@@ -4,16 +4,13 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
-import { type RetentionJobEnqueuerPort } from "../../ports/retention/retention-job-enqueuer.port.js";
-import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 import { RelayRetentionOutbox } from "./relay-retention-outbox.use-case.js";
 
 describe("RelayRetentionOutbox — 내구성 큐 전달", () => {
   let useCase: RelayRetentionOutbox;
-  let repository: Mocked<RetentionRepositoryPort>;
-  let enqueuer: Mocked<RetentionJobEnqueuerPort>;
-  let config: RetentionConfigPort;
+  let repository: Mocked<ConstructorParameters<typeof RelayRetentionOutbox>[0]["repository"]>;
+  let enqueuer: Mocked<ConstructorParameters<typeof RelayRetentionOutbox>[0]["enqueuer"]>;
+  let config: ConstructorParameters<typeof RelayRetentionOutbox>[0]["config"];
 
   beforeEach(async () => {
     const relayRetentionOutboxDependencies = mockDeep<
@@ -21,7 +18,7 @@ describe("RelayRetentionOutbox — 내구성 큐 전달", () => {
     >({
       repository: createRetentionRepositoryMock(),
       enqueuer: { enqueueDispatch: vi.fn() },
-      config: { enabled: true, treatmentPercent: 50 },
+      config: { enabled: true },
       unitOfWork: createUnitOfWorkMock(),
     });
     const unit = new RelayRetentionOutbox(relayRetentionOutboxDependencies);

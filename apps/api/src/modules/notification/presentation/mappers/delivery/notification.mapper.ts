@@ -7,7 +7,7 @@ import {
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import type { NotificationRecord } from "../../../domain/records/delivery/notification.record.js";
+import type { NotificationRecord } from "../../../application/read-models/delivery/notification.read-model.js";
 
 export abstract class NotificationMapper {
   static toDto(notification: NotificationRecord): NotificationDto {

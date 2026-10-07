@@ -1,9 +1,3 @@
-import type {
-  CreateNotificationData,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createSocialDigestNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -11,22 +5,29 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { createSocialDigestNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { getNotificationFriendFallback } from "../../messages/delivery/social-notification-message.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
+import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface SocialDigestStrategyDependencies {
-  readonly reader: ReEngagementReaderPort;
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<
+    ReEngagementReaderPort,
+    "findAcceptedFollows" | "findFriendsWithTodayTodos" | "findSocialDigestCandidates"
+  >;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class SocialDigestStrategy implements ITimezoneStrategy {
+export class SocialDigestStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: SocialDigestStrategyDependencies;
 
   constructor(dependencies: SocialDigestStrategyDependencies) {
@@ -131,7 +132,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
     for (const user of candidates) {
       const userFriendIds = friendIdMap.get(user.id);
 
-      if (!userFriendIds || userFriendIds.size === 0) {
+      if (userFriendIds === undefined || userFriendIds.size === 0) {
         continue;
       }
 
@@ -144,7 +145,7 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
       }
 
       const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
-      const fallbackName = locale === "en" ? "Your friend" : "친구";
+      const fallbackName = getNotificationFriendFallback(locale);
       const variantContext = {
         campaignKey: SCHEDULER_CAMPAIGN_KEY.SOCIAL_DIGEST,
         recipientId: user.id,
@@ -179,7 +180,11 @@ export class SocialDigestStrategy implements ITimezoneStrategy {
 
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.publishBatch(notifications);
-      this.#dependencies.logger.log(`Social digest: tz=${tz}, count=${notifications.length}`);
+      this.#dependencies.logger.log({
+        event: NotificationRemindersLogEvent.SOCIAL_DIGEST_SENT,
+        timezone: tz,
+        count: notifications.length,
+      });
     }
     return { sent: notifications.length };
   }

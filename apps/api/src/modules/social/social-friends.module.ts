@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FOLLOW_NOTIFIER } from "./application/ports/friends/follow-notifier.port.js";
@@ -29,7 +29,7 @@ import {
 } from "./social-friends-application.providers.js";
 
 @Module({
-  imports: [AccessModule, NotificationModule],
+  imports: [AccessModule, NotificationDeliveryModule],
   controllers: [FollowController],
   providers: [
     { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },

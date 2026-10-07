@@ -3,23 +3,21 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  createStreakAtRiskNotificationMessage,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
+import { createStreakAtRiskNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import type { UserWithTodosAndStreak } from "../../ports/reminders/scheduler-read-models.js";
 import { StreakAtRiskStrategy } from "./streak-at-risk.strategy.js";
 
 describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
   let strategy: StreakAtRiskStrategy;
-  let reader: Mocked<ReEngagementReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
+  let reader: Mocked<ConstructorParameters<typeof StreakAtRiskStrategy>[0]["reader"]>;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof StreakAtRiskStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof StreakAtRiskStrategy>[0]["notificationHistoryReader"]
+  >;
 
   const TZ = "Asia/Seoul";
 
@@ -51,7 +49,7 @@ describe("StreakAtRiskStrategy — 연속 달성 위험 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
     vi.spyOn(Math, "random").mockReturnValue(0);
 

@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 
-import { NotificationModule } from "../notification/notification-delivery.module.js";
+import { NotificationDeliveryModule } from "../notification/notification-delivery.module.js";
 import { PlanningTodosModule } from "../planning/planning-todos.module.js";
 import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
 import { AiModule } from "./ai-assistance-parsing.module.js";
@@ -40,7 +40,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
  * - PlanningTodosModule: 수락 시 RECURRING_TODO_CREATOR가 반복 생성 UseCase에 위임
  * - AiReportModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
  * - WeatherForecastModule: 날씨 기반 제안을 위한 격자 예보 조회
- * - NotificationModule: 새 제안 생성 시 알림 발송(프로세서)
+ * - NotificationDeliveryModule: 새 제안 생성 시 알림 발송(프로세서)
  */
 @Module({
   imports: [
@@ -48,7 +48,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
     IdentityUserAccessModule,
     AiModule,
     AiReportModule,
-    NotificationModule,
+    NotificationDeliveryModule,
     PlanningTodosModule,
     WeatherForecastModule,
   ],

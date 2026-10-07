@@ -1,16 +1,18 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { PaginationService } from "#api/shared/application/pagination/index";
 import { NotificationBuilder } from "#test/builders/index";
 
-import { type NotificationInboxReaderPort } from "../../ports/delivery/notification-inbox.reader.port.js";
 import { GetNotifications } from "./get-notifications.use-case.js";
 
 describe("GetNotifications", () => {
   let useCase: GetNotifications;
-  let notificationRepo: Mocked<NotificationInboxReaderPort>;
-  let paginationService: Mocked<PaginationService>;
+  let notificationRepo: Mocked<
+    ConstructorParameters<typeof GetNotifications>[0]["notificationInboxReader"]
+  >;
+  let paginationService: Mocked<
+    ConstructorParameters<typeof GetNotifications>[0]["paginationService"]
+  >;
 
   const mockUserId = "user-1";
 

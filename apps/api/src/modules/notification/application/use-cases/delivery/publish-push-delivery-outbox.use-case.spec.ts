@@ -25,8 +25,8 @@ function createEnqueuerMock(): PushDeliveryJobEnqueuerPort {
 
 describe("PublishPushDeliveryOutbox — outbox job 발행", () => {
   let useCase: PublishPushDeliveryOutbox;
-  let outbox: Mocked<PushDeliveryOutboxRepositoryPort>;
-  let enqueuer: Mocked<PushDeliveryJobEnqueuerPort>;
+  let outbox: Mocked<ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["outbox"]>;
+  let enqueuer: Mocked<ConstructorParameters<typeof PublishPushDeliveryOutbox>[0]["enqueuer"]>;
 
   beforeEach(async () => {
     const publishPushDeliveryOutboxDependencies = mockDeep<
@@ -69,7 +69,7 @@ describe("PublishPushDeliveryOutbox — outbox job 발행", () => {
   it("enqueue가 거부되면 같은 generation을 backoff 시점까지 defer한다", async () => {
     // Given - claim 성공 후 queue backend가 enqueue를 거부
     const now = new Date("2026-08-29T00:00:00.000Z");
-    vi.useFakeTimers({ now });
+    vi.useFakeTimers({ toFake: ["Date"], now });
     vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
     const publications = [{ dispatchId: 41, publishAttempt: 2 }];
     outbox.claimByDispatchIds.mockResolvedValue(publications);

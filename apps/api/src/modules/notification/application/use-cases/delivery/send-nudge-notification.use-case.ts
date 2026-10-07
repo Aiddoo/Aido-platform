@@ -5,8 +5,9 @@ import {
   createNudgeReceivedNotificationMessage,
   createTodoCreationNudgeNotificationMessage,
 } from "../../messages/delivery/notification-messages.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
+import type { NotificationRecipientLocaleReaderPort } from "../../ports/delivery/notification-recipient-locale.reader.port.js";
 import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 
 export interface SendNudgeNotificationInput {
   readonly nudgeId: number;
@@ -19,9 +20,9 @@ export interface SendNudgeNotificationInput {
 }
 
 interface SendNudgeNotificationDependencies {
-  readonly notificationPublisher: NotificationPublisher;
-  readonly recipientLocaleReader: NotificationRecipientLocaleReader;
-  readonly logger: ApplicationLogger;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishWithDeduplication">;
+  readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
 export class SendNudgeNotification {
@@ -32,9 +33,7 @@ export class SendNudgeNotification {
   }
 
   async execute(input: SendNudgeNotificationInput): Promise<void> {
-    const locale = await this.#dependencies.recipientLocaleReader.getRecipientLocale(
-      input.receiverId,
-    );
+    const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.receiverId);
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.NUDGE_RECEIVED,
       recipientId: input.receiverId,
@@ -67,8 +66,9 @@ export class SendNudgeNotification {
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,
     });
-    this.#dependencies.logger.log(
-      `Nudge notification sent: from=${input.senderId}, to=${input.receiverId}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.SEND_NUDGE_NOTIFICATION_SENT,
+      userId: input.receiverId,
+    });
   }
 }

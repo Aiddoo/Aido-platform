@@ -3,17 +3,15 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import {
-  PushTokenNotFoundError,
-  type PushTokenRepositoryPort,
-} from "../../ports/delivery/push-token.repository.port.js";
+import { PushTokenNotFoundError } from "../../ports/delivery/push-token.repository.port.js";
 import { UnregisterPushToken } from "./unregister-push-token.use-case.js";
 
 describe("UnregisterPushToken", () => {
   let useCase: UnregisterPushToken;
-  let repository: Mocked<PushTokenRepositoryPort>;
-  let cache: Mocked<NotificationCachePort>;
+  let repository: Mocked<
+    ConstructorParameters<typeof UnregisterPushToken>[0]["pushTokenRepository"]
+  >;
+  let cache: Mocked<ConstructorParameters<typeof UnregisterPushToken>[0]["cache"]>;
 
   beforeEach(async () => {
     const unregisterPushTokenDependencies = mockDeep<

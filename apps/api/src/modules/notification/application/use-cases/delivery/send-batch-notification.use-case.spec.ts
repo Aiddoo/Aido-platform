@@ -5,14 +5,16 @@ import { type AfterCommitTask } from "#api/shared/application/ports/index";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
-import { FinalizeBatchNotification } from "./finalize-batch-notification.use-case.js";
-import { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
 import { SendBatchNotification } from "./send-batch-notification.use-case.js";
 
 describe("배치 알림의 커밋 후 정리", () => {
   let useCase: SendBatchNotification;
-  let persistBatch: Mocked<PersistBatchNotification>;
-  let finalizeBatch: Mocked<FinalizeBatchNotification>;
+  let persistBatch: Mocked<
+    ConstructorParameters<typeof SendBatchNotification>[0]["persistBatchNotificationUseCase"]
+  >;
+  let finalizeBatch: Mocked<
+    ConstructorParameters<typeof SendBatchNotification>[0]["finalizeBatchNotificationUseCase"]
+  >;
   let afterCommitTasks: AfterCommitTask[];
 
   beforeEach(async () => {

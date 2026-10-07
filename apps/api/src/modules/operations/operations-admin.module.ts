@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
 import { ADMIN_BROADCAST_NOTIFIER } from "./application/ports/admin/admin-broadcast-notifier.port.js";
 import { ADMIN_GROWTH_METRICS } from "./application/ports/admin/admin-growth-metrics.port.js";
@@ -19,7 +19,7 @@ import { AdminController } from "./presentation/controllers/admin/admin.controll
  * 추상화하며, 현재 어댑터는 Prisma·NotificationService다.
  */
 @Module({
-  imports: [NotificationModule],
+  imports: [NotificationDeliveryModule],
   controllers: [AdminController, AdminGrowthController],
   providers: [
     {

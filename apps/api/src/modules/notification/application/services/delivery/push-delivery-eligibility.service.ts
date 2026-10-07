@@ -52,9 +52,18 @@ interface PushDeliveryCandidate {
 
 /** 푸시 수신 설정·동의·야간 시간·빈도 제한 판단을 한곳에서 수행한다. */
 interface PushDeliveryEligibilityServiceDependencies {
-  readonly userSettings: UserNotificationSettingsPort;
-  readonly rateLimiter: PushRateLimiterPort;
-  readonly recipientPreferenceReader: NotificationRecipientPreferenceReaderPort;
+  readonly userSettings: Pick<
+    UserNotificationSettingsPort,
+    "getConsentRecord" | "getConsentRecordsByUserIds" | "getPreferenceRecordsByUserIds"
+  >;
+  readonly rateLimiter: Pick<
+    PushRateLimiterPort,
+    "reserveBatch" | "reserveEngagement" | "reserveGeneral"
+  >;
+  readonly recipientPreferenceReader: Pick<
+    NotificationRecipientPreferenceReaderPort,
+    "getPreference"
+  >;
 }
 
 export class PushDeliveryEligibilityService {

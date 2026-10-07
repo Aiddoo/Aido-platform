@@ -4,14 +4,14 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import { type NotificationDedupPort } from "../../ports/delivery/notification-dedup.port.js";
 import { FinalizeBatchNotification } from "./finalize-batch-notification.use-case.js";
 
 describe("FinalizeBatchNotification", () => {
   let useCase: FinalizeBatchNotification;
-  let cache: Mocked<NotificationCachePort>;
-  let dedup: Mocked<NotificationDedupPort>;
+  let cache: Mocked<ConstructorParameters<typeof FinalizeBatchNotification>[0]["cache"]>;
+  let dedup: Mocked<
+    ConstructorParameters<typeof FinalizeBatchNotification>[0]["notificationDedup"]
+  >;
 
   beforeEach(async () => {
     const finalizeBatchNotificationDependencies = mockDeep<

@@ -34,6 +34,8 @@ type TimezoneReminderJobLike = {
   readonly data: JobData;
 };
 
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+
 @Injectable()
 export class TimezoneReminderProcessor implements OnModuleInit {
   readonly #logger = new Logger(TimezoneReminderProcessor.name);
@@ -62,38 +64,39 @@ export class TimezoneReminderProcessor implements OnModuleInit {
   }
 
   onStalled(jobId: string): void {
-    this.#logger.warn(`Job stalled: jobId=${jobId}`);
+    this.#logger.warn({ event: NotificationProviderLogEvent.JOB_STALLED, jobId });
   }
 
-  onError(error: Error): void {
-    this.#logger.error(`Worker error: ${error.message}`, error.stack);
+  onError(_error: Error): void {
+    this.#logger.error({ event: NotificationProviderLogEvent.WORKER_FAILED });
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
-    this.#logger.error(
-      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
-      error.stack,
-    );
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
+    this.#logger.error({ event: NotificationProviderLogEvent.JOB_FAILED, jobId: job?.id });
   }
 
   async process(untrustedJob: TimezoneReminderJobLike): Promise<void> {
     const parsedJob = TimezoneReminderRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
-      this.#logger.warn(`Invalid timezone reminder job: name=${untrustedJob.name}`);
+      this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
       return;
     }
     const job = parsedJob.data;
     switch (job.name) {
       case TimezoneReminderJobName.SWEEP_REMINDERS:
-        this.#logger.debug("Processing timezone reminder sweep...");
+        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: job.name });
         await this.orchestrator.handleMinuteSweep();
         break;
       case TimezoneReminderJobName.REMINDER_HOUR_CHANGED:
-        this.#logger.debug(`Processing reminder hour changed: userId=${job.data.userId}`);
+        this.#logger.debug({
+          event: NotificationProviderLogEvent.JOB_STARTED,
+          jobName: job.name,
+          userId: job.data.userId,
+        });
         await this.orchestrator.handleReminderHourChanged(job.data);
         break;
       case TimezoneReminderJobName.SOCIAL_DIGEST:
-        this.#logger.debug(`Processing social digest: tz=${job.data.timezone}`);
+        this.#logger.debug({ event: NotificationProviderLogEvent.JOB_STARTED, jobName: job.name });
         await this.orchestrator.handleSocialDigest(job.data);
         break;
       default: {

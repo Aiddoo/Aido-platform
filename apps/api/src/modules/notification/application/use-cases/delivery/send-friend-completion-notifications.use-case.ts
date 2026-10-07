@@ -5,6 +5,7 @@ import { DEFAULT_LOCALE, toSupportedLocale } from "#api/shared/domain/locale";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
 import { createFriendCompletedNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { DuplicateNotificationError } from "../../ports/delivery/notification.repository.port.js";
 import { type UserNotificationSettingsPort } from "../../ports/delivery/user-notification-settings.port.js";
 import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
@@ -20,12 +21,15 @@ export interface SendFriendCompletionNotificationsInput {
 }
 
 interface SendFriendCompletionNotificationsDependencies {
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly persistBatch: PersistBatchNotification;
-  readonly finalizeBatch: FinalizeBatchNotification;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly userNotificationSettings: UserNotificationSettingsPort;
-  readonly logger: ApplicationLogger;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly persistBatch: Pick<PersistBatchNotification, "execute">;
+  readonly finalizeBatch: Pick<FinalizeBatchNotification, "execute">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly userNotificationSettings: Pick<
+    UserNotificationSettingsPort,
+    "getPreferenceRecordsByUserIds"
+  >;
+  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
 }
 
 export class SendFriendCompletionNotifications {
@@ -37,7 +41,9 @@ export class SendFriendCompletionNotifications {
 
   async execute(input: SendFriendCompletionNotificationsInput): Promise<void> {
     if (input.notifyUserIds.length === 0) {
-      this.#dependencies.logger.debug("No friends to notify for friend completion");
+      this.#dependencies.logger.debug({
+        event: NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_NO_RECIPIENTS,
+      });
       return;
     }
 
@@ -55,9 +61,10 @@ export class SendFriendCompletionNotifications {
     );
 
     if (recipientUserIds.length === 0) {
-      this.#dependencies.logger.debug(
-        `Friend completion already sent today: friendId=${input.friendId}`,
-      );
+      this.#dependencies.logger.debug({
+        event: NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_ALREADY_SENT,
+        friendId: input.friendId,
+      });
       return;
     }
 
@@ -97,18 +104,24 @@ export class SendFriendCompletionNotifications {
       );
     } catch (error) {
       if (!(error instanceof DuplicateNotificationError)) throw error;
-      this.#dependencies.logger.debug(
-        `Friend completion duplicate prevented by constraint: friendId=${input.friendId}`,
-      );
+      this.#dependencies.logger.debug({
+        event:
+          NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_DUPLICATE_PREVENTED,
+        friendId: input.friendId,
+      });
       return;
     }
 
-    this.#dependencies.logger.log(
-      `Friend completion notifications persisted: friendId=${input.friendId}, count=${persistedBatch.count}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_PERSISTED,
+      friendId: input.friendId,
+      count: persistedBatch.count,
+    });
     await this.#dependencies.finalizeBatch.execute(persistedBatch);
-    this.#dependencies.logger.debug(
-      `Friend completion post-commit effects finalized: friendId=${input.friendId}, count=${persistedBatch.count}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.SEND_FRIEND_COMPLETION_NOTIFICATIONS_EFFECTS_FINALIZED,
+      friendId: input.friendId,
+      count: persistedBatch.count,
+    });
   }
 }

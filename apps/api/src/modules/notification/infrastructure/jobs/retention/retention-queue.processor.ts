@@ -27,6 +27,8 @@ import {
 type RetentionJob = NamedJob<RetentionJobMap>;
 type RetentionJobLike = { readonly name: string; readonly data: JobData };
 
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+
 @Injectable()
 export class RetentionQueueProcessor implements OnModuleInit {
   readonly #logger = new Logger(RetentionQueueProcessor.name);
@@ -79,7 +81,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
   ): Promise<void> {
     const parsedJob = RetentionRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
-      this.#logger.warn(`Invalid retention job: name=${untrustedJob.name}`);
+      this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });
       return;
     }
     const job = parsedJob.data;
@@ -105,10 +107,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
     }
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error): void {
-    this.#logger.error(
-      `Retention job failed: id=${job?.id}, name=${job?.name}, error=${error.message}`,
-      error.stack,
-    );
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error): void {
+    this.#logger.error({ event: NotificationProviderLogEvent.JOB_FAILED, jobId: job?.id });
   }
 }

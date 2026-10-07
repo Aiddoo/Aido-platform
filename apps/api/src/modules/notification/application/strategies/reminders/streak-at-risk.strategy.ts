@@ -1,9 +1,4 @@
 import { computeEffectiveStreak } from "#api/modules/identity/identity-settings.public";
-import type {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createStreakAtRiskNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -11,11 +6,13 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { createStreakAtRiskNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 /**
  * 스트릭 위기 Strategy (20:15)
@@ -25,13 +22,13 @@ import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement
  * 고정 시간(20:15) 전용 — 야간(21:00) 시작 전 마지막 넛지.
  */
 interface StreakAtRiskStrategyDependencies {
-  readonly reader: ReEngagementReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<ReEngagementReaderPort, "findStreakAtRiskUsers">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class StreakAtRiskStrategy implements ITimezoneStrategy {
+export class StreakAtRiskStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: StreakAtRiskStrategyDependencies;
 
   constructor(dependencies: StreakAtRiskStrategyDependencies) {
@@ -122,7 +119,11 @@ export class StreakAtRiskStrategy implements ITimezoneStrategy {
     });
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
-    this.#dependencies.logger.log(`Streak at risk: tz=${tz}, count=${notifications.length}`);
+    this.#dependencies.logger.log({
+      event: NotificationRemindersLogEvent.STREAK_AT_RISK_SENT,
+      timezone: tz,
+      count: notifications.length,
+    });
     return { sent: notifications.length };
   }
 }

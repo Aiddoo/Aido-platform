@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
@@ -35,7 +35,7 @@ import {
 } from "./social-nudges-application.providers.js";
 
 @Module({
-  imports: [AccessModule, SocialFriendsModule, NotificationModule],
+  imports: [AccessModule, SocialFriendsModule, NotificationDeliveryModule],
   controllers: [NudgeController, NudgeInteractionController],
   providers: [
     {

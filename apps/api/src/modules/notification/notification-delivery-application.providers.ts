@@ -12,6 +12,7 @@ import {
 } from "./application/ports/delivery/notification-dedup.port.js";
 import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notification-history.reader.port.js";
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
+import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
@@ -25,7 +26,6 @@ import { PUSH_TOKEN_REPOSITORY } from "./application/ports/delivery/push-token.r
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/delivery/user-notification-settings.port.js";
 import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
-import { NotificationRecipientLocaleReader } from "./application/readers/delivery/notification-recipient-locale.reader.js";
 import { NotificationAccountCleanup } from "./application/services/delivery/notification-account-cleanup.js";
 import { PushDeliveryAfterCommitPublisher } from "./application/services/delivery/push-delivery-after-commit.publisher.js";
 import { PushDeliveryEligibilityService } from "./application/services/delivery/push-delivery-eligibility.service.js";
@@ -33,7 +33,6 @@ import { PushNotificationDeliveryService } from "./application/services/delivery
 import { PushNotificationPayloadFactory } from "./application/services/delivery/push-notification-payload.factory.js";
 import { DeliverPushNotifications } from "./application/use-cases/delivery/deliver-push-notifications.use-case.js";
 import { FinalizeBatchNotification } from "./application/use-cases/delivery/finalize-batch-notification.use-case.js";
-import { FindAlreadyNotifiedUsers } from "./application/use-cases/delivery/find-already-notified-users.use-case.js";
 import { GetNotifications } from "./application/use-cases/delivery/get-notifications.use-case.js";
 import { GetUnreadCount } from "./application/use-cases/delivery/get-unread-count.use-case.js";
 import { MarkAllAsRead } from "./application/use-cases/delivery/mark-all-as-read.use-case.js";
@@ -191,21 +190,21 @@ export const finalizeBatchNotificationProvider: FactoryProvider<FinalizeBatchNot
     }),
 };
 
-export const findAlreadyNotifiedUsersProvider: FactoryProvider<FindAlreadyNotifiedUsers> = {
-  provide: FindAlreadyNotifiedUsers,
+export const notificationHistoryReaderProvider: FactoryProvider<NotificationHistoryReader> = {
+  provide: NotificationHistoryReader,
   inject: [NOTIFICATION_DEDUP, NOTIFICATION_HISTORY_READER],
   useFactory: (
     notificationDedup: ConstructorParameters<
-      typeof FindAlreadyNotifiedUsers
+      typeof NotificationHistoryReader
     >[0]["notificationDedup"],
     notificationHistoryReader: ConstructorParameters<
-      typeof FindAlreadyNotifiedUsers
+      typeof NotificationHistoryReader
     >[0]["notificationHistoryReader"],
   ) =>
-    new FindAlreadyNotifiedUsers({
+    new NotificationHistoryReader({
       notificationDedup,
       notificationHistoryReader,
-      logger: new Logger(FindAlreadyNotifiedUsers.name),
+      logger: new Logger(NotificationHistoryReader.name),
     }),
 };
 
@@ -344,7 +343,13 @@ export const publishPushDeliveryOutboxProvider: FactoryProvider<PublishPushDeliv
 
 export const reconcilePushReceiptsProvider: FactoryProvider<ReconcilePushReceipts> = {
   provide: ReconcilePushReceipts,
-  inject: [PUSH_RECEIPT_REPOSITORY, PUSH_TOKEN_REPOSITORY, PUSH_PROVIDER],
+  inject: [
+    PUSH_RECEIPT_REPOSITORY,
+    PUSH_TOKEN_REPOSITORY,
+    PUSH_PROVIDER,
+    NOTIFICATION_CACHE,
+    UNIT_OF_WORK,
+  ],
   useFactory: (
     pushReceiptRepository: ConstructorParameters<
       typeof ReconcilePushReceipts
@@ -353,11 +358,15 @@ export const reconcilePushReceiptsProvider: FactoryProvider<ReconcilePushReceipt
       typeof ReconcilePushReceipts
     >[0]["pushTokenRepository"],
     pushProvider: ConstructorParameters<typeof ReconcilePushReceipts>[0]["pushProvider"],
+    cache: ConstructorParameters<typeof ReconcilePushReceipts>[0]["cache"],
+    unitOfWork: ConstructorParameters<typeof ReconcilePushReceipts>[0]["unitOfWork"],
   ) =>
     new ReconcilePushReceipts({
       pushReceiptRepository,
       pushTokenRepository,
       pushProvider,
+      cache,
+      unitOfWork,
       logger: new Logger(ReconcilePushReceipts.name),
     }),
 };
@@ -439,7 +448,7 @@ export const sendBatchNotificationProvider: FactoryProvider<SendBatchNotificatio
 
 export const sendBillingIssueNotificationProvider: FactoryProvider<SendBillingIssueNotification> = {
   provide: SendBillingIssueNotification,
-  inject: [NotificationPublisher, NotificationRecipientLocaleReader],
+  inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
   useFactory: (
     notificationPublisher: ConstructorParameters<
       typeof SendBillingIssueNotification
@@ -457,7 +466,7 @@ export const sendBillingIssueNotificationProvider: FactoryProvider<SendBillingIs
 
 export const sendCheerNotificationProvider: FactoryProvider<SendCheerNotification> = {
   provide: SendCheerNotification,
-  inject: [NotificationPublisher, NotificationRecipientLocaleReader],
+  inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
   useFactory: (
     notificationPublisher: ConstructorParameters<
       typeof SendCheerNotification
@@ -476,7 +485,7 @@ export const sendCheerNotificationProvider: FactoryProvider<SendCheerNotificatio
 export const sendFollowAcceptedNotificationProvider: FactoryProvider<SendFollowAcceptedNotification> =
   {
     provide: SendFollowAcceptedNotification,
-    inject: [NotificationPublisher, NotificationRecipientLocaleReader],
+    inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
     useFactory: (
       notificationPublisher: ConstructorParameters<
         typeof SendFollowAcceptedNotification
@@ -495,7 +504,7 @@ export const sendFollowAcceptedNotificationProvider: FactoryProvider<SendFollowA
 export const sendFollowRequestNotificationProvider: FactoryProvider<SendFollowRequestNotification> =
   {
     provide: SendFollowRequestNotification,
-    inject: [NotificationPublisher, NotificationRecipientLocaleReader],
+    inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
     useFactory: (
       notificationPublisher: ConstructorParameters<
         typeof SendFollowRequestNotification
@@ -550,7 +559,7 @@ export const sendMilestoneNotificationProvider: FactoryProvider<SendMilestoneNot
   provide: SendMilestoneNotification,
   inject: [
     NotificationPublisher,
-    NotificationRecipientLocaleReader,
+    NOTIFICATION_RECIPIENT_LOCALE_READER,
     NOTIFICATION_HISTORY_READER,
     NOTIFICATION_DEDUP_LOCK,
   ],
@@ -630,7 +639,7 @@ export const sendNotificationWithDedupProvider: FactoryProvider<SendNotification
 
 export const sendNudgeNotificationProvider: FactoryProvider<SendNudgeNotification> = {
   provide: SendNudgeNotification,
-  inject: [NotificationPublisher, NotificationRecipientLocaleReader],
+  inject: [NotificationPublisher, NOTIFICATION_RECIPIENT_LOCALE_READER],
   useFactory: (
     notificationPublisher: ConstructorParameters<
       typeof SendNudgeNotification
@@ -659,5 +668,24 @@ export const unregisterPushTokenProvider: FactoryProvider<UnregisterPushToken> =
       pushTokenRepository,
       cache,
       logger: new Logger(UnregisterPushToken.name),
+    }),
+};
+
+export const notificationPublisherProvider: FactoryProvider<NotificationPublisher> = {
+  provide: NotificationPublisher,
+  inject: [SendNotification, SendNotificationWithDedup, SendBatchNotification],
+  useFactory: (
+    sendNotification: ConstructorParameters<typeof NotificationPublisher>[0]["sendNotification"],
+    sendNotificationWithDeduplication: ConstructorParameters<
+      typeof NotificationPublisher
+    >[0]["sendNotificationWithDeduplication"],
+    sendBatchNotification: ConstructorParameters<
+      typeof NotificationPublisher
+    >[0]["sendBatchNotification"],
+  ) =>
+    new NotificationPublisher({
+      sendNotification,
+      sendNotificationWithDeduplication,
+      sendBatchNotification,
     }),
 };

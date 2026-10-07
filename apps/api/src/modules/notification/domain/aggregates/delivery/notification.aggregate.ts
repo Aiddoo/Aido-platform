@@ -3,8 +3,6 @@ import { ErrorCode } from "@aido/api/errors";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { AggregateRoot } from "#api/shared/domain/index";
 
-import type { NotificationRecord } from "../../records/delivery/notification.record.js";
-
 /**
  * 알림 애그리게잇.
  *
@@ -18,7 +16,7 @@ interface NotificationProps {
 }
 
 export class Notification extends AggregateRoot<NotificationProps> {
-  static reconstitute(record: Pick<NotificationRecord, "id" | "userId" | "isRead">): Notification {
+  static reconstitute(record: Readonly<NotificationProps>): Notification {
     return new Notification({ ...record });
   }
 

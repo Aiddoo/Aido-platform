@@ -1,6 +1,7 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import { visibleNotificationTypes } from "../../../domain/services/delivery/notification-client-capability.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import { type NotificationRepositoryPort } from "../../ports/delivery/notification.repository.port.js";
 
@@ -8,9 +9,9 @@ import { type NotificationRepositoryPort } from "../../ports/delivery/notificati
  * 모든 알림 읽음 처리 유스케이스.
  */
 interface MarkAllAsReadDependencies {
-  readonly notificationRepository: NotificationRepositoryPort;
-  readonly cache: NotificationCachePort;
-  readonly logger: ApplicationLogger;
+  readonly notificationRepository: Pick<NotificationRepositoryPort, "markAllAsRead">;
+  readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly logger: Pick<ApplicationLogger, "debug">;
 }
 
 export class MarkAllAsRead {
@@ -27,9 +28,11 @@ export class MarkAllAsRead {
     );
     await this.#dependencies.cache.invalidateUnreadCount(userId);
 
-    this.#dependencies.logger.debug(
-      `All notifications read processed: userId=${userId}, count=${result.count}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.MARK_ALL_AS_READ_READ_ALL_PROCESSED,
+      userId,
+      count: result.count,
+    });
 
     return result;
   }

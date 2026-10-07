@@ -8,10 +8,10 @@ import type { FinalizeBatchNotification } from "./finalize-batch-notification.us
 import type { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
 
 interface SendBatchNotificationDependencies {
-  readonly persistBatchNotificationUseCase: PersistBatchNotification;
-  readonly finalizeBatchNotificationUseCase: FinalizeBatchNotification;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly afterCommitTasks: AfterCommitTaskRegistryPort;
+  readonly persistBatchNotificationUseCase: Pick<PersistBatchNotification, "execute">;
+  readonly finalizeBatchNotificationUseCase: Pick<FinalizeBatchNotification, "execute">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly afterCommitTasks: Pick<AfterCommitTaskRegistryPort, "register">;
 }
 
 export class SendBatchNotification {

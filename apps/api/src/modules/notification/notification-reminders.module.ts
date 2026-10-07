@@ -22,7 +22,7 @@ import {
 import { TimezoneReminderProcessor } from "./infrastructure/jobs/reminders/timezone-reminder-queue.processor.js";
 import { PrismaSchedulerReader } from "./infrastructure/persistence/reminders/prisma-scheduler.reader.js";
 import { TodoReminderProcessor } from "./infrastructure/processors/reminders/todo-reminder.processor.js";
-import { NotificationModule } from "./notification-delivery.module.js";
+import { NotificationDeliveryModule } from "./notification-delivery.module.js";
 import {
   eveningReminderStrategyProvider,
   lunchNudgeStrategyProvider,
@@ -41,7 +41,7 @@ import {
 } from "./notification-reminders-application.providers.js";
 
 /**
- * SchedulerModule (클린아키텍처 4계층 + 포트/어댑터)
+ * NotificationRemindersModule (클린아키텍처 4계층 + 포트/어댑터)
  *
  * 일정 기반 알림을 처리하는 모듈.
  * - 타임존 인식 리마인더: 매분 Sweep (BullMQ Job Scheduler — 아침/저녁 리마인더 통합)
@@ -55,7 +55,7 @@ import {
   imports: [
     TimezoneReminderQueueModule,
     DatabaseModule,
-    NotificationModule,
+    NotificationDeliveryModule,
     WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
   ],
@@ -107,4 +107,4 @@ import {
   ],
   exports: [REMINDER_SCHEDULER],
 })
-export class SchedulerModule {}
+export class NotificationRemindersModule {}

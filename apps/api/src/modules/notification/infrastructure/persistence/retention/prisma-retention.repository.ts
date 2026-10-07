@@ -26,6 +26,7 @@ import {
   RETENTION_STAGE_NAMES,
 } from "../../../domain/policies/retention/retention.constants.js";
 import { localDateString } from "../../../domain/services/retention/stage-policy.js";
+import { pushTokenFingerprint } from "../delivery/push-token-fingerprint.js";
 
 @Injectable()
 export class PrismaRetentionRepository implements RetentionRepositoryPort {
@@ -969,6 +970,7 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
 						${pushTokenId}::INTEGER,
 						${result.success ? "TICKET_ACCEPTED" : "FAILED"}::"PushDeliveryStatus",
 						${result.ticketId ?? null},
+						${pushTokenFingerprint(result.token)}::VARCHAR(64),
 						${result.errorCode ?? null},
 						${result.error?.slice(0, 500) ?? null},
 						CURRENT_TIMESTAMP
@@ -982,13 +984,14 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
             this.client,
             sql`
 				INSERT INTO "PushDeliveryAttempt" (
-					"dispatchId", "pushTokenId", "status", "expoTicketId",
+					"dispatchId", "pushTokenId", "status", "expoTicketId", "tokenFingerprint",
 					"errorCode", "errorMessage", "updatedAt"
 				)
 				VALUES ${join(attempts)}
 				ON CONFLICT ("dispatchId", "pushTokenId") DO UPDATE SET
 					"status" = EXCLUDED."status",
 					"expoTicketId" = EXCLUDED."expoTicketId",
+					"tokenFingerprint" = EXCLUDED."tokenFingerprint",
 					"errorCode" = EXCLUDED."errorCode",
 					"errorMessage" = EXCLUDED."errorMessage",
 					"receiptCheckedAt" = NULL,

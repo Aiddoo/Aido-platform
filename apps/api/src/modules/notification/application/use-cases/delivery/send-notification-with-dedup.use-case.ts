@@ -1,15 +1,16 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
-import type { NotificationRecord } from "../../../domain/records/delivery/notification.record.js";
 import {
   buildDedupContextFields,
   buildDedupKey,
   resolveDedupStrategy,
 } from "../../../domain/services/delivery/notification-dedup.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import { type NotificationDedupLockPort } from "../../ports/delivery/notification-dedup.port.js";
 import { type NotificationHistoryReaderPort } from "../../ports/delivery/notification-history.reader.port.js";
+import type { NotificationRecord } from "../../read-models/delivery/notification.read-model.js";
 import type { SendNotification } from "./send-notification.use-case.js";
 
 /**
@@ -21,10 +22,13 @@ import type { SendNotification } from "./send-notification.use-case.js";
  * @returns 생성된 Notification 또는 null (중복 스킵 / 잠금 대기 스킵)
  */
 interface SendNotificationWithDedupDependencies {
-  readonly sendNotification: SendNotification;
-  readonly dedupLock: NotificationDedupLockPort;
-  readonly notificationHistoryReader: NotificationHistoryReaderPort;
-  readonly logger: ApplicationLogger;
+  readonly sendNotification: Pick<SendNotification, "execute">;
+  readonly dedupLock: Pick<NotificationDedupLockPort, "acquire">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "existsRecentNotification"
+  >;
+  readonly logger: Pick<ApplicationLogger, "debug">;
 }
 
 export class SendNotificationWithDedup {
@@ -37,17 +41,19 @@ export class SendNotificationWithDedup {
   async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
     const strategy = resolveDedupStrategy(data.type);
 
-    if (!strategy) {
+    if (strategy === undefined) {
       return this.#dependencies.sendNotification.execute(data);
     }
 
     const dedupKey = buildDedupKey(data, strategy);
     const release = await this.#dependencies.dedupLock.acquire(dedupKey);
 
-    if (!release) {
-      this.#dependencies.logger.debug(
-        `Notification dedup: lock busy for ${data.type}, userId=${data.userId}`,
-      );
+    if (release === null) {
+      this.#dependencies.logger.debug({
+        event: NotificationDeliveryLogEvent.SEND_NOTIFICATION_WITH_DEDUP_LOCK_BUSY,
+        type: data.type,
+        userId: data.userId,
+      });
       return null;
     }
 
@@ -64,9 +70,11 @@ export class SendNotificationWithDedup {
       const exists =
         await this.#dependencies.notificationHistoryReader.existsRecentNotification(params);
       if (exists) {
-        this.#dependencies.logger.debug(
-          `Notification dedup: skipped ${data.type} for userId=${data.userId}`,
-        );
+        this.#dependencies.logger.debug({
+          event: NotificationDeliveryLogEvent.SEND_NOTIFICATION_WITH_DEDUP_DUPLICATE_SKIPPED,
+          type: data.type,
+          userId: data.userId,
+        });
         return null;
       }
 

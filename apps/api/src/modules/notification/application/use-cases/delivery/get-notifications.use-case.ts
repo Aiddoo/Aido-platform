@@ -4,10 +4,11 @@ import type { CursorPaginatedResponse } from "#api/shared/application/pagination
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
-import type { NotificationRecord } from "../../../domain/records/delivery/notification.record.js";
 import { visibleNotificationTypes } from "../../../domain/services/delivery/notification-client-capability.js";
 import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationInboxReaderPort } from "../../ports/delivery/notification-inbox.reader.port.js";
+import type { NotificationRecord } from "../../read-models/delivery/notification.read-model.js";
 
 export interface GetNotificationsInput {
   userId: string;
@@ -24,9 +25,12 @@ export interface GetNotificationsInput {
  * 카테고리 필터를 알림 타입 목록으로 변환하고, DTO 매핑은 프레젠테이션에 위임한다.
  */
 interface GetNotificationsDependencies {
-  readonly notificationInboxReader: NotificationInboxReaderPort;
-  readonly paginationService: PaginationService;
-  readonly logger: ApplicationLogger;
+  readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "findNotificationsByUser">;
+  readonly paginationService: Pick<
+    PaginationService,
+    "createCursorPaginatedResponse" | "normalizeCursorPagination"
+  >;
+  readonly logger: Pick<ApplicationLogger, "debug">;
 }
 
 export class GetNotifications {
@@ -59,9 +63,11 @@ export class GetNotifications {
       types: visibleNotificationTypes(input.appVersion, types),
     });
 
-    this.#dependencies.logger.debug(
-      `Notifications listed: ${notifications.length} items for user: ${input.userId}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.GET_NOTIFICATIONS_LISTED,
+      userId: input.userId,
+      count: notifications.length,
+    });
 
     return this.#dependencies.paginationService.createCursorPaginatedResponse<
       NotificationRecord,

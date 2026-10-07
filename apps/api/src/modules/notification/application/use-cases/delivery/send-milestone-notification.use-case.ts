@@ -2,10 +2,11 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 
 import type { NotificationMilestone } from "../../../domain/types/delivery/notification-milestone.js";
 import { createMilestoneNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationDedupLockPort } from "../../ports/delivery/notification-dedup.port.js";
 import { type NotificationHistoryReaderPort } from "../../ports/delivery/notification-history.reader.port.js";
+import type { NotificationRecipientLocaleReaderPort } from "../../ports/delivery/notification-recipient-locale.reader.port.js";
 import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 
 export interface SendMilestoneNotificationInput {
   readonly userId: string;
@@ -13,11 +14,14 @@ export interface SendMilestoneNotificationInput {
 }
 
 interface SendMilestoneNotificationDependencies {
-  readonly notificationPublisher: NotificationPublisher;
-  readonly recipientLocaleReader: NotificationRecipientLocaleReader;
-  readonly notificationHistoryReader: NotificationHistoryReaderPort;
-  readonly notificationDedupLock: NotificationDedupLockPort;
-  readonly logger: ApplicationLogger;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publish">;
+  readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
+  readonly notificationHistoryReader: Pick<
+    NotificationHistoryReaderPort,
+    "hasMilestoneNotification"
+  >;
+  readonly notificationDedupLock: Pick<NotificationDedupLockPort, "acquire">;
+  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
 }
 
 export class SendMilestoneNotification {
@@ -32,9 +36,10 @@ export class SendMilestoneNotification {
       `milestone:${input.userId}:${input.milestone}`,
     );
     if (release === null) {
-      this.#dependencies.logger.debug(
-        `Milestone notification is already being handled: userId=${input.userId}, milestone=${input.milestone}`,
-      );
+      this.#dependencies.logger.debug({
+        event: NotificationDeliveryLogEvent.SEND_MILESTONE_NOTIFICATION_LOCK_BUSY,
+        userId: input.userId,
+      });
       return;
     }
 
@@ -45,15 +50,14 @@ export class SendMilestoneNotification {
           input.milestone,
         );
       if (alreadySent) {
-        this.#dependencies.logger.debug(
-          `Milestone already achieved: userId=${input.userId}, milestone=${input.milestone}`,
-        );
+        this.#dependencies.logger.debug({
+          event: NotificationDeliveryLogEvent.SEND_MILESTONE_NOTIFICATION_DUPLICATE_SKIPPED,
+          userId: input.userId,
+        });
         return;
       }
 
-      const locale = await this.#dependencies.recipientLocaleReader.getRecipientLocale(
-        input.userId,
-      );
+      const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.userId);
       const message = createMilestoneNotificationMessage({
         milestone: input.milestone,
         locale,
@@ -65,9 +69,10 @@ export class SendMilestoneNotification {
         body: message.body,
         metadata: { milestone: input.milestone },
       });
-      this.#dependencies.logger.log(
-        `Milestone notification sent: userId=${input.userId}, milestone=${input.milestone}`,
-      );
+      this.#dependencies.logger.log({
+        event: NotificationDeliveryLogEvent.SEND_MILESTONE_NOTIFICATION_SENT,
+        userId: input.userId,
+      });
     } finally {
       await release();
     }

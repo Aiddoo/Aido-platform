@@ -4,11 +4,10 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock } from "#test/mocks/ports/index";
 
-import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 import { EnrollRetentionExperiment } from "./enroll-retention-experiment.use-case.js";
 
 describe("EnrollRetentionExperiment — 신규 사용자만 등록", () => {
-  let repository: Mocked<RetentionRepositoryPort>;
+  let repository: Mocked<ConstructorParameters<typeof EnrollRetentionExperiment>[0]["repository"]>;
 
   async function build(enabled: boolean) {
     const enrollRetentionExperimentDependencies = mockDeep<
@@ -28,7 +27,7 @@ describe("EnrollRetentionExperiment — 신규 사용자만 등록", () => {
   });
 
   it("활성화된 신규 등록 요청은 안정적으로 TREATMENT를 저장한다", async () => {
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00Z"));
+    vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-15T00:00:00Z"));
     const useCase = await build(true);
 
     await useCase.execute("new-user", true);

@@ -1,3 +1,11 @@
+import type { UserSettingsCachePort } from "./application/ports/settings/user-settings-cache.port.js";
+
+export { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
+export type UserPreferenceCacheInvalidatorPort = Pick<
+  UserSettingsCachePort,
+  "invalidateUserPreference"
+>;
+
 export {
   USER_PREFERENCE_READER,
   type UserPreferenceReaderPort,

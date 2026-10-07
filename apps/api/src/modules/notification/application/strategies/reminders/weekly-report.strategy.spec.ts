@@ -3,23 +3,22 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  createWeeklyReportNotificationMessage,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
-import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import { createWeeklyReportNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { WeeklyReportStrategy } from "./weekly-report.strategy.js";
 
 describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
   let strategy: WeeklyReportStrategy;
-  let reader: Mocked<ScheduledReminderReaderPort>;
-  let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
+  let reader: Mocked<ConstructorParameters<typeof WeeklyReportStrategy>[0]["reader"]>;
+  let preferenceReader: Mocked<
+    ConstructorParameters<typeof WeeklyReportStrategy>[0]["preferenceReader"]
+  >;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof WeeklyReportStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof WeeklyReportStrategy>[0]["notificationHistoryReader"]
+  >;
 
   const TZ = "Asia/Seoul";
 
@@ -37,7 +36,7 @@ describe("WeeklyReportStrategy — 주간 리포트 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
 
     const weeklyReportStrategyDependencies = mockDeep<

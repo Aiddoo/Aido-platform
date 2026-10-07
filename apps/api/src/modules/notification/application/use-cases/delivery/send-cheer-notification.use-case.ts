@@ -2,8 +2,9 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
 import { createCheerReceivedNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
+import type { NotificationRecipientLocaleReaderPort } from "../../ports/delivery/notification-recipient-locale.reader.port.js";
 import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 
 export interface SendCheerNotificationInput {
   readonly cheerId: number;
@@ -14,9 +15,9 @@ export interface SendCheerNotificationInput {
 }
 
 interface SendCheerNotificationDependencies {
-  readonly notificationPublisher: NotificationPublisher;
-  readonly recipientLocaleReader: NotificationRecipientLocaleReader;
-  readonly logger: ApplicationLogger;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishWithDeduplication">;
+  readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
 export class SendCheerNotification {
@@ -27,9 +28,7 @@ export class SendCheerNotification {
   }
 
   async execute(input: SendCheerNotificationInput): Promise<void> {
-    const locale = await this.#dependencies.recipientLocaleReader.getRecipientLocale(
-      input.receiverId,
-    );
+    const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.receiverId);
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
       recipientId: input.receiverId,
@@ -53,8 +52,9 @@ export class SendCheerNotification {
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,
     });
-    this.#dependencies.logger.log(
-      `Cheer notification sent: from=${input.senderId}, to=${input.receiverId}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.SEND_CHEER_NOTIFICATION_SENT,
+      userId: input.receiverId,
+    });
   }
 }

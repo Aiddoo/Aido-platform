@@ -8,7 +8,15 @@ import {
 } from "./notification-copy.renderer.js";
 import type { NotificationMessage, NotificationVariantContext } from "./notification-copy.types.js";
 
-const LOCALE_TEMPLATES = { ko, en };
+const LOCALE_TEMPLATES = { ko, en } satisfies Record<
+  SupportedLocale,
+  Pick<typeof ko, "SOCIAL_TEMPLATES"> & { readonly SOCIAL_SENDER_FALLBACK: string }
+>;
+
+/** 친구 이름이 없을 때에도 사용자 언어에 맞는 중립적인 라벨을 쓴다. */
+export function getNotificationFriendFallback(locale: SupportedLocale = DEFAULT_LOCALE): string {
+  return LOCALE_TEMPLATES[locale].SOCIAL_SENDER_FALLBACK;
+}
 
 interface LocalizedVariantInput {
   readonly locale?: SupportedLocale;

@@ -3,25 +3,26 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { WeeklyAchievementWriterPort } from "#api/modules/insights/insights-weekly-achievements.public";
-import {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
 import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
-import { type WeeklyAchievementStatsReaderPort } from "../../ports/reminders/weekly-achievement-stats-reader.port.js";
 import { WeeklyAchievementStrategy } from "./weekly-achievement.strategy.js";
 
 describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
   let strategy: WeeklyAchievementStrategy;
-  let reader: Mocked<WeeklyAchievementStatsReaderPort>;
-  let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
-  let weeklyAchievementWriter: Mocked<WeeklyAchievementWriterPort>;
+  let reader: Mocked<ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["reader"]>;
+  let preferenceReader: Mocked<
+    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["preferenceReader"]
+  >;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["notificationHistoryReader"]
+  >;
+  let weeklyAchievementWriter: Mocked<
+    ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["weeklyAchievementWriter"]
+  >;
 
   const TZ = "Asia/Seoul";
 
@@ -39,7 +40,7 @@ describe("WeeklyAchievementStrategy — 주간 성취 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
 
     const weeklyAchievementStrategyDependencies = mockDeep<

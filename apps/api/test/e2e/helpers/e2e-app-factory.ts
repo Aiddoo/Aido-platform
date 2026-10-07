@@ -28,16 +28,14 @@ import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/
 import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
 import { createOAuthProviderRegistry } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
 import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
+import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
+import { TimezoneReminderProcessor } from "#api/modules/notification/infrastructure/jobs/reminders/timezone-reminder-queue.processor";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
-import { PUSH_PROVIDER } from "#api/modules/notification/notification-delivery.public";
+import { TodoReminderProcessor } from "#api/modules/notification/infrastructure/processors/reminders/todo-reminder.processor";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
-import {
-  TimezoneAwareReminderOrchestrator,
-  TimezoneReminderProcessor,
-  TodoReminderProcessor,
-} from "#api/modules/notification/notification-reminders.public";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
 import {

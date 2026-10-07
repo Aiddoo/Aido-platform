@@ -1,10 +1,11 @@
 import { todoCommentNotificationRoutingSchema, NOTIFICATION_ACTION_TYPE } from "@aido/api";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createTodoCommentNotificationMessage,
   NotificationPublisher,
-  NotificationRecipientLocaleReader,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
+  type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 
@@ -22,7 +23,8 @@ type TodoCommentNotificationActivity =
 export class TodoCommentNotificationAdapter implements TodoCommentNotificationPort {
   constructor(
     private readonly notificationPublisher: NotificationPublisher,
-    private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    private readonly recipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {}
 
   notifyCommentsWritten(input: TodoCommentWrittenInput): Promise<void> {
@@ -48,7 +50,7 @@ export class TodoCommentNotificationAdapter implements TodoCommentNotificationPo
       return;
     }
 
-    const locale = await this.recipientLocaleReader.getRecipientLocale(input.recipientId);
+    const locale = await this.recipientLocaleReader.getLocale(input.recipientId);
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.TODO_COMMENT_ACTIVITY,
       recipientId: input.recipientId,

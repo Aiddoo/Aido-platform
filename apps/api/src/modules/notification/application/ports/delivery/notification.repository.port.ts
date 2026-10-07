@@ -1,5 +1,5 @@
-import type { NotificationRecord } from "../../../domain/records/delivery/notification.record.js";
 import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
+import type { NotificationRecord } from "../../read-models/delivery/notification.read-model.js";
 import type { CreateNotificationData } from "./notification-data.js";
 
 /** 알림 저장소 포트 (DI 토큰) */

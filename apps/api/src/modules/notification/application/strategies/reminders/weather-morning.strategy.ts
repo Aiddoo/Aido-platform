@@ -1,22 +1,19 @@
-import type {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import {
-  createWeatherMorningFallbackNotificationMessage,
-  createWeatherMorningNotificationMessage,
-} from "#api/modules/notification/notification-delivery.public";
 import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import {
+  createWeatherMorningFallbackNotificationMessage,
+  createWeatherMorningNotificationMessage,
+} from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type WeatherReminderReaderPort } from "../../ports/reminders/weather-reminder-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface VerifiedUserWithLocation {
   readonly id: string;
@@ -30,14 +27,17 @@ interface VerifiedUserWithLocation {
 }
 
 interface WeatherMorningStrategyDependencies {
-  readonly reader: WeatherReminderReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly weatherForecastReader: WeatherForecastReaderPort;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<
+    WeatherReminderReaderPort,
+    "findWeatherMorningFallbackUsers" | "findWeatherMorningUsersWithLocation"
+  >;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly weatherForecastReader: Pick<WeatherForecastReaderPort, "getForecastsByGridBatch">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class WeatherMorningStrategy implements ITimezoneStrategy {
+export class WeatherMorningStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: WeatherMorningStrategyDependencies;
 
   constructor(dependencies: WeatherMorningStrategyDependencies) {
@@ -55,9 +55,14 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
 
     const total = weatherSent + fallbackSent;
     if (total > 0) {
-      this.#dependencies.logger.log(
-        `Weather morning: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, weather=${weatherSent}, fallback=${fallbackSent}`,
-      );
+      this.#dependencies.logger.log({
+        event: NotificationRemindersLogEvent.WEATHER_MORNING_SENT,
+        timezone: tz,
+        localHour,
+        localMinute,
+        weatherCount: weatherSent,
+        fallbackCount: fallbackSent,
+      });
     }
     return { sent: total };
   }
@@ -91,7 +96,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
     const gridGroups = this.#groupByGrid(filtered);
     const gridInputs = [...gridGroups.values()].flatMap((group) => {
       const first = group[0];
-      if (!first) {
+      if (first === undefined) {
         return [];
       }
       return [
@@ -113,7 +118,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
         const loc = user.location;
         const key = `${loc.gridX}:${loc.gridY}`;
         const forecast = forecasts.get(key);
-        if (!forecast) {
+        if (forecast === undefined) {
           return null;
         }
 

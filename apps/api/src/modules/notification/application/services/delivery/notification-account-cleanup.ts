@@ -1,5 +1,6 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import { type NotificationRepositoryPort } from "../../ports/delivery/notification.repository.port.js";
 
@@ -9,9 +10,9 @@ export interface NotificationAccountCleanupResult {
 }
 
 interface NotificationAccountCleanupDependencies {
-  readonly repository: NotificationRepositoryPort;
-  readonly cache: NotificationCachePort;
-  readonly logger: ApplicationLogger;
+  readonly repository: Pick<NotificationRepositoryPort, "deleteNotificationsByActorId">;
+  readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly logger: Pick<ApplicationLogger, "warn">;
 }
 
 export class NotificationAccountCleanup {
@@ -34,9 +35,11 @@ export class NotificationAccountCleanup {
     );
     for (const [index, settlement] of settlements.entries()) {
       if (settlement.status === "rejected") {
-        this.#dependencies.logger.warn(
-          `계정 정리 후 알림 캐시를 무효화하지 못했습니다: userId=${result.affectedUserIds[index]}`,
-        );
+        this.#dependencies.logger.warn({
+          event: NotificationDeliveryLogEvent.NOTIFICATION_ACCOUNT_CLEANUP_CACHE_SETTLE_FAILED,
+          userId: result.affectedUserIds[index],
+          errorType: "cache-invalidation",
+        });
       }
     }
   }

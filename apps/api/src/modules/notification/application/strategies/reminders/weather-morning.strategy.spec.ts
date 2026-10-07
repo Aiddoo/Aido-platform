@@ -3,15 +3,9 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
 import type { WeatherForecast } from "#api/modules/weather/weather-forecast.public";
-import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type WeatherReminderReaderPort } from "../../ports/reminders/weather-reminder-reader.port.js";
 import { WeatherMorningStrategy } from "./weather-morning.strategy.js";
 
 const TZ = "Asia/Seoul";
@@ -41,10 +35,16 @@ const makeForecast = (): WeatherForecast => ({
 
 describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
   let strategy: WeatherMorningStrategy;
-  let reader: Mocked<WeatherReminderReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
-  let weatherForecastReader: Mocked<WeatherForecastReaderPort>;
+  let reader: Mocked<ConstructorParameters<typeof WeatherMorningStrategy>[0]["reader"]>;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof WeatherMorningStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof WeatherMorningStrategy>[0]["notificationHistoryReader"]
+  >;
+  let weatherForecastReader: Mocked<
+    ConstructorParameters<typeof WeatherMorningStrategy>[0]["weatherForecastReader"]
+  >;
 
   beforeEach(async () => {
     vi.spyOn(Math, "random").mockReturnValue(0);

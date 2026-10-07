@@ -20,12 +20,3 @@ export interface TimezoneContext {
   /** catch-up 발송 시 특정 유저만 대상 (없으면 전체 스윕) */
   readonly userId?: string;
 }
-
-/**
- * 모든 타임존 기반 Strategy가 구현하는 공통 인터페이스.
- *
- * 반환값 `sent`는 실제 발송 건수(오케스트레이터가 후속 조건 분기에 사용).
- */
-export interface ITimezoneStrategy {
-  execute(ctx: TimezoneContext): Promise<{ sent: number }>;
-}

@@ -26,7 +26,7 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917), [PR #919](https://github.com/Aiddoo/Aido-platform/pull/919))
 - [x] 12 Weather: 공급자 경계·KST 시각·날짜별 캐시 정합성 검증([Issue #921](https://github.com/Aiddoo/Aido-platform/issues/921)); 현재 한국 REST 유지, 해외 활성화는 별도 확장
 - [x] 13 AI Assistance: 권한·수락 원자성·현지 DATE·한/영 prompt·기록 기반 추천 검증([Issue #923](https://github.com/Aiddoo/Aido-platform/issues/923)); 자연어 평가 한계는 아래 기록
-- [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
+- [x] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker·한/영 문구([Issue #925](https://github.com/Aiddoo/Aido-platform/issues/925))
 - [ ] 15 Support·Operations·App Config
 - [ ] 16 ORM·N+1·성능·컨테이너 검증
 - [ ] 17 미사용 의존성·내부 레거시·빈 폴더 정리와 최종 검증
@@ -1063,3 +1063,88 @@ repeat 인수2·2주 이력 안의 날짜를 사용했다. raw/post 모두 러�
 
 공식 근거: [Gemini prompt 지침](https://ai.google.dev/gemini-api/docs/prompting-strategies),
 [structured output](https://ai.google.dev/gemini-api/docs/structured-output).
+
+## 14 Notification: 사실에 맞는 문구와 발송 정합성
+
+[Issue #925](https://github.com/Aiddoo/Aido-platform/issues/925)의 작업이다. Domain은 Notification
+읽음 상태·소유권·멱등 전이, Reminder/Retention의 순수 정책을 소유한다. query projection·payload
+routing·실행 전략 계약·HTML rendering·ko/en 문구는 Application에 둔다. Expo/Resend·ORM·cache·
+queue는 Infrastructure다. 단순 조회·전달에 새 Aggregate나 registry를 만들지 않았다.
+
+기존 locale catalog에 `SupportedLocale`의 완전한 매핑을 선언한다. 새 언어는 공용 supported
+locale·해당 locale catalog·메시지 변수와 길이 검증을 함께 추가한다. 국가 정책·timezone과 표시
+언어는 별도 개념이며 언어로 사용자 국가나 습관을 추정하지 않는다. 현재 지원은 ko/en이고 새
+국가·언어·발송 시간·수신 동의를 활성화한 변경이 아니다. 영어 단복수는 `Intl.PluralRules`, 한국어
+조사는 기존 `es-hangul`을 사용한다. 사용자 제목·이름·메시지는 번역/교정하지 않는다.
+
+### 문구와 실제 사실의 Before / After
+
+언어별73개 key·168개 factory, 총336개 copy factory를 검토했다. 키·variant 개수·순서·선택 seed는
+유지했다. 현재 새 copy revision은1.12.0이며 이미 저장된 title/body/revision은 retry 때 유지한다.
+
+| 문제           | Before                                                                    | After 검증                                                             |
+| -------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 연속 기록 약속 | KO/EN evening·standalone에서 하나만 완료하면 streak 유지4fail             | 남은 목록 확인 안내로 변경; 전체 완료의 실제 정책을 문구가 바꾸지 않음 |
+| 주간 기간      | 실제 previousIsoWeekRange Jul20–27 집계를 KO "이번 주"로 안내1fail        | 지난주 기록으로 안내; 기간중립 EN variant는 원래 통과로 보존           |
+| 반올림 완료    | KO/EN249/250을 round100으로 perfect 선택2fail                             | 실제250/250일 때만 perfect,249/250은 almost99표시; 정상 control 유지   |
+| 없는 사실 추정 | 미완료를 진행 중/시작 전, 소요시간 없는 일을5분으로 안내                  | 완료 표시/목록 확인으로 표현, 임의 소요시간 제거                       |
+| Report·AI 알림 | 저장 여부를 읽지 않는 정기 알림에서 ready, 모든 제안을 반복 습관으로 설명 | 지난주/지난달 기록 확인, 내 계획에 맞는 제안 선택 안내                 |
+| 언어·0값       | 1 to-dos/plans/friends,0완료 축하·부적절한 조사                           | 실제 단복수·0완료 별도 안내·영문/emoji 이름의 조사 fallback            |
+
+Before11개 중7desired fail/4pass(seed51401,1.62초)를 실제 factory/전략으로 확인했다. 수정 후
+사실 관계19개와 실제 저장 retry 검증을 실행했다. 기존 locale parity 선택 snapshot·키/순서/개수를
+억지로 새 기대값으로 승인하지 않았다. 재방문·오픈율·매출 효과는 측정하지 않았다.
+
+### receipt·SDK·레이어 검증
+
+실제 PG Before3개(seed141010,7.05초)에서 rotation A→B 뒤 invalid A receipt가B 비활성화,
+24시간 지난 missing ticket의 batch 점유, DELIVERED 뒤 중복 invalid의FAILED 회귀를 확인했다.
+새 nullable `tokenFingerprint`는 발송 토큰의 SHA256이며 토큰 원문 snapshot을 추가하지 않는다.
+현재 토큰과 fingerprint가 일치하는 실제 terminal 전이만 invalid 대상으로 반환한다. null인 기존
+이력은 상태를 반영하지만 현재 토큰을 추측해 비활성화하지 않는다. pending 조회는15분–24시간
+경계와 createdAt/id 정렬을 ORM으로 처리하고, row별 조회를 추가하지 않는다.
+
+다른 실제 PG Before1개(seed141024,4.31초)는 token 단계의 실제FK23503 뒤 receipt가FAILED로
+남아 다음 조회1회·tokenACTIVE 잔존을 확인했다. 외부 receipt 조회는 UoW 밖, receipt terminal
+갱신과 token 비활성화는 같은 UoW로 변경했다. After10개(seed141025,5.03초)는 pending 복원·
+재시도2회·token 비활성화를 확인했다. cache는 commit 뒤 실제 사용자만 정리하며 실패는 별도
+고정 event로 격리한다. 캐시 장애의 durable 재처리나 TTL 동안의 즉시 정합성을 보장하지 않는다.
+
+실제 설치 Expo SDK의 synthetic ticket/HTTP400/chunk HTTP500 Before5개(141002,273ms)에서
+민감 원문 로그3경로를 확인했다. SDK whole mock 없이 HTTP fixture로 반환·cause·chunk 진행
+metadata를 유지하며 로그를 고정 event/code/count로 좁혔다. Resend의 원문 error name도 로그의
+일반 분류 값으로 제한했다. 실제 외부 push/email·유료 공급자 호출은 이 단계에서 하지 않았다.
+
+History의 실제 cache/DB fallback은 canonical Reader로 통합하고 forwarding UseCase·locale
+wrapper를 제거했다. 공개 포트는 소비자에게 필요한 method만 연결하며 test를 위해 SDK·strategy·
+processor를 public에 내보내지 않는다. 기존 경량 jobs seam과 queue/키/TTL/동의/counter/timezone
+계약은 유지한다. 기존 Email template5개는 parent6e91317b와 byte가 같음을 직접 확인했다.
+
+### 적용과 한계
+
+Migration `20261007T1840_push_receipt_token_fingerprint`는 d80a48…→5eefdf…의 nullable column
+추가1operation이다. API보다 먼저 적용하며 코드 rollback 때 column/기존 데이터를 삭제하지 않는다.
+실제 PG1개(141011,7.16초)에서 직전 contract의 receipt/token 데이터 보존, 직전 ORM 읽기·쓰기,
+graph 재적용을 검증했다. 운영 DB 적용·복구는 하지 않았다.
+
+발송 도중 토큰이 회전하면 기존 문자열→ID lookup에서 attempt가 생략되는 경로는 유지되며,
+동일 문자열 재등록의 ABA 세대는 fingerprint만으로 구별하지 못한다.24시간 지난 accepted 이력은
+조회에서 제외하지만 삭제하거나 사용자 수신 완료로 바꾸지 않는다. 외부 전송은 at-least-once이며
+Expo ticket/receipt는 사용자의 수신·열람 보장이 아니다. schema-compatible migration·현재 앱
+회귀와 실제 운영 무영향의 보장은 구분한다.
+
+공식 근거: [Expo receipt 조회·15분/24시간 정책](https://docs.expo.dev/push-notifications/sending-notifications/),
+[Expo 전달 의미](https://docs.expo.dev/push-notifications/faq/).
+
+### 최종 검증
+
+전체 실행은 `TZ=Asia/Seoul`, shuffle seed `141030`으로 고정했다.
+
+- 서버 Unit: 495 files / 3,089 tests, 27.34초, 전체 통과.
+- PostgreSQL Integration: 57 files / 491 tests, 254.37초, 전체 통과.
+- HTTP E2E 최초 전체 실행: 41 files / 542 tests, 305.19초, 541개 통과·1개 실패. 새 문구 revision을 여전히1.11.0으로 기대한 `nudge-interaction.e2e-spec.ts`의 단일 기대값을1.12.0으로 수정했다. 동일 파일16개가 seed141031에서18.83초에 통과하여 전체542개를 전체 실행과 해당 파일 재검증으로 확인했다. 하나의 전체 실행에서542개가 모두 통과했다고 기록하지 않는다.
+- Notification HTTP spec·OpenAPI spec·공개 snapshot은 변경하지 않았다. 저장된 이전 revision의 retry fixture는 그대로이며 새 발송 metadata의 기대값만 수정했다.
+- workspace lint·format·typecheck·build 통과. Typecheck5 tasks 성공(4 cached),5.789초; Build4 tasks 성공(3 cached),17.009초.
+- Root Notification14 로그의 소유 테스트 DB12개와 C HTTP 실행의 소유 DB3개를 실제 조회했고 남은 DB는0개다.
+
+기존 앱 계약 회귀와 additive migration 호환성을 검증했으며 운영 배포·실제 사용자 무영향을 아직 확인하지 않았다. 상위15/18 구현·검증 완료이며 Operations/Support/AppConfig·성능/ORM/Container·최종 정리가 남는다. 새 패키지·검사 script·Action job은 추가하지 않았다. 테스트 실행 시간은 공유 환경의 검증 기록이며 운영 성능·Actions 청구 비용·재방문 효과의 개선율이 아니다.

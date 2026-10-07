@@ -22,6 +22,8 @@ const SWEEP_JOB_DATA: SweepRemindersJobData = {};
  *
  * {@link TimezoneReminderEnqueuerPort} 구현 — enqueue 진입점.
  */
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+
 @Injectable()
 export class TimezoneReminderQueueService implements TimezoneReminderEnqueuerPort {
   readonly #logger = new Logger(TimezoneReminderQueueService.name);
@@ -39,18 +41,18 @@ export class TimezoneReminderQueueService implements TimezoneReminderEnqueuerPor
       { name: TimezoneReminderJobName.SWEEP_REMINDERS, data: SWEEP_JOB_DATA },
       this.#jobOptions(),
     );
-    this.#logger.log("Timezone reminder sweep scheduler registered");
+    this.#logger.log({
+      event: NotificationProviderLogEvent.SCHEDULE_REGISTERED,
+      jobName: TimezoneReminderJobName.SWEEP_REMINDERS,
+    });
   }
 
   /**
    * 리마인더 시간 변경 catch-up 잡 등록
    */
   enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void {
-    this.#enqueueAsync(TimezoneReminderJobName.REMINDER_HOUR_CHANGED, payload).catch((error) => {
-      this.#logger.error(
-        `Failed to enqueue reminder-hour-changed: userId=${payload.userId}, ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+    this.#enqueueAsync(TimezoneReminderJobName.REMINDER_HOUR_CHANGED, payload).catch(() => {
+      this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
     });
   }
 
@@ -68,19 +70,19 @@ export class TimezoneReminderQueueService implements TimezoneReminderEnqueuerPor
         },
       )
       .then(() => {
-        this.#logger.debug(`Social digest job enqueued: tz=${payload.timezone}, delay=90min`);
+        this.#logger.debug({
+          event: NotificationProviderLogEvent.JOB_ENQUEUED,
+          jobName: TimezoneReminderJobName.SOCIAL_DIGEST,
+        });
       })
-      .catch((error) => {
-        this.#logger.error(
-          `Failed to enqueue social-digest: tz=${payload.timezone}, ${error}`,
-          error instanceof Error ? error.stack : undefined,
-        );
+      .catch(() => {
+        this.#logger.error({ event: NotificationProviderLogEvent.ENQUEUE_FAILED });
       });
   }
 
   async #enqueueAsync(name: string, data: ReminderHourChangedJobData): Promise<void> {
     await this.runtime.enqueue(TIMEZONE_REMINDER_QUEUE, { name, data }, this.#jobOptions());
-    this.#logger.debug(`Job enqueued: name=${name}`);
+    this.#logger.debug({ event: NotificationProviderLogEvent.JOB_ENQUEUED, jobName: name });
   }
 
   #jobOptions() {

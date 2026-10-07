@@ -26,8 +26,8 @@ import {
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { NotesMemosModule } from "#api/modules/notes/notes-memos.public";
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
-import { SchedulerModule } from "#api/modules/notification/notification-reminders.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
 import { AdminModule } from "#api/modules/operations/operations-admin.public";
 import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
@@ -123,9 +123,9 @@ import { AppService } from "./app.service.js";
     HealthModule,
     InquiryModule,
     NotesMemosModule,
-    NotificationModule,
+    NotificationDeliveryModule,
     SocialNudgesModule,
-    SchedulerModule,
+    NotificationRemindersModule,
     SubscriptionModule,
     PlanningTodosModule,
     EngagementCommentsModule,

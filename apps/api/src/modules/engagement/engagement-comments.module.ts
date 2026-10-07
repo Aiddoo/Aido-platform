@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
 
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "./application/ports/comments/todo-comment-account-cleanup.port.js";
@@ -31,7 +31,7 @@ import { HmacTodoCommentCursorCodec } from "./infrastructure/security/comments/h
 import { TodoCommentController } from "./presentation/controllers/comments/todo-comment.controller.js";
 
 @Module({
-  imports: [NotificationModule, PlanningTodosModule],
+  imports: [NotificationDeliveryModule, PlanningTodosModule],
   controllers: [TodoCommentController],
   providers: [
     HmacTodoCommentCursorCodec,

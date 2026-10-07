@@ -3,18 +3,14 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import { type PushProvider } from "../../ports/delivery/push-provider.port.js";
-import { type PushTokenRepositoryPort } from "../../ports/delivery/push-token.repository.port.js";
-import { type UserNotificationSettingsPort } from "../../ports/delivery/user-notification-settings.port.js";
 import { RegisterPushToken } from "./register-push-token.use-case.js";
 
 describe("RegisterPushToken", () => {
   let useCase: RegisterPushToken;
-  let repository: Mocked<PushTokenRepositoryPort>;
-  let pushProvider: Mocked<PushProvider>;
-  let userSettings: Mocked<UserNotificationSettingsPort>;
-  let cache: Mocked<NotificationCachePort>;
+  let repository: Mocked<ConstructorParameters<typeof RegisterPushToken>[0]["pushTokenRepository"]>;
+  let pushProvider: Mocked<ConstructorParameters<typeof RegisterPushToken>[0]["pushProvider"]>;
+  let userSettings: Mocked<ConstructorParameters<typeof RegisterPushToken>[0]["userSettings"]>;
+  let cache: Mocked<ConstructorParameters<typeof RegisterPushToken>[0]["cache"]>;
 
   beforeEach(async () => {
     const registerPushTokenDependencies = mockDeep<

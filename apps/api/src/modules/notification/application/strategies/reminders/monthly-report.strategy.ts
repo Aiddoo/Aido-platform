@@ -1,8 +1,3 @@
-import type {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createMonthlyReportNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { subtractMonths } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -10,22 +5,24 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { createMonthlyReportNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface MonthlyReportStrategyDependencies {
-  readonly reader: ScheduledReminderReaderPort;
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<ScheduledReminderReaderPort, "findMonthlyReportRecipients">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class MonthlyReportStrategy implements ITimezoneStrategy {
+export class MonthlyReportStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: MonthlyReportStrategyDependencies;
 
   constructor(dependencies: MonthlyReportStrategyDependencies) {
@@ -86,7 +83,11 @@ export class MonthlyReportStrategy implements ITimezoneStrategy {
     });
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
-    this.#dependencies.logger.log(`Monthly report: tz=${tz}, count=${notifications.length}`);
+    this.#dependencies.logger.log({
+      event: NotificationRemindersLogEvent.MONTHLY_REPORT_SENT,
+      timezone: tz,
+      count: notifications.length,
+    });
     return { sent: notifications.length };
   }
 }

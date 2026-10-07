@@ -15,10 +15,7 @@ import {
 } from "./application/ports/delivery/notification-dedup.port.js";
 import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notification-history.reader.port.js";
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
-import {
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
-} from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
+import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
@@ -35,12 +32,7 @@ import { PUSH_TOKEN_REPOSITORY } from "./application/ports/delivery/push-token.r
 import { USER_NOTIFICATION_SETTINGS } from "./application/ports/delivery/user-notification-settings.port.js";
 import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
-import { NotificationRecipientLocaleReader } from "./application/readers/delivery/notification-recipient-locale.reader.js";
 import { NotificationAccountCleanup } from "./application/services/delivery/notification-account-cleanup.js";
-import { FindAlreadyNotifiedUsers } from "./application/use-cases/delivery/find-already-notified-users.use-case.js";
-import { SendBatchNotification } from "./application/use-cases/delivery/send-batch-notification.use-case.js";
-import { SendNotificationWithDedup } from "./application/use-cases/delivery/send-notification-with-dedup.use-case.js";
-import { SendNotification } from "./application/use-cases/delivery/send-notification.use-case.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/delivery/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/delivery/notification-cache.adapter.js";
@@ -64,7 +56,8 @@ import { HmacMarketingPushOptOutTokenAdapter } from "./infrastructure/security/d
 import {
   deliverPushNotificationsProvider,
   finalizeBatchNotificationProvider,
-  findAlreadyNotifiedUsersProvider,
+  notificationHistoryReaderProvider,
+  notificationPublisherProvider,
   getNotificationsProvider,
   getUnreadCountProvider,
   markAllAsReadProvider,
@@ -97,49 +90,13 @@ import {
 import { NotificationInboxController } from "./presentation/controllers/delivery/notification-inbox.controller.js";
 import { NotificationController } from "./presentation/controllers/delivery/notification.controller.js";
 
-/**
- * Notification 모듈 (클린아키텍처 4계층 + 포트/어댑터)
- *
- * - presentation: NotificationController → endpoint UseCase
- * - application: 조회·읽음·토큰·발송 UseCase
- * - infrastructure: Prisma outbox 저장소·Expo provider·rate limiter·durable queue processor
- *
- * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
- */
 @Module({
-  // notification → user-settings 단방향 DI(푸시 발송 전 사용자 설정 조회).
-  // 역방향(user-settings → notification)은 경량 `@/notification/queue` 서브엔트리로만
-  // 참조하므로 ES 초기화 순환이 없다 → forwardRef 불필요.
+  // Identity 설정의 역방향 큐 참조는 jobs.public 경계로 분리한다.
   imports: [NotificationQueueModule, UserSettingsModule],
   controllers: [NotificationController, NotificationInboxController],
   providers: [
     // 크로스 모듈 호환 경계 + endpoint UseCase
-    {
-      provide: NotificationPublisher,
-      inject: [SendNotification, SendNotificationWithDedup, SendBatchNotification],
-      useFactory: (
-        sendNotification: SendNotification,
-        sendNotificationWithDeduplication: SendNotificationWithDedup,
-        sendBatchNotification: SendBatchNotification,
-      ) =>
-        new NotificationPublisher(
-          sendNotification,
-          sendNotificationWithDeduplication,
-          sendBatchNotification,
-        ),
-    },
-    {
-      provide: NotificationHistoryReader,
-      inject: [FindAlreadyNotifiedUsers],
-      useFactory: (findAlreadyNotifiedUsers: FindAlreadyNotifiedUsers) =>
-        new NotificationHistoryReader(findAlreadyNotifiedUsers),
-    },
-    {
-      provide: NotificationRecipientLocaleReader,
-      inject: [NOTIFICATION_RECIPIENT_LOCALE_READER],
-      useFactory: (localeReader: NotificationRecipientLocaleReaderPort) =>
-        new NotificationRecipientLocaleReader(localeReader),
-    },
+    notificationPublisherProvider,
     getNotificationsProvider,
     getUnreadCountProvider,
     markAsReadProvider,
@@ -154,7 +111,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     persistBatchNotificationProvider,
     finalizeBatchNotificationProvider,
     sendBatchNotificationProvider,
-    findAlreadyNotifiedUsersProvider,
+    notificationHistoryReaderProvider,
     sendFollowRequestNotificationProvider,
     sendFollowAcceptedNotificationProvider,
     sendNudgeNotificationProvider,
@@ -263,9 +220,10 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     NotificationQueueProcessor,
   ],
   exports: [
+    NOTIFICATION_CACHE,
     NotificationPublisher,
     NotificationHistoryReader,
-    NotificationRecipientLocaleReader,
+    NOTIFICATION_RECIPIENT_LOCALE_READER,
     NotificationAccountCleanup,
     NotificationQueueModule,
     PUSH_PROVIDER,
@@ -273,4 +231,4 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     MARKETING_PUSH_OPT_OUT_TOKEN,
   ],
 })
-export class NotificationModule {}
+export class NotificationDeliveryModule {}

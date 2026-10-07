@@ -4,6 +4,7 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Notification } from "../../../domain/aggregates/delivery/notification.aggregate.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import { type NotificationInboxReaderPort } from "../../ports/delivery/notification-inbox.reader.port.js";
 import { type NotificationRepositoryPort } from "../../ports/delivery/notification.repository.port.js";
@@ -15,10 +16,10 @@ import { type NotificationRepositoryPort } from "../../ports/delivery/notificati
  * 차단한다. 이미 읽은 알림은 무동작(멱등).
  */
 interface MarkAsReadDependencies {
-  readonly notificationInboxReader: NotificationInboxReaderPort;
-  readonly notificationRepository: NotificationRepositoryPort;
-  readonly cache: NotificationCachePort;
-  readonly logger: ApplicationLogger;
+  readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "findNotificationById">;
+  readonly notificationRepository: Pick<NotificationRepositoryPort, "markAsRead">;
+  readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly logger: Pick<ApplicationLogger, "debug">;
 }
 
 export class MarkAsRead {
@@ -32,7 +33,7 @@ export class MarkAsRead {
     const record =
       await this.#dependencies.notificationInboxReader.findNotificationById(notificationId);
 
-    if (!record) {
+    if (record === null) {
       throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {
         notificationId,
       });
@@ -51,6 +52,9 @@ export class MarkAsRead {
       await this.#dependencies.cache.invalidateUnreadCount(userId);
     }
 
-    this.#dependencies.logger.debug(`Notification read processed: id=${notificationId}`);
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.MARK_AS_READ_READ_PROCESSED,
+      notificationId,
+    });
   }
 }

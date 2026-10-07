@@ -3,25 +3,25 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  createSocialDigestNotificationMessage,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
 import { TEST_CUID } from "#test/fixtures/index";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
-import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import { createSocialDigestNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { SocialDigestStrategy } from "./social-digest.strategy.js";
 
 describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
   let strategy: SocialDigestStrategy;
-  let reader: Mocked<ReEngagementReaderPort>;
-  let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
+  let reader: Mocked<ConstructorParameters<typeof SocialDigestStrategy>[0]["reader"]>;
+  let preferenceReader: Mocked<
+    ConstructorParameters<typeof SocialDigestStrategy>[0]["preferenceReader"]
+  >;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof SocialDigestStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof SocialDigestStrategy>[0]["notificationHistoryReader"]
+  >;
 
   const TZ = "Asia/Seoul";
 
@@ -39,7 +39,7 @@ describe("SocialDigestStrategy — 소셜 다이제스트 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
 
     const socialDigestStrategyDependencies = mockDeep<

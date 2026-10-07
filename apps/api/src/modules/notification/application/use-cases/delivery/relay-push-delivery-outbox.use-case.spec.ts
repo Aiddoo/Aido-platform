@@ -6,7 +6,6 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { type PushDeliveryLifecycleRepositoryPort } from "../../ports/delivery/push-delivery-lifecycle.repository.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../../ports/delivery/push-delivery-outbox.repository.port.js";
-import { PublishPushDeliveryOutbox } from "./publish-push-delivery-outbox.use-case.js";
 import { RelayPushDeliveryOutbox } from "./relay-push-delivery-outbox.use-case.js";
 
 function createOutboxMock(): PushDeliveryOutboxRepositoryPort {
@@ -34,9 +33,11 @@ function createLifecycleMock(): PushDeliveryLifecycleRepositoryPort {
 
 describe("RelayPushDeliveryOutbox — stale recovery와 relay", () => {
   let useCase: RelayPushDeliveryOutbox;
-  let outbox: Mocked<PushDeliveryOutboxRepositoryPort>;
-  let lifecycle: Mocked<PushDeliveryLifecycleRepositoryPort>;
-  let publishOutbox: Mocked<PublishPushDeliveryOutbox>;
+  let outbox: Mocked<ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["outbox"]>;
+  let lifecycle: Mocked<ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["lifecycle"]>;
+  let publishOutbox: Mocked<
+    ConstructorParameters<typeof RelayPushDeliveryOutbox>[0]["publishOutbox"]
+  >;
 
   beforeEach(async () => {
     const relayPushDeliveryOutboxDependencies = mockDeep<
@@ -65,7 +66,7 @@ describe("RelayPushDeliveryOutbox — stale recovery와 relay", () => {
     // Given - 고정된 relay 실행 시각
     const now = new Date("2026-08-29T12:00:00.000Z");
     const processingStaleBefore = new Date(now.getTime() - 15 * 60_000);
-    vi.useFakeTimers({ now });
+    vi.useFakeTimers({ toFake: ["Date"], now });
 
     // When - 주기 relay 실행
     await useCase.execute();

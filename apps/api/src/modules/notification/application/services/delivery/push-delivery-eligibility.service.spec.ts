@@ -4,12 +4,7 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationRecipientPreferenceReaderMock } from "#test/mocks/ports/notification.mock";
 
-import { type NotificationRecipientPreferenceReaderPort } from "../../ports/delivery/notification-recipient-preference.reader.port.js";
-import { type PushRateLimiterPort } from "../../ports/delivery/push-rate-limiter.port.js";
-import {
-  type NotificationDeliveryPreference,
-  type UserNotificationSettingsPort,
-} from "../../ports/delivery/user-notification-settings.port.js";
+import { type NotificationDeliveryPreference } from "../../ports/delivery/user-notification-settings.port.js";
 import { PushDeliveryEligibilityService } from "./push-delivery-eligibility.service.js";
 
 const DAYTIME = new Date("2026-07-16T03:00:00.000Z");
@@ -54,12 +49,18 @@ const engagement = {
 
 describe("PushDeliveryEligibilityService", () => {
   let service: PushDeliveryEligibilityService;
-  let settings: Mocked<UserNotificationSettingsPort>;
-  let rateLimiter: Mocked<PushRateLimiterPort>;
-  let preferenceReader: Mocked<NotificationRecipientPreferenceReaderPort>;
+  let settings: Mocked<
+    ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["userSettings"]
+  >;
+  let rateLimiter: Mocked<
+    ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["rateLimiter"]
+  >;
+  let preferenceReader: Mocked<
+    ConstructorParameters<typeof PushDeliveryEligibilityService>[0]["recipientPreferenceReader"]
+  >;
 
   beforeEach(async () => {
-    vi.useFakeTimers().setSystemTime(DAYTIME);
+    vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(DAYTIME);
     const pushDeliveryEligibilityServiceDependencies = mockDeep<
       ConstructorParameters<typeof PushDeliveryEligibilityService>[0]
     >({ recipientPreferenceReader: createNotificationRecipientPreferenceReaderMock() });

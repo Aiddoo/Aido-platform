@@ -9,14 +9,11 @@ import { vi } from "vitest";
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-
 import { InMemoryPushRateLimiter } from "../../../infrastructure/rate-limiter/delivery/in-memory-push-rate-limiter.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../../errors/delivery/push-delivery-rate-limit-reservation-conflict.error.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import {
   type ClaimedPushDelivery,
-  type PushDeliveryLifecycleRepositoryPort,
   type ReservePushDeliveryRateLimitInput,
 } from "../../ports/delivery/push-delivery-lifecycle.repository.port.js";
 import {
@@ -25,10 +22,8 @@ import {
 } from "../../ports/delivery/push-provider.port.js";
 import {
   type BatchPushDeliveryRecipient,
-  PushDeliveryEligibilityService,
   type SinglePushDeliveryRecipient,
 } from "../../services/delivery/push-delivery-eligibility.service.js";
-import { PushNotificationDeliveryService } from "../../services/delivery/push-notification-delivery.service.js";
 import { PushNotificationPayloadFactory } from "../../services/delivery/push-notification-payload.factory.js";
 import type { DeliverPushNotificationsInput } from "../../types/delivery/push-delivery.types.js";
 import { DeliverPushNotifications } from "./deliver-push-notifications.use-case.js";
@@ -136,11 +131,13 @@ interface PersistenceObservation {
 
 describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
   let useCase: DeliverPushNotifications;
-  let lifecycle: Mocked<PushDeliveryLifecycleRepositoryPort>;
-  let uow: Mocked<UnitOfWorkPort>;
-  let eligibility: Mocked<PushDeliveryEligibilityService>;
-  let payloadFactory: Mocked<PushNotificationPayloadFactory>;
-  let delivery: Mocked<PushNotificationDeliveryService>;
+  let lifecycle: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["lifecycle"]>;
+  let uow: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["unitOfWork"]>;
+  let eligibility: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["eligibility"]>;
+  let payloadFactory: Mocked<
+    ConstructorParameters<typeof DeliverPushNotifications>[0]["payloadFactory"]
+  >;
+  let delivery: Mocked<ConstructorParameters<typeof DeliverPushNotifications>[0]["delivery"]>;
   let claimedDeliveries: readonly ClaimedPushDelivery[];
   let finalizeResultsError: Error | null;
   let transactionDepth: number;
@@ -183,7 +180,6 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
           },
         ),
         reopenAfterFinalClaimFailure: vi.fn(async () => 0),
-        reopenFailedPublications: vi.fn(async () => 0),
         finalizeSkipped: vi.fn(async (inputs) => {
           observePersistence("finalizeSkipped");
           return inputs.length;
@@ -197,7 +193,6 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
           observePersistence("release");
           return inputs.length;
         }),
-        recoverStaleProcessing: vi.fn(async () => 0),
       },
       unitOfWork: { run },
     });
@@ -671,6 +666,13 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
       dispatchId: 401,
       deliveryMode: "SINGLE",
       userId: "accepted-before-finalize",
+      dataOverrides: {
+        title: "이전 버전에서 저장한 제목",
+        body: "친구가 직접 남긴 {count} 문장",
+        campaignKey: "follow_request_v1",
+        variantId: "follow_request_v1.v2",
+        metadata: { copyRevision: "1.11.0" },
+      },
     });
     claimedDeliveries = [claimed];
     finalizeResultsError = new Error("database commit unavailable");
@@ -702,6 +704,27 @@ describe("DeliverPushNotifications — 저장된 Push 발송 처리", () => {
       "release",
     ]);
     expect(uow.run).toHaveBeenCalledTimes(4);
+    expectPersistenceInsideUnitOfWork();
+
+    // When - 다음 실행에 다시 claim된 기존 저장 문구를 실제 payload factory로 변환한다.
+    // 이 fixture는 DB claim/rollback 자체를 증명하지 않고 재시도 시 문자열 전달 계약을 확인한다.
+    finalizeResultsError = null;
+    const actualPayloadFactory = new PushNotificationPayloadFactory({
+      marketingOptOutTokens: { issue: () => "synthetic-opt-out" },
+    });
+    payloadFactory.createSingle.mockImplementation((input) =>
+      actualPayloadFactory.createSingle(input),
+    );
+    await useCase.execute(createExecutionInput(claimedDeliveries));
+
+    // Then - 현재 catalog revision/수신자 설정으로 재생성하지 않는다.
+    const retried = delivery.deliverSingle.mock.calls[1]?.[0];
+    expect(retried?.payload).toMatchObject({
+      title: "이전 버전에서 저장한 제목",
+      body: "친구가 직접 남긴 {count} 문장",
+      data: { campaignKey: "follow_request_v1", variantId: "follow_request_v1.v2" },
+    });
+    expect(retried?.data.metadata).toEqual({ copyRevision: "1.11.0" });
     expectPersistenceInsideUnitOfWork();
   });
 

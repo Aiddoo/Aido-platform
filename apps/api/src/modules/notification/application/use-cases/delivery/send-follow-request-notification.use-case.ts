@@ -2,8 +2,9 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
 import { createFollowRequestNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
+import type { NotificationRecipientLocaleReaderPort } from "../../ports/delivery/notification-recipient-locale.reader.port.js";
 import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import type { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 
 export interface SendFollowRequestNotificationInput {
   readonly followerId: string;
@@ -12,9 +13,9 @@ export interface SendFollowRequestNotificationInput {
 }
 
 interface SendFollowRequestNotificationDependencies {
-  readonly notificationPublisher: NotificationPublisher;
-  readonly recipientLocaleReader: NotificationRecipientLocaleReader;
-  readonly logger: ApplicationLogger;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishWithDeduplication">;
+  readonly recipientLocaleReader: Pick<NotificationRecipientLocaleReaderPort, "getLocale">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
 export class SendFollowRequestNotification {
@@ -25,9 +26,7 @@ export class SendFollowRequestNotification {
   }
 
   async execute(input: SendFollowRequestNotificationInput): Promise<void> {
-    const locale = await this.#dependencies.recipientLocaleReader.getRecipientLocale(
-      input.followingId,
-    );
+    const locale = await this.#dependencies.recipientLocaleReader.getLocale(input.followingId);
     const variantContext = {
       campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.FOLLOW_REQUEST,
       recipientId: input.followingId,
@@ -48,6 +47,9 @@ export class SendFollowRequestNotification {
       campaignKey: variantContext.campaignKey,
       variantId: message.variantId,
     });
-    this.#dependencies.logger.log(`Follow request notification sent to user: ${input.followingId}`);
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.SEND_FOLLOW_REQUEST_NOTIFICATION_SENT,
+      userId: input.followingId,
+    });
   }
 }

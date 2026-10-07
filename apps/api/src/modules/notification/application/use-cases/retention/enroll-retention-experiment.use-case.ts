@@ -3,8 +3,8 @@ import { type RetentionConfigPort } from "../../ports/retention/retention-config
 import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 
 interface EnrollRetentionExperimentDependencies {
-  readonly repository: RetentionRepositoryPort;
-  readonly config: RetentionConfigPort;
+  readonly repository: Pick<RetentionRepositoryPort, "enroll">;
+  readonly config: Pick<RetentionConfigPort, "enabled" | "treatmentPercent">;
 }
 
 export class EnrollRetentionExperiment {

@@ -14,7 +14,8 @@ import type { Mocked } from "vitest";
 
 import {
   NotificationPublisher,
-  NotificationRecipientLocaleReader,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
+  type NotificationRecipientLocaleReaderPort,
 } from "#api/modules/notification/notification-delivery.public";
 import { createMockJob } from "#test/mocks/index";
 
@@ -40,7 +41,7 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
   let processor: TodoReminderProcessor;
   let reader: Mocked<TodoReminderReaderPort>;
   let notificationPublisher: Mocked<NotificationPublisher>;
-  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReader>;
+  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(TodoReminderProcessor).compile();
@@ -48,8 +49,8 @@ describe("TodoReminderProcessor — 할 일 리마인더 프로세서", () => {
     processor = unit;
     reader = unitRef.get(TODO_REMINDER_READER);
     notificationPublisher = unitRef.get(NotificationPublisher);
-    recipientLocaleReader = unitRef.get(NotificationRecipientLocaleReader);
-    recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+    recipientLocaleReader = unitRef.get(NOTIFICATION_RECIPIENT_LOCALE_READER);
+    recipientLocaleReader.getLocale.mockResolvedValue("ko");
   });
 
   /** 리더 mock 설정 헬퍼 */

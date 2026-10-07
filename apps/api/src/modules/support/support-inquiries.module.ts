@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { EmailModule } from "#api/modules/notification/notification-email.module";
+import { NotificationEmailModule } from "#api/modules/notification/notification-email.module";
 
 import { INQUIRY_MAILER } from "./application/ports/inquiries/inquiry-mailer.port.js";
 import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/inquiries/email-inquiry-mailer.adapter.js";
@@ -14,7 +14,7 @@ import { INQUIRY_PROVIDERS } from "./support-inquiries.providers.js";
  * 현재 어댑터는 이메일(Resend)이다 — 슬랙/웹훅으로 바꾸려면 어댑터만 교체한다.
  */
 @Module({
-  imports: [EmailModule],
+  imports: [NotificationEmailModule],
   controllers: [InquiryController],
   providers: [
     { provide: INQUIRY_MAILER, useClass: EmailInquiryMailerAdapter },

@@ -2,6 +2,7 @@ import { forEachAsync, uniq } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import { type NotificationDedupPort } from "../../ports/delivery/notification-dedup.port.js";
 import type { PersistedBatchNotificationResult } from "../../types/delivery/push-delivery.types.js";
@@ -10,9 +11,9 @@ const CACHE_INVALIDATION_CONCURRENCY = 5;
 
 /** 커밋된 배치 알림의 cache와 날짜 dedup 후처리를 관찰 가능한 방식으로 정리한다. */
 interface FinalizeBatchNotificationDependencies {
-  readonly cache: NotificationCachePort;
-  readonly notificationDedup: NotificationDedupPort;
-  readonly logger: ApplicationLogger;
+  readonly cache: Pick<NotificationCachePort, "invalidateUnreadCount">;
+  readonly notificationDedup: Pick<NotificationDedupPort, "recordNotifiedUsers">;
+  readonly logger: Pick<ApplicationLogger, "warn">;
 }
 
 export class FinalizeBatchNotification {
@@ -33,10 +34,12 @@ export class FinalizeBatchNotification {
       async (userId) => {
         try {
           await this.#dependencies.cache.invalidateUnreadCount(userId);
-        } catch (error) {
-          this.#dependencies.logger.warn(
-            `알림 커밋 후 미읽음 캐시 정리 실패: userId=${userId}, ${error}`,
-          );
+        } catch {
+          this.#dependencies.logger.warn({
+            event: NotificationDeliveryLogEvent.FINALIZE_BATCH_NOTIFICATION_UNREAD_CACHE_FAILED,
+            userId,
+            errorType: "cache-invalidation",
+          });
         }
       },
       { concurrency: CACHE_INVALIDATION_CONCURRENCY },
@@ -50,8 +53,12 @@ export class FinalizeBatchNotification {
             : [],
         ),
       );
-    } catch (error) {
-      this.#dependencies.logger.warn(`알림 커밋 후 날짜 중복 기록 실패: ${error}`);
+    } catch {
+      this.#dependencies.logger.warn({
+        event: NotificationDeliveryLogEvent.FINALIZE_BATCH_NOTIFICATION_DEDUP_RECORD_FAILED,
+        count: input.count,
+        errorType: "dedup-recording",
+      });
     }
 
     return { count: input.count };

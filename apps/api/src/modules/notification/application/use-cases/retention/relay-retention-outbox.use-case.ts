@@ -1,6 +1,7 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
 import { decideRetentionOutboxRetry } from "../../policies/retention/retention-outbox-retry.policy.js";
 import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
 import { type RetentionJobEnqueuerPort } from "../../ports/retention/retention-job-enqueuer.port.js";
@@ -10,11 +11,18 @@ const OUTBOX_RELAY_BATCH_SIZE = 25;
 const OUTBOX_PROCESSING_LEASE_MS = 15 * 60_000;
 
 interface RelayRetentionOutboxDependencies {
-  readonly repository: RetentionRepositoryPort;
-  readonly enqueuer: RetentionJobEnqueuerPort;
-  readonly config: RetentionConfigPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly repository: Pick<
+    RetentionRepositoryPort,
+    | "claimOutboxes"
+    | "markOutboxFailed"
+    | "markOutboxPublished"
+    | "recoverStaleDispatches"
+    | "recoverStaleOutboxes"
+  >;
+  readonly enqueuer: Pick<RetentionJobEnqueuerPort, "enqueueDispatch">;
+  readonly config: Pick<RetentionConfigPort, "enabled">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly logger: Pick<ApplicationLogger, "error">;
 }
 
 export class RelayRetentionOutbox {
@@ -48,10 +56,11 @@ export class RelayRetentionOutbox {
             error: normalizedError.message,
             nextAttemptAt: new Date(Date.now() + retryDecision.delayMs),
           });
-          this.#dependencies.logger.error(
-            `Retention outbox publish failed: id=${outbox.id}`,
-            normalizedError.stack,
-          );
+          this.#dependencies.logger.error({
+            event: NotificationRetentionLogEvent.RELAY_RETENTION_OUTBOX_PUBLICATION_FAILED,
+            outboxId: outbox.id,
+            errorType: "enqueue",
+          });
           return;
         }
 
@@ -61,10 +70,11 @@ export class RelayRetentionOutbox {
           const normalizedError = error instanceof Error ? error : new Error(String(error));
           // enqueue 결과가 unknown이 아니므로 generation을 되돌리지 않는다. 이미 시작된
           // worker 또는 stale PROCESSING lease recovery가 같은 publication을 이어받는다.
-          this.#dependencies.logger.error(
-            `Retention outbox published-state write failed: id=${outbox.id}`,
-            normalizedError.stack,
-          );
+          this.#dependencies.logger.error({
+            event: NotificationRetentionLogEvent.RELAY_RETENTION_OUTBOX_PUBLISHED_STATE_FAILED,
+            outboxId: outbox.id,
+            errorType: "publication-state",
+          });
           throw normalizedError;
         }
       }),

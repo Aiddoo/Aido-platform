@@ -15,7 +15,7 @@ import {
   DuplicateNotificationError,
   type NotificationRepositoryPort,
 } from "../../../application/ports/delivery/notification.repository.port.js";
-import type { NotificationRecord } from "../../../domain/records/delivery/notification.record.js";
+import type { NotificationRecord } from "../../../application/read-models/delivery/notification.read-model.js";
 import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
 
 @Injectable()

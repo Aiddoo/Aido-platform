@@ -4,7 +4,8 @@ import type { Mocked } from "vitest";
 import {
   createTodoCommentNotificationMessage,
   NotificationPublisher,
-  NotificationRecipientLocaleReader,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
+  type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 
@@ -13,14 +14,14 @@ import { TodoCommentNotificationAdapter } from "./todo-comment-notification.adap
 describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", () => {
   let adapter: TodoCommentNotificationAdapter;
   let notificationSender: Mocked<NotificationPublisher>;
-  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReader>;
+  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReaderPort>;
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(TodoCommentNotificationAdapter).compile();
     adapter = unit;
     notificationSender = unitRef.get(NotificationPublisher);
-    recipientLocaleReader = unitRef.get(NotificationRecipientLocaleReader);
-    recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+    recipientLocaleReader = unitRef.get(NOTIFICATION_RECIPIENT_LOCALE_READER);
+    recipientLocaleReader.getLocale.mockResolvedValue("ko");
     notificationSender.publish.mockResolvedValue(null);
   });
 
@@ -164,7 +165,7 @@ describe("TodoCommentNotificationAdapter — 배포 앱 알림 이동 호환", (
     });
 
     // Then
-    expect(recipientLocaleReader.getRecipientLocale).not.toHaveBeenCalled();
+    expect(recipientLocaleReader.getLocale).not.toHaveBeenCalled();
     expect(notificationSender.publish).not.toHaveBeenCalled();
   });
 });

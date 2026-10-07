@@ -1,8 +1,9 @@
 import { Module } from "@nestjs/common";
 
-import { EMAIL_SENDER, type EmailSenderPort } from "./application/ports/email/email-sender.port.js";
+import { EMAIL_SENDER } from "./application/ports/email/email-sender.port.js";
 import { TransactionalEmailSender } from "./application/senders/email/transactional-email.sender.js";
 import { ResendEmailSenderAdapter } from "./infrastructure/adapters/email/resend-email-sender.adapter.js";
+import { transactionalEmailSenderProvider } from "./notification-email-application.providers.js";
 
 /**
  * 이메일 모듈 (클린아키텍처 capability — 컨트롤러 없음)
@@ -13,11 +14,7 @@ import { ResendEmailSenderAdapter } from "./infrastructure/adapters/email/resend
  */
 @Module({
   providers: [
-    {
-      provide: TransactionalEmailSender,
-      inject: [EMAIL_SENDER],
-      useFactory: (emailSender: EmailSenderPort) => new TransactionalEmailSender(emailSender),
-    },
+    transactionalEmailSenderProvider,
     {
       provide: EMAIL_SENDER,
       useClass: ResendEmailSenderAdapter,
@@ -25,4 +22,4 @@ import { ResendEmailSenderAdapter } from "./infrastructure/adapters/email/resend
   ],
   exports: [TransactionalEmailSender],
 })
-export class EmailModule {}
+export class NotificationEmailModule {}

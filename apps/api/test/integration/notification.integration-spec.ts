@@ -4,10 +4,17 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
 import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
-import { USER_PREFERENCE_READER } from "#api/modules/identity/identity-settings.public";
+import {
+  USER_PREFERENCE_READER,
+  USER_SETTINGS_CACHE,
+} from "#api/modules/identity/identity-settings.public";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
 import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
 import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import {
+  createMorningNoTodoNotificationMessage,
+  createMorningReminderNotificationMessage,
+} from "#api/modules/notification/application/messages/delivery/notification-messages";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
@@ -24,11 +31,12 @@ import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
 } from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
+import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
+import { PUSH_RATE_LIMITER } from "#api/modules/notification/application/ports/delivery/push-rate-limiter.port";
 import { PUSH_RECEIPT_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-token.repository.port";
 import { USER_NOTIFICATION_SETTINGS } from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
 import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/application/services/delivery/push-delivery-after-commit.publisher";
-// use-case는 배럴 비공개 → 테스트 모듈 구성용 딥 임포트 (test/는 경계 검사 제외)
 import { GetNotifications } from "#api/modules/notification/application/use-cases/delivery/get-notifications.use-case";
 import { GetUnreadCount } from "#api/modules/notification/application/use-cases/delivery/get-unread-count.use-case";
 import { MarkAllAsRead } from "#api/modules/notification/application/use-cases/delivery/mark-all-as-read.use-case";
@@ -47,13 +55,7 @@ import { PrismaNotificationReader } from "#api/modules/notification/infrastructu
 import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
 import { PrismaPushReceiptRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-receipt.repository";
 import { PrismaPushTokenRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-token.repository";
-import {
-  createMorningNoTodoNotificationMessage,
-  createMorningReminderNotificationMessage,
-  NotificationPublisher,
-  PUSH_PROVIDER,
-  PUSH_RATE_LIMITER,
-} from "#api/modules/notification/notification-delivery.public";
+import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DatabaseService } from "#api/platform/database/database.service";
@@ -81,7 +83,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 import {
   finalizeBatchNotificationProvider,
-  findAlreadyNotifiedUsersProvider,
+  notificationHistoryReaderProvider,
   getNotificationsProvider,
   getUnreadCountProvider,
   markAllAsReadProvider,
@@ -98,11 +100,11 @@ import {
 import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
 
 function buildNotificationTestApi(module: TestingModule) {
-  const publisher = new NotificationPublisher(
-    module.get(SendNotification),
-    module.get(SendNotificationWithDedup),
-    module.get(SendBatchNotification),
-  );
+  const publisher = new NotificationPublisher({
+    sendNotification: module.get(SendNotification),
+    sendNotificationWithDeduplication: module.get(SendNotificationWithDedup),
+    sendBatchNotification: module.get(SendBatchNotification),
+  });
   const getNotificationsUseCase = module.get(GetNotifications);
   const getUnreadCountUseCase = module.get(GetUnreadCount);
   const markAsReadUseCase = module.get(MarkAsRead);
@@ -267,6 +269,8 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           useExisting: CachedNotificationRecipientPreferenceAdapter,
         },
         // application은 NOTIFICATION_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
+        UserSettingsCacheAdapter,
+        { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
         { provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
         {
           provide: NOTIFICATION_DEDUP,
@@ -292,7 +296,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         persistBatchNotificationProvider,
         finalizeBatchNotificationProvider,
         sendBatchNotificationProvider,
-        findAlreadyNotifiedUsersProvider,
+        notificationHistoryReaderProvider,
         {
           provide: MARKETING_PUSH_OPT_OUT_TOKEN,
           useValue: mockMarketingPushOptOutToken,

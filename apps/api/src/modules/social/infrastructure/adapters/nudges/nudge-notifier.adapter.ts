@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { match } from "ts-pattern";
 
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
@@ -7,7 +7,8 @@ import {
   createNudgeThanksNotificationMessage,
   NotificationPublisher,
   type CreateNotificationData,
-  NotificationRecipientLocaleReader,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
+  type NotificationRecipientLocaleReaderPort,
   TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY,
 } from "#api/modules/notification/notification-delivery.public";
 import { DEFAULT_LOCALE, type SupportedLocale } from "#api/shared/domain/locale";
@@ -23,7 +24,8 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
   constructor(
     private readonly notificationQueue: NotificationQueueService,
     private readonly notificationPublisher: NotificationPublisher,
-    private readonly notificationRecipientLocaleReader: NotificationRecipientLocaleReader,
+    @Inject(NOTIFICATION_RECIPIENT_LOCALE_READER)
+    private readonly notificationRecipientLocaleReader: NotificationRecipientLocaleReaderPort,
   ) {}
 
   notifyNudgeSent(payload: NudgeSentNotification): void {
@@ -31,15 +33,13 @@ export class NudgeNotifierAdapter implements NudgeNotifierPort {
   }
 
   async recordInteraction(payload: NudgeInteractionNotification): Promise<void> {
-    const locale = await this.notificationRecipientLocaleReader.getRecipientLocale(
-      payload.recipientId,
-    );
+    const locale = await this.notificationRecipientLocaleReader.getLocale(payload.recipientId);
     await this.notificationPublisher.publish(this.#toNotificationData(payload, locale));
   }
 
   async recordInteractions(payloads: readonly NudgeInteractionNotification[]): Promise<void> {
     if (payloads.length === 0) return;
-    const locales = await this.notificationRecipientLocaleReader.getRecipientLocales(
+    const locales = await this.notificationRecipientLocaleReader.getLocales(
       payloads.map((payload) => payload.recipientId),
     );
     await this.notificationPublisher.publishBatch(

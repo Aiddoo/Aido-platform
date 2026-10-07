@@ -2,18 +2,22 @@ import type { Mocked } from "vitest";
 import { vi, type MockedFunction } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type NotificationDedupLockPort } from "../../ports/delivery/notification-dedup.port.js";
-import { type NotificationHistoryReaderPort } from "../../ports/delivery/notification-history.reader.port.js";
-import { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 import { SendMilestoneNotification } from "./send-milestone-notification.use-case.js";
 
 describe("SendMilestoneNotification", () => {
   let useCase: SendMilestoneNotification;
-  let publisher: Mocked<NotificationPublisher>;
-  let localeReader: Mocked<NotificationRecipientLocaleReader>;
-  let history: Mocked<NotificationHistoryReaderPort>;
-  let lock: Mocked<NotificationDedupLockPort>;
+  let publisher: Mocked<
+    ConstructorParameters<typeof SendMilestoneNotification>[0]["notificationPublisher"]
+  >;
+  let localeReader: Mocked<
+    ConstructorParameters<typeof SendMilestoneNotification>[0]["recipientLocaleReader"]
+  >;
+  let history: Mocked<
+    ConstructorParameters<typeof SendMilestoneNotification>[0]["notificationHistoryReader"]
+  >;
+  let lock: Mocked<
+    ConstructorParameters<typeof SendMilestoneNotification>[0]["notificationDedupLock"]
+  >;
   let release: MockedFunction<() => Promise<void>>;
 
   beforeEach(async () => {
@@ -29,7 +33,7 @@ describe("SendMilestoneNotification", () => {
     release = vi.fn().mockResolvedValue(undefined);
     lock.acquire.mockResolvedValue(release);
     history.hasMilestoneNotification.mockResolvedValue(false);
-    localeReader.getRecipientLocale.mockResolvedValue("ko");
+    localeReader.getLocale.mockResolvedValue("ko");
   });
 
   it("milestone 잠금을 획득해 한 번 발송하고 잠금을 해제한다", async () => {

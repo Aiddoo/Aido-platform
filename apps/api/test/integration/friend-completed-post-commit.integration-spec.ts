@@ -25,6 +25,7 @@ import {
   USER_NOTIFICATION_SETTINGS,
   type UserNotificationSettingsPort,
 } from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
+import type { NotificationRecord } from "#api/modules/notification/application/read-models/delivery/notification.read-model";
 import { NotificationHistoryReader } from "#api/modules/notification/application/readers/delivery/notification-history.reader";
 import { PersistBatchNotification } from "#api/modules/notification/application/use-cases/delivery/persist-batch-notification.use-case";
 import {
@@ -32,7 +33,6 @@ import {
   type PublishPushDeliveryOutboxInput,
 } from "#api/modules/notification/application/use-cases/delivery/publish-push-delivery-outbox.use-case";
 import { SendFriendCompletionNotifications } from "#api/modules/notification/application/use-cases/delivery/send-friend-completion-notifications.use-case";
-import type { NotificationRecord } from "#api/modules/notification/domain/records/delivery/notification.record";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
   UNIT_OF_WORK,

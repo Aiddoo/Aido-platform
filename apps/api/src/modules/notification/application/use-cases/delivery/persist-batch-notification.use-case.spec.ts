@@ -2,15 +2,12 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { NotificationBuilder } from "#test/builders/index";
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
-import { type NotificationRepositoryPort } from "../../ports/delivery/notification.repository.port.js";
 import { type PushDispatchStagingRepositoryPort } from "../../ports/delivery/push-dispatch-staging.repository.port.js";
-import { PushDeliveryAfterCommitPublisher } from "../../services/delivery/push-delivery-after-commit.publisher.js";
 import { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
 
 function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
@@ -22,10 +19,16 @@ function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
 
 describe("PersistBatchNotification", () => {
   let useCase: PersistBatchNotification;
-  let repository: Mocked<NotificationRepositoryPort>;
-  let staging: Mocked<PushDispatchStagingRepositoryPort>;
-  let unitOfWork: Mocked<UnitOfWorkPort>;
-  let afterCommitPublisher: Mocked<PushDeliveryAfterCommitPublisher>;
+  let repository: Mocked<
+    ConstructorParameters<typeof PersistBatchNotification>[0]["notificationRepository"]
+  >;
+  let staging: Mocked<
+    ConstructorParameters<typeof PersistBatchNotification>[0]["pushDispatchStaging"]
+  >;
+  let unitOfWork: Mocked<ConstructorParameters<typeof PersistBatchNotification>[0]["unitOfWork"]>;
+  let afterCommitPublisher: Mocked<
+    ConstructorParameters<typeof PersistBatchNotification>[0]["afterCommitPublisher"]
+  >;
 
   beforeEach(async () => {
     NotificationBuilder.resetIdCounter();

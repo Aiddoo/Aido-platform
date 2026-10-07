@@ -21,11 +21,11 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
 import { TODO_REMINDER_READER } from "#api/modules/notification/application/ports/reminders/todo-reminder-reader.port";
+import { TodoReminderProcessor } from "#api/modules/notification/infrastructure/processors/reminders/todo-reminder.processor";
 import {
   NotificationPublisher,
-  NotificationRecipientLocaleReader,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
 } from "#api/modules/notification/notification-delivery.public";
-import { TodoReminderProcessor } from "#api/modules/notification/notification-reminders.public";
 import { NotificationBuilder, TodoBuilder } from "#test/builders/index";
 import { createMockJob as createJob } from "#test/mocks/bull-job.mock";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -45,7 +45,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
   };
 
   const mockNotificationPublisher = { publish: vi.fn() };
-  const mockRecipientLocaleReader = { getRecipientLocale: vi.fn().mockResolvedValue("ko") };
+  const mockRecipientLocaleReader = { getLocale: vi.fn().mockResolvedValue("ko") };
 
   // 테스트 데이터
   const mockUserId = "user-reminder-123";
@@ -66,7 +66,7 @@ describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
           useValue: mockNotificationPublisher,
         },
         {
-          provide: NotificationRecipientLocaleReader,
+          provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
           useValue: mockRecipientLocaleReader,
         },
       ],

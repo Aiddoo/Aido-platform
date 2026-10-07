@@ -19,7 +19,7 @@ describe("TransactionalEmailSender — 트랜잭션 이메일 발송", () => {
 
   beforeEach(() => {
     sender = new StubEmailSender();
-    emailSender = new TransactionalEmailSender(sender);
+    emailSender = new TransactionalEmailSender({ emailSender: sender });
   });
 
   it("sendVerificationCode는 인증 메시지를 조립해 전송한다", async () => {

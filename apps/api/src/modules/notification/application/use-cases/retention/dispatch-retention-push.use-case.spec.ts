@@ -3,12 +3,9 @@ import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
+import { StubPushTokenCache } from "#test/mocks/stub-push-token-cache";
 
-import { type RetentionPushSenderPort } from "../../ports/retention/retention-push-sender.port.js";
-import {
-  type RetentionDispatchCandidate,
-  type RetentionRepositoryPort,
-} from "../../ports/retention/retention.repository.port.js";
+import { type RetentionDispatchCandidate } from "../../ports/retention/retention.repository.port.js";
 import { DispatchRetentionPush } from "./dispatch-retention-push.use-case.js";
 
 describe("DispatchRetentionPush — 멱등 푸시 처리", () => {
@@ -20,8 +17,9 @@ describe("DispatchRetentionPush — 멱등 푸시 처리", () => {
     isFinalAttempt: false,
   } as const;
   let useCase: DispatchRetentionPush;
-  let repository: Mocked<RetentionRepositoryPort>;
-  let sender: Mocked<RetentionPushSenderPort>;
+  let cache: StubPushTokenCache;
+  let repository: Mocked<ConstructorParameters<typeof DispatchRetentionPush>[0]["repository"]>;
+  let sender: Mocked<ConstructorParameters<typeof DispatchRetentionPush>[0]["sender"]>;
 
   beforeEach(async () => {
     const dispatchRetentionPushDependencies = mockDeep<
@@ -29,14 +27,24 @@ describe("DispatchRetentionPush — 멱등 푸시 처리", () => {
     >({
       repository: createRetentionRepositoryMock(),
       sender: { isEligible: vi.fn(), reserveRateLimit: vi.fn(), send: vi.fn() },
-      config: { enabled: true, treatmentPercent: 50 },
+      config: { enabled: true },
       unitOfWork: createUnitOfWorkMock(),
     });
-    const unit = new DispatchRetentionPush(dispatchRetentionPushDependencies);
+    cache = new StubPushTokenCache();
+    cache.entries.set("new-user", ["fake-token"]);
+    const unit = new DispatchRetentionPush({
+      repository: dispatchRetentionPushDependencies.repository,
+      sender: dispatchRetentionPushDependencies.sender,
+      config: dispatchRetentionPushDependencies.config,
+      unitOfWork: dispatchRetentionPushDependencies.unitOfWork,
+      logger: dispatchRetentionPushDependencies.logger,
+      cache,
+    });
     useCase = unit;
     repository = dispatchRetentionPushDependencies.repository;
     sender = dispatchRetentionPushDependencies.sender;
     repository.markRateLimitReserved.mockResolvedValue(true);
+    repository.recordDeliveryResults.mockResolvedValue(true);
     sender.reserveRateLimit.mockResolvedValue(true);
   });
 
@@ -81,7 +89,7 @@ describe("DispatchRetentionPush — 멱등 푸시 처리", () => {
     >({
       repository: createRetentionRepositoryMock(),
       sender: { isEligible: vi.fn(), reserveRateLimit: vi.fn(), send: vi.fn() },
-      config: { enabled: false, treatmentPercent: 50 },
+      config: { enabled: false },
       unitOfWork: createUnitOfWorkMock(),
     });
     const unit = new DispatchRetentionPush(dispatchRetentionPushDependencies);
@@ -174,5 +182,41 @@ describe("DispatchRetentionPush — 멱등 푸시 처리", () => {
     repository.reopenUnclaimedDispatch.mockRejectedValueOnce(new Error("recovery unavailable"));
 
     await expect(useCase.execute({ ...execution, isFinalAttempt: true })).rejects.toBe(claimError);
+  });
+  it.each([true, false])(
+    "retention 무효 토큰 결과가 finalized=%s일 때 현재 수신자 캐시를 구분한다",
+    async (finalized) => {
+      // Given - false는 repository가 stale fence 결과를 거부한 상태
+      const claimed = candidate();
+      repository.claimDispatch.mockResolvedValue(claimed);
+      repository.recordDeliveryResults.mockResolvedValue(finalized);
+      sender.isEligible.mockReturnValue(true);
+      sender.send.mockResolvedValue([
+        { token: "fake-token", success: false, errorCode: "DeviceNotRegistered" },
+      ]);
+      // When
+      await useCase.execute(execution);
+      // Then
+      expect(cache.invalidationAttempts).toEqual(finalized ? [claimed.userId] : []);
+      expect(cache.entries.has(claimed.userId)).toBe(!finalized);
+      expect(repository.releaseDispatchForRetry).not.toHaveBeenCalled();
+    },
+  );
+
+  it("retention 결과 저장 후 캐시 실패가 provider 발송 재시도를 만들지 않는다", async () => {
+    // Given
+    const claimed = candidate();
+    repository.claimDispatch.mockResolvedValue(claimed);
+    sender.isEligible.mockReturnValue(true);
+    sender.send.mockResolvedValue([
+      { token: "fake-token", success: false, errorCode: "DeviceNotRegistered" },
+    ]);
+    cache.failForUsers.add(claimed.userId);
+    // When / Then
+    await expect(useCase.execute(execution)).resolves.toBeUndefined();
+    expect(sender.send).toHaveBeenCalledTimes(1);
+    expect(repository.recordDeliveryResults).toHaveBeenCalledTimes(1);
+    expect(repository.releaseDispatchForRetry).not.toHaveBeenCalled();
+    expect(cache.invalidationAttempts).toEqual([claimed.userId]);
   });
 });

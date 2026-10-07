@@ -2,8 +2,6 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
-import { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 import { SendFollowAcceptedNotification } from "./send-follow-accepted-notification.use-case.js";
 
 describe("SendFollowAcceptedNotification", () => {
@@ -12,11 +10,13 @@ describe("SendFollowAcceptedNotification", () => {
       ConstructorParameters<typeof SendFollowAcceptedNotification>[0]
     >({});
     const unit = new SendFollowAcceptedNotification(sendFollowAcceptedNotificationDependencies);
-    const notificationSender: Mocked<NotificationPublisher> =
-      sendFollowAcceptedNotificationDependencies.notificationPublisher;
-    const recipientLocaleReader: Mocked<NotificationRecipientLocaleReader> =
-      sendFollowAcceptedNotificationDependencies.recipientLocaleReader;
-    recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+    const notificationSender: Mocked<
+      ConstructorParameters<typeof SendFollowAcceptedNotification>[0]["notificationPublisher"]
+    > = sendFollowAcceptedNotificationDependencies.notificationPublisher;
+    const recipientLocaleReader: Mocked<
+      ConstructorParameters<typeof SendFollowAcceptedNotification>[0]["recipientLocaleReader"]
+    > = sendFollowAcceptedNotificationDependencies.recipientLocaleReader;
+    recipientLocaleReader.getLocale.mockResolvedValue("ko");
 
     await unit.execute({ userId: "u1", friendId: "u2", friendName: "지윤" });
 

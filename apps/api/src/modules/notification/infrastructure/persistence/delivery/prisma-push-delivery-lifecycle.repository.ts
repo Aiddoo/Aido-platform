@@ -26,6 +26,8 @@ function toNotificationMetadata(value: unknown): Record<string, unknown> | null 
   return Object.fromEntries(Object.entries(value));
 }
 
+import { pushTokenFingerprint } from "./push-token-fingerprint.js";
+
 @Injectable()
 export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecycleRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
@@ -495,6 +497,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 						${pushTokenId}::INTEGER,
 						${result.success ? "TICKET_ACCEPTED" : "FAILED"}::"PushDeliveryStatus",
 						${result.ticketId ?? null},
+						${pushTokenFingerprint(result.token)}::VARCHAR(64),
 						${result.errorCode ?? null},
 						${result.error?.slice(0, 500) ?? null},
 						CURRENT_TIMESTAMP
@@ -513,6 +516,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 					"pushTokenId",
 					"status",
 					"expoTicketId",
+					"tokenFingerprint",
 					"errorCode",
 					"errorMessage",
 					"updatedAt"
@@ -522,6 +526,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
 				DO UPDATE SET
 					"status" = EXCLUDED."status",
 					"expoTicketId" = EXCLUDED."expoTicketId",
+					"tokenFingerprint" = EXCLUDED."tokenFingerprint",
 					"errorCode" = EXCLUDED."errorCode",
 					"errorMessage" = EXCLUDED."errorMessage",
 					"receiptCheckedAt" = NULL,

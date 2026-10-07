@@ -1,5 +1,6 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import {
   PushTokenNotFoundError,
@@ -12,9 +13,12 @@ import {
  * deviceId가 있으면 해당 기기 토큰만, 없으면 사용자의 모든 토큰을 해제한다.
  */
 interface UnregisterPushTokenDependencies {
-  readonly pushTokenRepository: PushTokenRepositoryPort;
-  readonly cache: NotificationCachePort;
-  readonly logger: ApplicationLogger;
+  readonly pushTokenRepository: Pick<
+    PushTokenRepositoryPort,
+    "deleteAllPushTokensByUser" | "deletePushToken"
+  >;
+  readonly cache: Pick<NotificationCachePort, "invalidatePushTokens">;
+  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
 }
 
 export class UnregisterPushToken {
@@ -36,14 +40,16 @@ export class UnregisterPushToken {
     try {
       await this.#dependencies.pushTokenRepository.deletePushToken(userId, deviceId);
       await this.#dependencies.cache.invalidatePushTokens(userId);
-      this.#dependencies.logger.log(
-        `Push token unregistered: userId=${userId}, deviceId=${deviceId}`,
-      );
+      this.#dependencies.logger.log({
+        event: NotificationDeliveryLogEvent.UNREGISTER_PUSH_TOKEN_UNREGISTERED,
+        userId,
+      });
     } catch (error) {
       if (error instanceof PushTokenNotFoundError) {
-        this.#dependencies.logger.warn(
-          `Push token not found: userId=${userId}, deviceId=${deviceId}`,
-        );
+        this.#dependencies.logger.warn({
+          event: NotificationDeliveryLogEvent.UNREGISTER_PUSH_TOKEN_NOT_FOUND,
+          userId,
+        });
         return;
       }
       throw error;
@@ -53,8 +59,10 @@ export class UnregisterPushToken {
   async #unregisterAll(userId: string): Promise<void> {
     const result = await this.#dependencies.pushTokenRepository.deleteAllPushTokensByUser(userId);
     await this.#dependencies.cache.invalidatePushTokens(userId);
-    this.#dependencies.logger.log(
-      `All push tokens unregistered: userId=${userId}, count=${result.count}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.UNREGISTER_PUSH_TOKEN_ALL_UNREGISTERED,
+      userId,
+      count: result.count,
+    });
   }
 }

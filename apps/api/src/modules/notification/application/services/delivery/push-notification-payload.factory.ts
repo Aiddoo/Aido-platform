@@ -2,11 +2,11 @@ import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/api";
 
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../../domain/services/delivery/feature-marketing-capability.js";
 import { isNudgeInteractionNotification } from "../../../domain/services/delivery/notification-client-capability.js";
-import { toNotificationRouting } from "../../../domain/services/delivery/notification-routing.js";
 import { isMarketingNotification } from "../../../domain/services/delivery/push-eligibility.js";
 import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import type { PushPayload } from "../../ports/delivery/push-provider.port.js";
+import { toNotificationRouting } from "./notification-routing.js";
 
 interface CreatePushNotificationPayloadInput {
   readonly data: CreateNotificationData;
@@ -23,7 +23,7 @@ export interface BatchPushNotificationPayload extends Omit<PushPayload, "token">
 
 /** 모바일 라우팅·컨텍스트·마케팅 메타데이터를 푸시 provider payload로 변환한다. */
 interface PushNotificationPayloadFactoryDependencies {
-  readonly marketingOptOutTokens: MarketingPushOptOutTokenPort;
+  readonly marketingOptOutTokens: Pick<MarketingPushOptOutTokenPort, "issue">;
 }
 
 export class PushNotificationPayloadFactory {

@@ -3,23 +3,22 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  createOnboardingNotificationMessage,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
-import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import { createOnboardingNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { OnboardingStrategy } from "./onboarding.strategy.js";
 
 describe("OnboardingStrategy — 온보딩 전략", () => {
   let strategy: OnboardingStrategy;
-  let reader: Mocked<ReEngagementReaderPort>;
-  let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
+  let reader: Mocked<ConstructorParameters<typeof OnboardingStrategy>[0]["reader"]>;
+  let preferenceReader: Mocked<
+    ConstructorParameters<typeof OnboardingStrategy>[0]["preferenceReader"]
+  >;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof OnboardingStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof OnboardingStrategy>[0]["notificationHistoryReader"]
+  >;
 
   const TZ = "Asia/Seoul";
 
@@ -39,7 +38,7 @@ describe("OnboardingStrategy — 온보딩 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
 
     const onboardingStrategyDependencies = mockDeep<

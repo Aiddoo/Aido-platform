@@ -13,7 +13,7 @@ import type {
   NotificationHistoryReaderPort,
 } from "../../../application/ports/delivery/notification-history.reader.port.js";
 import type { NotificationInboxReaderPort } from "../../../application/ports/delivery/notification-inbox.reader.port.js";
-import type { NotificationRecord } from "../../../domain/records/delivery/notification.record.js";
+import type { NotificationRecord } from "../../../application/read-models/delivery/notification.read-model.js";
 import type { NotificationMilestone } from "../../../domain/types/delivery/notification-milestone.js";
 import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
 

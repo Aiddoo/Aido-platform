@@ -7,14 +7,8 @@ import {
   createPushTokenRepositoryMock,
 } from "#test/mocks/ports/notification.mock";
 
-import type { PushTokenRecord } from "../../../domain/records/delivery/notification.record.js";
-import { type ActivePushTokenReaderPort } from "../../ports/delivery/active-push-token.reader.port.js";
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import {
-  type PushProvider,
-  RetryablePushProviderTransportError,
-} from "../../ports/delivery/push-provider.port.js";
-import { type PushTokenRepositoryPort } from "../../ports/delivery/push-token.repository.port.js";
+import { RetryablePushProviderTransportError } from "../../ports/delivery/push-provider.port.js";
+import type { PushTokenRecord } from "../../read-models/delivery/push-token.read-model.js";
 import { PushNotificationDeliveryService } from "./push-notification-delivery.service.js";
 import type { BatchPushNotificationPayload } from "./push-notification-payload.factory.js";
 
@@ -60,10 +54,18 @@ function batchPayload(input: {
 
 describe("PushNotificationDeliveryService", () => {
   let service: PushNotificationDeliveryService;
-  let activeTokenReader: Mocked<ActivePushTokenReaderPort>;
-  let tokenRepository: Mocked<PushTokenRepositoryPort>;
-  let pushProvider: Mocked<PushProvider>;
-  let notificationCache: Mocked<NotificationCachePort>;
+  let activeTokenReader: Mocked<
+    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["activePushTokenReader"]
+  >;
+  let tokenRepository: Mocked<
+    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["pushTokenRepository"]
+  >;
+  let pushProvider: Mocked<
+    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["pushProvider"]
+  >;
+  let notificationCache: Mocked<
+    ConstructorParameters<typeof PushNotificationDeliveryService>[0]["notificationCache"]
+  >;
 
   beforeEach(async () => {
     const pushNotificationDeliveryServiceDependencies = mockDeep<

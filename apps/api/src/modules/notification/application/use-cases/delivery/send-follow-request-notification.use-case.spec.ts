@@ -3,14 +3,16 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
 import { createFollowRequestNotificationMessage } from "../../messages/delivery/notification-messages.js";
-import { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 import { SendFollowRequestNotification } from "./send-follow-request-notification.use-case.js";
 
 describe("SendFollowRequestNotification", () => {
   let useCase: SendFollowRequestNotification;
-  let notificationSender: Mocked<NotificationPublisher>;
-  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReader>;
+  let notificationSender: Mocked<
+    ConstructorParameters<typeof SendFollowRequestNotification>[0]["notificationPublisher"]
+  >;
+  let recipientLocaleReader: Mocked<
+    ConstructorParameters<typeof SendFollowRequestNotification>[0]["recipientLocaleReader"]
+  >;
 
   beforeEach(async () => {
     const sendFollowRequestNotificationDependencies = mockDeep<
@@ -20,7 +22,7 @@ describe("SendFollowRequestNotification", () => {
     useCase = unit;
     notificationSender = sendFollowRequestNotificationDependencies.notificationPublisher;
     recipientLocaleReader = sendFollowRequestNotificationDependencies.recipientLocaleReader;
-    recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+    recipientLocaleReader.getLocale.mockResolvedValue("ko");
   });
 
   it("동일한 친구 요청에는 중복 제거 키가 같은 알림을 보낸다", async () => {

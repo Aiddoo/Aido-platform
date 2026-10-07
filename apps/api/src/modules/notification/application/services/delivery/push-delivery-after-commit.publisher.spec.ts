@@ -3,12 +3,8 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  type AfterCommitTask,
-  type AfterCommitTaskRegistryPort,
-} from "#api/shared/application/ports/index";
+import { type AfterCommitTask } from "#api/shared/application/ports/index";
 
-import { PublishPushDeliveryOutbox } from "../../use-cases/delivery/publish-push-delivery-outbox.use-case.js";
 import { PushDeliveryAfterCommitPublisher } from "./push-delivery-after-commit.publisher.js";
 
 function firstRegisteredTask(tasks: readonly AfterCommitTask[]): AfterCommitTask {
@@ -19,8 +15,12 @@ function firstRegisteredTask(tasks: readonly AfterCommitTask[]): AfterCommitTask
 
 describe("PushDeliveryAfterCommitPublisher — commit 이후 fast path", () => {
   let publisher: PushDeliveryAfterCommitPublisher;
-  let publishOutbox: Mocked<PublishPushDeliveryOutbox>;
-  let afterCommit: Mocked<AfterCommitTaskRegistryPort>;
+  let publishOutbox: Mocked<
+    ConstructorParameters<typeof PushDeliveryAfterCommitPublisher>[0]["publishOutbox"]
+  >;
+  let afterCommit: Mocked<
+    ConstructorParameters<typeof PushDeliveryAfterCommitPublisher>[0]["afterCommit"]
+  >;
   let registeredTasks: AfterCommitTask[];
 
   beforeEach(async () => {

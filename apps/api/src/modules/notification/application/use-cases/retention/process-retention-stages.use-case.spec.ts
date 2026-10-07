@@ -4,23 +4,20 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import {
-  type RetentionRepositoryPort,
-  type RetentionStageCandidate,
-} from "../../ports/retention/retention.repository.port.js";
+import { type RetentionStageCandidate } from "../../ports/retention/retention.repository.port.js";
 import { ProcessRetentionStages } from "./process-retention-stages.use-case.js";
 
 describe("ProcessRetentionStages — 신규 코호트 단계 처리", () => {
   let useCase: ProcessRetentionStages;
-  let repository: Mocked<RetentionRepositoryPort>;
+  let repository: Mocked<ConstructorParameters<typeof ProcessRetentionStages>[0]["repository"]>;
 
   beforeEach(async () => {
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-16T10:30:00Z"));
+    vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-16T10:30:00Z"));
     const processRetentionStagesDependencies = mockDeep<
       ConstructorParameters<typeof ProcessRetentionStages>[0]
     >({
       repository: createRetentionRepositoryMock(),
-      config: { enabled: true, treatmentPercent: 50 },
+      config: { enabled: true },
       unitOfWork: createUnitOfWorkMock(),
     });
     const unit = new ProcessRetentionStages(processRetentionStagesDependencies);

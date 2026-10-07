@@ -100,6 +100,7 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
     },
   ],
   exports: [
+    USER_SETTINGS_CACHE,
     USER_PREFERENCE_READER,
     USER_SETTINGS_PROVISIONER,
     USER_STREAK_ACCESS,

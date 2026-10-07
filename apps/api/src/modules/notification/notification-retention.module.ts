@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
 import { RETENTION_CONFIG } from "./application/ports/retention/retention-config.port.js";
 import { RETENTION_ENROLLMENT } from "./application/ports/retention/retention-enrollment.port.js";
@@ -23,7 +23,7 @@ import {
 } from "./notification-retention-application.providers.js";
 
 @Module({
-  imports: [NotificationModule],
+  imports: [NotificationDeliveryModule],
   providers: [
     RetentionEnrollmentAdapter,
     activateRetentionExperimentProvider,
@@ -51,4 +51,4 @@ import {
   ],
   exports: [RETENTION_ENROLLMENT],
 })
-export class RetentionModule {}
+export class NotificationRetentionModule {}

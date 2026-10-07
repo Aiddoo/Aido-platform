@@ -1,6 +1,5 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
-import type { PushTokenRecord } from "../../../domain/records/delivery/notification.record.js";
 import {
   FEATURE_DISCOVERY_CAMPAIGN_KEY,
   supportsFeatureDiscoveryMarketing,
@@ -9,6 +8,7 @@ import {
   isNudgeInteractionNotification,
   supportsNudgeInteractions,
 } from "../../../domain/services/delivery/notification-client-capability.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type ActivePushTokenReaderPort } from "../../ports/delivery/active-push-token.reader.port.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
@@ -18,6 +18,7 @@ import {
   type PushResult,
 } from "../../ports/delivery/push-provider.port.js";
 import { type PushTokenRepositoryPort } from "../../ports/delivery/push-token.repository.port.js";
+import type { PushTokenRecord } from "../../read-models/delivery/push-token.read-model.js";
 import type { PushDispatchSkipReason } from "../../types/delivery/push-delivery.types.js";
 import type { BatchPushNotificationPayload } from "./push-notification-payload.factory.js";
 
@@ -55,11 +56,14 @@ export interface BatchPushNotificationDeliveryResult {
 
 /** 활성·capability 토큰을 선택하고 provider 전달과 무효 토큰 정리를 수행한다. */
 interface PushNotificationDeliveryServiceDependencies {
-  readonly pushTokenRepository: PushTokenRepositoryPort;
-  readonly pushProvider: PushProvider;
-  readonly activePushTokenReader: ActivePushTokenReaderPort;
-  readonly notificationCache: NotificationCachePort;
-  readonly logger: ApplicationLogger;
+  readonly pushTokenRepository: Pick<
+    PushTokenRepositoryPort,
+    "deactivateInvalidTokens" | "findActivePushTokensByUsers" | "findPushTokensByUser"
+  >;
+  readonly pushProvider: Pick<PushProvider, "sendBatch">;
+  readonly activePushTokenReader: Pick<ActivePushTokenReaderPort, "findByUserId" | "findByUserIds">;
+  readonly notificationCache: Pick<NotificationCachePort, "invalidatePushTokens">;
+  readonly logger: Pick<ApplicationLogger, "debug" | "warn">;
 }
 
 export class PushNotificationDeliveryService {
@@ -82,11 +86,17 @@ export class PushNotificationDeliveryService {
     if (result.invalidTokens.length > 0) {
       await this.#dependencies.pushTokenRepository.deactivateInvalidTokens(result.invalidTokens);
       await this.#dependencies.notificationCache.invalidatePushTokens(input.data.userId);
-      this.#dependencies.logger.warn(`Deactivated invalid tokens: ${result.invalidTokens.length}`);
+      this.#dependencies.logger.warn({
+        event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_INVALID_TOKENS_DEACTIVATED,
+        count: result.invalidTokens.length,
+      });
     }
-    this.#dependencies.logger.debug(
-      `Push sent to user ${input.data.userId}: success=${result.successCount}, failure=${result.failureCount}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_SINGLE_SENT,
+      userId: input.data.userId,
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+    });
     return { status: "sent", results: result.results };
   }
 
@@ -194,11 +204,18 @@ export class PushNotificationDeliveryService {
           this.#dependencies.notificationCache.invalidatePushTokens(userId),
         ),
       );
-      this.#dependencies.logger.warn(`Deactivated invalid tokens: ${result.invalidTokens.length}`);
+      this.#dependencies.logger.warn({
+        event:
+          NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_BATCH_INVALID_TOKENS_DEACTIVATED,
+        count: result.invalidTokens.length,
+      });
     }
-    this.#dependencies.logger.debug(
-      `Batch push sent: total=${result.total}, success=${result.successCount}, failure=${result.failureCount}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.PUSH_NOTIFICATION_DELIVERY_BATCH_SENT,
+      total: result.total,
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+    });
 
     const resultsByDispatch = new Map<number, PushResult[]>();
     for (const [index, pushResult] of result.results.entries()) {

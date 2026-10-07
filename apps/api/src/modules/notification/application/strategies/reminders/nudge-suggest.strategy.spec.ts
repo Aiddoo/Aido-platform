@@ -3,26 +3,26 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  createNudgeSuggestionNotificationMessage,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
-import { type SchedulerDedupPort } from "../../ports/reminders/scheduler-dedup.port.js";
-import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import { createNudgeSuggestionNotificationMessage } from "../../messages/delivery/notification-messages.js";
 import { NudgeSuggestStrategy } from "./nudge-suggest.strategy.js";
 
 describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
   let strategy: NudgeSuggestStrategy;
-  let reader: Mocked<ReEngagementReaderPort>;
-  let preferenceReader: Mocked<SchedulerPreferenceReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
-  let schedulerDedup: Mocked<SchedulerDedupPort>;
+  let reader: Mocked<ConstructorParameters<typeof NudgeSuggestStrategy>[0]["reader"]>;
+  let preferenceReader: Mocked<
+    ConstructorParameters<typeof NudgeSuggestStrategy>[0]["preferenceReader"]
+  >;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof NudgeSuggestStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof NudgeSuggestStrategy>[0]["notificationHistoryReader"]
+  >;
+  let schedulerDedup: Mocked<
+    ConstructorParameters<typeof NudgeSuggestStrategy>[0]["schedulerDedup"]
+  >;
 
   const TZ = "Asia/Seoul";
 
@@ -40,7 +40,7 @@ describe("NudgeSuggestStrategy — 찔러보기 제안 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
 
     const nudgeSuggestStrategyDependencies = mockDeep<

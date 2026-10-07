@@ -1,6 +1,7 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../policies/delivery/push-delivery-outbox-retry.policy.js";
 import { type PushDeliveryJobEnqueuerPort } from "../../ports/delivery/push-delivery-job-enqueuer.port.js";
 import { type PushDeliveryOutboxRepositoryPort } from "../../ports/delivery/push-delivery-outbox.repository.port.js";
@@ -19,10 +20,13 @@ export type PublishPushDeliveryOutboxInput =
     };
 
 interface PublishPushDeliveryOutboxDependencies {
-  readonly outbox: PushDeliveryOutboxRepositoryPort;
-  readonly enqueuer: PushDeliveryJobEnqueuerPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly outbox: Pick<
+    PushDeliveryOutboxRepositoryPort,
+    "claimAvailable" | "claimByDispatchIds" | "defer" | "markPublished"
+  >;
+  readonly enqueuer: Pick<PushDeliveryJobEnqueuerPort, "enqueueDeliveries">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly logger: Pick<ApplicationLogger, "warn">;
 }
 
 export class PublishPushDeliveryOutbox {
@@ -69,9 +73,11 @@ export class PublishPushDeliveryOutbox {
           error: message,
         }),
       );
-      this.#dependencies.logger.warn(
-        `Push delivery enqueue deferred: dispatchIds=${publications.map((item) => item.dispatchId).join(",")}, error=${message}`,
-      );
+      this.#dependencies.logger.warn({
+        event: NotificationDeliveryLogEvent.PUBLISH_PUSH_DELIVERY_OUTBOX_ENQUEUE_DEFERRED,
+        dispatchCount: publications.length,
+        errorType: "enqueue",
+      });
       return 0;
     }
 
@@ -79,12 +85,14 @@ export class PublishPushDeliveryOutbox {
       return await this.#dependencies.unitOfWork.run(() =>
         this.#dependencies.outbox.markPublished(publications, new Date()),
       );
-    } catch (error) {
+    } catch {
       // enqueue 성공 여부가 확정된 뒤에는 generation을 되돌리지 않는다.
       // PROCESSING lease recovery가 같은 generation 또는 새 generation으로 안전하게 복구한다.
-      this.#dependencies.logger.warn(
-        `Push delivery outbox publish mark failed: dispatchIds=${publications.map((item) => item.dispatchId).join(",")}, error=${error}`,
-      );
+      this.#dependencies.logger.warn({
+        event: NotificationDeliveryLogEvent.PUBLISH_PUSH_DELIVERY_OUTBOX_PUBLISH_MARK_FAILED,
+        dispatchCount: publications.length,
+        errorType: "publication-state",
+      });
       return 0;
     }
   }

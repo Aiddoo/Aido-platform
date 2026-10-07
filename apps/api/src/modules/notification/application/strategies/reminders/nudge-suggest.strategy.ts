@@ -1,9 +1,3 @@
-import type {
-  CreateNotificationData,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createNudgeSuggestionNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
@@ -12,24 +6,31 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { createNudgeSuggestionNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { getNotificationFriendFallback } from "../../messages/delivery/social-notification-message.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
+import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../../ports/reminders/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface NudgeSuggestStrategyDependencies {
-  readonly reader: ReEngagementReaderPort;
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly schedulerDedup: SchedulerDedupPort;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<
+    ReEngagementReaderPort,
+    "findActiveUsersInTimezone" | "findNudgeSuggestFollows"
+  >;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly schedulerDedup: Pick<SchedulerDedupPort, "findSentNudgePairs" | "recordNudgePairs">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class NudgeSuggestStrategy implements ITimezoneStrategy {
+export class NudgeSuggestStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: NudgeSuggestStrategyDependencies;
 
   constructor(dependencies: NudgeSuggestStrategyDependencies) {
@@ -114,27 +115,27 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
     for (const user of candidates) {
       const friends = friendMap.get(user.id);
 
-      if (!friends || friends.length === 0) {
+      if (friends === undefined || friends.length === 0) {
         continue;
       }
 
       const eligibleFriends = friends
         .filter((f) => !sentPairs.has(`${user.id}:${f.id}`))
         .sort((a, b) => {
-          const daysA = a.lastActiveAt ? diffInDays(today, a.lastActiveAt) : 0;
-          const daysB = b.lastActiveAt ? diffInDays(today, b.lastActiveAt) : 0;
+          const daysA = a.lastActiveAt !== null ? diffInDays(today, a.lastActiveAt) : 0;
+          const daysB = b.lastActiveAt !== null ? diffInDays(today, b.lastActiveAt) : 0;
           return daysB - daysA;
         });
 
       const target = eligibleFriends[0];
 
-      if (!target?.lastActiveAt) {
+      if (target === undefined || target.lastActiveAt === null) {
         continue;
       }
 
       const locale = locales.get(user.id) ?? DEFAULT_LOCALE;
       const message = createNudgeSuggestionNotificationMessage({
-        friendName: target.name ?? (locale === "en" ? "Your friend" : "친구"),
+        friendName: target.name ?? getNotificationFriendFallback(locale),
         locale,
         variantContext: {
           campaignKey: SCHEDULER_CAMPAIGN_KEY.NUDGE_SUGGEST,
@@ -163,7 +164,11 @@ export class NudgeSuggestStrategy implements ITimezoneStrategy {
       const members = notifications.map((n) => `${n.userId}:${n.friendId}`);
       void this.#dependencies.schedulerDedup.recordNudgePairs(weekId, members);
 
-      this.#dependencies.logger.log(`Nudge suggest: tz=${tz}, count=${notifications.length}`);
+      this.#dependencies.logger.log({
+        event: NotificationRemindersLogEvent.NUDGE_SUGGEST_SENT,
+        timezone: tz,
+        count: notifications.length,
+      });
     }
     return { sent: notifications.length };
   }

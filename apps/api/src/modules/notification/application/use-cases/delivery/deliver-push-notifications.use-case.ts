@@ -3,6 +3,7 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import { PushDeliveryClaimRecoveryConflictError } from "../../errors/delivery/push-delivery-claim-recovery-conflict.error.js";
 import { PushDeliveryRateLimitReservationConflictError } from "../../errors/delivery/push-delivery-rate-limit-reservation-conflict.error.js";
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { pushDeliveryOutboxRetryDelayMs } from "../../policies/delivery/push-delivery-outbox-retry.policy.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import {
@@ -57,12 +58,30 @@ function partitionEligibility<TCandidate>(
  * DB fence는 stale worker의 상태 덮어쓰기를 막지만 외부 provider까지 exactly-once로 만들지는 않는다.
  */
 interface DeliverPushNotificationsDependencies {
-  readonly lifecycle: PushDeliveryLifecycleRepositoryPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly eligibility: PushDeliveryEligibilityService;
-  readonly payloadFactory: PushNotificationPayloadFactory;
-  readonly delivery: PushNotificationDeliveryService;
-  readonly logger: ApplicationLogger;
+  readonly lifecycle: Pick<
+    PushDeliveryLifecycleRepositoryPort,
+    | "claim"
+    | "finalizeResults"
+    | "finalizeSkipped"
+    | "markRateLimitReserved"
+    | "release"
+    | "reopenAfterFinalClaimFailure"
+  >;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly eligibility: Pick<
+    PushDeliveryEligibilityService,
+    | "evaluateBatchSettings"
+    | "evaluateSingle"
+    | "loadBatchRecipients"
+    | "loadSingleRecipient"
+    | "reserveBatch"
+  >;
+  readonly payloadFactory: Pick<PushNotificationPayloadFactory, "createBatch" | "createSingle">;
+  readonly delivery: Pick<
+    PushNotificationDeliveryService,
+    "deliverSingle" | "prepareBatchDelivery" | "sendPreparedBatch"
+  >;
+  readonly logger: Pick<ApplicationLogger, "debug" | "error">;
 }
 
 export class DeliverPushNotifications {
@@ -283,10 +302,12 @@ export class DeliverPushNotifications {
           throw new PushDeliveryClaimRecoveryConflictError(input.publications.length, recovered);
         }
       });
-    } catch (recoveryError) {
-      this.#dependencies.logger.error(
-        `Failed to reopen push publications after final claim error: dispatchIds=${input.publications.map((item) => item.dispatchId).join(",")}, claimError=${message}, recoveryError=${recoveryError}`,
-      );
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationDeliveryLogEvent.DELIVER_PUSH_NOTIFICATIONS_CLAIM_RECOVERY_FAILED,
+        dispatchCount: input.publications.length,
+        errorType: "claim-recovery",
+      });
     }
   }
 
@@ -299,7 +320,7 @@ export class DeliverPushNotifications {
   ): Promise<void> {
     const finalizations = skipped.flatMap(({ candidate, reason }) => {
       const context = contexts.get(candidate.dispatchId);
-      if (!context) return [];
+      if (context === undefined) return [];
       this.#logSkipped(candidate.data, reason);
       return [{ fence: candidate.claimed.fence, context, reason }];
     });
@@ -324,9 +345,12 @@ export class DeliverPushNotifications {
   }
 
   #logSkipped(data: CreateNotificationData, reason: PushDispatchSkipReason): void {
-    this.#dependencies.logger.debug(
-      `Push dispatch skipped: userId=${data.userId}, type=${data.type}, reason=${reason}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationDeliveryLogEvent.DELIVER_PUSH_NOTIFICATIONS_DISPATCH_SKIPPED,
+      userId: data.userId,
+      type: data.type,
+      reason,
+    });
   }
 
   async #release(
@@ -350,10 +374,12 @@ export class DeliverPushNotifications {
           })),
         ),
       );
-    } catch (releaseError) {
-      this.#dependencies.logger.error(
-        `Failed to release push delivery leases: dispatchIds=${claimed.map((item) => item.fence.dispatchId).join(",")}, originalError=${message}, releaseError=${releaseError}`,
-      );
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationDeliveryLogEvent.DELIVER_PUSH_NOTIFICATIONS_LEASE_RELEASE_FAILED,
+        dispatchCount: claimed.length,
+        errorType: "lease-release",
+      });
     }
   }
 }

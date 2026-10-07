@@ -1,7 +1,3 @@
-import {
-  createRetentionNotificationMessage,
-  type RetentionNotificationCopySelection,
-} from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
@@ -11,6 +7,9 @@ import {
   decideRetentionStage,
   localDateString,
 } from "../../../domain/services/retention/stage-policy.js";
+import { type RetentionNotificationCopySelection } from "../../messages/delivery/notification-copy.types.js";
+import { createRetentionNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationRetentionLogEvent } from "../../observability/retention/notification-retention-log.events.js";
 import { type RetentionConfigPort } from "../../ports/retention/retention-config.port.js";
 import {
   type RetentionRepositoryPort,
@@ -18,10 +17,13 @@ import {
 } from "../../ports/retention/retention.repository.port.js";
 
 interface ProcessRetentionStagesDependencies {
-  readonly repository: RetentionRepositoryPort;
-  readonly config: RetentionConfigPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly logger: ApplicationLogger;
+  readonly repository: Pick<
+    RetentionRepositoryPort,
+    "createDelivery" | "findScheduledStages" | "markStageSkipped" | "recordD7Result"
+  >;
+  readonly config: Pick<RetentionConfigPort, "enabled">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly logger: Pick<ApplicationLogger, "debug" | "error">;
 }
 
 export class ProcessRetentionStages {
@@ -37,11 +39,12 @@ export class ProcessRetentionStages {
     for (const candidate of candidates) {
       try {
         await this.#processCandidate(candidate, new Date());
-      } catch (error) {
-        this.#dependencies.logger.error(
-          `Retention stage failed: stageId=${candidate.stageId}, error=${error}`,
-          error instanceof Error ? error.stack : undefined,
-        );
+      } catch {
+        this.#dependencies.logger.error({
+          event: NotificationRetentionLogEvent.PROCESS_RETENTION_STAGES_STAGE_FAILED,
+          stageId: candidate.stageId,
+          errorType: "stage-processing",
+        });
       }
     }
   }
@@ -128,9 +131,12 @@ export class ProcessRetentionStages {
       });
     });
 
-    this.#dependencies.logger.debug(
-      `Retention stage processed: campaign=${RETENTION_CAMPAIGN_KEY}, stage=${candidate.stage}, userId=${candidate.userId}`,
-    );
+    this.#dependencies.logger.debug({
+      event: NotificationRetentionLogEvent.PROCESS_RETENTION_STAGES_STAGE_PROCESSED,
+      campaignKey: RETENTION_CAMPAIGN_KEY,
+      stage: candidate.stage,
+      userId: candidate.userId,
+    });
   }
 }
 

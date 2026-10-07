@@ -38,23 +38,23 @@ const REPLY_LABEL = { STARTING: "시작해볼게", THANKFUL: "응원 고마워",
 export const SCHEDULER_TEMPLATES = {
   TODO_REMINDER_60MIN: {
     variants: [
-      ({ todoTitle }) => copy("한 시간 뒤에 만나요 ⏰", `‘${todoTitle}’ 준비를 시작해볼까?`),
+      ({ todoTitle }) => copy("1시간 뒤 할 일이 있어 ⏰", `‘${todoTitle}’ 일정을 확인해봐`),
       ({ todoTitle }) => copy("미리 챙겨두면 편해", `‘${todoTitle}’까지 한 시간 남았어`),
       ({ todoTitle }) => copy("다음 할 일을 알려줄게", `한 시간 뒤에는 ‘${todoTitle}’야`),
     ],
   },
   TODO_REMINDER_10MIN: {
     variants: [
-      ({ todoTitle }) => copy("10분 뒤에 시작해요 ⏰", `곧 ‘${todoTitle}’ 할 시간이야`),
+      ({ todoTitle }) => copy("10분 뒤 할 시간이야 ⏰", `‘${todoTitle}’ 알림을 확인해봐`),
       ({ todoTitle }) => copy("잠깐, 다음 일정 확인", `‘${todoTitle}’까지 10분 남았어`),
-      ({ todoTitle }) => copy("준비됐으면 천천히 가자", `10분 뒤 ‘${todoTitle}’를 시작해봐`),
+      ({ todoTitle }) => copy("다음 할 일을 미리 확인해봐", `10분 뒤 ‘${todoTitle}’ 할 시간이야`),
     ],
   },
   TODO_REMINDER_IMMEDIATE: {
     variants: [
-      ({ todoTitle }) => copy("할 시간이에요 🐾", `‘${todoTitle}’부터 시작해볼까?`),
-      ({ todoTitle }) => copy("지금이 약속한 시간이야", `‘${todoTitle}’ 할 시간이 됐어`),
-      ({ todoTitle }) => copy("첫걸음만 가볍게", `‘${todoTitle}’를 시작해보자`),
+      ({ todoTitle }) => copy("할 시간이 됐어 🐾", `‘${todoTitle}’부터 시작해볼까?`),
+      ({ todoTitle }) => copy("설정한 알림 시간이 됐어", `‘${todoTitle}’ 일정을 확인해봐`),
+      ({ todoTitle }) => copy("첫걸음만 가볍게", `‘${todoTitle}’부터 시작해보자`),
     ],
   },
   MORNING_REMINDER: {
@@ -79,15 +79,16 @@ export const SCHEDULER_TEMPLATES = {
     variants: [
       ({ remaining }) =>
         copy(`오늘 남은 할 일 ${remaining}개`, "시간이 괜찮다면 하나만 더 해볼까?"),
-      ({ remaining }) => copy(`${remaining}개는 아직 진행 중`, "해낸 일도 함께 돌아봐"),
+      ({ remaining }) =>
+        copy(`완료 표시 전인 일 ${remaining}개`, "오늘 목록을 보고 다음 일을 정해봐"),
       ({ remaining }) => copy(`남은 계획은 ${remaining}개`, "작은 일부터 마무리해도 좋아 🐾"),
       ({ remaining }) => copy(`오늘 목록, ${remaining}개 남았어`, "할 수 있는 만큼만 해도 괜찮아"),
     ],
   },
   EVENING_NONE: {
     variants: [
-      staticCopy("오늘은 아직 시작 전이야 🌙", "여유가 있다면 작은 일 하나부터 해봐"),
-      staticCopy("지금 시작해도 괜찮아", "가장 쉬운 일을 하나 골라볼까?"),
+      staticCopy("오늘 목록을 돌아볼까? 🌙", "지금 필요한 계획을 확인해봐"),
+      staticCopy("오늘 계획을 다시 살펴봐", "목록을 보고 필요한 계획을 조정해봐"),
       staticCopy("가볍게 하나만 해볼까?", "오늘 할 일 목록을 살펴봐"),
       staticCopy("오늘도 네 속도로 가자", "쉬어야 하는 날엔 쉬어도 괜찮아"),
     ],
@@ -127,23 +128,22 @@ export const SCHEDULER_TEMPLATES = {
   },
   EVENING_STREAK_RISK_NONE: {
     variants: [
-      ({ streak }) => copy(`${streak}일 기록을 이어갈까?`, "할 일 하나를 마치면 오늘도 이어져"),
-      ({ streak }) => copy("오늘 한 걸음이면 충분해", `${streak}일의 기록에 발자국을 더해봐 🐾`),
+      ({ streak }) => copy(`${streak}일 기록을 이어갈까?`, "오늘 목록과 남은 일을 확인해봐"),
+      ({ streak }) => copy(`${streak}일 기록을 돌아볼까? 🐾`, "오늘 목록에서 남은 일을 살펴봐"),
       ({ streak }) => copy(`${streak}일 동안 잘 해왔어`, "가능한 작은 일부터 시작해봐"),
     ],
   },
   LUNCH_NUDGE: {
     variants: [
-      staticCopy("점심 뒤, 가볍게 시작해볼까?", "5분이면 되는 일을 하나 골라봐"),
-      staticCopy("오후 첫 체크를 해보자", "할 일 목록에서 쉬운 것부터 만나봐"),
+      staticCopy("점심 뒤, 계획을 살펴볼까?", "목록에서 지금 할 수 있는 일을 골라봐"),
+      staticCopy("오후에 할 일을 골라볼까?", "할 일 목록에서 하나를 정해봐"),
       staticCopy("잠깐 목록을 살펴볼까? 🐾", "지금 할 수 있는 일 하나면 충분해"),
       staticCopy("오늘의 첫걸음은 작게", "하나를 마치고 흐름을 이어가봐"),
     ],
   },
   STREAK_AT_RISK: {
     variants: [
-      ({ streak }) =>
-        copy(`${streak}일 기록을 이어갈 시간 🔥`, "작은 일 하나를 마치면 오늘도 이어져"),
+      ({ streak }) => copy(`${streak}일 기록을 돌아볼까? 🔥`, "오늘 목록에서 남은 일을 확인해봐"),
       ({ streak }) => copy("오늘도 발자국을 남겨볼까?", `${streak}일 동안 이어온 기록을 확인해봐`),
       ({ streak }) => copy(`${streak}일의 꾸준함이 쌓였어`, "오늘 할 수 있는 일부터 하나 골라봐"),
     ],
@@ -239,7 +239,10 @@ export const SOCIAL_TEMPLATES = {
           "이제 서로의 할 일을 응원할 수 있어",
         ),
       ({ senderName }) =>
-        copy(`${senderName}와 친구가 됐어 🎉`, "서로의 하루에 작은 힘이 되어보자"),
+        copy(
+          `${attachJosa(senderName, "와/과")} 친구가 됐어 🎉`,
+          "서로의 하루에 작은 힘이 되어보자",
+        ),
       ({ senderName }) => copy("친구가 한 명 더 생겼어", `${senderName}에게 가볍게 인사해봐 🐾`),
     ],
   },
@@ -303,7 +306,8 @@ export const SOCIAL_TEMPLATES = {
   },
   FRIEND_COMPLETED: {
     variants: [
-      ({ friendName }) => copy(`${friendName}의 하루가 반짝였어 ✨`, "오늘 할 일을 모두 마쳤대"),
+      ({ friendName }) =>
+        copy(`${friendName}의 오늘 할 일 모두 완료 ✨`, "친구에게 응원 한마디를 보내봐"),
       ({ friendName }) => copy(`${friendName}의 오늘도 모두 완료`, "친구에게 응원 한마디를 건네봐"),
       ({ friendName }) =>
         copy("친구의 완료 소식이 왔어", `${friendName}에게 잘했다고 말해볼까? 🐾`),
@@ -394,15 +398,15 @@ export const SYSTEM_TEMPLATES = {
   WINBACK_DAY3: {
     variants: [
       staticCopy("오늘 계획부터 다시 만나볼까?", "지금 필요한 작은 일 하나를 적어봐"),
-      staticCopy("잠깐 쉬어도 기록은 남아 있어", "할 수 있는 일부터 가볍게 시작해봐"),
+      staticCopy("오늘 계획을 다시 살펴볼까?", "지금 할 수 있는 일을 골라봐"),
       staticCopy("고양이와 한 걸음만 해볼까? 🐾", "오늘의 첫 할 일을 정해보자"),
     ],
   },
   WINBACK_DAY7: {
     variants: [
-      staticCopy("새로운 한 주를 시작해볼까?", "이번 주에 필요한 일을 하나 적어봐"),
+      staticCopy("오늘 필요한 계획을 적어볼까?", "지금 필요한 일을 하나 남겨봐"),
       staticCopy("오늘부터 천천히 다시 해보자", "작은 계획 하나로 돌아와도 괜찮아"),
-      staticCopy("네 계획은 언제든 여기 있어 🐾", "지금 마음에 있는 일을 남겨봐"),
+      staticCopy("새 계획을 적어도 좋아 🐾", "지금 마음에 있는 일을 남겨봐"),
     ],
   },
   WINBACK_DAY14: {
@@ -429,35 +433,35 @@ export const SYSTEM_TEMPLATES = {
   WEEKLY_ACHIEVEMENT: {
     variants: [
       ({ completedCount }) =>
-        copy(`이번 주 ${completedCount}개를 해냈어 🐾`, "차곡차곡 쌓인 완료를 돌아봐"),
+        copy(`지난주 ${completedCount}개를 해냈어 🐾`, "차곡차곡 쌓인 완료를 돌아봐"),
       ({ completedCount }) =>
-        copy(`일주일 동안 ${completedCount}개 완료`, "한 주의 기록을 한눈에 확인해봐"),
+        copy(`지난주 할 일 ${completedCount}개 완료`, "지난주 기록을 한눈에 확인해봐"),
       ({ completedCount }) =>
-        copy(`완료 ${completedCount}개, 잘 해왔어`, "이번 주의 작은 성취를 챙겨봐"),
+        copy(`완료 ${completedCount}개, 잘 해왔어`, "지난주의 작은 성취를 챙겨봐"),
     ],
   },
   WEEKLY_ACHIEVEMENT_PERFECT: {
     variants: [
-      staticCopy("이번 주 100% 완료 🏆", "계획한 일을 모두 해냈어, 수고했어"),
-      staticCopy("한 주 계획을 모두 마쳤어", "이번 주의 꾸준한 기록을 돌아봐"),
-      staticCopy("이번 주도 모두 완료했어", "고양이와 함께 해낸 한 주를 기억해 🐾"),
+      staticCopy("지난주 100% 완료 🏆", "계획한 일을 모두 해냈어, 수고했어"),
+      staticCopy("지난주 계획을 모두 마쳤어", "해낸 일들을 차근차근 돌아봐"),
+      staticCopy("지난주 할 일 모두 완료", "고양이와 함께 지난주를 돌아봐 🐾"),
     ],
   },
   WEEKLY_ACHIEVEMENT_ALMOST: {
     variants: [
-      ({ rate }) => copy(`이번 주 완료율 ${rate}%`, "해낸 일들을 차근차근 돌아봐"),
-      ({ rate }) => copy(`${rate}%만큼 계획을 해냈어`, "이번 주에 쌓은 발자국이야 🐾"),
-      ({ rate }) => copy(`한 주의 기록, ${rate}% 완료`, "잘 해낸 일부터 함께 확인해봐"),
+      ({ rate }) => copy(`지난주 완료율 ${rate}%`, "해낸 일들을 차근차근 돌아봐"),
+      ({ rate }) => copy(`${rate}%만큼 계획을 해냈어`, "지난주에 쌓은 발자국이야 🐾"),
+      ({ rate }) => copy(`지난주 기록, ${rate}% 완료`, "잘 해낸 일부터 함께 확인해봐"),
     ],
   },
   WEEKLY_REPORT: {
-    copy: staticCopy("이번 주 리포트가 준비됐어 📊", "완료 기록과 네 흐름을 함께 살펴봐"),
+    copy: staticCopy("지난주 기록을 돌아볼까? 📊", "리포트에서 지난주 흐름을 살펴봐"),
   },
   MONTHLY_REPORT: {
-    copy: staticCopy("한 달의 기록이 모였어 📈", "이번 달의 변화와 꾸준함을 돌아봐"),
+    copy: staticCopy("지난달 기록을 돌아볼까? 📈", "리포트에서 지난달 흐름을 살펴봐"),
   },
   AI_SUGGESTION: {
-    copy: staticCopy("자주 하는 일을 발견했어 ✨", "반복 할 일로 더 쉽게 챙겨볼까?"),
+    copy: staticCopy("할 일 제안이 도착했어 ✨", "내 계획에 맞는 제안인지 살펴봐"),
   },
   BILLING_ISSUE: {
     copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해 주세요."),
@@ -476,7 +480,9 @@ export const SYSTEM_TEMPLATES = {
   },
   ONBOARDING_DAY5: {
     copy: ({ completedCount }) =>
-      copy(`지금까지 ${completedCount}개를 해냈어`, "작은 완료들이 차곡차곡 쌓이고 있어 🐾"),
+      completedCount === 0
+        ? copy("내 계획을 한번 살펴볼까? 🐾", "할 일 목록에서 다음 일을 정해봐")
+        : copy(`지금까지 ${completedCount}개를 해냈어`, "완료한 일들을 함께 돌아봐 🐾"),
   },
   ONBOARDING_DAY7: {
     copy: ({ completedCount }) =>
@@ -531,7 +537,7 @@ export const RETENTION_TEMPLATES = {
   "D1:d1_has_todo_no_completion": {
     variants: [
       staticCopy("첫 완료를 함께 해볼까? ✅", "가장 쉬운 할 일을 하나 골라봐"),
-      staticCopy("적어둔 일부터 가볍게 시작해", "5분이면 되는 일도 좋은 첫걸음이야"),
+      staticCopy("적어둔 일부터 가볍게 시작해", "목록에서 지금 할 수 있는 일을 골라봐"),
       staticCopy("고양이와 첫 체크를 남겨봐 🐾", "할 수 있는 일 하나부터 해보자"),
     ],
   },
@@ -545,15 +551,15 @@ export const RETENTION_TEMPLATES = {
   "D7:d7_has_progress": {
     variants: [
       staticCopy("첫 주의 기록을 돌아볼까? 🎉", "일주일 동안 해낸 일들이 모였어"),
-      staticCopy("작은 완료가 한 주를 채웠어", "지금까지 쌓인 발자국을 확인해봐 🐾"),
+      staticCopy("첫 주에 남긴 기록을 살펴봐", "해낸 일들을 함께 돌아봐 🐾"),
       staticCopy("일주일의 네 흐름을 살펴봐", "해낸 일을 보며 다음 계획을 정해보자"),
     ],
   },
   "D7:d7_restart": {
     variants: [
-      staticCopy("새로운 한 주, 작은 계획부터", "지금 할 수 있는 일을 하나 적어봐"),
+      staticCopy("오늘 필요한 작은 계획부터", "지금 할 수 있는 일을 하나 적어봐"),
       staticCopy("오늘부터 다시 해도 괜찮아", "필요한 일 하나면 다시 시작할 수 있어"),
-      staticCopy("고양이와 한 주를 열어볼까? 🐾", "부담 없는 첫 할 일을 정해봐"),
+      staticCopy("고양이와 오늘을 계획할까? 🐾", "지금 필요한 할 일을 정해봐"),
     ],
   },
 } satisfies RetentionNotificationCopyCatalog;

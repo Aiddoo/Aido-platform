@@ -8,7 +8,10 @@ import {
 } from "./notification-copy.renderer.js";
 import type { NotificationMessage, NotificationVariantContext } from "./notification-copy.types.js";
 
-const LOCALE_TEMPLATES = { ko, en };
+const LOCALE_TEMPLATES = { ko, en } satisfies Record<
+  SupportedLocale,
+  Pick<typeof ko, "SCHEDULER_TEMPLATES" | "SYSTEM_TEMPLATES" | "SOCIAL_TEMPLATES">
+>;
 
 interface LocalizedVariantInput {
   readonly locale?: SupportedLocale;
@@ -188,8 +191,10 @@ export function createWeeklyAchievementNotificationMessage({
   variantContext,
 }: WeeklyAchievementNotificationInput): NotificationMessage {
   const templates = LOCALE_TEMPLATES[locale].SYSTEM_TEMPLATES;
-  const rate = Math.round((completedCount / totalCount) * 100);
-  if (rate === 100) {
+  // 반올림 100%는 전체 완료의 근거가 아니다. 실제 완료 개수로 perfect를 판단한다.
+  const isComplete = totalCount > 0 && completedCount === totalCount;
+  const rate = Math.min(99, Math.round((completedCount / totalCount) * 100));
+  if (isComplete) {
     return renderLocalizedNotification({
       template: templates.WEEKLY_ACHIEVEMENT_PERFECT,
       variables: undefined,

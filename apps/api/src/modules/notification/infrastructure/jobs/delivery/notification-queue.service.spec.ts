@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 /**
@@ -22,6 +23,20 @@ import { NotificationQueueService } from "./notification-queue.service.js";
 describe("NotificationQueueService — 알림 큐 서비스", () => {
   let service: NotificationQueueService;
   let runtime: Mocked<JobRuntimePort>;
+
+  it("isolates enqueue failure without logging the provider payload or stack", async () => {
+    const privateMessage = "notification14-job-private-token-and-body";
+    const log = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    runtime.enqueue.mockRejectedValue(new Error(privateMessage));
+    service.enqueueFollowNew({
+      followerId: "follower",
+      followingId: "following",
+      followerName: "private fixture name",
+    });
+    await flushPromises();
+    expect(log).toHaveBeenCalledWith({ event: "notification.enqueue_failed" });
+    expect(JSON.stringify(log.mock.calls)).not.toContain(privateMessage);
+  });
 
   beforeEach(async () => {
     const mockRuntime = {

@@ -1,9 +1,4 @@
 import type { WeeklyAchievementWriterPort } from "#api/modules/insights/insights-weekly-achievements.public";
-import type {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createWeeklyAchievementNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
@@ -11,23 +6,28 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { createWeeklyAchievementNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
 import { type WeeklyAchievementStatsReaderPort } from "../../ports/reminders/weekly-achievement-stats-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface WeeklyAchievementStrategyDependencies {
-  readonly reader: WeeklyAchievementStatsReaderPort;
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly weeklyAchievementWriter: WeeklyAchievementWriterPort;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<
+    WeeklyAchievementStatsReaderPort,
+    "findFreeRecipientIds" | "groupCompletedTodosByUser" | "groupTotalTodosByUser"
+  >;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly weeklyAchievementWriter: Pick<WeeklyAchievementWriterPort, "execute">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class WeeklyAchievementStrategy implements ITimezoneStrategy {
+export class WeeklyAchievementStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: WeeklyAchievementStrategyDependencies;
 
   constructor(dependencies: WeeklyAchievementStrategyDependencies) {
@@ -127,9 +127,12 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
 
-    this.#dependencies.logger.log(
-      `Weekly achievement: tz=${tz}, records=${records.length}, sent=${notifications.length}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationRemindersLogEvent.WEEKLY_ACHIEVEMENT_SENT,
+      timezone: tz,
+      recordCount: records.length,
+      count: notifications.length,
+    });
     return { sent: notifications.length };
   }
 }

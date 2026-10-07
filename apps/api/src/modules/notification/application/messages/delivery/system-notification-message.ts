@@ -6,7 +6,10 @@ import * as ko from "./locales/ko.js";
 import { renderLocalizedNotification } from "./notification-copy.renderer.js";
 import type { NotificationMessage, NotificationVariantContext } from "./notification-copy.types.js";
 
-const LOCALE_TEMPLATES = { ko, en };
+const LOCALE_TEMPLATES = { ko, en } satisfies Record<
+  SupportedLocale,
+  Pick<typeof ko, "SYSTEM_TEMPLATES">
+>;
 
 interface LocalizedVariantInput {
   readonly locale?: SupportedLocale;

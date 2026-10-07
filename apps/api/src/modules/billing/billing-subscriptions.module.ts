@@ -5,7 +5,7 @@ import {
   IdentityUserAccessModule,
   USER_MUTATION_LOCK,
 } from "#api/modules/identity/identity-user-access.public";
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.module";
 
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
@@ -24,7 +24,12 @@ import { PrismaSubscriptionRepository } from "./infrastructure/persistence/subsc
 import { SubscriptionController } from "./presentation/controllers/subscriptions/subscription.controller.js";
 
 @Module({
-  imports: [IdentityUserAccessModule, AccessModule, AdminNotificationModule, NotificationModule],
+  imports: [
+    IdentityUserAccessModule,
+    AccessModule,
+    AdminNotificationModule,
+    NotificationDeliveryModule,
+  ],
   controllers: [SubscriptionController],
   providers: [
     handleWebhookEventProvider,

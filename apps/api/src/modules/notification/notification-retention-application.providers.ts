@@ -2,6 +2,7 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
+import { NOTIFICATION_CACHE } from "./application/ports/delivery/notification-cache.port.js";
 import { RETENTION_CONFIG } from "./application/ports/retention/retention-config.port.js";
 import { RETENTION_JOB_ENQUEUER } from "./application/ports/retention/retention-job-enqueuer.port.js";
 import { RETENTION_PUSH_SENDER } from "./application/ports/retention/retention-push-sender.port.js";
@@ -30,18 +31,26 @@ export const activateRetentionExperimentProvider: FactoryProvider<ActivateRetent
 
 export const dispatchRetentionPushProvider: FactoryProvider<DispatchRetentionPush> = {
   provide: DispatchRetentionPush,
-  inject: [RETENTION_REPOSITORY, RETENTION_PUSH_SENDER, RETENTION_CONFIG, UNIT_OF_WORK],
+  inject: [
+    RETENTION_REPOSITORY,
+    RETENTION_PUSH_SENDER,
+    RETENTION_CONFIG,
+    UNIT_OF_WORK,
+    NOTIFICATION_CACHE,
+  ],
   useFactory: (
     repository: ConstructorParameters<typeof DispatchRetentionPush>[0]["repository"],
     sender: ConstructorParameters<typeof DispatchRetentionPush>[0]["sender"],
     config: ConstructorParameters<typeof DispatchRetentionPush>[0]["config"],
     unitOfWork: ConstructorParameters<typeof DispatchRetentionPush>[0]["unitOfWork"],
+    cache: ConstructorParameters<typeof DispatchRetentionPush>[0]["cache"],
   ) =>
     new DispatchRetentionPush({
       repository,
       sender,
       config,
       unitOfWork,
+      cache,
       logger: new Logger(DispatchRetentionPush.name),
     }),
 };

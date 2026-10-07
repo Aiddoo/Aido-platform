@@ -4,6 +4,7 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import type { RegisterPushTokenData } from "../../ports/delivery/notification-data.js";
 import { type PushProvider } from "../../ports/delivery/push-provider.port.js";
@@ -17,11 +18,14 @@ import { type UserNotificationSettingsPort } from "../../ports/delivery/user-not
  * 타임존·로케일 반영(있을 때만) → preference 캐시 무효화.
  */
 interface RegisterPushTokenDependencies {
-  readonly pushTokenRepository: PushTokenRepositoryPort;
-  readonly pushProvider: PushProvider;
-  readonly userSettings: UserNotificationSettingsPort;
-  readonly cache: NotificationCachePort;
-  readonly logger: ApplicationLogger;
+  readonly pushTokenRepository: Pick<PushTokenRepositoryPort, "registerPushToken">;
+  readonly pushProvider: Pick<PushProvider, "validateToken">;
+  readonly userSettings: Pick<
+    UserNotificationSettingsPort,
+    "upsertPushLocale" | "upsertPushTimezone"
+  >;
+  readonly cache: Pick<NotificationCachePort, "invalidatePushTokens" | "invalidateUserPreference">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
 export class RegisterPushToken {
@@ -54,8 +58,9 @@ export class RegisterPushToken {
       await this.#dependencies.cache.invalidateUserPreference(data.userId);
     }
 
-    this.#dependencies.logger.log(
-      `Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationDeliveryLogEvent.REGISTER_PUSH_TOKEN_REGISTERED,
+      userId: data.userId,
+    });
   }
 }

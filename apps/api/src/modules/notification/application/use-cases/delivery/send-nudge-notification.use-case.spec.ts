@@ -2,14 +2,16 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
-import { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 import { SendNudgeNotification } from "./send-nudge-notification.use-case.js";
 
 describe("SendNudgeNotification", () => {
   let useCase: SendNudgeNotification;
-  let notificationSender: Mocked<NotificationPublisher>;
-  let recipientLocaleReader: Mocked<NotificationRecipientLocaleReader>;
+  let notificationSender: Mocked<
+    ConstructorParameters<typeof SendNudgeNotification>[0]["notificationPublisher"]
+  >;
+  let recipientLocaleReader: Mocked<
+    ConstructorParameters<typeof SendNudgeNotification>[0]["recipientLocaleReader"]
+  >;
 
   beforeEach(async () => {
     const sendNudgeNotificationDependencies = mockDeep<
@@ -19,7 +21,7 @@ describe("SendNudgeNotification", () => {
     useCase = unit;
     notificationSender = sendNudgeNotificationDependencies.notificationPublisher;
     recipientLocaleReader = sendNudgeNotificationDependencies.recipientLocaleReader;
-    recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+    recipientLocaleReader.getLocale.mockResolvedValue("ko");
   });
 
   it("할 일 넛지에 할 일 정보와 선택 메시지 메타데이터를 포함한다", async () => {

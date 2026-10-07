@@ -2,8 +2,6 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "../../../domain/services/delivery/transactional-notification-campaign.js";
-import { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
-import { NotificationRecipientLocaleReader } from "../../readers/delivery/notification-recipient-locale.reader.js";
 import { SendCheerNotification } from "./send-cheer-notification.use-case.js";
 
 describe("SendCheerNotification", () => {
@@ -12,11 +10,13 @@ describe("SendCheerNotification", () => {
       ConstructorParameters<typeof SendCheerNotification>[0]
     >({});
     const unit = new SendCheerNotification(sendCheerNotificationDependencies);
-    const notificationSender: Mocked<NotificationPublisher> =
-      sendCheerNotificationDependencies.notificationPublisher;
-    const recipientLocaleReader: Mocked<NotificationRecipientLocaleReader> =
-      sendCheerNotificationDependencies.recipientLocaleReader;
-    recipientLocaleReader.getRecipientLocale.mockResolvedValue("ko");
+    const notificationSender: Mocked<
+      ConstructorParameters<typeof SendCheerNotification>[0]["notificationPublisher"]
+    > = sendCheerNotificationDependencies.notificationPublisher;
+    const recipientLocaleReader: Mocked<
+      ConstructorParameters<typeof SendCheerNotification>[0]["recipientLocaleReader"]
+    > = sendCheerNotificationDependencies.recipientLocaleReader;
+    recipientLocaleReader.getLocale.mockResolvedValue("ko");
 
     await unit.execute({
       cheerId: 2,

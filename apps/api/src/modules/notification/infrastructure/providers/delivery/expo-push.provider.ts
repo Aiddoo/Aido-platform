@@ -13,6 +13,11 @@ import type {
   PushResult,
 } from "../../../application/ports/delivery/push-provider.port.js";
 import { RetryablePushProviderTransportError } from "../../../application/ports/delivery/push-provider.port.js";
+import {
+  NotificationProviderLogEvent,
+  pushTicketErrorCode,
+  pushTransportStatusCode,
+} from "../../observability/delivery/notification-provider-log.events.js";
 import { buildExpoPushMessage, type ExpoPushMessageBuildResult } from "./expo-push-message.js";
 
 const EXPO_MESSAGE_TOO_BIG_ERROR_CODE = "MessageTooBig";
@@ -99,7 +104,12 @@ export class ExpoPushProvider implements PushProvider {
         throw error;
       }
 
-      this.#logger.error(`Failed to send push notification: ${error}`);
+      this.#logger.error({
+        event: NotificationProviderLogEvent.TRANSPORT_FAILED,
+        provider: this.name,
+        mode: "single",
+        statusCode: pushTransportStatusCode(error),
+      });
       throw new ApplicationException(ErrorCode.NOTIFICATION_1003, {
         reason: error instanceof Error ? error.message : "Unknown error",
       });
@@ -187,10 +197,13 @@ export class ExpoPushProvider implements PushProvider {
           },
           { cause: error },
         );
-        this.#logger.error(
-          transportError.message,
-          error instanceof Error ? error.stack : undefined,
-        );
+        this.#logger.error({
+          event: NotificationProviderLogEvent.TRANSPORT_FAILED,
+          provider: this.name,
+          mode: "batch",
+          statusCode: pushTransportStatusCode(error),
+          ...transportError.metadata,
+        });
         throw transportError;
       }
 
@@ -261,7 +274,11 @@ export class ExpoPushProvider implements PushProvider {
     const errorMessage = ticket.message ?? "Unknown error";
     const errorCode = ticket.details?.error ?? "NOTIFICATION_1003";
 
-    this.#logger.warn(`Push notification failed: error=${errorMessage}, code=${errorCode}`);
+    this.#logger.warn({
+      event: NotificationProviderLogEvent.TICKET_FAILED,
+      provider: this.name,
+      errorCode: pushTicketErrorCode(errorCode),
+    });
 
     return {
       token,

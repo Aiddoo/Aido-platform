@@ -13,10 +13,13 @@ import type { PersistedBatchNotificationResult } from "../../types/delivery/push
  * push 발행은 after-commit으로 등록하고 cache·Redis dedup 정리는 호출자에게 분리한다.
  */
 interface PersistBatchNotificationDependencies {
-  readonly notificationRepository: NotificationRepositoryPort;
-  readonly pushDispatchStaging: PushDispatchStagingRepositoryPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly afterCommitPublisher: PushDeliveryAfterCommitPublisher;
+  readonly notificationRepository: Pick<
+    NotificationRepositoryPort,
+    "createManyNotificationsAndReturn"
+  >;
+  readonly pushDispatchStaging: Pick<PushDispatchStagingRepositoryPort, "stageMany">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly afterCommitPublisher: Pick<PushDeliveryAfterCommitPublisher, "register">;
 }
 
 export class PersistBatchNotification {

@@ -1,7 +1,6 @@
 import dayjs from "dayjs";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
@@ -12,6 +11,7 @@ import {
   NOTIFICATION_SCHEDULE,
 } from "../../../domain/services/reminders/notification-schedule.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
 import {
   type ReminderHourChangedJobData,
@@ -42,22 +42,25 @@ import type { WinbackStrategy } from "../../strategies/reminders/winback.strateg
  * - 큐 등록/발송은 TimezoneReminderEnqueuerPort에 위임 (DIP)
  */
 interface TimezoneAwareReminderOrchestratorDependencies {
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly enqueuer: TimezoneReminderEnqueuerPort;
-  readonly morningReminder: MorningReminderStrategy;
-  readonly eveningReminder: EveningReminderStrategy;
-  readonly weeklyReport: WeeklyReportStrategy;
-  readonly monthlyReport: MonthlyReportStrategy;
-  readonly weeklyAchievement: WeeklyAchievementStrategy;
-  readonly winback: WinbackStrategy;
-  readonly nudgeSuggest: NudgeSuggestStrategy;
-  readonly socialDigest: SocialDigestStrategy;
-  readonly lunchNudge: LunchNudgeStrategy;
-  readonly streakAtRisk: StreakAtRiskStrategy;
-  readonly onboarding: OnboardingStrategy;
-  readonly weatherMorning: WeatherMorningStrategy;
-  readonly weatherEvening: WeatherEveningStrategy;
-  readonly logger: ApplicationLogger;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findActiveTimezones">;
+  readonly enqueuer: Pick<
+    TimezoneReminderEnqueuerPort,
+    "enqueueSocialDigest" | "registerSweepScheduler"
+  >;
+  readonly morningReminder: Pick<MorningReminderStrategy, "execute">;
+  readonly eveningReminder: Pick<EveningReminderStrategy, "execute">;
+  readonly weeklyReport: Pick<WeeklyReportStrategy, "execute">;
+  readonly monthlyReport: Pick<MonthlyReportStrategy, "execute">;
+  readonly weeklyAchievement: Pick<WeeklyAchievementStrategy, "execute">;
+  readonly winback: Pick<WinbackStrategy, "execute">;
+  readonly nudgeSuggest: Pick<NudgeSuggestStrategy, "execute">;
+  readonly socialDigest: Pick<SocialDigestStrategy, "execute">;
+  readonly lunchNudge: Pick<LunchNudgeStrategy, "execute">;
+  readonly streakAtRisk: Pick<StreakAtRiskStrategy, "execute">;
+  readonly onboarding: Pick<OnboardingStrategy, "execute">;
+  readonly weatherMorning: Pick<WeatherMorningStrategy, "execute">;
+  readonly weatherEvening: Pick<WeatherEveningStrategy, "execute">;
+  readonly logger: Pick<ApplicationLogger, "error" | "log" | "warn">;
 }
 
 export class TimezoneAwareReminderOrchestrator {
@@ -78,10 +81,11 @@ export class TimezoneAwareReminderOrchestrator {
   async #registerSweepScheduler(): Promise<void> {
     try {
       await this.#dependencies.enqueuer.registerSweepScheduler();
-    } catch (error: unknown) {
-      this.#dependencies.logger.error(
-        `Timezone reminder sweep scheduler registration failed: ${toErrorMessage(error)}`,
-      );
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_REGISTRATION_FAILED,
+        errorType: "scheduler-registration",
+      });
     }
   }
 
@@ -93,7 +97,9 @@ export class TimezoneAwareReminderOrchestrator {
    * 3. 해당 시간에 맞는 Strategy 실행
    */
   async handleMinuteSweep(): Promise<void> {
-    this.#dependencies.logger.log("Starting every-minute sweep reminder job...");
+    this.#dependencies.logger.log({
+      event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_STARTED,
+    });
 
     try {
       const now = new Date();
@@ -112,19 +118,23 @@ export class TimezoneAwareReminderOrchestrator {
       results.forEach((result, index) => {
         if (result.status === "rejected") {
           const tz = tzList[index] ?? "unknown";
-          this.#dependencies.logger.error(
-            `Timezone reminder task failed for tz=${tz}: ${result.reason}`,
-            result.reason instanceof Error ? result.reason.stack : undefined,
-          );
+          this.#dependencies.logger.error({
+            event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_TIMEZONE_FAILED,
+            timezone: tz,
+            errorType: "strategy-execution",
+          });
         }
       });
 
-      this.#dependencies.logger.log("Every-minute sweep reminder job completed");
-    } catch (error) {
-      this.#dependencies.logger.error(
-        `Sweep reminder job failed: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#dependencies.logger.log({
+        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_COMPLETED,
+        timezoneCount: tzList.length,
+      });
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_SWEEP_FAILED,
+        errorType: "sweep-execution",
+      });
     }
   }
 
@@ -145,9 +155,12 @@ export class TimezoneAwareReminderOrchestrator {
         payload.morningReminderHour === localHour &&
         morningMinute === localMinute
       ) {
-        this.#dependencies.logger.log(
-          `Catch-up morning reminder for user=${payload.userId}, time=${localHour}:${String(localMinute).padStart(2, "0")}`,
-        );
+        this.#dependencies.logger.log({
+          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_MORNING,
+          userId: payload.userId,
+          localHour,
+          localMinute,
+        });
         await this.#dependencies.morningReminder.execute(ctx);
       }
 
@@ -157,16 +170,20 @@ export class TimezoneAwareReminderOrchestrator {
         payload.eveningReminderHour === localHour &&
         eveningMinute === localMinute
       ) {
-        this.#dependencies.logger.log(
-          `Catch-up evening reminder for user=${payload.userId}, time=${localHour}:${String(localMinute).padStart(2, "0")}`,
-        );
+        this.#dependencies.logger.log({
+          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_EVENING,
+          userId: payload.userId,
+          localHour,
+          localMinute,
+        });
         await this.#dependencies.eveningReminder.execute(ctx);
       }
-    } catch (error) {
-      this.#dependencies.logger.error(
-        `Catch-up reminder failed for user=${payload.userId}: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_CATCH_UP_FAILED,
+        userId: payload.userId,
+        errorType: "catch-up-execution",
+      });
     }
   }
 
@@ -176,18 +193,20 @@ export class TimezoneAwareReminderOrchestrator {
   async handleSocialDigest(payload: SocialDigestJobData): Promise<void> {
     try {
       if (!payload.recipientUserIds?.length) {
-        this.#dependencies.logger.warn(
-          `Skipping legacy social digest job without recipients: tz=${payload.timezone}`,
-        );
+        this.#dependencies.logger.warn({
+          event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_LEGACY_DIGEST_SKIPPED,
+          timezone: payload.timezone,
+        });
         return;
       }
       const ctx = this.#buildContext(payload.timezone, 0, 0);
       await this.#dependencies.socialDigest.execute(ctx, payload.recipientUserIds);
-    } catch (error) {
-      this.#dependencies.logger.error(
-        `Social digest failed: tz=${payload.timezone}, ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+    } catch {
+      this.#dependencies.logger.error({
+        event: NotificationRemindersLogEvent.TIMEZONE_AWARE_REMINDER_DIGEST_FAILED,
+        timezone: payload.timezone,
+        errorType: "digest-execution",
+      });
     }
   }
 

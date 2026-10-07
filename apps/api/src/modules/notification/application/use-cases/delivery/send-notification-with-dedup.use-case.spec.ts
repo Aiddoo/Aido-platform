@@ -3,10 +3,7 @@ import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
-import { type NotificationDedupLockPort } from "../../ports/delivery/notification-dedup.port.js";
-import { type NotificationHistoryReaderPort } from "../../ports/delivery/notification-history.reader.port.js";
 import { SendNotificationWithDedup } from "./send-notification-with-dedup.use-case.js";
-import { SendNotification } from "./send-notification.use-case.js";
 
 const followData: CreateNotificationData = {
   userId: "user-1",
@@ -26,9 +23,13 @@ const nudgeData: CreateNotificationData = {
 
 describe("SendNotificationWithDedup", () => {
   let useCase: SendNotificationWithDedup;
-  let sendNotification: Mocked<SendNotification>;
-  let repository: Mocked<NotificationHistoryReaderPort>;
-  let dedupLock: Mocked<NotificationDedupLockPort>;
+  let sendNotification: Mocked<
+    ConstructorParameters<typeof SendNotificationWithDedup>[0]["sendNotification"]
+  >;
+  let repository: Mocked<
+    ConstructorParameters<typeof SendNotificationWithDedup>[0]["notificationHistoryReader"]
+  >;
+  let dedupLock: Mocked<ConstructorParameters<typeof SendNotificationWithDedup>[0]["dedupLock"]>;
   const release = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(async () => {

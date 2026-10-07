@@ -11,10 +11,10 @@ const MAX_BATCHES_PER_TRIGGER = 10;
 const PROCESSING_LEASE_MS = 15 * 60_000;
 
 interface RelayPushDeliveryOutboxDependencies {
-  readonly outbox: PushDeliveryOutboxRepositoryPort;
-  readonly lifecycle: PushDeliveryLifecycleRepositoryPort;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly publishOutbox: PublishPushDeliveryOutbox;
+  readonly outbox: Pick<PushDeliveryOutboxRepositoryPort, "recoverStaleProcessing">;
+  readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "recoverStaleProcessing">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly publishOutbox: Pick<PublishPushDeliveryOutbox, "execute">;
 }
 
 export class RelayPushDeliveryOutbox {

@@ -1,13 +1,7 @@
 import type { Mocked } from "vitest";
 import { mock, mockDeep } from "vitest-mock-extended";
 
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-
 import { DuplicateNotificationError } from "../../ports/delivery/notification.repository.port.js";
-import { type UserNotificationSettingsPort } from "../../ports/delivery/user-notification-settings.port.js";
-import { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
-import { FinalizeBatchNotification } from "./finalize-batch-notification.use-case.js";
-import { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
 import { SendFriendCompletionNotifications } from "./send-friend-completion-notifications.use-case.js";
 
 const input = {
@@ -19,11 +13,21 @@ const input = {
 
 describe("SendFriendCompletionNotifications", () => {
   let useCase: SendFriendCompletionNotifications;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
-  let persistBatch: Mocked<PersistBatchNotification>;
-  let finalizeBatch: Mocked<FinalizeBatchNotification>;
-  let unitOfWork: Mocked<UnitOfWorkPort>;
-  let userSettings: Mocked<UserNotificationSettingsPort>;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["notificationHistoryReader"]
+  >;
+  let persistBatch: Mocked<
+    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["persistBatch"]
+  >;
+  let finalizeBatch: Mocked<
+    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["finalizeBatch"]
+  >;
+  let unitOfWork: Mocked<
+    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["unitOfWork"]
+  >;
+  let userSettings: Mocked<
+    ConstructorParameters<typeof SendFriendCompletionNotifications>[0]["userNotificationSettings"]
+  >;
 
   beforeEach(async () => {
     const sendFriendCompletionNotificationsDependencies = mockDeep<

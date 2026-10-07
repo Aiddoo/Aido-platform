@@ -5,21 +5,15 @@ import { mockDeep } from "vitest-mock-extended";
 import {
   type AfterCommitTask,
   type AfterCommitTaskRegistryPort,
-  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { NotificationBuilder } from "#test/builders/index";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
 import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
-import {
-  DuplicateNotificationError,
-  type NotificationRepositoryPort,
-} from "../../ports/delivery/notification.repository.port.js";
+import { DuplicateNotificationError } from "../../ports/delivery/notification.repository.port.js";
 import { type PushDispatchStagingRepositoryPort } from "../../ports/delivery/push-dispatch-staging.repository.port.js";
-import { PushDeliveryAfterCommitPublisher } from "../../services/delivery/push-delivery-after-commit.publisher.js";
 import { SendNotification } from "./send-notification.use-case.js";
 
 const data: CreateNotificationData = {
@@ -39,11 +33,15 @@ function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
 
 describe("SendNotification", () => {
   let useCase: SendNotification;
-  let repository: Mocked<NotificationRepositoryPort>;
-  let staging: Mocked<PushDispatchStagingRepositoryPort>;
-  let cache: Mocked<NotificationCachePort>;
-  let unitOfWork: Mocked<UnitOfWorkPort>;
-  let afterCommitPublisher: Mocked<PushDeliveryAfterCommitPublisher>;
+  let repository: Mocked<
+    ConstructorParameters<typeof SendNotification>[0]["notificationRepository"]
+  >;
+  let staging: Mocked<ConstructorParameters<typeof SendNotification>[0]["pushDispatchStaging"]>;
+  let cache: Mocked<ConstructorParameters<typeof SendNotification>[0]["cache"]>;
+  let unitOfWork: Mocked<ConstructorParameters<typeof SendNotification>[0]["unitOfWork"]>;
+  let afterCommitPublisher: Mocked<
+    ConstructorParameters<typeof SendNotification>[0]["afterCommitPublisher"]
+  >;
   let afterCommitTasks: AfterCommitTask[];
 
   beforeEach(async () => {

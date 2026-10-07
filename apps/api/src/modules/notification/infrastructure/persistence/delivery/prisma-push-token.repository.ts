@@ -17,7 +17,7 @@ import {
   PushTokenNotFoundError,
   type PushTokenRepositoryPort,
 } from "../../../application/ports/delivery/push-token.repository.port.js";
-import type { PushTokenRecord } from "../../../domain/records/delivery/notification.record.js";
+import type { PushTokenRecord } from "../../../application/read-models/delivery/push-token.read-model.js";
 
 @Injectable()
 export class PrismaPushTokenRepository implements PushTokenRepositoryPort {

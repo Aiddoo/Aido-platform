@@ -4,18 +4,19 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createRetentionRepositoryMock, createUnitOfWorkMock } from "#test/mocks/ports/index";
 
-import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 import { ActivateRetentionExperiment } from "./activate-retention-experiment.use-case.js";
 
 describe("ActivateRetentionExperiment — 최초 인증 시점 시작", () => {
-  let repository: Mocked<RetentionRepositoryPort>;
+  let repository: Mocked<
+    ConstructorParameters<typeof ActivateRetentionExperiment>[0]["repository"]
+  >;
 
   async function build(enabled: boolean) {
     const activateRetentionExperimentDependencies = mockDeep<
       ConstructorParameters<typeof ActivateRetentionExperiment>[0]
     >({
       repository: createRetentionRepositoryMock(),
-      config: { enabled, treatmentPercent: 50 },
+      config: { enabled },
       unitOfWork: createUnitOfWorkMock(),
     });
     const unit = new ActivateRetentionExperiment(activateRetentionExperimentDependencies);
@@ -24,13 +25,19 @@ describe("ActivateRetentionExperiment — 최초 인증 시점 시작", () => {
   }
 
   it("assignment가 있을 수 있는 활성 환경에서만 시작을 요청한다", async () => {
-    vi.useFakeTimers().setSystemTime(new Date("2026-07-15T00:00:00Z"));
-    const useCase = await build(true);
+    vi.useFakeTimers({ toFake: ["Date"] }).setSystemTime(new Date("2026-07-15T00:00:00Z"));
+    try {
+      const useCase = await build(true);
 
-    await useCase.execute("new-user");
+      await useCase.execute("new-user");
 
-    expect(repository.activate).toHaveBeenCalledWith("new-user", new Date("2026-07-15T00:00:00Z"));
-    vi.useRealTimers();
+      expect(repository.activate).toHaveBeenCalledWith(
+        "new-user",
+        new Date("2026-07-15T00:00:00Z"),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("kill switch가 꺼지면 기존 인증 경로에서 DB를 조회하지 않는다", async () => {

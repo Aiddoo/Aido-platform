@@ -10,7 +10,10 @@ import type {
   WeatherCopyVariablesByKey,
 } from "./notification-copy.types.js";
 
-const LOCALE_TEMPLATES = { ko, en };
+const LOCALE_TEMPLATES = { ko, en } satisfies Record<
+  SupportedLocale,
+  Pick<typeof ko, "WEATHER_TEMPLATES" | "WEATHER_FALLBACK" | "SKY_LABEL_MAP">
+>;
 
 interface LocalizedWeatherInput {
   readonly locale?: SupportedLocale;

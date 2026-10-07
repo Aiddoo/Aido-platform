@@ -3,24 +3,25 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  createMorningNoTodoNotificationMessage,
-  createMorningReminderNotificationMessage,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
 import { TEST_CUID } from "#test/fixtures/index";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
-import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
+import {
+  createMorningNoTodoNotificationMessage,
+  createMorningReminderNotificationMessage,
+} from "../../messages/delivery/notification-messages.js";
 import { MorningReminderStrategy } from "./morning-reminder.strategy.js";
 
 describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
   let strategy: MorningReminderStrategy;
-  let reader: Mocked<ScheduledReminderReaderPort>;
-  let notificationPublisher: Mocked<NotificationPublisher>;
-  let notificationHistoryReader: Mocked<NotificationHistoryReader>;
+  let reader: Mocked<ConstructorParameters<typeof MorningReminderStrategy>[0]["reader"]>;
+  let notificationPublisher: Mocked<
+    ConstructorParameters<typeof MorningReminderStrategy>[0]["notificationPublisher"]
+  >;
+  let notificationHistoryReader: Mocked<
+    ConstructorParameters<typeof MorningReminderStrategy>[0]["notificationHistoryReader"]
+  >;
 
   const TZ = "Asia/Seoul";
   const VARIANT_CONTEXT = {
@@ -43,7 +44,7 @@ describe("MorningReminderStrategy — 아침 리마인더 전략", () => {
   });
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FAKE_NOW);
     vi.spyOn(Math, "random").mockReturnValue(0);
 

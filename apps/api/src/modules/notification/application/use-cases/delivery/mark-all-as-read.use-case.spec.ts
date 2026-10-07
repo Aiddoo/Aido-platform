@@ -3,14 +3,14 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import { type NotificationRepositoryPort } from "../../ports/delivery/notification.repository.port.js";
 import { MarkAllAsRead } from "./mark-all-as-read.use-case.js";
 
 describe("MarkAllAsRead", () => {
   let useCase: MarkAllAsRead;
-  let notificationRepo: Mocked<NotificationRepositoryPort>;
-  let cache: Mocked<NotificationCachePort>;
+  let notificationRepo: Mocked<
+    ConstructorParameters<typeof MarkAllAsRead>[0]["notificationRepository"]
+  >;
+  let cache: Mocked<ConstructorParameters<typeof MarkAllAsRead>[0]["cache"]>;
 
   const mockUserId = "user-1";
 

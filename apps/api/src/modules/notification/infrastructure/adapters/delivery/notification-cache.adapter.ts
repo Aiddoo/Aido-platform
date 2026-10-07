@@ -1,6 +1,9 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { UserSettingsCacheKey } from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
+import {
+  USER_SETTINGS_CACHE,
+  type UserPreferenceCacheInvalidatorPort,
+} from "#api/modules/identity/identity-settings.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { NotificationCachePort } from "../../../application/ports/delivery/notification-cache.port.js";
@@ -13,7 +16,11 @@ import {
 /** 알림 컨텍스트의 키·TTL을 사용해 공유 캐시를 연결한다. */
 @Injectable()
 export class NotificationCacheAdapter implements NotificationCachePort {
-  constructor(private readonly cacheService: CacheService) {}
+  constructor(
+    private readonly cacheService: CacheService,
+    @Inject(USER_SETTINGS_CACHE)
+    private readonly preferenceCache: UserPreferenceCacheInvalidatorPort,
+  ) {}
 
   wrapUnreadCount(
     userId: string,
@@ -39,6 +46,6 @@ export class NotificationCacheAdapter implements NotificationCachePort {
   }
 
   invalidateUserPreference(userId: string): Promise<void> {
-    return this.cacheService.del(UserSettingsCacheKey.preference(userId));
+    return this.preferenceCache.invalidateUserPreference(userId);
   }
 }

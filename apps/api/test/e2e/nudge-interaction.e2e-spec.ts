@@ -180,7 +180,7 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
         .all(),
     );
     expect(notifications).toHaveLength(1);
-    expect(notifications[0]?.metadata).toMatchObject({ copyRevision: "1.11.0" });
+    expect(notifications[0]?.metadata).toMatchObject({ copyRevision: "1.12.0" });
     expect(notifications[0]?.pushDispatch?.outbox).toMatchObject({
       dispatchId: expect.any(Number),
     });

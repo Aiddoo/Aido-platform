@@ -1,27 +1,9 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-/**
- * TimezoneAwareReminderOrchestrator 통합 테스트
- *
- * @description
- * 오케스트레이터가 각 전략(Strategy)과 함께 올바르게 작동하는지 검증합니다.
- * 매분 스윕(handleMinuteSweep)에서 타임존별 로컬 시간에 따라 적절한 전략이 실행되는지 확인합니다.
- *
- * 통합 테스트의 목적:
- * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - 타임존별 로컬 시간 변환 및 전략 분기가 정상 동작하는지 검증
- * - 전략 실행 조건(요일, 시간, 월 1일 등)이 올바르게 적용되는지 검증
- * - 한 타임존 실패가 다른 타임존에 영향을 주지 않는지 검증
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test scheduler.integration-spec
- * ```
- */
 import { vi } from "vitest";
 
 import { SCHEDULER_PREFERENCE_READER } from "#api/modules/notification/application/ports/reminders/scheduler-preference-reader.port";
 import { TIMEZONE_REMINDER_ENQUEUER } from "#api/modules/notification/application/ports/reminders/timezone-reminder-enqueuer.port";
-import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/domain/services/reminders/notification-schedule";
+import { TimezoneAwareReminderOrchestrator } from "#api/modules/notification/application/services/reminders/timezone-aware-reminder.orchestrator";
 import {
   EveningReminderStrategy,
   LunchNudgeStrategy,
@@ -31,13 +13,13 @@ import {
   OnboardingStrategy,
   SocialDigestStrategy,
   StreakAtRiskStrategy,
-  TimezoneAwareReminderOrchestrator,
   WeatherEveningStrategy,
   WeatherMorningStrategy,
   WeeklyAchievementStrategy,
   WeeklyReportStrategy,
   WinbackStrategy,
-} from "#api/modules/notification/notification-reminders.public";
+} from "#api/modules/notification/application/strategies/reminders/index";
+import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/domain/services/reminders/notification-schedule";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 

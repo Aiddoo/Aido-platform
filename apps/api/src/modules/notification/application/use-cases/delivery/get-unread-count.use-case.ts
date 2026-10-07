@@ -9,8 +9,8 @@ import { type NotificationInboxReaderPort } from "../../ports/delivery/notificat
  * 읽지 않은 알림 수 조회 유스케이스 (2분 캐시).
  */
 interface GetUnreadCountDependencies {
-  readonly notificationInboxReader: NotificationInboxReaderPort;
-  readonly cache: NotificationCachePort;
+  readonly notificationInboxReader: Pick<NotificationInboxReaderPort, "countUnread">;
+  readonly cache: Pick<NotificationCachePort, "wrapUnreadCount">;
 }
 
 export class GetUnreadCount {

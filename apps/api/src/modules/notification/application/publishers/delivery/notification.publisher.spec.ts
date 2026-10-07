@@ -7,14 +7,18 @@ import { NotificationPublisher } from "./notification.publisher.js";
 
 describe("NotificationPublisher", () => {
   it("발행 요청을 목적별 유스케이스에 위임한다", async () => {
-    const send = { execute: vi.fn().mockResolvedValue(null) };
-    const sendWithDeduplication = { execute: vi.fn().mockResolvedValue(null) };
-    const sendBatch = { execute: vi.fn().mockResolvedValue({ count: 1 }) };
-    const publisher = new NotificationPublisher(
-      send as unknown as SendNotification,
-      sendWithDeduplication as unknown as SendNotificationWithDedup,
-      sendBatch as unknown as SendBatchNotification,
-    );
+    const send: Pick<SendNotification, "execute"> = { execute: vi.fn().mockResolvedValue(null) };
+    const sendWithDeduplication: Pick<SendNotificationWithDedup, "execute"> = {
+      execute: vi.fn().mockResolvedValue(null),
+    };
+    const sendBatch: Pick<SendBatchNotification, "execute"> = {
+      execute: vi.fn().mockResolvedValue({ count: 1 }),
+    };
+    const publisher = new NotificationPublisher({
+      sendNotification: send,
+      sendNotificationWithDeduplication: sendWithDeduplication,
+      sendBatchNotification: sendBatch,
+    });
     const input = { userId: "user-1", type: "SYSTEM_NOTICE" as const, title: "제목", body: "본문" };
 
     await publisher.publish(input);

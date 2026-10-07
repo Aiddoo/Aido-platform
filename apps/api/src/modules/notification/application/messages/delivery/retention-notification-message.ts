@@ -11,7 +11,10 @@ import type {
   RetentionTemplateKey,
 } from "./notification-copy.types.js";
 
-const LOCALE_TEMPLATES = { ko, en };
+const LOCALE_TEMPLATES = { ko, en } satisfies Record<
+  SupportedLocale,
+  Pick<typeof ko, "RETENTION_TEMPLATES">
+>;
 
 export type RetentionNotificationInput = RetentionNotificationCopySelection & {
   readonly locale?: SupportedLocale;

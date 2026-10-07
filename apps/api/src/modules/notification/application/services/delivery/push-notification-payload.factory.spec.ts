@@ -3,12 +3,13 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createMarketingPushOptOutTokenMock } from "#test/mocks/ports/notification.mock";
 
-import { type MarketingPushOptOutTokenPort } from "../../ports/delivery/marketing-push-opt-out-token.port.js";
 import { PushNotificationPayloadFactory } from "./push-notification-payload.factory.js";
 
 describe("PushNotificationPayloadFactory", () => {
   let factory: PushNotificationPayloadFactory;
-  let optOutTokens: Mocked<MarketingPushOptOutTokenPort>;
+  let optOutTokens: Mocked<
+    ConstructorParameters<typeof PushNotificationPayloadFactory>[0]["marketingOptOutTokens"]
+  >;
 
   beforeEach(async () => {
     const pushNotificationPayloadFactoryDependencies = mockDeep<

@@ -1,9 +1,3 @@
-import type {
-  CreateNotificationData,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createWinbackNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
@@ -12,25 +6,28 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { resolveWinbackStage } from "../../../domain/services/reminders/winback-stage.js";
+import { createWinbackNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
+import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerDedupPort } from "../../ports/reminders/scheduler-dedup.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface WinbackStrategyDependencies {
-  readonly reader: ReEngagementReaderPort;
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly schedulerDedup: SchedulerDedupPort;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<ReEngagementReaderPort, "findWinbackUsers">;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly schedulerDedup: Pick<SchedulerDedupPort, "hasWinbackStage" | "recordWinbackStages">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class WinbackStrategy implements ITimezoneStrategy {
+export class WinbackStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: WinbackStrategyDependencies;
 
   constructor(dependencies: WinbackStrategyDependencies) {
@@ -71,7 +68,7 @@ export class WinbackStrategy implements ITimezoneStrategy {
     // 단계별 중복 방지: per-user Redis SISMEMBER 병렬 확인
     const checks = await Promise.all(
       filteredUsers.map(async (user) => {
-        if (!user.lastActiveAt) return null;
+        if (user.lastActiveAt === null) return null;
 
         const inactiveDays = diffInDays(today, user.lastActiveAt);
         const stage = resolveWinbackStage(inactiveDays);
@@ -123,7 +120,11 @@ export class WinbackStrategy implements ITimezoneStrategy {
         })),
       );
 
-      this.#dependencies.logger.log(`Winback: tz=${tz}, count=${notifications.length}`);
+      this.#dependencies.logger.log({
+        event: NotificationRemindersLogEvent.WINBACK_SENT,
+        timezone: tz,
+        count: notifications.length,
+      });
     }
     return { sent: notifications.length };
   }

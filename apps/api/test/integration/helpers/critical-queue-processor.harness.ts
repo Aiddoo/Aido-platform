@@ -11,24 +11,27 @@ import type {
   UserPreferenceRecord,
   UserPreferenceRecordWithId,
 } from "#api/modules/identity/identity-settings.public";
-import { USER_PREFERENCE_READER } from "#api/modules/identity/identity-settings.public";
+import {
+  USER_PREFERENCE_READER,
+  USER_SETTINGS_CACHE,
+} from "#api/modules/identity/identity-settings.public";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
 import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
+import { MARKETING_PUSH_OPT_OUT_TOKEN } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "#api/modules/notification/application/ports/delivery/notification-dedup.port";
 import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/application/ports/delivery/notification-history.reader.port";
 import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/application/ports/delivery/notification-inbox.reader.port";
-import {
-  NOTIFICATION_RECIPIENT_LOCALE_READER,
-  type NotificationRecipientLocaleReaderPort,
-} from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
+import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-preference.reader.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "#api/modules/notification/application/ports/delivery/push-delivery-job-enqueuer.port";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-delivery-lifecycle.repository.port";
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-delivery-outbox.repository.port";
 import { PUSH_DISPATCH_STAGING } from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
+import { PUSH_PROVIDER } from "#api/modules/notification/application/ports/delivery/push-provider.port";
+import { PUSH_RATE_LIMITER } from "#api/modules/notification/application/ports/delivery/push-rate-limiter.port";
 import { PUSH_RECEIPT_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-receipt.repository.port";
 import { PUSH_TOKEN_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-token.repository.port";
 import {
@@ -41,10 +44,6 @@ import {
 } from "#api/modules/notification/application/ports/retention/retention-config.port";
 import { RETENTION_PUSH_SENDER } from "#api/modules/notification/application/ports/retention/retention-push-sender.port";
 import { RETENTION_REPOSITORY } from "#api/modules/notification/application/ports/retention/retention.repository.port";
-import { NotificationPublisher } from "#api/modules/notification/application/publishers/delivery/notification.publisher";
-import { NotificationHistoryReader } from "#api/modules/notification/application/readers/delivery/notification-history.reader";
-import { NotificationRecipientLocaleReader } from "#api/modules/notification/application/readers/delivery/notification-recipient-locale.reader";
-import { FindAlreadyNotifiedUsers } from "#api/modules/notification/application/use-cases/delivery/find-already-notified-users.use-case";
 import { GetNotifications } from "#api/modules/notification/application/use-cases/delivery/get-notifications.use-case";
 import { GetUnreadCount } from "#api/modules/notification/application/use-cases/delivery/get-unread-count.use-case";
 import { MarkAllAsRead } from "#api/modules/notification/application/use-cases/delivery/mark-all-as-read.use-case";
@@ -86,7 +85,8 @@ import { InMemoryPushRateLimiter } from "#api/modules/notification/infrastructur
 import {
   deliverPushNotificationsProvider,
   finalizeBatchNotificationProvider,
-  findAlreadyNotifiedUsersProvider,
+  notificationPublisherProvider,
+  notificationHistoryReaderProvider,
   persistBatchNotificationProvider,
   publishPushDeliveryOutboxProvider,
   pushDeliveryAfterCommitPublisherProvider,
@@ -97,11 +97,6 @@ import {
   relayPushDeliveryOutboxProvider,
   sendFriendCompletionNotificationsProvider,
 } from "#api/modules/notification/notification-delivery-application.providers";
-import {
-  MARKETING_PUSH_OPT_OUT_TOKEN,
-  PUSH_PROVIDER,
-  PUSH_RATE_LIMITER,
-} from "#api/modules/notification/notification-delivery.public";
 import {
   dispatchRetentionPushProvider,
   recoverFailedRetentionDeliveryProvider,
@@ -256,30 +251,10 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     { provide: SendBillingIssueNotification, useValue: unexpectedUseCase },
     { provide: SendMilestoneNotification, useValue: unexpectedUseCase },
     { provide: ReconcilePushReceipts, useValue: unexpectedUseCase },
-    {
-      provide: NotificationPublisher,
-      inject: [SendNotification, SendNotificationWithDedup, SendBatchNotification],
-      useFactory: (
-        sendNotification: SendNotification,
-        sendWithDedup: SendNotificationWithDedup,
-        sendBatch: SendBatchNotification,
-      ) => new NotificationPublisher(sendNotification, sendWithDedup, sendBatch),
-    },
-    {
-      provide: NotificationHistoryReader,
-      inject: [FindAlreadyNotifiedUsers],
-      useFactory: (findAlreadyNotified: FindAlreadyNotifiedUsers) =>
-        new NotificationHistoryReader(findAlreadyNotified),
-    },
-    {
-      provide: NotificationRecipientLocaleReader,
-      inject: [NOTIFICATION_RECIPIENT_LOCALE_READER],
-      useFactory: (localeReader: NotificationRecipientLocaleReaderPort) =>
-        new NotificationRecipientLocaleReader(localeReader),
-    },
+    notificationPublisherProvider,
+    notificationHistoryReaderProvider,
     persistBatchNotificationProvider,
     finalizeBatchNotificationProvider,
-    findAlreadyNotifiedUsersProvider,
     {
       provide: GetNotifications,
       useValue: unexpectedUseCase,
@@ -334,6 +309,8 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
         }),
     },
     CacheService,
+    UserSettingsCacheAdapter,
+    { provide: USER_SETTINGS_CACHE, useExisting: UserSettingsCacheAdapter },
     NotificationCacheAdapter,
     { provide: NOTIFICATION_CACHE, useExisting: NotificationCacheAdapter },
     InMemoryDedupAdapter,

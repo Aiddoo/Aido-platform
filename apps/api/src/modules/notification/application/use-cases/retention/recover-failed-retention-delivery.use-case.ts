@@ -3,8 +3,8 @@ import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 
 interface RecoverFailedRetentionDeliveryDependencies {
-  readonly repository: RetentionRepositoryPort;
-  readonly unitOfWork: UnitOfWorkPort;
+  readonly repository: Pick<RetentionRepositoryPort, "reopenUnclaimedDispatch">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
 export class RecoverFailedRetentionDelivery {

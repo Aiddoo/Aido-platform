@@ -3,7 +3,7 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import { EMAIL_CONSTANTS } from "#api/modules/notification/infrastructure/constants/email/email.constants";
-import { EmailModule } from "#api/modules/notification/notification-email.module";
+import { NotificationEmailModule } from "#api/modules/notification/notification-email.module";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AppConfigModule } from "#api/platform/config/config.module";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -28,7 +28,7 @@ describe("TransactionalEmailSender 통합 테스트 — 실제 SDK + HTTP fixtur
     vi.setSystemTime(new Date("2026-10-07T00:00:00Z"));
     vi.stubEnv("RESEND_BASE_URL", "https://api.resend.com");
     givenResponses([]);
-    module = await Test.createTestingModule({ imports: [AppConfigModule, EmailModule] })
+    module = await Test.createTestingModule({ imports: [AppConfigModule, NotificationEmailModule] })
       .overrideProvider(TypedConfigService)
       .useValue(
         mock<TypedConfigService>({
@@ -69,7 +69,7 @@ describe("TransactionalEmailSender 통합 테스트 — 실제 SDK + HTTP fixtur
     return pending;
   }
 
-  it("운영 EmailModule 배선으로 설정·인증·템플릿을 실제 HTTP 요청에 전달한다", async () => {
+  it("운영 NotificationEmailModule 배선으로 설정·인증·템플릿을 실제 HTTP 요청에 전달한다", async () => {
     // Given
     givenResponses([success()]);
 

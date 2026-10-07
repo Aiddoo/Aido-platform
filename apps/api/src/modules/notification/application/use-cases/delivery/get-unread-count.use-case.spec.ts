@@ -3,14 +3,14 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { createNotificationCacheMock } from "#test/mocks/ports/index";
 
-import { type NotificationCachePort } from "../../ports/delivery/notification-cache.port.js";
-import { type NotificationInboxReaderPort } from "../../ports/delivery/notification-inbox.reader.port.js";
 import { GetUnreadCount } from "./get-unread-count.use-case.js";
 
 describe("GetUnreadCount", () => {
   let useCase: GetUnreadCount;
-  let notificationRepo: Mocked<NotificationInboxReaderPort>;
-  let cache: Mocked<NotificationCachePort>;
+  let notificationRepo: Mocked<
+    ConstructorParameters<typeof GetUnreadCount>[0]["notificationInboxReader"]
+  >;
+  let cache: Mocked<ConstructorParameters<typeof GetUnreadCount>[0]["cache"]>;
 
   const mockUserId = "user-1";
 

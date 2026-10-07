@@ -1,9 +1,7 @@
 import { InMemoryPushRateLimiter } from "#api/modules/notification/infrastructure/rate-limiter/delivery/in-memory-push-rate-limiter";
-import type {
-  MarketingPushOptOutTokenPort,
-  PushProvider,
-} from "#api/modules/notification/notification-delivery.public";
 
+import type { MarketingPushOptOutTokenPort } from "../../../application/ports/delivery/marketing-push-opt-out-token.port.js";
+import type { PushProvider } from "../../../application/ports/delivery/push-provider.port.js";
 import type { RetentionDispatchCandidate } from "../../../application/ports/retention/retention.repository.port.js";
 import { ExpoRetentionPushSenderAdapter } from "./expo-retention-push-sender.adapter.js";
 

@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
@@ -10,9 +9,9 @@ describe("RecoverFailedPushDeliveries", () => {
     const recoverFailedPushDeliveriesDependencies = mockDeep<
       ConstructorParameters<typeof RecoverFailedPushDeliveries>[0]
     >({
-      lifecycle: { reopenFailedPublications: vi.fn().mockResolvedValue(1) } as never,
       unitOfWork: createUnitOfWorkMock(),
     });
+    recoverFailedPushDeliveriesDependencies.lifecycle.reopenFailedPublications.mockResolvedValue(1);
     const unit = new RecoverFailedPushDeliveries(recoverFailedPushDeliveriesDependencies);
     const lifecycle = recoverFailedPushDeliveriesDependencies.lifecycle;
     const publications = [

@@ -13,8 +13,8 @@ interface RecoverFailedPushDeliveriesInput {
  * 이미 reopen된 row, terminal dispatch, newer generation, 실행 중 lease는 의도적인 no-op이다.
  */
 interface RecoverFailedPushDeliveriesDependencies {
-  readonly lifecycle: PushDeliveryLifecycleRepositoryPort;
-  readonly unitOfWork: UnitOfWorkPort;
+  readonly lifecycle: Pick<PushDeliveryLifecycleRepositoryPort, "reopenFailedPublications">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
 export class RecoverFailedPushDeliveries {

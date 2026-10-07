@@ -4,9 +4,9 @@ import { type RetentionConfigPort } from "../../ports/retention/retention-config
 import { type RetentionRepositoryPort } from "../../ports/retention/retention.repository.port.js";
 
 interface ActivateRetentionExperimentDependencies {
-  readonly repository: RetentionRepositoryPort;
-  readonly config: RetentionConfigPort;
-  readonly unitOfWork: UnitOfWorkPort;
+  readonly repository: Pick<RetentionRepositoryPort, "activate">;
+  readonly config: Pick<RetentionConfigPort, "enabled">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
 export class ActivateRetentionExperiment {

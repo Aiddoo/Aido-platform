@@ -1,8 +1,10 @@
 import type { AuthEmailSenderPort } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import type {
-  EmailSendResult,
   EmailTag,
   EmailType,
+} from "#api/modules/notification/domain/value-objects/email/email-message.vo";
+import type {
+  EmailSendResult,
   InquiryTemplateData,
 } from "#api/modules/notification/notification-email.public";
 

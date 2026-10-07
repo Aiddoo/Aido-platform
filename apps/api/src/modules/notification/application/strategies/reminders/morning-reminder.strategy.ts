@@ -1,13 +1,5 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 
-import type {
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import {
-  createMorningNoTodoNotificationMessage,
-  createMorningReminderNotificationMessage,
-} from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -15,21 +7,29 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { SCHEDULER_CAMPAIGN_KEY } from "../../../domain/services/reminders/notification-campaign.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import {
+  createMorningNoTodoNotificationMessage,
+  createMorningReminderNotificationMessage,
+} from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
 import { type ScheduledReminderReaderPort } from "../../ports/reminders/scheduled-reminder-reader.port.js";
 import type { ReminderCountUser } from "../../ports/reminders/scheduler-read-models.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface MorningReminderStrategyDependencies {
-  readonly reader: ScheduledReminderReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<
+    ScheduledReminderReaderPort,
+    "findFreeMorningReminderUsers" | "findPremiumMorningReminderUsers"
+  >;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class MorningReminderStrategy implements ITimezoneStrategy {
+export class MorningReminderStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: MorningReminderStrategyDependencies;
 
   constructor(dependencies: MorningReminderStrategyDependencies) {
@@ -111,9 +111,13 @@ export class MorningReminderStrategy implements ITimezoneStrategy {
     });
 
     await this.#dependencies.notificationPublisher.publishBatch(notifications);
-    this.#dependencies.logger.log(
-      `Morning reminder: tz=${tz}, time=${localHour}:${String(localMinute).padStart(2, "0")}, count=${notifications.length}`,
-    );
+    this.#dependencies.logger.log({
+      event: NotificationRemindersLogEvent.MORNING_REMINDER_SENT,
+      timezone: tz,
+      localHour,
+      localMinute,
+      count: notifications.length,
+    });
     return { sent: notifications.length };
   }
 }

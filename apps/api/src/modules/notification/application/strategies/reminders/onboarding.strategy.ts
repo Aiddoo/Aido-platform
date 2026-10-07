@@ -1,9 +1,3 @@
-import type {
-  CreateNotificationData,
-  NotificationHistoryReader,
-  NotificationPublisher,
-} from "#api/modules/notification/notification-delivery.public";
-import { createOnboardingNotificationMessage } from "#api/modules/notification/notification-delivery.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { diffInDays } from "#api/shared/domain/date/utils/compare";
@@ -17,22 +11,28 @@ import {
   ONBOARDING_MAX_DAY,
   requiresCompletedCount,
 } from "../../../domain/services/reminders/onboarding.js";
-import type {
-  ITimezoneStrategy,
-  TimezoneContext,
-} from "../../../domain/services/reminders/timezone-context.js";
+import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
+import { createOnboardingNotificationMessage } from "../../messages/delivery/notification-messages.js";
+import { NotificationRemindersLogEvent } from "../../observability/reminders/notification-reminders-log.events.js";
+import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
 import { type ReEngagementReaderPort } from "../../ports/reminders/re-engagement-reader.port.js";
 import { type SchedulerPreferenceReaderPort } from "../../ports/reminders/scheduler-preference-reader.port.js";
+import type { NotificationPublisher } from "../../publishers/delivery/notification.publisher.js";
+import type { NotificationHistoryReader } from "../../readers/delivery/notification-history.reader.js";
+import type { TimezoneReminderStrategy } from "./timezone-reminder.strategy.js";
 
 interface OnboardingStrategyDependencies {
-  readonly reader: ReEngagementReaderPort;
-  readonly preferenceReader: SchedulerPreferenceReaderPort;
-  readonly notificationPublisher: NotificationPublisher;
-  readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<
+    ReEngagementReaderPort,
+    "countCompletedTodosByUsers" | "findOnboardingCandidates"
+  >;
+  readonly preferenceReader: Pick<SchedulerPreferenceReaderPort, "findUserLocales">;
+  readonly notificationPublisher: Pick<NotificationPublisher, "publishBatch">;
+  readonly notificationHistoryReader: Pick<NotificationHistoryReader, "findAlreadyNotifiedUserIds">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
-export class OnboardingStrategy implements ITimezoneStrategy {
+export class OnboardingStrategy implements TimezoneReminderStrategy {
   readonly #dependencies: OnboardingStrategyDependencies;
 
   constructor(dependencies: OnboardingStrategyDependencies) {
@@ -126,7 +126,11 @@ export class OnboardingStrategy implements ITimezoneStrategy {
 
     if (notifications.length > 0) {
       await this.#dependencies.notificationPublisher.publishBatch(notifications);
-      this.#dependencies.logger.log(`Onboarding: tz=${tz}, count=${notifications.length}`);
+      this.#dependencies.logger.log({
+        event: NotificationRemindersLogEvent.ONBOARDING_SENT,
+        timezone: tz,
+        count: notifications.length,
+      });
     }
 
     return { sent: notifications.length };

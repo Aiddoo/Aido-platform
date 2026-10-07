@@ -392,6 +392,7 @@ namespace public {
     id               Int                         @id(map: "PushDeliveryAttempt_pkey") @default(autoincrement())
     dispatchId       Int
     pushTokenId      Int
+    tokenFingerprint VarChar(64)?
     status           pg.enum(PushDeliveryStatus) @default("PENDING")
     expoTicketId     VarChar(100)?
     errorCode        VarChar(100)?

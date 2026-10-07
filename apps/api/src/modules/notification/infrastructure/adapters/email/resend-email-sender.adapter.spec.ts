@@ -2,10 +2,10 @@ import { Logger } from "@nestjs/common";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { EmailMessage } from "#api/modules/notification/domain/value-objects/email/email-message.vo";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { resendResponseFixture, StubResendHttp } from "#test/mocks/resend-http.stub";
 
+import { createVerificationCodeEmail } from "../../../application/services/email/email-message.factory.js";
 import { EmailLogEvent } from "../../observability/email/email-log.events.js";
 import { ResendEmailSenderAdapter } from "./resend-email-sender.adapter.js";
 
@@ -15,7 +15,7 @@ describe("Resend Email Adapter — 발송 계약과 인증 정보 비노출", ()
   const recipient = "private@example.com";
   const verificationCode = "987654";
   const message = () =>
-    EmailMessage.verificationCode(recipient, { code: verificationCode, expiryMinutes: 15 });
+    createVerificationCodeEmail(recipient, { code: verificationCode, expiryMinutes: 15 });
 
   function adapter(isConfigured: boolean): ResendEmailSenderAdapter {
     return new ResendEmailSenderAdapter(
@@ -96,6 +96,26 @@ describe("Resend Email Adapter — 발송 계약과 인증 정보 비노출", ()
       retryCount: 0,
     });
     expect(JSON.stringify(vi.mocked(Logger.prototype.log).mock.calls)).not.toContain(recipient);
+  });
+
+  it("실제 SDK가 반환한 임의 오류 name은 로그에 노출하지 않는다", async () => {
+    const secret = `${recipient}:${verificationCode}:synthetic-private-key`;
+    http = new StubResendHttp([
+      () =>
+        new Response(JSON.stringify({ name: secret, message: secret }), {
+          status: 422,
+          headers: { "content-type": "application/json" },
+        }),
+    ]);
+    vi.stubGlobal("fetch", http.fetch);
+    const result = await adapter(true).send(message());
+    expect(result).toEqual({ success: false, error: secret, retryCount: 0 });
+    expect(Logger.prototype.error).toHaveBeenCalledWith({
+      event: EmailLogEvent.DELIVERY_FAILED,
+      errorType: "RESEND_ERROR",
+      retryCount: 0,
+    });
+    expect(JSON.stringify(vi.mocked(Logger.prototype.error).mock.calls)).not.toContain(secret);
   });
 
   it("실패 결과는 그대로 반환하고 수신자나 공급자 오류 원문을 로그에 기록하지 않는다", async () => {

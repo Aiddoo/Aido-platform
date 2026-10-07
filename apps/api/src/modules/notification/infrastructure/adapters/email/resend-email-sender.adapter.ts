@@ -104,7 +104,10 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
 
         this.#logger.error({
           event: EmailLogEvent.DELIVERY_FAILED,
-          errorType: result.error.name,
+          errorType:
+            result.error.name === "validation_error" || RETRYABLE_ERROR_TYPES.has(result.error.name)
+              ? result.error.name
+              : "RESEND_ERROR",
           retryCount: attempt,
         });
         return {

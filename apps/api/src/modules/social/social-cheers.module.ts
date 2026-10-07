@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
-import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 
 import { CHEER_LIMIT_READER } from "./application/ports/cheers/cheer-limit-reader.port.js";
@@ -22,7 +22,7 @@ import {
 } from "./social-cheers-application.providers.js";
 
 @Module({
-  imports: [AccessModule, SocialFriendsModule, NotificationModule],
+  imports: [AccessModule, SocialFriendsModule, NotificationDeliveryModule],
   controllers: [CheerController],
   providers: [
     { provide: CHEER_REPOSITORY, useClass: PrismaCheerRepository },
