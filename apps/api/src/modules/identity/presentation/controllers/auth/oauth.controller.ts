@@ -72,7 +72,7 @@ export class OAuthController {
 
   async #resolveOAuthErrorRedirectUri(state: string, defaultRedirectUri: string): Promise<string> {
     try {
-      const redirectUri = await this.getOAuthRedirectUriQuery.execute(state);
+      const redirectUri = await this.getOAuthRedirectUriQuery.execute({ state });
       return redirectUri || defaultRedirectUri;
     } catch {
       return defaultRedirectUri;
@@ -121,7 +121,7 @@ export class OAuthController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<AuthTokensDto> {
-    const result = await this.exchangeOAuthCodeUseCase.execute(dto.code);
+    const result = await this.exchangeOAuthCodeUseCase.execute({ code: dto.code });
     return AuthMapper.toExchangeCodeResponse(result, appVersion);
   }
 
@@ -178,17 +178,17 @@ export class OAuthController {
     @Headers("x-app-version") appVersion?: string,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.loginWithOAuthTokenUseCase.execute(
-      "APPLE",
-      dto.idToken,
-      dto.userName,
-      {
+    const result = await this.loginWithOAuthTokenUseCase.execute({
+      provider: "APPLE",
+      token: dto.idToken,
+      userName: dto.userName,
+      metadata: {
         ...metadata,
         deviceName: dto.deviceName ?? metadata.deviceName,
         deviceType: dto.deviceType ?? metadata.deviceType,
       },
-      dto.nonce,
-    );
+      nonce: dto.nonce,
+    });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -245,16 +245,16 @@ export class OAuthController {
     @Headers("x-app-version") appVersion?: string,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.loginWithOAuthTokenUseCase.execute(
-      "GOOGLE",
-      dto.idToken,
-      dto.userName,
-      {
+    const result = await this.loginWithOAuthTokenUseCase.execute({
+      provider: "GOOGLE",
+      token: dto.idToken,
+      userName: dto.userName,
+      metadata: {
         ...metadata,
         deviceName: dto.deviceName ?? metadata.deviceName,
         deviceType: dto.deviceType ?? metadata.deviceType,
       },
-    );
+    });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -312,13 +312,13 @@ export class OAuthController {
     @Res() res: Response,
   ): Promise<void> {
     const effectiveState = state || randomBytes(16).toString("hex");
-    const authUrl = await this.startOAuthAuthorizationUseCase.execute(
-      "GOOGLE",
-      effectiveState,
-      redirectUri,
+    const authUrl = await this.startOAuthAuthorizationUseCase.execute({
+      provider: "GOOGLE",
+      state: effectiveState,
+      clientRedirectUri: redirectUri,
       mode,
-      userHint,
-    );
+      initiatingUserId: userHint,
+    });
     res.redirect(authUrl);
   }
 
@@ -364,12 +364,12 @@ export class OAuthController {
     try {
       const metadata = extractMetadata(req);
 
-      const result = await this.completeOAuthAuthorizationUseCase.execute(
-        "GOOGLE",
+      const result = await this.completeOAuthAuthorizationUseCase.execute({
+        provider: "GOOGLE",
         code,
         state,
         metadata,
-      );
+      });
 
       const redirectUri = result.redirectUri || defaultRedirectUri;
       const params = new URLSearchParams({
@@ -445,16 +445,16 @@ export class OAuthController {
     @Headers("x-app-version") appVersion?: string,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.loginWithOAuthTokenUseCase.execute(
-      "KAKAO",
-      dto.accessToken,
-      dto.userName,
-      {
+    const result = await this.loginWithOAuthTokenUseCase.execute({
+      provider: "KAKAO",
+      token: dto.accessToken,
+      userName: dto.userName,
+      metadata: {
         ...metadata,
         deviceName: dto.deviceName ?? metadata.deviceName,
         deviceType: dto.deviceType ?? metadata.deviceType,
       },
-    );
+    });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -512,13 +512,13 @@ export class OAuthController {
     @Res() res: Response,
   ): Promise<void> {
     const effectiveState = state || randomBytes(16).toString("hex");
-    const authUrl = await this.startOAuthAuthorizationUseCase.execute(
-      "KAKAO",
-      effectiveState,
-      redirectUri,
+    const authUrl = await this.startOAuthAuthorizationUseCase.execute({
+      provider: "KAKAO",
+      state: effectiveState,
+      clientRedirectUri: redirectUri,
       mode,
-      userHint,
-    );
+      initiatingUserId: userHint,
+    });
     res.redirect(authUrl);
   }
 
@@ -562,12 +562,12 @@ export class OAuthController {
     try {
       const metadata = extractMetadata(req);
 
-      const result = await this.completeOAuthAuthorizationUseCase.execute(
-        "KAKAO",
+      const result = await this.completeOAuthAuthorizationUseCase.execute({
+        provider: "KAKAO",
         code,
         state,
         metadata,
-      );
+      });
 
       const redirectUri = result.redirectUri || defaultRedirectUri;
       const params = new URLSearchParams({
@@ -639,16 +639,16 @@ export class OAuthController {
     @Headers("x-app-version") appVersion?: string,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.loginWithOAuthTokenUseCase.execute(
-      "NAVER",
-      dto.accessToken,
-      dto.userName,
-      {
+    const result = await this.loginWithOAuthTokenUseCase.execute({
+      provider: "NAVER",
+      token: dto.accessToken,
+      userName: dto.userName,
+      metadata: {
         ...metadata,
         deviceName: dto.deviceName ?? metadata.deviceName,
         deviceType: dto.deviceType ?? metadata.deviceType,
       },
-    );
+    });
 
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
@@ -706,13 +706,13 @@ export class OAuthController {
     @Res() res: Response,
   ): Promise<void> {
     const effectiveState = state || randomBytes(16).toString("hex");
-    const authUrl = await this.startOAuthAuthorizationUseCase.execute(
-      "NAVER",
-      effectiveState,
-      redirectUri,
+    const authUrl = await this.startOAuthAuthorizationUseCase.execute({
+      provider: "NAVER",
+      state: effectiveState,
+      clientRedirectUri: redirectUri,
       mode,
-      userHint,
-    );
+      initiatingUserId: userHint,
+    });
     res.redirect(authUrl);
   }
 
@@ -758,12 +758,12 @@ export class OAuthController {
     try {
       const metadata = extractMetadata(req);
 
-      const result = await this.completeOAuthAuthorizationUseCase.execute(
-        "NAVER",
+      const result = await this.completeOAuthAuthorizationUseCase.execute({
+        provider: "NAVER",
         code,
         state,
         metadata,
-      );
+      });
 
       const redirectUri = result.redirectUri || defaultRedirectUri;
       const params = new URLSearchParams({
@@ -842,7 +842,7 @@ provider에 따라 필수 토큰이 다릅니다:
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    return this.linkOAuthAccountUseCase.execute(user.userId, dto, metadata);
+    return this.linkOAuthAccountUseCase.execute({ ...dto, userId: user.userId, metadata });
   }
 
   @Post("link-with-code")
@@ -900,6 +900,10 @@ provider에 따라 필수 토큰이 다릅니다:
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    return this.linkOAuthAccountWithCodeUseCase.execute(user.userId, dto.code, metadata);
+    return this.linkOAuthAccountWithCodeUseCase.execute({
+      userId: user.userId,
+      code: dto.code,
+      metadata,
+    });
   }
 }

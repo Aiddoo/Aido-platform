@@ -1116,6 +1116,58 @@ describe("인증 E2E", () => {
       expect(latestAttempt.failureReason).toBeNull();
     });
 
+    it("검증된 이메일의 자동 연동은 기존·새 세션에서 최신 provider와 기존 프로필을 반환한다", async () => {
+      // Given
+      const email = "oauth-cache-owner@example.com";
+      const googleToken = "oauth-cache-google-token";
+      const appleToken = "oauth-cache-apple-token";
+      ctx.fakeOAuthTokenVerifierService.setCustomProfile("google", googleToken, {
+        id: "oauth-cache-google-owner",
+        email,
+        emailVerified: true,
+        name: "기존 사용자",
+      });
+      ctx.fakeOAuthTokenVerifierService.setCustomProfile("apple", appleToken, {
+        id: "oauth-cache-apple-owner",
+        email,
+        emailVerified: true,
+      });
+      const googleLogin = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/google/callback")
+        .send({ idToken: googleToken })
+        .expect(200);
+      const previousProfile = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${googleLogin.body.data.accessToken}`)
+        .expect(200);
+      expect(previousProfile.body.data.providers).toEqual(["GOOGLE"]);
+
+      // When
+      const appleLogin = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/apple/callback")
+        .send({ idToken: appleToken })
+        .expect(200);
+
+      // Then
+      expect(appleLogin.body.data.userId).toBe(googleLogin.body.data.userId);
+      for (const accessToken of [
+        googleLogin.body.data.accessToken,
+        appleLogin.body.data.accessToken,
+      ]) {
+        const profile = await request(ctx.app.getHttpServer())
+          .get("/v1/auth/me")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .expect(200);
+        expect(profile.body.data.providers).toHaveLength(2);
+        expect(profile.body.data.providers).toEqual(expect.arrayContaining(["GOOGLE", "APPLE"]));
+        expect(profile.body.data).toMatchObject({
+          userId: previousProfile.body.data.userId,
+          name: previousProfile.body.data.name,
+          profileImage: previousProfile.body.data.profileImage,
+        });
+      }
+    });
+
     it("POST /auth/apple/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
       // Given - 유효한 애플 토큰
       const testToken = "valid-apple-token-12345";

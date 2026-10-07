@@ -149,4 +149,40 @@ describe("SetPassword — 소셜 세션을 유지하는 Credential 계정 추가
     expect(fixture.cacheService.userIds.has(fixture.user.id)).toBe(true);
     expect(fixture.securityLogRepository.entries).toEqual([]);
   });
+  it.each(["다른 요청이 비밀번호를 설정한", "다른 요청이 탈퇴한"])(
+    "%s 사용자는 잠금 후 최신 상태로 재검사하고 설정 코드를 소비하지 않는다",
+    async (description) => {
+      // Given
+      const fixture = given();
+      fixture.unitOfWork.run = async <T>(work: () => Promise<T>): Promise<T> => {
+        if (description === "다른 요청이 비밀번호를 설정한") {
+          await fixture.accountRepository.createCredentialAccount(
+            fixture.user.id,
+            "digest:OtherPassword3!",
+          );
+        } else {
+          await fixture.userRepository.softDelete(fixture.user.id, AUTH_CREDENTIAL_TIME);
+        }
+        return work();
+      };
+      // When
+      const pending = fixture.useCase.execute({ userId: fixture.user.id, code, newPassword });
+      // Then
+      await expect(pending).rejects.toMatchObject({
+        errorCode:
+          description === "다른 요청이 비밀번호를 설정한"
+            ? ErrorCode.USER_0614
+            : ErrorCode.USER_0606,
+      });
+      expect(
+        fixture.verificationRepository.verifications.get(fixture.verification.id)?.usedAt,
+      ).toBeNull();
+      expect(fixture.securityLogRepository.entries).toEqual([]);
+      if (description === "다른 요청이 비밀번호를 설정한") {
+        expect(
+          await fixture.accountRepository.findByUserIdAndProvider(fixture.user.id, "CREDENTIAL"),
+        ).toMatchObject({ password: "digest:OtherPassword3!" });
+      }
+    },
+  );
 });

@@ -53,10 +53,13 @@ export interface AuthUserRepositoryPort {
   restore(id: string): Promise<unknown>;
 }
 
-export interface AuthAccountLifecycleRepositoryPort {
-  findByIdForPurge(
+export interface AuthUserLockRepositoryPort {
+  findByIdForUpdate(
     id: string,
   ): Promise<Pick<AuthUserRecord, "id" | "email" | "status" | "deletedAt"> | null>;
+}
+
+export interface AuthAccountLifecycleRepositoryPort extends AuthUserLockRepositoryPort {
   findSoftDeletedForPurge(
     gracePeriodDays: number,
     at?: Date,
@@ -215,7 +218,15 @@ export interface AuthOAuthStateRecord {
   userName: string | null;
   profileImage: string | null;
   accountRestored: boolean | null;
+  expiresAt: Date;
+  exchangedAt: Date | null;
 }
+
+export type ConsumeAuthOAuthStateInput = {
+  id: number;
+  exchangeCode: string;
+  at: Date;
+} & ({ purpose: "login" } | { purpose: "link"; actorUserId: string });
 
 export interface AuthOAuthStateRepositoryPort {
   create(
@@ -232,7 +243,7 @@ export interface AuthOAuthStateRepositoryPort {
     },
   ): Promise<AuthOAuthStateRecord>;
   findByState(state: string): Promise<AuthOAuthStateRecord | null>;
-  findByExchangeCode(exchangeCode: string): Promise<AuthOAuthStateRecord | null>;
+  findByExchangeCode(exchangeCode: string, at?: Date): Promise<AuthOAuthStateRecord | null>;
   saveExchangeData(
     id: number,
     data: {
@@ -253,7 +264,7 @@ export interface AuthOAuthStateRepositoryPort {
       providerAccountId: string;
     },
   ): Promise<unknown>;
-  markAsExchanged(id: number): Promise<unknown>;
+  consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean>;
   generateExchangeCode(): string;
 }
 

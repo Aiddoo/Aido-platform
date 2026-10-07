@@ -1,46 +1,37 @@
 import { randomBytes } from "node:crypto";
 
+import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 
-import type { AuthOAuthStateRecord } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import type {
+  AuthOAuthStateRecord,
+  AuthOAuthStateRepositoryPort,
+  ConsumeAuthOAuthStateInput,
+} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import type { OAuthMode } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
 import type { AccountProvider, OAuthState } from "#api/platform/database/database.types";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { addMinutes } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 
 export type { OAuthMode };
 
-/**
- * OAuth State Repository
- *
- * CSRF/PKCE state 관리 및 일회용 교환 코드 관리를 담당합니다.
- * OAuthState 테이블을 사용하여 두 가지 역할을 수행합니다:
- * 1. OAuth 인증 시작 시: state(CSRF 토큰), codeVerifier(PKCE) 저장
- * 2. OAuth 인증 완료 시: exchangeCode, 암호화된 토큰, 사용자 정보 저장
- */
 @Injectable()
-export class OAuthStateRepository {
+export class OAuthStateRepository implements AuthOAuthStateRepositoryPort {
   constructor(
-    private readonly database: DatabaseService,
+    private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
     private readonly encryptionService: EncryptionService,
   ) {}
 
-  /**
-   * OAuth State 생성 (인증 시작 시)
-   *
-   * @param state - CSRF 방지용 상태 값
-   * @param provider - OAuth 제공자
-   * @param redirectUri - 리다이렉트 URI
-   * @param options.mode - 'login' | 'link' (미지정 시 null = login)
-   * @param options.codeVerifier - PKCE code verifier (선택)
-   * @param options.expiresInMinutes - 만료 시간 (기본 10분)
-   */
+  private get client() {
+    return this.txHost.tx;
+  }
+
   async create(
     state: string,
     provider: AccountProvider,
@@ -56,7 +47,7 @@ export class OAuthStateRepository {
   ): Promise<OAuthState> {
     const expiresAt = addMinutes(options?.expiresInMinutes ?? 10);
 
-    return this.database.db.orm.public.OAuthState.create(
+    return this.client.orm.public.OAuthState.create(
       encodeCreate("OAuthState", {
         state,
         provider,
@@ -72,26 +63,28 @@ export class OAuthStateRepository {
   }
 
   async findByState(state: string): Promise<OAuthState | null> {
-    return this.database.db.orm.public.OAuthState.where((row) =>
+    return this.client.orm.public.OAuthState.where((row) =>
       and(row.state.eq(varchar(state, 64)), row.expiresAt.gt(databaseTimestamp(now()))),
     )
       .first()
       .then((row) => decodeRecord("OAuthState", row));
   }
 
-  // 아직 교환되지 않은 (exchangedAt이 null인) 레코드만 반환
-  async findByExchangeCode(exchangeCode: string): Promise<AuthOAuthStateRecord | null> {
+  async findByExchangeCode(
+    exchangeCode: string,
+    at: Date = now(),
+  ): Promise<AuthOAuthStateRecord | null> {
     const state = decodeRecord(
       "OAuthState",
-      await this.database.db.orm.public.OAuthState.where((row) =>
+      await this.client.orm.public.OAuthState.where((row) =>
         and(
           row.exchangeCode.eq(varchar(exchangeCode, 64)),
           row.exchangedAt.isNull(),
-          row.expiresAt.gt(databaseTimestamp(now())),
+          row.expiresAt.gt(databaseTimestamp(at)),
         ),
       ).first(),
     );
-    if (!state) {
+    if (state === null) {
       return null;
     }
     return {
@@ -102,14 +95,20 @@ export class OAuthStateRepository {
       mode: state.mode,
       initiatingUserId: state.initiatingUserId,
       exchangeCode: state.exchangeCode,
-      accessToken: state.accessToken ? this.encryptionService.decryptSafe(state.accessToken) : null,
-      refreshToken: state.refreshToken
-        ? this.encryptionService.decryptSafe(state.refreshToken)
-        : null,
+      accessToken:
+        state.accessToken !== null && state.accessToken !== ""
+          ? this.encryptionService.decryptSafe(state.accessToken)
+          : null,
+      refreshToken:
+        state.refreshToken !== null && state.refreshToken !== ""
+          ? this.encryptionService.decryptSafe(state.refreshToken)
+          : null,
       userId: state.userId,
       userName: state.userName,
       profileImage: state.profileImage,
       accountRestored: state.accountRestored,
+      expiresAt: state.expiresAt,
+      exchangedAt: state.exchangedAt,
     };
   }
 
@@ -125,7 +124,7 @@ export class OAuthStateRepository {
       accountRestored?: boolean;
     },
   ): Promise<OAuthState> {
-    return this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id))
+    return this.client.orm.public.OAuthState.where((row) => row.id.eq(id))
       .update(
         encodePatch("OAuthState", {
           exchangeCode: data.exchangeCode,
@@ -140,12 +139,6 @@ export class OAuthStateRepository {
       .then((row) => decodeRecord("OAuthState", requireRecord(row)));
   }
 
-  /**
-   * 계정 연결(link) 모드 교환 데이터 저장
-   *
-   * login 모드와 달리 accessToken/refreshToken 대신
-   * providerAccountId를 userId 필드에 임시 저장합니다.
-   */
   async saveLinkingData(
     id: number,
     data: {
@@ -154,7 +147,7 @@ export class OAuthStateRepository {
       providerAccountId: string;
     },
   ): Promise<OAuthState> {
-    return this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id))
+    return this.client.orm.public.OAuthState.where((row) => row.id.eq(id))
       .update(
         encodePatch("OAuthState", {
           exchangeCode: data.exchangeCode,
@@ -165,36 +158,32 @@ export class OAuthStateRepository {
       .then((row) => decodeRecord("OAuthState", requireRecord(row)));
   }
 
-  // 교환 완료 후 보안을 위해 토큰 삭제
-  async markAsExchanged(id: number): Promise<OAuthState> {
-    return this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id))
-      .update(
-        encodePatch("OAuthState", {
-          exchangedAt: now(),
-          // 교환 완료 후 토큰 삭제 (보안)
-          accessToken: null,
-          refreshToken: null,
-        }),
-      )
-      .then((row) => decodeRecord("OAuthState", requireRecord(row)));
-  }
-
-  async delete(id: number): Promise<void> {
-    decodeRecord(
-      "OAuthState",
-      requireRecord(
-        await this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id)).delete(),
+  async consumeExchangeCode(input: ConsumeAuthOAuthStateInput): Promise<boolean> {
+    const count = await this.client.orm.public.OAuthState.where((row) =>
+      and(
+        row.id.eq(input.id),
+        row.exchangeCode.eq(varchar(input.exchangeCode, 64)),
+        row.exchangedAt.isNull(),
+        row.expiresAt.gt(databaseTimestamp(input.at)),
+        ...(input.purpose === "link"
+          ? [
+              row.mode.eq(varchar("link", 10)),
+              or(
+                row.initiatingUserId.isNull(),
+                row.initiatingUserId.eq(varchar("", 36)),
+                row.initiatingUserId.eq(varchar(input.actorUserId, 36)),
+              ),
+            ]
+          : []),
       ),
+    ).updateAndCount(
+      encodePatch("OAuthState", {
+        exchangedAt: input.at,
+        accessToken: null,
+        refreshToken: null,
+      }),
     );
-  }
-
-  async deleteExpired(): Promise<number> {
-    const result = {
-      count: await this.database.db.orm.public.OAuthState.where((row) =>
-        row.expiresAt.lt(databaseTimestamp(now())),
-      ).deleteAndCount(),
-    };
-    return result.count;
+    return count === 1;
   }
 
   generateExchangeCode(): string {

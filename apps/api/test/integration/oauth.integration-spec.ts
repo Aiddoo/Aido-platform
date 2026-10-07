@@ -1,355 +1,123 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-/**
- * OAuth 통합 테스트 (Testcontainers)
- *
- * @description
- * OAuthWorkflow와 관련 Repository들이 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
- * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
- *
- * 통합 테스트의 목적:
- * - OAuthWorkflow → Repository → Prisma → PostgreSQL 전체 스택 검증
- * - 소셜 로그인 플로우의 데이터베이스 연동 검증
- * - 계정 연결/해제 기능 검증
- * - 토큰 교환 플로우 검증
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test oauth.integration-spec
- * ```
- */
+import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { HttpClient } from "@nestjs/http-client";
-import { JwtModule } from "@nestjs/jwt";
-import { Test, type TestingModule } from "@nestjs/testing";
+import type { TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import {
-  AUTH_ACCOUNT_REPOSITORY,
-  AUTH_CACHE,
-  AUTH_LOGIN_ATTEMPT_REPOSITORY,
-  AUTH_OAUTH_STATE_REPOSITORY,
-  AUTH_REGISTRATION_NOTIFIER,
-  AUTH_RUNTIME_CONFIG,
-  AUTH_SECURITY_LOG_REPOSITORY,
-  AUTH_SESSION_REPOSITORY,
-  AUTH_TOKEN_ISSUER,
-  AUTH_USER_REPOSITORY,
-} from "#api/modules/identity/application/ports/auth/index";
-import {
-  OAUTH_IDENTITY_PROVIDER_REGISTRY,
-  type OAuthIdentityProvider,
-  type OAuthIdentityProviderRegistry,
-} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
-import { OAuthWorkflow } from "#api/modules/identity/application/workflows/auth/oauth.workflow";
-import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
-import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import type { OAuthIdentityProvider } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { ExchangeOAuthCode } from "#api/modules/identity/application/use-cases/auth/exchange-oauth-code.use-case";
+import { GetOAuthRedirectUri } from "#api/modules/identity/application/use-cases/auth/get-oauth-redirect-uri.use-case";
+import { LinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/link-oauth-account.use-case";
+import { ListLinkedAccounts } from "#api/modules/identity/application/use-cases/auth/list-linked-accounts.use-case";
+import { LoginWithOAuthToken } from "#api/modules/identity/application/use-cases/auth/login-with-oauth-token.use-case";
+import { UnlinkOAuthAccount } from "#api/modules/identity/application/use-cases/auth/unlink-oauth-account.use-case";
+import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
 import {
   AppleOAuthProvider,
   GoogleOAuthProvider,
   KakaoOAuthProvider,
   NaverOAuthProvider,
 } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
-import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
-import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
-import { LoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/login-attempt.repository";
 import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
-import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
-import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
-import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
-import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
-import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
-import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
-import { CacheService } from "#api/platform/cache/cache.service";
-import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
-import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
-import type { AccountProvider } from "#api/platform/database/database.types";
+import type { DatabaseService } from "#api/platform/database/database.service";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { EncryptionService } from "#api/platform/encryption/index";
-import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { createMockCacheService } from "#test/mocks/cache-test-utils";
-import {
-  createDatabaseTransactionFixture,
-  createTestDatabaseService,
-} from "#test/setup/database-context";
+import { FakeEmailService } from "#test/mocks/fake-email.service";
+import { FakeOAuthTokenVerifierService } from "#test/mocks/fake-oauth-token-verifier.service";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { TestDatabase } from "#test/setup/test-database";
 
-import {
-  issueLoginProvider,
-  oauthWorkflowProvider,
-  restoreAccountProvider,
-  provisionUserProvider,
-  sessionServiceProvider,
-} from "../../src/modules/identity/identity-auth-application.providers.js";
-import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service.js";
-import { TestDatabase } from "../setup/test-database.js";
-import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
-import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
+import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
-describe("OAuth 통합 테스트 (실제 DB)", () => {
+type SocialProvider = Exclude<AccountProvider, "CREDENTIAL">;
+const profileProviders = {
+  APPLE: "apple",
+  GOOGLE: "google",
+  KAKAO: "kakao",
+  NAVER: "naver",
+} satisfies Record<
+  SocialProvider,
+  Parameters<FakeOAuthTokenVerifierService["setCustomProfile"]>[0]
+>;
+const at = new Date("2026-10-07T12:00:00.000Z");
+
+describe("OAuth UseCase 통합 테스트 (실제 PostgreSQL)", () => {
   let module: TestingModule;
-  let oauthService: OAuthWorkflow;
+  let loginWithOAuthToken: LoginWithOAuthToken;
+  let linkOAuthAccount: LinkOAuthAccount;
+  let unlinkOAuthAccount: UnlinkOAuthAccount;
+  let listLinkedAccounts: ListLinkedAccounts;
+  let getOAuthRedirectUri: GetOAuthRedirectUri;
+  let exchangeOAuthCode: ExchangeOAuthCode;
   let fakeTokenVerifier: FakeOAuthTokenVerifierService;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
-  let accountRepository: AccountRepository;
-  let userRepository: UserRepository;
   let oauthStateRepository: OAuthStateRepository;
 
-  // 테스트 스위트 시작 시 한 번만 실행
   beforeAll(async () => {
-    suppressLogger();
-
-    // TestContainer 시작 및 Database 연결
     testDb = new TestDatabase();
     databaseService = createTestDatabaseService(await testDb.start());
-
-    // Fake OAuth Token Verifier 생성
     fakeTokenVerifier = new FakeOAuthTokenVerifierService();
+    const getConfig = () => ({
+      clientId: "test-client-id",
+      clientSecret: "test-client-secret",
+      callbackUrl: "http://localhost:3000/auth/callback",
+      isConfigured: true,
+    });
+    const logger = new Logger("OAuthIdentityProvider");
+    const http = new HttpClient({ retry: false, throwOnHttpError: false });
+    const registry = new Map<AccountProvider, OAuthIdentityProvider>([
+      ["APPLE", new AppleOAuthProvider(fakeTokenVerifier)],
+      ["GOOGLE", new GoogleOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
+      ["KAKAO", new KakaoOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
+      ["NAVER", new NaverOAuthProvider(getConfig, fakeTokenVerifier, logger, http)],
+    ]);
+    module = await createAuthTestModule(databaseService, new FakeEmailService(), {
+      oauthProviderRegistry: registry,
+    });
+    loginWithOAuthToken = module.get(LoginWithOAuthToken);
+    linkOAuthAccount = module.get(LinkOAuthAccount);
+    unlinkOAuthAccount = module.get(UnlinkOAuthAccount);
+    listLinkedAccounts = module.get(ListLinkedAccounts);
+    getOAuthRedirectUri = module.get(GetOAuthRedirectUri);
+    exchangeOAuthCode = module.get(ExchangeOAuthCode);
+    oauthStateRepository = module.get(OAuthStateRepository);
+  });
 
-    // NestJS 테스트 모듈 생성
-    const transaction = createDatabaseTransactionFixture(databaseService.db);
-    module = await Test.createTestingModule({
-      imports: [
-        JwtModule.register({
-          secret: "test-jwt-secret-key-for-integration-tests",
-          signOptions: { expiresIn: "15m" },
-        }),
-      ],
-      providers: [
-        oauthWorkflowProvider,
-        restoreAccountProvider,
-        issueLoginProvider,
-        provisionUserProvider,
-        {
-          provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
-          inject: [TypedConfigService, OAuthTokenVerifierService],
-          useFactory: (
-            config: TypedConfigService,
-            verifier: OAuthTokenVerifierService,
-          ): OAuthIdentityProviderRegistry => {
-            const logger = new Logger("OAuthIdentityProvider");
-            return new Map<AccountProvider, OAuthIdentityProvider>([
-              ["APPLE", new AppleOAuthProvider(verifier)],
-              [
-                "GOOGLE",
-                new GoogleOAuthProvider(
-                  () => config.googleOAuth,
-                  verifier,
-                  logger,
-                  new HttpClient({ retry: false, throwOnHttpError: false }),
-                ),
-              ],
-              [
-                "KAKAO",
-                new KakaoOAuthProvider(
-                  () => config.kakaoOAuth,
-                  verifier,
-                  logger,
-                  new HttpClient({ retry: false, throwOnHttpError: false }),
-                ),
-              ],
-              [
-                "NAVER",
-                new NaverOAuthProvider(
-                  () => config.naverOAuth,
-                  verifier,
-                  logger,
-                  new HttpClient({ retry: false, throwOnHttpError: false }),
-                ),
-              ],
-            ]);
-          },
-        },
-        sessionServiceProvider,
-        TokenService,
-        AccountRepository,
-        UserRepository,
-        SessionRepository,
-        SecurityLogRepository,
-        LoginAttemptRepository,
-        OAuthStateRepository,
-        { provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
-        { provide: AUTH_ACCOUNT_REPOSITORY, useExisting: AccountRepository },
-        { provide: AUTH_SESSION_REPOSITORY, useExisting: SessionRepository },
-        {
-          provide: AUTH_LOGIN_ATTEMPT_REPOSITORY,
-          useExisting: LoginAttemptRepository,
-        },
-        {
-          provide: AUTH_SECURITY_LOG_REPOSITORY,
-          useExisting: SecurityLogRepository,
-        },
-        {
-          provide: AUTH_OAUTH_STATE_REPOSITORY,
-          useExisting: OAuthStateRepository,
-        },
-        { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-        AuthCacheAdapter,
-        { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
-        { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
-        {
-          provide: AUTH_REGISTRATION_NOTIFIER,
-          useExisting: AdminEventNotifier,
-        },
-        UserConsentRepository,
-        UserPreferenceRepository,
-        DefaultTodoCategorySeeder,
-        provisioningSeederTestProvider,
-        retentionEnrollerTestProvider,
-        {
-          provide: DatabaseService,
-          useValue: databaseService,
-        },
-        {
-          provide: TransactionHost,
-          useValue: transaction.txHost,
-        },
-        {
-          provide: UNIT_OF_WORK,
-          useValue: transaction.uow,
-        },
-        {
-          provide: CacheService,
-          useFactory: () => {
-            const cache = createMockCacheService();
-            cache.wrap.mockImplementation((_key, factory) => factory());
-            return cache;
-          },
-        },
-        {
-          provide: CACHE_SERVICE,
-          useValue: {
-            get: async () => undefined,
-            set: async () => {},
-            del: async () => {},
-          },
-        },
-        {
-          provide: OAuthTokenVerifierService,
-          useValue: fakeTokenVerifier,
-        },
-        {
-          provide: TypedConfigService,
-          useValue: {
-            get: (key: string) => {
-              const config: Record<string, string> = {
-                JWT_SECRET: "test-jwt-secret-key-for-integration-tests",
-                JWT_EXPIRES_IN: "15m",
-                JWT_REFRESH_SECRET: "test-jwt-refresh-secret-key-for-integration-tests",
-                JWT_REFRESH_EXPIRES_IN: "7d",
-              };
-              return config[key];
-            },
-            // TokenService가 사용하는 getter들
-            jwtSecret: "test-jwt-secret-key-for-integration-tests",
-            jwtExpiresIn: "15m",
-            jwtRefreshSecret: "test-jwt-refresh-secret-key-for-integration-tests",
-            jwtRefreshExpiresIn: "7d",
-            // 레거시 jwtConfig 객체
-            jwtConfig: {
-              secret: "test-jwt-secret-key-for-integration-tests",
-              expiresIn: "15m",
-              refreshSecret: "test-jwt-refresh-secret-key-for-integration-tests",
-              refreshExpiresIn: "7d",
-            },
-            kakaoOAuth: {
-              clientId: "test-kakao-client-id",
-              clientSecret: "test-kakao-client-secret",
-              callbackUrl: "http://localhost:3000/auth/kakao/callback",
-              isConfigured: true,
-            },
-          },
-        },
-        {
-          provide: EncryptionService,
-          useValue: {
-            encrypt: (value: string) => value,
-            decryptSafe: (value: string) => value,
-          },
-        },
-        {
-          provide: AdminEventNotifier,
-          useValue: {
-            notifyUserRegistered: () => {},
-            notifySubscriptionEvent: () => {},
-          },
-        },
-        {
-          provide: NotificationQueueService,
-          useValue: {
-            enqueueFollowNew: () => {},
-            enqueueFollowMutual: () => {},
-            enqueueNudgeSent: () => {},
-            enqueueCheerSent: () => {},
-            enqueueBillingIssue: () => {},
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: (key: string) => {
-              const config: Record<string, string> = {
-                JWT_SECRET: "test-jwt-secret-key-for-integration-tests",
-                JWT_EXPIRES_IN: "15m",
-                JWT_REFRESH_SECRET: "test-jwt-refresh-secret-key-for-integration-tests",
-                JWT_REFRESH_EXPIRES_IN: "7d",
-              };
-              return config[key];
-            },
-          },
-        },
-      ],
-    }).compile();
-
-    oauthService = module.get<OAuthWorkflow>(OAuthWorkflow);
-    accountRepository = module.get<AccountRepository>(AccountRepository);
-    userRepository = module.get<UserRepository>(UserRepository);
-    oauthStateRepository = module.get<OAuthStateRepository>(OAuthStateRepository);
-  }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
-
-  // 각 테스트 전 데이터 초기화
   beforeEach(async () => {
-    vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(at);
+    suppressLogger();
     await testDb.cleanup();
     fakeTokenVerifier.clear();
   });
 
-  // 테스트 스위트 종료 시 정리
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
   afterAll(async () => {
     try {
-      if (module) {
-        await module.close();
-      }
+      await module?.close();
     } finally {
-      if (testDb) {
-        await testDb.stop();
-      }
+      await testDb?.stop();
     }
   });
 
-  describe("서비스-레포지토리 연결", () => {
-    it("oauthService가 정의되어 있어야 한다", () => {
-      expect(oauthService).toBeDefined();
+  function givenOAuthToken(provider: SocialProvider, providerAccountId: string): string {
+    const token = `link:${provider}:${providerAccountId}`;
+    fakeTokenVerifier.setCustomProfile(profileProviders[provider], token, {
+      id: providerAccountId,
+      emailVerified: true,
     });
-
-    it("레포지토리들이 연결되어 있어야 한다", () => {
-      expect(accountRepository).toBeDefined();
-      expect(userRepository).toBeDefined();
-      expect(oauthStateRepository).toBeDefined();
-    });
-  });
+    return token;
+  }
 
   describe("Google OAuth 모바일 로그인", () => {
     const testGoogleToken = "test-google-id-token-12345";
@@ -365,9 +133,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When: Google 로그인 처리
-      const result = await oauthService.handleGoogleMobileLogin(testGoogleToken, undefined, {
-        ip: "127.0.0.1",
-        userAgent: "TestAgent",
+      const result = await loginWithOAuthToken.execute({
+        provider: "GOOGLE",
+        token: testGoogleToken,
+        metadata: {
+          ip: "127.0.0.1",
+          userAgent: "TestAgent",
+        },
       });
 
       // Then: 로그인 결과 검증
@@ -405,11 +177,17 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Returning User",
       });
 
-      const firstLogin = await oauthService.handleGoogleMobileLogin(testGoogleToken);
+      const firstLogin = await loginWithOAuthToken.execute({
+        provider: "GOOGLE",
+        token: testGoogleToken,
+      });
       const userId = firstLogin.userId;
 
       // When: 두 번째 로그인
-      const secondLogin = await oauthService.handleGoogleMobileLogin(testGoogleToken);
+      const secondLogin = await loginWithOAuthToken.execute({
+        provider: "GOOGLE",
+        token: testGoogleToken,
+      });
 
       // Then: 같은 사용자로 로그인됨
       expect(secondLogin.userId).toBe(userId);
@@ -431,9 +209,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
       // When & Then: 로그인 실패
       await expect(
-        oauthService.handleGoogleMobileLogin("invalid-token", undefined, {
-          ip: "192.168.1.1",
-          userAgent: "FailTestAgent",
+        loginWithOAuthToken.execute({
+          provider: "GOOGLE",
+          token: "invalid-token",
+          metadata: {
+            ip: "192.168.1.1",
+            userAgent: "FailTestAgent",
+          },
         }),
       ).rejects.toThrow();
 
@@ -465,9 +247,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When: Naver 로그인 처리
-      const result = await oauthService.handleNaverMobileLogin(testNaverToken, undefined, {
-        ip: "127.0.0.1",
-        userAgent: "TestAgent",
+      const result = await loginWithOAuthToken.execute({
+        provider: "NAVER",
+        token: testNaverToken,
+        metadata: {
+          ip: "127.0.0.1",
+          userAgent: "TestAgent",
+        },
       });
 
       // Then: 로그인 결과 검증
@@ -498,10 +284,16 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Naver Return",
       });
 
-      const firstLogin = await oauthService.handleNaverMobileLogin(testNaverToken);
+      const firstLogin = await loginWithOAuthToken.execute({
+        provider: "NAVER",
+        token: testNaverToken,
+      });
 
       // When: 두 번째 로그인
-      const secondLogin = await oauthService.handleNaverMobileLogin(testNaverToken);
+      const secondLogin = await loginWithOAuthToken.execute({
+        provider: "NAVER",
+        token: testNaverToken,
+      });
 
       // Then: 같은 사용자
       expect(secondLogin.userId).toBe(firstLogin.userId);
@@ -513,9 +305,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
       // When & Then
       await expect(
-        oauthService.handleNaverMobileLogin("invalid-naver-token", undefined, {
-          ip: "10.0.0.1",
-          userAgent: "NaverFailTest",
+        loginWithOAuthToken.execute({
+          provider: "NAVER",
+          token: "invalid-naver-token",
+          metadata: {
+            ip: "10.0.0.1",
+            userAgent: "NaverFailTest",
+          },
         }),
       ).rejects.toThrow();
 
@@ -544,7 +340,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      const result = await oauthService.handleKakaoMobileLogin(testKakaoToken);
+      const result = await loginWithOAuthToken.execute({
+        provider: "KAKAO",
+        token: testKakaoToken,
+      });
 
       // Then
       expect(result).toBeDefined();
@@ -569,7 +368,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      const result = await oauthService.handleKakaoMobileLogin(testKakaoToken);
+      const result = await loginWithOAuthToken.execute({
+        provider: "KAKAO",
+        token: testKakaoToken,
+      });
 
       // Then: 플레이스홀더 이메일로 생성
       const user = decodeRecord(
@@ -593,10 +395,11 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      const result = await oauthService.handleAppleMobileLogin(
-        testAppleToken,
-        "Apple User", // userName 직접 제공
-      );
+      const result = await loginWithOAuthToken.execute({
+        provider: "APPLE",
+        token: testAppleToken,
+        userName: "Apple User",
+      });
 
       // Then
       expect(result).toBeDefined();
@@ -627,13 +430,17 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Link Test User",
       });
 
-      const result = await oauthService.handleGoogleMobileLogin(googleToken);
+      const result = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: googleToken });
       testUserId = result.userId;
     });
 
     it("기존 사용자에게 추가 소셜 계정을 연결할 수 있어야 한다", async () => {
       // When: Naver 계정 연결
-      const result = await oauthService.linkAccount(testUserId, "NAVER", "naver-link-id");
+      const result = await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "NAVER",
+        accessToken: givenOAuthToken("NAVER", "naver-link-id"),
+      });
 
       // Then
       expect(result.message).toBe("계정이 연결되었습니다.");
@@ -650,10 +457,18 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("이미 연결된 계정을 다시 연결하면 안내 메시지를 반환해야 한다", async () => {
       // Given: 이미 Naver 계정 연결
-      await oauthService.linkAccount(testUserId, "NAVER", "existing-naver-id");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "NAVER",
+        accessToken: givenOAuthToken("NAVER", "existing-naver-id"),
+      });
 
       // When: 같은 계정 다시 연결 시도
-      const result = await oauthService.linkAccount(testUserId, "NAVER", "existing-naver-id");
+      const result = await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "NAVER",
+        accessToken: givenOAuthToken("NAVER", "existing-naver-id"),
+      });
 
       // Then
       expect(result.message).toBe("이미 연결된 계정입니다.");
@@ -661,10 +476,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("여러 계정이 연결된 상태에서 소셜 계정을 해제할 수 있어야 한다", async () => {
       // Given: 두 개의 계정이 연결된 상태
-      await oauthService.linkAccount(testUserId, "NAVER", "unlink-naver-id");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "NAVER",
+        accessToken: givenOAuthToken("NAVER", "unlink-naver-id"),
+      });
 
       // When: Naver 계정 해제
-      const result = await oauthService.unlinkAccount(testUserId, "NAVER");
+      const result = await unlinkOAuthAccount.execute({ userId: testUserId, provider: "NAVER" });
 
       // Then
       expect(result.message).toBe("계정 연결이 해제되었습니다.");
@@ -679,18 +498,29 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("마지막 계정을 해제하려고 하면 에러를 발생시켜야 한다", async () => {
       // When & Then: 마지막 계정 해제 시도
-      await expect(oauthService.unlinkAccount(testUserId, "GOOGLE")).rejects.toThrow(
-        ApplicationException,
-      );
+      await expect(
+        unlinkOAuthAccount.execute({ userId: testUserId, provider: "GOOGLE" }),
+      ).rejects.toMatchObject({
+        errorCode: ErrorCode.USER_0610,
+        message: "마지막 로그인 수단은 해제할 수 없습니다.",
+      });
     });
 
     it("연결된 계정 목록을 조회할 수 있어야 한다", async () => {
       // Given: 추가 계정 연결
-      await oauthService.linkAccount(testUserId, "KAKAO", "kakao-link-id");
-      await oauthService.linkAccount(testUserId, "APPLE", "apple-link-id");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "KAKAO",
+        accessToken: givenOAuthToken("KAKAO", "kakao-link-id"),
+      });
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "APPLE",
+        accessToken: givenOAuthToken("APPLE", "apple-link-id"),
+      });
 
       // When
-      const linkedAccounts = await oauthService.getLinkedAccounts(testUserId);
+      const linkedAccounts = await listLinkedAccounts.execute({ userId: testUserId });
 
       // Then: 항상 4개 항목 반환
       expect(linkedAccounts.accounts).toHaveLength(4);
@@ -717,31 +547,39 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Advanced Link User",
       });
 
-      const result = await oauthService.handleGoogleMobileLogin(googleToken);
+      const result = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: googleToken });
       testUserId = result.userId;
     });
 
     it("해제 후 재연동 (round-trip)이 정상 동작해야 한다", async () => {
       // Given: Kakao 계정 연동
-      await oauthService.linkAccount(testUserId, "KAKAO", "kakao-roundtrip-id");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "KAKAO",
+        accessToken: givenOAuthToken("KAKAO", "kakao-roundtrip-id"),
+      });
 
       // 연결 확인
-      let result = await oauthService.getLinkedAccounts(testUserId);
+      let result = await listLinkedAccounts.execute({ userId: testUserId });
       expect(result.accounts.find((a) => a.provider === "KAKAO")?.linked).toBe(true);
 
       // When: 해제
-      await oauthService.unlinkAccount(testUserId, "KAKAO");
+      await unlinkOAuthAccount.execute({ userId: testUserId, provider: "KAKAO" });
 
       // 해제 확인
-      result = await oauthService.getLinkedAccounts(testUserId);
+      result = await listLinkedAccounts.execute({ userId: testUserId });
       expect(result.accounts.find((a) => a.provider === "KAKAO")?.linked).toBe(false);
 
       // When: 재연동
-      const linkResult = await oauthService.linkAccount(testUserId, "KAKAO", "kakao-roundtrip-id");
+      const linkResult = await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "KAKAO",
+        accessToken: givenOAuthToken("KAKAO", "kakao-roundtrip-id"),
+      });
 
       // Then: 재연동 성공
       expect(linkResult.message).toBe("계정이 연결되었습니다.");
-      result = await oauthService.getLinkedAccounts(testUserId);
+      result = await listLinkedAccounts.execute({ userId: testUserId });
       expect(result.accounts.find((a) => a.provider === "KAKAO")?.linked).toBe(true);
     });
 
@@ -749,21 +587,38 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       // Given: 이미 Google 계정이 있음
 
       // When: 나머지 3개 provider 모두 연동
-      await oauthService.linkAccount(testUserId, "APPLE", "apple-multi-id");
-      await oauthService.linkAccount(testUserId, "KAKAO", "kakao-multi-id");
-      await oauthService.linkAccount(testUserId, "NAVER", "naver-multi-id");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "APPLE",
+        accessToken: givenOAuthToken("APPLE", "apple-multi-id"),
+      });
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "KAKAO",
+        accessToken: givenOAuthToken("KAKAO", "kakao-multi-id"),
+      });
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "NAVER",
+        accessToken: givenOAuthToken("NAVER", "naver-multi-id"),
+      });
 
       // Then: 4개 모두 연동됨
-      const { accounts } = await oauthService.getLinkedAccounts(testUserId);
+      const { accounts } = await listLinkedAccounts.execute({ userId: testUserId });
       expect(accounts).toHaveLength(4);
       expect(accounts.every((a) => a.linked)).toBe(true);
     });
 
     it("linkAccount 시 SecurityLog(OAUTH_LINKED)가 기록되어야 한다", async () => {
       // When: 메타데이터와 함께 계정 연동
-      await oauthService.linkAccount(testUserId, "APPLE", "apple-seclog-id", undefined, {
-        ip: "10.0.0.1",
-        userAgent: "SecurityLogTest/1.0",
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "APPLE",
+        accessToken: givenOAuthToken("APPLE", "apple-seclog-id"),
+        metadata: {
+          ip: "10.0.0.1",
+          userAgent: "SecurityLogTest/1.0",
+        },
       });
 
       // Then: SecurityLog 확인
@@ -784,12 +639,20 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("unlinkAccount 시 SecurityLog(OAUTH_UNLINKED)가 기록되어야 한다", async () => {
       // Given: KAKAO 계정 연동
-      await oauthService.linkAccount(testUserId, "KAKAO", "kakao-seclog-id");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "KAKAO",
+        accessToken: givenOAuthToken("KAKAO", "kakao-seclog-id"),
+      });
 
       // When: 메타데이터와 함께 계정 해제
-      await oauthService.unlinkAccount(testUserId, "KAKAO", {
-        ip: "192.168.1.100",
-        userAgent: "UnlinkTest/2.0",
+      await unlinkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "KAKAO",
+        metadata: {
+          ip: "192.168.1.100",
+          userAgent: "UnlinkTest/2.0",
+        },
       });
 
       // Then: SecurityLog 확인
@@ -809,10 +672,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("getLinkedAccounts가 providerAccountId를 반환해야 한다", async () => {
       // Given: NAVER 계정 연동
-      await oauthService.linkAccount(testUserId, "NAVER", "naver-pid-test");
+      await linkOAuthAccount.execute({
+        userId: testUserId,
+        provider: "NAVER",
+        accessToken: givenOAuthToken("NAVER", "naver-pid-test"),
+      });
 
       // When
-      const { accounts } = await oauthService.getLinkedAccounts(testUserId);
+      const { accounts } = await listLinkedAccounts.execute({ userId: testUserId });
 
       // Then: providerAccountId 포함 확인
       const naverAccount = accounts.find((a) => a.provider === "NAVER");
@@ -832,11 +699,15 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Other Apple User",
       });
 
-      await oauthService.handleAppleMobileLogin(otherToken);
+      await loginWithOAuthToken.execute({ provider: "APPLE", token: otherToken });
 
       // When & Then: 현재 유저가 같은 providerAccountId로 연동 시도
       await expect(
-        oauthService.linkAccount(testUserId, "APPLE", "conflict-apple-id"),
+        linkOAuthAccount.execute({
+          userId: testUserId,
+          provider: "APPLE",
+          accessToken: givenOAuthToken("APPLE", "conflict-apple-id"),
+        }),
       ).rejects.toThrow(ApplicationException);
     });
   });
@@ -850,7 +721,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       await oauthStateRepository.create(state, "NAVER", redirectUri);
 
       // When
-      const resolved = await oauthService.getRedirectUriByState(state);
+      const resolved = await getOAuthRedirectUri.execute({ state: state });
 
       // Then
       expect(resolved).toBe(redirectUri);
@@ -858,7 +729,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("없는 state 조회 시 null을 반환해야 한다", async () => {
       // When
-      const resolved = await oauthService.getRedirectUriByState("missing-redirect-state");
+      const resolved = await getOAuthRedirectUri.execute({ state: "missing-redirect-state" });
 
       // Then
       expect(resolved).toBeNull();
@@ -894,26 +765,28 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Exchange Test",
       });
 
-      const loginResult = await oauthService.handleGoogleMobileLogin(googleToken);
+      const loginResult = await loginWithOAuthToken.execute({
+        provider: "GOOGLE",
+        token: googleToken,
+      });
 
       // OAuthState 생성
       const state = "exchange-state-456";
       const oauthState = await oauthStateRepository.create(state, "GOOGLE", "aido://auth/callback");
 
       // Exchange Code 생성
-      const exchangeCode = await oauthService.createExchangeCode(
-        oauthState.id,
-        loginResult.tokens,
-        {
-          userId: loginResult.userId,
-          userName: loginResult.name ?? undefined,
-        },
-      );
+      const exchangeCode = oauthStateRepository.generateExchangeCode();
+      await oauthStateRepository.saveExchangeData(oauthState.id, {
+        exchangeCode,
+        ...loginResult.tokens,
+        userId: loginResult.userId,
+        userName: loginResult.name ?? undefined,
+      });
 
       expect(exchangeCode).toBeDefined();
 
       // When: 교환 코드로 토큰 교환
-      const exchangeResult = await oauthService.exchangeCodeForTokens(exchangeCode);
+      const exchangeResult = await exchangeOAuthCode.execute({ code: exchangeCode });
 
       // Then
       expect(exchangeResult.accessToken).toBe(loginResult.tokens.accessToken);
@@ -923,7 +796,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
     it("유효하지 않은 교환 코드는 거부해야 한다", async () => {
       // When & Then
-      await expect(oauthService.exchangeCodeForTokens("invalid-exchange-code")).rejects.toThrow(
+      await expect(exchangeOAuthCode.execute({ code: "invalid-exchange-code" })).rejects.toThrow(
         ApplicationException,
       );
     });
@@ -938,7 +811,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Reuse Test",
       });
 
-      const loginResult = await oauthService.handleGoogleMobileLogin(googleToken);
+      const loginResult = await loginWithOAuthToken.execute({
+        provider: "GOOGLE",
+        token: googleToken,
+      });
 
       const oauthState = await oauthStateRepository.create(
         "reuse-state",
@@ -946,17 +822,18 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         "aido://auth/callback",
       );
 
-      const exchangeCode = await oauthService.createExchangeCode(
-        oauthState.id,
-        loginResult.tokens,
-        { userId: loginResult.userId },
-      );
+      const exchangeCode = oauthStateRepository.generateExchangeCode();
+      await oauthStateRepository.saveExchangeData(oauthState.id, {
+        exchangeCode,
+        ...loginResult.tokens,
+        userId: loginResult.userId,
+      });
 
       // 첫 번째 교환 (성공)
-      await oauthService.exchangeCodeForTokens(exchangeCode);
+      await exchangeOAuthCode.execute({ code: exchangeCode });
 
       // When & Then: 두 번째 교환 (실패)
-      await expect(oauthService.exchangeCodeForTokens(exchangeCode)).rejects.toThrow(
+      await expect(exchangeOAuthCode.execute({ code: exchangeCode })).rejects.toThrow(
         ApplicationException,
       );
     });
@@ -974,9 +851,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      const result = await oauthService.handleGoogleMobileLogin(token, undefined, {
-        ip: "203.0.113.1",
-        userAgent: "SecurityTestAgent/1.0",
+      const result = await loginWithOAuthToken.execute({
+        provider: "GOOGLE",
+        token: token,
+        metadata: {
+          ip: "203.0.113.1",
+          userAgent: "SecurityTestAgent/1.0",
+        },
       });
 
       // Then: 보안 로그 확인
@@ -1005,7 +886,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      const result = await oauthService.handleGoogleMobileLogin(token);
+      const result = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: token });
 
       // Then: 세션 확인
       const session = decodeRecord(
@@ -1034,7 +915,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Base User",
       });
 
-      const result = await oauthService.handleGoogleMobileLogin(googleToken);
+      const result = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: googleToken });
       testUserId = result.userId;
     });
 
@@ -1049,9 +930,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When: 토큰 검증 후 계정 연동
-      const result = await oauthService.linkSocialAccountWithToken(testUserId, {
-        provider: "KAKAO",
-        accessToken: kakaoToken,
+      const result = await linkOAuthAccount.execute({
+        userId: testUserId,
+        ...{
+          provider: "KAKAO",
+          accessToken: kakaoToken,
+        },
       });
 
       // Then
@@ -1076,9 +960,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When
-      const result = await oauthService.linkSocialAccountWithToken(testUserId, {
-        provider: "NAVER",
-        accessToken: naverToken,
+      const result = await linkOAuthAccount.execute({
+        userId: testUserId,
+        ...{
+          provider: "NAVER",
+          accessToken: naverToken,
+        },
       });
 
       // Then
@@ -1098,7 +985,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Existing Apple User",
         });
 
-        const appleResult = await oauthService.handleAppleMobileLogin(appleToken);
+        const appleResult = await loginWithOAuthToken.execute({
+          provider: "APPLE",
+          token: appleToken,
+        });
         const existingUserId = appleResult.userId;
 
         // When: 같은 이메일로 Google 로그인
@@ -1110,9 +1000,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Google User Same Email",
         });
 
-        const googleResult = await oauthService.handleGoogleMobileLogin(googleToken, undefined, {
-          ip: "127.0.0.1",
-          userAgent: "TestAgent",
+        const googleResult = await loginWithOAuthToken.execute({
+          provider: "GOOGLE",
+          token: googleToken,
+          metadata: {
+            ip: "127.0.0.1",
+            userAgent: "TestAgent",
+          },
         });
 
         // Then: 기존 사용자로 자동 연동됨
@@ -1152,7 +1046,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "First Google User",
         });
 
-        const firstResult = await oauthService.handleGoogleMobileLogin(firstGoogleToken);
+        const firstResult = await loginWithOAuthToken.execute({
+          provider: "GOOGLE",
+          token: firstGoogleToken,
+        });
 
         // When: 다른 Google 계정으로 같은 이메일 로그인 시도 (실제로는 같은 사용자)
         // 실제 시나리오에서는 Apple로 연동 테스트
@@ -1164,9 +1061,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Apple Same Email",
         });
 
-        const appleResult = await oauthService.handleAppleMobileLogin(appleToken, undefined, {
-          ip: "10.0.0.1",
-          userAgent: "AppleTest",
+        const appleResult = await loginWithOAuthToken.execute({
+          provider: "APPLE",
+          token: appleToken,
+          metadata: {
+            ip: "10.0.0.1",
+            userAgent: "AppleTest",
+          },
         });
 
         // Then: 토큰이 정상 발급됨
@@ -1197,7 +1098,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Existing Google User",
         });
 
-        const googleResult = await oauthService.handleGoogleMobileLogin(googleToken);
+        const googleResult = await loginWithOAuthToken.execute({
+          provider: "GOOGLE",
+          token: googleToken,
+        });
         const existingUserId = googleResult.userId;
 
         // When: 같은 이메일로 Apple 로그인
@@ -1209,9 +1113,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Apple User Same Email",
         });
 
-        const appleResult = await oauthService.handleAppleMobileLogin(appleToken, "Apple User", {
-          ip: "192.168.1.1",
-          userAgent: "AppleTestAgent",
+        const appleResult = await loginWithOAuthToken.execute({
+          provider: "APPLE",
+          token: appleToken,
+          userName: "Apple User",
+          metadata: {
+            ip: "192.168.1.1",
+            userAgent: "AppleTestAgent",
+          },
         });
 
         // Then: 기존 사용자로 자동 연동됨
@@ -1243,7 +1152,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Google User",
         });
 
-        const googleResult = await oauthService.handleGoogleMobileLogin(googleToken);
+        const googleResult = await loginWithOAuthToken.execute({
+          provider: "GOOGLE",
+          token: googleToken,
+        });
         const existingUserId = googleResult.userId;
 
         // When: 같은 이메일로 Kakao 로그인 시도
@@ -1257,9 +1169,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
         // Then: 에러 발생 (강제 연동 필요)
         await expect(
-          oauthService.handleKakaoMobileLogin(kakaoToken, undefined, {
-            ip: "172.16.0.1",
-            userAgent: "KakaoTestAgent",
+          loginWithOAuthToken.execute({
+            provider: "KAKAO",
+            token: kakaoToken,
+            metadata: {
+              ip: "172.16.0.1",
+              userAgent: "KakaoTestAgent",
+            },
           }),
         ).rejects.toThrow(ApplicationException);
 
@@ -1299,7 +1215,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Apple User",
         });
 
-        const appleResult = await oauthService.handleAppleMobileLogin(appleToken);
+        const appleResult = await loginWithOAuthToken.execute({
+          provider: "APPLE",
+          token: appleToken,
+        });
         const existingUserId = appleResult.userId;
 
         // When: 같은 이메일로 Naver 로그인 시도
@@ -1313,9 +1232,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
         // Then: 에러 발생 (강제 연동 필요)
         await expect(
-          oauthService.handleNaverMobileLogin(naverToken, undefined, {
-            ip: "172.16.0.2",
-            userAgent: "NaverTestAgent",
+          loginWithOAuthToken.execute({
+            provider: "NAVER",
+            token: naverToken,
+            metadata: {
+              ip: "172.16.0.2",
+              userAgent: "NaverTestAgent",
+            },
           }),
         ).rejects.toThrow(ApplicationException);
 
@@ -1345,7 +1268,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Locked User",
         });
 
-        const result = await oauthService.handleGoogleMobileLogin(googleToken);
+        const result = await loginWithOAuthToken.execute({
+          provider: "GOOGLE",
+          token: googleToken,
+        });
 
         // 사용자 상태를 LOCKED로 변경
         decodeRecord(
@@ -1367,9 +1293,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         });
 
         // Then: 에러 발생 (잠긴 사용자는 로그인 불가 — 도메인 상태 정책)
-        await expect(oauthService.handleAppleMobileLogin(appleToken)).rejects.toThrow(
-          DomainException,
-        );
+        await expect(
+          loginWithOAuthToken.execute({ provider: "APPLE", token: appleToken }),
+        ).rejects.toThrow(DomainException);
       });
 
       it("정지된 사용자에게 자동 연동을 시도하면 에러가 발생해야 한다", async () => {
@@ -1382,7 +1308,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           name: "Suspended User",
         });
 
-        const result = await oauthService.handleAppleMobileLogin(appleToken);
+        const result = await loginWithOAuthToken.execute({ provider: "APPLE", token: appleToken });
 
         // 사용자 상태를 SUSPENDED로 변경
         decodeRecord(
@@ -1404,9 +1330,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         });
 
         // Then: 에러 발생 (정지된 사용자는 로그인 불가 — 도메인 상태 정책)
-        await expect(oauthService.handleGoogleMobileLogin(googleToken)).rejects.toThrow(
-          DomainException,
-        );
+        await expect(
+          loginWithOAuthToken.execute({ provider: "GOOGLE", token: googleToken }),
+        ).rejects.toThrow(DomainException);
       });
     });
   });
@@ -1423,7 +1349,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // 먼저 정상 로그인
-      const result = await oauthService.handleGoogleMobileLogin(token);
+      const result = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: token });
 
       // 사용자 상태를 LOCKED로 변경
       decodeRecord(
@@ -1436,7 +1362,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       );
 
       // When & Then: 다시 로그인 시도 시 실패 (도메인 상태 정책)
-      await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(DomainException);
+      await expect(
+        loginWithOAuthToken.execute({ provider: "GOOGLE", token: token }),
+      ).rejects.toThrow(DomainException);
     });
 
     it("정지된 사용자의 로그인을 거부해야 한다", async () => {
@@ -1449,7 +1377,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Suspended User",
       });
 
-      const result = await oauthService.handleGoogleMobileLogin(token);
+      const result = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: token });
 
       // 사용자 상태를 SUSPENDED로 변경
       decodeRecord(
@@ -1462,7 +1390,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       );
 
       // When & Then (도메인 상태 정책)
-      await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(DomainException);
+      await expect(
+        loginWithOAuthToken.execute({ provider: "GOOGLE", token: token }),
+      ).rejects.toThrow(DomainException);
     });
 
     it("이메일 미인증 사용자도 소셜 로그인이 허용되어야 한다", async () => {
@@ -1476,7 +1406,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // When: 첫 로그인
-      const firstResult = await oauthService.handleKakaoMobileLogin(token);
+      const firstResult = await loginWithOAuthToken.execute({ provider: "KAKAO", token: token });
       expect(firstResult.userId).toBeDefined();
 
       // 상태 확인
@@ -1489,7 +1419,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       expect(user?.status).toBe("ACTIVE");
 
       // 두 번째 로그인도 허용되어야 함
-      const secondResult = await oauthService.handleKakaoMobileLogin(token);
+      const secondResult = await loginWithOAuthToken.execute({ provider: "KAKAO", token: token });
       expect(secondResult.userId).toBe(firstResult.userId);
     });
   });
@@ -1497,17 +1427,16 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
   describe("기본 카테고리 생성 (실제 DB)", () => {
     const categoryTestCases = [
       {
-        provider: "Apple" as const,
+        provider: "APPLE",
         token: "apple-category-test-token",
         profile: {
           id: "apple-category-user",
           email: "apple-category@example.com",
           emailVerified: true,
         },
-        login: (svc: OAuthWorkflow, token: string) => svc.handleAppleMobileLogin(token),
       },
       {
-        provider: "Google" as const,
+        provider: "GOOGLE",
         token: "google-category-test-token",
         profile: {
           id: "google-category-user",
@@ -1515,10 +1444,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           emailVerified: true,
           name: "Google Category User",
         },
-        login: (svc: OAuthWorkflow, token: string) => svc.handleGoogleMobileLogin(token),
       },
       {
-        provider: "Kakao" as const,
+        provider: "KAKAO",
         token: "kakao-category-test-token",
         profile: {
           id: "kakao-category-user",
@@ -1526,10 +1454,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           emailVerified: false,
           name: "Kakao Category User",
         },
-        login: (svc: OAuthWorkflow, token: string) => svc.handleKakaoMobileLogin(token),
       },
       {
-        provider: "Naver" as const,
+        provider: "NAVER",
         token: "naver-category-test-token",
         profile: {
           id: "naver-category-user",
@@ -1537,22 +1464,21 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           emailVerified: false,
           name: "Naver Category User",
         },
-        login: (svc: OAuthWorkflow, token: string) => svc.handleNaverMobileLogin(token),
       },
-    ];
+    ] satisfies Array<{
+      provider: SocialProvider;
+      token: string;
+      profile: Parameters<FakeOAuthTokenVerifierService["setCustomProfile"]>[2];
+    }>;
 
     it.each(categoryTestCases)(
       "$provider 로그인 시 기본 카테고리가 DB에 생성되어야 한다",
-      async ({ provider, token, profile, login }) => {
+      async ({ provider, token, profile }) => {
         // Given: 토큰 설정
-        fakeTokenVerifier.setCustomProfile(
-          provider.toLowerCase() as "apple" | "google" | "kakao" | "naver",
-          token,
-          profile,
-        );
+        fakeTokenVerifier.setCustomProfile(profileProviders[provider], token, profile);
 
         // When: 로그인
-        const result = await login(oauthService, token);
+        const result = await loginWithOAuthToken.execute({ provider, token });
 
         // Then: DB에서 카테고리 2개 확인
         const categories = decodeRecord(
@@ -1588,7 +1514,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         name: "Duplicate Test User",
       });
 
-      const firstResult = await oauthService.handleGoogleMobileLogin(token);
+      const firstResult = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: token });
 
       // 첫 로그인 후 카테고리 개수 확인
       const categoriesAfterFirst = decodeRecord(
@@ -1600,7 +1526,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       expect(categoriesAfterFirst).toHaveLength(2);
 
       // When: 같은 사용자로 재로그인
-      const secondResult = await oauthService.handleGoogleMobileLogin(token);
+      const secondResult = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: token });
 
       // Then: 같은 사용자이고 카테고리 개수가 여전히 2개
       expect(secondResult.userId).toBe(firstResult.userId);
@@ -1627,7 +1553,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         emailVerified: true,
         name: "Atomic User",
       });
-      const first = await oauthService.handleGoogleMobileLogin(googleToken);
+      const first = await loginWithOAuthToken.execute({ provider: "GOOGLE", token: googleToken });
       const userId = first.userId;
 
       // When: 같은 이메일의 검증된 Apple 계정으로 로그인 → 이메일 충돌 자동 연동
@@ -1637,7 +1563,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         email,
         emailVerified: true,
       });
-      const result = await oauthService.handleAppleMobileLogin(appleToken);
+      const result = await loginWithOAuthToken.execute({ provider: "APPLE", token: appleToken });
 
       // Then: 동일 사용자에 연동 + 세션 발급 + OAUTH_AUTO_LINKED 보안로그가 함께 커밋됨
       expect(result.userId).toBe(userId);
@@ -1676,7 +1602,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         email,
         emailVerified: true,
       });
-      const seeded = await oauthService.handleAppleMobileLogin(seedToken);
+      const seeded = await loginWithOAuthToken.execute({ provider: "APPLE", token: seedToken });
       const userId = seeded.userId;
 
       const sessionsBefore = (
@@ -1695,7 +1621,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       });
 
       // Then: 에러가 발생하고 부분 커밋이 남지 않는다
-      await expect(oauthService.handleAppleMobileLogin(conflictToken)).rejects.toThrow();
+      await expect(
+        loginWithOAuthToken.execute({ provider: "APPLE", token: conflictToken }),
+      ).rejects.toThrow();
 
       const conflictAccount = decodeRecord(
         "Account",

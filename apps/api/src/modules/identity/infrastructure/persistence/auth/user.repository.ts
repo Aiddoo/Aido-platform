@@ -299,7 +299,7 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
     );
   }
 
-  async findByIdForPurge(id: string) {
+  async findByIdForUpdate(id: string) {
     const rowSpec = sqlRowSpec({
       id: "pg/text@1",
       email: "pg/text@1",
@@ -312,7 +312,7 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
         sqlStatement(
           this.client,
           sql`SELECT "id", "email", "status"::text AS "status", "deletedAt"
-            FROM "User" WHERE "id" = ${id} FOR UPDATE`,
+            FROM "User" WHERE "id" = ${id} FOR NO KEY UPDATE`,
         )
           .returnsRow(rowSpec)
           .build(),

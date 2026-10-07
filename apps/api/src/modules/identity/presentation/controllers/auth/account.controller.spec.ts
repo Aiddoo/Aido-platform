@@ -162,7 +162,7 @@ describe("AccountController — 계정 컨트롤러", () => {
       const result = await controller.getLinkedAccounts(mockUser);
 
       // Then - 서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
-      expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith(mockUser.userId);
+      expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith({ userId: mockUser.userId });
       expect(result).toEqual(serviceResult);
     });
   });
@@ -178,14 +178,14 @@ describe("AccountController — 계정 컨트롤러", () => {
       const result = await controller.unlinkAccount(mockUser, provider, mockRequest);
 
       // Then - 서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
-      expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith(
-        mockUser.userId,
+      expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
         provider,
-        expect.objectContaining({
+        metadata: expect.objectContaining({
           ip: "127.0.0.1",
           userAgent: "TestAgent/1.0",
         }),
-      );
+      });
       expect(result).toEqual(serviceResult);
     });
   });

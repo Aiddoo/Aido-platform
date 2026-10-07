@@ -1,7 +1,11 @@
-import type { OAuthWorkflow } from "../../workflows/auth/oauth.workflow.js";
+import type { AuthOAuthStateRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
+
+export interface GetOAuthRedirectUriInput {
+  readonly state: string;
+}
 
 interface GetOAuthRedirectUriDependencies {
-  readonly workflow: OAuthWorkflow;
+  readonly oauthStateRepository: Pick<AuthOAuthStateRepositoryPort, "findByState">;
 }
 
 export class GetOAuthRedirectUri {
@@ -10,7 +14,9 @@ export class GetOAuthRedirectUri {
   constructor(dependencies: GetOAuthRedirectUriDependencies) {
     this.#dependencies = dependencies;
   }
-  execute(state: string): ReturnType<OAuthWorkflow["getRedirectUriByState"]> {
-    return this.#dependencies.workflow.getRedirectUriByState(state);
+
+  async execute(input: GetOAuthRedirectUriInput): Promise<string | null> {
+    const state = await this.#dependencies.oauthStateRepository.findByState(input.state);
+    return state?.redirectUri ?? null;
   }
 }

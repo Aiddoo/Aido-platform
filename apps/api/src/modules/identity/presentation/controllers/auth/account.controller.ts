@@ -176,7 +176,7 @@ export class AccountController {
   @ApiSuccessResponse({ type: LinkedAccountsResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
-    return this.listLinkedAccountsQuery.execute(user.userId);
+    return this.listLinkedAccountsQuery.execute({ userId: user.userId });
   }
 
   @Delete("linked-accounts/:provider")
@@ -221,7 +221,7 @@ export class AccountController {
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    return this.unlinkOAuthAccountUseCase.execute(user.userId, provider, metadata);
+    return this.unlinkOAuthAccountUseCase.execute({ userId: user.userId, provider, metadata });
   }
 
   @Delete("account")

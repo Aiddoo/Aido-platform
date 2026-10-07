@@ -15,6 +15,7 @@ import type { AuthCachePort } from "../../ports/auth/auth-collaboration.port.js"
 import type { AuthPasswordHasherPort } from "../../ports/auth/auth-crypto.port.js";
 import type {
   AuthUserRepositoryPort,
+  AuthUserLockRepositoryPort,
   AuthAccountRepositoryPort,
   AuthSecurityLogRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
@@ -28,7 +29,7 @@ export interface SetPasswordInput {
 }
 
 interface SetPasswordDependencies {
-  readonly userRepository: Pick<AuthUserRepositoryPort, "findById">;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "findById"> & AuthUserLockRepositoryPort;
   readonly accountRepository: Pick<
     AuthAccountRepositoryPort,
     "findByUserIdAndProvider" | "createCredentialAccount"
@@ -70,6 +71,18 @@ export class SetPassword {
     const hashedPassword = await this.#dependencies.passwordService.hash(newPassword);
 
     await this.#dependencies.unitOfWork.run(async () => {
+      const lockedUser = await this.#dependencies.userRepository.findByIdForUpdate(userId);
+      if (lockedUser === null) {
+        throw new ApplicationException(ErrorCode.USER_0601, { userId });
+      }
+      assertNotDeleted(lockedUser);
+      const currentAccount = await this.#dependencies.accountRepository.findByUserIdAndProvider(
+        userId,
+        "CREDENTIAL",
+      );
+      if (currentAccount !== null) {
+        throw new ApplicationException(ErrorCode.USER_0614, { userId });
+      }
       await this.#dependencies.verificationService.verifyCode(userId, code, "PASSWORD_SETUP");
 
       await this.#dependencies.accountRepository.createCredentialAccount(userId, hashedPassword);

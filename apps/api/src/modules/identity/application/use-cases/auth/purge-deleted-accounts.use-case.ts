@@ -42,7 +42,7 @@ export class PurgeDeletedAccounts {
     for (const candidate of users) {
       try {
         const cleanup = await this.#dependencies.unitOfWork.run(async () => {
-          const user = await this.#dependencies.userRepository.findByIdForPurge(candidate.id);
+          const user = await this.#dependencies.userRepository.findByIdForUpdate(candidate.id);
           if (user === null) {
             return null;
           }

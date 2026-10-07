@@ -8,6 +8,8 @@ import {
   AUTH_CACHE,
   AUTH_EMAIL_SENDER,
   AUTH_LOGIN_ATTEMPT_REPOSITORY,
+  AUTH_OAUTH_STATE_REPOSITORY,
+  AUTH_RUNTIME_CONFIG,
   AUTH_PASSWORD_HASHER,
   AUTH_REGISTRATION_NOTIFIER,
   AUTH_SECURITY_LOG_REPOSITORY,
@@ -16,6 +18,10 @@ import {
   AUTH_USER_REPOSITORY,
   AUTH_VERIFICATION_REPOSITORY,
 } from "#api/modules/identity/application/ports/auth/index";
+import {
+  OAUTH_IDENTITY_PROVIDER_REGISTRY,
+  type OAuthIdentityProviderRegistry,
+} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
 import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
@@ -23,6 +29,7 @@ import { PasswordService } from "#api/modules/identity/infrastructure/adapters/a
 import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
 import { LoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/login-attempt.repository";
+import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
 import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
 import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
@@ -43,6 +50,16 @@ import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 
 import {
+  completeOAuthAuthorizationProvider,
+  exchangeOAuthCodeProvider,
+  getOAuthRedirectUriProvider,
+  linkOAuthAccountProvider,
+  linkOAuthAccountWithCodeProvider,
+  linkOAuthIdentityProvider,
+  listLinkedAccountsProvider,
+  loginWithOAuthTokenProvider,
+  startOAuthAuthorizationProvider,
+  unlinkOAuthAccountProvider,
   registerProvider,
   verifyEmailProvider,
   loginWithPasswordProvider,
@@ -64,6 +81,7 @@ import { retentionEnrollerTestProvider } from "./retention-enroller.provider.js"
 export async function createAuthTestModule(
   databaseService: DatabaseService,
   fakeEmailService: FakeEmailService,
+  options: { readonly oauthProviderRegistry?: OAuthIdentityProviderRegistry } = {},
 ): Promise<TestingModule> {
   const transaction = createDatabaseTransactionFixture(databaseService.db);
   return Test.createTestingModule({
@@ -74,6 +92,24 @@ export async function createAuthTestModule(
       }),
     ],
     providers: [
+      ...(options.oauthProviderRegistry === undefined
+        ? []
+        : [
+            completeOAuthAuthorizationProvider,
+            exchangeOAuthCodeProvider,
+            getOAuthRedirectUriProvider,
+            linkOAuthAccountProvider,
+            linkOAuthAccountWithCodeProvider,
+            linkOAuthIdentityProvider,
+            listLinkedAccountsProvider,
+            loginWithOAuthTokenProvider,
+            startOAuthAuthorizationProvider,
+            unlinkOAuthAccountProvider,
+            OAuthStateRepository,
+            { provide: AUTH_OAUTH_STATE_REPOSITORY, useExisting: OAuthStateRepository },
+            { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
+            { provide: OAUTH_IDENTITY_PROVIDER_REGISTRY, useValue: options.oauthProviderRegistry },
+          ]),
       registerProvider,
       verifyEmailProvider,
       loginWithPasswordProvider,
@@ -185,13 +221,7 @@ export async function createAuthTestModule(
           jwtRefreshSecret:
             process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
           jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-          jwtConfig: {
-            secret: process.env.JWT_SECRET ?? "test-jwt-secret-for-integration",
-            expiresIn: process.env.JWT_EXPIRES_IN ?? "15m",
-            refreshSecret:
-              process.env.JWT_REFRESH_SECRET ?? "test-jwt-refresh-secret-for-integration",
-            refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? "7d",
-          },
+          isDevelopment: false,
         },
       },
       {

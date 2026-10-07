@@ -16,7 +16,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
-- [ ] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 진행([Issue #900](https://github.com/Aiddoo/Aido-platform/issues/900)); 자격 증명·OAuth·설정·동의 남음
+- [ ] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 진행([Issue #901](https://github.com/Aiddoo/Aido-platform/issues/901)); OAuth·설정·동의 남음
 - [ ] 05 Billing: Webhook·구독 상태 전이
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
@@ -269,3 +269,52 @@ helper를 만들지 않는다. [TypeScript 공식 lib 설명](https://www.typesc
 
 production 사용처가 없는 `updateLastLoginAt` Port·repository 메서드·빈 Stub·그 메서드만
 검증하던 Unit도 제거했다. DB column과 기존 데이터는 변경하지 않았다.
+
+## 04d OAuth와 로그인 수단 변경
+
+[Issue #901](https://github.com/Aiddoo/Aido-platform/issues/901)은 OAuth endpoint 9개를
+직접 UseCase로 옮긴다. 기존 Registry와 4개 vendor Adapter를 재사용하고 OAuth Workflow를
+제거한다. `LinkOAuthIdentity`는 계정 생성·감사·충돌 매핑만 공유하며, Token/Code endpoint가
+UOW·사용자 잠금·커밋 후 캐시를 소유한다. Web Complete는 실제 Login UseCase를 호출한다.
+코드 교환과 토큰 검증은 기존처럼 각 1회이며 지연 감소로 해석하지 않는다.
+
+| 실제 Before                                                                         | 구현한 After                                                               | 검증                                                 |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 같은 교환 코드 동시 2건 모두 성공, 토큰 2번 반환                                    | ORM CAS 승자 1건, 패자 USER_0602                                           | 실제 PG row lock·UPDATE waiters                      |
+| 서로 다른 계정 2개 동시 해제 후 Account 0개·감사 2개                                | 사용자 잠금 후 Aggregate 판단, 성공 1건·USER_0610 1건·Account 1개·감사 1개 | 실제 PG 경쟁 및 Link/Unlink 공존                     |
+| Link 감사 FK 오류 23503 후 Account는 rollback하지만 코드는 소비됨, 재시도 USER_0602 | 소비·계정·감사 같은 UOW, 실패 시 모두 rollback·같은 코드 재시도 성공       | 실제 PG SQL 오류                                     |
+| verified email 자동 연동 후 기존 JWT의 /me가 provider 1개 반환                      | 실제 commit 후 프로필 cache 무효화, 기존·새 세션 모두 provider 2개         | 실제 HTTP 1개 Before 실패 5.77초 → After 통과 8.84초 |
+
+교환 코드 Before·계정 해제 Before·Link 실패 Before 재현은 각각 1개 테스트, 5.93초·
+5.88초·6.29초였다. 이는 경쟁 결과의 재현 시간이며 benchmark가 아니다. 기존 정상 성공의
+REST 응답·메시지·오류 코드는 유지한다. Link의 후속 쓰기 실패 때 코드를 재사용할 수 있는
+것은 부분 커밋을 수정한 의도한 차이다.
+
+기존 사용자 잠금 SELECT 한 곳을 `findByIdForUpdate`와 `FOR NO KEY UPDATE`로 재사용한다.
+현재 설치 ORM rc.14의 Collection·SelectQuery·AST 및 실제 프로젝트 타입에서 공개 SELECT
+row lock API는 확인되지 않았다. SQL을 추가하거나 일반 잠금 프레임워크를 만들지 않는다.
+[PostgreSQL 공식 잠금 표](https://www.postgresql.org/docs/16/explicit-locking.html#LOCKING-ROWS)에
+맞춰 같은 User의 계정 변경을 직렬화하면서 FK의 KEY SHARE를 허용하며, 실제 PG에서 잠금
+해제 전 감사 INSERT 완료와 기존 purge 1승자도 확인했다. Token/Code caller의 잠금 조회는
+각 1회다. 잠금 비용·운영 처리량은 측정하지 않았으므로 성능 향상을 주장하지 않는다.
+
+기존 NULL/빈 initiating actor, login mode NULL, token 선택 `idToken ?? accessToken`,
+provider 목록 순서·null 필드, 상태·이메일 충돌 오류 우선순위를 보존한다. 토큰 검증 실패만
+실패 LoginAttempt를 기록하고 업무 오류까지 catch하지 않는다. 신규 가입 commit·관리자 알림·
+별도 로그인 commit 순서와 기존 복구 시각·fresh role 조회도 유지한다. SetPassword는 잠금
+획득 후 사용자·credential 상태를 다시 확인한다.
+
+기존 OAuth PG의 Nest 조립은 공용 auth factory 옵션으로 교체했다. 서비스가 정의됐는지만
+보던 2개를 제거하고 남은 47개는 seed 50441로 통과했다(16.68초). 최초 실행 1개 실패는
+Domain으로 이동한 예외를 ApplicationException 클래스만으로 비교한 테스트였다. 공개
+USER_0610과 동일 메시지를 검증하도록 바꾸고 재실행했다. 신규 실제 PG와 기존 purge PG
+16개는 seed 101(11.30초), LA 시간대 seed 202(9.97초)로 통과했다. 공용 factory의 cipher는
+identity Stub이며 이 결과를 실제 암호화 성능·SDK 검증으로 주장하지 않는다.
+
+전체 Unit 476 files / 2,864 tests(15.33초), Integration 47 files / 459 tests(145.57초),
+E2E 34 files / 482 tests(261.13초)가 seed 50442 shuffle로 통과했다. workspace
+lint·format·typecheck도 통과했다. Integration suite는 실제 PG 서비스로 실행했으며 기존 일부
+Stub 기반 spec도 포함한다. 이번 경쟁·rollback 결과는 별도 실제 PG 10개로 검증했다.
+잠금 helper도 native Promise.withResolvers로 정리한 뒤 10개를 seed 303으로 다시 확인했다
+(7.15초). Unit 자동 연동 warm setup이 빠진 최초 2개 실패는 테스트 선언을 보완해 재실행했다.
+새 script·package·schema·migration·Action job은 없다. 상위 단계는 여전히 4/18 완료다.

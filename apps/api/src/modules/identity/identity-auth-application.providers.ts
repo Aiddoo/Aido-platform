@@ -29,6 +29,7 @@ import {
 import { RETENTION_ENROLLER } from "./application/ports/auth/retention-enroller.port.js";
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
+import { LinkOAuthIdentity } from "./application/services/auth/link-oauth-identity.service.js";
 import { SessionService } from "./application/services/auth/session.service.js";
 import { VerificationService } from "./application/services/auth/verification.service.js";
 import { ChangePassword } from "./application/use-cases/auth/change-password.use-case.js";
@@ -61,7 +62,6 @@ import { StartOAuthAuthorization } from "./application/use-cases/auth/start-oaut
 import { UnlinkOAuthAccount } from "./application/use-cases/auth/unlink-oauth-account.use-case.js";
 import { UpdateProfile } from "./application/use-cases/auth/update-profile.use-case.js";
 import { VerifyEmail } from "./application/use-cases/auth/verify-email.use-case.js";
-import { OAuthWorkflow } from "./application/workflows/auth/oauth.workflow.js";
 
 export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
   provide: GetCurrentUser,
@@ -78,9 +78,15 @@ export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
 
 export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUri> = {
   provide: GetOAuthRedirectUri,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof GetOAuthRedirectUri>[0]["workflow"]) =>
-    new GetOAuthRedirectUri({ workflow }),
+  inject: [AUTH_OAUTH_STATE_REPOSITORY],
+  useFactory: (
+    oauthStateRepository: ConstructorParameters<
+      typeof GetOAuthRedirectUri
+    >[0]["oauthStateRepository"],
+  ) =>
+    new GetOAuthRedirectUri({
+      oauthStateRepository,
+    }),
 };
 
 export const listActiveSessionsProvider: FactoryProvider<ListActiveSessions> = {
@@ -92,9 +98,13 @@ export const listActiveSessionsProvider: FactoryProvider<ListActiveSessions> = {
 };
 export const listLinkedAccountsProvider: FactoryProvider<ListLinkedAccounts> = {
   provide: ListLinkedAccounts,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof ListLinkedAccounts>[0]["workflow"]) =>
-    new ListLinkedAccounts({ workflow }),
+  inject: [AUTH_ACCOUNT_REPOSITORY],
+  useFactory: (
+    accountRepository: ConstructorParameters<typeof ListLinkedAccounts>[0]["accountRepository"],
+  ) =>
+    new ListLinkedAccounts({
+      accountRepository,
+    }),
 };
 
 export const sessionServiceProvider: FactoryProvider<SessionService> = {
@@ -160,9 +170,22 @@ export const changePasswordProvider: FactoryProvider<ChangePassword> = {
 
 export const completeOAuthAuthorizationProvider: FactoryProvider<CompleteOAuthAuthorization> = {
   provide: CompleteOAuthAuthorization,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof CompleteOAuthAuthorization>[0]["workflow"]) =>
-    new CompleteOAuthAuthorization({ workflow }),
+  inject: [OAUTH_IDENTITY_PROVIDER_REGISTRY, AUTH_OAUTH_STATE_REPOSITORY, LoginWithOAuthToken],
+  useFactory: (
+    registry: ConstructorParameters<typeof CompleteOAuthAuthorization>[0]["registry"],
+    oauthStateRepository: ConstructorParameters<
+      typeof CompleteOAuthAuthorization
+    >[0]["oauthStateRepository"],
+    loginWithOAuthToken: ConstructorParameters<
+      typeof CompleteOAuthAuthorization
+    >[0]["loginWithOAuthToken"],
+  ) =>
+    new CompleteOAuthAuthorization({
+      registry,
+      oauthStateRepository,
+      loginWithOAuthToken,
+      logger: new Logger(CompleteOAuthAuthorization.name),
+    }),
 };
 
 export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
@@ -238,9 +261,16 @@ export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts>
 
 export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
   provide: ExchangeOAuthCode,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof ExchangeOAuthCode>[0]["workflow"]) =>
-    new ExchangeOAuthCode({ workflow }),
+  inject: [AUTH_OAUTH_STATE_REPOSITORY],
+  useFactory: (
+    oauthStateRepository: ConstructorParameters<
+      typeof ExchangeOAuthCode
+    >[0]["oauthStateRepository"],
+  ) =>
+    new ExchangeOAuthCode({
+      oauthStateRepository,
+      logger: new Logger(ExchangeOAuthCode.name),
+    }),
 };
 
 export const issueLoginProvider: FactoryProvider<IssueLogin> = {
@@ -265,25 +295,125 @@ export const issueLoginProvider: FactoryProvider<IssueLogin> = {
     }),
 };
 
+export const linkOAuthIdentityProvider: FactoryProvider<LinkOAuthIdentity> = {
+  provide: LinkOAuthIdentity,
+  inject: [AUTH_ACCOUNT_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY],
+  useFactory: (
+    accountRepository: ConstructorParameters<typeof LinkOAuthIdentity>[0]["accountRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof LinkOAuthIdentity
+    >[0]["securityLogRepository"],
+  ) =>
+    new LinkOAuthIdentity({
+      accountRepository,
+      securityLogRepository,
+    }),
+};
+
 export const linkOAuthAccountProvider: FactoryProvider<LinkOAuthAccount> = {
   provide: LinkOAuthAccount,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof LinkOAuthAccount>[0]["workflow"]) =>
-    new LinkOAuthAccount({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    OAUTH_IDENTITY_PROVIDER_REGISTRY,
+    LinkOAuthIdentity,
+    UNIT_OF_WORK,
+    AUTH_CACHE,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof LinkOAuthAccount>[0]["userRepository"],
+    registry: ConstructorParameters<typeof LinkOAuthAccount>[0]["registry"],
+    linkOAuthIdentity: ConstructorParameters<typeof LinkOAuthAccount>[0]["linkOAuthIdentity"],
+    unitOfWork: ConstructorParameters<typeof LinkOAuthAccount>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof LinkOAuthAccount>[0]["cacheService"],
+  ) =>
+    new LinkOAuthAccount({
+      userRepository,
+      registry,
+      linkOAuthIdentity,
+      unitOfWork,
+      cacheService,
+      logger: new Logger(LinkOAuthAccount.name),
+    }),
 };
 
 export const linkOAuthAccountWithCodeProvider: FactoryProvider<LinkOAuthAccountWithCode> = {
   provide: LinkOAuthAccountWithCode,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["workflow"]) =>
-    new LinkOAuthAccountWithCode({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_OAUTH_STATE_REPOSITORY,
+    LinkOAuthIdentity,
+    UNIT_OF_WORK,
+    AUTH_CACHE,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["userRepository"],
+    oauthStateRepository: ConstructorParameters<
+      typeof LinkOAuthAccountWithCode
+    >[0]["oauthStateRepository"],
+    linkOAuthIdentity: ConstructorParameters<
+      typeof LinkOAuthAccountWithCode
+    >[0]["linkOAuthIdentity"],
+    unitOfWork: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof LinkOAuthAccountWithCode>[0]["cacheService"],
+  ) =>
+    new LinkOAuthAccountWithCode({
+      userRepository,
+      oauthStateRepository,
+      linkOAuthIdentity,
+      unitOfWork,
+      cacheService,
+      logger: new Logger(LinkOAuthAccountWithCode.name),
+    }),
 };
 
 export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> = {
   provide: LoginWithOAuthToken,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof LoginWithOAuthToken>[0]["workflow"]) =>
-    new LoginWithOAuthToken({ workflow }),
+  inject: [
+    OAUTH_IDENTITY_PROVIDER_REGISTRY,
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    AUTH_LOGIN_ATTEMPT_REPOSITORY,
+    UNIT_OF_WORK,
+    AUTH_CACHE,
+    AUTH_REGISTRATION_NOTIFIER,
+    IssueLogin,
+    ProvisionUser,
+    RestoreAccount,
+  ],
+  useFactory: (
+    registry: ConstructorParameters<typeof LoginWithOAuthToken>[0]["registry"],
+    userRepository: ConstructorParameters<typeof LoginWithOAuthToken>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof LoginWithOAuthToken>[0]["accountRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof LoginWithOAuthToken
+    >[0]["securityLogRepository"],
+    loginAttemptRepository: ConstructorParameters<
+      typeof LoginWithOAuthToken
+    >[0]["loginAttemptRepository"],
+    unitOfWork: ConstructorParameters<typeof LoginWithOAuthToken>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof LoginWithOAuthToken>[0]["cacheService"],
+    adminEventNotifier: ConstructorParameters<typeof LoginWithOAuthToken>[0]["adminEventNotifier"],
+    issueLoginUseCase: ConstructorParameters<typeof LoginWithOAuthToken>[0]["issueLoginUseCase"],
+    provisionUserUseCase: ConstructorParameters<
+      typeof LoginWithOAuthToken
+    >[0]["provisionUserUseCase"],
+    restoreAccount: ConstructorParameters<typeof LoginWithOAuthToken>[0]["restoreAccount"],
+  ) =>
+    new LoginWithOAuthToken({
+      registry,
+      userRepository,
+      accountRepository,
+      securityLogRepository,
+      loginAttemptRepository,
+      unitOfWork,
+      cacheService,
+      adminEventNotifier,
+      issueLoginUseCase,
+      provisionUserUseCase,
+      restoreAccount,
+      logger: new Logger(LoginWithOAuthToken.name),
+    }),
 };
 
 export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {
@@ -568,16 +698,48 @@ export const setPasswordProvider: FactoryProvider<SetPassword> = {
 
 export const startOAuthAuthorizationProvider: FactoryProvider<StartOAuthAuthorization> = {
   provide: StartOAuthAuthorization,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof StartOAuthAuthorization>[0]["workflow"]) =>
-    new StartOAuthAuthorization({ workflow }),
+  inject: [OAUTH_IDENTITY_PROVIDER_REGISTRY, AUTH_OAUTH_STATE_REPOSITORY, AUTH_RUNTIME_CONFIG],
+  useFactory: (
+    registry: ConstructorParameters<typeof StartOAuthAuthorization>[0]["registry"],
+    oauthStateRepository: ConstructorParameters<
+      typeof StartOAuthAuthorization
+    >[0]["oauthStateRepository"],
+    configService: ConstructorParameters<typeof StartOAuthAuthorization>[0]["configService"],
+  ) =>
+    new StartOAuthAuthorization({
+      registry,
+      oauthStateRepository,
+      configService,
+      logger: new Logger(StartOAuthAuthorization.name),
+    }),
 };
 
 export const unlinkOAuthAccountProvider: FactoryProvider<UnlinkOAuthAccount> = {
   provide: UnlinkOAuthAccount,
-  inject: [OAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["workflow"]) =>
-    new UnlinkOAuthAccount({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    UNIT_OF_WORK,
+    AUTH_CACHE,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["accountRepository"],
+    securityLogRepository: ConstructorParameters<
+      typeof UnlinkOAuthAccount
+    >[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof UnlinkOAuthAccount>[0]["cacheService"],
+  ) =>
+    new UnlinkOAuthAccount({
+      userRepository,
+      accountRepository,
+      securityLogRepository,
+      unitOfWork,
+      cacheService,
+      logger: new Logger(UnlinkOAuthAccount.name),
+    }),
 };
 
 export const updateProfileProvider: FactoryProvider<UpdateProfile> = {
@@ -620,57 +782,5 @@ export const verifyEmailProvider: FactoryProvider<VerifyEmail> = {
       securityLogRepository,
       unitOfWork,
       logger: new Logger(VerifyEmail.name),
-    }),
-};
-
-export const oauthWorkflowProvider: FactoryProvider<OAuthWorkflow> = {
-  provide: OAuthWorkflow,
-  inject: [
-    UNIT_OF_WORK,
-    AUTH_USER_REPOSITORY,
-    AUTH_ACCOUNT_REPOSITORY,
-    AUTH_SECURITY_LOG_REPOSITORY,
-    AUTH_LOGIN_ATTEMPT_REPOSITORY,
-    AUTH_OAUTH_STATE_REPOSITORY,
-    AUTH_RUNTIME_CONFIG,
-    AUTH_REGISTRATION_NOTIFIER,
-    AUTH_CACHE,
-    IssueLogin,
-    ProvisionUser,
-    OAUTH_IDENTITY_PROVIDER_REGISTRY,
-    RestoreAccount,
-  ],
-  useFactory: (
-    unitOfWork: ConstructorParameters<typeof OAuthWorkflow>[0]["unitOfWork"],
-    userRepository: ConstructorParameters<typeof OAuthWorkflow>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof OAuthWorkflow>[0]["accountRepository"],
-    securityLogRepository: ConstructorParameters<typeof OAuthWorkflow>[0]["securityLogRepository"],
-    loginAttemptRepository: ConstructorParameters<
-      typeof OAuthWorkflow
-    >[0]["loginAttemptRepository"],
-    oauthStateRepository: ConstructorParameters<typeof OAuthWorkflow>[0]["oauthStateRepository"],
-    configService: ConstructorParameters<typeof OAuthWorkflow>[0]["configService"],
-    adminEventNotifier: ConstructorParameters<typeof OAuthWorkflow>[0]["adminEventNotifier"],
-    cacheService: ConstructorParameters<typeof OAuthWorkflow>[0]["cacheService"],
-    issueLoginUseCase: ConstructorParameters<typeof OAuthWorkflow>[0]["issueLoginUseCase"],
-    provisionUserUseCase: ConstructorParameters<typeof OAuthWorkflow>[0]["provisionUserUseCase"],
-    registry: ConstructorParameters<typeof OAuthWorkflow>[0]["registry"],
-    restoreAccount: ConstructorParameters<typeof OAuthWorkflow>[0]["restoreAccount"],
-  ) =>
-    new OAuthWorkflow({
-      unitOfWork,
-      userRepository,
-      accountRepository,
-      securityLogRepository,
-      loginAttemptRepository,
-      oauthStateRepository,
-      configService,
-      adminEventNotifier,
-      cacheService,
-      issueLoginUseCase,
-      provisionUserUseCase,
-      registry,
-      restoreAccount,
-      logger: new Logger(OAuthWorkflow.name),
     }),
 };

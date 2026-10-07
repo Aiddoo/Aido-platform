@@ -37,7 +37,7 @@ export class StubAccountLifecycleRepository
     return this.users.get(id) ?? null;
   }
 
-  async findByIdForPurge(id: string): Promise<AuthUserRecord | null> {
+  async findByIdForUpdate(id: string): Promise<AuthUserRecord | null> {
     return this.findById(id);
   }
 
@@ -81,6 +81,8 @@ export class StubAccountRepository implements Pick<
   AuthAccountRepositoryPort,
   | "findAllByUserId"
   | "findByUserIdAndProvider"
+  | "findByProviderAccountId"
+  | "deleteAccount"
   | "createCredentialAccount"
   | "createOAuthAccount"
   | "updatePassword"
@@ -104,6 +106,23 @@ export class StubAccountRepository implements Pick<
       (account) => account.userId === userId && account.provider === provider,
     );
     return account === undefined ? null : { ...account };
+  }
+
+  async findByProviderAccountId(
+    provider: AuthAccountRecord["provider"],
+    providerAccountId: string,
+  ): Promise<AuthAccountRecord | null> {
+    const account = this.accounts.find(
+      (account) => account.provider === provider && account.providerAccountId === providerAccountId,
+    );
+    return account === undefined ? null : { ...account };
+  }
+
+  async deleteAccount(userId: string, provider: AuthAccountRecord["provider"]): Promise<void> {
+    const index = this.accounts.findIndex(
+      (account) => account.userId === userId && account.provider === provider,
+    );
+    if (index !== -1) this.accounts.splice(index, 1);
   }
 
   async createCredentialAccount(userId: string, password: string): Promise<void> {

@@ -149,7 +149,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
           await repository.restore(user.id);
           return candidates;
         },
-        findByIdForPurge: (id) => dependencies.userRepository.findByIdForPurge(id),
+        findByIdForUpdate: (id) => dependencies.userRepository.findByIdForUpdate(id),
         hardDelete: (id) => dependencies.userRepository.hardDelete(id),
       },
     });
@@ -245,7 +245,7 @@ describe("UserRepository 통합 테스트 — 계정 생명주기", () => {
           client.raw.sql`
           SELECT count(*)::int AS count FROM pg_stat_activity
           WHERE datname = current_database() AND wait_event_type = 'Lock'
-            AND query LIKE '%FOR UPDATE%' AND query LIKE '%User%'
+            AND query LIKE '%FOR NO KEY UPDATE%' AND query LIKE '%User%'
         `
             .returnsRow({ count: "pg/int4@1" })
             .build(),

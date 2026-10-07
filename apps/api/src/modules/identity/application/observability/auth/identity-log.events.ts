@@ -35,4 +35,11 @@ export const IdentityLogEvent = {
   OAUTH_REDIRECT_REJECTED: "identity.oauth.redirect.rejected",
   OAUTH_STATE_REJECTED: "identity.oauth.state.rejected",
   OAUTH_EXCHANGE_REJECTED: "identity.oauth.exchange.rejected",
+  OAUTH_EXCHANGE_CREATED: "identity.oauth.exchange.created",
+  OAUTH_EXCHANGE_CONSUMED: "identity.oauth.exchange.consumed",
+  OAUTH_ACCOUNT_LINKED: "identity.oauth.account.linked",
+  OAUTH_ACCOUNT_UNLINKED: "identity.oauth.account.unlinked",
+  OAUTH_ACCOUNT_AUTO_LINKING: "identity.oauth.account.auto-linking",
+  OAUTH_ACCOUNT_LINK_REQUIRED: "identity.oauth.account.link-required",
+  OAUTH_EXISTING_USER_AUTHENTICATED: "identity.oauth.user.authenticated",
 } as const;
