@@ -4,258 +4,263 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { vi, type Mocked, type MockedFunction } from "vitest";
 
 import {
-	NOTIFICATION_CACHE,
-	type NotificationCachePort,
-} from "#api/notification/application/ports/notification-cache.port";
-import type { CreateNotificationData } from "#api/notification/application/ports/notification-data";
+  NOTIFICATION_CACHE,
+  type NotificationCachePort,
+} from "#api/modules/notification/application/ports/delivery/notification-cache.port";
+import type { CreateNotificationData } from "#api/modules/notification/application/ports/delivery/notification-data";
 import {
-	NOTIFICATION_DEDUP,
-	type NotificationDedupPort,
-} from "#api/notification/application/ports/notification-dedup.port";
+  NOTIFICATION_DEDUP,
+  type NotificationDedupPort,
+} from "#api/modules/notification/application/ports/delivery/notification-dedup.port";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
-} from "#api/notification/application/ports/notification.repository.port";
+  NOTIFICATION_REPOSITORY,
+  type NotificationRepositoryPort,
+} from "#api/modules/notification/application/ports/delivery/notification.repository.port";
 import {
-	PUSH_DISPATCH_STAGING,
-	type PushDispatchStagingRepositoryPort,
-	type StagePushDispatchInput,
-} from "#api/notification/application/ports/push-dispatch-staging.repository.port";
+  PUSH_DISPATCH_STAGING,
+  type PushDispatchStagingRepositoryPort,
+  type StagePushDispatchInput,
+} from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
 import {
-	USER_NOTIFICATION_SETTINGS,
-	type UserNotificationSettingsPort,
-} from "#api/notification/application/ports/user-notification-settings.port";
-import { NotificationHistoryReader } from "#api/notification/application/readers/notification-history.reader";
-import { PushDeliveryAfterCommitPublisher } from "#api/notification/application/services/push-delivery-after-commit.publisher";
-import { FinalizeBatchNotificationUseCase } from "#api/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "#api/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+  USER_NOTIFICATION_SETTINGS,
+  type UserNotificationSettingsPort,
+} from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
+import type { NotificationRecord } from "#api/modules/notification/application/read-models/delivery/notification.read-model";
+import { NotificationHistoryReader } from "#api/modules/notification/application/readers/delivery/notification-history.reader";
+import { PersistBatchNotification } from "#api/modules/notification/application/use-cases/delivery/persist-batch-notification.use-case";
 import {
-	PublishPushDeliveryOutboxUseCase,
-	type PublishPushDeliveryOutboxInput,
-} from "#api/notification/application/use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
-import { SendFriendCompletionNotificationsUseCase } from "#api/notification/application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
-import type { NotificationRecord } from "#api/notification/domain/records/notification.record";
+  PublishPushDeliveryOutbox,
+  type PublishPushDeliveryOutboxInput,
+} from "#api/modules/notification/application/use-cases/delivery/publish-push-delivery-outbox.use-case";
+import { SendFriendCompletionNotifications } from "#api/modules/notification/application/use-cases/delivery/send-friend-completion-notifications.use-case";
 import {
-	AFTER_COMMIT_TASK_REGISTRY,
-	type AfterCommitTask,
-	type AfterCommitTaskRegistryPort,
-	UNIT_OF_WORK,
-	type UnitOfWorkPort,
+  AFTER_COMMIT_TASK_REGISTRY,
+  UNIT_OF_WORK,
+  type AfterCommitTask,
+  type AfterCommitTaskRegistryPort,
+  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
 
+import {
+  finalizeBatchNotificationProvider,
+  persistBatchNotificationProvider,
+  pushDeliveryAfterCommitPublisherProvider,
+  sendFriendCompletionNotificationsProvider,
+} from "../../src/modules/notification/notification-delivery-application.providers.js";
+
 interface TransactionContext {
-	closed: boolean;
-	afterCommitTasks: AfterCommitTask[];
+  closed: boolean;
+  afterCommitTasks: AfterCommitTask[];
 }
 
 /** Required 전파와 after-commit 실행 시점을 함께 관찰하는 component-test UOW. */
 class AfterCommitAwareUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPort {
-	readonly storage = new AsyncLocalStorage<TransactionContext>();
-	rootTransactionCount = 0;
+  readonly storage = new AsyncLocalStorage<TransactionContext>();
+  rootTransactionCount = 0;
 
-	async run<T>(work: () => Promise<T>): Promise<T> {
-		const active = this.storage.getStore();
-		if (active && !active.closed) return work();
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    const active = this.storage.getStore();
+    if (active && !active.closed) return work();
 
-		this.rootTransactionCount += 1;
-		const context: TransactionContext = { closed: false, afterCommitTasks: [] };
-		return this.storage.run(context, async () => {
-			let result: T;
-			try {
-				result = await work();
-			} catch (error) {
-				context.closed = true;
-				throw error;
-			}
+    this.rootTransactionCount += 1;
+    const context: TransactionContext = { closed: false, afterCommitTasks: [] };
+    return this.storage.run(context, async () => {
+      let result: T;
+      try {
+        result = await work();
+      } catch (error) {
+        context.closed = true;
+        throw error;
+      }
 
-			context.closed = true;
-			for (const task of context.afterCommitTasks) await task();
-			return result;
-		});
-	}
+      context.closed = true;
+      for (const task of context.afterCommitTasks) await task();
+      return result;
+    });
+  }
 
-	register(task: AfterCommitTask): void {
-		const active = this.storage.getStore();
-		if (!active || active.closed) {
-			throw new Error("After-commit task must be registered in an active test UOW");
-		}
-		active.afterCommitTasks.push(task);
-	}
+  register(task: AfterCommitTask): void {
+    const active = this.storage.getStore();
+    if (!active || active.closed) {
+      throw new Error("After-commit task must be registered in an active test UOW");
+    }
+    active.afterCommitTasks.push(task);
+  }
 }
 
 function toNotificationRecord(data: CreateNotificationData, index: number): NotificationRecord {
-	return {
-		id: index + 1,
-		userId: data.userId,
-		type: data.type,
-		title: data.title,
-		body: data.body,
-		isRead: false,
-		todoId: data.todoId ?? null,
-		friendId: data.friendId ?? null,
-		nudgeId: data.nudgeId ?? null,
-		cheerId: data.cheerId ?? null,
-		notificationDate: data.notificationDate ?? null,
-		metadata: data.metadata ?? null,
-		createdAt: new Date("2026-07-26T00:00:00.000Z"),
-		readAt: null,
-		actionType: data.action?.type ?? "DEEP_LINK",
-		actionUrl: data.action?.url ?? null,
-		campaignKey: data.campaignKey ?? null,
-		variantId: data.variantId ?? null,
-		purpose: data.purpose ?? "TRANSACTIONAL",
-		openedAt: null,
-	};
+  return {
+    id: index + 1,
+    userId: data.userId,
+    type: data.type,
+    title: data.title,
+    body: data.body,
+    isRead: false,
+    todoId: data.todoId ?? null,
+    friendId: data.friendId ?? null,
+    nudgeId: data.nudgeId ?? null,
+    cheerId: data.cheerId ?? null,
+    notificationDate: data.notificationDate ?? null,
+    metadata: data.metadata ?? null,
+    createdAt: new Date("2026-07-26T00:00:00.000Z"),
+    readAt: null,
+    actionType: data.action?.type ?? "DEEP_LINK",
+    actionUrl: data.action?.url ?? null,
+    campaignKey: data.campaignKey ?? null,
+    variantId: data.variantId ?? null,
+    purpose: data.purpose ?? "TRANSACTIONAL",
+    openedAt: null,
+  };
 }
 
 const friendCompletionInput = {
-	friendId: "friend-1",
-	friendName: "완료 친구",
-	notifyUserIds: ["user-1", "user-2"],
-	timezone: "Asia/Seoul",
+  friendId: "friend-1",
+  friendName: "완료 친구",
+  notifyUserIds: ["user-1", "user-2"],
+  timezone: "Asia/Seoul",
 };
 
-describe("friend-completed durable post-commit publication (component)", () => {
-	let module: TestingModule;
-	let useCase: SendFriendCompletionNotificationsUseCase;
-	let persistBatch: PersistBatchNotificationUseCase;
-	let unitOfWork: AfterCommitAwareUnitOfWork;
-	let repository: Mocked<NotificationRepositoryPort>;
-	let staging: Mocked<PushDispatchStagingRepositoryPort>;
-	let cache: Mocked<NotificationCachePort>;
-	let executePublish: MockedFunction<(input: PublishPushDeliveryOutboxInput) => Promise<number>>;
-	let events: string[];
+describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () => {
+  let module: TestingModule;
+  let useCase: SendFriendCompletionNotifications;
+  let persistBatch: PersistBatchNotification;
+  let unitOfWork: AfterCommitAwareUnitOfWork;
+  let repository: Mocked<NotificationRepositoryPort>;
+  let staging: Mocked<PushDispatchStagingRepositoryPort>;
+  let cache: Mocked<NotificationCachePort>;
+  let executePublish: MockedFunction<(input: PublishPushDeliveryOutboxInput) => Promise<number>>;
+  let events: string[];
 
-	beforeEach(async () => {
-		events = [];
-		unitOfWork = new AfterCommitAwareUnitOfWork();
-		repository = vi.mocked(createNotificationRepositoryMock());
-		repository.createManyNotificationsAndReturn.mockImplementation(async (items) => {
-			expect(unitOfWork.storage.getStore()?.closed).toBe(false);
-			events.push("persist-notifications");
-			return items.map(toNotificationRecord);
-		});
-		staging = vi.mocked({
-			stage: vi.fn(),
-			stageMany: vi.fn(async (inputs: readonly StagePushDispatchInput[]) => {
-				expect(unitOfWork.storage.getStore()?.closed).toBe(false);
-				events.push("stage-dispatch-outbox");
-				return inputs.map((input, index) => ({
-					dispatchId: 201 + index,
-					notificationId: input.notificationId,
-				}));
-			}),
-		} satisfies PushDispatchStagingRepositoryPort);
-		cache = vi.mocked(createNotificationCacheMock());
-		cache.invalidateUnreadCount.mockImplementation(async (userId) => {
-			events.push(`invalidate-cache:${userId}`);
-		});
-		const notificationDedup: NotificationDedupPort = {
-			recordNotifiedUsers: vi.fn(async () => {
-				events.push("record-dedup");
-			}),
-			readKnownRecipients: vi.fn(),
-			warmRecipients: vi.fn(),
-		};
-		const userSettings: UserNotificationSettingsPort = {
-			upsertPushTimezone: vi.fn(),
-			upsertPushLocale: vi.fn(),
-			getPreferenceRecord: vi.fn(),
-			getPreferenceRecordsByUserIds: vi.fn().mockResolvedValue([]),
-			getConsentRecord: vi.fn(),
-			getConsentRecordsByUserIds: vi.fn(),
-			updateMarketingPushConsent: vi.fn(),
-		};
-		const notificationHistoryReader = {
-			findAlreadyNotifiedUserIds: vi.fn().mockResolvedValue(new Set<string>()),
-		};
-		executePublish = vi.fn(async (input) => {
-			expect(unitOfWork.storage.getStore()?.closed).toBe(true);
-			events.push("publish-delivery-job");
-			return input.kind === "dispatches" ? input.dispatchIds.length : 0;
-		});
+  beforeEach(async () => {
+    events = [];
+    unitOfWork = new AfterCommitAwareUnitOfWork();
+    repository = vi.mocked(createNotificationRepositoryMock());
+    repository.createManyNotificationsAndReturn.mockImplementation(async (items) => {
+      expect(unitOfWork.storage.getStore()?.closed).toBe(false);
+      events.push("persist-notifications");
+      return items.map(toNotificationRecord);
+    });
+    staging = vi.mocked({
+      stage: vi.fn(),
+      stageMany: vi.fn(async (inputs: readonly StagePushDispatchInput[]) => {
+        expect(unitOfWork.storage.getStore()?.closed).toBe(false);
+        events.push("stage-dispatch-outbox");
+        return inputs.map((input, index) => ({
+          dispatchId: 201 + index,
+          notificationId: input.notificationId,
+        }));
+      }),
+    } satisfies PushDispatchStagingRepositoryPort);
+    cache = vi.mocked(createNotificationCacheMock());
+    cache.invalidateUnreadCount.mockImplementation(async (userId) => {
+      events.push(`invalidate-cache:${userId}`);
+    });
+    const notificationDedup: NotificationDedupPort = {
+      recordNotifiedUsers: vi.fn(async () => {
+        events.push("record-dedup");
+      }),
+      readKnownRecipients: vi.fn(),
+      warmRecipients: vi.fn(),
+    };
+    const userSettings: UserNotificationSettingsPort = {
+      upsertPushTimezone: vi.fn(),
+      upsertPushLocale: vi.fn(),
+      getPreferenceRecord: vi.fn(),
+      getPreferenceRecordsByUserIds: vi.fn().mockResolvedValue([]),
+      getConsentRecord: vi.fn(),
+      getConsentRecordsByUserIds: vi.fn(),
+      updateMarketingPushConsent: vi.fn(),
+    };
+    const notificationHistoryReader = {
+      findAlreadyNotifiedUserIds: vi.fn().mockResolvedValue(new Set<string>()),
+    };
+    executePublish = vi.fn(async (input) => {
+      expect(unitOfWork.storage.getStore()?.closed).toBe(true);
+      events.push("publish-delivery-job");
+      return input.kind === "dispatches" ? input.dispatchIds.length : 0;
+    });
 
-		module = await Test.createTestingModule({
-			providers: [
-				SendFriendCompletionNotificationsUseCase,
-				PersistBatchNotificationUseCase,
-				FinalizeBatchNotificationUseCase,
-				PushDeliveryAfterCommitPublisher,
-				{ provide: NotificationHistoryReader, useValue: notificationHistoryReader },
-				{ provide: NOTIFICATION_REPOSITORY, useValue: repository },
-				{ provide: PUSH_DISPATCH_STAGING, useValue: staging },
-				{ provide: NOTIFICATION_CACHE, useValue: cache },
-				{ provide: NOTIFICATION_DEDUP, useValue: notificationDedup },
-				{ provide: USER_NOTIFICATION_SETTINGS, useValue: userSettings },
-				{ provide: UNIT_OF_WORK, useValue: unitOfWork },
-				{ provide: AFTER_COMMIT_TASK_REGISTRY, useValue: unitOfWork },
-				{ provide: PublishPushDeliveryOutboxUseCase, useValue: { execute: executePublish } },
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        sendFriendCompletionNotificationsProvider,
+        persistBatchNotificationProvider,
+        finalizeBatchNotificationProvider,
+        pushDeliveryAfterCommitPublisherProvider,
+        { provide: NotificationHistoryReader, useValue: notificationHistoryReader },
+        { provide: NOTIFICATION_REPOSITORY, useValue: repository },
+        { provide: PUSH_DISPATCH_STAGING, useValue: staging },
+        { provide: NOTIFICATION_CACHE, useValue: cache },
+        { provide: NOTIFICATION_DEDUP, useValue: notificationDedup },
+        { provide: USER_NOTIFICATION_SETTINGS, useValue: userSettings },
+        { provide: UNIT_OF_WORK, useValue: unitOfWork },
+        { provide: AFTER_COMMIT_TASK_REGISTRY, useValue: unitOfWork },
+        { provide: PublishPushDeliveryOutbox, useValue: { execute: executePublish } },
+      ],
+    }).compile();
 
-		useCase = module.get(SendFriendCompletionNotificationsUseCase);
-		persistBatch = module.get(PersistBatchNotificationUseCase);
-	});
+    useCase = module.get(SendFriendCompletionNotifications);
+    persistBatch = module.get(PersistBatchNotification);
+  });
 
-	afterEach(async () => {
-		await module?.close();
-	});
+  afterEach(async () => {
+    await module?.close();
+  });
 
-	it("stages notifications and BATCH outbox atomically, then publishes only after root commit", async () => {
-		await useCase.execute(friendCompletionInput);
+  it("알림과 BATCH outbox를 원자적으로 저장하고 root commit 후에만 발행한다", async () => {
+    await useCase.execute(friendCompletionInput);
 
-		expect(unitOfWork.rootTransactionCount).toBe(1);
-		expect(staging.stageMany).toHaveBeenCalledWith([
-			expect.objectContaining({
-				notificationId: 1,
-				userId: "user-1",
-				deliveryMode: "BATCH",
-				force: false,
-			}),
-			expect.objectContaining({
-				notificationId: 2,
-				userId: "user-2",
-				deliveryMode: "BATCH",
-				force: false,
-			}),
-		]);
-		expect(executePublish).toHaveBeenCalledWith({
-			kind: "dispatches",
-			dispatchIds: [201, 202],
-		});
-		expect(events).toEqual([
-			"persist-notifications",
-			"stage-dispatch-outbox",
-			"publish-delivery-job",
-			"invalidate-cache:user-1",
-			"invalidate-cache:user-2",
-			"record-dedup",
-		]);
-	});
+    expect(unitOfWork.rootTransactionCount).toBe(1);
+    expect(staging.stageMany).toHaveBeenCalledWith([
+      expect.objectContaining({
+        notificationId: 1,
+        userId: "user-1",
+        deliveryMode: "BATCH",
+        force: false,
+      }),
+      expect.objectContaining({
+        notificationId: 2,
+        userId: "user-2",
+        deliveryMode: "BATCH",
+        force: false,
+      }),
+    ]);
+    expect(executePublish).toHaveBeenCalledWith({
+      kind: "dispatches",
+      dispatchIds: [201, 202],
+    });
+    expect(events).toEqual([
+      "persist-notifications",
+      "stage-dispatch-outbox",
+      "publish-delivery-job",
+      "invalidate-cache:user-1",
+      "invalidate-cache:user-2",
+      "record-dedup",
+    ]);
+  });
 
-	it("does not publish a registered delivery task when the enclosing UOW rolls back", async () => {
-		const data: CreateNotificationData[] = [
-			{
-				userId: "user-1",
-				type: "FRIEND_COMPLETED",
-				title: "친구 완료",
-				body: "친구가 오늘 할 일을 마쳤어요",
-				friendId: "friend-1",
-			},
-		];
+  it("외부 UoW가 rollback되면 등록된 발송 작업을 발행하지 않는다", async () => {
+    const data: CreateNotificationData[] = [
+      {
+        userId: "user-1",
+        type: "FRIEND_COMPLETED",
+        title: "친구 완료",
+        body: "친구가 오늘 할 일을 마쳤어요",
+        friendId: "friend-1",
+      },
+    ];
 
-		await expect(
-			unitOfWork.run(async () => {
-				await persistBatch.execute(data);
-				throw new Error("rollback persistence transaction");
-			}),
-		).rejects.toThrow("rollback persistence transaction");
+    await expect(
+      unitOfWork.run(async () => {
+        await persistBatch.execute(data);
+        throw new Error("rollback persistence transaction");
+      }),
+    ).rejects.toThrow("rollback persistence transaction");
 
-		expect(unitOfWork.rootTransactionCount).toBe(1);
-		expect(repository.createManyNotificationsAndReturn).toHaveBeenCalledWith(data);
-		expect(staging.stageMany).toHaveBeenCalledTimes(1);
-		expect(executePublish).not.toHaveBeenCalled();
-	});
+    expect(unitOfWork.rootTransactionCount).toBe(1);
+    expect(repository.createManyNotificationsAndReturn).toHaveBeenCalledWith(data);
+    expect(staging.stageMany).toHaveBeenCalledTimes(1);
+    expect(executePublish).not.toHaveBeenCalled();
+  });
 });

@@ -1,4 +1,4 @@
-import type { UpdateTodoCommentInput } from '@aido/validators';
+import type { UpdateTodoCommentInput } from '@aido/api';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';

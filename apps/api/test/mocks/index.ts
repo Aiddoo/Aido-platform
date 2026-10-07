@@ -9,7 +9,7 @@ export * from "./fake-ai.provider.js";
 export * from "./fake-email.service.js";
 export * from "./mock-database.factory.js";
 // 포트 mock 팩토리 (Symbol 토큰 포트용)
+export * from "./database.mock.js";
 export * from "./ports/index.js";
-export * from "./prisma.mock.js";
 export * from "./transaction.mock.js";
 export * from "./typed-mock.js";

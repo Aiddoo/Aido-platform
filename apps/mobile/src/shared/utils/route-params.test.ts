@@ -1,4 +1,4 @@
-import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/validators';
+import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
 import {
   isSampleReportId,
   getSampleReport,

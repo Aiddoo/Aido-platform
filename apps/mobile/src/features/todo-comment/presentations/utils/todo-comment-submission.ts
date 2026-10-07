@@ -1,4 +1,4 @@
-import type { CreateTodoCommentChainInput } from '@aido/validators';
+import type { CreateTodoCommentChainInput } from '@aido/api';
 
 export interface PreparedTodoCommentSubmission {
   fingerprint: string;

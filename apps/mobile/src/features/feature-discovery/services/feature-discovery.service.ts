@@ -1,4 +1,4 @@
-import { featureDiscoveryResponseSchema } from '@aido/validators';
+import { featureDiscoveryResponseSchema } from '@aido/api';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import { ParseError } from '@src/shared/errors/infra-error';
 

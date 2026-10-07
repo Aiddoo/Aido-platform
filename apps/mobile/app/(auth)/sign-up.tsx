@@ -1,4 +1,4 @@
-import { verifyEmailSchema } from '@aido/validators';
+import { verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SignUpPasswordForm } from '@src/features/auth/presentations/components/SignUpPasswordForm';
 import { SignUpUserInfoForm } from '@src/features/auth/presentations/components/SignUpUserInfoForm';

@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT, todoCommentIdSchema, type TodoCommentSort } from '@aido/validators';
+import { TODO_COMMENT_SORT, todoCommentIdSchema, type TodoCommentSort } from '@aido/api';
 import { z } from 'zod';
 
 const todoCommentSortSchema = z

@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT } from '@aido/validators';
+import { TODO_COMMENT_SORT } from '@aido/api';
 
 import type { TodoCommentRoute } from './todo-comment-route';
 import {

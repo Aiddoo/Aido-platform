@@ -1,4 +1,4 @@
-import type { NotificationType } from '@aido/validators';
+import type { NotificationType } from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

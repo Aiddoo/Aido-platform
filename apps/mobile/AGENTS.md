@@ -74,11 +74,11 @@ features/{feature}/
 - **Mapper**: DTO(ISO 문자열) → Domain(`Date` 객체) 변환. 서버 응답 변경의 충격을 Mapper에서 흡수.
 - **의존성 방향**: `Model ← Service/Mapper/UI` (단방향). Model이 다른 레이어를 알면 안 됨.
 - **UI 컴포넌트 우선순위**: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native.
-- **DTO**: `@aido/validators` 사용, 모바일 내부 중복 금지.
+- **DTO**: `@aido/api` 사용, 모바일 내부 중복 금지.
 - **i18n**: 사용자 노출 문자열 하드코딩 금지 — ko/en 카탈로그(`src/shared/i18n/locales`) 동시 추가. 상세: [.claude/i18n-guide.md](.claude/i18n-guide.md)
 - **인증**: `useAuth()` 훅으로 인증 상태를 관리하고 토큰은 `expo-secure-store`에 저장한다.
 - **OAuth**: Google/Kakao/Naver는 백엔드 플로우, Apple은 네이티브 SDK를 사용한다. OAuth 클라이언트 ID는 API 서버에서 관리하며 모바일에는 두지 않는다.
-- **폼**: `react-hook-form`과 `@aido/validators`의 Zod 스키마를 사용한다.
+- **폼**: `react-hook-form`과 `@aido/api`의 Zod 스키마를 사용한다.
 - **HTTP**: Ky 클라이언트를 `HttpClient` 포트를 통해 DI한다.
 - **관측**: Sentry는 `ErrorReporter` 포트, Firebase Analytics는 `Analytics` 포트와 타입 카탈로그 `track()`을 사용한다. 벤더 코드는 어댑터에만 둔다. 상세: [.claude/observability.md](.claude/observability.md)
 

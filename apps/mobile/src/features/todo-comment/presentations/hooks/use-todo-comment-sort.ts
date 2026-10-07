@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT } from '@aido/validators';
+import { TODO_COMMENT_SORT } from '@aido/api';
 import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-todo-screen-params';
 import { useTrack } from '@src/shared/analytics';

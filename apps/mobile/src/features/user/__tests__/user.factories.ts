@@ -1,4 +1,4 @@
-import type { CurrentUser, UpdateProfileResponse } from '@aido/validators';
+import type { CurrentUser, UpdateProfileResponse } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 const generateCurrentUserDto = (): CurrentUser => ({

@@ -1,263 +1,253 @@
 import type { TestingModule } from "@nestjs/testing";
-/**
- * 비밀번호 설정 통합 테스트 (Testcontainers)
- *
- * @description
- * PasswordWorkflow.requestPasswordSetupCode() 및 PasswordWorkflow.setPassword()가
- * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
- *
- * 통합 테스트의 목적:
- * - PasswordWorkflow -> Repository -> Prisma -> PostgreSQL 전체 스택 검증
- * - 소셜 전용 사용자의 비밀번호 설정 플로우
- * - CREDENTIAL 계정 생성 및 SecurityLog 기록
- * - 비밀번호 설정 후 이메일 로그인 가능 여부
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test auth-password-setup.integration-spec
- * ```
- */
-import { vi } from "vitest";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { omit } from "es-toolkit";
 
-import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
+import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
+import { RequestPasswordSetupCode } from "#api/modules/identity/application/use-cases/auth/request-password-setup-code.use-case";
+import { SetPassword } from "#api/modules/identity/application/use-cases/auth/set-password.use-case";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { DatabaseService } from "#api/platform/database/database.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase } from "../setup/test-database.js";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
-	let module: TestingModule;
-	let authService: CredentialAuthWorkflow;
-	let passwordManagementService: PasswordWorkflow;
-	let fakeEmailService: FakeEmailService;
-	let testDb: TestDatabase;
-	let databaseService: DatabaseService;
+  let module: TestingModule;
+  let requestPasswordSetupCode: RequestPasswordSetupCode;
+  let setPassword: SetPassword;
+  let loginWithPassword: LoginWithPassword;
+  let fakeEmailService: FakeEmailService;
+  let testDb: TestDatabase;
+  let databaseService: DatabaseService;
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    testDb = new TestDatabase();
+    databaseService = createTestDatabaseService(await testDb.start());
+    fakeEmailService = new FakeEmailService();
 
-		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
-		fakeEmailService = new FakeEmailService();
+    module = await createAuthTestModule(databaseService, fakeEmailService);
+    requestPasswordSetupCode = module.get(RequestPasswordSetupCode);
+    setPassword = module.get(SetPassword);
+    loginWithPassword = module.get(LoginWithPassword);
+  }, 60000);
 
-		module = await createAuthTestModule(databaseService, fakeEmailService);
-		authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
-		passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
-	}, 60000);
+  beforeEach(async () => {
+    suppressLogger();
+    await testDb.cleanup();
+    fakeEmailService.clear();
+  });
 
-	beforeEach(async () => {
-		vi.clearAllMocks();
-		await testDb.cleanup();
-		fakeEmailService.clear();
-	});
+  afterAll(async () => {
+    try {
+      if (module) await module.close();
+    } finally {
+      if (testDb) await testDb.stop();
+    }
+  });
 
-	afterAll(async () => {
-		try {
-			if (module) await module.close();
-		} finally {
-			if (testDb) await testDb.stop();
-		}
-	});
+  function getCode(email: string): string {
+    const code = fakeEmailService.getLastCode(email);
+    if (code == null) throw new Error(`No code found for ${email}`);
+    return code;
+  }
 
-	/**
-	 * FakeEmailService에서 인증 코드를 안전하게 가져오는 헬퍼
-	 */
-	function getCode(email: string): string {
-		const code = fakeEmailService.getLastCode(email);
-		if (!code) throw new Error(`No code found for ${email}`);
-		return code;
-	}
+  async function createSocialOnlyUser(
+    email: string,
+    provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
+  ): Promise<string> {
+    const userFixture = UserFixture.create({ email });
+    const user = await createUserDatabaseFixture(
+      testDb.getClient(),
+      encodeCreate("User", userFixture),
+      {
+        accounts: [
+          omit(
+            encodeCreate(
+              "Account",
+              AccountFixture.create({
+                userId: userFixture.id,
+                provider,
+                providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
+              }),
+            ),
+            ["id", "userId"],
+          ),
+        ],
+      },
+    );
+    return user.id;
+  }
 
-	/**
-	 * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
-	 * CREDENTIAL 계정 없이 소셜 계정만 가진 사용자를 생성합니다.
-	 * @returns userId
-	 */
-	async function createSocialOnlyUser(
-		email: string,
-		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
-	): Promise<string> {
-		const prisma = testDb.getPrisma();
-		const user = await prisma.user.create({
-			data: {
-				email,
-				userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-				status: "ACTIVE",
-				emailVerifiedAt: new Date(),
-			},
-		});
+  describe("requestPasswordSetupCode", () => {
+    it("소셜 전용 사용자에게 비밀번호 설정 코드를 발송한다", async () => {
+      // Given
+      const email = "social-setup@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-		await prisma.account.create({
-			data: {
-				userId: user.id,
-				provider,
-				providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-			},
-		});
+      // When
+      const result = await requestPasswordSetupCode.execute({ userId });
 
-		return user.id;
-	}
+      // Then
+      expect(result.message).toBeDefined();
+      expect(fakeEmailService.hasSentTo(email)).toBe(true);
+      expect(fakeEmailService.getLastCode(email)).toMatch(/^\d{6}$/);
+    });
 
-	describe("requestPasswordSetupCode", () => {
-		it("소셜 전용 사용자에게 비밀번호 설정 코드를 발송한다", async () => {
-			// Given
-			const email = "social-setup@example.com";
-			const userId = await createSocialOnlyUser(email);
+    it("CREDENTIAL 계정이 이미 있으면 에러를 던진다", async () => {
+      // Given - 소셜 사용자 생성 후 비밀번호 설정 완료
+      const email = "already-has-pw@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-			// When
-			const result = await passwordManagementService.requestPasswordSetupCode(userId);
+      // 비밀번호 설정 코드 요청 및 설정
+      await requestPasswordSetupCode.execute({ userId });
+      const code = getCode(email);
 
-			// Then
-			expect(result.message).toBeDefined();
-			expect(fakeEmailService.hasSentTo(email)).toBe(true);
-			expect(fakeEmailService.getLastCode(email)).toMatch(/^\d{6}$/);
-		});
+      await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
-		it("CREDENTIAL 계정이 이미 있으면 에러를 던진다", async () => {
-			// Given - 소셜 사용자 생성 후 비밀번호 설정 완료
-			const email = "already-has-pw@example.com";
-			const userId = await createSocialOnlyUser(email);
+      // When & Then
+      await expect(requestPasswordSetupCode.execute({ userId })).rejects.toThrow(
+        ApplicationException,
+      );
+    });
+  });
 
-			// 비밀번호 설정 코드 요청 및 설정
-			await passwordManagementService.requestPasswordSetupCode(userId);
-			const code = getCode(email);
+  describe("setPassword", () => {
+    it("인증 코드 확인 후 CREDENTIAL 계정을 생성한다", async () => {
+      // Given
+      const email = "set-pw-test@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-			await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      await requestPasswordSetupCode.execute({ userId });
+      const code = getCode(email);
 
-			// When & Then
-			await expect(passwordManagementService.requestPasswordSetupCode(userId)).rejects.toThrow(
-				ApplicationException,
-			);
-		});
-	});
+      // When
+      const result = await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
-	describe("setPassword", () => {
-		it("인증 코드 확인 후 CREDENTIAL 계정을 생성한다", async () => {
-			// Given
-			const email = "set-pw-test@example.com";
-			const userId = await createSocialOnlyUser(email);
+      // Then
+      expect(result.message).toBeDefined();
 
-			await passwordManagementService.requestPasswordSetupCode(userId);
-			const code = getCode(email);
+      // DB 검증: CREDENTIAL 계정 생성됨
+      const prisma = testDb.getClient();
+      const accounts = decodeRecord(
+        "Account",
+        await prisma.orm.public.Account.where((row) => row.userId.eq(userId)).all(),
+      );
 
-			// When
-			const result = await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
+      expect(credentialAccount).toBeDefined();
+      expect(credentialAccount?.password).toBeTruthy();
+    });
 
-			// Then
-			expect(result.message).toBeDefined();
+    it("비밀번호 설정 후 SecurityLog에 PASSWORD_SETUP 이벤트가 기록된다", async () => {
+      // Given
+      const email = "seclog-pw-test@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-			// DB 검증: CREDENTIAL 계정 생성됨
-			const prisma = testDb.getPrisma();
-			const accounts = await prisma.account.findMany({
-				where: { userId },
-			});
+      await requestPasswordSetupCode.execute({ userId });
+      const code = getCode(email);
 
-			const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
-			expect(credentialAccount).toBeDefined();
-			expect(credentialAccount?.password).toBeTruthy();
-		});
+      // When
+      await setPassword.execute({
+        userId,
+        code,
+        newPassword: "NewPassword1",
+        metadata: {
+          ip: "192.168.1.1",
+          userAgent: "IntegrationTest/1.0",
+        },
+      });
 
-		it("비밀번호 설정 후 SecurityLog에 PASSWORD_SETUP 이벤트가 기록된다", async () => {
-			// Given
-			const email = "seclog-pw-test@example.com";
-			const userId = await createSocialOnlyUser(email);
+      // Then
+      const prisma = testDb.getClient();
+      const logs = decodeRecord(
+        "SecurityLog",
+        await prisma.orm.public.SecurityLog.where((row) =>
+          and(row.userId.eq(userId), row.event.eq("PASSWORD_SETUP")),
+        ).all(),
+      );
+      expect(logs).toHaveLength(1);
+      expect(logs[0]?.ipAddress).toBe("192.168.1.1");
+      expect(logs[0]?.userAgent).toBe("IntegrationTest/1.0");
+    });
 
-			await passwordManagementService.requestPasswordSetupCode(userId);
-			const code = getCode(email);
+    it("비밀번호 설정 후 이메일 로그인이 가능하다", async () => {
+      // Given - 소셜 사용자에게 비밀번호 설정
+      const email = "login-after-setup@example.com";
+      const password = "NewPassword1";
+      const userId = await createSocialOnlyUser(email);
 
-			// When
-			await passwordManagementService.setPassword(userId, code, "NewPassword1", {
-				ip: "192.168.1.1",
-				userAgent: "IntegrationTest/1.0",
-			});
+      await requestPasswordSetupCode.execute({ userId });
+      const code = getCode(email);
 
-			// Then
-			const prisma = testDb.getPrisma();
-			const logs = await prisma.securityLog.findMany({
-				where: { userId, event: "PASSWORD_SETUP" },
-			});
-			expect(logs).toHaveLength(1);
-			expect(logs[0]?.ipAddress).toBe("192.168.1.1");
-			expect(logs[0]?.userAgent).toBe("IntegrationTest/1.0");
-		});
+      await setPassword.execute({ userId, code, newPassword: password });
 
-		it("비밀번호 설정 후 이메일 로그인이 가능하다", async () => {
-			// Given - 소셜 사용자에게 비밀번호 설정
-			const email = "login-after-setup@example.com";
-			const password = "NewPassword1";
-			const userId = await createSocialOnlyUser(email);
+      // When - 이메일/비밀번호로 로그인
+      const loginResult = await loginWithPassword.execute({ email, password });
 
-			await passwordManagementService.requestPasswordSetupCode(userId);
-			const code = getCode(email);
+      // Then
+      expect(loginResult.tokens.accessToken).toBeDefined();
+      expect(loginResult.tokens.refreshToken).toBeDefined();
+    });
 
-			await passwordManagementService.setPassword(userId, code, password);
+    it("잘못된 인증 코드로 비밀번호 설정 시 에러를 던진다", async () => {
+      // Given
+      const email = "wrong-code-test@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-			// When - 이메일/비밀번호로 로그인
-			const loginResult = await authService.login({ email, password });
+      await requestPasswordSetupCode.execute({ userId });
 
-			// Then
-			expect(loginResult.tokens.accessToken).toBeDefined();
-			expect(loginResult.tokens.refreshToken).toBeDefined();
-		});
+      // When & Then
+      await expect(
+        setPassword.execute({ userId, code: "000000", newPassword: "NewPassword1" }),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("잘못된 인증 코드로 비밀번호 설정 시 에러를 던진다", async () => {
-			// Given
-			const email = "wrong-code-test@example.com";
-			const userId = await createSocialOnlyUser(email);
+    it("이미 CREDENTIAL 계정이 있으면 에러를 던진다", async () => {
+      // Given - 비밀번호 설정 완료
+      const email = "duplicate-setup@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-			await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
+      const code = getCode(email);
 
-			// When & Then
-			await expect(
-				passwordManagementService.setPassword(userId, "000000", "NewPassword1"),
-			).rejects.toThrow(ApplicationException);
-		});
+      await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
-		it("이미 CREDENTIAL 계정이 있으면 에러를 던진다", async () => {
-			// Given - 비밀번호 설정 완료
-			const email = "duplicate-setup@example.com";
-			const userId = await createSocialOnlyUser(email);
+      // When & Then - 다시 설정 시도 (코드 요청도 실패해야 함)
+      await expect(requestPasswordSetupCode.execute({ userId })).rejects.toThrow(
+        ApplicationException,
+      );
+    });
 
-			await passwordManagementService.requestPasswordSetupCode(userId);
-			const code = getCode(email);
+    it("기존 소셜 계정은 유지된다", async () => {
+      // Given
+      const email = "keep-social@example.com";
+      const userId = await createSocialOnlyUser(email, "KAKAO");
 
-			await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      await requestPasswordSetupCode.execute({ userId });
+      const code = getCode(email);
 
-			// When & Then - 다시 설정 시도 (코드 요청도 실패해야 함)
-			await expect(passwordManagementService.requestPasswordSetupCode(userId)).rejects.toThrow(
-				ApplicationException,
-			);
-		});
+      // When
+      await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
-		it("기존 소셜 계정은 유지된다", async () => {
-			// Given
-			const email = "keep-social@example.com";
-			const userId = await createSocialOnlyUser(email, "KAKAO");
+      // Then - KAKAO 계정과 CREDENTIAL 계정 모두 존재
+      const prisma = testDb.getClient();
+      const accounts = decodeRecord(
+        "Account",
+        await prisma.orm.public.Account.where((row) => row.userId.eq(userId))
+          .orderBy((row) => row.provider.asc())
+          .all(),
+      );
 
-			await passwordManagementService.requestPasswordSetupCode(userId);
-			const code = getCode(email);
-
-			// When
-			await passwordManagementService.setPassword(userId, code, "NewPassword1");
-
-			// Then - KAKAO 계정과 CREDENTIAL 계정 모두 존재
-			const prisma = testDb.getPrisma();
-			const accounts = await prisma.account.findMany({
-				where: { userId },
-				orderBy: { provider: "asc" },
-			});
-
-			expect(accounts).toHaveLength(2);
-			const providers = accounts.map((a) => a.provider);
-			expect(providers).toContain("CREDENTIAL");
-			expect(providers).toContain("KAKAO");
-		});
-	});
+      expect(accounts).toHaveLength(2);
+      const providers = accounts.map((a) => a.provider);
+      expect(providers).toContain("CREDENTIAL");
+      expect(providers).toContain("KAKAO");
+    });
+  });
 });

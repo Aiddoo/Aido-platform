@@ -3,7 +3,7 @@ import {
   type NotificationInboxItem as ServerNotification,
   type NotificationRouting,
   notificationRoutingSchema,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type { Notification, NotificationListResult } from '../models/notification.model';
 

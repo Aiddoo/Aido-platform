@@ -1,5 +1,5 @@
-import type { ErrorCodeType } from '@aido/errors';
-import { isErrorCode } from '@aido/errors';
+import type { ErrorCodeType } from '@aido/api/errors';
+import { isErrorCode } from '@aido/api/errors';
 import { z } from 'zod';
 
 /** 서버 에러 envelope(신뢰 불가 입력) — 런타임 검증으로 `as` 캐스트를 피한다. */

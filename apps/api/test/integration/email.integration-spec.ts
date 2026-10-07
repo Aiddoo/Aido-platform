@@ -1,430 +1,301 @@
 import { Test, type TestingModule } from "@nestjs/testing";
-/**
- * TransactionalEmailSender 통합 테스트
- *
- * @description
- * TransactionalEmailSender가 NestJS DI 컨테이너와 함께 올바르게 작동하는지 검증합니다.
- * Resend SDK를 모킹하여 실제 API 호출 없이 전체 서비스 동작을 테스트합니다.
- *
- * 통합 테스트의 목적:
- * - NestJS 의존성 주입이 올바르게 작동하는지 검증
- * - ConfigService와의 통합 검증
- * - 재시도 로직이 실제 환경에서 올바르게 동작하는지 검증
- * - 이메일 템플릿이 올바르게 렌더링되는지 검증
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test email.integration-spec
- * ```
- */
 import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
-import { EMAIL_SENDER, type EmailSenderPort } from "#api/email/application/ports/email-sender.port";
-import { TransactionalEmailSender } from "#api/email/index";
-import { ResendEmailSenderAdapter } from "#api/email/infrastructure/adapters/resend-email-sender.adapter";
-import { EMAIL_CONSTANTS } from "#api/email/infrastructure/constants/email.constants";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { EMAIL_CONSTANTS } from "#api/modules/notification/infrastructure/constants/email/email.constants";
+import { NotificationEmailModule } from "#api/modules/notification/notification-email.module";
+import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { AppConfigModule } from "#api/platform/config/config.module";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { resendResponseFixture, StubResendHttp } from "#test/mocks/resend-http.stub";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-const resendMock = vi.hoisted(() => ({ emails: { send: vi.fn() } }));
+const recipient = "private@example.com";
+const code = "987654";
+const expiryMinutes = 15;
+const success = () => resendResponseFixture("send.success.json");
+const failure = () => resendResponseFixture("send.application-error.json", 500);
 
-vi.mock("resend", () => ({
-	Resend: vi.fn().mockImplementation(function () {
-		return resendMock;
-	}),
-}));
+describe("TransactionalEmailSender 통합 테스트 — 실제 SDK + HTTP fixture", () => {
+  let module: TestingModule;
+  let sender: TransactionalEmailSender;
+  let http: StubResendHttp;
 
-describe("TransactionalEmailSender 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let facade: TransactionalEmailSender;
+  beforeEach(async () => {
+    suppressLogger();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-07T00:00:00Z"));
+    vi.stubEnv("RESEND_BASE_URL", "https://api.resend.com");
+    givenResponses([]);
+    module = await Test.createTestingModule({ imports: [AppConfigModule, NotificationEmailModule] })
+      .overrideProvider(TypedConfigService)
+      .useValue(
+        mock<TypedConfigService>({
+          email: {
+            isConfigured: true,
+            apiKey: "fixture-api-key",
+            from: "noreply@integration-test.com",
+            fromName: "Integration Test",
+            supportEmail: "support@example.com",
+          },
+          nodeEnv: "test",
+        }),
+      )
+      .compile();
+    sender = module.get(TransactionalEmailSender);
+  });
 
-	// 테스트 데이터
-	const testEmail = "integration-test@example.com";
-	const testCode = "987654";
-	const testExpiryMinutes = 15;
+  afterEach(async () => {
+    try {
+      await module?.close();
+      expect(http.unexpectedRequests).toEqual([]);
+      expect(http.remainingResponses).toBe(0);
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
+  });
 
-	beforeAll(async () => {
-		suppressLogger();
+  function givenResponses(responses: ConstructorParameters<typeof StubResendHttp>[0]): void {
+    http = new StubResendHttp(responses);
+    vi.stubGlobal("fetch", http.fetch);
+  }
 
-		// fake timers를 사용하여 #sleep의 setTimeout을 즉시 실행
-		vi.useFakeTimers();
+  async function sendVerificationCode(idempotencyKey?: string) {
+    const pending = sender.sendVerificationCode(recipient, { code, expiryMinutes }, idempotencyKey);
+    await vi.runAllTimersAsync();
+    return pending;
+  }
 
-		module = await Test.createTestingModule({
-			providers: [
-				{
-					provide: TransactionalEmailSender,
-					inject: [EMAIL_SENDER],
-					useFactory: (emailSender: EmailSenderPort) => new TransactionalEmailSender(emailSender),
-				},
-				{ provide: EMAIL_SENDER, useClass: ResendEmailSenderAdapter },
-				{
-					provide: TypedConfigService,
-					useValue: {
-						email: {
-							isConfigured: true,
-							apiKey: "test-integration-api-key",
-							from: "noreply@integration-test.com",
-							fromName: "Integration Test",
-						},
-						nodeEnv: "test",
-					},
-				},
-			],
-		}).compile();
+  it("운영 NotificationEmailModule 배선으로 설정·인증·템플릿을 실제 HTTP 요청에 전달한다", async () => {
+    // Given
+    givenResponses([success()]);
 
-		facade = module.get<TransactionalEmailSender>(TransactionalEmailSender);
-	});
+    // When
+    const result = await sendVerificationCode();
 
-	afterAll(async () => {
-		vi.useRealTimers();
-		await module.close();
-		vi.restoreAllMocks();
-	});
+    // Then
+    expect(result).toEqual({ success: true, messageId: "fixture-message", retryCount: 0 });
+    expect(http.request().headers.get("authorization")).toBe("Bearer fixture-api-key");
+    expect(http.request().headers.get("content-type")).toBe("application/json");
+    const body = await http.request().json();
+    expect(body).toEqual(
+      expect.objectContaining({
+        from: "Integration Test <noreply@integration-test.com>",
+        to: recipient,
+        subject: "[Aido] 이메일 인증 코드",
+        html: expect.stringContaining(code),
+        text: expect.stringContaining(String(expiryMinutes)),
+        tags: [
+          { name: "type", value: "verification" },
+          { name: "environment", value: "test" },
+        ],
+      }),
+    );
+    expect(body).toEqual(
+      expect.objectContaining({
+        html: expect.stringContaining(String(expiryMinutes)),
+        text: expect.stringContaining(code),
+      }),
+    );
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+  it("서버 오류 후 성공하면 동일한 요청을 재시도하고 결과를 반환한다", async () => {
+    // Given
+    givenResponses([failure(), success()]);
 
-	/**
-	 * #sleep 내부의 setTimeout을 즉시 해소하면서 async 작업을 진행시키는 헬퍼.
-	 * promise를 반환하되, 모든 pending timer를 반복적으로 flush한다.
-	 */
-	async function flushTimersAndAwait<T>(promise: Promise<T>): Promise<T> {
-		let resolved = false;
-		let result: T;
-		let error: unknown;
+    // When
+    const result = await sendVerificationCode();
 
-		promise
-			.then((r) => {
-				resolved = true;
-				result = r;
-			})
-			.catch((e) => {
-				resolved = true;
-				error = e;
-			});
+    // Then
+    expect(result).toEqual({ success: true, messageId: "fixture-message", retryCount: 1 });
+    expect(http.requests).toHaveLength(2);
+    expect(await http.request(0).json()).toEqual(await http.request(1).json());
+  });
 
-		// 타이머를 반복적으로 flush하여 재시도 루프 전체를 처리
-		while (!resolved) {
-			vi.advanceTimersByTime(10_000);
-			// microtask queue를 비워서 Promise continuation이 실행되도록 함
-			await Promise.resolve();
-		}
+  it("서버 오류와 429가 연속되면 최대 재시도 내에서 성공한다", async () => {
+    // Given
+    givenResponses([
+      failure(),
+      resendResponseFixture("send.rate-limit.json", 429),
+      failure(),
+      success(),
+    ]);
 
-		if (error) throw error;
-		return result!;
-	}
+    // When
+    const result = await sendVerificationCode();
 
-	describe("DI 통합", () => {
-		it("TransactionalEmailSender가 올바르게 인스턴스화된다", () => {
-			// Given - DI 컨테이너가 구성됨
+    // Then
+    expect(result.retryCount).toBe(3);
+    expect(result.success).toBe(true);
+    expect(http.requests).toHaveLength(4);
+  });
 
-			// When - 서비스 인스턴스 확인
+  it("최대 재시도 횟수까지 실패하면 공급자 오류를 반환한다", async () => {
+    // Given
+    givenResponses(Array.from({ length: EMAIL_CONSTANTS.MAX_RETRIES + 1 }, failure));
+    const startedAt = Date.now();
 
-			// Then - 서비스가 정의되어 있어야 함
-			expect(facade).toBeDefined();
-			expect(facade).toBeInstanceOf(TransactionalEmailSender);
-		});
+    // When
+    const result = await sendVerificationCode();
 
-		it("ConfigService에서 설정을 올바르게 읽어온다", async () => {
-			// Given - 이메일 발송 성공 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-integration" },
-				error: null,
-			});
+    // Then
+    expect(result).toEqual({
+      success: false,
+      error: "Persistent failure",
+      retryCount: EMAIL_CONSTANTS.MAX_RETRIES,
+    });
+    expect(http.requests).toHaveLength(EMAIL_CONSTANTS.MAX_RETRIES + 1);
+    expect(Date.now() - startedAt).toBe(
+      EMAIL_CONSTANTS.BASE_RETRY_DELAY * (2 ** EMAIL_CONSTANTS.MAX_RETRIES - 1),
+    );
+  });
 
-			// When - 인증 코드 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
+  it("validation_error는 재시도 없이 실패한다", async () => {
+    // Given
+    givenResponses([resendResponseFixture("send.validation-error.json", 422)]);
 
-			// Then - ConfigService에서 가져온 from 값이 사용됨
-			expect(resendMock.emails.send).toHaveBeenCalledWith(
-				expect.objectContaining({
-					from: "Integration Test <noreply@integration-test.com>",
-				}),
-			);
-		});
-	});
+    // When
+    const result = await sendVerificationCode();
 
-	describe("재시도 통합 테스트", () => {
-		it("재시도 후 성공하면 최종 성공 결과를 반환한다", async () => {
-			// Given - 첫 번째 시도 실패, 두 번째 시도 성공 설정
-			resendMock.emails.send
-				.mockResolvedValueOnce({
-					data: null,
-					error: { name: "application_error", message: "Temporary error" },
-				})
-				.mockResolvedValueOnce({
-					data: { id: "msg-retry-success" },
-					error: null,
-				});
+    // Then
+    expect(result).toEqual({
+      success: false,
+      error: `Rejected ${recipient}: ${code}`,
+      retryCount: 0,
+    });
+    expect(http.requests).toHaveLength(1);
+  });
 
-			// When - 인증 코드 이메일 발송
-			const result = await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
+  it("연결 실패는 실제 SDK가 정규화한 오류를 재시도한 뒤 반환한다", async () => {
+    // Given
+    givenResponses(
+      Array.from({ length: EMAIL_CONSTANTS.MAX_RETRIES + 1 }, () => () => {
+        throw new TypeError("Network connection failed");
+      }),
+    );
 
-			// Then - 재시도 후 성공
-			expect(result.success).toBe(true);
-			expect(result.messageId).toBe("msg-retry-success");
-			expect(result.retryCount).toBe(1);
-			expect(resendMock.emails.send).toHaveBeenCalledTimes(2);
-		});
+    // When
+    const result = await sendVerificationCode();
 
-		it("여러 번 재시도 후 성공한다", async () => {
-			// Given - 3번 실패 후 성공 설정
-			resendMock.emails.send
-				.mockResolvedValueOnce({
-					data: null,
-					error: { name: "application_error", message: "Error 1" },
-				})
-				.mockResolvedValueOnce({
-					data: null,
-					error: { name: "rate_limit_exceeded", message: "Error 2" },
-				})
-				.mockResolvedValueOnce({
-					data: null,
-					error: { name: "application_error", message: "Error 3" },
-				})
-				.mockResolvedValueOnce({
-					data: { id: "msg-final-success" },
-					error: null,
-				});
+    // Then
+    expect(result).toEqual({
+      success: false,
+      error: "Unable to fetch data. The request could not be resolved.",
+      retryCount: EMAIL_CONSTANTS.MAX_RETRIES,
+    });
+    expect(http.requests).toHaveLength(EMAIL_CONSTANTS.MAX_RETRIES + 1);
+  });
 
-			// When - 인증 코드 이메일 발송
-			const result = await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
+  it("JSON이 아닌 서버 오류도 SDK 정규화와 재시도를 거쳐 복구한다", async () => {
+    // Given
+    givenResponses([() => new Response("Bad gateway", { status: 502 }), success()]);
 
-			// Then - 3번 재시도 후 성공
-			expect(result.success).toBe(true);
-			expect(result.retryCount).toBe(3);
-			expect(resendMock.emails.send).toHaveBeenCalledTimes(4);
-		});
+    // When
+    const result = await sendVerificationCode();
 
-		it("최대 재시도 횟수 초과 후 실패한다", async () => {
-			// Given - 모든 시도 실패 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: null,
-				error: { name: "application_error", message: "Persistent failure" },
-			});
+    // Then
+    expect(result.success).toBe(true);
+    expect(result.retryCount).toBe(1);
+  });
 
-			// When - 인증 코드 이메일 발송
-			const result = await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
+  it("재시도마다 Idempotency Key를 HTTP 헤더에 유지한다", async () => {
+    // Given
+    givenResponses([failure(), success()]);
+    const idempotencyKey = "fixture-request-12345";
 
-			// Then - 최대 재시도 후 실패
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Persistent failure");
-			expect(result.retryCount).toBe(EMAIL_CONSTANTS.MAX_RETRIES);
-			expect(resendMock.emails.send).toHaveBeenCalledTimes(EMAIL_CONSTANTS.MAX_RETRIES + 1);
-		});
-	});
+    // When
+    await sendVerificationCode(idempotencyKey);
 
-	describe("템플릿 통합 테스트", () => {
-		it("인증 코드 이메일이 올바른 템플릿으로 생성된다", async () => {
-			// Given - 이메일 발송 성공 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-template" },
-				error: null,
-			});
+    // Then
+    expect(http.requests).toHaveLength(2);
+    for (const request of http.requests) {
+      expect(request.headers.get("idempotency-key")).toBe(idempotencyKey);
+      expect(await request.json()).not.toHaveProperty("headers.Idempotency-Key");
+    }
+  });
 
-			// When - 인증 코드 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: "123456",
-					expiryMinutes: 10,
-				}),
-			);
+  it("Idempotency Key가 없으면 HTTP 헤더에도 포함하지 않는다", async () => {
+    // Given
+    givenResponses([success()]);
 
-			// Then - 템플릿에 인증 코드와 만료 시간이 포함됨
-			const call = resendMock.emails.send.mock.calls[0]?.[0];
-			expect(call?.html).toContain("123456");
-			expect(call?.text).toContain("123456");
-			expect(call?.html).toContain("10");
-			expect(call?.text).toContain("10");
-			expect(call.subject).toBeDefined();
-			expect(call.subject.length).toBeGreaterThan(0);
-		});
+    // When
+    await sendVerificationCode();
 
-		it("비밀번호 재설정 이메일이 올바른 템플릿으로 생성된다", async () => {
-			// Given - 이메일 발송 성공 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-template" },
-				error: null,
-			});
+    // Then
+    expect(http.request().headers.has("idempotency-key")).toBe(false);
+  });
 
-			// When - 비밀번호 재설정 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendPasswordResetCode(testEmail, {
-					code: "654321",
-					expiryMinutes: 30,
-				}),
-			);
+  it("동시에 발송한 이메일의 Idempotency Key와 본문을 각각 유지한다", async () => {
+    // Given
+    givenResponses([success(), success()]);
 
-			// Then - 템플릿에 재설정 코드와 만료 시간이 포함됨
-			const call = resendMock.emails.send.mock.calls[0]?.[0];
-			expect(call?.html).toContain("654321");
-			expect(call?.text).toContain("654321");
-			expect(call?.html).toContain("30");
-			expect(call?.text).toContain("30");
-		});
-	});
+    // When
+    const results = await Promise.all([
+      sender.sendVerificationCode(recipient, { code, expiryMinutes }, "verification-request"),
+      sender.sendPasswordResetCode(
+        "another@example.com",
+        { code: "123456", expiryMinutes },
+        "reset-request",
+      ),
+    ]);
 
-	describe("Idempotency 통합 테스트", () => {
-		it("같은 idempotencyKey가 헤더에 올바르게 전달된다", async () => {
-			// Given - 이메일 발송 성공 응답 및 idempotencyKey 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-idempotent" },
-				error: null,
-			});
-			const idempotencyKey = "unique-request-id-12345";
+    // Then
+    expect(results.every((result) => result.success)).toBe(true);
+    expect(http.requests).toHaveLength(2);
+    const deliveredRequests = await Promise.all(
+      http.requests.map(async (request) => ({
+        idempotencyKey: request.headers.get("idempotency-key"),
+        body: await request.json(),
+      })),
+    );
+    expect(deliveredRequests).toEqual(
+      expect.arrayContaining([
+        {
+          idempotencyKey: "verification-request",
+          body: expect.objectContaining({ to: recipient, text: expect.stringContaining(code) }),
+        },
+        {
+          idempotencyKey: "reset-request",
+          body: expect.objectContaining({
+            to: "another@example.com",
+            text: expect.stringContaining("123456"),
+          }),
+        },
+      ]),
+    );
+  });
 
-			// When - idempotencyKey와 함께 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendVerificationCode(
-					testEmail,
-					{ code: testCode, expiryMinutes: testExpiryMinutes },
-					idempotencyKey,
-				),
-			);
+  it.each([
+    ["비밀번호 재설정", "sendPasswordResetCode", "password-reset"],
+    ["비밀번호 설정", "sendPasswordSetupCode", "password-setup"],
+  ] as const)("%s 템플릿과 환경 태그를 요청에 전달한다", async (_description, method, type) => {
+    // Given
+    givenResponses([success()]);
 
-			// Then - 헤더에 idempotencyKey가 포함됨
-			expect(resendMock.emails.send).toHaveBeenCalledWith(
-				expect.objectContaining({
-					headers: { "Idempotency-Key": idempotencyKey },
-				}),
-			);
-		});
+    // When
+    await sender[method](recipient, { code, expiryMinutes });
 
-		it("idempotencyKey가 없으면 헤더 없이 요청한다", async () => {
-			// Given - 이메일 발송 성공 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-no-idempotency" },
-				error: null,
-			});
-
-			// When - idempotencyKey 없이 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
-
-			// Then - 헤더가 undefined
-			expect(resendMock.emails.send).toHaveBeenCalledWith(
-				expect.objectContaining({
-					headers: undefined,
-				}),
-			);
-		});
-	});
-
-	describe("Tags 통합 테스트", () => {
-		it("verification 이메일에 올바른 태그가 포함된다", async () => {
-			// Given - 이메일 발송 성공 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-tags" },
-				error: null,
-			});
-
-			// When - 인증 코드 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
-
-			// Then - verification 태그가 포함됨
-			const call = resendMock.emails.send.mock.calls[0]?.[0];
-			expect(call.tags).toEqual(
-				expect.arrayContaining([
-					{ name: "type", value: "verification" },
-					{ name: "environment", value: "test" },
-				]),
-			);
-		});
-
-		it("password-reset 이메일에 올바른 태그가 포함된다", async () => {
-			// Given - 이메일 발송 성공 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: { id: "msg-tags" },
-				error: null,
-			});
-
-			// When - 비밀번호 재설정 이메일 발송
-			await flushTimersAndAwait(
-				facade.sendPasswordResetCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
-
-			// Then - password-reset 태그가 포함됨
-			const call = resendMock.emails.send.mock.calls[0]?.[0];
-			expect(call.tags).toEqual(
-				expect.arrayContaining([
-					{ name: "type", value: "password-reset" },
-					{ name: "environment", value: "test" },
-				]),
-			);
-		});
-	});
-
-	describe("에러 핸들링 통합 테스트", () => {
-		it("네트워크 에러 발생 시 적절하게 처리한다", async () => {
-			// Given - 네트워크 에러 발생 설정
-			resendMock.emails.send.mockRejectedValue(new Error("Network connection failed"));
-
-			// When - 인증 코드 이메일 발송
-			const result = await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
-
-			// Then - 실패 결과 반환
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Network connection failed");
-		});
-
-		it("validation_error는 재시도하지 않고 즉시 실패한다", async () => {
-			// Given - validation_error 응답 설정
-			resendMock.emails.send.mockResolvedValue({
-				data: null,
-				error: { name: "validation_error", message: "Invalid email format" },
-			});
-
-			// When - 인증 코드 이메일 발송
-			const result = await flushTimersAndAwait(
-				facade.sendVerificationCode(testEmail, {
-					code: testCode,
-					expiryMinutes: testExpiryMinutes,
-				}),
-			);
-
-			// Then - 재시도 없이 즉시 실패
-			expect(result.success).toBe(false);
-			expect(result.error).toBe("Invalid email format");
-			expect(result.retryCount).toBe(0);
-			expect(resendMock.emails.send).toHaveBeenCalledTimes(1);
-		});
-	});
+    // Then
+    const body = await http.request().json();
+    expect(body).toEqual(
+      expect.objectContaining({
+        to: recipient,
+        html: expect.stringContaining(code),
+        text: expect.stringContaining(String(expiryMinutes)),
+        tags: [
+          { name: "type", value: type },
+          { name: "environment", value: "test" },
+        ],
+      }),
+    );
+    expect(body).toEqual(
+      expect.objectContaining({
+        html: expect.stringContaining(String(expiryMinutes)),
+        text: expect.stringContaining(code),
+      }),
+    );
+  });
 });

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "table.SubscriptionEventReceipt",
+    "label": "Create table \"SubscriptionEventReceipt\"",
+    "summary": "Creates table \"SubscriptionEventReceipt\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "SubscriptionEventReceipt"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"SubscriptionEventReceipt\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SubscriptionEventReceipt\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"SubscriptionEventReceipt\"",
+        "sql": "CREATE TABLE \"public\".\"SubscriptionEventReceipt\" (\n  \"eventId\" character varying(255) NOT NULL,\n  \"eventType\" character varying(50) NOT NULL,\n  \"processedAt\" timestamp(3) NOT NULL,\n  \"provider\" character varying(30) NOT NULL,\n  CONSTRAINT \"SubscriptionEventReceipt_pkey\" PRIMARY KEY (\"provider\", \"eventId\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"SubscriptionEventReceipt\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"SubscriptionEventReceipt\""
+        ]
+      }
+    ]
+  }
+]

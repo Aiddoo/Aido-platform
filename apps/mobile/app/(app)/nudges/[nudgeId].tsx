@@ -1,4 +1,4 @@
-import type { NudgeReplyKind } from '@aido/validators';
+import type { NudgeReplyKind } from '@aido/api';
 import { NudgeInteractionPolicy } from '@src/features/todo/models/nudge-interaction.model';
 import { NudgeThanksButton } from '@src/features/todo/presentations/components/nudge-interactions/NudgeThanksButton';
 import { useGetNudgeInteractionQueryOptions } from '@src/features/todo/presentations/queries/get-nudge-interaction-query-options';

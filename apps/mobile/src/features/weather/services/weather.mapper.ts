@@ -2,7 +2,7 @@ import type {
   LocationResponse,
   WeatherConditions as WeatherConditionsDTO,
   WeatherForecastResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   DailyForecast,

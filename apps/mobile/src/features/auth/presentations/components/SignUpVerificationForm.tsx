@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import { VERIFICATION_CODE, type VerifyEmailInput } from '@aido/validators';
+import { VERIFICATION_CODE, type VerifyEmailInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
 import { isBusinessError } from '@src/shared/errors/result';

@@ -1,4 +1,4 @@
-import { PASSWORD_RULES } from '@aido/validators';
+import { PASSWORD_RULES } from '@aido/api';
 import { PasswordPolicy } from '@src/features/auth/models/auth.model';
 import { useTranslation } from '@src/shared/i18n';
 import { CheckmarkIcon, HStack, Text } from '@src/shared/ui';

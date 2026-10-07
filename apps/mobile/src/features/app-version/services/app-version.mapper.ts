@@ -1,4 +1,4 @@
-import type { AppVersionResponse } from '@aido/validators';
+import type { AppVersionResponse } from '@aido/api';
 
 import type { AppVersionConfig } from '../models/app-version.model';
 

@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import type { ParsedMemoResult, ParsedMemoTodo } from '@src/features/ai/models/ai.model';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { useMemoScreenParams } from '@src/features/memo/presentations/hooks/use-memo-screen-params';

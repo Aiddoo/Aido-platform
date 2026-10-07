@@ -1,4 +1,4 @@
-import type { ReorderMemoInput } from '@aido/validators';
+import type { ReorderMemoInput } from '@aido/api';
 import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

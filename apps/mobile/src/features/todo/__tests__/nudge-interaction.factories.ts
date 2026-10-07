@@ -1,4 +1,4 @@
-import type { NudgeInteractionResponse } from '@aido/validators';
+import type { NudgeInteractionResponse } from '@aido/api';
 
 import { createSendNudgeResponseDto } from './todo-nudge.factories';
 

@@ -18,152 +18,179 @@ import request from "supertest";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("문의 E2E", () => {
-	let ctx: E2eTestContext;
+  let ctx: E2eTestContext;
 
-	beforeAll(async () => {
-		ctx = await createE2eApp();
-	}, 60000);
+  beforeAll(async () => {
+    ctx = await createE2eApp();
+  }, 60000);
 
-	afterAll(async () => {
-		await destroyE2eApp(ctx);
-	});
+  afterAll(async () => {
+    await destroyE2eApp(ctx);
+  });
 
-	beforeEach(async () => {
-		await ctx.reset();
-	});
+  beforeEach(async () => {
+    await ctx.reset();
+  });
 
-	describe("POST /inquiries - 문의 접수", () => {
-		it("인증된 사용자가 문의를 접수한다 (201)", async () => {
-			// Given - 인증된 사용자
-			const user = await ctx.helpers.createVerifiedUser("inquiry-user@example.com", "Test1234!");
+  describe("POST /inquiries - 문의 접수", () => {
+    it("인증된 사용자가 문의를 접수한다 (201)", async () => {
+      // Given - 인증된 사용자
+      const user = await ctx.helpers.createVerifiedUser("inquiry-user@example.com", "Test1234!");
 
-			// When - 문의 접수 API 호출
-			const response = await request(ctx.app.getHttpServer())
-				.post("/v1/inquiries")
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({
-					category: "BUG_REPORT",
-					content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
-				})
-				.expect(201);
+      // When - 문의 접수 API 호출
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/inquiries")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          category: "BUG_REPORT",
+          content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
+        })
+        .expect(201);
 
-			// Then - 문의 접수 성공 검증
-			expect(response.body.success).toBe(true);
-			expect(response.body.data.message).toBe("문의가 접수되었습니다.");
-		});
+      // Then - 문의 접수 성공 검증
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.message).toBe("문의가 접수되었습니다.");
+    });
 
-		it("문의 접수 시 FakeEmailService에 문의가 기록된다", async () => {
-			// Given - 인증된 사용자
-			const user = await ctx.helpers.createVerifiedUser("inquiry-email@example.com", "Test1234!");
+    it("문의 접수 시 FakeEmailService에 문의가 기록된다", async () => {
+      // Given - 인증된 사용자
+      const user = await ctx.helpers.createVerifiedUser("inquiry-email@example.com", "Test1234!");
 
-			// When - 문의 접수 API 호출
-			await request(ctx.app.getHttpServer())
-				.post("/v1/inquiries")
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({
-					category: "BUG_REPORT",
-					content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
-				})
-				.expect(201);
+      // When - 문의 접수 API 호출
+      await request(ctx.app.getHttpServer())
+        .post("/v1/inquiries")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          category: "BUG_REPORT",
+          content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
+        })
+        .expect(201);
 
-			// Then - FakeEmailService에 기록 확인
-			const lastInquiry = ctx.fakeEmailService.getLastInquiry();
-			expect(lastInquiry).toBeDefined();
-			expect(lastInquiry?.data.categoryLabel).toBe("버그 신고");
-		});
+      // Then - FakeEmailService에 기록 확인
+      const lastInquiry = ctx.fakeEmailService.getLastInquiry();
+      expect(lastInquiry).toBeDefined();
+      expect(lastInquiry?.data).toMatchObject({
+        userEmail: "inquiry-email@example.com",
+        category: "BUG_REPORT",
+        categoryLabel: "버그 신고",
+        content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
+      });
+      expect(ctx.fakeEmailService.getInquiryCount()).toBe(1);
+    });
 
-		it("인증 없이 요청 시 401 에러 반환", async () => {
-			// Given - 인증 토큰 없음
+    it("메일 전송 실패는 INQUIRY_1501을 반환하고 접수 성공으로 기록하지 않는다", async () => {
+      // Given - 인증은 완료했지만 문의 메일 전송은 한 번 실패한다
+      const user = await ctx.helpers.createVerifiedUser(
+        "inquiry-failure@example.test",
+        "Test1234!",
+      );
+      ctx.fakeEmailService.simulateFailures(1);
+      // When - 실제 문의 HTTP 흐름을 실행한다
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/inquiries")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ category: "OTHER", content: "합성 문의 전송 실패를 확인합니다." })
+        .expect(502);
+      // Then - 기존 오류 계약을 유지하며 성공 메일 기록은 없다
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe("INQUIRY_1501");
+      expect(response.body.error.message).toBe("문의 이메일 발송에 실패했습니다.");
+      expect(ctx.fakeEmailService.getFailureCount()).toBe(1);
+      expect(ctx.fakeEmailService.getInquiryCount()).toBe(0);
+    });
 
-			// When - 인증 없이 문의 접수 API 호출
-			await request(ctx.app.getHttpServer())
-				.post("/v1/inquiries")
-				.send({
-					category: "BUG_REPORT",
-					content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
-				})
-				.expect(401);
+    it("인증 없이 요청 시 401 에러 반환", async () => {
+      // Given - 인증 토큰 없음
 
-			// Then - 401 Unauthorized 응답 확인 (expect에서 검증)
-		});
+      // When - 인증 없이 문의 접수 API 호출
+      await request(ctx.app.getHttpServer())
+        .post("/v1/inquiries")
+        .send({
+          category: "BUG_REPORT",
+          content: "앱에서 할 일 추가 시 가끔 오류가 발생합니다.",
+        })
+        .expect(401);
 
-		it("잘못된 카테고리 시 400 에러 반환", async () => {
-			// Given - 인증된 사용자, 잘못된 카테고리 값
-			const user = await ctx.helpers.createVerifiedUser("inquiry-badcat@example.com", "Test1234!");
+      // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
+    });
 
-			// When - 잘못된 카테고리로 문의 접수 API 호출
-			const response = await request(ctx.app.getHttpServer())
-				.post("/v1/inquiries")
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({
-					category: "INVALID_CATEGORY",
-					content: "잘못된 카테고리 테스트입니다.",
-				})
-				.expect(400);
+    it("잘못된 카테고리 시 400 에러 반환", async () => {
+      // Given - 인증된 사용자, 잘못된 카테고리 값
+      const user = await ctx.helpers.createVerifiedUser("inquiry-badcat@example.com", "Test1234!");
 
-			// Then - 400 Bad Request 검증
-			expect(response.body.success).toBe(false);
-		});
+      // When - 잘못된 카테고리로 문의 접수 API 호출
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/inquiries")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          category: "INVALID_CATEGORY",
+          content: "잘못된 카테고리 테스트입니다.",
+        })
+        .expect(400);
 
-		it("내용이 너무 짧으면 400 에러 반환", async () => {
-			// Given - 인증된 사용자, 너무 짧은 내용 (10자 미만)
-			const user = await ctx.helpers.createVerifiedUser("inquiry-short@example.com", "Test1234!");
+      // Then - 400 Bad Request 검증
+      expect(response.body.success).toBe(false);
+    });
 
-			// When - 짧은 내용으로 문의 접수 API 호출
-			const response = await request(ctx.app.getHttpServer())
-				.post("/v1/inquiries")
-				.set("Authorization", `Bearer ${user.accessToken}`)
-				.send({
-					category: "BUG_REPORT",
-					content: "짧은내용",
-				})
-				.expect(400);
+    it("내용이 너무 짧으면 400 에러 반환", async () => {
+      // Given - 인증된 사용자, 너무 짧은 내용 (10자 미만)
+      const user = await ctx.helpers.createVerifiedUser("inquiry-short@example.com", "Test1234!");
 
-			// Then - 400 Bad Request 검증
-			expect(response.body.success).toBe(false);
-		});
+      // When - 짧은 내용으로 문의 접수 API 호출
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/inquiries")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({
+          category: "BUG_REPORT",
+          content: "짧은내용",
+        })
+        .expect(400);
 
-		describe("각 카테고리 타입 정상 작동", () => {
-			it("FEATURE_REQUEST 카테고리로 문의 접수", async () => {
-				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser(
-					"inquiry-feature@example.com",
-					"Test1234!",
-				);
+      // Then - 400 Bad Request 검증
+      expect(response.body.success).toBe(false);
+    });
 
-				// When - FEATURE_REQUEST 카테고리로 문의 접수 API 호출
-				const response = await request(ctx.app.getHttpServer())
-					.post("/v1/inquiries")
-					.set("Authorization", `Bearer ${user.accessToken}`)
-					.send({
-						category: "FEATURE_REQUEST",
-						content: "새로운 기능을 추가해주시면 좋겠습니다. 상세 내용입니다.",
-					})
-					.expect(201);
+    describe("각 카테고리 타입 정상 작동", () => {
+      it("FEATURE_REQUEST 카테고리로 문의 접수", async () => {
+        // Given - 인증된 사용자
+        const user = await ctx.helpers.createVerifiedUser(
+          "inquiry-feature@example.com",
+          "Test1234!",
+        );
 
-				// Then - 문의 접수 성공 검증
-				expect(response.body.success).toBe(true);
-				expect(response.body.data.message).toBe("문의가 접수되었습니다.");
-			});
+        // When - FEATURE_REQUEST 카테고리로 문의 접수 API 호출
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/inquiries")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({
+            category: "FEATURE_REQUEST",
+            content: "새로운 기능을 추가해주시면 좋겠습니다. 상세 내용입니다.",
+          })
+          .expect(201);
 
-			it("OTHER 카테고리로 문의 접수", async () => {
-				// Given - 인증된 사용자
-				const user = await ctx.helpers.createVerifiedUser("inquiry-other@example.com", "Test1234!");
+        // Then - 문의 접수 성공 검증
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.message).toBe("문의가 접수되었습니다.");
+      });
 
-				// When - OTHER 카테고리로 문의 접수 API 호출
-				const response = await request(ctx.app.getHttpServer())
-					.post("/v1/inquiries")
-					.set("Authorization", `Bearer ${user.accessToken}`)
-					.send({
-						category: "OTHER",
-						content: "기타 문의 내용입니다. 상세 내용을 작성합니다.",
-					})
-					.expect(201);
+      it("OTHER 카테고리로 문의 접수", async () => {
+        // Given - 인증된 사용자
+        const user = await ctx.helpers.createVerifiedUser("inquiry-other@example.com", "Test1234!");
 
-				// Then - 문의 접수 성공 검증
-				expect(response.body.success).toBe(true);
-				expect(response.body.data.message).toBe("문의가 접수되었습니다.");
-			});
-		});
-	});
+        // When - OTHER 카테고리로 문의 접수 API 호출
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/inquiries")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({
+            category: "OTHER",
+            content: "기타 문의 내용입니다. 상세 내용을 작성합니다.",
+          })
+          .expect(201);
+
+        // Then - 문의 접수 성공 검증
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.message).toBe("문의가 접수되었습니다.");
+      });
+    });
+  });
 });

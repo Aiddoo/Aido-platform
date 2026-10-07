@@ -19,19 +19,19 @@
  * @example maskEmail("invalid")              → "<invalid>"
  */
 export function maskEmail(email: string): string {
-	if (!email) {
-		return "<invalid>";
-	}
-	const lastAtIndex = email.lastIndexOf("@");
-	if (lastAtIndex <= 0) {
-		return "<invalid>";
-	}
-	const local = email.slice(0, lastAtIndex);
-	const domain = email.slice(lastAtIndex + 1);
-	if (!domain) {
-		return "<invalid>";
-	}
-	return `${local[0]}***@${domain}`;
+  if (!email) {
+    return "<invalid>";
+  }
+  const lastAtIndex = email.lastIndexOf("@");
+  if (lastAtIndex <= 0) {
+    return "<invalid>";
+  }
+  const local = email.slice(0, lastAtIndex);
+  const domain = email.slice(lastAtIndex + 1);
+  if (!domain) {
+    return "<invalid>";
+  }
+  return `${local[0]}***@${domain}`;
 }
 
 /**
@@ -43,11 +43,11 @@ export function maskEmail(email: string): string {
  * @example maskUserId("cmmxmf9tx000f1ysse29t7981") → "cmmxmf…"
  */
 export function maskUserId(userId: string): string {
-	if (!userId) {
-		return "<empty>";
-	}
-	if (userId.length <= 6) {
-		return `${userId}…`;
-	}
-	return `${userId.slice(0, 6)}…`;
+  if (!userId) {
+    return "<empty>";
+  }
+  if (userId.length <= 6) {
+    return `${userId}…`;
+  }
+  return `${userId.slice(0, 6)}…`;
 }

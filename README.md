@@ -23,7 +23,7 @@
 | 분류         | 기술                                             |
 | ------------ | ------------------------------------------------ |
 | Monorepo     | Turborepo 2.11, pnpm 10.34                       |
-| Backend      | NestJS 12 ESM, Prisma 7.10, PostgreSQL 16        |
+| Backend      | NestJS 12 ESM, Prisma 8 RC, PostgreSQL 16        |
 | Mobile       | Expo 58, React Native 0.88 RC, React 19.3        |
 | Validation   | Zod 4.3.6, Nest Standard Schema                  |
 | Testing      | Jest Expo 58 (Jest 29), Vitest 5, Testcontainers |
@@ -38,8 +38,7 @@ aido/
 │   ├── api/          # NestJS 백엔드
 │   └── mobile/       # Expo 모바일 앱
 ├── packages/
-│   ├── validators/   # Zod 스키마 (@aido/validators)
-│   └── errors/       # 에러 정의 (@aido/errors)
+│   └── api/          # REST 계약·오류 코드·순수 공용 타입 (@aido/api)
 ├── tooling/
 │   ├── typescript/   # TypeScript 프리셋
 │   ├── vitest/       # Vitest 프리셋
@@ -49,6 +48,8 @@ aido/
 
 ## 시작하기
 
+서버 환경 파일·인증 설정·실행 준비는 [API README](apps/api/README.md#시작하기)를 따른다. 아래 DB 연결은 로컬 개발용이다.
+
 ```bash
 # 설치
 pnpm install
@@ -56,8 +57,8 @@ pnpm install
 # DB 실행 (Docker)
 pnpm docker:up
 
-# 마이그레이션
-pnpm db:migrate
+# 로컬 DB graph 적용·검증
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm --filter @aido/server db:deploy
 
 # 개발 서버
 pnpm dev
@@ -79,11 +80,12 @@ pnpm dev
 
 ### 데이터베이스
 
-| 명령어             | 설명                |
-| ------------------ | ------------------- |
-| `pnpm db:migrate`  | Prisma 마이그레이션 |
-| `pnpm db:generate` | Prisma Client 생성  |
-| `pnpm db:push`     | 스키마 즉시 반영    |
+| 명령어             | 설명                                  |
+| ------------------ | ------------------------------------- |
+| `pnpm db:migrate`  | Prisma 마이그레이션                   |
+| `pnpm db:generate` | Prisma 8 contract의 runtime·타입 생성 |
+| `pnpm db:plan`     | migration graph 적용 계획 확인        |
+| `pnpm db:verify`   | DB와 contract의 일치 확인             |
 
 ### 테스트
 
@@ -119,29 +121,30 @@ pnpm dev
 
 ## 패키지
 
-| 패키지                                    | 설명              |
-| ----------------------------------------- | ----------------- |
-| [@aido/api](./apps/api)                   | NestJS 백엔드 API |
-| [@aido/mobile](./apps/mobile)             | Expo 모바일 앱    |
-| [@aido/validators](./packages/validators) | Zod 스키마        |
-| [@aido/errors](./packages/errors)         | 에러 정의         |
+| 패키지                             | 설명              |
+| ---------------------------------- | ----------------- |
+| [@aido/server](./apps/api)         | NestJS 백엔드 API |
+| [@aido/mobile](./apps/mobile)      | Expo 모바일 앱    |
+| [@aido/api](./packages/api)        | Zod 스키마        |
+| [@aido/api/errors](./packages/api) | 에러 정의         |
 
 ## 개발 가이드
 
 - **커밋**: Conventional Commits (`pnpm commit`)
 - **린트/포맷**: Oxlint + Oxfmt (`pnpm lint && pnpm format:check`)
 - **타입**: TypeScript strict 모드
-- **DTO**: Zod 스키마 (`@aido/validators`)
-- **에러 코드**: `@aido/errors`의 `ErrorCode` 사용 (하드코딩 금지)
+- **DTO**: Zod 스키마 (`@aido/api`)
+- **에러 코드**: `@aido/api/errors`의 `ErrorCode` 사용 (하드코딩 금지)
 - **AI 에이전트 워크플로우**: [AGENTS.md](./AGENTS.md) 참조
 
 ## API 문서
 
-- Swagger UI: `http://localhost:8080/api-docs`
-- OpenAPI JSON: `http://localhost:8080/api-docs-json`
+- Swagger UI: `http://localhost:8080/api/docs`
+- OpenAPI JSON: `http://localhost:8080/api/docs-json`
 
 ## 배포
 
+- **서버 개발 문서**: [작업별 문서 안내](docs/server/README.md)
 - **API**: AWS EC2 + Docker Compose (GitHub Actions SSH 배포). [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
 - **Mobile**: Expo EAS 빌드. [apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)
 

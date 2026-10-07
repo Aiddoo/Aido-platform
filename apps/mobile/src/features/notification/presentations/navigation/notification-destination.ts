@@ -5,7 +5,7 @@ import {
   type NotificationRouting,
   type NotificationType,
   todoCommentIdSchema,
-} from '@aido/validators';
+} from '@aido/api';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 import { z } from 'zod';

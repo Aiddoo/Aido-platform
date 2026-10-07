@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { FlashList } from '@shopify/flash-list';
 import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
 import { isApiError } from '@src/shared/errors';

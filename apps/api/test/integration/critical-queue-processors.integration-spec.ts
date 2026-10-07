@@ -1,408 +1,462 @@
-import type { PrismaClient } from "#api/generated/prisma/client";
-import {
-	NOTIFICATION_QUEUE,
-	NotificationJobName,
-} from "#api/notification/infrastructure/queue/notification-queue.constants";
-import {
-	RETENTION_QUEUE,
-	RetentionJobName,
-} from "#api/retention/infrastructure/queue/retention-queue.constants";
-import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 import {
-	type CriticalQueueProcessorHarness,
-	createCriticalQueueProcessorHarness,
+  NOTIFICATION_QUEUE,
+  NotificationJobName,
+} from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
+import {
+  RETENTION_QUEUE,
+  RetentionJobName,
+} from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { createEntityId } from "#api/platform/database/database-values";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import type { TestDatabaseClient } from "#test/setup/test-database";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
+
+import {
+  type CriticalQueueProcessorHarness,
+  createCriticalQueueProcessorHarness,
 } from "./helpers/critical-queue-processor.harness.js";
 
 const JOB_OPTIONS: EnqueueJobOptions = {
-	retryLimit: 1,
-	retryDelaySeconds: 1,
-	retryBackoff: false,
-	expireInSeconds: 30,
-	retentionSeconds: 60 * 60,
-	deleteAfterSeconds: 60 * 60,
+  retryLimit: 1,
+  retryDelaySeconds: 1,
+  retryBackoff: false,
+  expireInSeconds: 30,
+  retentionSeconds: 60 * 60,
+  deleteAfterSeconds: 60 * 60,
 };
 
 describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg-boss)", () => {
-	let harness: CriticalQueueProcessorHarness;
+  let harness: CriticalQueueProcessorHarness;
 
-	beforeAll(async () => {
-		harness = await createCriticalQueueProcessorHarness();
-	}, 60_000);
+  beforeAll(async () => {
+    harness = await createCriticalQueueProcessorHarness();
+  }, 60_000);
 
-	beforeEach(async () => {
-		await harness.cleanup();
-	});
+  beforeEach(async () => {
+    await harness.cleanup();
+  });
 
-	afterAll(async () => {
-		await harness?.close();
-	});
+  afterAll(async () => {
+    await harness?.close();
+  });
 
-	it("friend-completed 잡은 실제 worker를 거쳐 알림과 푸시 전달 결과를 영속화한다", async () => {
-		// Given
-		const friend = await createPushReadyUser(harness.prisma, {
-			email: "queue-friend@example.com",
-			userTag: "FRIEND01",
-			name: "완료 친구",
-			locale: "ko",
-			token: "fake-friend-token",
-		});
-		const koreanRecipient = await createPushReadyUser(harness.prisma, {
-			email: "queue-ko@example.com",
-			userTag: "QUEUEKO1",
-			name: "한국어 수신자",
-			locale: "ko",
-			token: "fake-queue-ko-token",
-		});
-		const englishRecipient = await createPushReadyUser(harness.prisma, {
-			email: "queue-en@example.com",
-			userTag: "QUEUEEN1",
-			name: "English recipient",
-			locale: "en",
-			token: "fake-queue-en-token",
-		});
+  it("friend-completed 잡은 실제 worker를 거쳐 알림과 푸시 전달 결과를 영속화한다", async () => {
+    // Given
+    const friend = await createPushReadyUser(harness.prisma, {
+      email: "queue-friend@example.com",
+      userTag: "FRIEND01",
+      name: "완료 친구",
+      locale: "ko",
+      token: "fake-friend-token",
+    });
+    const koreanRecipient = await createPushReadyUser(harness.prisma, {
+      email: "queue-ko@example.com",
+      userTag: "QUEUEKO1",
+      name: "한국어 수신자",
+      locale: "ko",
+      token: "fake-queue-ko-token",
+    });
+    const englishRecipient = await createPushReadyUser(harness.prisma, {
+      email: "queue-en@example.com",
+      userTag: "QUEUEEN1",
+      name: "English recipient",
+      locale: "en",
+      token: "fake-queue-en-token",
+    });
 
-		// When
-		const jobId = await harness.runtime.enqueue(
-			NOTIFICATION_QUEUE,
-			{
-				name: NotificationJobName.FRIEND_COMPLETED,
-				data: {
-					friendId: friend.id,
-					friendName: "완료 친구",
-					notifyUserIds: [koreanRecipient.id, englishRecipient.id],
-					timezone: "Asia/Seoul",
-				},
-			},
-			{ ...JOB_OPTIONS, idempotencyKey: `friend-completed:${friend.id}` },
-		);
+    // When
+    const jobId = await harness.runtime.enqueue(
+      NOTIFICATION_QUEUE,
+      {
+        name: NotificationJobName.FRIEND_COMPLETED,
+        data: {
+          friendId: friend.id,
+          friendName: "완료 친구",
+          notifyUserIds: [koreanRecipient.id, englishRecipient.id],
+          timezone: "Asia/Seoul",
+        },
+      },
+      { ...JOB_OPTIONS, idempotencyKey: `friend-completed:${friend.id}` },
+    );
 
-		// Then
-		expect(jobId).not.toBeNull();
-		await harness.eventually(async () => {
-			const [notifications, dispatches, attempts, jobs] = await Promise.all([
-				harness.prisma.notification.findMany({
-					where: { type: "FRIEND_COMPLETED", friendId: friend.id },
-					orderBy: { userId: "asc" },
-				}),
-				harness.prisma.pushDispatch.findMany({
-					where: {
-						notification: {
-							type: "FRIEND_COMPLETED",
-							friendId: friend.id,
-						},
-					},
-				}),
-				harness.prisma.pushDeliveryAttempt.findMany({
-					where: {
-						dispatch: {
-							notification: {
-								type: "FRIEND_COMPLETED",
-								friendId: friend.id,
-							},
-						},
-					},
-				}),
-				harness.boss.findJobs(NOTIFICATION_QUEUE, {
-					id: jobId ?? undefined,
-				}),
-			]);
+    // Then
+    expect(jobId).not.toBeNull();
+    await harness.eventually(async () => {
+      const [notifications, dispatches, attempts, jobs] = await Promise.all([
+        harness.prisma.orm.public.Notification.where((row) =>
+          and(row._type.eq("FRIEND_COMPLETED"), row.friendId.eq(friend.id)),
+        )
+          .orderBy((row) => row.userId.asc())
+          .all()
+          .then((row) => decodeRecord("Notification", row)),
+        harness.prisma.orm.public.PushDispatch.where((row) =>
+          row.notification.some((related) =>
+            and(related._type.eq("FRIEND_COMPLETED"), related.friendId.eq(friend.id)),
+          ),
+        )
+          .all()
+          .then((row) => decodeRecord("PushDispatch", row)),
+        harness.prisma.orm.public.PushDeliveryAttempt.where((row) =>
+          row.dispatch.some((related) =>
+            related.notification.some((related) =>
+              and(related._type.eq("FRIEND_COMPLETED"), related.friendId.eq(friend.id)),
+            ),
+          ),
+        )
+          .all()
+          .then((row) => decodeRecord("PushDeliveryAttempt", row)),
+        harness.boss.findJobs(NOTIFICATION_QUEUE, {
+          id: jobId ?? undefined,
+        }),
+      ]);
 
-			expect(notifications).toHaveLength(2);
-			expect(notifications.map(({ userId }) => userId).sort()).toEqual(
-				[koreanRecipient.id, englishRecipient.id].sort(),
-			);
-			expect(notifications.every(({ notificationDate }) => notificationDate !== null)).toBe(true);
-			expect(dispatches).toHaveLength(2);
-			expect(dispatches.every(({ status }) => status === "SENT")).toBe(true);
-			expect(attempts).toHaveLength(2);
-			expect(attempts.every(({ status }) => status === "TICKET_ACCEPTED")).toBe(true);
-			expect(jobs[0]?.state).toBe("completed");
-		});
-		expect(
-			harness.pushProvider
-				.getSentPayloads()
-				.map(({ token }) => token)
-				.sort(),
-		).toEqual(["fake-queue-en-token", "fake-queue-ko-token"]);
-	});
+      expect(notifications).toHaveLength(2);
+      expect(notifications.map(({ userId }) => userId).sort()).toEqual(
+        [koreanRecipient.id, englishRecipient.id].sort(),
+      );
+      expect(notifications.every(({ notificationDate }) => notificationDate !== null)).toBe(true);
+      expect(dispatches).toHaveLength(2);
+      expect(dispatches.every(({ status }) => status === "SENT")).toBe(true);
+      expect(attempts).toHaveLength(2);
+      expect(attempts.every(({ status }) => status === "TICKET_ACCEPTED")).toBe(true);
+      expect(jobs[0]?.state).toBe("completed");
+    });
+    expect(
+      harness.pushProvider
+        .getSentPayloads()
+        .map(({ token }) => token)
+        .sort(),
+    ).toEqual(["fake-queue-en-token", "fake-queue-ko-token"]);
+  });
 
-	it("retention-dispatch 잡은 실제 worker를 거쳐 전송 상태와 시도를 영속화한다", async () => {
-		// Given
-		const recipient = await createPushReadyUser(harness.prisma, {
-			email: "queue-retention@example.com",
-			userTag: "RETENT01",
-			name: "리텐션 수신자",
-			locale: "ko",
-			token: "fake-retention-token",
-			timezone: harness.daytimeTimezone,
-		});
-		await harness.retentionRepository.enroll({
-			userId: recipient.id,
-			variant: "TREATMENT",
-			startedAt: new Date("2026-07-01T00:00:00.000Z"),
-		});
-		const stage = await harness.prisma.retentionExperimentStage.findFirstOrThrow({
-			where: {
-				assignment: { userId: recipient.id },
-				stage: "D1",
-			},
-		});
-		await harness.retentionRepository.createDelivery({
-			stageId: stage.id,
-			userId: recipient.id,
-			timezone: harness.daytimeTimezone,
-			title: "오늘 할 일을 이어가세요",
-			body: "작은 할 일 하나로 다시 시작해 보세요.",
-			route: "/feed",
-			variantId: "d1_return",
-		});
-		const outbox = await harness.prisma.retentionPushOutbox.findUniqueOrThrow({
-			where: { stageId: stage.id },
-		});
-		const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
-		expect(publication).toEqual({ id: outbox.id, attempts: 1 });
+  it("retention-dispatch 잡은 실제 worker를 거쳐 전송 상태와 시도를 영속화한다", async () => {
+    // Given
+    const recipient = await createPushReadyUser(harness.prisma, {
+      email: "queue-retention@example.com",
+      userTag: "RETENT01",
+      name: "리텐션 수신자",
+      locale: "ko",
+      token: "fake-retention-token",
+      timezone: harness.daytimeTimezone,
+    });
+    await harness.retentionRepository.enroll({
+      userId: recipient.id,
+      variant: "TREATMENT",
+      startedAt: new Date("2026-07-01T00:00:00.000Z"),
+    });
+    const stage = decodeRecord(
+      "RetentionExperimentStage",
+      requireRecord(
+        await harness.prisma.orm.public.RetentionExperimentStage.where((row) =>
+          and(
+            row.assignment.some((related) => related.userId.eq(recipient.id)),
+            row.stage.eq("D1"),
+          ),
+        ).first(),
+      ),
+    );
+    await harness.retentionRepository.createDelivery({
+      stageId: stage.id,
+      userId: recipient.id,
+      timezone: harness.daytimeTimezone,
+      title: "오늘 할 일을 이어가세요",
+      body: "작은 할 일 하나로 다시 시작해 보세요.",
+      route: "/feed",
+      variantId: "d1_return",
+    });
+    const outbox = decodeRecord(
+      "RetentionPushOutbox",
+      requireRecord(
+        await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+          row.stageId.eq(stage.id),
+        ).first(),
+      ),
+    );
+    const publication = await claimReadyRetentionOutbox(harness, outbox.id);
+    expect(publication).toEqual({ id: outbox.id, attempts: 1 });
 
-		// When
-		const jobId = await harness.runtime.enqueue(
-			RETENTION_QUEUE,
-			{
-				name: RetentionJobName.DISPATCH,
-				data: { outboxId: outbox.id, publishAttempt: publication?.attempts },
-			},
-			{ ...JOB_OPTIONS, idempotencyKey: `retention-dispatch:${outbox.id}` },
-		);
-		if (publication) await harness.retentionRepository.markOutboxPublished(publication);
+    // When
+    const jobId = await harness.runtime.enqueue(
+      RETENTION_QUEUE,
+      {
+        name: RetentionJobName.DISPATCH,
+        data: { outboxId: outbox.id, publishAttempt: publication?.attempts },
+      },
+      { ...JOB_OPTIONS, idempotencyKey: `retention-dispatch:${outbox.id}` },
+    );
+    if (publication) await harness.retentionRepository.markOutboxPublished(publication);
 
-		// Then
-		expect(jobId).not.toBeNull();
-		await harness.eventually(async () => {
-			const [dispatch, attempts, jobs] = await Promise.all([
-				harness.prisma.pushDispatch.findUniqueOrThrow({
-					where: { id: outbox.dispatchId },
-				}),
-				harness.prisma.pushDeliveryAttempt.findMany({
-					where: { dispatchId: outbox.dispatchId },
-				}),
-				harness.boss.findJobs(RETENTION_QUEUE, {
-					id: jobId ?? undefined,
-				}),
-			]);
+    // Then
+    expect(jobId).not.toBeNull();
+    await harness.eventually(async () => {
+      const [dispatch, attempts, jobs] = await Promise.all([
+        harness.prisma.orm.public.PushDispatch.where((row) => row.id.eq(outbox.dispatchId))
+          .first()
+          .then((row) => decodeRecord("PushDispatch", requireRecord(row))),
+        harness.prisma.orm.public.PushDeliveryAttempt.where((row) =>
+          row.dispatchId.eq(outbox.dispatchId),
+        )
+          .all()
+          .then((row) => decodeRecord("PushDeliveryAttempt", row)),
+        harness.boss.findJobs(RETENTION_QUEUE, {
+          id: jobId ?? undefined,
+        }),
+      ]);
 
-			expect(dispatch.status).toBe("SENT");
-			expect(dispatch.sentAt).not.toBeNull();
-			expect(attempts).toHaveLength(1);
-			expect(attempts[0]?.status).toBe("TICKET_ACCEPTED");
-			expect(jobs[0]?.state).toBe("completed");
-		});
-		expect(harness.pushProvider.getSentPayloads().map(({ token }) => token)).toEqual([
-			"fake-retention-token",
-		]);
-	});
+      expect(dispatch.status).toBe("SENT");
+      expect(dispatch.sentAt).not.toBeNull();
+      expect(attempts).toHaveLength(1);
+      expect(attempts[0]?.status).toBe("TICKET_ACCEPTED");
+      expect(jobs[0]?.state).toBe("completed");
+    });
+    expect(harness.pushProvider.getSentPayloads().map(({ token }) => token)).toEqual([
+      "fake-retention-token",
+    ]);
+  });
 
-	it("retention lease는 같은 runtime job의 높은 attempt만 reclaim하고 stale worker finalize를 거부한다", async () => {
-		const { outbox, publication } = await createRetentionPublication(harness, "LEASE001");
-		const first = await harness.retentionRepository.claimDispatch({
-			outboxId: outbox.id,
-			publishAttempt: publication.attempts,
-			processingJobId: "retention-lease-job",
-			processingJobAttempt: 1,
-			startedAt: new Date(),
-		});
-		expect(first).not.toBeNull();
+  it("retention lease는 같은 runtime job의 높은 attempt만 reclaim하고 stale worker finalize를 거부한다", async () => {
+    const { outbox, publication } = await createRetentionPublication(harness, "LEASE001");
+    const first = await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      processingJobId: "retention-lease-job",
+      processingJobAttempt: 1,
+      startedAt: new Date(),
+    });
+    expect(first).not.toBeNull();
 
-		await expect(
-			harness.retentionRepository.claimDispatch({
-				outboxId: outbox.id,
-				publishAttempt: publication.attempts,
-				processingJobId: "different-job",
-				processingJobAttempt: 2,
-				startedAt: new Date(),
-			}),
-		).resolves.toBeNull();
-		const retry = await harness.retentionRepository.claimDispatch({
-			outboxId: outbox.id,
-			publishAttempt: publication.attempts,
-			processingJobId: "retention-lease-job",
-			processingJobAttempt: 2,
-			startedAt: new Date(),
-		});
-		expect(retry?.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
-		await expect(
-			harness.retentionRepository.markDispatchSkipped(first?.fence ?? retry!.fence, "STALE"),
-		).resolves.toBe(false);
-		await expect(
-			harness.retentionRepository.markDispatchSkipped(retry!.fence, "CURRENT"),
-		).resolves.toBe(true);
-	});
+    await expect(
+      harness.retentionRepository.claimDispatch({
+        outboxId: outbox.id,
+        publishAttempt: publication.attempts,
+        processingJobId: "different-job",
+        processingJobAttempt: 2,
+        startedAt: new Date(),
+      }),
+    ).resolves.toBeNull();
+    const retry = await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      processingJobId: "retention-lease-job",
+      processingJobAttempt: 2,
+      startedAt: new Date(),
+    });
+    expect(retry?.fence.deliveryAttemptCount).toBe((first?.fence.deliveryAttemptCount ?? 0) + 1);
+    await expect(
+      harness.retentionRepository.markDispatchSkipped(first?.fence ?? retry!.fence, "STALE"),
+    ).resolves.toBe(false);
+    await expect(
+      harness.retentionRepository.markDispatchSkipped(retry!.fence, "CURRENT"),
+    ).resolves.toBe(true);
+  });
 
-	it("stale retention PROCESSING lease는 일반 outbox와 섞지 않고 dispatch+retention outbox를 함께 reopen한다", async () => {
-		const { outbox, publication } = await createRetentionPublication(harness, "STALE001");
-		await harness.retentionRepository.claimDispatch({
-			outboxId: outbox.id,
-			publishAttempt: publication.attempts,
-			processingJobId: "stale-retention-job",
-			processingJobAttempt: 1,
-			startedAt: new Date("2026-08-01T00:00:00.000Z"),
-		});
+  it("stale retention PROCESSING lease는 일반 outbox와 섞지 않고 dispatch+retention outbox를 함께 reopen한다", async () => {
+    const { outbox, publication } = await createRetentionPublication(harness, "STALE001");
+    await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      processingJobId: "stale-retention-job",
+      processingJobAttempt: 1,
+      startedAt: new Date("2026-08-01T00:00:00.000Z"),
+    });
 
-		await expect(
-			harness.retentionRepository.recoverStaleDispatches(new Date("2026-08-01T00:15:01.000Z")),
-		).resolves.toBe(1);
-		await expect(
-			harness.prisma.pushDispatch.findUniqueOrThrow({ where: { id: outbox.dispatchId } }),
-		).resolves.toMatchObject({ status: "PENDING", processingJobId: null });
-		await expect(
-			harness.prisma.retentionPushOutbox.findUniqueOrThrow({ where: { id: outbox.id } }),
-		).resolves.toMatchObject({ status: "PENDING", publishedAt: null });
-		await expect(
-			harness.prisma.pushDispatchOutbox.count({ where: { dispatchId: outbox.dispatchId } }),
-		).resolves.toBe(0);
-	});
+    await expect(
+      harness.retentionRepository.recoverStaleDispatches(new Date("2026-08-01T00:15:01.000Z")),
+    ).resolves.toBe(1);
+    await expect(
+      harness.prisma.orm.public.PushDispatch.where((row) => row.id.eq(outbox.dispatchId))
+        .first()
+        .then((row) => decodeRecord("PushDispatch", requireRecord(row))),
+    ).resolves.toMatchObject({ status: "PENDING", processingJobId: null });
+    await expect(
+      harness.prisma.orm.public.RetentionPushOutbox.where((row) => row.id.eq(outbox.id))
+        .first()
+        .then((row) => decodeRecord("RetentionPushOutbox", requireRecord(row))),
+    ).resolves.toMatchObject({ status: "PENDING", publishedAt: null });
+    await expect(
+      harness.prisma.orm.public.PushDispatchOutbox.where((row) =>
+        row.dispatchId.eq(outbox.dispatchId),
+      )
+        .aggregate((aggregate) => ({ count: aggregate.count() }))
+        .then(({ count }) => count),
+    ).resolves.toBe(0);
+  });
 
-	it("enqueue 성공 뒤 publish mark가 늦어져도 active retention worker lease를 reopen하지 않는다", async () => {
-		const { outbox, publication } = await createRetentionPublication(harness, "ACTIVE01");
-		const startedAt = new Date();
-		await harness.retentionRepository.claimDispatch({
-			outboxId: outbox.id,
-			publishAttempt: publication.attempts,
-			processingJobId: "active-retention-job",
-			processingJobAttempt: 1,
-			startedAt,
-		});
-		await harness.prisma.retentionPushOutbox.update({
-			where: { id: outbox.id },
-			data: {
-				status: "PROCESSING",
-				publishedAt: null,
-				lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
-			},
-		});
+  it("enqueue 성공 뒤 publish mark가 늦어져도 active retention worker lease를 reopen하지 않는다", async () => {
+    const { outbox, publication } = await createRetentionPublication(harness, "ACTIVE01");
+    const startedAt = new Date();
+    await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      processingJobId: "active-retention-job",
+      processingJobAttempt: 1,
+      startedAt,
+    });
+    decodeRecord(
+      "RetentionPushOutbox",
+      requireRecord(
+        await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+          row.id.eq(outbox.id),
+        ).update(
+          encodePatch("RetentionPushOutbox", {
+            status: "PROCESSING",
+            publishedAt: null,
+            lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
+          }),
+        ),
+      ),
+    );
 
-		await expect(
-			harness.retentionRepository.recoverStaleOutboxes(new Date(startedAt.getTime() - 15 * 60_000)),
-		).resolves.toBe(0);
-		await expect(
-			harness.prisma.retentionPushOutbox.findUniqueOrThrow({ where: { id: outbox.id } }),
-		).resolves.toMatchObject({ status: "PROCESSING" });
-	});
+    await expect(
+      harness.retentionRepository.recoverStaleOutboxes(new Date(startedAt.getTime() - 15 * 60_000)),
+    ).resolves.toBe(0);
+    await expect(
+      harness.prisma.orm.public.RetentionPushOutbox.where((row) => row.id.eq(outbox.id))
+        .first()
+        .then((row) => decodeRecord("RetentionPushOutbox", requireRecord(row))),
+    ).resolves.toMatchObject({ status: "PROCESSING" });
+  });
 
-	it("retention rate marker는 새 publication generation에 남고 stale generation DLQ는 reopen하지 못한다", async () => {
-		const { outbox, publication } = await createRetentionPublication(harness, "RATE0001");
-		const claimed = await harness.retentionRepository.claimDispatch({
-			outboxId: outbox.id,
-			publishAttempt: publication.attempts,
-			processingJobId: "rate-reservation-job",
-			processingJobAttempt: 1,
-			startedAt: new Date(),
-		});
-		expect(claimed).not.toBeNull();
-		await expect(
-			harness.retentionRepository.markRateLimitReserved(claimed!.fence, new Date()),
-		).resolves.toBe(true);
-		await expect(
-			harness.retentionRepository.releaseDispatchForRetry({
-				fence: claimed!.fence,
-				reason: "provider unavailable",
-				availableAt: new Date(),
-				hasExhaustedRetries: false,
-			}),
-		).resolves.toBe(true);
-		const [nextPublication] = await harness.retentionRepository.claimOutboxes(1, new Date());
-		expect(nextPublication?.attempts).toBe(2);
-		await expect(
-			harness.retentionRepository.reopenUnclaimedDispatch({
-				outboxId: outbox.id,
-				publishAttempt: publication.attempts,
-				availableAt: new Date(),
-				reason: "stale DLQ",
-			}),
-		).resolves.toBe(false);
-		const retry = await harness.retentionRepository.claimDispatch({
-			outboxId: outbox.id,
-			publishAttempt: nextPublication?.attempts,
-			processingJobId: "rate-reservation-job-2",
-			processingJobAttempt: 1,
-			startedAt: new Date(),
-		});
-		expect(retry?.rateLimitReserved).toBe(true);
-	});
+  it("retention rate marker는 새 publication generation에 남고 stale generation DLQ는 reopen하지 못한다", async () => {
+    const { outbox, publication } = await createRetentionPublication(harness, "RATE0001");
+    const claimed = await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: publication.attempts,
+      processingJobId: "rate-reservation-job",
+      processingJobAttempt: 1,
+      startedAt: new Date(),
+    });
+    expect(claimed).not.toBeNull();
+    await expect(
+      harness.retentionRepository.markRateLimitReserved(claimed!.fence, new Date()),
+    ).resolves.toBe(true);
+    await expect(
+      harness.retentionRepository.releaseDispatchForRetry({
+        fence: claimed!.fence,
+        reason: "provider unavailable",
+        availableAt: new Date(),
+        hasExhaustedRetries: false,
+      }),
+    ).resolves.toBe(true);
+    const [nextPublication] = await harness.retentionRepository.claimOutboxes(1, new Date());
+    expect(nextPublication?.attempts).toBe(2);
+    await expect(
+      harness.retentionRepository.reopenUnclaimedDispatch({
+        outboxId: outbox.id,
+        publishAttempt: publication.attempts,
+        availableAt: new Date(),
+        reason: "stale DLQ",
+      }),
+    ).resolves.toBe(false);
+    const retry = await harness.retentionRepository.claimDispatch({
+      outboxId: outbox.id,
+      publishAttempt: nextPublication?.attempts,
+      processingJobId: "rate-reservation-job-2",
+      processingJobAttempt: 1,
+      startedAt: new Date(),
+    });
+    expect(retry?.rateLimitReserved).toBe(true);
+  });
 });
 
 async function createRetentionPublication(harness: CriticalQueueProcessorHarness, userTag: string) {
-	const user = await createPushReadyUser(harness.prisma, {
-		email: `${userTag.toLowerCase()}@example.com`,
-		userTag,
-		name: "Retention fixture",
-		locale: "ko",
-		token: `fake-${userTag.toLowerCase()}-token`,
-		timezone: harness.daytimeTimezone,
-	});
-	await harness.retentionRepository.enroll({
-		userId: user.id,
-		variant: "TREATMENT",
-		startedAt: new Date("2026-07-01T00:00:00.000Z"),
-	});
-	const stage = await harness.prisma.retentionExperimentStage.findFirstOrThrow({
-		where: { assignment: { userId: user.id }, stage: "D1" },
-	});
-	await harness.retentionRepository.createDelivery({
-		stageId: stage.id,
-		userId: user.id,
-		timezone: harness.daytimeTimezone,
-		title: "title",
-		body: "body",
-		route: "/feed",
-		variantId: "d1_return",
-	});
-	const outbox = await harness.prisma.retentionPushOutbox.findUniqueOrThrow({
-		where: { stageId: stage.id },
-	});
-	const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
-	if (!publication) throw new Error("Retention publication was not claimed");
-	await harness.retentionRepository.markOutboxPublished(publication);
-	return { outbox, publication };
+  const user = await createPushReadyUser(harness.prisma, {
+    email: `${userTag.toLowerCase()}@example.com`,
+    userTag,
+    name: "Retention fixture",
+    locale: "ko",
+    token: `fake-${userTag.toLowerCase()}-token`,
+    timezone: harness.daytimeTimezone,
+  });
+  await harness.retentionRepository.enroll({
+    userId: user.id,
+    variant: "TREATMENT",
+    startedAt: new Date("2026-07-01T00:00:00.000Z"),
+  });
+  const stage = decodeRecord(
+    "RetentionExperimentStage",
+    requireRecord(
+      await harness.prisma.orm.public.RetentionExperimentStage.where((row) =>
+        and(
+          row.assignment.some((related) => related.userId.eq(user.id)),
+          row.stage.eq("D1"),
+        ),
+      ).first(),
+    ),
+  );
+  await harness.retentionRepository.createDelivery({
+    stageId: stage.id,
+    userId: user.id,
+    timezone: harness.daytimeTimezone,
+    title: "title",
+    body: "body",
+    route: "/feed",
+    variantId: "d1_return",
+  });
+  const outbox = decodeRecord(
+    "RetentionPushOutbox",
+    requireRecord(
+      await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+        row.stageId.eq(stage.id),
+      ).first(),
+    ),
+  );
+  const publication = await claimReadyRetentionOutbox(harness, outbox.id);
+  await harness.retentionRepository.markOutboxPublished(publication);
+  return { outbox, publication };
+}
+
+async function claimReadyRetentionOutbox(harness: CriticalQueueProcessorHarness, outboxId: string) {
+  // DB DEFAULT 시계와 Node 시계의 차이 대신 같은 업무 시각으로 발행 가능 여부를 검증한다.
+  const claimAt = new Date("2026-07-02T00:00:00.000Z");
+  await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+    row.id.eq(outboxId),
+  ).updateAndCount(encodePatch("RetentionPushOutbox", { availableAt: claimAt }));
+  const [publication] = await harness.retentionRepository.claimOutboxes(1, claimAt);
+  if (publication === undefined) throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+  return publication;
 }
 
 async function createPushReadyUser(
-	prisma: PrismaClient,
-	input: {
-		email: string;
-		userTag: string;
-		name: string;
-		locale: "ko" | "en";
-		token: string;
-		timezone?: string;
-	},
+  prisma: TestDatabaseClient,
+  input: {
+    email: string;
+    userTag: string;
+    name: string;
+    locale: "ko" | "en";
+    token: string;
+    timezone?: string;
+  },
 ): Promise<{ id: string }> {
-	return prisma.user.create({
-		data: {
-			email: input.email,
-			userTag: input.userTag,
-			status: "ACTIVE",
-			profile: { create: { name: input.name } },
-			preference: {
-				create: {
-					pushEnabled: true,
-					nightPushEnabled: true,
-					timezone: input.timezone ?? "Asia/Seoul",
-					locale: input.locale,
-				},
-			},
-			consent: {
-				create: {
-					marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
-				},
-			},
-			pushTokens: {
-				create: {
-					token: input.token,
-					deviceId: `${input.userTag}-device`,
-					platform: "IOS",
-					appVersion: "1.8.0",
-				},
-			},
-		},
-		select: { id: true },
-	});
+  return createUserDatabaseFixture(
+    prisma,
+    encodeCreate("User", { email: input.email, userTag: input.userTag, status: "ACTIVE" }),
+    {
+      profile: encodePatch("UserProfile", { id: createEntityId(), name: input.name }),
+      preference: encodePatch("UserPreference", {
+        id: createEntityId(),
+        pushEnabled: true,
+        nightPushEnabled: true,
+        timezone: input.timezone ?? "Asia/Seoul",
+        locale: input.locale,
+      }),
+      consent: encodePatch("UserConsent", {
+        id: createEntityId(),
+        marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
+      }),
+      pushTokens: encodePatch<
+        "PushToken",
+        { token: string; deviceId: string; platform: "IOS"; appVersion: string }
+      >("PushToken", {
+        token: input.token,
+        deviceId: `${input.userTag}-device`,
+        platform: "IOS",
+        appVersion: "1.8.0",
+      }),
+    },
+  ).then((row) => decodeRecord("User", row));
 }

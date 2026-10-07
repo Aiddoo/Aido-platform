@@ -7,7 +7,7 @@ import { DATE_FORMAT } from "../constants/date.constant.js";
  * @example toISOString(date) // "2024-01-15T09:30:00.000Z"
  */
 export function toISOString(date: Date): string {
-	return dayjs.utc(date).toISOString();
+  return dayjs.utc(date).toISOString();
 }
 
 /**
@@ -15,7 +15,7 @@ export function toISOString(date: Date): string {
  * @example toDateString(date) // "2024-01-15"
  */
 export function toDateString(date: Date): string {
-	return dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY);
+  return dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY);
 }
 
 /**
@@ -24,7 +24,7 @@ export function toDateString(date: Date): string {
  * @example toISOStringOrNull(null) // null
  */
 export function toISOStringOrNull(date: Date | null): string | null {
-	return date ? dayjs.utc(date).toISOString() : null;
+  return date ? dayjs.utc(date).toISOString() : null;
 }
 
 /**
@@ -33,31 +33,7 @@ export function toISOStringOrNull(date: Date | null): string | null {
  * @example toDateStringOrNull(null) // null
  */
 export function toDateStringOrNull(date: Date | null): string | null {
-	return date ? dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY) : null;
-}
-
-/**
- * Date → 공공데이터포털 API 날짜 (YYYYMMDD)
- *
- * 로컬 타임존(서버 TZ=Asia/Seoul) 기준으로 변환합니다.
- * 기상청, 천문연구원, 에어코리아 등 공공 API 호출용.
- *
- * @example toCompactDateString(new Date(2026, 2, 18)) // "20260318"
- */
-export function toCompactDateString(date: Date): string {
-	return dayjs(date).format(DATE_FORMAT.DATE_COMPACT);
-}
-
-/**
- * Date → 공공데이터포털 API 날짜+시간 (YYYYMMDDHH)
- *
- * 로컬 타임존(서버 TZ=Asia/Seoul) 기준으로 변환합니다.
- * 기상청 생활기상지수 API 등 시간 단위 API 호출용.
- *
- * @example toCompactDateHourString(new Date(2026, 2, 18, 14, 30)) // "2026031814"
- */
-export function toCompactDateHourString(date: Date): string {
-	return dayjs(date).format(DATE_FORMAT.DATE_HOUR_COMPACT);
+  return date ? dayjs.utc(date).format(DATE_FORMAT.DATE_ONLY) : null;
 }
 
 /**
@@ -70,8 +46,8 @@ export function toCompactDateHourString(date: Date): string {
  * @example toIsoWeekId(new Date("2026-03-15T16:00:00Z"), "Asia/Seoul") // "2026-W12" (KST 3/16 월)
  */
 export function toIsoWeekId(date: Date = new Date(), tz?: string): string {
-	const d = tz ? dayjs(date).tz(tz) : dayjs.utc(date);
-	return `${d.isoWeekYear()}-W${String(d.isoWeek()).padStart(2, "0")}`;
+  const d = tz ? dayjs(date).tz(tz) : dayjs.utc(date);
+  return `${d.isoWeekYear()}-W${String(d.isoWeek()).padStart(2, "0")}`;
 }
 
 /**
@@ -84,6 +60,6 @@ export function toIsoWeekId(date: Date = new Date(), tz?: string): string {
  * @example toIsoMonthId(new Date("2026-03-31T16:00:00Z"), "Asia/Seoul") // "2026-M04" (KST 4/1)
  */
 export function toIsoMonthId(date: Date = new Date(), tz?: string): string {
-	const d = tz ? dayjs(date).tz(tz) : dayjs.utc(date);
-	return `${d.year()}-M${String(d.month() + 1).padStart(2, "0")}`;
+  const d = tz ? dayjs(date).tz(tz) : dayjs.utc(date);
+  return `${d.year()}-M${String(d.month() + 1).padStart(2, "0")}`;
 }

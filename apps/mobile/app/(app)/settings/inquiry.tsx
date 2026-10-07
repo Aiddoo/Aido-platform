@@ -3,7 +3,7 @@ import {
   createInquirySchema,
   INQUIRY_CATEGORY,
   INQUIRY_CONTENT_LIMITS,
-} from '@aido/validators';
+} from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/presentations/constants/inquiry-category-labels.constant';
 import { useCreateInquiryMutationOptions } from '@src/features/inquiry/presentations/queries/use-create-inquiry-mutation-options';

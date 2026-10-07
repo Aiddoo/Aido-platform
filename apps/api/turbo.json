@@ -1,23 +1,103 @@
 {
-	"$schema": "https://v2-9-4.turborepo.dev/schema.json",
-	"extends": ["//"],
-	"tasks": {
-		"build": {
-			"inputs": ["src/**", "prisma/**", "package.json", "tsconfig.json", "nest-cli.json"]
-		},
-		"test": {
-			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
-		},
-		"test:e2e": {
-			"cache": false,
-			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
-		},
-		"test:integration": {
-			"cache": false,
-			"inputs": ["src/**", "test/**", "prisma/**", "jest.config.*"]
-		},
-		"typecheck": {
-			"inputs": ["src/**", "prisma/**", "tsconfig.json"]
-		}
-	}
+  "$schema": "https://v2-9-4.turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "prisma*.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts"
+      ],
+      "dependsOn": ["^build", "contract:emit"]
+    },
+    "test": {
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "prisma*.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "test/**"
+      ],
+      "dependsOn": ["^build", "contract:emit"]
+    },
+    "test:e2e": {
+      "cache": false,
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "prisma*.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "test/**"
+      ],
+      "dependsOn": ["^build", "contract:emit"]
+    },
+    "test:integration": {
+      "cache": false,
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "prisma*.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "test/**"
+      ],
+      "dependsOn": ["^build", "contract:emit"]
+    },
+    "typecheck": {
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "prisma*.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "test/**"
+      ],
+      "dependsOn": ["^build", "contract:emit"]
+    },
+    "contract:emit": {
+      "inputs": [
+        "src/prisma/contract.prisma",
+        "prisma.config.ts",
+        "scripts/guard-database-url.cjs",
+        "package.json"
+      ],
+      "outputs": ["src/generated/prisma8/**"]
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "test:cov": {
+      "dependsOn": ["^build", "contract:emit"],
+      "inputs": [
+        "src/**",
+        "prisma/**",
+        "package.json",
+        "prisma*.config.ts",
+        "tsconfig*.json",
+        "nest-cli.json",
+        ".swcrc",
+        "vitest.config.ts",
+        "test/**"
+      ]
+    }
+  }
 }

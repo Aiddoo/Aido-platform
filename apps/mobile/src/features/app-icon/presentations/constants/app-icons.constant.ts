@@ -1,4 +1,4 @@
-import { PROFILE_ICON_KEYS } from '@aido/validators';
+import { PROFILE_ICON_KEYS } from '@aido/api';
 import black_cat from '@assets/premium-app-icons/black-cat.png';
 import cream_cat from '@assets/premium-app-icons/cream-cat.png';
 import defaultIcon from '@assets/premium-app-icons/default.png';

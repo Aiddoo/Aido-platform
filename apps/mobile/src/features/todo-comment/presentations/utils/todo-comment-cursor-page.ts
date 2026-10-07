@@ -3,7 +3,7 @@ import {
   type GetTodoCommentOverviewQuery,
   type GetTodoConversationQuery,
   type TodoCommentCursorPagination,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type { TodoCommentSort } from '../../models/todo-comment.model';
 

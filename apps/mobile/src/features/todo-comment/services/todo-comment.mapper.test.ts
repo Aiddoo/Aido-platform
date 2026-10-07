@@ -3,7 +3,7 @@ import type {
   TodoCommentOverviewResponse,
   TodoConversationItem as TodoConversationItemDto,
   TodoConversationResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import { toTodoCommentOverviewPage, toTodoConversationPage } from './todo-comment.mapper';
 

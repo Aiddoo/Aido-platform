@@ -1,4 +1,4 @@
-import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/validators';
+import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCooldown } from '@src/features/auth/presentations/hooks/use-cooldown';
 import {

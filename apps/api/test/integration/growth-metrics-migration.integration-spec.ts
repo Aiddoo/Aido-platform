@@ -1,165 +1,95 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { Client, Pool } from "pg";
 
-import { PrismaPg } from "@prisma/adapter-pg";
-
-import { PrismaClient } from "#api/generated/prisma/client";
 import { TestDatabase } from "#test/setup/test-database";
 
-const MIGRATION_PATH = path.resolve(
-	import.meta.dirname,
-	"../../prisma/migrations/20260726000000_optimize_growth_metrics/migration.sql",
-);
-const TEST_SCHEMA = `growth_migration_${process.pid}`;
-const LOCK_TIMEOUT_MS = 250;
+import operations from "../../prisma/migrations8/app/20261006T1211_native_unique_constraints/ops.json" with { type: "json" };
 
-interface RelationLock {
-	mode: string;
-	granted: boolean;
-}
+const schema = `native_constraint_adoption_${process.pid}`;
+const table = `"${schema}"."Account"`;
+const index = "Account_provider_providerAccountId_key";
+const operation = operations.find((entry) => entry.id === `adoptUnique.Account.${index}`);
+if (operation === undefined) throw new Error("Native constraint adoption operation missing");
+const adoptionSql = operation.execute[0]?.sql.replaceAll('"public".', `"${schema}".`);
+if (adoptionSql === undefined) throw new Error("Native constraint adoption SQL missing");
 
-function createSingleConnectionClient(connectionString: string): PrismaClient {
-	return new PrismaClient({
-		adapter: new PrismaPg({ connectionString, max: 1 }),
-	});
-}
-
-function migrationStatements(): string[] {
-	return readFileSync(MIGRATION_PATH, "utf8")
-		.split(";")
-		.map((statement) => statement.trim())
-		.filter((statement) => statement.length > 0);
-}
-
-function tableNameFor(statement: string): "User" | "UserActivityDay" {
-	const tableName = statement.match(/\bON\s+"([^"]+)"/)?.[1];
-	if (tableName === "User" || tableName === "UserActivityDay") {
-		return tableName;
-	}
-	throw new Error(`Unexpected growth metric migration statement: ${statement}`);
-}
-
-function insertStatementFor(tableName: "User" | "UserActivityDay"): string {
-	return tableName === "User"
-		? 'INSERT INTO "User" ("deletedAt", "createdAt") VALUES (NULL, now())'
-		: 'INSERT INTO "UserActivityDay" ("firstSeenAt") VALUES (now())';
-}
-
-async function waitForRelationLock(
-	prisma: PrismaClient,
-	ddlPid: number,
-	qualifiedTableName: string,
-): Promise<RelationLock> {
-	const timeoutAt = Date.now() + 2_000;
-
-	while (Date.now() < timeoutAt) {
-		const locks = await prisma.$queryRawUnsafe<RelationLock[]>(
-			`SELECT mode, granted
-			 FROM pg_locks
-			 WHERE pid = $1
-			   AND relation = to_regclass($2)::oid`,
-			ddlPid,
-			qualifiedTableName,
-		);
-		const relationLock = locks[0];
-		if (relationLock) return relationLock;
-		await new Promise<void>((resolve) => setTimeout(resolve, 10));
-	}
-
-	throw new Error(
-		`Timed out waiting for migration relation lock: pid=${ddlPid}, table=${qualifiedTableName}`,
-	);
-}
-
-describe("성장 지표 마이그레이션 (실제 PostgreSQL)", () => {
-	let testDatabase: TestDatabase;
-	let control: PrismaClient;
-	let blocker: PrismaClient;
-	let ddl: PrismaClient;
-	let writer: PrismaClient;
-
-	beforeAll(async () => {
-		testDatabase = new TestDatabase({
-			createPrismaClient: createSingleConnectionClient,
-		});
-		control = await testDatabase.start();
-		const connectionString = testDatabase.getConnectionUri();
-		blocker = createSingleConnectionClient(connectionString);
-		ddl = createSingleConnectionClient(connectionString);
-		writer = createSingleConnectionClient(connectionString);
-		await Promise.all([blocker.$connect(), ddl.$connect(), writer.$connect()]);
-
-		await control.$executeRawUnsafe(
-			`CREATE SCHEMA "${TEST_SCHEMA}"
-			 AUTHORIZATION CURRENT_USER`,
-		);
-		await control.$executeRawUnsafe(
-			`CREATE TABLE "${TEST_SCHEMA}"."User" (
-				"id" bigserial PRIMARY KEY,
-				"deletedAt" timestamptz,
-				"createdAt" timestamptz NOT NULL
-			)`,
-		);
-		await control.$executeRawUnsafe(
-			`CREATE TABLE "${TEST_SCHEMA}"."UserActivityDay" (
-				"id" bigserial PRIMARY KEY,
-				"firstSeenAt" timestamptz NOT NULL
-			)`,
-		);
-
-		for (const client of [blocker, ddl, writer]) {
-			await client.$executeRawUnsafe(`SET search_path TO "${TEST_SCHEMA}"`);
-		}
-		await writer.$executeRawUnsafe(`SET lock_timeout TO '${LOCK_TIMEOUT_MS}ms'`);
-	}, 60_000);
-
-	afterAll(async () => {
-		await control?.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${TEST_SCHEMA}" CASCADE`);
-		await Promise.all([blocker?.$disconnect(), ddl?.$disconnect(), writer?.$disconnect()]);
-		await testDatabase?.stop();
-	});
-
-	it.each(migrationStatements())(
-		"활성 쓰기와 함께 적용해도 새 쓰기를 막지 않아야 한다: %#",
-		async (statement) => {
-			// Given - 기존 앱 요청이 쓰기 트랜잭션을 수행 중인 운영 테이블
-			const tableName = tableNameFor(statement);
-			const insertStatement = insertStatementFor(tableName);
-			const qualifiedTableName = `"${TEST_SCHEMA}"."${tableName}"`;
-			await blocker.$executeRawUnsafe("BEGIN");
-			await blocker.$executeRawUnsafe(insertStatement);
-			const ddlBackend = await ddl.$queryRawUnsafe<Array<{ pid: number }>>(
-				"SELECT pg_backend_pid()::int AS pid",
-			);
-			const ddlPid = ddlBackend[0]?.pid;
-			if (ddlPid === undefined) {
-				throw new Error("Could not identify migration backend");
-			}
-
-			// When - migration deploy와 다음 기존 앱 쓰기가 겹친다
-			// PrismaPromise is lazy; attaching a continuation starts the DDL before
-			// we probe pg_locks and issue the competing write.
-			const migration = ddl.$executeRawUnsafe(statement).then((affectedRows) => affectedRows);
-			let relationLock: RelationLock | undefined;
-			let writerError: unknown;
-			try {
-				relationLock = await waitForRelationLock(control, ddlPid, qualifiedTableName);
-				try {
-					await writer.$executeRawUnsafe(insertStatement);
-				} catch (error) {
-					writerError = error;
-				}
-			} finally {
-				await blocker.$executeRawUnsafe("COMMIT");
-				await migration;
-			}
-
-			// Then - online index lock은 쓰기와 호환되고 새 요청도 timeout 없이 완료된다
-			expect(relationLock).toEqual({
-				mode: "ShareUpdateExclusiveLock",
-				granted: true,
-			});
-			expect(writerError).toBeUndefined();
-		},
-	);
+describe("native migration graph의 기존 unique index 전환", () => {
+  let database: TestDatabase;
+  let pool: Pool;
+  beforeAll(async () => {
+    database = new TestDatabase();
+    await database.start();
+    pool = new Pool({ connectionString: database.getConnectionUri() });
+    await pool.query(`CREATE SCHEMA "${schema}"`);
+  });
+  afterAll(async () => {
+    await pool.query(`DROP SCHEMA "${schema}" CASCADE`);
+    await pool.end();
+    await database.stop();
+  });
+  beforeEach(async () => {
+    await pool.query(`DROP TABLE IF EXISTS ${table}`);
+    await pool.query(
+      `CREATE TABLE ${table} ("id" text PRIMARY KEY, "provider" text NOT NULL, "providerAccountId" text NOT NULL)`,
+    );
+    await pool.query(
+      `CREATE UNIQUE INDEX "${index}" ON ${table} ("provider", "providerAccountId")`,
+    );
+    await pool.query(`INSERT INTO ${table} VALUES ('existing', 'CREDENTIAL', '기존 사용자')`);
+  });
+  const readIndex = async () =>
+    (
+      await pool.query<{ oid: number; indisvalid: boolean }>(
+        "SELECT indexrelid::int AS oid, indisvalid FROM pg_index WHERE indexrelid = to_regclass($1)",
+        [`"${schema}"."${index}"`],
+      )
+    ).rows;
+  it("graph의 모든 unique 전환이 기존 index를 재사용하며 drop·rebuild를 하지 않는다", () => {
+    expect(operations).toHaveLength(34);
+    for (const entry of operations) {
+      expect(entry.execute).toHaveLength(1);
+      expect(entry.execute[0]?.sql).toMatch(
+        /^ALTER TABLE .* ADD CONSTRAINT .* UNIQUE USING INDEX /,
+      );
+      expect(entry.execute[0]?.sql).not.toMatch(/DROP|CREATE INDEX|DELETE|TRUNCATE/);
+    }
+  });
+  it("데이터·index OID·중복 거부를 보존하고 ORM upsert용 constraint만 연결한다", async () => {
+    const before = await readIndex();
+    await pool.query(adoptionSql);
+    expect(await readIndex()).toEqual(before);
+    expect((await pool.query(`SELECT * FROM ${table}`)).rows).toEqual([
+      { id: "existing", provider: "CREDENTIAL", providerAccountId: "기존 사용자" },
+    ]);
+    await expect(
+      pool.query(`INSERT INTO ${table} VALUES ('duplicate', 'CREDENTIAL', '기존 사용자')`),
+    ).rejects.toMatchObject({ code: "23505", constraint: index });
+  });
+  it("활성 쓰기로 DDL이 대기하면 제한시간 내 취소되고 기존 데이터와 쓰기를 보존한다", async () => {
+    const writer = new Client({ connectionString: database.getConnectionUri() });
+    const ddl = new Client({ connectionString: database.getConnectionUri() });
+    await Promise.all([writer.connect(), ddl.connect()]);
+    const before = await readIndex();
+    try {
+      await writer.query("BEGIN");
+      await writer.query(
+        `INSERT INTO ${table} VALUES ('active', 'CREDENTIAL', 'active@example.com')`,
+      );
+      await ddl.query("BEGIN");
+      await ddl.query("SET LOCAL lock_timeout = '250ms'");
+      await expect(ddl.query(adoptionSql)).rejects.toMatchObject({ code: "55P03" });
+      await ddl.query("ROLLBACK");
+      await writer.query(`INSERT INTO ${table} VALUES ('next', 'CREDENTIAL', 'next@example.com')`);
+      await writer.query("COMMIT");
+      expect(await readIndex()).toEqual(before);
+      await pool.query(adoptionSql);
+      expect(await readIndex()).toEqual(before);
+      expect((await pool.query(`SELECT count(*)::int AS count FROM ${table}`)).rows).toEqual([
+        { count: 3 },
+      ]);
+    } finally {
+      await writer.query("ROLLBACK");
+      await ddl.query("ROLLBACK");
+      await Promise.all([writer.end(), ddl.end()]);
+    }
+  });
 });

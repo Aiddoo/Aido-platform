@@ -5,7 +5,7 @@ import {
   reportStatusResponseSchema,
   suggestionActionResponseSchema,
   suggestionListResponseSchema,
-} from '@aido/validators';
+} from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { Logger } from '@src/core/ports/logger';
 import type { ApiError } from '@src/shared/errors/api-error';

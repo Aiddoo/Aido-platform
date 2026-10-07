@@ -8,34 +8,54 @@ export const MUTATION_LOCK = Symbol("MUTATION_LOCK");
  * 트랜잭션 종료 시 데이터베이스가 자동으로 해제하는 잠금만 사용한다.
  */
 export interface MutationLockPort {
-	acquire(keys: readonly string[]): Promise<void>;
+  acquire(keys: readonly string[]): Promise<void>;
 }
 
 const MUTATION_KEY_PREFIX = "mutation:v1";
 
 export const MutationLockKeys = {
-	cheerDaily(senderId: string, localDate: string): string {
-		return `${MUTATION_KEY_PREFIX}:cheer:daily:${senderId}:${localDate}`;
-	},
-	cheerCooldown(senderId: string, receiverId: string): string {
-		return `${MUTATION_KEY_PREFIX}:cheer:cooldown:${senderId}:${receiverId}`;
-	},
-	nudgeDaily(senderId: string, localDate: string): string {
-		return `${MUTATION_KEY_PREFIX}:nudge:daily:${senderId}:${localDate}`;
-	},
-	nudgeCooldown(senderId: string, todoId: number): string {
-		return `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId}:${todoId}`;
-	},
-	remindNudgeCooldown(senderId: string, receiverId: string): string {
-		return `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId}:${receiverId}`;
-	},
-	todoCategory(userId: string): string {
-		return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
-	},
-	todoComment(commentId: string): string {
-		return `${MUTATION_KEY_PREFIX}:todo-comment:${commentId}`;
-	},
-	todoCommentRequest(authorId: string, clientRequestId: string): string {
-		return `${MUTATION_KEY_PREFIX}:todo-comment-request:${authorId}:${clientRequestId}`;
-	},
+  friendPair(userId: string, targetUserId: string): string {
+    const [smallerId, largerId] =
+      userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
+    return `${MUTATION_KEY_PREFIX}:friend:pair:${smallerId}:${largerId}`;
+  },
+  friendList(userId: string): string {
+    return `${MUTATION_KEY_PREFIX}:friend:list:${userId}`;
+  },
+  cheerDailyQuota(senderId: string): string {
+    return `${MUTATION_KEY_PREFIX}:cheer:daily-quota:${senderId}`;
+  },
+  nudgeDailyQuota(senderId: string): string {
+    return `${MUTATION_KEY_PREFIX}:nudge:daily-quota:${senderId}`;
+  },
+  cheerCooldown(senderId: string, receiverId: string): string {
+    return `${MUTATION_KEY_PREFIX}:cheer:cooldown:${senderId}:${receiverId}`;
+  },
+  nudgeCooldown(senderId: string, todoId: number): string {
+    return `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId}:${todoId}`;
+  },
+  remindNudgeCooldown(senderId: string, receiverId: string): string {
+    return `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId}:${receiverId}`;
+  },
+  todoCategory(userId: string): string {
+    return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
+  },
+  todo(todoId: number): string {
+    return `${MUTATION_KEY_PREFIX}:todo:${todoId}`;
+  },
+  todoSortOrder(userId: string): string {
+    return `${MUTATION_KEY_PREFIX}:todo-sort-order:${userId}`;
+  },
+  memo(memoId: number): string {
+    return `${MUTATION_KEY_PREFIX}:memo:${memoId}`;
+  },
+  memoSortOrder(userId: string): string {
+    return `${MUTATION_KEY_PREFIX}:memo-sort-order:${userId}`;
+  },
+  todoComment(commentId: string): string {
+    return `${MUTATION_KEY_PREFIX}:todo-comment:${commentId}`;
+  },
+  todoCommentRequest(authorId: string, clientRequestId: string): string {
+    return `${MUTATION_KEY_PREFIX}:todo-comment-request:${authorId}:${clientRequestId}`;
+  },
 };

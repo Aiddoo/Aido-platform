@@ -1,4 +1,4 @@
-import type { UpdateMemoInput } from '@aido/validators';
+import type { UpdateMemoInput } from '@aido/api';
 import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';

@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import { VERIFICATION_CODE } from '@aido/validators';
+import { VERIFICATION_CODE } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
 import { PasswordStrengthIndicator } from '@src/features/auth/presentations/components/PasswordStrengthIndicator';

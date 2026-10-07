@@ -1,4 +1,4 @@
-import type { TodoItemResponse } from '@aido/validators';
+import type { TodoItemResponse } from '@aido/api';
 
 import type { SubTodo } from '../models/sub-todo.model';
 

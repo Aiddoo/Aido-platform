@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import type { CreateRecurringTodoInput } from '@aido/validators';
+import type { CreateRecurringTodoInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-category-query-keys.constant';

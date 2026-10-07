@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import type { CreateTodoCategoryInput } from '@aido/validators';
+import type { CreateTodoCategoryInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type {

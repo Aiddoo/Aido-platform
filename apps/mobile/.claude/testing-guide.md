@@ -72,7 +72,7 @@ UI에서 복잡한 계산이 필요하면 계산을 순수 util 또는 view-mode
 ### Mapper / Service
 
 - 올바른 method, path, query, body를 전송하는지
-- `@aido/validators` 스키마로 응답을 검증하는지
+- `@aido/api` 스키마로 응답을 검증하는지
 - ISO 문자열을 `Date` 등 Domain 값으로 한 번만 변환하는지
 - `AbortSignal` 같은 호출 제어 값을 transport까지 전달하는지
 - 계약 파싱 실패와 서버 오류를 정해진 방식으로 전달하는지

@@ -1,4 +1,4 @@
-import { appStoreVersionSchema } from '@aido/validators';
+import { appStoreVersionSchema } from '@aido/api';
 import { z } from 'zod';
 
 export const appVersionPlatformSchema = z.enum(['ios', 'android']);

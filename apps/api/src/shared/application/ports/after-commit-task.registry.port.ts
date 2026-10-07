@@ -9,5 +9,5 @@ export type AfterCommitTask = () => Promise<void>;
  * 보장하지 않으므로, 반드시 전달되어야 하는 작업은 outbox와 함께 사용합니다.
  */
 export interface AfterCommitTaskRegistryPort {
-	register(task: AfterCommitTask): void;
+  register(task: AfterCommitTask): void;
 }

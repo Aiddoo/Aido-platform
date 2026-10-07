@@ -1,4 +1,4 @@
-import type { CurrentUser, UpdateProfileResponse } from '@aido/validators';
+import type { CurrentUser, UpdateProfileResponse } from '@aido/api';
 
 import type { UpdateProfileResult, User } from '../models/user.model';
 

@@ -1,0 +1,28 @@
+import { Inject, Injectable } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
+
+import {
+  TODO_REMINDER,
+  type TodoReminderPort,
+} from "../../../application/ports/todos/todo-reminder.port.js";
+import { TodoDeletedEvent } from "../../../domain/events/todos/todo-deleted.event.js";
+import { TODO_EVENTS } from "../../../domain/events/todos/todo-event-names.js";
+
+/**
+ * Todo 삭제 이벤트 핸들러
+ *
+ * 삭제된 할 일의 리마인더를 취소합니다.
+ * 취소할 잡이 없는 경우는 정상 처리하고, 인프라 실패는 이벤트 경계까지 전파합니다.
+ */
+@Injectable()
+export class TodoDeletedHandler {
+  constructor(
+    @Inject(TODO_REMINDER)
+    private readonly todoReminder: TodoReminderPort,
+  ) {}
+
+  @OnEvent(TODO_EVENTS.DELETED, { suppressErrors: false })
+  async handle(event: TodoDeletedEvent): Promise<void> {
+    await this.todoReminder.cancelReminder(event.todoId);
+  }
+}

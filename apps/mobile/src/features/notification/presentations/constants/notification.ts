@@ -1,4 +1,4 @@
-import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/validators';
+import { NOTIFICATION_CATEGORY, type NotificationCategory } from '@aido/api';
 
 export const CATEGORY_TABS = [
   { value: NOTIFICATION_CATEGORY.ALL, labelKey: 'categories.all' },

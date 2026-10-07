@@ -10,110 +10,110 @@ import { Test, type TestingModule } from "@nestjs/testing";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test inquiry.integration-spec
+ * pnpm --filter @aido/server test inquiry.integration-spec
  * ```
  */
 import { vi } from "vitest";
 
-import { TransactionalEmailSender } from "#api/email/index";
-import { EmailInquiryMailerAdapter } from "#api/inquiry/infrastructure/adapters/email-inquiry-mailer.adapter";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { EmailInquiryMailerAdapter } from "#api/modules/support/infrastructure/adapters/inquiries/email-inquiry-mailer.adapter";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {
-	let module: TestingModule;
-	let adapter: EmailInquiryMailerAdapter;
+  let module: TestingModule;
+  let adapter: EmailInquiryMailerAdapter;
 
-	const mockEmailService = {
-		sendInquiry: vi.fn(),
-	};
+  const mockEmailService = {
+    sendInquiry: vi.fn(),
+  };
 
-	const mockConfigService = {
-		email: {
-			supportEmail: "support@aido.kr",
-			apiKey: "test",
-			from: "noreply@test.com",
-			fromName: "Test",
-			isConfigured: true,
-		},
-	};
+  const mockConfigService = {
+    email: {
+      supportEmail: "support@aido.kr",
+      apiKey: "test",
+      from: "noreply@test.com",
+      fromName: "Test",
+      isConfigured: true,
+    },
+  };
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		module = await Test.createTestingModule({
-			providers: [
-				EmailInquiryMailerAdapter,
-				{ provide: TransactionalEmailSender, useValue: mockEmailService },
-				{ provide: TypedConfigService, useValue: mockConfigService },
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        EmailInquiryMailerAdapter,
+        { provide: TransactionalEmailSender, useValue: mockEmailService },
+        { provide: TypedConfigService, useValue: mockConfigService },
+      ],
+    }).compile();
 
-		adapter = module.get(EmailInquiryMailerAdapter);
-	});
+    adapter = module.get(EmailInquiryMailerAdapter);
+  });
 
-	afterAll(async () => {
-		await module.close();
-		vi.restoreAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+    vi.restoreAllMocks();
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-	it("어댑터가 정상적으로 주입되어야 함", () => {
-		expect(adapter).toBeDefined();
-		expect(adapter).toBeInstanceOf(EmailInquiryMailerAdapter);
-	});
+  it("어댑터가 정상적으로 주입되어야 함", () => {
+    expect(adapter).toBeDefined();
+    expect(adapter).toBeInstanceOf(EmailInquiryMailerAdapter);
+  });
 
-	it("설정의 supportEmail로 문의를 위임한다", async () => {
-		// Given
-		mockEmailService.sendInquiry.mockResolvedValue({
-			success: true,
-			messageId: "msg-integration",
-		});
+  it("설정의 supportEmail로 문의를 위임한다", async () => {
+    // Given
+    mockEmailService.sendInquiry.mockResolvedValue({
+      success: true,
+      messageId: "msg-integration",
+    });
 
-		// When
-		const result = await adapter.deliver({
-			userEmail: "test@example.com",
-			category: "OTHER",
-			categoryLabel: "기타",
-			content: "통합 테스트 문의 내용입니다.",
-			submittedAt: "2026-07-11 14:30 (KST)",
-		});
+    // When
+    const result = await adapter.deliver({
+      userEmail: "test@example.com",
+      category: "OTHER",
+      categoryLabel: "기타",
+      content: "통합 테스트 문의 내용입니다.",
+      submittedAt: "2026-07-11 14:30 (KST)",
+    });
 
-		// Then
-		expect(mockEmailService.sendInquiry).toHaveBeenCalledWith(
-			"support@aido.kr",
-			expect.objectContaining({
-				userEmail: "test@example.com",
-				category: "OTHER",
-				categoryLabel: "기타",
-			}),
-		);
-		expect(result).toEqual({ success: true, error: undefined });
-	});
+    // Then
+    expect(mockEmailService.sendInquiry).toHaveBeenCalledWith(
+      "support@aido.kr",
+      expect.objectContaining({
+        userEmail: "test@example.com",
+        category: "OTHER",
+        categoryLabel: "기타",
+      }),
+    );
+    expect(result).toEqual({ success: true, error: undefined });
+  });
 
-	it("EmailService 실패 결과를 그대로 전달 결과로 매핑한다", async () => {
-		// Given
-		mockEmailService.sendInquiry.mockResolvedValue({
-			success: false,
-			error: "Service unavailable",
-		});
+  it("EmailService 실패 결과를 그대로 전달 결과로 매핑한다", async () => {
+    // Given
+    mockEmailService.sendInquiry.mockResolvedValue({
+      success: false,
+      error: "Service unavailable",
+    });
 
-		// When
-		const result = await adapter.deliver({
-			userEmail: "fail@example.com",
-			category: "FEATURE_REQUEST",
-			categoryLabel: "기능 요청",
-			content: "기능 요청입니다.",
-			submittedAt: "2026-07-11 14:30 (KST)",
-		});
+    // When
+    const result = await adapter.deliver({
+      userEmail: "fail@example.com",
+      category: "FEATURE_REQUEST",
+      categoryLabel: "기능 요청",
+      content: "기능 요청입니다.",
+      submittedAt: "2026-07-11 14:30 (KST)",
+    });
 
-		// Then
-		expect(result).toEqual({
-			success: false,
-			error: "Service unavailable",
-		});
-	});
+    // Then
+    expect(result).toEqual({
+      success: false,
+      error: "Service unavailable",
+    });
+  });
 });

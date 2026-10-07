@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT } from '@aido/validators';
+import { TODO_COMMENT_SORT } from '@aido/api';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import type { TodoCommentService } from '@src/features/todo-comment/services/todo-comment.service';
 import { unwrap } from '@src/shared/errors/result';

@@ -1,4 +1,4 @@
-import { ACCOUNT_PROVIDERS, OAUTH_PROVIDERS } from '@aido/validators';
+import { ACCOUNT_PROVIDERS, OAUTH_PROVIDERS } from '@aido/api';
 import { z } from 'zod';
 
 const toSlugTuple = <T extends readonly string[]>(arr: T) =>

@@ -16,11 +16,11 @@ const MAX_MEMO_PROMPT_LENGTH = 1000;
  * 프롬프트 경계 보호는 문자열 훼손이 아니라 encodeUntrustedJson에서 담당합니다.
  */
 export function sanitizeForPrompt(input: string): string {
-	return input
-		.normalize("NFKC")
-		.replace(/[\r\n]+/g, " ")
-		.trim()
-		.slice(0, MAX_SHORT_PROMPT_LENGTH);
+  return input
+    .normalize("NFKC")
+    .replace(/[\r\n]+/g, " ")
+    .trim()
+    .slice(0, MAX_SHORT_PROMPT_LENGTH);
 }
 
 /**
@@ -29,7 +29,7 @@ export function sanitizeForPrompt(input: string): string {
  * 메모의 리스트·문단·코드 표현을 보존합니다.
  */
 export function sanitizeMemoForPrompt(input: string): string {
-	return input.normalize("NFKC").replace(/\r\n?/g, "\n").trim().slice(0, MAX_MEMO_PROMPT_LENGTH);
+  return input.normalize("NFKC").replace(/\r\n?/g, "\n").trim().slice(0, MAX_MEMO_PROMPT_LENGTH);
 }
 
 /**
@@ -37,8 +37,8 @@ export function sanitizeMemoForPrompt(input: string): string {
  * JSON.parse 시 원래 값이 완전히 복원되므로 사용자 의미를 손상하지 않습니다.
  */
 export function encodeUntrustedJson(value: unknown): string {
-	return JSON.stringify(value, null, 2)
-		.replace(/</g, "\\u003c")
-		.replace(/>/g, "\\u003e")
-		.replace(/&/g, "\\u0026");
+  return JSON.stringify(value, null, 2)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
 }

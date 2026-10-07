@@ -1,4 +1,4 @@
-import { createMemoSchema } from '@aido/validators';
+import { createMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';

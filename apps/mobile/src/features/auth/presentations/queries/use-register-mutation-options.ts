@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import type { RegisterInput } from '@aido/validators';
+import type { RegisterInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';

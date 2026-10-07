@@ -1,4 +1,4 @@
-import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/validators';
+import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { TodoCategory } from '@src/features/todo/models/todo-category.model';
 import { useUpdateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-update-todo-category-mutation-options';

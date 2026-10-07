@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { i18n } from '@src/shared/i18n';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
 import type { AfterResponseState, KyRequest, KyResponse, NormalizedOptions } from 'ky';

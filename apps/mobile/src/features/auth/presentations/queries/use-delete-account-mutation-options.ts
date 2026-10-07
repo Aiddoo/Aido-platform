@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import type { DeleteAccountInput } from '@aido/validators';
+import type { DeleteAccountInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import {
   useAnalytics,

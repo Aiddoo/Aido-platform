@@ -1,4 +1,4 @@
-import { emailSchema } from '@aido/validators';
+import { emailSchema } from '@aido/api';
 import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 

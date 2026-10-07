@@ -1,4 +1,4 @@
-import type { ErrorCodeType } from '@aido/errors';
+import type { ErrorCodeType } from '@aido/api/errors';
 import type { Severity } from '@src/core/ports/severity';
 
 /**

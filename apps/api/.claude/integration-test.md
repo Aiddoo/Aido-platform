@@ -1,319 +1,58 @@
-# 통합 테스트 가이드
+# 서버 Integration 테스트
 
-**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
+실제 Module 연결이나 PostgreSQL의 데이터·트랜잭션 의미가 검증 대상일 때 사용한다. 단순 Application 분기는 [Unit](./unit-test.md), HTTP validation·권한·응답은 [E2E](./e2e-test.md)가 담당한다. 파일의 project 이름보다 실행한 실제 구성과 증거 범위를 명확히 적는다.
 
-> Mock DB 또는 실제 DB로 Service + Repository DI 통합을 검증하는 테스트
+## 대역과 실제 DB 선택
 
----
+`createMockDatabaseContext()`·`createMockDatabaseService(context)`·`createMockTransactionHost(context)`는 동일 native ORM context를 사용하는 기존 DI/쿼리 조립 대역이다. 결과 projection·조건·정렬·호출 순서를 확인할 때 사용할 수 있다. `createUnitOfWorkMock()`이 callback을 실행해도 commit·rollback·constraint를 검증한 것은 아니다.
 
-## 관련 문서
+실제 PG 검증이 이미 같은 조립과 의미를 확인한다면 대역 DI 테스트를 자동으로 추가하거나 유지하지 않는다. 제거할 때는 고유 assertion이 실제 테스트에 남는지 확인한다. 기존 mock ORM의 `.all()`/`.createAll()`에는 `nativeRows`, 단건에는 `databaseFixture`와 필요한 projection을 사용하고 미설정 undefined를 행 부재로 취급하지 않는다.
 
-| 문서                                   | 내용               |
-| -------------------------------------- | ------------------ |
-| [testing-guide.md](./testing-guide.md) | 종합 테스팅 가이드 |
-| [unit-test.md](./unit-test.md)         | 단위 테스트 가이드 |
-| [e2e-test.md](./e2e-test.md)           | E2E 테스트 가이드  |
+실제 PostgreSQL이 필요한 예:
 
----
+- 실패 시 business row·receipt·Todo·outbox가 함께 rollback되는지
+- Required 중첩 UoW와 CLS, after-commit 효과
+- atomic claim/counter, unique/check/FK constraint, retry/idempotency
+- 사용자 row lock·토큰 회전·이전 receipt와 새 token의 경합
+- migration graph·기존 행·index·DATE/UTC codec·구 client 호환성
 
-## 개요
+## 관리형 PostgreSQL 수명주기
 
-통합 테스트는 두 가지 유형으로 나뉩니다:
+정본은 [global-setup](../test/setup/global-setup.ts), [managed-test-database](../test/setup/managed-test-database.ts), [setup-env](../test/setup-env.ts), [TestDatabase](../test/setup/test-database.ts)이다.
 
-| 유형        | DB                                          | 도구                         | 목적                         | 예시                          |
-| ----------- | ------------------------------------------- | ---------------------------- | ---------------------------- | ----------------------------- |
-| **Mock DB** | `createMockDatabaseService()`               | NestJS `TestingModule`       | Service → Repository DI 검증 | cheer, follow, nudge, todo 등 |
-| **실제 DB** | Vitest 실행당 Testcontainers PostgreSQL 1개 | `TestDatabase` + 모듈 팩토리 | 전체 DB 트랜잭션 검증        | auth, oauth, account-deletion |
+1. DB project global setup이 실행별 `aido_test_<run-id>`를 만든다. `AIDO_TEST_POSTGRES_URL`이 있으면 `postgres` 관리 DB를 가리키는 전용 service를 사용하고, 없으면 로컬 PostgreSQL Testcontainers를 시작한다.
+2. 실행 DB에 기존 native migration graph를 적용하고 Vitest `provide`/`inject`로 worker에 전달한다. 관리 marker와 DB 이름 allowlist를 확인한다. 운영/공유 개발 DB나 `DATABASE_URL` fallback을 사용하지 않는다.
+3. `TestDatabase.start()`는 관리형 DB client를 연결한다. spec은 앱/module과 client의 수명주기를 소유하고, global setup 반환 teardown은 자신이 생성한 DB/컨테이너를 제거한다.
+4. spec 간에는 `testDatabase.cleanup()` 또는 해당 실제 harness의 reset 경로를 사용한다. 앱·잔류 background work·cache를 정리한 뒤 client를 닫는다. 주입받은 client를 다른 provider가 대신 종료하지 않는다.
 
-### 파일 위치 및 명명
+원래 관리형 임시 환경에서 필요한 생성·migration·초기화·소유 자원 정리는 승인된 작업 범위 안에서 진행할 수 있다. 다른 작업의 DB/컨테이너를 일괄 정리하지 않는다. teardown 실패나 중단이 있으면 자신의 DB 이름으로 잔여 여부를 확인하고 자신의 자원만 정리한다. URI/비밀은 출력하지 않고 DB 이름과 잔여 수를 기록한다.
 
-```
-test/
-├── integration/
-│   ├── helpers/
-│   │   └── auth-test-module.factory.ts   # Auth 실제 DB 모듈 팩토리
-│   ├── cheer.integration-spec.ts         # Mock DB
-│   ├── todo.integration-spec.ts          # Mock DB
-│   ├── auth-password-setup.integration-spec.ts  # 실제 DB
-│   ├── oauth.integration-spec.ts         # 실제 DB
-│   └── ...
-├── mocks/
-│   └── mock-database.factory.ts          # createMockDatabaseService
-└── setup/
-    ├── suppress-logger.ts                # suppressLogger()
-    ├── managed-test-database.ts          # global container + migration
-    └── test-database.ts                  # Prisma 연결 + 데이터 초기화
-```
+실제 repository harness는 `createTestDatabaseService(client)`와 `createDatabaseTransactionFixture(client)`의 같은 database·txHost·uow를 연결한다. 가능하면 운영 Composition Root를 재사용한다. 복합 User fixture는 `createUserDatabaseFixture` 등 기존 소유 fixture를 사용하고 native scalar create에 ORM 중첩 쓰기 형태를 넣지 않는다.
 
----
+## 결정적인 동시성·rollback 검증
 
-## Mock DB 통합 테스트
+처리기 시작·성공만 확인하지 않는다. 실패 지점 뒤 실제 행 상태, 다음 실행의 조회/claim 가능성, 남아야 할 token·멱등 행·outbox를 확인한다. 실패 전후를 따로 실행했다면 그 단계와 기대 실패를 기록한다.
 
-### 핵심 도구
+경합은 Promise/transaction barrier와 PostgreSQL lock waiter를 관찰해 작업이 실제 같은 경계에서 대기했음을 확인한다. 한 tick·임의 sleep·`Promise.all`만으로 경합 발생을 단정하지 않는다. 요청 fixture를 구분하고 완전한 최종 행을 확인한다. timeout이 작업을 취소한다고 가정하지 않으며, 실패한 reset 환경을 다음 테스트에 재사용하지 않는다.
 
-| 도구                          | import                              | 역할                               |
-| ----------------------------- | ----------------------------------- | ---------------------------------- |
-| `createMockDatabaseService()` | `@test/mocks/mock-database.factory` | DB Mock + `$transaction` 자동 설정 |
-| `suppressLogger()`            | `@test/setup/suppress-logger`       | Logger 출력 억제                   |
-| Builder                       | `@test/builders`                    | 테스트 데이터 생성                 |
+DB/socket/job의 timer는 native로 유지한다. 날짜만 필요한 경우 Date-only fake를 `finally`/`afterEach`에서 복원하거나 영속 timestamp를 명시한다. host UTC/KST/다른 timezone 및 DST 검증은 실제 날짜/기간 경계가 변경된 범위에 한정한다.
 
-### 전체 템플릿
+실제 예제:
 
-```typescript
-import { Test, type TestingModule } from "@nestjs/testing";
-import { suppressLogger } from "@test/setup/suppress-logger";
-import { createMockDatabaseService } from "@test/mocks/mock-database.factory";
-import { [Feature]Builder } from "@test/builders";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { [Feature]Repository } from "#api/{name}/{name}.repository";
-import { [Feature]Service } from "#api/{name}/{name}.service";
-import { [Feature]QueueService } from "#api/{name}/queue/{name}-queue.service";
+- [prisma8-transaction](../test/integration/prisma8-transaction.integration-spec.ts): 실제 CLS·Required·after-commit.
+- [job-runtime-postgres](../test/integration/job-runtime-postgres.integration-spec.ts): business mutation과 durable job 원자성.
+- [ai-generation-consistency](../test/integration/ai-generation-consistency.integration-spec.ts): 실제 premium 상태·accept/rollback 정합성.
+- [weather-location](../test/integration/weather-location.integration-spec.ts): 위치 upsert·경합.
+- [push-receipt-consistency](../test/integration/push-receipt-consistency.integration-spec.ts): token·receipt·동일 UoW 실패/재시도.
 
-describe("[Feature]Service 통합 테스트 (Mock DB)", () => {
-  let module: TestingModule;
-  let service: [Feature]Service;
+## 공급자 SDK와 HTTP fixture
 
-  // Mock DB 팩토리로 생성 — $transaction 자동 설정됨
-  const mockDb = createMockDatabaseService({
-    [model]: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() },
-  });
+[이메일 Integration](../test/integration/email.integration-spec.ts)은 실제 NotificationEmailModule/Resend SDK와 고정 `StubResendHttp`를 조립한다. 외부 요청 대신 fixture 응답으로 payload·인증/idempotency 헤더·오류·retry/backoff를 확인한다. DB가 없는 이 suite의 retry timer는 제어할 수 있다. 이를 native DB와 timer가 섞인 테스트에 그대로 적용하지 않는다.
 
-  const mockQueueService = { enqueueXxx: vi.fn() };
+미설정/unmatched 요청은 차단하고 각 테스트의 fixture 응답 소비, globals/env/timer 복원과 module 종료를 확인한다. transport를 교체한 결과는 실제 공급자 운영 품질·SLA 증거가 아니다. E2E의 외부 Fake와 wire fixture는 서로 다른 경계를 검증하며 둘 중 하나를 전체 SDK mock으로 대체할 필요는 없다.
 
-  beforeAll(async () => {
-    suppressLogger();
-
-    module = await Test.createTestingModule({
-      providers: [
-        [Feature]Service,
-        [Feature]Repository,
-        { provide: DatabaseService, useValue: mockDb },
-        { provide: [Feature]QueueService, useValue: mockQueueService },
-      ],
-    }).compile();
-
-    service = module.get<[Feature]Service>([Feature]Service);
-  });
-
-  afterAll(async () => {
-    await module.close();
-    vi.restoreAllMocks();
-  });
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    [Feature]Builder.resetIdCounter();
-  });
-
-  describe("DI 통합 테스트", () => {
-    it("[Feature]Service가 정상적으로 주입되어야 함", () => {
-      // Given — DI 컨테이너 구성 완료
-
-      // When & Then
-      expect(service).toBeDefined();
-      expect(service).toBeInstanceOf([Feature]Service);
-    });
-  });
-
-  describe("생성", () => {
-    it("정상적으로 생성해야 함", async () => {
-      // Given - DB Mock 설정
-      const mock = [Feature]Builder.create().build();
-      mockDb.[model].create.mockResolvedValue(mock);
-
-      // When
-      const result = await service.create({ ... });
-
-      // Then - 성공 검증 + 큐 enqueue 호출 확인
-      expect(result.id).toBeDefined();
-      expect(mockQueueService.enqueueXxx).toHaveBeenCalledWith(
-        expect.objectContaining({ [feature]Id: mock.id }),
-      );
-    });
-  });
-});
+```sh
+pnpm --filter @aido/server exec vitest run --project integration test/integration/push-receipt-consistency.integration-spec.ts --sequence.seed=101
 ```
 
-### `createMockDatabaseService()` 사용법
-
-```typescript
-import { createMockDatabaseService } from '@test/mocks/mock-database.factory';
-
-// 필요한 모델만 전달 — $transaction은 자동 설정됨
-const mockDb = createMockDatabaseService({
-  todo: { create: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  todoCategory: { findUnique: vi.fn() },
-});
-
-// 사용: Service 내부의 $transaction이 정상 동작
-// $transaction(callback) → callback(mockDb) 호출
-```
-
-### 단위 테스트에서의 `$transaction` mock (txProxy 패턴)
-
-단위 테스트(@suites)에서는 `createMockDatabaseService()`를 사용하지 않습니다.
-대신 `$transaction`의 callback에 **txProxy** 객체를 직접 전달합니다:
-
-```typescript
-// Given - 트랜잭션 내부에서 사용할 모델별 mock 설정
-vi.mocked(database.$transaction).mockImplementation(
-  async (callback: (tx: unknown) => Promise<unknown>) => {
-    const txProxy = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue(mockUser),
-      },
-      cheer: {
-        create: vi.fn().mockResolvedValue(mockCheer),
-      },
-    };
-    return callback(txProxy);
-  },
-);
-```
-
-> **참고**: 통합 테스트에서는 `createMockDatabaseService()`가 `$transaction`을 자동 설정하므로 txProxy가 불필요합니다. txProxy 패턴은 단위 테스트에서만 사용합니다.
-
----
-
-## 실제 DB 통합 테스트
-
-### 핵심 도구
-
-| 도구                     | import                                               | 역할                                           |
-| ------------------------ | ---------------------------------------------------- | ---------------------------------------------- |
-| `TestDatabase`           | `@test/setup/test-database`                          | global setup DB에 Prisma 연결 및 데이터 초기화 |
-| `createAuthTestModule()` | `@test/integration/helpers/auth-test-module.factory` | Auth 관련 TestingModule 팩토리                 |
-| `suppressLogger()`       | `@test/setup/suppress-logger`                        | Logger 출력 억제                               |
-| `FakeEmailService`       | `@test/mocks/fake-email.service`                     | 이메일 발송 Mock                               |
-
-### Auth 모듈 팩토리 사용 (password-setup, password-change, password-reset)
-
-```typescript
-import { suppressLogger } from "@test/setup/suppress-logger";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { {Feature}Service } from "#api/{feature}/services/{feature}.service";
-import { FakeEmailService } from "../mocks/fake-email.service.js";
-import { TestDatabase } from "../setup/test-database.js";
-import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
-
-describe("{Feature} 통합 테스트 (실제 DB)", () => {
-  let module: TestingModule;
-  let service: {Feature}Service;
-  let testDb: TestDatabase;
-  let databaseService: DatabaseService;
-  const fakeEmailService = new FakeEmailService();
-
-  beforeAll(async () => {
-    suppressLogger();
-    testDb = new TestDatabase();
-    databaseService = (await testDb.start()) as DatabaseService;
-    module = await createAuthTestModule(databaseService, fakeEmailService);
-    service = module.get<{Feature}Service>({Feature}Service);
-  }, 60000);
-
-  beforeEach(async () => {
-    await testDb.cleanup();
-    fakeEmailService.clear();
-  });
-
-  afterAll(async () => {
-    try {
-      if (module) await module.close();
-    } finally {
-      if (testDb) await testDb.stop();
-    }
-  });
-
-  // 테스트 케이스들...
-});
-```
-
-### 독립 모듈 구성 (oauth, account-deletion)
-
-Auth 팩토리에 포함되지 않는 서비스(OAuth, AccountPurge)는 자체 모듈을 구성합니다.
-공통 패턴은 동일합니다:
-
-컨테이너 생성과 migration은 Vitest `globalSetup`이 suite 전체에서 한 번만 수행합니다.
-각 spec의 `TestDatabase.start()`는 이미 관리 중인 `aido_test_<run-id>` DB에 연결만 하며,
-`cleanup()`은 `_prisma_migrations`를 제외한 `public` 테이블을 동적으로 truncate합니다.
-
-```typescript
-beforeAll(async () => {
-  suppressLogger();
-  testDb = new TestDatabase();
-  databaseService = (await testDb.start()) as DatabaseService;
-
-  module = await Test.createTestingModule({
-    imports: [JwtModule.register({ secret: "...", signOptions: { expiresIn: "15m" } })],
-    providers: [
-      {Feature}Service, TokenService,
-      {Feature}Repository, {Related}Repository,
-      // ... 필요한 Repository들
-      { provide: DatabaseService, useValue: databaseService },
-      { provide: CacheService, useValue: { invalidateSession: async () => {}, ... } },
-      { provide: CACHE_SERVICE, useValue: { get: async () => undefined, set: async () => {}, del: async () => {} } },
-      { provide: EncryptionService, useValue: { encrypt: (v) => v, decryptSafe: (v) => v } },
-      { provide: [Feature]QueueService, useValue: { enqueueXxx: vi.fn() } },
-      // ... ConfigService, TypedConfigService mocks
-    ],
-  }).compile();
-}, 60000);
-```
-
----
-
-## 네이밍 규칙
-
-### describe명 형식
-
-```typescript
-// Mock DB 통합 테스트
-describe("{Feature}Service 통합 테스트 (Mock DB)", () => { ... });
-
-// 실제 DB 통합 테스트
-describe("{Feature} 통합 테스트 (실제 DB)", () => { ... });
-```
-
----
-
-## 실행 명령어
-
-```bash
-# 전체 통합 테스트
-pnpm --filter @aido/api test:integration
-
-# 특정 파일
-pnpm --filter @aido/api test cheer.integration-spec
-
-# 특정 describe 블록
-pnpm --filter @aido/api test cheer.integration-spec -- -t "응원 전송"
-```
-
----
-
-## DO / DON'T
-
-### DO
-
-- ✅ Mock DB: `createMockDatabaseService()` 팩토리 사용
-- ✅ 실제 DB Auth: `createAuthTestModule()` 팩토리 사용
-- ✅ 모든 파일에서 `suppressLogger()` 호출
-- ✅ `beforeAll`에서 TestingModule 생성 (성능)
-- ✅ Builder 패턴으로 mock 반환값 생성
-- ✅ GWT 주석으로 테스트 의도 표현
-- ✅ 한국어 describe명 + 유형 태그 `(Mock DB)` / `(실제 DB)`
-- ✅ `afterAll`에서 `module.close()` 호출
-
-### DON'T
-
-- ❌ 직접 `$transaction` mock 구현 → `createMockDatabaseService()` 사용
-- ❌ 직접 `Logger.prototype` spy → `suppressLogger()` 사용
-- ❌ HTTP 요청 테스트 (E2E에서 담당)
-- ❌ 테스트 간 상태 공유
-- ❌ 하드코딩된 ID (Builder 사용)
-- ❌ 영어 describe명 (한국어 통일)
-
----
-
-**문서 버전**: 4.0.0
-**최종 수정일**: 2026-10-01
+파일 직렬 실행과 shuffle은 현재 DB project 설정이 소유한다. 작업 중에는 관련 범위만 실행하고, module 최종 동결 뒤 전체 gate는 [검증 범위 선택](./testing-guide.md)의 완료 담당자가 한 번 실행한다.

@@ -1,4 +1,4 @@
-import { aiReportIdParamSchema } from '@aido/validators';
+import { aiReportIdParamSchema } from '@aido/api';
 import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
 import { useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';

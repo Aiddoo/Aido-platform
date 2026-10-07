@@ -1,4 +1,4 @@
-import type { UpdateMarketingPushConsentInput } from '@aido/validators';
+import type { UpdateMarketingPushConsentInput } from '@aido/api';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';

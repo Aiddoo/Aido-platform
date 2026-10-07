@@ -14,38 +14,38 @@ import type { DomainEvent } from "#api/shared/domain/aggregate-root";
  *  이벤트 단위 실패는 기록 후 격리해 post-commit 요청 성공을 유지한다.)
  */
 export class TrackingDomainEventPublisher implements DomainEventPublisherPort {
-	readonly #logger = new Logger(TrackingDomainEventPublisher.name);
-	readonly #pending = new Set<Promise<unknown>>();
+  readonly #logger = new Logger(TrackingDomainEventPublisher.name);
+  readonly #pending = new Set<Promise<unknown>>();
 
-	constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(private readonly eventEmitter: EventEmitter2) {}
 
-	async publishAll(events: readonly DomainEvent[]): Promise<void> {
-		for (const event of events) {
-			const settled: Promise<unknown> = this.eventEmitter
-				.emitAsync(event.eventName, event)
-				.catch((error) => {
-					this.#logger.error(
-						`Failed to publish domain event ${event.eventName}: ${error}`,
-						error instanceof Error ? error.stack : undefined,
-					);
-				})
-				.finally(() => {
-					this.#pending.delete(settled);
-				});
-			this.#pending.add(settled);
-			await settled;
-		}
-	}
+  async publishAll(events: readonly DomainEvent[]): Promise<void> {
+    for (const event of events) {
+      const settled: Promise<unknown> = this.eventEmitter
+        .emitAsync(event.eventName, event)
+        .catch((error) => {
+          this.#logger.error(
+            `Failed to publish domain event ${event.eventName}: ${error}`,
+            error instanceof Error ? error.stack : undefined,
+          );
+        })
+        .finally(() => {
+          this.#pending.delete(settled);
+        });
+      this.#pending.add(settled);
+      await settled;
+    }
+  }
 
-	/** 진행 중인 이벤트 리스너 작업이 전부 정착할 때까지 대기 (핸들러의 연쇄 발행 포함) */
-	async drainPendingEvents(): Promise<void> {
-		let rounds = 0;
-		while (this.#pending.size > 0) {
-			rounds += 1;
-			if (rounds > 25) {
-				throw new Error("Domain event drain exceeded 25 rounds — 이벤트 연쇄 루프 의심");
-			}
-			await Promise.allSettled([...this.#pending]);
-		}
-	}
+  /** 진행 중인 이벤트 리스너 작업이 전부 정착할 때까지 대기 (핸들러의 연쇄 발행 포함) */
+  async drainPendingEvents(): Promise<void> {
+    let rounds = 0;
+    while (this.#pending.size > 0) {
+      rounds += 1;
+      if (rounds > 25) {
+        throw new Error("Domain event drain exceeded 25 rounds — 이벤트 연쇄 루프 의심");
+      }
+      await Promise.allSettled([...this.#pending]);
+    }
+  }
 }
