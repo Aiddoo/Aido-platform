@@ -5,13 +5,13 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
 import { Logger } from "nestjs-pino";
 
-import { AdminModule } from "#api/admin/admin.module";
-import type { EnvConfig } from "#api/shared/infrastructure/config/index";
-import { configureApplication } from "#api/shared/infrastructure/http/configure-application";
-import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/shared/presentation/swagger/index";
+import { AdminModule } from "#api/modules/operations/operations-admin.module";
+import type { EnvConfig } from "#api/platform/config/index";
+import { configureApplication } from "#api/platform/http/configure-application";
+import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 
 import { AppModule } from "./app.module.js";
-import { convertStandardSchema } from "./shared/presentation/swagger/standard-schema.converter.js";
+import { convertStandardSchema } from "./platform/http/swagger/standard-schema.converter.js";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });

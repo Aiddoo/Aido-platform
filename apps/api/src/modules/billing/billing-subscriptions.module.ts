@@ -1,0 +1,39 @@
+import { Module } from "@nestjs/common";
+
+import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.module";
+
+import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
+import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscriptions/subscription-event-notifier.port.js";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "./application/ports/subscriptions/subscription-webhook-lock.port.js";
+import { SUBSCRIPTION_REPOSITORY } from "./application/ports/subscriptions/subscription.repository.port.js";
+import { handleWebhookEventProvider } from "./billing-subscriptions-application.providers.js";
+import { SubscriptionCacheAdapter } from "./infrastructure/adapters/subscriptions/subscription-cache.adapter.js";
+import { SubscriptionEventNotifierAdapter } from "./infrastructure/adapters/subscriptions/subscription-event-notifier.adapter.js";
+import { SubscriptionWebhookLockAdapter } from "./infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter.js";
+import { WebhookSignatureGuard } from "./infrastructure/guards/subscriptions/webhook-signature.guard.js";
+import { PrismaSubscriptionRepository } from "./infrastructure/persistence/subscriptions/prisma-subscription.repository.js";
+import { SubscriptionController } from "./presentation/controllers/subscriptions/subscription.controller.js";
+
+@Module({
+  imports: [AdminNotificationModule, NotificationModule],
+  controllers: [SubscriptionController],
+  providers: [
+    handleWebhookEventProvider,
+    WebhookSignatureGuard,
+    {
+      provide: SUBSCRIPTION_REPOSITORY,
+      useClass: PrismaSubscriptionRepository,
+    },
+    { provide: SUBSCRIPTION_CACHE, useClass: SubscriptionCacheAdapter },
+    {
+      provide: SUBSCRIPTION_EVENT_NOTIFIER,
+      useClass: SubscriptionEventNotifierAdapter,
+    },
+    {
+      provide: SUBSCRIPTION_WEBHOOK_LOCK,
+      useClass: SubscriptionWebhookLockAdapter,
+    },
+  ],
+})
+export class SubscriptionModule {}

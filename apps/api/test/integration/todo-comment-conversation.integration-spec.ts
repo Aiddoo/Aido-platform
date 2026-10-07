@@ -6,29 +6,25 @@ import { Test } from "@nestjs/testing";
 import sql from "sql-template-tag";
 import { vi } from "vitest";
 
-import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { sqlRowSpec, sqlStatement } from "#api/shared/infrastructure/database/database-sql";
-import { createEntityId } from "#api/shared/infrastructure/database/database-values";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import type { TodoCommentCursorCodecPort } from "#api/todo-comment/application/ports/todo-comment-cursor-codec.port";
+import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/application/ports/comments/todo-comment-cursor-codec.port";
 import {
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
-} from "#api/todo-comment/application/ports/todo-comment.repository.port";
-import { GetTodoCommentOverviewUseCase } from "#api/todo-comment/application/queries/get-todo-comment-overview/get-todo-comment-overview.use-case";
-import { GetTodoConversationUseCase } from "#api/todo-comment/application/queries/get-todo-conversation/get-todo-conversation.use-case";
-import { ThreadPlacement } from "#api/todo-comment/domain/value-objects/thread-placement.vo";
-import { PrismaTodoCommentReader } from "#api/todo-comment/infrastructure/persistence/prisma-todo-comment.reader";
-import { PrismaTodoCommentRepository } from "#api/todo-comment/infrastructure/persistence/prisma-todo-comment.repository";
-import { buildTodoConversationTreeCtes } from "#api/todo-comment/infrastructure/persistence/todo-conversation-tree.sql";
-import { HmacTodoCommentCursorCodec } from "#api/todo-comment/infrastructure/security/hmac-todo-comment-cursor.codec";
+} from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
+import { GetTodoCommentOverview } from "#api/modules/engagement/application/use-cases/comments/get-todo-comment-overview.use-case";
+import { GetTodoConversation } from "#api/modules/engagement/application/use-cases/comments/get-todo-conversation.use-case";
+import { ThreadPlacement } from "#api/modules/engagement/domain/value-objects/comments/thread-placement.vo";
+import { PrismaTodoCommentReader } from "#api/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment.reader";
+import { PrismaTodoCommentRepository } from "#api/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment.repository";
+import { buildTodoConversationTreeCtes } from "#api/modules/engagement/infrastructure/persistence/comments/todo-conversation-tree.sql";
+import { HmacTodoCommentCursorCodec } from "#api/modules/engagement/infrastructure/security/comments/hmac-todo-comment-cursor.codec";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { createEntityId } from "#api/platform/database/database-values";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 import { createDatabaseContext } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
@@ -446,7 +442,10 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
           ),
         ),
       );
-      const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
+      const useCase = new GetTodoCommentOverview({
+        reader: reader,
+        cursorCodec: cursorCodec,
+      });
       const firstPage = await useCase.execute({
         todoId,
         viewerId: "conversation-owner",
@@ -480,7 +479,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   );
 
   it("overview cursor의 root가 soft-delete되어도 불변 root 위치로 계속 읽는다", async () => {
-    const useCase = new GetTodoCommentOverviewUseCase(reader, cursorCodec);
+    const useCase = new GetTodoCommentOverview({ reader: reader, cursorCodec: cursorCodec });
     const firstPage = await useCase.execute({
       todoId,
       viewerId: "conversation-owner",
@@ -920,7 +919,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         ),
       ),
     );
-    const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
+    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
     const response = await useCase.execute({
       todoId,
@@ -954,7 +953,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
         ),
       ),
     );
-    const useCase = new GetTodoConversationUseCase(reader, cursorCodec);
+    const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
     const response = await useCase.execute({
       todoId,

@@ -12,7 +12,7 @@ import type {
   UserProfile,
   UserRole,
   UserStatus,
-} from "#api/shared/infrastructure/database/database.types";
+} from "#api/platform/database/database.types";
 
 let userCounter = 0;
 

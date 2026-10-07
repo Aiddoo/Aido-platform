@@ -1,7 +1,7 @@
 import { Controller, Get } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
 
-import { Public } from "#api/auth/presentation/decorators/index";
+import { Public } from "#api/modules/identity/presentation/decorators/auth/index";
 
 import { AppService } from "./app.service.js";
 

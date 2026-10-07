@@ -1,6 +1,6 @@
 import { vi, type Mocked } from "vitest";
 
-import type { NudgeRepositoryPort } from "#api/nudge/application/ports/nudge.repository.port";
+import type { NudgeRepositoryPort } from "#api/modules/social/application/ports/nudges/nudge.repository.port";
 
 export function createNudgeRepositoryMock(): Mocked<NudgeRepositoryPort> {
   return {

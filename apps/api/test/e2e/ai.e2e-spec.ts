@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { AI_PROVIDER } from "#api/ai/index";
+import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 /**
  * AI 모듈 E2E 테스트
  *
@@ -14,8 +14,8 @@ import { AI_PROVIDER } from "#api/ai/index";
  * - 월간 사용량 제한 (5회/월, KST 매월 1일 00:00 리셋)
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
-import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

@@ -12,26 +12,28 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { FollowReader } from "#api/follow/index";
-import { NotificationPublisher, NotificationRecipientLocaleReader } from "#api/notification/index";
-import { NotificationQueueService } from "#api/notification/queue";
-import { NUDGE_LIMIT_READER } from "#api/nudge/application/ports/nudge-limit-reader.port";
-import { NUDGE_NOTIFIER } from "#api/nudge/application/ports/nudge-notifier.port";
-import { NUDGE_REPOSITORY } from "#api/nudge/application/ports/nudge.repository.port";
-import { NudgeReader } from "#api/nudge/application/services/nudge.reader";
-import { MarkNudgeReadUseCase } from "#api/nudge/application/use-cases/mark-nudge-read/mark-nudge-read.use-case";
-import { SendNudgeUseCase } from "#api/nudge/application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "#api/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import { NudgeLimitReaderAdapter } from "#api/nudge/infrastructure/adapters/nudge-limit-reader.adapter";
-import { NudgeNotifierAdapter } from "#api/nudge/infrastructure/adapters/nudge-notifier.adapter";
-import { PrismaNudgeRepository } from "#api/nudge/infrastructure/persistence/prisma-nudge.repository";
-import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
-import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import {
+  NotificationPublisher,
+  NotificationRecipientLocaleReader,
+} from "#api/modules/notification/notification-delivery.public";
+import { NUDGE_LIMIT_READER } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
+import { NUDGE_NOTIFIER } from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+import { NUDGE_REPOSITORY } from "#api/modules/social/application/ports/nudges/nudge.repository.port";
+import { NudgeReader } from "#api/modules/social/application/services/nudges/nudge.reader";
+import { MarkNudgeRead } from "#api/modules/social/application/use-cases/nudges/mark-nudge-read.use-case";
+import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
+import { SendRemindNudge } from "#api/modules/social/application/use-cases/nudges/send-remind-nudge.use-case";
+import { NudgeLimitReaderAdapter } from "#api/modules/social/infrastructure/adapters/nudges/nudge-limit-reader.adapter";
+import { NudgeNotifierAdapter } from "#api/modules/social/infrastructure/adapters/nudges/nudge-notifier.adapter";
+import { PrismaNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/prisma-nudge.repository";
+import { FollowReader } from "#api/modules/social/social-friends.public";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { NudgeBuilder, TodoBuilder } from "#test/builders/index";
 import {
   assertNativeWhere,
@@ -42,16 +44,24 @@ import {
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import {
+  markNudgeReadProvider,
+  nudgeReaderProvider,
+  sendNudgeProvider,
+  sendRemindNudgeProvider,
+} from "../../src/modules/social/social-nudges-application.providers.js";
+import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
+
 describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let reader: NudgeReader;
-  let sendNudgeUseCase: SendNudgeUseCase;
-  let sendRemindNudgeUseCase: SendRemindNudgeUseCase;
-  let markNudgeReadUseCase: MarkNudgeReadUseCase;
+  let sendNudgeUseCase: SendNudge;
+  let sendRemindNudgeUseCase: SendRemindNudge;
+  let markNudgeReadUseCase: MarkNudgeRead;
   const nudgeApi = {
-    sendNudge: (input: Parameters<SendNudgeUseCase["execute"]>[0], timezone: string) =>
+    sendNudge: (input: Parameters<SendNudge["execute"]>[0], timezone: string) =>
       sendNudgeUseCase.execute(input, timezone),
-    sendRemindNudge: (input: Parameters<SendRemindNudgeUseCase["execute"]>[0], timezone: string) =>
+    sendRemindNudge: (input: Parameters<SendRemindNudge["execute"]>[0], timezone: string) =>
       sendRemindNudgeUseCase.execute(input, timezone),
     getReceivedNudges: (input: Parameters<NudgeReader["getReceivedNudges"]>[0]) =>
       reader.getReceivedNudges(input),
@@ -106,16 +116,16 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        NudgeReader,
-        SendNudgeUseCase,
-        SendRemindNudgeUseCase,
-        MarkNudgeReadUseCase,
+        nudgeReaderProvider,
+        sendNudgeProvider,
+        sendRemindNudgeProvider,
+        markNudgeReadProvider,
         { provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
         { provide: NUDGE_NOTIFIER, useClass: NudgeNotifierAdapter },
         { provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
         { provide: NotificationPublisher, useValue: { publish: vi.fn() } },
         { provide: NotificationRecipientLocaleReader, useValue: { getRecipientLocale: vi.fn() } },
-        PaginationService,
+        paginationServiceProvider,
         { provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
         {
           provide: MUTATION_LOCK,
@@ -138,9 +148,9 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
     }).compile();
 
     reader = module.get(NudgeReader);
-    sendNudgeUseCase = module.get(SendNudgeUseCase);
-    sendRemindNudgeUseCase = module.get(SendRemindNudgeUseCase);
-    markNudgeReadUseCase = module.get(MarkNudgeReadUseCase);
+    sendNudgeUseCase = module.get(SendNudge);
+    sendRemindNudgeUseCase = module.get(SendRemindNudge);
+    markNudgeReadUseCase = module.get(MarkNudgeRead);
   });
 
   afterAll(async () => {
@@ -173,7 +183,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
   describe("DI 통합", () => {
     it("Nudge UseCase와 Reader가 조립된다", () => {
-      expect(sendNudgeUseCase).toBeInstanceOf(SendNudgeUseCase);
+      expect(sendNudgeUseCase).toBeInstanceOf(SendNudge);
       expect(reader).toBeInstanceOf(NudgeReader);
     });
     it("NudgeRepository 포트가 주입된다", () => {

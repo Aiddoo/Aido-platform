@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
+import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 /**
  * Admin E2E 테스트
  *
@@ -14,8 +14,8 @@ import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/d
  * 3. 비관리자가 호출하면 403을 반환한다
  * 4. 인증 없이 호출하면 401을 반환한다
  */
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

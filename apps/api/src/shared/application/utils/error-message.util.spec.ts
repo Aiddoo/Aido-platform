@@ -1,11 +1,3 @@
-/**
- * toErrorMessage 단위 테스트
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test error-message.util
- * ```
- */
 import { toErrorMessage } from "./error-message.util.js";
 
 describe("toErrorMessage — 에러 메시지 정규화", () => {

@@ -96,7 +96,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 ## 5. 인프라스트럭처
 
 - **OAuth 어댑터**(`infrastructure/oauth/adapters/{google,kakao,naver,apple}.oauth-adapter.ts`): raw `fetch()` → 여기로. 벤더 JSON 캐스트는 `shared/infrastructure/http/readJson<T>`(weather 선례)로 격리. 설정은 `TypedConfigService` 주입. DI 등록 + 레지스트리 팩토리(`{provide: REGISTRY, useFactory: (g,k,n,a)=>new Map(...)}`).
-- **토큰 검증 어댑터**(`infrastructure/oauth/verifier/`): jose JWKS(Apple)·google-auth-library(Google)·kakao/naver fetch. `VerifiedProfile` 반환. jose ESM 동적 import 유지.
+- **토큰 검증 어댑터**(`infrastructure/oauth/verifier/`): jose JWKS(Apple)·google-auth-library(Google)·kakao/naver fetch. `VerifiedProfile` 반환. ESM 서버에서 jose는 Infrastructure에서 정적 import한다. 별도 호환 wrapper는 사용하지 않는다.
 - **저장소 어댑터**(`infrastructure/persistence/prisma-*.repository.ts`): 7종. **레거시 `tx?` + DatabaseService → CLS `TransactionHost.tx`로 전환**(다른 모듈 표준). `UNIT_OF_WORK.run(...)` 호출부는 use-case에서 `UNIT_OF_WORK.run(...)`으로.
 - **계정 purge**: `AccountPurgeJob`(cron `0 3 * * *` KST) + `AccountPurgeProcessor`(setter 순환 → 생성자 주입으로 제거, admin-notification/notification 선례). `ACCOUNT_PURGE_QUEUE` 상수 → infrastructure/queue로, 배럴 export(e2e·health 재배선).
 - **가드/전략/인터셉터**: `JwtAuthGuard`·`JwtRefreshGuard`·`AdminGuard`, passport `JwtStrategy`·`JwtRefreshStrategy`, `LastActiveInterceptor` → presentation/infrastructure 적절 배치. 동작 불변.

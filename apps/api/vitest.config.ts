@@ -3,10 +3,10 @@ import { resolve } from "node:path";
 import swc from "unplugin-swc";
 import { defineConfig } from "vitest/config";
 
-const setupFiles = ["./test/setup/vitest.setup.ts"];
+const setupFiles = ["./test/setup/vitest.setup"];
 const databaseProject = {
-  globalSetup: "./test/setup/global-setup.ts",
-  setupFiles: ["./test/setup-env.ts", ...setupFiles],
+  globalSetup: "./test/setup/global-setup",
+  setupFiles: ["./test/setup-env", ...setupFiles],
   fileParallelism: false,
   maxWorkers: 1,
   sequence: { shuffle: true },
@@ -27,12 +27,12 @@ export default defineConfig({
     alias: {
       "#api": resolve(import.meta.dirname, "src"),
       "#test": resolve(import.meta.dirname, "test"),
-      "@aido/api/errors": resolve(import.meta.dirname, "../../packages/api/src/errors/index.ts"),
+      "@aido/api/errors": resolve(import.meta.dirname, "../../packages/api/src/errors/index"),
       "@aido/api/vocabulary": resolve(
         import.meta.dirname,
-        "../../packages/api/src/vocabulary/index.ts",
+        "../../packages/api/src/vocabulary/index",
       ),
-      "@aido/api": resolve(import.meta.dirname, "../../packages/api/src/index.ts"),
+      "@aido/api": resolve(import.meta.dirname, "../../packages/api/src/index"),
     },
   },
   test: {

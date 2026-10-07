@@ -1,9 +1,9 @@
 import { vi } from "vitest";
 
-import type { AirQualityProvider } from "#api/weather/application/ports/air-quality-provider.port";
-import type { LifestyleIndexProvider } from "#api/weather/application/ports/lifestyle-index-provider.port";
-import type { SunTimeProvider } from "#api/weather/application/ports/sun-time-provider.port";
-import type { WeatherLocationRepositoryPort } from "#api/weather/application/ports/weather-location.repository.port";
+import type { AirQualityProvider } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
+import type { LifestyleIndexProvider } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
+import type { SunTimeProvider } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
+import type { WeatherLocationRepositoryPort } from "#api/modules/weather/application/ports/forecast/weather-location.repository.port";
 
 /**
  * 날씨 도메인 Symbol 토큰 포트 mock 팩토리 모음.

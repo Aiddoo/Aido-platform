@@ -14,7 +14,7 @@ import { createHash } from "node:crypto";
 
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
-import { convertStandardSchema } from "#api/shared/presentation/swagger/standard-schema.converter";
+import { convertStandardSchema } from "#api/platform/http/swagger/standard-schema.converter";
 
 import { RELEASED_V1_OPENAPI_CONTRACT } from "./fixtures/released-v1-openapi-contract.js";
 import { RELEASED_V1_8_2_OPENAPI_CONTRACT } from "./fixtures/released-v1.8.2-openapi-contract.js";

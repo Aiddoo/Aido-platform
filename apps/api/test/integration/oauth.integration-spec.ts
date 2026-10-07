@@ -28,7 +28,6 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { AdminEventNotifier } from "#api/admin-notification/index";
 import {
   AUTH_ACCOUNT_REPOSITORY,
   AUTH_CACHE,
@@ -40,52 +39,56 @@ import {
   AUTH_SESSION_REPOSITORY,
   AUTH_TOKEN_ISSUER,
   AUTH_USER_REPOSITORY,
-} from "#api/auth/application/ports/index";
+} from "#api/modules/identity/application/ports/auth/index";
 import {
   OAUTH_IDENTITY_PROVIDER_REGISTRY,
   type OAuthIdentityProvider,
   type OAuthIdentityProviderRegistry,
-} from "#api/auth/application/ports/oauth-identity-provider.port";
-import { SessionService } from "#api/auth/application/services/session.service";
-import { IssueLoginUseCase } from "#api/auth/application/use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "#api/auth/application/use-cases/provision-user/provision-user.use-case";
-import { OAuthWorkflow } from "#api/auth/application/workflows/oauth.workflow";
-import { TokenService } from "#api/auth/infrastructure/adapters/token.service";
+} from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { OAuthWorkflow } from "#api/modules/identity/application/workflows/auth/oauth.workflow";
+import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import {
   AppleOAuthProvider,
   GoogleOAuthProvider,
   KakaoOAuthProvider,
   NaverOAuthProvider,
-} from "#api/auth/infrastructure/oauth/adapters/index";
-import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { AccountRepository } from "#api/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "#api/auth/infrastructure/persistence/login-attempt.repository";
-import { OAuthStateRepository } from "#api/auth/infrastructure/persistence/oauth-state.repository";
-import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "#api/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
-import { NotificationQueueService } from "#api/notification/queue";
+} from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
+import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
+import { LoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/login-attempt.repository";
+import { OAuthStateRepository } from "#api/modules/identity/infrastructure/persistence/auth/oauth-state.repository";
+import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
+import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
+import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
+import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
+import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import type { AccountProvider } from "#api/platform/database/database.types";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
-import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import type { AccountProvider } from "#api/shared/infrastructure/database/database.types";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
-import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
-import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
 import {
   createDatabaseTransactionFixture,
   createTestDatabaseService,
 } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import {
+  issueLoginProvider,
+  oauthWorkflowProvider,
+  provisionUserProvider,
+  sessionServiceProvider,
+} from "../../src/modules/identity/identity-auth-application.providers.js";
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service.js";
 import { TestDatabase } from "../setup/test-database.js";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
@@ -122,9 +125,9 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         }),
       ],
       providers: [
-        OAuthWorkflow,
-        IssueLoginUseCase,
-        ProvisionUserUseCase,
+        oauthWorkflowProvider,
+        issueLoginProvider,
+        provisionUserProvider,
         {
           provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
           inject: [TypedConfigService, OAuthTokenVerifierService],
@@ -165,7 +168,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
             ]);
           },
         },
-        SessionService,
+        sessionServiceProvider,
         TokenService,
         AccountRepository,
         UserRepository,

@@ -14,17 +14,17 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { ADMIN_PROVIDERS } from "#api/admin/application/admin.providers";
-import { ADMIN_BROADCAST_NOTIFIER } from "#api/admin/application/ports/admin-broadcast-notifier.port";
-import { ADMIN_GROWTH_METRICS } from "#api/admin/application/ports/admin-growth-metrics.port";
-import { ADMIN_USER_DIRECTORY } from "#api/admin/application/ports/admin-user-directory.port";
-import { BroadcastNotificationUseCase } from "#api/admin/application/use-cases/broadcast-notification/broadcast-notification.use-case";
-import { SendTargetedNotificationUseCase } from "#api/admin/application/use-cases/send-targeted-notification/send-targeted-notification.use-case";
-import { NotificationAdminBroadcastNotifierAdapter } from "#api/admin/infrastructure/adapters/notification-admin-broadcast-notifier.adapter";
-import { PrismaAdminUserDirectoryAdapter } from "#api/admin/infrastructure/adapters/prisma-admin-user-directory.adapter";
-import { NotificationPublisher } from "#api/notification/index";
+import { NotificationPublisher } from "#api/modules/notification/notification-delivery.public";
+import { ADMIN_BROADCAST_NOTIFIER } from "#api/modules/operations/application/ports/admin/admin-broadcast-notifier.port";
+import { ADMIN_GROWTH_METRICS } from "#api/modules/operations/application/ports/admin/admin-growth-metrics.port";
+import { ADMIN_USER_DIRECTORY } from "#api/modules/operations/application/ports/admin/admin-user-directory.port";
+import { BroadcastNotification } from "#api/modules/operations/application/use-cases/admin/broadcast-notification.use-case";
+import { SendTargetedNotification } from "#api/modules/operations/application/use-cases/admin/send-targeted-notification.use-case";
+import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/infrastructure/adapters/admin/notification-admin-broadcast-notifier.adapter";
+import { PrismaAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-user-directory.adapter";
+import { ADMIN_PROVIDERS } from "#api/modules/operations/operations-admin.providers";
+import { DatabaseService } from "#api/platform/database/database.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import { UserBuilder } from "#test/builders/index";
 import {
   assertNativeWhereContains,
@@ -37,8 +37,8 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
   let module: TestingModule;
-  let broadcastNotificationUseCase: BroadcastNotificationUseCase;
-  let sendTargetedNotificationUseCase: SendTargetedNotificationUseCase;
+  let broadcastNotificationUseCase: BroadcastNotification;
+  let sendTargetedNotificationUseCase: SendTargetedNotification;
 
   const nativeContext = createMockDatabaseContext();
   const mockUserDb = nativeContext.orm.public.User;
@@ -73,8 +73,8 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
     }).compile();
 
     await module.init();
-    broadcastNotificationUseCase = module.get(BroadcastNotificationUseCase);
-    sendTargetedNotificationUseCase = module.get(SendTargetedNotificationUseCase);
+    broadcastNotificationUseCase = module.get(BroadcastNotification);
+    sendTargetedNotificationUseCase = module.get(SendTargetedNotification);
   });
 
   afterAll(async () => {

@@ -12,7 +12,7 @@ import type {
   GenerateStructuredOptions,
   GenerateStructuredResult,
   TokenUsage,
-} from "#api/ai/index";
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 
 /**
  * FakeAiProvider 설정 옵션

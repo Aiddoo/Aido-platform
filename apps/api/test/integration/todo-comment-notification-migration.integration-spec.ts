@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 
-import { encodeCreate } from "#api/shared/infrastructure/database/database-records";
-import { toInputJson } from "#api/shared/infrastructure/database/json.util";
+import { encodeCreate } from "#api/platform/database/database-records";
+import { toInputJson } from "#api/platform/database/json.util";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
 describe("native migration graph의 댓글 알림 DB invariant와 정리 index", () => {

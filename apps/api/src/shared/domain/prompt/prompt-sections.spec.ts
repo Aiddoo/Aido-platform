@@ -5,12 +5,12 @@
  * 프롬프트 본문은 각 빌더 자신의 spec에서 검증하고, 여기서는 "보안/출력 규칙 주입 여부"만 봅니다.
  */
 
-import { buildReportPrompt } from "#api/ai-report/domain/services/prompts/report.prompt";
-import type { AggregatedReportData } from "#api/ai-report/domain/types";
-import { buildSuggestionPrompt } from "#api/ai-suggestion/domain/services/prompts/detect-patterns.prompt";
-import type { SuggestionContext } from "#api/ai-suggestion/domain/types";
-import { buildParseMemoPrompt } from "#api/ai/domain/services/prompts/parse-memo.prompt";
-import { buildParseTodoPrompt } from "#api/ai/domain/services/prompts/parse-todo.prompt";
+import { buildParseMemoPrompt } from "#api/modules/ai-assistance/domain/services/parsing/prompts/parse-memo.prompt";
+import { buildParseTodoPrompt } from "#api/modules/ai-assistance/domain/services/parsing/prompts/parse-todo.prompt";
+import { buildReportPrompt } from "#api/modules/ai-assistance/domain/services/reports/prompts/report.prompt";
+import { buildSuggestionPrompt } from "#api/modules/ai-assistance/domain/services/suggestions/prompts/detect-patterns.prompt";
+import type { AggregatedReportData } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
+import type { SuggestionContext } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 
 import { PROMPT_OUTPUT_DISCIPLINE, PROMPT_SECURITY_GUARD } from "./prompt-sections.js";
 

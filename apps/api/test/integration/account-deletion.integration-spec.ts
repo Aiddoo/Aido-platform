@@ -27,7 +27,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { AdminEventNotifier } from "#api/admin-notification/index";
+import { TodoCommentAccountCleanup } from "#api/modules/engagement/engagement-comments.public";
 import {
   AUTH_ACCOUNT_REPOSITORY,
   AUTH_CACHE,
@@ -40,52 +40,52 @@ import {
   AUTH_TOKEN_ISSUER,
   AUTH_USER_REPOSITORY,
   AUTH_VERIFICATION_REPOSITORY,
-} from "#api/auth/application/ports/index";
-import { VERIFICATION_CODE_SECURITY } from "#api/auth/application/ports/verification-code-security.port";
-import { SessionService } from "#api/auth/application/services/session.service";
-import { VerificationService } from "#api/auth/application/services/verification.service";
-import { IssueLoginUseCase } from "#api/auth/application/use-cases/issue-login/issue-login.use-case";
-import { ProvisionUserUseCase } from "#api/auth/application/use-cases/provision-user/provision-user.use-case";
-import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
-import { NodeVerificationCodeSecurityAdapter } from "#api/auth/infrastructure/adapters/node-verification-code-security.adapter";
-import { PasswordService } from "#api/auth/infrastructure/adapters/password.service";
-import { TokenService } from "#api/auth/infrastructure/adapters/token.service";
-import { AccountRepository } from "#api/auth/infrastructure/persistence/account.repository";
-import { LoginAttemptRepository } from "#api/auth/infrastructure/persistence/login-attempt.repository";
-import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
-import { SessionRepository } from "#api/auth/infrastructure/persistence/session.repository";
-import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
-import { VerificationRepository } from "#api/auth/infrastructure/persistence/verification.repository";
-import { AccountPurgeProcessor } from "#api/auth/infrastructure/queue/account-purge.processor";
-import { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
-import { TransactionalEmailSender } from "#api/email/index";
-import { NotificationAccountCleanup } from "#api/notification/index";
-import { NotificationQueueService } from "#api/notification/queue";
+} from "#api/modules/identity/application/ports/auth/index";
+import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
+import { CredentialAuthWorkflow } from "#api/modules/identity/application/workflows/auth/credential-auth.workflow";
+import { PasswordWorkflow } from "#api/modules/identity/application/workflows/auth/password.workflow";
+import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
+import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
+import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
+import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
+import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
+import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
+import { LoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/login-attempt.repository";
+import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
+import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
+import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { VerificationRepository } from "#api/modules/identity/infrastructure/persistence/auth/verification.repository";
+import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
+import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
+import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
+import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
-import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
-import { TodoCommentAccountCleanup } from "#api/todo-comment/index";
-import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
 import {
   createDatabaseTransactionFixture,
   createTestDatabaseService,
 } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import {
+  credentialAuthWorkflowProvider,
+  issueLoginProvider,
+  passwordWorkflowProvider,
+  provisionUserProvider,
+  sessionServiceProvider,
+  verificationServiceProvider,
+} from "../../src/modules/identity/identity-auth-application.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { TestDatabase } from "../setup/test-database.js";
@@ -119,9 +119,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         }),
       ],
       providers: [
-        CredentialAuthWorkflow,
-        IssueLoginUseCase,
-        ProvisionUserUseCase,
+        credentialAuthWorkflowProvider,
+        issueLoginProvider,
+        provisionUserProvider,
         AccountPurgeJob,
         {
           provide: NotificationAccountCleanup,
@@ -145,10 +145,10 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           },
         },
         PasswordService,
-        PasswordWorkflow,
-        SessionService,
+        passwordWorkflowProvider,
+        sessionServiceProvider,
         TokenService,
-        VerificationService,
+        verificationServiceProvider,
         {
           provide: VERIFICATION_CODE_SECURITY,
           useClass: NodeVerificationCodeSecurityAdapter,

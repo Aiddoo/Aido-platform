@@ -4,11 +4,11 @@ import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { Pool } from "pg";
 
-import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { PostgresPool } from "#api/shared/infrastructure/database/postgres-pool";
-import { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { PostgresPool } from "#api/platform/database/postgres-pool";
+import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { assertManagedTestDatabaseEnvironment } from "#test/setup/managed-test-database";
 
 @Module({})

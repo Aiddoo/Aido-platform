@@ -6,11 +6,11 @@
 
 ## 관련 문서
 
-| 문서                                         | 내용                                      |
-| -------------------------------------------- | ----------------------------------------- |
-| [unit-test.md](./unit-test.md)               | 단위 테스트 상세 (Suites, Builder, GWT)   |
-| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB)       |
-| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 상세 (createE2eApp, supertest) |
+| 문서                                         | 내용                                        |
+| -------------------------------------------- | ------------------------------------------- |
+| [unit-test.md](./unit-test.md)               | 단위 테스트 상세 (typed mock, fixture, GWT) |
+| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB)         |
+| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 상세 (createE2eApp, supertest)   |
 
 ---
 
@@ -37,67 +37,52 @@
 
 ## 2. 유형 선택 기준
 
-| 검증하려는 것                           | 유형                  | 이유                                  |
-| --------------------------------------- | --------------------- | ------------------------------------- |
-| 단일 메서드의 입력 검증 / 예외 분기     | Unit                  | `TestBed.solitary`가 의존성 자동 Mock |
-| Repository 쿼리 파라미터                | Unit                  | `toHaveBeenCalledWith`로 충분         |
-| NestJS DI 연결 정합성                   | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요            |
-| `UNIT_OF_WORK.run` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증               |
-| 실제 DB 쿼리 + 마이그레이션 정합성      | Integration (실제 DB) | Testcontainers PostgreSQL             |
-| HTTP 요청 → 응답 전체 흐름              | E2E                   | supertest + 인증 + DB                 |
-| Guard / Interceptor 동작                | E2E                   | 실제 HTTP 파이프라인 필요             |
+| 검증하려는 것                           | 유형                  | 이유                                     |
+| --------------------------------------- | --------------------- | ---------------------------------------- |
+| 단일 메서드의 입력 검증 / 예외 분기     | Unit                  | 직접 생성 + typed mock으로 격리          |
+| Repository 쿼리 파라미터                | Unit                  | `toHaveBeenCalledWith`로 충분            |
+| NestJS DI 연결 정합성                   | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요               |
+| `UNIT_OF_WORK.run` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증                  |
+| 실제 DB 쿼리 + 마이그레이션 정합성      | Integration (실제 DB) | 공식 CI PG service / 로컬 Testcontainers |
+| HTTP 요청 → 응답 전체 흐름              | E2E                   | supertest + 인증 + DB                    |
+| Guard / Interceptor 동작                | E2E                   | 실제 HTTP 파이프라인 필요                |
 
 ---
 
 ## 3. 파일 구조
 
-```
+```text
 apps/api/
-├── src/{name}/
-│   ├── domain/
-│   │   ├── entities/{name}.entity.spec.ts       # 애그리게잇 Unit (클린아키 모듈)
-│   │   └── value-objects/*.vo.spec.ts           # VO 불변식 Unit
-│   └── application/
-│       ├── use-cases/<kebab>/<kebab>.use-case.spec.ts  # 쓰기 use-case Unit
-│       ├── queries/<kebab>/<kebab>.use-case.spec.ts    # 읽기 use-case Unit
-│       └── events/*.handler.spec.ts                    # @OnEvent 구독자 Unit
+├── src/modules/<context>/
+│   ├── domain/{aggregates,entities,value-objects,policies}/<slice>/*.spec.ts
+│   ├── application/use-cases/<slice>/*.use-case.spec.ts
+│   └── infrastructure/{persistence,adapters,jobs,subscribers}/<slice>/*.spec.ts
 └── test/
-    ├── e2e/{name}.e2e-spec.ts          # E2E 테스트
-    ├── integration/{name}.integration-spec.ts  # Integration 테스트
-    ├── builders/                        # 테스트 데이터 빌더 (17+)
-    ├── mocks/                           # FakeService + Mock 팩토리
-    │   └── ports/                       # Symbol 토큰 포트 mock 팩토리 (클린아키)
-    └── setup/                           # TestDatabase, suppressLogger 등
+    ├── e2e/*.e2e-spec.ts
+    ├── integration/*.integration-spec.ts
+    ├── builders/
+    ├── fixtures/
+    ├── mocks/ports/
+    └── setup/
 ```
 
-### 3.1 Use-case spec 패턴 (클린아키텍처 모듈)
+### 3.1 Application spec
 
-`@suites/unit`은 Symbol 토큰 포트도 deep-mock하지만, `test/mocks/ports/`의 수제 팩토리를 표준으로 쓴다 — **인터페이스 완전성**(포트 확장 시 누락을 타입 에러로 잡음)과 `createUnitOfWorkMock()` 같은 표준 패스스루의 일관성을 위해서다. 모듈별로 팩토리 파일 1개(`follow.mock.ts` 등)를 `test/mocks/ports/`에 두고 배럴/직접경로로 import한다 (실제 예: `update-todo.use-case.spec.ts`):
+순수 Application은 `mockDeep<ConstructorParameters<typeof UseCase>[0]>()`로 의존성을 준비하고
+직접 생성한다. 콜백을 실행하는 UoW fixture 등 기존 업무 fixture를 주입하고 시나리오별 반환값만
+설정한다. Nest DI가 필요한 Infrastructure/Presentation은 기존 Suites를 사용한다.
+[Unit 가이드](./unit-test.md)에 실제 코드 형식을 정리했다.
 
-```ts
-const { unit, unitRef } = await TestBed.solitary(UpdateTodoUseCase)
-  .mock<TodoRepositoryPort>(TODO_REPOSITORY)
-  .impl(() => createTodoRepositoryMock())
-  .mock(UNIT_OF_WORK)
-  .impl(() => createUnitOfWorkMock()) // run(work) 즉시 실행 패스스루
-  .mock<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER)
-  .impl(() => ({ publishAll: vi.fn() }))
-  .compile();
-useCase = unit;
-eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
-```
-
-- 이벤트 발행 검증: **`expect(eventPublisher.publishAll).toHaveBeenCalledWith([new TodoDeletedEvent(1, "user-123")])`** — 이벤트 인스턴스 배열로 정확 단언. 애그리게잇 내부(`raise`)는 protected라 스파이하지 않는다
-- TX mock: `createUnitOfWorkMock()`은 `run(work)`을 즉시 실행 패스스루로 구현 — 콜백이 무인자(CLS 기반)라 tx 핸들 조립이 필요 없다
-- 포트 mock 팩토리는 포트 인터페이스 반환 타입 강제 → 포트 확장 시 누락이 컴파일 에러로 드러남
-- 애그리게잇 픽스처는 `Todo.reconstitute({...})` — schedule은 `TodoSchedule.reconstitute`, 항목은 `TodoItem.reconstitute`로 조립. 응답 read model은 `TodoBuilder` + 응답 매퍼
-- 자식 엔티티·VO·도메인 정책은 프레임워크 없이 순수 단위 테스트 (예: `todo-item.entity.spec.ts`, `completion-policy.spec.ts`)
+- 이벤트는 공개 `publishAll`에 전달되는 domain event로 검증한다. protected state에 spy하지 않는다.
+- `createUnitOfWorkMock()`은 CLS 기반 무인자 콜백을 실행한다. rollback은 실제 PG 테스트에서 검증한다.
+- 영속 상태는 Aggregate/VO의 `reconstitute()`로 복원한다. 조회 결과는 기존 Builder를 재사용한다.
+- Module과 worker harness는 운영 Composition Root의 Application factory provider를 재사용한다.
 
 ### 3.2 동작 동일성 게이트 (마이그레이션 필수)
 
 | 게이트                           | 파일                                               | 검증 내용                                                                                                                                                                 |
 | -------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **OpenAPI 계약 스냅샷**          | `test/e2e/openapi-contract.e2e-spec.ts`            | 전체 라우트·요청/응답 스키마 스냅샷 — **diff 0 = 클라이언트 영향 0**. 의도적 계약 변경 시에만 `-u`로 재생성                                                               |
+| **OpenAPI 계약 스냅샷**          | `test/e2e/openapi-contract.e2e-spec.ts`            | 전체 라우트·요청/응답 스키마 스냅샷 — **diff 0은 공개 명세 동일성의 근거이며 모든 운영 영향의 보장은 아님**. 의도적 계약 변경 시에만 `-u`로 재생성                        |
 | **스토어 배포 계약 fingerprint** | `test/e2e/fixtures/released-*-openapi-contract.ts` | 배포된 1.7.x(111 paths·137 schemas), 1.8.2(113 paths·140 schemas) 계약을 각각 고정. 문서 문구와 새 API 추가는 허용하되 기존 request/response/status/Zod shape 변경은 차단 |
 | **블랙박스 E2E**                 | `test/e2e/todo.e2e-spec.ts` 등                     | 리팩터링 시 **무수정 통과**가 원칙 — 테스트를 고치면 동일성 증명이 깨진다                                                                                                 |
 
@@ -107,15 +92,15 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ### 4.1 핵심 인프라
 
-| 파일                                                   | 용도                                                         | 사용처                      |
-| ------------------------------------------------------ | ------------------------------------------------------------ | --------------------------- |
-| `test/setup/suppress-logger.ts`                        | `suppressLogger()` — Logger 출력 억제                        | Integration                 |
-| `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — native ORM context 연결      | Integration (Mock DB)       |
-| `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                         | E2E                         |
-| `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                     | E2E                         |
-| `test/setup/managed-test-database.ts`                  | Vitest 실행당 Testcontainers PostgreSQL + migration 수명주기 | Integration (실제 DB) + E2E |
-| `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate             | Integration (실제 DB) + E2E |
-| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                     | Integration (실제 DB, Auth) |
+| 파일                                                   | 용도                                                                        | 사용처                      |
+| ------------------------------------------------------ | --------------------------------------------------------------------------- | --------------------------- |
+| `test/setup/suppress-logger.ts`                        | `suppressLogger()` — Logger 출력 억제                                       | Integration                 |
+| `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — native ORM context 연결                     | Integration (Mock DB)       |
+| `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                                        | E2E                         |
+| `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                                    | E2E                         |
+| `test/setup/managed-test-database.ts`                  | Vitest 실행당 공식 CI PG service / 로컬 Testcontainers + migration 수명주기 | Integration (실제 DB) + E2E |
+| `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate                            | Integration (실제 DB) + E2E |
+| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                                    | Integration (실제 DB, Auth) |
 
 ### 4.2 FakeService 목록
 
@@ -144,7 +129,7 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 - ✅ 테스트 이름과 준비·실행·검증 순서로 의도 표현. 주석은 동시성 보장이나 계약상 제약처럼 코드만으로 드러나지 않는 이유에 사용
 - ✅ Builder 패턴으로 테스트 데이터 생성
-- ✅ 한국어 describe명 + 유형 태그 (예: `"(Mock DB)"`, `"(실제 DB)"`)
+- ✅ 한국어 describe/it 설명 + 유형 태그 (예: `"(Mock DB)"`, `"(실제 DB)"`)
 - ✅ `clearMocks`/`restoreMocks`는 `vitest.config.ts`에서 매 테스트 전에 적용된다. Fixture ID 리셋도 setup의 `beforeEach`가 소유한다
 - ✅ FakeService로 외부 서비스 대체 (E2E)
 
@@ -186,15 +171,15 @@ pnpm --filter @aido/server test:e2e -- -t "패턴"    # 특정 테스트
 
 ## 7. 예제 파일 경로
 
-| 유형                     | 예제 파일                                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| **Unit (쓰기 use-case)** | `src/todo/application/use-cases/update-todo/update-todo.use-case.spec.ts` — UoW·이벤트·포트 팩토리 |
-| Unit (읽기 query)        | `src/todo/application/queries/get-todo-summary/get-todo-summary.use-case.spec.ts`                  |
-| Integration (Mock DB)    | `test/integration/cheer.integration-spec.ts`                                                       |
-| Integration (실제 DB)    | `test/integration/auth-password-setup.integration-spec.ts`                                         |
-| E2E                      | `test/e2e/todo.e2e-spec.ts`                                                                        |
-| Builder                  | `test/builders/user.builder.ts`                                                                    |
-| FakeService              | `test/mocks/fake-*.ts`                                                                             |
+| 유형                     | 예제 파일                                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| **Unit (쓰기 use-case)** | `src/modules/planning/application/use-cases/todos/update-todo.use-case.spec.ts` — UoW·이벤트·포트 팩토리 |
+| Unit (읽기 query)        | `src/modules/planning/application/use-cases/todos/get-todo-summary.use-case.spec.ts`                     |
+| Integration (Mock DB)    | `test/integration/cheer.integration-spec.ts`                                                             |
+| Integration (실제 DB)    | `test/integration/auth-password-setup.integration-spec.ts`                                               |
+| E2E                      | `test/e2e/todo.e2e-spec.ts`                                                                              |
+| Builder                  | `test/builders/user.builder.ts`                                                                          |
+| FakeService              | `test/mocks/fake-*.ts`                                                                                   |
 
 ---
 
@@ -205,7 +190,7 @@ pnpm --filter @aido/server test:e2e -- -t "패턴"    # 특정 테스트
 
 - API는 NodeNext ESM이다. 내부 별칭은 `#api/*`, 테스트 별칭은 `#test/*`, 상대 경로에는 `.js`를 명시한다. `require`와 `__dirname`은 사용하지 않는다.
 - Unit, integration, E2E는 Vitest project로 나눈다. DB project는 파일을 직렬 실행하고 순서를 섞어 공유 상태 의존을 확인한다.
-- DB global setup은 project마다 PostgreSQL 컨테이너 하나를 생성하고 migration을 적용한다. `provide`/`inject`로 연결 정보를 worker에 전달하며, 컨테이너 종료는 global setup의 반환 teardown이 소유한다.
+- DB global setup은 `AIDO_TEST_POSTGRES_URL`이 있으면 공식 PostgreSQL service 안에 실행별 DB를 생성하고, 없으면 로컬 Testcontainers를 사용한다. 각 실행에 migration을 적용한다. `provide`/`inject`로 연결 정보를 worker에 전달하며, 자신이 만든 DB/컨테이너의 종료는 global setup의 반환 teardown이 소유한다.
 - SDK mock은 `vi.hoisted`와 `vi.mock`을 사용한다. 실제 오류 클래스, 토큰 검증, 순수 SDK 함수는 `importOriginal`로 유지한다. Constructor mock의 구현은 일반 함수나 class를 사용한다.
 - Prisma query의 select 결과는 필요한 반환 필드를 명시한다. `asMock`의 partial mock 지원은 native ORM projection이 선택한 필드만 돌려주는 테스트에서 사용한다.
 - 동시성 테스트는 transaction barrier와 PostgreSQL lock 상태를 관찰한다. 한 번의 event loop tick이나 임의 sleep으로 순서를 가정하지 않는다.

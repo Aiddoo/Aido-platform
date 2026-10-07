@@ -1,11 +1,11 @@
 import { vi } from "vitest";
 
+import type { TodoCommentCursorCodecPort } from "#api/modules/engagement/application/ports/comments/todo-comment-cursor-codec.port";
+import type { TodoCommentNotificationPort } from "#api/modules/engagement/application/ports/comments/todo-comment-notification.port";
+import type { TodoCommentReaderPort } from "#api/modules/engagement/application/ports/comments/todo-comment.reader.port";
+import type { TodoCommentRepositoryPort } from "#api/modules/engagement/application/ports/comments/todo-comment.repository.port";
+import type { TodoViewCachePort } from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
 import type { MutationLockPort } from "#api/shared/application/ports/index";
-import type { TodoCommentCursorCodecPort } from "#api/todo-comment/application/ports/todo-comment-cursor-codec.port";
-import type { TodoCommentNotificationPort } from "#api/todo-comment/application/ports/todo-comment-notification.port";
-import type { TodoCommentReaderPort } from "#api/todo-comment/application/ports/todo-comment.reader.port";
-import type { TodoCommentRepositoryPort } from "#api/todo-comment/application/ports/todo-comment.repository.port";
-import type { TodoViewCachePort } from "#api/todo-comment/application/ports/todo-view-cache.port";
 
 /**
  * todo-comment 포트 mock 팩토리.

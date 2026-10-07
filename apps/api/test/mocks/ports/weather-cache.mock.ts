@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { WeatherCachePort } from "#api/weather/application/ports/weather-cache.port";
+import type { WeatherCachePort } from "#api/modules/weather/application/ports/forecast/weather-cache.port";
 
 /**
  * WeatherCachePort mock 팩토리.

@@ -1,0 +1,66 @@
+import type { Mocked } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
+
+import type { WeeklyAchievementUpsert } from "../../../domain/policies/weekly-achievements/weekly-achievement.js";
+import { type WeeklyAchievementRepositoryPort } from "../../ports/weekly-achievements/weekly-achievement.repository.port.js";
+import { UpsertWeeklyAchievements } from "./upsert-weekly-achievements.use-case.js";
+
+function record(overrides: Partial<WeeklyAchievementUpsert> = {}): WeeklyAchievementUpsert {
+  return {
+    userId: "user-1",
+    year: 2026,
+    week: 10,
+    totalTodos: 5,
+    completedTodos: 3,
+    achievedAt: new Date("2026-03-09T00:00:00.000Z"),
+    ...overrides,
+  };
+}
+
+describe("UpsertWeeklyAchievements — 일괄 upsert use-case", () => {
+  let useCase: UpsertWeeklyAchievements;
+  let repository: Mocked<WeeklyAchievementRepositoryPort>;
+
+  beforeEach(async () => {
+    const upsertWeeklyAchievementsDependencies = mockDeep<
+      ConstructorParameters<typeof UpsertWeeklyAchievements>[0]
+    >({});
+    const unit = new UpsertWeeklyAchievements(upsertWeeklyAchievementsDependencies);
+
+    useCase = unit;
+    repository = upsertWeeklyAchievementsDependencies.repository;
+  });
+
+  it("레코드가 비어 있으면 저장소를 호출하지 않는다", async () => {
+    // Given - 빈 레코드 배열
+
+    // When - upsert를 실행하면
+    await useCase.execute({ records: [] });
+
+    // Then - 저장소 upsertMany가 호출되지 않는다
+    expect(repository.upsertMany).not.toHaveBeenCalled();
+  });
+
+  it("불변식을 통과한 스냅샷을 저장소에 위임한다", async () => {
+    // Given - 유효한 두 레코드
+    repository.upsertMany.mockResolvedValue(undefined);
+    const records = [record(), record({ userId: "user-2", week: 11 })];
+
+    // When - upsert를 실행하면
+    await useCase.execute({ records });
+
+    // Then - 저장소에 그대로 위임된다
+    expect(repository.upsertMany).toHaveBeenCalledWith(records);
+  });
+
+  it("완료 수가 전체 수를 초과하면 도메인 불변식으로 실패한다", async () => {
+    // Given - completedTodos > totalTodos 인 잘못된 레코드
+    const invalid = record({ totalTodos: 2, completedTodos: 5 });
+
+    // When/Then - SYS_0002 도메인 예외로 실패하고 저장소를 호출하지 않는다
+    await expect(useCase.execute({ records: [invalid] })).rejects.toMatchObject({
+      errorCode: "SYS_0002",
+    });
+    expect(repository.upsertMany).not.toHaveBeenCalled();
+  });
+});

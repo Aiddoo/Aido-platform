@@ -7,7 +7,7 @@ import type {
   Session,
   Verification,
   VerificationType,
-} from "#api/shared/infrastructure/database/database.types";
+} from "#api/platform/database/database.types";
 
 let sessionCounter = 0;
 let verificationCounter = 0;

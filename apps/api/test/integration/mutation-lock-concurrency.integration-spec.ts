@@ -8,54 +8,47 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { ClsModule, ClsService } from "nestjs-cls";
 import sql, { join } from "sql-template-tag";
 import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
-import { type CheerLimitReaderPort } from "#api/cheer/application/ports/cheer-limit-reader.port";
-import type { CheerNotifierPort } from "#api/cheer/application/ports/cheer-notifier.port";
-import { CheerReader } from "#api/cheer/application/services/cheer.reader";
-import { SendCheerUseCase } from "#api/cheer/application/use-cases/send-cheer/send-cheer.use-case";
-import { PrismaCheerRepository } from "#api/cheer/infrastructure/persistence/prisma-cheer.repository";
-import { FollowReader } from "#api/follow/index";
-import type { NudgeLimitReaderPort } from "#api/nudge/application/ports/nudge-limit-reader.port";
-import type { NudgeNotifierPort } from "#api/nudge/application/ports/nudge-notifier.port";
-import { NudgeReader } from "#api/nudge/application/services/nudge.reader";
-import { SendNudgeUseCase } from "#api/nudge/application/use-cases/send-nudge/send-nudge.use-case";
-import { SendRemindNudgeUseCase } from "#api/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
-import { PrismaNudgeRepository } from "#api/nudge/infrastructure/persistence/prisma-nudge.repository";
 import {
   ENTITLEMENT_CACHE,
   ENTITLEMENT_DATABASE,
-} from "#api/shared/application/entitlement/entitlement-state.port";
-import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+} from "#api/modules/access/application/services/entitlement/entitlement-state.port";
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/prisma-entitlement.reader";
+import type { TodoCategoryCachePort } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
+import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
+import { ReorderTodoCategory } from "#api/modules/planning/application/use-cases/categories/reorder-todo-category.use-case";
+import { TodoCategoryLimitReaderAdapter } from "#api/modules/planning/infrastructure/adapters/categories/todo-category-limit-reader.adapter";
+import { PrismaTodoCategoryRepository } from "#api/modules/planning/infrastructure/persistence/categories/prisma-todo-category.repository";
+import { type CheerLimitReaderPort } from "#api/modules/social/application/ports/cheers/cheer-limit-reader.port";
+import type { CheerNotifierPort } from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
+import type { NudgeLimitReaderPort } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
+import type { NudgeNotifierPort } from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+import { CheerReader } from "#api/modules/social/application/services/cheers/cheer.reader";
+import { NudgeReader } from "#api/modules/social/application/services/nudges/nudge.reader";
+import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
+import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
+import { SendRemindNudge } from "#api/modules/social/application/use-cases/nudges/send-remind-nudge.use-case";
+import { PrismaCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/prisma-cheer.repository";
+import { PrismaNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/prisma-nudge.repository";
+import { FollowReader } from "#api/modules/social/social-friends.public";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { Prisma8Transaction as TransactionClient } from "#api/platform/database/prisma8-transactional.adapter";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import {
   MutationLockKeys,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import {
-  decodeSqlRows,
-  sqlRowSpec,
-  sqlStatement,
-} from "#api/shared/infrastructure/database/database-sql";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { PostgresMutationLockAdapter } from "#api/shared/infrastructure/database/postgres-mutation-lock.adapter";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import type { Prisma8Transaction as TransactionClient } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import { PrismaEntitlementReader } from "#api/shared/infrastructure/entitlement/prisma-entitlement.reader";
-import type { TodoCategoryCachePort } from "#api/todo-category/application/ports/todo-category-cache.port";
-import { CreateTodoCategoryUseCase } from "#api/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
-import { ReorderTodoCategoryUseCase } from "#api/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
-import { TodoCategoryLimitReaderAdapter } from "#api/todo-category/infrastructure/adapters/todo-category-limit-reader.adapter";
-import { PrismaTodoCategoryRepository } from "#api/todo-category/infrastructure/persistence/prisma-todo-category.repository";
 import {
   createDatabaseContext,
   createTestDatabaseService,
@@ -64,6 +57,7 @@ import {
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
+import { entitlementServiceProvider } from "../../src/modules/access/access-entitlement-application.providers.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const CONCURRENCY = 20;
@@ -747,7 +741,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         ClsUnitOfWork,
         PrismaTodoCategoryRepository,
         PostgresMutationLockAdapter,
-        EntitlementService,
+        entitlementServiceProvider,
         { provide: ENTITLEMENT_CACHE, useExisting: CacheService },
         { provide: ENTITLEMENT_DATABASE, useClass: PrismaEntitlementReader },
         TodoCategoryLimitReaderAdapter,
@@ -879,14 +873,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     );
     const { txHost, uow } = createTransactionHarness(prisma);
     const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
-    const useCase = new SendCheerUseCase(
-      repository,
-      createCheerNotifier(),
-      createCheerLimitReader(DAILY_LIMIT),
-      new PostgresMutationLockAdapter(txHost),
-      uow,
-      createFollowReader(),
-    );
+    const useCase = new SendCheer({
+      cheerRepository: repository,
+      notifier: createCheerNotifier(),
+      limitReader: createCheerLimitReader(DAILY_LIMIT),
+      mutationLock: new PostgresMutationLockAdapter(txHost),
+      unitOfWork: uow,
+      followReader: createFollowReader(),
+      logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
+    });
 
     // When - 같은 일일 한도를 동시에 소비
     const summary = summarize(
@@ -917,14 +912,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendCheerUseCase(
-      repository,
-      createCheerNotifier(),
-      createCheerLimitReader(null),
-      new PostgresMutationLockAdapter(txHost),
-      uow,
-      createFollowReader(),
-    );
+    const useCase = new SendCheer({
+      cheerRepository: repository,
+      notifier: createCheerNotifier(),
+      limitReader: createCheerLimitReader(null),
+      mutationLock: new PostgresMutationLockAdapter(txHost),
+      unitOfWork: uow,
+      followReader: createFollowReader(),
+      logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
+    });
 
     // When - 동일 대상을 동시에 응원
     const summary = summarize(
@@ -955,14 +951,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     }
     const { txHost, uow } = createTransactionHarness(prisma);
     const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
-    const useCase = new SendNudgeUseCase(
-      repository,
-      createNudgeNotifier(),
-      createNudgeLimitReader(DAILY_LIMIT),
-      new PostgresMutationLockAdapter(txHost),
-      uow,
-      createFollowReader(),
-    );
+    const useCase = new SendNudge({
+      nudgeRepository: repository,
+      notifier: createNudgeNotifier(),
+      limitReader: createNudgeLimitReader(DAILY_LIMIT),
+      mutationLock: new PostgresMutationLockAdapter(txHost),
+      unitOfWork: uow,
+      followReader: createFollowReader(),
+      logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
+    });
 
     // When - 같은 일일 한도를 동시에 소비
     const summary = summarize(
@@ -994,14 +991,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendNudgeUseCase(
-      repository,
-      createNudgeNotifier(),
-      createNudgeLimitReader(null),
-      new PostgresMutationLockAdapter(txHost),
-      uow,
-      createFollowReader(),
-    );
+    const useCase = new SendNudge({
+      nudgeRepository: repository,
+      notifier: createNudgeNotifier(),
+      limitReader: createNudgeLimitReader(null),
+      mutationLock: new PostgresMutationLockAdapter(txHost),
+      unitOfWork: uow,
+      followReader: createFollowReader(),
+      logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
+    });
 
     // When - 동일 Todo를 동시에 찌름
     const summary = summarize(
@@ -1035,13 +1033,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       undefined,
       new BestEffortRendezvous(CONCURRENCY),
     );
-    const useCase = new SendRemindNudgeUseCase(
-      repository,
-      createNudgeNotifier(),
-      new PostgresMutationLockAdapter(txHost),
-      uow,
-      createFollowReader(),
-    );
+    const useCase = new SendRemindNudge({
+      nudgeRepository: repository,
+      notifier: createNudgeNotifier(),
+      mutationLock: new PostgresMutationLockAdapter(txHost),
+      unitOfWork: uow,
+      followReader: createFollowReader(),
+      logger: mock<ConstructorParameters<typeof SendRemindNudge>[0]["logger"]>(),
+    });
 
     // When - 동일 친구에게 동시에 reminder-Nudge 전송
     const summary = summarize(
@@ -1072,13 +1071,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       lockKey,
       CONCURRENCY,
     );
-    const useCase = new CreateTodoCategoryUseCase(
-      categoryRepository,
-      createTodoCategoryCache(),
-      categoryLimitReader,
-      coordinatedLock,
-      categoryUow,
-    );
+    const useCase = new CreateTodoCategory({
+      repository: categoryRepository,
+      cache: createTodoCategoryCache(),
+      limitReader: categoryLimitReader,
+      mutationLock: coordinatedLock,
+      unitOfWork: categoryUow,
+      logger: mock<ConstructorParameters<typeof CreateTodoCategory>[0]["logger"]>(),
+    });
 
     // When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
     const race = await observeCategoryRace(
@@ -1143,12 +1143,13 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       lockKey,
       CONCURRENCY,
     );
-    const useCase = new ReorderTodoCategoryUseCase(
-      categoryRepository,
-      createTodoCategoryCache(),
-      coordinatedLock,
-      categoryUow,
-    );
+    const useCase = new ReorderTodoCategory({
+      repository: categoryRepository,
+      cache: createTodoCategoryCache(),
+      mutationLock: coordinatedLock,
+      unitOfWork: categoryUow,
+      logger: mock<ConstructorParameters<typeof ReorderTodoCategory>[0]["logger"]>(),
+    });
 
     // When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
     const race = await observeCategoryRace(
@@ -1207,11 +1208,12 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ].map((value) => encodeCreate("Cheer", value)),
     );
     const { txHost } = createTransactionHarness(prisma);
-    const reader = new CheerReader(
-      new PrismaCheerRepository(txHost),
-      {} as PaginationService,
-      createReaderEntitlement(3),
-    );
+    const reader = new CheerReader({
+      cheerRepository: new PrismaCheerRepository(txHost),
+      paginationService: {} as PaginationService,
+      entitlementService: createReaderEntitlement(3),
+      logger: mock<ConstructorParameters<typeof CheerReader>[0]["logger"]>(),
+    });
 
     // When
     const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
@@ -1242,11 +1244,12 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ].map((value) => encodeCreate("Nudge", value)),
     );
     const { txHost } = createTransactionHarness(prisma);
-    const reader = new NudgeReader(
-      new PrismaNudgeRepository(txHost),
-      {} as PaginationService,
-      createReaderEntitlement(3),
-    );
+    const reader = new NudgeReader({
+      nudgeRepository: new PrismaNudgeRepository(txHost),
+      paginationService: {} as PaginationService,
+      entitlementService: createReaderEntitlement(3),
+      logger: mock<ConstructorParameters<typeof NudgeReader>[0]["logger"]>(),
+    });
 
     // When
     const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
@@ -1315,14 +1318,15 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         await realLock.acquire(keys);
       },
     };
-    const useCase = new SendCheerUseCase(
-      new PrismaCheerRepository(txHost),
-      createCheerNotifier(),
-      createCheerLimitReader(1),
-      mutationLock,
-      uow,
-      createFollowReader(),
-    );
+    const useCase = new SendCheer({
+      cheerRepository: new PrismaCheerRepository(txHost),
+      notifier: createCheerNotifier(),
+      limitReader: createCheerLimitReader(1),
+      mutationLock: mutationLock,
+      unitOfWork: uow,
+      followReader: createFollowReader(),
+      logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
+    });
 
     // When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
     const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");

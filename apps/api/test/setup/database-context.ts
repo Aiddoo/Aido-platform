@@ -5,13 +5,13 @@ import postgres from "@prisma/orm-postgres/runtime";
 import { Pool, type PoolConfig } from "pg";
 import { mock } from "vitest-mock-extended";
 
-import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/platform/database/database.service";
 import {
   Prisma8TransactionalAdapter,
   bindDatabaseTransaction,
   type Prisma8Transaction,
-} from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+} from "#api/platform/database/prisma8-transactional.adapter";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
 import type { Contract } from "../../src/generated/prisma8/contract.d.js";
 import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };

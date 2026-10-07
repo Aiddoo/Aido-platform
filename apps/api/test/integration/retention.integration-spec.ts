@@ -3,16 +3,12 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import type { TransactionHost } from "@nestjs-cls/transactional";
 import { and } from "@prisma/orm-postgres/orm-client";
 
-import { PrismaRetentionRepository } from "#api/retention/infrastructure/persistence/prisma-retention.repository";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { createEntityId } from "#api/shared/infrastructure/database/database-values";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { createEntityId } from "#api/platform/database/database-values";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 import { asDep } from "#test/mocks/index";
 import { createDatabaseContext, withDatabaseTransaction } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";

@@ -6,44 +6,49 @@ import { vi, type Mocked, type MockedFunction } from "vitest";
 import {
   NOTIFICATION_CACHE,
   type NotificationCachePort,
-} from "#api/notification/application/ports/notification-cache.port";
-import type { CreateNotificationData } from "#api/notification/application/ports/notification-data";
+} from "#api/modules/notification/application/ports/delivery/notification-cache.port";
+import type { CreateNotificationData } from "#api/modules/notification/application/ports/delivery/notification-data";
 import {
   NOTIFICATION_DEDUP,
   type NotificationDedupPort,
-} from "#api/notification/application/ports/notification-dedup.port";
+} from "#api/modules/notification/application/ports/delivery/notification-dedup.port";
 import {
   NOTIFICATION_REPOSITORY,
   type NotificationRepositoryPort,
-} from "#api/notification/application/ports/notification.repository.port";
+} from "#api/modules/notification/application/ports/delivery/notification.repository.port";
 import {
   PUSH_DISPATCH_STAGING,
   type PushDispatchStagingRepositoryPort,
   type StagePushDispatchInput,
-} from "#api/notification/application/ports/push-dispatch-staging.repository.port";
+} from "#api/modules/notification/application/ports/delivery/push-dispatch-staging.repository.port";
 import {
   USER_NOTIFICATION_SETTINGS,
   type UserNotificationSettingsPort,
-} from "#api/notification/application/ports/user-notification-settings.port";
-import { NotificationHistoryReader } from "#api/notification/application/readers/notification-history.reader";
-import { PushDeliveryAfterCommitPublisher } from "#api/notification/application/services/push-delivery-after-commit.publisher";
-import { FinalizeBatchNotificationUseCase } from "#api/notification/application/use-cases/finalize-batch-notification/finalize-batch-notification.use-case";
-import { PersistBatchNotificationUseCase } from "#api/notification/application/use-cases/persist-batch-notification/persist-batch-notification.use-case";
+} from "#api/modules/notification/application/ports/delivery/user-notification-settings.port";
+import { NotificationHistoryReader } from "#api/modules/notification/application/readers/delivery/notification-history.reader";
+import { PersistBatchNotification } from "#api/modules/notification/application/use-cases/delivery/persist-batch-notification.use-case";
 import {
-  PublishPushDeliveryOutboxUseCase,
+  PublishPushDeliveryOutbox,
   type PublishPushDeliveryOutboxInput,
-} from "#api/notification/application/use-cases/publish-push-delivery-outbox/publish-push-delivery-outbox.use-case";
-import { SendFriendCompletionNotificationsUseCase } from "#api/notification/application/use-cases/send-friend-completion-notifications/send-friend-completion-notifications.use-case";
-import type { NotificationRecord } from "#api/notification/domain/records/notification.record";
+} from "#api/modules/notification/application/use-cases/delivery/publish-push-delivery-outbox.use-case";
+import { SendFriendCompletionNotifications } from "#api/modules/notification/application/use-cases/delivery/send-friend-completion-notifications.use-case";
+import type { NotificationRecord } from "#api/modules/notification/domain/records/delivery/notification.record";
 import {
   AFTER_COMMIT_TASK_REGISTRY,
+  UNIT_OF_WORK,
   type AfterCommitTask,
   type AfterCommitTaskRegistryPort,
-  UNIT_OF_WORK,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { createNotificationCacheMock } from "#test/mocks/ports/notification-cache.mock";
 import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
+
+import {
+  finalizeBatchNotificationProvider,
+  persistBatchNotificationProvider,
+  pushDeliveryAfterCommitPublisherProvider,
+  sendFriendCompletionNotificationsProvider,
+} from "../../src/modules/notification/notification-delivery-application.providers.js";
 
 interface TransactionContext {
   closed: boolean;
@@ -117,10 +122,10 @@ const friendCompletionInput = {
   timezone: "Asia/Seoul",
 };
 
-describe("friend-completed durable post-commit publication (component)", () => {
+describe("친구 완료 알림의 commit 후 영속 발행 (컴포넌트)", () => {
   let module: TestingModule;
-  let useCase: SendFriendCompletionNotificationsUseCase;
-  let persistBatch: PersistBatchNotificationUseCase;
+  let useCase: SendFriendCompletionNotifications;
+  let persistBatch: PersistBatchNotification;
   let unitOfWork: AfterCommitAwareUnitOfWork;
   let repository: Mocked<NotificationRepositoryPort>;
   let staging: Mocked<PushDispatchStagingRepositoryPort>;
@@ -179,10 +184,10 @@ describe("friend-completed durable post-commit publication (component)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        SendFriendCompletionNotificationsUseCase,
-        PersistBatchNotificationUseCase,
-        FinalizeBatchNotificationUseCase,
-        PushDeliveryAfterCommitPublisher,
+        sendFriendCompletionNotificationsProvider,
+        persistBatchNotificationProvider,
+        finalizeBatchNotificationProvider,
+        pushDeliveryAfterCommitPublisherProvider,
         { provide: NotificationHistoryReader, useValue: notificationHistoryReader },
         { provide: NOTIFICATION_REPOSITORY, useValue: repository },
         { provide: PUSH_DISPATCH_STAGING, useValue: staging },
@@ -191,19 +196,19 @@ describe("friend-completed durable post-commit publication (component)", () => {
         { provide: USER_NOTIFICATION_SETTINGS, useValue: userSettings },
         { provide: UNIT_OF_WORK, useValue: unitOfWork },
         { provide: AFTER_COMMIT_TASK_REGISTRY, useValue: unitOfWork },
-        { provide: PublishPushDeliveryOutboxUseCase, useValue: { execute: executePublish } },
+        { provide: PublishPushDeliveryOutbox, useValue: { execute: executePublish } },
       ],
     }).compile();
 
-    useCase = module.get(SendFriendCompletionNotificationsUseCase);
-    persistBatch = module.get(PersistBatchNotificationUseCase);
+    useCase = module.get(SendFriendCompletionNotifications);
+    persistBatch = module.get(PersistBatchNotification);
   });
 
   afterEach(async () => {
     await module?.close();
   });
 
-  it("stages notifications and BATCH outbox atomically, then publishes only after root commit", async () => {
+  it("알림과 BATCH outbox를 원자적으로 저장하고 root commit 후에만 발행한다", async () => {
     await useCase.execute(friendCompletionInput);
 
     expect(unitOfWork.rootTransactionCount).toBe(1);
@@ -235,7 +240,7 @@ describe("friend-completed durable post-commit publication (component)", () => {
     ]);
   });
 
-  it("does not publish a registered delivery task when the enclosing UOW rolls back", async () => {
+  it("외부 UoW가 rollback되면 등록된 발송 작업을 발행하지 않는다", async () => {
     const data: CreateNotificationData[] = [
       {
         userId: "user-1",

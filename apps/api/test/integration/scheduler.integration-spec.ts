@@ -19,9 +19,9 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { SCHEDULER_PREFERENCE_READER } from "#api/scheduler/application/ports/scheduler-preference-reader.port";
-import { TIMEZONE_REMINDER_ENQUEUER } from "#api/scheduler/application/ports/timezone-reminder-enqueuer.port";
-import { NOTIFICATION_SCHEDULE } from "#api/scheduler/domain/services/notification-schedule";
+import { SCHEDULER_PREFERENCE_READER } from "#api/modules/notification/application/ports/reminders/scheduler-preference-reader.port";
+import { TIMEZONE_REMINDER_ENQUEUER } from "#api/modules/notification/application/ports/reminders/timezone-reminder-enqueuer.port";
+import { NOTIFICATION_SCHEDULE } from "#api/modules/notification/domain/services/reminders/notification-schedule";
 import {
   EveningReminderStrategy,
   LunchNudgeStrategy,
@@ -37,9 +37,11 @@ import {
   WeeklyAchievementStrategy,
   WeeklyReportStrategy,
   WinbackStrategy,
-} from "#api/scheduler/index";
+} from "#api/modules/notification/notification-reminders.public";
 import { TEST_CUID } from "#test/fixtures/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
+
+import { timezoneAwareReminderOrchestratorProvider } from "../../src/modules/notification/notification-reminders-application.providers.js";
 
 describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () => {
   let module: TestingModule;
@@ -97,7 +99,7 @@ describe("TimezoneAwareReminderOrchestrator 통합 테스트 (Mock 포트)", () 
 
     module = await Test.createTestingModule({
       providers: [
-        TimezoneAwareReminderOrchestrator,
+        timezoneAwareReminderOrchestratorProvider,
         {
           provide: SCHEDULER_PREFERENCE_READER,
           useValue: mockPreferenceReader,

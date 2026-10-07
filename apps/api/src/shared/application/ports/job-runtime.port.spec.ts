@@ -46,7 +46,7 @@ describe("resolveJobIdempotencyKey", () => {
   });
 });
 
-describe("dead-letter queue policy normalization", () => {
+describe("dead-letter 큐 정책 정규화", () => {
   it("typed DLQ는 queue 이름과 독립 retry policy를 보존한다", () => {
     const jobPolicy = { ...BASE_OPTIONS };
     const deadLetter = { queue: "push-dead-letter.v1", jobPolicy } as const;

@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["import", "typescript"],
+  "plugins": ["import", "typescript", "unicorn"],
   "categories": {
     "correctness": "off"
   },
@@ -65,7 +65,7 @@
       }
     },
     {
-      "files": ["apps/api/src/*/domain/**/*.ts"],
+      "files": ["apps/api/src/modules/*/domain/**/*.ts", "apps/api/src/shared/domain/**/*.ts"],
       "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
       "rules": {
         "no-restricted-imports": [
@@ -73,45 +73,16 @@
           {
             "patterns": [
               {
-                "regex": "^@nestjs/",
-                "message": "domain\uc740 NestJS\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                "regex": "^@nestjs/|^@prisma/|(?:^|/)(?:generated|platform)(?:/|$)",
+                "message": "Domain은 framework·ORM·platform 구현에 의존할 수 없습니다."
               },
               {
-                "regex": "(?:^|/)generated(?:/|$)",
-                "message": "domain\uc740 \uc0dd\uc131\ub41c Prisma \ud0c0\uc785\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                "regex": "(?:^|/)(?:application|infrastructure|presentation)(?:/|$)",
+                "message": "Domain은 Application·Infrastructure·Presentation에 의존할 수 없습니다."
               },
               {
-                "regex": "(?:^|/)presentation(?:/|$)",
-                "message": "domain\uc740 presentation\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
-              },
-              {
-                "regex": "(?:^|/)application/ports(?:/|$)",
-                "message": "domain\uc740 application port\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "files": ["apps/api/src/*/application/**/*.ts"],
-      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
-      "rules": {
-        "no-restricted-imports": [
-          "error",
-          {
-            "patterns": [
-              {
-                "regex": "^@prisma/|(?:^|/)generated(?:/|$)",
-                "message": "application\uc740 Prisma \ud0c0\uc785\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
-              },
-              {
-                "regex": "(?:^|/)infrastructure(?:/|$)",
-                "message": "application\uc740 infrastructure \uad6c\ud604\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
-              },
-              {
-                "regex": "(?:^|/)presentation(?:/|$)",
-                "message": "application\uc740 presentation\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
+                "regex": "^(?:pg|pg-boss|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
               }
             ]
           }
@@ -120,18 +91,128 @@
     },
     {
       "files": [
-        "apps/api/src/*/domain/**/*.ts",
-        "apps/api/src/*/application/**/*.ts",
-        "apps/api/src/*/infrastructure/**/*.ts"
+        "apps/api/src/modules/*/application/**/*.ts",
+        "apps/api/src/shared/application/**/*.ts"
       ],
-      "excludeFiles": [
-        "apps/api/src/shared/application/**/*.ts",
-        "apps/api/src/shared/infrastructure/**/*.ts",
-        "**/*.spec.ts",
-        "**/*.test.ts"
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/|^@prisma/|(?:^|/)(?:generated|platform)(?:/|$)",
+                "message": "Application은 framework·ORM·platform 구현에 의존할 수 없습니다."
+              },
+              {
+                "regex": "(?:^|/)(?:infrastructure|presentation)(?:/|$)",
+                "message": "Application은 Infrastructure·Presentation 구현에 의존할 수 없습니다."
+              },
+              {
+                "regex": "^(?:pg|pg-boss|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/api/src/modules/*/domain/**/*.ts",
+        "apps/api/src/modules/*/application/**/*.ts",
+        "apps/api/src/modules/*/infrastructure/**/*.ts"
       ],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
       "rules": {
         "typescript/no-non-null-assertion": "error"
+      }
+    },
+    {
+      "files": ["apps/api/**/*.ts", "packages/api/**/*.ts"],
+      "rules": {
+        "unicorn/filename-case": [
+          "error",
+          {
+            "case": "kebabCase",
+            "multipleFileExtensions": false
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/api/src/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/|^@prisma/|^@aido/(?:server|mobile)(?:/|$)|^node:|^pg(?:/|$)|^react-native(?:/|$)",
+                "message": "공유 REST 계약은 서버·네이티브 runtime에 의존할 수 없습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/api/src/vocabulary/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/|^@prisma/|^@aido/(?:server|mobile)(?:/|$)|^node:|^pg(?:/|$)|^react-native(?:/|$)|^zod(?:/|$)|(?:^|/)(?:contracts|errors)(?:/|$)",
+                "message": "공유 vocabulary는 runtime·Zod·REST 스키마에 의존할 수 없습니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/api/src/shared/domain/**/*.ts", "apps/api/src/shared/application/**/*.ts"],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "regex": "^@nestjs/|^@prisma/|(?:^|/)(?:generated|platform|infrastructure|presentation|modules)(?:/|$)",
+                "message": "Shared Domain/Application은 framework·구현·개별 Context에 의존할 수 없습니다."
+              },
+              {
+                "regex": "^(?:pg|pg-boss|bullmq|ioredis|jose|ai|google-auth-library|expo-server-sdk|resend|sql-template-tag)(?:/|$)|^@(?:ai-sdk|sentry)/",
+                "message": "외부 I/O·vendor SDK는 Infrastructure Adapter가 소유합니다."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "apps/api/src/modules/*/domain/**/*.ts",
+        "apps/api/src/modules/*/application/**/*.ts",
+        "apps/api/src/shared/domain/**/*.ts",
+        "apps/api/src/shared/application/**/*.ts"
+      ],
+      "excludeFiles": ["**/*.spec.ts", "**/*.test.ts"],
+      "rules": {
+        "typescript/consistent-type-imports": "error"
+      }
+    },
+    {
+      "files": [
+        "apps/api/src/modules/*/*-application.providers.ts",
+        "apps/api/src/platform/pagination/pagination-application.providers.ts"
+      ],
+      "rules": {
+        "eslint/object-shorthand": "error"
       }
     }
   ]

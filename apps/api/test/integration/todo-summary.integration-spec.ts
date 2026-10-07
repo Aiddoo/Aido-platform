@@ -1,6 +1,6 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 /**
- * GetTodoSummaryUseCase 통합 테스트 (Mock DB)
+ * GetTodoSummary 통합 테스트 (Mock DB)
  *
  * @description
  * 오늘의 할 일 요약 use-case가 실제 NestJS DI 컨테이너에서
@@ -19,17 +19,19 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { STREAK_PORT } from "#api/todo/application/ports/streak.port";
-import { TODO_READ_REPOSITORY } from "#api/todo/application/ports/todo-read.repository.port";
-import { GetTodoSummaryUseCase } from "#api/todo/application/queries/get-todo-summary/get-todo-summary.use-case";
-import { StreakAdapter } from "#api/todo/infrastructure/adapters/streak.adapter";
-import { USER_STREAK_ACCESS } from "#api/user-settings/index";
+import { USER_STREAK_ACCESS } from "#api/modules/identity/identity-settings.public";
+import { STREAK_PORT } from "#api/modules/planning/application/ports/todos/streak.port";
+import { TODO_READ_REPOSITORY } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
+import { GetTodoSummary } from "#api/modules/planning/application/use-cases/todos/get-todo-summary.use-case";
+import { StreakAdapter } from "#api/modules/planning/infrastructure/adapters/todos/streak.adapter";
 import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
+import { getTodoSummaryProvider } from "../../src/modules/planning/planning-todos-application.providers.js";
+
+describe("GetTodoSummary 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
-  let useCase: GetTodoSummaryUseCase;
+  let useCase: GetTodoSummary;
 
   const mockReadRepository = createTodoReadRepositoryMock();
 
@@ -44,14 +46,14 @@ describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        GetTodoSummaryUseCase,
+        getTodoSummaryProvider,
         { provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
         { provide: STREAK_PORT, useClass: StreakAdapter },
         { provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
       ],
     }).compile();
 
-    useCase = module.get(GetTodoSummaryUseCase);
+    useCase = module.get(GetTodoSummary);
   });
 
   afterAll(async () => {

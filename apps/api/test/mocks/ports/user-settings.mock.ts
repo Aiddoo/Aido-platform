@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
-import type { UserConsentRepositoryPort } from "#api/user-settings/application/ports/user-consent.repository.port";
-import type { UserPreferenceRepositoryPort } from "#api/user-settings/application/ports/user-preference.repository.port";
+import type { UserConsentRepositoryPort } from "#api/modules/identity/application/ports/settings/user-consent.repository.port";
+import type { UserPreferenceRepositoryPort } from "#api/modules/identity/application/ports/settings/user-preference.repository.port";
 
 /**
  * UserPreferenceRepositoryPort mock 팩토리.

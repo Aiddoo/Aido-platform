@@ -12,23 +12,22 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { CHEER_LIMIT_READER } from "#api/cheer/application/ports/cheer-limit-reader.port";
-import { CHEER_NOTIFIER } from "#api/cheer/application/ports/cheer-notifier.port";
-import { CHEER_REPOSITORY } from "#api/cheer/application/ports/cheer.repository.port";
-import { CheerReader } from "#api/cheer/application/services/cheer.reader";
-import { MarkCheerReadUseCase } from "#api/cheer/application/use-cases/mark-cheer-read/mark-cheer-read.use-case";
-import { MarkManyCheersReadUseCase } from "#api/cheer/application/use-cases/mark-many-cheers-read/mark-many-cheers-read.use-case";
-import { SendCheerUseCase } from "#api/cheer/application/use-cases/send-cheer/send-cheer.use-case";
-import { CheerLimitReaderAdapter } from "#api/cheer/infrastructure/adapters/cheer-limit-reader.adapter";
-import { CheerNotifierAdapter } from "#api/cheer/infrastructure/adapters/cheer-notifier.adapter";
-import { PrismaCheerRepository } from "#api/cheer/infrastructure/persistence/prisma-cheer.repository";
-import { FollowReader } from "#api/follow/index";
-import { NotificationQueueService } from "#api/notification/queue";
-import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
-import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { CHEER_LIMIT_READER } from "#api/modules/social/application/ports/cheers/cheer-limit-reader.port";
+import { CHEER_NOTIFIER } from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
+import { CHEER_REPOSITORY } from "#api/modules/social/application/ports/cheers/cheer.repository.port";
+import { CheerReader } from "#api/modules/social/application/services/cheers/cheer.reader";
+import { MarkCheerRead } from "#api/modules/social/application/use-cases/cheers/mark-cheer-read.use-case";
+import { MarkManyCheersRead } from "#api/modules/social/application/use-cases/cheers/mark-many-cheers-read.use-case";
+import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
+import { CheerLimitReaderAdapter } from "#api/modules/social/infrastructure/adapters/cheers/cheer-limit-reader.adapter";
+import { CheerNotifierAdapter } from "#api/modules/social/infrastructure/adapters/cheers/cheer-notifier.adapter";
+import { PrismaCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/prisma-cheer.repository";
+import { FollowReader } from "#api/modules/social/social-friends.public";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { CheerBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
 import {
@@ -41,14 +40,22 @@ import {
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import {
+  cheerReaderProvider,
+  markCheerReadProvider,
+  markManyCheersReadProvider,
+  sendCheerProvider,
+} from "../../src/modules/social/social-cheers-application.providers.js";
+import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
+
 describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let reader: CheerReader;
-  let sendCheerUseCase: SendCheerUseCase;
-  let markCheerReadUseCase: MarkCheerReadUseCase;
-  let markManyCheersReadUseCase: MarkManyCheersReadUseCase;
+  let sendCheerUseCase: SendCheer;
+  let markCheerReadUseCase: MarkCheerRead;
+  let markManyCheersReadUseCase: MarkManyCheersRead;
   const cheerApi = {
-    sendCheer: (input: Parameters<SendCheerUseCase["execute"]>[0], timezone: string) =>
+    sendCheer: (input: Parameters<SendCheer["execute"]>[0], timezone: string) =>
       sendCheerUseCase.execute(input, timezone),
     getReceivedCheers: (input: Parameters<CheerReader["getReceivedCheers"]>[0]) =>
       reader.getReceivedCheers(input),
@@ -97,14 +104,14 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        CheerReader,
-        SendCheerUseCase,
-        MarkCheerReadUseCase,
-        MarkManyCheersReadUseCase,
+        cheerReaderProvider,
+        sendCheerProvider,
+        markCheerReadProvider,
+        markManyCheersReadProvider,
         { provide: CHEER_REPOSITORY, useClass: PrismaCheerRepository },
         { provide: CHEER_NOTIFIER, useClass: CheerNotifierAdapter },
         { provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
-        PaginationService,
+        paginationServiceProvider,
         { provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
         {
           provide: MUTATION_LOCK,
@@ -127,9 +134,9 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
     }).compile();
 
     reader = module.get(CheerReader);
-    sendCheerUseCase = module.get(SendCheerUseCase);
-    markCheerReadUseCase = module.get(MarkCheerReadUseCase);
-    markManyCheersReadUseCase = module.get(MarkManyCheersReadUseCase);
+    sendCheerUseCase = module.get(SendCheer);
+    markCheerReadUseCase = module.get(MarkCheerRead);
+    markManyCheersReadUseCase = module.get(MarkManyCheersRead);
   });
 
   afterAll(async () => {
@@ -158,7 +165,7 @@ describe("Cheer 모듈 통합 테스트 (Mock DB)", () => {
 
   describe("DI 통합", () => {
     it("Cheer UseCase와 Reader가 조립된다", () => {
-      expect(sendCheerUseCase).toBeInstanceOf(SendCheerUseCase);
+      expect(sendCheerUseCase).toBeInstanceOf(SendCheer);
       expect(reader).toBeInstanceOf(CheerReader);
     });
     it("CheerRepository 포트가 주입된다", () => {

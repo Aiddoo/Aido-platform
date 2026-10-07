@@ -1,0 +1,25 @@
+import { Injectable } from "@nestjs/common";
+
+import { CacheService } from "#api/platform/cache/cache.service";
+
+import type { TodoCategoryCachePort } from "../../../application/ports/categories/todo-category-cache.port.js";
+import type { TodoCategoryWithCountView } from "../../../application/ports/categories/todo-category.repository.port.js";
+
+/**
+ * TodoCategoryCachePort의 어댑터 — 공유 CacheService에 위임한다(키·TTL은 CacheService가 소유).
+ */
+@Injectable()
+export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
+  constructor(private readonly cacheService: CacheService) {}
+
+  wrapList(
+    userId: string,
+    factory: () => Promise<TodoCategoryWithCountView[]>,
+  ): Promise<TodoCategoryWithCountView[]> {
+    return this.cacheService.wrapTodoCategories(userId, factory);
+  }
+
+  invalidate(userId: string): Promise<void> {
+    return this.cacheService.invalidateTodoCategories(userId);
+  }
+}

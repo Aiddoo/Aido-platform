@@ -6,7 +6,7 @@ import { createE2eApp } from "./helpers/e2e-app-factory.js";
 
 const realCanActivate = ThrottlerGuard.prototype.canActivate;
 
-describe("E2E app factory throttler lifecycle failures", () => {
+describe("E2E 앱 factory의 throttler 생명주기 실패", () => {
   it("DB setup 시작이 실패해도 원래 오류를 유지하고 전역 guard를 변경하지 않는다", async () => {
     // Given - real throttler opt-in 직후 DB setup이 실패
     const setupError = new Error("fault: test database start");

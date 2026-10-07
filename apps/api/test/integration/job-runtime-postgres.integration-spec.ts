@@ -1,9 +1,9 @@
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 
+import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
+import { PgBossJobRuntimeAdapter } from "#api/platform/jobs/pg-boss-job-runtime.adapter";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
-import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import { PgBossJobRuntimeAdapter } from "#api/shared/infrastructure/jobs/pg-boss-job-runtime.adapter";
 import { createDatabaseContext, withDatabaseTransaction } from "#test/setup/database-context";
 
 import { TestDatabase } from "../setup/test-database.js";

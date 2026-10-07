@@ -15,9 +15,9 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { TransactionalEmailSender } from "#api/email/index";
-import { EmailInquiryMailerAdapter } from "#api/inquiry/infrastructure/adapters/email-inquiry-mailer.adapter";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { EmailInquiryMailerAdapter } from "#api/modules/support/infrastructure/adapters/inquiries/email-inquiry-mailer.adapter";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Inquiry 어댑터 통합 테스트 (Mock Email)", () => {

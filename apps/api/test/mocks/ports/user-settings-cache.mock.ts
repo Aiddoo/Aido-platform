@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { UserSettingsCachePort } from "#api/user-settings/application/ports/user-settings-cache.port";
+import type { UserSettingsCachePort } from "#api/modules/identity/application/ports/settings/user-settings-cache.port";
 
 /**
  * UserSettingsCachePort mock 팩토리.

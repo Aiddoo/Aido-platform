@@ -9,19 +9,12 @@ import request from "supertest";
  */
 import { vi } from "vitest";
 
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import {
-  CACHE_SERVICE,
-  type ICacheService,
-} from "#api/shared/infrastructure/cache/interfaces/cache.interface";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

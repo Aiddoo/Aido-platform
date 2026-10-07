@@ -16,30 +16,34 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { REMINDER_SCHEDULE_ENQUEUER } from "#api/user-settings/application/ports/reminder-schedule.enqueuer.port";
-import { USER_CONSENT_REPOSITORY } from "#api/user-settings/application/ports/user-consent.repository.port";
-import { USER_PREFERENCE_REPOSITORY } from "#api/user-settings/application/ports/user-preference.repository.port";
-import { USER_SETTINGS_CACHE } from "#api/user-settings/application/ports/user-settings-cache.port";
-import { GetPreferenceUseCase } from "#api/user-settings/application/use-cases/get-preference/get-preference.use-case";
-import { UpdateMarketingConsentUseCase } from "#api/user-settings/application/use-cases/update-marketing-consent/update-marketing-consent.use-case";
-import { UpdatePreferenceUseCase } from "#api/user-settings/application/use-cases/update-preference/update-preference.use-case";
-import { UserSettingsCacheAdapter } from "#api/user-settings/infrastructure/adapters/user-settings-cache.adapter";
-import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
-import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/application/ports/settings/reminder-schedule.enqueuer.port";
+import { USER_CONSENT_REPOSITORY } from "#api/modules/identity/application/ports/settings/user-consent.repository.port";
+import { USER_PREFERENCE_REPOSITORY } from "#api/modules/identity/application/ports/settings/user-preference.repository.port";
+import { USER_SETTINGS_CACHE } from "#api/modules/identity/application/ports/settings/user-settings-cache.port";
+import { GetPreference } from "#api/modules/identity/application/use-cases/settings/get-preference.use-case";
+import { UpdateMarketingConsent } from "#api/modules/identity/application/use-cases/settings/update-marketing-consent.use-case";
+import { UpdatePreference } from "#api/modules/identity/application/use-cases/settings/update-preference.use-case";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
+import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
+import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { DatabaseService } from "#api/platform/database/database.service";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { TEST_CUID } from "#test/fixtures/index";
 import { createMockDatabaseContext, databaseFixture } from "#test/mocks/database.mock";
 import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { updateMarketingConsentProvider } from "../../src/modules/identity/identity-settings-application.providers.js";
+import { updatePreferenceProvider } from "../../src/modules/identity/identity-settings-application.providers.js";
+import { getPreferenceProvider } from "../../src/modules/identity/identity-settings-application.providers.js";
+
 describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
-  let getPreference: GetPreferenceUseCase;
-  let updatePreference: UpdatePreferenceUseCase;
-  let updateMarketingConsent: UpdateMarketingConsentUseCase;
+  let getPreference: GetPreference;
+  let updatePreference: UpdatePreference;
+  let updateMarketingConsent: UpdateMarketingConsent;
 
   const nativeContext = createMockDatabaseContext();
   const mockUserPreferenceDb = nativeContext.orm.public.UserPreference;
@@ -71,9 +75,9 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        GetPreferenceUseCase,
-        UpdatePreferenceUseCase,
-        UpdateMarketingConsentUseCase,
+        getPreferenceProvider,
+        updatePreferenceProvider,
+        updateMarketingConsentProvider,
         UserPreferenceRepository,
         UserConsentRepository,
         {
@@ -98,9 +102,9 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
       ],
     }).compile();
 
-    getPreference = module.get(GetPreferenceUseCase);
-    updatePreference = module.get(UpdatePreferenceUseCase);
-    updateMarketingConsent = module.get(UpdateMarketingConsentUseCase);
+    getPreference = module.get(GetPreference);
+    updatePreference = module.get(UpdatePreference);
+    updateMarketingConsent = module.get(UpdateMarketingConsent);
   });
 
   afterAll(async () => {

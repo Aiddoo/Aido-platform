@@ -7,45 +7,52 @@ import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/
 import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
-import { AdminNotificationModule } from "#api/admin-notification/index";
-import { AdminModule } from "#api/admin/index";
-import { AiReportModule } from "#api/ai-report/index";
-import { AiSuggestionModule } from "#api/ai-suggestion/index";
-import { AiModule } from "#api/ai/index";
-import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "#api/app-config/index";
-import { AuthModule, JwtAuthGuard, LastActiveInterceptor } from "#api/auth/index";
-import { CheerModule } from "#api/cheer/index";
-import { DailyCompletionModule } from "#api/daily-completion/index";
-import { FollowModule } from "#api/follow/index";
-import { HealthModule } from "#api/health/index";
-import { InquiryModule } from "#api/inquiry/index";
-import { MemoModule } from "#api/memo/index";
-import { NotificationModule } from "#api/notification/index";
-import { NudgeModule } from "#api/nudge/index";
-import { SchedulerModule } from "#api/scheduler/index";
-import { PaginationModule } from "#api/shared/application/pagination/index";
-import { CacheModule } from "#api/shared/infrastructure/cache/index";
-import type { EnvConfig } from "#api/shared/infrastructure/config/index";
-import { AppConfigModule } from "#api/shared/infrastructure/config/index";
-import { DatabaseModule, DatabaseService } from "#api/shared/infrastructure/database/index";
-import { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import { DedupModule } from "#api/shared/infrastructure/dedup/index";
-import { EncryptionModule } from "#api/shared/infrastructure/encryption/index";
-import { EntitlementModule } from "#api/shared/infrastructure/entitlement/entitlement.module";
-import { DomainEventsModule } from "#api/shared/infrastructure/events/index";
-import { JobRuntimeModule } from "#api/shared/infrastructure/jobs/job-runtime.module";
-import { LockModule } from "#api/shared/infrastructure/lock/index";
-import { LoggerModule } from "#api/shared/infrastructure/logging/index";
-import { RedisModule } from "#api/shared/infrastructure/redis/index";
-import { SharedKernelModule } from "#api/shared/infrastructure/shared-kernel.module";
-import { THROTTLER_STORAGE, ThrottleModule } from "#api/shared/infrastructure/throttle/index";
-import { SubscriptionModule } from "#api/subscription/index";
-import { TodoCategoryModule } from "#api/todo-category/index";
-import { TodoCommentModule } from "#api/todo-comment/index";
-import { TodoModule } from "#api/todo/index";
-import { TimezoneSelfHealInterceptor, UserSettingsModule } from "#api/user-settings/index";
-import { WeatherModule } from "#api/weather/weather.module";
-import { WeeklyAchievementModule } from "#api/weekly-achievement/index";
+import { EntitlementModule } from "#api/modules/access/access.module";
+import { AiModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AiReportModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
+import { AiSuggestionModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "#api/modules/app-config/app-config-discovery.public";
+import { SubscriptionModule } from "#api/modules/billing/billing-subscriptions.public";
+import { TodoCommentModule } from "#api/modules/engagement/engagement-comments.public";
+import {
+  AuthModule,
+  JwtAuthGuard,
+  LastActiveInterceptor,
+} from "#api/modules/identity/identity-auth.public";
+import {
+  TimezoneSelfHealInterceptor,
+  UserSettingsModule,
+} from "#api/modules/identity/identity-settings.public";
+import { DailyCompletionModule } from "#api/modules/insights/insights-daily-completions.public";
+import { WeeklyAchievementModule } from "#api/modules/insights/insights-weekly-achievements.public";
+import { MemoModule } from "#api/modules/notes/notes-memos.public";
+import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
+import { SchedulerModule } from "#api/modules/notification/notification-reminders.public";
+import { AdminModule } from "#api/modules/operations/operations-admin.public";
+import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.public";
+import { TodoCategoryModule } from "#api/modules/planning/planning-categories.public";
+import { TodoModule } from "#api/modules/planning/planning-todos.public";
+import { CheerModule } from "#api/modules/social/social-cheers.public";
+import { FollowModule } from "#api/modules/social/social-friends.public";
+import { NudgeModule } from "#api/modules/social/social-nudges.public";
+import { InquiryModule } from "#api/modules/support/support-inquiries.public";
+import { WeatherModule } from "#api/modules/weather/weather-forecast.module";
+import { CacheModule } from "#api/platform/cache/index";
+import type { EnvConfig } from "#api/platform/config/index";
+import { AppConfigModule } from "#api/platform/config/index";
+import { DatabaseModule, DatabaseService } from "#api/platform/database/index";
+import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { DedupModule } from "#api/platform/dedup/index";
+import { EncryptionModule } from "#api/platform/encryption/index";
+import { DomainEventsModule } from "#api/platform/events/index";
+import { HealthModule } from "#api/platform/health/index";
+import { JobRuntimeModule } from "#api/platform/jobs/job-runtime.module";
+import { LockModule } from "#api/platform/lock/index";
+import { LoggerModule } from "#api/platform/logging/index";
+import { PaginationModule } from "#api/platform/pagination/pagination.module";
+import { RedisModule } from "#api/platform/redis/index";
+import { SharedKernelModule } from "#api/platform/shared-kernel.module";
+import { THROTTLER_STORAGE, ThrottleModule } from "#api/platform/throttle/index";
 
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";

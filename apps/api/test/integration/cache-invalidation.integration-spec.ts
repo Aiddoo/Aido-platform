@@ -10,9 +10,9 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { CacheModule } from "#api/shared/infrastructure/cache/cache.module";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { CacheKeys } from "#api/shared/infrastructure/cache/constants/cache-keys";
+import { CacheModule } from "#api/platform/cache/cache.module";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { CacheKeys } from "#api/platform/cache/constants/cache-keys";
 
 import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 

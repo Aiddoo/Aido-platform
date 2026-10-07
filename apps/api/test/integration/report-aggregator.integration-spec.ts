@@ -29,20 +29,19 @@ import { vi } from "vitest";
 import {
   TODO_STATS_READER,
   type TodoStatsReaderPort,
-} from "#api/ai-report/application/ports/todo-stats.reader.port";
-import { assembleAggregatedData } from "#api/ai-report/domain/services/report-aggregation";
-import type { AggregatedReportData, AggregateParams } from "#api/ai-report/domain/types";
-import { PrismaTodoStatsReader } from "#api/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
-import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { createEntityId, varchar } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+} from "#api/modules/ai-assistance/application/ports/reports/todo-stats.reader.port";
+import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/services/reports/report-aggregation";
+import type {
+  AggregatedReportData,
+  AggregateParams,
+} from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
+import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
+import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { createEntityId, varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";

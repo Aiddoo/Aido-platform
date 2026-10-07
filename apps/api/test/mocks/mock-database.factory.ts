@@ -1,6 +1,6 @@
 import { mockDeep } from "vitest-mock-extended";
 
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { DatabaseService } from "#api/platform/database/database.service";
 
 import { createMockDatabaseContext, type MockDatabaseContext } from "./database.mock.js";
 

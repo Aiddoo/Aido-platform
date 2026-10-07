@@ -27,13 +27,9 @@ import {
 import { ErrorCode, type ErrorCodeType, HttpStatus } from "@aido/api/errors";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { varchar } from "#api/platform/database/database-values";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { createTestClient, withDatabaseTransaction } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 

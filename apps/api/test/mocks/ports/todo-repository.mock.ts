@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { TodoRepositoryPort } from "#api/todo/application/ports/todo.repository.port";
+import type { TodoRepositoryPort } from "#api/modules/planning/application/ports/todos/todo.repository.port";
 
 /**
  * TODO_REPOSITORY(쓰기) 포트 mock 팩토리

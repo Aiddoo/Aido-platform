@@ -8,7 +8,7 @@ import type {
   NotificationType,
   Platform,
   PushToken,
-} from "#api/shared/infrastructure/database/database.types";
+} from "#api/platform/database/database.types";
 
 let notificationCounter = 0;
 let pushTokenCounter = 0;

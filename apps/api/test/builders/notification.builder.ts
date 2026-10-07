@@ -17,10 +17,7 @@ import { z } from "@aido/api";
  *   .build();
  * ```
  */
-import type {
-  Notification,
-  NotificationType,
-} from "#api/shared/infrastructure/database/database.types";
+import type { Notification, NotificationType } from "#api/platform/database/database.types";
 
 export class NotificationBuilder {
   private data: Notification;

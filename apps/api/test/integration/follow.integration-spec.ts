@@ -14,28 +14,24 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { FOLLOW_CACHE } from "#api/follow/application/ports/follow-cache.port";
-import { FOLLOW_NOTIFIER } from "#api/follow/application/ports/follow-notifier.port";
-import { FOLLOW_REPOSITORY } from "#api/follow/application/ports/follow.repository.port";
-import { SearchUsersUseCase } from "#api/follow/application/queries/search-users/search-users.use-case";
-import { FollowReader } from "#api/follow/application/services/follow.reader";
-import { FriendshipEffects } from "#api/follow/application/services/friendship-effects.service";
-import { AcceptFriendRequestUseCase } from "#api/follow/application/use-cases/accept-friend-request/accept-friend-request.use-case";
-import { RejectFriendRequestUseCase } from "#api/follow/application/use-cases/reject-friend-request/reject-friend-request.use-case";
-import { RemoveFriendUseCase } from "#api/follow/application/use-cases/remove-friend/remove-friend.use-case";
-import { ReorderFriendUseCase } from "#api/follow/application/use-cases/reorder-friend/reorder-friend.use-case";
-import { SendFriendRequestByTagUseCase } from "#api/follow/application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case";
-import { SendFriendRequestUseCase } from "#api/follow/application/use-cases/send-friend-request/send-friend-request.use-case";
-import { FollowCacheAdapter } from "#api/follow/infrastructure/adapters/follow-cache.adapter";
-import { FollowNotifierAdapter } from "#api/follow/infrastructure/adapters/follow-notifier.adapter";
-import { PrismaFollowRepository } from "#api/follow/infrastructure/persistence/prisma-follow.repository";
-import { NotificationQueueService } from "#api/notification/queue";
-import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
-import { PaginationService } from "#api/shared/application/pagination/services/pagination.service";
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import { FOLLOW_CACHE } from "#api/modules/social/application/ports/friends/follow-cache.port";
+import { FOLLOW_NOTIFIER } from "#api/modules/social/application/ports/friends/follow-notifier.port";
+import { FOLLOW_REPOSITORY } from "#api/modules/social/application/ports/friends/follow.repository.port";
+import { FollowReader } from "#api/modules/social/application/services/friends/follow.reader";
+import { AcceptFriendRequest } from "#api/modules/social/application/use-cases/friends/accept-friend-request.use-case";
+import { RejectFriendRequest } from "#api/modules/social/application/use-cases/friends/reject-friend-request.use-case";
+import { RemoveFriend } from "#api/modules/social/application/use-cases/friends/remove-friend.use-case";
+import { SendFriendRequestByTag } from "#api/modules/social/application/use-cases/friends/send-friend-request-by-tag.use-case";
+import { SendFriendRequest } from "#api/modules/social/application/use-cases/friends/send-friend-request.use-case";
+import { FollowCacheAdapter } from "#api/modules/social/infrastructure/adapters/friends/follow-cache.adapter";
+import { FollowNotifierAdapter } from "#api/modules/social/infrastructure/adapters/friends/follow-notifier.adapter";
+import { PrismaFollowRepository } from "#api/modules/social/infrastructure/persistence/friends/prisma-follow.repository";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { FollowBuilder, UserBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
 import {
@@ -47,14 +43,27 @@ import {
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import {
+  acceptFriendRequestProvider,
+  followReaderProvider,
+  friendshipEffectsProvider,
+  rejectFriendRequestProvider,
+  removeFriendProvider,
+  reorderFriendProvider,
+  searchUsersProvider,
+  sendFriendRequestByTagProvider,
+  sendFriendRequestProvider,
+} from "../../src/modules/social/social-friends-application.providers.js";
+import { paginationServiceProvider } from "../../src/platform/pagination/pagination.providers.js";
+
 describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let followReader: FollowReader;
-  let sendUseCase: SendFriendRequestUseCase;
-  let sendByTagUseCase: SendFriendRequestByTagUseCase;
-  let acceptUseCase: AcceptFriendRequestUseCase;
-  let rejectUseCase: RejectFriendRequestUseCase;
-  let removeUseCase: RemoveFriendUseCase;
+  let sendUseCase: SendFriendRequest;
+  let sendByTagUseCase: SendFriendRequestByTag;
+  let acceptUseCase: AcceptFriendRequest;
+  let rejectUseCase: RejectFriendRequest;
+  let removeUseCase: RemoveFriend;
 
   const nativeContext = createMockDatabaseContext();
   const mockFollowDb = nativeContext.orm.public.Follow;
@@ -92,19 +101,19 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        FollowReader,
-        FriendshipEffects,
-        SendFriendRequestUseCase,
-        SendFriendRequestByTagUseCase,
-        AcceptFriendRequestUseCase,
-        RejectFriendRequestUseCase,
-        RemoveFriendUseCase,
-        ReorderFriendUseCase,
-        SearchUsersUseCase,
+        followReaderProvider,
+        friendshipEffectsProvider,
+        sendFriendRequestProvider,
+        sendFriendRequestByTagProvider,
+        acceptFriendRequestProvider,
+        rejectFriendRequestProvider,
+        removeFriendProvider,
+        reorderFriendProvider,
+        searchUsersProvider,
         { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
         { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
         { provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
-        PaginationService,
+        paginationServiceProvider,
         { provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
         {
           provide: TransactionHost,
@@ -136,11 +145,11 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
     }).compile();
 
     followReader = module.get(FollowReader);
-    sendUseCase = module.get(SendFriendRequestUseCase);
-    sendByTagUseCase = module.get(SendFriendRequestByTagUseCase);
-    acceptUseCase = module.get(AcceptFriendRequestUseCase);
-    rejectUseCase = module.get(RejectFriendRequestUseCase);
-    removeUseCase = module.get(RemoveFriendUseCase);
+    sendUseCase = module.get(SendFriendRequest);
+    sendByTagUseCase = module.get(SendFriendRequestByTag);
+    acceptUseCase = module.get(AcceptFriendRequest);
+    rejectUseCase = module.get(RejectFriendRequest);
+    removeUseCase = module.get(RemoveFriend);
   });
 
   afterAll(async () => {

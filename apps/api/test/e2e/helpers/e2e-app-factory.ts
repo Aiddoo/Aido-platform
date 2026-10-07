@@ -17,44 +17,44 @@ import RedisMock from "ioredis-mock";
 import { PinoLogger } from "nestjs-pino";
 import type { App } from "supertest/types.js";
 
-import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
-import { AdminNotificationProcessor } from "#api/admin-notification/infrastructure/queue/admin-notification-queue.processor";
-import { DailySignupSummaryScheduler } from "#api/admin-notification/infrastructure/scheduler/daily-signup-summary.scheduler";
-import { ReportGenerationJob } from "#api/ai-report/infrastructure/jobs/report-generation.job";
-import { ReportGenerationProcessor } from "#api/ai-report/infrastructure/processors/report-generation.processor";
-import { SuggestionAnalysisJob } from "#api/ai-suggestion/infrastructure/jobs/suggestion-analysis.job";
-import { SuggestionAnalysisProcessor } from "#api/ai-suggestion/infrastructure/processors/suggestion-analysis.processor";
-import { AI_PROVIDER } from "#api/ai/index";
 import { AppModule } from "#api/app.module";
-import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/auth/application/ports/oauth-identity-provider.port";
-import { createOAuthProviderRegistry } from "#api/auth/infrastructure/oauth/adapters/index";
-import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
-import { AccountPurgeProcessor } from "#api/auth/infrastructure/queue/account-purge.processor";
-import { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
-import { TransactionalEmailSender } from "#api/email/index";
-import { PUSH_PROVIDER } from "#api/notification/index";
-import { NotificationQueueProcessor } from "#api/notification/infrastructure/queue/notification-queue.processor";
-import { RetentionQueueProcessor } from "#api/retention/infrastructure/queue/retention-queue.processor";
-import { RetentionQueueService } from "#api/retention/infrastructure/queue/retention-queue.service";
+import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { ReportGenerationJob } from "#api/modules/ai-assistance/infrastructure/jobs/reports/report-generation.job";
+import { SuggestionAnalysisJob } from "#api/modules/ai-assistance/infrastructure/jobs/suggestions/suggestion-analysis.job";
+import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
+import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
+import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
+import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
+import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
+import { createOAuthProviderRegistry } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
+import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
+import { NotificationQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.processor";
+import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
+import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
+import { PUSH_PROVIDER } from "#api/modules/notification/notification-delivery.public";
+import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import {
   TimezoneAwareReminderOrchestrator,
   TimezoneReminderProcessor,
   TodoReminderProcessor,
-} from "#api/scheduler/index";
-import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
-import { InMemoryCacheAdapter } from "#api/shared/infrastructure/cache/adapters/in-memory-cache.adapter";
-import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "#api/shared/infrastructure/database/index";
-import { configureApplication } from "#api/shared/infrastructure/http/configure-application";
+} from "#api/modules/notification/notification-reminders.public";
+import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
+import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
 import {
-  REDIS_CLIENT,
-  REDIS_COMMAND_CLIENT,
-} from "#api/shared/infrastructure/redis/redis.constants";
-import { AIR_QUALITY_PROVIDER } from "#api/weather/application/ports/air-quality-provider.port";
-import { LIFESTYLE_INDEX_PROVIDER } from "#api/weather/application/ports/lifestyle-index-provider.port";
-import { SUN_TIME_PROVIDER } from "#api/weather/application/ports/sun-time-provider.port";
-import { WEATHER_PROVIDER } from "#api/weather/application/ports/weather-provider.port";
+  ADMIN_NOTIFIER,
+  PAYMENT_NOTIFIER,
+} from "#api/modules/operations/operations-notifications.public";
+import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
+import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
+import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
+import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
+import { CACHE_SERVICE } from "#api/platform/cache/interfaces/cache.interface";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
+import { DatabaseService } from "#api/platform/database/index";
+import { configureApplication } from "#api/platform/http/configure-application";
+import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
+import { DOMAIN_EVENT_PUBLISHER, JOB_RUNTIME } from "#api/shared/application/ports/index";
 
 import { FakeAdminNotifier } from "../../mocks/fake-admin-notifier.js";
 import { FakeAiProvider } from "../../mocks/fake-ai.provider.js";

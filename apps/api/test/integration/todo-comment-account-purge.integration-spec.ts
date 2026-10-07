@@ -5,36 +5,36 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { ClsModule } from "nestjs-cls";
 import { vi } from "vitest";
 
-import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
-import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
-import { AccountPurgeProcessor } from "#api/auth/infrastructure/queue/account-purge.processor";
-import { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
-import {
-  NOTIFICATION_CACHE,
-  type NotificationCachePort,
-} from "#api/notification/application/ports/notification-cache.port";
-import { NOTIFICATION_REPOSITORY } from "#api/notification/application/ports/notification.repository.port";
-import { NotificationAccountCleanup } from "#api/notification/index";
-import { PrismaNotificationRepository } from "#api/notification/infrastructure/persistence/prisma-notification.repository";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
-import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
-import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
-import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { PostgresMutationLockAdapter } from "#api/shared/infrastructure/database/postgres-mutation-lock.adapter";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "#api/todo-comment/application/ports/todo-comment-account-cleanup.store.port";
+import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "#api/modules/engagement/application/ports/comments/todo-comment-account-cleanup.store.port";
 import {
   TODO_VIEW_CACHE,
   type TodoViewCachePort,
-} from "#api/todo-comment/application/ports/todo-view-cache.port";
-import { TodoCommentAccountCleanup } from "#api/todo-comment/application/services/todo-comment-account-cleanup";
-import { PrismaTodoCommentAccountCleanupStore } from "#api/todo-comment/infrastructure/persistence/prisma-todo-comment-account-cleanup.store";
+} from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
+import { PrismaTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment-account-cleanup.store";
+import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
+import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
+import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
+import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import {
+  NOTIFICATION_CACHE,
+  type NotificationCachePort,
+} from "#api/modules/notification/application/ports/delivery/notification-cache.port";
+import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
+import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
+import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mutation-lock.adapter";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
+import { todoCommentAccountCleanupProvider } from "../../src/modules/engagement/engagement-comments-application.providers.js";
+import { notificationAccountCleanupProvider } from "../../src/modules/notification/notification-delivery-application.providers.js";
 import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { TestDatabase } from "../setup/test-database.js";
 
@@ -238,10 +238,10 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
           provide: TODO_COMMENT_ACCOUNT_CLEANUP_STORE,
           useExisting: PrismaTodoCommentAccountCleanupStore,
         },
-        TodoCommentAccountCleanup,
+        todoCommentAccountCleanupProvider,
         PrismaNotificationRepository,
         { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
-        NotificationAccountCleanup,
+        notificationAccountCleanupProvider,
         { provide: NOTIFICATION_CACHE, useValue: notificationCache },
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },
         UserRepository,

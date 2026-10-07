@@ -3,10 +3,10 @@ import request from "supertest";
 import {
   RETENTION_CONFIG,
   type RetentionConfigPort,
-} from "#api/retention/application/ports/retention-config.port";
-import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+} from "#api/modules/notification/application/ports/retention/retention-config.port";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { varchar } from "#api/platform/database/database-values";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

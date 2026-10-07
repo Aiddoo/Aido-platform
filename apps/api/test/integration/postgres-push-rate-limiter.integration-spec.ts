@@ -1,7 +1,7 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 
-import { PostgresPushRateLimiter } from "#api/notification/infrastructure/rate-limiter/postgres-push-rate-limiter";
-import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import { PostgresPushRateLimiter } from "#api/modules/notification/infrastructure/rate-limiter/delivery/postgres-push-rate-limiter";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { TestDatabase } from "#test/setup/test-database";

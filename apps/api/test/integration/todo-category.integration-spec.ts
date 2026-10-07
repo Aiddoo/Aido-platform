@@ -11,22 +11,22 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
+import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { TODO_CATEGORY_CACHE } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
+import { TODO_CATEGORY_LIMIT_READER } from "#api/modules/planning/application/ports/categories/todo-category-limit-reader.port";
+import { TODO_CATEGORY_REPOSITORY } from "#api/modules/planning/application/ports/categories/todo-category.repository.port";
+import { TodoCategoryReader } from "#api/modules/planning/application/services/categories/todo-category.reader";
+import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
+import { DeleteTodoCategory } from "#api/modules/planning/application/use-cases/categories/delete-todo-category.use-case";
+import { ReorderTodoCategory } from "#api/modules/planning/application/use-cases/categories/reorder-todo-category.use-case";
+import { UpdateTodoCategory } from "#api/modules/planning/application/use-cases/categories/update-todo-category.use-case";
+import { TodoCategoryCacheAdapter } from "#api/modules/planning/infrastructure/adapters/categories/todo-category-cache.adapter";
+import { PrismaTodoCategoryRepository } from "#api/modules/planning/infrastructure/persistence/categories/prisma-todo-category.repository";
+import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
+import { CacheService } from "#api/platform/cache/cache.service";
+import type { TodoCategory } from "#api/platform/database/database.types";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import type { TodoCategory } from "#api/shared/infrastructure/database/database.types";
-import { TODO_CATEGORY_CACHE } from "#api/todo-category/application/ports/todo-category-cache.port";
-import { TODO_CATEGORY_LIMIT_READER } from "#api/todo-category/application/ports/todo-category-limit-reader.port";
-import { TODO_CATEGORY_REPOSITORY } from "#api/todo-category/application/ports/todo-category.repository.port";
-import { TodoCategoryReader } from "#api/todo-category/application/services/todo-category.reader";
-import { CreateTodoCategoryUseCase } from "#api/todo-category/application/use-cases/create-todo-category/create-todo-category.use-case";
-import { DeleteTodoCategoryUseCase } from "#api/todo-category/application/use-cases/delete-todo-category/delete-todo-category.use-case";
-import { ReorderTodoCategoryUseCase } from "#api/todo-category/application/use-cases/reorder-todo-category/reorder-todo-category.use-case";
-import { UpdateTodoCategoryUseCase } from "#api/todo-category/application/use-cases/update-todo-category/update-todo-category.use-case";
-import { TodoCategoryCacheAdapter } from "#api/todo-category/infrastructure/adapters/todo-category-cache.adapter";
-import { PrismaTodoCategoryRepository } from "#api/todo-category/infrastructure/persistence/prisma-todo-category.repository";
-import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { TodoCategoryBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
 import {
@@ -40,13 +40,19 @@ import {
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { reorderTodoCategoryProvider } from "../../src/modules/planning/planning-categories-application.providers.js";
+import { deleteTodoCategoryProvider } from "../../src/modules/planning/planning-categories-application.providers.js";
+import { updateTodoCategoryProvider } from "../../src/modules/planning/planning-categories-application.providers.js";
+import { createTodoCategoryProvider } from "../../src/modules/planning/planning-categories-application.providers.js";
+import { todoCategoryReaderProvider } from "../../src/modules/planning/planning-categories-application.providers.js";
+
 describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
   let reader: TodoCategoryReader;
-  let createUseCase: CreateTodoCategoryUseCase;
-  let updateUseCase: UpdateTodoCategoryUseCase;
-  let deleteUseCase: DeleteTodoCategoryUseCase;
-  let reorderUseCase: ReorderTodoCategoryUseCase;
+  let createUseCase: CreateTodoCategory;
+  let updateUseCase: UpdateTodoCategory;
+  let deleteUseCase: DeleteTodoCategory;
+  let reorderUseCase: ReorderTodoCategory;
 
   const nativeContext = createMockDatabaseContext();
   const mockTodoCategoryDb = nativeContext.orm.public.TodoCategory;
@@ -76,11 +82,11 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        TodoCategoryReader,
-        CreateTodoCategoryUseCase,
-        UpdateTodoCategoryUseCase,
-        DeleteTodoCategoryUseCase,
-        ReorderTodoCategoryUseCase,
+        todoCategoryReaderProvider,
+        createTodoCategoryProvider,
+        updateTodoCategoryProvider,
+        deleteTodoCategoryProvider,
+        reorderTodoCategoryProvider,
         DefaultTodoCategorySeeder,
         {
           provide: TODO_CATEGORY_REPOSITORY,
@@ -118,10 +124,10 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
     }).compile();
 
     reader = module.get(TodoCategoryReader);
-    createUseCase = module.get(CreateTodoCategoryUseCase);
-    updateUseCase = module.get(UpdateTodoCategoryUseCase);
-    deleteUseCase = module.get(DeleteTodoCategoryUseCase);
-    reorderUseCase = module.get(ReorderTodoCategoryUseCase);
+    createUseCase = module.get(CreateTodoCategory);
+    updateUseCase = module.get(UpdateTodoCategory);
+    deleteUseCase = module.get(DeleteTodoCategory);
+    reorderUseCase = module.get(ReorderTodoCategory);
   });
 
   afterAll(async () => {
@@ -138,7 +144,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
   describe("DI 통합", () => {
     it("endpoint use-case와 reader가 조립된다", () => {
       expect(reader).toBeInstanceOf(TodoCategoryReader);
-      expect(createUseCase).toBeInstanceOf(CreateTodoCategoryUseCase);
+      expect(createUseCase).toBeInstanceOf(CreateTodoCategory);
     });
     it("Repository 포트가 주입된다", () => {
       expect(module.get(TODO_CATEGORY_REPOSITORY)).toBeInstanceOf(PrismaTodoCategoryRepository);
@@ -462,7 +468,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
       asMock(mockTodoCategoryDb.first).mockResolvedValue(databaseFixture("TodoCategory", null));
       try {
         await reader.findById(999, userId);
-        throw new Error("should have thrown");
+        throw new Error("오류가 발생해야 한다");
       } catch (error) {
         expect(error).toBeInstanceOf(ApplicationException);
         expect((error as ApplicationException).errorCode).toContain("TODO_CATEGORY");

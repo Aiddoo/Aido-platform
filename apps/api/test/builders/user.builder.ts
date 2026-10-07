@@ -26,7 +26,7 @@ import type {
   User,
   UserRole,
   UserStatus,
-} from "#api/shared/infrastructure/database/database.types";
+} from "#api/platform/database/database.types";
 
 export class UserBuilder {
   private data: User;

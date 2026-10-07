@@ -3,23 +3,23 @@ import { EventEmitterModule } from "@nestjs/event-emitter";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi, type MockInstance } from "vitest";
 
-import { REMINDER_SCHEDULER } from "#api/scheduler/index";
 import {
   BullMQReminderSchedulerAdapter,
   TODO_REMINDER_QUEUE,
-} from "#api/scheduler/infrastructure/scheduler/bullmq-reminder-scheduler.adapter";
+} from "#api/modules/notification/infrastructure/jobs/reminders/bullmq-reminder-scheduler.adapter";
+import { REMINDER_SCHEDULER } from "#api/modules/notification/notification-reminders.public";
+import { TODO_REMINDER } from "#api/modules/planning/application/ports/todos/todo-reminder.port";
+import { TodoDeletedEvent } from "#api/modules/planning/domain/events/todos/todo-deleted.event";
+import { TodoRescheduledEvent } from "#api/modules/planning/domain/events/todos/todo-rescheduled.event";
+import { TodoReminderAdapter } from "#api/modules/planning/infrastructure/adapters/todos/todo-reminder.adapter";
+import { TodoDeletedHandler } from "#api/modules/planning/infrastructure/subscribers/todos/todo-deleted.handler";
+import { TodoRescheduledHandler } from "#api/modules/planning/infrastructure/subscribers/todos/todo-rescheduled.handler";
+import { EventEmitterDomainEventPublisher } from "#api/platform/events/event-emitter-domain-event.publisher";
 import type { DomainEventPublisherPort } from "#api/shared/application/ports/index";
 import {
   JOB_RUNTIME,
   type JobCancellationResult,
 } from "#api/shared/application/ports/job-runtime.port";
-import { EventEmitterDomainEventPublisher } from "#api/shared/infrastructure/events/event-emitter-domain-event.publisher";
-import { TodoDeletedHandler } from "#api/todo/application/events/todo-deleted.handler";
-import { TodoRescheduledHandler } from "#api/todo/application/events/todo-rescheduled.handler";
-import { TODO_REMINDER } from "#api/todo/application/ports/todo-reminder.port";
-import { TodoDeletedEvent } from "#api/todo/domain/events/todo-deleted.event";
-import { TodoRescheduledEvent } from "#api/todo/domain/events/todo-rescheduled.event";
-import { TodoReminderAdapter } from "#api/todo/infrastructure/adapters/todo-reminder.adapter";
 
 import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { suppressLogger } from "../setup/suppress-logger.js";

@@ -20,9 +20,12 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { NotificationPublisher, NotificationRecipientLocaleReader } from "#api/notification/index";
-import { TODO_REMINDER_READER } from "#api/scheduler/application/ports/todo-reminder-reader.port";
-import { TodoReminderProcessor } from "#api/scheduler/index";
+import { TODO_REMINDER_READER } from "#api/modules/notification/application/ports/reminders/todo-reminder-reader.port";
+import {
+  NotificationPublisher,
+  NotificationRecipientLocaleReader,
+} from "#api/modules/notification/notification-delivery.public";
+import { TodoReminderProcessor } from "#api/modules/notification/notification-reminders.public";
 import { NotificationBuilder, TodoBuilder } from "#test/builders/index";
 import { createMockJob as createJob } from "#test/mocks/bull-job.mock";
 import { suppressLogger } from "#test/setup/suppress-logger";

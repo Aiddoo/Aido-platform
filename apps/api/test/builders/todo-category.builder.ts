@@ -13,7 +13,7 @@
  *   .build();
  * ```
  */
-import type { TodoCategory } from "#api/shared/infrastructure/database/database.types";
+import type { TodoCategory } from "#api/platform/database/database.types";
 
 export interface TodoCategoryWithCount extends TodoCategory {
   _count: {

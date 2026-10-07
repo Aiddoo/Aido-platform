@@ -1,35 +1,38 @@
 # API Code Conventions
 
-> Version 3.0.0 · Updated 2026-08-14 · Owner: Aido Platform Team
+> Version 4.0.0 · Updated 2026-10-07 · Owner: Aido Platform Team
 
 이 문서는 신규·수정 코드의 작성 규칙이다. 구조적 이유는 [architecture.md](./architecture.md), DTO는 [rest-contracts.md](./rest-contracts.md), DB는 [prisma.md](./prisma.md), 테스트는 [testing-guide.md](./testing-guide.md)를 따른다.
 
 ## 1. 기본 원칙
 
-- 기존 모듈의 현재 패턴과 `src/todo`를 먼저 읽는다.
+- 기존 모듈의 현재 패턴과 `src/modules/planning`를 먼저 읽는다.
 - 한 클래스는 하나의 역할과 하나의 변경 이유를 가진다.
 - 전달만 하는 Facade, Service, Manager, Helper, Utils, Impl을 만들지 않는다.
 - 추상화는 교체·격리·모듈 경계 가치가 있을 때만 추가한다.
 - 공개 계약을 유지하는 리팩터링에서는 snapshot을 갱신해 회귀를 승인하지 않는다.
 
+포맷은 Oxfmt가 소유한다. 서버는 2칸 들여쓰기·double quote·LF·세미콜론으로 통일한다.
+`pnpm lint`가 레이어 import·runtime cycle·kebab-case 파일명을 검사한다.
+
 ## 2. 파일과 역할
 
-| 역할           | 위치·형식                                                                                 |
-| -------------- | ----------------------------------------------------------------------------------------- |
-| Aggregate Root | `domain/entities/<name>.aggregate.ts`                                                     |
-| 자식 Entity    | `domain/entities/<name>.entity.ts`                                                        |
-| Value Object   | `domain/value-objects/<name>.vo.ts`                                                       |
-| 순수 판단      | `domain/policies/<name>.policy.ts` 또는 기존 `domain/services/<specific-name>.ts`         |
-| Domain event   | `domain/events/<event>.event.ts`                                                          |
-| 쓰기 UseCase   | `application/use-cases/<verb-object>/<verb-object>.use-case.ts`                           |
-| 읽기 UseCase   | `application/queries/<verb-object>/<verb-object>.use-case.ts`                             |
-| Port           | `application/ports/<capability>.<role>.port.ts`                                           |
-| Adapter        | `infrastructure/adapters/<purpose>.adapter.ts`                                            |
-| Prisma 구현    | `infrastructure/adapters/prisma-<capability>.<role>.ts` 또는 모듈의 기존 persistence 구조 |
-| Cache keyspace | `infrastructure/cache/<context>-cache.keyspace.ts`                                        |
-| Queue contract | `infrastructure/queue/<context>-queue.constants.ts`                                       |
-| Queue consumer | `<purpose>.processor.ts` 또는 `<purpose>.job-handler.ts`                                  |
-| HTTP mapper    | `presentation/<purpose>.mapper.ts`                                                        |
+| 역할           | 위치·형식                                                                                            |
+| -------------- | ---------------------------------------------------------------------------------------------------- |
+| Aggregate Root | `domain/aggregates/<slice>/<name>.aggregate.ts`                                                      |
+| 자식 Entity    | `domain/entities/<slice>/<name>.entity.ts`                                                           |
+| Value Object   | `domain/value-objects/<slice>/<name>.vo.ts`                                                          |
+| 순수 판단      | `domain/policies/<slice>/<name>.policy.ts` 또는 기존 `domain/services/<slice>/<specific-name>.ts`    |
+| Domain event   | `domain/events/<slice>/<event>.event.ts`                                                             |
+| 쓰기 UseCase   | `application/use-cases/<slice>/<verb-object>.use-case.ts`                                            |
+| 읽기 UseCase   | `application/use-cases/<slice>/<verb-object>.use-case.ts`                                            |
+| Port           | `application/ports/<slice>/<capability>.<role>.port.ts`                                              |
+| Adapter        | `infrastructure/adapters/<slice>/<purpose>.adapter.ts`                                               |
+| Prisma 구현    | `infrastructure/persistence/<slice>/prisma-<capability>.<role>.ts` 또는 모듈의 기존 persistence 구조 |
+| Cache keyspace | `infrastructure/cache/<slice>/<slice>-cache.keyspace.ts`                                             |
+| Queue contract | `infrastructure/jobs/<slice>/<slice>-queue.constants.ts`                                             |
+| Queue consumer | `<purpose>.processor.ts` 또는 `<purpose>.job-handler.ts`                                             |
+| HTTP mapper    | `presentation/mappers/<slice>/<purpose>.mapper.ts`                                                   |
 
 역할 접미사:
 
@@ -49,7 +52,7 @@
 ### 경계 안에서 사용하는 이름
 
 - 파일·폴더는 kebab-case, 클래스는 PascalCase, 변수·필드는 camelCase로 역할을 일치시킨다.
-- DI 필드는 클래스의 업무 이름을 그대로 드러낸다. `getNudgeInteractionUseCase`, `nudgeRepository`,
+- DI 필드는 클래스의 업무 이름을 그대로 드러낸다. `getNudgeInteraction`, `nudgeRepository`,
   `notificationPublisher`처럼 읽고, `useCase`, `repository`, `publisher`로 여러 책임을 축약하지 않는다.
 - 단수 식별자는 `nudgeId`, 복수 식별자는 `friendIds`, 시각은 `repliedAt`, 수정 시각은 `replyUpdatedAt`이다.
 - 내부 boolean은 `isEnabled`처럼 판단 의미를 나타낸다. 이미 공개된 `enabled` 등 API 필드는 mapper에서
@@ -82,10 +85,10 @@ Controller는 HTTP 경계다.
 ```ts
 @Post()
 async create(
-  @CurrentUser('id') userId: string,
+  @CurrentUser("id") userId: string,
   @Body() request: CreateTodoRequestDto,
 ): Promise<TodoResponseDto> {
-  return this.createTodoUseCase.execute({
+  return this.createTodo.execute({
     userId,
     title: request.title,
     scheduledAt: request.scheduledAt,
@@ -95,12 +98,12 @@ async create(
 
 ## 4. UseCase
 
-- 클래스명은 `<Verb><Object>UseCase`다.
+- 클래스명은 `<Verb><Object>`이며 파일 접미사는 `.use-case.ts`다.
 - 공개 실행 메서드는 `execute` 하나다.
 - 입력이 있으면 단일 `XxxInput`, 없으면 무인자다.
 - 입력 속성은 재할당하지 않는 계약이므로 `readonly`를 사용한다. 지역 변수나 mutable domain state에 기계적으로 붙이지 않는다.
 - 반환 객체는 `XxxResult` 또는 실제 read model 이름을 사용한다.
-- Nest의 `@Injectable`, `@Inject`, Logger는 허용한다.
+- 순수 TypeScript로 작성한다. Nest decorator와 Logger 구현은 Composition Root에서 조립한다.
 - Prisma와 vendor 타입은 금지한다.
 - 권한, orchestration, transaction, port 호출 순서를 담당한다.
 - 상태 전이 규칙은 Aggregate/VO/Policy에 위임한다.
@@ -112,21 +115,25 @@ export interface UpdateTodoTitleInput {
   readonly title: string;
 }
 
-@Injectable()
-export class UpdateTodoTitleUseCase {
-  constructor(
-    @Inject(TODO_REPOSITORY)
-    private readonly todoRepository: TodoRepositoryPort,
-    @Inject(UNIT_OF_WORK)
-    private readonly unitOfWork: UnitOfWorkPort,
-  ) {}
+interface UpdateTodoTitleDependencies {
+  readonly todoRepository: TodoRepositoryPort;
+  readonly unitOfWork: UnitOfWorkPort;
+}
+
+export class UpdateTodoTitle {
+  readonly #dependencies: UpdateTodoTitleDependencies;
+
+  constructor(dependencies: UpdateTodoTitleDependencies) {
+    this.#dependencies = dependencies;
+  }
 
   async execute(input: UpdateTodoTitleInput): Promise<TodoResponse> {
-    return this.unitOfWork.run(async () => {
-      const todo = await this.todoRepository.findOwnedById(input.todoId, input.userId);
+    return this.#dependencies.unitOfWork.run(async () => {
+      const { todoRepository } = this.#dependencies;
+      const todo = await todoRepository.findOwnedById(input.todoId, input.userId);
       todo.changeTitle(input.title);
-      await this.todoRepository.updateTitle(todo);
-      return this.todoRepository.findResponseById(input.todoId, input.userId);
+      await todoRepository.updateTitle(todo);
+      return todoRepository.findResponseById(input.todoId, input.userId);
     });
   }
 }
@@ -144,13 +151,11 @@ if (patch.completed !== undefined) {
 }
 ```
 
-필드가 많으면 순수 presence 함수 또는 mapper로 정리하되 truthy 검사로 바꾸지 않는다. `false`, `0`, 빈 문자열이 유효한 값일 수 있기 때문이다.
+입력 변환이 복잡하면 mapper로 정리하되, 단순 비교를 범용 helper로 감싸지 않는다. Truthy 검사로 바꾸지 않는다. `false`, `0`, 빈 문자열이 유효한 값일 수 있기 때문이다.
 
 ```ts
-const hasValue = <T>(value: T | undefined): value is T => value !== undefined;
-
-if (hasValue(patch.completed)) {
-  todo.changeCompletion(patch.completed);
+if (patch.categoryId !== undefined) {
+  todo.changeCategory(patch.categoryId);
 }
 ```
 
@@ -223,7 +228,7 @@ Adapter는 변환과 외부 I/O를 담당하며 비즈니스 규칙을 만들지
 ## 11. Module과 public API
 
 - Module이 UseCase와 `Port → Adapter` binding을 명시적으로 등록한다.
-- provider 배열은 반복 등록을 줄일 때만 사용하며 `todo-use-case.providers.ts` 같은 별도 파일을 기본 규칙으로 만들지 않는다.
+- `<context>-<slice>-application.providers.ts`가 순수 Application 클래스의 factory provider를 소유한다. Port → Adapter binding은 해당 Root provider/module에 둔다.
 - 공개 `index.ts`는 타 모듈이 실제로 소비하는 capability, event contract, DTO만 export한다.
 - UseCase, concrete repository, queue 구현, test helper는 공개하지 않는다.
 - 순환 의존을 `forwardRef`로 덮기 전에 capability 방향을 재검토한다.
@@ -240,12 +245,12 @@ Adapter는 변환과 외부 I/O를 담당하며 비즈니스 규칙을 만들지
 ## 13. Test
 
 - Aggregate/VO/Policy: 프레임워크 없는 단위 테스트
-- UseCase: `@suites/unit`의 `TestBed.solitary` 또는 명시적 fake/mock
+- UseCase: `vitest-mock-extended`의 `mockDeep<ConstructorParameters<typeof UseCase>[0]>`와 명시적 생성자 주입
 - Module wiring/decorator/guard: Nest testing module
 - Repository/UoW/concurrency: 실제 PostgreSQL 통합 테스트
 - HTTP/error/OpenAPI: E2E
 
-TestBed는 금지 대상이 아니다. domain 테스트에 Nest container를 불필요하게 올리지 않고, UseCase DI 자동 mock에 선택적으로 사용한다.
+Nest DI가 필요한 Infrastructure/Presentation Unit은 기존 Suites를 사용한다. 순수 Domain/Application에는 컨테이너를 올리지 않는다.
 
 ## 14. 신규·수정 체크리스트
 

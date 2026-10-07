@@ -3,7 +3,7 @@ import request from "supertest";
 import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
-} from "#api/notification/application/ports/marketing-push-opt-out-token.port";
+} from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
 /**
  * Notification E2E 테스트
  *
@@ -17,12 +17,8 @@ import {
  * 3. 읽지 않은 알림 수 조회
  * 4. 알림 읽음 처리
  */
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

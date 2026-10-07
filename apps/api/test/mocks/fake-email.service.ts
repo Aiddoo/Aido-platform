@@ -1,4 +1,9 @@
-import type { EmailSendResult, EmailTag, EmailType, InquiryTemplateData } from "#api/email/index";
+import type {
+  EmailSendResult,
+  EmailTag,
+  EmailType,
+  InquiryTemplateData,
+} from "#api/modules/notification/notification-email.public";
 
 /**
  * 발송된 이메일 기록

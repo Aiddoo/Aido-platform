@@ -21,13 +21,19 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import type { Job } from "bullmq";
 import { vi } from "vitest";
 
-import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/admin-notification/application/ports/admin-notification-queue.port";
-import { SIGNUP_STATS_READER } from "#api/admin-notification/application/ports/signup-stats.reader.port";
-import { DispatchDailySignupSummaryUseCase } from "#api/admin-notification/application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotificationUseCase } from "#api/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case";
-import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
-import { AdminNotificationProcessor } from "#api/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
+import { SIGNUP_STATS_READER } from "#api/modules/operations/application/ports/notifications/signup-stats.reader.port";
+import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
+import {
+  ADMIN_NOTIFIER,
+  PAYMENT_NOTIFIER,
+} from "#api/modules/operations/operations-notifications.public";
 import { suppressLogger } from "#test/setup/suppress-logger";
+
+import {
+  dispatchDailySignupSummaryProvider,
+  sendAdminNotificationProvider,
+} from "../../src/modules/operations/operations-notifications-application.providers.js";
 
 function createMockJob(name: string, data: Record<string, unknown>): Job {
   return { name, data, id: `job-${name}` } as unknown as Job;
@@ -68,8 +74,8 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
     module = await Test.createTestingModule({
       providers: [
         AdminNotificationProcessor,
-        SendAdminNotificationUseCase,
-        DispatchDailySignupSummaryUseCase,
+        sendAdminNotificationProvider,
+        dispatchDailySignupSummaryProvider,
         {
           provide: ADMIN_NOTIFIER,
           useValue: mockAdminNotifier,

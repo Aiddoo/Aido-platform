@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { NotificationCachePort } from "#api/notification/application/ports/notification-cache.port";
+import type { NotificationCachePort } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
 
 /**
  * NotificationCachePort mock 팩토리.

@@ -1,0 +1,53 @@
+import { TodoCreatedHandler } from "./infrastructure/subscribers/todos/todo-created.handler.js";
+import { TodoDeletedHandler } from "./infrastructure/subscribers/todos/todo-deleted.handler.js";
+import { TodoRescheduledHandler } from "./infrastructure/subscribers/todos/todo-rescheduled.handler.js";
+import { TodoToggledHandler } from "./infrastructure/subscribers/todos/todo-toggled.handler.js";
+import { TodoUpdatedHandler } from "./infrastructure/subscribers/todos/todo-updated.handler.js";
+import {
+  addTodoItemProvider,
+  changeTodoCategoryProvider,
+  createRecurringTodosProvider,
+  createTodoProvider,
+  deleteTodoItemProvider,
+  deleteTodoProvider,
+  getFriendTodosProvider,
+  getTodoByIdProvider,
+  getTodoResourceLimitProvider,
+  getTodoSummaryProvider,
+  getTodosProvider,
+  reorderTodoItemsProvider,
+  reorderTodoProvider,
+  toggleTodoCompleteProvider,
+  updateTodoItemProvider,
+  updateTodoScheduleProvider,
+  updateTodoTitleProvider,
+  updateTodoProvider,
+  updateTodoVisibilityProvider,
+} from "./planning-todos-application.providers.js";
+
+export const TODO_PROVIDERS = [
+  addTodoItemProvider,
+  changeTodoCategoryProvider,
+  createRecurringTodosProvider,
+  createTodoProvider,
+  deleteTodoProvider,
+  deleteTodoItemProvider,
+  reorderTodoProvider,
+  reorderTodoItemsProvider,
+  toggleTodoCompleteProvider,
+  updateTodoProvider,
+  updateTodoItemProvider,
+  updateTodoScheduleProvider,
+  updateTodoTitleProvider,
+  updateTodoVisibilityProvider,
+  getTodoByIdProvider,
+  getTodosProvider,
+  getFriendTodosProvider,
+  getTodoResourceLimitProvider,
+  getTodoSummaryProvider,
+  TodoCreatedHandler,
+  TodoDeletedHandler,
+  TodoRescheduledHandler,
+  TodoToggledHandler,
+  TodoUpdatedHandler,
+] as const;

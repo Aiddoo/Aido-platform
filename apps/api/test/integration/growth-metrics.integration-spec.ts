@@ -2,21 +2,13 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import sql from "sql-template-tag";
 import { vi } from "vitest";
 
-import { PrismaAdminGrowthMetricsAdapter } from "#api/admin/infrastructure/adapters/prisma-admin-growth-metrics.adapter";
-import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
+import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { PrismaAdminGrowthMetricsAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-growth-metrics.adapter";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import {
-  decodeSqlRows,
-  sqlRowSpec,
-  sqlStatement,
-} from "#api/shared/infrastructure/database/database-sql";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 

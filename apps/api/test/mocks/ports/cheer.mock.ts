@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { CheerRepositoryPort } from "#api/cheer/application/ports/cheer.repository.port";
+import type { CheerRepositoryPort } from "#api/modules/social/application/ports/cheers/cheer.repository.port";
 
 /**
  * Cheer 애플리케이션 포트 mock 팩토리 모음

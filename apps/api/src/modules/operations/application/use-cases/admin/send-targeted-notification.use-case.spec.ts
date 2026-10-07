@@ -1,0 +1,84 @@
+import type { Mocked } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
+
+import { type AdminBroadcastNotifierPort } from "../../ports/admin/admin-broadcast-notifier.port.js";
+import { type AdminUserDirectoryPort } from "../../ports/admin/admin-user-directory.port.js";
+import { SendTargetedNotification } from "./send-targeted-notification.use-case.js";
+
+describe("SendTargetedNotification — 타겟 발송", () => {
+  let useCase: SendTargetedNotification;
+  let userDirectory: Mocked<AdminUserDirectoryPort>;
+  let notifier: Mocked<AdminBroadcastNotifierPort>;
+
+  beforeEach(async () => {
+    const sendTargetedNotificationDependencies = mockDeep<
+      ConstructorParameters<typeof SendTargetedNotification>[0]
+    >({});
+    const unit = new SendTargetedNotification(sendTargetedNotificationDependencies);
+
+    useCase = unit;
+    userDirectory = sendTargetedNotificationDependencies.userDirectory;
+    notifier = sendTargetedNotificationDependencies.notifier;
+  });
+
+  it("존재하는 사용자만 필터링해 발송하고 총 대상은 존재 수로 집계한다", async () => {
+    // Given - 3명 중 2명만 존재하고 발송이 성공할 때
+    userDirectory.findExistingUserIds.mockResolvedValue(["u1", "u2"]);
+    notifier.sendBatch.mockResolvedValue({ count: 2 });
+
+    // When - 타겟 발송을 실행하면
+    const result = await useCase.execute({
+      title: "제목",
+      body: "내용",
+      userIds: ["u1", "u2", "u3"],
+      action: undefined,
+      force: false,
+    });
+
+    // Then - 존재 사용자 수 기준으로 집계된다
+    const messages = notifier.sendBatch.mock.calls[0]?.[0];
+    expect(messages).toHaveLength(2);
+    expect(messages?.[0]?.type).toBe("ADMIN_TARGETED");
+    expect(result).toEqual({
+      successCount: 2,
+      failCount: 0,
+      totalTargets: 2,
+    });
+  });
+
+  it("force 입력은 발송 메시지에 그대로 전파된다", async () => {
+    // Given - force 타겟 발송 요청
+    userDirectory.findExistingUserIds.mockResolvedValue(["u1"]);
+    notifier.sendBatch.mockResolvedValue({ count: 1 });
+
+    // When - force로 타겟 발송을 실행하면
+    await useCase.execute({
+      title: "제목",
+      body: "내용",
+      userIds: ["u1"],
+      action: undefined,
+      force: true,
+    });
+
+    // Then - 발송 메시지에 force가 포함된다
+    const messages = notifier.sendBatch.mock.calls[0]?.[0];
+    expect(messages?.[0]).toMatchObject({ force: true });
+  });
+
+  it("존재하는 사용자가 없으면 ADMIN_1402를 던진다", async () => {
+    // Given - 존재하는 사용자가 하나도 없을 때
+    userDirectory.findExistingUserIds.mockResolvedValue([]);
+
+    // When/Then - 대상 없음 예외로 실패한다
+    await expect(
+      useCase.execute({
+        title: "제목",
+        body: "내용",
+        userIds: ["u1"],
+        action: undefined,
+        force: false,
+      }),
+    ).rejects.toMatchObject({ errorCode: "ADMIN_1402" });
+    expect(notifier.sendBatch).not.toHaveBeenCalled();
+  });
+});

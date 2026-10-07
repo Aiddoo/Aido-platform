@@ -87,5 +87,5 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 
 ## AI 가이드 인덱스
 
-- **API**: [`apps/api/.claude/`](apps/api/.claude/) — architecture, api-conventions, prisma, validators, logging, testing
+- **API**: [`apps/api/.claude/`](apps/api/.claude/) — architecture, api-conventions, prisma, rest-contracts, logging, testing
 - **Mobile**: [`apps/mobile/.claude/`](apps/mobile/.claude/) — architecture, testing-guide, ui-components, oauth-client-guide

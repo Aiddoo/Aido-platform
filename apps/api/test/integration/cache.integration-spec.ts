@@ -13,12 +13,9 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { CacheModule } from "#api/shared/infrastructure/cache/cache.module";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import {
-  CACHE_SERVICE,
-  ICacheService,
-} from "#api/shared/infrastructure/cache/interfaces/cache.interface";
+import { CacheModule } from "#api/platform/cache/cache.module";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 
 import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils.js";
 

@@ -8,10 +8,7 @@
  * ```
  */
 
-import type {
-  AccountProvider,
-  LoginAttempt,
-} from "#api/shared/infrastructure/database/database.types";
+import type { AccountProvider, LoginAttempt } from "#api/platform/database/database.types";
 
 let idCounter = 1;
 

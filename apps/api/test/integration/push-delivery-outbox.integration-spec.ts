@@ -4,23 +4,15 @@ import sql from "sql-template-tag";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
-import { PrismaPushDeliveryLifecycleRepository } from "#api/notification/infrastructure/persistence/prisma-push-delivery-lifecycle.repository";
-import { PrismaPushDeliveryOutboxRepository } from "#api/notification/infrastructure/persistence/prisma-push-delivery-outbox.repository";
-import { PrismaPushDispatchStagingRepository } from "#api/notification/infrastructure/persistence/prisma-push-dispatch-staging.repository";
-import { PrismaRetentionRepository } from "#api/retention/infrastructure/persistence/prisma-retention.repository";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import {
-  decodeSqlRows,
-  sqlRowSpec,
-  sqlStatement,
-} from "#api/shared/infrastructure/database/database-sql";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository";
+import { PrismaPushDeliveryOutboxRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-outbox.repository";
+import { PrismaPushDispatchStagingRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-dispatch-staging.repository";
+import { PrismaRetentionRepository } from "#api/modules/notification/infrastructure/persistence/retention/prisma-retention.repository";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 import {
   createDatabaseContext,
   createDatabaseTransactionFixture,

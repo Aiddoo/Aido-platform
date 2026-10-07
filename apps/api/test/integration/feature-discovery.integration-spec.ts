@@ -4,10 +4,10 @@ import { Test } from "@nestjs/testing";
 import request from "supertest";
 import type { App } from "supertest/types.js";
 
-import { AppConfigModule } from "#api/app-config/index";
-import { FeatureDiscoveryConfigAdapter } from "#api/app-config/infrastructure/adapters/feature-discovery-config.adapter";
+import { AppConfigModule } from "#api/modules/app-config/app-config-discovery.public";
+import { FeatureDiscoveryConfigAdapter } from "#api/modules/app-config/infrastructure/adapters/discovery/feature-discovery-config.adapter";
 
-describe("Feature discovery configuration route (integration)", () => {
+describe("기능 발견 설정 route (Integration)", () => {
   let app: INestApplication<App>;
 
   beforeAll(async () => {
@@ -27,7 +27,7 @@ describe("Feature discovery configuration route (integration)", () => {
     await app?.close();
   });
 
-  it("serves a non-cacheable fail-closed response", async () => {
+  it("캐시할 수 없는 비활성 응답을 제공한다", async () => {
     // When
     const response = await request(app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
@@ -38,7 +38,7 @@ describe("Feature discovery configuration route (integration)", () => {
     expect(response.body).toEqual({ enabled: false });
   });
 
-  it("documents the raw discriminated union and cache response header", () => {
+  it("raw discriminated union과 캐시 응답 header를 문서화한다", () => {
     // When
     const document = SwaggerModule.createDocument(
       app,

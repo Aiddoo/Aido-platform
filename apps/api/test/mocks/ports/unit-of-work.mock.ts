@@ -2,21 +2,7 @@ import { vi } from "vitest";
 
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 
-/**
- * UNIT_OF_WORK 포트 mock 팩토리
- *
- * run이 콜백을 즉시 실행하는 passthrough 구현입니다.
- * 콜백이 인자를 받지 않으므로(리포지토리가 CLS에서 tx를 읽는 구조)
- * 스텁 클라이언트 없이 순수 통과만 합니다.
- *
- * @example
- * ```typescript
- * const { unit, unitRef } = await TestBed.solitary(CreateTodoHandler)
- *   .mock<UnitOfWorkPort>(UNIT_OF_WORK)
- *   .impl(() => createUnitOfWorkMock())
- *   .compile();
- * ```
- */
+// CLS 기반 repository가 transaction을 읽으므로 콜백에는 별도 client를 전달하지 않는다.
 export function createUnitOfWorkMock(): UnitOfWorkPort {
   const run = vi.fn();
   run.mockImplementation((work: () => Promise<unknown>) => work());

@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
-import type { DailyCompletionCachePort } from "#api/daily-completion/application/ports/daily-completion-cache.port";
-import type { FriendPort } from "#api/daily-completion/application/ports/friend.port";
+import type { DailyCompletionCachePort } from "#api/modules/insights/application/ports/daily-completions/daily-completion-cache.port";
+import type { FriendPort } from "#api/modules/insights/application/ports/daily-completions/friend.port";
 
 /**
  * DailyCompletion 애플리케이션 포트 mock 팩토리 모음.

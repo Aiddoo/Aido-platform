@@ -1,0 +1,195 @@
+import type { Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_LIMITS } from "@aido/api/vocabulary";
+import type { Mocked } from "vitest";
+import { vi } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
+
+import { type DomainEventPublisherPort } from "#api/shared/application/ports/index";
+import { DomainException } from "#api/shared/domain/index";
+import { TodoBuilder } from "#test/builders/index";
+import {
+  createCategoryOwnershipMock,
+  createTodoCacheMock,
+  createTodoReadRepositoryMock,
+  createTodoRepositoryMock,
+  createUnitOfWorkMock,
+} from "#test/mocks/ports/index";
+
+import { Todo } from "../../../domain/aggregates/todos/todo.aggregate.js";
+import { TodoCreatedEvent } from "../../../domain/events/todos/todo-created.event.js";
+import { TodoId } from "../../../domain/value-objects/todos/todo-id.vo.js";
+import { TodoSchedule } from "../../../domain/value-objects/todos/todo-schedule.vo.js";
+import { TodoMapper } from "../../../infrastructure/persistence/todos/todo-response.mapper.js";
+import type { CreateTodoData } from "../../models/todos/todo.types.js";
+import { type CategoryOwnershipPort } from "../../ports/todos/category-ownership.port.js";
+import { type TodoCachePort } from "../../ports/todos/todo-cache.port.js";
+import { type TodoReadRepositoryPort } from "../../ports/todos/todo-read.repository.port.js";
+import { type TodoRepositoryPort } from "../../ports/todos/todo.repository.port.js";
+import { CreateTodo } from "./create-todo.use-case.js";
+
+/** 생성 결과 애그리게잇 */
+function buildEntity(): Todo {
+  return Todo.reconstitute({
+    id: TodoId.create(1),
+    userId: "user-123",
+    title: "새 할 일",
+    categoryId: 1,
+    sortOrder: 0,
+    completed: false,
+    completedAt: null,
+    schedule: TodoSchedule.reconstitute({
+      startDate: new Date("2026-02-22"),
+      endDate: null,
+      scheduledTime: null,
+      isAllDay: true,
+    }),
+    visibility: "PUBLIC",
+    recurrenceGroupId: null,
+    items: [],
+    createdAt: new Date("2026-02-20T00:00:00.000Z"),
+    updatedAt: new Date("2026-02-20T00:00:00.000Z"),
+  });
+}
+
+/** 재조회 시 반환할 응답 read model */
+function buildResponse(): TodoResponse {
+  return TodoMapper.toResponse(
+    TodoBuilder.create("user-123").withId(1).withTitle("새 할 일").build(),
+  );
+}
+
+const baseData: CreateTodoData = {
+  userId: "user-123",
+  title: "새 할 일",
+  categoryId: 1,
+  startDate: new Date("2026-02-22"),
+};
+
+describe("CreateTodo — 할 일 생성 핸들러", () => {
+  let useCase: CreateTodo;
+  let todoRepository: Mocked<TodoRepositoryPort>;
+  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
+  let categoryOwnership: Mocked<CategoryOwnershipPort>;
+  let todoCache: Mocked<TodoCachePort>;
+  let eventPublisher: Mocked<DomainEventPublisherPort>;
+
+  beforeEach(async () => {
+    const createTodoDependencies = mockDeep<ConstructorParameters<typeof CreateTodo>[0]>({
+      todoRepository: createTodoRepositoryMock(),
+      todoReadRepository: createTodoReadRepositoryMock(),
+      unitOfWork: createUnitOfWorkMock(),
+      categoryOwnership: createCategoryOwnershipMock(),
+      todoCache: createTodoCacheMock(),
+      eventPublisher: { publishAll: vi.fn().mockResolvedValue(undefined) },
+    });
+    const unit = new CreateTodo(createTodoDependencies);
+
+    useCase = unit;
+    todoRepository = createTodoDependencies.todoRepository;
+    todoReadRepository = createTodoDependencies.todoReadRepository;
+    categoryOwnership = createTodoDependencies.categoryOwnership;
+    todoCache = createTodoDependencies.todoCache;
+    eventPublisher = createTodoDependencies.eventPublisher;
+  });
+
+  it("카테고리 소유권 확인 후 할 일을 생성하고 캐시를 무효화한 뒤 응답을 반환한다", async () => {
+    // Given - 한도 여유가 있는 상태
+    todoRepository.countActiveByCategory.mockResolvedValue(0);
+    todoRepository.getMaxSortOrder.mockResolvedValue(-1);
+    todoRepository.create.mockResolvedValue(buildEntity());
+    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+
+    // When
+    const result = await useCase.execute(baseData);
+
+    // Then - 생성 + 캐시 + TodoCreatedEvent 발행(리마인더는 이벤트 핸들러)
+    expect(categoryOwnership.validateOwnership).toHaveBeenCalledWith(1, "user-123");
+    expect(todoRepository.create).toHaveBeenCalledTimes(1);
+    expect(todoCache.invalidateTodoCategories).toHaveBeenCalledWith("user-123");
+    expect(todoCache.invalidateFriendTodos).toHaveBeenCalledWith("user-123");
+    expect(eventPublisher.publishAll).toHaveBeenCalledWith([
+      new TodoCreatedEvent(1, "user-123", null),
+    ]);
+    expect(result.id).toBe(1);
+  });
+
+  it("카테고리 소유권 확인이 실패하면 예외를 전파하고 생성하지 않는다", async () => {
+    // Given - 소유권 검증 실패
+    categoryOwnership.validateOwnership.mockRejectedValue(new Error("not owner"));
+
+    // When & Then
+    await expect(useCase.execute(baseData)).rejects.toThrow("not owner");
+    expect(todoRepository.create).not.toHaveBeenCalled();
+    expect(eventPublisher.publishAll).not.toHaveBeenCalled();
+  });
+
+  it("post-commit 이벤트 발행 관측이 끝난 뒤 응답을 재조회한다", async () => {
+    // Given - 이벤트 publisher 완료를 외부 gate로 지연
+    todoRepository.countActiveByCategory.mockResolvedValue(0);
+    todoRepository.getMaxSortOrder.mockResolvedValue(-1);
+    todoRepository.create.mockResolvedValue(buildEntity());
+    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+    let release: (() => void) | undefined;
+    const publication = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    eventPublisher.publishAll.mockReturnValue(publication);
+
+    // When - 생성 실행
+    const execution = useCase.execute(baseData);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    // Then - publisher 완료 전에는 post-commit 재조회로 진행하지 않음
+    expect(todoReadRepository.findByIdAndUserId).not.toHaveBeenCalled();
+    release?.();
+    await execution;
+    expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalled();
+  });
+
+  it("제목이 200자를 초과하면 소유권 확인 전에 DomainException(SYS_0002)을 던진다 (도메인 자기방어)", async () => {
+    // Given - 201자 제목 (Zod 통과를 우회한 비정상 입력 가정)
+    const data: CreateTodoData = { ...baseData, title: "가".repeat(201) };
+
+    // When & Then - 어떤 포트도 호출되기 전에 거부된다
+    const execution = useCase.execute(data);
+    await expect(execution).rejects.toBeInstanceOf(DomainException);
+    await expect(execution).rejects.toMatchObject({
+      errorCode: ErrorCode.SYS_0002,
+    });
+    expect(categoryOwnership.validateOwnership).not.toHaveBeenCalled();
+    expect(todoRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("카테고리 활성 한도를 초과하면 ApplicationException(TODO_0811)을 던진다", async () => {
+    // Given - 카테고리가 가득 참
+    todoRepository.countActiveByCategory.mockResolvedValue(TODO_LIMITS.MAX_PER_CATEGORY);
+
+    // When & Then
+    await expect(useCase.execute(baseData)).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_0811,
+    });
+    expect(todoRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("인라인 하위 항목이 있으면 항목을 일괄 생성하고 응답을 재조회한다", async () => {
+    // Given - items 포함 생성
+    todoRepository.countActiveByCategory.mockResolvedValue(0);
+    todoRepository.getMaxSortOrder.mockResolvedValue(-1);
+    todoRepository.create.mockResolvedValue(buildEntity());
+    todoReadRepository.findByIdAndUserId.mockResolvedValue(buildResponse());
+
+    // When
+    await useCase.execute({
+      ...baseData,
+      items: [{ title: "하위1" }, { title: "하위2" }],
+    });
+
+    // Then - 인라인 항목 생성 + 응답 재조회
+    expect(todoRepository.createInlineItems).toHaveBeenCalledWith(1, [
+      { title: "하위1" },
+      { title: "하위2" },
+    ]);
+    expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(1, "user-123");
+  });
+});

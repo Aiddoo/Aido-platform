@@ -19,11 +19,14 @@ import { Test, type TestingModule } from "@nestjs/testing";
  */
 import { vi } from "vitest";
 
-import { EMAIL_SENDER, type EmailSenderPort } from "#api/email/application/ports/email-sender.port";
-import { TransactionalEmailSender } from "#api/email/index";
-import { ResendEmailSenderAdapter } from "#api/email/infrastructure/adapters/resend-email-sender.adapter";
-import { EMAIL_CONSTANTS } from "#api/email/infrastructure/constants/email.constants";
-import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import {
+  EMAIL_SENDER,
+  type EmailSenderPort,
+} from "#api/modules/notification/application/ports/email/email-sender.port";
+import { ResendEmailSenderAdapter } from "#api/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter";
+import { EMAIL_CONSTANTS } from "#api/modules/notification/infrastructure/constants/email/email.constants";
+import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 const resendMock = vi.hoisted(() => ({ emails: { send: vi.fn() } }));

@@ -24,19 +24,15 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import dayjs from "dayjs";
 import { vi } from "vitest";
 
-import { DAILY_COMPLETION_PROVIDERS } from "#api/daily-completion/application/daily-completion.providers";
-import { DAILY_COMPLETION_CACHE } from "#api/daily-completion/application/ports/daily-completion-cache.port";
-import { FRIEND_PORT } from "#api/daily-completion/application/ports/friend.port";
-import { TODO_COMPLETION_REPOSITORY } from "#api/daily-completion/application/ports/todo-completion.repository.port";
-import { GetDailyCompletionsUseCase } from "#api/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case";
-import { PrismaTodoCompletionRepository } from "#api/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { createEntityId } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { DAILY_COMPLETION_CACHE } from "#api/modules/insights/application/ports/daily-completions/daily-completion-cache.port";
+import { FRIEND_PORT } from "#api/modules/insights/application/ports/daily-completions/friend.port";
+import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
+import { GetDailyCompletions } from "#api/modules/insights/application/use-cases/daily-completions/get-daily-completions.use-case";
+import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
+import { DAILY_COMPLETION_PROVIDERS } from "#api/modules/insights/insights-daily-completions.providers";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { createEntityId } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
 import {
   createDailyCompletionCacheMock,
   createDailyCompletionFriendMock,
@@ -49,7 +45,7 @@ import { TestDatabase } from "../setup/test-database.js";
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let getDailyCompletionsUseCase: GetDailyCompletionsUseCase;
+  let getDailyCompletionsUseCase: GetDailyCompletions;
   let repository: PrismaTodoCompletionRepository;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
@@ -87,7 +83,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     }).compile();
 
     await module.init();
-    getDailyCompletionsUseCase = module.get(GetDailyCompletionsUseCase);
+    getDailyCompletionsUseCase = module.get(GetDailyCompletions);
     repository = module.get(TODO_COMPLETION_REPOSITORY);
   }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
 

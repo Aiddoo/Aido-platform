@@ -16,7 +16,7 @@
 
 import * as crypto from "node:crypto";
 
-import type { Session } from "#api/shared/infrastructure/database/database.types";
+import type { Session } from "#api/platform/database/database.types";
 
 export class SessionBuilder {
   private data: Session;

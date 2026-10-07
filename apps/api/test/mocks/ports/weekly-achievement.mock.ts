@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 
-import type { WeeklyAchievementRepositoryPort } from "#api/weekly-achievement/application/ports/weekly-achievement.repository.port";
+import type { WeeklyAchievementRepositoryPort } from "#api/modules/insights/application/ports/weekly-achievements/weekly-achievement.repository.port";
 
 /**
  * WEEKLY_ACHIEVEMENT_REPOSITORY 포트 mock 팩토리.

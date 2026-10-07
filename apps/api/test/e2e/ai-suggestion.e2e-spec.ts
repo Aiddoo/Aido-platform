@@ -1,6 +1,6 @@
 import request from "supertest";
 
-import { AI_PROVIDER } from "#api/ai/index";
+import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -13,14 +13,10 @@ import { AI_PROVIDER } from "#api/ai/index";
  * - PATCH /ai/suggestions/:id: 제안 수락/거절
  * - 인증 에러 (401)
  */
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

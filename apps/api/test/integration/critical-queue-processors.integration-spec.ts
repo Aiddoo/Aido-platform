@@ -3,19 +3,15 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import {
   NOTIFICATION_QUEUE,
   NotificationJobName,
-} from "#api/notification/infrastructure/queue/notification-queue.constants";
+} from "#api/modules/notification/infrastructure/jobs/delivery/notification-queue.constants";
 import {
   RETENTION_QUEUE,
   RetentionJobName,
-} from "#api/retention/infrastructure/queue/retention-queue.constants";
+} from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.constants";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { createEntityId } from "#api/platform/database/database-values";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { createEntityId } from "#api/shared/infrastructure/database/database-values";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 

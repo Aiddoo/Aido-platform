@@ -6,7 +6,7 @@ import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-describe("durable job runtime health E2E", () => {
+describe("영속 job runtime 상태 확인 E2E", () => {
   let ctx: E2eTestContext;
   const runtime = new FakeJobRuntime();
   let health: MockInstance<typeof runtime.health>;

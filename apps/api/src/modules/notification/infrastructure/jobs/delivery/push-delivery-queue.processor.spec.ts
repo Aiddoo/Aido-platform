@@ -1,0 +1,124 @@
+import { TestBed } from "@suites/unit";
+import { vi } from "vitest";
+import type { Mocked } from "vitest";
+
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
+
+import { DeliverPushNotifications } from "../../../application/use-cases/delivery/deliver-push-notifications.use-case.js";
+import { RecoverFailedPushDeliveries } from "../../../application/use-cases/delivery/recover-failed-push-deliveries.use-case.js";
+import { RelayPushDeliveryOutbox } from "../../../application/use-cases/delivery/relay-push-delivery-outbox.use-case.js";
+import {
+  PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+  PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
+  PUSH_DELIVERY_QUEUE,
+  PushDeliveryJobName,
+} from "./push-delivery-queue.constants.js";
+import { PushDeliveryQueueProcessor } from "./push-delivery-queue.processor.js";
+
+describe("PushDeliveryQueueProcessor — 영속 Push 큐 라우팅", () => {
+  let processor: PushDeliveryQueueProcessor;
+  let relayOutbox: Mocked<RelayPushDeliveryOutbox>;
+  let deliverPushNotifications: Mocked<DeliverPushNotifications>;
+  let recoverFailedDeliveries: Mocked<RecoverFailedPushDeliveries>;
+  let runtime: Mocked<JobRuntimePort>;
+
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(PushDeliveryQueueProcessor)
+      .mock<JobRuntimePort>(JOB_RUNTIME)
+      .impl(() => ({
+        start: vi.fn(),
+        stop: vi.fn(),
+        enqueue: vi.fn(),
+        schedule: vi.fn(),
+        unschedule: vi.fn(),
+        cancel: vi.fn(),
+        work: vi.fn().mockResolvedValue(undefined),
+        health: vi.fn(),
+      }))
+      .compile();
+
+    processor = unit;
+    relayOutbox = unitRef.get(RelayPushDeliveryOutbox);
+    deliverPushNotifications = unitRef.get(DeliverPushNotifications);
+    recoverFailedDeliveries = unitRef.get(RecoverFailedPushDeliveries);
+    runtime = unitRef.get(JOB_RUNTIME);
+  });
+
+  it("전용 DLQ worker는 strict delivery publication을 DB recovery use case로 전달한다", async () => {
+    await processor.onModuleInit();
+    const deadLetterWorker = runtime.work.mock.calls.find(
+      ([queue]) => queue === PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+    )?.[1];
+    const publications = [{ dispatchId: 88, publishAttempt: 4 }];
+
+    await deadLetterWorker?.([
+      {
+        id: "dead-letter-job",
+        name: PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+        data: { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
+        attempt: 2,
+      },
+    ]);
+
+    expect(recoverFailedDeliveries.execute).toHaveBeenCalledWith({ publications });
+    expect(runtime.work).toHaveBeenCalledWith(
+      PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+      expect.any(Function),
+      PUSH_DELIVERY_DEAD_LETTER_WORKER_POLICY,
+    );
+  });
+
+  it("runtime의 실제 JobEnvelope.id를 delivery fencing ID로 전달한다", async () => {
+    // Given - 등록된 worker와 pg-boss가 전달한 실제 job envelope
+    await processor.onModuleInit();
+    const worker = runtime.work.mock.calls[0]?.[1];
+    const publications = [{ dispatchId: 31, publishAttempt: 5 }];
+    expect(worker).toBeDefined();
+
+    // When - runtime worker가 job을 처리
+    await worker?.([
+      {
+        id: "pg-boss-job-7f9c",
+        name: PUSH_DELIVERY_QUEUE,
+        data: { name: PushDeliveryJobName.DELIVER_DISPATCHES, data: publications },
+        attempt: 3,
+      },
+    ]);
+
+    // Then - transport에서 새 ID를 만들지 않고 실제 envelope ID와 generation을 전달
+    expect(deliverPushNotifications.execute).toHaveBeenCalledWith({
+      processingJobId: "pg-boss-job-7f9c",
+      processingJobAttempt: 3,
+      publications,
+      isFinalAttempt: false,
+    });
+  });
+
+  it("relay job은 delivery use case와 분리해 outbox relay로 라우팅한다", async () => {
+    // Given - strict relay payload
+    const relayJob = { name: PushDeliveryJobName.RELAY_OUTBOX, data: {} };
+
+    // When - relay job 처리
+    await processor.process("relay-job-1", 1, relayJob);
+
+    // Then - relay 책임만 실행
+    expect(relayOutbox.execute).toHaveBeenCalledWith();
+    expect(deliverPushNotifications.execute).not.toHaveBeenCalled();
+  });
+
+  it("retryLimit 이후 마지막 attempt를 outbox reopen 신호로 전달한다", async () => {
+    const publications = [{ dispatchId: 32, publishAttempt: 6 }];
+
+    await processor.process("final-job", 6, {
+      name: PushDeliveryJobName.DELIVER_DISPATCHES,
+      data: publications,
+    });
+
+    expect(deliverPushNotifications.execute).toHaveBeenCalledWith({
+      processingJobId: "final-job",
+      processingJobAttempt: 6,
+      publications,
+      isFinalAttempt: true,
+    });
+  });
+});

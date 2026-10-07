@@ -23,13 +23,13 @@ import { and } from "@prisma/orm-postgres/orm-client";
  */
 import { vi } from "vitest";
 
-import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
+import { CredentialAuthWorkflow } from "#api/modules/identity/application/workflows/auth/credential-auth.workflow";
+import { PasswordWorkflow } from "#api/modules/identity/application/workflows/auth/password.workflow";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 

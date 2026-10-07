@@ -15,7 +15,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 00 Prisma 8 기존 변경 보존, Unit 2,895·Integration 433·E2E 480 재검증
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
-- [ ] 03 modules/platform/shared·명시적 조립·로그·키 경계
+- [ ] 03 modules/platform/shared·명시적 조립·로그·키 경계: 구조·순수 Application·native lint 완료, Context별 로그/키 정리는 후속 단계
 - [ ] 04 Identity: 계정·세션·설정·동의·계정 생명주기
 - [ ] 05 Billing: Webhook·구독 상태 전이
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
@@ -51,3 +51,29 @@ producer와 waiting/active/delayed/retry/repeat 작업의 drain 확인을 배포
 구조 개선을 성능 개선으로 추정하지 않는다. 같은 데이터·리소스에서 commit별 쿼리 수·p50/p95·
 CPU·RSS·오류율을 측정하고 Issue/PR에 조건과 한계를 기록한다. 이전 Prisma 8의 8쿼리→5쿼리
 측정은 후속 구조 전환 결과로 재사용하지 않는다. 운영 latency와 billed Actions 절감률은 미측정이다.
+
+## 03 구조와 기본 도구 검증
+
+14개 Context를 `src/modules`로, Nest·DB·HTTP·job runtime을 `src/platform`으로 분리했다.
+Application 200개 클래스는 순수 생성자 의존성 객체를 받고 기존 DI token을 Nest factory provider로
+조립한다. 테스트 156개 setup은 기존 mock 라이브러리와 fixture를 사용한다. HTTP 예외 변환은
+filter가 소유하며 미사용 예외 생성 메서드 129개를 제거했다. `jose`는 기존 ESM 실행 설정에 맞춰
+native static import로 사용하고 wrapper·중복 타입·강제 변환을 제거했다.
+
+레이어 소스 스캔 검사를 Oxlint 기본 규칙으로 대체했다. type import·re-export·상대 경로·별칭·
+문자열 dynamic import·순환 의존·파일명 위반을 포함한 임시 사례 11개가 모두 차단되었다.
+임시 파일은 제거했고 실행 script·추가 패키지·추가 Action job은 없다. Nest Module/worker DI는
+실제 Integration, HTTP 응답과 배포 앱 계약은 E2E가 검증한다.
+
+- 서버 Unit: 446 files / 2,903 tests, 15.91초. 중복 소스 스캔 테스트 제거와 JWT 검증 추가를 반영한 수다.
+- 실제 PostgreSQL service Integration: 43 files / 433 tests, 154.94초.
+- 전체 E2E: 34 files / 480 tests, 328.61초. 구 앱 fingerprint와 OpenAPI fixture 변경 없음.
+- lint·format·fresh server typecheck·server build 통과. 빌드된 OAuth verifier의 Node ESM import 확인.
+- 실제 JWT 서명·만료·issuer·audience·nonce·JWKS key rotation: 24 tests.
+
+테스트 fixture의 provider 등록 누락으로 큐 Integration 2개가 처음 실패했다. harness가 운영 factory
+provider를 재사용하도록 수정한 뒤 해당 6 tests와 전체 433 tests가 통과했다. 테스트 timeout이나
+기대값을 완화하지 않았다. 실행 조건이 다른 테스트 시간은 성능 향상률로 사용하지 않는다.
+
+Context 내부 상태 모델·owner Gateway·Access quota·로그 식별자·키 정리·성능 측정은 후속 단계에
+남아 있다. 이 단계의 검증을 전체 구조 전환이나 운영 영향 없음의 보장으로 확대하지 않는다.

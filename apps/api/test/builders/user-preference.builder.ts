@@ -13,10 +13,7 @@
  * const nightPush = UserPreferenceBuilder.create('user-123').withNightPushEnabled().build();
  * ```
  */
-import type {
-  TimeFormat,
-  UserPreference,
-} from "#api/shared/infrastructure/database/database.types";
+import type { TimeFormat, UserPreference } from "#api/platform/database/database.types";
 
 export class UserPreferenceBuilder {
   private data: UserPreference;

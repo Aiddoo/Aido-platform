@@ -4,7 +4,7 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 import { z } from "zod";
 
-import { encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import { encodeCreate } from "#api/platform/database/database-records";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 

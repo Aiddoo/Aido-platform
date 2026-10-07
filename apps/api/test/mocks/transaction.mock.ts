@@ -1,4 +1,4 @@
-import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 
 import {
   createMockDatabaseContext,

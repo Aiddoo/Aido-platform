@@ -17,7 +17,7 @@
  *   .buildWithUser();
  * ```
  */
-import type { Follow, FollowStatus } from "#api/shared/infrastructure/database/database.types";
+import type { Follow, FollowStatus } from "#api/platform/database/database.types";
 
 /**
  * 팔로워/팔로잉 사용자 정보 (목록 조회용)

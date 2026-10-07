@@ -15,14 +15,14 @@ import { isPlainObject } from "es-toolkit";
 import { vi } from "vitest";
 import { mock, mockDeep, mockReset, type DeepMockProxy } from "vitest-mock-extended";
 
-import type { ModelName } from "#api/shared/infrastructure/database/database-records";
+import type { ModelName } from "#api/platform/database/database-records";
 import {
   databaseDate,
   databaseTimestamp,
   databaseTimestamptz,
-} from "#api/shared/infrastructure/database/database-values";
-import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+} from "#api/platform/database/database-values";
+import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type { Contract } from "../../src/generated/prisma8/contract.d.js";
 import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };

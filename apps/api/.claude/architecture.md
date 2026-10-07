@@ -1,6 +1,6 @@
 # API Architecture
 
-> Version 6.1.0 · Updated 2026-08-26 · Owner: Aido Platform Team
+> Version 7.0.0 · Updated 2026-10-07 · Owner: Aido Platform Team
 
 이 문서는 Aido API의 구조적 결정만 설명한다. 코드 작성 형식은 [api-conventions.md](./api-conventions.md), 저장소와 트랜잭션은 [prisma.md](./prisma.md), 테스트는 [testing-guide.md](./testing-guide.md)를 따른다.
 
@@ -19,7 +19,7 @@ Aido API는 싱글 PostgreSQL 기반의 모듈러 모놀리스다. 실용형 DDD
 
 - 모든 모델을 Aggregate로 만들지 않는다.
 - 모든 repository 호출 앞에 Port를 추가하지 않는다.
-- application을 프레임워크 제로 의존으로 만들지 않는다.
+- 상태 없는 조회·전달에 가짜 Aggregate를 만들지 않는다.
 - CQRS bus, 별도 command/query 객체, 추상 factory를 일괄 도입하지 않는다.
 
 ## 2. 의존성 방향
@@ -30,24 +30,24 @@ presentation ───────────────→ application ──
       │                            │ implements ports        │ maps/reconstitutes
       └────────────────────→ infrastructure ─────────────────┘
                                   │
-                                  └→ Prisma / Redis / BullMQ / vendor SDK
+                                  └→ Prisma / Redis / pg-boss / vendor SDK
 ```
 
-| 레이어           | 소유 책임                                                | 허용 의존성                                     |
-| ---------------- | -------------------------------------------------------- | ----------------------------------------------- |
-| `domain`         | Aggregate, Entity, VO, Policy, domain event              | 순수 TypeScript와 shared domain                 |
-| `application`    | endpoint UseCase, orchestration, port, application error | domain, application 내부, 제한된 Nest DI/Logger |
-| `infrastructure` | Prisma/Redis/queue/vendor 구현, mapper, listener         | application port, domain, 외부 기술             |
-| `presentation`   | HTTP DTO, validation, Swagger, input/output mapper       | application 진입점, validator                   |
+| 레이어           | 소유 책임                                                | 허용 의존성                              |
+| ---------------- | -------------------------------------------------------- | ---------------------------------------- |
+| `domain`         | Aggregate, Entity, VO, Policy, domain event              | 순수 TypeScript와 shared domain          |
+| `application`    | endpoint UseCase, orchestration, port, application error | domain, application 내부, 순수 공용 코드 |
+| `infrastructure` | Prisma/Redis/queue/vendor 구현, mapper, listener         | application port, domain, 외부 기술      |
+| `presentation`   | HTTP DTO, validation, Swagger, input/output mapper       | application 진입점, validator            |
 
 금지:
 
 - domain → Nest, Prisma, application, infrastructure, presentation
-- application → Prisma type, vendor SDK, infrastructure, presentation
+- application → Nest, Prisma type, vendor SDK, platform, infrastructure, presentation
 - 외부 모듈 → 다른 모듈의 내부 UseCase, concrete adapter/repository, deep path
 - public barrel → 내부 repository, queue 구현, 테스트 helper
 
-`pnpm lint`의 Oxlint `no-restricted-imports` 규칙이 domain/application import 경계를 검사한다. Aggregate 파일명, public barrel, 타입 단언 같은 의미 규칙은 컴파일러와 리뷰 체크리스트로 확인하며 전용 AST 스크립트를 추가하지 않는다.
+`pnpm lint`의 Oxlint `no-restricted-imports` 규칙이 domain/application import 경계를 검사한다. `unicorn/filename-case`가 kebab-case 파일명을 검사한다. Aggregate 위치와 역할, public capability의 적절성은 리뷰로, Module 조립과 transaction은 실제 Integration/E2E로 검증한다. 소스 파일을 다시 파싱하는 레이어 검사 스크립트나 중복 Unit 검사를 만들지 않는다.
 
 ## 3. 요청 흐름
 
@@ -139,9 +139,9 @@ commit
 
 참조:
 
-- `todo/infrastructure/cache/todo-cache.keyspace.ts`
-- `weather/infrastructure/cache/weather-cache.keyspace.ts`
-- `notification/infrastructure/cache/notification-cache.keyspace.ts`
+- `modules/planning/infrastructure/cache/todos/todo-cache.keyspace.ts`
+- `modules/weather/infrastructure/cache/forecast/weather-cache.keyspace.ts`
+- `modules/notification/infrastructure/cache/delivery/notification-cache.keyspace.ts`
 
 ### 댓글 읽기 모델 결정
 
@@ -199,31 +199,41 @@ commit
 ## 11. 참조 구조
 
 ```text
-src/todo/
-├── domain/
-│   ├── entities/todo.aggregate.ts
-│   ├── entities/todo-item.entity.ts
-│   ├── value-objects/
-│   ├── services/              # 기존 순수 정책; 신규는 명확한 역할명 사용
-│   └── events/
-├── application/
-│   ├── use-cases/
-│   ├── queries/
-│   ├── ports/
-│   ├── events/
-│   └── types.ts
-├── infrastructure/
-│   ├── adapters/
-│   ├── persistence/
-│   └── cache/
-├── presentation/
-│   ├── dtos/
-│   └── todo.controller.ts
-├── todo.module.ts
-└── index.ts
+src/
+├── modules/<context>/
+│   ├── domain/{aggregates,entities,value-objects,policies,events}/<slice>/
+│   ├── application/{use-cases,ports,services,types}/<slice>/
+│   ├── infrastructure/{persistence,adapters,cache,jobs,subscribers}/<slice>/
+│   ├── presentation/{controllers,schemas,mappers}/<slice>/
+│   ├── <context>-<slice>.module.ts
+│   ├── <context>-<slice>-application.providers.ts
+│   └── <context>-<slice>.public.ts
+├── platform/                 # Nest·DB·HTTP·cache·job runtime
+└── shared/{domain,application}/
 ```
 
-새 구조를 추측하지 말고 이 디렉터리와 [api-conventions.md](./api-conventions.md)의 체크리스트를 함께 따른다.
+빈 역할 폴더는 생성하지 않는다. 현재 Context별 상태 모델과 Gateway 전환은 단계별로 진행 중이며
+[전환 기록](../../../docs/server/migration.md)에 완료 범위를 표시한다.
+
+Application은 Nest decorator와 ORM 없이 `new UseCase({ repository, unitOfWork, ... })`로
+생성한다. Composition Root의 Nest factory provider가 기존 DI token을 연결한다. Logger가 필요한
+Application에는 구조적 `ApplicationLogger` port로 기존 Nest Logger를 주입하며 wrapper를 추가하지 않는다.
+HTTP 상태와 envelope는 `platform/http`의 filter가 순수 `ApplicationException`을 변환한다.
+
+### 기본 도구로 검증하는 범위
+
+- [Oxlint no-restricted-imports](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-imports):
+  Domain/Application의 구현 의존, 공유 REST 계약의 서버 의존, vocabulary의 Zod 의존을 차단한다.
+  type import·re-export·문자열 literal dynamic import도 검사한다. 계산된 dynamic import는 대상이 아니다.
+- [Oxlint no-cycle](https://oxc.rs/docs/guide/usage/linter/rules/import/no-cycle):
+  깊이 제한 없이 runtime 순환 의존을 검사한다. type-only import는 기본적으로 제외한다.
+  [multi-file analysis](https://oxc.rs/docs/guide/usage/linter/multi-file-analysis)가 tsconfig 별칭을 해석한다.
+- [Oxlint filename-case](https://oxc.rs/docs/guide/usage/linter/rules/unicorn/filename-case):
+  서버·공유 계약 파일명에 kebab-case를 적용한다.
+- [Oxfmt](https://oxc.rs/docs/guide/usage/formatter/config):
+  들여쓰기 2칸, 공백, 줄바꿈, 따옴표와 import/package 정렬을 처리한다. 레이어 검증 도구는 아니다.
+
+이 검증은 기존 `pnpm lint`와 `pnpm format:check`에 포함한다. 별도 Action job이나 검사 패키지를 추가하지 않는다.
 
 ## 12. Todo 댓글 참조 흐름
 

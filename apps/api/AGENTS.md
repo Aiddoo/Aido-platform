@@ -1,8 +1,8 @@
 # Aido API
 
-> Version 2.1.0 · Updated 2026-10-01 · Owner: Aido Platform Team
+> Version 3.0.0 · Updated 2026-10-07 · Owner: Aido Platform Team
 
-NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높은 규칙만 담는다. 세부 설계는 링크된 문서를 읽고, 구조가 불명확하면 `src/todo`의 현재 코드를 기준으로 판단한다.
+NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높은 규칙만 담는다. 세부 설계는 링크된 문서를 읽고, 구조가 불명확하면 `src/modules/planning`의 현재 코드를 기준으로 판단한다.
 
 ## 작업 전 읽기
 
@@ -24,9 +24,11 @@ HTTP → presentation → endpoint UseCase → domain + application port
 ```
 
 - `domain`: 순수 TypeScript. Aggregate, Entity, VO, Policy, domain event를 소유한다.
-- `application`: endpoint 흐름과 consumer-owned port를 소유한다. Nest DI와 Nest Logger는 허용한다.
-- `infrastructure`: Prisma, Redis, BullMQ, 외부 SDK, port 구현을 소유한다.
+- `application`: endpoint 흐름과 consumer-owned port를 소유한다. 순수 TypeScript이며 의존성을 생성자 객체로 받는다.
+- `infrastructure`: Prisma, Redis, pg-boss, 외부 SDK, port 구현을 소유한다.
 - `presentation`: HTTP DTO 검증, 원시값 변환, Swagger, 응답 매핑을 소유한다.
+- Context는 `src/modules/<context>`, 공용 기술 구현은 `src/platform`, 순수 공통 코드는 `src/shared`에 둔다.
+- Composition Root의 `*-application.providers.ts`가 factory provider로 순수 Application 클래스를 조립한다.
 - Controller는 UseCase를 직접 주입한다. 전달 전용 Facade는 만들지 않는다.
 - Port는 DB 내부 호출마다 만들지 않는다. 외부 공급자, 캐시, 큐, 크로스 컨텍스트 capability처럼 교체·격리 가치가 있을 때 만든다.
 
@@ -49,13 +51,13 @@ HTTP → presentation → endpoint UseCase → domain + application port
 
 ## 명명
 
-- Aggregate: `domain/entities/<name>.aggregate.ts`
-- Entity: `domain/entities/<name>.entity.ts`
-- VO: `domain/value-objects/<name>.vo.ts`
-- UseCase: `application/use-cases/<verb-object>/<verb-object>.use-case.ts`
-- 읽기 UseCase: 기존 규칙에 따라 `application/queries/<verb-object>/<verb-object>.use-case.ts`
-- Port: `application/ports/<capability>.<role>.port.ts`
-- Adapter: `infrastructure/adapters/<purpose>.adapter.ts`
+- Aggregate: `domain/aggregates/<slice>/<name>.aggregate.ts`
+- Entity: `domain/entities/<slice>/<name>.entity.ts`
+- VO: `domain/value-objects/<slice>/<name>.vo.ts`
+- UseCase: `application/use-cases/<slice>/<verb-object>.use-case.ts`
+- 읽기 UseCase도 같은 위치와 `.use-case.ts` 접미사를 사용한다.
+- Port: `application/ports/<slice>/<capability>.<role>.port.ts`
+- Adapter: `infrastructure/adapters/<slice>/<purpose>.adapter.ts`
 - 역할명은 `Repository`, `Reader`, `Store`, `Client`, `Sender`, `Recorder`, `Publisher`, `Adapter`, `Policy`, `Resolver`, `Registry`, `JobHandler` 중 실제 책임을 표현한다.
 
 ## 완료 조건

@@ -14,17 +14,13 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import request from "supertest";
 import { z } from "zod";
 
-import { NUDGE_INTERACTION_CONFIG } from "#api/nudge/application/ports/nudge-interaction.config.port";
+import { NUDGE_INTERACTION_CONFIG } from "#api/modules/social/application/ports/nudges/nudge-interaction.config.port";
 import {
   NUDGE_NOTIFIER,
   type NudgeNotifierPort,
-} from "#api/nudge/application/ports/nudge-notifier.port";
-import {
-  decodeRecord,
-  encodeCreate,
-  encodePatch,
-} from "#api/shared/infrastructure/database/database-records";
-import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+} from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import {
   createE2eApp,

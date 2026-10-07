@@ -1,5 +1,3 @@
-import { Injectable } from "@nestjs/common";
-
 import {
   PAGINATION_DEFAULT,
   SORT_DEFAULT,
@@ -21,7 +19,7 @@ import type {
 /**
  * 페이지네이션 서비스
  */
-@Injectable()
+
 export class PaginationService {
   // ============================================
   // 오프셋 기반 페이지네이션

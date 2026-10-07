@@ -1,0 +1,149 @@
+import type { Mocked } from "vitest";
+import { vi } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
+
+import { type MutationLockPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+
+import { TodoCategory } from "../../../domain/aggregates/categories/todo-category.aggregate.js";
+import { type TodoCategoryCachePort } from "../../ports/categories/todo-category-cache.port.js";
+import { type TodoCategoryRepositoryPort } from "../../ports/categories/todo-category.repository.port.js";
+import { DeleteTodoCategory } from "./delete-todo-category.use-case.js";
+
+const category = (id = 1, userId = "u1") =>
+  TodoCategory.reconstitute({
+    id,
+    userId,
+    name: "c",
+    color: "#FFB3B3",
+    sortOrder: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+describe("DeleteTodoCategory", () => {
+  let useCase: DeleteTodoCategory;
+  let repo: Mocked<TodoCategoryRepositoryPort>;
+  let cache: Mocked<TodoCategoryCachePort>;
+  let mutationLock: Mocked<MutationLockPort>;
+  let uow: Mocked<UnitOfWorkPort>;
+
+  beforeEach(async () => {
+    const deleteTodoCategoryDependencies = mockDeep<
+      ConstructorParameters<typeof DeleteTodoCategory>[0]
+    >({ mutationLock: { acquire: vi.fn() } });
+    const unit = new DeleteTodoCategory(deleteTodoCategoryDependencies);
+    useCase = unit;
+    repo = deleteTodoCategoryDependencies.repository;
+    cache = deleteTodoCategoryDependencies.cache;
+    mutationLock = deleteTodoCategoryDependencies.mutationLock;
+    uow = deleteTodoCategoryDependencies.unitOfWork;
+
+    uow.run.mockImplementation((work) => work());
+    repo.findByIdAndUserId.mockResolvedValue(category());
+    repo.countByUserId.mockResolvedValue(2);
+    repo.getTodoCount.mockResolvedValue(0);
+  });
+
+  it("존재하지 않으면 TODO_CATEGORY_0851", async () => {
+    repo.findByIdAndUserId.mockResolvedValue(null);
+    await expect(useCase.execute({ userId: "u1", categoryId: 1 })).rejects.toBeInstanceOf(
+      ApplicationException,
+    );
+  });
+
+  it("마지막 카테고리면 TODO_CATEGORY_0854", async () => {
+    repo.countByUserId.mockResolvedValue(1);
+    await expect(useCase.execute({ userId: "u1", categoryId: 1 })).rejects.toBeInstanceOf(
+      ApplicationException,
+    );
+  });
+
+  it("할 일이 있는데 이동 대상 없으면 TODO_CATEGORY_0855", async () => {
+    repo.getTodoCount.mockResolvedValue(3);
+    await expect(useCase.execute({ userId: "u1", categoryId: 1 })).rejects.toBeInstanceOf(
+      ApplicationException,
+    );
+  });
+
+  it("이동 대상이 자신과 같으면 SYS_0002", async () => {
+    repo.getTodoCount.mockResolvedValue(3);
+    await expect(
+      useCase.execute({ userId: "u1", categoryId: 1, moveToCategoryId: 1 }),
+    ).rejects.toBeInstanceOf(ApplicationException);
+  });
+
+  it("이동 대상이 없으면 TODO_CATEGORY_0851", async () => {
+    repo.getTodoCount.mockResolvedValue(3);
+    repo.findByIdAndUserId.mockResolvedValueOnce(category()).mockResolvedValueOnce(null);
+    await expect(
+      useCase.execute({ userId: "u1", categoryId: 1, moveToCategoryId: 2 }),
+    ).rejects.toBeInstanceOf(ApplicationException);
+  });
+
+  it("할 일 이동 후 삭제 + 캐시 무효화", async () => {
+    repo.getTodoCount.mockResolvedValue(3);
+    repo.findByIdAndUserId.mockResolvedValueOnce(category(1)).mockResolvedValueOnce(category(2));
+
+    await useCase.execute({ userId: "u1", categoryId: 1, moveToCategoryId: 2 });
+
+    expect(repo.moveTodosToCategory).toHaveBeenCalledWith(1, 2);
+    expect(repo.delete).toHaveBeenCalledWith(1);
+    expect(cache.invalidate).toHaveBeenCalledWith("u1");
+  });
+
+  it("할 일 없으면 바로 삭제", async () => {
+    await useCase.execute({ userId: "u1", categoryId: 1 });
+    expect(repo.moveTodosToCategory).not.toHaveBeenCalled();
+    expect(repo.delete).toHaveBeenCalledWith(1);
+  });
+
+  it("사용자 카테고리 키를 UoW 안에서 첫 구조 읽기 전에 잠그고 커밋 후 캐시를 무효화한다", async () => {
+    // Given - 삭제 transaction 경계와 구조 읽기 순서 기록
+    const events: string[] = [];
+    uow.run.mockImplementation(async (work: () => unknown) => {
+      events.push("uow:start");
+      const result = await work();
+      events.push("uow:commit");
+      return result;
+    });
+    mutationLock.acquire.mockImplementation(async () => {
+      events.push("lock");
+    });
+    repo.findByIdAndUserId.mockImplementation(async () => {
+      events.push("category-read");
+      return category();
+    });
+    repo.countByUserId.mockImplementation(async () => {
+      events.push("count");
+      return 2;
+    });
+    repo.getTodoCount.mockImplementation(async () => {
+      events.push("todo-count");
+      return 0;
+    });
+    repo.delete.mockImplementation(async () => {
+      events.push("delete");
+    });
+    cache.invalidate.mockImplementation(async () => {
+      events.push("cache");
+    });
+
+    // When
+    await useCase.execute({ userId: "u1", categoryId: 1 });
+
+    // Then
+    expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:todo-category:u1"]);
+    expect(events).toEqual([
+      "uow:start",
+      "lock",
+      "category-read",
+      "count",
+      "todo-count",
+      "delete",
+      "uow:commit",
+      "cache",
+    ]);
+  });
+});

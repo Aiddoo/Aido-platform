@@ -15,42 +15,43 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import {
   AIR_QUALITY_PROVIDER,
   type AirQualityProvider,
-} from "#api/weather/application/ports/air-quality-provider.port";
+} from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import {
   LIFESTYLE_INDEX_PROVIDER,
   type LifestyleIndexProvider,
-} from "#api/weather/application/ports/lifestyle-index-provider.port";
+} from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import {
   SUN_TIME_PROVIDER,
   type SunTimeProvider,
-} from "#api/weather/application/ports/sun-time-provider.port";
-import { WEATHER_CACHE } from "#api/weather/application/ports/weather-cache.port";
-import { WEATHER_LOCATION_REPOSITORY } from "#api/weather/application/ports/weather-location.repository.port";
+} from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
+import { WEATHER_CACHE } from "#api/modules/weather/application/ports/forecast/weather-cache.port";
+import { WEATHER_LOCATION_REPOSITORY } from "#api/modules/weather/application/ports/forecast/weather-location.repository.port";
 import {
   WEATHER_PROVIDER,
   type WeatherProvider,
-} from "#api/weather/application/ports/weather-provider.port";
-import { GetWeatherConditionsUseCase } from "#api/weather/application/queries/get-weather-conditions/get-weather-conditions.use-case";
-import { GetWeatherForecastUseCase } from "#api/weather/application/queries/get-weather-forecast/get-weather-forecast.use-case";
-import { WeatherForecastReader } from "#api/weather/application/services/weather-forecast.reader";
-import { UpsertLocationUseCase } from "#api/weather/application/use-cases/upsert-location/upsert-location.use-case";
-import { WEATHER_PROVIDERS } from "#api/weather/application/weather.providers";
-import { WeatherCacheAdapter } from "#api/weather/infrastructure/adapters/weather-cache.adapter";
-import { PrismaWeatherLocationRepository } from "#api/weather/infrastructure/persistence/prisma-weather-location.repository";
+} from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import { GetWeatherConditions } from "#api/modules/weather/application/use-cases/forecast/get-weather-conditions.use-case";
+import { GetWeatherForecast } from "#api/modules/weather/application/use-cases/forecast/get-weather-forecast.use-case";
+import { UpsertLocation } from "#api/modules/weather/application/use-cases/forecast/upsert-location.use-case";
+import { WeatherCacheAdapter } from "#api/modules/weather/infrastructure/adapters/forecast/weather-cache.adapter";
+import { PrismaWeatherLocationRepository } from "#api/modules/weather/infrastructure/persistence/forecast/prisma-weather-location.repository";
+import { WEATHER_PROVIDERS } from "#api/modules/weather/weather-forecast.providers";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { UserLocationBuilder } from "#test/builders/index";
 import { createMockDatabaseContext, databaseFixture } from "#test/mocks/database.mock";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import { weatherForecastReaderProvider } from "../../src/modules/weather/weather-forecast-application.providers.js";
+
 describe("Weather 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
-  let upsertLocationUseCase: UpsertLocationUseCase;
-  let getWeatherForecastUseCase: GetWeatherForecastUseCase;
-  let getWeatherConditionsUseCase: GetWeatherConditionsUseCase;
+  let upsertLocationUseCase: UpsertLocation;
+  let getWeatherForecastUseCase: GetWeatherForecast;
+  let getWeatherConditionsUseCase: GetWeatherConditions;
 
   // Mock 데이터베이스 서비스
   const nativeContext = createMockDatabaseContext();
@@ -110,7 +111,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
     // 클린아키 수직 배선: Facade → use-case → 리더/어댑터(mock 인프라)
     module = await Test.createTestingModule({
       providers: [
-        WeatherForecastReader,
+        weatherForecastReaderProvider,
         ...WEATHER_PROVIDERS,
         {
           provide: WEATHER_LOCATION_REPOSITORY,
@@ -135,9 +136,9 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
     }).compile();
 
     await module.init();
-    upsertLocationUseCase = module.get(UpsertLocationUseCase);
-    getWeatherForecastUseCase = module.get(GetWeatherForecastUseCase);
-    getWeatherConditionsUseCase = module.get(GetWeatherConditionsUseCase);
+    upsertLocationUseCase = module.get(UpsertLocation);
+    getWeatherForecastUseCase = module.get(GetWeatherForecast);
+    getWeatherConditionsUseCase = module.get(GetWeatherConditions);
   });
 
   afterAll(async () => {

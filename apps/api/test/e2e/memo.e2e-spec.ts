@@ -20,7 +20,7 @@ import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
  */
 import request from "supertest";
 
-import { encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import { encodeCreate } from "#api/platform/database/database-records";
 
 import {
   createE2eApp,

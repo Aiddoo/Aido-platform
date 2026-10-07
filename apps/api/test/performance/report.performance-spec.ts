@@ -6,13 +6,13 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import postgres from "@prisma/orm-postgres/runtime";
 import { Pool } from "pg";
 
-import { assembleAggregatedData } from "#api/ai-report/domain/services/report-aggregation";
-import type { AggregateParams } from "#api/ai-report/domain/types";
-import { PrismaTodoStatsReader } from "#api/ai-report/infrastructure/persistence/prisma-todo-stats.reader";
-import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
-import { databaseDate } from "#api/shared/infrastructure/database/database-values";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { PostgresPool } from "#api/shared/infrastructure/database/postgres-pool";
+import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/services/reports/report-aggregation";
+import type { AggregateParams } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
+import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { databaseDate } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { PostgresPool } from "#api/platform/database/postgres-pool";
 import { createDatabaseContext } from "#test/setup/database-context";
 import { TestDatabase } from "#test/setup/test-database";
 

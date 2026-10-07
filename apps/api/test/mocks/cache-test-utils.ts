@@ -1,13 +1,13 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { CachedUserProfile } from "#api/shared/infrastructure/cache/cache.service";
+import type { CachedUserProfile } from "#api/platform/cache/cache.service";
 import {
   type CacheStats,
   type ICacheService,
   parseTtl,
   type TtlValue,
-} from "#api/shared/infrastructure/cache/interfaces/cache.interface";
+} from "#api/platform/cache/interfaces/cache.interface";
 
 /**
  * 테스트용 Mock 캐시 어댑터

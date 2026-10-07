@@ -2,11 +2,11 @@ import { featureDiscoveryResponseSchema } from "@aido/api";
 import request from "supertest";
 import { vi } from "vitest";
 
-import { GetFeatureDiscoveryUseCase } from "#api/app-config/application/queries/get-feature-discovery/get-feature-discovery.use-case";
+import { GetFeatureDiscovery } from "#api/modules/app-config/application/use-cases/discovery/get-feature-discovery.use-case";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
-describe("Feature discovery configuration (e2e)", () => {
+describe("기능 발견 설정 (E2E)", () => {
   let ctx: E2eTestContext;
 
   beforeAll(async () => {
@@ -21,7 +21,7 @@ describe("Feature discovery configuration (e2e)", () => {
     await ctx.reset();
   });
 
-  it("returns the raw fail-closed config while ordinary endpoints remain wrapped", async () => {
+  it("비활성 기능 설정은 raw로, 일반 endpoint 응답은 기존 envelope로 반환한다", async () => {
     // When
     const featureDiscovery = await request(ctx.app.getHttpServer())
       .get("/v1/app-config/feature-discovery")
@@ -40,9 +40,9 @@ describe("Feature discovery configuration (e2e)", () => {
     expect(root.body.timestamp).toEqual(expect.any(Number));
   });
 
-  it("returns an enabled wire response that the mobile Zod contract parses", async () => {
+  it("모바일 Zod 계약으로 검증 가능한 활성 응답을 반환한다", async () => {
     // Given - use the real HTTP/interceptor path with an enabled rollout result
-    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscoveryUseCase);
+    const getFeatureDiscoveryUseCase = ctx.module.get(GetFeatureDiscovery);
     const response = {
       enabled: true as const,
       campaignId: "feature-discovery-2026-08",

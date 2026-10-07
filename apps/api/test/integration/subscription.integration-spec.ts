@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 /**
- * HandleWebhookEventUseCase 통합 테스트
+ * HandleWebhookEvent 통합 테스트
  *
  * @description
  * HandleWebhookEventUseCase가 PrismaSubscriptionRepository, 캐시·알림 어댑터,
@@ -23,22 +23,25 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { AdminEventNotifier, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
-import { NotificationQueueService } from "#api/notification/queue";
+import { SUBSCRIPTION_CACHE } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
+import { SUBSCRIPTION_EVENT_NOTIFIER } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
+import { SUBSCRIPTION_WEBHOOK_LOCK } from "#api/modules/billing/application/ports/subscriptions/subscription-webhook-lock.port";
+import { SUBSCRIPTION_REPOSITORY } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
+import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
+import { SubscriptionCacheAdapter } from "#api/modules/billing/infrastructure/adapters/subscriptions/subscription-cache.adapter";
+import { SubscriptionEventNotifierAdapter } from "#api/modules/billing/infrastructure/adapters/subscriptions/subscription-event-notifier.adapter";
+import { SubscriptionWebhookLockAdapter } from "#api/modules/billing/infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter";
+import { PrismaSubscriptionRepository } from "#api/modules/billing/infrastructure/persistence/subscriptions/prisma-subscription.repository";
+import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
+import {
+  AdminEventNotifier,
+  PAYMENT_NOTIFIER,
+} from "#api/modules/operations/operations-notifications.public";
+import { CacheService } from "#api/platform/cache/cache.service";
+import { varchar } from "#api/platform/database/database-values";
+import { LOCK_PROVIDER } from "#api/platform/lock/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
-import { varchar } from "#api/shared/infrastructure/database/database-values";
-import { LOCK_PROVIDER } from "#api/shared/infrastructure/lock/index";
-import { SUBSCRIPTION_CACHE } from "#api/subscription/application/ports/subscription-cache.port";
-import { SUBSCRIPTION_EVENT_NOTIFIER } from "#api/subscription/application/ports/subscription-event-notifier.port";
-import { SUBSCRIPTION_WEBHOOK_LOCK } from "#api/subscription/application/ports/subscription-webhook-lock.port";
-import { SUBSCRIPTION_REPOSITORY } from "#api/subscription/application/ports/subscription.repository.port";
-import { HandleWebhookEventUseCase } from "#api/subscription/application/use-cases/handle-webhook-event/handle-webhook-event.use-case";
-import { SubscriptionCacheAdapter } from "#api/subscription/infrastructure/adapters/subscription-cache.adapter";
-import { SubscriptionEventNotifierAdapter } from "#api/subscription/infrastructure/adapters/subscription-event-notifier.adapter";
-import { SubscriptionWebhookLockAdapter } from "#api/subscription/infrastructure/adapters/subscription-webhook-lock.adapter";
-import { PrismaSubscriptionRepository } from "#api/subscription/infrastructure/persistence/prisma-subscription.repository";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
 import {
@@ -50,9 +53,11 @@ import {
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
+import { handleWebhookEventProvider } from "../../src/modules/billing/billing-subscriptions-application.providers.js";
+
+describe("HandleWebhookEvent 통합 테스트 (Mock DB)", () => {
   let module: TestingModule;
-  let useCase: HandleWebhookEventUseCase;
+  let useCase: HandleWebhookEvent;
 
   // Mock 데이터베이스 모델
   const nativeContext = createMockDatabaseContext();
@@ -107,7 +112,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        HandleWebhookEventUseCase,
+        handleWebhookEventProvider,
         {
           provide: SUBSCRIPTION_REPOSITORY,
           useClass: PrismaSubscriptionRepository,
@@ -153,7 +158,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
       ],
     }).compile();
 
-    useCase = module.get<HandleWebhookEventUseCase>(HandleWebhookEventUseCase);
+    useCase = module.get<HandleWebhookEvent>(HandleWebhookEvent);
   });
 
   afterAll(async () => {

@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 
-import type { MemoRepositoryPort } from "#api/memo/application/ports/memo.repository.port";
-import type { TodoCreatorPort } from "#api/memo/application/ports/todo-creator.port";
+import type { MemoRepositoryPort } from "#api/modules/notes/application/ports/memos/memo.repository.port";
+import type { TodoCreatorPort } from "#api/modules/notes/application/ports/memos/todo-creator.port";
 
 /**
  * MEMO_REPOSITORY 포트 mock 팩토리

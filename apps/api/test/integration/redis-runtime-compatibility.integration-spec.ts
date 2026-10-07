@@ -4,17 +4,17 @@ import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import { GenericContainer, type StartedTestContainer, Wait } from "testcontainers";
 
-import type { JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
-import { RedisCacheAdapter } from "#api/shared/infrastructure/cache/adapters/redis-cache.adapter";
+import { RedisCacheAdapter } from "#api/platform/cache/adapters/redis-cache.adapter";
 import {
   bullMqClientFactoryProvider,
   BullMqJobRuntimeAdapter,
-} from "#api/shared/infrastructure/jobs/bullmq-job-runtime.adapter";
+} from "#api/platform/jobs/bullmq-job-runtime.adapter";
 import {
   buildBullRedisOptions,
   buildCommandRedisOptions,
   type RedisConnectionSettings,
-} from "#api/shared/infrastructure/redis/redis-client.factory";
+} from "#api/platform/redis/redis-client.factory";
+import type { JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
 
 const REDIS_PORT = 6379;
 const CONNECTION_TIMEOUT_MS = 10_000;

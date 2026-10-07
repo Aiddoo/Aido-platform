@@ -2,7 +2,7 @@ import type {
   AdminNotification,
   AdminNotifier,
   AdminNotifyResult,
-} from "#api/admin-notification/index";
+} from "#api/modules/operations/operations-notifications.public";
 
 /**
  * 테스트용 FakeAdminNotifier

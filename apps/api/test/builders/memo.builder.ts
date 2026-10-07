@@ -1,4 +1,4 @@
-import type { Memo } from "#api/shared/infrastructure/database/database.types";
+import type { Memo } from "#api/platform/database/database.types";
 
 export class MemoBuilder {
   private data: Memo;
