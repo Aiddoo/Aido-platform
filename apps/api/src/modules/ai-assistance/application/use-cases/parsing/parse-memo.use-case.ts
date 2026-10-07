@@ -2,6 +2,7 @@ import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/api";
 import { parsedMemoDataSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { sumBy } from "es-toolkit";
+import { ZodError } from "zod";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -93,9 +94,13 @@ export class ParseMemo {
         maxOutputTokens: 800,
       });
 
+      const data = parsedMemoDataSchema.parse({
+        todos: result.output.todos.slice(0, 5).map((todo) => ({
+          ...todo,
+          categoryId: categoryIds.has(todo.categoryId) ? todo.categoryId : categoryId,
+        })),
+      });
       const processingTimeMs = Date.now() - startTime;
-      const todoCount = result.output.todos.length;
-      const itemCount = sumBy(result.output.todos, (todo) => todo.items.length);
 
       this.#dependencies.logger.log({
         event: AiParsingLogEvent.MEMO_COMPLETED,
@@ -103,15 +108,8 @@ export class ParseMemo {
         model: result.model,
         processingTimeMs,
         tokenUsage: result.usage,
-        todoCount,
-        itemCount,
-      });
-
-      const data = parsedMemoDataSchema.parse({
-        todos: result.output.todos.slice(0, 5).map((todo) => ({
-          ...todo,
-          categoryId: categoryIds.has(todo.categoryId) ? todo.categoryId : categoryId,
-        })),
+        todoCount: data.todos.length,
+        itemCount: sumBy(data.todos, (todo) => todo.items.length),
       });
 
       return {
@@ -123,6 +121,9 @@ export class ParseMemo {
         },
       };
     } catch (error) {
+      if (error instanceof ApplicationException && error.errorCode === ErrorCode.AI_1310) {
+        throw error;
+      }
       if (error instanceof AiProviderCallError) {
         this.#dependencies.logger.error({
           event: AiParsingLogEvent.PROVIDER_FAILED,
@@ -136,6 +137,9 @@ export class ParseMemo {
         event: AiParsingLogEvent.OUTPUT_INVALID,
         userId,
         errorCode: ErrorCode.AI_1302,
+        ...(error instanceof ZodError && {
+          validationIssues: error.issues.map(({ path, code }) => ({ path, code })),
+        }),
       });
       throw new ApplicationException(ErrorCode.AI_1302, {
         details: error instanceof Error ? error.message : "Unknown error",

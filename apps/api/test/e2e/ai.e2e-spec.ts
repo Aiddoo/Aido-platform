@@ -950,6 +950,42 @@ describe("AI E2E", () => {
     });
   });
 
+  it.each([
+    { itemCount: 5, status: 200, used: 1 },
+    { itemCount: 6, status: 422, used: 0 },
+  ])(
+    "메모 하위 항목 $itemCount개는 HTTP $status와 사용량 $used회를 반환한다",
+    async ({ itemCount, status, used }) => {
+      // Given
+      const memo = createParsedMemoResponse();
+      memo.todos[0]!.items = Array.from({ length: itemCount }, (_, index) => ({
+        title: `발표 준비 단계 ${index + 1}`,
+      }));
+      fakeAiProvider.setRawResponse(memo);
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/ai/parse-memo")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "발표 준비", categoryId: 1 });
+      const usage = await request(ctx.app.getHttpServer())
+        .get("/v1/ai/usage")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      // Then
+      expect(response.status).toBe(status);
+      expect(usage.status).toBe(200);
+      expect(usage.body.data.data.used).toBe(used);
+      expect(fakeAiProvider.getCallCount()).toBe(1);
+      if (status === 200) {
+        expect(response.body.data.success).toBe(true);
+        expect(response.body.data.data.todos[0].items).toEqual(memo.todos[0]!.items);
+      } else {
+        expect(response.body.error.code).toBe("AI_1302");
+      }
+    },
+  );
+
   it.each(["ko", "en"] as const)(
     "%s parsing은 locale prompt를 선택하고 요청당 quota 한 회만 쓴다",
     async (locale) => {
