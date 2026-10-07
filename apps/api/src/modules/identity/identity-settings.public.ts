@@ -1,3 +1,8 @@
+export {
+  USER_PREFERENCE_READER,
+  type UserPreferenceReaderPort,
+} from "./application/ports/settings/user-preference.reader.port.js";
+export type { PreferenceSnapshot } from "./application/read-models/settings/preference.read-model.js";
 export type { UserConsentRecordWithId } from "./application/ports/settings/user-consent.repository.port.js";
 export type { UserPreferenceRecordWithId } from "./application/ports/settings/user-preference.repository.port.js";
 export {

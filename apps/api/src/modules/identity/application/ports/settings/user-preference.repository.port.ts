@@ -1,5 +1,7 @@
-import type { UserPreferenceRecord } from "../../../domain/records/settings/user-preference.record.js";
-import type { TimeFormatValue } from "../../../domain/services/settings/preference-view.js";
+import type {
+  TimeFormatValue,
+  UserPreferenceRecord,
+} from "../../../domain/records/settings/user-preference.record.js";
 import type { StreakState } from "../../../domain/value-objects/settings/streak.vo.js";
 
 export type { UserPreferenceRecord };
@@ -32,7 +34,7 @@ export interface PreferenceWriteInput {
  */
 export interface UserPreferenceRepositoryPort {
   findByUserId(userId: string): Promise<UserPreferenceRecord | null>;
-  findByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]>;
+  findByUserIds(userIds: readonly string[]): Promise<UserPreferenceRecordWithId[]>;
   create(userId: string, data?: PreferenceWriteInput): Promise<UserPreferenceRecord>;
   upsert(userId: string, data: PreferenceWriteInput): Promise<UserPreferenceRecord>;
   upsertTimezone(userId: string, timezone: string): Promise<void>;
@@ -44,7 +46,11 @@ export interface UserPreferenceRepositoryPort {
    */
   refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number>;
   upsertLocale(userId: string, locale: string): Promise<void>;
-  updateStreak(userId: string, state: StreakState): Promise<void>;
+  updateStreakIfUnchanged(
+    userId: string,
+    expected: StreakState,
+    next: StreakState,
+  ): Promise<boolean>;
 }
 
 export const USER_PREFERENCE_REPOSITORY = Symbol("USER_PREFERENCE_REPOSITORY");

@@ -115,4 +115,29 @@ describe("Streak", () => {
       ).toBe(false);
     });
   });
+  it("입력·조회·계획의 Date 변경이 완료 상태와 연속 판정을 바꾸지 않는다", () => {
+    // Given
+    const suppliedDate = new Date(YESTERDAY);
+    const streak = Streak.of({
+      currentStreak: 2,
+      longestStreak: 2,
+      lastCompletedDate: suppliedDate,
+    });
+    const completedDate = new Date(TODAY);
+
+    // When
+    suppliedDate.setUTCDate(1);
+    streak.lastCompletedDate?.setUTCDate(1);
+    const plan = streak.planCompletion(completedDate);
+    completedDate.setUTCDate(1);
+
+    // Then
+    expect(streak.isCompletedOn(YESTERDAY)).toBe(true);
+    expect(plan?.nextState).toEqual({
+      currentStreak: 3,
+      longestStreak: 3,
+      lastCompletedDate: TODAY,
+    });
+    expect(plan?.reachedStreak3).toBe(true);
+  });
 });

@@ -6,11 +6,11 @@ import type {
 
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import type { UserConsentRecord } from "../../records/settings/user-consent.record.js";
+import type { UserConsentRecord } from "../../../domain/records/settings/user-consent.record.js";
 
 /** 약관 동의 응답 뷰. 기록이 없으면 전부 null(기존 사용자 호환). */
 export function buildConsentView(consent: UserConsentRecord | null): ConsentResponse {
-  if (!consent) {
+  if (consent === null) {
     return {
       termsAgreedAt: null,
       privacyAgreedAt: null,

@@ -1,12 +1,10 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
+import { uniq } from "es-toolkit";
 
-import type { PreferenceSnapshot } from "#api/modules/identity/domain/services/settings/preference-view";
 import {
-  UserSettingsCacheKey,
-  USER_SETTINGS_CACHE_TTL_MS,
-} from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
-import { CacheService } from "#api/platform/cache/cache.service";
+  USER_PREFERENCE_READER,
+  type UserPreferenceReaderPort,
+} from "#api/modules/identity/identity-settings.public";
 import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
 
 import { type NotificationRecipientLocaleReaderPort } from "../../../application/ports/delivery/notification-recipient-locale.reader.port.js";
@@ -24,15 +22,12 @@ export class CachedNotificationRecipientPreferenceAdapter
   constructor(
     @Inject(USER_NOTIFICATION_SETTINGS)
     private readonly userSettings: UserNotificationSettingsPort,
-    private readonly cacheService: CacheService,
+    @Inject(USER_PREFERENCE_READER)
+    private readonly preferenceReader: UserPreferenceReaderPort,
   ) {}
 
   async getPreference(userId: string): Promise<NotificationDeliveryPreference> {
-    const preference = await this.cacheService.wrap(
-      UserSettingsCacheKey.preference(userId),
-      () => this.#loadPreference(userId),
-      USER_SETTINGS_CACHE_TTL_MS,
-    );
+    const preference = await this.preferenceReader.read(userId);
     return {
       ...preference,
       locale: preference.locale ?? DEFAULT_LOCALE,
@@ -45,53 +40,12 @@ export class CachedNotificationRecipientPreferenceAdapter
   }
 
   async getLocales(userIds: readonly string[]): Promise<ReadonlyMap<string, SupportedLocale>> {
-    const uniqueUserIds = [...new Set(userIds)];
+    const uniqueUserIds = uniq(userIds);
     if (uniqueUserIds.length === 0) return new Map();
     const preferences = await this.userSettings.getPreferenceRecordsByUserIds(uniqueUserIds);
     const locales = new Map(
       preferences.map((preference) => [preference.userId, toSupportedLocale(preference.locale)]),
     );
     return new Map(uniqueUserIds.map((userId) => [userId, locales.get(userId) ?? DEFAULT_LOCALE]));
-  }
-
-  async #loadPreference(userId: string): Promise<PreferenceSnapshot> {
-    const preference = await this.userSettings.getPreferenceRecord(userId);
-    if (preference) {
-      return {
-        pushEnabled: preference.pushEnabled,
-        nightPushEnabled: preference.nightPushEnabled,
-        timezone: preference.timezone,
-        locale: preference.locale,
-        morningReminderHour: preference.morningReminderHour,
-        morningReminderMinute: preference.morningReminderMinute,
-        eveningReminderHour: preference.eveningReminderHour,
-        eveningReminderMinute: preference.eveningReminderMinute,
-        timeFormat: preference.timeFormat,
-        weatherMorningEnabled: preference.weatherMorningEnabled,
-        weatherMorningHour: preference.weatherMorningHour,
-        weatherMorningMinute: preference.weatherMorningMinute,
-        weatherEveningEnabled: preference.weatherEveningEnabled,
-        weatherEveningHour: preference.weatherEveningHour,
-        weatherEveningMinute: preference.weatherEveningMinute,
-      };
-    }
-
-    return {
-      pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
-      nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
-      timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
-      locale: DEFAULT_LOCALE,
-      morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
-      morningReminderMinute: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE,
-      eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
-      eveningReminderMinute: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE,
-      timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
-      weatherMorningEnabled: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
-      weatherMorningHour: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_HOUR,
-      weatherMorningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_MINUTE,
-      weatherEveningEnabled: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_ENABLED,
-      weatherEveningHour: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_HOUR,
-      weatherEveningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
-    };
   }
 }

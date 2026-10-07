@@ -4,13 +4,14 @@ import {
 } from "../../ports/settings/user-consent.repository.port.js";
 import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
 
-/**
- * 회원가입 시 기본 설정 시딩 — 약관 동의 + 푸시 설정 기본값.
- * 호출측(auth 프로비저닝)이 연 CLS 트랜잭션에 참여한다.
- */
+export interface SeedUserSettingsInput {
+  readonly userId: string;
+  readonly consent: ConsentSeedInput;
+}
+
 interface SeedUserSettingsDependencies {
-  readonly consentRepository: UserConsentRepositoryPort;
-  readonly preferenceRepository: UserPreferenceRepositoryPort;
+  readonly consentRepository: Pick<UserConsentRepositoryPort, "create">;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "create">;
 }
 
 export class SeedUserSettings {
@@ -20,9 +21,10 @@ export class SeedUserSettings {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, consent: ConsentSeedInput): Promise<void> {
-    await this.#dependencies.consentRepository.create(userId, consent);
-    await this.#dependencies.preferenceRepository.create(userId, {
+  async execute(input: SeedUserSettingsInput): Promise<void> {
+    // Auth 프로비저닝이 연 CLS transaction에 참여한다.
+    await this.#dependencies.consentRepository.create(input.userId, input.consent);
+    await this.#dependencies.preferenceRepository.create(input.userId, {
       pushEnabled: true,
       nightPushEnabled: true,
     });

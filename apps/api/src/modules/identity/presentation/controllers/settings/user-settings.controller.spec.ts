@@ -73,30 +73,8 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
       const result = await controller.getPreference(mockUser);
 
       // Then
-      expect(getPreferenceUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
+      expect(getPreferenceUseCase.execute).toHaveBeenCalledWith({ userId: mockUser.userId });
       expect(result).toEqual(expectedResult);
-    });
-
-    it("설정이 없으면 기본값을 반환해야 한다", async () => {
-      // Given
-      const defaultResult = {
-        pushEnabled: false,
-        nightPushEnabled: false,
-        timezone: "UTC",
-        morningReminderHour: 8,
-        morningReminderMinute: 0,
-        eveningReminderHour: 18,
-        eveningReminderMinute: 0,
-        timeFormat: "TWELVE_HOUR" as const,
-        ...WEATHER_DEFAULTS,
-      };
-      getPreferenceUseCase.execute.mockResolvedValue(defaultResult);
-
-      // When
-      const result = await controller.getPreference(mockUser);
-
-      // Then
-      expect(result).toEqual(defaultResult);
     });
   });
 
@@ -121,31 +99,10 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
       const result = await controller.updatePreference(mockUser, dto);
 
       // Then
-      expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
-      expect(result).toEqual(expectedResult);
-    });
-
-    it("일부 설정만 업데이트할 수 있어야 한다", async () => {
-      // Given
-      const dto = { pushEnabled: true };
-      const expectedResult = {
-        pushEnabled: true,
-        nightPushEnabled: false,
-        timezone: "UTC",
-        morningReminderHour: 8,
-        morningReminderMinute: 0,
-        eveningReminderHour: 18,
-        eveningReminderMinute: 0,
-        timeFormat: "TWELVE_HOUR" as const,
-        ...WEATHER_DEFAULTS,
-      };
-      updatePreferenceUseCase.execute.mockResolvedValue(expectedResult);
-
-      // When
-      const result = await controller.updatePreference(mockUser, dto);
-
-      // Then
-      expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
+      expect(updatePreferenceUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        ...dto,
+      });
       expect(result).toEqual(expectedResult);
     });
   });
@@ -166,26 +123,8 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
       const result = await controller.getConsent(mockUser);
 
       // Then
-      expect(getConsentUseCase.execute).toHaveBeenCalledWith(mockUser.userId);
+      expect(getConsentUseCase.execute).toHaveBeenCalledWith({ userId: mockUser.userId });
       expect(result).toEqual(expectedResult);
-    });
-
-    it("동의 기록이 없으면 기본값을 반환해야 한다", async () => {
-      // Given
-      const defaultResult = {
-        termsAgreedAt: null,
-        privacyAgreedAt: null,
-        agreedTermsVersion: null,
-        marketingAgreedAt: null,
-        marketingPushAgreedAt: null,
-      };
-      getConsentUseCase.execute.mockResolvedValue(defaultResult);
-
-      // When
-      const result = await controller.getConsent(mockUser);
-
-      // Then
-      expect(result).toEqual(defaultResult);
     });
   });
 
@@ -202,7 +141,10 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
       const result = await controller.updateMarketingConsent(mockUser, dto);
 
       // Then
-      expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(mockUser.userId, true);
+      expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        agreed: true,
+      });
       expect(result).toEqual(expectedResult);
     });
 
@@ -216,7 +158,10 @@ describe("SettingsController — 사용자 설정 컨트롤러", () => {
       const result = await controller.updateMarketingConsent(mockUser, dto);
 
       // Then
-      expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith(mockUser.userId, false);
+      expect(updateMarketingConsentUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        agreed: false,
+      });
       expect(result).toEqual(expectedResult);
     });
   });

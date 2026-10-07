@@ -1,149 +1,69 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { createUserSettingsCacheMock } from "#test/mocks/ports/user-settings-cache.mock";
-import { createUserPreferenceRepositoryMock } from "#test/mocks/ports/user-settings.mock";
+import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import type { UserPreferenceRecord } from "../../../domain/records/settings/user-preference.record.js";
-import type { PreferenceSnapshot } from "../../../domain/services/settings/preference-view.js";
-import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
-import { type UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
 import { GetPreference } from "./get-preference.use-case.js";
 
-const userId = "user-1";
-
-const record: UserPreferenceRecord = {
-  pushEnabled: true,
-  nightPushEnabled: true,
-  timezone: "Asia/Seoul",
-  locale: "ko",
-  morningReminderHour: 7,
-  morningReminderMinute: 30,
-  eveningReminderHour: 18,
-  eveningReminderMinute: 15,
-  timeFormat: "TWENTY_FOUR_HOUR",
-  weatherMorningEnabled: true,
-  weatherMorningHour: 7,
-  weatherMorningMinute: 0,
-  weatherEveningEnabled: true,
-  weatherEveningHour: 17,
-  weatherEveningMinute: 30,
-  currentStreak: 0,
-  longestStreak: 0,
-  lastCompletedDate: null,
-};
-
-describe("GetPreference", () => {
-  let useCase: GetPreference;
-  let repo: Mocked<UserPreferenceRepositoryPort>;
-  let entitlement: Mocked<EntitlementService>;
-  let cache: Mocked<UserSettingsCachePort>;
-
-  beforeEach(async () => {
-    const getPreferenceDependencies = mockDeep<ConstructorParameters<typeof GetPreference>[0]>({
-      preferenceRepository: createUserPreferenceRepositoryMock(),
-      cache: createUserSettingsCacheMock(),
+describe("GetPreference — 원본 캐시와 요청 시점의 프리미엄 게이팅", () => {
+  it("같은 원본 캐시에서도 구독 변경을 즉시 반영하고 저장된 시간·다른 필드를 보존한다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({
+      preference: {
+        morningReminderHour: 7,
+        morningReminderMinute: 30,
+        eveningReminderHour: 20,
+        eveningReminderMinute: 45,
+        timezone: "Asia/Tokyo",
+        locale: "ja",
+        timeFormat: "TWENTY_FOUR_HOUR",
+      },
     });
-    const unit = new GetPreference(getPreferenceDependencies);
-    useCase = unit;
-    repo = getPreferenceDependencies.preferenceRepository;
-    entitlement = getPreferenceDependencies.entitlementService;
-    cache = getPreferenceDependencies.cache;
-    // 캐시 미스: 팩토리를 실행해 원본을 로드한다(캐시 스루).
-    cache.wrapUserPreference.mockImplementation((_userId, factory) => factory());
-  });
-
-  it("캐시 스루로 원본을 읽고, 프리미엄이면 저장된 리마인더 시간을 그대로 반환한다", async () => {
-    // Given: 저장된 리마인더 07:30 / 18:15 + 프리미엄 사용자
-    repo.findByUserId.mockResolvedValue(record);
-    entitlement.hasPremiumAccess.mockResolvedValue(true);
-
-    // When: 설정 조회
-    const result = await useCase.execute(userId);
-
-    // Then: 팩토리로 원본을 읽고 저장된 리마인더 시간이 그대로 노출
-    expect(cache.wrapUserPreference).toHaveBeenCalledWith(userId, expect.any(Function));
-    expect(repo.findByUserId).toHaveBeenCalledWith(userId);
-    expect(entitlement.hasPremiumAccess).toHaveBeenCalledWith(userId);
-    expect(result).toMatchObject({
-      timezone: "Asia/Seoul",
+    const useCase = new GetPreference(fixture);
+    // When
+    const free = await useCase.execute({ userId: fixture.userId });
+    fixture.preferenceRepository.records.delete(fixture.userId);
+    fixture.entitlement.premiumUserIds.add(fixture.userId);
+    const premium = await useCase.execute({ userId: fixture.userId });
+    fixture.entitlement.premiumUserIds.delete(fixture.userId);
+    const expired = await useCase.execute({ userId: fixture.userId });
+    // Then
+    expect(free).toMatchObject({
+      morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
+      eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
+      timezone: "Asia/Tokyo",
       timeFormat: "TWENTY_FOUR_HOUR",
+    });
+    expect(premium).toMatchObject({
       morningReminderHour: 7,
       morningReminderMinute: 30,
-      eveningReminderHour: 18,
-      eveningReminderMinute: 15,
+      eveningReminderHour: 20,
+      eveningReminderMinute: 45,
+      timezone: "Asia/Tokyo",
     });
+    expect(expired).toEqual(free);
+    expect(fixture.preferenceRepository.reads).toEqual([fixture.userId]);
+    expect(fixture.cache.snapshots.get(fixture.userId)).toMatchObject({
+      morningReminderHour: 7,
+      locale: "ja",
+    });
+    expect(premium).not.toHaveProperty("locale");
   });
-
-  it("비프리미엄은 리마인더 시간이 기본값(08:00/19:00)으로 고정된다", async () => {
-    // Given: 저장된 리마인더 07:30 / 18:15 + 비프리미엄 사용자
-    repo.findByUserId.mockResolvedValue(record);
-    entitlement.hasPremiumAccess.mockResolvedValue(false);
-
-    // When: 설정 조회
-    const result = await useCase.execute(userId);
-
-    // Then: 리마인더는 기본값으로 게이팅, 그 외 필드는 저장값 유지
-    expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
-    expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
-    expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
-    expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
-    expect(result.timezone).toBe("Asia/Seoul");
-    expect(result.timeFormat).toBe("TWENTY_FOUR_HOUR");
-  });
-
-  it("레코드가 없으면 기본 스냅샷을 사용한다", async () => {
-    // Given: 설정 레코드 미존재 + 프리미엄(게이팅 영향 격리)
-    repo.findByUserId.mockResolvedValue(null);
-    entitlement.hasPremiumAccess.mockResolvedValue(true);
-
-    // When: 설정 조회
-    const result = await useCase.execute(userId);
-
-    // Then: 전 필드가 기본값
+  it("행이 없으면 응답 기본값을 반환하고 조회만으로 설정이나 동의를 생성하지 않는다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ preference: null, consent: null, premium: true });
+    // When
+    const result = await new GetPreference(fixture).execute({ userId: fixture.userId });
+    // Then
     expect(result).toMatchObject({
       pushEnabled: USER_PREFERENCE_DEFAULTS.PUSH_ENABLED,
       nightPushEnabled: USER_PREFERENCE_DEFAULTS.NIGHT_PUSH_ENABLED,
       timezone: USER_PREFERENCE_DEFAULTS.TIMEZONE,
       morningReminderHour: USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR,
       eveningReminderHour: USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR,
-      timeFormat: USER_PREFERENCE_DEFAULTS.TIME_FORMAT,
+      weatherMorningEnabled: USER_PREFERENCE_DEFAULTS.WEATHER_MORNING_ENABLED,
+      weatherEveningMinute: USER_PREFERENCE_DEFAULTS.WEATHER_EVENING_MINUTE,
     });
-  });
-
-  it("캐시 히트 시 리포지토리를 조회하지 않고 스냅샷 위에 게이팅만 적용한다", async () => {
-    // Given: 캐시가 팩토리 실행 없이 저장된 스냅샷을 반환
-    const cachedSnapshot: PreferenceSnapshot = {
-      pushEnabled: true,
-      nightPushEnabled: false,
-      timezone: "Asia/Tokyo",
-      locale: "ja",
-      morningReminderHour: 9,
-      morningReminderMinute: 45,
-      eveningReminderHour: 20,
-      eveningReminderMinute: 10,
-      timeFormat: "TWELVE_HOUR",
-      weatherMorningEnabled: false,
-      weatherMorningHour: 6,
-      weatherMorningMinute: 0,
-      weatherEveningEnabled: false,
-      weatherEveningHour: 18,
-      weatherEveningMinute: 0,
-    };
-    cache.wrapUserPreference.mockResolvedValue(cachedSnapshot);
-    entitlement.hasPremiumAccess.mockResolvedValue(true);
-
-    // When: 설정 조회
-    const result = await useCase.execute(userId);
-
-    // Then: 리포지토리 미조회, 캐시 스냅샷 값이 그대로 반영
-    expect(repo.findByUserId).not.toHaveBeenCalled();
-    expect(result).toMatchObject({
-      timezone: "Asia/Tokyo",
-      morningReminderHour: 9,
-      eveningReminderHour: 20,
-    });
+    expect(fixture.preferenceRepository.records.size).toBe(0);
+    expect(fixture.consentRepository.records.size).toBe(0);
   });
 });

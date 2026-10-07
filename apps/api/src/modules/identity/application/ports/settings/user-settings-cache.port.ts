@@ -1,4 +1,4 @@
-import type { PreferenceSnapshot } from "../../../domain/services/settings/preference-view.js";
+import type { PreferenceSnapshot } from "../../read-models/settings/preference.read-model.js";
 
 export const USER_SETTINGS_CACHE = Symbol("USER_SETTINGS_CACHE");
 

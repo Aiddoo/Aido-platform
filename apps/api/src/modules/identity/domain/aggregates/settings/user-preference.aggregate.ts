@@ -1,6 +1,5 @@
 import { AggregateRoot } from "#api/shared/domain/aggregate-root";
 
-import type { UserPreferenceRecord } from "../../records/settings/user-preference.record.js";
 import {
   Streak,
   type StreakCompletionPlan,
@@ -8,19 +7,28 @@ import {
 } from "../../value-objects/settings/streak.vo.js";
 
 /** 사용자 설정 애그리게잇. 현재는 설정 중 상태 전이가 있는 스트릭을 소유한다. */
-export class UserPreference extends AggregateRoot<UserPreferenceRecord> {
-  private constructor(preference: UserPreferenceRecord) {
+export class UserPreference extends AggregateRoot<StreakState> {
+  private constructor(preference: StreakState) {
     super({
-      ...preference,
-      lastCompletedDate: preference.lastCompletedDate
-        ? new Date(preference.lastCompletedDate)
-        : null,
+      currentStreak: preference.currentStreak,
+      longestStreak: preference.longestStreak,
+      lastCompletedDate:
+        preference.lastCompletedDate === null ? null : new Date(preference.lastCompletedDate),
     });
   }
 
   /** 영속 상태 복원은 생성 규칙을 다시 검증하지 않는다. */
-  static reconstitute(preference: UserPreferenceRecord): UserPreference {
+  static reconstitute(preference: StreakState): UserPreference {
     return new UserPreference(preference);
+  }
+
+  get streakState(): StreakState {
+    return {
+      currentStreak: this.props.currentStreak,
+      longestStreak: this.props.longestStreak,
+      lastCompletedDate:
+        this.props.lastCompletedDate === null ? null : new Date(this.props.lastCompletedDate),
+    };
   }
 
   planTodoCompletion(completedAt: Date): StreakCompletionPlan | null {

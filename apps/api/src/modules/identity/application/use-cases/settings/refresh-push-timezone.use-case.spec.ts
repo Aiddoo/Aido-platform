@@ -1,42 +1,42 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { createUserSettingsCacheMock } from "#test/mocks/ports/index";
-
-import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
-import { type UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
+import { GetPreference } from "./get-preference.use-case.js";
 import { RefreshPushTimezone } from "./refresh-push-timezone.use-case.js";
 
-describe("RefreshPushTimezone — 타임존 자가치유", () => {
-  let useCase: RefreshPushTimezone;
-  let repo: Mocked<UserPreferenceRepositoryPort>;
-  let cache: Mocked<UserSettingsCachePort>;
-
-  beforeEach(async () => {
-    const refreshPushTimezoneDependencies = mockDeep<
-      ConstructorParameters<typeof RefreshPushTimezone>[0]
-    >({ cache: createUserSettingsCacheMock() });
-    const unit = new RefreshPushTimezone(refreshPushTimezoneDependencies);
-    useCase = unit;
-    repo = refreshPushTimezoneDependencies.preferenceRepository;
-    cache = refreshPushTimezoneDependencies.cache;
+describe("RefreshPushTimezone — 실제 변경에만 설정 캐시 갱신", () => {
+  it("캐시된 UTC를 새 timezone으로 갱신해 이후 설정 조회와 DB가 일치한다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture();
+    const query = new GetPreference(fixture);
+    expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
+    fixture.cache.activeTimezones.add("UTC");
+    // When
+    await new RefreshPushTimezone(fixture).execute({
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+    });
+    const reloaded = await query.execute({ userId: fixture.userId });
+    // Then
+    expect(reloaded.timezone).toBe("Asia/Seoul");
+    expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe("Asia/Seoul");
+    expect(fixture.cache.activeTimezones.size).toBe(0);
+    expect(fixture.cache.activeTimezoneInvalidations).toBe(1);
   });
-
-  it("타임존이 실제로 바뀌면(1행) activeTimezones 캐시를 무효화한다", async () => {
-    repo.refreshTimezoneIfChanged.mockResolvedValue(1);
-
-    await useCase.execute("user-1", "Asia/Seoul");
-
-    expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
-    expect(cache.invalidateActiveTimezones).toHaveBeenCalledTimes(1);
-  });
-
-  it("변경이 없으면(0행) 캐시를 무효화하지 않는다 (thundering-herd 방지)", async () => {
-    repo.refreshTimezoneIfChanged.mockResolvedValue(0);
-
-    await useCase.execute("user-1", "Asia/Seoul");
-
-    expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
-    expect(cache.invalidateActiveTimezones).not.toHaveBeenCalled();
-  });
+  it.each([true, false])(
+    "설정 행 존재=%s: 변경이 없으면 행 생성과 캐시 무효화를 하지 않는다",
+    async (existing) => {
+      // Given
+      const fixture = createUserSettingsFixture(existing ? {} : { preference: null });
+      await fixture.preferenceReader.read(fixture.userId);
+      const cached = fixture.cache.snapshots.get(fixture.userId);
+      fixture.cache.activeTimezones.add("UTC");
+      // When
+      await new RefreshPushTimezone(fixture).execute({ userId: fixture.userId, timezone: "UTC" });
+      // Then
+      expect(fixture.preferenceRepository.records.size).toBe(existing ? 1 : 0);
+      expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(cached);
+      expect([...fixture.cache.activeTimezones]).toEqual(["UTC"]);
+      expect(fixture.cache.activeTimezoneInvalidations).toBe(0);
+    },
+  );
 });

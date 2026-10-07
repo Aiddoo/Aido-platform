@@ -1,15 +1,17 @@
-import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
-import { type UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
+import type { UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
+import type { UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
 
-/**
- * 푸시 토큰 등록 시 타임존 upsert (notification).
- *
- * 새 타임존이 등록되면 스케줄러의 활성 타임존 목록이 스테일해지므로,
- * upsert 후 activeTimezones 캐시를 무효화한다(update-preference와 대칭).
- */
+export interface UpsertPushTimezoneInput {
+  readonly userId: string;
+  readonly timezone: string;
+}
+
 interface UpsertPushTimezoneDependencies {
-  readonly preferenceRepository: UserPreferenceRepositoryPort;
-  readonly cache: UserSettingsCachePort;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "upsertTimezone">;
+  readonly cache: Pick<
+    UserSettingsCachePort,
+    "invalidateActiveTimezones" | "invalidateUserPreference"
+  >;
 }
 
 export class UpsertPushTimezone {
@@ -19,8 +21,11 @@ export class UpsertPushTimezone {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, timezone: string): Promise<void> {
-    await this.#dependencies.preferenceRepository.upsertTimezone(userId, timezone);
-    await this.#dependencies.cache.invalidateActiveTimezones();
+  async execute(input: UpsertPushTimezoneInput): Promise<void> {
+    await this.#dependencies.preferenceRepository.upsertTimezone(input.userId, input.timezone);
+    await Promise.all([
+      this.#dependencies.cache.invalidateActiveTimezones(),
+      this.#dependencies.cache.invalidateUserPreference(input.userId),
+    ]);
   }
 }

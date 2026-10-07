@@ -1,4 +1,4 @@
-import type { TimeFormatValue } from "../../services/settings/preference-view.js";
+export type TimeFormatValue = "TWELVE_HOUR" | "TWENTY_FOUR_HOUR";
 
 /**
  * 설정 레코드(리포지토리 읽기 모델).

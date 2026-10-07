@@ -1,46 +1,41 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { createUserPreferenceRepositoryMock } from "#test/mocks/ports/user-settings.mock";
+import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
 import { UpsertPushLocale } from "./upsert-push-locale.use-case.js";
 
-const userId = "user-1";
-
-describe("UpsertPushLocale", () => {
-  let useCase: UpsertPushLocale;
-  let repo: Mocked<UserPreferenceRepositoryPort>;
-
-  beforeEach(async () => {
-    const upsertPushLocaleDependencies = mockDeep<
-      ConstructorParameters<typeof UpsertPushLocale>[0]
-    >({ preferenceRepository: createUserPreferenceRepositoryMock() });
-    const unit = new UpsertPushLocale(upsertPushLocaleDependencies);
-    useCase = unit;
-    repo = upsertPushLocaleDependencies.preferenceRepository;
-  });
-
-  it("전달된 로케일을 그대로 upsertLocale에 위임한다", async () => {
-    // Given: 로케일 upsert 성공
-    repo.upsertLocale.mockResolvedValue(undefined);
-
-    // When: 로케일 upsert 실행
-    await useCase.execute(userId, "ko");
-
-    // Then: userId + 로케일이 변형 없이 그대로 전달
-    expect(repo.upsertLocale).toHaveBeenCalledTimes(1);
-    expect(repo.upsertLocale).toHaveBeenCalledWith(userId, "ko");
-  });
-
-  it("리전 포함 로케일도 변형 없이 그대로 전달한다", async () => {
-    // Given: 로케일 upsert 성공
-    repo.upsertLocale.mockResolvedValue(undefined);
-
-    // When: en-US 로케일 upsert
-    await useCase.execute(userId, "en-US");
-
-    // Then: 정규화 없이 원본 문자열 전달(정규화는 어댑터 책임)
-    expect(repo.upsertLocale).toHaveBeenCalledWith(userId, "en-US");
+describe("UpsertPushLocale — 푸시 언어 저장 경계", () => {
+  it.each(["ko", "en-US"])(
+    "%s locale를 저장하면서 timezone·알림·streak 설정을 보존한다",
+    async (locale) => {
+      // Given
+      const fixture = createUserSettingsFixture({
+        preference: { timezone: "Asia/Tokyo", currentStreak: 3 },
+      });
+      await fixture.preferenceReader.read(fixture.userId);
+      // When
+      await new UpsertPushLocale(fixture).execute({ userId: fixture.userId, locale });
+      // Then
+      expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual({
+        ...fixture.preference,
+        locale,
+      });
+      expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);
+      expect((await fixture.preferenceReader.read(fixture.userId)).locale).toBe(locale);
+    },
+  );
+  it("저장 실패는 전달하고 기존 locale 캐시를 무효화하지 않는다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture();
+    await fixture.preferenceReader.read(fixture.userId);
+    const cached = fixture.cache.snapshots.get(fixture.userId);
+    const storageError = new Error("locale 저장 실패");
+    vi.spyOn(fixture.preferenceRepository, "upsertLocale").mockRejectedValueOnce(storageError);
+    // When
+    const pending = new UpsertPushLocale(fixture).execute({ userId: fixture.userId, locale: "ja" });
+    // Then
+    await expect(pending).rejects.toBe(storageError);
+    expect(fixture.cache.snapshots.get(fixture.userId)).toEqual(cached);
+    expect(fixture.preferenceRepository.records.get(fixture.userId)).toEqual(fixture.preference);
   });
 });

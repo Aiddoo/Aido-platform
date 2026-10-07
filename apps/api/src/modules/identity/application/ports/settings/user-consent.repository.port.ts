@@ -19,10 +19,16 @@ export interface ConsentSeedInput {
  */
 export interface UserConsentRepositoryPort {
   findByUserId(userId: string): Promise<UserConsentRecord | null>;
-  findByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]>;
+  findByUserIds(userIds: readonly string[]): Promise<UserConsentRecordWithId[]>;
   create(userId: string, data: ConsentSeedInput): Promise<UserConsentRecord>;
-  upsertMarketingConsent(userId: string, data: { agreed: boolean }): Promise<UserConsentRecord>;
-  upsertMarketingPushConsent(userId: string, data: { agreed: boolean }): Promise<UserConsentRecord>;
+  upsertMarketingConsent(
+    userId: string,
+    data: { agreedAt: Date | null },
+  ): Promise<UserConsentRecord>;
+  upsertMarketingPushConsent(
+    userId: string,
+    data: { agreedAt: Date | null },
+  ): Promise<UserConsentRecord>;
 }
 
 export const USER_CONSENT_REPOSITORY = Symbol("USER_CONSENT_REPOSITORY");

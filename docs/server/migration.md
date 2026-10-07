@@ -16,7 +16,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
-- [ ] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 진행([Issue #901](https://github.com/Aiddoo/Aido-platform/issues/901)); OAuth·설정·동의 남음
+- [x] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 완료([PR #903](https://github.com/Aiddoo/Aido-platform/pull/903)), 04e 설정·동의 검증 완료([Issue #904](https://github.com/Aiddoo/Aido-platform/issues/904))
 - [ ] 05 Billing: Webhook·구독 상태 전이
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
@@ -24,7 +24,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [ ] 09 Notes: 메모와 전환
 - [ ] 10 Engagement: 댓글·반응·대화·정리
 - [ ] 11 Insights: 완료 집계·주간 달성·연속 기록
-- [ ] 12 Weather: 위치·좌표·격자·Provider
+- [ ] 12 Weather: 위치·좌표·격자·공급자 Port·지역별 선택 정책·도메인 응답 정규화; 한국 API 유지, 해외 공급자는 동일 인터페이스로 추가
 - [ ] 13 AI Assistance: 파싱·보고서·추천
 - [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
 - [ ] 15 Support·Operations·App Config
@@ -318,3 +318,72 @@ Stub 기반 spec도 포함한다. 이번 경쟁·rollback 결과는 별도 실�
 잠금 helper도 native Promise.withResolvers로 정리한 뒤 10개를 seed 303으로 다시 확인했다
 (7.15초). Unit 자동 연동 warm setup이 빠진 최초 2개 실패는 테스트 선언을 보완해 재실행했다.
 새 script·package·schema·migration·Action job은 없다. 상위 단계는 여전히 4/18 완료다.
+
+## 04e 설정·동의와 공유 조회 경계
+
+[Issue #904](https://github.com/Aiddoo/Aido-platform/issues/904)의 직접 UseCase 14개를
+named input·최소 Port로 정리했다. REST 응답 mapping은 Domain에서 Application read model로
+옮기고, `UserPreferenceReader`가 원본 설정의 cache-aside·기본값·projection을 소유한다.
+Notification은 Identity의 공개 Reader와 기존 batch capability를 사용하고 다른 Context의
+캐시 key/TTL을 읽지 않는다. premium gate는 캐시 밖에서 요청마다 판정한다. 기존 enum·REST
+15개 필드·locale 미노출·Date/null 표현·기본 push 경로별 값을 유지한다.
+
+| 실제 Before                                                                     | 구현한 After                                               | 근거                                   |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------- |
+| 설정 행이 없는 첫 weather 수정의 false·09:37·false·22:43가 defaults로 저장/응답 | create/upsert ORM mapping을 공유해 요청한 6개 값 저장/응답 | 실제 PG와 HTTP                         |
+| warm UTC cache 뒤 timezone DB를 변경해도 GET은 UTC                              | Refresh/Upsert가 설정·활성 timezone cache 무효화           | 실제 PG·HTTP                           |
+| 같은 날 전체 완료 동시 2건에서 milestone port 2회 호출                          | 최신 통계 재조회·streak 3필드 CAS·승자만 port 1회 호출     | 실제 PG UPDATE waiters                 |
+| 타임존 저장 실패 뒤 같은 timezone의 다음 요청이 throttle로 생략                 | 실패한 현재 attempt만 삭제하고 다음 요청 재시도            | Before Unit expected2/actual1 → After2 |
+
+Before 3개 PG 재현은 5.54초, After PG 10개는 seed 101(8.69초)과 미국 시간대 seed
+202(16.09초)로 통과했다. 첫 PG 로딩 실패는 조립 중 public import 파일 누락으로, 연결
+완료 후 재실행했다. 임의 sleep 대신 실제 row lock 대기자를 관찰했다. 부분 Preference와
+Consent 동시 변경·실제 CLS provisioning rollback도 포함했다. milestone은 Port 호출 수이며
+외부 push 발송의 exactly-once 보장을 뜻하지 않는다.
+
+Streak VO와 Aggregate는 Date를 방어 복사하고 상태 3개만 복원한다. Todo의 DATE 컬럼은
+로컬 달력 날짜를 UTC midnight로 표현한 계약을 유지한다. 처리 중 자정·DST의 반복 시각을
+고정 clock으로 검증하며 DATE 범위를 실제 timestamp의 23/25시간 창으로 바꾸지 않는다.
+동의 시각은 Application에서 한 번 결정하고 Repository가 해당 필드만 upsert한다. 서로
+다른 마케팅/광고 push 동의·약관 필드는 보존한다.
+
+ORM updateAndCount의 expected state 조건으로 경쟁을 처리하며 raw SQL·스키마 변경은
+없다. 미사용 Preference.update·Consent.upsert/updateMarketingConsent와 구 mock factory,
+중복 Mock DB Integration 8개를 제거했다. 중요한 행동은 상태 기반 Unit과 실제 PG로 검증한다.
+원본 캐시의 in-flight 재적재·서로 다른 timezone 비동기 완료 순서까지 해결했다고 주장하지
+않으며 운영 쿼리 지연·처리량·billed Actions 절감률은 미측정이다.
+
+최종 전체 Unit 477 files / 2,866 tests(16.91초·seed 50455), Integration 47 files /
+461 tests(132.12초·seed 50456), E2E 34 files / 486 tests(252.49초·seed 50454)가
+shuffle로 통과했다. Integration은 PG 서비스와 기존 일부 Stub spec을 포함하며 이번 신규
+정합성 10개는 실제 PG다. 최초 Integration은 큐 harness의 공개 Reader token 등록 누락으로
+1 suite 실패·6 skip이었다. 조립 후 해당 실제 pg-boss 6개(19.07초)와 전체를 다시 통과했다.
+HTTP 비동기 timezone 검증은 DB 저장만 기다리는 대신 다음 GET의 실제 변경 결과를 기다리도록
+정리한 뒤 미국 시간대 seed 50456에서 14개를 재검증했다(10.01초). Notification Unit 최초
+2개 실패는 상태 Stub이 입력을 복사하는데 원래 입력만 바꾼 fixture 오류로, 실제 locale 저장
+메서드를 호출하도록 수정했다. workspace lint·format·typecheck 통과. 추가 script·package·
+schema·migration·Action job은 없다. 상위 5/18 완료, Billing부터 13단계가 남는다.
+
+## 12 Weather 공급자 확장 계획
+
+현재 한국 API와 공개 REST 응답을 유지한다. Application은 공급자 Port의 정규화된 날씨 결과만
+사용하고, Infrastructure Adapter가 HTTP 요청·공급자 응답 검증·단위/시간대 변환을 맡는다.
+언어·timezone·IP를 국가로 추정하지 않고 검증된 위치 정보로 지원 여부와 공급자를 결정한다.
+한국 격자 변환은 한국 Adapter가
+소유한다. 해외 공급자를 등록할 때 기존 유즈케이스와 알림 정책을 복제하지 않는다.
+
+기존 날씨 타입·좌표 Value Object·HTTP client·fixture를 먼저 재사용한다. 공급자 공통 cache key에는
+공급자 구분과 위치·예보 기준 시각을 포함하되, 기존 키 변경은 호환 전환 검증 후 결정한다.
+미지원 지역·timeout·부분 예보·잘못된 단위/시각·중복 요청·공급자별 응답을 fixture HTTP와
+동일한 계약 테스트로 검증한다. 해외 API는 실제 선택·설정 전까지 구현하거나 지원한다고 표시하지 않는다.
+
+현재 공용 좌표/REST와 UserLocation의 필수 grid 필드는 한국 범위에 묶여 있다. 해외 Adapter
+추가만으로 전체 경계가 확장되는 상태가 아니므로, 지역별 위치 검증·저장 모델·Notification/AI
+소비자·cache address도 함께 확인한다. 한국 serialization/TTL을 먼저 유지하고 공급자별
+opaque location key와 target local date·forecast revision을 cache address에 분리한다.
+한국 정리와 실제 해외 API 활성화/데이터 전환은 별도 검증 단계로 다룬다.
+
+날짜 간 hourly 병합·0°C 결측 판정·프로세스 TZ 의존·latest fallback 날짜 혼합은 현재 정적
+검토 후보다. 실제 fixture로 재현 후 개선하며, 후보만으로 확인된 버그나 측정된 성능 개선이라고
+기록하지 않는다. 설치 HTTP client의 인스턴스별 fetch 주입과 기존 codec·테스트 도구를 재사용해
+한국/해외 공급자가 같은 normalized domain 결과를 반환하는 계약을 검증한다.

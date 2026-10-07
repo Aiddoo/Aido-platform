@@ -2,14 +2,18 @@ import type { UpdateMarketingConsentResponse } from "@aido/api";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
-import { buildMarketingConsentView } from "../../../domain/services/settings/consent-view.js";
-import { type UserConsentRepositoryPort } from "../../ports/settings/user-consent.repository.port.js";
+import { resolveMarketingAgreement } from "../../../domain/services/settings/marketing-consent-policy.js";
+import { IdentitySettingsLogEvent } from "../../observability/settings/identity-settings-log.events.js";
+import type { UserConsentRepositoryPort } from "../../ports/settings/user-consent.repository.port.js";
+import { buildMarketingConsentView } from "../../read-models/settings/consent.read-model.js";
 
-/**
- * 마케팅 수신 동의 변경 유스케이스.
- */
+export interface UpdateMarketingConsentInput {
+  readonly userId: string;
+  readonly agreed: boolean;
+}
+
 interface UpdateMarketingConsentDependencies {
-  readonly consentRepository: UserConsentRepositoryPort;
+  readonly consentRepository: Pick<UserConsentRepositoryPort, "upsertMarketingConsent">;
   readonly logger: ApplicationLogger;
 }
 
@@ -20,13 +24,18 @@ export class UpdateMarketingConsent {
     this.#dependencies = dependencies;
   }
 
-  async execute(userId: string, agreed: boolean): Promise<UpdateMarketingConsentResponse> {
-    const updated = await this.#dependencies.consentRepository.upsertMarketingConsent(userId, {
-      agreed,
+  async execute(input: UpdateMarketingConsentInput): Promise<UpdateMarketingConsentResponse> {
+    const updated = await this.#dependencies.consentRepository.upsertMarketingConsent(
+      input.userId,
+      {
+        agreedAt: resolveMarketingAgreement(input.agreed, new Date()),
+      },
+    );
+    this.#dependencies.logger.log({
+      event: IdentitySettingsLogEvent.MARKETING_CONSENT_UPDATED,
+      userId: input.userId,
+      agreed: input.agreed,
     });
-
-    this.#dependencies.logger.log(`User ${userId} updated marketing consent: agreed=${agreed}`);
-
     return buildMarketingConsentView(updated);
   }
 }

@@ -3,6 +3,9 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
+import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
+import { USER_PREFERENCE_READER } from "#api/modules/identity/identity-settings.public";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
 import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
 import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
@@ -245,6 +248,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           provide: ACTIVE_PUSH_TOKEN_READER,
           useExisting: CachedActivePushTokenReaderAdapter,
         },
+        {
+          provide: USER_PREFERENCE_READER,
+          useFactory: (preferenceRepository: UserPreferenceRepository, cache: CacheService) =>
+            new UserPreferenceReader({
+              preferenceRepository,
+              cache: new UserSettingsCacheAdapter(cache),
+            }),
+          inject: [UserPreferenceRepository, CacheService],
+        },
         CachedNotificationRecipientPreferenceAdapter,
         {
           provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
@@ -308,7 +320,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
               consentRepository.findByUserIds(userIds),
             updateMarketingPushConsent: (userId: string, agreed: boolean) =>
               consentRepository
-                .upsertMarketingPushConsent(userId, { agreed })
+                .upsertMarketingPushConsent(userId, { agreedAt: agreed ? new Date() : null })
                 .then(() => undefined),
           }),
           inject: [UserPreferenceRepository, UserConsentRepository],

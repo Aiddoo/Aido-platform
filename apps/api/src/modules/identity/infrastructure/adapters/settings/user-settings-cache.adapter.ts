@@ -8,7 +8,7 @@ import { ReminderCacheKey } from "#api/modules/notification/infrastructure/cache
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { UserSettingsCachePort } from "../../../application/ports/settings/user-settings-cache.port.js";
-import type { PreferenceSnapshot } from "../../../domain/services/settings/preference-view.js";
+import type { PreferenceSnapshot } from "../../../application/read-models/settings/preference.read-model.js";
 
 @Injectable()
 export class UserSettingsCacheAdapter implements UserSettingsCachePort {

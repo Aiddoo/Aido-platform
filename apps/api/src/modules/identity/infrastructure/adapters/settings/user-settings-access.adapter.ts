@@ -34,38 +34,38 @@ export class UserSettingsAccessAdapter
   ) {}
 
   seedDefaults(userId: string, consent: ConsentSeedInput): Promise<void> {
-    return this.seedUserSettingsUseCase.execute(userId, consent);
+    return this.seedUserSettingsUseCase.execute({ userId, consent });
   }
 
   recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
-    return this.onTodoToggledUseCase.execute(userId, completed, timezone);
+    return this.onTodoToggledUseCase.execute({ userId, completed, timezone });
   }
 
   getPreferenceRecord(userId: string) {
-    return this.getPreferenceRecordUseCase.execute(userId);
+    return this.getPreferenceRecordUseCase.execute({ userId });
   }
 
   getPreferenceRecordsByUserIds(userIds: string[]) {
-    return this.getPreferenceRecordsUseCase.execute(userIds);
+    return this.getPreferenceRecordsUseCase.execute({ userIds });
   }
 
   getConsentRecord(userId: string) {
-    return this.getConsentRecordUseCase.execute(userId);
+    return this.getConsentRecordUseCase.execute({ userId });
   }
 
   getConsentRecordsByUserIds(userIds: string[]) {
-    return this.getConsentRecordsUseCase.execute(userIds);
+    return this.getConsentRecordsUseCase.execute({ userIds });
   }
 
   upsertPushTimezone(userId: string, timezone: string): Promise<void> {
-    return this.upsertPushTimezoneUseCase.execute(userId, timezone);
+    return this.upsertPushTimezoneUseCase.execute({ userId, timezone });
   }
 
   upsertPushLocale(userId: string, locale: string): Promise<void> {
-    return this.upsertPushLocaleUseCase.execute(userId, locale);
+    return this.upsertPushLocaleUseCase.execute({ userId, locale });
   }
 
   async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
-    await this.updateMarketingPushConsentUseCase.execute(userId, agreed);
+    await this.updateMarketingPushConsentUseCase.execute({ userId, agreed });
   }
 }

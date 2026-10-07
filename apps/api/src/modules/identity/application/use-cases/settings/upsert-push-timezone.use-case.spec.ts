@@ -1,36 +1,33 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { createUserSettingsFixture } from "#test/fixtures/user-settings.fixture";
 
-import { createUserSettingsCacheMock } from "#test/mocks/ports/index";
-
-import { type UserPreferenceRepositoryPort } from "../../ports/settings/user-preference.repository.port.js";
-import { type UserSettingsCachePort } from "../../ports/settings/user-settings-cache.port.js";
+import { GetPreference } from "./get-preference.use-case.js";
 import { UpsertPushTimezone } from "./upsert-push-timezone.use-case.js";
 
-describe("UpsertPushTimezone — 푸시 토큰 등록 시 타임존 upsert", () => {
-  let useCase: UpsertPushTimezone;
-  let repo: Mocked<UserPreferenceRepositoryPort>;
-  let cache: Mocked<UserSettingsCachePort>;
-
-  beforeEach(async () => {
-    const upsertPushTimezoneDependencies = mockDeep<
-      ConstructorParameters<typeof UpsertPushTimezone>[0]
-    >({ cache: createUserSettingsCacheMock() });
-    const unit = new UpsertPushTimezone(upsertPushTimezoneDependencies);
-    useCase = unit;
-    repo = upsertPushTimezoneDependencies.preferenceRepository;
-    cache = upsertPushTimezoneDependencies.cache;
-  });
-
-  it("타임존을 upsert하고 activeTimezones 캐시를 무효화한다", async () => {
-    // Given
-    repo.upsertTimezone.mockResolvedValue(undefined);
-
-    // When
-    await useCase.execute("user-1", "Asia/Seoul");
-
-    // Then - upsert 후 활성 타임존 목록 캐시 무효화 (스테일 방지)
-    expect(repo.upsertTimezone).toHaveBeenCalledWith("user-1", "Asia/Seoul");
-    expect(cache.invalidateActiveTimezones).toHaveBeenCalledTimes(1);
-  });
+describe("UpsertPushTimezone — 토큰 등록의 timezone 동기화", () => {
+  it.each([true, false])(
+    "설정 행 존재=%s: timezone을 저장하고 캐시된 이전 응답을 갱신한다",
+    async (existing) => {
+      // Given
+      const fixture = createUserSettingsFixture(
+        existing ? { preference: { currentStreak: 7 } } : { preference: null },
+      );
+      const query = new GetPreference(fixture);
+      expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
+      fixture.cache.activeTimezones.add("UTC");
+      // When
+      await new UpsertPushTimezone(fixture).execute({
+        userId: fixture.userId,
+        timezone: "America/New_York",
+      });
+      // Then
+      expect((await query.execute({ userId: fixture.userId })).timezone).toBe("America/New_York");
+      expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe(
+        "America/New_York",
+      );
+      expect(fixture.cache.activeTimezones.size).toBe(0);
+      expect(fixture.reminderEnqueuer.jobs).toEqual([]);
+      if (existing)
+        expect(fixture.preferenceRepository.records.get(fixture.userId)?.currentStreak).toBe(7);
+    },
+  );
 });

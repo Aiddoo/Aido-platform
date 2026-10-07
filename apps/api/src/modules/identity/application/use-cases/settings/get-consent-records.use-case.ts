@@ -1,11 +1,14 @@
-import {
-  type UserConsentRecordWithId,
-  type UserConsentRepositoryPort,
+import type {
+  UserConsentRepositoryPort,
+  UserConsentRecordWithId,
 } from "../../ports/settings/user-consent.repository.port.js";
 
-/** 푸시 발송 판단용 배치 동의 조회 (notification). */
+export interface GetConsentRecordsInput {
+  readonly userIds: readonly string[];
+}
+
 interface GetConsentRecordsDependencies {
-  readonly consentRepository: UserConsentRepositoryPort;
+  readonly consentRepository: Pick<UserConsentRepositoryPort, "findByUserIds">;
 }
 
 export class GetConsentRecords {
@@ -15,7 +18,7 @@ export class GetConsentRecords {
     this.#dependencies = dependencies;
   }
 
-  execute(userIds: string[]): Promise<UserConsentRecordWithId[]> {
-    return this.#dependencies.consentRepository.findByUserIds(userIds);
+  execute(input: GetConsentRecordsInput): Promise<UserConsentRecordWithId[]> {
+    return this.#dependencies.consentRepository.findByUserIds(input.userIds);
   }
 }

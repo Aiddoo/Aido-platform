@@ -1,11 +1,14 @@
-import {
-  type UserPreferenceRecordWithId,
-  type UserPreferenceRepositoryPort,
+import type {
+  UserPreferenceRepositoryPort,
+  UserPreferenceRecordWithId,
 } from "../../ports/settings/user-preference.repository.port.js";
 
-/** 푸시 발송 판단용 배치 설정 조회 (notification). */
+export interface GetPreferenceRecordsInput {
+  readonly userIds: readonly string[];
+}
+
 interface GetPreferenceRecordsDependencies {
-  readonly preferenceRepository: UserPreferenceRepositoryPort;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserIds">;
 }
 
 export class GetPreferenceRecords {
@@ -15,7 +18,7 @@ export class GetPreferenceRecords {
     this.#dependencies = dependencies;
   }
 
-  execute(userIds: string[]): Promise<UserPreferenceRecordWithId[]> {
-    return this.#dependencies.preferenceRepository.findByUserIds(userIds);
+  execute(input: GetPreferenceRecordsInput): Promise<UserPreferenceRecordWithId[]> {
+    return this.#dependencies.preferenceRepository.findByUserIds(input.userIds);
   }
 }

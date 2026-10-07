@@ -4,12 +4,16 @@ import { Test } from "@nestjs/testing";
 import { ClsModule } from "nestjs-cls";
 import { PgBoss } from "pg-boss";
 
+import { UserPreferenceReader } from "#api/modules/identity/application/services/settings/user-preference-reader.service";
 import type {
   UserConsentRecord,
   UserConsentRecordWithId,
   UserPreferenceRecord,
   UserPreferenceRecordWithId,
 } from "#api/modules/identity/identity-settings.public";
+import { USER_PREFERENCE_READER } from "#api/modules/identity/identity-settings.public";
+import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
+import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/modules/notification/application/ports/delivery/active-push-token.reader.port";
 import { NOTIFICATION_CACHE } from "#api/modules/notification/application/ports/delivery/notification-cache.port";
 import { NOTIFICATION_DEDUP } from "#api/modules/notification/application/ports/delivery/notification-dedup.port";
@@ -344,6 +348,16 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     },
     CachedActivePushTokenReaderAdapter,
     { provide: ACTIVE_PUSH_TOKEN_READER, useExisting: CachedActivePushTokenReaderAdapter },
+    UserPreferenceRepository,
+    {
+      provide: USER_PREFERENCE_READER,
+      useFactory: (preferenceRepository: UserPreferenceRepository, cache: CacheService) =>
+        new UserPreferenceReader({
+          preferenceRepository,
+          cache: new UserSettingsCacheAdapter(cache),
+        }),
+      inject: [UserPreferenceRepository, CacheService],
+    },
     CachedNotificationRecipientPreferenceAdapter,
     {
       provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,

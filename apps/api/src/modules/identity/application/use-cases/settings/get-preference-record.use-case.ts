@@ -1,11 +1,14 @@
-import {
-  type UserPreferenceRecord,
-  type UserPreferenceRepositoryPort,
+import type {
+  UserPreferenceRepositoryPort,
+  UserPreferenceRecord,
 } from "../../ports/settings/user-preference.repository.port.js";
 
-/** 푸시 발송 판단용 단건 설정 조회 (notification). */
+export interface GetPreferenceRecordInput {
+  readonly userId: string;
+}
+
 interface GetPreferenceRecordDependencies {
-  readonly preferenceRepository: UserPreferenceRepositoryPort;
+  readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "findByUserId">;
 }
 
 export class GetPreferenceRecord {
@@ -15,7 +18,7 @@ export class GetPreferenceRecord {
     this.#dependencies = dependencies;
   }
 
-  execute(userId: string): Promise<UserPreferenceRecord | null> {
-    return this.#dependencies.preferenceRepository.findByUserId(userId);
+  execute(input: GetPreferenceRecordInput): Promise<UserPreferenceRecord | null> {
+    return this.#dependencies.preferenceRepository.findByUserId(input.userId);
   }
 }

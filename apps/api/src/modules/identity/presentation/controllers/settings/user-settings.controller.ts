@@ -75,7 +75,7 @@ export class SettingsController {
   @ApiSuccessResponse({ type: PreferenceResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getPreference(@CurrentUser() user: CurrentUserPayload) {
-    return this.getPreferenceUseCase.execute(user.userId);
+    return this.getPreferenceUseCase.execute({ userId: user.userId });
   }
 
   @Patch("preference")
@@ -113,7 +113,7 @@ export class SettingsController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdatePreferenceDto }) dto: UpdatePreferenceDto,
   ) {
-    return this.updatePreferenceUseCase.execute(user.userId, dto);
+    return this.updatePreferenceUseCase.execute({ ...dto, userId: user.userId });
   }
 
   @Get("consent")
@@ -133,7 +133,7 @@ export class SettingsController {
   @ApiSuccessResponse({ type: ConsentResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getConsent(@CurrentUser() user: CurrentUserPayload) {
-    return this.getConsentUseCase.execute(user.userId);
+    return this.getConsentUseCase.execute({ userId: user.userId });
   }
 
   @Patch("consent/marketing")
@@ -159,7 +159,7 @@ export class SettingsController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateMarketingConsentDto }) dto: UpdateMarketingConsentDto,
   ) {
-    return this.updateMarketingConsentUseCase.execute(user.userId, dto.agreed);
+    return this.updateMarketingConsentUseCase.execute({ userId: user.userId, agreed: dto.agreed });
   }
 
   @Patch("consent/marketing-push")
@@ -176,6 +176,9 @@ export class SettingsController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateMarketingPushConsentDto }) dto: UpdateMarketingPushConsentDto,
   ) {
-    return this.updateMarketingPushConsentUseCase.execute(user.userId, dto.agreed);
+    return this.updateMarketingPushConsentUseCase.execute({
+      userId: user.userId,
+      agreed: dto.agreed,
+    });
   }
 }

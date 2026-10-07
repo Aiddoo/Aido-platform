@@ -1,13 +1,13 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-
+import { PREFERENCE_ENTITLEMENT } from "./application/ports/settings/preference-entitlement.port.js";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/settings/reminder-schedule.enqueuer.port.js";
 import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/settings/streak-milestone.notifier.port.js";
 import { TODO_COMPLETION_STATS_READER } from "./application/ports/settings/todo-completion-stats.reader.port.js";
 import { USER_CONSENT_REPOSITORY } from "./application/ports/settings/user-consent.repository.port.js";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/settings/user-preference.repository.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
+import { UserPreferenceReader } from "./application/services/settings/user-preference-reader.service.js";
 import { GetConsentRecord } from "./application/use-cases/settings/get-consent-record.use-case.js";
 import { GetConsentRecords } from "./application/use-cases/settings/get-consent-records.use-case.js";
 import { GetConsent } from "./application/use-cases/settings/get-consent.use-case.js";
@@ -22,6 +22,17 @@ import { UpdateMarketingPushConsent } from "./application/use-cases/settings/upd
 import { UpdatePreference } from "./application/use-cases/settings/update-preference.use-case.js";
 import { UpsertPushLocale } from "./application/use-cases/settings/upsert-push-locale.use-case.js";
 import { UpsertPushTimezone } from "./application/use-cases/settings/upsert-push-timezone.use-case.js";
+
+export const userPreferenceReaderProvider: FactoryProvider<UserPreferenceReader> = {
+  provide: UserPreferenceReader,
+  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
+  useFactory: (
+    preferenceRepository: ConstructorParameters<
+      typeof UserPreferenceReader
+    >[0]["preferenceRepository"],
+    cache: ConstructorParameters<typeof UserPreferenceReader>[0]["cache"],
+  ) => new UserPreferenceReader({ preferenceRepository, cache }),
+};
 
 export const getConsentProvider: FactoryProvider<GetConsent> = {
   provide: GetConsent,
@@ -49,17 +60,11 @@ export const getConsentRecordsProvider: FactoryProvider<GetConsentRecords> = {
 
 export const getPreferenceProvider: FactoryProvider<GetPreference> = {
   provide: GetPreference,
-  inject: [USER_PREFERENCE_REPOSITORY, EntitlementService, USER_SETTINGS_CACHE],
+  inject: [UserPreferenceReader, PREFERENCE_ENTITLEMENT],
   useFactory: (
-    preferenceRepository: ConstructorParameters<typeof GetPreference>[0]["preferenceRepository"],
-    entitlementService: ConstructorParameters<typeof GetPreference>[0]["entitlementService"],
-    cache: ConstructorParameters<typeof GetPreference>[0]["cache"],
-  ) =>
-    new GetPreference({
-      preferenceRepository,
-      entitlementService,
-      cache,
-    }),
+    preferenceReader: ConstructorParameters<typeof GetPreference>[0]["preferenceReader"],
+    entitlement: ConstructorParameters<typeof GetPreference>[0]["entitlement"],
+  ) => new GetPreference({ preferenceReader, entitlement }),
 };
 
 export const getPreferenceRecordProvider: FactoryProvider<GetPreferenceRecord> = {
@@ -152,19 +157,19 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
   provide: UpdatePreference,
   inject: [
     USER_PREFERENCE_REPOSITORY,
-    EntitlementService,
+    PREFERENCE_ENTITLEMENT,
     USER_SETTINGS_CACHE,
     REMINDER_SCHEDULE_ENQUEUER,
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<typeof UpdatePreference>[0]["preferenceRepository"],
-    entitlementService: ConstructorParameters<typeof UpdatePreference>[0]["entitlementService"],
+    entitlement: ConstructorParameters<typeof UpdatePreference>[0]["entitlement"],
     cache: ConstructorParameters<typeof UpdatePreference>[0]["cache"],
     reminderEnqueuer: ConstructorParameters<typeof UpdatePreference>[0]["reminderEnqueuer"],
   ) =>
     new UpdatePreference({
       preferenceRepository,
-      entitlementService,
+      entitlement,
       cache,
       reminderEnqueuer,
       logger: new Logger(UpdatePreference.name),
@@ -173,10 +178,11 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
 
 export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocale> = {
   provide: UpsertPushLocale,
-  inject: [USER_PREFERENCE_REPOSITORY],
+  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
   useFactory: (
     preferenceRepository: ConstructorParameters<typeof UpsertPushLocale>[0]["preferenceRepository"],
-  ) => new UpsertPushLocale({ preferenceRepository }),
+    cache: ConstructorParameters<typeof UpsertPushLocale>[0]["cache"],
+  ) => new UpsertPushLocale({ preferenceRepository, cache }),
 };
 
 export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezone> = {

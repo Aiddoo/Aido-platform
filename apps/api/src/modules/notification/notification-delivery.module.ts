@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
-import { UserSettingsModule } from "#api/modules/identity/identity-settings.module";
+import { UserSettingsModule } from "#api/modules/identity/identity-settings.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";

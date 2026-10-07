@@ -1,65 +1,42 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { createUserConsentRepositoryMock } from "#test/mocks/ports/user-settings.mock";
+import { createUserSettingsFixture, SETTINGS_TIME } from "#test/fixtures/user-settings.fixture";
 
-import { type UserConsentRepositoryPort } from "../../ports/settings/user-consent.repository.port.js";
 import { UpdateMarketingPushConsent } from "./update-marketing-push-consent.use-case.js";
 
-const userId = "user-1";
-
-describe("UpdateMarketingPushConsent", () => {
-  let useCase: UpdateMarketingPushConsent;
-  let repo: Mocked<UserConsentRepositoryPort>;
-
-  beforeEach(async () => {
-    const updateMarketingPushConsentDependencies = mockDeep<
-      ConstructorParameters<typeof UpdateMarketingPushConsent>[0]
-    >({ consentRepository: createUserConsentRepositoryMock() });
-    const unit = new UpdateMarketingPushConsent(updateMarketingPushConsentDependencies);
-    useCase = unit;
-    repo = updateMarketingPushConsentDependencies.consentRepository;
+describe("UpdateMarketingPushConsent — 광고성 푸시 선택 동의", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SETTINGS_TIME);
   });
-
-  it("동의 시 upsert 위임 후 marketingPushAgreedAt ISO 문자열을 반환한다", async () => {
-    // Given: upsert가 동의 시각이 채워진 레코드를 반환
-    repo.upsertMarketingPushConsent.mockResolvedValue({
-      termsAgreedAt: null,
-      privacyAgreedAt: null,
-      agreedTermsVersion: null,
-      marketingAgreedAt: null,
-      marketingPushAgreedAt: new Date("2024-03-01T09:00:00.000Z"),
-    });
-
-    // When: 동의(true)로 변경
-    const result = await useCase.execute(userId, true);
-
-    // Then: { agreed: true }로 upsert, ISO 문자열 뷰 반환
-    expect(repo.upsertMarketingPushConsent).toHaveBeenCalledWith(userId, {
-      agreed: true,
-    });
-    expect(result).toEqual({
-      marketingPushAgreedAt: "2024-03-01T09:00:00.000Z",
-    });
-  });
-
-  it("철회 시 marketingPushAgreedAt는 null을 반환한다", async () => {
-    // Given: upsert가 동의 시각이 비워진 레코드를 반환
-    repo.upsertMarketingPushConsent.mockResolvedValue({
-      termsAgreedAt: null,
-      privacyAgreedAt: null,
-      agreedTermsVersion: null,
-      marketingAgreedAt: null,
+  afterEach(() => vi.useRealTimers());
+  it("활성화·철회는 광고성 푸시 동의만 바꾸고 일반 마케팅 동의를 보존한다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ consent: { marketingAgreedAt: SETTINGS_TIME } });
+    const useCase = new UpdateMarketingPushConsent(fixture);
+    // When
+    const agreed = await useCase.execute({ userId: fixture.userId, agreed: true });
+    const revoked = await useCase.execute({ userId: fixture.userId, agreed: false });
+    // Then
+    expect(agreed.marketingPushAgreedAt).toBe(SETTINGS_TIME.toISOString());
+    expect(revoked.marketingPushAgreedAt).toBeNull();
+    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+      ...fixture.consent,
       marketingPushAgreedAt: null,
     });
-
-    // When: 철회(false)로 변경
-    const result = await useCase.execute(userId, false);
-
-    // Then: { agreed: false }로 upsert, null 뷰 반환
-    expect(repo.upsertMarketingPushConsent).toHaveBeenCalledWith(userId, {
-      agreed: false,
+  });
+  it("동의 기록이 없으면 광고성 푸시 동의만 생성한다", async () => {
+    // Given
+    const fixture = createUserSettingsFixture({ consent: null });
+    // When
+    await new UpdateMarketingPushConsent(fixture).execute({ userId: fixture.userId, agreed: true });
+    // Then
+    expect(fixture.consentRepository.records.get(fixture.userId)).toEqual({
+      termsAgreedAt: null,
+      privacyAgreedAt: null,
+      agreedTermsVersion: null,
+      marketingAgreedAt: null,
+      marketingPushAgreedAt: SETTINGS_TIME,
     });
-    expect(result.marketingPushAgreedAt).toBeNull();
   });
 });
