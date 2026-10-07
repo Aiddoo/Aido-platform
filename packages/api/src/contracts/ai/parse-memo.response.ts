@@ -73,26 +73,6 @@ export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;
 // LLM 내부용 스키마
 // ============================================================================
 
-export const llmParsedMemoResultSchema = z.object({
-  todos: z.array(
-    z.object({
-      title: z.string(),
-      startDate: z.string(),
-      endDate: z.string().nullable(),
-      scheduledTime: z.string().nullable(),
-      isAllDay: z.boolean(),
-      isRecurring: z.boolean().default(false),
-      recurrence: z
-        .object({
-          daysOfWeek: z.array(dayOfWeekSchema),
-          endDate: z.string(),
-        })
-        .nullable()
-        .default(null),
-      categoryId: z.number().int().positive(),
-      items: z.array(z.object({ title: z.string() })).default([]),
-    }),
-  ),
-});
+export const llmParsedMemoResultSchema = parsedMemoDataSchema;
 
 export type LlmParsedMemoResult = z.infer<typeof llmParsedMemoResultSchema>;

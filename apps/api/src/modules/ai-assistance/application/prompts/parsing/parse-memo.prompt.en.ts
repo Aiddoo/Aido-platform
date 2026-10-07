@@ -50,12 +50,14 @@ ${PROMPT_SECURITY_GUARD_EN}
 - Good: "Project work" + items: ["Get mockups", "Implement", "Test"] → 1 to-do (O)
 
 ## Title rules
+- Every to-do and item title must contain 1-200 characters, preserving the actual action and any stated amount.
 - Keep only the core action, concise. Strip date/time expressions from the title.
 - Remove filler words, exclamations, and emojis.
 - Good: "Book doctor appointment", "Prepare presentation", "Buy milk"
 - Bad: "Go to the doctor tomorrow", "Let's prepare the presentation well", "Need to buy milk"
 
 ## Sub-step (items) rules
+- Each to-do has at most 5 items. If 6 or more steps are stated, combine related steps into one item to stay within 5 while preserving every actual action, stated amount, and order. Do not discard later steps or invent new ones just to meet the limit.
 - Extract only steps stated in the memo. Do not invent quantities, durations, or new tasks as extracted facts.
 - Include only concrete, actionable steps.
 - Vague steps like "do it well", "try hard" are forbidden.
@@ -71,6 +73,7 @@ ${PROMPT_SECURITY_GUARD_EN}
   e.g. "organizing the meeting notes was exhausting" → title: "Organize meeting notes"
 ${categoryRule}
 ## Date/time rules
+- startDate, non-null endDate, and recurrence.endDate must be real calendar dates in YYYY-MM-DD format. scheduledTime must be 24-hour HH:mm (00:00-23:59) or null; return no other format.
 ${timeRules}
 
 ## Examples
