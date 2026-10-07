@@ -4,6 +4,10 @@ import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/applicat
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import {
+  ACCOUNT_NOTIFICATION_CLEANUP,
+  ACCOUNT_TODO_COMMENT_CLEANUP,
+} from "./application/ports/auth/account-cleanup.port.js";
+import {
   AUTH_EMAIL_SENDER,
   AUTH_CACHE,
   AUTH_REGISTRATION_NOTIFIER,
@@ -43,12 +47,14 @@ import { LoginWithPassword } from "./application/use-cases/auth/login-with-passw
 import { LogoutAll } from "./application/use-cases/auth/logout-all.use-case.js";
 import { Logout } from "./application/use-cases/auth/logout.use-case.js";
 import { ProvisionUser } from "./application/use-cases/auth/provision-user.use-case.js";
+import { PurgeDeletedAccounts } from "./application/use-cases/auth/purge-deleted-accounts.use-case.js";
 import { RefreshTokens } from "./application/use-cases/auth/refresh-tokens.use-case.js";
 import { Register } from "./application/use-cases/auth/register.use-case.js";
 import { RequestPasswordReset } from "./application/use-cases/auth/request-password-reset.use-case.js";
 import { RequestPasswordSetupCode } from "./application/use-cases/auth/request-password-setup-code.use-case.js";
 import { ResendVerification } from "./application/use-cases/auth/resend-verification.use-case.js";
 import { ResetPassword } from "./application/use-cases/auth/reset-password.use-case.js";
+import { RestoreAccount } from "./application/use-cases/auth/restore-account.use-case.js";
 import { RevokeSession } from "./application/use-cases/auth/revoke-session.use-case.js";
 import { SetPassword } from "./application/use-cases/auth/set-password.use-case.js";
 import { StartOAuthAuthorization } from "./application/use-cases/auth/start-oauth-authorization.use-case.js";
@@ -132,9 +138,73 @@ export const completeOAuthAuthorizationProvider: FactoryProvider<CompleteOAuthAu
 
 export const deleteAccountProvider: FactoryProvider<DeleteAccount> = {
   provide: DeleteAccount,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof DeleteAccount>[0]["workflow"]) =>
-    new DeleteAccount({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_SESSION_REPOSITORY,
+    AUTH_PASSWORD_HASHER,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    UNIT_OF_WORK,
+    AUTH_CACHE,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof DeleteAccount>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof DeleteAccount>[0]["accountRepository"],
+    sessionRepository: ConstructorParameters<typeof DeleteAccount>[0]["sessionRepository"],
+    passwordService: ConstructorParameters<typeof DeleteAccount>[0]["passwordService"],
+    securityLogRepository: ConstructorParameters<typeof DeleteAccount>[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof DeleteAccount>[0]["unitOfWork"],
+    cacheService: ConstructorParameters<typeof DeleteAccount>[0]["cacheService"],
+  ) =>
+    new DeleteAccount({
+      userRepository,
+      accountRepository,
+      sessionRepository,
+      passwordService,
+      securityLogRepository,
+      unitOfWork,
+      cacheService,
+      logger: new Logger(DeleteAccount.name),
+    }),
+};
+
+export const restoreAccountProvider: FactoryProvider<RestoreAccount> = {
+  provide: RestoreAccount,
+  inject: [AUTH_USER_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof RestoreAccount>[0]["userRepository"],
+    securityLogRepository: ConstructorParameters<typeof RestoreAccount>[0]["securityLogRepository"],
+  ) => new RestoreAccount({ userRepository, securityLogRepository }),
+};
+
+export const purgeDeletedAccountsProvider: FactoryProvider<PurgeDeletedAccounts> = {
+  provide: PurgeDeletedAccounts,
+  inject: [
+    AUTH_USER_REPOSITORY,
+    UNIT_OF_WORK,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    ACCOUNT_NOTIFICATION_CLEANUP,
+    ACCOUNT_TODO_COMMENT_CLEANUP,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["userRepository"],
+    unitOfWork: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["unitOfWork"],
+    securityLogRepository: ConstructorParameters<
+      typeof PurgeDeletedAccounts
+    >[0]["securityLogRepository"],
+    notificationCleanup: ConstructorParameters<
+      typeof PurgeDeletedAccounts
+    >[0]["notificationCleanup"],
+    todoCommentCleanup: ConstructorParameters<typeof PurgeDeletedAccounts>[0]["todoCommentCleanup"],
+  ) =>
+    new PurgeDeletedAccounts({
+      userRepository,
+      unitOfWork,
+      securityLogRepository,
+      notificationCleanup,
+      todoCommentCleanup,
+      logger: new Logger(PurgeDeletedAccounts.name),
+    }),
 };
 
 export const exchangeOAuthCodeProvider: FactoryProvider<ExchangeOAuthCode> = {
@@ -354,7 +424,6 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
     UNIT_OF_WORK,
     AUTH_USER_REPOSITORY,
     AUTH_ACCOUNT_REPOSITORY,
-    AUTH_SESSION_REPOSITORY,
     AUTH_LOGIN_ATTEMPT_REPOSITORY,
     AUTH_SECURITY_LOG_REPOSITORY,
     AUTH_PASSWORD_HASHER,
@@ -365,12 +434,12 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
     IssueLogin,
     ProvisionUser,
     RETENTION_ENROLLER,
+    RestoreAccount,
   ],
   useFactory: (
     unitOfWork: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["unitOfWork"],
     userRepository: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["userRepository"],
     accountRepository: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["accountRepository"],
-    sessionRepository: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["sessionRepository"],
     loginAttemptRepository: ConstructorParameters<
       typeof CredentialAuthWorkflow
     >[0]["loginAttemptRepository"],
@@ -391,12 +460,12 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
       typeof CredentialAuthWorkflow
     >[0]["provisionUserUseCase"],
     retentionEnroller: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["retentionEnroller"],
+    restoreAccount: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["restoreAccount"],
   ) =>
     new CredentialAuthWorkflow({
       unitOfWork,
       userRepository,
       accountRepository,
-      sessionRepository,
       loginAttemptRepository,
       securityLogRepository,
       passwordService,
@@ -407,6 +476,7 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
       issueLoginUseCase,
       provisionUserUseCase,
       retentionEnroller,
+      restoreAccount,
       logger: new Logger(CredentialAuthWorkflow.name),
     }),
 };
@@ -426,6 +496,7 @@ export const oauthWorkflowProvider: FactoryProvider<OAuthWorkflow> = {
     IssueLogin,
     ProvisionUser,
     OAUTH_IDENTITY_PROVIDER_REGISTRY,
+    RestoreAccount,
   ],
   useFactory: (
     unitOfWork: ConstructorParameters<typeof OAuthWorkflow>[0]["unitOfWork"],
@@ -442,6 +513,7 @@ export const oauthWorkflowProvider: FactoryProvider<OAuthWorkflow> = {
     issueLoginUseCase: ConstructorParameters<typeof OAuthWorkflow>[0]["issueLoginUseCase"],
     provisionUserUseCase: ConstructorParameters<typeof OAuthWorkflow>[0]["provisionUserUseCase"],
     registry: ConstructorParameters<typeof OAuthWorkflow>[0]["registry"],
+    restoreAccount: ConstructorParameters<typeof OAuthWorkflow>[0]["restoreAccount"],
   ) =>
     new OAuthWorkflow({
       unitOfWork,
@@ -456,6 +528,7 @@ export const oauthWorkflowProvider: FactoryProvider<OAuthWorkflow> = {
       issueLoginUseCase,
       provisionUserUseCase,
       registry,
+      restoreAccount,
       logger: new Logger(OAuthWorkflow.name),
     }),
 };

@@ -16,7 +16,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
-- [ ] 04 Identity: 04a 세션 완료([Issue #896](https://github.com/Aiddoo/Aido-platform/issues/896)); 계정·자격 증명·설정·동의·생명주기 남음
+- [ ] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([Issue #898](https://github.com/Aiddoo/Aido-platform/issues/898)); 자격 증명·OAuth·설정·동의 남음
 - [ ] 05 Billing: Webhook·구독 상태 전이
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
@@ -171,3 +171,49 @@ E2E 34 files / 481 tests(265.17초), lint·format·workspace typecheck 통과.
 재검증했다. CredentialAuthWorkflow는 세션 흐름을 제거해 순수 356줄 줄었다. 새 script·패키지·
 Action job, DB schema/migration·운영 key/TTL·공유 REST 계약 변경은 없다. 실행 시간 차이로
 운영 성능 향상률을 주장하지 않는다. Identity 상위 단계는 아직 진행 중이며 전체 4/18 완료다.
+
+## 04b Identity 사용자 생명주기
+
+[Issue #898](https://github.com/Aiddoo/Aido-platform/issues/898)에서 최소 상태의 IdentityUser
+Aggregate가 탈퇴·복구·purge 판정을 소유한다. 복구는 `deletedAt > cutoff`, purge는 `< cutoff`
+이며 정확히 같은 시각에는 둘 다 실행하지 않는다. 복구 가능성을 판단한 시각을 Credential/OAuth의
+공유 RestoreAccount에 전달한다. 로그인 처리 중 기간 경계를 지나도 기존 허용 의미를 유지한다.
+레거시 복구 policy와 중복 저장·감사 흐름을 제거하고 DeleteAccount도 직접 UseCase로 이전했다.
+
+PurgeDeletedAccounts가 사용자별 UoW와 기존 Notification/Engagement cleanup capability를
+사용한다. Composition Root의 typed factory binding을 Integration에서도 재사용하며 전달만 하는
+새 Adapter 클래스는 만들지 않았다. scheduler/handler는 업무 흐름을 가지지 않고 setter 연결을
+제거했다. queue/job/scheduler/catch-up key와 retry를 소유 constants로 모으며 기존 wire 값을
+유지했다. `account-purge` legacy 소비는 drain 근거가 없어 남긴다.
+
+기존 purge는 hard delete commit 후 감사 기록을 저장하므로 감사 실패 시 재시도 대상이 사라지는
+처리 순서였다. 삭제와 기존 감사 데이터를 같은 transaction에 저장하도록 바꿨다. 실제 PG에서
+감사 저장 FK 실패를 유발하고 User/Profile 삭제 rollback을 검증했다. commit 뒤 cache 정리
+실패는 삭제 성공·감사 기록과 분리하며 로그는 실제 purged/skipped/failed 수를 기록한다.
+기존 후보 개수를 성공 수로 출력하던 코드를 제거했다. 운영 장애 발생 횟수는 미측정이다.
+
+최소 `SELECT User FOR UPDATE` 한 문장은 중복 purge와 후보 상태 재검증을 위한 lock으로
+사용한다. 설치된 rc.14 public ORM 표면에서 lock API를 확인할 수 없어 기존 native query bridge를
+재사용했다. 값을 바인딩하고 nullable 날짜 codec·상태 schema를 명시했다. 단순 CRUD는 ORM을
+사용한다. 실제 PG에서 두 purge가 같은 행 잠금에 대기한 뒤 해제하여 삭제·감사 1회와 나머지 skip을
+검증했다. 정상 복구/purge는 서로 다른 기간 범위이므로 정상 복구 경쟁으로 삭제가 발생했다고
+주장하지 않는다. 후보 조회 후 상태가 바뀐 경우의 방어 검증으로 구분한다.
+
+User profile projection의 `deletedAt` 누락과 fixture의 명시적인 `emailVerifiedAt/name: null`이
+기본값으로 덮이던 동작을 고쳤다. 미인증/nullable profile 응답을 실제 fixture로 확인한다.
+가짜 활성 transaction 증명 5개는 제거하고 실제 PG에 맡긴다. 신규 UseCase Unit은 24개이며
+이름과 달리 실패를 설정하지 않던 purge 테스트도 실제 실패·다음 사용자 상태 검사로 바꿨다.
+
+Auth E2E 85 tests가 40.37초에 통과했다. 3기기의 JWT cache를 채우고 탈퇴 직후 모두 거부하며,
+복구 뒤 profile/Todo/category가 보존되고 새 세션만 활성인지 확인한다. 기존 JWT/Refresh는 계속
+거부한다. 검증 없는 "성능 향상" 테스트는 기존 cache miss/hit 계약에 합치고 실제 userId와
+응답 data 동일성을 검증했다. 실제 PG 3 files / 17 tests는 미국·한국 timezone으로 반복 통과했다.
+PG socket/timer는 유지하고 업무 Date만 고정했다. 새 script·패키지·Action job은 없다.
+운영 latency·처리량은 미측정이며 전체 04 Identity 완료를 의미하지 않는다.
+
+전체 검증도 통과했다: Unit 457 files / 2,880 tests(16.48초), Integration 45 files /
+441 tests(135.74초), E2E 34 files / 481 tests(242.94초), lint·format·workspace typecheck.
+credential/OAuth Workflow는 각각 순수 104줄/14줄, AccountPurgeJob은 94줄 감소했다.
+신규 코드·테스트를 포함한 전체 변경이 줄었다는 뜻은 아니다. Role/응답/status/error·30일 정책·
+DB schema/migration·queue wire·key/TTL·고정 구 앱/OpenAPI 계약을 유지했다.
+전체 상위 단계는 여전히 4/18 완료이고 04c 자격 증명·비밀번호·프로필이 다음 범위다.

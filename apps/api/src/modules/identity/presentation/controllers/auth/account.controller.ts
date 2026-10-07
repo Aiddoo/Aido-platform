@@ -263,6 +263,11 @@ export class AccountController {
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    return this.deleteAccountUseCase.execute(user.userId, user.sessionId, dto, metadata);
+    return this.deleteAccountUseCase.execute({
+      userId: user.userId,
+      password: dto.password,
+      reason: dto.reason,
+      metadata,
+    });
   }
 }

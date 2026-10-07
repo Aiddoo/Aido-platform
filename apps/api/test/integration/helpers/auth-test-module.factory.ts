@@ -53,6 +53,7 @@ import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 
 import {
   credentialAuthWorkflowProvider,
+  restoreAccountProvider,
   issueLoginProvider,
   passwordWorkflowProvider,
   provisionUserProvider,
@@ -77,6 +78,7 @@ export async function createAuthTestModule(
     ],
     providers: [
       credentialAuthWorkflowProvider,
+      restoreAccountProvider,
       issueLoginProvider,
       provisionUserProvider,
       PasswordService,

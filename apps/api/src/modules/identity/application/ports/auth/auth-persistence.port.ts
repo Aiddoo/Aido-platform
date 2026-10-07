@@ -50,8 +50,19 @@ export interface AuthUserRepositoryPort {
     userId: string,
     data: { name?: string | null; profileImage?: string | null },
   ): Promise<{ name: string | null; profileImage: string | null }>;
-  softDelete(id: string): Promise<unknown>;
+  softDelete(id: string, deletedAt?: Date): Promise<unknown>;
   restore(id: string): Promise<unknown>;
+}
+
+export interface AuthAccountLifecycleRepositoryPort {
+  findByIdForPurge(
+    id: string,
+  ): Promise<Pick<AuthUserRecord, "id" | "email" | "status" | "deletedAt"> | null>;
+  findSoftDeletedForPurge(
+    gracePeriodDays: number,
+    at?: Date,
+  ): Promise<Array<{ id: string; email: string; deletedAt: Date }>>;
+  hardDelete(id: string): Promise<void>;
 }
 
 export interface AuthAccountRecord {

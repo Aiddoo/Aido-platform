@@ -1624,8 +1624,8 @@ describe("인증 E2E", () => {
       const statsAfterSecond = cacheService.getStats();
       expect(statsAfterSecond.hits).toBe(statsAfterFirst.hits + 2);
 
-      expect(response1.body.data.id).toBe(response2.body.data.id);
-      expect(response1.body.data.name).toBe(response2.body.data.name);
+      expect(response1.body.data.userId).toBeDefined();
+      expect(response2.body.data).toEqual(response1.body.data);
     });
 
     it("PATCH /auth/profile - 프로필 수정 후 최신 데이터 반환 (캐시 무효화 검증)", async () => {
@@ -1720,37 +1720,6 @@ describe("인증 E2E", () => {
       const finalStats = cacheService.getStats();
       expect(finalStats.misses).toBe(initialStats.misses + 2);
       expect(finalStats.hits).toBe(initialStats.hits + 8);
-    });
-
-    it("캐시 히트 시 응답 속도 향상 (성능 기반 검증)", async () => {
-      // Given - 캐시 초기화 및 사용자 생성
-      await cacheService.reset();
-      const { accessToken } = await ctx.helpers.createVerifiedUser(
-        "cache-perf@example.com",
-        cachePassword,
-      );
-
-      await cacheService.reset();
-
-      // When - 첫 번째 호출 (캐시 미스)
-      const start1 = Date.now();
-      await request(ctx.app.getHttpServer())
-        .get("/v1/auth/me")
-        .set("Authorization", `Bearer ${accessToken}`)
-        .expect(200);
-      const _duration1 = Date.now() - start1;
-
-      // When - 두 번째 호출 (캐시 히트)
-      const start2 = Date.now();
-      await request(ctx.app.getHttpServer())
-        .get("/v1/auth/me")
-        .set("Authorization", `Bearer ${accessToken}`)
-        .expect(200);
-      const _duration2 = Date.now() - start2;
-
-      // Then - 캐시 동작 확인
-      const stats = cacheService.getStats();
-      expect(stats.hits).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -2182,6 +2151,113 @@ describe("인증 E2E", () => {
   });
 
   describe("회원 탈퇴 플로우", () => {
+    it("여러 기기의 캐시된 세션은 탈퇴 후 거부되고 복구 후에도 재사용할 수 없다", async () => {
+      // Given - 세 기기의 세션과 보존할 프로필·할 일이 있는 사용자
+      const email = "delete-restore-multi-device@example.com";
+      const password = "Test1234!";
+      const name = "복구 후에도 유지할 이름";
+      const user = await ctx.helpers.createVerifiedUser(email, password, { name });
+      const secondDevice = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/login")
+        .set("User-Agent", "lifecycle-device-tablet")
+        .send({ email, password, deviceName: "태블릿" })
+        .expect(200);
+      const thirdDevice = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/login")
+        .set("User-Agent", "lifecycle-device-laptop")
+        .send({ email, password, deviceName: "노트북" })
+        .expect(200);
+      const accessTokens: string[] = [
+        user.accessToken,
+        secondDevice.body.data.accessToken,
+        thirdDevice.body.data.accessToken,
+      ];
+      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const createdTodo = await request(ctx.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ title: "복구 후에도 유지할 할 일", categoryId, startDate: "2024-01-15" })
+        .expect(201);
+      const authCache = ctx.module.get<AuthCachePort>(AUTH_CACHE);
+      const sessionIds: string[] = [];
+      for (const accessToken of accessTokens) {
+        const profile = await request(ctx.app.getHttpServer())
+          .get("/v1/auth/me")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .expect(200);
+        sessionIds.push(profile.body.data.sessionId);
+        expect(await authCache.getSession(profile.body.data.sessionId)).toBeDefined();
+      }
+      expect(new Set(sessionIds).size).toBe(3);
+
+      // When - 한 기기에서 탈퇴를 요청한다
+      const deletion = await request(ctx.app.getHttpServer())
+        .delete("/v1/auth/account")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ password })
+        .expect(200);
+
+      // Then - 모든 기기의 세션 캐시가 삭제되고 기존 JWT는 거부된다
+      expect(deletion.body.data.gracePeriodDays).toBe(30);
+      for (const sessionId of sessionIds) {
+        expect(await authCache.getSession(sessionId)).toBeUndefined();
+      }
+      for (const accessToken of accessTokens) {
+        const denied = await request(ctx.app.getHttpServer())
+          .get("/v1/auth/me")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .expect(401);
+        expect(denied.body.error.code).toBe("AUTH_0101");
+      }
+
+      // When - 유예 기간 내 로그인으로 계정을 복구한다
+      const restoration = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/login")
+        .send({ email, password })
+        .expect(200);
+      const restoredAccessToken: string = restoration.body.data.accessToken;
+
+      // Then - 기존 데이터는 유지되고 복구한 새 세션만 활성 상태다
+      expect(restoration.body.data.accountRestored).toBe(true);
+      const restoredProfile = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${restoredAccessToken}`)
+        .expect(200);
+      expect(restoredProfile.body.data).toMatchObject({
+        userId: user.userId,
+        name,
+        status: "ACTIVE",
+      });
+      expect(sessionIds).not.toContain(restoredProfile.body.data.sessionId);
+      const restoredTodo = await request(ctx.app.getHttpServer())
+        .get(`/v1/todos/${createdTodo.body.data.todo.id}`)
+        .set("Authorization", `Bearer ${restoredAccessToken}`)
+        .expect(200);
+      expect(restoredTodo.body.data).toMatchObject({
+        id: createdTodo.body.data.todo.id,
+        title: "복구 후에도 유지할 할 일",
+        category: { id: categoryId },
+      });
+      const sessions = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/sessions")
+        .set("Authorization", `Bearer ${restoredAccessToken}`)
+        .expect(200);
+      expect(sessions.body.data.sessions).toEqual([
+        expect.objectContaining({ id: restoredProfile.body.data.sessionId, isCurrent: true }),
+      ]);
+      for (const accessToken of accessTokens) {
+        await request(ctx.app.getHttpServer())
+          .get("/v1/auth/me")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .expect(401);
+      }
+      const refusedRefresh = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/refresh")
+        .set("Authorization", `Bearer ${secondDevice.body.data.refreshToken}`)
+        .expect(401);
+      expect(refusedRefresh.body.error.code).toBe("SESSION_0703");
+    });
+
     it("이메일 계정 탈퇴 → 유예 기간 내 복구 → 유예 기간 초과 차단", async () => {
       // Given - 인증된 사용자
       const deleteEmail = "delete-test@example.com";

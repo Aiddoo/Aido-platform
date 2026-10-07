@@ -67,7 +67,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 
   describe("getMe", () => {
     it("현재 사용자 정보를 서비스에서 조회하고 매핑된 결과를 반환해야 한다", async () => {
-      // Given -사용자 정보 서비스 응답이 준비되었을 때
+      // Given - 사용자 정보 서비스 응답이 준비되었을 때
       const serviceResult = {
         userId: "user-123",
         email: "test@example.com",
@@ -86,10 +86,10 @@ describe("AccountController — 계정 컨트롤러", () => {
       getCurrentUserQuery.execute.mockResolvedValue(serviceResult);
       const expectedResponse = AuthMapper.toCurrentUserResponse(serviceResult);
 
-      // When -getMe를 호출하면
+      // When - getMe를 호출하면
       const result = await controller.getMe(mockUser);
 
-      // Then -서비스에 userId, email, sessionId를 전달하고 매핑된 결과를 반환해야 한다
+      // Then - 서비스에 userId, email, sessionId를 전달하고 매핑된 결과를 반환해야 한다
       expect(getCurrentUserQuery.execute).toHaveBeenCalledWith(
         mockUser.userId,
         mockUser.email,
@@ -101,7 +101,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 
   describe("updateProfile", () => {
     it("프로필 수정 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
-      // Given -프로필 수정 DTO와 서비스 응답이 준비되었을 때
+      // Given - 프로필 수정 DTO와 서비스 응답이 준비되었을 때
       const dto = {
         name: "새이름",
       } as unknown as UpdateProfileDto;
@@ -113,10 +113,10 @@ describe("AccountController — 계정 컨트롤러", () => {
       updateProfileUseCase.execute.mockResolvedValue(serviceResult);
       const expectedResponse = AuthMapper.toUpdateProfileResponse(serviceResult);
 
-      // When -updateProfile을 호출하면
+      // When - updateProfile을 호출하면
       const result = await controller.updateProfile(mockUser, dto);
 
-      // Then -서비스에 userId와 DTO를 전달하고 매핑된 결과를 반환해야 한다
+      // Then - 서비스에 userId와 DTO를 전달하고 매핑된 결과를 반환해야 한다
       expect(updateProfileUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
       expect(result).toEqual(expectedResponse);
     });
@@ -124,7 +124,7 @@ describe("AccountController — 계정 컨트롤러", () => {
 
   describe("getLinkedAccounts", () => {
     it("연동된 소셜 계정 목록을 서비스에서 조회하고 결과를 반환해야 한다", async () => {
-      // Given -연동 계정 서비스 응답이 준비되었을 때
+      // Given - 연동 계정 서비스 응답이 준비되었을 때
       const serviceResult = {
         accounts: [
           {
@@ -156,10 +156,10 @@ describe("AccountController — 계정 컨트롤러", () => {
       };
       listLinkedAccountsQuery.execute.mockResolvedValue(serviceResult);
 
-      // When -getLinkedAccounts를 호출하면
+      // When - getLinkedAccounts를 호출하면
       const result = await controller.getLinkedAccounts(mockUser);
 
-      // Then -서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
+      // Then - 서비스에 userId를 전달하고 서비스 결과를 직접 반환해야 한다
       expect(listLinkedAccountsQuery.execute).toHaveBeenCalledWith(mockUser.userId);
       expect(result).toEqual(serviceResult);
     });
@@ -167,15 +167,15 @@ describe("AccountController — 계정 컨트롤러", () => {
 
   describe("unlinkAccount", () => {
     it("소셜 계정 연동 해제 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-      // Given -연동 해제 서비스 응답이 준비되었을 때
+      // Given - 연동 해제 서비스 응답이 준비되었을 때
       const provider = "GOOGLE" as const;
       const serviceResult = { message: "소셜 계정이 연결 해제되었습니다." };
       unlinkOAuthAccountUseCase.execute.mockResolvedValue(serviceResult);
 
-      // When -unlinkAccount를 호출하면
+      // When - unlinkAccount를 호출하면
       const result = await controller.unlinkAccount(mockUser, provider, mockRequest);
 
-      // Then -서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
+      // Then - 서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
       expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith(
         mockUser.userId,
         provider,
@@ -190,10 +190,10 @@ describe("AccountController — 계정 컨트롤러", () => {
 
   describe("deleteAccount", () => {
     it("회원 탈퇴 요청을 서비스에 위임하고 결과를 반환해야 한다", async () => {
-      // Given -회원 탈퇴 DTO와 서비스 응답이 준비되었을 때
-      const dto = {
+      // Given - 회원 탈퇴 DTO와 서비스 응답이 준비되었을 때
+      const dto: DeleteAccountDto = {
         reason: "사용하지 않아서",
-      } as unknown as DeleteAccountDto;
+      };
       const serviceResult = {
         message: "회원 탈퇴가 완료되었습니다.",
         deletedAt: "2026-03-01T00:00:00.000Z",
@@ -201,19 +201,19 @@ describe("AccountController — 계정 컨트롤러", () => {
       };
       deleteAccountUseCase.execute.mockResolvedValue(serviceResult);
 
-      // When -deleteAccount를 호출하면
+      // When - deleteAccount를 호출하면
       const result = await controller.deleteAccount(mockUser, dto, mockRequest);
 
-      // Then -서비스에 userId, sessionId, dto, metadata를 전달하고 결과를 반환해야 한다
-      expect(deleteAccountUseCase.execute).toHaveBeenCalledWith(
-        mockUser.userId,
-        mockUser.sessionId,
-        dto,
-        expect.objectContaining({
+      // Then - 서비스에 사용자 ID와 탈퇴 입력·요청 정보를 전달하고 결과를 반환해야 한다
+      expect(deleteAccountUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        password: dto.password,
+        reason: dto.reason,
+        metadata: expect.objectContaining({
           ip: "127.0.0.1",
           userAgent: "TestAgent/1.0",
         }),
-      );
+      });
       expect(result).toEqual(serviceResult);
     });
   });

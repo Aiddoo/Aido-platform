@@ -39,6 +39,10 @@ import { RETENTION_ENROLLER } from "./application/ports/auth/retention-enroller.
 import { USER_PROVISIONING_SEEDER } from "./application/ports/auth/user-provisioning-seeder.port.js";
 import { VERIFICATION_CODE_SECURITY } from "./application/ports/auth/verification-code-security.port.js";
 import {
+  accountNotificationCleanupProvider,
+  accountTodoCommentCleanupProvider,
+} from "./identity-auth-account-cleanup.providers.js";
+import {
   changePasswordProvider,
   completeOAuthAuthorizationProvider,
   credentialAuthWorkflowProvider,
@@ -58,6 +62,8 @@ import {
   oauthWorkflowProvider,
   passwordWorkflowProvider,
   provisionUserProvider,
+  purgeDeletedAccountsProvider,
+  restoreAccountProvider,
   refreshTokensProvider,
   registerProvider,
   requestPasswordResetProvider,
@@ -168,6 +174,8 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
       provide: RETENTION_ENROLLER,
       useClass: RetentionEnrollerAdapter,
     },
+    accountNotificationCleanupProvider,
+    accountTodoCommentCleanupProvider,
     // Services
     PasswordService,
     sessionServiceProvider,
@@ -193,6 +201,8 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     oauthWorkflowProvider,
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
     issueLoginProvider,
+    restoreAccountProvider,
+    purgeDeletedAccountsProvider,
     provisionUserProvider,
     registerProvider,
     verifyEmailProvider,

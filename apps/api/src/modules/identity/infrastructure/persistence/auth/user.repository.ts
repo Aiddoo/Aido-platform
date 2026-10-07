@@ -1,20 +1,22 @@
+import { userStatusSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { param } from "@prisma/orm-postgres/relational-core/expression";
+import sql from "sql-template-tag";
 
-import { AuthPersistenceConflict } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import {
+  type AuthAccountLifecycleRepositoryPort,
+  AuthPersistenceConflict,
+  type AuthUserProfileRecord,
+  type AuthUserRepositoryPort,
+} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import type { DatabaseCreate } from "#api/platform/database/database-records";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
+import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { databaseDate, databaseTimestamp, varchar } from "#api/platform/database/database-values";
-import type {
-  AccountProvider,
-  SubscriptionStatus,
-  User,
-  UserRole,
-  UserStatus,
-} from "#api/platform/database/database.types";
+import type { User, UserStatus } from "#api/platform/database/database.types";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { uniqueConstraintTargets } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
@@ -37,29 +39,12 @@ export interface UserWithAccount {
   }[];
 }
 
-// 비밀번호 등 민감 정보 제외
-export interface UserWithProfile {
-  id: string;
-  email: string;
-  userTag: string;
-  role: UserRole;
-  status: UserStatus;
-  emailVerifiedAt: Date | null;
-  subscriptionStatus: SubscriptionStatus;
-  subscriptionExpiresAt: Date | null;
-  createdAt: Date;
+export interface UserWithProfile extends AuthUserProfileRecord {
   lastLoginAt: Date | null;
-  profile: {
-    name: string | null;
-    profileImage: string | null;
-  } | null;
-  accounts: {
-    provider: AccountProvider;
-  }[];
 }
 
 @Injectable()
-export class UserRepository {
+export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecycleRepositoryPort {
   readonly #logger = new Logger(UserRepository.name);
   private static readonly MAX_USER_TAG_RETRIES = 5;
 
@@ -104,6 +89,7 @@ export class UserRepository {
         "subscriptionStatus",
         "subscriptionExpiresAt",
         "createdAt",
+        "deletedAt",
         "lastLoginAt",
       )
       .include("profile", (related) => related.select("name", "profileImage"))
@@ -294,9 +280,9 @@ export class UserRepository {
     return profile;
   }
 
-  async softDelete(id: string): Promise<User> {
+  async softDelete(id: string, deletedAt: Date = now()): Promise<User> {
     return this.client.orm.public.User.where((row) => row.id.eq(id))
-      .update(encodePatch("User", { deletedAt: now(), status: "SUSPENDED" }))
+      .update(encodePatch("User", { deletedAt, status: "SUSPENDED" }))
       .then((row) => decodeRecord("User", requireRecord(row)));
   }
 
@@ -308,8 +294,9 @@ export class UserRepository {
 
   async findSoftDeletedForPurge(
     gracePeriodDays: number,
+    at: Date = now(),
   ): Promise<{ id: string; email: string; deletedAt: Date }[]> {
-    const cutoff = subtractDays(gracePeriodDays);
+    const cutoff = subtractDays(gracePeriodDays, at);
     const rows = decodeRecord(
       "User",
       await this.client.orm.public.User.where((row) =>
@@ -318,11 +305,32 @@ export class UserRepository {
         .select("id", "email", "deletedAt")
         .all(),
     );
-    // WHERE deletedAt not null 이 보장하지만 Prisma 타입은 Date|null 이므로
-    // 타입 가드 필터로 non-null을 좁힌다(캐스트 없이 정합).
     return rows.filter(
       (row): row is { id: string; email: string; deletedAt: Date } => row.deletedAt !== null,
     );
+  }
+
+  async findByIdForPurge(id: string) {
+    const rowSpec = sqlRowSpec({
+      id: "pg/text@1",
+      email: "pg/text@1",
+      status: "pg/text@1",
+      deletedAt: { codecId: "pg/timestamp-string@1", nullable: true },
+    });
+    const rows = decodeSqlRows(
+      rowSpec,
+      await this.client.query(
+        sqlStatement(
+          this.client,
+          sql`SELECT "id", "email", "status"::text AS "status", "deletedAt"
+            FROM "User" WHERE "id" = ${id} FOR UPDATE`,
+        )
+          .returnsRow(rowSpec)
+          .build(),
+      ),
+    );
+    const row = rows[0];
+    return row === undefined ? null : { ...row, status: userStatusSchema.parse(row.status) };
   }
 
   async hardDelete(id: string): Promise<void> {

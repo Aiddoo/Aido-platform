@@ -1,25 +1,8 @@
-/**
- * UserRepository 단위 테스트
- *
- * @description
- * 사용자 저장소의 CRUD, 상태 변경, 프로필 조회 메서드를 검증한다.
- * userTag 자동 생성, 트랜잭션 지원, 이메일 인증 처리를 확인한다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test user.repository.spec.ts
- * ```
- */
 import { vi } from "vitest";
 
 import { AuthPersistenceConflict } from "#api/modules/identity/application/ports/auth/index";
 import { databaseDate, databaseTimestamp, varchar } from "#api/platform/database/database-values";
-import type {
-  AccountProvider,
-  SubscriptionStatus,
-  UserRole,
-  UserStatus,
-} from "#api/platform/database/database.types";
+import type { UserStatus } from "#api/platform/database/database.types";
 import { UserBuilder } from "#test/builders/index";
 import {
   assertNativeWhere,
@@ -31,7 +14,7 @@ import {
 } from "#test/mocks/database.mock";
 import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
-import { UserRepository } from "./user.repository.js";
+import { UserRepository, type UserWithProfile } from "./user.repository.js";
 
 /**
  * findByEmailWithCredential의 select 결과 타입
@@ -46,29 +29,6 @@ interface UserWithCredential {
     provider: string;
     password: string | null;
   }>;
-}
-
-/**
- * findByIdWithProfile의 select 결과 타입
- */
-interface UserWithProfile {
-  id: string;
-  email: string;
-  userTag: string;
-  role: UserRole;
-  status: UserStatus;
-  emailVerifiedAt: Date | null;
-  subscriptionStatus: SubscriptionStatus;
-  subscriptionExpiresAt: Date | null;
-  createdAt: Date;
-  lastLoginAt: Date | null;
-  profile: {
-    name: string;
-    profileImage: string | null;
-  } | null;
-  accounts: {
-    provider: AccountProvider;
-  }[];
 }
 
 // 테스트용 상수
@@ -91,11 +51,16 @@ describe("UserRepository — 사용자 리포지토리", () => {
     .verified()
     .build();
 
-  beforeEach(async () => {
-    // Given - Suites가 모든 의존성을 자동으로 mock
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-31T23:59:00.000Z"));
     db = createMockDatabaseContext();
 
     repository = new UserRepository(createMockTransactionHost(db));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   describe("findByEmail", () => {
@@ -194,6 +159,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
         subscriptionStatus: mockUser.subscriptionStatus,
         subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
         createdAt: mockUser.createdAt,
+        deletedAt: mockUser.deletedAt,
         lastLoginAt: mockUser.lastLoginAt,
         profile: {
           name: "Test User",
@@ -225,6 +191,7 @@ describe("UserRepository — 사용자 리포지토리", () => {
         subscriptionStatus: mockUser.subscriptionStatus,
         subscriptionExpiresAt: mockUser.subscriptionExpiresAt,
         createdAt: mockUser.createdAt,
+        deletedAt: mockUser.deletedAt,
         lastLoginAt: mockUser.lastLoginAt,
         profile: null,
         accounts: [{ provider: "CREDENTIAL" }],
@@ -302,39 +269,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
       );
     });
 
-    it("활성 트랜잭션 클라이언트로 사용자를 생성한다", async () => {
-      // Given - 사용자 생성 데이터 준비
-      const createData: { email: string; status: UserStatus } = {
-        email: "new@example.com",
-        status: "PENDING_VERIFY",
-      };
-      const txUser = UserBuilder.create()
-        .withId("tx-user-123")
-        .withEmail(createData.email)
-        .withUserTag(TEST_USER_TAG)
-        .withStatus(createData.status)
-        .build();
-
-      db.orm.public.User.first.mockResolvedValue(databaseFixture("User", null));
-      db.orm.public.User.create.mockResolvedValue(databaseFixture("User", txUser));
-
-      // When - 활성 트랜잭션 클라이언트로 사용자 생성
-      const result = await repository.create(createData);
-
-      // Then - 활성 트랜잭션 클라이언트를 통해 생성되고 userTag가 자동 생성됨
-      expect(result.id).toBe("tx-user-123");
-      expect(result.userTag).toBe(TEST_USER_TAG);
-      expect(db.orm.public.User.create).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("User", {
-            email: createData.email,
-            status: createData.status,
-            userTag: expect.stringMatching(USER_TAG_PATTERN),
-          }),
-        ),
-      );
-    });
-
     it("이메일 유니크 충돌을 애플리케이션 경계 오류로 변환한다", async () => {
       // Given - 가입 전 조회 이후 동시에 같은 이메일이 생성된 상황
       db.orm.public.User.first.mockResolvedValue(databaseFixture("User", null));
@@ -369,20 +303,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
         expect.objectContaining(databaseWriteExpectation("User", { status: "SUSPENDED" })),
       );
     });
-
-    it("활성 트랜잭션 클라이언트로 상태를 업데이트한다", async () => {
-      // Given - 업데이트 결과 모킹
-      const activeUser = UserBuilder.create().withId("user-123").verified().build();
-      db.orm.public.User.update.mockResolvedValue(databaseFixture("User", activeUser));
-
-      // When - 활성 트랜잭션 클라이언트로 상태 업데이트
-      await repository.updateStatus("user-123", "ACTIVE");
-
-      // Then - 활성 트랜잭션 클라이언트를 통해 업데이트됨
-      expect(db.orm.public.User.update).toHaveBeenCalledWith(
-        expect.objectContaining(databaseWriteExpectation("User", { status: "ACTIVE" })),
-      );
-    });
   });
 
   describe("markEmailVerified", () => {
@@ -397,25 +317,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
       // Then - 인증 완료된 사용자 반환하고 상태가 ACTIVE로 변경됨
       expect(result.status).toBe("ACTIVE");
       expect(result.emailVerifiedAt).toBeDefined();
-      expect(db.orm.public.User.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("User", {
-            emailVerifiedAt: expect.any(String),
-            status: "ACTIVE",
-          }),
-        ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트로 인증 완료 처리한다", async () => {
-      // Given - 인증 완료 결과 모킹
-      const verifiedUser = UserBuilder.create().withId("user-123").verified().build();
-      db.orm.public.User.update.mockResolvedValue(databaseFixture("User", verifiedUser));
-
-      // When - 활성 트랜잭션 클라이언트로 이메일 인증 완료 처리
-      await repository.markEmailVerified("user-123");
-
-      // Then - 활성 트랜잭션 클라이언트를 통해 인증 완료 처리됨
       expect(db.orm.public.User.update).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("User", {
@@ -440,25 +341,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
       await repository.updateLastLoginAt("user-123");
 
       // Then - 올바른 update 쿼리가 실행됨
-      expect(db.orm.public.User.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("User", { lastLoginAt: expect.any(String) }),
-        ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트로 로그인 시간을 업데이트한다", async () => {
-      // Given - 업데이트 결과 모킹
-      const userWithLogin = UserBuilder.create()
-        .withId("user-123")
-        .withLastLoginAt(new Date())
-        .build();
-      db.orm.public.User.update.mockResolvedValue(databaseFixture("User", userWithLogin));
-
-      // When - 활성 트랜잭션 클라이언트로 로그인 시간 업데이트
-      await repository.updateLastLoginAt("user-123");
-
-      // Then - 활성 트랜잭션 클라이언트를 통해 업데이트됨
       expect(db.orm.public.User.update).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("User", { lastLoginAt: expect.any(String) }),
@@ -519,22 +401,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
       );
       expect(result.deletedAt).toBeNull();
       expect(result.status).toBe("ACTIVE");
-    });
-
-    it("활성 트랜잭션 클라이언트로 복구한다", async () => {
-      // Given
-      const restoredUser = UserBuilder.create().verified().build();
-      db.orm.public.User.update.mockResolvedValue(databaseFixture("User", restoredUser));
-
-      // When
-      await repository.restore("user-123");
-
-      // Then
-      expect(db.orm.public.User.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("User", { deletedAt: null, status: "ACTIVE" }),
-        ),
-      );
     });
   });
 });

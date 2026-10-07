@@ -45,7 +45,7 @@ export const UserFixture = {
       userTag: overrides.userTag ?? `USR${String(id).padStart(5, "0")}`,
       role: overrides.role ?? ("USER" as UserRole),
       status: overrides.status ?? ("ACTIVE" as UserStatus),
-      emailVerifiedAt: overrides.emailVerifiedAt ?? now,
+      emailVerifiedAt: overrides.emailVerifiedAt === undefined ? now : overrides.emailVerifiedAt,
       twoFactorEnabled: overrides.twoFactorEnabled ?? false,
       twoFactorSecret: overrides.twoFactorSecret ?? null,
       subscriptionStatus: overrides.subscriptionStatus ?? ("FREE" as SubscriptionStatus),
@@ -73,7 +73,7 @@ export const UserFixture = {
     const profile: UserProfile = {
       id: profileOverrides.id ?? `profile-${userCounter}`,
       userId: user.id,
-      name: profileOverrides.name ?? `User ${userCounter}`,
+      name: profileOverrides.name === undefined ? `User ${userCounter}` : profileOverrides.name,
       profileImage: profileOverrides.profileImage ?? null,
     };
 

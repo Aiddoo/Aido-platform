@@ -1,5 +1,4 @@
 import {
-  type DeleteAccountInput,
   LOGIN_ATTEMPT,
   type LoginInput,
   type RegisterInput,
@@ -10,7 +9,6 @@ import { ErrorCode } from "@aido/api/errors";
 
 import type {
   CurrentUserResult,
-  DeleteAccountResult,
   LoginResult,
   RegisterResult,
   RequestMetadata,
@@ -18,14 +16,12 @@ import type {
   VerifyEmailResult,
 } from "#api/modules/identity/application/types/auth/index";
 import { assertNotDeleted } from "#api/modules/identity/application/utils/auth/auth-validation.utils";
+import { IdentityUser } from "#api/modules/identity/domain/aggregates/auth/identity-user.aggregate";
 import {
-  ACCOUNT_DELETION,
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
-  REVOKE_REASON,
   SECURITY_EVENT,
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
-import { assertRestorableWithinGracePeriod } from "#api/modules/identity/domain/services/auth/account-restoration-policy";
 import { assertStatusAllowsLogin } from "#api/modules/identity/domain/services/auth/account-status-policy";
 import type { UserStatus } from "#api/modules/identity/domain/types/auth/auth.types";
 import { Email } from "#api/modules/identity/domain/value-objects/auth/email.vo";
@@ -37,6 +33,7 @@ import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/fo
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { maskEmail } from "#api/shared/domain/utils/mask.util";
 
+import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import {
   type AuthCachePort,
   type AuthRegistrationNotifierPort,
@@ -48,7 +45,6 @@ import {
   type AuthLoginAttemptRepositoryPort,
   AuthPersistenceConflict,
   type AuthSecurityLogRepositoryPort,
-  type AuthSessionRepositoryPort,
   type AuthUserRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
 import { type RetentionEnrollerPort } from "../../ports/auth/retention-enroller.port.js";
@@ -56,12 +52,12 @@ import type { SessionService } from "../../services/auth/session.service.js";
 import type { VerificationService } from "../../services/auth/verification.service.js";
 import type { IssueLogin } from "../../use-cases/auth/issue-login.use-case.js";
 import type { ProvisionUser } from "../../use-cases/auth/provision-user.use-case.js";
+import type { RestoreAccount } from "../../use-cases/auth/restore-account.use-case.js";
 
 interface CredentialAuthWorkflowDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly userRepository: AuthUserRepositoryPort;
   readonly accountRepository: AuthAccountRepositoryPort;
-  readonly sessionRepository: AuthSessionRepositoryPort;
   readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort;
   readonly securityLogRepository: AuthSecurityLogRepositoryPort;
   readonly passwordService: AuthPasswordHasherPort;
@@ -71,6 +67,7 @@ interface CredentialAuthWorkflowDependencies {
   readonly adminEventNotifier: AuthRegistrationNotifierPort;
   readonly issueLoginUseCase: IssueLogin;
   readonly provisionUserUseCase: ProvisionUser;
+  readonly restoreAccount: RestoreAccount;
   readonly retentionEnroller: RetentionEnrollerPort;
   readonly logger: ApplicationLogger;
 }
@@ -412,7 +409,9 @@ export class CredentialAuthWorkflow {
     }
 
     // 5. 사용자 상태 확인 (탈퇴 유예 기간 내 복구 처리)
-    const needsRestore = this.#isWithinGracePeriod(user);
+    const identityUser = IdentityUser.reconstitute(user);
+    const restorationAt = now();
+    const needsRestore = identityUser.requiresRestoration(restorationAt);
 
     if (!needsRestore) {
       if (user.status === "PENDING_VERIFY") {
@@ -425,7 +424,11 @@ export class CredentialAuthWorkflow {
     const result = await this.#dependencies.unitOfWork.run(async () => {
       // 유예 기간 내 탈퇴 계정 복구
       if (needsRestore) {
-        await this.#restoreDeletedAccount(user, { ip, userAgent });
+        await this.#dependencies.restoreAccount.execute({
+          user: identityUser,
+          metadata: { ip, userAgent },
+          at: restorationAt,
+        });
       }
 
       return this.#dependencies.issueLoginUseCase.execute({
@@ -442,9 +445,11 @@ export class CredentialAuthWorkflow {
     // 복구된 계정의 캐시 무효화
     if (needsRestore) {
       await this.#dependencies.cacheService.invalidateUserProfile(user.id);
-      this.#dependencies.logger.log(
-        `Deleted account restored on login: ${user.id} (${maskEmail(email)})`,
-      );
+      this.#dependencies.logger.log({
+        event: IdentityLogEvent.ACCOUNT_RESTORED,
+        userId: user.id,
+        provider: "CREDENTIAL",
+      });
     }
 
     this.#dependencies.logger.log(`User logged in: ${user.id} (${maskEmail(email)})`);
@@ -524,115 +529,6 @@ export class CredentialAuthWorkflow {
       name: profile.name,
       profileImage: profile.profileImage,
     };
-  }
-
-  async deleteAccount(
-    userId: string,
-    _sessionId: string,
-    input: DeleteAccountInput,
-    metadata?: RequestMetadata,
-  ): Promise<DeleteAccountResult> {
-    const ip = metadata?.ip ?? AUTH_DEFAULTS.UNKNOWN_IP;
-    const userAgent = metadata?.userAgent ?? AUTH_DEFAULTS.UNKNOWN_USER_AGENT;
-
-    // 1. 사용자 조회 + 이미 탈퇴 여부 확인
-    const user = await this.#dependencies.userRepository.findById(userId);
-    if (!user) throw new ApplicationException(ErrorCode.USER_0601, { userId });
-    assertNotDeleted(user);
-
-    // 2. 계정 유형에 따른 본인 확인
-    const accounts = await this.#dependencies.accountRepository.findAllByUserId(userId);
-    const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
-
-    if (credentialAccount) {
-      if (!input.password) {
-        throw new ApplicationException(ErrorCode.USER_0612);
-      }
-      const credentialPassword = credentialAccount.password;
-      if (!credentialPassword) {
-        throw new ApplicationException(ErrorCode.USER_0602);
-      }
-      const isValid = await this.#dependencies.passwordService.verify(
-        credentialPassword,
-        input.password,
-      );
-      if (!isValid) throw new ApplicationException(ErrorCode.USER_0602);
-    }
-    // 소셜 전용: JWT 인증 통과 = 확인 완료
-
-    // 3. 활성 세션 ID 조회 (캐시 무효화용, 트랜잭션 전에 조회)
-    const activeSessions = await this.#dependencies.sessionRepository.findActiveByUserId(userId);
-
-    // 4. 트랜잭션: soft delete + 세션 전체 폐기 + 보안 로그
-    const deletedAt = now();
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.userRepository.softDelete(userId);
-      await this.#dependencies.sessionRepository.revokeAllByUserId(
-        userId,
-        REVOKE_REASON.ACCOUNT_DELETION,
-        undefined,
-      );
-      await this.#dependencies.securityLogRepository.create({
-        userId,
-        event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
-        ipAddress: ip,
-        userAgent,
-        metadata: {
-          reason: input.reason ?? null,
-          gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-          providers: accounts.map((a) => a.provider),
-        },
-      });
-    });
-
-    // 5. 캐시 무효화: 모든 기기의 세션 캐시 즉시 삭제
-    await Promise.all(
-      activeSessions.map((s) => this.#dependencies.cacheService.invalidateSession(s.id)),
-    );
-    await this.#dependencies.cacheService.invalidateUserProfile(userId);
-
-    this.#dependencies.logger.log(`Account deletion requested: ${userId}`);
-
-    return {
-      message: `계정이 탈퇴 처리되었습니다. ${ACCOUNT_DELETION.GRACE_PERIOD_DAYS}일 이내에 복구할 수 있습니다.`,
-      deletedAt: toISOString(deletedAt),
-      gracePeriodDays: ACCOUNT_DELETION.GRACE_PERIOD_DAYS,
-    };
-  }
-
-  /**
-   * 탈퇴 유예 기간(30일) 내 여부를 판단합니다.
-   *
-   * - deletedAt이 null이면 false (복구 불필요)
-   * - 30일 이내면 true (복구 필요)
-   * - 30일 초과면 예외 발생 (cron이 아직 처리하지 못한 edge case)
-   */
-  #isWithinGracePeriod(user: { deletedAt: Date | null; id: string }): boolean {
-    return assertRestorableWithinGracePeriod(user.deletedAt, user.id);
-  }
-
-  /**
-   * 탈퇴 계정 복구 처리 (트랜잭션 내부에서 호출)
-   *
-   * - 사용자 상태를 ACTIVE로 복원
-   * - 보안 로그에 ACCOUNT_RESTORED 이벤트 기록
-   */
-  async #restoreDeletedAccount(
-    user: { id: string; deletedAt: Date | null },
-    metadata: { ip: string; userAgent: string },
-  ): Promise<void> {
-    await this.#dependencies.userRepository.restore(user.id);
-
-    await this.#dependencies.securityLogRepository.create({
-      userId: user.id,
-      event: SECURITY_EVENT.ACCOUNT_RESTORED,
-      ipAddress: metadata.ip,
-      userAgent: metadata.userAgent,
-      metadata: {
-        deletedAt: toISOStringOrNull(user.deletedAt ?? null),
-        restoredAt: toISOString(now()),
-      },
-    });
   }
 
   #checkUserStatus(status: UserStatus, email: string): void {

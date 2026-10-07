@@ -11,8 +11,11 @@ import {
   type TodoViewCachePort,
 } from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
 import { PrismaTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment-account-cleanup.store";
-import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
-import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
+import {
+  AUTH_USER_REPOSITORY,
+  AUTH_SECURITY_LOG_REPOSITORY,
+} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
 import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
 import {
@@ -28,14 +31,17 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { todoCommentAccountCleanupProvider } from "../../src/modules/engagement/engagement-comments-application.providers.js";
+import {
+  accountNotificationCleanupProvider,
+  accountTodoCommentCleanupProvider,
+} from "../../src/modules/identity/identity-auth-account-cleanup.providers.js";
+import { purgeDeletedAccountsProvider } from "../../src/modules/identity/identity-auth-application.providers.js";
 import { notificationAccountCleanupProvider } from "../../src/modules/notification/notification-delivery-application.providers.js";
-import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { TestDatabase } from "../setup/test-database.js";
 
 const NOW = new Date("2026-08-26T00:00:00.000Z");
@@ -200,7 +206,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
   let testDatabase: TestDatabase;
   let prisma: TestDatabaseClient;
   let module: TestingModule;
-  let purgeJob: AccountPurgeJob;
+  let purgeDeletedAccounts: PurgeDeletedAccounts;
   let notificationCache: NotificationCachePort;
   let todoViewCache: TodoViewCachePort;
 
@@ -246,16 +252,15 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         { provide: TODO_VIEW_CACHE, useValue: todoViewCache },
         UserRepository,
         SecurityLogRepository,
-        AccountPurgeJob,
-        { provide: JOB_RUNTIME, useValue: new FakeJobRuntime() },
-        {
-          provide: AccountPurgeProcessor,
-          useValue: { setPurgeJob: vi.fn() },
-        },
+        { provide: AUTH_USER_REPOSITORY, useExisting: UserRepository },
+        { provide: AUTH_SECURITY_LOG_REPOSITORY, useExisting: SecurityLogRepository },
+        accountNotificationCleanupProvider,
+        accountTodoCommentCleanupProvider,
+        purgeDeletedAccountsProvider,
       ],
     }).compile();
     await module.init();
-    purgeJob = module.get(AccountPurgeJob);
+    purgeDeletedAccounts = module.get(PurgeDeletedAccounts);
   }, 60_000);
 
   beforeEach(async () => {
@@ -325,7 +330,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
       ),
     );
 
-    await purgeJob.purgeDeletedAccounts();
+    await purgeDeletedAccounts.execute();
 
     await expect(
       prisma.orm.public.User.where((row) => row.id.eq(fixture.purgedUserId))
@@ -414,7 +419,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
         .map((value) => encodeCreate("TodoComment", value)),
     );
 
-    await purgeJob.purgeDeletedAccounts();
+    await purgeDeletedAccounts.execute();
 
     const comments = decodeRecord(
       "TodoComment",
@@ -476,7 +481,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
     );
 
     // When
-    await purgeJob.purgeDeletedAccounts();
+    await purgeDeletedAccounts.execute();
 
     // Then - 계정은 삭제되지만 다른 사용자의 descendant와 대화 rail은 남는다
     await expect(

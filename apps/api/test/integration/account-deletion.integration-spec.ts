@@ -1,25 +1,4 @@
 import { ACCOUNT_DELETION } from "@aido/api";
-/**
- * 회원 탈퇴 통합 테스트 (Testcontainers)
- *
- * @description
- * CredentialAuthWorkflow.deleteAccount()와 AccountPurgeJob이
- * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
- *
- * 통합 테스트의 목적:
- * - CredentialAuthWorkflow → Repository → Prisma → PostgreSQL 전체 스택 검증
- * - 회원 탈퇴 soft delete + 세션 폐기 + 보안 로그 기록
- * - AccountPurgeJob hard delete 플로우
- * - 탈퇴 후 로그인/비밀번호 재설정 차단
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test account-deletion.integration-spec
- * ```
- */
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
@@ -27,7 +6,10 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { TodoCommentAccountCleanup } from "#api/modules/engagement/engagement-comments.public";
+import {
+  ACCOUNT_NOTIFICATION_CLEANUP,
+  ACCOUNT_TODO_COMMENT_CLEANUP,
+} from "#api/modules/identity/application/ports/auth/account-cleanup.port";
 import {
   AUTH_ACCOUNT_REPOSITORY,
   AUTH_CACHE,
@@ -42,14 +24,14 @@ import {
   AUTH_VERIFICATION_REPOSITORY,
 } from "#api/modules/identity/application/ports/auth/index";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
+import { DeleteAccount } from "#api/modules/identity/application/use-cases/auth/delete-account.use-case";
+import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
 import { CredentialAuthWorkflow } from "#api/modules/identity/application/workflows/auth/credential-auth.workflow";
 import { PasswordWorkflow } from "#api/modules/identity/application/workflows/auth/password.workflow";
 import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
 import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
 import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
-import { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
-import { AccountPurgeProcessor } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.processor";
 import { AccountRepository } from "#api/modules/identity/infrastructure/persistence/auth/account.repository";
 import { LoginAttemptRepository } from "#api/modules/identity/infrastructure/persistence/auth/login-attempt.repository";
 import { SecurityLogRepository } from "#api/modules/identity/infrastructure/persistence/auth/security-log.repository";
@@ -59,7 +41,6 @@ import { VerificationRepository } from "#api/modules/identity/infrastructure/per
 import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
 import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
-import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
 import { AdminEventNotifier } from "#api/modules/operations/operations-notifications.public";
 import { DefaultTodoCategorySeeder } from "#api/modules/planning/infrastructure/seeders/categories/default-todo-category.seeder";
@@ -71,7 +52,7 @@ import { DatabaseService } from "#api/platform/database/database.service";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
+import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
@@ -82,6 +63,9 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 
 import {
   credentialAuthWorkflowProvider,
+  deleteAccountProvider,
+  purgeDeletedAccountsProvider,
+  restoreAccountProvider,
   issueLoginProvider,
   passwordWorkflowProvider,
   provisionUserProvider,
@@ -89,7 +73,6 @@ import {
   verificationServiceProvider,
 } from "../../src/modules/identity/identity-auth-application.providers.js";
 import { FakeEmailService } from "../mocks/fake-email.service.js";
-import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { TestDatabase } from "../setup/test-database.js";
 import { provisioningSeederTestProvider } from "./helpers/provisioning-seeder.provider.js";
 import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.provider.js";
@@ -98,17 +81,12 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
   let authService: CredentialAuthWorkflow;
   let passwordManagementService: PasswordWorkflow;
-  let purgeJob: AccountPurgeJob;
+  let deleteAccount: DeleteAccount;
+  let purgeDeletedAccounts: PurgeDeletedAccounts;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
-  let _userRepository: UserRepository;
-  let _accountRepository: AccountRepository;
-  let _sessionRepository: SessionRepository;
-  let _securityLogRepository: SecurityLogRepository;
 
   beforeAll(async () => {
-    suppressLogger();
-
     testDb = new TestDatabase();
     databaseService = createTestDatabaseService(await testDb.start());
 
@@ -124,26 +102,21 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         credentialAuthWorkflowProvider,
         issueLoginProvider,
         provisionUserProvider,
-        AccountPurgeJob,
+        deleteAccountProvider,
+        purgeDeletedAccountsProvider,
+        restoreAccountProvider,
         {
-          provide: NotificationAccountCleanup,
+          provide: ACCOUNT_NOTIFICATION_CLEANUP,
           useValue: {
             cleanupInTransaction: async () => ({ affectedUserIds: [] }),
             settleAfterCommit: async () => {},
           },
         },
         {
-          provide: TodoCommentAccountCleanup,
+          provide: ACCOUNT_TODO_COMMENT_CLEANUP,
           useValue: {
             cleanupInTransaction: async () => ({ affectedTodoIds: [] }),
             settleAfterCommit: async () => {},
-          },
-        },
-        { provide: JOB_RUNTIME, useValue: new FakeJobRuntime() },
-        {
-          provide: AccountPurgeProcessor,
-          useValue: {
-            setPurgeJob: vi.fn(),
           },
         },
         PasswordService,
@@ -293,14 +266,12 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 
     authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
     passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
-    purgeJob = module.get<AccountPurgeJob>(AccountPurgeJob);
-    _userRepository = module.get<UserRepository>(UserRepository);
-    _accountRepository = module.get<AccountRepository>(AccountRepository);
-    _sessionRepository = module.get<SessionRepository>(SessionRepository);
-    _securityLogRepository = module.get<SecurityLogRepository>(SecurityLogRepository);
+    deleteAccount = module.get(DeleteAccount);
+    purgeDeletedAccounts = module.get(PurgeDeletedAccounts);
   }, 60000);
 
   beforeEach(async () => {
+    suppressLogger();
     vi.clearAllMocks();
     await testDb.cleanup();
   });
@@ -356,9 +327,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       await authService.login({ email, password });
 
       // When
-      const result = await authService.deleteAccount(userId, "test-session", {
-        password,
-      });
+      const result = await deleteAccount.execute({ userId, password });
 
       // Then
       expect(result.gracePeriodDays).toBe(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
@@ -370,7 +339,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         "User",
         await prisma.orm.public.User.where((row) => row.id.eq(userId)).first(),
       );
-      expect(user?.deletedAt).not.toBeNull();
+      expect(user?.deletedAt?.toISOString()).toBe(result.deletedAt);
       expect(user?.status).toBe("SUSPENDED");
 
       // DB 검증: 세션이 폐기됨
@@ -418,7 +387,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       );
 
       // When
-      const result = await authService.deleteAccount(user.id, "test-session", {});
+      const result = await deleteAccount.execute({ userId: user.id });
 
       // Then
       expect(result.gracePeriodDays).toBe(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
@@ -434,7 +403,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       const email = "login-after-delete@example.com";
       const password = "Test1234!";
       const userId = await createVerifiedCredentialUser(email, password);
-      await authService.deleteAccount(userId, "test-session", { password });
+      await deleteAccount.execute({ userId, password });
 
       // When - 로그인 (탈퇴 직후 = 유예 기간 내)
       const loginResult = await authService.login({ email, password });
@@ -466,8 +435,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     it("유예 기간 초과 시 로그인 차단 (USER_0606)", async () => {
       // Given - 31일 전 탈퇴된 사용자 (DB 직접 생성)
       const prisma = testDb.getClient();
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1));
+      const pastDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
 
       const email = "expired-delete@example.com";
       const password = "Test1234!";
@@ -488,12 +456,11 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     });
   });
 
-  describe("AccountPurgeJob — 계정 삭제 잡", () => {
+  describe("PurgeDeletedAccounts — 계정 영구 삭제", () => {
     it("유예 기간 경과 후 hard delete 실행", async () => {
       // Given - deletedAt이 31일 전인 사용자 DB에 직접 생성
       const prisma = testDb.getClient();
-      const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1));
+      const pastDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1);
 
       const user = decodeRecord(
         "User",
@@ -508,7 +475,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       );
 
       // When
-      await purgeJob.purgeDeletedAccounts();
+      await purgeDeletedAccounts.execute();
 
       // Then - user가 DB에서 완전 삭제됨
       const deletedUser = decodeRecord(
@@ -521,8 +488,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     it("유예 기간 내 사용자는 삭제하지 않음", async () => {
       // Given - deletedAt이 29일 전인 사용자
       const prisma = testDb.getClient();
-      const recentDate = new Date();
-      recentDate.setDate(recentDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1));
+      const recentDate = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1);
 
       const user = decodeRecord(
         "User",
@@ -537,7 +503,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       );
 
       // When
-      await purgeJob.purgeDeletedAccounts();
+      await purgeDeletedAccounts.execute();
 
       // Then - user가 여전히 DB에 존재
       const existingUser = decodeRecord(
@@ -554,7 +520,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       const email = "forgot-after-delete@example.com";
       const password = "Test1234!";
       const userId = await createVerifiedCredentialUser(email, password);
-      await authService.deleteAccount(userId, "test-session", { password });
+      await deleteAccount.execute({ userId, password });
 
       // When
       const result = await passwordManagementService.forgotPassword(email);

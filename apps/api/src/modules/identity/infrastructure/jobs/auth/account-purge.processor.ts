@@ -1,66 +1,50 @@
-import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
+import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 
-import type { AccountPurgeJob } from "#api/modules/identity/infrastructure/jobs/auth/account-purge.job";
+import { IdentityLogEvent } from "#api/modules/identity/application/observability/auth/identity-log.events";
+import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+
 import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+  ACCOUNT_PURGE_LEGACY_QUEUE,
+  ACCOUNT_PURGE_QUEUE,
+  type AccountPurgeJobData,
+} from "./account-purge-queue.constants.js";
 
-export const ACCOUNT_PURGE_QUEUE = "account-purge.v1";
-export const ACCOUNT_PURGE_LEGACY_QUEUE = "account-purge";
-export const ACCOUNT_PURGE_JOB_NAME = "purge-accounts";
-
-export type AccountPurgeJobData = Record<string, never>;
-
-/**
- * 계정 정리 BullMQ Processor
- *
- * BullMQ Job Scheduler가 매일 KST 03:00에 생성하는 잡을 처리합니다.
- * 실제 로직은 AccountPurgeJob.purgeDeletedAccounts()에 위임합니다.
- */
 @Injectable()
 export class AccountPurgeProcessor implements OnModuleInit {
   readonly #logger = new Logger(AccountPurgeProcessor.name);
 
-  /** @see AccountPurgeJob — 순환 참조 방지를 위해 setter injection */
-  #purgeJob?: AccountPurgeJob;
-  setPurgeJob(job: AccountPurgeJob) {
-    this.#purgeJob = job;
-  }
-
   constructor(
-    @Optional()
-    @Inject(JOB_RUNTIME)
-    private readonly runtime?: JobRuntimePort,
+    @Inject(PurgeDeletedAccounts)
+    private readonly purgeDeletedAccounts: Pick<PurgeDeletedAccounts, "execute">,
+    @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
     const handler = async () => this.process();
-    await this.runtime.work<JobData>(ACCOUNT_PURGE_QUEUE, handler, {
-      teamSize: 1,
-      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-    });
-    await this.runtime.work<JobData>(ACCOUNT_PURGE_LEGACY_QUEUE, handler, {
-      teamSize: 1,
-      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-    });
+    for (const queue of [ACCOUNT_PURGE_QUEUE, ACCOUNT_PURGE_LEGACY_QUEUE]) {
+      await this.runtime.work<AccountPurgeJobData>(queue, handler, {
+        teamSize: 1,
+        pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+      });
+    }
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error): void {
     this.#logger.error(
-      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
+      {
+        event: IdentityLogEvent.ACCOUNT_PURGE_JOB_FAILED,
+        jobId: job?.id,
+        jobName: job?.name,
+        errorName: error.name,
+      },
       error.stack,
     );
   }
 
   async process(_job?: { readonly data?: AccountPurgeJobData }): Promise<void> {
-    this.#logger.debug("Processing account purge job...");
-    if (!this.#purgeJob) {
-      throw new Error("AccountPurgeJob not wired (setPurgeJob 미호출)");
-    }
-    await this.#purgeJob.purgeDeletedAccounts();
+    this.#logger.debug({ event: IdentityLogEvent.ACCOUNT_PURGE_JOB_STARTED });
+    await this.purgeDeletedAccounts.execute();
   }
 }

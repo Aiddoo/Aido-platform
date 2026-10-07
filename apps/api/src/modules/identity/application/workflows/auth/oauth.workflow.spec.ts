@@ -44,6 +44,7 @@ import type { UserProvisioningSeederPort } from "../../ports/auth/user-provision
 import { SessionService } from "../../services/auth/session.service.js";
 import { IssueLogin } from "../../use-cases/auth/issue-login.use-case.js";
 import { ProvisionUser } from "../../use-cases/auth/provision-user.use-case.js";
+import { RestoreAccount } from "../../use-cases/auth/restore-account.use-case.js";
 import { OAuthWorkflow } from "./oauth.workflow.js";
 
 /** Apple 토큰 검증 결과 프로필 */
@@ -90,6 +91,8 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
   };
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-31T23:59:00Z"));
     const configServiceMock = mock<TypedConfigService>();
     const oauthWorkflowDependencies = mockDeep<ConstructorParameters<typeof OAuthWorkflow>[0]>({
       configService: configServiceMock,
@@ -112,6 +115,14 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
     configService = configServiceMock;
     adminEventNotifier = oauthWorkflowDependencies.adminEventNotifier;
     cacheService = oauthWorkflowDependencies.cacheService;
+
+    const restoreAccount = new RestoreAccount({
+      userRepository: userRepo,
+      securityLogRepository: securityLogRepo,
+    });
+    oauthWorkflowDependencies.restoreAccount.execute.mockImplementation((input) =>
+      restoreAccount.execute(input),
+    );
 
     // IssueLogin(발급 수렴)를 실제 인스턴스로 위임 — 소셜 로그인 테스트가
     // 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
@@ -193,6 +204,8 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
     const registry = oauthWorkflowDependencies.registry;
     registry.get.mockImplementation((provider) => realProviders.get(provider));
   });
+
+  afterEach(() => vi.useRealTimers());
 
   /**
    * ConfigService 기본 설정 헬퍼
@@ -562,7 +575,7 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
         userRepo.findById.mockResolvedValue(deletedUser);
         asMock(loginAttemptRepo.create).mockResolvedValue({});
 
-        // When & Then - 탈퇴 계정 복구 불변식(account-restoration-policy)이 소유
+        // When & Then - 탈퇴 계정 복구 불변식(IdentityUser Aggregate)이 소유
         await expect(service.handleAppleMobileLogin("valid-id-token")).rejects.toThrow(
           DomainException,
         );
@@ -1967,7 +1980,7 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
     });
   });
 
-  describe("자동 연동 트랜잭션 원자성", () => {
+  describe("자동 연동 실패 시 후속 발급·캐시 처리", () => {
     const atomicGoogleProfile: OAuthProfile = {
       id: "google-atomic-456",
       email: "atomic@example.com",
@@ -2031,7 +2044,7 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
       ).rejects.toThrow("link failed in tx");
 
       // 연동은 복구·세션과 같은 트랜잭션(커밋 전)에서 수행되므로,
-      // 실패 시 커밋 후 단계인 프로필 캐시 무효화에 도달하지 않는다(전체 롤백).
+      // 실패 시 커밋 후 단계인 프로필 캐시 무효화에 도달하지 않는다. 실제 rollback은 PG Integration에서 검증한다.
       expect(cacheService.invalidateUserProfile).not.toHaveBeenCalled();
     });
   });

@@ -4,14 +4,12 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-  REVOKE_REASON,
-  SECURITY_EVENT,
-} from "#api/modules/identity/domain/constants/auth/auth.constants";
+import { SECURITY_EVENT } from "#api/modules/identity/domain/constants/auth/auth.constants";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-import { AccountBuilder, SessionBuilder, UserBuilder } from "#test/builders/index";
+import { AccountBuilder, UserBuilder } from "#test/builders/index";
+import { UserFixture } from "#test/fixtures/index";
 import { asDep, asMock, mockOf } from "#test/mocks/index";
 
 import type { AuthCachedUserProfile } from "../../ports/auth/auth-collaboration.port.js";
@@ -25,7 +23,6 @@ import {
   type AuthLoginAttemptRepositoryPort,
   AuthPersistenceConflict,
   type AuthSecurityLogRepositoryPort,
-  type AuthSessionRepositoryPort,
   type AuthUserRepositoryPort,
 } from "../../ports/auth/auth-persistence.port.js";
 import { type RetentionEnrollerPort } from "../../ports/auth/retention-enroller.port.js";
@@ -34,13 +31,13 @@ import { SessionService } from "../../services/auth/session.service.js";
 import { VerificationService } from "../../services/auth/verification.service.js";
 import { IssueLogin } from "../../use-cases/auth/issue-login.use-case.js";
 import { ProvisionUser } from "../../use-cases/auth/provision-user.use-case.js";
+import { RestoreAccount } from "../../use-cases/auth/restore-account.use-case.js";
 import { CredentialAuthWorkflow } from "./credential-auth.workflow.js";
 
 describe("CredentialAuthWorkflow — 인증 workflow", () => {
   let service: CredentialAuthWorkflow;
   let userRepo: Mocked<AuthUserRepositoryPort>;
   let accountRepo: Mocked<AuthAccountRepositoryPort>;
-  let sessionRepo: Mocked<AuthSessionRepositoryPort>;
   let passwordService: Mocked<AuthPasswordHasherPort>;
   let verificationService: Mocked<VerificationService>;
   let cacheService: Mocked<AuthCachePort>;
@@ -59,6 +56,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
   };
 
   beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-12-31T23:59:00Z"));
     const credentialAuthWorkflowDependencies = mockDeep<
       ConstructorParameters<typeof CredentialAuthWorkflow>[0]
     >({});
@@ -67,7 +66,6 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
     service = unit;
     userRepo = credentialAuthWorkflowDependencies.userRepository;
     accountRepo = credentialAuthWorkflowDependencies.accountRepository;
-    sessionRepo = credentialAuthWorkflowDependencies.sessionRepository;
     passwordService = credentialAuthWorkflowDependencies.passwordService;
     verificationService = credentialAuthWorkflowDependencies.verificationService;
     cacheService = credentialAuthWorkflowDependencies.cacheService;
@@ -77,6 +75,14 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
     sessionService = credentialAuthWorkflowDependencies.sessionService;
     adminEventNotifier = credentialAuthWorkflowDependencies.adminEventNotifier;
     retentionEnroller = credentialAuthWorkflowDependencies.retentionEnroller;
+
+    const restoreAccount = new RestoreAccount({
+      userRepository: userRepo,
+      securityLogRepository: securityLogRepo,
+    });
+    credentialAuthWorkflowDependencies.restoreAccount.execute.mockImplementation((input) =>
+      restoreAccount.execute(input),
+    );
 
     // IssueLogin(발급 수렴)를 실제 인스턴스로 위임 — 기존 login 테스트가
     // 세션·로그인시도·보안로그·프로필 조회 호출을 그대로 검증하도록 mock 콜라보레이터에 배선
@@ -109,6 +115,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
     });
     provisionUser.execute.mockImplementation((input) => realProvisionUser.execute(input));
   });
+
+  afterEach(() => vi.useRealTimers());
 
   describe("register", () => {
     const registerInput = {
@@ -640,178 +648,6 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
     });
   });
 
-  describe("deleteAccount", () => {
-    const userId = "user-123";
-    const sessionId = "session-123";
-    const metadata = { ip: "127.0.0.1", userAgent: "test-agent" };
-
-    it("CREDENTIAL 계정: 비밀번호 확인 후 soft delete 처리", async () => {
-      // Given
-      const user = UserBuilder.create().withId(userId).verified().build();
-      userRepo.findById.mockResolvedValue(user);
-      asMock(accountRepo.findAllByUserId).mockResolvedValue([
-        {
-          ...AccountBuilder.create("user-123").build(),
-          id: 1,
-          userId,
-          provider: "CREDENTIAL",
-          password: "hashed-pw",
-        },
-      ]);
-      passwordService.verify.mockResolvedValue(true);
-      sessionRepo.findActiveByUserId.mockResolvedValue([
-        SessionBuilder.create(userId).withId(sessionId).build(),
-      ]);
-      uow.run.mockImplementation((work) => work());
-      asMock(userRepo.softDelete).mockResolvedValue({});
-      sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-      asMock(securityLogRepo.create).mockResolvedValue({});
-
-      // When
-      const result = await service.deleteAccount(
-        userId,
-        sessionId,
-        { password: "CurrentPw123" },
-        metadata,
-      );
-
-      // Then
-      expect(result.message).toContain("탈퇴 처리되었습니다");
-      expect(result.gracePeriodDays).toBe(30);
-      expect(userRepo.softDelete).toHaveBeenCalledWith(userId);
-      expect(sessionRepo.revokeAllByUserId).toHaveBeenCalledWith(
-        userId,
-        REVOKE_REASON.ACCOUNT_DELETION,
-        undefined,
-      );
-    });
-
-    it("CREDENTIAL 계정: 비밀번호 미입력 시 USER_0612 에러", async () => {
-      // Given
-      const user = UserBuilder.create().withId(userId).verified().build();
-      userRepo.findById.mockResolvedValue(user);
-      asMock(accountRepo.findAllByUserId).mockResolvedValue([
-        {
-          ...AccountBuilder.create("user-123").build(),
-          id: 1,
-          userId,
-          provider: "CREDENTIAL",
-          password: "hashed-pw",
-        },
-      ]);
-
-      // When & Then
-      await expect(service.deleteAccount(userId, sessionId, {}, metadata)).rejects.toThrow(
-        ApplicationException,
-      );
-    });
-
-    it("CREDENTIAL 계정: 비밀번호 불일치 시 USER_0602 에러", async () => {
-      // Given
-      const user = UserBuilder.create().withId(userId).verified().build();
-      userRepo.findById.mockResolvedValue(user);
-      asMock(accountRepo.findAllByUserId).mockResolvedValue([
-        {
-          ...AccountBuilder.create("user-123").build(),
-          id: 1,
-          userId,
-          provider: "CREDENTIAL",
-          password: "hashed-pw",
-        },
-      ]);
-      passwordService.verify.mockResolvedValue(false);
-
-      // When & Then
-      await expect(
-        service.deleteAccount(userId, sessionId, { password: "WrongPassword123" }, metadata),
-      ).rejects.toThrow(ApplicationException);
-    });
-
-    it("소셜 전용 계정: 세션 기반 확인으로 soft delete 처리", async () => {
-      // Given
-      const user = UserBuilder.create().withId(userId).verified().build();
-      userRepo.findById.mockResolvedValue(user);
-      asMock(accountRepo.findAllByUserId).mockResolvedValue([
-        {
-          ...AccountBuilder.create("user-123").build(),
-          id: 1,
-          userId,
-          provider: "GOOGLE",
-          password: null,
-        },
-      ]);
-      sessionRepo.findActiveByUserId.mockResolvedValue([
-        SessionBuilder.create(userId).withId(sessionId).build(),
-      ]);
-      uow.run.mockImplementation((work) => work());
-      asMock(userRepo.softDelete).mockResolvedValue({});
-      sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-      asMock(securityLogRepo.create).mockResolvedValue({});
-
-      // When
-      const result = await service.deleteAccount(userId, sessionId, {}, metadata);
-
-      // Then
-      expect(result.message).toContain("탈퇴 처리되었습니다");
-      expect(passwordService.verify).not.toHaveBeenCalled();
-    });
-
-    it("이미 탈퇴한 계정 시도 시 USER_0606 에러", async () => {
-      // Given
-      const user = UserBuilder.create().withId(userId).verified().deleted().build();
-      userRepo.findById.mockResolvedValue(user);
-
-      // When & Then
-      await expect(service.deleteAccount(userId, sessionId, {}, metadata)).rejects.toThrow(
-        ApplicationException,
-      );
-    });
-
-    it("존재하지 않는 사용자 시 USER_0601 에러", async () => {
-      // Given
-      userRepo.findById.mockResolvedValue(null);
-
-      // When & Then
-      await expect(service.deleteAccount(userId, sessionId, {}, metadata)).rejects.toThrow(
-        ApplicationException,
-      );
-    });
-
-    it("트랜잭션 내 softDelete + revokeAllByUserId + securityLog 호출 확인", async () => {
-      // Given
-      const user = UserBuilder.create().withId(userId).verified().build();
-      userRepo.findById.mockResolvedValue(user);
-      asMock(accountRepo.findAllByUserId).mockResolvedValue([
-        {
-          ...AccountBuilder.create("user-123").build(),
-          id: 1,
-          userId,
-          provider: "GOOGLE",
-          password: null,
-        },
-      ]);
-      sessionRepo.findActiveByUserId.mockResolvedValue([
-        SessionBuilder.create(userId).withId(sessionId).build(),
-      ]);
-      uow.run.mockImplementation((work) => work());
-      asMock(userRepo.softDelete).mockResolvedValue({});
-      sessionRepo.revokeAllByUserId.mockResolvedValue(1);
-      asMock(securityLogRepo.create).mockResolvedValue({});
-
-      // When
-      await service.deleteAccount(userId, sessionId, {}, metadata);
-
-      // Then
-      expect(uow.run).toHaveBeenCalled();
-      expect(securityLogRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId,
-          event: SECURITY_EVENT.ACCOUNT_DELETION_REQUESTED,
-        }),
-      );
-    });
-  });
-
   describe("login - 탈퇴 사용자", () => {
     it("유예 기간 초과 시 USER_0606 에러", async () => {
       // Given - 31일 전에 탈퇴한 사용자
@@ -831,7 +667,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
       passwordService.verify.mockResolvedValue(true);
       loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
 
-      // When & Then - 탈퇴 계정 복구 불변식(account-restoration-policy)이 소유
+      // When & Then - 탈퇴 계정 복구 불변식(IdentityUser Aggregate)이 소유
       await expect(
         service.login({
           email: "deleted@example.com",
@@ -840,9 +676,15 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
       ).rejects.toThrow(DomainException);
     });
 
-    it("유예 기간 내 탈퇴 사용자 로그인 시 자동 복구", async () => {
-      // Given - 29일 전에 탈퇴한 사용자
-      const deletedAt = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+    it.each([
+      { description: "유예 기간 내", crossesBoundary: false },
+      { description: "승인 뒤 복구 경계를 지나도", crossesBoundary: true },
+    ])("$description 탈퇴 사용자 로그인은 계정을 복구한다", async ({ crossesBoundary }) => {
+      // Given
+      const startedAt = new Date();
+      const deletedAt = new Date(
+        startedAt.getTime() - (crossesBoundary ? 30 : 29) * 86_400_000 + (crossesBoundary ? 1 : 0),
+      );
       const deletedUser = UserBuilder.create()
         .withEmail("deleted@example.com")
         .verified()
@@ -858,7 +700,10 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
       });
       passwordService.verify.mockResolvedValue(true);
       loginAttemptRepo.countRecentFailuresByEmail.mockResolvedValue(0);
-      uow.run.mockImplementation((work) => work());
+      uow.run.mockImplementation((work) => {
+        if (crossesBoundary) vi.setSystemTime(new Date(startedAt.getTime() + 2));
+        return work();
+      });
       sessionService.createSessionWithTokens.mockResolvedValue({
         sessionId: "session-123",
         tokens: {
@@ -891,6 +736,7 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
         expect.objectContaining({
           event: "ACCOUNT_RESTORED",
           userId: deletedUser.id,
+          metadata: { deletedAt: deletedAt.toISOString(), restoredAt: startedAt.toISOString() },
         }),
       );
       // 캐시 무효화 확인
@@ -977,6 +823,35 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
   });
 
   describe("getCurrentUser", () => {
+    it("미인증 날짜와 이름·이미지가 없는 프로필은 명시적인 null로 응답한다", async () => {
+      // Given
+      const { user, profile } = UserFixture.createWithProfile(
+        { id: "user-123", emailVerifiedAt: null },
+        { name: null, profileImage: null },
+      );
+      userRepo.findByIdWithProfile.mockResolvedValue({
+        ...user,
+        profile,
+        accounts: [{ provider: "CREDENTIAL" }],
+      });
+      cacheService.wrapUserProfile.mockImplementation((_userId, load) => load());
+
+      // When
+      const result = await service.getCurrentUser(user.id, user.email, "session-123");
+
+      // Then
+      expect(result).toEqual(
+        expect.objectContaining({
+          userId: user.id,
+          sessionId: "session-123",
+          emailVerifiedAt: null,
+          name: null,
+          profileImage: null,
+          providers: ["CREDENTIAL"],
+        }),
+      );
+    });
+
     it("캐시된 프로필을 조회하여 사용자 정보를 반환한다", async () => {
       // Given
       const mockUser = UserBuilder.create()

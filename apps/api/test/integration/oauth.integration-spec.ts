@@ -88,6 +88,7 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import {
   issueLoginProvider,
   oauthWorkflowProvider,
+  restoreAccountProvider,
   provisionUserProvider,
   sessionServiceProvider,
 } from "../../src/modules/identity/identity-auth-application.providers.js";
@@ -128,6 +129,7 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
       ],
       providers: [
         oauthWorkflowProvider,
+        restoreAccountProvider,
         issueLoginProvider,
         provisionUserProvider,
         {

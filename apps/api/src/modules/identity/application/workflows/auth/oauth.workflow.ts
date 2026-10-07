@@ -9,20 +9,20 @@ import type {
   LoginResult,
   RequestMetadata,
 } from "#api/modules/identity/application/types/auth/index";
+import { IdentityUser } from "#api/modules/identity/domain/aggregates/auth/identity-user.aggregate";
 import {
   AUTH_DEFAULTS,
   LOGIN_FAILURE_REASON,
   SECURITY_EVENT,
   TRUSTED_EMAIL_PROVIDERS,
 } from "#api/modules/identity/domain/constants/auth/auth.constants";
-import { assertRestorableWithinGracePeriod } from "#api/modules/identity/domain/services/auth/account-restoration-policy";
 import { assertStatusAllowsLogin } from "#api/modules/identity/domain/services/auth/account-status-policy";
 import { generateRandomName } from "#api/modules/identity/domain/services/auth/random-name.util";
 import type { AccountProvider } from "#api/modules/identity/domain/types/auth/auth.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
-import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
@@ -39,10 +39,12 @@ import {
   AuthPersistenceConflict,
   type AuthSecurityLogRepositoryPort,
   type AuthUserRepositoryPort,
+  type AuthUserRecord,
 } from "../../ports/auth/auth-persistence.port.js";
 import type { OAuthMode } from "../../ports/auth/oauth-identity-provider.port.js";
 import type { IssueLogin } from "../../use-cases/auth/issue-login.use-case.js";
 import type { ProvisionUser } from "../../use-cases/auth/provision-user.use-case.js";
+import type { RestoreAccount } from "../../use-cases/auth/restore-account.use-case.js";
 
 /**
  * AccountProvider → 이벤트 페이로드 provider 매핑
@@ -70,6 +72,7 @@ interface OAuthWorkflowDependencies {
   readonly cacheService: AuthCachePort;
   readonly issueLoginUseCase: IssueLogin;
   readonly provisionUserUseCase: ProvisionUser;
+  readonly restoreAccount: RestoreAccount;
   readonly registry: OAuthIdentityProviderRegistry;
   readonly logger: ApplicationLogger;
 }
@@ -586,12 +589,14 @@ export class OAuthWorkflow {
       }
 
       // 탈퇴 사용자: 유예 기간 내 복구 또는 차단(도메인 정책이 소유)
-      if (assertRestorableWithinGracePeriod(user.deletedAt, userId)) {
+      const restorationAt = now();
+      if (IdentityUser.reconstitute(user).requiresRestoration(restorationAt)) {
         // 30일 이내 — 복구 + 세션 생성을 원자적으로 처리
         const loginResult = await this.#restoreAndCreateSession(user, {
           ip,
           userAgent,
           provider,
+          restorationAt,
         });
         return { ...loginResult, accountRestored: true };
       }
@@ -739,8 +744,8 @@ export class OAuthWorkflow {
    *   원자적으로 처리하기 위해 사용한다. 캐시 무효화는 커밋 후 수행된다.
    */
   async #restoreAndCreateSession(
-    user: { id: string; email: string; deletedAt: Date | null },
-    options: { ip: string; userAgent: string; provider: AccountProvider },
+    user: Pick<AuthUserRecord, "id" | "email" | "status" | "deletedAt">,
+    options: { ip: string; userAgent: string; provider: AccountProvider; restorationAt: Date },
     onLinkInTransaction?: () => Promise<void>,
   ): Promise<LoginResult> {
     const userRecord = await this.#dependencies.userRepository.findById(user.id);
@@ -750,9 +755,10 @@ export class OAuthWorkflow {
     }
 
     const result = await this.#dependencies.unitOfWork.run(async () => {
-      await this.#restoreDeletedAccount(user, {
-        ip: options.ip,
-        userAgent: options.userAgent,
+      await this.#dependencies.restoreAccount.execute({
+        user: IdentityUser.reconstitute(user),
+        metadata: { ip: options.ip, userAgent: options.userAgent },
+        at: options.restorationAt,
       });
 
       const outcome = await this.#dependencies.issueLoginUseCase.execute({
@@ -781,7 +787,11 @@ export class OAuthWorkflow {
     });
 
     await this.#dependencies.cacheService.invalidateUserProfile(user.id);
-    this.#dependencies.logger.log(`Deleted account restored on social login: ${user.id}`);
+    this.#dependencies.logger.log({
+      event: IdentityLogEvent.ACCOUNT_RESTORED,
+      userId: user.id,
+      provider: options.provider,
+    });
 
     return result;
   }
@@ -824,31 +834,6 @@ export class OAuthWorkflow {
     });
   }
 
-  /**
-   * 탈퇴 계정 복구 처리 (트랜잭션 내부에서 호출)
-   *
-   * - 사용자 상태를 ACTIVE로 복원
-   * - 보안 로그에 ACCOUNT_RESTORED 이벤트 기록
-   * - 캐시 무효화는 트랜잭션 커밋 후 호출측에서 수행
-   */
-  async #restoreDeletedAccount(
-    user: { id: string; deletedAt: Date | null },
-    metadata: { ip: string; userAgent: string },
-  ): Promise<void> {
-    await this.#dependencies.userRepository.restore(user.id);
-
-    await this.#dependencies.securityLogRepository.create({
-      userId: user.id,
-      event: SECURITY_EVENT.ACCOUNT_RESTORED,
-      ipAddress: metadata.ip,
-      userAgent: metadata.userAgent,
-      metadata: {
-        deletedAt: toISOStringOrNull(user.deletedAt ?? null),
-        restoredAt: toISOString(now()),
-      },
-    });
-  }
-
   #validateUserStatus(status: string): void {
     assertStatusAllowsLogin(status, "Social login user");
   }
@@ -880,7 +865,7 @@ export class OAuthWorkflow {
     existingUser: {
       id: string;
       email: string;
-      status: string;
+      status: AuthUserRecord["status"];
       deletedAt: Date | null;
     },
     provider: AccountProvider,
@@ -894,7 +879,8 @@ export class OAuthWorkflow {
   ): Promise<LoginResult> {
     // 탈퇴 사용자: 유예 기간 내 복구 또는 차단(도메인 정책이 소유)
     // 유예 기간 이내면 needsRestore=true(아래에서 트랜잭션 내 복구), 초과면 USER_0606
-    const needsRestore = assertRestorableWithinGracePeriod(existingUser.deletedAt, existingUser.id);
+    const restorationAt = now();
+    const needsRestore = IdentityUser.reconstitute(existingUser).requiresRestoration(restorationAt);
 
     const isTrusted = this.#isTrustedProvider(provider);
     const isEmailVerified = options.emailVerified === true;
@@ -917,7 +903,7 @@ export class OAuthWorkflow {
         // 프로필 캐시 무효화는 커밋 후 수행되도록 #restoreAndCreateSession이 보장한다.
         const loginResult = await this.#restoreAndCreateSession(
           existingUser,
-          { ip: options.ip, userAgent: options.userAgent, provider },
+          { ip: options.ip, userAgent: options.userAgent, provider, restorationAt },
           () =>
             this.#linkOAuthAccount(existingUser.id, provider, providerAccountId, {
               ip: options.ip,
