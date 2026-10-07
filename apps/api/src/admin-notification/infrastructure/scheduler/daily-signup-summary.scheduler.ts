@@ -4,9 +4,9 @@ import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/
 import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
 
 import {
-	ADMIN_NOTIFICATION_QUEUE,
-	AdminNotificationJobName,
-	DAILY_SIGNUP_SUMMARY_SCHEDULE,
+  ADMIN_NOTIFICATION_QUEUE,
+  AdminNotificationJobName,
+  DAILY_SIGNUP_SUMMARY_SCHEDULE,
 } from "../queue/admin-notification-queue.constants.js";
 
 /**
@@ -23,31 +23,31 @@ import {
  */
 @Injectable()
 export class DailySignupSummaryScheduler implements OnModuleInit {
-	readonly #logger = new Logger(DailySignupSummaryScheduler.name);
+  readonly #logger = new Logger(DailySignupSummaryScheduler.name);
 
-	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
+  constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-	/** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
-	schedulerRegistration: Promise<void> = Promise.resolve();
+  /** 스케줄러 등록 완료 프로미스 (테스트 대기용) — 부팅을 블로킹하지 않는다 */
+  schedulerRegistration: Promise<void> = Promise.resolve();
 
-	onModuleInit(): void {
-		this.schedulerRegistration = runInBackground(
-			this.#logger,
-			"Daily signup summary scheduler registration",
-			async () => {
-				await this.runtime.schedule(
-					DAILY_SIGNUP_SUMMARY_SCHEDULE.key,
-					DAILY_SIGNUP_SUMMARY_SCHEDULE.cron,
-					ADMIN_NOTIFICATION_QUEUE,
-					{ name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
-					{
-						...DAILY_SIGNUP_SUMMARY_SCHEDULE.jobPolicy,
-						timezone: DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone,
-					},
-				);
+  onModuleInit(): void {
+    this.schedulerRegistration = runInBackground(
+      this.#logger,
+      "Daily signup summary scheduler registration",
+      async () => {
+        await this.runtime.schedule(
+          DAILY_SIGNUP_SUMMARY_SCHEDULE.key,
+          DAILY_SIGNUP_SUMMARY_SCHEDULE.cron,
+          ADMIN_NOTIFICATION_QUEUE,
+          { name: AdminNotificationJobName.DISPATCH_SUMMARY, data: {} },
+          {
+            ...DAILY_SIGNUP_SUMMARY_SCHEDULE.jobPolicy,
+            timezone: DAILY_SIGNUP_SUMMARY_SCHEDULE.timezone,
+          },
+        );
 
-				this.#logger.log("Daily signup summary scheduler registered");
-			},
-		);
-	}
+        this.#logger.log("Daily signup summary scheduler registered");
+      },
+    );
+  }
 }

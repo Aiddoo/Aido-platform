@@ -13,19 +13,19 @@ import type { AdminBroadcastMessage } from "../../domain/broadcast-message.js";
  */
 @Injectable()
 export class NotificationAdminBroadcastNotifierAdapter implements AdminBroadcastNotifierPort {
-	constructor(private readonly notificationService: NotificationPublisher) {}
+  constructor(private readonly notificationService: NotificationPublisher) {}
 
-	sendBatch(messages: AdminBroadcastMessage[]): Promise<{ count: number }> {
-		return this.notificationService.publishBatch(
-			messages.map((message) => ({
-				userId: message.userId,
-				type: message.type,
-				title: message.title,
-				body: message.body,
-				action: message.action,
-				metadata: message.metadata,
-				force: message.force,
-			})),
-		);
-	}
+  sendBatch(messages: AdminBroadcastMessage[]): Promise<{ count: number }> {
+    return this.notificationService.publishBatch(
+      messages.map((message) => ({
+        userId: message.userId,
+        type: message.type,
+        title: message.title,
+        body: message.body,
+        action: message.action,
+        metadata: message.metadata,
+        force: message.force,
+      })),
+    );
+  }
 }

@@ -13,14 +13,14 @@ const TITLE_MAX_LENGTH = 200;
  * 제목이 도메인에 들어오는 모든 경로가 이 VO를 통과해야 합니다.
  */
 export class TodoTitle extends ValueObject<string> {
-	static create(title: string): TodoTitle {
-		if (title.length < TITLE_MIN_LENGTH || title.length > TITLE_MAX_LENGTH) {
-			throw new DomainException(
-				ErrorCode.SYS_0002,
-				{ titleLength: title.length, max: TITLE_MAX_LENGTH },
-				`제목은 ${TITLE_MIN_LENGTH}~${TITLE_MAX_LENGTH}자여야 합니다.`,
-			);
-		}
-		return new TodoTitle(title);
-	}
+  static create(title: string): TodoTitle {
+    if (title.length < TITLE_MIN_LENGTH || title.length > TITLE_MAX_LENGTH) {
+      throw new DomainException(
+        ErrorCode.SYS_0002,
+        { titleLength: title.length, max: TITLE_MAX_LENGTH },
+        `제목은 ${TITLE_MIN_LENGTH}~${TITLE_MAX_LENGTH}자여야 합니다.`,
+      );
+    }
+    return new TodoTitle(title);
+  }
 }

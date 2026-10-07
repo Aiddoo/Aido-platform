@@ -11,18 +11,18 @@ import type { TodoCreatorPort } from "#api/memo/application/ports/todo-creator.p
  * 개별 메서드의 mock API가 필요하면 spec에서 `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createMemoRepositoryMock(): MemoRepositoryPort {
-	return {
-		create: vi.fn(),
-		findByIdAndUserId: vi.fn(),
-		findManyByUserId: vi.fn(),
-		countByUserId: vi.fn(),
-		updateContent: vi.fn(),
-		updatePinned: vi.fn(),
-		updateSortOrder: vi.fn(),
-		getMaxSortOrder: vi.fn(),
-		shiftSortOrders: vi.fn(),
-		delete: vi.fn(),
-	};
+  return {
+    create: vi.fn(),
+    findByIdAndUserId: vi.fn(),
+    findManyByUserId: vi.fn(),
+    countByUserId: vi.fn(),
+    updateContent: vi.fn(),
+    updatePinned: vi.fn(),
+    updateSortOrder: vi.fn(),
+    getMaxSortOrder: vi.fn(),
+    shiftSortOrders: vi.fn(),
+    delete: vi.fn(),
+  };
 }
 
 /**
@@ -32,8 +32,8 @@ export function createMemoRepositoryMock(): MemoRepositoryPort {
  * 명시하며, 포트 확장 시 누락을 타입 에러로 잡습니다.
  */
 export function createTodoCreatorMock(): TodoCreatorPort {
-	return {
-		createTodo: vi.fn(),
-		createRecurringTodos: vi.fn(),
-	};
+  return {
+    createTodo: vi.fn(),
+    createRecurringTodos: vi.fn(),
+  };
 }

@@ -37,66 +37,66 @@ const RELEASE_SCRIPT = `
  */
 @Injectable()
 export class RedisLockAdapter implements ILockProvider {
-	readonly #logger = new Logger(RedisLockAdapter.name);
-	readonly #redis: Redis;
-	readonly #keyPrefix = "lock:";
-	readonly #errorSampler: RedisErrorLogSampler;
+  readonly #logger = new Logger(RedisLockAdapter.name);
+  readonly #redis: Redis;
+  readonly #keyPrefix = "lock:";
+  readonly #errorSampler: RedisErrorLogSampler;
 
-	constructor(redis: Redis, errorSampler?: RedisErrorLogSampler) {
-		this.#redis = redis;
-		this.#errorSampler = errorSampler ?? new RedisErrorLogSampler(this.#logger);
-	}
+  constructor(redis: Redis, errorSampler?: RedisErrorLogSampler) {
+    this.#redis = redis;
+    this.#errorSampler = errorSampler ?? new RedisErrorLogSampler(this.#logger);
+  }
 
-	async acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
-		const key = this.#keyPrefix + resource;
-		const value = randomUUID();
+  async acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
+    const key = this.#keyPrefix + resource;
+    const value = randomUUID();
 
-		let result: string | null;
-		try {
-			result = await this.#redis.set(key, value, "PX", ttlMs, "NX");
-		} catch (error) {
-			// fail-closed: busy와 동일하게 취급 — 소비처가 스킵/재시도 경로를 탄다
-			this.#errorSampler.warn("LOCK_ACQUIRE", error);
-			return null;
-		}
+    let result: string | null;
+    try {
+      result = await this.#redis.set(key, value, "PX", ttlMs, "NX");
+    } catch (error) {
+      // fail-closed: busy와 동일하게 취급 — 소비처가 스킵/재시도 경로를 탄다
+      this.#errorSampler.warn("LOCK_ACQUIRE", error);
+      return null;
+    }
 
-		if (result !== "OK") {
-			this.#logger.debug(`LOCK_BUSY ${resource}`);
-			return null;
-		}
+    if (result !== "OK") {
+      this.#logger.debug(`LOCK_BUSY ${resource}`);
+      return null;
+    }
 
-		this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
+    this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
 
-		const release = async (): Promise<void> => {
-			let released: unknown;
-			try {
-				released = await this.#redis.eval(RELEASE_SCRIPT, 1, key, value);
-			} catch (error) {
-				// 해제 실패는 무시 — TTL 자동 만료가 정리한다
-				this.#errorSampler.warn("LOCK_RELEASE", error);
-				return;
-			}
+    const release = async (): Promise<void> => {
+      let released: unknown;
+      try {
+        released = await this.#redis.eval(RELEASE_SCRIPT, 1, key, value);
+      } catch (error) {
+        // 해제 실패는 무시 — TTL 자동 만료가 정리한다
+        this.#errorSampler.warn("LOCK_RELEASE", error);
+        return;
+      }
 
-			if (released === 1) {
-				this.#logger.debug(`LOCK_RELEASED ${resource}`);
-			} else {
-				this.#logger.warn(`LOCK_RELEASE_SKIPPED ${resource} (expired or stolen)`);
-			}
-		};
+      if (released === 1) {
+        this.#logger.debug(`LOCK_RELEASED ${resource}`);
+      } else {
+        this.#logger.warn(`LOCK_RELEASE_SKIPPED ${resource} (expired or stolen)`);
+      }
+    };
 
-		return release;
-	}
+    return release;
+  }
 
-	async isLocked(resource: string): Promise<boolean> {
-		const key = this.#keyPrefix + resource;
+  async isLocked(resource: string): Promise<boolean> {
+    const key = this.#keyPrefix + resource;
 
-		try {
-			const exists = await this.#redis.exists(key);
-			return exists === 1;
-		} catch (error) {
-			// fail-closed: 장애 시 잠긴 것으로 취급
-			this.#errorSampler.warn("LOCK_IS_LOCKED", error);
-			return true;
-		}
-	}
+    try {
+      const exists = await this.#redis.exists(key);
+      return exists === 1;
+    } catch (error) {
+      // fail-closed: 장애 시 잠긴 것으로 취급
+      this.#errorSampler.warn("LOCK_IS_LOCKED", error);
+      return true;
+    }
+  }
 }

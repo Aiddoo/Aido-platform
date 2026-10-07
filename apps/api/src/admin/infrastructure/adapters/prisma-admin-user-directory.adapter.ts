@@ -23,54 +23,54 @@ const BROADCAST_BATCH_SIZE = 500;
  */
 @Injectable()
 export class PrismaAdminUserDirectoryAdapter implements AdminUserDirectoryPort {
-	constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly database: DatabaseService) {}
 
-	async *streamTargetUserIds(filter: BroadcastTargetFilter): AsyncIterable<string[]> {
-		const users = this.database.db.orm.public.User.where((user) =>
-			and(user.deletedAt.isNull(), user.status.eq("ACTIVE"), this.#buildTargetWhere(filter, user)),
-		)
-			.select("id")
-			.orderBy((user) => user.id.asc())
-			.limit(BROADCAST_BATCH_SIZE);
-		let cursor: string | undefined;
-		for (;;) {
-			const rows = await users
-				.where((user) => (cursor !== undefined ? user.id.gt(cursor) : all()))
-				.all();
-			if (rows.length === 0) break;
-			yield rows.map((row) => row.id);
-			const last = rows.at(-1);
-			if (rows.length < BROADCAST_BATCH_SIZE || last === undefined) break;
-			cursor = last.id;
-		}
-	}
+  async *streamTargetUserIds(filter: BroadcastTargetFilter): AsyncIterable<string[]> {
+    const users = this.database.db.orm.public.User.where((user) =>
+      and(user.deletedAt.isNull(), user.status.eq("ACTIVE"), this.#buildTargetWhere(filter, user)),
+    )
+      .select("id")
+      .orderBy((user) => user.id.asc())
+      .limit(BROADCAST_BATCH_SIZE);
+    let cursor: string | undefined;
+    for (;;) {
+      const rows = await users
+        .where((user) => (cursor !== undefined ? user.id.gt(cursor) : all()))
+        .all();
+      if (rows.length === 0) break;
+      yield rows.map((row) => row.id);
+      const last = rows.at(-1);
+      if (rows.length < BROADCAST_BATCH_SIZE || last === undefined) break;
+      cursor = last.id;
+    }
+  }
 
-	async findExistingUserIds(userIds: string[]): Promise<string[]> {
-		const rows = decodeRecord(
-			"User",
-			await this.database.db.orm.public.User.where((row) =>
-				and(row.id.in(userIds), row.deletedAt.isNull()),
-			)
-				.select("id")
-				.all(),
-		);
-		return rows.map((row) => row.id);
-	}
+  async findExistingUserIds(userIds: string[]): Promise<string[]> {
+    const rows = decodeRecord(
+      "User",
+      await this.database.db.orm.public.User.where((row) =>
+        and(row.id.in(userIds), row.deletedAt.isNull()),
+      )
+        .select("id")
+        .all(),
+    );
+    return rows.map((row) => row.id);
+  }
 
-	#buildTargetWhere(
-		filter: BroadcastTargetFilter,
-		user: ModelAccessor<Contract, "User", "public">,
-	) {
-		return match(filter)
-			.with(BROADCAST_TARGET_FILTER.ALL, () => all())
-			.with(BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN, () => user.pushTokens.some())
-			.with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () =>
-				user.lastLoginAt.gte(databaseTimestamp(subtractDays(7))),
-			)
-			.with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () =>
-				user.lastLoginAt.gte(databaseTimestamp(subtractDays(30))),
-			)
-			.with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => user.subscriptionStatus.eq("ACTIVE"))
-			.exhaustive();
-	}
+  #buildTargetWhere(
+    filter: BroadcastTargetFilter,
+    user: ModelAccessor<Contract, "User", "public">,
+  ) {
+    return match(filter)
+      .with(BROADCAST_TARGET_FILTER.ALL, () => all())
+      .with(BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN, () => user.pushTokens.some())
+      .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () =>
+        user.lastLoginAt.gte(databaseTimestamp(subtractDays(7))),
+      )
+      .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () =>
+        user.lastLoginAt.gte(databaseTimestamp(subtractDays(30))),
+      )
+      .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => user.subscriptionStatus.eq("ACTIVE"))
+      .exhaustive();
+  }
 }

@@ -1,17 +1,17 @@
 import {
-	locationResponseSchema,
-	weatherConditionsSchema,
-	weatherForecastSchema,
+  locationResponseSchema,
+  weatherConditionsSchema,
+  weatherForecastSchema,
 } from "@aido/validators";
 import type { z } from "zod";
 
 export const WeatherForecastResponseDto = weatherForecastSchema.meta({
-	id: "WeatherForecastResponseDto",
+  id: "WeatherForecastResponseDto",
 });
 export type WeatherForecastResponseDto = z.infer<typeof WeatherForecastResponseDto>;
 
 export const WeatherConditionsResponseDto = weatherConditionsSchema.meta({
-	id: "WeatherConditionsResponseDto",
+  id: "WeatherConditionsResponseDto",
 });
 export type WeatherConditionsResponseDto = z.infer<typeof WeatherConditionsResponseDto>;
 

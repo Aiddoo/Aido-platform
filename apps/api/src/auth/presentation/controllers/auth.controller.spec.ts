@@ -16,9 +16,9 @@ import type { Request } from "express";
 import type { Mocked } from "vitest";
 
 import {
-	LoginWithPasswordUseCase,
-	LogoutAllUseCase,
-	RegisterUseCase,
+  LoginWithPasswordUseCase,
+  LogoutAllUseCase,
+  RegisterUseCase,
 } from "#api/auth/application/use-cases/index";
 import type { CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 
@@ -26,118 +26,118 @@ import type { LoginDto, RegisterDto } from "../dtos/index.js";
 import { AuthController } from "./auth.controller.js";
 
 describe("AuthController — 인증 컨트롤러", () => {
-	let controller: AuthController;
-	let registerUseCase: Mocked<RegisterUseCase>;
-	let loginWithPasswordUseCase: Mocked<LoginWithPasswordUseCase>;
-	let logoutAllUseCase: Mocked<LogoutAllUseCase>;
+  let controller: AuthController;
+  let registerUseCase: Mocked<RegisterUseCase>;
+  let loginWithPasswordUseCase: Mocked<LoginWithPasswordUseCase>;
+  let logoutAllUseCase: Mocked<LogoutAllUseCase>;
 
-	const mockUser: CurrentUserPayload = {
-		userId: "user-123",
-		email: "test@example.com",
-		sessionId: "session-123",
-		role: "USER",
-	};
+  const mockUser: CurrentUserPayload = {
+    userId: "user-123",
+    email: "test@example.com",
+    sessionId: "session-123",
+    role: "USER",
+  };
 
-	const mockReq = {
-		ip: "127.0.0.1",
-		headers: { "user-agent": "test-agent" },
-	} as unknown as Request;
+  const mockReq = {
+    ip: "127.0.0.1",
+    headers: { "user-agent": "test-agent" },
+  } as unknown as Request;
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(AuthController).compile();
 
-		controller = unit;
-		registerUseCase = unitRef.get(RegisterUseCase);
-		loginWithPasswordUseCase = unitRef.get(LoginWithPasswordUseCase);
-		logoutAllUseCase = unitRef.get(LogoutAllUseCase);
-	});
+    controller = unit;
+    registerUseCase = unitRef.get(RegisterUseCase);
+    loginWithPasswordUseCase = unitRef.get(LoginWithPasswordUseCase);
+    logoutAllUseCase = unitRef.get(LogoutAllUseCase);
+  });
 
-	describe("register", () => {
-		it("회원가입 요청을 서비스에 위임하고 매퍼를 통해 응답을 반환해야 한다", async () => {
-			// Given -회원가입 DTO와 서비스 응답이 준비되었을 때
-			const dto = {
-				email: "test@example.com",
-				password: "Password1!",
-				nickname: "테스터",
-				termsAgreed: true,
-				privacyAgreed: true,
-				marketingAgreed: false,
-			};
-			const serviceResult = {
-				userId: "user-123",
-				message: "인증 코드가 발송되었습니다.",
-				email: "test@example.com",
-				emailSent: true,
-			};
-			registerUseCase.execute.mockResolvedValue(serviceResult);
+  describe("register", () => {
+    it("회원가입 요청을 서비스에 위임하고 매퍼를 통해 응답을 반환해야 한다", async () => {
+      // Given -회원가입 DTO와 서비스 응답이 준비되었을 때
+      const dto = {
+        email: "test@example.com",
+        password: "Password1!",
+        nickname: "테스터",
+        termsAgreed: true,
+        privacyAgreed: true,
+        marketingAgreed: false,
+      };
+      const serviceResult = {
+        userId: "user-123",
+        message: "인증 코드가 발송되었습니다.",
+        email: "test@example.com",
+        emailSent: true,
+      };
+      registerUseCase.execute.mockResolvedValue(serviceResult);
 
-			// When -register를 호출하면
-			const result = await controller.register(dto as unknown as RegisterDto, mockReq);
+      // When -register를 호출하면
+      const result = await controller.register(dto as unknown as RegisterDto, mockReq);
 
-			// Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-			expect(registerUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
-			expect(result).toEqual({
-				message: serviceResult.message,
-				email: serviceResult.email,
-				emailSent: true,
-			});
-		});
-	});
+      // Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
+      expect(registerUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
+      expect(result).toEqual({
+        message: serviceResult.message,
+        email: serviceResult.email,
+        emailSent: true,
+      });
+    });
+  });
 
-	describe("login", () => {
-		it("로그인 요청을 서비스에 위임하고 매퍼를 통해 토큰 응답을 반환해야 한다", async () => {
-			// Given -로그인 DTO와 서비스 응답이 준비되었을 때
-			const dto = {
-				email: "test@example.com",
-				password: "Password1!",
-			};
-			const serviceResult = {
-				userId: "user-123",
-				userTag: "tester#1234",
-				name: "테스터",
-				profileImage: null,
-				sessionId: "session-789",
-				tokens: {
-					accessToken: "access-token",
-					refreshToken: "refresh-token",
-					expiresIn: 3600,
-				},
-			};
-			loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
+  describe("login", () => {
+    it("로그인 요청을 서비스에 위임하고 매퍼를 통해 토큰 응답을 반환해야 한다", async () => {
+      // Given -로그인 DTO와 서비스 응답이 준비되었을 때
+      const dto = {
+        email: "test@example.com",
+        password: "Password1!",
+      };
+      const serviceResult = {
+        userId: "user-123",
+        userTag: "tester#1234",
+        name: "테스터",
+        profileImage: null,
+        sessionId: "session-789",
+        tokens: {
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          expiresIn: 3600,
+        },
+      };
+      loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
 
-			// When -login을 호출하면
-			const result = await controller.login(dto as unknown as LoginDto, mockReq);
+      // When -login을 호출하면
+      const result = await controller.login(dto as unknown as LoginDto, mockReq);
 
-			// Then -서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
-			expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
-			expect(result).toEqual({
-				userId: serviceResult.userId,
-				userTag: serviceResult.userTag,
-				accessToken: serviceResult.tokens.accessToken,
-				refreshToken: serviceResult.tokens.refreshToken,
-				name: serviceResult.name,
-				profileImage: serviceResult.profileImage,
-				accountRestored: false,
-			});
-		});
-	});
+      // Then -서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
+      expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
+      expect(result).toEqual({
+        userId: serviceResult.userId,
+        userTag: serviceResult.userTag,
+        accessToken: serviceResult.tokens.accessToken,
+        refreshToken: serviceResult.tokens.refreshToken,
+        name: serviceResult.name,
+        profileImage: serviceResult.profileImage,
+        accountRestored: false,
+      });
+    });
+  });
 
-	describe("logoutAll", () => {
-		it("전체 로그아웃 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
-			// Given -인증된 사용자가 있을 때
-			logoutAllUseCase.execute.mockResolvedValue({
-				message: "모든 기기에서 로그아웃되었습니다.",
-				revokedCount: 3,
-			});
+  describe("logoutAll", () => {
+    it("전체 로그아웃 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
+      // Given -인증된 사용자가 있을 때
+      logoutAllUseCase.execute.mockResolvedValue({
+        message: "모든 기기에서 로그아웃되었습니다.",
+        revokedCount: 3,
+      });
 
-			// When -logoutAll을 호출하면
-			const result = await controller.logoutAll(mockUser, mockReq);
+      // When -logoutAll을 호출하면
+      const result = await controller.logoutAll(mockUser, mockReq);
 
-			// Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-			expect(logoutAllUseCase.execute).toHaveBeenCalledWith(mockUser.userId, expect.any(Object));
-			expect(result).toEqual({
-				message: "모든 기기에서 로그아웃되었습니다.",
-			});
-		});
-	});
+      // Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
+      expect(logoutAllUseCase.execute).toHaveBeenCalledWith(mockUser.userId, expect.any(Object));
+      expect(result).toEqual({
+        message: "모든 기기에서 로그아웃되었습니다.",
+      });
+    });
+  });
 });

@@ -10,6 +10,6 @@ export const WEATHER_LOCATION_REPOSITORY = Symbol("WEATHER_LOCATION_REPOSITORY")
  * 담당한다.
  */
 export interface WeatherLocationRepositoryPort {
-	findByUserId(userId: string): Promise<UserLocation | null>;
-	upsert(location: UserLocation): Promise<UserLocation>;
+  findByUserId(userId: string): Promise<UserLocation | null>;
+  upsert(location: UserLocation): Promise<UserLocation>;
 }

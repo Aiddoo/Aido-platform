@@ -14,51 +14,51 @@ import { ADMIN_NOTIFICATION_QUEUE } from "../queue/admin-notification-queue.cons
 import { BullmqAdminNotificationQueueAdapter } from "./bullmq-admin-notification-queue.adapter.js";
 
 describe("BullmqAdminNotificationQueueAdapter", () => {
-	let adapter: BullmqAdminNotificationQueueAdapter;
-	let runtime: Mocked<JobRuntimePort>;
+  let adapter: BullmqAdminNotificationQueueAdapter;
+  let runtime: Mocked<JobRuntimePort>;
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(BullmqAdminNotificationQueueAdapter)
-			.mock<JobRuntimePort>(JOB_RUNTIME)
-			.impl(() => ({ enqueue: vi.fn().mockResolvedValue("job-1") }))
-			.compile();
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(BullmqAdminNotificationQueueAdapter)
+      .mock<JobRuntimePort>(JOB_RUNTIME)
+      .impl(() => ({ enqueue: vi.fn().mockResolvedValue("job-1") }))
+      .compile();
 
-		adapter = unit;
-		runtime = unitRef.get(JOB_RUNTIME);
-	});
+    adapter = unit;
+    runtime = unitRef.get(JOB_RUNTIME);
+  });
 
-	it("SEND 잡을 공통 재시도 옵션으로 등록한다", async () => {
-		await adapter.enqueueSend("admin", { title: "제목", body: "본문" });
+  it("SEND 잡을 공통 재시도 옵션으로 등록한다", async () => {
+    await adapter.enqueueSend("admin", { title: "제목", body: "본문" });
 
-		expect(runtime.enqueue).toHaveBeenCalledWith(
-			ADMIN_NOTIFICATION_QUEUE,
-			{
-				name: "send-notification",
-				data: {
-					channel: "admin",
-					notification: { title: "제목", body: "본문" },
-				},
-			},
-			expect.objectContaining({
-				retryLimit: 2,
-				retryDelaySeconds: 5,
-			}),
-		);
-	});
+    expect(runtime.enqueue).toHaveBeenCalledWith(
+      ADMIN_NOTIFICATION_QUEUE,
+      {
+        name: "send-notification",
+        data: {
+          channel: "admin",
+          notification: { title: "제목", body: "본문" },
+        },
+      },
+      expect.objectContaining({
+        retryLimit: 2,
+        retryDelaySeconds: 5,
+      }),
+    );
+  });
 
-	it("jobId 옵션을 공통 옵션에 병합한다", async () => {
-		await adapter.enqueueSend(
-			"admin",
-			{ title: "제목", body: "본문" },
-			{ jobId: "signup-summary_2026-02-10" },
-		);
+  it("jobId 옵션을 공통 옵션에 병합한다", async () => {
+    await adapter.enqueueSend(
+      "admin",
+      { title: "제목", body: "본문" },
+      { jobId: "signup-summary_2026-02-10" },
+    );
 
-		const opts = runtime.enqueue.mock.calls[0]?.[2];
-		expect(opts).toEqual(
-			expect.objectContaining({
-				retryLimit: 2,
-				idempotencyKey: "signup-summary_2026-02-10",
-			}),
-		);
-	});
+    const opts = runtime.enqueue.mock.calls[0]?.[2];
+    expect(opts).toEqual(
+      expect.objectContaining({
+        retryLimit: 2,
+        idempotencyKey: "signup-summary_2026-02-10",
+      }),
+    );
+  });
 });

@@ -2,15 +2,15 @@ import type { Todo as TodoResponse } from "@aido/validators";
 import { Injectable } from "@nestjs/common";
 
 import {
-	type CreateRecurringTodosResult,
-	CreateRecurringTodosUseCase,
-	CreateTodoUseCase,
+  type CreateRecurringTodosResult,
+  CreateRecurringTodosUseCase,
+  CreateTodoUseCase,
 } from "#api/todo/index";
 
 import type {
-	CreateRecurringTodoData,
-	CreateTodoData,
-	TodoCreatorPort,
+  CreateRecurringTodoData,
+  CreateTodoData,
+  TodoCreatorPort,
 } from "../../application/ports/todo-creator.port.js";
 
 /**
@@ -18,19 +18,19 @@ import type {
  */
 @Injectable()
 export class TodoCreatorAdapter implements TodoCreatorPort {
-	constructor(
-		private readonly createTodoUseCase: CreateTodoUseCase,
-		private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
-	) {}
+  constructor(
+    private readonly createTodoUseCase: CreateTodoUseCase,
+    private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
+  ) {}
 
-	createTodo(data: CreateTodoData): Promise<TodoResponse> {
-		return this.createTodoUseCase.execute(data);
-	}
+  createTodo(data: CreateTodoData): Promise<TodoResponse> {
+    return this.createTodoUseCase.execute(data);
+  }
 
-	createRecurringTodos(
-		data: CreateRecurringTodoData,
-		timezone: string,
-	): Promise<CreateRecurringTodosResult> {
-		return this.createRecurringTodosUseCase.execute({ data, timezone });
-	}
+  createRecurringTodos(
+    data: CreateRecurringTodoData,
+    timezone: string,
+  ): Promise<CreateRecurringTodosResult> {
+    return this.createRecurringTodosUseCase.execute({ data, timezone });
+  }
 }

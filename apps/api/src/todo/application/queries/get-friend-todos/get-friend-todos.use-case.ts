@@ -11,8 +11,8 @@ import { ApplicationException } from "#api/shared/domain/index";
 import { FRIEND_PORT, type FriendPort } from "../../ports/friend.port.js";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 import type { FindFriendTodosParams, GetFriendTodosParams } from "../../types.js";
 
@@ -28,87 +28,87 @@ export type GetFriendTodosInput = GetFriendTodosParams;
  */
 @Injectable()
 export class GetFriendTodosUseCase {
-	constructor(
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		private readonly paginationService: PaginationService,
-		@Inject(FRIEND_PORT)
-		private readonly friendPort: FriendPort,
-		@Inject(TODO_CACHE)
-		private readonly todoCache: TodoCachePort,
-	) {}
+  constructor(
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    private readonly paginationService: PaginationService,
+    @Inject(FRIEND_PORT)
+    private readonly friendPort: FriendPort,
+    @Inject(TODO_CACHE)
+    private readonly todoCache: TodoCachePort,
+  ) {}
 
-	async execute(
-		input: GetFriendTodosInput,
-	): Promise<CursorPaginatedResponse<TodoResponse, number>> {
-		const { userId, friendUserId } = input;
+  async execute(
+    input: GetFriendTodosInput,
+  ): Promise<CursorPaginatedResponse<TodoResponse, number>> {
+    const { userId, friendUserId } = input;
 
-		if (input.startDate && input.endDate && isAfter(input.startDate, input.endDate)) {
-			throw new ApplicationException(ErrorCode.SYS_0002, {
-				message: "startDate must be less than or equal to endDate",
-				startDate: input.startDate,
-				endDate: input.endDate,
-			});
-		}
+    if (input.startDate && input.endDate && isAfter(input.startDate, input.endDate)) {
+      throw new ApplicationException(ErrorCode.SYS_0002, {
+        message: "startDate must be less than or equal to endDate",
+        startDate: input.startDate,
+        endDate: input.endDate,
+      });
+    }
 
-		const isMutualFriend = await this.friendPort.isMutualFriend(userId, friendUserId);
-		if (!isMutualFriend) {
-			throw new ApplicationException(ErrorCode.FOLLOW_0906, {
-				targetUserId: friendUserId,
-			});
-		}
+    const isMutualFriend = await this.friendPort.isMutualFriend(userId, friendUserId);
+    if (!isMutualFriend) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0906, {
+        targetUserId: friendUserId,
+      });
+    }
 
-		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
-			cursor: input.cursor,
-			size: input.size,
-		});
+    const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+      cursor: input.cursor,
+      size: input.size,
+    });
 
-		// 첫 페이지(cursor 미지정)만 캐싱 — normalizeCursorPagination은 cursor를 그대로 통과시킴.
-		// 스탬피드 락/지터 미적용 — 키가 사용자 단위라 글로벌 핫키 없음(과설계 방지).
-		const isFirstPage = cursor === undefined;
-		const startDateKey = input.startDate ? toDateString(input.startDate) : "-";
-		const endDateKey = input.endDate ? toDateString(input.endDate) : "-";
-		let cacheGeneration: string | undefined;
+    // 첫 페이지(cursor 미지정)만 캐싱 — normalizeCursorPagination은 cursor를 그대로 통과시킴.
+    // 스탬피드 락/지터 미적용 — 키가 사용자 단위라 글로벌 핫키 없음(과설계 방지).
+    const isFirstPage = cursor === undefined;
+    const startDateKey = input.startDate ? toDateString(input.startDate) : "-";
+    const endDateKey = input.endDate ? toDateString(input.endDate) : "-";
+    let cacheGeneration: string | undefined;
 
-		if (isFirstPage) {
-			const cached = await this.todoCache.readFriendTodosFirstPage(
-				friendUserId,
-				startDateKey,
-				endDateKey,
-				size,
-			);
-			cacheGeneration = cached.generation;
-			if (cached.page) {
-				return cached.page;
-			}
-		}
+    if (isFirstPage) {
+      const cached = await this.todoCache.readFriendTodosFirstPage(
+        friendUserId,
+        startDateKey,
+        endDateKey,
+        size,
+      );
+      cacheGeneration = cached.generation;
+      if (cached.page) {
+        return cached.page;
+      }
+    }
 
-		const repoParams: FindFriendTodosParams = {
-			friendUserId,
-			cursor,
-			size,
-			startDate: input.startDate,
-			endDate: input.endDate,
-		};
+    const repoParams: FindFriendTodosParams = {
+      friendUserId,
+      cursor,
+      size,
+      startDate: input.startDate,
+      endDate: input.endDate,
+    };
 
-		const items = await this.todoReadRepository.findPublicTodosByUserId(repoParams);
+    const items = await this.todoReadRepository.findPublicTodosByUserId(repoParams);
 
-		const response = this.paginationService.createCursorPaginatedResponse<TodoResponse, number>({
-			items,
-			size,
-		});
+    const response = this.paginationService.createCursorPaginatedResponse<TodoResponse, number>({
+      items,
+      size,
+    });
 
-		if (isFirstPage && cacheGeneration !== undefined) {
-			await this.todoCache.storeFriendTodosFirstPageIfCurrent(
-				friendUserId,
-				startDateKey,
-				endDateKey,
-				size,
-				cacheGeneration,
-				response,
-			);
-		}
+    if (isFirstPage && cacheGeneration !== undefined) {
+      await this.todoCache.storeFriendTodosFirstPageIfCurrent(
+        friendUserId,
+        startDateKey,
+        endDateKey,
+        size,
+        cacheGeneration,
+        response,
+      );
+    }
 
-		return response;
-	}
+    return response;
+  }
 }

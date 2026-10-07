@@ -17,14 +17,14 @@ import { LoggerService } from "./services/logger.service.js";
  * @example LOG_LEVEL=debug pnpm test:e2e
  */
 function getDefaultLogLevel(nodeEnv: string): string {
-	switch (nodeEnv) {
-		case "test":
-			return "silent";
-		case "production":
-			return "info";
-		default:
-			return "debug";
-	}
+  switch (nodeEnv) {
+    case "test":
+      return "silent";
+    case "production":
+      return "info";
+    default:
+      return "debug";
+  }
 }
 
 /**
@@ -34,130 +34,130 @@ function getDefaultLogLevel(nodeEnv: string): string {
 @Global()
 @Module({})
 export class LoggerModule {
-	/**
-	 * 동적 모듈 설정 (동기)
-	 * ConfigModule이 로드되기 전에 사용할 때
-	 */
-	static forRoot(options: LoggerModuleOptions = {}): DynamicModule {
-		const nodeEnv = process.env.NODE_ENV ?? "development";
-		const isTest = nodeEnv === "test";
+  /**
+   * 동적 모듈 설정 (동기)
+   * ConfigModule이 로드되기 전에 사용할 때
+   */
+  static forRoot(options: LoggerModuleOptions = {}): DynamicModule {
+    const nodeEnv = process.env.NODE_ENV ?? "development";
+    const isTest = nodeEnv === "test";
 
-		const {
-			level = process.env.LOG_LEVEL ?? getDefaultLogLevel(nodeEnv),
-			prettyPrint = nodeEnv !== "production" && !isTest,
-			redactPaths = [...LOGGER_REDACT_PATHS],
-			autoLogging = !isTest, // 테스트 환경에서는 HTTP 자동 로깅 비활성화
-		} = options;
+    const {
+      level = process.env.LOG_LEVEL ?? getDefaultLogLevel(nodeEnv),
+      prettyPrint = nodeEnv !== "production" && !isTest,
+      redactPaths = [...LOGGER_REDACT_PATHS],
+      autoLogging = !isTest, // 테스트 환경에서는 HTTP 자동 로깅 비활성화
+    } = options;
 
-		return {
-			module: LoggerModule,
-			imports: [
-				PinoLoggerModule.forRoot({
-					pinoHttp: {
-						transport: prettyPrint
-							? {
-									target: "pino-pretty",
-									options: {
-										colorize: true,
-										customColors: "warn:red",
-										translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
-									},
-								}
-							: undefined,
-						level,
-						// 에러 응답은 GlobalExceptionFilter가 로깅하므로 피노는 성공 응답만
-						autoLogging: autoLogging
-							? {
-									ignore: (req) =>
-										((req as { res?: { statusCode?: number } }).res?.statusCode ?? 200) >= 400,
-								}
-							: false,
-						redact: redactPaths,
-						// req/res/responseTime 숨김 (메시지만 출력)
-						serializers: {
-							req: () => undefined,
-							res: () => undefined,
-							responseTime: () => undefined,
-						},
-						customSuccessMessage: (req, res, responseTime) => {
-							const userId = (req as { user?: { userId?: string } }).user?.userId ?? "anonymous";
-							return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
-						},
-					},
-				}),
-			],
-			providers: [LoggerService],
-			exports: [LoggerService, PinoLoggerModule],
-		};
-	}
+    return {
+      module: LoggerModule,
+      imports: [
+        PinoLoggerModule.forRoot({
+          pinoHttp: {
+            transport: prettyPrint
+              ? {
+                  target: "pino-pretty",
+                  options: {
+                    colorize: true,
+                    customColors: "warn:red",
+                    translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+                  },
+                }
+              : undefined,
+            level,
+            // 에러 응답은 GlobalExceptionFilter가 로깅하므로 피노는 성공 응답만
+            autoLogging: autoLogging
+              ? {
+                  ignore: (req) =>
+                    ((req as { res?: { statusCode?: number } }).res?.statusCode ?? 200) >= 400,
+                }
+              : false,
+            redact: redactPaths,
+            // req/res/responseTime 숨김 (메시지만 출력)
+            serializers: {
+              req: () => undefined,
+              res: () => undefined,
+              responseTime: () => undefined,
+            },
+            customSuccessMessage: (req, res, responseTime) => {
+              const userId = (req as { user?: { userId?: string } }).user?.userId ?? "anonymous";
+              return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
+            },
+          },
+        }),
+      ],
+      providers: [LoggerService],
+      exports: [LoggerService, PinoLoggerModule],
+    };
+  }
 
-	/**
-	 * 동적 모듈 설정 (비동기)
-	 * ConfigService를 통해 타입 안전하게 환경변수 사용
-	 */
-	static forRootAsync(options: LoggerModuleOptions = {}): DynamicModule {
-		const { redactPaths = [...LOGGER_REDACT_PATHS] } = options;
+  /**
+   * 동적 모듈 설정 (비동기)
+   * ConfigService를 통해 타입 안전하게 환경변수 사용
+   */
+  static forRootAsync(options: LoggerModuleOptions = {}): DynamicModule {
+    const { redactPaths = [...LOGGER_REDACT_PATHS] } = options;
 
-		return {
-			module: LoggerModule,
-			imports: [
-				PinoLoggerModule.forRootAsync({
-					inject: [ConfigService],
-					useFactory: (configService: ConfigService<EnvConfig, true>) => {
-						const nodeEnv = configService.get("NODE_ENV", { infer: true });
-						const isTest = nodeEnv === "test";
+    return {
+      module: LoggerModule,
+      imports: [
+        PinoLoggerModule.forRootAsync({
+          inject: [ConfigService],
+          useFactory: (configService: ConfigService<EnvConfig, true>) => {
+            const nodeEnv = configService.get("NODE_ENV", { infer: true });
+            const isTest = nodeEnv === "test";
 
-						// 로그 레벨 우선순위: options.level > LOG_LEVEL 환경변수 > 기본값
-						const logLevelEnv = configService.get("LOG_LEVEL", {
-							infer: true,
-						});
-						const level = options.level ?? logLevelEnv ?? getDefaultLogLevel(nodeEnv);
+            // 로그 레벨 우선순위: options.level > LOG_LEVEL 환경변수 > 기본값
+            const logLevelEnv = configService.get("LOG_LEVEL", {
+              infer: true,
+            });
+            const level = options.level ?? logLevelEnv ?? getDefaultLogLevel(nodeEnv);
 
-						// 테스트 환경에서는 pretty print 비활성화
-						const prettyPrint = options.prettyPrint ?? (nodeEnv !== "production" && !isTest);
+            // 테스트 환경에서는 pretty print 비활성화
+            const prettyPrint = options.prettyPrint ?? (nodeEnv !== "production" && !isTest);
 
-						// 테스트 환경에서는 HTTP 자동 로깅 비활성화
-						const autoLogging = options.autoLogging ?? !isTest;
+            // 테스트 환경에서는 HTTP 자동 로깅 비활성화
+            const autoLogging = options.autoLogging ?? !isTest;
 
-						return {
-							pinoHttp: {
-								transport: prettyPrint
-									? {
-											target: "pino-pretty",
-											options: {
-												colorize: true,
-												customColors: "warn:red",
-												translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
-											},
-										}
-									: undefined,
-								level,
-								// 에러 응답은 GlobalExceptionFilter가 로깅하므로 피노는 성공 응답만
-								autoLogging: autoLogging
-									? {
-											ignore: (req) =>
-												((req as { res?: { statusCode?: number } }).res?.statusCode ?? 200) >= 400,
-										}
-									: false,
-								redact: redactPaths,
-								// req/res/responseTime 숨김 (메시지만 출력)
-								serializers: {
-									req: () => undefined,
-									res: () => undefined,
-									responseTime: () => undefined,
-								},
-								customSuccessMessage: (req, res, responseTime) => {
-									const userId =
-										(req as { user?: { userId?: string } }).user?.userId ?? "anonymous";
-									return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
-								},
-							},
-						};
-					},
-				}),
-			],
-			providers: [LoggerService],
-			exports: [LoggerService, PinoLoggerModule],
-		};
-	}
+            return {
+              pinoHttp: {
+                transport: prettyPrint
+                  ? {
+                      target: "pino-pretty",
+                      options: {
+                        colorize: true,
+                        customColors: "warn:red",
+                        translateTime: "SYS:yyyy-mm-dd HH:MM:ss.l",
+                      },
+                    }
+                  : undefined,
+                level,
+                // 에러 응답은 GlobalExceptionFilter가 로깅하므로 피노는 성공 응답만
+                autoLogging: autoLogging
+                  ? {
+                      ignore: (req) =>
+                        ((req as { res?: { statusCode?: number } }).res?.statusCode ?? 200) >= 400,
+                    }
+                  : false,
+                redact: redactPaths,
+                // req/res/responseTime 숨김 (메시지만 출력)
+                serializers: {
+                  req: () => undefined,
+                  res: () => undefined,
+                  responseTime: () => undefined,
+                },
+                customSuccessMessage: (req, res, responseTime) => {
+                  const userId =
+                    (req as { user?: { userId?: string } }).user?.userId ?? "anonymous";
+                  return `${req.method} ${req.url} ${res.statusCode} ${Math.round(responseTime as number)}ms [user:${userId}]`;
+                },
+              },
+            };
+          },
+        }),
+      ],
+      providers: [LoggerService],
+      exports: [LoggerService, PinoLoggerModule],
+    };
+  }
 }

@@ -3,8 +3,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { type IReminderScheduler, REMINDER_SCHEDULER } from "#api/scheduler/index";
 
 import type {
-	TodoReminderCancellationResult,
-	TodoReminderPort,
+  TodoReminderCancellationResult,
+  TodoReminderPort,
 } from "../../application/ports/todo-reminder.port.js";
 
 /**
@@ -12,16 +12,16 @@ import type {
  */
 @Injectable()
 export class TodoReminderAdapter implements TodoReminderPort {
-	constructor(
-		@Inject(REMINDER_SCHEDULER)
-		private readonly reminderScheduler: IReminderScheduler,
-	) {}
+  constructor(
+    @Inject(REMINDER_SCHEDULER)
+    private readonly reminderScheduler: IReminderScheduler,
+  ) {}
 
-	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
-		return this.reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
-	}
+  scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+    return this.reminderScheduler.scheduleReminder(todoId, scheduledTime, userId);
+  }
 
-	cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
-		return this.reminderScheduler.cancelReminder(todoId);
-	}
+  cancelReminder(todoId: number): Promise<TodoReminderCancellationResult> {
+    return this.reminderScheduler.cancelReminder(todoId);
+  }
 }

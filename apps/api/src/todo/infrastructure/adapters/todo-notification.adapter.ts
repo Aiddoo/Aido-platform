@@ -3,9 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
-	FriendCompletedPayload,
-	MilestoneReachedPayload,
-	TodoNotificationPort,
+  FriendCompletedPayload,
+  MilestoneReachedPayload,
+  TodoNotificationPort,
 } from "../../application/ports/todo-notification.port.js";
 
 /**
@@ -15,13 +15,13 @@ import type {
  */
 @Injectable()
 export class TodoNotificationAdapter implements TodoNotificationPort {
-	constructor(private readonly notificationQueueService: NotificationQueueService) {}
+  constructor(private readonly notificationQueueService: NotificationQueueService) {}
 
-	enqueueFriendCompleted(payload: FriendCompletedPayload): void {
-		this.notificationQueueService.enqueueFriendCompleted(payload);
-	}
+  enqueueFriendCompleted(payload: FriendCompletedPayload): void {
+    this.notificationQueueService.enqueueFriendCompleted(payload);
+  }
 
-	enqueueMilestoneReached(payload: MilestoneReachedPayload): void {
-		this.notificationQueueService.enqueueMilestoneReached(payload);
-	}
+  enqueueMilestoneReached(payload: MilestoneReachedPayload): void {
+    this.notificationQueueService.enqueueMilestoneReached(payload);
+  }
 }

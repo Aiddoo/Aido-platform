@@ -13,11 +13,11 @@ import { TypedConfigService } from "#api/shared/infrastructure/config/services/c
  * Refresh Token 요청에서 추출된 정보
  */
 export interface RefreshTokenPayload {
-	userId: string;
-	email: string;
-	sessionId: string;
-	role: UserRole;
-	refreshToken: string;
+  userId: string;
+  email: string;
+  sessionId: string;
+  role: UserRole;
+  refreshToken: string;
 }
 
 /**
@@ -27,43 +27,43 @@ export interface RefreshTokenPayload {
  */
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, "jwt-refresh") {
-	constructor(readonly configService: TypedConfigService) {
-		super({
-			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-			ignoreExpiration: false,
-			secretOrKey: configService.get("JWT_REFRESH_SECRET"),
-			passReqToCallback: true,
-		});
-	}
+  constructor(readonly configService: TypedConfigService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: configService.get("JWT_REFRESH_SECRET"),
+      passReqToCallback: true,
+    });
+  }
 
-	/**
-	 * JWT 페이로드 검증 및 Refresh Token 정보 반환
-	 */
-	async validate(req: Request, payload: JwtPayload): Promise<RefreshTokenPayload> {
-		// Refresh Token 타입 확인
-		if (payload.type !== "refresh") {
-			throw new ApplicationException(ErrorCode.AUTH_0104);
-		}
+  /**
+   * JWT 페이로드 검증 및 Refresh Token 정보 반환
+   */
+  async validate(req: Request, payload: JwtPayload): Promise<RefreshTokenPayload> {
+    // Refresh Token 타입 확인
+    if (payload.type !== "refresh") {
+      throw new ApplicationException(ErrorCode.AUTH_0104);
+    }
 
-		// sessionId 필수 확인
-		if (!payload.sessionId) {
-			throw new ApplicationException(ErrorCode.AUTH_0104);
-		}
+    // sessionId 필수 확인
+    if (!payload.sessionId) {
+      throw new ApplicationException(ErrorCode.AUTH_0104);
+    }
 
-		// Authorization 헤더에서 토큰 추출
-		const authHeader = req.headers.authorization;
-		if (!authHeader) {
-			throw new ApplicationException(ErrorCode.AUTH_0104);
-		}
+    // Authorization 헤더에서 토큰 추출
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new ApplicationException(ErrorCode.AUTH_0104);
+    }
 
-		const refreshToken = authHeader.replace("Bearer ", "").trim();
+    const refreshToken = authHeader.replace("Bearer ", "").trim();
 
-		return {
-			userId: payload.sub,
-			email: payload.email,
-			sessionId: payload.sessionId,
-			role: payload.role,
-			refreshToken,
-		};
-	}
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      sessionId: payload.sessionId,
+      role: payload.role,
+      refreshToken,
+    };
+  }
 }

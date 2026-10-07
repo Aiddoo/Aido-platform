@@ -8,31 +8,31 @@ import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repos
 
 /** 메모 단건 조회 입력. */
 export interface GetMemoInput {
-	userId: string;
-	memoId: number;
+  userId: string;
+  memoId: number;
 }
 
 /** 메모 단건 조회 결과. */
 export interface GetMemoResult {
-	memo: MemoResponse;
+  memo: MemoResponse;
 }
 
 /** 메모 단건 조회 use-case (소유권 확인). */
 @Injectable()
 export class GetMemoUseCase {
-	constructor(
-		@Inject(MEMO_REPOSITORY)
-		private readonly repository: MemoRepositoryPort,
-	) {}
+  constructor(
+    @Inject(MEMO_REPOSITORY)
+    private readonly repository: MemoRepositoryPort,
+  ) {}
 
-	async execute(input: GetMemoInput): Promise<GetMemoResult> {
-		const memo = await this.repository.findByIdAndUserId(input.memoId, input.userId);
-		if (!memo) {
-			throw new ApplicationException(ErrorCode.MEMO_2001, {
-				memoId: input.memoId,
-			});
-		}
+  async execute(input: GetMemoInput): Promise<GetMemoResult> {
+    const memo = await this.repository.findByIdAndUserId(input.memoId, input.userId);
+    if (!memo) {
+      throw new ApplicationException(ErrorCode.MEMO_2001, {
+        memoId: input.memoId,
+      });
+    }
 
-		return { memo: memo.toView() };
-	}
+    return { memo: memo.toView() };
+  }
 }

@@ -11,5 +11,5 @@ export const ADMIN_BROADCAST_NOTIFIER = Symbol("ADMIN_BROADCAST_NOTIFIER");
  * 테스트는 스텁으로 대체해 실제 발송을 막는다.
  */
 export interface AdminBroadcastNotifierPort {
-	sendBatch(messages: AdminBroadcastMessage[]): Promise<{ count: number }>;
+  sendBatch(messages: AdminBroadcastMessage[]): Promise<{ count: number }>;
 }

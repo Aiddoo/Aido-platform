@@ -1,29 +1,29 @@
 import { ErrorCode } from "@aido/errors";
 import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Logger,
-	Param,
-	Patch,
-	Post,
-	Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
-	ApiBadRequestError,
-	ApiConflictError,
-	ApiCreatedResponse,
-	ApiDoc,
-	ApiForbiddenError,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiBadRequestError,
+  ApiConflictError,
+  ApiCreatedResponse,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
@@ -33,18 +33,18 @@ import { DeleteTodoCategoryUseCase } from "../application/use-cases/delete-todo-
 import { ReorderTodoCategoryUseCase } from "../application/use-cases/reorder-todo-category/reorder-todo-category.use-case.js";
 import { UpdateTodoCategoryUseCase } from "../application/use-cases/update-todo-category/update-todo-category.use-case.js";
 import {
-	CreateTodoCategoryDto,
-	CreateTodoCategoryResponseDto,
-	DeleteTodoCategoryQueryDto,
-	DeleteTodoCategoryResponseDto,
-	ReorderTodoCategoryDto,
-	ReorderTodoCategoryResponseDto,
-	TodoCategoryIdParamDto,
-	TodoCategoryListResponseDto,
-	TodoCategoryResourceLimitResponseDto,
-	TodoCategoryResponseDto,
-	UpdateTodoCategoryDto,
-	UpdateTodoCategoryResponseDto,
+  CreateTodoCategoryDto,
+  CreateTodoCategoryResponseDto,
+  DeleteTodoCategoryQueryDto,
+  DeleteTodoCategoryResponseDto,
+  ReorderTodoCategoryDto,
+  ReorderTodoCategoryResponseDto,
+  TodoCategoryIdParamDto,
+  TodoCategoryListResponseDto,
+  TodoCategoryResourceLimitResponseDto,
+  TodoCategoryResponseDto,
+  UpdateTodoCategoryDto,
+  UpdateTodoCategoryResponseDto,
 } from "./dtos/index.js";
 import { TodoCategoryMapper } from "./todo-category.mapper.js";
 
@@ -52,39 +52,39 @@ import { TodoCategoryMapper } from "./todo-category.mapper.js";
 @ApiBearerAuth()
 @Controller("todo-categories")
 export class TodoCategoryController {
-	readonly #logger = new Logger(TodoCategoryController.name);
+  readonly #logger = new Logger(TodoCategoryController.name);
 
-	constructor(
-		private readonly todoCategoryReader: TodoCategoryReader,
-		private readonly createTodoCategoryUseCase: CreateTodoCategoryUseCase,
-		private readonly updateTodoCategoryUseCase: UpdateTodoCategoryUseCase,
-		private readonly reorderTodoCategoryUseCase: ReorderTodoCategoryUseCase,
-		private readonly deleteTodoCategoryUseCase: DeleteTodoCategoryUseCase,
-	) {}
+  constructor(
+    private readonly todoCategoryReader: TodoCategoryReader,
+    private readonly createTodoCategoryUseCase: CreateTodoCategoryUseCase,
+    private readonly updateTodoCategoryUseCase: UpdateTodoCategoryUseCase,
+    private readonly reorderTodoCategoryUseCase: ReorderTodoCategoryUseCase,
+    private readonly deleteTodoCategoryUseCase: DeleteTodoCategoryUseCase,
+  ) {}
 
-	@Get("resource-limit")
-	@ApiDoc({
-		summary: "카테고리 리소스 제한 정보 조회",
-		operationId: "getTodoCategoryResourceLimit",
-		description: `현재 카테고리 개수와 최대 한도를 조회합니다.
+  @Get("resource-limit")
+  @ApiDoc({
+    summary: "카테고리 리소스 제한 정보 조회",
+    operationId: "getTodoCategoryResourceLimit",
+    description: `현재 카테고리 개수와 최대 한도를 조회합니다.
 
 **응답 필드**
 - \`categoryCount\`: 현재 카테고리 개수
 - \`maxCount\`: 최대 한도 (null이면 무제한)`,
-	})
-	@ApiSuccessResponse({ type: TodoCategoryResourceLimitResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getResourceLimit(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<TodoCategoryResourceLimitResponseDto> {
-		return this.todoCategoryReader.getResourceLimitInfo(user.userId);
-	}
+  })
+  @ApiSuccessResponse({ type: TodoCategoryResourceLimitResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getResourceLimit(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<TodoCategoryResourceLimitResponseDto> {
+    return this.todoCategoryReader.getResourceLimitInfo(user.userId);
+  }
 
-	@Post()
-	@ApiDoc({
-		summary: "카테고리 생성",
-		operationId: "createTodoCategory",
-		description: `새로운 할 일 카테고리를 생성합니다.
+  @Post()
+  @ApiDoc({
+    summary: "카테고리 생성",
+    operationId: "createTodoCategory",
+    description: `새로운 할 일 카테고리를 생성합니다.
 
 ## 필수 필드
 | 필드 | 타입 | 제약 | 설명 |
@@ -95,37 +95,37 @@ export class TodoCategoryController {
 ## 동작 방식
 - 새 카테고리는 목록 맨 끝에 추가됩니다 (sortOrder 자동 부여)
 - 같은 이름의 카테고리가 이미 존재하면 \`409 Conflict\` 에러 반환`,
-	})
-	@ApiCreatedResponse({ type: CreateTodoCategoryResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
-	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)
-	async create(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: CreateTodoCategoryDto }) dto: CreateTodoCategoryDto,
-	): Promise<CreateTodoCategoryResponseDto> {
-		this.#logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
+  })
+  @ApiCreatedResponse({ type: CreateTodoCategoryResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
+  @ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)
+  async create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: CreateTodoCategoryDto }) dto: CreateTodoCategoryDto,
+  ): Promise<CreateTodoCategoryResponseDto> {
+    this.#logger.debug(`카테고리 생성: user=${user.userId}, name=${dto.name}`);
 
-		const category = await this.createTodoCategoryUseCase.execute({
-			userId: user.userId,
-			name: dto.name,
-			color: dto.color,
-		});
+    const category = await this.createTodoCategoryUseCase.execute({
+      userId: user.userId,
+      name: dto.name,
+      color: dto.color,
+    });
 
-		this.#logger.log(`카테고리 생성 완료: id=${category.id}, user=${user.userId}`);
+    this.#logger.log(`카테고리 생성 완료: id=${category.id}, user=${user.userId}`);
 
-		return {
-			message: "카테고리가 생성되었습니다.",
-			category: TodoCategoryMapper.toResponse(category),
-		};
-	}
+    return {
+      message: "카테고리가 생성되었습니다.",
+      category: TodoCategoryMapper.toResponse(category),
+    };
+  }
 
-	@Get()
-	@ApiDoc({
-		summary: "카테고리 목록 조회",
-		operationId: "getTodoCategories",
-		description: `사용자의 모든 카테고리 목록을 조회합니다.
+  @Get()
+  @ApiDoc({
+    summary: "카테고리 목록 조회",
+    operationId: "getTodoCategories",
+    description: `사용자의 모든 카테고리 목록을 조회합니다.
 
 ## 응답 데이터
 - 각 카테고리에 \`todoCount\` (해당 카테고리의 할 일 개수) 포함
@@ -135,51 +135,51 @@ export class TodoCategoryController {
 회원가입 시 자동 생성되는 기본 카테고리:
 - **중요한 일** (\`#FFB3B3\`, 빨간색 파스텔톤)
 - **할 일** (\`#FF6B43\`, 앱 메인 주황색)`,
-	})
-	@ApiSuccessResponse({ type: TodoCategoryListResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async findAll(@CurrentUser() user: CurrentUserPayload): Promise<TodoCategoryListResponseDto> {
-		this.#logger.debug(`카테고리 목록 조회: user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: TodoCategoryListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async findAll(@CurrentUser() user: CurrentUserPayload): Promise<TodoCategoryListResponseDto> {
+    this.#logger.debug(`카테고리 목록 조회: user=${user.userId}`);
 
-		const categories = await this.todoCategoryReader.findMany(user.userId);
+    const categories = await this.todoCategoryReader.findMany(user.userId);
 
-		return {
-			items: TodoCategoryMapper.toManyResponseWithCount(categories),
-		};
-	}
+    return {
+      items: TodoCategoryMapper.toManyResponseWithCount(categories),
+    };
+  }
 
-	@Get(":id")
-	@ApiDoc({
-		summary: "카테고리 상세 조회",
-		operationId: "getTodoCategory",
-		description: `특정 카테고리의 상세 정보를 조회합니다.
+  @Get(":id")
+  @ApiDoc({
+    summary: "카테고리 상세 조회",
+    operationId: "getTodoCategory",
+    description: `특정 카테고리의 상세 정보를 조회합니다.
 
 ## 응답 데이터
 - \`todoCount\`: 해당 카테고리의 할 일 개수 포함`,
-	})
-	@ApiSuccessResponse({ type: TodoCategoryResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	@ApiForbiddenError(ErrorCode.TODO_CATEGORY_0852)
-	async findOne(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
-	): Promise<TodoCategoryResponseDto> {
-		this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: TodoCategoryResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiForbiddenError(ErrorCode.TODO_CATEGORY_0852)
+  async findOne(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+  ): Promise<TodoCategoryResponseDto> {
+    this.#logger.debug(`카테고리 조회: id=${params.id}, user=${user.userId}`);
 
-		const category = await this.todoCategoryReader.findById(params.id, user.userId);
+    const category = await this.todoCategoryReader.findById(params.id, user.userId);
 
-		return {
-			category: TodoCategoryMapper.toResponseWithCount(category),
-		};
-	}
+    return {
+      category: TodoCategoryMapper.toResponseWithCount(category),
+    };
+  }
 
-	@Patch(":id")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "카테고리 수정",
-		operationId: "updateTodoCategory",
-		description: `카테고리의 이름 또는 색상을 수정합니다.
+  @Patch(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "카테고리 수정",
+    operationId: "updateTodoCategory",
+    description: `카테고리의 이름 또는 색상을 수정합니다.
 
 ## 수정 가능한 필드
 | 필드 | 타입 | 설명 |
@@ -189,34 +189,34 @@ export class TodoCategoryController {
 
 ## 주의사항
 - 이름 변경 시 동일한 이름의 카테고리가 이미 존재하면 \`409 Conflict\` 에러`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoCategoryResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	@ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
-	async update(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
-		@Body({ schema: UpdateTodoCategoryDto }) dto: UpdateTodoCategoryDto,
-	): Promise<UpdateTodoCategoryResponseDto> {
-		this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoCategoryResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
+  async update(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+    @Body({ schema: UpdateTodoCategoryDto }) dto: UpdateTodoCategoryDto,
+  ): Promise<UpdateTodoCategoryResponseDto> {
+    this.#logger.debug(`카테고리 수정: id=${params.id}, user=${user.userId}`);
 
-		const category = await this.updateTodoCategoryUseCase.execute(params.id, user.userId, dto);
+    const category = await this.updateTodoCategoryUseCase.execute(params.id, user.userId, dto);
 
-		this.#logger.log(`카테고리 수정 완료: id=${params.id}`);
+    this.#logger.log(`카테고리 수정 완료: id=${params.id}`);
 
-		return {
-			message: "카테고리가 수정되었습니다.",
-			category: TodoCategoryMapper.toResponse(category),
-		};
-	}
+    return {
+      message: "카테고리가 수정되었습니다.",
+      category: TodoCategoryMapper.toResponse(category),
+    };
+  }
 
-	@Patch(":id/reorder")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "카테고리 순서 변경",
-		operationId: "reorderTodoCategory",
-		description: `특정 카테고리를 다른 카테고리의 앞 또는 뒤로 이동합니다.
+  @Patch(":id/reorder")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "카테고리 순서 변경",
+    operationId: "reorderTodoCategory",
+    description: `특정 카테고리를 다른 카테고리의 앞 또는 뒤로 이동합니다.
 드래그 앤 드롭으로 카테고리 순서를 변경할 때 사용합니다.
 
 ## 동작 방식
@@ -244,40 +244,40 @@ export class TodoCategoryController {
 
 ## 주의사항
 - 자기 자신을 targetCategoryId로 지정하면 무시 (변경 없음)`,
-	})
-	@ApiSuccessResponse({ type: ReorderTodoCategoryResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	async reorder(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
-		@Body({ schema: ReorderTodoCategoryDto }) dto: ReorderTodoCategoryDto,
-	): Promise<ReorderTodoCategoryResponseDto> {
-		this.#logger.debug(
-			`카테고리 순서 변경: id=${params.id}, target=${dto.targetCategoryId}, position=${dto.position}`,
-		);
+  })
+  @ApiSuccessResponse({ type: ReorderTodoCategoryResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  async reorder(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+    @Body({ schema: ReorderTodoCategoryDto }) dto: ReorderTodoCategoryDto,
+  ): Promise<ReorderTodoCategoryResponseDto> {
+    this.#logger.debug(
+      `카테고리 순서 변경: id=${params.id}, target=${dto.targetCategoryId}, position=${dto.position}`,
+    );
 
-		const category = await this.reorderTodoCategoryUseCase.execute({
-			userId: user.userId,
-			categoryId: params.id,
-			targetCategoryId: dto.targetCategoryId,
-			position: dto.position,
-		});
+    const category = await this.reorderTodoCategoryUseCase.execute({
+      userId: user.userId,
+      categoryId: params.id,
+      targetCategoryId: dto.targetCategoryId,
+      position: dto.position,
+    });
 
-		this.#logger.log(`카테고리 순서 변경 완료: id=${params.id}`);
+    this.#logger.log(`카테고리 순서 변경 완료: id=${params.id}`);
 
-		return {
-			message: "카테고리 순서가 변경되었습니다.",
-			category: TodoCategoryMapper.toResponse(category),
-		};
-	}
+    return {
+      message: "카테고리 순서가 변경되었습니다.",
+      category: TodoCategoryMapper.toResponse(category),
+    };
+  }
 
-	@Delete(":id")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "카테고리 삭제",
-		operationId: "deleteTodoCategory",
-		description: `카테고리를 삭제합니다.
+  @Delete(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "카테고리 삭제",
+    operationId: "deleteTodoCategory",
+    description: `카테고리를 삭제합니다.
 
 ## 삭제 규칙
 1. **최소 1개의 카테고리 필요**: 마지막 남은 카테고리는 삭제할 수 없습니다.
@@ -302,30 +302,30 @@ DELETE /todo-categories/3?moveToCategoryId=1
 | 할 일이 있는데 moveToCategoryId 없음 | \`TODO_CATEGORY_0855\` | 카테고리에 할 일이 있습니다 (details에 todoCount 포함) |
 | moveToCategoryId가 삭제 대상과 같음 | \`SYS_0002\` | 삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다 |
 | moveToCategoryId 카테고리 없음 | \`TODO_CATEGORY_0851\` | 카테고리를 찾을 수 없습니다 |`,
-	})
-	@ApiSuccessResponse({ type: DeleteTodoCategoryResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0854)
-	@ApiBadRequestError(ErrorCode.TODO_CATEGORY_0855)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async delete(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
-		@Query({ schema: DeleteTodoCategoryQueryDto }) query: DeleteTodoCategoryQueryDto,
-	): Promise<DeleteTodoCategoryResponseDto> {
-		this.#logger.debug(`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`);
+  })
+  @ApiSuccessResponse({ type: DeleteTodoCategoryResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiBadRequestError(ErrorCode.TODO_CATEGORY_0854)
+  @ApiBadRequestError(ErrorCode.TODO_CATEGORY_0855)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async delete(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,
+    @Query({ schema: DeleteTodoCategoryQueryDto }) query: DeleteTodoCategoryQueryDto,
+  ): Promise<DeleteTodoCategoryResponseDto> {
+    this.#logger.debug(`카테고리 삭제: id=${params.id}, moveTo=${query.moveToCategoryId}`);
 
-		await this.deleteTodoCategoryUseCase.execute({
-			userId: user.userId,
-			categoryId: params.id,
-			moveToCategoryId: query.moveToCategoryId,
-		});
+    await this.deleteTodoCategoryUseCase.execute({
+      userId: user.userId,
+      categoryId: params.id,
+      moveToCategoryId: query.moveToCategoryId,
+    });
 
-		this.#logger.log(`카테고리 삭제 완료: id=${params.id}`);
+    this.#logger.log(`카테고리 삭제 완료: id=${params.id}`);
 
-		return {
-			message: "카테고리가 삭제되었습니다.",
-		};
-	}
+    return {
+      message: "카테고리가 삭제되었습니다.",
+    };
+  }
 }

@@ -10,78 +10,78 @@ import type { Mocked } from "vitest";
 import { z } from "zod";
 
 import type {
-	AiProvider,
-	GenerateStructuredResult,
+  AiProvider,
+  GenerateStructuredResult,
 } from "../../application/ports/ai-provider.port.js";
 import { AI_PROVIDER_GEMINI, AiRouterAdapter } from "./ai-router.adapter.js";
 
 describe("AiRouterAdapter — 라우팅 Provider", () => {
-	let router: AiRouterAdapter;
-	let mockGemini: Mocked<AiProvider>;
+  let router: AiRouterAdapter;
+  let mockGemini: Mocked<AiProvider>;
 
-	const schema = z.object({ title: z.string() });
-	const sampleResult: GenerateStructuredResult<{ title: string }> = {
-		output: { title: "테스트" },
-		model: "google:gemini-3.1-flash-lite",
-		usage: { input: 100, output: 50 },
-	};
+  const schema = z.object({ title: z.string() });
+  const sampleResult: GenerateStructuredResult<{ title: string }> = {
+    output: { title: "테스트" },
+    model: "google:gemini-3.1-flash-lite",
+    usage: { input: 100, output: 50 },
+  };
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(AiRouterAdapter)
-			.mock(AI_PROVIDER_GEMINI)
-			.impl(() => ({
-				generateStructured: vi.fn().mockResolvedValue(sampleResult),
-				isAvailable: vi.fn().mockReturnValue(true),
-			}))
-			.compile();
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(AiRouterAdapter)
+      .mock(AI_PROVIDER_GEMINI)
+      .impl(() => ({
+        generateStructured: vi.fn().mockResolvedValue(sampleResult),
+        isAvailable: vi.fn().mockReturnValue(true),
+      }))
+      .compile();
 
-		router = unit;
-		mockGemini = unitRef.get(AI_PROVIDER_GEMINI);
-	});
+    router = unit;
+    mockGemini = unitRef.get(AI_PROVIDER_GEMINI);
+  });
 
-	describe("generateStructured", () => {
-		it("modelHint 없이 호출 시 Gemini 로 위임한다", async () => {
-			// When
-			const result = await router.generateStructured({
-				prompt: "테스트",
-				schema,
-			});
+  describe("generateStructured", () => {
+    it("modelHint 없이 호출 시 Gemini 로 위임한다", async () => {
+      // When
+      const result = await router.generateStructured({
+        prompt: "테스트",
+        schema,
+      });
 
-			// Then
-			expect(mockGemini.generateStructured).toHaveBeenCalledTimes(1);
-			expect(result.model).toBe("google:gemini-3.1-flash-lite");
-		});
+      // Then
+      expect(mockGemini.generateStructured).toHaveBeenCalledTimes(1);
+      expect(result.model).toBe("google:gemini-3.1-flash-lite");
+    });
 
-		it("modelHint='default' 로 호출해도 Gemini 로 위임한다", async () => {
-			// When
-			await router.generateStructured({
-				prompt: "테스트",
-				schema,
-				modelHint: "default",
-			});
+    it("modelHint='default' 로 호출해도 Gemini 로 위임한다", async () => {
+      // When
+      await router.generateStructured({
+        prompt: "테스트",
+        schema,
+        modelHint: "default",
+      });
 
-			// Then
-			expect(mockGemini.generateStructured).toHaveBeenCalledTimes(1);
-		});
+      // Then
+      expect(mockGemini.generateStructured).toHaveBeenCalledTimes(1);
+    });
 
-		it("Gemini 가 던진 에러는 그대로 전파한다", async () => {
-			// Given
-			mockGemini.generateStructured.mockRejectedValueOnce(new Error("API 실패"));
+    it("Gemini 가 던진 에러는 그대로 전파한다", async () => {
+      // Given
+      mockGemini.generateStructured.mockRejectedValueOnce(new Error("API 실패"));
 
-			// When & Then
-			await expect(router.generateStructured({ prompt: "x", schema })).rejects.toThrow("API 실패");
-		});
-	});
+      // When & Then
+      await expect(router.generateStructured({ prompt: "x", schema })).rejects.toThrow("API 실패");
+    });
+  });
 
-	describe("isAvailable", () => {
-		it("Gemini 가 가용하면 true", () => {
-			mockGemini.isAvailable.mockReturnValue(true);
-			expect(router.isAvailable()).toBe(true);
-		});
+  describe("isAvailable", () => {
+    it("Gemini 가 가용하면 true", () => {
+      mockGemini.isAvailable.mockReturnValue(true);
+      expect(router.isAvailable()).toBe(true);
+    });
 
-		it("Gemini 가 비가용이면 false", () => {
-			mockGemini.isAvailable.mockReturnValue(false);
-			expect(router.isAvailable()).toBe(false);
-		});
-	});
+    it("Gemini 가 비가용이면 false", () => {
+      mockGemini.isAvailable.mockReturnValue(false);
+      expect(router.isAvailable()).toBe(false);
+    });
+  });
 });

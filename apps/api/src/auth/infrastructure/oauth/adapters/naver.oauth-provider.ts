@@ -3,21 +3,21 @@ import type { Logger } from "@nestjs/common";
 import type { HttpClient } from "@nestjs/http-client";
 
 import type {
-	ExchangedToken,
-	GenerateAuthUrlParams,
-	OAuthIdentityProvider,
-	OAuthTokenVerifier,
-	SocialLoginOptions,
-	VerifiedProfile,
+  ExchangedToken,
+  GenerateAuthUrlParams,
+  OAuthIdentityProvider,
+  OAuthTokenVerifier,
+  SocialLoginOptions,
+  VerifiedProfile,
 } from "#api/auth/application/ports/oauth-identity-provider.port";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { readJson } from "#api/shared/infrastructure/http/read-json";
 
 interface OAuthConfig {
-	clientId: string | undefined;
-	clientSecret: string | undefined;
-	callbackUrl: string | undefined;
-	isConfigured: boolean;
+  clientId: string | undefined;
+  clientSecret: string | undefined;
+  callbackUrl: string | undefined;
+  isConfigured: boolean;
 }
 
 /**
@@ -28,102 +28,102 @@ interface OAuthConfig {
  * - exchangeCode에 optional state 전달 (Naver API 요구사항)
  */
 export class NaverOAuthProvider implements OAuthIdentityProvider {
-	readonly provider = "NAVER" as const;
-	readonly failureEmail = "naver_unknown@social.aido.kr";
+  readonly provider = "NAVER" as const;
+  readonly failureEmail = "naver_unknown@social.aido.kr";
 
-	readonly #getConfig: () => OAuthConfig;
-	readonly #verifier: OAuthTokenVerifier;
-	readonly #logger: Logger;
+  readonly #getConfig: () => OAuthConfig;
+  readonly #verifier: OAuthTokenVerifier;
+  readonly #logger: Logger;
 
-	constructor(
-		getConfig: () => OAuthConfig,
-		verifier: OAuthTokenVerifier,
-		logger: Logger,
-		private readonly http: HttpClient,
-	) {
-		this.#getConfig = getConfig;
-		this.#verifier = verifier;
-		this.#logger = logger;
-	}
+  constructor(
+    getConfig: () => OAuthConfig,
+    verifier: OAuthTokenVerifier,
+    logger: Logger,
+    private readonly http: HttpClient,
+  ) {
+    this.#getConfig = getConfig;
+    this.#verifier = verifier;
+    this.#logger = logger;
+  }
 
-	async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
-		const { clientId, callbackUrl, isConfigured } = this.#getConfig();
+  async generateAuthUrl(params: GenerateAuthUrlParams): Promise<string> {
+    const { clientId, callbackUrl, isConfigured } = this.#getConfig();
 
-		if (!isConfigured || !clientId || !callbackUrl) {
-			throw new ApplicationException(ErrorCode.USER_0602);
-		}
+    if (!isConfigured || !clientId || !callbackUrl) {
+      throw new ApplicationException(ErrorCode.USER_0602);
+    }
 
-		await params.persistState("NAVER", params.validatedRedirectUri, {
-			mode: params.mode,
-			initiatingUserId: params.mode === "link" ? params.initiatingUserId : undefined,
-		});
+    await params.persistState("NAVER", params.validatedRedirectUri, {
+      mode: params.mode,
+      initiatingUserId: params.mode === "link" ? params.initiatingUserId : undefined,
+    });
 
-		const urlParams = new URLSearchParams({
-			client_id: clientId,
-			redirect_uri: callbackUrl,
-			response_type: "code",
-			state: params.state,
-		});
+    const urlParams = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: callbackUrl,
+      response_type: "code",
+      state: params.state,
+    });
 
-		return `https://nid.naver.com/oauth2.0/authorize?${urlParams.toString()}`;
-	}
+    return `https://nid.naver.com/oauth2.0/authorize?${urlParams.toString()}`;
+  }
 
-	async exchangeCode(code: string, state?: string): Promise<ExchangedToken> {
-		const { clientId, clientSecret, callbackUrl, isConfigured } = this.#getConfig();
+  async exchangeCode(code: string, state?: string): Promise<ExchangedToken> {
+    const { clientId, clientSecret, callbackUrl, isConfigured } = this.#getConfig();
 
-		if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
-			throw new ApplicationException(ErrorCode.USER_0602);
-		}
+    if (!isConfigured || !clientId || !clientSecret || !callbackUrl) {
+      throw new ApplicationException(ErrorCode.USER_0602);
+    }
 
-		const tokenRequestBody = new URLSearchParams({
-			grant_type: "authorization_code",
-			client_id: clientId,
-			client_secret: clientSecret,
-			redirect_uri: callbackUrl,
-			code,
-		});
+    const tokenRequestBody = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: callbackUrl,
+      code,
+    });
 
-		if (state) {
-			tokenRequestBody.set("state", state);
-		}
+    if (state) {
+      tokenRequestBody.set("state", state);
+    }
 
-		const { data: tokenResponse } = await this.http.request(
-			"https://nid.naver.com/oauth2.0/token",
-			{
-				method: "POST",
-				responseType: "response",
-				retry: false,
-				throwOnHttpError: false,
-				headers: { "Content-Type": "application/x-www-form-urlencoded" },
-				body: tokenRequestBody.toString(),
-			},
-		);
+    const { data: tokenResponse } = await this.http.request(
+      "https://nid.naver.com/oauth2.0/token",
+      {
+        method: "POST",
+        responseType: "response",
+        retry: false,
+        throwOnHttpError: false,
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: tokenRequestBody.toString(),
+      },
+    );
 
-		if (!tokenResponse.ok) {
-			const errorData = await tokenResponse.text();
-			this.#logger.error(`Naver token exchange failed: ${errorData}`);
-			throw new ApplicationException(ErrorCode.USER_0602);
-		}
+    if (!tokenResponse.ok) {
+      const errorData = await tokenResponse.text();
+      this.#logger.error(`Naver token exchange failed: ${errorData}`);
+      throw new ApplicationException(ErrorCode.USER_0602);
+    }
 
-		const tokenData = await readJson<{
-			access_token: string;
-			token_type: string;
-			refresh_token?: string;
-			expires_in: number;
-		}>(tokenResponse);
+    const tokenData = await readJson<{
+      access_token: string;
+      token_type: string;
+      refresh_token?: string;
+      expires_in: number;
+    }>(tokenResponse);
 
-		return { token: tokenData.access_token };
-	}
+    return { token: tokenData.access_token };
+  }
 
-	async verifyToken(accessToken: string): Promise<VerifiedProfile> {
-		return this.#verifier.verifyNaverToken(accessToken);
-	}
+  async verifyToken(accessToken: string): Promise<VerifiedProfile> {
+    return this.#verifier.verifyNaverToken(accessToken);
+  }
 
-	buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
-		return {
-			userName: userName ?? verifiedProfile.name,
-			emailVerified: verifiedProfile.emailVerified,
-			profileImage: verifiedProfile.picture,
-		};
-	}
+  buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
+    return {
+      userName: userName ?? verifiedProfile.name,
+      emailVerified: verifiedProfile.emailVerified,
+      profileImage: verifiedProfile.picture,
+    };
+  }
 }

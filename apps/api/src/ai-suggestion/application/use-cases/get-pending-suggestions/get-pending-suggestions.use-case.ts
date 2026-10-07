@@ -6,8 +6,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import type { Suggestion } from "../../../domain/entities/suggestion.aggregate.js";
 import {
-	AI_SUGGESTION_REPOSITORY,
-	type AiSuggestionRepositoryPort,
+  AI_SUGGESTION_REPOSITORY,
+  type AiSuggestionRepositoryPort,
 } from "../../ports/ai-suggestion.repository.port.js";
 
 /**
@@ -17,21 +17,21 @@ import {
  */
 @Injectable()
 export class GetPendingSuggestionsUseCase {
-	readonly #logger = new Logger(GetPendingSuggestionsUseCase.name);
+  readonly #logger = new Logger(GetPendingSuggestionsUseCase.name);
 
-	constructor(
-		@Inject(AI_SUGGESTION_REPOSITORY)
-		private readonly repository: AiSuggestionRepositoryPort,
-		private readonly entitlementService: EntitlementService,
-	) {}
+  constructor(
+    @Inject(AI_SUGGESTION_REPOSITORY)
+    private readonly repository: AiSuggestionRepositoryPort,
+    private readonly entitlementService: EntitlementService,
+  ) {}
 
-	async execute(userId: string): Promise<Suggestion[]> {
-		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
-		if (!hasPremium) {
-			this.#logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
-			throw new ApplicationException(ErrorCode.AI_1309);
-		}
+  async execute(userId: string): Promise<Suggestion[]> {
+    const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+    if (!hasPremium) {
+      this.#logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
+      throw new ApplicationException(ErrorCode.AI_1309);
+    }
 
-		return this.repository.findPendingByUserId(userId);
-	}
+    return this.repository.findPendingByUserId(userId);
+  }
 }

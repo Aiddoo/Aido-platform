@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	EntitlementService,
-	Feature,
+  EntitlementService,
+  Feature,
 } from "#api/shared/application/entitlement/entitlement.service";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import { PaginationService } from "#api/shared/application/pagination/index";
@@ -10,27 +10,27 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import {
-	evaluateNudgeCooldown,
-	evaluateRemindNudgeCooldown,
-	type NudgeCooldown,
+  evaluateNudgeCooldown,
+  evaluateRemindNudgeCooldown,
+  type NudgeCooldown,
 } from "../../domain/services/nudge-cooldown.js";
 import {
-	NUDGE_REPOSITORY,
-	type NudgeRepositoryPort,
-	type NudgeWithRelations,
+  NUDGE_REPOSITORY,
+  type NudgeRepositoryPort,
+  type NudgeWithRelations,
 } from "../ports/nudge.repository.port.js";
 
 export interface NudgeLimitInfo {
-	dailyLimit: number | null;
-	used: number;
-	remaining: number | null;
+  dailyLimit: number | null;
+  used: number;
+  remaining: number | null;
 }
 
 /** 목록 조회 파라미터 (정규화 전 — size 선택) */
 export interface GetNudgesParams {
-	userId: string;
-	cursor?: number;
-	size?: number;
+  userId: string;
+  cursor?: number;
+  size?: number;
 }
 
 /**
@@ -41,96 +41,96 @@ export interface GetNudgesParams {
  */
 @Injectable()
 export class NudgeReader {
-	readonly #logger = new Logger(NudgeReader.name);
+  readonly #logger = new Logger(NudgeReader.name);
 
-	constructor(
-		@Inject(NUDGE_REPOSITORY)
-		private readonly nudgeRepository: NudgeRepositoryPort,
-		private readonly paginationService: PaginationService,
-		private readonly entitlementService: EntitlementService,
-	) {}
+  constructor(
+    @Inject(NUDGE_REPOSITORY)
+    private readonly nudgeRepository: NudgeRepositoryPort,
+    private readonly paginationService: PaginationService,
+    private readonly entitlementService: EntitlementService,
+  ) {}
 
-	async getReceivedNudges(
-		params: GetNudgesParams,
-	): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
-		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
-			cursor: params.cursor,
-			size: params.size,
-		});
+  async getReceivedNudges(
+    params: GetNudgesParams,
+  ): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
+    const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+      cursor: params.cursor,
+      size: params.size,
+    });
 
-		const nudges = await this.nudgeRepository.findReceivedNudges({
-			userId: params.userId,
-			cursor,
-			size,
-		});
+    const nudges = await this.nudgeRepository.findReceivedNudges({
+      userId: params.userId,
+      cursor,
+      size,
+    });
 
-		this.#logger.debug(`Received nudges listed: ${nudges.length} items for user: ${params.userId}`);
+    this.#logger.debug(`Received nudges listed: ${nudges.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<NudgeWithRelations, number>({
-			items: nudges,
-			size,
-		});
-	}
+    return this.paginationService.createCursorPaginatedResponse<NudgeWithRelations, number>({
+      items: nudges,
+      size,
+    });
+  }
 
-	async getSentNudges(
-		params: GetNudgesParams,
-	): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
-		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
-			cursor: params.cursor,
-			size: params.size,
-		});
+  async getSentNudges(
+    params: GetNudgesParams,
+  ): Promise<CursorPaginatedResponse<NudgeWithRelations, number>> {
+    const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+      cursor: params.cursor,
+      size: params.size,
+    });
 
-		const nudges = await this.nudgeRepository.findSentNudges({
-			userId: params.userId,
-			cursor,
-			size,
-		});
+    const nudges = await this.nudgeRepository.findSentNudges({
+      userId: params.userId,
+      cursor,
+      size,
+    });
 
-		this.#logger.debug(`Sent nudges listed: ${nudges.length} items for user: ${params.userId}`);
+    this.#logger.debug(`Sent nudges listed: ${nudges.length} items for user: ${params.userId}`);
 
-		return this.paginationService.createCursorPaginatedResponse<NudgeWithRelations, number>({
-			items: nudges,
-			size,
-		});
-	}
+    return this.paginationService.createCursorPaginatedResponse<NudgeWithRelations, number>({
+      items: nudges,
+      size,
+    });
+  }
 
-	async getLimitInfo(userId: string, tz: string = "UTC"): Promise<NudgeLimitInfo> {
-		const capturedAt = now();
-		const quotaWindow = dayWindowInTimezone(capturedAt, tz);
-		const { dailyLimit } = await this.entitlementService.getFeatureLimit(userId, Feature.NUDGE);
+  async getLimitInfo(userId: string, tz: string = "UTC"): Promise<NudgeLimitInfo> {
+    const capturedAt = now();
+    const quotaWindow = dayWindowInTimezone(capturedAt, tz);
+    const { dailyLimit } = await this.entitlementService.getFeatureLimit(userId, Feature.NUDGE);
 
-		const used = await this.nudgeRepository.countSentSince(
-			userId,
-			quotaWindow.startsAt,
-			quotaWindow.endsAt,
-		);
+    const used = await this.nudgeRepository.countSentSince(
+      userId,
+      quotaWindow.startsAt,
+      quotaWindow.endsAt,
+    );
 
-		return {
-			dailyLimit,
-			used,
-			remaining: this.entitlementService.calculateRemaining(dailyLimit, used),
-		};
-	}
+    return {
+      dailyLimit,
+      used,
+      remaining: this.entitlementService.calculateRemaining(dailyLimit, used),
+    };
+  }
 
-	async getCooldownInfoForUser(senderId: string, receiverId: string): Promise<NudgeCooldown> {
-		const lastNudge = await this.nudgeRepository.findLastNudgeToUser(senderId, receiverId);
-		return evaluateNudgeCooldown(lastNudge?.createdAt ?? null);
-	}
+  async getCooldownInfoForUser(senderId: string, receiverId: string): Promise<NudgeCooldown> {
+    const lastNudge = await this.nudgeRepository.findLastNudgeToUser(senderId, receiverId);
+    return evaluateNudgeCooldown(lastNudge?.createdAt ?? null);
+  }
 
-	async getRemindCooldownInfo(senderId: string, receiverId: string): Promise<NudgeCooldown> {
-		const lastRemind = await this.nudgeRepository.findLastRemindNudge(senderId, receiverId);
-		return evaluateRemindNudgeCooldown(lastRemind?.createdAt ?? null);
-	}
+  async getRemindCooldownInfo(senderId: string, receiverId: string): Promise<NudgeCooldown> {
+    const lastRemind = await this.nudgeRepository.findLastRemindNudge(senderId, receiverId);
+    return evaluateRemindNudgeCooldown(lastRemind?.createdAt ?? null);
+  }
 
-	countReceivedNudges(userId: string): Promise<number> {
-		return this.nudgeRepository.countReceived(userId);
-	}
+  countReceivedNudges(userId: string): Promise<number> {
+    return this.nudgeRepository.countReceived(userId);
+  }
 
-	countSentNudges(userId: string): Promise<number> {
-		return this.nudgeRepository.countSent(userId);
-	}
+  countSentNudges(userId: string): Promise<number> {
+    return this.nudgeRepository.countSent(userId);
+  }
 
-	countUnreadReceivedNudges(userId: string): Promise<number> {
-		return this.nudgeRepository.countUnreadReceived(userId);
-	}
+  countUnreadReceivedNudges(userId: string): Promise<number> {
+    return this.nudgeRepository.countUnreadReceived(userId);
+  }
 }

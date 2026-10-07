@@ -16,16 +16,16 @@ import { TypedConfigService } from "./services/config.service.js";
  */
 @Global()
 @Module({
-	imports: [
-		NestConfigModule.forRoot({
-			isGlobal: true,
-			envFilePath: getEnvFilePath(),
-			validate: validateEnv,
-			ignoreEnvFile: false,
-		}),
-	],
-	providers: [TypedConfigService],
-	exports: [TypedConfigService],
+  imports: [
+    NestConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: getEnvFilePath(),
+      validate: validateEnv,
+      ignoreEnvFile: false,
+    }),
+  ],
+  providers: [TypedConfigService],
+  exports: [TypedConfigService],
 })
 export class AppConfigModule {}
 
@@ -37,8 +37,8 @@ export class AppConfigModule {}
  * - development → .env.development
  */
 function getEnvFilePath(): string {
-	const env = process.env.NODE_ENV || "development";
-	if (env === "production") return ".env";
-	if (env === "test") return ".env.test";
-	return ".env.development";
+  const env = process.env.NODE_ENV || "development";
+  if (env === "production") return ".env";
+  if (env === "test") return ".env.test";
+  return ".env.development";
 }

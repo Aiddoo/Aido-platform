@@ -12,37 +12,37 @@ export type JWKSFunction = (protectedHeader: unknown, token: unknown) => Promise
 
 /** 애플리케이션에서 조정 가능한 최소 Remote JWKS 옵션 */
 export interface RemoteJWKSetOptions {
-	cooldownDuration?: number;
+  cooldownDuration?: number;
 }
 
 /** jose에서 필요한 함수만 노출하는 타입 안전 래퍼 */
 export interface JoseWrapper {
-	createRemoteJWKSet: (url: URL, options?: RemoteJWKSetOptions) => JWKSFunction;
-	jwtVerify: <T>(
-		jwt: string,
-		jwks: JWKSFunction,
-		options?: { issuer?: string; audience?: string },
-	) => Promise<{ payload: T }>;
-	isJWTExpiredError: (error: unknown) => boolean;
-	isJWTClaimValidationError: (error: unknown) => boolean;
+  createRemoteJWKSet: (url: URL, options?: RemoteJWKSetOptions) => JWKSFunction;
+  jwtVerify: <T>(
+    jwt: string,
+    jwks: JWKSFunction,
+    options?: { issuer?: string; audience?: string },
+  ) => Promise<{ payload: T }>;
+  isJWTExpiredError: (error: unknown) => boolean;
+  isJWTClaimValidationError: (error: unknown) => boolean;
 }
 
 /** jose를 동적 import 하여 타입 안전 래퍼로 감싼다. */
 export async function loadJose(): Promise<JoseWrapper> {
-	const jose = await import("jose");
-	return {
-		createRemoteJWKSet: (url: URL, options?: RemoteJWKSetOptions) =>
-			jose.createRemoteJWKSet(url, options) as JWKSFunction,
-		jwtVerify: <T>(
-			jwt: string,
-			jwks: JWKSFunction,
-			options?: { issuer?: string; audience?: string },
-		) =>
-			jose.jwtVerify(jwt, jwks as Parameters<typeof jose.jwtVerify>[1], options) as Promise<{
-				payload: T;
-			}>,
-		isJWTExpiredError: (error: unknown): boolean => error instanceof jose.errors.JWTExpired,
-		isJWTClaimValidationError: (error: unknown): boolean =>
-			error instanceof jose.errors.JWTClaimValidationFailed,
-	};
+  const jose = await import("jose");
+  return {
+    createRemoteJWKSet: (url: URL, options?: RemoteJWKSetOptions) =>
+      jose.createRemoteJWKSet(url, options) as JWKSFunction,
+    jwtVerify: <T>(
+      jwt: string,
+      jwks: JWKSFunction,
+      options?: { issuer?: string; audience?: string },
+    ) =>
+      jose.jwtVerify(jwt, jwks as Parameters<typeof jose.jwtVerify>[1], options) as Promise<{
+        payload: T;
+      }>,
+    isJWTExpiredError: (error: unknown): boolean => error instanceof jose.errors.JWTExpired,
+    isJWTClaimValidationError: (error: unknown): boolean =>
+      error instanceof jose.errors.JWTClaimValidationFailed,
+  };
 }

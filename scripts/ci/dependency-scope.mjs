@@ -18,7 +18,11 @@ export function dependencyScope(paths) {
     )
       scope.api = true;
     else if (path.startsWith('apps/mobile/')) scope.mobile = true;
-    else if (path.startsWith('packages/errors/') || path.startsWith('packages/validators/')) {
+    else if (
+      path.startsWith('packages/api/') ||
+      path.startsWith('packages/errors/') ||
+      path.startsWith('packages/validators/')
+    ) {
       scope.api = true;
       scope.mobile = true;
       scope.shared = true;

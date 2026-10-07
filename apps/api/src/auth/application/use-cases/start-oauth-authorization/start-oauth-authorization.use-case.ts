@@ -7,27 +7,27 @@ import { OAuthWorkflow } from "../../workflows/oauth.workflow.js";
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 type WebOAuthProvider = Exclude<OAuthProvider, "APPLE">;
 type StartAuthorizationMethod =
-	| "generateGoogleAuthUrlWithState"
-	| "generateKakaoAuthUrlWithState"
-	| "generateNaverAuthUrlWithState";
+  | "generateGoogleAuthUrlWithState"
+  | "generateKakaoAuthUrlWithState"
+  | "generateNaverAuthUrlWithState";
 
 const START_AUTHORIZATION_METHOD_BY_PROVIDER = {
-	GOOGLE: "generateGoogleAuthUrlWithState",
-	KAKAO: "generateKakaoAuthUrlWithState",
-	NAVER: "generateNaverAuthUrlWithState",
+  GOOGLE: "generateGoogleAuthUrlWithState",
+  KAKAO: "generateKakaoAuthUrlWithState",
+  NAVER: "generateNaverAuthUrlWithState",
 } as const satisfies Record<WebOAuthProvider, StartAuthorizationMethod>;
 
 @Injectable()
 export class StartOAuthAuthorizationUseCase {
-	constructor(private readonly workflow: OAuthWorkflow) {}
-	execute(
-		provider: WebOAuthProvider,
-		state: string,
-		clientRedirectUri?: string,
-		mode?: OAuthMode,
-		initiatingUserId?: string,
-	): Promise<string> {
-		const methodName = START_AUTHORIZATION_METHOD_BY_PROVIDER[provider];
-		return this.workflow[methodName](state, clientRedirectUri, mode, initiatingUserId);
-	}
+  constructor(private readonly workflow: OAuthWorkflow) {}
+  execute(
+    provider: WebOAuthProvider,
+    state: string,
+    clientRedirectUri?: string,
+    mode?: OAuthMode,
+    initiatingUserId?: string,
+  ): Promise<string> {
+    const methodName = START_AUTHORIZATION_METHOD_BY_PROVIDER[provider];
+    return this.workflow[methodName](state, clientRedirectUri, mode, initiatingUserId);
+  }
 }

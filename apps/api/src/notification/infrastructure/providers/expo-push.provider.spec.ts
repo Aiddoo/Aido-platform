@@ -14,482 +14,482 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import {
-	type PushPayload,
-	RetryablePushProviderTransportError,
+  type PushPayload,
+  RetryablePushProviderTransportError,
 } from "../../application/ports/push-provider.port.js";
 import { EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH } from "./expo-push-message.js";
 import { ExpoPushProvider } from "./expo-push.provider.js";
 
 const { mockSendPushNotificationsAsync, mockChunkPushNotifications, mockExpoConstructor } =
-	vi.hoisted(() => ({
-		mockSendPushNotificationsAsync:
-			vi.fn<(messages: ExpoPushMessage[]) => Promise<ExpoPushTicket[]>>(),
-		mockChunkPushNotifications: vi.fn<(messages: ExpoPushMessage[]) => ExpoPushMessage[][]>(),
-		mockExpoConstructor: vi.fn<(options?: unknown) => void>(),
-	}));
+  vi.hoisted(() => ({
+    mockSendPushNotificationsAsync:
+      vi.fn<(messages: ExpoPushMessage[]) => Promise<ExpoPushTicket[]>>(),
+    mockChunkPushNotifications: vi.fn<(messages: ExpoPushMessage[]) => ExpoPushMessage[][]>(),
+    mockExpoConstructor: vi.fn<(options?: unknown) => void>(),
+  }));
 
 vi.mock("expo-server-sdk", async (importOriginal) => {
-	const sdk = await importOriginal<typeof import("expo-server-sdk")>();
-	return {
-		...sdk,
-		default: class MockExpo {
-			constructor(options?: unknown) {
-				mockExpoConstructor(options);
-			}
+  const sdk = await importOriginal<typeof import("expo-server-sdk")>();
+  return {
+    ...sdk,
+    default: class MockExpo {
+      constructor(options?: unknown) {
+        mockExpoConstructor(options);
+      }
 
-			sendPushNotificationsAsync = mockSendPushNotificationsAsync;
-			chunkPushNotifications = mockChunkPushNotifications;
-			static isExpoPushToken = sdk.default.isExpoPushToken;
-		},
-	};
+      sendPushNotificationsAsync = mockSendPushNotificationsAsync;
+      chunkPushNotifications = mockChunkPushNotifications;
+      static isExpoPushToken = sdk.default.isExpoPushToken;
+    },
+  };
 });
 
 describe("ExpoPushProvider — Expo 푸시 프로바이더", () => {
-	let provider: ExpoPushProvider;
+  let provider: ExpoPushProvider;
 
-	const validToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
-	const invalidToken = "invalid-token";
+  const validToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
+  const invalidToken = "invalid-token";
 
-	const createPayload = (overrides?: Partial<PushPayload>): PushPayload => ({
-		token: validToken,
-		title: "테스트 알림",
-		body: "알림 내용",
-		...overrides,
-	});
+  const createPayload = (overrides?: Partial<PushPayload>): PushPayload => ({
+    token: validToken,
+    title: "테스트 알림",
+    body: "알림 내용",
+    ...overrides,
+  });
 
-	beforeEach(async () => {
-		const { unit } = await TestBed.solitary(ExpoPushProvider)
-			.mock(TypedConfigService)
-			.impl(() => ({ expoAccessToken: "test-expo-access-token" }))
-			.compile();
-		provider = unit;
-	});
+  beforeEach(async () => {
+    const { unit } = await TestBed.solitary(ExpoPushProvider)
+      .mock(TypedConfigService)
+      .impl(() => ({ expoAccessToken: "test-expo-access-token" }))
+      .compile();
+    provider = unit;
+  });
 
-	describe("name", () => {
-		it('name이 "expo"여야 한다', () => {
-			// When / Then
-			expect(provider.name).toBe("expo");
-		});
+  describe("name", () => {
+    it('name이 "expo"여야 한다', () => {
+      // When / Then
+      expect(provider.name).toBe("expo");
+    });
 
-		it("설정된 Expo access token을 SDK 생성자에 전달한다", () => {
-			expect(mockExpoConstructor).toHaveBeenCalledWith({
-				accessToken: "test-expo-access-token",
-			});
-		});
-	});
+    it("설정된 Expo access token을 SDK 생성자에 전달한다", () => {
+      expect(mockExpoConstructor).toHaveBeenCalledWith({
+        accessToken: "test-expo-access-token",
+      });
+    });
+  });
 
-	describe("validateToken", () => {
-		it.each([
-			validToken,
-			"ExpoPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
-			"12345678-1234-1234-1234-123456789012",
-		])("유효한 Expo 토큰 %s은 true를 반환해야 한다", (token) => {
-			expect(provider.validateToken(token)).toBe(true);
-		});
+  describe("validateToken", () => {
+    it.each([
+      validToken,
+      "ExpoPushToken[xxxxxxxxxxxxxxxxxxxxxx]",
+      "12345678-1234-1234-1234-123456789012",
+    ])("유효한 Expo 토큰 %s은 true를 반환해야 한다", (token) => {
+      expect(provider.validateToken(token)).toBe(true);
+    });
 
-		it("유효하지 않은 토큰은 false를 반환해야 한다", () => {
-			// Given
-			const token = invalidToken;
+    it("유효하지 않은 토큰은 false를 반환해야 한다", () => {
+      // Given
+      const token = invalidToken;
 
-			// When
-			const result = provider.validateToken(token);
+      // When
+      const result = provider.validateToken(token);
 
-			// Then
-			expect(result).toBe(false);
-		});
-	});
+      // Then
+      expect(result).toBe(false);
+    });
+  });
 
-	describe("send", () => {
-		it("유효한 토큰으로 성공적으로 발송해야 한다", async () => {
-			// Given
-			const payload = createPayload();
-			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-123" }]);
+  describe("send", () => {
+    it("유효한 토큰으로 성공적으로 발송해야 한다", async () => {
+      // Given
+      const payload = createPayload();
+      mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-123" }]);
 
-			// When
-			const result = await provider.send(payload);
+      // When
+      const result = await provider.send(payload);
 
-			// Then
-			expect(result).toEqual({
-				token: validToken,
-				success: true,
-				ticketId: "ticket-123",
-			});
-			expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
-				expect.objectContaining({
-					to: validToken,
-					title: "테스트 알림",
-					body: "알림 내용",
-					sound: "default",
-					channelId: "default",
-					priority: "high",
-				}),
-			]);
-		});
+      // Then
+      expect(result).toEqual({
+        token: validToken,
+        success: true,
+        ticketId: "ticket-123",
+      });
+      expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
+        expect.objectContaining({
+          to: validToken,
+          title: "테스트 알림",
+          body: "알림 내용",
+          sound: "default",
+          channelId: "default",
+          priority: "high",
+        }),
+      ]);
+    });
 
-		it("유효하지 않은 토큰은 invalidPushToken 에러를 던져야 한다", async () => {
-			// Given
-			const payload = createPayload({ token: invalidToken });
+    it("유효하지 않은 토큰은 invalidPushToken 에러를 던져야 한다", async () => {
+      // Given
+      const payload = createPayload({ token: invalidToken });
 
-			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
-			expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
-		});
+      // When / Then
+      await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
+      expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
+    });
 
-		it("티켓이 없으면 pushSendFailed 에러를 던져야 한다", async () => {
-			// Given
-			const payload = createPayload();
-			mockSendPushNotificationsAsync.mockResolvedValue([]);
+    it("티켓이 없으면 pushSendFailed 에러를 던져야 한다", async () => {
+      // Given
+      const payload = createPayload();
+      mockSendPushNotificationsAsync.mockResolvedValue([]);
 
-			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
-		});
+      // When / Then
+      await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
+    });
 
-		it("Expo SDK 에러 시 pushSendFailed 에러를 던져야 한다", async () => {
-			// Given
-			const payload = createPayload();
-			mockSendPushNotificationsAsync.mockRejectedValue(new Error("Network error"));
+    it("Expo SDK 에러 시 pushSendFailed 에러를 던져야 한다", async () => {
+      // Given
+      const payload = createPayload();
+      mockSendPushNotificationsAsync.mockRejectedValue(new Error("Network error"));
 
-			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
-		});
+      // When / Then
+      await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
+    });
 
-		it("에러 티켓을 올바르게 파싱해야 한다", async () => {
-			// Given
-			const payload = createPayload();
-			mockSendPushNotificationsAsync.mockResolvedValue([
-				{
-					status: "error",
-					message: "DeviceNotRegistered",
-					details: { error: "DeviceNotRegistered" },
-				},
-			]);
+    it("에러 티켓을 올바르게 파싱해야 한다", async () => {
+      // Given
+      const payload = createPayload();
+      mockSendPushNotificationsAsync.mockResolvedValue([
+        {
+          status: "error",
+          message: "DeviceNotRegistered",
+          details: { error: "DeviceNotRegistered" },
+        },
+      ]);
 
-			// When
-			const result = await provider.send(payload);
+      // When
+      const result = await provider.send(payload);
 
-			// Then
-			expect(result).toEqual({
-				token: validToken,
-				success: false,
-				error: "DeviceNotRegistered",
-				errorCode: "DeviceNotRegistered",
-			});
-		});
+      // Then
+      expect(result).toEqual({
+        token: validToken,
+        success: false,
+        error: "DeviceNotRegistered",
+        errorCode: "DeviceNotRegistered",
+      });
+    });
 
-		it("BusinessException은 그대로 재전파해야 한다", async () => {
-			// Given
-			const payload = createPayload();
-			// 첫 번째 호출은 빈 티켓 반환 -> pushSendFailed BusinessException 발생
-			mockSendPushNotificationsAsync.mockResolvedValue([]);
+    it("BusinessException은 그대로 재전파해야 한다", async () => {
+      // Given
+      const payload = createPayload();
+      // 첫 번째 호출은 빈 티켓 반환 -> pushSendFailed BusinessException 발생
+      mockSendPushNotificationsAsync.mockResolvedValue([]);
 
-			// When / Then
-			await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
-		});
+      // When / Then
+      await expect(provider.send(payload)).rejects.toThrow(ApplicationException);
+    });
 
-		it("payload의 선택적 필드가 메시지에 반영되어야 한다", async () => {
-			// Given
-			const payload = createPayload({
-				data: { type: "DAILY_COMPLETE", screen: "home" },
-				badge: 5,
-				sound: "default",
-				channelId: "reminder",
-				priority: "normal",
-				ttl: 3600,
-			});
-			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-456" }]);
+    it("payload의 선택적 필드가 메시지에 반영되어야 한다", async () => {
+      // Given
+      const payload = createPayload({
+        data: { type: "DAILY_COMPLETE", screen: "home" },
+        badge: 5,
+        sound: "default",
+        channelId: "reminder",
+        priority: "normal",
+        ttl: 3600,
+      });
+      mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-456" }]);
 
-			// When
-			await provider.send(payload);
+      // When
+      await provider.send(payload);
 
-			// Then
-			expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
-				expect.objectContaining({
-					to: validToken,
-					title: "테스트 알림",
-					body: "알림 내용",
-					data: { type: "DAILY_COMPLETE", screen: "home" },
-					badge: 5,
-					sound: "default",
-					channelId: "reminder",
-					priority: "normal",
-					ttl: 3600,
-				}),
-			]);
-		});
+      // Then
+      expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
+        expect.objectContaining({
+          to: validToken,
+          title: "테스트 알림",
+          body: "알림 내용",
+          data: { type: "DAILY_COMPLETE", screen: "home" },
+          badge: 5,
+          sound: "default",
+          channelId: "reminder",
+          priority: "normal",
+          ttl: 3600,
+        }),
+      ]);
+    });
 
-		it("Expo 한도를 넘는 payload는 SDK로 보내지 않고 MessageTooBig을 반환한다", async () => {
-			// Given
-			const payload = createPayload({ body: "🐾".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) });
+    it("Expo 한도를 넘는 payload는 SDK로 보내지 않고 MessageTooBig을 반환한다", async () => {
+      // Given
+      const payload = createPayload({ body: "🐾".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) });
 
-			// When
-			const result = await provider.send(payload);
+      // When
+      const result = await provider.send(payload);
 
-			// Then
-			expect(result).toMatchObject({
-				token: validToken,
-				success: false,
-				errorCode: "MessageTooBig",
-			});
-			expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
-		});
-	});
+      // Then
+      expect(result).toMatchObject({
+        token: validToken,
+        success: false,
+        errorCode: "MessageTooBig",
+      });
+      expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
+    });
+  });
 
-	describe("sendBatch", () => {
-		it("여러 알림을 성공적으로 발송해야 한다", async () => {
-			// Given
-			const payloads = [
-				createPayload({ token: validToken, title: "알림 1" }),
-				createPayload({ token: validToken, title: "알림 2" }),
-			];
-			const messages = payloads.map((p) => expect.objectContaining({ to: p.token }));
-			mockChunkPushNotifications.mockReturnValue([messages]);
-			mockSendPushNotificationsAsync.mockResolvedValue([
-				{ status: "ok", id: "ticket-1" },
-				{ status: "ok", id: "ticket-2" },
-			]);
+  describe("sendBatch", () => {
+    it("여러 알림을 성공적으로 발송해야 한다", async () => {
+      // Given
+      const payloads = [
+        createPayload({ token: validToken, title: "알림 1" }),
+        createPayload({ token: validToken, title: "알림 2" }),
+      ];
+      const messages = payloads.map((p) => expect.objectContaining({ to: p.token }));
+      mockChunkPushNotifications.mockReturnValue([messages]);
+      mockSendPushNotificationsAsync.mockResolvedValue([
+        { status: "ok", id: "ticket-1" },
+        { status: "ok", id: "ticket-2" },
+      ]);
 
-			// When
-			const result = await provider.sendBatch(payloads);
+      // When
+      const result = await provider.sendBatch(payloads);
 
-			// Then
-			expect(result.total).toBe(2);
-			expect(result.successCount).toBe(2);
-			expect(result.failureCount).toBe(0);
-			expect(result.invalidTokens).toEqual([]);
-			expect(result.results).toHaveLength(2);
-			expect(result.results[0]).toEqual({
-				token: validToken,
-				success: true,
-				ticketId: "ticket-1",
-			});
-			expect(result.results[1]).toEqual({
-				token: validToken,
-				success: true,
-				ticketId: "ticket-2",
-			});
-		});
+      // Then
+      expect(result.total).toBe(2);
+      expect(result.successCount).toBe(2);
+      expect(result.failureCount).toBe(0);
+      expect(result.invalidTokens).toEqual([]);
+      expect(result.results).toHaveLength(2);
+      expect(result.results[0]).toEqual({
+        token: validToken,
+        success: true,
+        ticketId: "ticket-1",
+      });
+      expect(result.results[1]).toEqual({
+        token: validToken,
+        success: true,
+        ticketId: "ticket-2",
+      });
+    });
 
-		it("유효하지 않은 토큰을 필터링해야 한다", async () => {
-			// Given
-			const payloads = [
-				createPayload({ token: validToken, title: "유효" }),
-				createPayload({ token: invalidToken, title: "무효" }),
-			];
-			// chunkPushNotifications는 유효한 메시지만 받음
-			mockChunkPushNotifications.mockReturnValue([[expect.objectContaining({ to: validToken })]]);
-			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
+    it("유효하지 않은 토큰을 필터링해야 한다", async () => {
+      // Given
+      const payloads = [
+        createPayload({ token: validToken, title: "유효" }),
+        createPayload({ token: invalidToken, title: "무효" }),
+      ];
+      // chunkPushNotifications는 유효한 메시지만 받음
+      mockChunkPushNotifications.mockReturnValue([[expect.objectContaining({ to: validToken })]]);
+      mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
 
-			// When
-			const result = await provider.sendBatch(payloads);
+      // When
+      const result = await provider.sendBatch(payloads);
 
-			// Then
-			expect(result.total).toBe(2);
-			expect(result.successCount).toBe(1);
-			expect(result.failureCount).toBe(1);
-			expect(result.invalidTokens).toContain(invalidToken);
-			// 무효 토큰에 대한 결과
-			const invalidResult = result.results.find((r) => r.errorCode === "NOTIFICATION_1001");
-			expect(invalidResult).toBeDefined();
-			expect(invalidResult?.success).toBe(false);
-		});
+      // Then
+      expect(result.total).toBe(2);
+      expect(result.successCount).toBe(1);
+      expect(result.failureCount).toBe(1);
+      expect(result.invalidTokens).toContain(invalidToken);
+      // 무효 토큰에 대한 결과
+      const invalidResult = result.results.find((r) => r.errorCode === "NOTIFICATION_1001");
+      expect(invalidResult).toBeDefined();
+      expect(invalidResult?.success).toBe(false);
+    });
 
-		it("모든 토큰이 유효하지 않으면 전체 실패를 반환해야 한다", async () => {
-			// Given
-			const payloads = [
-				createPayload({ token: invalidToken }),
-				createPayload({ token: "also-invalid" }),
-			];
+    it("모든 토큰이 유효하지 않으면 전체 실패를 반환해야 한다", async () => {
+      // Given
+      const payloads = [
+        createPayload({ token: invalidToken }),
+        createPayload({ token: "also-invalid" }),
+      ];
 
-			// When
-			const result = await provider.sendBatch(payloads);
+      // When
+      const result = await provider.sendBatch(payloads);
 
-			// Then
-			expect(result.total).toBe(2);
-			expect(result.successCount).toBe(0);
-			expect(result.failureCount).toBe(2);
-			expect(result.invalidTokens).toEqual([invalidToken, "also-invalid"]);
-			expect(mockChunkPushNotifications).not.toHaveBeenCalled();
-			expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
-		});
+      // Then
+      expect(result.total).toBe(2);
+      expect(result.successCount).toBe(0);
+      expect(result.failureCount).toBe(2);
+      expect(result.invalidTokens).toEqual([invalidToken, "also-invalid"]);
+      expect(mockChunkPushNotifications).not.toHaveBeenCalled();
+      expect(mockSendPushNotificationsAsync).not.toHaveBeenCalled();
+    });
 
-		it("부분 실패를 올바르게 처리해야 한다", async () => {
-			// Given
-			const token2 = "ExponentPushToken[yyyyyyyyyyyyyyyyyyyyyy]";
-			const payloads = [
-				createPayload({ token: validToken, title: "성공" }),
-				createPayload({ token: token2, title: "실패" }),
-			];
-			mockChunkPushNotifications.mockReturnValue([
-				[expect.objectContaining({ to: validToken }), expect.objectContaining({ to: token2 })],
-			]);
-			mockSendPushNotificationsAsync.mockResolvedValue([
-				{ status: "ok", id: "ticket-1" },
-				{
-					status: "error",
-					message: "DeviceNotRegistered",
-					details: { error: "DeviceNotRegistered" },
-				},
-			]);
+    it("부분 실패를 올바르게 처리해야 한다", async () => {
+      // Given
+      const token2 = "ExponentPushToken[yyyyyyyyyyyyyyyyyyyyyy]";
+      const payloads = [
+        createPayload({ token: validToken, title: "성공" }),
+        createPayload({ token: token2, title: "실패" }),
+      ];
+      mockChunkPushNotifications.mockReturnValue([
+        [expect.objectContaining({ to: validToken }), expect.objectContaining({ to: token2 })],
+      ]);
+      mockSendPushNotificationsAsync.mockResolvedValue([
+        { status: "ok", id: "ticket-1" },
+        {
+          status: "error",
+          message: "DeviceNotRegistered",
+          details: { error: "DeviceNotRegistered" },
+        },
+      ]);
 
-			// When
-			const result = await provider.sendBatch(payloads);
+      // When
+      const result = await provider.sendBatch(payloads);
 
-			// Then
-			expect(result.total).toBe(2);
-			expect(result.successCount).toBe(1);
-			expect(result.failureCount).toBe(1);
-			expect(result.results[0]).toEqual({
-				token: validToken,
-				success: true,
-				ticketId: "ticket-1",
-			});
-			expect(result.results[1]).toEqual({
-				token: token2,
-				success: false,
-				error: "DeviceNotRegistered",
-				errorCode: "DeviceNotRegistered",
-			});
-			// DeviceNotRegistered 에러는 invalidTokens에 추가
-			expect(result.invalidTokens).toContain(token2);
-		});
+      // Then
+      expect(result.total).toBe(2);
+      expect(result.successCount).toBe(1);
+      expect(result.failureCount).toBe(1);
+      expect(result.results[0]).toEqual({
+        token: validToken,
+        success: true,
+        ticketId: "ticket-1",
+      });
+      expect(result.results[1]).toEqual({
+        token: token2,
+        success: false,
+        error: "DeviceNotRegistered",
+        errorCode: "DeviceNotRegistered",
+      });
+      // DeviceNotRegistered 에러는 invalidTokens에 추가
+      expect(result.invalidTokens).toContain(token2);
+    });
 
-		it("청크 transport 실패는 provider 재시도 오류로 원인과 진행 상태를 보존한다", async () => {
-			// Given
-			const payloads = [
-				createPayload({ token: validToken, title: "알림 1" }),
-				createPayload({ token: validToken, title: "알림 2" }),
-			];
-			mockChunkPushNotifications.mockReturnValue([
-				[expect.objectContaining({ to: validToken }), expect.objectContaining({ to: validToken })],
-			]);
-			const transportFailure = new Error("Expo server error");
-			mockSendPushNotificationsAsync.mockRejectedValue(transportFailure);
+    it("청크 transport 실패는 provider 재시도 오류로 원인과 진행 상태를 보존한다", async () => {
+      // Given
+      const payloads = [
+        createPayload({ token: validToken, title: "알림 1" }),
+        createPayload({ token: validToken, title: "알림 2" }),
+      ];
+      mockChunkPushNotifications.mockReturnValue([
+        [expect.objectContaining({ to: validToken }), expect.objectContaining({ to: validToken })],
+      ]);
+      const transportFailure = new Error("Expo server error");
+      mockSendPushNotificationsAsync.mockRejectedValue(transportFailure);
 
-			// When / Then
-			const delivery = provider.sendBatch(payloads);
-			await expect(delivery).rejects.toBeInstanceOf(RetryablePushProviderTransportError);
-			await expect(delivery).rejects.toMatchObject({
-				name: RetryablePushProviderTransportError.name,
-				cause: transportFailure,
-				metadata: {
-					providerName: "expo",
-					resolvedPayloadCountBeforeFailure: 0,
-					acceptedTicketCountBeforeFailure: 0,
-					unconfirmedPayloadCount: 2,
-					unattemptedPayloadCount: 0,
-				},
-			});
-		});
+      // When / Then
+      const delivery = provider.sendBatch(payloads);
+      await expect(delivery).rejects.toBeInstanceOf(RetryablePushProviderTransportError);
+      await expect(delivery).rejects.toMatchObject({
+        name: RetryablePushProviderTransportError.name,
+        cause: transportFailure,
+        metadata: {
+          providerName: "expo",
+          resolvedPayloadCountBeforeFailure: 0,
+          acceptedTicketCountBeforeFailure: 0,
+          unconfirmedPayloadCount: 2,
+          unattemptedPayloadCount: 0,
+        },
+      });
+    });
 
-		it("앞선 청크가 수락된 뒤 transport가 실패하면 중복 가능성을 metadata로 드러낸다", async () => {
-			// Given
-			const secondToken = "ExponentPushToken[second-token]";
-			const thirdToken = "ExponentPushToken[third-token]";
-			const payloads = [
-				createPayload({ token: validToken }),
-				createPayload({ token: secondToken }),
-				createPayload({ token: thirdToken }),
-			];
-			mockChunkPushNotifications.mockReturnValue([
-				[expect.objectContaining({ to: validToken })],
-				[expect.objectContaining({ to: secondToken })],
-				[expect.objectContaining({ to: thirdToken })],
-			]);
-			mockSendPushNotificationsAsync
-				.mockResolvedValueOnce([{ status: "ok", id: "accepted-ticket" }])
-				.mockRejectedValueOnce(new Error("connection reset"));
+    it("앞선 청크가 수락된 뒤 transport가 실패하면 중복 가능성을 metadata로 드러낸다", async () => {
+      // Given
+      const secondToken = "ExponentPushToken[second-token]";
+      const thirdToken = "ExponentPushToken[third-token]";
+      const payloads = [
+        createPayload({ token: validToken }),
+        createPayload({ token: secondToken }),
+        createPayload({ token: thirdToken }),
+      ];
+      mockChunkPushNotifications.mockReturnValue([
+        [expect.objectContaining({ to: validToken })],
+        [expect.objectContaining({ to: secondToken })],
+        [expect.objectContaining({ to: thirdToken })],
+      ]);
+      mockSendPushNotificationsAsync
+        .mockResolvedValueOnce([{ status: "ok", id: "accepted-ticket" }])
+        .mockRejectedValueOnce(new Error("connection reset"));
 
-			// When / Then
-			const delivery = provider.sendBatch(payloads);
-			await expect(delivery).rejects.toBeInstanceOf(RetryablePushProviderTransportError);
-			await expect(delivery).rejects.toMatchObject({
-				name: RetryablePushProviderTransportError.name,
-				metadata: {
-					providerName: "expo",
-					resolvedPayloadCountBeforeFailure: 1,
-					acceptedTicketCountBeforeFailure: 1,
-					unconfirmedPayloadCount: 1,
-					unattemptedPayloadCount: 1,
-				},
-			});
-			expect(mockSendPushNotificationsAsync).toHaveBeenCalledTimes(2);
-		});
+      // When / Then
+      const delivery = provider.sendBatch(payloads);
+      await expect(delivery).rejects.toBeInstanceOf(RetryablePushProviderTransportError);
+      await expect(delivery).rejects.toMatchObject({
+        name: RetryablePushProviderTransportError.name,
+        metadata: {
+          providerName: "expo",
+          resolvedPayloadCountBeforeFailure: 1,
+          acceptedTicketCountBeforeFailure: 1,
+          unconfirmedPayloadCount: 1,
+          unattemptedPayloadCount: 1,
+        },
+      });
+      expect(mockSendPushNotificationsAsync).toHaveBeenCalledTimes(2);
+    });
 
-		it("Expo가 일부 티켓만 반환해도 모든 입력에 순서대로 결과를 만든다", async () => {
-			const secondToken = "ExponentPushToken[second-token]";
-			const payloads = [createPayload(), createPayload({ token: secondToken })];
-			mockChunkPushNotifications.mockImplementation((messages) => [messages]);
-			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
+    it("Expo가 일부 티켓만 반환해도 모든 입력에 순서대로 결과를 만든다", async () => {
+      const secondToken = "ExponentPushToken[second-token]";
+      const payloads = [createPayload(), createPayload({ token: secondToken })];
+      mockChunkPushNotifications.mockImplementation((messages) => [messages]);
+      mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-1" }]);
 
-			const result = await provider.sendBatch(payloads);
+      const result = await provider.sendBatch(payloads);
 
-			expect(result).toMatchObject({
-				total: 2,
-				successCount: 1,
-				failureCount: 1,
-			});
-			expect(result.results).toEqual([
-				{ token: validToken, success: true, ticketId: "ticket-1" },
-				{
-					token: secondToken,
-					success: false,
-					error: "No ticket or payload",
-					errorCode: "NOTIFICATION_1003",
-				},
-			]);
-		});
+      expect(result).toMatchObject({
+        total: 2,
+        successCount: 1,
+        failureCount: 1,
+      });
+      expect(result.results).toEqual([
+        { token: validToken, success: true, ticketId: "ticket-1" },
+        {
+          token: secondToken,
+          success: false,
+          error: "No ticket or payload",
+          errorCode: "NOTIFICATION_1003",
+        },
+      ]);
+    });
 
-		it("빈 페이로드 배열은 전체 실패(0건)를 반환해야 한다", async () => {
-			// Given
-			const payloads: PushPayload[] = [];
+    it("빈 페이로드 배열은 전체 실패(0건)를 반환해야 한다", async () => {
+      // Given
+      const payloads: PushPayload[] = [];
 
-			// When
-			const result = await provider.sendBatch(payloads);
+      // When
+      const result = await provider.sendBatch(payloads);
 
-			// Then
-			expect(result.total).toBe(0);
-			expect(result.successCount).toBe(0);
-			expect(result.failureCount).toBe(0);
-			expect(result.results).toEqual([]);
-			expect(result.invalidTokens).toEqual([]);
-		});
+      // Then
+      expect(result.total).toBe(0);
+      expect(result.successCount).toBe(0);
+      expect(result.failureCount).toBe(0);
+      expect(result.results).toEqual([]);
+      expect(result.invalidTokens).toEqual([]);
+    });
 
-		it("한도를 넘는 항목만 거부하고 다른 항목은 순서대로 발송한다", async () => {
-			// Given
-			const sendableToken = "ExponentPushToken[sendable-token]";
-			const payloads = [
-				createPayload({ body: "한".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) }),
-				createPayload({ token: sendableToken, title: "전송 가능" }),
-			];
-			mockChunkPushNotifications.mockImplementation((messages) => [messages]);
-			mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-sendable" }]);
+    it("한도를 넘는 항목만 거부하고 다른 항목은 순서대로 발송한다", async () => {
+      // Given
+      const sendableToken = "ExponentPushToken[sendable-token]";
+      const payloads = [
+        createPayload({ body: "한".repeat(EXPO_PUSH_PAYLOAD_MAX_BYTE_LENGTH) }),
+        createPayload({ token: sendableToken, title: "전송 가능" }),
+      ];
+      mockChunkPushNotifications.mockImplementation((messages) => [messages]);
+      mockSendPushNotificationsAsync.mockResolvedValue([{ status: "ok", id: "ticket-sendable" }]);
 
-			// When
-			const result = await provider.sendBatch(payloads);
+      // When
+      const result = await provider.sendBatch(payloads);
 
-			// Then
-			expect(result).toMatchObject({
-				total: 2,
-				successCount: 1,
-				failureCount: 1,
-				invalidTokens: [],
-			});
-			expect(result.results).toEqual([
-				expect.objectContaining({
-					token: validToken,
-					success: false,
-					errorCode: "MessageTooBig",
-				}),
-				{
-					token: sendableToken,
-					success: true,
-					ticketId: "ticket-sendable",
-				},
-			]);
-			expect(mockSendPushNotificationsAsync).toHaveBeenCalledTimes(1);
-			expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
-				expect.objectContaining({ to: sendableToken }),
-			]);
-		});
-	});
+      // Then
+      expect(result).toMatchObject({
+        total: 2,
+        successCount: 1,
+        failureCount: 1,
+        invalidTokens: [],
+      });
+      expect(result.results).toEqual([
+        expect.objectContaining({
+          token: validToken,
+          success: false,
+          errorCode: "MessageTooBig",
+        }),
+        {
+          token: sendableToken,
+          success: true,
+          ticketId: "ticket-sendable",
+        },
+      ]);
+      expect(mockSendPushNotificationsAsync).toHaveBeenCalledTimes(1);
+      expect(mockSendPushNotificationsAsync).toHaveBeenCalledWith([
+        expect.objectContaining({ to: sendableToken }),
+      ]);
+    });
+  });
 });

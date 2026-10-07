@@ -17,43 +17,43 @@ import type { Suggestion } from "../domain/entities/suggestion.aggregate.js";
  * Suggestion 애그리게잇을 API 응답 형식으로 변환합니다.
  */
 export abstract class AiSuggestionMapper {
-	/**
-	 * Suggestion 애그리게잇을 API 응답 형식으로 변환
-	 */
-	static toResponse(suggestion: Suggestion): RecurringSuggestion {
-		const daysResult = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
+  /**
+   * Suggestion 애그리게잇을 API 응답 형식으로 변환
+   */
+  static toResponse(suggestion: Suggestion): RecurringSuggestion {
+    const daysResult = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
 
-		return {
-			id: suggestion.id,
-			title: suggestion.title,
-			daysOfWeek: daysResult.success ? daysResult.data : [],
-			scheduledTime: suggestion.scheduledTime,
-			confidence: suggestion.confidence,
-			reason: suggestion.reason,
-			status: suggestion.status,
-			expiresAt: suggestion.expiresAt.toISOString(),
-			createdAt: suggestion.createdAt.toISOString(),
-			suggestedCategoryId: suggestion.suggestedCategoryId ?? null,
-		};
-	}
+    return {
+      id: suggestion.id,
+      title: suggestion.title,
+      daysOfWeek: daysResult.success ? daysResult.data : [],
+      scheduledTime: suggestion.scheduledTime,
+      confidence: suggestion.confidence,
+      reason: suggestion.reason,
+      status: suggestion.status,
+      expiresAt: suggestion.expiresAt.toISOString(),
+      createdAt: suggestion.createdAt.toISOString(),
+      suggestedCategoryId: suggestion.suggestedCategoryId ?? null,
+    };
+  }
 
-	/**
-	 * 여러 애그리게잇을 API 응답 형식으로 일괄 변환
-	 */
-	static toManyResponse(suggestions: Suggestion[]): RecurringSuggestion[] {
-		return suggestions.map((suggestion) => AiSuggestionMapper.toResponse(suggestion));
-	}
+  /**
+   * 여러 애그리게잇을 API 응답 형식으로 일괄 변환
+   */
+  static toManyResponse(suggestions: Suggestion[]): RecurringSuggestion[] {
+    return suggestions.map((suggestion) => AiSuggestionMapper.toResponse(suggestion));
+  }
 
-	/**
-	 * 수락/거절 결과를 API 응답 형식으로 변환 (createdTodosCount는 수락 시에만 포함)
-	 */
-	static toActionResponse(result: SuggestionActionResult): SuggestionActionResponse {
-		return {
-			message: result.message,
-			suggestion: AiSuggestionMapper.toResponse(result.suggestion),
-			...(result.createdTodosCount !== undefined && {
-				createdTodosCount: result.createdTodosCount,
-			}),
-		};
-	}
+  /**
+   * 수락/거절 결과를 API 응답 형식으로 변환 (createdTodosCount는 수락 시에만 포함)
+   */
+  static toActionResponse(result: SuggestionActionResult): SuggestionActionResponse {
+    return {
+      message: result.message,
+      suggestion: AiSuggestionMapper.toResponse(result.suggestion),
+      ...(result.createdTodosCount !== undefined && {
+        createdTodosCount: result.createdTodosCount,
+      }),
+    };
+  }
 }

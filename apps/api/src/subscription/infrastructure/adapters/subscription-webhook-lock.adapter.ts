@@ -9,12 +9,12 @@ const REVENUECAT_WEBHOOK_LOCK_TTL_MS = 10_000;
 
 @Injectable()
 export class SubscriptionWebhookLockAdapter implements SubscriptionWebhookLockPort {
-	constructor(@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider) {}
+  constructor(@Inject(LOCK_PROVIDER) private readonly lockProvider: ILockProvider) {}
 
-	acquire(appUserId: string): Promise<(() => Promise<void>) | null> {
-		return this.lockProvider.acquire(
-			cacheKey("subscription", "lock-revenuecat-webhook", appUserId),
-			REVENUECAT_WEBHOOK_LOCK_TTL_MS,
-		);
-	}
+  acquire(appUserId: string): Promise<(() => Promise<void>) | null> {
+    return this.lockProvider.acquire(
+      cacheKey("subscription", "lock-revenuecat-webhook", appUserId),
+      REVENUECAT_WEBHOOK_LOCK_TTL_MS,
+    );
+  }
 }

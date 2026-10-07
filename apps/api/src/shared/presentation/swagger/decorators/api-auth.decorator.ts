@@ -19,14 +19,14 @@ import { ErrorResponseSchema } from "../schemas/response.schema.js";
  * ```
  */
 export function ApiAuthRequired(): MethodDecorator {
-	return applyDecorators(
-		ApiBearerAuth(SWAGGER_SECURITY.ACCESS_TOKEN),
-		ApiResponse({
-			status: HttpStatus.UNAUTHORIZED,
-			description: SWAGGER_DESCRIPTION.UNAUTHORIZED_401,
-			type: ErrorResponseSchema,
-		}),
-	);
+  return applyDecorators(
+    ApiBearerAuth(SWAGGER_SECURITY.ACCESS_TOKEN),
+    ApiResponse({
+      status: HttpStatus.UNAUTHORIZED,
+      description: SWAGGER_DESCRIPTION.UNAUTHORIZED_401,
+      type: ErrorResponseSchema,
+    }),
+  );
 }
 
 /**
@@ -40,12 +40,12 @@ export function ApiAuthRequired(): MethodDecorator {
  * ```
  */
 export function ApiRefreshTokenRequired(): MethodDecorator {
-	return applyDecorators(
-		ApiBearerAuth(SWAGGER_SECURITY.REFRESH_TOKEN),
-		ApiResponse({
-			status: HttpStatus.UNAUTHORIZED,
-			description: SWAGGER_DESCRIPTION.UNAUTHORIZED_401,
-			type: ErrorResponseSchema,
-		}),
-	);
+  return applyDecorators(
+    ApiBearerAuth(SWAGGER_SECURITY.REFRESH_TOKEN),
+    ApiResponse({
+      status: HttpStatus.UNAUTHORIZED,
+      description: SWAGGER_DESCRIPTION.UNAUTHORIZED_401,
+      type: ErrorResponseSchema,
+    }),
+  );
 }

@@ -17,14 +17,14 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
  *   (cron이 아직 hard delete 처리하지 못한 edge case — 복구 거부)
  */
 export function assertRestorableWithinGracePeriod(deletedAt: Date | null, userId: string): boolean {
-	if (!deletedAt) {
-		return false;
-	}
+  if (!deletedAt) {
+    return false;
+  }
 
-	const gracePeriodCutoff = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
-	if (deletedAt > gracePeriodCutoff) {
-		return true;
-	}
+  const gracePeriodCutoff = subtractDays(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
+  if (deletedAt > gracePeriodCutoff) {
+    return true;
+  }
 
-	throw new DomainException(ErrorCode.USER_0606, { userId });
+  throw new DomainException(ErrorCode.USER_0606, { userId });
 }

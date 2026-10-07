@@ -4,9 +4,9 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";
 
 import type {
-	LocalizedNotificationTemplate,
-	NotificationMessage,
-	NotificationVariantContext,
+  LocalizedNotificationTemplate,
+  NotificationMessage,
+  NotificationVariantContext,
 } from "./notification-copy.types.js";
 
 const KOREAN_NOTIFICATION_LABEL_MAX_GRAPHEMES = 24;
@@ -14,8 +14,8 @@ const ENGLISH_NOTIFICATION_LABEL_MAX_GRAPHEMES = 16;
 const ELLIPSIS = "…";
 
 interface NotificationLabelPreviewInput {
-	readonly label: string;
-	readonly locale: SupportedLocale;
+  readonly label: string;
+  readonly locale: SupportedLocale;
 }
 
 /**
@@ -24,64 +24,64 @@ interface NotificationLabelPreviewInput {
  * 한국어 24 grapheme, 영어 16 grapheme으로 제한한다.
  */
 export function createNotificationLabelPreview({
-	label,
-	locale,
+  label,
+  locale,
 }: NotificationLabelPreviewInput): string {
-	const normalizedLabel = label.trim();
-	const maxGraphemes =
-		locale === "en"
-			? ENGLISH_NOTIFICATION_LABEL_MAX_GRAPHEMES
-			: KOREAN_NOTIFICATION_LABEL_MAX_GRAPHEMES;
-	const graphemes = Array.from(
-		new Intl.Segmenter(locale, { granularity: "grapheme" }).segment(normalizedLabel),
-		({ segment }) => segment,
-	);
+  const normalizedLabel = label.trim();
+  const maxGraphemes =
+    locale === "en"
+      ? ENGLISH_NOTIFICATION_LABEL_MAX_GRAPHEMES
+      : KOREAN_NOTIFICATION_LABEL_MAX_GRAPHEMES;
+  const graphemes = Array.from(
+    new Intl.Segmenter(locale, { granularity: "grapheme" }).segment(normalizedLabel),
+    ({ segment }) => segment,
+  );
 
-	if (graphemes.length <= maxGraphemes) {
-		return normalizedLabel;
-	}
+  if (graphemes.length <= maxGraphemes) {
+    return normalizedLabel;
+  }
 
-	return `${graphemes.slice(0, maxGraphemes - 1).join("")}${ELLIPSIS}`;
+  return `${graphemes.slice(0, maxGraphemes - 1).join("")}${ELLIPSIS}`;
 }
 
 interface RenderLocalizedNotificationInput<TVariables> {
-	readonly template: LocalizedNotificationTemplate<TVariables>;
-	readonly variables: Readonly<TVariables>;
-	readonly variantContext?: NotificationVariantContext;
-	readonly templateKey?: string;
+  readonly template: LocalizedNotificationTemplate<TVariables>;
+  readonly variables: Readonly<TVariables>;
+  readonly variantContext?: NotificationVariantContext;
+  readonly templateKey?: string;
 }
 
 /** 동일한 seed에서 동일한 카피와 분석용 variant ID를 반환한다. */
 export function renderLocalizedNotification<TVariables>({
-	template,
-	variables,
-	variantContext,
-	templateKey,
+  template,
+  variables,
+  variantContext,
+  templateKey,
 }: RenderLocalizedNotificationInput<TVariables>): NotificationMessage {
-	const variantNamespace = variantContext
-		? templateKey
-			? `${variantContext.campaignKey}.${templateKey}`
-			: variantContext.campaignKey
-		: undefined;
+  const variantNamespace = variantContext
+    ? templateKey
+      ? `${variantContext.campaignKey}.${templateKey}`
+      : variantContext.campaignKey
+    : undefined;
 
-	if (template.variants) {
-		const index = variantContext
-			? deterministicIndex(
-					`${variantNamespace}\u0000${variantContext.recipientId}\u0000${variantContext.occurrenceKey}`,
-					template.variants.length,
-				)
-			: 0;
-		const selectedCopy = notificationContentSchema.parse(
-			(template.variants[index] ?? template.variants[0])(variables),
-		);
-		return {
-			...selectedCopy,
-			variantId: variantNamespace ? `${variantNamespace}.v${index + 1}` : `v${index + 1}`,
-		};
-	}
+  if (template.variants) {
+    const index = variantContext
+      ? deterministicIndex(
+          `${variantNamespace}\u0000${variantContext.recipientId}\u0000${variantContext.occurrenceKey}`,
+          template.variants.length,
+        )
+      : 0;
+    const selectedCopy = notificationContentSchema.parse(
+      (template.variants[index] ?? template.variants[0])(variables),
+    );
+    return {
+      ...selectedCopy,
+      variantId: variantNamespace ? `${variantNamespace}.v${index + 1}` : `v${index + 1}`,
+    };
+  }
 
-	return {
-		...notificationContentSchema.parse(template.copy(variables)),
-		variantId: variantNamespace ? `${variantNamespace}.default` : "default",
-	};
+  return {
+    ...notificationContentSchema.parse(template.copy(variables)),
+    variantId: variantNamespace ? `${variantNamespace}.default` : "default",
+  };
 }

@@ -8,7 +8,7 @@ import { PaginationService } from "./services/pagination.service.js";
  */
 @Global()
 @Module({
-	providers: [PaginationService],
-	exports: [PaginationService],
+  providers: [PaginationService],
+  exports: [PaginationService],
 })
 export class PaginationModule {}

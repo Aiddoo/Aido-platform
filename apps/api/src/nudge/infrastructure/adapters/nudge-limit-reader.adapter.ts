@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import {
-	EntitlementService,
-	Feature,
+  EntitlementService,
+  Feature,
 } from "#api/shared/application/entitlement/entitlement.service";
 
 import type { NudgeLimitReaderPort } from "../../application/ports/nudge-limit-reader.port.js";
@@ -15,10 +15,10 @@ import type { NudgeLimitReaderPort } from "../../application/ports/nudge-limit-r
  */
 @Injectable()
 export class NudgeLimitReaderAdapter implements NudgeLimitReaderPort {
-	constructor(private readonly entitlementService: EntitlementService) {}
+  constructor(private readonly entitlementService: EntitlementService) {}
 
-	async getDailyLimitInTx(userId: string): Promise<number | null> {
-		const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(userId, Feature.NUDGE);
-		return dailyLimit;
-	}
+  async getDailyLimitInTx(userId: string): Promise<number | null> {
+    const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(userId, Feature.NUDGE);
+    return dailyLimit;
+  }
 }

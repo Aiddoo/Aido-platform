@@ -16,12 +16,12 @@ const ONBOARDING_DAY_SET = new Set<number>(ONBOARDING_DAYS);
 
 /** 경과일이 온보딩 발송 대상 day인지 판정 */
 export function isOnboardingDay(day: number): day is OnboardingDay {
-	return ONBOARDING_DAY_SET.has(day);
+  return ONBOARDING_DAY_SET.has(day);
 }
 
 /** 해당 day가 완료 수 조회 대상인지 판정 */
 export function requiresCompletedCount(
-	day: OnboardingDay,
+  day: OnboardingDay,
 ): day is OnboardingDayRequiringCompletedCount {
-	return day === 5 || day === 7;
+  return day === 5 || day === 7;
 }

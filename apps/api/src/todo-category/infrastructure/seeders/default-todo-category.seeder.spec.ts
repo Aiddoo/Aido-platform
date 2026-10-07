@@ -10,49 +10,49 @@ import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks
 import { DefaultTodoCategorySeeder } from "./default-todo-category.seeder.js";
 
 describe("DefaultTodoCategorySeeder — 기본 카테고리 시딩", () => {
-	let seeder: DefaultTodoCategorySeeder;
-	let db: MockDatabaseContext;
+  let seeder: DefaultTodoCategorySeeder;
+  let db: MockDatabaseContext;
 
-	beforeEach(async () => {
-		db = createMockDatabaseContext();
+  beforeEach(async () => {
+    db = createMockDatabaseContext();
 
-		seeder = new DefaultTodoCategorySeeder(createMockTransactionHost(db));
-	});
+    seeder = new DefaultTodoCategorySeeder(createMockTransactionHost(db));
+  });
 
-	it("seed는 활성 트랜잭션에 기본 카테고리를 생성한다", async () => {
-		db.orm.public.TodoCategory.createAndCount.mockResolvedValue(2);
+  it("seed는 활성 트랜잭션에 기본 카테고리를 생성한다", async () => {
+    db.orm.public.TodoCategory.createAndCount.mockResolvedValue(2);
 
-		const count = await seeder.seed("u1");
+    const count = await seeder.seed("u1");
 
-		expect(count).toBe(2);
-		expect(db.orm.public.TodoCategory.createAndCount).toHaveBeenCalledWith([
-			expect.objectContaining(
-				databaseWriteExpectation("TodoCategory", {
-					userId: "u1",
-					name: "중요한 일",
-					color: "#FFB3B3",
-					sortOrder: 0,
-				}),
-			),
-			expect.objectContaining(
-				databaseWriteExpectation("TodoCategory", {
-					userId: "u1",
-					name: "할 일",
-					color: "#FF6B43",
-					sortOrder: 1,
-				}),
-			),
-		]);
-	});
+    expect(count).toBe(2);
+    expect(db.orm.public.TodoCategory.createAndCount).toHaveBeenCalledWith([
+      expect.objectContaining(
+        databaseWriteExpectation("TodoCategory", {
+          userId: "u1",
+          name: "중요한 일",
+          color: "#FFB3B3",
+          sortOrder: 0,
+        }),
+      ),
+      expect.objectContaining(
+        databaseWriteExpectation("TodoCategory", {
+          userId: "u1",
+          name: "할 일",
+          color: "#FF6B43",
+          sortOrder: 1,
+        }),
+      ),
+    ]);
+  });
 
-	it("활성 CLS tx가 바뀌면 그 클라이언트를 사용한다", async () => {
-		const txClient = createMockDatabaseContext();
-		txClient.orm.public.TodoCategory.createAndCount.mockResolvedValue(1);
-		Object.defineProperty(seeder, "txHost", { value: { tx: txClient } });
-		const count = await seeder.seed("u1");
+  it("활성 CLS tx가 바뀌면 그 클라이언트를 사용한다", async () => {
+    const txClient = createMockDatabaseContext();
+    txClient.orm.public.TodoCategory.createAndCount.mockResolvedValue(1);
+    Object.defineProperty(seeder, "txHost", { value: { tx: txClient } });
+    const count = await seeder.seed("u1");
 
-		expect(count).toBe(1);
-		expect(txClient.orm.public.TodoCategory.createAndCount).toHaveBeenCalled();
-		expect(db.orm.public.TodoCategory.createAndCount).not.toHaveBeenCalled();
-	});
+    expect(count).toBe(1);
+    expect(txClient.orm.public.TodoCategory.createAndCount).toHaveBeenCalled();
+    expect(db.orm.public.TodoCategory.createAndCount).not.toHaveBeenCalled();
+  });
 });

@@ -20,31 +20,31 @@ import { ErrorResponseSchema } from "../schemas/response.schema.js";
  * ```
  */
 export function ApiDoc(options: ApiDocOptions): MethodDecorator {
-	const { summary, description, operationId, deprecated, includeCommonErrors = true } = options;
+  const { summary, description, operationId, deprecated, includeCommonErrors = true } = options;
 
-	const decorators: Array<ClassDecorator | MethodDecorator | PropertyDecorator> = [
-		ApiOperation({
-			summary,
-			description,
-			operationId,
-			deprecated,
-		}),
-	];
+  const decorators: Array<ClassDecorator | MethodDecorator | PropertyDecorator> = [
+    ApiOperation({
+      summary,
+      description,
+      operationId,
+      deprecated,
+    }),
+  ];
 
-	if (includeCommonErrors) {
-		decorators.push(
-			ApiResponse({
-				status: HttpStatus.BAD_REQUEST,
-				description: SWAGGER_DESCRIPTION.BAD_REQUEST_400,
-				type: ErrorResponseSchema,
-			}),
-			ApiResponse({
-				status: HttpStatus.INTERNAL_SERVER_ERROR,
-				description: SWAGGER_DESCRIPTION.INTERNAL_ERROR_500,
-				type: ErrorResponseSchema,
-			}),
-		);
-	}
+  if (includeCommonErrors) {
+    decorators.push(
+      ApiResponse({
+        status: HttpStatus.BAD_REQUEST,
+        description: SWAGGER_DESCRIPTION.BAD_REQUEST_400,
+        type: ErrorResponseSchema,
+      }),
+      ApiResponse({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        description: SWAGGER_DESCRIPTION.INTERNAL_ERROR_500,
+        type: ErrorResponseSchema,
+      }),
+    );
+  }
 
-	return applyDecorators(...decorators);
+  return applyDecorators(...decorators);
 }

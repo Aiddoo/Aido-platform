@@ -6,28 +6,28 @@
  */
 
 export interface ScheduleTime {
-	readonly hour: number;
-	readonly minute: number;
+  readonly hour: number;
+  readonly minute: number;
 }
 
 export const NOTIFICATION_SCHEDULE = {
-	ONBOARDING: { hour: 10, minute: 30 },
-	WEEKLY_REPORT: { hour: 11, minute: 30 },
-	MONTHLY_REPORT: { hour: 11, minute: 30 },
-	WEEKLY_ACHIEVEMENT: { hour: 11, minute: 30 },
-	LUNCH_NUDGE: { hour: 12, minute: 30 },
-	NUDGE_SUGGEST: { hour: 15, minute: 0 },
-	WINBACK: { hour: 16, minute: 0 },
-	STREAK_AT_RISK: { hour: 20, minute: 15 },
+  ONBOARDING: { hour: 10, minute: 30 },
+  WEEKLY_REPORT: { hour: 11, minute: 30 },
+  MONTHLY_REPORT: { hour: 11, minute: 30 },
+  WEEKLY_ACHIEVEMENT: { hour: 11, minute: 30 },
+  LUNCH_NUDGE: { hour: 12, minute: 30 },
+  NUDGE_SUGGEST: { hour: 15, minute: 0 },
+  WINBACK: { hour: 16, minute: 0 },
+  STREAK_AT_RISK: { hour: 20, minute: 15 },
 } as const satisfies Record<string, ScheduleTime>;
 
 /** 로컬 시:분이 지정 스케줄과 정확히 일치하는지 판정 */
 export function matchesScheduleTime(
-	schedule: ScheduleTime,
-	localHour: number,
-	localMinute: number,
+  schedule: ScheduleTime,
+  localHour: number,
+  localMinute: number,
 ): boolean {
-	return schedule.hour === localHour && schedule.minute === localMinute;
+  return schedule.hour === localHour && schedule.minute === localMinute;
 }
 
 /**
@@ -47,14 +47,14 @@ export const SCHEDULE_GRACE_MINUTES = 3;
  * grace 기본값은 {@link SCHEDULE_GRACE_MINUTES}. grace=1이면 정각만 매칭한다.
  */
 export function isWithinScheduleWindow(
-	schedule: ScheduleTime,
-	localHour: number,
-	localMinute: number,
-	graceMinutes: number = SCHEDULE_GRACE_MINUTES,
+  schedule: ScheduleTime,
+  localHour: number,
+  localMinute: number,
+  graceMinutes: number = SCHEDULE_GRACE_MINUTES,
 ): boolean {
-	const nowMinutes = localHour * 60 + localMinute;
-	const startMinutes = schedule.hour * 60 + schedule.minute;
-	return nowMinutes >= startMinutes && nowMinutes < startMinutes + graceMinutes;
+  const nowMinutes = localHour * 60 + localMinute;
+  const startMinutes = schedule.hour * 60 + schedule.minute;
+  return nowMinutes >= startMinutes && nowMinutes < startMinutes + graceMinutes;
 }
 
 /** 월요일 여부 (0=일, 1=월) */

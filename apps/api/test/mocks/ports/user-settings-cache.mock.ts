@@ -8,9 +8,9 @@ import type { UserSettingsCachePort } from "#api/user-settings/application/ports
  * `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createUserSettingsCacheMock(): UserSettingsCachePort {
-	return {
-		wrapUserPreference: vi.fn(),
-		invalidateUserPreference: vi.fn(),
-		invalidateActiveTimezones: vi.fn(),
-	};
+  return {
+    wrapUserPreference: vi.fn(),
+    invalidateUserPreference: vi.fn(),
+    invalidateActiveTimezones: vi.fn(),
+  };
 }

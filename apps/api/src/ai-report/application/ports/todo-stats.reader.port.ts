@@ -9,5 +9,5 @@ export const TODO_STATS_READER = Symbol("TODO_STATS_READER");
  * 계산은 도메인 서비스가 담당하고, 이 포트는 순수 데이터 조회만 소유한다.
  */
 export interface TodoStatsReaderPort {
-	fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs>;
+  fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs>;
 }

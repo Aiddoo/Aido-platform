@@ -5,18 +5,18 @@ import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	NOTIFICATION_CACHE,
-	type NotificationCachePort,
+  NOTIFICATION_CACHE,
+  type NotificationCachePort,
 } from "../../ports/notification-cache.port.js";
 import type { RegisterPushTokenData } from "../../ports/notification-data.js";
 import { PUSH_PROVIDER, type PushProvider } from "../../ports/push-provider.port.js";
 import {
-	PUSH_TOKEN_REPOSITORY,
-	type PushTokenRepositoryPort,
+  PUSH_TOKEN_REPOSITORY,
+  type PushTokenRepositoryPort,
 } from "../../ports/push-token.repository.port.js";
 import {
-	USER_NOTIFICATION_SETTINGS,
-	type UserNotificationSettingsPort,
+  USER_NOTIFICATION_SETTINGS,
+  type UserNotificationSettingsPort,
 } from "../../ports/user-notification-settings.port.js";
 
 /**
@@ -27,41 +27,41 @@ import {
  */
 @Injectable()
 export class RegisterPushTokenUseCase {
-	readonly #logger = new Logger(RegisterPushTokenUseCase.name);
+  readonly #logger = new Logger(RegisterPushTokenUseCase.name);
 
-	constructor(
-		@Inject(PUSH_TOKEN_REPOSITORY)
-		private readonly pushTokenRepository: PushTokenRepositoryPort,
-		@Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
-		@Inject(USER_NOTIFICATION_SETTINGS)
-		private readonly userSettings: UserNotificationSettingsPort,
-		@Inject(NOTIFICATION_CACHE)
-		private readonly cache: NotificationCachePort,
-	) {}
+  constructor(
+    @Inject(PUSH_TOKEN_REPOSITORY)
+    private readonly pushTokenRepository: PushTokenRepositoryPort,
+    @Inject(PUSH_PROVIDER) private readonly pushProvider: PushProvider,
+    @Inject(USER_NOTIFICATION_SETTINGS)
+    private readonly userSettings: UserNotificationSettingsPort,
+    @Inject(NOTIFICATION_CACHE)
+    private readonly cache: NotificationCachePort,
+  ) {}
 
-	async execute(data: RegisterPushTokenData): Promise<void> {
-		if (!this.pushProvider.validateToken(data.token)) {
-			throw new ApplicationException(ErrorCode.NOTIFICATION_1001, {
-				token: data.token,
-			});
-		}
+  async execute(data: RegisterPushTokenData): Promise<void> {
+    if (!this.pushProvider.validateToken(data.token)) {
+      throw new ApplicationException(ErrorCode.NOTIFICATION_1001, {
+        token: data.token,
+      });
+    }
 
-		const timezone = normalizeIanaTimezone(data.timezone) ?? undefined;
-		await this.pushTokenRepository.registerPushToken({ ...data, timezone });
-		await this.cache.invalidatePushTokens(data.userId);
+    const timezone = normalizeIanaTimezone(data.timezone) ?? undefined;
+    await this.pushTokenRepository.registerPushToken({ ...data, timezone });
+    await this.cache.invalidatePushTokens(data.userId);
 
-		if (timezone) {
-			await this.userSettings.upsertPushTimezone(data.userId, timezone);
-		}
+    if (timezone) {
+      await this.userSettings.upsertPushTimezone(data.userId, timezone);
+    }
 
-		if (data.locale) {
-			await this.userSettings.upsertPushLocale(data.userId, data.locale);
-		}
+    if (data.locale) {
+      await this.userSettings.upsertPushLocale(data.userId, data.locale);
+    }
 
-		if (timezone || data.locale) {
-			await this.cache.invalidateUserPreference(data.userId);
-		}
+    if (timezone || data.locale) {
+      await this.cache.invalidateUserPreference(data.userId);
+    }
 
-		this.#logger.log(`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`);
-	}
+    this.#logger.log(`Push token registered: userId=${data.userId}, deviceId=${data.deviceId}`);
+  }
 }

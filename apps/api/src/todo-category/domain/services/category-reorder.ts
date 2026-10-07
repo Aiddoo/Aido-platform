@@ -2,12 +2,12 @@ export type ReorderPosition = "before" | "after";
 
 /** 재배치 계획: 대상 카테고리의 새 sortOrder + 사이에 낀 카테고리들의 시프트 범위/방향 */
 export interface ReorderPlan {
-	newSortOrder: number;
-	shift: {
-		from: number;
-		to: number | null;
-		delta: number;
-	};
+  newSortOrder: number;
+  shift: {
+    from: number;
+    to: number | null;
+    delta: number;
+  };
 }
 
 /**
@@ -19,42 +19,42 @@ export interface ReorderPlan {
 
 /** 특정 카테고리 기준 앞/뒤로 이동 */
 export function planReorderRelativeTo(
-	currentSortOrder: number,
-	targetSortOrder: number,
-	position: ReorderPosition,
+  currentSortOrder: number,
+  targetSortOrder: number,
+  position: ReorderPosition,
 ): ReorderPlan {
-	const desired = position === "before" ? targetSortOrder : targetSortOrder + 1;
+  const desired = position === "before" ? targetSortOrder : targetSortOrder + 1;
 
-	// 아래로 이동: [current+1, desired-1] 구간을 위로 당기고(-1), 자신은 desired-1로
-	if (currentSortOrder < desired) {
-		return {
-			newSortOrder: desired - 1,
-			shift: { from: currentSortOrder + 1, to: desired - 1, delta: -1 },
-		};
-	}
+  // 아래로 이동: [current+1, desired-1] 구간을 위로 당기고(-1), 자신은 desired-1로
+  if (currentSortOrder < desired) {
+    return {
+      newSortOrder: desired - 1,
+      shift: { from: currentSortOrder + 1, to: desired - 1, delta: -1 },
+    };
+  }
 
-	// 위로 이동: [desired, current-1] 구간을 아래로 밀고(+1), 자신은 desired로
-	return {
-		newSortOrder: desired,
-		shift: { from: desired, to: currentSortOrder - 1, delta: 1 },
-	};
+  // 위로 이동: [desired, current-1] 구간을 아래로 밀고(+1), 자신은 desired로
+  return {
+    newSortOrder: desired,
+    shift: { from: desired, to: currentSortOrder - 1, delta: 1 },
+  };
 }
 
 /** 목록의 맨 앞/맨 뒤로 이동 */
 export function planReorderToEdge(
-	currentSortOrder: number,
-	position: ReorderPosition,
-	maxSortOrder: number,
+  currentSortOrder: number,
+  position: ReorderPosition,
+  maxSortOrder: number,
 ): ReorderPlan {
-	if (position === "before") {
-		return {
-			newSortOrder: 0,
-			shift: { from: 0, to: currentSortOrder - 1, delta: 1 },
-		};
-	}
+  if (position === "before") {
+    return {
+      newSortOrder: 0,
+      shift: { from: 0, to: currentSortOrder - 1, delta: 1 },
+    };
+  }
 
-	return {
-		newSortOrder: maxSortOrder,
-		shift: { from: currentSortOrder + 1, to: null, delta: -1 },
-	};
+  return {
+    newSortOrder: maxSortOrder,
+    shift: { from: currentSortOrder + 1, to: null, delta: -1 },
+  };
 }

@@ -7,11 +7,11 @@ import { ListActiveSessionsQuery } from "#api/auth/application/queries/index";
 import { RevokeSessionUseCase } from "#api/auth/application/use-cases/index";
 import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
-	ApiDoc,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiDoc,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { MessageResponseDto, SessionListDto } from "../dtos/index.js";
@@ -30,16 +30,16 @@ import { extractMetadata } from "./auth-controller.utils.js";
 @ApiBearerAuth()
 @Controller("auth")
 export class SessionController {
-	constructor(
-		private readonly listActiveSessionsQuery: ListActiveSessionsQuery,
-		private readonly revokeSessionUseCase: RevokeSessionUseCase,
-	) {}
+  constructor(
+    private readonly listActiveSessionsQuery: ListActiveSessionsQuery,
+    private readonly revokeSessionUseCase: RevokeSessionUseCase,
+  ) {}
 
-	@Get("sessions")
-	@ApiDoc({
-		summary: "활성 세션 목록 조회",
-		operationId: "getActiveSessions",
-		description: `
+  @Get("sessions")
+  @ApiDoc({
+    summary: "활성 세션 목록 조회",
+    operationId: "getActiveSessions",
+    description: `
 ## 📱 활성 세션 목록
 
 현재 로그인되어 있는 모든 기기/세션 목록을 조회합니다.
@@ -62,26 +62,26 @@ export class SessionController {
 - 의심스러운 세션 발견 시 종료
 - 보안 점검
 		`,
-	})
-	@ApiSuccessResponse({ type: SessionListDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getSessions(@CurrentUser() user: CurrentUserPayload) {
-		const sessions = await this.listActiveSessionsQuery.execute(user.userId);
+  })
+  @ApiSuccessResponse({ type: SessionListDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getSessions(@CurrentUser() user: CurrentUserPayload) {
+    const sessions = await this.listActiveSessionsQuery.execute(user.userId);
 
-		const sessionsWithCurrent = sessions.map((session) => ({
-			...session,
-			isCurrent: session.id === user.sessionId,
-		}));
+    const sessionsWithCurrent = sessions.map((session) => ({
+      ...session,
+      isCurrent: session.id === user.sessionId,
+    }));
 
-		return { sessions: sessionsWithCurrent };
-	}
+    return { sessions: sessionsWithCurrent };
+  }
 
-	@Delete("sessions/:sessionId")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "특정 세션 종료",
-		operationId: "revokeSession",
-		description: `
+  @Delete("sessions/:sessionId")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "특정 세션 종료",
+    operationId: "revokeSession",
+    description: `
 ## 🔌 세션 종료
 
 특정 기기의 세션을 원격으로 종료합니다.
@@ -102,22 +102,22 @@ export class SessionController {
 ### ⚠️ 에러 케이스
 - \`SESSION_NOT_FOUND\`: 존재하지 않는 세션 ID
 		`,
-	})
-	@ApiParam({
-		name: "sessionId",
-		description: "종료할 세션 ID (UUID)",
-		example: "550e8400-e29b-41d4-a716-446655440000",
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.SESSION_0701)
-	async revokeSession(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param("sessionId") sessionId: string,
-		@Req() req: Request,
-	) {
-		const metadata = extractMetadata(req);
-		const result = await this.revokeSessionUseCase.execute(user.userId, sessionId, metadata);
-		return result;
-	}
+  })
+  @ApiParam({
+    name: "sessionId",
+    description: "종료할 세션 ID (UUID)",
+    example: "550e8400-e29b-41d4-a716-446655440000",
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.SESSION_0701)
+  async revokeSession(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param("sessionId") sessionId: string,
+    @Req() req: Request,
+  ) {
+    const metadata = extractMetadata(req);
+    const result = await this.revokeSessionUseCase.execute(user.userId, sessionId, metadata);
+    return result;
+  }
 }

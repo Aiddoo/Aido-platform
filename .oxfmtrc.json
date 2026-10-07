@@ -11,9 +11,12 @@
   "sortPackageJson": true,
   "overrides": [
     {
-      "files": ["apps/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}"],
+      "files": [
+        "apps/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}",
+        "packages/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}"
+      ],
       "options": {
-        "useTabs": true,
+        "useTabs": false,
         "singleQuote": false
       }
     }
@@ -33,6 +36,7 @@
     "**/coverage/**",
     "apps/api/prisma/migrations8/snapshots/**",
     "apps/api/prisma/migrations8/**/ops.json",
-    "apps/api/prisma/migrations8/**/migration.json"
+    "apps/api/prisma/migrations8/**/migration.json",
+    "apps/api/test/e2e/fixtures/released-*-openapi-contract.ts"
   ]
 }

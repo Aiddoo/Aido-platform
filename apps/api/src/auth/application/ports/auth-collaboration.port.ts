@@ -9,64 +9,64 @@ export const AUTH_RUNTIME_CONFIG = Symbol("AUTH_RUNTIME_CONFIG");
 export const AUTH_USER_ACTIVITY_WRITER = Symbol("AUTH_USER_ACTIVITY_WRITER");
 
 export interface AuthCachedUserProfile {
-	id: string;
-	email: string;
-	userTag: string;
-	role: UserRole;
-	status: UserStatus;
-	emailVerifiedAt: string | null;
-	subscriptionStatus: SubscriptionStatus;
-	subscriptionExpiresAt: string | null;
-	name: string | null;
-	profileImage: string | null;
-	createdAt: string;
-	providers: AccountProvider[];
+  id: string;
+  email: string;
+  userTag: string;
+  role: UserRole;
+  status: UserStatus;
+  emailVerifiedAt: string | null;
+  subscriptionStatus: SubscriptionStatus;
+  subscriptionExpiresAt: string | null;
+  name: string | null;
+  profileImage: string | null;
+  createdAt: string;
+  providers: AccountProvider[];
 }
 
 export interface AuthCachePort {
-	invalidateSession(sessionId: string): Promise<void>;
-	invalidateUserProfile(userId: string): Promise<void>;
-	wrapUserProfile(
-		userId: string,
-		factory: () => Promise<AuthCachedUserProfile | undefined>,
-	): Promise<AuthCachedUserProfile | undefined>;
+  invalidateSession(sessionId: string): Promise<void>;
+  invalidateUserProfile(userId: string): Promise<void>;
+  wrapUserProfile(
+    userId: string,
+    factory: () => Promise<AuthCachedUserProfile | undefined>,
+  ): Promise<AuthCachedUserProfile | undefined>;
 }
 
 export interface AuthEmailResult {
-	success: boolean;
-	error?: string;
+  success: boolean;
+  error?: string;
 }
 
 export interface AuthEmailSenderPort {
-	sendVerificationCode(
-		to: string,
-		data: { code: string; expiryMinutes: number },
-	): Promise<AuthEmailResult>;
-	sendPasswordResetCode(
-		to: string,
-		data: { code: string; expiryMinutes: number },
-	): Promise<AuthEmailResult>;
-	sendPasswordSetupCode(
-		to: string,
-		data: { code: string; expiryMinutes: number },
-	): Promise<AuthEmailResult>;
+  sendVerificationCode(
+    to: string,
+    data: { code: string; expiryMinutes: number },
+  ): Promise<AuthEmailResult>;
+  sendPasswordResetCode(
+    to: string,
+    data: { code: string; expiryMinutes: number },
+  ): Promise<AuthEmailResult>;
+  sendPasswordSetupCode(
+    to: string,
+    data: { code: string; expiryMinutes: number },
+  ): Promise<AuthEmailResult>;
 }
 
 export interface AuthUserRegisteredNotification {
-	userId: string;
-	email: string;
-	provider: "credential" | "apple" | "google" | "kakao" | "naver";
-	registeredAt: string;
+  userId: string;
+  email: string;
+  provider: "credential" | "apple" | "google" | "kakao" | "naver";
+  registeredAt: string;
 }
 
 export interface AuthRegistrationNotifierPort {
-	notifyUserRegistered(payload: AuthUserRegisteredNotification): void;
+  notifyUserRegistered(payload: AuthUserRegisteredNotification): void;
 }
 
 export interface AuthRuntimeConfigPort {
-	readonly isDevelopment: boolean;
+  readonly isDevelopment: boolean;
 }
 
 export interface AuthUserActivityWriterPort {
-	updateLastActiveAt(userId: string, timezone: string): Promise<void>;
+  updateLastActiveAt(userId: string, timezone: string): Promise<void>;
 }

@@ -4,10 +4,10 @@ import { OAuthWorkflow } from "../../workflows/oauth.workflow.js";
 
 @Injectable()
 export class ListLinkedAccountsQuery {
-	constructor(private readonly workflow: OAuthWorkflow) {}
-	execute(
-		userId: Parameters<OAuthWorkflow["getLinkedAccounts"]>[0],
-	): ReturnType<OAuthWorkflow["getLinkedAccounts"]> {
-		return this.workflow.getLinkedAccounts(userId);
-	}
+  constructor(private readonly workflow: OAuthWorkflow) {}
+  execute(
+    userId: Parameters<OAuthWorkflow["getLinkedAccounts"]>[0],
+  ): ReturnType<OAuthWorkflow["getLinkedAccounts"]> {
+    return this.workflow.getLinkedAccounts(userId);
+  }
 }

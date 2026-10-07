@@ -6,15 +6,15 @@
  */
 
 export interface CheerSentNotification {
-	cheerId: number;
-	senderId: string;
-	receiverId: string;
-	senderName: string;
-	message?: string;
+  cheerId: number;
+  senderId: string;
+  receiverId: string;
+  senderName: string;
+  message?: string;
 }
 
 export const CHEER_NOTIFIER = Symbol("CHEER_NOTIFIER");
 
 export interface CheerNotifierPort {
-	notifyCheerSent(payload: CheerSentNotification): void;
+  notifyCheerSent(payload: CheerSentNotification): void;
 }

@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import {
-	EntitlementService,
-	Feature,
+  EntitlementService,
+  Feature,
 } from "#api/shared/application/entitlement/entitlement.service";
 
 import type { CheerLimitReaderPort } from "../../application/ports/cheer-limit-reader.port.js";
@@ -15,10 +15,10 @@ import type { CheerLimitReaderPort } from "../../application/ports/cheer-limit-r
  */
 @Injectable()
 export class CheerLimitReaderAdapter implements CheerLimitReaderPort {
-	constructor(private readonly entitlementService: EntitlementService) {}
+  constructor(private readonly entitlementService: EntitlementService) {}
 
-	async getDailyLimitInTx(userId: string): Promise<number | null> {
-		const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(userId, Feature.CHEER);
-		return dailyLimit;
-	}
+  async getDailyLimitInTx(userId: string): Promise<number | null> {
+    const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(userId, Feature.CHEER);
+    return dailyLimit;
+  }
 }

@@ -8,15 +8,15 @@ import type { WeatherCachePort } from "#api/weather/application/ports/weather-ca
  * `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createWeatherCacheMock(): WeatherCachePort {
-	return {
-		getForecast: vi.fn(),
-		saveForecast: vi.fn(),
-		getLatestForecast: vi.fn(),
-		getForecastBatch: vi.fn(),
-		saveForecastBatch: vi.fn(),
-		getLatestForecastBatch: vi.fn(),
-		getConditions: vi.fn(),
-		setConditions: vi.fn(),
-		invalidateGrid: vi.fn(),
-	};
+  return {
+    getForecast: vi.fn(),
+    saveForecast: vi.fn(),
+    getLatestForecast: vi.fn(),
+    getForecastBatch: vi.fn(),
+    saveForecastBatch: vi.fn(),
+    getLatestForecastBatch: vi.fn(),
+    getConditions: vi.fn(),
+    setConditions: vi.fn(),
+    invalidateGrid: vi.fn(),
+  };
 }

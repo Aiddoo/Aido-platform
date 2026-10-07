@@ -3,10 +3,10 @@ import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, type SupportedLocale } from "#api/shared/domain/locale";
 
 export {
-	DEFAULT_LOCALE,
-	SUPPORTED_LOCALES,
-	type SupportedLocale,
-	toSupportedLocale,
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+  type SupportedLocale,
+  toSupportedLocale,
 } from "#api/shared/domain/locale";
 
 /**
@@ -17,18 +17,18 @@ export {
  * - "en-US,en;q=0.9" 같은 표준 형식은 첫 항목의 language 서브태그만 사용
  */
 export function parseAcceptLanguage(header: unknown): SupportedLocale | undefined {
-	if (typeof header !== "string" || header.length === 0) {
-		return undefined;
-	}
+  if (typeof header !== "string" || header.length === 0) {
+    return undefined;
+  }
 
-	const primary = header.split(",")[0]?.trim().toLowerCase();
-	if (!primary) {
-		return undefined;
-	}
+  const primary = header.split(",")[0]?.trim().toLowerCase();
+  if (!primary) {
+    return undefined;
+  }
 
-	const language = primary.split(";")[0]?.split("-")[0];
-	const matched = SUPPORTED_LOCALES.find((locale) => locale === language);
-	return matched ?? DEFAULT_LOCALE;
+  const language = primary.split(";")[0]?.split("-")[0];
+  const matched = SUPPORTED_LOCALES.find((locale) => locale === language);
+  return matched ?? DEFAULT_LOCALE;
 }
 
 /**
@@ -36,8 +36,8 @@ export function parseAcceptLanguage(header: unknown): SupportedLocale | undefine
  * 화이트리스트 밖 값은 DEFAULT_LOCALE("ko") — 기존 유저 하위 호환.
  */
 export const Locale = createParamDecorator(
-	(_data: unknown, ctx: ExecutionContext): SupportedLocale | undefined => {
-		const request = ctx.switchToHttp().getRequest();
-		return parseAcceptLanguage(request.headers["accept-language"]);
-	},
+  (_data: unknown, ctx: ExecutionContext): SupportedLocale | undefined => {
+    const request = ctx.switchToHttp().getRequest();
+    return parseAcceptLanguage(request.headers["accept-language"]);
+  },
 );

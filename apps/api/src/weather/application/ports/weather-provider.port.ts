@@ -1,43 +1,43 @@
 export const WEATHER_PROVIDER = Symbol("WEATHER_PROVIDER");
 
 export interface HourlyForecast {
-	hour: number;
-	temperature: number;
-	skyCondition: string;
-	precipitationProbability: number;
-	precipitationAmount: number;
-	snowAmount: number;
+  hour: number;
+  temperature: number;
+  skyCondition: string;
+  precipitationProbability: number;
+  precipitationAmount: number;
+  snowAmount: number;
 }
 
 export interface DailyForecast {
-	date: string; // "YYYY-MM-DD"
-	skyCondition: "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY";
-	precipitationType: "NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER";
-	precipitationProbability: number;
-	temperatureMin: number;
-	temperatureMax: number;
+  date: string; // "YYYY-MM-DD"
+  skyCondition: "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY";
+  precipitationType: "NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER";
+  precipitationProbability: number;
+  temperatureMin: number;
+  temperatureMax: number;
 }
 
 export interface WeatherForecast {
-	date: Date;
-	skyCondition: "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY";
-	precipitationType: "NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER";
-	precipitationProbability: number;
-	temperatureMin: number;
-	temperatureMax: number;
-	humidity: number;
-	windSpeed: number;
-	hourlyForecasts: HourlyForecast[];
-	dailyForecasts: DailyForecast[];
+  date: Date;
+  skyCondition: "CLEAR" | "PARTLY_CLOUDY" | "CLOUDY";
+  precipitationType: "NONE" | "RAIN" | "RAIN_SNOW" | "SNOW" | "SHOWER";
+  precipitationProbability: number;
+  temperatureMin: number;
+  temperatureMax: number;
+  humidity: number;
+  windSpeed: number;
+  hourlyForecasts: HourlyForecast[];
+  dailyForecasts: DailyForecast[];
 }
 
 export interface WeatherConditions {
-	feelsLikeTemperature: number | null;
-	uvIndex: number | null;
-	sunrise: string | null;
-	sunset: string | null;
-	pm10: number | null;
-	pm25: number | null;
+  feelsLikeTemperature: number | null;
+  uvIndex: number | null;
+  sunrise: string | null;
+  sunset: string | null;
+  pm10: number | null;
+  pm25: number | null;
 }
 
 /**
@@ -56,10 +56,10 @@ export interface WeatherConditions {
  * 불변식과 격자 기반 캐시 버킷팅을 지역별로 일반화한다.
  */
 export interface WeatherProvider {
-	/** 프로바이더 식별자 (예: "kma", "openweathermap") — 지역 라우팅·로깅용. */
-	readonly name: string;
-	/** WGS84 위경도로 예보를 조회한다 (격자 변환은 어댑터 내부 책임). */
-	getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast>;
-	/** 필수 자격(API 키 등) 구성 여부 — 지역 라우팅 시 가용성 판단. */
-	isConfigured(): boolean;
+  /** 프로바이더 식별자 (예: "kma", "openweathermap") — 지역 라우팅·로깅용. */
+  readonly name: string;
+  /** WGS84 위경도로 예보를 조회한다 (격자 변환은 어댑터 내부 책임). */
+  getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast>;
+  /** 필수 자격(API 키 등) 구성 여부 — 지역 라우팅 시 가용성 판단. */
+  isConfigured(): boolean;
 }

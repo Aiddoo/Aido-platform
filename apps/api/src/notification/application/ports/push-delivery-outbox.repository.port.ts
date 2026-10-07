@@ -3,14 +3,14 @@ import type { PushDeliveryPublication } from "../types/push-delivery.types.js";
 export const PUSH_DELIVERY_OUTBOX_REPOSITORY = Symbol("PUSH_DELIVERY_OUTBOX_REPOSITORY");
 
 export interface ClaimPushDeliveryOutboxInput {
-	readonly limit: number;
-	readonly lockedAt: Date;
+  readonly limit: number;
+  readonly lockedAt: Date;
 }
 
 export interface DeferPushDeliveryPublicationsInput {
-	readonly publications: readonly PushDeliveryPublication[];
-	readonly availableAt: Date;
-	readonly error: string;
+  readonly publications: readonly PushDeliveryPublication[];
+  readonly availableAt: Date;
+  readonly error: string;
 }
 
 /**
@@ -18,15 +18,15 @@ export interface DeferPushDeliveryPublicationsInput {
  * 상태 변경 메서드는 정렬된 row lock을 유지하도록 UNIT_OF_WORK 안에서 호출한다.
  */
 export interface PushDeliveryOutboxRepositoryPort {
-	claimByDispatchIds(
-		dispatchIds: readonly number[],
-		lockedAt: Date,
-	): Promise<readonly PushDeliveryPublication[]>;
-	claimAvailable(input: ClaimPushDeliveryOutboxInput): Promise<readonly PushDeliveryPublication[]>;
-	markPublished(
-		publications: readonly PushDeliveryPublication[],
-		publishedAt: Date,
-	): Promise<number>;
-	defer(input: DeferPushDeliveryPublicationsInput): Promise<number>;
-	recoverStaleProcessing(lockedBefore: Date): Promise<number>;
+  claimByDispatchIds(
+    dispatchIds: readonly number[],
+    lockedAt: Date,
+  ): Promise<readonly PushDeliveryPublication[]>;
+  claimAvailable(input: ClaimPushDeliveryOutboxInput): Promise<readonly PushDeliveryPublication[]>;
+  markPublished(
+    publications: readonly PushDeliveryPublication[],
+    publishedAt: Date,
+  ): Promise<number>;
+  defer(input: DeferPushDeliveryPublicationsInput): Promise<number>;
+  recoverStaleProcessing(lockedBefore: Date): Promise<number>;
 }

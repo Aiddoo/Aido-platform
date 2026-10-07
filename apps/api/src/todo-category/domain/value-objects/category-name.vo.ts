@@ -11,16 +11,16 @@ const MAX_LENGTH = 50;
  * 도메인 경계에서도 방어한다(동일 상한이라 유효 입력은 통과).
  */
 export class CategoryName {
-	private constructor(private readonly text: string) {}
+  private constructor(private readonly text: string) {}
 
-	static of(value: string): CategoryName {
-		if (value.length < 1 || value.length > MAX_LENGTH) {
-			throw new DomainException(ErrorCode.SYS_0002, { maxLength: MAX_LENGTH });
-		}
-		return new CategoryName(value);
-	}
+  static of(value: string): CategoryName {
+    if (value.length < 1 || value.length > MAX_LENGTH) {
+      throw new DomainException(ErrorCode.SYS_0002, { maxLength: MAX_LENGTH });
+    }
+    return new CategoryName(value);
+  }
 
-	get value(): string {
-		return this.text;
-	}
+  get value(): string {
+    return this.text;
+  }
 }

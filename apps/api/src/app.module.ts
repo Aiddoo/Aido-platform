@@ -51,109 +51,109 @@ import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
 
 @Module({
-	imports: [
-		// 1. Configuration (Must be loaded first)
-		AppConfigModule,
+  imports: [
+    // 1. Configuration (Must be loaded first)
+    AppConfigModule,
 
-		// 2. Monitoring
-		SentryModule.forRoot(),
+    // 2. Monitoring
+    SentryModule.forRoot(),
 
-		// 3. Infrastructure
-		DatabaseModule,
-		// CLS 트랜잭션 플러그인 — UNIT_OF_WORK(ClsUnitOfWork)가 사용하는
-		// TransactionHost를 전역 제공. withTransaction이 자체 CLS 스코프를 열므로
-		// 미들웨어/가드 마운트는 불필요. 어댑터에 옵션을 지정하지 않아
-		// native transaction의 commit·rollback과 CLS 전파를 연결한다.
-		ClsModule.forRoot({
-			global: true,
-			plugins: [
-				new ClsPluginTransactional({
-					imports: [DatabaseModule],
-					adapter: new Prisma8TransactionalAdapter(DatabaseService),
-				}),
-			],
-		}),
-		EncryptionModule,
-		// 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), 전송은 EventEmitter2.
-		// 와일드카드 off(기본값): 구독은 명시적 이벤트명(@OnEvent)만 사용한다.
-		EventEmitterModule.forRoot(),
-		DomainEventsModule,
-		RedisModule.forRoot(),
-		CacheModule.forRoot(),
-		DedupModule.forRoot(),
-		LockModule.forRoot(),
-		JobRuntimeModule,
-		// 4. Global Modules
-		EntitlementModule,
-		LoggerModule.forRootAsync(),
-		SharedKernelModule,
-		PaginationModule,
-		ThrottlerModule.forRootAsync({
-			imports: [ThrottleModule.forRoot()],
-			inject: [ConfigService, { token: THROTTLER_STORAGE, optional: true }],
-			useFactory: (config: ConfigService<EnvConfig, true>, storage?: ThrottlerStorage) => ({
-				throttlers: [
-					{
-						ttl: config.get("THROTTLE_TTL", { infer: true }),
-						limit: config.get("THROTTLE_LIMIT", { infer: true }),
-					},
-				],
-				...(storage && { storage }),
-			}),
-		}),
+    // 3. Infrastructure
+    DatabaseModule,
+    // CLS 트랜잭션 플러그인 — UNIT_OF_WORK(ClsUnitOfWork)가 사용하는
+    // TransactionHost를 전역 제공. withTransaction이 자체 CLS 스코프를 열므로
+    // 미들웨어/가드 마운트는 불필요. 어댑터에 옵션을 지정하지 않아
+    // native transaction의 commit·rollback과 CLS 전파를 연결한다.
+    ClsModule.forRoot({
+      global: true,
+      plugins: [
+        new ClsPluginTransactional({
+          imports: [DatabaseModule],
+          adapter: new Prisma8TransactionalAdapter(DatabaseService),
+        }),
+      ],
+    }),
+    EncryptionModule,
+    // 도메인 이벤트 — 발행 포트는 DomainEventsModule(@Global), 전송은 EventEmitter2.
+    // 와일드카드 off(기본값): 구독은 명시적 이벤트명(@OnEvent)만 사용한다.
+    EventEmitterModule.forRoot(),
+    DomainEventsModule,
+    RedisModule.forRoot(),
+    CacheModule.forRoot(),
+    DedupModule.forRoot(),
+    LockModule.forRoot(),
+    JobRuntimeModule,
+    // 4. Global Modules
+    EntitlementModule,
+    LoggerModule.forRootAsync(),
+    SharedKernelModule,
+    PaginationModule,
+    ThrottlerModule.forRootAsync({
+      imports: [ThrottleModule.forRoot()],
+      inject: [ConfigService, { token: THROTTLER_STORAGE, optional: true }],
+      useFactory: (config: ConfigService<EnvConfig, true>, storage?: ThrottlerStorage) => ({
+        throttlers: [
+          {
+            ttl: config.get("THROTTLE_TTL", { infer: true }),
+            limit: config.get("THROTTLE_LIMIT", { infer: true }),
+          },
+        ],
+        ...(storage && { storage }),
+      }),
+    }),
 
-		// 5. Features
-		AdminModule,
-		AdminNotificationModule,
-		FeatureDiscoveryAppConfigModule,
-		AiModule,
-		AiReportModule,
-		AiSuggestionModule,
-		AuthModule,
-		CheerModule,
-		DailyCompletionModule,
-		FollowModule,
-		HealthModule,
-		InquiryModule,
-		MemoModule,
-		NotificationModule,
-		NudgeModule,
-		SchedulerModule,
-		SubscriptionModule,
-		TodoModule,
-		TodoCommentModule,
-		TodoCategoryModule,
-		UserSettingsModule,
-		WeatherModule,
-		WeeklyAchievementModule,
-	],
-	// Controllers
-	controllers: [AppController],
+    // 5. Features
+    AdminModule,
+    AdminNotificationModule,
+    FeatureDiscoveryAppConfigModule,
+    AiModule,
+    AiReportModule,
+    AiSuggestionModule,
+    AuthModule,
+    CheerModule,
+    DailyCompletionModule,
+    FollowModule,
+    HealthModule,
+    InquiryModule,
+    MemoModule,
+    NotificationModule,
+    NudgeModule,
+    SchedulerModule,
+    SubscriptionModule,
+    TodoModule,
+    TodoCommentModule,
+    TodoCategoryModule,
+    UserSettingsModule,
+    WeatherModule,
+    WeeklyAchievementModule,
+  ],
+  // Controllers
+  controllers: [AppController],
 
-	// Providers
-	providers: [
-		AppService,
-		ThrottlerGuard,
+  // Providers
+  providers: [
+    AppService,
+    ThrottlerGuard,
 
-		// Global Guards
-		{
-			provide: APP_GUARD,
-			useExisting: JwtAuthGuard,
-		},
-		{
-			provide: APP_GUARD,
-			useExisting: ThrottlerGuard,
-		},
+    // Global Guards
+    {
+      provide: APP_GUARD,
+      useExisting: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useExisting: ThrottlerGuard,
+    },
 
-		// Global Interceptors
-		{
-			provide: APP_INTERCEPTOR,
-			useExisting: LastActiveInterceptor,
-		},
-		{
-			provide: APP_INTERCEPTOR,
-			useExisting: TimezoneSelfHealInterceptor,
-		},
-	],
+    // Global Interceptors
+    {
+      provide: APP_INTERCEPTOR,
+      useExisting: LastActiveInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useExisting: TimezoneSelfHealInterceptor,
+    },
+  ],
 })
 export class AppModule {}

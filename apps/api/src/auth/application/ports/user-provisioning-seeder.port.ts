@@ -1,9 +1,9 @@
 /** 회원가입 시딩할 초기 약관 동의 값. */
 export interface ProvisioningConsent {
-	termsAgreedAt?: Date;
-	privacyAgreedAt?: Date;
-	marketingAgreedAt?: Date;
-	marketingPushAgreedAt?: Date;
+  termsAgreedAt?: Date;
+  privacyAgreedAt?: Date;
+  marketingAgreedAt?: Date;
+  marketingPushAgreedAt?: Date;
 }
 
 /**
@@ -13,8 +13,8 @@ export interface ProvisioningConsent {
  * 어댑터가 설정과 기본 카테고리 생성을 위임하며, 호출측이 연 CLS 트랜잭션에 참여한다.
  */
 export interface UserProvisioningSeederPort {
-	seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
-	seedDefaultCategories(userId: string): Promise<void>;
+  seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void>;
+  seedDefaultCategories(userId: string): Promise<void>;
 }
 
 export const USER_PROVISIONING_SEEDER = Symbol("USER_PROVISIONING_SEEDER");

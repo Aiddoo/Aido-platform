@@ -12,24 +12,24 @@ import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt.
 type Pattern = DetectedPatternsResponse["patterns"][number];
 
 const WEATHER_KEYWORDS = [
-	"날씨",
-	"비",
-	"눈",
-	"소나기",
-	"우천",
-	"실내",
-	"악천후",
-	"weather",
-	"rain",
-	"snow",
-	"indoor",
+  "날씨",
+  "비",
+  "눈",
+  "소나기",
+  "우천",
+  "실내",
+  "악천후",
+  "weather",
+  "rain",
+  "snow",
+  "indoor",
 ] as const;
 
 /**
  * reason 텍스트에서 날씨 관련 키워드 포함 여부 감지.
  */
 export function isWeatherRelated(reason: string): boolean {
-	return WEATHER_KEYWORDS.some((keyword) => reason.includes(keyword));
+  return WEATHER_KEYWORDS.some((keyword) => reason.includes(keyword));
 }
 
 /**
@@ -41,32 +41,32 @@ export function isWeatherRelated(reason: string): boolean {
  * - 순차/발전(서로 다른 제목): 2개 이상이면 허용
  */
 export function filterWeakPatterns(patterns: Pattern[], context: SuggestionContext): Pattern[] {
-	return patterns.filter((p) => {
-		if (p.matchedTitles.length === 0) {
-			return true;
-		}
+  return patterns.filter((p) => {
+    if (p.matchedTitles.length === 0) {
+      return true;
+    }
 
-		if (!context.weather && isWeatherRelated(p.reason)) {
-			return false;
-		}
+    if (!context.weather && isWeatherRelated(p.reason)) {
+      return false;
+    }
 
-		const uniqueTitles = new Set(p.matchedTitles);
-		const isRepetition = uniqueTitles.size === 1;
+    const uniqueTitles = new Set(p.matchedTitles);
+    const isRepetition = uniqueTitles.size === 1;
 
-		if (isRepetition) {
-			const count = p.matchedTitles.length;
-			if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) {
-				return false;
-			}
-			const gate =
-				count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
-					? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
-					: AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_MULTI_OCC;
-			return p.confidence >= gate;
-		}
+    if (isRepetition) {
+      const count = p.matchedTitles.length;
+      if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) {
+        return false;
+      }
+      const gate =
+        count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
+          ? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
+          : AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_MULTI_OCC;
+      return p.confidence >= gate;
+    }
 
-		return p.matchedTitles.length >= 2;
-	});
+    return p.matchedTitles.length >= 2;
+  });
 }
 
 /**
@@ -74,23 +74,23 @@ export function filterWeakPatterns(patterns: Pattern[], context: SuggestionConte
  * 모델이 반복 근거나 높은 confidence를 만들더라도 서버가 실제 기록 수를 기준으로 고정합니다.
  */
 export function normalizeStarterSuggestions(
-	patterns: Pattern[],
-	context: SuggestionContext,
-	locale: "ko" | "en",
+  patterns: Pattern[],
+  context: SuggestionContext,
+  locale: "ko" | "en",
 ): Pattern[] {
-	return patterns
-		.filter((pattern) => pattern.daysOfWeek.length > 0)
-		.filter((pattern) => context.weather || !isWeatherRelated(pattern.reason.toLowerCase()))
-		.slice(0, 2)
-		.map((pattern) => ({
-			...pattern,
-			confidence: Math.min(pattern.confidence, 0.6),
-			matchedTitles: [],
-			reason:
-				locale === "en"
-					? `You have ${context.todos.length} recent ${context.todos.length === 1 ? "record" : "records"}, so it is too early to call this a pattern. Try this small step to build useful history.`
-					: `최근 기록이 ${context.todos.length}개라 아직 패턴을 단정하긴 일러요. 이 작은 행동부터 시작해 유용한 기록을 쌓아봐요!`,
-		}));
+  return patterns
+    .filter((pattern) => pattern.daysOfWeek.length > 0)
+    .filter((pattern) => context.weather || !isWeatherRelated(pattern.reason.toLowerCase()))
+    .slice(0, 2)
+    .map((pattern) => ({
+      ...pattern,
+      confidence: Math.min(pattern.confidence, 0.6),
+      matchedTitles: [],
+      reason:
+        locale === "en"
+          ? `You have ${context.todos.length} recent ${context.todos.length === 1 ? "record" : "records"}, so it is too early to call this a pattern. Try this small step to build useful history.`
+          : `최근 기록이 ${context.todos.length}개라 아직 패턴을 단정하긴 일러요. 이 작은 행동부터 시작해 유용한 기록을 쌓아봐요!`,
+    }));
 }
 
 /**
@@ -98,20 +98,20 @@ export function normalizeStarterSuggestions(
  * 빈 유형이 과다하게 남아 제안이 획일화되는 것을 방지.
  */
 export function applyTypeCap(patterns: Pattern[]): Pattern[] {
-	const noMatchCap = AI_SUGGESTION_LIMITS.NO_MATCH_TYPE_CAP;
-	const matched: Pattern[] = [];
-	const noMatched: Pattern[] = [];
-	for (const p of patterns) {
-		if (p.matchedTitles.length === 0) {
-			noMatched.push(p);
-			continue;
-		}
-		matched.push(p);
-	}
-	const cappedNoMatched = [...noMatched]
-		.sort((a, b) => b.confidence - a.confidence)
-		.slice(0, noMatchCap);
-	return [...matched, ...cappedNoMatched];
+  const noMatchCap = AI_SUGGESTION_LIMITS.NO_MATCH_TYPE_CAP;
+  const matched: Pattern[] = [];
+  const noMatched: Pattern[] = [];
+  for (const p of patterns) {
+    if (p.matchedTitles.length === 0) {
+      noMatched.push(p);
+      continue;
+    }
+    matched.push(p);
+  }
+  const cappedNoMatched = [...noMatched]
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, noMatchCap);
+  return [...matched, ...cappedNoMatched];
 }
 
 /**
@@ -122,17 +122,17 @@ export function applyTypeCap(patterns: Pattern[]): Pattern[] {
  * 시간 파라미터만 다른 중복을 잡기 위함.
  */
 export function dedupeByTitlePrefixAndDays(patterns: Pattern[]): Pattern[] {
-	const seen = new Map<string, Pattern>();
-	for (const p of patterns) {
-		const firstTwoWords = p.title.trim().split(/\s+/).slice(0, 2).join(" ");
-		const daysKey = [...p.daysOfWeek].sort().join(",");
-		const key = `${firstTwoWords}|${daysKey}`;
-		const existing = seen.get(key);
-		if (!existing || p.confidence > existing.confidence) {
-			seen.set(key, p);
-		}
-	}
-	return [...seen.values()];
+  const seen = new Map<string, Pattern>();
+  for (const p of patterns) {
+    const firstTwoWords = p.title.trim().split(/\s+/).slice(0, 2).join(" ");
+    const daysKey = [...p.daysOfWeek].sort().join(",");
+    const key = `${firstTwoWords}|${daysKey}`;
+    const existing = seen.get(key);
+    if (!existing || p.confidence > existing.confidence) {
+      seen.set(key, p);
+    }
+  }
+  return [...seen.values()];
 }
 
 /**
@@ -140,14 +140,14 @@ export function dedupeByTitlePrefixAndDays(patterns: Pattern[]): Pattern[] {
  * 1차 결과가 임계치 미만이라 재시도했을 때 사용.
  */
 export function mergeUniquePatterns(primary: Pattern[], secondary: Pattern[]): Pattern[] {
-	const seen = new Set(primary.map((p) => p.title));
-	const merged = [...primary];
-	for (const p of secondary) {
-		if (seen.has(p.title)) {
-			continue;
-		}
-		merged.push(p);
-		seen.add(p.title);
-	}
-	return merged;
+  const seen = new Set(primary.map((p) => p.title));
+  const merged = [...primary];
+  for (const p of secondary) {
+    if (seen.has(p.title)) {
+      continue;
+    }
+    merged.push(p);
+    seen.add(p.title);
+  }
+  return merged;
 }

@@ -8,15 +8,15 @@ import { type GridInput, WeatherForecastReader } from "../../services/weather-fo
  * 결과 Map 키는 "gridX:gridY".
  */
 export interface GetForecastsByGridBatchInput {
-	grids: GridInput[];
-	date: Date;
+  grids: GridInput[];
+  date: Date;
 }
 
 @Injectable()
 export class GetForecastsByGridBatchUseCase {
-	constructor(private readonly forecastReader: WeatherForecastReader) {}
+  constructor(private readonly forecastReader: WeatherForecastReader) {}
 
-	execute(input: GetForecastsByGridBatchInput): Promise<Map<string, WeatherForecast>> {
-		return this.forecastReader.fetchBatch(input.grids, input.date);
-	}
+  execute(input: GetForecastsByGridBatchInput): Promise<Map<string, WeatherForecast>> {
+    return this.forecastReader.fetchBatch(input.grids, input.date);
+  }
 }

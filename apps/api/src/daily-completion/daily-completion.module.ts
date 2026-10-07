@@ -20,20 +20,20 @@ import { DailyCompletionController } from "./presentation/daily-completion.contr
  * 캐싱되고, 투두 쓰기 도메인 이벤트(@OnEvent) 구독으로 무효화된다.
  */
 @Module({
-	imports: [FollowModule],
-	controllers: [DailyCompletionController],
-	providers: [
-		{
-			provide: TODO_COMPLETION_REPOSITORY,
-			useClass: PrismaTodoCompletionRepository,
-		},
-		{
-			provide: DAILY_COMPLETION_CACHE,
-			useClass: DailyCompletionCacheAdapter,
-		},
-		{ provide: FRIEND_PORT, useClass: FriendAdapter },
-		DailyCompletionCacheInvalidator,
-		...DAILY_COMPLETION_PROVIDERS,
-	],
+  imports: [FollowModule],
+  controllers: [DailyCompletionController],
+  providers: [
+    {
+      provide: TODO_COMPLETION_REPOSITORY,
+      useClass: PrismaTodoCompletionRepository,
+    },
+    {
+      provide: DAILY_COMPLETION_CACHE,
+      useClass: DailyCompletionCacheAdapter,
+    },
+    { provide: FRIEND_PORT, useClass: FriendAdapter },
+    DailyCompletionCacheInvalidator,
+    ...DAILY_COMPLETION_PROVIDERS,
+  ],
 })
 export class DailyCompletionModule {}

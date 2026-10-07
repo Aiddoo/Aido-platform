@@ -4,11 +4,11 @@ import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
 import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
-	ApiDoc,
-	ApiForbiddenError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
@@ -21,30 +21,30 @@ import { DailyCompletionsRangeResponseDto, GetDailyCompletionsRangeDto } from ".
 @ApiBearerAuth()
 @Controller("daily-completions")
 export class DailyCompletionController {
-	readonly #logger = new Logger(DailyCompletionController.name);
+  readonly #logger = new Logger(DailyCompletionController.name);
 
-	constructor(
-		private readonly getDailyCompletionsUseCase: GetDailyCompletionsUseCase,
-		private readonly getFriendDailyCompletionsUseCase: GetFriendDailyCompletionsUseCase,
-	) {}
+  constructor(
+    private readonly getDailyCompletionsUseCase: GetDailyCompletionsUseCase,
+    private readonly getFriendDailyCompletionsUseCase: GetFriendDailyCompletionsUseCase,
+  ) {}
 
-	@Get()
-	@ApiQuery({
-		name: "startDate",
-		required: true,
-		description: "조회 시작 날짜 (YYYY-MM-DD)",
-		example: "2026-01-01",
-	})
-	@ApiQuery({
-		name: "endDate",
-		required: true,
-		description: "조회 종료 날짜 (YYYY-MM-DD)",
-		example: "2026-01-31",
-	})
-	@ApiDoc({
-		summary: "날짜 범위 내 일일 완료 현황 조회",
-		operationId: "getDailyCompletions",
-		description: `
+  @Get()
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    description: "조회 시작 날짜 (YYYY-MM-DD)",
+    example: "2026-01-01",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    description: "조회 종료 날짜 (YYYY-MM-DD)",
+    example: "2026-01-31",
+  })
+  @ApiDoc({
+    summary: "날짜 범위 내 일일 완료 현황 조회",
+    operationId: "getDailyCompletions",
+    description: `
 ## 일일 완료 현황 조회
 
 지정된 날짜 범위 내의 일일 완료 현황을 조회합니다.
@@ -114,47 +114,47 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
 - DB 레벨에서 집계하여 대량 데이터도 빠르게 처리
 - Todo가 없는 날짜는 응답에서 제외되어 데이터 전송량 최소화
 		`,
-	})
-	@ApiSuccessResponse({ type: DailyCompletionsRangeResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getDailyCompletionsRange(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
-	): Promise<DailyCompletionsRangeResponseDto> {
-		this.#logger.debug(
-			`일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
-		);
+  })
+  @ApiSuccessResponse({ type: DailyCompletionsRangeResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getDailyCompletionsRange(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
+  ): Promise<DailyCompletionsRangeResponseDto> {
+    this.#logger.debug(
+      `일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
+    );
 
-		const result = await this.getDailyCompletionsUseCase.execute({
-			userId: user.userId,
-			startDate: query.startDate,
-			endDate: query.endDate,
-		});
+    const result = await this.getDailyCompletionsUseCase.execute({
+      userId: user.userId,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
 
-		this.#logger.debug(
-			`일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
-		);
+    this.#logger.debug(
+      `일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
+    );
 
-		return this.#mapToResponse(result);
-	}
+    return this.#mapToResponse(result);
+  }
 
-	@Get("friends/:userId")
-	@ApiQuery({
-		name: "startDate",
-		required: true,
-		description: "조회 시작 날짜 (YYYY-MM-DD)",
-		example: "2026-01-01",
-	})
-	@ApiQuery({
-		name: "endDate",
-		required: true,
-		description: "조회 종료 날짜 (YYYY-MM-DD)",
-		example: "2026-01-31",
-	})
-	@ApiDoc({
-		summary: "친구의 날짜 범위 내 일일 완료 현황 조회",
-		operationId: "getFriendDailyCompletions",
-		description: `
+  @Get("friends/:userId")
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    description: "조회 시작 날짜 (YYYY-MM-DD)",
+    example: "2026-01-01",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    description: "조회 종료 날짜 (YYYY-MM-DD)",
+    example: "2026-01-31",
+  })
+  @ApiDoc({
+    summary: "친구의 날짜 범위 내 일일 완료 현황 조회",
+    operationId: "getFriendDailyCompletions",
+    description: `
 ## 친구 일일 완료 현황 조회
 
 친구의 지정된 날짜 범위 내 일일 완료 현황을 조회합니다.
@@ -182,44 +182,44 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
 | startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
 | 잘못된 날짜 형식 | \`400 Bad Request\` (SYS_0002) |
 		`,
-	})
-	@ApiSuccessResponse({ type: DailyCompletionsRangeResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
-	async getFriendDailyCompletions(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
-		@Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
-	): Promise<DailyCompletionsRangeResponseDto> {
-		this.#logger.debug(
-			`친구 일일 완료 현황 조회: friendUserId=${params.userId}, user=${user.userId}, range=${query.startDate}~${query.endDate}`,
-		);
+  })
+  @ApiSuccessResponse({ type: DailyCompletionsRangeResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.FOLLOW_0906)
+  async getFriendDailyCompletions(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+    @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
+  ): Promise<DailyCompletionsRangeResponseDto> {
+    this.#logger.debug(
+      `친구 일일 완료 현황 조회: friendUserId=${params.userId}, user=${user.userId}, range=${query.startDate}~${query.endDate}`,
+    );
 
-		const result = await this.getFriendDailyCompletionsUseCase.execute({
-			userId: user.userId,
-			friendUserId: params.userId,
-			startDate: query.startDate,
-			endDate: query.endDate,
-		});
+    const result = await this.getFriendDailyCompletionsUseCase.execute({
+      userId: user.userId,
+      friendUserId: params.userId,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
 
-		return this.#mapToResponse(result);
-	}
+    return this.#mapToResponse(result);
+  }
 
-	#mapToResponse(result: DailyCompletionsRange): DailyCompletionsRangeResponseDto {
-		return {
-			completions: result.completions.map((c) => ({
-				date: c.date,
-				totalTodos: c.totalTodos,
-				completedTodos: c.completedTodos,
-				isComplete: c.isComplete,
-				completionRate: c.completionRate,
-				categoryColors: c.categoryColors,
-			})),
-			totalCompleteDays: result.totalCompleteDays,
-			dateRange: {
-				startDate: result.dateRange.startDate,
-				endDate: result.dateRange.endDate,
-			},
-		};
-	}
+  #mapToResponse(result: DailyCompletionsRange): DailyCompletionsRangeResponseDto {
+    return {
+      completions: result.completions.map((c) => ({
+        date: c.date,
+        totalTodos: c.totalTodos,
+        completedTodos: c.completedTodos,
+        isComplete: c.isComplete,
+        completionRate: c.completionRate,
+        categoryColors: c.categoryColors,
+      })),
+      totalCompleteDays: result.totalCompleteDays,
+      dateRange: {
+        startDate: result.dateRange.startDate,
+        endDate: result.dateRange.endDate,
+      },
+    };
+  }
 }

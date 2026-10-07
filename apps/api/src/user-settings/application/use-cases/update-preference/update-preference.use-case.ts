@@ -9,16 +9,16 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { buildUpdatedPreferenceView } from "../../../domain/services/preference-view.js";
 import { ReminderTime } from "../../../domain/value-objects/reminder-time.vo.js";
 import {
-	REMINDER_SCHEDULE_ENQUEUER,
-	type ReminderScheduleEnqueuerPort,
+  REMINDER_SCHEDULE_ENQUEUER,
+  type ReminderScheduleEnqueuerPort,
 } from "../../ports/reminder-schedule.enqueuer.port.js";
 import {
-	USER_PREFERENCE_REPOSITORY,
-	type UserPreferenceRepositoryPort,
+  USER_PREFERENCE_REPOSITORY,
+  type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port.js";
 import {
-	USER_SETTINGS_CACHE,
-	type UserSettingsCachePort,
+  USER_SETTINGS_CACHE,
+  type UserSettingsCachePort,
 } from "../../ports/user-settings-cache.port.js";
 
 /**
@@ -29,84 +29,84 @@ import {
  */
 @Injectable()
 export class UpdatePreferenceUseCase {
-	readonly #logger = new Logger(UpdatePreferenceUseCase.name);
+  readonly #logger = new Logger(UpdatePreferenceUseCase.name);
 
-	constructor(
-		@Inject(USER_PREFERENCE_REPOSITORY)
-		private readonly preferenceRepository: UserPreferenceRepositoryPort,
-		private readonly entitlementService: EntitlementService,
-		@Inject(USER_SETTINGS_CACHE)
-		private readonly cache: UserSettingsCachePort,
-		@Inject(REMINDER_SCHEDULE_ENQUEUER)
-		private readonly reminderEnqueuer: ReminderScheduleEnqueuerPort,
-	) {}
+  constructor(
+    @Inject(USER_PREFERENCE_REPOSITORY)
+    private readonly preferenceRepository: UserPreferenceRepositoryPort,
+    private readonly entitlementService: EntitlementService,
+    @Inject(USER_SETTINGS_CACHE)
+    private readonly cache: UserSettingsCachePort,
+    @Inject(REMINDER_SCHEDULE_ENQUEUER)
+    private readonly reminderEnqueuer: ReminderScheduleEnqueuerPort,
+  ) {}
 
-	async execute(userId: string, input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> {
-		const changesReminder =
-			input.morningReminderHour !== undefined ||
-			input.morningReminderMinute !== undefined ||
-			input.eveningReminderHour !== undefined ||
-			input.eveningReminderMinute !== undefined;
+  async execute(userId: string, input: UpdatePreferenceInput): Promise<UpdatePreferenceResponse> {
+    const changesReminder =
+      input.morningReminderHour !== undefined ||
+      input.morningReminderMinute !== undefined ||
+      input.eveningReminderHour !== undefined ||
+      input.eveningReminderMinute !== undefined;
 
-		// 리마인더 시간 변경 시 프리미엄 체크
-		if (changesReminder) {
-			const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
-			if (!hasPremium) {
-				throw new ApplicationException(ErrorCode.PREFERENCE_1701);
-			}
-		}
+    // 리마인더 시간 변경 시 프리미엄 체크
+    if (changesReminder) {
+      const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+      if (!hasPremium) {
+        throw new ApplicationException(ErrorCode.PREFERENCE_1701);
+      }
+    }
 
-		// 리마인더 시간 범위 검증 (오전: 0-11, 오후: 12-23)
-		ReminderTime.assertValidRanges(input);
+    // 리마인더 시간 범위 검증 (오전: 0-11, 오후: 12-23)
+    ReminderTime.assertValidRanges(input);
 
-		const timezone =
-			input.timezone === undefined ? undefined : normalizeIanaTimezone(input.timezone);
-		if (input.timezone !== undefined && timezone === null) {
-			throw new ApplicationException(ErrorCode.SYS_0002, {
-				field: "timezone",
-			});
-		}
+    const timezone =
+      input.timezone === undefined ? undefined : normalizeIanaTimezone(input.timezone);
+    if (input.timezone !== undefined && timezone === null) {
+      throw new ApplicationException(ErrorCode.SYS_0002, {
+        field: "timezone",
+      });
+    }
 
-		const updated = await this.preferenceRepository.upsert(userId, {
-			pushEnabled: input.pushEnabled,
-			nightPushEnabled: input.nightPushEnabled,
-			timezone: timezone ?? undefined,
-			morningReminderHour: input.morningReminderHour,
-			morningReminderMinute: input.morningReminderMinute,
-			eveningReminderHour: input.eveningReminderHour,
-			eveningReminderMinute: input.eveningReminderMinute,
-			timeFormat: input.timeFormat,
-			weatherMorningEnabled: input.weatherMorningEnabled,
-			weatherMorningHour: input.weatherMorningHour,
-			weatherMorningMinute: input.weatherMorningMinute,
-			weatherEveningEnabled: input.weatherEveningEnabled,
-			weatherEveningHour: input.weatherEveningHour,
-			weatherEveningMinute: input.weatherEveningMinute,
-		});
-		await this.cache.invalidateUserPreference(userId);
+    const updated = await this.preferenceRepository.upsert(userId, {
+      pushEnabled: input.pushEnabled,
+      nightPushEnabled: input.nightPushEnabled,
+      timezone: timezone ?? undefined,
+      morningReminderHour: input.morningReminderHour,
+      morningReminderMinute: input.morningReminderMinute,
+      eveningReminderHour: input.eveningReminderHour,
+      eveningReminderMinute: input.eveningReminderMinute,
+      timeFormat: input.timeFormat,
+      weatherMorningEnabled: input.weatherMorningEnabled,
+      weatherMorningHour: input.weatherMorningHour,
+      weatherMorningMinute: input.weatherMorningMinute,
+      weatherEveningEnabled: input.weatherEveningEnabled,
+      weatherEveningHour: input.weatherEveningHour,
+      weatherEveningMinute: input.weatherEveningMinute,
+    });
+    await this.cache.invalidateUserPreference(userId);
 
-		// 타임존 또는 pushEnabled 변경 시 활성 타임존 목록 캐시 무효화
-		if (input.timezone !== undefined || input.pushEnabled !== undefined) {
-			await this.cache.invalidateActiveTimezones();
-		}
+    // 타임존 또는 pushEnabled 변경 시 활성 타임존 목록 캐시 무효화
+    if (input.timezone !== undefined || input.pushEnabled !== undefined) {
+      await this.cache.invalidateActiveTimezones();
+    }
 
-		this.#logger.log(
-			`User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
-		);
+    this.#logger.log(
+      `User ${userId} updated preference: pushEnabled=${updated.pushEnabled}, nightPushEnabled=${updated.nightPushEnabled}, timezone=${updated.timezone}`,
+    );
 
-		// 리마인더 시간 변경 시 즉시 반영 큐 잡 등록
-		// (현재 시간과 동일한 시간으로 변경했을 때 크론이 이미 지나간 경우 보완)
-		if (changesReminder) {
-			this.reminderEnqueuer.enqueueReminderHourChanged({
-				userId,
-				timezone: updated.timezone,
-				morningReminderHour: input.morningReminderHour,
-				morningReminderMinute: input.morningReminderMinute,
-				eveningReminderHour: input.eveningReminderHour,
-				eveningReminderMinute: input.eveningReminderMinute,
-			});
-		}
+    // 리마인더 시간 변경 시 즉시 반영 큐 잡 등록
+    // (현재 시간과 동일한 시간으로 변경했을 때 크론이 이미 지나간 경우 보완)
+    if (changesReminder) {
+      this.reminderEnqueuer.enqueueReminderHourChanged({
+        userId,
+        timezone: updated.timezone,
+        morningReminderHour: input.morningReminderHour,
+        morningReminderMinute: input.morningReminderMinute,
+        eveningReminderHour: input.eveningReminderHour,
+        eveningReminderMinute: input.eveningReminderMinute,
+      });
+    }
 
-		return buildUpdatedPreferenceView(updated);
-	}
+    return buildUpdatedPreferenceView(updated);
+  }
 }

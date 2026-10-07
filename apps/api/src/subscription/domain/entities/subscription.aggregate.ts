@@ -5,15 +5,15 @@ import { AggregateRoot } from "#api/shared/domain/index";
 export type SubscriptionStatusValue = "FREE" | "ACTIVE" | "EXPIRED" | "CANCELLED";
 
 export interface SubscriptionProps {
-	id: number;
-	userId: string;
-	revenueCatId: string;
-	productId: string;
-	status: SubscriptionStatusValue;
-	startedAt: Date;
-	expiresAt: Date;
-	cancelledAt: Date | null;
-	lastProcessedEventId: string | null;
+  id: number;
+  userId: string;
+  revenueCatId: string;
+  productId: string;
+  status: SubscriptionStatusValue;
+  startedAt: Date;
+  expiresAt: Date;
+  cancelledAt: Date | null;
+  lastProcessedEventId: string | null;
 }
 
 /**
@@ -24,58 +24,58 @@ export interface SubscriptionProps {
  * 유스케이스가 저장소를 통해 반영하므로, 이 애그리게잇은 읽기 판정만 담당한다.
  */
 export class Subscription extends AggregateRoot<SubscriptionProps> {
-	static reconstitute(props: SubscriptionProps): Subscription {
-		return new Subscription({
-			...props,
-			startedAt: new Date(props.startedAt),
-			expiresAt: new Date(props.expiresAt),
-			cancelledAt: props.cancelledAt ? new Date(props.cancelledAt) : null,
-		});
-	}
+  static reconstitute(props: SubscriptionProps): Subscription {
+    return new Subscription({
+      ...props,
+      startedAt: new Date(props.startedAt),
+      expiresAt: new Date(props.expiresAt),
+      cancelledAt: props.cancelledAt ? new Date(props.cancelledAt) : null,
+    });
+  }
 
-	get id(): number {
-		return this.props.id;
-	}
+  get id(): number {
+    return this.props.id;
+  }
 
-	get userId(): string {
-		return this.props.userId;
-	}
+  get userId(): string {
+    return this.props.userId;
+  }
 
-	get revenueCatId(): string {
-		return this.props.revenueCatId;
-	}
+  get revenueCatId(): string {
+    return this.props.revenueCatId;
+  }
 
-	get productId(): string {
-		return this.props.productId;
-	}
+  get productId(): string {
+    return this.props.productId;
+  }
 
-	get status(): SubscriptionStatusValue {
-		return this.props.status;
-	}
+  get status(): SubscriptionStatusValue {
+    return this.props.status;
+  }
 
-	get expiresAt(): Date {
-		return new Date(this.props.expiresAt);
-	}
+  get expiresAt(): Date {
+    return new Date(this.props.expiresAt);
+  }
 
-	get cancelledAt(): Date | null {
-		return this.props.cancelledAt ? new Date(this.props.cancelledAt) : null;
-	}
+  get cancelledAt(): Date | null {
+    return this.props.cancelledAt ? new Date(this.props.cancelledAt) : null;
+  }
 
-	get lastProcessedEventId(): string | null {
-		return this.props.lastProcessedEventId;
-	}
+  get lastProcessedEventId(): string | null {
+    return this.props.lastProcessedEventId;
+  }
 
-	isActive(): boolean {
-		return this.props.status === "ACTIVE";
-	}
+  isActive(): boolean {
+    return this.props.status === "ACTIVE";
+  }
 
-	/** 동일 만료 시각으로 이미 갱신된 ACTIVE 구독인지(RENEWAL 멱등성 판정) */
-	isActiveWithSameExpiry(expiresAt: Date): boolean {
-		return this.isActive() && isSame(this.props.expiresAt, expiresAt);
-	}
+  /** 동일 만료 시각으로 이미 갱신된 ACTIVE 구독인지(RENEWAL 멱등성 판정) */
+  isActiveWithSameExpiry(expiresAt: Date): boolean {
+    return this.isActive() && isSame(this.props.expiresAt, expiresAt);
+  }
 
-	/** 해당 event.id로 이미 처리된 구독인지(웹훅 재전송 멱등성 판정) */
-	wasProcessedWith(eventId: string): boolean {
-		return this.props.lastProcessedEventId === eventId;
-	}
+  /** 해당 event.id로 이미 처리된 구독인지(웹훅 재전송 멱등성 판정) */
+  wasProcessedWith(eventId: string): boolean {
+    return this.props.lastProcessedEventId === eventId;
+  }
 }

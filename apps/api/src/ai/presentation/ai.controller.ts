@@ -4,14 +4,14 @@ import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import { Locale, Timezone } from "#api/shared/presentation/decorators/index";
 import {
-	ApiBadRequestError,
-	ApiDoc,
-	ApiServiceUnavailableError,
-	ApiSuccessResponse,
-	ApiTooManyRequestsError,
-	ApiUnauthorizedError,
-	ApiUnprocessableError,
-	SWAGGER_TAGS,
+  ApiBadRequestError,
+  ApiDoc,
+  ApiServiceUnavailableError,
+  ApiSuccessResponse,
+  ApiTooManyRequestsError,
+  ApiUnauthorizedError,
+  ApiUnprocessableError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
@@ -20,62 +20,62 @@ import { ParseMemoUseCase } from "../application/use-cases/parse-memo/parse-memo
 import { ParseTodoUseCase } from "../application/use-cases/parse-todo/parse-todo.use-case.js";
 import { AiUsageGuard } from "../infrastructure/guards/ai-usage.guard.js";
 import {
-	AiUsageResponseDto,
-	ParseMemoRequestDto,
-	ParseMemoResponseDto,
-	ParseTodoRequestDto,
-	ParseTodoResponseDto,
+  AiUsageResponseDto,
+  ParseMemoRequestDto,
+  ParseMemoResponseDto,
+  ParseTodoRequestDto,
+  ParseTodoResponseDto,
 } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
 @Controller("ai")
 export class AiController {
-	constructor(
-		private readonly parseTodoUseCase: ParseTodoUseCase,
-		private readonly parseMemoUseCase: ParseMemoUseCase,
-		private readonly getAiUsageUseCase: GetAiUsageUseCase,
-	) {}
+  constructor(
+    private readonly parseTodoUseCase: ParseTodoUseCase,
+    private readonly parseMemoUseCase: ParseMemoUseCase,
+    private readonly getAiUsageUseCase: GetAiUsageUseCase,
+  ) {}
 
-	/**
-	 * @example
-	 * ```
-	 * // Request
-	 * POST /ai/parse-todo
-	 * { "text": "내일 오후 3시에 팀 미팅" }
-	 *
-	 * // Response
-	 * {
-	 *   "success": true,
-	 *   "data": {
-	 *     "title": "팀 미팅",
-	 *     "startDate": "2025-01-26",
-	 *     "scheduledTime": "15:00",
-	 *     "isAllDay": false,
-	 *     "isRecurring": false,
-	 *     "recurrence": null
-	 *   },
-	 *   "meta": {
-	 *     "model": "google:gemini-3.1-flash-lite",
-	 *     "processingTimeMs": 185,
-	 *     "tokenUsage": { "input": 180, "output": 45 }
-	 *   }
-	 * }
-	 * ```
-	 */
-	@Post("parse-todo")
-	@HttpCode(HttpStatus.OK)
-	@UseGuards(AiUsageGuard)
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "자연어 텍스트를 투두 데이터로 파싱",
-		operationId: "parseNaturalLanguageTodo",
-		description: `한국어 자연어 입력을 분석하여 구조화된 투두 데이터를 생성합니다.
+  /**
+   * @example
+   * ```
+   * // Request
+   * POST /ai/parse-todo
+   * { "text": "내일 오후 3시에 팀 미팅" }
+   *
+   * // Response
+   * {
+   *   "success": true,
+   *   "data": {
+   *     "title": "팀 미팅",
+   *     "startDate": "2025-01-26",
+   *     "scheduledTime": "15:00",
+   *     "isAllDay": false,
+   *     "isRecurring": false,
+   *     "recurrence": null
+   *   },
+   *   "meta": {
+   *     "model": "google:gemini-3.1-flash-lite",
+   *     "processingTimeMs": 185,
+   *     "tokenUsage": { "input": 180, "output": 45 }
+   *   }
+   * }
+   * ```
+   */
+  @Post("parse-todo")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AiUsageGuard)
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "자연어 텍스트를 투두 데이터로 파싱",
+    operationId: "parseNaturalLanguageTodo",
+    description: `한국어 자연어 입력을 분석하여 구조화된 투두 데이터를 생성합니다.
 
 ## 📝 입력 필드
 | 필드 | 타입 | 제약 | 설명 |
@@ -165,108 +165,108 @@ if (confirmed) {
 - **사용자 확인 단계**: AI 파싱 결과를 사용자가 검토/수정 가능
 - **유연성**: 파싱만 사용하거나, 수동 생성도 가능
 - **오류 복구**: 파싱 실패 시 사용자가 직접 수정 가능`,
-	})
-	@ApiSuccessResponse({ type: ParseTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiUnprocessableError(ErrorCode.AI_1302)
-	@ApiTooManyRequestsError(ErrorCode.AI_1303)
-	@ApiServiceUnavailableError(ErrorCode.AI_1301)
-	@ApiHeader({
-		name: "Accept-Language",
-		description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
-		required: false,
-		example: "ko",
-	})
-	async parseTodo(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
-		@Timezone() tz: string,
-		@Locale() locale: "ko" | "en" | undefined,
-	): Promise<ParseTodoResponseDto> {
-		const result = await this.parseTodoUseCase.execute({
-			text: dto.text,
-			userId: user.userId,
-			timezone: tz,
-			categoryId: dto.categoryId,
-			locale: locale ?? "ko",
-		});
+  })
+  @ApiSuccessResponse({ type: ParseTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiUnprocessableError(ErrorCode.AI_1302)
+  @ApiTooManyRequestsError(ErrorCode.AI_1303)
+  @ApiServiceUnavailableError(ErrorCode.AI_1301)
+  @ApiHeader({
+    name: "Accept-Language",
+    description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+    required: false,
+    example: "ko",
+  })
+  async parseTodo(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
+    @Timezone() tz: string,
+    @Locale() locale: "ko" | "en" | undefined,
+  ): Promise<ParseTodoResponseDto> {
+    const result = await this.parseTodoUseCase.execute({
+      text: dto.text,
+      userId: user.userId,
+      timezone: tz,
+      categoryId: dto.categoryId,
+      locale: locale ?? "ko",
+    });
 
-		return {
-			success: true,
-			data: result.data,
-			meta: result.meta,
-		};
-	}
+    return {
+      success: true,
+      data: result.data,
+      meta: result.meta,
+    };
+  }
 
-	/**
-	 * @example
-	 * ```
-	 * // Request
-	 * POST /ai/parse-memo
-	 * { "content": "내일 오후 2시까지 버그 수정하고 정산 로직도 확인. 금요일엔 스터디 자료 올리기", "categoryId": 1 }
-	 *
-	 * // Response
-	 * {
-	 *   "success": true,
-	 *   "data": {
-	 *     "todos": [
-	 *       {
-	 *         "title": "버그 수정",
-	 *         "startDate": "2026-04-12",
-	 *         "endDate": null,
-	 *         "scheduledTime": "14:00",
-	 *         "isAllDay": false,
-	 *         "isRecurring": false,
-	 *         "recurrence": null,
-	 *         "categoryId": 1,
-	 *         "items": []
-	 *       },
-	 *       {
-	 *         "title": "정산 로직 확인",
-	 *         "startDate": "2026-04-12",
-	 *         "endDate": null,
-	 *         "scheduledTime": null,
-	 *         "isAllDay": true,
-	 *         "isRecurring": false,
-	 *         "recurrence": null,
-	 *         "categoryId": 1,
-	 *         "items": []
-	 *       },
-	 *       {
-	 *         "title": "스터디 자료 올리기",
-	 *         "startDate": "2026-04-17",
-	 *         "endDate": null,
-	 *         "scheduledTime": null,
-	 *         "isAllDay": true,
-	 *         "isRecurring": false,
-	 *         "recurrence": null,
-	 *         "categoryId": 1,
-	 *         "items": []
-	 *       }
-	 *     ]
-	 *   },
-	 *   "meta": {
-	 *     "model": "google:gemini-3.1-flash-lite",
-	 *     "processingTimeMs": 350,
-	 *     "tokenUsage": { "input": 450, "output": 280 }
-	 *   }
-	 * }
-	 * ```
-	 */
-	@Post("parse-memo")
-	@HttpCode(HttpStatus.OK)
-	@UseGuards(AiUsageGuard)
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "메모 내용을 다중 할 일 + 서브투두로 파싱",
-		operationId: "parseMemoToTodos",
-		description: `메모 내용을 AI가 분석하여 여러 개의 구조화된 할 일(각각 서브투두 포함)을 생성합니다.
+  /**
+   * @example
+   * ```
+   * // Request
+   * POST /ai/parse-memo
+   * { "content": "내일 오후 2시까지 버그 수정하고 정산 로직도 확인. 금요일엔 스터디 자료 올리기", "categoryId": 1 }
+   *
+   * // Response
+   * {
+   *   "success": true,
+   *   "data": {
+   *     "todos": [
+   *       {
+   *         "title": "버그 수정",
+   *         "startDate": "2026-04-12",
+   *         "endDate": null,
+   *         "scheduledTime": "14:00",
+   *         "isAllDay": false,
+   *         "isRecurring": false,
+   *         "recurrence": null,
+   *         "categoryId": 1,
+   *         "items": []
+   *       },
+   *       {
+   *         "title": "정산 로직 확인",
+   *         "startDate": "2026-04-12",
+   *         "endDate": null,
+   *         "scheduledTime": null,
+   *         "isAllDay": true,
+   *         "isRecurring": false,
+   *         "recurrence": null,
+   *         "categoryId": 1,
+   *         "items": []
+   *       },
+   *       {
+   *         "title": "스터디 자료 올리기",
+   *         "startDate": "2026-04-17",
+   *         "endDate": null,
+   *         "scheduledTime": null,
+   *         "isAllDay": true,
+   *         "isRecurring": false,
+   *         "recurrence": null,
+   *         "categoryId": 1,
+   *         "items": []
+   *       }
+   *     ]
+   *   },
+   *   "meta": {
+   *     "model": "google:gemini-3.1-flash-lite",
+   *     "processingTimeMs": 350,
+   *     "tokenUsage": { "input": 450, "output": 280 }
+   *   }
+   * }
+   * ```
+   */
+  @Post("parse-memo")
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AiUsageGuard)
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "메모 내용을 다중 할 일 + 서브투두로 파싱",
+    operationId: "parseMemoToTodos",
+    description: `메모 내용을 AI가 분석하여 여러 개의 구조화된 할 일(각각 서브투두 포함)을 생성합니다.
 
 ## 📝 입력 필드
 | 필드 | 타입 | 제약 | 설명 |
@@ -312,73 +312,73 @@ if (confirmed) {
 - 기존 AI 파싱과 **월간 사용량 공유** (parse-todo와 동일 카운트)
 - 무료 유저: 월 5회 / 프리미엄: 무제한
 - 리셋: KST 매월 1일 00:00`,
-	})
-	@ApiSuccessResponse({ type: ParseMemoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiUnprocessableError(ErrorCode.AI_1302)
-	@ApiTooManyRequestsError(ErrorCode.AI_1303)
-	@ApiServiceUnavailableError(ErrorCode.AI_1301)
-	@ApiHeader({
-		name: "Accept-Language",
-		description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
-		required: false,
-		example: "ko",
-	})
-	async parseMemo(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
-		@Timezone() tz: string,
-		@Locale() locale: "ko" | "en" | undefined,
-	): Promise<ParseMemoResponseDto> {
-		const result = await this.parseMemoUseCase.execute({
-			content: dto.content,
-			userId: user.userId,
-			timezone: tz,
-			categoryId: dto.categoryId,
-			locale: locale ?? "ko",
-		});
+  })
+  @ApiSuccessResponse({ type: ParseMemoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiUnprocessableError(ErrorCode.AI_1302)
+  @ApiTooManyRequestsError(ErrorCode.AI_1303)
+  @ApiServiceUnavailableError(ErrorCode.AI_1301)
+  @ApiHeader({
+    name: "Accept-Language",
+    description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+    required: false,
+    example: "ko",
+  })
+  async parseMemo(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
+    @Timezone() tz: string,
+    @Locale() locale: "ko" | "en" | undefined,
+  ): Promise<ParseMemoResponseDto> {
+    const result = await this.parseMemoUseCase.execute({
+      content: dto.content,
+      userId: user.userId,
+      timezone: tz,
+      categoryId: dto.categoryId,
+      locale: locale ?? "ko",
+    });
 
-		return {
-			success: true,
-			data: result.data,
-			meta: result.meta,
-		};
-	}
+    return {
+      success: true,
+      data: result.data,
+      meta: result.meta,
+    };
+  }
 
-	/**
-	 * @example
-	 * ```
-	 * // Request
-	 * GET /ai/usage
-	 *
-	 * // Response (무료 유저)
-	 * {
-	 *   "success": true,
-	 *   "data": {
-	 *     "used": 3,
-	 *     "limit": 5,
-	 *     "resetsAt": "2026-04-30T15:00:00.000Z"
-	 *   }
-	 * }
-	 *
-	 * // Response (프리미엄 유저)
-	 * {
-	 *   "success": true,
-	 *   "data": {
-	 *     "used": 12,
-	 *     "limit": null,
-	 *     "resetsAt": "2026-04-30T15:00:00.000Z"
-	 *   }
-	 * }
-	 * ```
-	 */
-	@Get("usage")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "AI 사용량 조회",
-		operationId: "getAiUsage",
-		description: `현재 사용자의 월간 AI 사용량을 조회합니다.
+  /**
+   * @example
+   * ```
+   * // Request
+   * GET /ai/usage
+   *
+   * // Response (무료 유저)
+   * {
+   *   "success": true,
+   *   "data": {
+   *     "used": 3,
+   *     "limit": 5,
+   *     "resetsAt": "2026-04-30T15:00:00.000Z"
+   *   }
+   * }
+   *
+   * // Response (프리미엄 유저)
+   * {
+   *   "success": true,
+   *   "data": {
+   *     "used": 12,
+   *     "limit": null,
+   *     "resetsAt": "2026-04-30T15:00:00.000Z"
+   *   }
+   * }
+   * ```
+   */
+  @Get("usage")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "AI 사용량 조회",
+    operationId: "getAiUsage",
+    description: `현재 사용자의 월간 AI 사용량을 조회합니다.
 
 ## 📊 응답 데이터
 | 필드 | 타입 | 설명 |
@@ -401,15 +401,15 @@ if (limit !== null && used >= limit) {
   console.log(\`사용 제한 도달. \${resetTime.toLocaleString()}에 리셋됩니다.\`);
 }
 \`\`\``,
-	})
-	@ApiSuccessResponse({ type: AiUsageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getUsage(@CurrentUser() user: CurrentUserPayload): Promise<AiUsageResponseDto> {
-		const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
+  })
+  @ApiSuccessResponse({ type: AiUsageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getUsage(@CurrentUser() user: CurrentUserPayload): Promise<AiUsageResponseDto> {
+    const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
-		return {
-			success: true,
-			data: usage.toView(),
-		};
-	}
+    return {
+      success: true,
+      data: usage.toView(),
+    };
+  }
 }

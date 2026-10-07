@@ -10,11 +10,11 @@ import type { TodoCategoryWithCountView } from "./todo-category.repository.port.
 export const TODO_CATEGORY_CACHE = Symbol("TODO_CATEGORY_CACHE");
 
 export interface TodoCategoryCachePort {
-	/** 목록 캐시 read-through (miss 시 factory 실행 후 저장) */
-	wrapList(
-		userId: string,
-		factory: () => Promise<TodoCategoryWithCountView[]>,
-	): Promise<TodoCategoryWithCountView[]>;
-	/** 사용자 카테고리 목록 캐시 무효화 */
-	invalidate(userId: string): Promise<void>;
+  /** 목록 캐시 read-through (miss 시 factory 실행 후 저장) */
+  wrapList(
+    userId: string,
+    factory: () => Promise<TodoCategoryWithCountView[]>,
+  ): Promise<TodoCategoryWithCountView[]>;
+  /** 사용자 카테고리 목록 캐시 무효화 */
+  invalidate(userId: string): Promise<void>;
 }

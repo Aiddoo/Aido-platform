@@ -12,7 +12,7 @@ import { TimezoneReminderQueueService } from "./timezone-reminder-queue.service.
  * - SchedulerModule은 이 모듈을 import하여 Processor와 함께 구성
  */
 @Module({
-	providers: [TimezoneReminderQueueService],
-	exports: [TimezoneReminderQueueService],
+  providers: [TimezoneReminderQueueService],
+  exports: [TimezoneReminderQueueService],
 })
 export class TimezoneReminderQueueModule {}

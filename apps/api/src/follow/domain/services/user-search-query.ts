@@ -8,8 +8,8 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
  * - `upperTag`: 대문자화된 검색어 (userTag 매칭에 사용, 태그는 [A-Z0-9] 저장)
  */
 export interface NormalizedSearchQuery {
-	nfc: string;
-	upperTag: string;
+  nfc: string;
+  upperTag: string;
 }
 
 /**
@@ -20,9 +20,9 @@ export interface NormalizedSearchQuery {
  * (프레젠테이션 zod가 1차 게이트지만 도메인 경계에서도 방어한다.)
  */
 export function normalizeUserSearchQuery(input: string): NormalizedSearchQuery {
-	const nfc = input.normalize("NFC").trim().replace(/\s+/g, " ");
-	if (nfc.length === 0) {
-		throw new DomainException(ErrorCode.FOLLOW_0911, { query: input });
-	}
-	return { nfc, upperTag: nfc.toUpperCase() };
+  const nfc = input.normalize("NFC").trim().replace(/\s+/g, " ");
+  if (nfc.length === 0) {
+    throw new DomainException(ErrorCode.FOLLOW_0911, { query: input });
+  }
+  return { nfc, upperTag: nfc.toUpperCase() };
 }

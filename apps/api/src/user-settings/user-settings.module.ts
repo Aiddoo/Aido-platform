@@ -9,9 +9,9 @@ import { TODO_COMPLETION_STATS_READER } from "./application/ports/todo-completio
 import { USER_CONSENT_REPOSITORY } from "./application/ports/user-consent.repository.port.js";
 import { USER_PREFERENCE_REPOSITORY } from "./application/ports/user-preference.repository.port.js";
 import {
-	USER_NOTIFICATION_SETTINGS_ACCESS,
-	USER_SETTINGS_PROVISIONER,
-	USER_STREAK_ACCESS,
+  USER_NOTIFICATION_SETTINGS_ACCESS,
+  USER_SETTINGS_PROVISIONER,
+  USER_STREAK_ACCESS,
 } from "./application/ports/user-settings-access.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/user-settings-cache.port.js";
 import { GetConsentRecordUseCase } from "./application/use-cases/get-consent-record/get-consent-record.use-case.js";
@@ -39,62 +39,62 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/timezon
 import { SettingsController } from "./presentation/user-settings.controller.js";
 
 @Module({
-	imports: [NotificationQueueModule, TimezoneReminderQueueModule],
-	controllers: [SettingsController],
-	providers: [
-		UserSettingsAccessAdapter,
-		GetPreferenceUseCase,
-		UpdatePreferenceUseCase,
-		GetConsentUseCase,
-		UpdateMarketingConsentUseCase,
-		UpdateMarketingPushConsentUseCase,
-		OnTodoToggledUseCase,
-		SeedUserSettingsUseCase,
-		UpsertPushTimezoneUseCase,
-		RefreshPushTimezoneUseCase,
-		UpsertPushLocaleUseCase,
-		TimezoneSelfHealInterceptor,
-		GetPreferenceRecordUseCase,
-		GetPreferenceRecordsUseCase,
-		GetConsentRecordUseCase,
-		GetConsentRecordsUseCase,
-		UserPreferenceRepository,
-		UserConsentRepository,
-		PrismaTodoCompletionStatsReader,
-		{
-			provide: USER_PREFERENCE_REPOSITORY,
-			useExisting: UserPreferenceRepository,
-		},
-		{ provide: USER_CONSENT_REPOSITORY, useExisting: UserConsentRepository },
-		{
-			provide: TODO_COMPLETION_STATS_READER,
-			useExisting: PrismaTodoCompletionStatsReader,
-		},
-		{
-			provide: REMINDER_SCHEDULE_ENQUEUER,
-			useClass: TimezoneReminderEnqueuerAdapter,
-		},
-		{
-			provide: STREAK_MILESTONE_NOTIFIER,
-			useClass: StreakMilestoneNotifierAdapter,
-		},
-		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
-		{ provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
-		{
-			provide: USER_SETTINGS_PROVISIONER,
-			useExisting: UserSettingsAccessAdapter,
-		},
-		{ provide: USER_STREAK_ACCESS, useExisting: UserSettingsAccessAdapter },
-		{
-			provide: USER_NOTIFICATION_SETTINGS_ACCESS,
-			useExisting: UserSettingsAccessAdapter,
-		},
-	],
-	exports: [
-		USER_SETTINGS_PROVISIONER,
-		USER_STREAK_ACCESS,
-		USER_NOTIFICATION_SETTINGS_ACCESS,
-		TimezoneSelfHealInterceptor,
-	],
+  imports: [NotificationQueueModule, TimezoneReminderQueueModule],
+  controllers: [SettingsController],
+  providers: [
+    UserSettingsAccessAdapter,
+    GetPreferenceUseCase,
+    UpdatePreferenceUseCase,
+    GetConsentUseCase,
+    UpdateMarketingConsentUseCase,
+    UpdateMarketingPushConsentUseCase,
+    OnTodoToggledUseCase,
+    SeedUserSettingsUseCase,
+    UpsertPushTimezoneUseCase,
+    RefreshPushTimezoneUseCase,
+    UpsertPushLocaleUseCase,
+    TimezoneSelfHealInterceptor,
+    GetPreferenceRecordUseCase,
+    GetPreferenceRecordsUseCase,
+    GetConsentRecordUseCase,
+    GetConsentRecordsUseCase,
+    UserPreferenceRepository,
+    UserConsentRepository,
+    PrismaTodoCompletionStatsReader,
+    {
+      provide: USER_PREFERENCE_REPOSITORY,
+      useExisting: UserPreferenceRepository,
+    },
+    { provide: USER_CONSENT_REPOSITORY, useExisting: UserConsentRepository },
+    {
+      provide: TODO_COMPLETION_STATS_READER,
+      useExisting: PrismaTodoCompletionStatsReader,
+    },
+    {
+      provide: REMINDER_SCHEDULE_ENQUEUER,
+      useClass: TimezoneReminderEnqueuerAdapter,
+    },
+    {
+      provide: STREAK_MILESTONE_NOTIFIER,
+      useClass: StreakMilestoneNotifierAdapter,
+    },
+    // 조회 캐시 포트 (application → CacheService 직접 의존 역전)
+    { provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
+    {
+      provide: USER_SETTINGS_PROVISIONER,
+      useExisting: UserSettingsAccessAdapter,
+    },
+    { provide: USER_STREAK_ACCESS, useExisting: UserSettingsAccessAdapter },
+    {
+      provide: USER_NOTIFICATION_SETTINGS_ACCESS,
+      useExisting: UserSettingsAccessAdapter,
+    },
+  ],
+  exports: [
+    USER_SETTINGS_PROVISIONER,
+    USER_STREAK_ACCESS,
+    USER_NOTIFICATION_SETTINGS_ACCESS,
+    TimezoneSelfHealInterceptor,
+  ],
 })
 export class UserSettingsModule {}

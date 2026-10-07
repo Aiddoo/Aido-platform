@@ -1,8 +1,8 @@
 import type {
-	OAuthIdentityProvider,
-	OAuthTokenVerifier,
-	SocialLoginOptions,
-	VerifiedProfile,
+  OAuthIdentityProvider,
+  OAuthTokenVerifier,
+  SocialLoginOptions,
+  VerifiedProfile,
 } from "#api/auth/application/ports/oauth-identity-provider.port";
 
 /**
@@ -14,31 +14,31 @@ import type {
  * - profileImage 미제공
  */
 export class AppleOAuthProvider implements OAuthIdentityProvider {
-	readonly provider = "APPLE" as const;
-	readonly failureEmail = "apple_unknown@social.aido.kr";
+  readonly provider = "APPLE" as const;
+  readonly failureEmail = "apple_unknown@social.aido.kr";
 
-	readonly #verifier: OAuthTokenVerifier;
+  readonly #verifier: OAuthTokenVerifier;
 
-	constructor(verifier: OAuthTokenVerifier) {
-		this.#verifier = verifier;
-	}
+  constructor(verifier: OAuthTokenVerifier) {
+    this.#verifier = verifier;
+  }
 
-	async generateAuthUrl(): Promise<null> {
-		return null;
-	}
+  async generateAuthUrl(): Promise<null> {
+    return null;
+  }
 
-	async exchangeCode(): Promise<null> {
-		return null;
-	}
+  async exchangeCode(): Promise<null> {
+    return null;
+  }
 
-	async verifyToken(idToken: string, nonce?: string): Promise<VerifiedProfile> {
-		return this.#verifier.verifyAppleToken(idToken, nonce);
-	}
+  async verifyToken(idToken: string, nonce?: string): Promise<VerifiedProfile> {
+    return this.#verifier.verifyAppleToken(idToken, nonce);
+  }
 
-	buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
-		return {
-			userName,
-			emailVerified: verifiedProfile.emailVerified,
-		};
-	}
+  buildLoginOptions(verifiedProfile: VerifiedProfile, userName?: string): SocialLoginOptions {
+    return {
+      userName,
+      emailVerified: verifiedProfile.emailVerified,
+    };
+  }
 }

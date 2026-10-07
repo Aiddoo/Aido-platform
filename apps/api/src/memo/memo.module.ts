@@ -20,12 +20,12 @@ import { PrismaMemoRepository } from "./infrastructure/persistence/prisma-memo.r
 import { MemoController } from "./presentation/memo.controller.js";
 
 @Module({
-	imports: [TodoModule],
-	controllers: [MemoController],
-	providers: [
-		{ provide: MEMO_REPOSITORY, useClass: PrismaMemoRepository },
-		{ provide: TODO_CREATOR, useClass: TodoCreatorAdapter },
-		...MEMO_PROVIDERS,
-	],
+  imports: [TodoModule],
+  controllers: [MemoController],
+  providers: [
+    { provide: MEMO_REPOSITORY, useClass: PrismaMemoRepository },
+    { provide: TODO_CREATOR, useClass: TodoCreatorAdapter },
+    ...MEMO_PROVIDERS,
+  ],
 })
 export class MemoModule {}

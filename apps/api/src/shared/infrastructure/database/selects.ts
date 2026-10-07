@@ -10,12 +10,12 @@
  * 친구 목록, 응원/콕 등에서 사용자 정보를 표시할 때 사용합니다.
  */
 export const USER_BRIEF_SELECT = {
-	id: true,
-	userTag: true,
-	profile: {
-		select: {
-			name: true,
-			profileImage: true,
-		},
-	},
+  id: true,
+  userTag: true,
+  profile: {
+    select: {
+      name: true,
+      profileImage: true,
+    },
+  },
 } as const;

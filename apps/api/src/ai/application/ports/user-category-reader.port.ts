@@ -7,13 +7,13 @@
 
 /** 프롬프트용 최소 카테고리 정보. */
 export interface UserCategory {
-	id: number;
-	name: string;
+  id: number;
+  name: string;
 }
 
 export interface UserCategoryReaderPort {
-	/** 사용자의 카테고리 목록을 조회한다. */
-	findByUserId(userId: string): Promise<UserCategory[]>;
+  /** 사용자의 카테고리 목록을 조회한다. */
+  findByUserId(userId: string): Promise<UserCategory[]>;
 }
 
 /** 사용자 카테고리 리더 주입 토큰. */

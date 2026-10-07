@@ -6,11 +6,11 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoCreatedEvent {
-	readonly eventName = TODO_EVENTS.CREATED;
+  readonly eventName = TODO_EVENTS.CREATED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-		public readonly scheduledTime: Date | null,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+    public readonly scheduledTime: Date | null,
+  ) {}
 }

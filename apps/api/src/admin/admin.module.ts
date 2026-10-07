@@ -19,22 +19,22 @@ import { AdminController } from "./presentation/admin.controller.js";
  * 추상화하며, 현재 어댑터는 Prisma·NotificationService다.
  */
 @Module({
-	imports: [NotificationModule],
-	controllers: [AdminController, AdminGrowthController],
-	providers: [
-		{
-			provide: ADMIN_USER_DIRECTORY,
-			useClass: PrismaAdminUserDirectoryAdapter,
-		},
-		{
-			provide: ADMIN_BROADCAST_NOTIFIER,
-			useClass: NotificationAdminBroadcastNotifierAdapter,
-		},
-		{
-			provide: ADMIN_GROWTH_METRICS,
-			useClass: PrismaAdminGrowthMetricsAdapter,
-		},
-		...ADMIN_PROVIDERS,
-	],
+  imports: [NotificationModule],
+  controllers: [AdminController, AdminGrowthController],
+  providers: [
+    {
+      provide: ADMIN_USER_DIRECTORY,
+      useClass: PrismaAdminUserDirectoryAdapter,
+    },
+    {
+      provide: ADMIN_BROADCAST_NOTIFIER,
+      useClass: NotificationAdminBroadcastNotifierAdapter,
+    },
+    {
+      provide: ADMIN_GROWTH_METRICS,
+      useClass: PrismaAdminGrowthMetricsAdapter,
+    },
+    ...ADMIN_PROVIDERS,
+  ],
 })
 export class AdminModule {}

@@ -2,10 +2,10 @@ import { marketingPushOptOutResponseSchema, marketingPushOptOutSchema } from "@a
 import type { z } from "zod";
 
 export const MarketingPushOptOutDto = marketingPushOptOutSchema.meta({
-	id: "MarketingPushOptOutDto",
+  id: "MarketingPushOptOutDto",
 });
 export type MarketingPushOptOutDto = z.infer<typeof MarketingPushOptOutDto>;
 export const MarketingPushOptOutResponseDto = marketingPushOptOutResponseSchema.meta({
-	id: "MarketingPushOptOutResponseDto",
+  id: "MarketingPushOptOutResponseDto",
 });
 export type MarketingPushOptOutResponseDto = z.infer<typeof MarketingPushOptOutResponseDto>;

@@ -7,60 +7,60 @@ import { FakeJobRuntime } from "../mocks/fake-job-runtime.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("durable job runtime health E2E", () => {
-	let ctx: E2eTestContext;
-	const runtime = new FakeJobRuntime();
-	let health: MockInstance<typeof runtime.health>;
+  let ctx: E2eTestContext;
+  const runtime = new FakeJobRuntime();
+  let health: MockInstance<typeof runtime.health>;
 
-	beforeAll(async () => {
-		ctx = await createE2eApp({
-			customizeBuilder: (builder) => builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
-			additionalResetters: [() => health?.mockClear()],
-		});
-	});
+  beforeAll(async () => {
+    ctx = await createE2eApp({
+      customizeBuilder: (builder) => builder.overrideProvider(JOB_RUNTIME).useValue(runtime),
+      additionalResetters: [() => health?.mockClear()],
+    });
+  });
 
-	afterAll(async () => {
-		await destroyE2eApp(ctx);
-	});
+  afterAll(async () => {
+    await destroyE2eApp(ctx);
+  });
 
-	beforeEach(async () => {
-		health = vi.spyOn(runtime, "health");
-		await ctx.reset();
-	});
+  beforeEach(async () => {
+    health = vi.spyOn(runtime, "health");
+    await ctx.reset();
+  });
 
-	it("PostgreSQL backend이면 기존 200/up health 계약을 유지한다", async () => {
-		const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
+  it("PostgreSQL backend이면 기존 200/up health 계약을 유지한다", async () => {
+    const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
 
-		expect(response.body.data.status).toBe("ok");
-		expect(response.body.data.info.queues).toMatchObject({
-			status: "up",
-			backend: "postgres",
-			degraded: false,
-			queues: {
-				"ai-suggestion-analysis.v1": {
-					active: 0,
-					waiting: 0,
-					failed: 0,
-				},
-			},
-		});
-	});
+    expect(response.body.data.status).toBe("ok");
+    expect(response.body.data.info.queues).toMatchObject({
+      status: "up",
+      backend: "postgres",
+      degraded: false,
+      queues: {
+        "ai-suggestion-analysis.v1": {
+          active: 0,
+          waiting: 0,
+          failed: 0,
+        },
+      },
+    });
+  });
 
-	it("backend 장애도 200/up을 유지하고 degraded 필드로만 알린다", async () => {
-		health.mockResolvedValueOnce({
-			backend: "postgres",
-			degraded: true,
-			reason: "job_runtime_unavailable",
-			queues: {},
-		});
+  it("backend 장애도 200/up을 유지하고 degraded 필드로만 알린다", async () => {
+    health.mockResolvedValueOnce({
+      backend: "postgres",
+      degraded: true,
+      reason: "job_runtime_unavailable",
+      queues: {},
+    });
 
-		const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
+    const response = await request(ctx.app.getHttpServer()).get("/health").expect(200);
 
-		expect(response.body.data.status).toBe("ok");
-		expect(response.body.data.info.queues).toMatchObject({
-			status: "up",
-			backend: "postgres",
-			degraded: true,
-			reason: "job_runtime_unavailable",
-		});
-	});
+    expect(response.body.data.status).toBe("ok");
+    expect(response.body.data.info.queues).toMatchObject({
+      status: "up",
+      backend: "postgres",
+      degraded: true,
+      reason: "job_runtime_unavailable",
+    });
+  });
 });

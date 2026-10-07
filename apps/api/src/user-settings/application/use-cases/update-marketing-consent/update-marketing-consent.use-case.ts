@@ -3,8 +3,8 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { buildMarketingConsentView } from "../../../domain/services/consent-view.js";
 import {
-	USER_CONSENT_REPOSITORY,
-	type UserConsentRepositoryPort,
+  USER_CONSENT_REPOSITORY,
+  type UserConsentRepositoryPort,
 } from "../../ports/user-consent.repository.port.js";
 
 /**
@@ -12,20 +12,20 @@ import {
  */
 @Injectable()
 export class UpdateMarketingConsentUseCase {
-	readonly #logger = new Logger(UpdateMarketingConsentUseCase.name);
+  readonly #logger = new Logger(UpdateMarketingConsentUseCase.name);
 
-	constructor(
-		@Inject(USER_CONSENT_REPOSITORY)
-		private readonly consentRepository: UserConsentRepositoryPort,
-	) {}
+  constructor(
+    @Inject(USER_CONSENT_REPOSITORY)
+    private readonly consentRepository: UserConsentRepositoryPort,
+  ) {}
 
-	async execute(userId: string, agreed: boolean): Promise<UpdateMarketingConsentResponse> {
-		const updated = await this.consentRepository.upsertMarketingConsent(userId, {
-			agreed,
-		});
+  async execute(userId: string, agreed: boolean): Promise<UpdateMarketingConsentResponse> {
+    const updated = await this.consentRepository.upsertMarketingConsent(userId, {
+      agreed,
+    });
 
-		this.#logger.log(`User ${userId} updated marketing consent: agreed=${agreed}`);
+    this.#logger.log(`User ${userId} updated marketing consent: agreed=${agreed}`);
 
-		return buildMarketingConsentView(updated);
-	}
+    return buildMarketingConsentView(updated);
+  }
 }

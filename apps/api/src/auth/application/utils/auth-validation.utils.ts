@@ -8,7 +8,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
  * 자격 증명 workflow와 비밀번호 workflow가 공유하는 순수 함수입니다.
  */
 export function assertNotDeleted(user: { deletedAt: Date | null; id: string }): void {
-	if (user.deletedAt) {
-		throw new ApplicationException(ErrorCode.USER_0606, { userId: user.id });
-	}
+  if (user.deletedAt) {
+    throw new ApplicationException(ErrorCode.USER_0606, { userId: user.id });
+  }
 }

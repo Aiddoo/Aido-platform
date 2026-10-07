@@ -11,12 +11,12 @@ import type { SubscriptionCachePort } from "../../application/ports/subscription
  */
 @Injectable()
 export class SubscriptionCacheAdapter implements SubscriptionCachePort {
-	constructor(private readonly cacheService: CacheService) {}
+  constructor(private readonly cacheService: CacheService) {}
 
-	async invalidate(userId: string): Promise<void> {
-		await Promise.all([
-			this.cacheService.invalidateSubscription(userId),
-			this.cacheService.invalidateUserProfile(userId),
-		]);
-	}
+  async invalidate(userId: string): Promise<void> {
+    await Promise.all([
+      this.cacheService.invalidateSubscription(userId),
+      this.cacheService.invalidateUserProfile(userId),
+    ]);
+  }
 }

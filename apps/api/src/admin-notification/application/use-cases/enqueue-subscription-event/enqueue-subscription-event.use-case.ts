@@ -4,8 +4,8 @@ import type { SubscriptionEventPayload } from "#api/subscription/index";
 
 import { buildSubscriptionEventMessage } from "../../../domain/services/admin-message.factory.js";
 import {
-	ADMIN_NOTIFICATION_QUEUE_PORT,
-	type AdminNotificationQueuePort,
+  ADMIN_NOTIFICATION_QUEUE_PORT,
+  type AdminNotificationQueuePort,
 } from "../../ports/admin-notification-queue.port.js";
 
 /**
@@ -15,13 +15,13 @@ import {
  */
 @Injectable()
 export class EnqueueSubscriptionEventUseCase {
-	constructor(
-		@Inject(ADMIN_NOTIFICATION_QUEUE_PORT)
-		private readonly queue: AdminNotificationQueuePort,
-	) {}
+  constructor(
+    @Inject(ADMIN_NOTIFICATION_QUEUE_PORT)
+    private readonly queue: AdminNotificationQueuePort,
+  ) {}
 
-	async execute(payload: SubscriptionEventPayload): Promise<void> {
-		const message = buildSubscriptionEventMessage(payload);
-		await this.queue.enqueueSend("payment", message.toPayload());
-	}
+  async execute(payload: SubscriptionEventPayload): Promise<void> {
+    const message = buildSubscriptionEventMessage(payload);
+    await this.queue.enqueueSend("payment", message.toPayload());
+  }
 }

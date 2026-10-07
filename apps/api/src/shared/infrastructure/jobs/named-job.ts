@@ -1,10 +1,10 @@
 import type { JobData, JobEnvelope } from "#api/shared/application/ports/job-runtime.port";
 
 export type NamedJob<TMap extends { [K in keyof TMap]: JobData }> = {
-	[K in keyof TMap & string]: {
-		readonly name: K;
-		readonly data: Readonly<TMap[K]>;
-	};
+  [K in keyof TMap & string]: {
+    readonly name: K;
+    readonly data: Readonly<TMap[K]>;
+  };
 }[keyof TMap & string];
 
 /**
@@ -12,7 +12,7 @@ export type NamedJob<TMap extends { [K in keyof TMap]: JobData }> = {
  * name/data 상관관계는 기존 producer가 보장하며 이 함수가 vendor 경계를 한 곳에 격리한다.
  */
 export function fromLegacyJob<TMap extends { [K in keyof TMap]: JobData }>(
-	job: JobEnvelope<JobData>,
+  job: JobEnvelope<JobData>,
 ): NamedJob<TMap> {
-	return { name: job.name, data: job.data } as NamedJob<TMap>;
+  return { name: job.name, data: job.data } as NamedJob<TMap>;
 }

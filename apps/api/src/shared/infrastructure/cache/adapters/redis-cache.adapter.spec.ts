@@ -19,124 +19,124 @@ import { describeCacheAdapterContract } from "./cache-adapter.contract.js";
 import { RedisCacheAdapter } from "./redis-cache.adapter.js";
 
 describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
-	describeCacheAdapterContract({
-		createAdapter: () => new RedisCacheAdapter(new RedisMock(), 60_000),
-		cleanup: (adapter) => adapter.reset(),
-	});
+  describeCacheAdapterContract({
+    createAdapter: () => new RedisCacheAdapter(new RedisMock(), 60_000),
+    cleanup: (adapter) => adapter.reset(),
+  });
 
-	describe("fail-open (Redis 장애 시)", () => {
-		const failure = new Error("Connection is closed.");
-		let redis: InstanceType<typeof RedisMock>;
-		let warn: Mock;
-		let cache: RedisCacheAdapter;
+  describe("fail-open (Redis 장애 시)", () => {
+    const failure = new Error("Connection is closed.");
+    let redis: InstanceType<typeof RedisMock>;
+    let warn: Mock;
+    let cache: RedisCacheAdapter;
 
-		beforeEach(() => {
-			redis = new RedisMock();
-			warn = vi.fn();
-			cache = new RedisCacheAdapter(redis, 60_000, new RedisErrorLogSampler({ warn }));
-		});
+    beforeEach(() => {
+      redis = new RedisMock();
+      warn = vi.fn();
+      cache = new RedisCacheAdapter(redis, 60_000, new RedisErrorLogSampler({ warn }));
+    });
 
-		it("get 실패 시 캐시 미스(undefined)로 취급한다", async () => {
-			// Given
-			vi.spyOn(redis, "get").mockRejectedValue(failure);
+    it("get 실패 시 캐시 미스(undefined)로 취급한다", async () => {
+      // Given
+      vi.spyOn(redis, "get").mockRejectedValue(failure);
 
-			// When
-			const result = await cache.get("key");
+      // When
+      const result = await cache.get("key");
 
-			// Then
-			expect(result).toBeUndefined();
-		});
+      // Then
+      expect(result).toBeUndefined();
+    });
 
-		it("mget 실패 시 전원 undefined를 반환한다", async () => {
-			// Given
-			vi.spyOn(redis, "mget").mockRejectedValue(failure);
+    it("mget 실패 시 전원 undefined를 반환한다", async () => {
+      // Given
+      vi.spyOn(redis, "mget").mockRejectedValue(failure);
 
-			// When
-			const result = await cache.mget(["a", "b", "c"]);
+      // When
+      const result = await cache.mget(["a", "b", "c"]);
 
-			// Then
-			expect(result).toEqual([undefined, undefined, undefined]);
-		});
+      // Then
+      expect(result).toEqual([undefined, undefined, undefined]);
+    });
 
-		it("has 실패 시 false를 반환한다", async () => {
-			// Given
-			vi.spyOn(redis, "exists").mockRejectedValue(failure);
+    it("has 실패 시 false를 반환한다", async () => {
+      // Given
+      vi.spyOn(redis, "exists").mockRejectedValue(failure);
 
-			// When / Then
-			expect(await cache.has("key")).toBe(false);
-		});
+      // When / Then
+      expect(await cache.has("key")).toBe(false);
+    });
 
-		it("ttl 실패 시 -2(키 없음)를 반환한다", async () => {
-			// Given
-			vi.spyOn(redis, "pttl").mockRejectedValue(failure);
+    it("ttl 실패 시 -2(키 없음)를 반환한다", async () => {
+      // Given
+      vi.spyOn(redis, "pttl").mockRejectedValue(failure);
 
-			// When / Then
-			expect(await cache.ttl("key")).toBe(-2);
-		});
+      // When / Then
+      expect(await cache.ttl("key")).toBe(-2);
+    });
 
-		it("touch 실패 시 false를 반환한다", async () => {
-			// Given
-			vi.spyOn(redis, "pexpire").mockRejectedValue(failure);
+    it("touch 실패 시 false를 반환한다", async () => {
+      // Given
+      vi.spyOn(redis, "pexpire").mockRejectedValue(failure);
 
-			// When / Then
-			expect(await cache.touch("key", 1000)).toBe(false);
-		});
+      // When / Then
+      expect(await cache.touch("key", 1000)).toBe(false);
+    });
 
-		it("set/del/mset 실패는 조용히 무시한다 (throw하지 않음)", async () => {
-			// Given
-			vi.spyOn(redis, "set").mockRejectedValue(failure);
-			vi.spyOn(redis, "del").mockRejectedValue(failure);
-			vi.spyOn(redis, "pipeline").mockImplementation(() => {
-				throw failure;
-			});
+    it("set/del/mset 실패는 조용히 무시한다 (throw하지 않음)", async () => {
+      // Given
+      vi.spyOn(redis, "set").mockRejectedValue(failure);
+      vi.spyOn(redis, "del").mockRejectedValue(failure);
+      vi.spyOn(redis, "pipeline").mockImplementation(() => {
+        throw failure;
+      });
 
-			// When / Then
-			await expect(cache.set("key", "value")).resolves.toBeUndefined();
-			await expect(cache.del("key")).resolves.toBeUndefined();
-			await expect(cache.mset([{ key: "a", value: 1 }])).resolves.toBeUndefined();
-		});
+      // When / Then
+      await expect(cache.set("key", "value")).resolves.toBeUndefined();
+      await expect(cache.del("key")).resolves.toBeUndefined();
+      await expect(cache.mset([{ key: "a", value: 1 }])).resolves.toBeUndefined();
+    });
 
-		it("delByPattern 실패 시 지금까지 삭제한 개수를 반환한다", async () => {
-			// Given
-			vi.spyOn(redis, "scan").mockRejectedValue(failure);
+    it("delByPattern 실패 시 지금까지 삭제한 개수를 반환한다", async () => {
+      // Given
+      vi.spyOn(redis, "scan").mockRejectedValue(failure);
 
-			// When / Then
-			expect(await cache.delByPattern("user:*")).toBe(0);
-		});
+      // When / Then
+      expect(await cache.delByPattern("user:*")).toBe(0);
+    });
 
-		it("reset 실패는 조용히 무시한다", async () => {
-			// Given
-			vi.spyOn(redis, "scan").mockRejectedValue(failure);
+    it("reset 실패는 조용히 무시한다", async () => {
+      // Given
+      vi.spyOn(redis, "scan").mockRejectedValue(failure);
 
-			// When / Then
-			await expect(cache.reset()).resolves.toBeUndefined();
-		});
+      // When / Then
+      await expect(cache.reset()).resolves.toBeUndefined();
+    });
 
-		it("wrap은 get 실패 시 factory 결과를 그대로 반환한다 (DB 폴백)", async () => {
-			// Given
-			vi.spyOn(redis, "get").mockRejectedValue(failure);
-			vi.spyOn(redis, "set").mockRejectedValue(failure);
-			const factory = vi.fn().mockResolvedValue("from-db");
+    it("wrap은 get 실패 시 factory 결과를 그대로 반환한다 (DB 폴백)", async () => {
+      // Given
+      vi.spyOn(redis, "get").mockRejectedValue(failure);
+      vi.spyOn(redis, "set").mockRejectedValue(failure);
+      const factory = vi.fn().mockResolvedValue("from-db");
 
-			// When
-			const result = await cache.wrap("key", factory);
+      // When
+      const result = await cache.wrap("key", factory);
 
-			// Then
-			expect(result).toBe("from-db");
-			expect(factory).toHaveBeenCalledTimes(1);
-		});
+      // Then
+      expect(result).toBe("from-db");
+      expect(factory).toHaveBeenCalledTimes(1);
+    });
 
-		it("장애 중 반복 에러는 샘플러가 억제한다 (warn 1회)", async () => {
-			// Given
-			vi.spyOn(redis, "get").mockRejectedValue(failure);
+    it("장애 중 반복 에러는 샘플러가 억제한다 (warn 1회)", async () => {
+      // Given
+      vi.spyOn(redis, "get").mockRejectedValue(failure);
 
-			// When
-			for (let i = 0; i < 50; i++) {
-				await cache.get("key");
-			}
+      // When
+      for (let i = 0; i < 50; i++) {
+        await cache.get("key");
+      }
 
-			// Then
-			expect(warn).toHaveBeenCalledTimes(1);
-		});
-	});
+      // Then
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+  });
 });

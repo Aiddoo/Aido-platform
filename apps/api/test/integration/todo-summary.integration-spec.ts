@@ -28,77 +28,77 @@ import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let useCase: GetTodoSummaryUseCase;
+  let module: TestingModule;
+  let useCase: GetTodoSummaryUseCase;
 
-	const mockReadRepository = createTodoReadRepositoryMock();
+  const mockReadRepository = createTodoReadRepositoryMock();
 
-	const mockUserStreakAccess = {
-		getPreferenceRecord: vi.fn(),
-	};
+  const mockUserStreakAccess = {
+    getPreferenceRecord: vi.fn(),
+  };
 
-	const today = new Date("2026-07-12T00:00:00.000Z");
+  const today = new Date("2026-07-12T00:00:00.000Z");
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		module = await Test.createTestingModule({
-			providers: [
-				GetTodoSummaryUseCase,
-				{ provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
-				{ provide: STREAK_PORT, useClass: StreakAdapter },
-				{ provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        GetTodoSummaryUseCase,
+        { provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
+        { provide: STREAK_PORT, useClass: StreakAdapter },
+        { provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
+      ],
+    }).compile();
 
-		useCase = module.get(GetTodoSummaryUseCase);
-	});
+    useCase = module.get(GetTodoSummaryUseCase);
+  });
 
-	afterAll(async () => {
-		await module.close();
-	});
+  afterAll(async () => {
+    await module.close();
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-	it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
-		// Given
-		vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
-			total: 2,
-			completed: 2,
-		});
-		vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
-		// lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
-		mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
-			currentStreak: 7,
-			lastCompletedDate: today,
-		});
+  it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
+    // Given
+    vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
+      total: 2,
+      completed: 2,
+    });
+    vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+    // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
+    mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
+      currentStreak: 7,
+      lastCompletedDate: today,
+    });
 
-		// When
-		const result = await useCase.execute({ userId: "user-123", today });
+    // When
+    const result = await useCase.execute({ userId: "user-123", today });
 
-		// Then
-		expect(result.date).toBe("2026-07-12");
-		expect(result.isComplete).toBe(true);
-		expect(result.completionRate).toBe(100);
-		expect(result.currentStreak).toBe(7);
-		expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith("user-123");
-	});
+    // Then
+    expect(result.date).toBe("2026-07-12");
+    expect(result.isComplete).toBe(true);
+    expect(result.completionRate).toBe(100);
+    expect(result.currentStreak).toBe(7);
+    expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith("user-123");
+  });
 
-	it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
-		// Given
-		vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
-			total: 0,
-			completed: 0,
-		});
-		vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
-		mockUserStreakAccess.getPreferenceRecord.mockResolvedValue(null);
+  it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
+    // Given
+    vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
+      total: 0,
+      completed: 0,
+    });
+    vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+    mockUserStreakAccess.getPreferenceRecord.mockResolvedValue(null);
 
-		// When
-		const result = await useCase.execute({ userId: "user-없음", today });
+    // When
+    const result = await useCase.execute({ userId: "user-없음", today });
 
-		// Then
-		expect(result.currentStreak).toBe(0);
-	});
+    // Then
+    expect(result.currentStreak).toBe(0);
+  });
 });

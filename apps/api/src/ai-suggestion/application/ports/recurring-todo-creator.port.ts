@@ -4,13 +4,13 @@ export const RECURRING_TODO_CREATOR = Symbol("RECURRING_TODO_CREATOR");
 
 /** 반복 할 일 생성 입력 — todo 모듈의 반복 생성 계약과 동일한 형태 */
 export interface CreateRecurringTodoInput {
-	userId: string;
-	title: string;
-	categoryId: number;
-	startDate: string;
-	endDate: string;
-	daysOfWeek: DayOfWeek[];
-	scheduledTime: string | null;
+  userId: string;
+  title: string;
+  categoryId: number;
+  startDate: string;
+  endDate: string;
+  daysOfWeek: DayOfWeek[];
+  scheduledTime: string | null;
 }
 
 /**
@@ -20,5 +20,5 @@ export interface CreateRecurringTodoInput {
  * (TodoCreator)으로 컨텍스트 경계를 흡수한다.
  */
 export interface RecurringTodoCreatorPort {
-	createRecurring(input: CreateRecurringTodoInput, timezone: string): Promise<{ count: number }>;
+  createRecurring(input: CreateRecurringTodoInput, timezone: string): Promise<{ count: number }>;
 }

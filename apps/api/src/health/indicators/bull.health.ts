@@ -12,14 +12,14 @@ import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 const QUEUE_STATS_TIMEOUT_MS = 2_000;
 const MONITORED_QUEUES = [
-	AI_SUGGESTION_QUEUE,
-	AI_REPORT_QUEUE,
-	ADMIN_NOTIFICATION_QUEUE,
-	TODO_REMINDER_QUEUE,
-	PUSH_DELIVERY_QUEUE,
-	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-	RETENTION_QUEUE,
-	RETENTION_DEAD_LETTER_QUEUE,
+  AI_SUGGESTION_QUEUE,
+  AI_REPORT_QUEUE,
+  ADMIN_NOTIFICATION_QUEUE,
+  TODO_REMINDER_QUEUE,
+  PUSH_DELIVERY_QUEUE,
+  PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+  RETENTION_QUEUE,
+  RETENTION_DEAD_LETTER_QUEUE,
 ] as const;
 
 /**
@@ -29,25 +29,25 @@ const MONITORED_QUEUES = [
  */
 @Injectable()
 export class BullHealthIndicator {
-	constructor(
-		private readonly healthIndicatorService: HealthIndicatorService,
-		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
-	) {}
+  constructor(
+    private readonly healthIndicatorService: HealthIndicatorService,
+    @Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
+  ) {}
 
-	async isHealthy(key: string): Promise<HealthIndicatorResult> {
-		const indicator = this.healthIndicatorService.check(key);
-		try {
-			const health = await withTimeout(
-				this.runtime.health(MONITORED_QUEUES),
-				QUEUE_STATS_TIMEOUT_MS,
-				"Job runtime health collection",
-			);
-			return indicator.up({ ...health });
-		} catch {
-			return indicator.up({
-				degraded: true,
-				reason: "job_runtime_health_timeout",
-			});
-		}
-	}
+  async isHealthy(key: string): Promise<HealthIndicatorResult> {
+    const indicator = this.healthIndicatorService.check(key);
+    try {
+      const health = await withTimeout(
+        this.runtime.health(MONITORED_QUEUES),
+        QUEUE_STATS_TIMEOUT_MS,
+        "Job runtime health collection",
+      );
+      return indicator.up({ ...health });
+    } catch {
+      return indicator.up({
+        degraded: true,
+        reason: "job_runtime_health_timeout",
+      });
+    }
+  }
 }

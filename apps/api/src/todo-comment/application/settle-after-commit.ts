@@ -1,8 +1,8 @@
 import type { LoggerService } from "@nestjs/common";
 
 interface AfterCommitTask {
-	label: string;
-	run: () => Promise<unknown>;
+  label: string;
+  run: () => Promise<unknown>;
 }
 
 /**
@@ -13,17 +13,17 @@ interface AfterCommitTask {
  * 통째로 건너뛰므로, 알림도 캐시 무효화도 두 번 다시 시도되지 않는다.
  */
 export async function settleAfterCommit(
-	logger: LoggerService,
-	tasks: readonly AfterCommitTask[],
+  logger: LoggerService,
+  tasks: readonly AfterCommitTask[],
 ): Promise<void> {
-	const settled = await Promise.allSettled(tasks.map((task) => task.run()));
+  const settled = await Promise.allSettled(tasks.map((task) => task.run()));
 
-	settled.forEach((result, index) => {
-		if (result.status === "rejected") {
-			logger.warn(
-				`커밋 후 작업을 마치지 못했습니다: ${tasks[index]?.label ?? "알 수 없는 작업"}. ${result.reason}`,
-				result.reason instanceof Error ? result.reason.stack : undefined,
-			);
-		}
-	});
+  settled.forEach((result, index) => {
+    if (result.status === "rejected") {
+      logger.warn(
+        `커밋 후 작업을 마치지 못했습니다: ${tasks[index]?.label ?? "알 수 없는 작업"}. ${result.reason}`,
+        result.reason instanceof Error ? result.reason.stack : undefined,
+      );
+    }
+  });
 }

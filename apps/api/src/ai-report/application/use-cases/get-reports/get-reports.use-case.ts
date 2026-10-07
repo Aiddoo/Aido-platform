@@ -7,8 +7,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import type { ReportType } from "../../../domain/types.js";
 import {
-	AI_REPORT_REPOSITORY,
-	type AiReportRepositoryPort,
+  AI_REPORT_REPOSITORY,
+  type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port.js";
 
 /**
@@ -16,27 +16,27 @@ import {
  */
 @Injectable()
 export class GetReportsUseCase {
-	constructor(
-		@Inject(AI_REPORT_REPOSITORY)
-		private readonly aiReportRepository: AiReportRepositoryPort,
-		private readonly entitlementService: EntitlementService,
-	) {}
+  constructor(
+    @Inject(AI_REPORT_REPOSITORY)
+    private readonly aiReportRepository: AiReportRepositoryPort,
+    private readonly entitlementService: EntitlementService,
+  ) {}
 
-	async execute(
-		userId: string,
-		params: { type?: ReportType; limit: number },
-	): Promise<AiReportDto[]> {
-		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
-		if (!hasPremium) {
-			throw new ApplicationException(ErrorCode.AI_1308);
-		}
+  async execute(
+    userId: string,
+    params: { type?: ReportType; limit: number },
+  ): Promise<AiReportDto[]> {
+    const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+    if (!hasPremium) {
+      throw new ApplicationException(ErrorCode.AI_1308);
+    }
 
-		const reports = await this.aiReportRepository.findMany({
-			userId,
-			type: params.type,
-			limit: params.limit,
-		});
+    const reports = await this.aiReportRepository.findMany({
+      userId,
+      type: params.type,
+      limit: params.limit,
+    });
 
-		return reports.map((report) => report.toView());
-	}
+    return reports.map((report) => report.toView());
+  }
 }

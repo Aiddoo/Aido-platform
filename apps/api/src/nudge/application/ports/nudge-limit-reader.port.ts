@@ -8,6 +8,6 @@
 export const NUDGE_LIMIT_READER = Symbol("NUDGE_LIMIT_READER");
 
 export interface NudgeLimitReaderPort {
-	/** 트랜잭션 내 사용자 일일 콕 찌르기 한도 (null이면 무제한) */
-	getDailyLimitInTx(userId: string): Promise<number | null>;
+  /** 트랜잭션 내 사용자 일일 콕 찌르기 한도 (null이면 무제한) */
+  getDailyLimitInTx(userId: string): Promise<number | null>;
 }

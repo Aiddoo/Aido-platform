@@ -18,7 +18,7 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
  * ```
  */
 export function createUnitOfWorkMock(): UnitOfWorkPort {
-	const run = vi.fn();
-	run.mockImplementation((work: () => Promise<unknown>) => work());
-	return { run };
+  const run = vi.fn();
+  run.mockImplementation((work: () => Promise<unknown>) => work());
+  return { run };
 }

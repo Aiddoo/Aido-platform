@@ -2,15 +2,15 @@ import { Injectable } from "@nestjs/common";
 import sql from "sql-template-tag";
 
 import {
-	decodeSqlRows,
-	sqlRowSpec,
-	sqlStatement,
+  decodeSqlRows,
+  sqlRowSpec,
+  sqlStatement,
 } from "#api/shared/infrastructure/database/database-sql";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
-	AdminGrowthMetricsPort,
-	AdminGrowthSummaryCounts,
+  AdminGrowthMetricsPort,
+  AdminGrowthSummaryCounts,
 } from "../../application/ports/admin-growth-metrics.port.js";
 
 /**
@@ -21,37 +21,37 @@ import type {
  */
 @Injectable()
 export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
-	constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly database: DatabaseService) {}
 
-	async getSummary(input: {
-		readonly cohortFrom: string;
-		readonly cohortTo: string;
-		readonly asOf: Date;
-	}): Promise<AdminGrowthSummaryCounts> {
-		const sqlRows1 = sqlRowSpec({
-			measurementStartedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-			totalActiveUsers: "pg/int8@1",
-			signups: "pg/int8@1",
-			dau: "pg/int8@1",
-			wau: "pg/int8@1",
-			mau: "pg/int8@1",
-			activationEligible: "pg/int8@1",
-			activationAchieved: "pg/int8@1",
-			d1Eligible: "pg/int8@1",
-			d1Achieved: "pg/int8@1",
-			d7Eligible: "pg/int8@1",
-			d7Achieved: "pg/int8@1",
-			d30Eligible: "pg/int8@1",
-			d30Achieved: "pg/int8@1",
-			d7RetainedActivatedUsers: "pg/int8@1",
-		});
+  async getSummary(input: {
+    readonly cohortFrom: string;
+    readonly cohortTo: string;
+    readonly asOf: Date;
+  }): Promise<AdminGrowthSummaryCounts> {
+    const sqlRows1 = sqlRowSpec({
+      measurementStartedAt: { codecId: "pg/timestamp-string@1", nullable: true },
+      totalActiveUsers: "pg/int8@1",
+      signups: "pg/int8@1",
+      dau: "pg/int8@1",
+      wau: "pg/int8@1",
+      mau: "pg/int8@1",
+      activationEligible: "pg/int8@1",
+      activationAchieved: "pg/int8@1",
+      d1Eligible: "pg/int8@1",
+      d1Achieved: "pg/int8@1",
+      d7Eligible: "pg/int8@1",
+      d7Achieved: "pg/int8@1",
+      d30Eligible: "pg/int8@1",
+      d30Achieved: "pg/int8@1",
+      d7RetainedActivatedUsers: "pg/int8@1",
+    });
 
-		const rows = decodeSqlRows(
-			sqlRows1,
-			await this.database.db.runtime().query(
-				sqlStatement(
-					this.database.db,
-					sql`
+    const rows = decodeSqlRows(
+      sqlRows1,
+      await this.database.db.runtime().query(
+        sqlStatement(
+          this.database.db,
+          sql`
 			WITH measurement AS (
 				SELECT (
 					SELECT activity."firstSeenAt"
@@ -261,32 +261,32 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 			CROSS JOIN active_counts
 			CROSS JOIN cohort_counts
 		`,
-				)
-					.returnsRow(sqlRows1)
-					.build(),
-			),
-		);
-		const row = rows[0];
-		if (!row) {
-			throw new Error("growth summary aggregate returned no row");
-		}
+        )
+          .returnsRow(sqlRows1)
+          .build(),
+      ),
+    );
+    const row = rows[0];
+    if (!row) {
+      throw new Error("growth summary aggregate returned no row");
+    }
 
-		return {
-			measurementStartedAt: row.measurementStartedAt,
-			totalActiveUsers: Number(row.totalActiveUsers),
-			signups: Number(row.signups),
-			dau: Number(row.dau),
-			wau: Number(row.wau),
-			mau: Number(row.mau),
-			activationEligible: Number(row.activationEligible),
-			activationAchieved: Number(row.activationAchieved),
-			d1Eligible: Number(row.d1Eligible),
-			d1Achieved: Number(row.d1Achieved),
-			d7Eligible: Number(row.d7Eligible),
-			d7Achieved: Number(row.d7Achieved),
-			d30Eligible: Number(row.d30Eligible),
-			d30Achieved: Number(row.d30Achieved),
-			d7RetainedActivatedUsers: Number(row.d7RetainedActivatedUsers),
-		};
-	}
+    return {
+      measurementStartedAt: row.measurementStartedAt,
+      totalActiveUsers: Number(row.totalActiveUsers),
+      signups: Number(row.signups),
+      dau: Number(row.dau),
+      wau: Number(row.wau),
+      mau: Number(row.mau),
+      activationEligible: Number(row.activationEligible),
+      activationAchieved: Number(row.activationAchieved),
+      d1Eligible: Number(row.d1Eligible),
+      d1Achieved: Number(row.d1Achieved),
+      d7Eligible: Number(row.d7Eligible),
+      d7Achieved: Number(row.d7Achieved),
+      d30Eligible: Number(row.d30Eligible),
+      d30Achieved: Number(row.d30Achieved),
+      d7RetainedActivatedUsers: Number(row.d7RetainedActivatedUsers),
+    };
+  }
 }

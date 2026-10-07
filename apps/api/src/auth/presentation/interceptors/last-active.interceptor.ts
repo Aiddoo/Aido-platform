@@ -1,18 +1,18 @@
 import type { CurrentUserPayload } from "@aido/validators";
 import {
-	type CallHandler,
-	type ExecutionContext,
-	Inject,
-	Injectable,
-	Logger,
-	type NestInterceptor,
-	type OnModuleDestroy,
+  type CallHandler,
+  type ExecutionContext,
+  Inject,
+  Injectable,
+  Logger,
+  type NestInterceptor,
+  type OnModuleDestroy,
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 
 import {
-	AUTH_USER_ACTIVITY_WRITER,
-	type AuthUserActivityWriterPort,
+  AUTH_USER_ACTIVITY_WRITER,
+  type AuthUserActivityWriterPort,
 } from "#api/auth/application/ports/auth-collaboration.port";
 import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
@@ -26,73 +26,73 @@ import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/u
  */
 @Injectable()
 export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
-	readonly #logger = new Logger(LastActiveInterceptor.name);
+  readonly #logger = new Logger(LastActiveInterceptor.name);
 
-	/** `${userId}:${localDate}` → lastUpdatedAt (epoch ms) */
-	readonly #throttleMap = new Map<string, number>();
+  /** `${userId}:${localDate}` → lastUpdatedAt (epoch ms) */
+  readonly #throttleMap = new Map<string, number>();
 
-	readonly #cleanupInterval: NodeJS.Timeout;
+  readonly #cleanupInterval: NodeJS.Timeout;
 
-	static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
+  static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
 
-	constructor(
-		@Inject(AUTH_USER_ACTIVITY_WRITER)
-		private readonly userActivityWriter: AuthUserActivityWriterPort,
-	) {
-		this.#cleanupInterval = setInterval(() => this.#cleanup(), LastActiveInterceptor.THROTTLE_MS);
-	}
+  constructor(
+    @Inject(AUTH_USER_ACTIVITY_WRITER)
+    private readonly userActivityWriter: AuthUserActivityWriterPort,
+  ) {
+    this.#cleanupInterval = setInterval(() => this.#cleanup(), LastActiveInterceptor.THROTTLE_MS);
+  }
 
-	onModuleDestroy(): void {
-		clearInterval(this.#cleanupInterval);
-	}
+  onModuleDestroy(): void {
+    clearInterval(this.#cleanupInterval);
+  }
 
-	intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-		const request = context.switchToHttp().getRequest();
-		const user = request.user as CurrentUserPayload | undefined;
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user as CurrentUserPayload | undefined;
 
-		if (user?.userId) {
-			this.#touchLastActive(user.userId, resolveTimezone(request.headers?.["x-timezone"]));
-		}
+    if (user?.userId) {
+      this.#touchLastActive(user.userId, resolveTimezone(request.headers?.["x-timezone"]));
+    }
 
-		return next.handle();
-	}
+    return next.handle();
+  }
 
-	#touchLastActive(userId: string, timezone: string): void {
-		const touchedAt = Date.now();
-		const localDate = startOfDayInTimezone(new Date(touchedAt), timezone)
-			.toISOString()
-			.slice(0, 10);
-		const throttleKey = `${userId}:${localDate}`;
-		const lastUpdated = this.#throttleMap.get(throttleKey);
+  #touchLastActive(userId: string, timezone: string): void {
+    const touchedAt = Date.now();
+    const localDate = startOfDayInTimezone(new Date(touchedAt), timezone)
+      .toISOString()
+      .slice(0, 10);
+    const throttleKey = `${userId}:${localDate}`;
+    const lastUpdated = this.#throttleMap.get(throttleKey);
 
-		if (lastUpdated && touchedAt - lastUpdated < LastActiveInterceptor.THROTTLE_MS) {
-			return;
-		}
+    if (lastUpdated && touchedAt - lastUpdated < LastActiveInterceptor.THROTTLE_MS) {
+      return;
+    }
 
-		this.#throttleMap.set(throttleKey, touchedAt);
+    this.#throttleMap.set(throttleKey, touchedAt);
 
-		// fire-and-forget — 응답을 블로킹하지 않음
-		this.userActivityWriter.updateLastActiveAt(userId, timezone).catch((error) => {
-			if (this.#throttleMap.get(throttleKey) === touchedAt) {
-				this.#throttleMap.delete(throttleKey);
-			}
-			this.#logger.error(`Failed to update lastActiveAt: userId=${userId}, error=${error}`);
-		});
-	}
+    // fire-and-forget — 응답을 블로킹하지 않음
+    this.userActivityWriter.updateLastActiveAt(userId, timezone).catch((error) => {
+      if (this.#throttleMap.get(throttleKey) === touchedAt) {
+        this.#throttleMap.delete(throttleKey);
+      }
+      this.#logger.error(`Failed to update lastActiveAt: userId=${userId}, error=${error}`);
+    });
+  }
 
-	#cleanup(): void {
-		const cutoff = Date.now() - LastActiveInterceptor.THROTTLE_MS;
-		let cleaned = 0;
+  #cleanup(): void {
+    const cutoff = Date.now() - LastActiveInterceptor.THROTTLE_MS;
+    let cleaned = 0;
 
-		for (const [throttleKey, timestamp] of this.#throttleMap.entries()) {
-			if (timestamp < cutoff) {
-				this.#throttleMap.delete(throttleKey);
-				cleaned++;
-			}
-		}
+    for (const [throttleKey, timestamp] of this.#throttleMap.entries()) {
+      if (timestamp < cutoff) {
+        this.#throttleMap.delete(throttleKey);
+        cleaned++;
+      }
+    }
 
-		if (cleaned > 0) {
-			this.#logger.debug(`Throttle cleanup: removed ${cleaned} expired entries`);
-		}
-	}
+    if (cleaned > 0) {
+      this.#logger.debug(`Throttle cleanup: removed ${cleaned} expired entries`);
+    }
+  }
 }

@@ -8,13 +8,13 @@ import type { ActiveTodo } from "./scheduler-read-models.js";
 export const TODO_REMINDER_READER = Symbol("TODO_REMINDER_READER");
 
 export interface TodoReminderReaderPort {
-	/** 미완료(유효) 투두 조회 (완료/삭제 시 null) */
-	findActiveTodo(todoId: number): Promise<ActiveTodo | null>;
+  /** 미완료(유효) 투두 조회 (완료/삭제 시 null) */
+  findActiveTodo(todoId: number): Promise<ActiveTodo | null>;
 
-	/** since 이후 동일 단계 TODO_REMINDER 알림 존재 여부 (dedup) */
-	existsRecentReminderNotification(params: {
-		todoId: number;
-		since: Date;
-		stage: string;
-	}): Promise<boolean>;
+  /** since 이후 동일 단계 TODO_REMINDER 알림 존재 여부 (dedup) */
+  existsRecentReminderNotification(params: {
+    todoId: number;
+    since: Date;
+    stage: string;
+  }): Promise<boolean>;
 }

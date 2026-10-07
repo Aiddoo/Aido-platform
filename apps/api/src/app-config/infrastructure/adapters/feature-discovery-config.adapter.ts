@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import type {
-	FeatureDiscoveryConfig,
-	FeatureDiscoveryConfigPort,
+  FeatureDiscoveryConfig,
+  FeatureDiscoveryConfigPort,
 } from "../../application/ports/feature-discovery-config.port.js";
 
 /**
@@ -13,25 +13,25 @@ import type {
  */
 @Injectable()
 export class FeatureDiscoveryConfigAdapter implements FeatureDiscoveryConfigPort {
-	constructor(private readonly config: TypedConfigService) {}
+  constructor(private readonly config: TypedConfigService) {}
 
-	getFeatureDiscovery(): FeatureDiscoveryConfig {
-		const featureDiscovery = this.config.featureDiscovery;
-		if (
-			!featureDiscovery.enabled ||
-			!featureDiscovery.campaignId ||
-			!featureDiscovery.minAppVersion ||
-			!featureDiscovery.launchedAt
-		) {
-			return { enabled: false };
-		}
+  getFeatureDiscovery(): FeatureDiscoveryConfig {
+    const featureDiscovery = this.config.featureDiscovery;
+    if (
+      !featureDiscovery.enabled ||
+      !featureDiscovery.campaignId ||
+      !featureDiscovery.minAppVersion ||
+      !featureDiscovery.launchedAt
+    ) {
+      return { enabled: false };
+    }
 
-		return {
-			enabled: true,
-			campaignId: featureDiscovery.campaignId,
-			minAppVersion: featureDiscovery.minAppVersion,
-			launchedAt: featureDiscovery.launchedAt,
-			autoOpen: featureDiscovery.autoOpen,
-		};
-	}
+    return {
+      enabled: true,
+      campaignId: featureDiscovery.campaignId,
+      minAppVersion: featureDiscovery.minAppVersion,
+      launchedAt: featureDiscovery.launchedAt,
+      autoOpen: featureDiscovery.autoOpen,
+    };
+  }
 }

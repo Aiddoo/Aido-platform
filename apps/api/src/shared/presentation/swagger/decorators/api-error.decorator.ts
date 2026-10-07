@@ -8,23 +8,23 @@ import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface.js
  * 에러 응답 스키마 생성 (에러 코드, 메시지 포함)
  */
 function createErrorSchema(errorCode: ErrorCodeType, message: string) {
-	return {
-		type: "object",
-		properties: {
-			success: { type: "boolean", example: false },
-			error: {
-				type: "object",
-				properties: {
-					code: { type: "string", example: errorCode },
-					message: { type: "string", example: message },
-					details: { type: "object", nullable: true, example: null },
-				},
-				required: ["code", "message"],
-			},
-			timestamp: { type: "number", example: Date.now() },
-		},
-		required: ["success", "error", "timestamp"],
-	};
+  return {
+    type: "object",
+    properties: {
+      success: { type: "boolean", example: false },
+      error: {
+        type: "object",
+        properties: {
+          code: { type: "string", example: errorCode },
+          message: { type: "string", example: message },
+          details: { type: "object", nullable: true, example: null },
+        },
+        required: ["code", "message"],
+      },
+      timestamp: { type: "number", example: Date.now() },
+    },
+    required: ["success", "error", "timestamp"],
+  };
 }
 
 /**
@@ -41,19 +41,19 @@ function createErrorSchema(errorCode: ErrorCodeType, message: string) {
  * ```
  */
 export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecorator {
-	const { errorCode, description } = options;
+  const { errorCode, description } = options;
 
-	const errorDef = Errors[errorCode];
-	const httpStatus = errorDef?.httpStatus ?? HttpStatus.BAD_REQUEST;
-	const message = description ?? errorDef?.message ?? "Unknown error";
+  const errorDef = Errors[errorCode];
+  const httpStatus = errorDef?.httpStatus ?? HttpStatus.BAD_REQUEST;
+  const message = description ?? errorDef?.message ?? "Unknown error";
 
-	return applyDecorators(
-		ApiResponse({
-			status: httpStatus,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: httpStatus,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -67,15 +67,15 @@ export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecora
  * ```
  */
 export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "Not found";
+  const message = Errors[errorCode]?.message ?? "Not found";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.NOT_FOUND,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.NOT_FOUND,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -89,16 +89,16 @@ export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator {
-	const code = errorCode ?? ("AUTH_0107" as ErrorCodeType);
-	const message = Errors[code]?.message ?? "인증이 필요합니다.";
+  const code = errorCode ?? ("AUTH_0107" as ErrorCodeType);
+  const message = Errors[code]?.message ?? "인증이 필요합니다.";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.UNAUTHORIZED,
-			description: message,
-			schema: createErrorSchema(code, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.UNAUTHORIZED,
+      description: message,
+      schema: createErrorSchema(code, message),
+    }),
+  );
 }
 
 /**
@@ -112,15 +112,15 @@ export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator
  * ```
  */
 export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "접근 권한이 없습니다.";
+  const message = Errors[errorCode]?.message ?? "접근 권한이 없습니다.";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.FORBIDDEN,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.FORBIDDEN,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -134,15 +134,15 @@ export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "Conflict";
+  const message = Errors[errorCode]?.message ?? "Conflict";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.CONFLICT,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.CONFLICT,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -156,15 +156,15 @@ export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "Unprocessable";
+  const message = Errors[errorCode]?.message ?? "Unprocessable";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.UNPROCESSABLE_ENTITY,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -178,15 +178,15 @@ export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator
  * ```
  */
 export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "Bad request";
+  const message = Errors[errorCode]?.message ?? "Bad request";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.BAD_REQUEST,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.BAD_REQUEST,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -200,15 +200,15 @@ export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "Service unavailable";
+  const message = Errors[errorCode]?.message ?? "Service unavailable";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.SERVICE_UNAVAILABLE,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }
 
 /**
@@ -222,13 +222,13 @@ export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDeco
  * ```
  */
 export function ApiTooManyRequestsError(errorCode: ErrorCodeType): MethodDecorator {
-	const message = Errors[errorCode]?.message ?? "Too many requests";
+  const message = Errors[errorCode]?.message ?? "Too many requests";
 
-	return applyDecorators(
-		ApiResponse({
-			status: HttpStatus.TOO_MANY_REQUESTS,
-			description: message,
-			schema: createErrorSchema(errorCode, message),
-		}),
-	);
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.TOO_MANY_REQUESTS,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
 }

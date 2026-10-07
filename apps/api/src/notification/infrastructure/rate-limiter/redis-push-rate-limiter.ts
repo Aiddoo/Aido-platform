@@ -4,10 +4,10 @@ import type { Redis } from "ioredis";
 import { RedisErrorLogSampler } from "#api/shared/infrastructure/redis/redis-error-log-sampler";
 
 import type {
-	EngagementPushRateLimitRequest,
-	GeneralPushRateLimitRequest,
-	PushRateLimitRequest,
-	PushRateLimiterPort,
+  EngagementPushRateLimitRequest,
+  GeneralPushRateLimitRequest,
+  PushRateLimitRequest,
+  PushRateLimiterPort,
 } from "../../application/ports/push-rate-limiter.port.js";
 import { PUSH_RATE_LIMIT_POLICY } from "../../domain/services/push-rate-limit-policy.js";
 import { PushRateLimiterKeys } from "./push-rate-limiter.keys.js";
@@ -16,9 +16,9 @@ const { GENERAL, ENGAGEMENT } = PUSH_RATE_LIMIT_POLICY;
 const RESERVATION_TTL_MS = ENGAGEMENT.RETENTION_MS;
 
 interface LegacyPushRateLimitRequest {
-	readonly userId: string;
-	readonly reservationId?: string;
-	readonly engagementLocalDate?: string;
+  readonly userId: string;
+  readonly reservationId?: string;
+  readonly engagementLocalDate?: string;
 }
 
 /**
@@ -182,11 +182,11 @@ const BATCH_LIMIT_SCRIPT = `
 `;
 
 function isRateLimitResult(value: unknown, expectedLength: number): value is Array<0 | 1> {
-	return (
-		Array.isArray(value) &&
-		value.length === expectedLength &&
-		value.every((item) => item === 0 || item === 1)
-	);
+  return (
+    Array.isArray(value) &&
+    value.length === expectedLength &&
+    value.every((item) => item === 0 || item === 1)
+  );
 }
 
 /**
@@ -198,159 +198,159 @@ function isRateLimitResult(value: unknown, expectedLength: number): value is Arr
  * - Redis 장애 시 fail-open (발송 허용)
  */
 export class RedisPushRateLimiter implements PushRateLimiterPort {
-	readonly #logger = new Logger(RedisPushRateLimiter.name);
-	readonly #redis: Redis;
-	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
+  readonly #logger = new Logger(RedisPushRateLimiter.name);
+  readonly #redis: Redis;
+  readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
-	constructor(redis: Redis) {
-		this.#redis = redis;
-	}
+  constructor(redis: Redis) {
+    this.#redis = redis;
+  }
 
-	async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
-		return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
-	}
+  async reserveGeneral(request: GeneralPushRateLimitRequest): Promise<boolean> {
+    return this.#reserveGeneral(request.userId, this.#reservationId(request.dispatchId));
+  }
 
-	/** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
-	async isRateLimited(userId: string, reservationId?: string): Promise<boolean> {
-		return this.#reserveGeneral(userId, reservationId);
-	}
+  /** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
+  async isRateLimited(userId: string, reservationId?: string): Promise<boolean> {
+    return this.#reserveGeneral(userId, reservationId);
+  }
 
-	async #reserveGeneral(userId: string, reservationId?: string): Promise<boolean> {
-		const key = PushRateLimiterKeys.general(userId);
-		const reservationKey = reservationId
-			? PushRateLimiterKeys.generalReservation(userId, reservationId)
-			: PushRateLimiterKeys.reservationPlaceholder("general");
-		const now = Date.now();
-		const windowStart = now - GENERAL.WINDOW_MS;
+  async #reserveGeneral(userId: string, reservationId?: string): Promise<boolean> {
+    const key = PushRateLimiterKeys.general(userId);
+    const reservationKey = reservationId
+      ? PushRateLimiterKeys.generalReservation(userId, reservationId)
+      : PushRateLimiterKeys.reservationPlaceholder("general");
+    const now = Date.now();
+    const windowStart = now - GENERAL.WINDOW_MS;
 
-		try {
-			const result = await this.#redis.eval(
-				SLIDING_WINDOW_SCRIPT,
-				2,
-				key,
-				reservationKey,
-				now,
-				windowStart,
-				GENERAL.MAX,
-				GENERAL.WINDOW_MS,
-				reservationId ?? "",
-				RESERVATION_TTL_MS,
-			);
+    try {
+      const result = await this.#redis.eval(
+        SLIDING_WINDOW_SCRIPT,
+        2,
+        key,
+        reservationKey,
+        now,
+        windowStart,
+        GENERAL.MAX,
+        GENERAL.WINDOW_MS,
+        reservationId ?? "",
+        RESERVATION_TTL_MS,
+      );
 
-			return result === 1;
-		} catch (error) {
-			this.#errorSampler.warn("PUSH_RATE_LIMIT", error);
-			// fail-open: Redis 장애 시 발송 허용
-			return false;
-		}
-	}
+      return result === 1;
+    } catch (error) {
+      this.#errorSampler.warn("PUSH_RATE_LIMIT", error);
+      // fail-open: Redis 장애 시 발송 허용
+      return false;
+    }
+  }
 
-	async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
-		return this.#reserveEngagement(
-			request.userId,
-			request.localDate,
-			this.#reservationId(request.dispatchId),
-		);
-	}
+  async reserveEngagement(request: EngagementPushRateLimitRequest): Promise<boolean> {
+    return this.#reserveEngagement(
+      request.userId,
+      request.localDate,
+      this.#reservationId(request.dispatchId),
+    );
+  }
 
-	/** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
-	async isEngagementRateLimited(
-		userId: string,
-		localDate: string,
-		reservationId?: string,
-	): Promise<boolean> {
-		return this.#reserveEngagement(userId, localDate, reservationId);
-	}
+  /** @deprecated 테스트 호환 전용. 애플리케이션 포트에서는 dispatchId 기반 API를 사용한다. */
+  async isEngagementRateLimited(
+    userId: string,
+    localDate: string,
+    reservationId?: string,
+  ): Promise<boolean> {
+    return this.#reserveEngagement(userId, localDate, reservationId);
+  }
 
-	async #reserveEngagement(
-		userId: string,
-		localDate: string,
-		reservationId?: string,
-	): Promise<boolean> {
-		const key = PushRateLimiterKeys.engagement(userId, localDate);
-		const reservationKey = reservationId
-			? PushRateLimiterKeys.engagementReservation(userId, reservationId)
-			: PushRateLimiterKeys.reservationPlaceholder("engagement");
-		try {
-			const result = await this.#redis.eval(
-				ENGAGEMENT_LIMIT_SCRIPT,
-				2,
-				key,
-				reservationKey,
-				Date.now(),
-				ENGAGEMENT.MIN_INTERVAL_MS,
-				ENGAGEMENT.DAILY_MAX,
-				ENGAGEMENT.TTL_SECONDS,
-				reservationId ?? "",
-				RESERVATION_TTL_MS,
-			);
-			return result === 1;
-		} catch (error) {
-			this.#errorSampler.warn("PUSH_ENGAGEMENT_LIMIT", error);
-			return false;
-		}
-	}
+  async #reserveEngagement(
+    userId: string,
+    localDate: string,
+    reservationId?: string,
+  ): Promise<boolean> {
+    const key = PushRateLimiterKeys.engagement(userId, localDate);
+    const reservationKey = reservationId
+      ? PushRateLimiterKeys.engagementReservation(userId, reservationId)
+      : PushRateLimiterKeys.reservationPlaceholder("engagement");
+    try {
+      const result = await this.#redis.eval(
+        ENGAGEMENT_LIMIT_SCRIPT,
+        2,
+        key,
+        reservationKey,
+        Date.now(),
+        ENGAGEMENT.MIN_INTERVAL_MS,
+        ENGAGEMENT.DAILY_MAX,
+        ENGAGEMENT.TTL_SECONDS,
+        reservationId ?? "",
+        RESERVATION_TTL_MS,
+      );
+      return result === 1;
+    } catch (error) {
+      this.#errorSampler.warn("PUSH_ENGAGEMENT_LIMIT", error);
+      return false;
+    }
+  }
 
-	async reserveBatch(
-		requests: readonly (PushRateLimitRequest | LegacyPushRateLimitRequest)[],
-	): Promise<readonly boolean[]> {
-		if (requests.length === 0) return [];
+  async reserveBatch(
+    requests: readonly (PushRateLimitRequest | LegacyPushRateLimitRequest)[],
+  ): Promise<readonly boolean[]> {
+    if (requests.length === 0) return [];
 
-		const now = Date.now();
-		const keys = requests.flatMap((request, index) => {
-			const reservationId =
-				"dispatchId" in request ? this.#reservationId(request.dispatchId) : request.reservationId;
-			return [
-				PushRateLimiterKeys.general(request.userId),
-				request.engagementLocalDate
-					? PushRateLimiterKeys.engagement(request.userId, request.engagementLocalDate)
-					: PushRateLimiterKeys.engagementPlaceholder(index),
-				reservationId
-					? PushRateLimiterKeys.generalReservation(request.userId, reservationId)
-					: PushRateLimiterKeys.reservationPlaceholder("general", index),
-				reservationId
-					? PushRateLimiterKeys.engagementReservation(request.userId, reservationId)
-					: PushRateLimiterKeys.reservationPlaceholder("engagement", index),
-			];
-		});
-		const engagementFlags = requests.map((request) => (request.engagementLocalDate ? 1 : 0));
-		const reservationIds = requests.map((request) =>
-			"dispatchId" in request
-				? this.#reservationId(request.dispatchId)
-				: (request.reservationId ?? ""),
-		);
+    const now = Date.now();
+    const keys = requests.flatMap((request, index) => {
+      const reservationId =
+        "dispatchId" in request ? this.#reservationId(request.dispatchId) : request.reservationId;
+      return [
+        PushRateLimiterKeys.general(request.userId),
+        request.engagementLocalDate
+          ? PushRateLimiterKeys.engagement(request.userId, request.engagementLocalDate)
+          : PushRateLimiterKeys.engagementPlaceholder(index),
+        reservationId
+          ? PushRateLimiterKeys.generalReservation(request.userId, reservationId)
+          : PushRateLimiterKeys.reservationPlaceholder("general", index),
+        reservationId
+          ? PushRateLimiterKeys.engagementReservation(request.userId, reservationId)
+          : PushRateLimiterKeys.reservationPlaceholder("engagement", index),
+      ];
+    });
+    const engagementFlags = requests.map((request) => (request.engagementLocalDate ? 1 : 0));
+    const reservationIds = requests.map((request) =>
+      "dispatchId" in request
+        ? this.#reservationId(request.dispatchId)
+        : (request.reservationId ?? ""),
+    );
 
-		try {
-			const result = await this.#redis.eval(
-				BATCH_LIMIT_SCRIPT,
-				keys.length,
-				...keys,
-				now,
-				now - GENERAL.WINDOW_MS,
-				GENERAL.MAX,
-				GENERAL.WINDOW_MS,
-				ENGAGEMENT.MIN_INTERVAL_MS,
-				ENGAGEMENT.DAILY_MAX,
-				ENGAGEMENT.TTL_SECONDS,
-				RESERVATION_TTL_MS,
-				...engagementFlags,
-				...reservationIds,
-			);
-			if (!isRateLimitResult(result, requests.length)) {
-				this.#errorSampler.warn(
-					"PUSH_BATCH_RATE_LIMIT",
-					new Error("Redis rate-limit batch returned an invalid result"),
-				);
-				return requests.map(() => false);
-			}
-			return result.map((item) => item === 1);
-		} catch (error) {
-			this.#errorSampler.warn("PUSH_BATCH_RATE_LIMIT", error);
-			return requests.map(() => false);
-		}
-	}
+    try {
+      const result = await this.#redis.eval(
+        BATCH_LIMIT_SCRIPT,
+        keys.length,
+        ...keys,
+        now,
+        now - GENERAL.WINDOW_MS,
+        GENERAL.MAX,
+        GENERAL.WINDOW_MS,
+        ENGAGEMENT.MIN_INTERVAL_MS,
+        ENGAGEMENT.DAILY_MAX,
+        ENGAGEMENT.TTL_SECONDS,
+        RESERVATION_TTL_MS,
+        ...engagementFlags,
+        ...reservationIds,
+      );
+      if (!isRateLimitResult(result, requests.length)) {
+        this.#errorSampler.warn(
+          "PUSH_BATCH_RATE_LIMIT",
+          new Error("Redis rate-limit batch returned an invalid result"),
+        );
+        return requests.map(() => false);
+      }
+      return result.map((item) => item === 1);
+    } catch (error) {
+      this.#errorSampler.warn("PUSH_BATCH_RATE_LIMIT", error);
+      return requests.map(() => false);
+    }
+  }
 
-	#reservationId(dispatchId: number): string {
-		return `push-dispatch-${dispatchId}`;
-	}
+  #reservationId(dispatchId: number): string {
+    return `push-dispatch-${dispatchId}`;
+  }
 }

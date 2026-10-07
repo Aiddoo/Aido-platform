@@ -12,20 +12,20 @@ const USER_TAG_PATTERN = /^[A-Z0-9]{8}$/;
  * 도메인 경계에서도 형식을 강제해 방어한다(동일 정규식이라 유효 입력은 통과).
  */
 export class UserTag {
-	private constructor(private readonly tag: string) {}
+  private constructor(private readonly tag: string) {}
 
-	static of(value: string): UserTag {
-		if (!USER_TAG_PATTERN.test(value)) {
-			throw new DomainException(ErrorCode.SYS_0002, { userTag: value });
-		}
-		return new UserTag(value);
-	}
+  static of(value: string): UserTag {
+    if (!USER_TAG_PATTERN.test(value)) {
+      throw new DomainException(ErrorCode.SYS_0002, { userTag: value });
+    }
+    return new UserTag(value);
+  }
 
-	get value(): string {
-		return this.tag;
-	}
+  get value(): string {
+    return this.tag;
+  }
 
-	equals(other: UserTag): boolean {
-		return this.tag === other.tag;
-	}
+  equals(other: UserTag): boolean {
+    return this.tag === other.tag;
+  }
 }

@@ -5,22 +5,22 @@ import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
 import {
-	buildDailyCompletionsRange,
-	type DailyCompletionsRange,
+  buildDailyCompletionsRange,
+  type DailyCompletionsRange,
 } from "../../../domain/daily-completion.js";
 import {
-	DAILY_COMPLETION_CACHE,
-	type DailyCompletionCachePort,
+  DAILY_COMPLETION_CACHE,
+  type DailyCompletionCachePort,
 } from "../../ports/daily-completion-cache.port.js";
 import {
-	TODO_COMPLETION_REPOSITORY,
-	type TodoCompletionRepositoryPort,
+  TODO_COMPLETION_REPOSITORY,
+  type TodoCompletionRepositoryPort,
 } from "../../ports/todo-completion.repository.port.js";
 
 export interface GetDailyCompletionsInput {
-	userId: string;
-	startDate: string;
-	endDate: string;
+  userId: string;
+  startDate: string;
+  endDate: string;
 }
 
 /**
@@ -30,40 +30,40 @@ export interface GetDailyCompletionsInput {
  */
 @Injectable()
 export class GetDailyCompletionsUseCase {
-	constructor(
-		@Inject(TODO_COMPLETION_REPOSITORY)
-		private readonly repository: TodoCompletionRepositoryPort,
-		@Inject(DAILY_COMPLETION_CACHE)
-		private readonly cache: DailyCompletionCachePort,
-	) {}
+  constructor(
+    @Inject(TODO_COMPLETION_REPOSITORY)
+    private readonly repository: TodoCompletionRepositoryPort,
+    @Inject(DAILY_COMPLETION_CACHE)
+    private readonly cache: DailyCompletionCachePort,
+  ) {}
 
-	async execute(input: GetDailyCompletionsInput): Promise<DailyCompletionsRange> {
-		const start = parseDateOnly(input.startDate);
-		const endInclusive = parseDateOnly(input.endDate);
+  async execute(input: GetDailyCompletionsInput): Promise<DailyCompletionsRange> {
+    const start = parseDateOnly(input.startDate);
+    const endInclusive = parseDateOnly(input.endDate);
 
-		// 캐시 키 세그먼트는 파싱된 날짜를 YYYY-MM-DD로 정규화해 사용
-		const startKey = toDateString(start);
-		const endKey = toDateString(endInclusive);
+    // 캐시 키 세그먼트는 파싱된 날짜를 YYYY-MM-DD로 정규화해 사용
+    const startKey = toDateString(start);
+    const endKey = toDateString(endInclusive);
 
-		const cached = await this.cache.getRange(input.userId, startKey, endKey);
-		if (cached !== undefined) {
-			return cached;
-		}
+    const cached = await this.cache.getRange(input.userId, startKey, endKey);
+    if (cached !== undefined) {
+      return cached;
+    }
 
-		// 조회 범위를 반열림 구간 [start, end)로 변환 (종료일 포함 위해 +1일)
-		const aggregates = await this.repository.aggregateByDateRange({
-			userId: input.userId,
-			startDate: start,
-			endDate: addDays(1, endInclusive),
-		});
+    // 조회 범위를 반열림 구간 [start, end)로 변환 (종료일 포함 위해 +1일)
+    const aggregates = await this.repository.aggregateByDateRange({
+      userId: input.userId,
+      startDate: start,
+      endDate: addDays(1, endInclusive),
+    });
 
-		const result = buildDailyCompletionsRange(aggregates, {
-			startDate: input.startDate,
-			endDate: input.endDate,
-		});
+    const result = buildDailyCompletionsRange(aggregates, {
+      startDate: input.startDate,
+      endDate: input.endDate,
+    });
 
-		await this.cache.setRange(input.userId, startKey, endKey, result);
+    await this.cache.setRange(input.userId, startKey, endKey, result);
 
-		return result;
-	}
+    return result;
+  }
 }

@@ -10,17 +10,17 @@ import type { FriendPort } from "#api/daily-completion/application/ports/friend.
  * 개별 메서드 mock API는 `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createDailyCompletionCacheMock(): DailyCompletionCachePort {
-	return {
-		getRange: vi.fn(),
-		setRange: vi.fn(),
-		getPublicRange: vi.fn(),
-		setPublicRange: vi.fn(),
-		invalidate: vi.fn(),
-	};
+  return {
+    getRange: vi.fn(),
+    setRange: vi.fn(),
+    getPublicRange: vi.fn(),
+    setPublicRange: vi.fn(),
+    invalidate: vi.fn(),
+  };
 }
 
 export function createDailyCompletionFriendMock(): FriendPort {
-	return {
-		isMutualFriend: vi.fn(),
-	};
+  return {
+    isMutualFriend: vi.fn(),
+  };
 }

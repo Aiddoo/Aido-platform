@@ -9,8 +9,8 @@ const KMA_BASE_TIMES = ["0200", "0500", "0800", "1100", "1400", "1700", "2000", 
 
 /** 기상청 API base_date + base_time 쌍 */
 export interface KmaBaseDateTime {
-	baseDate: string; // YYYYMMDD
-	baseTime: string; // HHmm
+  baseDate: string; // YYYYMMDD
+  baseTime: string; // HHmm
 }
 
 /**
@@ -20,27 +20,27 @@ export interface KmaBaseDateTime {
  * - 자정~02:14: 전날 23시 발표 → base_date도 하루 전으로 보정
  */
 export function getKmaBaseDateTime(date: Date): KmaBaseDateTime {
-	const hours = date.getHours();
-	const minutes = date.getMinutes();
-	const currentTime = hours * 100 + minutes;
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const currentTime = hours * 100 + minutes;
 
-	const availableTimes = KMA_BASE_TIMES.filter((bt) => {
-		const btNum = Number.parseInt(bt, 10);
-		return currentTime >= btNum + 15;
-	});
+  const availableTimes = KMA_BASE_TIMES.filter((bt) => {
+    const btNum = Number.parseInt(bt, 10);
+    return currentTime >= btNum + 15;
+  });
 
-	if (availableTimes.length === 0) {
-		// 자정~02:14: 전날 23시 발표 데이터 → base_date도 하루 전
-		const yesterday = new Date(date);
-		yesterday.setDate(yesterday.getDate() - 1);
-		return {
-			baseDate: toCompactDateString(yesterday),
-			baseTime: "2300",
-		};
-	}
+  if (availableTimes.length === 0) {
+    // 자정~02:14: 전날 23시 발표 데이터 → base_date도 하루 전
+    const yesterday = new Date(date);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return {
+      baseDate: toCompactDateString(yesterday),
+      baseTime: "2300",
+    };
+  }
 
-	return {
-		baseDate: toCompactDateString(date),
-		baseTime: availableTimes.at(-1) ?? "2300",
-	};
+  return {
+    baseDate: toCompactDateString(date),
+    baseTime: availableTimes.at(-1) ?? "2300",
+  };
 }

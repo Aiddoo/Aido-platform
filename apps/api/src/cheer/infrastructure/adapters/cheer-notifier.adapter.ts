@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
-	CheerNotifierPort,
-	CheerSentNotification,
+  CheerNotifierPort,
+  CheerSentNotification,
 } from "../../application/ports/cheer-notifier.port.js";
 
 /**
@@ -12,9 +12,9 @@ import type {
  */
 @Injectable()
 export class CheerNotifierAdapter implements CheerNotifierPort {
-	constructor(private readonly queue: NotificationQueueService) {}
+  constructor(private readonly queue: NotificationQueueService) {}
 
-	notifyCheerSent(payload: CheerSentNotification): void {
-		this.queue.enqueueCheerSent(payload);
-	}
+  notifyCheerSent(payload: CheerSentNotification): void {
+    this.queue.enqueueCheerSent(payload);
+  }
 }

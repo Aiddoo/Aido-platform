@@ -3,8 +3,8 @@ import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@ne
 import type { IDedupProvider } from "../interfaces/dedup.interface.js";
 
 interface DedupEntry {
-	members: Set<string>;
-	expiresAt: number;
+  members: Set<string>;
+  expiresAt: number;
 }
 
 /**
@@ -17,70 +17,70 @@ interface DedupEntry {
  */
 @Injectable()
 export class InMemoryDedupAdapter implements IDedupProvider, OnModuleDestroy, OnModuleInit {
-	readonly #logger = new Logger(InMemoryDedupAdapter.name);
-	readonly #sets = new Map<string, DedupEntry>();
-	#cleanupInterval: NodeJS.Timeout | undefined;
+  readonly #logger = new Logger(InMemoryDedupAdapter.name);
+  readonly #sets = new Map<string, DedupEntry>();
+  #cleanupInterval: NodeJS.Timeout | undefined;
 
-	onModuleInit(): void {
-		this.#cleanupInterval = setInterval(() => this.#cleanup(), 60_000);
-		this.#logger.warn(
-			"Using in-memory dedup provider — SINGLE INSTANCE ONLY. " +
-				"Set CACHE_TYPE=redis for multi-instance deployments.",
-		);
-	}
+  onModuleInit(): void {
+    this.#cleanupInterval = setInterval(() => this.#cleanup(), 60_000);
+    this.#logger.warn(
+      "Using in-memory dedup provider — SINGLE INSTANCE ONLY. " +
+        "Set CACHE_TYPE=redis for multi-instance deployments.",
+    );
+  }
 
-	onModuleDestroy(): void {
-		clearInterval(this.#cleanupInterval);
-	}
+  onModuleDestroy(): void {
+    clearInterval(this.#cleanupInterval);
+  }
 
-	async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
-		const entry = this.#getValid(setKey);
-		if (!entry) return new Set();
-		return new Set(members.filter((m) => entry.members.has(m)));
-	}
+  async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
+    const entry = this.#getValid(setKey);
+    if (!entry) return new Set();
+    return new Set(members.filter((m) => entry.members.has(m)));
+  }
 
-	async isMember(setKey: string, member: string): Promise<boolean> {
-		return this.#getValid(setKey)?.members.has(member) ?? false;
-	}
+  async isMember(setKey: string, member: string): Promise<boolean> {
+    return this.#getValid(setKey)?.members.has(member) ?? false;
+  }
 
-	async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
-		if (members.length === 0) return;
+  async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
+    if (members.length === 0) return;
 
-		let entry = this.#getValid(setKey);
-		if (!entry) {
-			entry = { members: new Set(), expiresAt: Date.now() + ttlMs };
-			this.#sets.set(setKey, entry);
-		}
-		for (const m of members) entry.members.add(m);
-		entry.expiresAt = Date.now() + ttlMs;
-	}
+    let entry = this.#getValid(setKey);
+    if (!entry) {
+      entry = { members: new Set(), expiresAt: Date.now() + ttlMs };
+      this.#sets.set(setKey, entry);
+    }
+    for (const m of members) entry.members.add(m);
+    entry.expiresAt = Date.now() + ttlMs;
+  }
 
-	// === Private 헬퍼 ===
-	#getValid(key: string): DedupEntry | undefined {
-		const entry = this.#sets.get(key);
-		if (!entry) return undefined;
+  // === Private 헬퍼 ===
+  #getValid(key: string): DedupEntry | undefined {
+    const entry = this.#sets.get(key);
+    if (!entry) return undefined;
 
-		if (Date.now() > entry.expiresAt) {
-			this.#sets.delete(key);
-			return undefined;
-		}
+    if (Date.now() > entry.expiresAt) {
+      this.#sets.delete(key);
+      return undefined;
+    }
 
-		return entry;
-	}
+    return entry;
+  }
 
-	#cleanup(): void {
-		const now = Date.now();
-		let cleaned = 0;
+  #cleanup(): void {
+    const now = Date.now();
+    let cleaned = 0;
 
-		for (const [key, entry] of this.#sets) {
-			if (now > entry.expiresAt) {
-				this.#sets.delete(key);
-				cleaned++;
-			}
-		}
+    for (const [key, entry] of this.#sets) {
+      if (now > entry.expiresAt) {
+        this.#sets.delete(key);
+        cleaned++;
+      }
+    }
 
-		if (cleaned > 0) {
-			this.#logger.debug(`DEDUP_CLEANUP ${cleaned} expired entries`);
-		}
-	}
+    if (cleaned > 0) {
+      this.#logger.debug(`DEDUP_CLEANUP ${cleaned} expired entries`);
+    }
+  }
 }

@@ -10,11 +10,11 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoUpdatedEvent {
-	readonly eventName = TODO_EVENTS.UPDATED;
+  readonly eventName = TODO_EVENTS.UPDATED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-		public readonly completed: boolean,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+    public readonly completed: boolean,
+  ) {}
 }

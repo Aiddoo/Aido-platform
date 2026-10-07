@@ -1,15 +1,15 @@
 import {
-	dailyCompletionSummarySchema,
-	dailyCompletionsRangeResponseSchema,
+  dailyCompletionSummarySchema,
+  dailyCompletionsRangeResponseSchema,
 } from "@aido/validators";
 import type { z } from "zod";
 
 export const DailyCompletionSummaryDto = dailyCompletionSummarySchema.meta({
-	id: "DailyCompletionSummaryDto",
+  id: "DailyCompletionSummaryDto",
 });
 export type DailyCompletionSummaryDto = z.infer<typeof DailyCompletionSummaryDto>;
 
 export const DailyCompletionsRangeResponseDto = dailyCompletionsRangeResponseSchema.meta({
-	id: "DailyCompletionsRangeResponseDto",
+  id: "DailyCompletionsRangeResponseDto",
 });
 export type DailyCompletionsRangeResponseDto = z.infer<typeof DailyCompletionsRangeResponseDto>;

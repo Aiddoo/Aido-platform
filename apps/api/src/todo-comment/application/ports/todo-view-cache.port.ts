@@ -8,5 +8,5 @@ export const TODO_VIEW_CACHE = Symbol("TODO_VIEW_CACHE");
  * 어느 키인지, 소유자가 누구인지는 알 필요도 없고 알아서도 안 된다.
  */
 export interface TodoViewCachePort {
-	invalidateForTodo(todoId: number): Promise<void>;
+  invalidateForTodo(todoId: number): Promise<void>;
 }

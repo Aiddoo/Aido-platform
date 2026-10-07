@@ -9,9 +9,9 @@ import type { CategoryOwnershipPort } from "../../application/ports/category-own
  */
 @Injectable()
 export class CategoryOwnershipAdapter implements CategoryOwnershipPort {
-	constructor(private readonly todoCategoryReader: TodoCategoryReader) {}
+  constructor(private readonly todoCategoryReader: TodoCategoryReader) {}
 
-	async validateOwnership(categoryId: number, userId: string): Promise<void> {
-		await this.todoCategoryReader.validateOwnership(categoryId, userId);
-	}
+  async validateOwnership(categoryId: number, userId: string): Promise<void> {
+    await this.todoCategoryReader.validateOwnership(categoryId, userId);
+  }
 }

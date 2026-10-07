@@ -4,20 +4,20 @@ import { Inject, Injectable } from "@nestjs/common";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	toWeeklyAchievementView,
-	type WeekLabelLocale,
-	type WeeklyAchievementView,
+  toWeeklyAchievementView,
+  type WeekLabelLocale,
+  type WeeklyAchievementView,
 } from "../../../domain/weekly-achievement.js";
 import {
-	WEEKLY_ACHIEVEMENT_REPOSITORY,
-	type WeeklyAchievementRepositoryPort,
+  WEEKLY_ACHIEVEMENT_REPOSITORY,
+  type WeeklyAchievementRepositoryPort,
 } from "../../ports/weekly-achievement.repository.port.js";
 
 export interface GetWeeklyAchievementInput {
-	userId: string;
-	year: number;
-	week: number;
-	locale: WeekLabelLocale;
+  userId: string;
+  year: number;
+  week: number;
+  locale: WeekLabelLocale;
 }
 
 /**
@@ -25,23 +25,23 @@ export interface GetWeeklyAchievementInput {
  */
 @Injectable()
 export class GetWeeklyAchievementUseCase {
-	constructor(
-		@Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
-		private readonly repository: WeeklyAchievementRepositoryPort,
-	) {}
+  constructor(
+    @Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
+    private readonly repository: WeeklyAchievementRepositoryPort,
+  ) {}
 
-	async execute(input: GetWeeklyAchievementInput): Promise<WeeklyAchievementView> {
-		const { userId, year, week, locale } = input;
+  async execute(input: GetWeeklyAchievementInput): Promise<WeeklyAchievementView> {
+    const { userId, year, week, locale } = input;
 
-		const row = await this.repository.findByYearAndWeek(userId, year, week);
+    const row = await this.repository.findByYearAndWeek(userId, year, week);
 
-		if (!row) {
-			throw new ApplicationException(ErrorCode.ACHIEVEMENT_1801, {
-				year,
-				week,
-			});
-		}
+    if (!row) {
+      throw new ApplicationException(ErrorCode.ACHIEVEMENT_1801, {
+        year,
+        week,
+      });
+    }
 
-		return toWeeklyAchievementView(row, locale);
-	}
+    return toWeeklyAchievementView(row, locale);
+  }
 }

@@ -13,7 +13,7 @@ import { PushReceiptScheduler } from "./push-receipt.scheduler.js";
  * - NotificationModule은 이 모듈을 import하여 Processor와 함께 구성
  */
 @Module({
-	providers: [NotificationQueueService, PushReceiptScheduler],
-	exports: [NotificationQueueService],
+  providers: [NotificationQueueService, PushReceiptScheduler],
+  exports: [NotificationQueueService],
 })
 export class NotificationQueueModule {}

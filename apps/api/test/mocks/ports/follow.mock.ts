@@ -13,49 +13,49 @@ import type { FollowRepositoryPort } from "#api/follow/application/ports/follow.
  */
 
 export function createFollowRepositoryMock(): FollowRepositoryPort {
-	return {
-		create: vi.fn(),
-		findByFollowerAndFollowing: vi.fn(),
-		findByIdWithUser: vi.fn(),
-		update: vi.fn(),
-		updateByFollowerAndFollowing: vi.fn(),
-		delete: vi.fn(),
-		findMutualFriends: vi.fn(),
-		findReceivedRequests: vi.fn(),
-		findSentRequests: vi.fn(),
-		searchUsers: vi.fn(),
-		countSearchUsers: vi.fn(),
-		findAcceptedByIdAndFollowerId: vi.fn(),
-		getMaxSortOrderForFriends: vi.fn(),
-		shiftFriendSortOrders: vi.fn(),
-		updateFollowSortOrder: vi.fn(),
-		isMutualFriend: vi.fn(),
-		countMutualFriends: vi.fn(),
-		countReceivedRequests: vi.fn(),
-		countSentRequests: vi.fn(),
-		userExists: vi.fn(),
-		getUserDisplayName: vi.fn(),
-		findUserByTag: vi.fn(),
-		getMutualFriendIds: vi.fn(),
-	};
+  return {
+    create: vi.fn(),
+    findByFollowerAndFollowing: vi.fn(),
+    findByIdWithUser: vi.fn(),
+    update: vi.fn(),
+    updateByFollowerAndFollowing: vi.fn(),
+    delete: vi.fn(),
+    findMutualFriends: vi.fn(),
+    findReceivedRequests: vi.fn(),
+    findSentRequests: vi.fn(),
+    searchUsers: vi.fn(),
+    countSearchUsers: vi.fn(),
+    findAcceptedByIdAndFollowerId: vi.fn(),
+    getMaxSortOrderForFriends: vi.fn(),
+    shiftFriendSortOrders: vi.fn(),
+    updateFollowSortOrder: vi.fn(),
+    isMutualFriend: vi.fn(),
+    countMutualFriends: vi.fn(),
+    countReceivedRequests: vi.fn(),
+    countSentRequests: vi.fn(),
+    userExists: vi.fn(),
+    getUserDisplayName: vi.fn(),
+    findUserByTag: vi.fn(),
+    getMutualFriendIds: vi.fn(),
+  };
 }
 
 export function createFollowNotifierMock(): FollowNotifierPort {
-	return {
-		notifyFollowNew: vi.fn(),
-		notifyFollowMutual: vi.fn(),
-		notifyFirstFriendMilestone: vi.fn(),
-	};
+  return {
+    notifyFollowNew: vi.fn(),
+    notifyFollowMutual: vi.fn(),
+    notifyFirstFriendMilestone: vi.fn(),
+  };
 }
 
 export function createFollowCacheMock(): FollowCachePort {
-	return {
-		getMutualFriend: vi.fn(),
-		setMutualFriend: vi.fn(),
-		invalidateMutualFriend: vi.fn(),
-		wrapMutualFriendIds: vi.fn(),
-		invalidateMutualFriendIds: vi.fn(),
-		wrapFriendCount: vi.fn(),
-		invalidateFriendCount: vi.fn(),
-	};
+  return {
+    getMutualFriend: vi.fn(),
+    setMutualFriend: vi.fn(),
+    invalidateMutualFriend: vi.fn(),
+    wrapMutualFriendIds: vi.fn(),
+    invalidateMutualFriendIds: vi.fn(),
+    wrapFriendCount: vi.fn(),
+    invalidateFriendCount: vi.fn(),
+  };
 }

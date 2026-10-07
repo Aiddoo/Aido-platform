@@ -12,112 +12,112 @@ import { createWeatherCacheMock } from "#test/mocks/ports/index";
 import { UserLocation } from "../../../domain/entities/user-location.entity.js";
 import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port.js";
 import {
-	WEATHER_LOCATION_REPOSITORY,
-	type WeatherLocationRepositoryPort,
+  WEATHER_LOCATION_REPOSITORY,
+  type WeatherLocationRepositoryPort,
 } from "../../ports/weather-location.repository.port.js";
 import { UpsertLocationUseCase } from "./upsert-location.use-case.js";
 
 function reconstitute(
-	userId: string,
-	latitude: number,
-	longitude: number,
-	gridX: number,
-	gridY: number,
+  userId: string,
+  latitude: number,
+  longitude: number,
+  gridX: number,
+  gridY: number,
 ): UserLocation {
-	return UserLocation.reconstitute({
-		userId,
-		latitude,
-		longitude,
-		gridX,
-		gridY,
-	});
+  return UserLocation.reconstitute({
+    userId,
+    latitude,
+    longitude,
+    gridX,
+    gridY,
+  });
 }
 
 describe("UpsertLocationUseCase — 위치 등록/수정 use-case", () => {
-	let useCase: UpsertLocationUseCase;
-	let repository: Mocked<WeatherLocationRepositoryPort>;
-	let cache: Mocked<WeatherCachePort>;
+  let useCase: UpsertLocationUseCase;
+  let repository: Mocked<WeatherLocationRepositoryPort>;
+  let cache: Mocked<WeatherCachePort>;
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(UpsertLocationUseCase)
-			.mock<WeatherCachePort>(WEATHER_CACHE)
-			.impl(() => createWeatherCacheMock())
-			.compile();
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(UpsertLocationUseCase)
+      .mock<WeatherCachePort>(WEATHER_CACHE)
+      .impl(() => createWeatherCacheMock())
+      .compile();
 
-		useCase = unit;
-		repository = unitRef.get(WEATHER_LOCATION_REPOSITORY);
-		cache = unitRef.get<WeatherCachePort>(WEATHER_CACHE);
-	});
+    useCase = unit;
+    repository = unitRef.get(WEATHER_LOCATION_REPOSITORY);
+    cache = unitRef.get<WeatherCachePort>(WEATHER_CACHE);
+  });
 
-	it("좌표 불변식을 검증하고 저장 결과를 반환한다", async () => {
-		// Given
-		const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
-		repository.findByUserId.mockResolvedValue(null);
-		repository.upsert.mockResolvedValue(saved);
+  it("좌표 불변식을 검증하고 저장 결과를 반환한다", async () => {
+    // Given
+    const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
+    repository.findByUserId.mockResolvedValue(null);
+    repository.upsert.mockResolvedValue(saved);
 
-		// When
-		const result = await useCase.execute({
-			userId: "user-1",
-			latitude: 37.5665,
-			longitude: 126.978,
-		});
+    // When
+    const result = await useCase.execute({
+      userId: "user-1",
+      latitude: 37.5665,
+      longitude: 126.978,
+    });
 
-		// Then
-		expect(result).toBe(saved);
-		expect(repository.upsert).toHaveBeenCalledTimes(1);
-		expect(cache.invalidateGrid).not.toHaveBeenCalled();
-	});
+    // Then
+    expect(result).toBe(saved);
+    expect(repository.upsert).toHaveBeenCalledTimes(1);
+    expect(cache.invalidateGrid).not.toHaveBeenCalled();
+  });
 
-	it("기존 위치가 없으면 캐시를 무효화하지 않는다", async () => {
-		// Given
-		const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
-		repository.findByUserId.mockResolvedValue(null);
-		repository.upsert.mockResolvedValue(saved);
+  it("기존 위치가 없으면 캐시를 무효화하지 않는다", async () => {
+    // Given
+    const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
+    repository.findByUserId.mockResolvedValue(null);
+    repository.upsert.mockResolvedValue(saved);
 
-		// When
-		await useCase.execute({
-			userId: "user-1",
-			latitude: 37.5665,
-			longitude: 126.978,
-		});
+    // When
+    await useCase.execute({
+      userId: "user-1",
+      latitude: 37.5665,
+      longitude: 126.978,
+    });
 
-		// Then
-		expect(cache.invalidateGrid).not.toHaveBeenCalled();
-	});
+    // Then
+    expect(cache.invalidateGrid).not.toHaveBeenCalled();
+  });
 
-	it("격자가 동일하면 캐시를 무효화하지 않는다", async () => {
-		// Given
-		const old = reconstitute("user-1", 37.5665, 126.978, 60, 127);
-		const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
-		repository.findByUserId.mockResolvedValue(old);
-		repository.upsert.mockResolvedValue(saved);
+  it("격자가 동일하면 캐시를 무효화하지 않는다", async () => {
+    // Given
+    const old = reconstitute("user-1", 37.5665, 126.978, 60, 127);
+    const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
+    repository.findByUserId.mockResolvedValue(old);
+    repository.upsert.mockResolvedValue(saved);
 
-		// When
-		await useCase.execute({
-			userId: "user-1",
-			latitude: 37.5665,
-			longitude: 126.978,
-		});
+    // When
+    await useCase.execute({
+      userId: "user-1",
+      latitude: 37.5665,
+      longitude: 126.978,
+    });
 
-		// Then
-		expect(cache.invalidateGrid).not.toHaveBeenCalled();
-	});
+    // Then
+    expect(cache.invalidateGrid).not.toHaveBeenCalled();
+  });
 
-	it("격자가 변경되면 구 격자 캐시를 무효화한다", async () => {
-		// Given
-		const old = reconstitute("user-1", 35.1796, 129.0756, 98, 76);
-		const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
-		repository.findByUserId.mockResolvedValue(old);
-		repository.upsert.mockResolvedValue(saved);
+  it("격자가 변경되면 구 격자 캐시를 무효화한다", async () => {
+    // Given
+    const old = reconstitute("user-1", 35.1796, 129.0756, 98, 76);
+    const saved = reconstitute("user-1", 37.5665, 126.978, 60, 127);
+    repository.findByUserId.mockResolvedValue(old);
+    repository.upsert.mockResolvedValue(saved);
 
-		// When
-		await useCase.execute({
-			userId: "user-1",
-			latitude: 37.5665,
-			longitude: 126.978,
-		});
+    // When
+    await useCase.execute({
+      userId: "user-1",
+      latitude: 37.5665,
+      longitude: 126.978,
+    });
 
-		// Then - 구 격자(98:76) 기준으로 패턴/latest/conditions 캐시 삭제
-		expect(cache.invalidateGrid).toHaveBeenCalledWith(98, 76);
-	});
+    // Then - 구 격자(98:76) 기준으로 패턴/latest/conditions 캐시 삭제
+    expect(cache.invalidateGrid).toHaveBeenCalledWith(98, 76);
+  });
 });

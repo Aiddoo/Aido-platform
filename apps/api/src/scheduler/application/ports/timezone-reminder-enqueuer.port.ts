@@ -15,18 +15,18 @@ export const TIMEZONE_REMINDER_ENQUEUER = Symbol("TIMEZONE_REMINDER_ENQUEUER");
  * 변경된 시간이 현재 로컬 시간과 같으면 즉시 리마인더를 보내기 위함.
  */
 export interface ReminderHourChangedJobData {
-	/** 사용자 ID */
-	readonly userId: string;
-	/** 사용자 타임존 (IANA) */
-	readonly timezone: string;
-	/** 변경된 아침 리마인더 시간 (undefined면 변경 안 됨) */
-	readonly morningReminderHour?: number;
-	/** 변경된 아침 리마인더 분 (undefined면 변경 안 됨) */
-	readonly morningReminderMinute?: number;
-	/** 변경된 저녁 리마인더 시간 (undefined면 변경 안 됨) */
-	readonly eveningReminderHour?: number;
-	/** 변경된 저녁 리마인더 분 (undefined면 변경 안 됨) */
-	readonly eveningReminderMinute?: number;
+  /** 사용자 ID */
+  readonly userId: string;
+  /** 사용자 타임존 (IANA) */
+  readonly timezone: string;
+  /** 변경된 아침 리마인더 시간 (undefined면 변경 안 됨) */
+  readonly morningReminderHour?: number;
+  /** 변경된 아침 리마인더 분 (undefined면 변경 안 됨) */
+  readonly morningReminderMinute?: number;
+  /** 변경된 저녁 리마인더 시간 (undefined면 변경 안 됨) */
+  readonly eveningReminderHour?: number;
+  /** 변경된 저녁 리마인더 분 (undefined면 변경 안 됨) */
+  readonly eveningReminderMinute?: number;
 }
 
 /**
@@ -35,27 +35,27 @@ export interface ReminderHourChangedJobData {
  * 저녁 리마인더 발송 90분 후 실행. 본인 미완료 + 친구 완료 시 활동 요약 알림 발송.
  */
 export interface SocialDigestJobData {
-	/** 사용자 타임존 (IANA) */
-	readonly timezone: string;
-	/**
-	 * 직전 저녁 리마인더를 실제로 받은 사용자 ID.
-	 * 배포 전에 등록된 지연 잡과의 런타임 호환을 위해 optional로 읽되,
-	 * 신규 enqueue에서는 아래 TargetedSocialDigestJobData로 필수화한다.
-	 */
-	readonly recipientUserIds?: readonly string[];
+  /** 사용자 타임존 (IANA) */
+  readonly timezone: string;
+  /**
+   * 직전 저녁 리마인더를 실제로 받은 사용자 ID.
+   * 배포 전에 등록된 지연 잡과의 런타임 호환을 위해 optional로 읽되,
+   * 신규 enqueue에서는 아래 TargetedSocialDigestJobData로 필수화한다.
+   */
+  readonly recipientUserIds?: readonly string[];
 }
 
 export interface TargetedSocialDigestJobData extends SocialDigestJobData {
-	readonly recipientUserIds: readonly string[];
+  readonly recipientUserIds: readonly string[];
 }
 
 export interface TimezoneReminderEnqueuerPort {
-	/** 매분 sweep 스케줄러 등록 (upsert — 멱등) */
-	registerSweepScheduler(): Promise<void>;
+  /** 매분 sweep 스케줄러 등록 (upsert — 멱등) */
+  registerSweepScheduler(): Promise<void>;
 
-	/** 리마인더 시간 변경 catch-up 잡 등록 (fire-and-forget) */
-	enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void;
+  /** 리마인더 시간 변경 catch-up 잡 등록 (fire-and-forget) */
+  enqueueReminderHourChanged(payload: ReminderHourChangedJobData): void;
 
-	/** Social Digest 지연 잡 등록 (저녁 리마인더 90분 후, fire-and-forget) */
-	enqueueSocialDigest(payload: TargetedSocialDigestJobData): void;
+  /** Social Digest 지연 잡 등록 (저녁 리마인더 90분 후, fire-and-forget) */
+  enqueueSocialDigest(payload: TargetedSocialDigestJobData): void;
 }

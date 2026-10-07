@@ -1,91 +1,91 @@
 import { ErrorCode } from "@aido/errors";
 import {
-	Header,
-	Headers,
-	Body,
-	Controller,
-	HttpCode,
-	HttpStatus,
-	Patch,
-	Post,
-	Req,
-	UseGuards,
+  Header,
+  Headers,
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
 import {
-	ChangePasswordUseCase,
-	LoginWithPasswordUseCase,
-	LogoutAllUseCase,
-	LogoutUseCase,
-	RefreshTokensUseCase,
-	RegisterUseCase,
-	RequestPasswordResetUseCase,
-	RequestPasswordSetupCodeUseCase,
-	ResendVerificationUseCase,
-	ResetPasswordUseCase,
-	SetPasswordUseCase,
-	VerifyEmailUseCase,
+  ChangePasswordUseCase,
+  LoginWithPasswordUseCase,
+  LogoutAllUseCase,
+  LogoutUseCase,
+  RefreshTokensUseCase,
+  RegisterUseCase,
+  RequestPasswordResetUseCase,
+  RequestPasswordSetupCodeUseCase,
+  ResendVerificationUseCase,
+  ResetPasswordUseCase,
+  SetPasswordUseCase,
+  VerifyEmailUseCase,
 } from "#api/auth/application/use-cases/index";
 import { JwtRefreshGuard } from "#api/auth/infrastructure/guards/index";
 import type { RefreshTokenPayload } from "#api/auth/infrastructure/strategies/jwt-refresh.strategy";
 import { AuthMapper } from "#api/auth/presentation/auth.mapper";
 import {
-	CurrentUser,
-	type CurrentUserPayload,
-	Public,
+  CurrentUser,
+  type CurrentUserPayload,
+  Public,
 } from "#api/auth/presentation/decorators/index";
 import {
-	ApiCreatedResponse,
-	ApiDoc,
-	ApiErrorResponse,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiCreatedResponse,
+  ApiDoc,
+  ApiErrorResponse,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import {
-	AuthTokensDto,
-	ChangePasswordDto,
-	ForgotPasswordDto,
-	LoginDto,
-	MessageResponseDto,
-	RefreshTokensDto,
-	RegisterDto,
-	ResendVerificationDto,
-	ResetPasswordDto,
-	SetPasswordDto,
-	VerifyEmailDto,
+  AuthTokensDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  LoginDto,
+  MessageResponseDto,
+  RefreshTokensDto,
+  RegisterDto,
+  ResendVerificationDto,
+  ResetPasswordDto,
+  SetPasswordDto,
+  VerifyEmailDto,
 } from "../dtos/index.js";
 import { extractMetadata } from "./auth-controller.utils.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @Controller("auth")
 export class AuthController {
-	constructor(
-		private readonly registerUseCase: RegisterUseCase,
-		private readonly verifyEmailUseCase: VerifyEmailUseCase,
-		private readonly resendVerificationUseCase: ResendVerificationUseCase,
-		private readonly loginWithPasswordUseCase: LoginWithPasswordUseCase,
-		private readonly logoutUseCase: LogoutUseCase,
-		private readonly logoutAllUseCase: LogoutAllUseCase,
-		private readonly refreshTokensUseCase: RefreshTokensUseCase,
-		private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
-		private readonly resetPasswordUseCase: ResetPasswordUseCase,
-		private readonly requestPasswordSetupCodeUseCase: RequestPasswordSetupCodeUseCase,
-		private readonly setPasswordUseCase: SetPasswordUseCase,
-		private readonly changePasswordUseCase: ChangePasswordUseCase,
-	) {}
+  constructor(
+    private readonly registerUseCase: RegisterUseCase,
+    private readonly verifyEmailUseCase: VerifyEmailUseCase,
+    private readonly resendVerificationUseCase: ResendVerificationUseCase,
+    private readonly loginWithPasswordUseCase: LoginWithPasswordUseCase,
+    private readonly logoutUseCase: LogoutUseCase,
+    private readonly logoutAllUseCase: LogoutAllUseCase,
+    private readonly refreshTokensUseCase: RefreshTokensUseCase,
+    private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly requestPasswordSetupCodeUseCase: RequestPasswordSetupCodeUseCase,
+    private readonly setPasswordUseCase: SetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
+  ) {}
 
-	@Post("register")
-	@Public()
-	@Throttle({ default: { ttl: 60000, limit: 5 } })
-	@ApiDoc({
-		summary: "회원가입",
-		operationId: "register",
-		description: `
+  @Post("register")
+  @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @ApiDoc({
+    summary: "회원가입",
+    operationId: "register",
+    description: `
 ## 📋 회원가입
 이메일/비밀번호로 계정 생성 후 인증 코드가 발송됩니다.
 
@@ -105,27 +105,27 @@ export class AuthController {
 |------|------|
 | EMAIL_0501 | 이미 가입된 이메일 |
 		`,
-	})
-	@ApiCreatedResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
-	async register(@Body({ schema: RegisterDto }) dto: RegisterDto, @Req() req: Request) {
-		const result = await this.registerUseCase.execute(dto, extractMetadata(req));
-		return AuthMapper.toRegisterResponse(result);
-	}
+  })
+  @ApiCreatedResponse({ type: MessageResponseDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
+  async register(@Body({ schema: RegisterDto }) dto: RegisterDto, @Req() req: Request) {
+    const result = await this.registerUseCase.execute(dto, extractMetadata(req));
+    return AuthMapper.toRegisterResponse(result);
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Post("verify-email")
-	@Public()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "이메일 인증 코드 확인",
-		operationId: "verifyEmail",
-		description: `
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Post("verify-email")
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "이메일 인증 코드 확인",
+    operationId: "verifyEmail",
+    description: `
 ## ✉️ 이메일 인증
 회원가입 시 발송된 6자리 인증 코드를 검증합니다. 성공 시 토큰이 발급됩니다.
 
@@ -147,29 +147,29 @@ export class AuthController {
 | EMAIL_0505 | 인증 코드 시도 횟수 초과 |
 | USER_0604 | 이미 인증 완료된 사용자 |
 		`,
-	})
-	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0502 })
-	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
-	@ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
-	async verifyEmail(
-		@Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto,
-		@Req() req: Request,
-		@Headers("x-app-version") appVersion?: string,
-	) {
-		const metadata = extractMetadata(req);
-		const result = await this.verifyEmailUseCase.execute(dto, metadata);
-		return AuthMapper.toAuthTokensResponse(result, appVersion);
-	}
+  })
+  @ApiSuccessResponse({ type: AuthTokensDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0502 })
+  @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
+  @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
+  async verifyEmail(
+    @Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto,
+    @Req() req: Request,
+    @Headers("x-app-version") appVersion?: string,
+  ) {
+    const metadata = extractMetadata(req);
+    const result = await this.verifyEmailUseCase.execute(dto, metadata);
+    return AuthMapper.toAuthTokensResponse(result, appVersion);
+  }
 
-	@Post("resend-verification")
-	@Public()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "인증 코드 재발송",
-		operationId: "resendVerificationCode",
-		description: `
+  @Post("resend-verification")
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "인증 코드 재발송",
+    operationId: "resendVerificationCode",
+    description: `
 ## 🔄 인증 코드 재발송
 인증 코드를 다시 발송합니다. 이전 코드는 무효화됩니다.
 
@@ -185,29 +185,29 @@ export class AuthController {
 | USER_0604 | 이미 인증 완료된 사용자 |
 | VERIFY_0753 | 재발송 쿨다운 (1분) |
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
-	async resendVerification(@Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto) {
-		const result = await this.resendVerificationUseCase.execute(dto.email);
-		return result;
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
+  async resendVerification(@Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto) {
+    const result = await this.resendVerificationUseCase.execute(dto.email);
+    return result;
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Post("login")
-	@Public()
-	@Throttle({ default: { ttl: 60000, limit: 10 } })
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "이메일 로그인",
-		operationId: "login",
-		description: `
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Post("login")
+  @Public()
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "이메일 로그인",
+    operationId: "login",
+    description: `
 ## 🔑 로그인
 이메일/비밀번호로 로그인 후 토큰을 발급받습니다.
 
@@ -238,30 +238,30 @@ export class AuthController {
 - 클라이언트는 이 플래그를 확인하여 "계정이 복구되었습니다" 안내 표시
 - 30일 경과 후에는 복구 불가 (USER_0606 에러)
 		`,
-	})
-	@ApiSuccessResponse({ type: AuthTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
-	async login(
-		@Body({ schema: LoginDto }) dto: LoginDto,
-		@Req() req: Request,
-		@Headers("x-app-version") appVersion?: string,
-	) {
-		const metadata = extractMetadata(req);
-		const result = await this.loginWithPasswordUseCase.execute(dto, metadata);
-		return AuthMapper.toAuthTokensResponse(result, appVersion);
-	}
+  })
+  @ApiSuccessResponse({ type: AuthTokensDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
+  async login(
+    @Body({ schema: LoginDto }) dto: LoginDto,
+    @Req() req: Request,
+    @Headers("x-app-version") appVersion?: string,
+  ) {
+    const metadata = extractMetadata(req);
+    const result = await this.loginWithPasswordUseCase.execute(dto, metadata);
+    return AuthMapper.toAuthTokensResponse(result, appVersion);
+  }
 
-	@Post("logout")
-	@ApiBearerAuth()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "로그아웃 (현재 기기)",
-		operationId: "logout",
-		description: `
+  @Post("logout")
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "로그아웃 (현재 기기)",
+    operationId: "logout",
+    description: `
 ## 🚪 로그아웃
 
 현재 세션을 종료합니다.
@@ -278,22 +278,22 @@ export class AuthController {
 모든 기기에서 로그아웃하려면:
 \`POST /auth/logout-all\` 사용
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
-		const metadata = extractMetadata(req);
-		await this.logoutUseCase.execute(user.userId, user.sessionId, metadata);
-		return AuthMapper.toMessageResponse("로그아웃되었습니다.");
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
+    const metadata = extractMetadata(req);
+    await this.logoutUseCase.execute(user.userId, user.sessionId, metadata);
+    return AuthMapper.toMessageResponse("로그아웃되었습니다.");
+  }
 
-	@Post("logout-all")
-	@ApiBearerAuth()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "전체 로그아웃 (모든 기기)",
-		operationId: "logoutAll",
-		description: `
+  @Post("logout-all")
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "전체 로그아웃 (모든 기기)",
+    operationId: "logoutAll",
+    description: `
 ## 🚪 전체 로그아웃
 
 모든 기기의 세션을 한 번에 종료합니다.
@@ -311,24 +311,24 @@ export class AuthController {
 - 기기 분실 시
 - 비밀번호 변경 후 전체 재로그인 유도 시
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async logoutAll(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
-		await this.logoutAllUseCase.execute(user.userId, extractMetadata(req));
-		return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async logoutAll(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
+    await this.logoutAllUseCase.execute(user.userId, extractMetadata(req));
+    return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
+  }
 
-	@Post("refresh")
-	@Public()
-	@Throttle({ default: { ttl: 60000, limit: 20 } })
-	@UseGuards(JwtRefreshGuard)
-	@ApiBearerAuth()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "토큰 갱신",
-		operationId: "refreshTokens",
-		description: `
+  @Post("refresh")
+  @Public()
+  @Throttle({ default: { ttl: 60000, limit: 20 } })
+  @UseGuards(JwtRefreshGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "토큰 갱신",
+    operationId: "refreshTokens",
+    description: `
 ## 🔄 토큰 갱신
 Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용)
 
@@ -345,33 +345,33 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 | AUTH_0104 | 유효하지 않은 토큰 | 재로그인 |
 | SESSION_0704 | 토큰 재사용 감지 | 전체 세션 무효화, 재로그인 |
 		`,
-	})
-	@ApiSuccessResponse({ type: RefreshTokensDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.AUTH_0104 })
-	@ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
-	async refresh(@Req() req: Request) {
-		const payload = req.user as RefreshTokenPayload;
-		const result = await this.refreshTokensUseCase.execute(
-			payload.refreshToken,
-			{
-				userId: payload.userId,
-				email: payload.email,
-				sessionId: payload.sessionId,
-				role: payload.role,
-			},
-			extractMetadata(req),
-		);
-		return AuthMapper.toRefreshTokensResponse(result);
-	}
+  })
+  @ApiSuccessResponse({ type: RefreshTokensDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.AUTH_0104 })
+  @ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
+  async refresh(@Req() req: Request) {
+    const payload = req.user as RefreshTokenPayload;
+    const result = await this.refreshTokensUseCase.execute(
+      payload.refreshToken,
+      {
+        userId: payload.userId,
+        email: payload.email,
+        sessionId: payload.sessionId,
+        role: payload.role,
+      },
+      extractMetadata(req),
+    );
+    return AuthMapper.toRefreshTokensResponse(result);
+  }
 
-	@Post("forgot-password")
-	@Public()
-	@Throttle({ default: { ttl: 60000, limit: 5 } })
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "비밀번호 재설정 - 코드 요청",
-		operationId: "forgotPassword",
-		description: `
+  @Post("forgot-password")
+  @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "비밀번호 재설정 - 코드 요청",
+    operationId: "forgotPassword",
+    description: `
 ## 🔑 비밀번호 재설정 — 1단계: 인증 코드 발송
 
 > **인증**: 불필요
@@ -388,23 +388,23 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 - 보안상 등록되지 않은 이메일이어도 동일한 성공 응답을 반환합니다 (이메일 존재 여부 노출 방지)
 - 소셜 로그인 사용자가 비밀번호를 **새로 설정**하려면 → \`POST /auth/password/setup-code\` (로그인 필요)
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	async forgotPassword(
-		@Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
-		@Req() req: Request,
-	) {
-		const result = await this.requestPasswordResetUseCase.execute(dto.email, extractMetadata(req));
-		return result;
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  async forgotPassword(
+    @Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
+    @Req() req: Request,
+  ) {
+    const result = await this.requestPasswordResetUseCase.execute(dto.email, extractMetadata(req));
+    return result;
+  }
 
-	@Post("reset-password")
-	@Public()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "비밀번호 재설정 - 새 비밀번호 설정",
-		operationId: "resetPassword",
-		description: `
+  @Post("reset-password")
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "비밀번호 재설정 - 새 비밀번호 설정",
+    operationId: "resetPassword",
+    description: `
 ## 🔑 비밀번호 재설정 — 2단계: 새 비밀번호 설정
 
 > **인증**: 불필요
@@ -429,26 +429,26 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 🔒 보안
 - 성공 시 모든 기존 세션이 무효화됩니다 (재로그인 필요)
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0752 })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
-	async resetPassword(@Body({ schema: ResetPasswordDto }) dto: ResetPasswordDto) {
-		const result = await this.resetPasswordUseCase.execute(dto.email, dto.code, dto.newPassword);
-		return result;
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0752 })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
+  async resetPassword(@Body({ schema: ResetPasswordDto }) dto: ResetPasswordDto) {
+    const result = await this.resetPasswordUseCase.execute(dto.email, dto.code, dto.newPassword);
+    return result;
+  }
 
-	@Post("password/setup-code")
-	@ApiBearerAuth()
-	@Throttle({ default: { ttl: 60000, limit: 5 } })
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "비밀번호 최초 설정 - 코드 요청",
-		operationId: "requestPasswordSetupCode",
-		description: `
+  @Post("password/setup-code")
+  @ApiBearerAuth()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "비밀번호 최초 설정 - 코드 요청",
+    operationId: "requestPasswordSetupCode",
+    description: `
 ## 🔑 비밀번호 설정 — 1단계: 인증 코드 발송
 
 > **인증**: Bearer 토큰 필요
@@ -471,22 +471,22 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 - 이미 비밀번호가 있는 사용자가 비밀번호를 **변경**하려면 → \`PATCH /auth/password\` (로그인 필요)
 - 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
-	async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
-		return this.requestPasswordSetupCodeUseCase.execute(user.userId);
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
+  async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
+    return this.requestPasswordSetupCodeUseCase.execute(user.userId);
+  }
 
-	@Post("password")
-	@ApiBearerAuth()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "비밀번호 최초 설정 - 비밀번호 생성",
-		operationId: "setPassword",
-		description: `
+  @Post("password")
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "비밀번호 최초 설정 - 비밀번호 생성",
+    operationId: "setPassword",
+    description: `
 ## 🔑 비밀번호 설정 — 2단계: 비밀번호 생성
 
 > **인증**: Bearer 토큰 필요
@@ -513,28 +513,28 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 ### 🔒 보안
 - 기존 세션이 유지됩니다 (재로그인 불필요)
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
-	@ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
-	async setPassword(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: SetPasswordDto }) dto: SetPasswordDto,
-		@Req() req: Request,
-	) {
-		const metadata = extractMetadata(req);
-		return this.setPasswordUseCase.execute(user.userId, dto.code, dto.newPassword, metadata);
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
+  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
+  async setPassword(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: SetPasswordDto }) dto: SetPasswordDto,
+    @Req() req: Request,
+  ) {
+    const metadata = extractMetadata(req);
+    return this.setPasswordUseCase.execute(user.userId, dto.code, dto.newPassword, metadata);
+  }
 
-	@Patch("password")
-	@ApiBearerAuth()
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "비밀번호 변경",
-		operationId: "changePassword",
-		description: `
+  @Patch("password")
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "비밀번호 변경",
+    operationId: "changePassword",
+    description: `
 ## 🔐 비밀번호 변경
 
 > **인증**: Bearer 토큰 필요
@@ -558,24 +558,24 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 - 비밀번호를 잊어버렸다면 → \`POST /auth/forgot-password\` (로그인 불필요)
 - 소셜 계정에 비밀번호를 **처음 설정**하려면 → \`POST /auth/password/setup-code\`
 		`,
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
-	async changePassword(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: ChangePasswordDto }) dto: ChangePasswordDto,
-		@Req() req: Request,
-	) {
-		const metadata = extractMetadata(req);
-		const result = await this.changePasswordUseCase.execute(
-			user.userId,
-			dto.currentPassword,
-			dto.newPassword,
-			metadata,
-			user.sessionId,
-		);
-		return result;
-	}
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
+  async changePassword(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: ChangePasswordDto }) dto: ChangePasswordDto,
+    @Req() req: Request,
+  ) {
+    const metadata = extractMetadata(req);
+    const result = await this.changePasswordUseCase.execute(
+      user.userId,
+      dto.currentPassword,
+      dto.newPassword,
+      metadata,
+      user.sessionId,
+    );
+    return result;
+  }
 }

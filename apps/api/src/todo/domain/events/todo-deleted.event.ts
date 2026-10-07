@@ -6,10 +6,10 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoDeletedEvent {
-	readonly eventName = TODO_EVENTS.DELETED;
+  readonly eventName = TODO_EVENTS.DELETED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+  ) {}
 }

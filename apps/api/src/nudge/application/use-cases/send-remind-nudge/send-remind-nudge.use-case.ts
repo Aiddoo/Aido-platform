@@ -3,11 +3,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { FollowReader } from "#api/follow/index";
 import {
-	MUTATION_LOCK,
-	MutationLockKeys,
-	type MutationLockPort,
-	UNIT_OF_WORK,
-	type UnitOfWorkPort,
+  MUTATION_LOCK,
+  MutationLockKeys,
+  type MutationLockPort,
+  UNIT_OF_WORK,
+  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
@@ -17,15 +17,15 @@ import { evaluateRemindNudgeCooldown } from "../../../domain/services/nudge-cool
 import { NudgeMessage } from "../../../domain/value-objects/nudge-message.vo.js";
 import { NUDGE_NOTIFIER, type NudgeNotifierPort } from "../../ports/nudge-notifier.port.js";
 import {
-	NUDGE_REPOSITORY,
-	type NudgeRepositoryPort,
-	type ReminderNudgeWithRelations,
+  NUDGE_REPOSITORY,
+  type NudgeRepositoryPort,
+  type ReminderNudgeWithRelations,
 } from "../../ports/nudge.repository.port.js";
 
 export interface SendRemindNudgeInput {
-	senderId: string;
-	receiverId: string;
-	message?: string;
+  senderId: string;
+  receiverId: string;
+  message?: string;
 }
 
 /**
@@ -37,81 +37,81 @@ export interface SendRemindNudgeInput {
  */
 @Injectable()
 export class SendRemindNudgeUseCase {
-	readonly #logger = new Logger(SendRemindNudgeUseCase.name);
+  readonly #logger = new Logger(SendRemindNudgeUseCase.name);
 
-	constructor(
-		@Inject(NUDGE_REPOSITORY)
-		private readonly nudgeRepository: NudgeRepositoryPort,
-		@Inject(NUDGE_NOTIFIER)
-		private readonly notifier: NudgeNotifierPort,
-		@Inject(MUTATION_LOCK)
-		private readonly mutationLock: MutationLockPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		private readonly followReader: FollowReader,
-	) {}
+  constructor(
+    @Inject(NUDGE_REPOSITORY)
+    private readonly nudgeRepository: NudgeRepositoryPort,
+    @Inject(NUDGE_NOTIFIER)
+    private readonly notifier: NudgeNotifierPort,
+    @Inject(MUTATION_LOCK)
+    private readonly mutationLock: MutationLockPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    private readonly followReader: FollowReader,
+  ) {}
 
-	async execute(
-		input: SendRemindNudgeInput,
-		tz: string = "UTC",
-	): Promise<ReminderNudgeWithRelations> {
-		const { senderId, receiverId, message } = input;
+  async execute(
+    input: SendRemindNudgeInput,
+    tz: string = "UTC",
+  ): Promise<ReminderNudgeWithRelations> {
+    const { senderId, receiverId, message } = input;
 
-		if (senderId === receiverId) {
-			throw new ApplicationException(ErrorCode.NUDGE_1104);
-		}
+    if (senderId === receiverId) {
+      throw new ApplicationException(ErrorCode.NUDGE_1104);
+    }
 
-		const isFriend = await this.followReader.isMutualFriend(senderId, receiverId);
-		if (!isFriend) {
-			throw new ApplicationException(ErrorCode.NUDGE_1103, {
-				targetUserId: receiverId,
-			});
-		}
+    const isFriend = await this.followReader.isMutualFriend(senderId, receiverId);
+    if (!isFriend) {
+      throw new ApplicationException(ErrorCode.NUDGE_1103, {
+        targetUserId: receiverId,
+      });
+    }
 
-		const nudgeMessage = NudgeMessage.of(message);
-		const capturedAt = now();
-		const today = startOfDayInTimezone(capturedAt, tz);
+    const nudgeMessage = NudgeMessage.of(message);
+    const capturedAt = now();
+    const today = startOfDayInTimezone(capturedAt, tz);
 
-		const remindNudge = await this.uow.run(async () => {
-			await this.mutationLock.acquire([MutationLockKeys.remindNudgeCooldown(senderId, receiverId)]);
+    const remindNudge = await this.uow.run(async () => {
+      await this.mutationLock.acquire([MutationLockKeys.remindNudgeCooldown(senderId, receiverId)]);
 
-			const todayTodoCount = await this.nudgeRepository.countTodayTodos(receiverId, today);
-			if (todayTodoCount > 0) {
-				throw new ApplicationException(ErrorCode.NUDGE_1107, { receiverId });
-			}
+      const todayTodoCount = await this.nudgeRepository.countTodayTodos(receiverId, today);
+      if (todayTodoCount > 0) {
+        throw new ApplicationException(ErrorCode.NUDGE_1107, { receiverId });
+      }
 
-			const lastRemind = await this.nudgeRepository.findLastRemindNudge(senderId, receiverId);
-			if (lastRemind) {
-				const cooldown = evaluateRemindNudgeCooldown(lastRemind.createdAt);
-				if (cooldown.isActive) {
-					throw new ApplicationException(ErrorCode.NUDGE_1108, {
-						targetUserId: receiverId,
-						remainingSeconds: cooldown.remainingSeconds,
-					});
-				}
-			}
+      const lastRemind = await this.nudgeRepository.findLastRemindNudge(senderId, receiverId);
+      if (lastRemind) {
+        const cooldown = evaluateRemindNudgeCooldown(lastRemind.createdAt);
+        if (cooldown.isActive) {
+          throw new ApplicationException(ErrorCode.NUDGE_1108, {
+            targetUserId: receiverId,
+            remainingSeconds: cooldown.remainingSeconds,
+          });
+        }
+      }
 
-			return this.nudgeRepository.createRemindNudge(
-				ReminderNudge.planCreation({
-					senderId,
-					receiverId,
-					message: nudgeMessage.raw,
-				}),
-			);
-		});
+      return this.nudgeRepository.createRemindNudge(
+        ReminderNudge.planCreation({
+          senderId,
+          receiverId,
+          message: nudgeMessage.raw,
+        }),
+      );
+    });
 
-		this.#logger.log(`Remind nudge sent: senderId=${senderId}, receiverId=${receiverId}`);
+    this.#logger.log(`Remind nudge sent: senderId=${senderId}, receiverId=${receiverId}`);
 
-		const senderName = remindNudge.sender.profile?.name ?? remindNudge.sender.userTag;
-		this.notifier.notifyNudgeSent({
-			nudgeId: remindNudge.id,
-			senderId,
-			receiverId,
-			senderName,
-			message: nudgeMessage.raw,
-		});
+    const senderName = remindNudge.sender.profile?.name ?? remindNudge.sender.userTag;
+    this.notifier.notifyNudgeSent({
+      nudgeId: remindNudge.id,
+      senderId,
+      receiverId,
+      senderName,
+      message: nudgeMessage.raw,
+    });
 
-		return remindNudge;
-	}
+    return remindNudge;
+  }
 }
 import { ReminderNudge } from "../../../domain/entities/reminder-nudge.aggregate.js";

@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	createRetentionNotificationMessage,
-	type RetentionNotificationCopySelection,
+  createRetentionNotificationMessage,
+  type RetentionNotificationCopySelection,
 } from "#api/notification/index";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
@@ -11,139 +11,139 @@ import { retentionPushSkipReason } from "../../../domain/services/push-eligibili
 import { decideRetentionStage, localDateString } from "../../../domain/services/stage-policy.js";
 import { RETENTION_CONFIG, type RetentionConfigPort } from "../../ports/retention-config.port.js";
 import {
-	RETENTION_REPOSITORY,
-	type RetentionRepositoryPort,
-	type RetentionStageCandidate,
+  RETENTION_REPOSITORY,
+  type RetentionRepositoryPort,
+  type RetentionStageCandidate,
 } from "../../ports/retention.repository.port.js";
 
 @Injectable()
 export class ProcessRetentionStagesUseCase {
-	readonly #logger = new Logger(ProcessRetentionStagesUseCase.name);
+  readonly #logger = new Logger(ProcessRetentionStagesUseCase.name);
 
-	constructor(
-		@Inject(RETENTION_REPOSITORY)
-		private readonly repository: RetentionRepositoryPort,
-		@Inject(RETENTION_CONFIG)
-		private readonly config: RetentionConfigPort,
-		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
-	) {}
+  constructor(
+    @Inject(RETENTION_REPOSITORY)
+    private readonly repository: RetentionRepositoryPort,
+    @Inject(RETENTION_CONFIG)
+    private readonly config: RetentionConfigPort,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
+  ) {}
 
-	async execute(): Promise<void> {
-		if (!this.config.enabled) return;
-		const candidates = await this.repository.findScheduledStages(200);
-		for (const candidate of candidates) {
-			try {
-				await this.#processCandidate(candidate, new Date());
-			} catch (error) {
-				this.#logger.error(
-					`Retention stage failed: stageId=${candidate.stageId}, error=${error}`,
-					error instanceof Error ? error.stack : undefined,
-				);
-			}
-		}
-	}
+  async execute(): Promise<void> {
+    if (!this.config.enabled) return;
+    const candidates = await this.repository.findScheduledStages(200);
+    for (const candidate of candidates) {
+      try {
+        await this.#processCandidate(candidate, new Date());
+      } catch (error) {
+        this.#logger.error(
+          `Retention stage failed: stageId=${candidate.stageId}, error=${error}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
+    }
+  }
 
-	async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
-		const returnedWithinWindow = Boolean(
-			candidate.lastActiveAt &&
-			localDateString(candidate.lastActiveAt, candidate.timezone) >
-				localDateString(candidate.startedAt, candidate.timezone),
-		);
-		const activeToday = Boolean(
-			candidate.lastActiveAt &&
-			localDateString(candidate.lastActiveAt, candidate.timezone) ===
-				localDateString(now, candidate.timezone),
-		);
+  async #processCandidate(candidate: RetentionStageCandidate, now: Date): Promise<void> {
+    const returnedWithinWindow = Boolean(
+      candidate.lastActiveAt &&
+      localDateString(candidate.lastActiveAt, candidate.timezone) >
+        localDateString(candidate.startedAt, candidate.timezone),
+    );
+    const activeToday = Boolean(
+      candidate.lastActiveAt &&
+      localDateString(candidate.lastActiveAt, candidate.timezone) ===
+        localDateString(now, candidate.timezone),
+    );
 
-		if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
-			await this.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP");
-			return;
-		}
+    if (candidate.variant === "CONTROL" && candidate.stage !== "D7") {
+      await this.repository.markStageSkipped(candidate.stageId, "CONTROL_GROUP");
+      return;
+    }
 
-		const decision = decideRetentionStage(candidate.stage, {
-			startedAt: candidate.startedAt,
-			now,
-			timezone: candidate.timezone,
-			todoCount: candidate.todoCount,
-			completedCount: candidate.completedCount,
-			incompleteCount: candidate.incompleteCount,
-			returnedWithinWindow,
-			todoActionWithinWindow: candidate.todoActionWithinWindow,
-			activeToday,
-		});
-		if (decision.kind === "WAIT") return;
+    const decision = decideRetentionStage(candidate.stage, {
+      startedAt: candidate.startedAt,
+      now,
+      timezone: candidate.timezone,
+      todoCount: candidate.todoCount,
+      completedCount: candidate.completedCount,
+      incompleteCount: candidate.incompleteCount,
+      returnedWithinWindow,
+      todoActionWithinWindow: candidate.todoActionWithinWindow,
+      activeToday,
+    });
+    if (decision.kind === "WAIT") return;
 
-		await this.uow.run(async () => {
-			if (candidate.stage === "D7") {
-				await this.repository.recordD7Result({
-					assignmentId: candidate.assignmentId,
-					returnedWithinD7: returnedWithinWindow,
-					todoActionWithinD7: candidate.todoActionWithinWindow,
-				});
-			}
+    await this.uow.run(async () => {
+      if (candidate.stage === "D7") {
+        await this.repository.recordD7Result({
+          assignmentId: candidate.assignmentId,
+          returnedWithinD7: returnedWithinWindow,
+          todoActionWithinD7: candidate.todoActionWithinWindow,
+        });
+      }
 
-			if (candidate.variant === "CONTROL") {
-				await this.repository.markStageSkipped(candidate.stageId, "CONTROL_MEASUREMENT_COMPLETE");
-				return;
-			}
-			if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
-				await this.repository.markStageSkipped(candidate.stageId, decision.reason);
-				return;
-			}
+      if (candidate.variant === "CONTROL") {
+        await this.repository.markStageSkipped(candidate.stageId, "CONTROL_MEASUREMENT_COMPLETE");
+        return;
+      }
+      if (decision.kind === "SKIP" || decision.kind === "EVALUATE_ONLY") {
+        await this.repository.markStageSkipped(candidate.stageId, decision.reason);
+        return;
+      }
 
-			const skipReason = retentionPushSkipReason({
-				pushEnabled: candidate.pushEnabled,
-				marketingPushAgreedAt: candidate.marketingPushAgreedAt,
-				activeTokenCount: candidate.activeTokenCount,
-				timezone: candidate.timezone,
-				now,
-			});
-			if (skipReason) {
-				await this.repository.markStageSkipped(candidate.stageId, skipReason);
-				return;
-			}
+      const skipReason = retentionPushSkipReason({
+        pushEnabled: candidate.pushEnabled,
+        marketingPushAgreedAt: candidate.marketingPushAgreedAt,
+        activeTokenCount: candidate.activeTokenCount,
+        timezone: candidate.timezone,
+        now,
+      });
+      if (skipReason) {
+        await this.repository.markStageSkipped(candidate.stageId, skipReason);
+        return;
+      }
 
-			const message = createRetentionNotificationMessage({
-				...resolveRetentionNotificationSelection(candidate.stage, decision.variantId),
-				locale: candidate.locale,
-				selectionContext: {
-					recipientId: candidate.userId,
-					occurrenceKey: localDateString(now, candidate.timezone),
-				},
-			});
-			await this.repository.createDelivery({
-				stageId: candidate.stageId,
-				userId: candidate.userId,
-				timezone: candidate.timezone,
-				title: message.title,
-				body: message.body,
-				route: decision.route,
-				variantId: message.variantId,
-			});
-		});
+      const message = createRetentionNotificationMessage({
+        ...resolveRetentionNotificationSelection(candidate.stage, decision.variantId),
+        locale: candidate.locale,
+        selectionContext: {
+          recipientId: candidate.userId,
+          occurrenceKey: localDateString(now, candidate.timezone),
+        },
+      });
+      await this.repository.createDelivery({
+        stageId: candidate.stageId,
+        userId: candidate.userId,
+        timezone: candidate.timezone,
+        title: message.title,
+        body: message.body,
+        route: decision.route,
+        variantId: message.variantId,
+      });
+    });
 
-		this.#logger.debug(
-			`Retention stage processed: campaign=${RETENTION_CAMPAIGN_KEY}, stage=${candidate.stage}, userId=${candidate.userId}`,
-		);
-	}
+    this.#logger.debug(
+      `Retention stage processed: campaign=${RETENTION_CAMPAIGN_KEY}, stage=${candidate.stage}, userId=${candidate.userId}`,
+    );
+  }
 }
 
 function resolveRetentionNotificationSelection(
-	stage: RetentionStageCandidate["stage"],
-	variantId: string,
+  stage: RetentionStageCandidate["stage"],
+  variantId: string,
 ): RetentionNotificationCopySelection {
-	if (stage === "D0" && variantId === "d0_no_todo") {
-		return { stage, copyKey: variantId };
-	}
-	if (stage === "D1" && (variantId === "d1_no_todo" || variantId === "d1_has_todo_no_completion")) {
-		return { stage, copyKey: variantId };
-	}
-	if (stage === "D3" && variantId === "d3_restart") {
-		return { stage, copyKey: variantId };
-	}
-	if (stage === "D7" && (variantId === "d7_has_progress" || variantId === "d7_restart")) {
-		return { stage, copyKey: variantId };
-	}
+  if (stage === "D0" && variantId === "d0_no_todo") {
+    return { stage, copyKey: variantId };
+  }
+  if (stage === "D1" && (variantId === "d1_no_todo" || variantId === "d1_has_todo_no_completion")) {
+    return { stage, copyKey: variantId };
+  }
+  if (stage === "D3" && variantId === "d3_restart") {
+    return { stage, copyKey: variantId };
+  }
+  if (stage === "D7" && (variantId === "d7_has_progress" || variantId === "d7_restart")) {
+    return { stage, copyKey: variantId };
+  }
 
-	throw new Error(`Invalid retention notification selection: ${stage}:${variantId}`);
+  throw new Error(`Invalid retention notification selection: ${stage}:${variantId}`);
 }

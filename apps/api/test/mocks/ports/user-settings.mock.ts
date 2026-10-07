@@ -9,16 +9,16 @@ import type { UserPreferenceRepositoryPort } from "#api/user-settings/applicatio
  * `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createUserPreferenceRepositoryMock(): UserPreferenceRepositoryPort {
-	return {
-		findByUserId: vi.fn(),
-		findByUserIds: vi.fn(),
-		create: vi.fn(),
-		upsert: vi.fn(),
-		upsertTimezone: vi.fn(),
-		refreshTimezoneIfChanged: vi.fn(),
-		upsertLocale: vi.fn(),
-		updateStreak: vi.fn(),
-	};
+  return {
+    findByUserId: vi.fn(),
+    findByUserIds: vi.fn(),
+    create: vi.fn(),
+    upsert: vi.fn(),
+    upsertTimezone: vi.fn(),
+    refreshTimezoneIfChanged: vi.fn(),
+    upsertLocale: vi.fn(),
+    updateStreak: vi.fn(),
+  };
 }
 
 /**
@@ -27,11 +27,11 @@ export function createUserPreferenceRepositoryMock(): UserPreferenceRepositoryPo
  * `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createUserConsentRepositoryMock(): UserConsentRepositoryPort {
-	return {
-		findByUserId: vi.fn(),
-		findByUserIds: vi.fn(),
-		create: vi.fn(),
-		upsertMarketingConsent: vi.fn(),
-		upsertMarketingPushConsent: vi.fn(),
-	};
+  return {
+    findByUserId: vi.fn(),
+    findByUserIds: vi.fn(),
+    create: vi.fn(),
+    upsertMarketingConsent: vi.fn(),
+    upsertMarketingPushConsent: vi.fn(),
+  };
 }

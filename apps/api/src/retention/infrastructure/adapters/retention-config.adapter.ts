@@ -6,13 +6,13 @@ import type { RetentionConfigPort } from "../../application/ports/retention-conf
 
 @Injectable()
 export class RetentionConfigAdapter implements RetentionConfigPort {
-	constructor(private readonly config: TypedConfigService) {}
+  constructor(private readonly config: TypedConfigService) {}
 
-	get enabled(): boolean {
-		return this.config.retentionOnboardingV2.enabled;
-	}
+  get enabled(): boolean {
+    return this.config.retentionOnboardingV2.enabled;
+  }
 
-	get treatmentPercent(): number {
-		return this.config.retentionOnboardingV2.treatmentPercent;
-	}
+  get treatmentPercent(): number {
+    return this.config.retentionOnboardingV2.treatmentPercent;
+  }
 }

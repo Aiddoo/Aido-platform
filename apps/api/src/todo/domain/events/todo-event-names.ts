@@ -5,11 +5,11 @@
  * 구독 측(@OnEvent)과 발행 측이 이 상수만 공유합니다.
  */
 export const TODO_EVENTS = {
-	CREATED: "todo.created",
-	UPDATED: "todo.updated",
-	DELETED: "todo.deleted",
-	TOGGLED: "todo.toggled",
-	RESCHEDULED: "todo.rescheduled",
-	CATEGORY_CHANGED: "todo.category-changed",
-	VISIBILITY_CHANGED: "todo.visibility-changed",
+  CREATED: "todo.created",
+  UPDATED: "todo.updated",
+  DELETED: "todo.deleted",
+  TOGGLED: "todo.toggled",
+  RESCHEDULED: "todo.rescheduled",
+  CATEGORY_CHANGED: "todo.category-changed",
+  VISIBILITY_CHANGED: "todo.visibility-changed",
 } as const;

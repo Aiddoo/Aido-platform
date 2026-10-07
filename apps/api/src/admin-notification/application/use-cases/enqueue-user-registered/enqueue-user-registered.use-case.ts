@@ -3,8 +3,8 @@ import { Inject, Injectable } from "@nestjs/common";
 import { buildUserRegisteredMessage } from "../../../domain/services/admin-message.factory.js";
 import type { UserRegisteredEventPayload } from "../../../domain/types/user-registered.payload.js";
 import {
-	ADMIN_NOTIFICATION_QUEUE_PORT,
-	type AdminNotificationQueuePort,
+  ADMIN_NOTIFICATION_QUEUE_PORT,
+  type AdminNotificationQueuePort,
 } from "../../ports/admin-notification-queue.port.js";
 
 /**
@@ -14,13 +14,13 @@ import {
  */
 @Injectable()
 export class EnqueueUserRegisteredUseCase {
-	constructor(
-		@Inject(ADMIN_NOTIFICATION_QUEUE_PORT)
-		private readonly queue: AdminNotificationQueuePort,
-	) {}
+  constructor(
+    @Inject(ADMIN_NOTIFICATION_QUEUE_PORT)
+    private readonly queue: AdminNotificationQueuePort,
+  ) {}
 
-	async execute(payload: UserRegisteredEventPayload): Promise<void> {
-		const message = buildUserRegisteredMessage(payload);
-		await this.queue.enqueueSend("admin", message.toPayload());
-	}
+  async execute(payload: UserRegisteredEventPayload): Promise<void> {
+    const message = buildUserRegisteredMessage(payload);
+    await this.queue.enqueueSend("admin", message.toPayload());
+  }
 }

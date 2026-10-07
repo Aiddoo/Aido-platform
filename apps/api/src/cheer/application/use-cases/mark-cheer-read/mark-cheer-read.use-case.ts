@@ -6,8 +6,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { CHEER_REPOSITORY, type CheerRepositoryPort } from "../../ports/cheer.repository.port.js";
 
 export interface MarkCheerReadInput {
-	userId: string;
-	cheerId: number;
+  userId: string;
+  cheerId: number;
 }
 
 /**
@@ -16,25 +16,25 @@ export interface MarkCheerReadInput {
  */
 @Injectable()
 export class MarkCheerReadUseCase {
-	readonly #logger = new Logger(MarkCheerReadUseCase.name);
+  readonly #logger = new Logger(MarkCheerReadUseCase.name);
 
-	constructor(
-		@Inject(CHEER_REPOSITORY)
-		private readonly cheerRepository: CheerRepositoryPort,
-	) {}
+  constructor(
+    @Inject(CHEER_REPOSITORY)
+    private readonly cheerRepository: CheerRepositoryPort,
+  ) {}
 
-	async execute(input: MarkCheerReadInput): Promise<void> {
-		const { userId, cheerId } = input;
+  async execute(input: MarkCheerReadInput): Promise<void> {
+    const { userId, cheerId } = input;
 
-		const cheer = await this.cheerRepository.findById(cheerId);
-		if (!cheer?.isReceivedBy(userId)) {
-			throw new ApplicationException(ErrorCode.CHEER_1205, { cheerId });
-		}
-		if (cheer.isRead()) {
-			return;
-		}
+    const cheer = await this.cheerRepository.findById(cheerId);
+    if (!cheer?.isReceivedBy(userId)) {
+      throw new ApplicationException(ErrorCode.CHEER_1205, { cheerId });
+    }
+    if (cheer.isRead()) {
+      return;
+    }
 
-		await this.cheerRepository.markAsRead(cheerId);
-		this.#logger.debug(`Cheer 읽음 처리: id=${cheerId}`);
-	}
+    await this.cheerRepository.markAsRead(cheerId);
+    this.#logger.debug(`Cheer 읽음 처리: id=${cheerId}`);
+  }
 }

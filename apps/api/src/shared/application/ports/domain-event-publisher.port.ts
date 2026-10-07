@@ -12,5 +12,5 @@ export const DOMAIN_EVENT_PUBLISHER = Symbol("DOMAIN_EVENT_PUBLISHER");
  * 커밋이 끝난 요청을 부수효과 오류로 실패시키지 않기 위함입니다.
  */
 export interface DomainEventPublisherPort {
-	publishAll(events: readonly DomainEvent[]): Promise<void>;
+  publishAll(events: readonly DomainEvent[]): Promise<void>;
 }

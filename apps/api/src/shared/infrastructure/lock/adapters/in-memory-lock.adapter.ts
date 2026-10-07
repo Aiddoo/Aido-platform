@@ -3,7 +3,7 @@ import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@ne
 import type { ILockProvider } from "../interfaces/lock.interface.js";
 
 interface LockEntry {
-	expiresAt: number;
+  expiresAt: number;
 }
 
 /**
@@ -16,81 +16,81 @@ interface LockEntry {
  */
 @Injectable()
 export class InMemoryLockAdapter implements ILockProvider, OnModuleDestroy, OnModuleInit {
-	readonly #logger = new Logger(InMemoryLockAdapter.name);
-	readonly #locks = new Map<string, LockEntry>();
-	readonly #cleanupInterval: NodeJS.Timeout;
+  readonly #logger = new Logger(InMemoryLockAdapter.name);
+  readonly #locks = new Map<string, LockEntry>();
+  readonly #cleanupInterval: NodeJS.Timeout;
 
-	constructor(config?: { cleanupIntervalMs?: number }) {
-		const cleanupIntervalMs = config?.cleanupIntervalMs ?? 30_000;
+  constructor(config?: { cleanupIntervalMs?: number }) {
+    const cleanupIntervalMs = config?.cleanupIntervalMs ?? 30_000;
 
-		this.#cleanupInterval = setInterval(() => this.#cleanup(), cleanupIntervalMs);
-	}
+    this.#cleanupInterval = setInterval(() => this.#cleanup(), cleanupIntervalMs);
+  }
 
-	onModuleInit(): void {
-		this.#logger.warn(
-			"Using in-memory lock provider — SINGLE INSTANCE ONLY. " +
-				"Set LOCK_PROVIDER=redis for multi-instance deployments.",
-		);
-	}
+  onModuleInit(): void {
+    this.#logger.warn(
+      "Using in-memory lock provider — SINGLE INSTANCE ONLY. " +
+        "Set LOCK_PROVIDER=redis for multi-instance deployments.",
+    );
+  }
 
-	onModuleDestroy(): void {
-		clearInterval(this.#cleanupInterval);
-	}
+  onModuleDestroy(): void {
+    clearInterval(this.#cleanupInterval);
+  }
 
-	async acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
-		const now = Date.now();
-		const existing = this.#locks.get(resource);
+  async acquire(resource: string, ttlMs: number): Promise<(() => Promise<void>) | null> {
+    const now = Date.now();
+    const existing = this.#locks.get(resource);
 
-		// 이미 잠겨있고 아직 만료되지 않은 경우
-		if (existing && now < existing.expiresAt) {
-			this.#logger.debug(`LOCK_BUSY ${resource}`);
-			return null;
-		}
+    // 이미 잠겨있고 아직 만료되지 않은 경우
+    if (existing && now < existing.expiresAt) {
+      this.#logger.debug(`LOCK_BUSY ${resource}`);
+      return null;
+    }
 
-		// 잠금 획득
-		this.#locks.set(resource, { expiresAt: now + ttlMs });
-		this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
+    // 잠금 획득
+    this.#locks.set(resource, { expiresAt: now + ttlMs });
+    this.#logger.debug(`LOCK_ACQUIRED ${resource} (TTL: ${ttlMs}ms)`);
 
-		// release 함수 반환
-		const release = async (): Promise<void> => {
-			this.#locks.delete(resource);
-			this.#logger.debug(`LOCK_RELEASED ${resource}`);
-		};
+    // release 함수 반환
+    const release = async (): Promise<void> => {
+      this.#locks.delete(resource);
+      this.#logger.debug(`LOCK_RELEASED ${resource}`);
+    };
 
-		return release;
-	}
+    return release;
+  }
 
-	async isLocked(resource: string): Promise<boolean> {
-		const entry = this.#locks.get(resource);
+  async isLocked(resource: string): Promise<boolean> {
+    const entry = this.#locks.get(resource);
 
-		if (!entry) {
-			return false;
-		}
+    if (!entry) {
+      return false;
+    }
 
-		// 만료 체크
-		if (Date.now() >= entry.expiresAt) {
-			this.#locks.delete(resource);
-			return false;
-		}
+    // 만료 체크
+    if (Date.now() >= entry.expiresAt) {
+      this.#locks.delete(resource);
+      return false;
+    }
 
-		return true;
-	}
+    return true;
+  }
 
-	// === Private 헬퍼 ===
+  // === Private 헬퍼 ===
 
-	#cleanup(): void {
-		const now = Date.now();
-		let cleaned = 0;
+  #cleanup(): void {
+    const now = Date.now();
+    let cleaned = 0;
 
-		for (const [resource, entry] of this.#locks.entries()) {
-			if (now >= entry.expiresAt) {
-				this.#locks.delete(resource);
-				cleaned++;
-			}
-		}
+    for (const [resource, entry] of this.#locks.entries()) {
+      if (now >= entry.expiresAt) {
+        this.#locks.delete(resource);
+        cleaned++;
+      }
+    }
 
-		if (cleaned > 0) {
-			this.#logger.debug(`LOCK_CLEANUP ${cleaned} expired entries`);
-		}
-	}
+    if (cleaned > 0) {
+      this.#logger.debug(`LOCK_CLEANUP ${cleaned} expired entries`);
+    }
+  }
 }

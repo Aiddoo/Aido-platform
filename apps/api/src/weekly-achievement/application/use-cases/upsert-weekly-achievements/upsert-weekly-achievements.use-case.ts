@@ -1,16 +1,16 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	buildWeeklyAchievementSnapshot,
-	type WeeklyAchievementUpsert,
+  buildWeeklyAchievementSnapshot,
+  type WeeklyAchievementUpsert,
 } from "../../../domain/weekly-achievement.js";
 import {
-	WEEKLY_ACHIEVEMENT_REPOSITORY,
-	type WeeklyAchievementRepositoryPort,
+  WEEKLY_ACHIEVEMENT_REPOSITORY,
+  type WeeklyAchievementRepositoryPort,
 } from "../../ports/weekly-achievement.repository.port.js";
 
 export interface UpsertWeeklyAchievementsInput {
-	records: WeeklyAchievementUpsert[];
+  records: WeeklyAchievementUpsert[];
 }
 
 /**
@@ -18,18 +18,18 @@ export interface UpsertWeeklyAchievementsInput {
  */
 @Injectable()
 export class UpsertWeeklyAchievementsUseCase {
-	constructor(
-		@Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
-		private readonly repository: WeeklyAchievementRepositoryPort,
-	) {}
+  constructor(
+    @Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
+    private readonly repository: WeeklyAchievementRepositoryPort,
+  ) {}
 
-	async execute(input: UpsertWeeklyAchievementsInput): Promise<void> {
-		if (input.records.length === 0) {
-			return;
-		}
+  async execute(input: UpsertWeeklyAchievementsInput): Promise<void> {
+    if (input.records.length === 0) {
+      return;
+    }
 
-		// 도메인 불변식(완료 수 ≤ 전체 수, 주차 범위) 검증 후 영속
-		const snapshots = input.records.map(buildWeeklyAchievementSnapshot);
-		await this.repository.upsertMany(snapshots);
-	}
+    // 도메인 불변식(완료 수 ≤ 전체 수, 주차 범위) 검증 후 영속
+    const snapshots = input.records.map(buildWeeklyAchievementSnapshot);
+    await this.repository.upsertMany(snapshots);
+  }
 }

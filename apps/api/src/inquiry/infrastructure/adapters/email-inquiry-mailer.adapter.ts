@@ -4,8 +4,8 @@ import { TransactionalEmailSender } from "#api/email/index";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import type {
-	InquiryDeliveryResult,
-	InquiryMailerPort,
+  InquiryDeliveryResult,
+  InquiryMailerPort,
 } from "../../application/ports/inquiry-mailer.port.js";
 import type { InquirySubmission } from "../../domain/services/inquiry-submission.js";
 
@@ -18,22 +18,22 @@ import type { InquirySubmission } from "../../domain/services/inquiry-submission
  */
 @Injectable()
 export class EmailInquiryMailerAdapter implements InquiryMailerPort {
-	constructor(
-		private readonly emailSender: TransactionalEmailSender,
-		private readonly configService: TypedConfigService,
-	) {}
+  constructor(
+    private readonly emailSender: TransactionalEmailSender,
+    private readonly configService: TypedConfigService,
+  ) {}
 
-	async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
-		const supportEmail = this.configService.email.supportEmail;
+  async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
+    const supportEmail = this.configService.email.supportEmail;
 
-		const result = await this.emailSender.sendInquiry(supportEmail, {
-			userEmail: submission.userEmail,
-			category: submission.category,
-			categoryLabel: submission.categoryLabel,
-			content: submission.content,
-			submittedAt: submission.submittedAt,
-		});
+    const result = await this.emailSender.sendInquiry(supportEmail, {
+      userEmail: submission.userEmail,
+      category: submission.category,
+      categoryLabel: submission.categoryLabel,
+      content: submission.content,
+      submittedAt: submission.submittedAt,
+    });
 
-		return { success: result.success, error: result.error };
-	}
+    return { success: result.success, error: result.error };
+  }
 }

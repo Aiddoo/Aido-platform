@@ -3,10 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { NotificationQueueService } from "#api/notification/queue";
 
 import type {
-	FirstFriendMilestoneNotification,
-	FollowMutualNotification,
-	FollowNewNotification,
-	FollowNotifierPort,
+  FirstFriendMilestoneNotification,
+  FollowMutualNotification,
+  FollowNewNotification,
+  FollowNotifierPort,
 } from "../../application/ports/follow-notifier.port.js";
 
 /**
@@ -15,20 +15,20 @@ import type {
  */
 @Injectable()
 export class FollowNotifierAdapter implements FollowNotifierPort {
-	constructor(private readonly queue: NotificationQueueService) {}
+  constructor(private readonly queue: NotificationQueueService) {}
 
-	notifyFollowNew(payload: FollowNewNotification): void {
-		this.queue.enqueueFollowNew(payload);
-	}
+  notifyFollowNew(payload: FollowNewNotification): void {
+    this.queue.enqueueFollowNew(payload);
+  }
 
-	notifyFollowMutual(payload: FollowMutualNotification): void {
-		this.queue.enqueueFollowMutual(payload);
-	}
+  notifyFollowMutual(payload: FollowMutualNotification): void {
+    this.queue.enqueueFollowMutual(payload);
+  }
 
-	notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void {
-		this.queue.enqueueMilestoneReached({
-			userId: payload.userId,
-			milestone: "FIRST_FRIEND",
-		});
-	}
+  notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void {
+    this.queue.enqueueMilestoneReached({
+      userId: payload.userId,
+      milestone: "FIRST_FRIEND",
+    });
+  }
 }

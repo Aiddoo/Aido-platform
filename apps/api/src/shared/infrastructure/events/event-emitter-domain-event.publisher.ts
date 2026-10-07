@@ -16,20 +16,20 @@ import type { DomainEvent } from "#api/shared/domain/aggregate-root";
  */
 @Injectable()
 export class EventEmitterDomainEventPublisher implements DomainEventPublisherPort {
-	readonly #logger = new Logger(EventEmitterDomainEventPublisher.name);
+  readonly #logger = new Logger(EventEmitterDomainEventPublisher.name);
 
-	constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(private readonly eventEmitter: EventEmitter2) {}
 
-	async publishAll(events: readonly DomainEvent[]): Promise<void> {
-		for (const event of events) {
-			try {
-				await this.eventEmitter.emitAsync(event.eventName, event);
-			} catch (error) {
-				this.#logger.error(
-					`Failed to publish domain event ${event.eventName}: ${error}`,
-					error instanceof Error ? error.stack : undefined,
-				);
-			}
-		}
-	}
+  async publishAll(events: readonly DomainEvent[]): Promise<void> {
+    for (const event of events) {
+      try {
+        await this.eventEmitter.emitAsync(event.eventName, event);
+      } catch (error) {
+        this.#logger.error(
+          `Failed to publish domain event ${event.eventName}: ${error}`,
+          error instanceof Error ? error.stack : undefined,
+        );
+      }
+    }
+  }
 }

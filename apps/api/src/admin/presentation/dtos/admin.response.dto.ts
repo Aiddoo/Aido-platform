@@ -9,6 +9,6 @@ export type BroadcastResultDto = z.infer<typeof BroadcastResultDto>;
 
 /** 관리자 성장 지표 요약 응답 DTO */
 export const GrowthSummaryResponseDto = growthSummaryResponseSchema.meta({
-	id: "GrowthSummaryResponseDto",
+  id: "GrowthSummaryResponseDto",
 });
 export type GrowthSummaryResponseDto = z.infer<typeof GrowthSummaryResponseDto>;

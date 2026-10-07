@@ -4,10 +4,10 @@ import { OAuthWorkflow } from "../../workflows/oauth.workflow.js";
 
 @Injectable()
 export class LinkOAuthAccountWithCodeUseCase {
-	constructor(private readonly workflow: OAuthWorkflow) {}
-	execute(
-		...args: Parameters<OAuthWorkflow["linkAccountWithExchangeCode"]>
-	): ReturnType<OAuthWorkflow["linkAccountWithExchangeCode"]> {
-		return this.workflow.linkAccountWithExchangeCode(...args);
-	}
+  constructor(private readonly workflow: OAuthWorkflow) {}
+  execute(
+    ...args: Parameters<OAuthWorkflow["linkAccountWithExchangeCode"]>
+  ): ReturnType<OAuthWorkflow["linkAccountWithExchangeCode"]> {
+    return this.workflow.linkAccountWithExchangeCode(...args);
+  }
 }

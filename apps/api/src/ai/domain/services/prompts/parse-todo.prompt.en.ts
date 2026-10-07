@@ -1,6 +1,6 @@
 import {
-	PROMPT_OUTPUT_DISCIPLINE_EN,
-	PROMPT_SECURITY_GUARD_EN,
+  PROMPT_OUTPUT_DISCIPLINE_EN,
+  PROMPT_SECURITY_GUARD_EN,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/prompt/sanitize";
 
@@ -13,21 +13,21 @@ import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules.js";
  * 구조·규칙·예시 골격은 한국어 버전과 동일하다.
  */
 export function buildParseTodoPromptEn(
-	text: string,
-	tz: string = "UTC",
-	now: Date = new Date(),
-	categories: CategoryInfo[] = [],
+  text: string,
+  tz: string = "UTC",
+  now: Date = new Date(),
+  categories: CategoryInfo[] = [],
 ): ParseTodoPrompt {
-	const ctx = buildTimeContext(tz, now, "en");
-	const timeRules = buildTimeRulesTextEn(ctx);
-	const safeText = sanitizeForPrompt(text);
+  const ctx = buildTimeContext(tz, now, "en");
+  const timeRules = buildTimeRulesTextEn(ctx);
+  const safeText = sanitizeForPrompt(text);
 
-	const categoryRule =
-		categories.length > 0
-			? "- Choose categoryId only from the IDs in context.categories, using the closest semantic match."
-			: "";
+  const categoryRule =
+    categories.length > 0
+      ? "- Choose categoryId only from the IDs in context.categories, using the closest semantic match."
+      : "";
 
-	const system = `<role>
+  const system = `<role>
 You are an expert at converting natural language input into structured to-do data.
 </role>
 
@@ -74,7 +74,7 @@ Example 4: "presentation the week after next"
 
 ${PROMPT_OUTPUT_DISCIPLINE_EN}`;
 
-	const prompt = `<context_json>
+  const prompt = `<context_json>
 ${encodeUntrustedJson({ timezone: tz, categories })}
 </context_json>
 <user_input_json>
@@ -82,5 +82,5 @@ ${encodeUntrustedJson({ text: safeText })}
 </user_input_json>
 <task>Convert the user input into one to-do. Check rule consistency internally, then return only the structured result.</task>`;
 
-	return { system, prompt };
+  return { system, prompt };
 }

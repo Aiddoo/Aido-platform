@@ -5,6 +5,6 @@ export const FriendUserResponseDto = friendUserSchema.meta({ id: "FriendUserResp
 export type FriendUserResponseDto = z.infer<typeof FriendUserResponseDto>;
 
 export const FriendRequestUserResponseDto = friendRequestUserSchema.meta({
-	id: "FriendRequestUserResponseDto",
+  id: "FriendRequestUserResponseDto",
 });
 export type FriendRequestUserResponseDto = z.infer<typeof FriendRequestUserResponseDto>;

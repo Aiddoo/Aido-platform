@@ -4,29 +4,29 @@ import { TODO_LIMITS } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	DOMAIN_EVENT_PUBLISHER,
-	type DomainEventPublisherPort,
-	UNIT_OF_WORK,
-	type UnitOfWorkPort,
+  DOMAIN_EVENT_PUBLISHER,
+  type DomainEventPublisherPort,
+  UNIT_OF_WORK,
+  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import {
-	CATEGORY_OWNERSHIP,
-	type CategoryOwnershipPort,
+  CATEGORY_OWNERSHIP,
+  type CategoryOwnershipPort,
 } from "../../ports/category-ownership.port.js";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
 /** Todo 카테고리 변경 입력. */
 export interface ChangeTodoCategoryInput {
-	id: number;
-	userId: string;
-	categoryId: number;
+  id: number;
+  userId: string;
+  categoryId: number;
 }
 
 /**
@@ -38,66 +38,66 @@ export interface ChangeTodoCategoryInput {
  */
 @Injectable()
 export class ChangeTodoCategoryUseCase {
-	readonly #logger = new Logger(ChangeTodoCategoryUseCase.name);
+  readonly #logger = new Logger(ChangeTodoCategoryUseCase.name);
 
-	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		@Inject(CATEGORY_OWNERSHIP)
-		private readonly categoryOwnership: CategoryOwnershipPort,
-		@Inject(TODO_CACHE)
-		private readonly todoCache: TodoCachePort,
-		@Inject(DOMAIN_EVENT_PUBLISHER)
-		private readonly eventPublisher: DomainEventPublisherPort,
-	) {}
+  constructor(
+    @Inject(TODO_REPOSITORY)
+    private readonly todoRepository: TodoRepositoryPort,
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    @Inject(CATEGORY_OWNERSHIP)
+    private readonly categoryOwnership: CategoryOwnershipPort,
+    @Inject(TODO_CACHE)
+    private readonly todoCache: TodoCachePort,
+    @Inject(DOMAIN_EVENT_PUBLISHER)
+    private readonly eventPublisher: DomainEventPublisherPort,
+  ) {}
 
-	async execute(input: ChangeTodoCategoryInput): Promise<TodoResponse> {
-		const { id, userId, categoryId } = input;
+  async execute(input: ChangeTodoCategoryInput): Promise<TodoResponse> {
+    const { id, userId, categoryId } = input;
 
-		// 1. 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
-		await this.categoryOwnership.validateOwnership(categoryId, userId);
+    // 1. 대상 카테고리 소유권 확인 (읽기 전용, TX 외부)
+    await this.categoryOwnership.validateOwnership(categoryId, userId);
 
-		// 2. TX 안에서 로드 → 애그리게잇 전이 → 활성 할 일만 한도 체크 후 영속화 (race 방지)
-		const events = await this.uow.run(async () => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-			if (!todo) {
-				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-			}
+    // 2. TX 안에서 로드 → 애그리게잇 전이 → 활성 할 일만 한도 체크 후 영속화 (race 방지)
+    const events = await this.uow.run(async () => {
+      const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+      if (!todo) {
+        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      }
 
-			todo.changeCategory(categoryId);
-			const targetCategoryId = todo.toPersistence().categoryId;
+      todo.changeCategory(categoryId);
+      const targetCategoryId = todo.toPersistence().categoryId;
 
-			if (!todo.isCompleted()) {
-				const activeInTarget = await this.todoRepository.countActiveByCategory(userId, categoryId);
-				if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
-					throw new ApplicationException(ErrorCode.TODO_0811, {
-						activeCount: activeInTarget,
-						maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
-					});
-				}
-			}
-			await this.todoRepository.updateCategory(id, targetCategoryId);
-			return todo.pullDomainEvents();
-		});
+      if (!todo.isCompleted()) {
+        const activeInTarget = await this.todoRepository.countActiveByCategory(userId, categoryId);
+        if (activeInTarget >= TODO_LIMITS.MAX_PER_CATEGORY) {
+          throw new ApplicationException(ErrorCode.TODO_0811, {
+            activeCount: activeInTarget,
+            maxPerCategory: TODO_LIMITS.MAX_PER_CATEGORY,
+          });
+        }
+      }
+      await this.todoRepository.updateCategory(id, targetCategoryId);
+      return todo.pullDomainEvents();
+    });
 
-		// 3. 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 캐시 무효화 트리거)
-		await this.eventPublisher.publishAll(events);
+    // 3. 저장(TX 커밋) 완료 후 이벤트 발행 (daily-completion 캐시 무효화 트리거)
+    await this.eventPublisher.publishAll(events);
 
-		// 4. 캐시 무효화 (todoCount 변경)
-		await this.todoCache.invalidateTodoCategories(userId);
-		await this.todoCache.invalidateFriendTodos(userId);
+    // 4. 캐시 무효화 (todoCount 변경)
+    await this.todoCache.invalidateTodoCategories(userId);
+    await this.todoCache.invalidateFriendTodos(userId);
 
-		this.#logger.log(`Todo category updated: ${id} -> ${categoryId} for user: ${userId}`);
+    this.#logger.log(`Todo category updated: ${id} -> ${categoryId} for user: ${userId}`);
 
-		// 5. 응답 재조회
-		const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
-		if (!response) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
-		return response;
-	}
+    // 5. 응답 재조회
+    const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
+    if (!response) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+    }
+    return response;
+  }
 }

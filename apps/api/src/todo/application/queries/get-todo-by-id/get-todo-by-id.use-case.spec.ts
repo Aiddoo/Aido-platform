@@ -14,49 +14,49 @@ import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 
 import { TodoMapper } from "../../../infrastructure/persistence/todo-response.mapper.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 import { GetTodoByIdUseCase } from "./get-todo-by-id.use-case.js";
 
 function buildResponse(id: number, userId = "user-123"): TodoResponse {
-	return TodoMapper.toResponse(TodoBuilder.create(userId).withId(id).build());
+  return TodoMapper.toResponse(TodoBuilder.create(userId).withId(id).build());
 }
 
 describe("GetTodoByIdUseCase — 단일 Todo 조회", () => {
-	let useCase: GetTodoByIdUseCase;
-	let todoReadRepository: Mocked<TodoReadRepositoryPort>;
+  let useCase: GetTodoByIdUseCase;
+  let todoReadRepository: Mocked<TodoReadRepositoryPort>;
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(GetTodoByIdUseCase)
-			.mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
-			.impl(() => createTodoReadRepositoryMock())
-			.compile();
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(GetTodoByIdUseCase)
+      .mock<TodoReadRepositoryPort>(TODO_READ_REPOSITORY)
+      .impl(() => createTodoReadRepositoryMock())
+      .compile();
 
-		useCase = unit;
-		todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
-	});
+    useCase = unit;
+    todoReadRepository = unitRef.get<TodoReadRepositoryPort>(TODO_READ_REPOSITORY);
+  });
 
-	it("소유자 스코프로 조회한 read model을 그대로 반환한다", async () => {
-		// Given
-		const todo = buildResponse(42);
-		todoReadRepository.findByIdAndUserId.mockResolvedValue(todo);
+  it("소유자 스코프로 조회한 read model을 그대로 반환한다", async () => {
+    // Given
+    const todo = buildResponse(42);
+    todoReadRepository.findByIdAndUserId.mockResolvedValue(todo);
 
-		// When
-		const result = await useCase.execute({ id: 42, userId: "user-123" });
+    // When
+    const result = await useCase.execute({ id: 42, userId: "user-123" });
 
-		// Then - id·userId를 그대로 저장소에 위임하고 결과를 손대지 않는다
-		expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(42, "user-123");
-		expect(result).toBe(todo);
-	});
+    // Then - id·userId를 그대로 저장소에 위임하고 결과를 손대지 않는다
+    expect(todoReadRepository.findByIdAndUserId).toHaveBeenCalledWith(42, "user-123");
+    expect(result).toBe(todo);
+  });
 
-	it("조회 결과가 없으면 TODO_0801을 던지고 todoId를 컨텍스트에 담는다", async () => {
-		// Given - 미존재(또는 타인 소유)
-		todoReadRepository.findByIdAndUserId.mockResolvedValue(null);
+  it("조회 결과가 없으면 TODO_0801을 던지고 todoId를 컨텍스트에 담는다", async () => {
+    // Given - 미존재(또는 타인 소유)
+    todoReadRepository.findByIdAndUserId.mockResolvedValue(null);
 
-		// When & Then
-		await expect(useCase.execute({ id: 999, userId: "user-123" })).rejects.toMatchObject({
-			errorCode: ErrorCode.TODO_0801,
-		});
-	});
+    // When & Then
+    await expect(useCase.execute({ id: 999, userId: "user-123" })).rejects.toMatchObject({
+      errorCode: ErrorCode.TODO_0801,
+    });
+  });
 });

@@ -9,9 +9,9 @@ import type { FriendPort } from "../../application/ports/friend.port.js";
  */
 @Injectable()
 export class FriendAdapter implements FriendPort {
-	constructor(private readonly followReader: FollowReader) {}
+  constructor(private readonly followReader: FollowReader) {}
 
-	isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-		return this.followReader.isMutualFriend(userId, targetUserId);
-	}
+  isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
+    return this.followReader.isMutualFriend(userId, targetUserId);
+  }
 }

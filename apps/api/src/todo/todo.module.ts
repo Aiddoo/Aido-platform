@@ -11,8 +11,8 @@ import { STREAK_PORT } from "./application/ports/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todo-cache.port.js";
 import { TODO_NOTIFICATION } from "./application/ports/todo-notification.port.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "./application/ports/todo-read.repository.port.js";
 import { TODO_REMINDER } from "./application/ports/todo-reminder.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todo.repository.port.js";
@@ -51,35 +51,35 @@ import { TodoController } from "./presentation/todo.controller.js";
  * - 외부 모듈에는 실제로 필요한 생성 UseCase만 명시적으로 공개
  */
 @Module({
-	imports: [
-		FollowModule,
-		NotificationModule,
-		TodoCategoryModule,
-		SchedulerModule,
-		UserSettingsModule,
-	],
-	controllers: [TodoController],
-	providers: [
-		TodoRowRepository,
-		PrismaTodoRepository,
-		PrismaTodoReadRepository,
-		{ provide: TODO_REPOSITORY, useExisting: PrismaTodoRepository },
-		{ provide: TODO_READ_REPOSITORY, useExisting: PrismaTodoReadRepository },
-		{ provide: CATEGORY_OWNERSHIP, useClass: CategoryOwnershipAdapter },
-		{ provide: TODO_CACHE, useClass: TodoCacheAdapter },
-		{ provide: FRIEND_PORT, useClass: FriendAdapter },
-		{ provide: STREAK_PORT, useClass: StreakAdapter },
-		{ provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
-		{ provide: TODO_REMINDER, useClass: TodoReminderAdapter },
-		...TODO_PROVIDERS,
-		// 크로스 모듈 호환 경계 — 다른 모듈은 이 capability만 본다
-		{
-			provide: TodoViewCacheInvalidator,
-			inject: [TODO_READ_REPOSITORY, TODO_CACHE],
-			useFactory: (readRepository: TodoReadRepositoryPort, cache: TodoCachePort) =>
-				new TodoViewCacheInvalidator(readRepository, cache),
-		},
-	],
-	exports: [CreateTodoUseCase, CreateRecurringTodosUseCase, TodoViewCacheInvalidator],
+  imports: [
+    FollowModule,
+    NotificationModule,
+    TodoCategoryModule,
+    SchedulerModule,
+    UserSettingsModule,
+  ],
+  controllers: [TodoController],
+  providers: [
+    TodoRowRepository,
+    PrismaTodoRepository,
+    PrismaTodoReadRepository,
+    { provide: TODO_REPOSITORY, useExisting: PrismaTodoRepository },
+    { provide: TODO_READ_REPOSITORY, useExisting: PrismaTodoReadRepository },
+    { provide: CATEGORY_OWNERSHIP, useClass: CategoryOwnershipAdapter },
+    { provide: TODO_CACHE, useClass: TodoCacheAdapter },
+    { provide: FRIEND_PORT, useClass: FriendAdapter },
+    { provide: STREAK_PORT, useClass: StreakAdapter },
+    { provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
+    { provide: TODO_REMINDER, useClass: TodoReminderAdapter },
+    ...TODO_PROVIDERS,
+    // 크로스 모듈 호환 경계 — 다른 모듈은 이 capability만 본다
+    {
+      provide: TodoViewCacheInvalidator,
+      inject: [TODO_READ_REPOSITORY, TODO_CACHE],
+      useFactory: (readRepository: TodoReadRepositoryPort, cache: TodoCachePort) =>
+        new TodoViewCacheInvalidator(readRepository, cache),
+    },
+  ],
+  exports: [CreateTodoUseCase, CreateRecurringTodosUseCase, TodoViewCacheInvalidator],
 })
 export class TodoModule {}

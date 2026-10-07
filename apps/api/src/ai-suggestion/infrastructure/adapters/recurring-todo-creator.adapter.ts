@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { CreateRecurringTodosUseCase } from "#api/todo/index";
 
 import type {
-	CreateRecurringTodoInput,
-	RecurringTodoCreatorPort,
+  CreateRecurringTodoInput,
+  RecurringTodoCreatorPort,
 } from "../../application/ports/recurring-todo-creator.port.js";
 
 /**
@@ -14,16 +14,16 @@ import type {
  */
 @Injectable()
 export class RecurringTodoCreatorAdapter implements RecurringTodoCreatorPort {
-	constructor(private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase) {}
+  constructor(private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase) {}
 
-	async createRecurring(
-		input: CreateRecurringTodoInput,
-		timezone: string,
-	): Promise<{ count: number }> {
-		const result = await this.createRecurringTodosUseCase.execute({
-			data: input,
-			timezone,
-		});
-		return { count: result.count };
-	}
+  async createRecurring(
+    input: CreateRecurringTodoInput,
+    timezone: string,
+  ): Promise<{ count: number }> {
+    const result = await this.createRecurringTodosUseCase.execute({
+      data: input,
+      timezone,
+    });
+    return { count: result.count };
+  }
 }

@@ -4,26 +4,26 @@ import { PaginationService } from "#api/shared/application/pagination/index";
 
 import { normalizeUserSearchQuery } from "../../../domain/services/user-search-query.js";
 import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-	type UserSearchResult,
+  FOLLOW_REPOSITORY,
+  type FollowRepositoryPort,
+  type UserSearchResult,
 } from "../../ports/follow.repository.port.js";
 import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor.js";
 
 /** 사용자 검색 입력 (정규화 전 원본 검색어). */
 export interface SearchUsersInput {
-	viewerId: string;
-	query: string;
-	cursor?: string;
-	size?: number;
+  viewerId: string;
+  query: string;
+  cursor?: string;
+  size?: number;
 }
 
 /** 사용자 검색 결과 (관련도 순 + 커서 페이지네이션). */
 export interface SearchUsersOutput {
-	items: UserSearchResult[];
-	totalCount: number;
-	hasMore: boolean;
-	nextCursor: string | null;
+  items: UserSearchResult[];
+  totalCount: number;
+  hasMore: boolean;
+  nextCursor: string | null;
 }
 
 /**
@@ -34,46 +34,46 @@ export interface SearchUsersOutput {
  */
 @Injectable()
 export class SearchUsersUseCase {
-	readonly #logger = new Logger(SearchUsersUseCase.name);
+  readonly #logger = new Logger(SearchUsersUseCase.name);
 
-	constructor(
-		@Inject(FOLLOW_REPOSITORY)
-		private readonly followRepository: FollowRepositoryPort,
-		private readonly paginationService: PaginationService,
-	) {}
+  constructor(
+    @Inject(FOLLOW_REPOSITORY)
+    private readonly followRepository: FollowRepositoryPort,
+    private readonly paginationService: PaginationService,
+  ) {}
 
-	async execute(input: SearchUsersInput): Promise<SearchUsersOutput> {
-		const { nfc, upperTag } = normalizeUserSearchQuery(input.query);
+  async execute(input: SearchUsersInput): Promise<SearchUsersOutput> {
+    const { nfc, upperTag } = normalizeUserSearchQuery(input.query);
 
-		const { size } = this.paginationService.normalizeCursorPagination<string>({
-			size: input.size,
-		});
+    const { size } = this.paginationService.normalizeCursorPagination<string>({
+      size: input.size,
+    });
 
-		const cursor = input.cursor != null ? decodeSearchCursor(input.cursor) : undefined;
+    const cursor = input.cursor != null ? decodeSearchCursor(input.cursor) : undefined;
 
-		const [rows, totalCount] = await Promise.all([
-			this.followRepository.searchUsers({
-				viewerId: input.viewerId,
-				nfcQuery: nfc,
-				upperTag,
-				cursor,
-				size,
-			}),
-			this.followRepository.countSearchUsers({
-				viewerId: input.viewerId,
-				nfcQuery: nfc,
-				upperTag,
-			}),
-		]);
+    const [rows, totalCount] = await Promise.all([
+      this.followRepository.searchUsers({
+        viewerId: input.viewerId,
+        nfcQuery: nfc,
+        upperTag,
+        cursor,
+        size,
+      }),
+      this.followRepository.countSearchUsers({
+        viewerId: input.viewerId,
+        nfcQuery: nfc,
+        upperTag,
+      }),
+    ]);
 
-		const hasMore = rows.length > size;
-		const items = hasMore ? rows.slice(0, size) : rows;
-		const last = items.at(-1);
-		const nextCursor =
-			hasMore && last != null ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
+    const hasMore = rows.length > size;
+    const items = hasMore ? rows.slice(0, size) : rows;
+    const last = items.at(-1);
+    const nextCursor =
+      hasMore && last != null ? encodeSearchCursor({ rank: last.rank, id: last.id }) : null;
 
-		this.#logger.debug(`User search: ${items.length} items for viewer: ${input.viewerId}`);
+    this.#logger.debug(`User search: ${items.length} items for viewer: ${input.viewerId}`);
 
-		return { items, totalCount, hasMore, nextCursor };
-	}
+    return { items, totalCount, hasMore, nextCursor };
+  }
 }

@@ -10,25 +10,25 @@ import type { TodoRepositoryPort } from "#api/todo/application/ports/todo.reposi
  * 개별 메서드의 mock API가 필요하면 spec에서 `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createTodoRepositoryMock(): TodoRepositoryPort {
-	return {
-		findByIdAndUserId: vi.fn(),
-		create: vi.fn(),
-		createMany: vi.fn(),
-		createInlineItems: vi.fn(),
-		updateCompletion: vi.fn(),
-		updateDetails: vi.fn(),
-		updateTitle: vi.fn(),
-		updateVisibility: vi.fn(),
-		updateSchedule: vi.fn(),
-		updateCategory: vi.fn(),
-		delete: vi.fn(),
-		updateSortOrder: vi.fn(),
-		shiftSortOrders: vi.fn(),
-		createItem: vi.fn(),
-		updateItem: vi.fn(),
-		deleteItem: vi.fn(),
-		reorderItems: vi.fn(),
-		countActiveByCategory: vi.fn(),
-		getMaxSortOrder: vi.fn(),
-	};
+  return {
+    findByIdAndUserId: vi.fn(),
+    create: vi.fn(),
+    createMany: vi.fn(),
+    createInlineItems: vi.fn(),
+    updateCompletion: vi.fn(),
+    updateDetails: vi.fn(),
+    updateTitle: vi.fn(),
+    updateVisibility: vi.fn(),
+    updateSchedule: vi.fn(),
+    updateCategory: vi.fn(),
+    delete: vi.fn(),
+    updateSortOrder: vi.fn(),
+    shiftSortOrders: vi.fn(),
+    createItem: vi.fn(),
+    updateItem: vi.fn(),
+    deleteItem: vi.fn(),
+    reorderItems: vi.fn(),
+    countActiveByCategory: vi.fn(),
+    getMaxSortOrder: vi.fn(),
+  };
 }

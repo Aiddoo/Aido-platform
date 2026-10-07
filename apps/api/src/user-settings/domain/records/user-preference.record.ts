@@ -7,22 +7,22 @@ import type { TimeFormatValue } from "../services/preference-view.js";
  * 않으므로 timeFormat은 도메인 유니온으로 노출한다.
  */
 export interface UserPreferenceRecord {
-	pushEnabled: boolean;
-	nightPushEnabled: boolean;
-	timezone: string;
-	locale: string;
-	morningReminderHour: number;
-	morningReminderMinute: number;
-	eveningReminderHour: number;
-	eveningReminderMinute: number;
-	timeFormat: TimeFormatValue;
-	weatherMorningEnabled: boolean;
-	weatherMorningHour: number;
-	weatherMorningMinute: number;
-	weatherEveningEnabled: boolean;
-	weatherEveningHour: number;
-	weatherEveningMinute: number;
-	currentStreak: number;
-	longestStreak: number;
-	lastCompletedDate: Date | null;
+  pushEnabled: boolean;
+  nightPushEnabled: boolean;
+  timezone: string;
+  locale: string;
+  morningReminderHour: number;
+  morningReminderMinute: number;
+  eveningReminderHour: number;
+  eveningReminderMinute: number;
+  timeFormat: TimeFormatValue;
+  weatherMorningEnabled: boolean;
+  weatherMorningHour: number;
+  weatherMorningMinute: number;
+  weatherEveningEnabled: boolean;
+  weatherEveningHour: number;
+  weatherEveningMinute: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastCompletedDate: Date | null;
 }

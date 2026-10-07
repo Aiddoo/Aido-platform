@@ -30,23 +30,23 @@ import { AiReportController } from "./presentation/ai-report.controller.js";
  * - 알림 발송은 SchedulerModule의 Strategy에서 담당
  */
 @Module({
-	imports: [AiModule],
-	controllers: [AiReportController],
-	providers: [
-		LatestReportStatsReader,
-		GetReportStatusUseCase,
-		GetReportsUseCase,
-		GetReportByIdUseCase,
-		GenerateReportUseCase,
-		ReportGenerationJob,
-		ReportGenerationProcessor,
-		{ provide: AI_REPORT_REPOSITORY, useClass: PrismaAiReportRepository },
-		{ provide: TODO_STATS_READER, useClass: PrismaTodoStatsReader },
-		{
-			provide: LATEST_REPORT_STATS_READER,
-			useExisting: LatestReportStatsReader,
-		},
-	],
-	exports: [LATEST_REPORT_STATS_READER],
+  imports: [AiModule],
+  controllers: [AiReportController],
+  providers: [
+    LatestReportStatsReader,
+    GetReportStatusUseCase,
+    GetReportsUseCase,
+    GetReportByIdUseCase,
+    GenerateReportUseCase,
+    ReportGenerationJob,
+    ReportGenerationProcessor,
+    { provide: AI_REPORT_REPOSITORY, useClass: PrismaAiReportRepository },
+    { provide: TODO_STATS_READER, useClass: PrismaTodoStatsReader },
+    {
+      provide: LATEST_REPORT_STATS_READER,
+      useExisting: LatestReportStatsReader,
+    },
+  ],
+  exports: [LATEST_REPORT_STATS_READER],
 })
 export class AiReportModule {}

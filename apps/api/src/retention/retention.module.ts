@@ -21,32 +21,32 @@ import { RetentionQueueProcessor } from "./infrastructure/queue/retention-queue.
 import { RetentionQueueService } from "./infrastructure/queue/retention-queue.service.js";
 
 @Module({
-	imports: [NotificationModule],
-	providers: [
-		RetentionEnrollmentAdapter,
-		ActivateRetentionExperimentUseCase,
-		EnrollRetentionExperimentUseCase,
-		ProcessRetentionStagesUseCase,
-		RelayRetentionOutboxUseCase,
-		DispatchRetentionPushUseCase,
-		RecoverFailedRetentionDeliveryUseCase,
-		PrismaRetentionRepository,
-		RetentionConfigAdapter,
-		ExpoRetentionPushSenderAdapter,
-		RetentionQueueService,
-		RetentionQueueProcessor,
-		{ provide: RETENTION_REPOSITORY, useExisting: PrismaRetentionRepository },
-		{ provide: RETENTION_CONFIG, useExisting: RetentionConfigAdapter },
-		{
-			provide: RETENTION_PUSH_SENDER,
-			useExisting: ExpoRetentionPushSenderAdapter,
-		},
-		{ provide: RETENTION_JOB_ENQUEUER, useExisting: RetentionQueueService },
-		{
-			provide: RETENTION_ENROLLMENT,
-			useExisting: RetentionEnrollmentAdapter,
-		},
-	],
-	exports: [RETENTION_ENROLLMENT],
+  imports: [NotificationModule],
+  providers: [
+    RetentionEnrollmentAdapter,
+    ActivateRetentionExperimentUseCase,
+    EnrollRetentionExperimentUseCase,
+    ProcessRetentionStagesUseCase,
+    RelayRetentionOutboxUseCase,
+    DispatchRetentionPushUseCase,
+    RecoverFailedRetentionDeliveryUseCase,
+    PrismaRetentionRepository,
+    RetentionConfigAdapter,
+    ExpoRetentionPushSenderAdapter,
+    RetentionQueueService,
+    RetentionQueueProcessor,
+    { provide: RETENTION_REPOSITORY, useExisting: PrismaRetentionRepository },
+    { provide: RETENTION_CONFIG, useExisting: RetentionConfigAdapter },
+    {
+      provide: RETENTION_PUSH_SENDER,
+      useExisting: ExpoRetentionPushSenderAdapter,
+    },
+    { provide: RETENTION_JOB_ENQUEUER, useExisting: RetentionQueueService },
+    {
+      provide: RETENTION_ENROLLMENT,
+      useExisting: RetentionEnrollmentAdapter,
+    },
+  ],
+  exports: [RETENTION_ENROLLMENT],
 })
 export class RetentionModule {}

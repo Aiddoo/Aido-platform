@@ -5,8 +5,8 @@ import { z } from "zod";
 import { now } from "#api/shared/domain/date/utils/core";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import {
-	PROMPT_OUTPUT_DISCIPLINE,
-	PROMPT_SECURITY_GUARD,
+  PROMPT_OUTPUT_DISCIPLINE,
+  PROMPT_SECURITY_GUARD,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
@@ -17,19 +17,19 @@ import { computeDerivedInsights } from "./report-insights.js";
 import { buildReportPromptEn } from "./report.prompt.en.js";
 
 export const reportAiResponseSchema = z.object({
-	summary: z.string().describe("한국어로 작성된 주간/월간 요약 (4-6문장)"),
-	tips: z.array(z.string()).min(1).max(3).describe("실천 가능한 팁 1-3개 (한국어)"),
+  summary: z.string().describe("한국어로 작성된 주간/월간 요약 (4-6문장)"),
+  tips: z.array(z.string()).min(1).max(3).describe("실천 가능한 팁 1-3개 (한국어)"),
 });
 
 export type ReportAiResponse = z.infer<typeof reportAiResponseSchema>;
 
 export const reportAiResponseSchemaEn = z.object({
-	summary: z.string().describe("Weekly/monthly summary written in English (4-6 sentences)"),
-	tips: z.array(z.string()).min(1).max(3).describe("1-3 actionable tips (English)"),
+  summary: z.string().describe("Weekly/monthly summary written in English (4-6 sentences)"),
+  tips: z.array(z.string()).min(1).max(3).describe("1-3 actionable tips (English)"),
 });
 
 export function getReportAiResponseSchema(locale: SupportedLocale) {
-	return locale === "en" ? reportAiResponseSchemaEn : reportAiResponseSchema;
+  return locale === "en" ? reportAiResponseSchemaEn : reportAiResponseSchema;
 }
 
 const REPORT_SYSTEM = `<role>
@@ -62,55 +62,55 @@ ${PROMPT_SECURITY_GUARD}
 ${PROMPT_OUTPUT_DISCIPLINE}`;
 
 function buildKoContext(
-	data: AggregatedReportData,
-	periodLabel: string,
-	type: ReportType,
-	options: BuildReportPromptOptions,
+  data: AggregatedReportData,
+  periodLabel: string,
+  type: ReportType,
+  options: BuildReportPromptOptions,
 ): Record<string, unknown> {
-	if (!data.hasActivity) {
-		return {
-			periodLabel,
-			type,
-			hasActivity: false,
-			previousTips: options.prevTips,
-		};
-	}
+  if (!data.hasActivity) {
+    return {
+      periodLabel,
+      type,
+      hasActivity: false,
+      previousTips: options.prevTips,
+    };
+  }
 
-	const insights = computeDerivedInsights(data);
-	return {
-		periodLabel,
-		type,
-		hasActivity: true,
-		stats: data,
-		derivedInsights: insights,
-		seasonalContext: getKoreanSeasonalContext(now()),
-		coachProfile: selectProfileTemplate({
-			completionRate: data.completionRate,
-			rateChange: insights.rateChange,
-		}),
-		previousTips: options.prevTips,
-	};
+  const insights = computeDerivedInsights(data);
+  return {
+    periodLabel,
+    type,
+    hasActivity: true,
+    stats: data,
+    derivedInsights: insights,
+    seasonalContext: getKoreanSeasonalContext(now()),
+    coachProfile: selectProfileTemplate({
+      completionRate: data.completionRate,
+      rateChange: insights.rateChange,
+    }),
+    previousTips: options.prevTips,
+  };
 }
 
 export function buildReportPrompt(
-	data: AggregatedReportData,
-	periodLabel: string,
-	type: ReportType,
-	options: BuildReportPromptOptions,
-	locale: SupportedLocale = "ko",
+  data: AggregatedReportData,
+  periodLabel: string,
+  type: ReportType,
+  options: BuildReportPromptOptions,
+  locale: SupportedLocale = "ko",
 ): ReportPrompt {
-	if (locale === "en") {
-		return buildReportPromptEn(data, periodLabel, type, options);
-	}
+  if (locale === "en") {
+    return buildReportPromptEn(data, periodLabel, type, options);
+  }
 
-	const activityTask = data.hasActivity
-		? `${periodLabel} 데이터를 분석해 사용자가 다음 ${type === "WEEKLY" ? "7일" : "달"}에 바로 적용할 코칭을 작성한다.`
-		: `${periodLabel}에는 등록된 할 일이 없다. 쉬어간 것을 다정하게 인정하고, 다음 기간에 바로 등록할 초간단 할 일 1~2개를 제안한다.`;
+  const activityTask = data.hasActivity
+    ? `${periodLabel} 데이터를 분석해 사용자가 다음 ${type === "WEEKLY" ? "7일" : "달"}에 바로 적용할 코칭을 작성한다.`
+    : `${periodLabel}에는 등록된 할 일이 없다. 쉬어간 것을 다정하게 인정하고, 다음 기간에 바로 등록할 초간단 할 일 1~2개를 제안한다.`;
 
-	return {
-		system: REPORT_SYSTEM,
-		prompt: `<context_json>\n${encodeUntrustedJson(
-			buildKoContext(data, periodLabel, type, options),
-		)}\n</context_json>\n<task>${activityTask} 내부적으로 근거를 점검한 뒤 구조화 결과만 반환한다.</task>`,
-	};
+  return {
+    system: REPORT_SYSTEM,
+    prompt: `<context_json>\n${encodeUntrustedJson(
+      buildKoContext(data, periodLabel, type, options),
+    )}\n</context_json>\n<task>${activityTask} 내부적으로 근거를 점검한 뒤 구조화 결과만 반환한다.</task>`,
+  };
 }

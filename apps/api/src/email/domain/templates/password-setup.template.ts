@@ -2,16 +2,16 @@
  * 비밀번호 설정 이메일 템플릿
  */
 export interface PasswordSetupTemplateData {
-	code: string;
-	expiryMinutes: number;
+  code: string;
+  expiryMinutes: number;
 }
 
 export function getPasswordSetupSubject(): string {
-	return "[Aido] 비밀번호 설정 인증 코드";
+  return "[Aido] 비밀번호 설정 인증 코드";
 }
 
 export function getPasswordSetupHtml(data: PasswordSetupTemplateData): string {
-	return `
+  return `
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -86,7 +86,7 @@ export function getPasswordSetupHtml(data: PasswordSetupTemplateData): string {
 }
 
 export function getPasswordSetupText(data: PasswordSetupTemplateData): string {
-	return `
+  return `
 [Aido] 비밀번호 설정 인증 코드
 
 비밀번호 설정 인증 코드: ${data.code}

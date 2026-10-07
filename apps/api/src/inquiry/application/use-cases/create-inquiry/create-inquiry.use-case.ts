@@ -9,10 +9,10 @@ import { buildInquirySubmission } from "../../../domain/services/inquiry-submiss
 import { INQUIRY_MAILER, type InquiryMailerPort } from "../../ports/inquiry-mailer.port.js";
 
 export interface CreateInquiryInput {
-	userId: string;
-	userEmail: string;
-	category: InquiryCategory;
-	content: string;
+  userId: string;
+  userEmail: string;
+  category: InquiryCategory;
+  content: string;
 }
 
 /**
@@ -22,29 +22,29 @@ export interface CreateInquiryInput {
  */
 @Injectable()
 export class CreateInquiryUseCase {
-	readonly #logger = new Logger(CreateInquiryUseCase.name);
+  readonly #logger = new Logger(CreateInquiryUseCase.name);
 
-	constructor(@Inject(INQUIRY_MAILER) private readonly mailer: InquiryMailerPort) {}
+  constructor(@Inject(INQUIRY_MAILER) private readonly mailer: InquiryMailerPort) {}
 
-	async execute(input: CreateInquiryInput): Promise<void> {
-		const submission = buildInquirySubmission(
-			{
-				userEmail: input.userEmail,
-				category: input.category,
-				content: input.content,
-			},
-			now(),
-		);
+  async execute(input: CreateInquiryInput): Promise<void> {
+    const submission = buildInquirySubmission(
+      {
+        userEmail: input.userEmail,
+        category: input.category,
+        content: input.content,
+      },
+      now(),
+    );
 
-		const result = await this.mailer.deliver(submission);
+    const result = await this.mailer.deliver(submission);
 
-		if (!result.success) {
-			throw new ApplicationException(ErrorCode.INQUIRY_1501, {
-				userId: input.userId,
-				error: result.error,
-			});
-		}
+    if (!result.success) {
+      throw new ApplicationException(ErrorCode.INQUIRY_1501, {
+        userId: input.userId,
+        error: result.error,
+      });
+    }
 
-		this.#logger.log(`Inquiry submitted: userId=${input.userId}, category=${input.category}`);
-	}
+    this.#logger.log(`Inquiry submitted: userId=${input.userId}, category=${input.category}`);
+  }
 }

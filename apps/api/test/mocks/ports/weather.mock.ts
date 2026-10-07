@@ -16,29 +16,29 @@ import type { WeatherLocationRepositoryPort } from "#api/weather/application/por
 
 /** WEATHER_LOCATION_REPOSITORY 포트 mock */
 export function createWeatherLocationRepositoryMock(): WeatherLocationRepositoryPort {
-	return {
-		findByUserId: vi.fn(),
-		upsert: vi.fn(),
-	};
+  return {
+    findByUserId: vi.fn(),
+    upsert: vi.fn(),
+  };
 }
 
 /** AIR_QUALITY_PROVIDER 포트 mock */
 export function createAirQualityProviderMock(): AirQualityProvider {
-	return {
-		getAirQuality: vi.fn(),
-	};
+  return {
+    getAirQuality: vi.fn(),
+  };
 }
 
 /** LIFESTYLE_INDEX_PROVIDER 포트 mock */
 export function createLifestyleIndexProviderMock(): LifestyleIndexProvider {
-	return {
-		getIndex: vi.fn(),
-	};
+  return {
+    getIndex: vi.fn(),
+  };
 }
 
 /** SUN_TIME_PROVIDER 포트 mock */
 export function createSunTimeProviderMock(): SunTimeProvider {
-	return {
-		getSunTime: vi.fn(),
-	};
+  return {
+    getSunTime: vi.fn(),
+  };
 }

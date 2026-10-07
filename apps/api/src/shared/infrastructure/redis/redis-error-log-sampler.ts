@@ -11,28 +11,28 @@ import { toErrorMessage } from "#api/shared/application/utils/error-message.util
  * `(+N suppressed)`로 덧붙인다.
  */
 export class RedisErrorLogSampler {
-	readonly #logger: Pick<Logger, "warn">;
-	readonly #intervalMs: number;
-	#windowStartedAt = Number.NEGATIVE_INFINITY;
-	#suppressed = 0;
+  readonly #logger: Pick<Logger, "warn">;
+  readonly #intervalMs: number;
+  #windowStartedAt = Number.NEGATIVE_INFINITY;
+  #suppressed = 0;
 
-	constructor(logger: Pick<Logger, "warn">, intervalMs = 30_000) {
-		this.#logger = logger;
-		this.#intervalMs = intervalMs;
-	}
+  constructor(logger: Pick<Logger, "warn">, intervalMs = 30_000) {
+    this.#logger = logger;
+    this.#intervalMs = intervalMs;
+  }
 
-	warn(operation: string, error: unknown): void {
-		const now = Date.now();
+  warn(operation: string, error: unknown): void {
+    const now = Date.now();
 
-		if (now - this.#windowStartedAt < this.#intervalMs) {
-			this.#suppressed++;
-			return;
-		}
+    if (now - this.#windowStartedAt < this.#intervalMs) {
+      this.#suppressed++;
+      return;
+    }
 
-		// 정책 문구(fail-open/closed)는 어댑터별 계약이 다르므로 중립 유지
-		const suffix = this.#suppressed > 0 ? ` (+${this.#suppressed} suppressed)` : "";
-		this.#logger.warn(`Redis ${operation} failed: ${toErrorMessage(error)}${suffix}`);
-		this.#windowStartedAt = now;
-		this.#suppressed = 0;
-	}
+    // 정책 문구(fail-open/closed)는 어댑터별 계약이 다르므로 중립 유지
+    const suffix = this.#suppressed > 0 ? ` (+${this.#suppressed} suppressed)` : "";
+    this.#logger.warn(`Redis ${operation} failed: ${toErrorMessage(error)}${suffix}`);
+    this.#windowStartedAt = now;
+    this.#suppressed = 0;
+  }
 }

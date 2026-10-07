@@ -8,20 +8,20 @@ import type { BroadcastTargetFilter } from "../../../domain/broadcast-message.js
 import { type BroadcastResult, buildBroadcastResult } from "../../../domain/broadcast-result.js";
 import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign.js";
 import {
-	ADMIN_BROADCAST_NOTIFIER,
-	type AdminBroadcastNotifierPort,
+  ADMIN_BROADCAST_NOTIFIER,
+  type AdminBroadcastNotifierPort,
 } from "../../ports/admin-broadcast-notifier.port.js";
 import {
-	ADMIN_USER_DIRECTORY,
-	type AdminUserDirectoryPort,
+  ADMIN_USER_DIRECTORY,
+  type AdminUserDirectoryPort,
 } from "../../ports/admin-user-directory.port.js";
 
 export interface BroadcastNotificationInput {
-	title: string;
-	body: string;
-	targetFilter: BroadcastTargetFilter;
-	action: NotificationAction | undefined;
-	force: boolean;
+  title: string;
+  body: string;
+  targetFilter: BroadcastTargetFilter;
+  action: NotificationAction | undefined;
+  force: boolean;
 }
 
 /**
@@ -31,48 +31,48 @@ export interface BroadcastNotificationInput {
  */
 @Injectable()
 export class BroadcastNotificationUseCase {
-	readonly #logger = new Logger(BroadcastNotificationUseCase.name);
+  readonly #logger = new Logger(BroadcastNotificationUseCase.name);
 
-	constructor(
-		@Inject(ADMIN_USER_DIRECTORY)
-		private readonly userDirectory: AdminUserDirectoryPort,
-		@Inject(ADMIN_BROADCAST_NOTIFIER)
-		private readonly notifier: AdminBroadcastNotifierPort,
-	) {}
+  constructor(
+    @Inject(ADMIN_USER_DIRECTORY)
+    private readonly userDirectory: AdminUserDirectoryPort,
+    @Inject(ADMIN_BROADCAST_NOTIFIER)
+    private readonly notifier: AdminBroadcastNotifierPort,
+  ) {}
 
-	async execute(input: BroadcastNotificationInput): Promise<BroadcastResult> {
-		// 도메인 불변식 검증(제목/본문 비어 있지 않음) 후 캠페인 생성
-		const campaign = BroadcastCampaign.create({
-			title: input.title,
-			body: input.body,
-			targetFilter: input.targetFilter,
-			action: input.action,
-			force: input.force,
-		});
+  async execute(input: BroadcastNotificationInput): Promise<BroadcastResult> {
+    // 도메인 불변식 검증(제목/본문 비어 있지 않음) 후 캠페인 생성
+    const campaign = BroadcastCampaign.create({
+      title: input.title,
+      body: input.body,
+      targetFilter: input.targetFilter,
+      action: input.action,
+      force: input.force,
+    });
 
-		let totalTargets = 0;
-		let successCount = 0;
+    let totalTargets = 0;
+    let successCount = 0;
 
-		// 대상 사용자를 배치로 스트리밍하며 배치마다 발송 (메모리 절약)
-		for await (const userIds of this.userDirectory.streamTargetUserIds(campaign.targetFilter)) {
-			totalTargets += userIds.length;
+    // 대상 사용자를 배치로 스트리밍하며 배치마다 발송 (메모리 절약)
+    for await (const userIds of this.userDirectory.streamTargetUserIds(campaign.targetFilter)) {
+      totalTargets += userIds.length;
 
-			const { count } = await this.notifier.sendBatch(
-				campaign.toMessages(userIds, "ADMIN_BROADCAST"),
-			);
-			successCount += count;
-		}
+      const { count } = await this.notifier.sendBatch(
+        campaign.toMessages(userIds, "ADMIN_BROADCAST"),
+      );
+      successCount += count;
+    }
 
-		if (totalTargets === 0) {
-			throw new ApplicationException(ErrorCode.ADMIN_1402, {
-				targetFilter: input.targetFilter,
-			});
-		}
+    if (totalTargets === 0) {
+      throw new ApplicationException(ErrorCode.ADMIN_1402, {
+        targetFilter: input.targetFilter,
+      });
+    }
 
-		this.#logger.log(
-			`Broadcast notification completed: ${successCount}/${totalTargets} sent, filter=${input.targetFilter}`,
-		);
+    this.#logger.log(
+      `Broadcast notification completed: ${successCount}/${totalTargets} sent, filter=${input.targetFilter}`,
+    );
 
-		return buildBroadcastResult(totalTargets, successCount);
-	}
+    return buildBroadcastResult(totalTargets, successCount);
+  }
 }

@@ -4,18 +4,18 @@ import { Inject, Injectable } from "@nestjs/common";
 import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
 
 import {
-	buildPreferenceView,
-	DEFAULT_PREFERENCE_SNAPSHOT,
-	type PreferenceSnapshot,
+  buildPreferenceView,
+  DEFAULT_PREFERENCE_SNAPSHOT,
+  type PreferenceSnapshot,
 } from "../../../domain/services/preference-view.js";
 import {
-	USER_PREFERENCE_REPOSITORY,
-	type UserPreferenceRecord,
-	type UserPreferenceRepositoryPort,
+  USER_PREFERENCE_REPOSITORY,
+  type UserPreferenceRecord,
+  type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port.js";
 import {
-	USER_SETTINGS_CACHE,
-	type UserSettingsCachePort,
+  USER_SETTINGS_CACHE,
+  type UserSettingsCachePort,
 } from "../../ports/user-settings-cache.port.js";
 
 /**
@@ -25,41 +25,41 @@ import {
  */
 @Injectable()
 export class GetPreferenceUseCase {
-	constructor(
-		@Inject(USER_PREFERENCE_REPOSITORY)
-		private readonly preferenceRepository: UserPreferenceRepositoryPort,
-		private readonly entitlementService: EntitlementService,
-		@Inject(USER_SETTINGS_CACHE)
-		private readonly cache: UserSettingsCachePort,
-	) {}
+  constructor(
+    @Inject(USER_PREFERENCE_REPOSITORY)
+    private readonly preferenceRepository: UserPreferenceRepositoryPort,
+    private readonly entitlementService: EntitlementService,
+    @Inject(USER_SETTINGS_CACHE)
+    private readonly cache: UserSettingsCachePort,
+  ) {}
 
-	async execute(userId: string): Promise<PreferenceResponse> {
-		const snapshot = await this.cache.wrapUserPreference(userId, async () => {
-			const raw = await this.preferenceRepository.findByUserId(userId);
-			return raw ? toSnapshot(raw) : DEFAULT_PREFERENCE_SNAPSHOT;
-		});
+  async execute(userId: string): Promise<PreferenceResponse> {
+    const snapshot = await this.cache.wrapUserPreference(userId, async () => {
+      const raw = await this.preferenceRepository.findByUserId(userId);
+      return raw ? toSnapshot(raw) : DEFAULT_PREFERENCE_SNAPSHOT;
+    });
 
-		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
-		return buildPreferenceView(snapshot, hasPremium);
-	}
+    const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+    return buildPreferenceView(snapshot, hasPremium);
+  }
 }
 
 function toSnapshot(record: UserPreferenceRecord): PreferenceSnapshot {
-	return {
-		pushEnabled: record.pushEnabled,
-		nightPushEnabled: record.nightPushEnabled,
-		timezone: record.timezone,
-		locale: record.locale,
-		morningReminderHour: record.morningReminderHour,
-		morningReminderMinute: record.morningReminderMinute,
-		eveningReminderHour: record.eveningReminderHour,
-		eveningReminderMinute: record.eveningReminderMinute,
-		timeFormat: record.timeFormat,
-		weatherMorningEnabled: record.weatherMorningEnabled,
-		weatherMorningHour: record.weatherMorningHour,
-		weatherMorningMinute: record.weatherMorningMinute,
-		weatherEveningEnabled: record.weatherEveningEnabled,
-		weatherEveningHour: record.weatherEveningHour,
-		weatherEveningMinute: record.weatherEveningMinute,
-	};
+  return {
+    pushEnabled: record.pushEnabled,
+    nightPushEnabled: record.nightPushEnabled,
+    timezone: record.timezone,
+    locale: record.locale,
+    morningReminderHour: record.morningReminderHour,
+    morningReminderMinute: record.morningReminderMinute,
+    eveningReminderHour: record.eveningReminderHour,
+    eveningReminderMinute: record.eveningReminderMinute,
+    timeFormat: record.timeFormat,
+    weatherMorningEnabled: record.weatherMorningEnabled,
+    weatherMorningHour: record.weatherMorningHour,
+    weatherMorningMinute: record.weatherMorningMinute,
+    weatherEveningEnabled: record.weatherEveningEnabled,
+    weatherEveningHour: record.weatherEveningHour,
+    weatherEveningMinute: record.weatherEveningMinute,
+  };
 }

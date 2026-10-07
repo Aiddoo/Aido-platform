@@ -39,466 +39,466 @@ import { TypedConfigService } from "#api/shared/infrastructure/config/services/c
 import { FollowBuilder, UserBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
 import {
-	assertNativeWhere,
-	createMockDatabaseContext,
-	databaseFixture,
-	nativeRows,
+  assertNativeWhere,
+  createMockDatabaseContext,
+  databaseFixture,
+  nativeRows,
 } from "#test/mocks/database.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let followReader: FollowReader;
-	let sendUseCase: SendFriendRequestUseCase;
-	let sendByTagUseCase: SendFriendRequestByTagUseCase;
-	let acceptUseCase: AcceptFriendRequestUseCase;
-	let rejectUseCase: RejectFriendRequestUseCase;
-	let removeUseCase: RemoveFriendUseCase;
+  let module: TestingModule;
+  let followReader: FollowReader;
+  let sendUseCase: SendFriendRequestUseCase;
+  let sendByTagUseCase: SendFriendRequestByTagUseCase;
+  let acceptUseCase: AcceptFriendRequestUseCase;
+  let rejectUseCase: RejectFriendRequestUseCase;
+  let removeUseCase: RemoveFriendUseCase;
 
-	const nativeContext = createMockDatabaseContext();
-	const mockFollowDb = nativeContext.orm.public.Follow;
-	const mockUserDb = nativeContext.orm.public.User;
+  const nativeContext = createMockDatabaseContext();
+  const mockFollowDb = nativeContext.orm.public.Follow;
+  const mockUserDb = nativeContext.orm.public.User;
 
-	const mockNotificationQueueService = {
-		enqueueFollowNew: vi.fn(),
-		enqueueFollowMutual: vi.fn(),
-		enqueueMilestoneReached: vi.fn(),
-	};
+  const mockNotificationQueueService = {
+    enqueueFollowNew: vi.fn(),
+    enqueueFollowMutual: vi.fn(),
+    enqueueMilestoneReached: vi.fn(),
+  };
 
-	const mockCacheService = {
-		getMutualFriend: vi.fn(),
-		setMutualFriend: vi.fn(),
-		invalidateMutualFriend: vi.fn().mockResolvedValue(undefined),
-		invalidateMutualFriendIds: vi.fn().mockResolvedValue(undefined),
-		invalidateFriendCount: vi.fn().mockResolvedValue(undefined),
-		wrapFriendCount: vi.fn().mockImplementation((_userId, factory) => factory()),
-		wrapMutualFriendIds: vi.fn().mockImplementation((_userId, factory) => factory()),
-	};
+  const mockCacheService = {
+    getMutualFriend: vi.fn(),
+    setMutualFriend: vi.fn(),
+    invalidateMutualFriend: vi.fn().mockResolvedValue(undefined),
+    invalidateMutualFriendIds: vi.fn().mockResolvedValue(undefined),
+    invalidateFriendCount: vi.fn().mockResolvedValue(undefined),
+    wrapFriendCount: vi.fn().mockImplementation((_userId, factory) => factory()),
+    wrapMutualFriendIds: vi.fn().mockImplementation((_userId, factory) => factory()),
+  };
 
-	const mockUser = UserBuilder.create().withId("user-integration-123").verified().build();
-	const mockTargetUser = UserBuilder.create()
-		.withId("user-integration-456")
-		.withUserTag("TGT67890")
-		.verified()
-		.build();
-	const mockUserId = mockUser.id;
-	const mockTargetUserId = mockTargetUser.id;
-	const mockFollowId = "follow-integration-789";
-	const mockTargetUserTag = mockTargetUser.userTag;
+  const mockUser = UserBuilder.create().withId("user-integration-123").verified().build();
+  const mockTargetUser = UserBuilder.create()
+    .withId("user-integration-456")
+    .withUserTag("TGT67890")
+    .verified()
+    .build();
+  const mockUserId = mockUser.id;
+  const mockTargetUserId = mockTargetUser.id;
+  const mockFollowId = "follow-integration-789";
+  const mockTargetUserTag = mockTargetUser.userTag;
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		module = await Test.createTestingModule({
-			providers: [
-				FollowReader,
-				FriendshipEffects,
-				SendFriendRequestUseCase,
-				SendFriendRequestByTagUseCase,
-				AcceptFriendRequestUseCase,
-				RejectFriendRequestUseCase,
-				RemoveFriendUseCase,
-				ReorderFriendUseCase,
-				SearchUsersUseCase,
-				{ provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
-				{ provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
-				{ provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
-				PaginationService,
-				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
-				{
-					provide: TransactionHost,
-					useValue: { tx: nativeContext },
-				},
-				{
-					provide: TypedConfigService,
-					useValue: {
-						pagination: { defaultPageSize: 20, maxPageSize: 100 },
-					},
-				},
-				{
-					provide: NotificationQueueService,
-					useValue: mockNotificationQueueService,
-				},
-				{ provide: CacheService, useValue: mockCacheService },
-				{
-					provide: EntitlementService,
-					useValue: {
-						getResourceLimit: vi.fn().mockResolvedValue({
-							maxCount: null,
-							isAdmin: false,
-							subscriptionStatus: "ACTIVE",
-						}),
-						enforceResourceLimit: vi.fn(),
-					},
-				},
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        FollowReader,
+        FriendshipEffects,
+        SendFriendRequestUseCase,
+        SendFriendRequestByTagUseCase,
+        AcceptFriendRequestUseCase,
+        RejectFriendRequestUseCase,
+        RemoveFriendUseCase,
+        ReorderFriendUseCase,
+        SearchUsersUseCase,
+        { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
+        { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
+        { provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
+        PaginationService,
+        { provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
+        {
+          provide: TransactionHost,
+          useValue: { tx: nativeContext },
+        },
+        {
+          provide: TypedConfigService,
+          useValue: {
+            pagination: { defaultPageSize: 20, maxPageSize: 100 },
+          },
+        },
+        {
+          provide: NotificationQueueService,
+          useValue: mockNotificationQueueService,
+        },
+        { provide: CacheService, useValue: mockCacheService },
+        {
+          provide: EntitlementService,
+          useValue: {
+            getResourceLimit: vi.fn().mockResolvedValue({
+              maxCount: null,
+              isAdmin: false,
+              subscriptionStatus: "ACTIVE",
+            }),
+            enforceResourceLimit: vi.fn(),
+          },
+        },
+      ],
+    }).compile();
 
-		followReader = module.get(FollowReader);
-		sendUseCase = module.get(SendFriendRequestUseCase);
-		sendByTagUseCase = module.get(SendFriendRequestByTagUseCase);
-		acceptUseCase = module.get(AcceptFriendRequestUseCase);
-		rejectUseCase = module.get(RejectFriendRequestUseCase);
-		removeUseCase = module.get(RemoveFriendUseCase);
-	});
+    followReader = module.get(FollowReader);
+    sendUseCase = module.get(SendFriendRequestUseCase);
+    sendByTagUseCase = module.get(SendFriendRequestByTagUseCase);
+    acceptUseCase = module.get(AcceptFriendRequestUseCase);
+    rejectUseCase = module.get(RejectFriendRequestUseCase);
+    removeUseCase = module.get(RemoveFriendUseCase);
+  });
 
-	afterAll(async () => {
-		await module.close();
-		vi.restoreAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+    vi.restoreAllMocks();
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-		mockCacheService.getMutualFriend.mockResolvedValue(undefined);
-		asMock(mockFollowDb.aggregate).mockResolvedValue({ max_sortOrder: null, count: 0 });
-	});
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCacheService.getMutualFriend.mockResolvedValue(undefined);
+    asMock(mockFollowDb.aggregate).mockResolvedValue({ max_sortOrder: null, count: 0 });
+  });
 
-	describe("DI 통합", () => {
-		it("FollowReader가 올바르게 조립된다", () => {
-			expect(followReader).toBeDefined();
-			expect(followReader).toBeInstanceOf(FollowReader);
-		});
+  describe("DI 통합", () => {
+    it("FollowReader가 올바르게 조립된다", () => {
+      expect(followReader).toBeDefined();
+      expect(followReader).toBeInstanceOf(FollowReader);
+    });
 
-		it("FollowRepository 포트가 주입된다", () => {
-			expect(module.get(FOLLOW_REPOSITORY)).toBeInstanceOf(PrismaFollowRepository);
-		});
-	});
+    it("FollowRepository 포트가 주입된다", () => {
+      expect(module.get(FOLLOW_REPOSITORY)).toBeInstanceOf(PrismaFollowRepository);
+    });
+  });
 
-	describe("친구 요청 (use-case)", () => {
-		it("친구 요청이 Repository를 통해 생성된다", async () => {
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
-			asMock(mockFollowDb.create).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
-				),
-			);
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+  describe("친구 요청 (use-case)", () => {
+    it("친구 요청이 Repository를 통해 생성된다", async () => {
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+      asMock(mockFollowDb.create).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
+        ),
+      );
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
 
-			const result = await sendUseCase.execute({
-				userId: mockUserId,
-				targetUserId: mockTargetUserId,
-			});
+      const result = await sendUseCase.execute({
+        userId: mockUserId,
+        targetUserId: mockTargetUserId,
+      });
 
-			expect(result.follow.followerId).toBe(mockUserId);
-			expect(result.follow.followingId).toBe(mockTargetUserId);
-			expect(result.follow.status).toBe("PENDING");
-			expect(result.autoAccepted).toBe(false);
-		});
+      expect(result.follow.followerId).toBe(mockUserId);
+      expect(result.follow.followingId).toBe(mockTargetUserId);
+      expect(result.follow.status).toBe("PENDING");
+      expect(result.autoAccepted).toBe(false);
+    });
 
-		it("자기 자신에게 요청 시 ApplicationException", async () => {
-			await expect(
-				sendUseCase.execute({ userId: mockUserId, targetUserId: mockUserId }),
-			).rejects.toThrow(ApplicationException);
-		});
+    it("자기 자신에게 요청 시 ApplicationException", async () => {
+      await expect(
+        sendUseCase.execute({ userId: mockUserId, targetUserId: mockUserId }),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("존재하지 않는 사용자에게 요청 시 ApplicationException", async () => {
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
-			await expect(
-				sendUseCase.execute({
-					userId: mockUserId,
-					targetUserId: mockTargetUserId,
-				}),
-			).rejects.toThrow(ApplicationException);
-		});
+    it("존재하지 않는 사용자에게 요청 시 ApplicationException", async () => {
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
+      await expect(
+        sendUseCase.execute({
+          userId: mockUserId,
+          targetUserId: mockTargetUserId,
+        }),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("이미 친구인 경우 ApplicationException", async () => {
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
-			asMock(mockFollowDb.first).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId)
-						.withId(mockFollowId)
-						.accepted()
-						.build(),
-				),
-			);
-			await expect(
-				sendUseCase.execute({
-					userId: mockUserId,
-					targetUserId: mockTargetUserId,
-				}),
-			).rejects.toThrow(ApplicationException);
-		});
+    it("이미 친구인 경우 ApplicationException", async () => {
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+      asMock(mockFollowDb.first).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId)
+            .withId(mockFollowId)
+            .accepted()
+            .build(),
+        ),
+      );
+      await expect(
+        sendUseCase.execute({
+          userId: mockUserId,
+          targetUserId: mockTargetUserId,
+        }),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("상대방이 먼저 요청한 경우 자동 수락", async () => {
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockTargetUserId, mockUserId)
-						.withId("reverse-follow-id")
-						.pending()
-						.build(),
-				),
-			);
-			asMock(mockFollowDb.update).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
-				),
-			);
-			asMock(mockFollowDb.create).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId)
-						.withId(mockFollowId)
-						.accepted()
-						.build(),
-				),
-			);
-			asMock(mockUserDb.first).mockResolvedValue(
-				databaseFixture("User", { ...mockUser, userTag: "USR12345", profile: { name: "User" } }),
-			);
+    it("상대방이 먼저 요청한 경우 자동 수락", async () => {
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockTargetUserId, mockUserId)
+            .withId("reverse-follow-id")
+            .pending()
+            .build(),
+        ),
+      );
+      asMock(mockFollowDb.update).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
+        ),
+      );
+      asMock(mockFollowDb.create).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId)
+            .withId(mockFollowId)
+            .accepted()
+            .build(),
+        ),
+      );
+      asMock(mockUserDb.first).mockResolvedValue(
+        databaseFixture("User", { ...mockUser, userTag: "USR12345", profile: { name: "User" } }),
+      );
 
-			const result = await sendUseCase.execute({
-				userId: mockUserId,
-				targetUserId: mockTargetUserId,
-			});
+      const result = await sendUseCase.execute({
+        userId: mockUserId,
+        targetUserId: mockTargetUserId,
+      });
 
-			expect(result.follow.status).toBe("ACCEPTED");
-			expect(result.autoAccepted).toBe(true);
-		});
-	});
+      expect(result.follow.status).toBe("ACCEPTED");
+      expect(result.autoAccepted).toBe(true);
+    });
+  });
 
-	describe("친구 요청 by tag (facade)", () => {
-		it("userTag로 요청하면 Follow가 생성된다", async () => {
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
-			asMock(mockFollowDb.create).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
-				),
-			);
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+  describe("친구 요청 by tag (facade)", () => {
+    it("userTag로 요청하면 Follow가 생성된다", async () => {
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+      asMock(mockFollowDb.create).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
+        ),
+      );
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
 
-			const result = await sendByTagUseCase.execute({
-				userId: mockUserId,
-				targetUserTag: mockTargetUserTag,
-			});
+      const result = await sendByTagUseCase.execute({
+        userId: mockUserId,
+        targetUserTag: mockTargetUserTag,
+      });
 
-			expect(result.follow.status).toBe("PENDING");
-			expect(result.autoAccepted).toBe(false);
-		});
+      expect(result.follow.status).toBe("PENDING");
+      expect(result.autoAccepted).toBe(false);
+    });
 
-		it("존재하지 않는 userTag → ApplicationException", async () => {
-			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
-			await expect(
-				sendByTagUseCase.execute({
-					userId: mockUserId,
-					targetUserTag: "NOTEXIST",
-				}),
-			).rejects.toThrow(ApplicationException);
-		});
-	});
+    it("존재하지 않는 userTag → ApplicationException", async () => {
+      asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
+      await expect(
+        sendByTagUseCase.execute({
+          userId: mockUserId,
+          targetUserTag: "NOTEXIST",
+        }),
+      ).rejects.toThrow(ApplicationException);
+    });
+  });
 
-	describe("친구 요청 수락 (facade)", () => {
-		it("수락 시 양방향 관계가 성립된다", async () => {
-			const pendingRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
-				.withId(mockFollowId)
-				.pending()
-				.build();
-			const myFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
-				.withId("my-follow-id")
-				.accepted()
-				.build();
+  describe("친구 요청 수락 (facade)", () => {
+    it("수락 시 양방향 관계가 성립된다", async () => {
+      const pendingRequest = FollowBuilder.create(mockTargetUserId, mockUserId)
+        .withId(mockFollowId)
+        .pending()
+        .build();
+      const myFollow = FollowBuilder.create(mockUserId, mockTargetUserId)
+        .withId("my-follow-id")
+        .accepted()
+        .build();
 
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", pendingRequest));
-			asMock(mockFollowDb.update).mockResolvedValue(
-				databaseFixture("Follow", {
-					...pendingRequest,
-					status: "ACCEPTED",
-				}),
-			);
-			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
-			asMock(mockFollowDb.create).mockResolvedValue(databaseFixture("Follow", myFollow));
-			asMock(mockFollowDb.first).mockResolvedValueOnce(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId)
-						.withId("my-follow-id")
-						.accepted()
-						.withFollowerUser({
-							id: mockUserId,
-							userTag: "MYTAG123",
-							profile: { name: "My User", profileImage: null },
-						})
-						.withFollowingUser({
-							id: mockTargetUserId,
-							userTag: mockTargetUserTag,
-							profile: { name: "Target User", profileImage: null },
-						})
-						.buildWithUser(),
-				),
-			);
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", pendingRequest));
+      asMock(mockFollowDb.update).mockResolvedValue(
+        databaseFixture("Follow", {
+          ...pendingRequest,
+          status: "ACCEPTED",
+        }),
+      );
+      asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+      asMock(mockFollowDb.create).mockResolvedValue(databaseFixture("Follow", myFollow));
+      asMock(mockFollowDb.first).mockResolvedValueOnce(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId)
+            .withId("my-follow-id")
+            .accepted()
+            .withFollowerUser({
+              id: mockUserId,
+              userTag: "MYTAG123",
+              profile: { name: "My User", profileImage: null },
+            })
+            .withFollowingUser({
+              id: mockTargetUserId,
+              userTag: mockTargetUserTag,
+              profile: { name: "Target User", profileImage: null },
+            })
+            .buildWithUser(),
+        ),
+      );
 
-			const result = await acceptUseCase.execute({
-				userId: mockUserId,
-				requesterUserId: mockTargetUserId,
-			});
+      const result = await acceptUseCase.execute({
+        userId: mockUserId,
+        requesterUserId: mockTargetUserId,
+      });
 
-			expect(result.status).toBe("ACCEPTED");
-			expect(mockFollowDb.create).toHaveBeenCalled();
-		});
+      expect(result.status).toBe("ACCEPTED");
+      expect(mockFollowDb.create).toHaveBeenCalled();
+    });
 
-		it("존재하지 않는 요청 수락 → ApplicationException", async () => {
-			asMock(mockFollowDb.first).mockResolvedValue(databaseFixture("Follow", null));
-			await expect(
-				acceptUseCase.execute({
-					userId: mockUserId,
-					requesterUserId: mockTargetUserId,
-				}),
-			).rejects.toThrow(ApplicationException);
-		});
-	});
+    it("존재하지 않는 요청 수락 → ApplicationException", async () => {
+      asMock(mockFollowDb.first).mockResolvedValue(databaseFixture("Follow", null));
+      await expect(
+        acceptUseCase.execute({
+          userId: mockUserId,
+          requesterUserId: mockTargetUserId,
+        }),
+      ).rejects.toThrow(ApplicationException);
+    });
+  });
 
-	describe("친구 요청 거절 / 삭제 (facade)", () => {
-		it("거절 시 요청이 삭제된다", async () => {
-			asMock(mockFollowDb.first).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockTargetUserId, mockUserId).withId(mockFollowId).pending().build(),
-				),
-			);
-			asMock(mockFollowDb.delete).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).build(),
-				),
-			);
+  describe("친구 요청 거절 / 삭제 (facade)", () => {
+    it("거절 시 요청이 삭제된다", async () => {
+      asMock(mockFollowDb.first).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockTargetUserId, mockUserId).withId(mockFollowId).pending().build(),
+        ),
+      );
+      asMock(mockFollowDb.delete).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).build(),
+        ),
+      );
 
-			await rejectUseCase.execute({
-				userId: mockUserId,
-				requesterUserId: mockTargetUserId,
-			});
-			expect(mockFollowDb.delete).toHaveBeenCalled();
-		});
+      await rejectUseCase.execute({
+        userId: mockUserId,
+        requesterUserId: mockTargetUserId,
+      });
+      expect(mockFollowDb.delete).toHaveBeenCalled();
+    });
 
-		it("친구 삭제는 양방향으로 수행된다", async () => {
-			asMock(mockFollowDb.first).mockResolvedValueOnce(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId)
-						.withId(mockFollowId)
-						.accepted()
-						.build(),
-				),
-			);
-			asMock(mockFollowDb.delete).mockResolvedValue(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).build(),
-				),
-			);
-			asMock(mockFollowDb.first).mockResolvedValueOnce(
-				databaseFixture(
-					"Follow",
-					FollowBuilder.create(mockTargetUserId, mockUserId)
-						.withId("their-follow-id")
-						.accepted()
-						.build(),
-				),
-			);
+    it("친구 삭제는 양방향으로 수행된다", async () => {
+      asMock(mockFollowDb.first).mockResolvedValueOnce(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId)
+            .withId(mockFollowId)
+            .accepted()
+            .build(),
+        ),
+      );
+      asMock(mockFollowDb.delete).mockResolvedValue(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).build(),
+        ),
+      );
+      asMock(mockFollowDb.first).mockResolvedValueOnce(
+        databaseFixture(
+          "Follow",
+          FollowBuilder.create(mockTargetUserId, mockUserId)
+            .withId("their-follow-id")
+            .accepted()
+            .build(),
+        ),
+      );
 
-			await removeUseCase.execute({
-				userId: mockUserId,
-				targetUserId: mockTargetUserId,
-			});
-			expect(mockFollowDb.delete).toHaveBeenCalledTimes(2);
-		});
-	});
+      await removeUseCase.execute({
+        userId: mockUserId,
+        targetUserId: mockTargetUserId,
+      });
+      expect(mockFollowDb.delete).toHaveBeenCalledTimes(2);
+    });
+  });
 
-	describe("친구 목록 조회 (facade)", () => {
-		it("친구 목록이 페이지네이션과 함께 조회된다", async () => {
-			mockFollowDb.all.mockReturnValue(
-				nativeRows(
-					databaseFixture("Follow", [
-						FollowBuilder.create(mockUserId, "friend-1")
-							.withId("follow-1")
-							.accepted()
-							.buildWithUser(),
-						FollowBuilder.create(mockUserId, "friend-2")
-							.withId("follow-2")
-							.accepted()
-							.buildWithUser(),
-					]),
-				),
-			);
+  describe("친구 목록 조회 (facade)", () => {
+    it("친구 목록이 페이지네이션과 함께 조회된다", async () => {
+      mockFollowDb.all.mockReturnValue(
+        nativeRows(
+          databaseFixture("Follow", [
+            FollowBuilder.create(mockUserId, "friend-1")
+              .withId("follow-1")
+              .accepted()
+              .buildWithUser(),
+            FollowBuilder.create(mockUserId, "friend-2")
+              .withId("follow-2")
+              .accepted()
+              .buildWithUser(),
+          ]),
+        ),
+      );
 
-			const result = await followReader.getFriends({ userId: mockUserId });
-			expect(result.items).toHaveLength(2);
-			expect(result.pagination).toBeDefined();
-		});
+      const result = await followReader.getFriends({ userId: mockUserId });
+      expect(result.items).toHaveLength(2);
+      expect(result.pagination).toBeDefined();
+    });
 
-		it("userTag 검색 조건이 쿼리에 포함된다", async () => {
-			mockFollowDb.all.mockReturnValue(nativeRows(databaseFixture("Follow", [])));
-			await followReader.getFriends({ userId: mockUserId, search: "TGT" });
-			assertNativeWhere("Follow", mockFollowDb.where.mock.calls[0]?.[0], (row) =>
-				and(
-					row.followerId.eq(mockUserId),
-					row.status.eq("ACCEPTED"),
-					row.following.some((user) =>
-						and(
-							nativeContext.raw.sql`${user.userTag} ILIKE ${"%TGT%"}`
-								.returns("pg/bool@1")
-								.buildAst(),
-							user.following.some((back) =>
-								and(
-									back.followerId.neq(mockUserId),
-									back.followingId.eq(mockUserId),
-									back.status.eq("ACCEPTED"),
-								),
-							),
-						),
-					),
-				),
-			);
-		});
-	});
+    it("userTag 검색 조건이 쿼리에 포함된다", async () => {
+      mockFollowDb.all.mockReturnValue(nativeRows(databaseFixture("Follow", [])));
+      await followReader.getFriends({ userId: mockUserId, search: "TGT" });
+      assertNativeWhere("Follow", mockFollowDb.where.mock.calls[0]?.[0], (row) =>
+        and(
+          row.followerId.eq(mockUserId),
+          row.status.eq("ACCEPTED"),
+          row.following.some((user) =>
+            and(
+              nativeContext.raw.sql`${user.userTag} ILIKE ${"%TGT%"}`
+                .returns("pg/bool@1")
+                .buildAst(),
+              user.following.some((back) =>
+                and(
+                  back.followerId.neq(mockUserId),
+                  back.followingId.eq(mockUserId),
+                  back.status.eq("ACCEPTED"),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  });
 
-	describe("맞팔 여부 / 집계 (facade)", () => {
-		it("양방향 수락이면 맞팔이다", async () => {
-			asMock(mockFollowDb.first)
-				.mockResolvedValueOnce(
-					databaseFixture(
-						"Follow",
-						FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
-					),
-				)
-				.mockResolvedValueOnce(
-					databaseFixture(
-						"Follow",
-						FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
-					),
-				);
+  describe("맞팔 여부 / 집계 (facade)", () => {
+    it("양방향 수락이면 맞팔이다", async () => {
+      asMock(mockFollowDb.first)
+        .mockResolvedValueOnce(
+          databaseFixture(
+            "Follow",
+            FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
+          ),
+        )
+        .mockResolvedValueOnce(
+          databaseFixture(
+            "Follow",
+            FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
+          ),
+        );
 
-			const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
-			expect(result).toBe(true);
-		});
+      const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
+      expect(result).toBe(true);
+    });
 
-		it("일방적 팔로우는 맞팔이 아니다", async () => {
-			asMock(mockFollowDb.first)
-				.mockResolvedValueOnce(
-					databaseFixture(
-						"Follow",
-						FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
-					),
-				)
-				.mockResolvedValueOnce(null);
+    it("일방적 팔로우는 맞팔이 아니다", async () => {
+      asMock(mockFollowDb.first)
+        .mockResolvedValueOnce(
+          databaseFixture(
+            "Follow",
+            FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
+          ),
+        )
+        .mockResolvedValueOnce(null);
 
-			const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
-			expect(result).toBe(false);
-		});
+      const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
+      expect(result).toBe(false);
+    });
 
-		it("친구 수가 집계된다", async () => {
-			asMock(mockFollowDb.aggregate).mockResolvedValue({ count: 5 });
-			expect(await followReader.countFriends(mockUserId)).toBe(5);
-		});
-	});
+    it("친구 수가 집계된다", async () => {
+      asMock(mockFollowDb.aggregate).mockResolvedValue({ count: 5 });
+      expect(await followReader.countFriends(mockUserId)).toBe(5);
+    });
+  });
 });

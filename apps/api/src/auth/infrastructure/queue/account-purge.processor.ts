@@ -3,9 +3,9 @@ import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs
 import type { AccountPurgeJob } from "#api/auth/infrastructure/scheduler/account-purge.job";
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 import {
-	JOB_RUNTIME,
-	type JobData,
-	type JobRuntimePort,
+  JOB_RUNTIME,
+  type JobData,
+  type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
 
 export const ACCOUNT_PURGE_QUEUE = "account-purge.v1";
@@ -22,45 +22,45 @@ export type AccountPurgeJobData = Record<string, never>;
  */
 @Injectable()
 export class AccountPurgeProcessor implements OnModuleInit {
-	readonly #logger = new Logger(AccountPurgeProcessor.name);
+  readonly #logger = new Logger(AccountPurgeProcessor.name);
 
-	/** @see AccountPurgeJob — 순환 참조 방지를 위해 setter injection */
-	#purgeJob?: AccountPurgeJob;
-	setPurgeJob(job: AccountPurgeJob) {
-		this.#purgeJob = job;
-	}
+  /** @see AccountPurgeJob — 순환 참조 방지를 위해 setter injection */
+  #purgeJob?: AccountPurgeJob;
+  setPurgeJob(job: AccountPurgeJob) {
+    this.#purgeJob = job;
+  }
 
-	constructor(
-		@Optional()
-		@Inject(JOB_RUNTIME)
-		private readonly runtime?: JobRuntimePort,
-	) {}
+  constructor(
+    @Optional()
+    @Inject(JOB_RUNTIME)
+    private readonly runtime?: JobRuntimePort,
+  ) {}
 
-	async onModuleInit(): Promise<void> {
-		if (!this.runtime) return;
-		const handler = async () => this.process();
-		await this.runtime.work<JobData>(ACCOUNT_PURGE_QUEUE, handler, {
-			teamSize: 1,
-			pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-		});
-		await this.runtime.work<JobData>(ACCOUNT_PURGE_LEGACY_QUEUE, handler, {
-			teamSize: 1,
-			pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-		});
-	}
+  async onModuleInit(): Promise<void> {
+    if (!this.runtime) return;
+    const handler = async () => this.process();
+    await this.runtime.work<JobData>(ACCOUNT_PURGE_QUEUE, handler, {
+      teamSize: 1,
+      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+    });
+    await this.runtime.work<JobData>(ACCOUNT_PURGE_LEGACY_QUEUE, handler, {
+      teamSize: 1,
+      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+    });
+  }
 
-	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
-		this.#logger.error(
-			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
-			error.stack,
-		);
-	}
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
+    this.#logger.error(
+      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
+      error.stack,
+    );
+  }
 
-	async process(_job?: { readonly data?: AccountPurgeJobData }): Promise<void> {
-		this.#logger.debug("Processing account purge job...");
-		if (!this.#purgeJob) {
-			throw new Error("AccountPurgeJob not wired (setPurgeJob 미호출)");
-		}
-		await this.#purgeJob.purgeDeletedAccounts();
-	}
+  async process(_job?: { readonly data?: AccountPurgeJobData }): Promise<void> {
+    this.#logger.debug("Processing account purge job...");
+    if (!this.#purgeJob) {
+      throw new Error("AccountPurgeJob not wired (setPurgeJob 미호출)");
+    }
+    await this.#purgeJob.purgeDeletedAccounts();
+  }
 }

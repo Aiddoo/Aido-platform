@@ -6,20 +6,20 @@ import { computeDateRange, computePeriodLabel } from "../services/report-period.
 import type { ReportType } from "../types.js";
 
 export interface AiReportProps {
-	id: number;
-	userId: string;
-	type: ReportType;
-	year: number;
-	period: number;
-	stats: Validators.ReportStats;
-	categoryBreakdown: Validators.CategoryBreakdownItem[];
-	dayPatterns: Validators.DayPatternItem[];
-	timePatterns: Validators.TimePatternItem[];
-	aiSummary: string;
-	aiTips: string[];
-	locale: SupportedLocale;
-	hasActivity: boolean;
-	generatedAt: Date;
+  id: number;
+  userId: string;
+  type: ReportType;
+  year: number;
+  period: number;
+  stats: Validators.ReportStats;
+  categoryBreakdown: Validators.CategoryBreakdownItem[];
+  dayPatterns: Validators.DayPatternItem[];
+  timePatterns: Validators.TimePatternItem[];
+  aiSummary: string;
+  aiTips: string[];
+  locale: SupportedLocale;
+  hasActivity: boolean;
+  generatedAt: Date;
 }
 
 /**
@@ -30,46 +30,46 @@ export interface AiReportProps {
  * 이미 파싱된 타입 안전 필드를 보유한다.
  */
 export class AiReport {
-	private constructor(private readonly props: AiReportProps) {}
+  private constructor(private readonly props: AiReportProps) {}
 
-	static reconstitute(props: AiReportProps): AiReport {
-		return new AiReport(props);
-	}
+  static reconstitute(props: AiReportProps): AiReport {
+    return new AiReport(props);
+  }
 
-	get id(): number {
-		return this.props.id;
-	}
+  get id(): number {
+    return this.props.id;
+  }
 
-	get type(): ReportType {
-		return this.props.type;
-	}
+  get type(): ReportType {
+    return this.props.type;
+  }
 
-	get stats(): Validators.ReportStats {
-		return this.props.stats;
-	}
+  get stats(): Validators.ReportStats {
+    return this.props.stats;
+  }
 
-	get aiTips(): string[] {
-		return this.props.aiTips;
-	}
+  get aiTips(): string[] {
+    return this.props.aiTips;
+  }
 
-	/** 응답 DTO로 직렬화 (기간 라벨·날짜 범위는 파생 계산) */
-	toView(): Validators.AiReport {
-		const { type, year, period, locale } = this.props;
-		return {
-			id: this.props.id,
-			type,
-			year,
-			period,
-			periodLabel: computePeriodLabel(type, year, period, locale),
-			dateRange: computeDateRange(type, year, period),
-			stats: this.props.stats,
-			categoryBreakdown: this.props.categoryBreakdown,
-			dayPatterns: this.props.dayPatterns,
-			timePatterns: this.props.timePatterns,
-			aiSummary: this.props.aiSummary,
-			aiTips: this.props.aiTips,
-			hasActivity: this.props.hasActivity,
-			generatedAt: this.props.generatedAt.toISOString(),
-		};
-	}
+  /** 응답 DTO로 직렬화 (기간 라벨·날짜 범위는 파생 계산) */
+  toView(): Validators.AiReport {
+    const { type, year, period, locale } = this.props;
+    return {
+      id: this.props.id,
+      type,
+      year,
+      period,
+      periodLabel: computePeriodLabel(type, year, period, locale),
+      dateRange: computeDateRange(type, year, period),
+      stats: this.props.stats,
+      categoryBreakdown: this.props.categoryBreakdown,
+      dayPatterns: this.props.dayPatterns,
+      timePatterns: this.props.timePatterns,
+      aiSummary: this.props.aiSummary,
+      aiTips: this.props.aiTips,
+      hasActivity: this.props.hasActivity,
+      generatedAt: this.props.generatedAt.toISOString(),
+    };
+  }
 }

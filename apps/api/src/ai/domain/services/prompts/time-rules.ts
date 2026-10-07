@@ -1,37 +1,37 @@
 import dayjs from "dayjs";
 
 export interface TimeContext {
-	datetime: string;
-	fourWeeksLater: string;
-	thisWeekSun: string;
-	nextWeekMon: string;
-	nextWeekSat: string;
-	nextWeekSun: string;
-	nextNextWeekMon: string;
-	nextNextWeekSun: string;
-	remainingDays: string[];
+  datetime: string;
+  fourWeeksLater: string;
+  thisWeekSun: string;
+  nextWeekMon: string;
+  nextWeekSat: string;
+  nextWeekSun: string;
+  nextNextWeekMon: string;
+  nextNextWeekSun: string;
+  remainingDays: string[];
 }
 
 export function buildTimeContext(tz: string, now: Date, locale: "ko" | "en" = "ko"): TimeContext {
-	const localNow = dayjs(now).tz(tz);
-	const todayDayIdx = localNow.day();
-	const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const localNow = dayjs(now).tz(tz);
+  const todayDayIdx = localNow.day();
+  const dayNames = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-	return {
-		datetime: localNow.locale(locale).format("YYYY-MM-DD HH:mm (dddd)"),
-		fourWeeksLater: localNow.add(4, "week").format("YYYY-MM-DD"),
-		thisWeekSun: localNow.day(todayDayIdx === 0 ? 0 : 7).format("YYYY-MM-DD"),
-		nextWeekMon: localNow.day(todayDayIdx === 0 ? 1 : 8).format("YYYY-MM-DD"),
-		nextWeekSat: localNow.day(todayDayIdx === 0 ? 6 : 13).format("YYYY-MM-DD"),
-		nextWeekSun: localNow.day(todayDayIdx === 0 ? 7 : 14).format("YYYY-MM-DD"),
-		nextNextWeekMon: localNow.day(todayDayIdx === 0 ? 8 : 15).format("YYYY-MM-DD"),
-		nextNextWeekSun: localNow.day(todayDayIdx === 0 ? 14 : 21).format("YYYY-MM-DD"),
-		remainingDays: todayDayIdx === 0 ? ["SUN"] : dayNames.slice(todayDayIdx).concat("SUN"),
-	};
+  return {
+    datetime: localNow.locale(locale).format("YYYY-MM-DD HH:mm (dddd)"),
+    fourWeeksLater: localNow.add(4, "week").format("YYYY-MM-DD"),
+    thisWeekSun: localNow.day(todayDayIdx === 0 ? 0 : 7).format("YYYY-MM-DD"),
+    nextWeekMon: localNow.day(todayDayIdx === 0 ? 1 : 8).format("YYYY-MM-DD"),
+    nextWeekSat: localNow.day(todayDayIdx === 0 ? 6 : 13).format("YYYY-MM-DD"),
+    nextWeekSun: localNow.day(todayDayIdx === 0 ? 7 : 14).format("YYYY-MM-DD"),
+    nextNextWeekMon: localNow.day(todayDayIdx === 0 ? 8 : 15).format("YYYY-MM-DD"),
+    nextNextWeekSun: localNow.day(todayDayIdx === 0 ? 14 : 21).format("YYYY-MM-DD"),
+    remainingDays: todayDayIdx === 0 ? ["SUN"] : dayNames.slice(todayDayIdx).concat("SUN"),
+  };
 }
 
 export function buildTimeRulesText(ctx: TimeContext): string {
-	return `현재 시각: ${ctx.datetime}
+  return `현재 시각: ${ctx.datetime}
 
 기본 규칙:
 - 날짜가 없으면 오늘(today)로 설정합니다.
@@ -101,7 +101,7 @@ export function buildTimeRulesText(ctx: TimeContext): string {
  * 날짜 산식(ctx)은 한국어 버전과 동일하다.
  */
 export function buildTimeRulesTextEn(ctx: TimeContext): string {
-	return `Current time: ${ctx.datetime}
+  return `Current time: ${ctx.datetime}
 
 Base rules:
 - If no date is given, use today.

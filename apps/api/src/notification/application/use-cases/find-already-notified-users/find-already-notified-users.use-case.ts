@@ -2,12 +2,12 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { NotificationType } from "../../../domain/types/notification-type.js";
 import {
-	NOTIFICATION_DEDUP,
-	type NotificationDedupPort,
+  NOTIFICATION_DEDUP,
+  type NotificationDedupPort,
 } from "../../ports/notification-dedup.port.js";
 import {
-	NOTIFICATION_HISTORY_READER,
-	type NotificationHistoryReaderPort,
+  NOTIFICATION_HISTORY_READER,
+  type NotificationHistoryReaderPort,
 } from "../../ports/notification-history.reader.port.js";
 
 /**
@@ -20,39 +20,39 @@ import {
  */
 @Injectable()
 export class FindAlreadyNotifiedUsersUseCase {
-	readonly #logger = new Logger(FindAlreadyNotifiedUsersUseCase.name);
+  readonly #logger = new Logger(FindAlreadyNotifiedUsersUseCase.name);
 
-	constructor(
-		@Inject(NOTIFICATION_DEDUP)
-		private readonly notificationDedup: NotificationDedupPort,
-		@Inject(NOTIFICATION_HISTORY_READER)
-		private readonly notificationHistoryReader: NotificationHistoryReaderPort,
-	) {}
+  constructor(
+    @Inject(NOTIFICATION_DEDUP)
+    private readonly notificationDedup: NotificationDedupPort,
+    @Inject(NOTIFICATION_HISTORY_READER)
+    private readonly notificationHistoryReader: NotificationHistoryReaderPort,
+  ) {}
 
-	async execute(params: {
-		userIds: string[];
-		type: NotificationType;
-		notificationDate: Date;
-		friendId?: string;
-	}): Promise<Set<string>> {
-		const knownRecipients = await this.notificationDedup.readKnownRecipients(
-			params.type,
-			params.notificationDate,
-			params.userIds,
-		);
-		if (knownRecipients) {
-			return knownRecipients;
-		}
+  async execute(params: {
+    userIds: string[];
+    type: NotificationType;
+    notificationDate: Date;
+    friendId?: string;
+  }): Promise<Set<string>> {
+    const knownRecipients = await this.notificationDedup.readKnownRecipients(
+      params.type,
+      params.notificationDate,
+      params.userIds,
+    );
+    if (knownRecipients) {
+      return knownRecipients;
+    }
 
-		// Cold start: DB fallback + Redis warm-up
-		const fromDb = await this.notificationHistoryReader.findAlreadyNotifiedUserIds(params);
+    // Cold start: DB fallback + Redis warm-up
+    const fromDb = await this.notificationHistoryReader.findAlreadyNotifiedUserIds(params);
 
-		this.notificationDedup
-			.warmRecipients(params.type, params.notificationDate, [...fromDb])
-			.catch((error: unknown) => {
-				this.#logger.warn(`Failed to warm notification dedup recipients: ${error}`);
-			});
+    this.notificationDedup
+      .warmRecipients(params.type, params.notificationDate, [...fromDb])
+      .catch((error: unknown) => {
+        this.#logger.warn(`Failed to warm notification dedup recipients: ${error}`);
+      });
 
-		return fromDb;
-	}
+    return fromDb;
+  }
 }

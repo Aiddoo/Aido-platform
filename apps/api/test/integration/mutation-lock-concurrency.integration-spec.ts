@@ -22,27 +22,27 @@ import { SendNudgeUseCase } from "#api/nudge/application/use-cases/send-nudge/se
 import { SendRemindNudgeUseCase } from "#api/nudge/application/use-cases/send-remind-nudge/send-remind-nudge.use-case";
 import { PrismaNudgeRepository } from "#api/nudge/infrastructure/persistence/prisma-nudge.repository";
 import {
-	ENTITLEMENT_CACHE,
-	ENTITLEMENT_DATABASE,
+  ENTITLEMENT_CACHE,
+  ENTITLEMENT_DATABASE,
 } from "#api/shared/application/entitlement/entitlement-state.port";
 import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import {
-	MutationLockKeys,
-	type MutationLockPort,
-	type UnitOfWorkPort,
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import { ClsUnitOfWork } from "#api/shared/infrastructure/database/cls-unit-of-work";
 import {
-	decodeRecord,
-	encodeCreate,
-	encodePatch,
+  decodeRecord,
+  encodeCreate,
+  encodePatch,
 } from "#api/shared/infrastructure/database/database-records";
 import {
-	decodeSqlRows,
-	sqlRowSpec,
-	sqlStatement,
+  decodeSqlRows,
+  sqlRowSpec,
+  sqlStatement,
 } from "#api/shared/infrastructure/database/database-sql";
 import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
@@ -57,9 +57,9 @@ import { ReorderTodoCategoryUseCase } from "#api/todo-category/application/use-c
 import { TodoCategoryLimitReaderAdapter } from "#api/todo-category/infrastructure/adapters/todo-category-limit-reader.adapter";
 import { PrismaTodoCategoryRepository } from "#api/todo-category/infrastructure/persistence/prisma-todo-category.repository";
 import {
-	createDatabaseContext,
-	createTestDatabaseService,
-	withDatabaseTransaction,
+  createDatabaseContext,
+  createTestDatabaseService,
+  withDatabaseTransaction,
 } from "#test/setup/database-context";
 import { createTestClient } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
@@ -72,304 +72,304 @@ const DAILY_LIMIT = 3;
 const TODAY = new Date("2026-07-26T00:00:00.000Z");
 
 class BestEffortRendezvous {
-	#arrivals = 0;
-	#release: (() => void) | undefined;
-	readonly #released = new Promise<void>((resolve) => {
-		this.#release = resolve;
-	});
+  #arrivals = 0;
+  #release: (() => void) | undefined;
+  readonly #released = new Promise<void>((resolve) => {
+    this.#release = resolve;
+  });
 
-	constructor(
-		private readonly participants: number,
-		private readonly maximumWaitMs = 20,
-	) {}
+  constructor(
+    private readonly participants: number,
+    private readonly maximumWaitMs = 20,
+  ) {}
 
-	async wait(): Promise<void> {
-		this.#arrivals += 1;
-		if (this.#arrivals >= this.participants) {
-			this.#release?.();
-		}
-		await Promise.race([
-			this.#released,
-			new Promise<void>((resolve) => setTimeout(resolve, this.maximumWaitMs)),
-		]);
-	}
+  async wait(): Promise<void> {
+    this.#arrivals += 1;
+    if (this.#arrivals >= this.participants) {
+      this.#release?.();
+    }
+    await Promise.race([
+      this.#released,
+      new Promise<void>((resolve) => setTimeout(resolve, this.maximumWaitMs)),
+    ]);
+  }
 }
 
 interface RejectableDeferred {
-	promise: Promise<void>;
-	resolve: () => void;
-	reject: (reason: Error) => void;
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: (reason: Error) => void;
 }
 
 function createRejectableDeferred(): RejectableDeferred {
-	let resolve: (() => void) | undefined;
-	let reject: ((reason: Error) => void) | undefined;
-	const promise = new Promise<void>((settle, fail) => {
-		resolve = settle;
-		reject = fail;
-	});
-	return {
-		promise,
-		resolve: () => resolve?.(),
-		reject: (reason) => reject?.(reason),
-	};
+  let resolve: (() => void) | undefined;
+  let reject: ((reason: Error) => void) | undefined;
+  const promise = new Promise<void>((settle, fail) => {
+    resolve = settle;
+    reject = fail;
+  });
+  return {
+    promise,
+    resolve: () => resolve?.(),
+    reject: (reason) => reject?.(reason),
+  };
 }
 
 class RequiredParticipantBarrier {
-	#arrivals: string[] = [];
-	readonly #ready = createRejectableDeferred();
-	readonly #timer: ReturnType<typeof setTimeout>;
+  #arrivals: string[] = [];
+  readonly #ready = createRejectableDeferred();
+  readonly #timer: ReturnType<typeof setTimeout>;
 
-	constructor(
-		private readonly participants: number,
-		timeoutMs = 5_000,
-	) {
-		this.#timer = setTimeout(() => {
-			this.#ready.reject(
-				new Error(
-					`category pre-lock barrier timed out: ` +
-						`arrivals=${this.#arrivals.length}/${this.participants}; ` +
-						`participants=[${this.#arrivals.join(",")}]`,
-				),
-			);
-		}, timeoutMs);
-	}
+  constructor(
+    private readonly participants: number,
+    timeoutMs = 5_000,
+  ) {
+    this.#timer = setTimeout(() => {
+      this.#ready.reject(
+        new Error(
+          `category pre-lock barrier timed out: ` +
+            `arrivals=${this.#arrivals.length}/${this.participants}; ` +
+            `participants=[${this.#arrivals.join(",")}]`,
+        ),
+      );
+    }, timeoutMs);
+  }
 
-	async arrive(participant: string): Promise<void> {
-		this.#arrivals.push(participant);
-		if (this.#arrivals.length > this.participants) {
-			const error = new Error(
-				`category pre-lock barrier overflow: ` +
-					`arrivals=${this.#arrivals.length}/${this.participants}; ` +
-					`participants=[${this.#arrivals.join(",")}]`,
-			);
-			this.#ready.reject(error);
-			throw error;
-		}
-		if (this.#arrivals.length === this.participants) {
-			clearTimeout(this.#timer);
-			this.#ready.resolve();
-		}
-		await this.#ready.promise;
-	}
+  async arrive(participant: string): Promise<void> {
+    this.#arrivals.push(participant);
+    if (this.#arrivals.length > this.participants) {
+      const error = new Error(
+        `category pre-lock barrier overflow: ` +
+          `arrivals=${this.#arrivals.length}/${this.participants}; ` +
+          `participants=[${this.#arrivals.join(",")}]`,
+      );
+      this.#ready.reject(error);
+      throw error;
+    }
+    if (this.#arrivals.length === this.participants) {
+      clearTimeout(this.#timer);
+      this.#ready.resolve();
+    }
+    await this.#ready.promise;
+  }
 
-	waitUntilReady(): Promise<void> {
-		return this.#ready.promise;
-	}
+  waitUntilReady(): Promise<void> {
+    return this.#ready.promise;
+  }
 
-	get participantsSeen(): readonly string[] {
-		return this.#arrivals;
-	}
+  get participantsSeen(): readonly string[] {
+    return this.#arrivals;
+  }
 }
 
 class RacingCheerRepository extends PrismaCheerRepository {
-	constructor(
-		txHost: TransactionHost<Prisma8TransactionalAdapter>,
-		private readonly dailyBarrier?: BestEffortRendezvous,
-		private readonly cooldownBarrier?: BestEffortRendezvous,
-	) {
-		super(txHost);
-	}
+  constructor(
+    txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    private readonly dailyBarrier?: BestEffortRendezvous,
+    private readonly cooldownBarrier?: BestEffortRendezvous,
+  ) {
+    super(txHost);
+  }
 
-	override async countSentSince(
-		senderId: string,
-		since: Date,
-		untilExclusive: Date,
-	): Promise<number> {
-		const count = await super.countSentSince(senderId, since, untilExclusive);
-		await this.dailyBarrier?.wait();
-		return count;
-	}
+  override async countSentSince(
+    senderId: string,
+    since: Date,
+    untilExclusive: Date,
+  ): Promise<number> {
+    const count = await super.countSentSince(senderId, since, untilExclusive);
+    await this.dailyBarrier?.wait();
+    return count;
+  }
 
-	override async findLastCheerToUser(senderId: string, receiverId: string) {
-		const cheer = await super.findLastCheerToUser(senderId, receiverId);
-		await this.cooldownBarrier?.wait();
-		return cheer;
-	}
+  override async findLastCheerToUser(senderId: string, receiverId: string) {
+    const cheer = await super.findLastCheerToUser(senderId, receiverId);
+    await this.cooldownBarrier?.wait();
+    return cheer;
+  }
 }
 
 class RacingNudgeRepository extends PrismaNudgeRepository {
-	constructor(
-		txHost: TransactionHost<Prisma8TransactionalAdapter>,
-		private readonly dailyBarrier?: BestEffortRendezvous,
-		private readonly todoCooldownBarrier?: BestEffortRendezvous,
-		private readonly reminderCooldownBarrier?: BestEffortRendezvous,
-	) {
-		super(txHost);
-	}
+  constructor(
+    txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    private readonly dailyBarrier?: BestEffortRendezvous,
+    private readonly todoCooldownBarrier?: BestEffortRendezvous,
+    private readonly reminderCooldownBarrier?: BestEffortRendezvous,
+  ) {
+    super(txHost);
+  }
 
-	override async countSentSince(
-		senderId: string,
-		since: Date,
-		untilExclusive: Date,
-	): Promise<number> {
-		const count = await super.countSentSince(senderId, since, untilExclusive);
-		await this.dailyBarrier?.wait();
-		return count;
-	}
+  override async countSentSince(
+    senderId: string,
+    since: Date,
+    untilExclusive: Date,
+  ): Promise<number> {
+    const count = await super.countSentSince(senderId, since, untilExclusive);
+    await this.dailyBarrier?.wait();
+    return count;
+  }
 
-	override async findLastNudgeForTodo(senderId: string, todoId: number) {
-		const nudge = await super.findLastNudgeForTodo(senderId, todoId);
-		await this.todoCooldownBarrier?.wait();
-		return nudge;
-	}
+  override async findLastNudgeForTodo(senderId: string, todoId: number) {
+    const nudge = await super.findLastNudgeForTodo(senderId, todoId);
+    await this.todoCooldownBarrier?.wait();
+    return nudge;
+  }
 
-	override async findLastRemindNudge(senderId: string, receiverId: string) {
-		const reminder = await super.findLastRemindNudge(senderId, receiverId);
-		await this.reminderCooldownBarrier?.wait();
-		return reminder;
-	}
+  override async findLastRemindNudge(senderId: string, receiverId: string) {
+    const reminder = await super.findLastRemindNudge(senderId, receiverId);
+    await this.reminderCooldownBarrier?.wait();
+    return reminder;
+  }
 }
 
 interface RaceSummary {
-	successes: number;
-	errorCodes: string[];
+  successes: number;
+  errorCodes: string[];
 }
 
 interface Deferred {
-	promise: Promise<void>;
-	resolve: () => void;
+  promise: Promise<void>;
+  resolve: () => void;
 }
 
 function createDeferred(): Deferred {
-	let resolve: (() => void) | undefined;
-	const promise = new Promise<void>((settle) => {
-		resolve = settle;
-	});
-	return {
-		promise,
-		resolve: () => resolve?.(),
-	};
+  let resolve: (() => void) | undefined;
+  const promise = new Promise<void>((settle) => {
+    resolve = settle;
+  });
+  return {
+    promise,
+    resolve: () => resolve?.(),
+  };
 }
 
 interface ValueDeferred<T> {
-	promise: Promise<T>;
-	resolve: (value: T) => void;
+  promise: Promise<T>;
+  resolve: (value: T) => void;
 }
 
 function createValueDeferred<T>(): ValueDeferred<T> {
-	let resolve: ((value: T) => void) | undefined;
-	const promise = new Promise<T>((settle) => {
-		resolve = settle;
-	});
-	return {
-		promise,
-		resolve: (value) => resolve?.(value),
-	};
+  let resolve: ((value: T) => void) | undefined;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return {
+    promise,
+    resolve: (value) => resolve?.(value),
+  };
 }
 
 interface AdvisoryWaitObservation {
-	probes: number;
-	waitingCount: number;
+  probes: number;
+  waitingCount: number;
 }
 
 interface AdvisoryLockIdentity {
-	pid: number;
-	databaseOid: number;
+  pid: number;
+  databaseOid: number;
 }
 
 interface AdvisoryLockState {
-	probes: number;
-	grantedCount: number;
-	waitingCount: number;
+  probes: number;
+  grantedCount: number;
+  waitingCount: number;
 }
 
 class CoordinatedCategoryMutationLock implements MutationLockPort {
-	readonly #barrier: RequiredParticipantBarrier;
-	readonly #firstHolderAcquired = createRejectableDeferred();
-	readonly #releaseFirstHolder = createDeferred();
-	#hasFirstHolder = false;
+  readonly #barrier: RequiredParticipantBarrier;
+  readonly #firstHolderAcquired = createRejectableDeferred();
+  readonly #releaseFirstHolder = createDeferred();
+  #hasFirstHolder = false;
 
-	constructor(
-		private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
-		private readonly delegate: PostgresMutationLockAdapter,
-		private readonly expectedKey: string,
-		participants: number,
-		timeoutMs = 5_000,
-	) {
-		this.#barrier = new RequiredParticipantBarrier(participants, timeoutMs);
-	}
+  constructor(
+    private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
+    private readonly delegate: PostgresMutationLockAdapter,
+    private readonly expectedKey: string,
+    participants: number,
+    timeoutMs = 5_000,
+  ) {
+    this.#barrier = new RequiredParticipantBarrier(participants, timeoutMs);
+  }
 
-	async acquire(keys: readonly string[]): Promise<void> {
-		const sqlRows1 = sqlRowSpec({ pid: "pg/int4@1" });
+  async acquire(keys: readonly string[]): Promise<void> {
+    const sqlRows1 = sqlRowSpec({ pid: "pg/int4@1" });
 
-		if (keys.length !== 1 || keys[0] !== this.expectedKey) {
-			throw new Error(
-				`unexpected category lock key: expected=${JSON.stringify(this.expectedKey)}, ` +
-					`received=${JSON.stringify(keys)}`,
-			);
-		}
-		if (!this.txHost.isTransactionActive()) {
-			throw new Error(
-				`category lock reached outside active UoW: key=${JSON.stringify(this.expectedKey)}`,
-			);
-		}
+    if (keys.length !== 1 || keys[0] !== this.expectedKey) {
+      throw new Error(
+        `unexpected category lock key: expected=${JSON.stringify(this.expectedKey)}, ` +
+          `received=${JSON.stringify(keys)}`,
+      );
+    }
+    if (!this.txHost.isTransactionActive()) {
+      throw new Error(
+        `category lock reached outside active UoW: key=${JSON.stringify(this.expectedKey)}`,
+      );
+    }
 
-		const rows = decodeSqlRows(
-			sqlRows1,
-			await this.txHost.tx.query(
-				sqlStatement(
-					this.txHost.tx,
-					sql`
+    const rows = decodeSqlRows(
+      sqlRows1,
+      await this.txHost.tx.query(
+        sqlStatement(
+          this.txHost.tx,
+          sql`
 			SELECT pg_backend_pid()::int AS pid
 		`,
-				)
-					.returnsRow(sqlRows1)
-					.build(),
-			),
-		);
-		const pid = rows[0]?.pid;
-		if (pid === undefined) {
-			throw new Error(
-				`could not identify category transaction backend: ` +
-					`key=${JSON.stringify(this.expectedKey)}`,
-			);
-		}
+        )
+          .returnsRow(sqlRows1)
+          .build(),
+      ),
+    );
+    const pid = rows[0]?.pid;
+    if (pid === undefined) {
+      throw new Error(
+        `could not identify category transaction backend: ` +
+          `key=${JSON.stringify(this.expectedKey)}`,
+      );
+    }
 
-		await this.#barrier.arrive(pid.toString());
-		await this.delegate.acquire(keys);
+    await this.#barrier.arrive(pid.toString());
+    await this.delegate.acquire(keys);
 
-		if (!this.#hasFirstHolder) {
-			this.#hasFirstHolder = true;
-			this.#firstHolderAcquired.resolve();
-			await this.#releaseFirstHolder.promise;
-		}
-	}
+    if (!this.#hasFirstHolder) {
+      this.#hasFirstHolder = true;
+      this.#firstHolderAcquired.resolve();
+      await this.#releaseFirstHolder.promise;
+    }
+  }
 
-	async waitUntilAllTransactionsArrive(): Promise<readonly string[]> {
-		await this.#barrier.waitUntilReady();
-		return this.#barrier.participantsSeen;
-	}
+  async waitUntilAllTransactionsArrive(): Promise<readonly string[]> {
+    await this.#barrier.waitUntilReady();
+    return this.#barrier.participantsSeen;
+  }
 
-	waitUntilFirstHolderAcquires(): Promise<void> {
-		return this.#firstHolderAcquired.promise;
-	}
+  waitUntilFirstHolderAcquires(): Promise<void> {
+    return this.#firstHolderAcquired.promise;
+  }
 
-	releaseHolder(): void {
-		this.#releaseFirstHolder.resolve();
-	}
+  releaseHolder(): void {
+    this.#releaseFirstHolder.resolve();
+  }
 }
 
 async function waitForBlockedAdvisoryLock(
-	prisma: TestDatabaseClient,
-	key: string,
-	identity: AdvisoryLockIdentity,
-	options: { timeoutMs?: number; pollIntervalMs?: number } = {},
+  prisma: TestDatabaseClient,
+  key: string,
+  identity: AdvisoryLockIdentity,
+  options: { timeoutMs?: number; pollIntervalMs?: number } = {},
 ): Promise<AdvisoryWaitObservation> {
-	const sqlRows2 = sqlRowSpec({ waitingCount: "pg/int4@1" });
+  const sqlRows2 = sqlRowSpec({ waitingCount: "pg/int4@1" });
 
-	const timeoutMs = options.timeoutMs ?? 2_000;
-	const pollIntervalMs = options.pollIntervalMs ?? 10;
-	const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
-	let lastWaitingCount = 0;
+  const timeoutMs = options.timeoutMs ?? 2_000;
+  const pollIntervalMs = options.pollIntervalMs ?? 10;
+  const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
+  let lastWaitingCount = 0;
 
-	for (let probe = 1; probe <= maxProbes; probe += 1) {
-		const rows = decodeSqlRows(
-			sqlRows2,
-			await prisma.runtime().query(
-				sqlStatement(
-					prisma,
-					sql`
+  for (let probe = 1; probe <= maxProbes; probe += 1) {
+    const rows = decodeSqlRows(
+      sqlRows2,
+      await prisma.runtime().query(
+        sqlStatement(
+          prisma,
+          sql`
 			WITH target AS (
 				SELECT hashtextextended(${key}, 0) AS lock_key
 			)
@@ -383,49 +383,49 @@ async function waitForBlockedAdvisoryLock(
 				AND classid::bigint = ((lock_key >> 32) & 4294967295)
 				AND objid::bigint = (lock_key & 4294967295)
 		`,
-				)
-					.returnsRow(sqlRows2)
-					.build(),
-			),
-		);
-		lastWaitingCount = rows[0]?.waitingCount ?? 0;
-		if (lastWaitingCount > 0) {
-			return { probes: probe, waitingCount: lastWaitingCount };
-		}
-		if (probe < maxProbes) {
-			await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
-		}
-	}
+        )
+          .returnsRow(sqlRows2)
+          .build(),
+      ),
+    );
+    lastWaitingCount = rows[0]?.waitingCount ?? 0;
+    if (lastWaitingCount > 0) {
+      return { probes: probe, waitingCount: lastWaitingCount };
+    }
+    if (probe < maxProbes) {
+      await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+  }
 
-	throw new Error(
-		`Timed out after ${maxProbes} probes (~${timeoutMs}ms) waiting for ` +
-			`PostgreSQL advisory lock key=${JSON.stringify(key)}; ` +
-			`pid=${identity.pid}, databaseOid=${identity.databaseOid}; ` +
-			`lastWaitingCount=${lastWaitingCount}`,
-	);
+  throw new Error(
+    `Timed out after ${maxProbes} probes (~${timeoutMs}ms) waiting for ` +
+      `PostgreSQL advisory lock key=${JSON.stringify(key)}; ` +
+      `pid=${identity.pid}, databaseOid=${identity.databaseOid}; ` +
+      `lastWaitingCount=${lastWaitingCount}`,
+  );
 }
 
 async function waitForCategoryAdvisoryLockState(
-	prisma: TestDatabaseClient,
-	key: string,
-	expectedWaitingCount: number,
-	options: { timeoutMs?: number; pollIntervalMs?: number } = {},
+  prisma: TestDatabaseClient,
+  key: string,
+  expectedWaitingCount: number,
+  options: { timeoutMs?: number; pollIntervalMs?: number } = {},
 ): Promise<AdvisoryLockState> {
-	const sqlRows3 = sqlRowSpec({ grantedCount: "pg/int4@1", waitingCount: "pg/int4@1" });
+  const sqlRows3 = sqlRowSpec({ grantedCount: "pg/int4@1", waitingCount: "pg/int4@1" });
 
-	const timeoutMs = options.timeoutMs ?? 5_000;
-	const pollIntervalMs = options.pollIntervalMs ?? 10;
-	const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
-	let lastGrantedCount = 0;
-	let lastWaitingCount = 0;
+  const timeoutMs = options.timeoutMs ?? 5_000;
+  const pollIntervalMs = options.pollIntervalMs ?? 10;
+  const maxProbes = Math.max(1, Math.ceil(timeoutMs / pollIntervalMs));
+  let lastGrantedCount = 0;
+  let lastWaitingCount = 0;
 
-	for (let probe = 1; probe <= maxProbes; probe += 1) {
-		const rows = decodeSqlRows(
-			sqlRows3,
-			await prisma.runtime().query(
-				sqlStatement(
-					prisma,
-					sql`
+  for (let probe = 1; probe <= maxProbes; probe += 1) {
+    const rows = decodeSqlRows(
+      sqlRows3,
+      await prisma.runtime().query(
+        sqlStatement(
+          prisma,
+          sql`
 			WITH target AS (
 				SELECT
 					hashtextextended(${key}, 0) AS lock_key,
@@ -441,858 +441,858 @@ async function waitForCategoryAdvisoryLockState(
 				AND classid::bigint = ((lock_key >> 32) & 4294967295)
 				AND objid::bigint = (lock_key & 4294967295)
 		`,
-				)
-					.returnsRow(sqlRows3)
-					.build(),
-			),
-		);
-		lastGrantedCount = rows[0]?.grantedCount ?? 0;
-		lastWaitingCount = rows[0]?.waitingCount ?? 0;
-		if (lastGrantedCount === 1 && lastWaitingCount === expectedWaitingCount) {
-			return {
-				probes: probe,
-				grantedCount: lastGrantedCount,
-				waitingCount: lastWaitingCount,
-			};
-		}
-		if (probe < maxProbes) {
-			await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
-		}
-	}
+        )
+          .returnsRow(sqlRows3)
+          .build(),
+      ),
+    );
+    lastGrantedCount = rows[0]?.grantedCount ?? 0;
+    lastWaitingCount = rows[0]?.waitingCount ?? 0;
+    if (lastGrantedCount === 1 && lastWaitingCount === expectedWaitingCount) {
+      return {
+        probes: probe,
+        grantedCount: lastGrantedCount,
+        waitingCount: lastWaitingCount,
+      };
+    }
+    if (probe < maxProbes) {
+      await new Promise<void>((resolve) => setTimeout(resolve, pollIntervalMs));
+    }
+  }
 
-	throw new Error(
-		`Timed out after ${maxProbes} probes (~${timeoutMs}ms) observing category ` +
-			`advisory lock key=${JSON.stringify(key)} in the current database; ` +
-			`expectedGranted=1, lastGranted=${lastGrantedCount}; ` +
-			`expectedWaiting=${expectedWaitingCount}, lastWaiting=${lastWaitingCount}`,
-	);
+  throw new Error(
+    `Timed out after ${maxProbes} probes (~${timeoutMs}ms) observing category ` +
+      `advisory lock key=${JSON.stringify(key)} in the current database; ` +
+      `expectedGranted=1, lastGranted=${lastGrantedCount}; ` +
+      `expectedWaiting=${expectedWaitingCount}, lastWaiting=${lastWaitingCount}`,
+  );
 }
 
 async function observeCategoryRace<T>(
-	prisma: TestDatabaseClient,
-	key: string,
-	lock: CoordinatedCategoryMutationLock,
-	operations: Promise<PromiseSettledResult<T>[]>,
+  prisma: TestDatabaseClient,
+  key: string,
+  lock: CoordinatedCategoryMutationLock,
+  operations: Promise<PromiseSettledResult<T>[]>,
 ): Promise<{
-	participants: readonly string[];
-	lockState: AdvisoryLockState;
-	results: PromiseSettledResult<T>[];
+  participants: readonly string[];
+  lockState: AdvisoryLockState;
+  results: PromiseSettledResult<T>[];
 }> {
-	let participants: readonly string[] = [];
-	let lockState: AdvisoryLockState = {
-		probes: 0,
-		grantedCount: 0,
-		waitingCount: 0,
-	};
-	let observationFailure: unknown;
+  let participants: readonly string[] = [];
+  let lockState: AdvisoryLockState = {
+    probes: 0,
+    grantedCount: 0,
+    waitingCount: 0,
+  };
+  let observationFailure: unknown;
 
-	try {
-		participants = await lock.waitUntilAllTransactionsArrive();
-		await lock.waitUntilFirstHolderAcquires();
-		lockState = await waitForCategoryAdvisoryLockState(prisma, key, CONCURRENCY - 1);
-	} catch (error) {
-		observationFailure = error;
-	} finally {
-		lock.releaseHolder();
-	}
+  try {
+    participants = await lock.waitUntilAllTransactionsArrive();
+    await lock.waitUntilFirstHolderAcquires();
+    lockState = await waitForCategoryAdvisoryLockState(prisma, key, CONCURRENCY - 1);
+  } catch (error) {
+    observationFailure = error;
+  } finally {
+    lock.releaseHolder();
+  }
 
-	const results = await operations;
-	if (observationFailure !== undefined) {
-		throw observationFailure;
-	}
-	return { participants, lockState, results };
+  const results = await operations;
+  if (observationFailure !== undefined) {
+    throw observationFailure;
+  }
+  return { participants, lockState, results };
 }
 
 function summarize(results: PromiseSettledResult<unknown>[]): RaceSummary {
-	const errorCodes = results.flatMap((result) => {
-		if (result.status === "fulfilled") return [];
-		const reason = result.reason;
-		if (
-			typeof reason === "object" &&
-			reason !== null &&
-			"errorCode" in reason &&
-			typeof reason.errorCode === "string"
-		) {
-			return [reason.errorCode];
-		}
-		throw reason;
-	});
-	return {
-		successes: results.length - errorCodes.length,
-		errorCodes,
-	};
+  const errorCodes = results.flatMap((result) => {
+    if (result.status === "fulfilled") return [];
+    const reason = result.reason;
+    if (
+      typeof reason === "object" &&
+      reason !== null &&
+      "errorCode" in reason &&
+      typeof reason.errorCode === "string"
+    ) {
+      return [reason.errorCode];
+    }
+    throw reason;
+  });
+  return {
+    successes: results.length - errorCodes.length,
+    errorCodes,
+  };
 }
 
 @Module({})
 class CategoryDatabaseTestModule {
-	static register(prisma: TestDatabaseClient): DynamicModule {
-		return {
-			module: CategoryDatabaseTestModule,
-			providers: [{ provide: DatabaseService, useValue: createTestDatabaseService(prisma) }],
-			exports: [DatabaseService],
-		};
-	}
+  static register(prisma: TestDatabaseClient): DynamicModule {
+    return {
+      module: CategoryDatabaseTestModule,
+      providers: [{ provide: DatabaseService, useValue: createTestDatabaseService(prisma) }],
+      exports: [DatabaseService],
+    };
+  }
 }
 
 function createTransactionHarness(prisma: TestDatabaseClient): {
-	txHost: TransactionHost<Prisma8TransactionalAdapter>;
-	uow: UnitOfWorkPort;
+  txHost: TransactionHost<Prisma8TransactionalAdapter>;
+  uow: UnitOfWorkPort;
 } {
-	const storage = new AsyncLocalStorage<TransactionClient>();
-	const cls = new ClsService(new AsyncLocalStorage());
-	const txHost = {
-		get tx(): TransactionClient {
-			return storage.getStore() ?? createDatabaseContext(prisma);
-		},
-		isTransactionActive(): boolean {
-			return storage.getStore() !== undefined;
-		},
-		withTransaction<T>(work: () => Promise<T>): Promise<T> {
-			if (storage.getStore()) {
-				return cls.run({ ifNested: "inherit" }, work);
-			}
-			return withDatabaseTransaction(prisma, (tx) =>
-				storage.run(tx, () => cls.run({ ifNested: "inherit" }, work)),
-			);
-		},
-	};
-	const typedTxHost = txHost as unknown as TransactionHost<Prisma8TransactionalAdapter>;
-	return {
-		txHost: typedTxHost,
-		uow: new ClsUnitOfWork(typedTxHost, cls),
-	};
+  const storage = new AsyncLocalStorage<TransactionClient>();
+  const cls = new ClsService(new AsyncLocalStorage());
+  const txHost = {
+    get tx(): TransactionClient {
+      return storage.getStore() ?? createDatabaseContext(prisma);
+    },
+    isTransactionActive(): boolean {
+      return storage.getStore() !== undefined;
+    },
+    withTransaction<T>(work: () => Promise<T>): Promise<T> {
+      if (storage.getStore()) {
+        return cls.run({ ifNested: "inherit" }, work);
+      }
+      return withDatabaseTransaction(prisma, (tx) =>
+        storage.run(tx, () => cls.run({ ifNested: "inherit" }, work)),
+      );
+    },
+  };
+  const typedTxHost = txHost as unknown as TransactionHost<Prisma8TransactionalAdapter>;
+  return {
+    txHost: typedTxHost,
+    uow: new ClsUnitOfWork(typedTxHost, cls),
+  };
 }
 
 interface AdvisoryLockAttempt {
-	key: string;
-	acquired: boolean;
+  key: string;
+  acquired: boolean;
 }
 
 async function tryAcquireAdvisoryLocks(
-	prisma: TestDatabaseClient,
-	keys: readonly string[],
+  prisma: TestDatabaseClient,
+  keys: readonly string[],
 ): Promise<AdvisoryLockAttempt[]> {
-	return withDatabaseTransaction(
-		prisma,
-		async (tx) =>
-			await tx
-				.query(
-					sqlStatement(
-						tx,
-						sql`
+  return withDatabaseTransaction(
+    prisma,
+    async (tx) =>
+      await tx
+        .query(
+          sqlStatement(
+            tx,
+            sql`
 			SELECT
 				requested."key",
 				pg_try_advisory_xact_lock(hashtextextended(requested."key", 0)) AS acquired
 			FROM unnest(ARRAY[${join(keys)}]::TEXT[]) AS requested("key")
 			ORDER BY requested."key"
 		`,
-					)
-						.returnsRow(sqlRowSpec({ key: "pg/text@1", acquired: "pg/bool@1" }))
-						.build(),
-				)
-				.then((rows) =>
-					decodeSqlRows(sqlRowSpec({ key: "pg/text@1", acquired: "pg/bool@1" }), rows),
-				),
-	);
+          )
+            .returnsRow(sqlRowSpec({ key: "pg/text@1", acquired: "pg/bool@1" }))
+            .build(),
+        )
+        .then((rows) =>
+          decodeSqlRows(sqlRowSpec({ key: "pg/text@1", acquired: "pg/bool@1" }), rows),
+        ),
+  );
 }
 
 async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-	let timeout: ReturnType<typeof setTimeout> | undefined;
-	const deadline = new Promise<never>((_resolve, reject) => {
-		timeout = setTimeout(() => {
-			reject(new Error(`동시성 검증이 ${timeoutMs}ms 안에 끝나지 않았습니다.`));
-		}, timeoutMs);
-	});
-	try {
-		return await Promise.race([promise, deadline]);
-	} finally {
-		clearTimeout(timeout);
-	}
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_resolve, reject) => {
+    timeout = setTimeout(() => {
+      reject(new Error(`동시성 검증이 ${timeoutMs}ms 안에 끝나지 않았습니다.`));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, deadline]);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function createFollowReader(): FollowReader {
-	return {
-		isMutualFriend: async () => true,
-	} as unknown as FollowReader;
+  return {
+    isMutualFriend: async () => true,
+  } as unknown as FollowReader;
 }
 
 function createCheerNotifier(): CheerNotifierPort {
-	return { notifyCheerSent: () => undefined };
+  return { notifyCheerSent: () => undefined };
 }
 
 function createNudgeNotifier(): NudgeNotifierPort {
-	return {
-		notifyNudgeSent: () => undefined,
-		recordInteraction: async () => undefined,
-		recordInteractions: async () => undefined,
-	};
+  return {
+    notifyNudgeSent: () => undefined,
+    recordInteraction: async () => undefined,
+    recordInteractions: async () => undefined,
+  };
 }
 
 function createCheerLimitReader(limit: number | null): CheerLimitReaderPort {
-	return { getDailyLimitInTx: async () => limit };
+  return { getDailyLimitInTx: async () => limit };
 }
 
 function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
-	return { getDailyLimitInTx: async () => limit };
+  return { getDailyLimitInTx: async () => limit };
 }
 
 function createReaderEntitlement(dailyLimit: number): EntitlementService {
-	return {
-		getFeatureLimit: async () => ({
-			dailyLimit,
-			isAdmin: false,
-			subscriptionStatus: "FREE",
-		}),
-		calculateRemaining: (limit: number | null, used: number) =>
-			limit === null ? null : Math.max(0, limit - used),
-	} as unknown as EntitlementService;
+  return {
+    getFeatureLimit: async () => ({
+      dailyLimit,
+      isAdmin: false,
+      subscriptionStatus: "FREE",
+    }),
+    calculateRemaining: (limit: number | null, used: number) =>
+      limit === null ? null : Math.max(0, limit - used),
+  } as unknown as EntitlementService;
 }
 
 function createTodoCategoryCache(): TodoCategoryCachePort {
-	return {
-		wrapList: async (_userId, factory) => factory(),
-		invalidate: async () => undefined,
-	};
+  return {
+    wrapList: async (_userId, factory) => factory(),
+    invalidate: async () => undefined,
+  };
 }
 
 async function createUser(
-	prisma: TestDatabaseClient,
-	index: number,
-	subscriptionStatus: "FREE" | "ACTIVE" = "FREE",
+  prisma: TestDatabaseClient,
+  index: number,
+  subscriptionStatus: "FREE" | "ACTIVE" = "FREE",
 ): Promise<string> {
-	const suffix = index.toString().padStart(7, "0");
-	const id = `mutation-user-${suffix}`;
-	decodeRecord(
-		"User",
-		await prisma.orm.public.User.create(
-			encodeCreate("User", {
-				id,
-				email: `mutation-${suffix}@example.com`,
-				userTag: `M${suffix}`,
-				status: "ACTIVE",
-				subscriptionStatus,
-			}),
-		),
-	);
-	return id;
+  const suffix = index.toString().padStart(7, "0");
+  const id = `mutation-user-${suffix}`;
+  decodeRecord(
+    "User",
+    await prisma.orm.public.User.create(
+      encodeCreate("User", {
+        id,
+        email: `mutation-${suffix}@example.com`,
+        userTag: `M${suffix}`,
+        status: "ACTIVE",
+        subscriptionStatus,
+      }),
+    ),
+  );
+  return id;
 }
 
 async function createTodo(
-	prisma: TestDatabaseClient,
-	userId: string,
-	title: string,
+  prisma: TestDatabaseClient,
+  userId: string,
+  title: string,
 ): Promise<number> {
-	const category = decodeRecord(
-		"TodoCategory",
-		await prisma.orm.public.TodoCategory.where((row) =>
-			and(row.userId.eq(userId), row.name.eq(varchar("Mutation", 50))),
-		).upsert({
-			conflictOn: encodePatch("TodoCategory", { userId, name: "Mutation" }),
-			create: encodeCreate("TodoCategory", {
-				userId,
-				name: "Mutation",
-				color: "#112233",
-				sortOrder: 0,
-			}),
-			update: encodePatch("TodoCategory", {}),
-		}),
-	);
-	const todo = decodeRecord(
-		"Todo",
-		await prisma.orm.public.Todo.create(
-			encodeCreate("Todo", {
-				userId,
-				categoryId: category.id,
-				title,
-				startDate: TODAY,
-				visibility: "PUBLIC",
-			}),
-		),
-	);
-	return todo.id;
+  const category = decodeRecord(
+    "TodoCategory",
+    await prisma.orm.public.TodoCategory.where((row) =>
+      and(row.userId.eq(userId), row.name.eq(varchar("Mutation", 50))),
+    ).upsert({
+      conflictOn: encodePatch("TodoCategory", { userId, name: "Mutation" }),
+      create: encodeCreate("TodoCategory", {
+        userId,
+        name: "Mutation",
+        color: "#112233",
+        sortOrder: 0,
+      }),
+      update: encodePatch("TodoCategory", {}),
+    }),
+  );
+  const todo = decodeRecord(
+    "Todo",
+    await prisma.orm.public.Todo.create(
+      encodeCreate("Todo", {
+        userId,
+        categoryId: category.id,
+        title,
+        startDate: TODAY,
+        visibility: "PUBLIC",
+      }),
+    ),
+  );
+  return todo.id;
 }
 
 describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
-	let testDatabase: TestDatabase;
-	let prisma: TestDatabaseClient;
-	let categoryModule: TestingModule;
-	let categoryTxHost: TransactionHost<Prisma8TransactionalAdapter>;
-	let categoryUow: ClsUnitOfWork;
-	let categoryRepository: PrismaTodoCategoryRepository;
-	let categoryLockAdapter: PostgresMutationLockAdapter;
-	let categoryLimitReader: TodoCategoryLimitReaderAdapter;
+  let testDatabase: TestDatabase;
+  let prisma: TestDatabaseClient;
+  let categoryModule: TestingModule;
+  let categoryTxHost: TransactionHost<Prisma8TransactionalAdapter>;
+  let categoryUow: ClsUnitOfWork;
+  let categoryRepository: PrismaTodoCategoryRepository;
+  let categoryLockAdapter: PostgresMutationLockAdapter;
+  let categoryLimitReader: TodoCategoryLimitReaderAdapter;
 
-	beforeAll(async () => {
-		testDatabase = new TestDatabase({
-			createClient: (connectionString) =>
-				createTestClient(connectionString, { max: CATEGORY_POOL_MAX }),
-		});
-		prisma = await testDatabase.start();
+  beforeAll(async () => {
+    testDatabase = new TestDatabase({
+      createClient: (connectionString) =>
+        createTestClient(connectionString, { max: CATEGORY_POOL_MAX }),
+    });
+    prisma = await testDatabase.start();
 
-		const categoryDatabaseModule = CategoryDatabaseTestModule.register(prisma);
-		categoryModule = await Test.createTestingModule({
-			imports: [
-				categoryDatabaseModule,
-				ClsModule.forRoot({
-					global: true,
-					plugins: [
-						new ClsPluginTransactional({
-							imports: [categoryDatabaseModule],
-							adapter: new Prisma8TransactionalAdapter(),
-						}),
-					],
-				}),
-			],
-			providers: [
-				ClsUnitOfWork,
-				PrismaTodoCategoryRepository,
-				PostgresMutationLockAdapter,
-				EntitlementService,
-				{ provide: ENTITLEMENT_CACHE, useExisting: CacheService },
-				{ provide: ENTITLEMENT_DATABASE, useClass: PrismaEntitlementReader },
-				TodoCategoryLimitReaderAdapter,
-				{
-					provide: CacheService,
-					useValue: {
-						wrapSubscription: () => {
-							throw new Error("category mutation integration test used cached entitlement");
-						},
-					},
-				},
-			],
-		}).compile();
-		await categoryModule.init();
+    const categoryDatabaseModule = CategoryDatabaseTestModule.register(prisma);
+    categoryModule = await Test.createTestingModule({
+      imports: [
+        categoryDatabaseModule,
+        ClsModule.forRoot({
+          global: true,
+          plugins: [
+            new ClsPluginTransactional({
+              imports: [categoryDatabaseModule],
+              adapter: new Prisma8TransactionalAdapter(),
+            }),
+          ],
+        }),
+      ],
+      providers: [
+        ClsUnitOfWork,
+        PrismaTodoCategoryRepository,
+        PostgresMutationLockAdapter,
+        EntitlementService,
+        { provide: ENTITLEMENT_CACHE, useExisting: CacheService },
+        { provide: ENTITLEMENT_DATABASE, useClass: PrismaEntitlementReader },
+        TodoCategoryLimitReaderAdapter,
+        {
+          provide: CacheService,
+          useValue: {
+            wrapSubscription: () => {
+              throw new Error("category mutation integration test used cached entitlement");
+            },
+          },
+        },
+      ],
+    }).compile();
+    await categoryModule.init();
 
-		categoryTxHost =
-			categoryModule.get<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost);
-		categoryUow = categoryModule.get(ClsUnitOfWork);
-		categoryRepository = categoryModule.get(PrismaTodoCategoryRepository);
-		categoryLockAdapter = categoryModule.get(PostgresMutationLockAdapter);
-		categoryLimitReader = categoryModule.get(TodoCategoryLimitReaderAdapter);
-	}, 60_000);
+    categoryTxHost =
+      categoryModule.get<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost);
+    categoryUow = categoryModule.get(ClsUnitOfWork);
+    categoryRepository = categoryModule.get(PrismaTodoCategoryRepository);
+    categoryLockAdapter = categoryModule.get(PostgresMutationLockAdapter);
+    categoryLimitReader = categoryModule.get(TodoCategoryLimitReaderAdapter);
+  }, 60_000);
 
-	beforeEach(async () => {
-		await testDatabase.cleanup();
-		vi.useFakeTimers({
-			toNotFake: ["nextTick", "setImmediate", "setTimeout"],
-		});
-		vi.setSystemTime(new Date("2026-07-26T12:00:00.000Z"));
-	});
+  beforeEach(async () => {
+    await testDatabase.cleanup();
+    vi.useFakeTimers({
+      toNotFake: ["nextTick", "setImmediate", "setTimeout"],
+    });
+    vi.setSystemTime(new Date("2026-07-26T12:00:00.000Z"));
+  });
 
-	afterEach(() => {
-		vi.useRealTimers();
-	});
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-	afterAll(async () => {
-		await categoryModule?.close();
-		await testDatabase.stop();
-	});
+  afterAll(async () => {
+    await categoryModule?.close();
+    await testDatabase.stop();
+  });
 
-	it("카테고리 검증 하네스는 실제 TransactionHost 인스턴스를 사용한다", async () => {
-		// Given - Nest testing module에서 주입받은 category transaction stack
-		let activeClient: TransactionClient | undefined;
+  it("카테고리 검증 하네스는 실제 TransactionHost 인스턴스를 사용한다", async () => {
+    // Given - Nest testing module에서 주입받은 category transaction stack
+    let activeClient: TransactionClient | undefined;
 
-		// When
-		await categoryUow.run(async () => {
-			expect(categoryTxHost.isTransactionActive()).toBe(true);
-			activeClient = categoryTxHost.tx;
-		});
+    // When
+    await categoryUow.run(async () => {
+      expect(categoryTxHost.isTransactionActive()).toBe(true);
+      activeClient = categoryTxHost.tx;
+    });
 
-		// Then - hand-built ALS 객체가 아닌 Nest/CLS 실제 구현체
-		expect(categoryTxHost).toBeInstanceOf(TransactionHost);
-		expect(categoryUow).toBeInstanceOf(ClsUnitOfWork);
-		expect(categoryRepository).toBeInstanceOf(PrismaTodoCategoryRepository);
-		expect(categoryLockAdapter).toBeInstanceOf(PostgresMutationLockAdapter);
-		expect(categoryLimitReader).toBeInstanceOf(TodoCategoryLimitReaderAdapter);
-		expect(activeClient).not.toBe(prisma);
-	});
+    // Then - hand-built ALS 객체가 아닌 Nest/CLS 실제 구현체
+    expect(categoryTxHost).toBeInstanceOf(TransactionHost);
+    expect(categoryUow).toBeInstanceOf(ClsUnitOfWork);
+    expect(categoryRepository).toBeInstanceOf(PrismaTodoCategoryRepository);
+    expect(categoryLockAdapter).toBeInstanceOf(PostgresMutationLockAdapter);
+    expect(categoryLimitReader).toBeInstanceOf(TodoCategoryLimitReaderAdapter);
+    expect(activeClient).not.toBe(prisma);
+  });
 
-	it("카테고리 사전 lock coordination은 참가자가 부족하면 진단과 함께 실패한다", async () => {
-		// Given - 요구 인원보다 한 명 적은 coordination
-		const barrier = new RequiredParticipantBarrier(2, 1);
+  it("카테고리 사전 lock coordination은 참가자가 부족하면 진단과 함께 실패한다", async () => {
+    // Given - 요구 인원보다 한 명 적은 coordination
+    const barrier = new RequiredParticipantBarrier(2, 1);
 
-		// When / Then - timeout을 성공으로 취급하지 않는다
-		await expect(barrier.arrive("pid-1")).rejects.toThrow("arrivals=1/2");
-	});
+    // When / Then - timeout을 성공으로 취급하지 않는다
+    await expect(barrier.arrive("pid-1")).rejects.toThrow("arrivals=1/2");
+  });
 
-	it("배치 lock은 한 트랜잭션이 보유한 두 키를 모두 막고 commit 후 해제한다", async () => {
-		const keys = ["mutation:v1:comment:batch:b", "mutation:v1:comment:batch:a"];
-		const held = createDeferred();
-		const release = createDeferred();
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const holding = uow.run(async () => {
-			await new PostgresMutationLockAdapter(txHost).acquire(keys);
-			held.resolve();
-			await release.promise;
-		});
+  it("배치 lock은 한 트랜잭션이 보유한 두 키를 모두 막고 commit 후 해제한다", async () => {
+    const keys = ["mutation:v1:comment:batch:b", "mutation:v1:comment:batch:a"];
+    const held = createDeferred();
+    const release = createDeferred();
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const holding = uow.run(async () => {
+      await new PostgresMutationLockAdapter(txHost).acquire(keys);
+      held.resolve();
+      await release.promise;
+    });
 
-		await held.promise;
-		try {
-			const blocked = await tryAcquireAdvisoryLocks(prisma, keys);
-			expect(blocked).toEqual([
-				{ key: "mutation:v1:comment:batch:a", acquired: false },
-				{ key: "mutation:v1:comment:batch:b", acquired: false },
-			]);
-		} finally {
-			release.resolve();
-			await holding;
-		}
+    await held.promise;
+    try {
+      const blocked = await tryAcquireAdvisoryLocks(prisma, keys);
+      expect(blocked).toEqual([
+        { key: "mutation:v1:comment:batch:a", acquired: false },
+        { key: "mutation:v1:comment:batch:b", acquired: false },
+      ]);
+    } finally {
+      release.resolve();
+      await holding;
+    }
 
-		const available = await tryAcquireAdvisoryLocks(prisma, keys);
-		expect(available).toEqual([
-			{ key: "mutation:v1:comment:batch:a", acquired: true },
-			{ key: "mutation:v1:comment:batch:b", acquired: true },
-		]);
-	});
+    const available = await tryAcquireAdvisoryLocks(prisma, keys);
+    expect(available).toEqual([
+      { key: "mutation:v1:comment:batch:a", acquired: true },
+      { key: "mutation:v1:comment:batch:b", acquired: true },
+    ]);
+  });
 
-	it("서로 반대 순서의 배치도 DB 내부 정렬 순서로 잠겨 교착 없이 완료한다", async () => {
-		const barrier = new RequiredParticipantBarrier(2);
-		const first = createTransactionHarness(prisma);
-		const second = createTransactionHarness(prisma);
+  it("서로 반대 순서의 배치도 DB 내부 정렬 순서로 잠겨 교착 없이 완료한다", async () => {
+    const barrier = new RequiredParticipantBarrier(2);
+    const first = createTransactionHarness(prisma);
+    const second = createTransactionHarness(prisma);
 
-		const acquire = (
-			participant: string,
-			keys: readonly string[],
-			txHost: TransactionHost<Prisma8TransactionalAdapter>,
-			uow: UnitOfWorkPort,
-		) =>
-			uow.run(async () => {
-				await barrier.arrive(participant);
-				await new PostgresMutationLockAdapter(txHost).acquire(keys);
-			});
+    const acquire = (
+      participant: string,
+      keys: readonly string[],
+      txHost: TransactionHost<Prisma8TransactionalAdapter>,
+      uow: UnitOfWorkPort,
+    ) =>
+      uow.run(async () => {
+        await barrier.arrive(participant);
+        await new PostgresMutationLockAdapter(txHost).acquire(keys);
+      });
 
-		await completeWithin(
-			Promise.all([
-				acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
-				acquire("descending", ["batch:b", "batch:a"], second.txHost, second.uow),
-			]),
-			3_000,
-		);
-		expect(barrier.participantsSeen.toSorted()).toEqual(["ascending", "descending"]);
-	});
+    await completeWithin(
+      Promise.all([
+        acquire("ascending", ["batch:a", "batch:b"], first.txHost, first.uow),
+        acquire("descending", ["batch:b", "batch:a"], second.txHost, second.uow),
+      ]),
+      3_000,
+    );
+    expect(barrier.participantsSeen.toSorted()).toEqual(["ascending", "descending"]);
+  });
 
-	it("20개 Cheer 일일 한도 경쟁에서 3개만 저장하고 나머지는 CHEER_1201이어야 한다", async () => {
-		// Given - 한 발신자와 서로 다른 20개 수신자
-		const senderId = await createUser(prisma, 0);
-		const receiverIds = await Promise.all(
-			Array.from({ length: CONCURRENCY }, (_, index) => createUser(prisma, index + 1)),
-		);
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
-		const useCase = new SendCheerUseCase(
-			repository,
-			createCheerNotifier(),
-			createCheerLimitReader(DAILY_LIMIT),
-			new PostgresMutationLockAdapter(txHost),
-			uow,
-			createFollowReader(),
-		);
+  it("20개 Cheer 일일 한도 경쟁에서 3개만 저장하고 나머지는 CHEER_1201이어야 한다", async () => {
+    // Given - 한 발신자와 서로 다른 20개 수신자
+    const senderId = await createUser(prisma, 0);
+    const receiverIds = await Promise.all(
+      Array.from({ length: CONCURRENCY }, (_, index) => createUser(prisma, index + 1)),
+    );
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const repository = new RacingCheerRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
+    const useCase = new SendCheerUseCase(
+      repository,
+      createCheerNotifier(),
+      createCheerLimitReader(DAILY_LIMIT),
+      new PostgresMutationLockAdapter(txHost),
+      uow,
+      createFollowReader(),
+    );
 
-		// When - 같은 일일 한도를 동시에 소비
-		const summary = summarize(
-			await Promise.allSettled(
-				receiverIds.map((receiverId) => useCase.execute({ senderId, receiverId }, "UTC")),
-			),
-		);
+    // When - 같은 일일 한도를 동시에 소비
+    const summary = summarize(
+      await Promise.allSettled(
+        receiverIds.map((receiverId) => useCase.execute({ senderId, receiverId }, "UTC")),
+      ),
+    );
 
-		// Then - 성공 수와 실제 저장 수가 한도와 정확히 일치
-		expect(summary.successes).toBe(DAILY_LIMIT);
-		expect(summary.errorCodes).toEqual(Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.CHEER_1201));
-		expect(
-			(
-				await prisma.orm.public.Cheer.where((row) => row.senderId.eq(senderId)).aggregate(
-					(aggregate) => ({ count: aggregate.count() }),
-				)
-			).count,
-		).toBe(DAILY_LIMIT);
-	});
+    // Then - 성공 수와 실제 저장 수가 한도와 정확히 일치
+    expect(summary.successes).toBe(DAILY_LIMIT);
+    expect(summary.errorCodes).toEqual(Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.CHEER_1201));
+    expect(
+      (
+        await prisma.orm.public.Cheer.where((row) => row.senderId.eq(senderId)).aggregate(
+          (aggregate) => ({ count: aggregate.count() }),
+        )
+      ).count,
+    ).toBe(DAILY_LIMIT);
+  });
 
-	it("20개 동일 대상 Cheer 경쟁에서 1개만 저장하고 나머지는 CHEER_1202여야 한다", async () => {
-		// Given - 무제한 발신자와 한 수신자
-		const senderId = await createUser(prisma, 0, "ACTIVE");
-		const receiverId = await createUser(prisma, 1);
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const repository = new RacingCheerRepository(
-			txHost,
-			undefined,
-			new BestEffortRendezvous(CONCURRENCY),
-		);
-		const useCase = new SendCheerUseCase(
-			repository,
-			createCheerNotifier(),
-			createCheerLimitReader(null),
-			new PostgresMutationLockAdapter(txHost),
-			uow,
-			createFollowReader(),
-		);
+  it("20개 동일 대상 Cheer 경쟁에서 1개만 저장하고 나머지는 CHEER_1202여야 한다", async () => {
+    // Given - 무제한 발신자와 한 수신자
+    const senderId = await createUser(prisma, 0, "ACTIVE");
+    const receiverId = await createUser(prisma, 1);
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const repository = new RacingCheerRepository(
+      txHost,
+      undefined,
+      new BestEffortRendezvous(CONCURRENCY),
+    );
+    const useCase = new SendCheerUseCase(
+      repository,
+      createCheerNotifier(),
+      createCheerLimitReader(null),
+      new PostgresMutationLockAdapter(txHost),
+      uow,
+      createFollowReader(),
+    );
 
-		// When - 동일 대상을 동시에 응원
-		const summary = summarize(
-			await Promise.allSettled(
-				Array.from({ length: CONCURRENCY }, () => useCase.execute({ senderId, receiverId }, "UTC")),
-			),
-		);
+    // When - 동일 대상을 동시에 응원
+    const summary = summarize(
+      await Promise.allSettled(
+        Array.from({ length: CONCURRENCY }, () => useCase.execute({ senderId, receiverId }, "UTC")),
+      ),
+    );
 
-		// Then - 쿨다운 단위로 하나만 성공
-		expect(summary.successes).toBe(1);
-		expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.CHEER_1202));
-		expect(
-			(
-				await prisma.orm.public.Cheer.where((row) =>
-					and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
-				).aggregate((aggregate) => ({ count: aggregate.count() }))
-			).count,
-		).toBe(1);
-	});
+    // Then - 쿨다운 단위로 하나만 성공
+    expect(summary.successes).toBe(1);
+    expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.CHEER_1202));
+    expect(
+      (
+        await prisma.orm.public.Cheer.where((row) =>
+          and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
+        ).aggregate((aggregate) => ({ count: aggregate.count() }))
+      ).count,
+    ).toBe(1);
+  });
 
-	it("20개 Nudge 일일 한도 경쟁에서 3개만 저장하고 나머지는 NUDGE_1101이어야 한다", async () => {
-		// Given - 한 발신자와 서로 다른 20개 공개 Todo
-		const senderId = await createUser(prisma, 0);
-		const receiverId = await createUser(prisma, 1);
-		const todoIds: number[] = [];
-		for (let index = 0; index < CONCURRENCY; index += 1) {
-			todoIds.push(await createTodo(prisma, receiverId, `Todo ${index}`));
-		}
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
-		const useCase = new SendNudgeUseCase(
-			repository,
-			createNudgeNotifier(),
-			createNudgeLimitReader(DAILY_LIMIT),
-			new PostgresMutationLockAdapter(txHost),
-			uow,
-			createFollowReader(),
-		);
+  it("20개 Nudge 일일 한도 경쟁에서 3개만 저장하고 나머지는 NUDGE_1101이어야 한다", async () => {
+    // Given - 한 발신자와 서로 다른 20개 공개 Todo
+    const senderId = await createUser(prisma, 0);
+    const receiverId = await createUser(prisma, 1);
+    const todoIds: number[] = [];
+    for (let index = 0; index < CONCURRENCY; index += 1) {
+      todoIds.push(await createTodo(prisma, receiverId, `Todo ${index}`));
+    }
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const repository = new RacingNudgeRepository(txHost, new BestEffortRendezvous(CONCURRENCY));
+    const useCase = new SendNudgeUseCase(
+      repository,
+      createNudgeNotifier(),
+      createNudgeLimitReader(DAILY_LIMIT),
+      new PostgresMutationLockAdapter(txHost),
+      uow,
+      createFollowReader(),
+    );
 
-		// When - 같은 일일 한도를 동시에 소비
-		const summary = summarize(
-			await Promise.allSettled(
-				todoIds.map((todoId) => useCase.execute({ senderId, receiverId, todoId }, "UTC")),
-			),
-		);
+    // When - 같은 일일 한도를 동시에 소비
+    const summary = summarize(
+      await Promise.allSettled(
+        todoIds.map((todoId) => useCase.execute({ senderId, receiverId, todoId }, "UTC")),
+      ),
+    );
 
-		// Then - 성공 수와 실제 저장 수가 한도와 정확히 일치
-		expect(summary.successes).toBe(DAILY_LIMIT);
-		expect(summary.errorCodes).toEqual(Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.NUDGE_1101));
-		expect(
-			(
-				await prisma.orm.public.Nudge.where((row) => row.senderId.eq(senderId)).aggregate(
-					(aggregate) => ({ count: aggregate.count() }),
-				)
-			).count,
-		).toBe(DAILY_LIMIT);
-	});
+    // Then - 성공 수와 실제 저장 수가 한도와 정확히 일치
+    expect(summary.successes).toBe(DAILY_LIMIT);
+    expect(summary.errorCodes).toEqual(Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.NUDGE_1101));
+    expect(
+      (
+        await prisma.orm.public.Nudge.where((row) => row.senderId.eq(senderId)).aggregate(
+          (aggregate) => ({ count: aggregate.count() }),
+        )
+      ).count,
+    ).toBe(DAILY_LIMIT);
+  });
 
-	it("20개 동일 Todo Nudge 경쟁에서 1개만 저장하고 나머지는 NUDGE_1102여야 한다", async () => {
-		// Given - 무제한 발신자와 한 공개 Todo
-		const senderId = await createUser(prisma, 0, "ACTIVE");
-		const receiverId = await createUser(prisma, 1);
-		const todoId = await createTodo(prisma, receiverId, "Same Todo");
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const repository = new RacingNudgeRepository(
-			txHost,
-			undefined,
-			new BestEffortRendezvous(CONCURRENCY),
-		);
-		const useCase = new SendNudgeUseCase(
-			repository,
-			createNudgeNotifier(),
-			createNudgeLimitReader(null),
-			new PostgresMutationLockAdapter(txHost),
-			uow,
-			createFollowReader(),
-		);
+  it("20개 동일 Todo Nudge 경쟁에서 1개만 저장하고 나머지는 NUDGE_1102여야 한다", async () => {
+    // Given - 무제한 발신자와 한 공개 Todo
+    const senderId = await createUser(prisma, 0, "ACTIVE");
+    const receiverId = await createUser(prisma, 1);
+    const todoId = await createTodo(prisma, receiverId, "Same Todo");
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const repository = new RacingNudgeRepository(
+      txHost,
+      undefined,
+      new BestEffortRendezvous(CONCURRENCY),
+    );
+    const useCase = new SendNudgeUseCase(
+      repository,
+      createNudgeNotifier(),
+      createNudgeLimitReader(null),
+      new PostgresMutationLockAdapter(txHost),
+      uow,
+      createFollowReader(),
+    );
 
-		// When - 동일 Todo를 동시에 찌름
-		const summary = summarize(
-			await Promise.allSettled(
-				Array.from({ length: CONCURRENCY }, () =>
-					useCase.execute({ senderId, receiverId, todoId }, "UTC"),
-				),
-			),
-		);
+    // When - 동일 Todo를 동시에 찌름
+    const summary = summarize(
+      await Promise.allSettled(
+        Array.from({ length: CONCURRENCY }, () =>
+          useCase.execute({ senderId, receiverId, todoId }, "UTC"),
+        ),
+      ),
+    );
 
-		// Then - Todo 쿨다운 단위로 하나만 성공
-		expect(summary.successes).toBe(1);
-		expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.NUDGE_1102));
-		expect(
-			(
-				await prisma.orm.public.Nudge.where((row) =>
-					and(row.senderId.eq(senderId), row.todoId.eq(todoId)),
-				).aggregate((aggregate) => ({ count: aggregate.count() }))
-			).count,
-		).toBe(1);
-	});
+    // Then - Todo 쿨다운 단위로 하나만 성공
+    expect(summary.successes).toBe(1);
+    expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.NUDGE_1102));
+    expect(
+      (
+        await prisma.orm.public.Nudge.where((row) =>
+          and(row.senderId.eq(senderId), row.todoId.eq(todoId)),
+        ).aggregate((aggregate) => ({ count: aggregate.count() }))
+      ).count,
+    ).toBe(1);
+  });
 
-	it("20개 reminder-Nudge 경쟁에서 1개만 저장하고 나머지는 NUDGE_1108이어야 한다", async () => {
-		// Given - 오늘 Todo가 없는 한 수신자
-		const senderId = await createUser(prisma, 0);
-		const receiverId = await createUser(prisma, 1);
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const repository = new RacingNudgeRepository(
-			txHost,
-			undefined,
-			undefined,
-			new BestEffortRendezvous(CONCURRENCY),
-		);
-		const useCase = new SendRemindNudgeUseCase(
-			repository,
-			createNudgeNotifier(),
-			new PostgresMutationLockAdapter(txHost),
-			uow,
-			createFollowReader(),
-		);
+  it("20개 reminder-Nudge 경쟁에서 1개만 저장하고 나머지는 NUDGE_1108이어야 한다", async () => {
+    // Given - 오늘 Todo가 없는 한 수신자
+    const senderId = await createUser(prisma, 0);
+    const receiverId = await createUser(prisma, 1);
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const repository = new RacingNudgeRepository(
+      txHost,
+      undefined,
+      undefined,
+      new BestEffortRendezvous(CONCURRENCY),
+    );
+    const useCase = new SendRemindNudgeUseCase(
+      repository,
+      createNudgeNotifier(),
+      new PostgresMutationLockAdapter(txHost),
+      uow,
+      createFollowReader(),
+    );
 
-		// When - 동일 친구에게 동시에 reminder-Nudge 전송
-		const summary = summarize(
-			await Promise.allSettled(
-				Array.from({ length: CONCURRENCY }, () => useCase.execute({ senderId, receiverId }, "UTC")),
-			),
-		);
+    // When - 동일 친구에게 동시에 reminder-Nudge 전송
+    const summary = summarize(
+      await Promise.allSettled(
+        Array.from({ length: CONCURRENCY }, () => useCase.execute({ senderId, receiverId }, "UTC")),
+      ),
+    );
 
-		// Then - 친구 쿨다운 단위로 하나만 성공
-		expect(summary.successes).toBe(1);
-		expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.NUDGE_1108));
-		expect(
-			(
-				await prisma.orm.public.ReminderNudge.where((row) =>
-					and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
-				).aggregate((aggregate) => ({ count: aggregate.count() }))
-			).count,
-		).toBe(1);
-	});
+    // Then - 친구 쿨다운 단위로 하나만 성공
+    expect(summary.successes).toBe(1);
+    expect(summary.errorCodes).toEqual(Array(CONCURRENCY - 1).fill(ErrorCode.NUDGE_1108));
+    expect(
+      (
+        await prisma.orm.public.ReminderNudge.where((row) =>
+          and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
+        ).aggregate((aggregate) => ({ count: aggregate.count() }))
+      ).count,
+    ).toBe(1);
+  });
 
-	it("20개 고유 이름 카테고리 생성 경쟁에서 FREE 한도와 연속 sortOrder를 보존한다", async () => {
-		// Given - FREE 사용자와 Nest가 주입한 실제 transaction stack
-		const userId = await createUser(prisma, 0);
-		const lockKey = MutationLockKeys.todoCategory(userId);
-		const coordinatedLock = new CoordinatedCategoryMutationLock(
-			categoryTxHost,
-			categoryLockAdapter,
-			lockKey,
-			CONCURRENCY,
-		);
-		const useCase = new CreateTodoCategoryUseCase(
-			categoryRepository,
-			createTodoCategoryCache(),
-			categoryLimitReader,
-			coordinatedLock,
-			categoryUow,
-		);
+  it("20개 고유 이름 카테고리 생성 경쟁에서 FREE 한도와 연속 sortOrder를 보존한다", async () => {
+    // Given - FREE 사용자와 Nest가 주입한 실제 transaction stack
+    const userId = await createUser(prisma, 0);
+    const lockKey = MutationLockKeys.todoCategory(userId);
+    const coordinatedLock = new CoordinatedCategoryMutationLock(
+      categoryTxHost,
+      categoryLockAdapter,
+      lockKey,
+      CONCURRENCY,
+    );
+    const useCase = new CreateTodoCategoryUseCase(
+      categoryRepository,
+      createTodoCategoryCache(),
+      categoryLimitReader,
+      coordinatedLock,
+      categoryUow,
+    );
 
-		// When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
-		const race = await observeCategoryRace(
-			prisma,
-			lockKey,
-			coordinatedLock,
-			Promise.allSettled(
-				Array.from({ length: CONCURRENCY }, (_, index) =>
-					useCase.execute({
-						userId,
-						name: `Category ${index.toString().padStart(2, "0")}`,
-						color: "#112233",
-					}),
-				),
-			),
-		);
-		const summary = summarize(race.results);
+    // When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
+    const race = await observeCategoryRace(
+      prisma,
+      lockKey,
+      coordinatedLock,
+      Promise.allSettled(
+        Array.from({ length: CONCURRENCY }, (_, index) =>
+          useCase.execute({
+            userId,
+            name: `Category ${index.toString().padStart(2, "0")}`,
+            color: "#112233",
+          }),
+        ),
+      ),
+    );
+    const summary = summarize(race.results);
 
-		// Then - pool 직렬화가 아닌 실제 동일-key advisory 대기열
-		expect(race.participants).toHaveLength(CONCURRENCY);
-		expect(new Set(race.participants).size).toBe(CONCURRENCY);
-		expect(race.lockState.grantedCount).toBe(1);
-		expect(race.lockState.waitingCount).toBe(CONCURRENCY - 1);
+    // Then - pool 직렬화가 아닌 실제 동일-key advisory 대기열
+    expect(race.participants).toHaveLength(CONCURRENCY);
+    expect(new Set(race.participants).size).toBe(CONCURRENCY);
+    expect(race.lockState.grantedCount).toBe(1);
+    expect(race.lockState.waitingCount).toBe(CONCURRENCY - 1);
 
-		// Then - 성공은 FREE=3을 넘지 않고 저장 순번은 중복/공백 없는 0..2
-		expect(summary.successes).toBe(DAILY_LIMIT);
-		expect(summary.errorCodes).toEqual(
-			Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.TODO_CATEGORY_0857),
-		);
-		const persisted = decodeRecord(
-			"TodoCategory",
-			await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-				.orderBy((row) => row.sortOrder.asc())
-				.all(),
-		);
-		expect(persisted).toHaveLength(DAILY_LIMIT);
-		expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([0, 1, 2]);
-		expect(new Set(persisted.map(({ name }) => name)).size).toBe(DAILY_LIMIT);
-	});
+    // Then - 성공은 FREE=3을 넘지 않고 저장 순번은 중복/공백 없는 0..2
+    expect(summary.successes).toBe(DAILY_LIMIT);
+    expect(summary.errorCodes).toEqual(
+      Array(CONCURRENCY - DAILY_LIMIT).fill(ErrorCode.TODO_CATEGORY_0857),
+    );
+    const persisted = decodeRecord(
+      "TodoCategory",
+      await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
+        .orderBy((row) => row.sortOrder.asc())
+        .all(),
+    );
+    expect(persisted).toHaveLength(DAILY_LIMIT);
+    expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([0, 1, 2]);
+    expect(new Set(persisted.map(({ name }) => name)).size).toBe(DAILY_LIMIT);
+  });
 
-	it("20개 유효한 카테고리 재배치 경쟁 후 sortOrder가 완전한 permutation이다", async () => {
-		// Given - ACTIVE 사용자에게 0..19 순번의 카테고리와 실제 transaction stack
-		const userId = await createUser(prisma, 0, "ACTIVE");
-		await prisma.orm.public.TodoCategory.createAndCount(
-			Array.from({ length: CONCURRENCY }, (_, index) => ({
-				userId,
-				name: `Reorder ${index.toString().padStart(2, "0")}`,
-				color: "#112233",
-				sortOrder: index,
-			})).map((value) => encodeCreate("TodoCategory", value)),
-		);
-		const categories = decodeRecord(
-			"TodoCategory",
-			await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-				.orderBy((row) => row.sortOrder.asc())
-				.all(),
-		);
-		const lockKey = MutationLockKeys.todoCategory(userId);
-		const coordinatedLock = new CoordinatedCategoryMutationLock(
-			categoryTxHost,
-			categoryLockAdapter,
-			lockKey,
-			CONCURRENCY,
-		);
-		const useCase = new ReorderTodoCategoryUseCase(
-			categoryRepository,
-			createTodoCategoryCache(),
-			coordinatedLock,
-			categoryUow,
-		);
+  it("20개 유효한 카테고리 재배치 경쟁 후 sortOrder가 완전한 permutation이다", async () => {
+    // Given - ACTIVE 사용자에게 0..19 순번의 카테고리와 실제 transaction stack
+    const userId = await createUser(prisma, 0, "ACTIVE");
+    await prisma.orm.public.TodoCategory.createAndCount(
+      Array.from({ length: CONCURRENCY }, (_, index) => ({
+        userId,
+        name: `Reorder ${index.toString().padStart(2, "0")}`,
+        color: "#112233",
+        sortOrder: index,
+      })).map((value) => encodeCreate("TodoCategory", value)),
+    );
+    const categories = decodeRecord(
+      "TodoCategory",
+      await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
+        .orderBy((row) => row.sortOrder.asc())
+        .all(),
+    );
+    const lockKey = MutationLockKeys.todoCategory(userId);
+    const coordinatedLock = new CoordinatedCategoryMutationLock(
+      categoryTxHost,
+      categoryLockAdapter,
+      lockKey,
+      CONCURRENCY,
+    );
+    const useCase = new ReorderTodoCategoryUseCase(
+      categoryRepository,
+      createTodoCategoryCache(),
+      coordinatedLock,
+      categoryUow,
+    );
 
-		// When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
-		const race = await observeCategoryRace(
-			prisma,
-			lockKey,
-			coordinatedLock,
-			Promise.allSettled(
-				categories.map(({ id }) =>
-					useCase.execute({
-						userId,
-						categoryId: id,
-						position: "before",
-					}),
-				),
-			),
-		);
+    // When - 20개 활성 UoW가 lock 직전 도착한 뒤 한 holder와 19 waiters 관찰
+    const race = await observeCategoryRace(
+      prisma,
+      lockKey,
+      coordinatedLock,
+      Promise.allSettled(
+        categories.map(({ id }) =>
+          useCase.execute({
+            userId,
+            categoryId: id,
+            position: "before",
+          }),
+        ),
+      ),
+    );
 
-		// Then - pool 직렬화가 아닌 실제 동일-key advisory 대기열
-		expect(race.participants).toHaveLength(CONCURRENCY);
-		expect(new Set(race.participants).size).toBe(CONCURRENCY);
-		expect(race.lockState.grantedCount).toBe(1);
-		expect(race.lockState.waitingCount).toBe(CONCURRENCY - 1);
+    // Then - pool 직렬화가 아닌 실제 동일-key advisory 대기열
+    expect(race.participants).toHaveLength(CONCURRENCY);
+    expect(new Set(race.participants).size).toBe(CONCURRENCY);
+    expect(race.lockState.grantedCount).toBe(1);
+    expect(race.lockState.waitingCount).toBe(CONCURRENCY - 1);
 
-		// Then - 20개 모두 성공하고 persisted 순번이 정확히 0..19 permutation
-		expect(race.results.every(({ status }) => status === "fulfilled")).toBe(true);
-		const persisted = decodeRecord(
-			"TodoCategory",
-			await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
-				.orderBy((row) => row.sortOrder.asc())
-				.all(),
-		);
-		expect(persisted).toHaveLength(CONCURRENCY);
-		expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([
-			0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-		]);
-		expect(new Set(persisted.map(({ id }) => id)).size).toBe(CONCURRENCY);
-	});
+    // Then - 20개 모두 성공하고 persisted 순번이 정확히 0..19 permutation
+    expect(race.results.every(({ status }) => status === "fulfilled")).toBe(true);
+    const persisted = decodeRecord(
+      "TodoCategory",
+      await prisma.orm.public.TodoCategory.where((row) => row.userId.eq(userId))
+        .orderBy((row) => row.sortOrder.asc())
+        .all(),
+    );
+    expect(persisted).toHaveLength(CONCURRENCY);
+    expect(persisted.map(({ sortOrder }) => sortOrder)).toEqual([
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    ]);
+    expect(new Set(persisted.map(({ id }) => id)).size).toBe(CONCURRENCY);
+  });
 
-	it("Cheer limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
-		// Given - KST 7/26 경계 바로 전/후의 두 row
-		const senderId = await createUser(prisma, 0);
-		const priorReceiverId = await createUser(prisma, 1);
-		const currentReceiverId = await createUser(prisma, 2);
-		await prisma.orm.public.Cheer.createAndCount(
-			[
-				{
-					senderId,
-					receiverId: priorReceiverId,
-					createdAt: new Date("2026-07-25T14:59:59.999Z"),
-				},
-				{
-					senderId,
-					receiverId: currentReceiverId,
-					createdAt: new Date("2026-07-25T15:00:00.001Z"),
-				},
-			].map((value) => encodeCreate("Cheer", value)),
-		);
-		const { txHost } = createTransactionHarness(prisma);
-		const reader = new CheerReader(
-			new PrismaCheerRepository(txHost),
-			{} as PaginationService,
-			createReaderEntitlement(3),
-		);
+  it("Cheer limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
+    // Given - KST 7/26 경계 바로 전/후의 두 row
+    const senderId = await createUser(prisma, 0);
+    const priorReceiverId = await createUser(prisma, 1);
+    const currentReceiverId = await createUser(prisma, 2);
+    await prisma.orm.public.Cheer.createAndCount(
+      [
+        {
+          senderId,
+          receiverId: priorReceiverId,
+          createdAt: new Date("2026-07-25T14:59:59.999Z"),
+        },
+        {
+          senderId,
+          receiverId: currentReceiverId,
+          createdAt: new Date("2026-07-25T15:00:00.001Z"),
+        },
+      ].map((value) => encodeCreate("Cheer", value)),
+    );
+    const { txHost } = createTransactionHarness(prisma);
+    const reader = new CheerReader(
+      new PrismaCheerRepository(txHost),
+      {} as PaginationService,
+      createReaderEntitlement(3),
+    );
 
-		// When
-		const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
+    // When
+    const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
 
-		// Then - prior local day는 제외하고 early local day는 포함
-		expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
-	});
+    // Then - prior local day는 제외하고 early local day는 포함
+    expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
+  });
 
-	it("Nudge limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
-		// Given - KST 7/26 경계 바로 전/후의 두 row
-		const senderId = await createUser(prisma, 0);
-		const receiverId = await createUser(prisma, 1);
-		const todoId = await createTodo(prisma, receiverId, "Reader boundary");
-		await prisma.orm.public.Nudge.createAndCount(
-			[
-				{
-					senderId,
-					receiverId,
-					todoId,
-					createdAt: new Date("2026-07-25T14:59:59.999Z"),
-				},
-				{
-					senderId,
-					receiverId,
-					todoId,
-					createdAt: new Date("2026-07-25T15:00:00.001Z"),
-				},
-			].map((value) => encodeCreate("Nudge", value)),
-		);
-		const { txHost } = createTransactionHarness(prisma);
-		const reader = new NudgeReader(
-			new PrismaNudgeRepository(txHost),
-			{} as PaginationService,
-			createReaderEntitlement(3),
-		);
+  it("Nudge limit-info는 Asia/Seoul 이른 당일 row만 사용량에 포함한다", async () => {
+    // Given - KST 7/26 경계 바로 전/후의 두 row
+    const senderId = await createUser(prisma, 0);
+    const receiverId = await createUser(prisma, 1);
+    const todoId = await createTodo(prisma, receiverId, "Reader boundary");
+    await prisma.orm.public.Nudge.createAndCount(
+      [
+        {
+          senderId,
+          receiverId,
+          todoId,
+          createdAt: new Date("2026-07-25T14:59:59.999Z"),
+        },
+        {
+          senderId,
+          receiverId,
+          todoId,
+          createdAt: new Date("2026-07-25T15:00:00.001Z"),
+        },
+      ].map((value) => encodeCreate("Nudge", value)),
+    );
+    const { txHost } = createTransactionHarness(prisma);
+    const reader = new NudgeReader(
+      new PrismaNudgeRepository(txHost),
+      {} as PaginationService,
+      createReaderEntitlement(3),
+    );
 
-		// When
-		const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
+    // When
+    const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
 
-		// Then - prior local day는 제외하고 early local day는 포함
-		expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
-	});
+    // Then - prior local day는 제외하고 early local day는 포함
+    expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
+  });
 
-	it("Cheer lock 대기가 KST 자정을 넘어도 row는 캡처한 이전 날짜 시각으로 저장한다", async () => {
-		// Given - 이전 날짜 key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
-		vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
-		const senderId = await createUser(prisma, 0);
-		const receiverId = await createUser(prisma, 1);
-		const held = createDeferred();
-		const release = createDeferred();
-		const dailyKey = MutationLockKeys.cheerDaily(senderId, "2026-07-26");
-		const blocker = withDatabaseTransaction(prisma, async (tx) => {
-			await tx
-				.execute(
-					sqlStatement(
-						tx,
-						sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`,
-					)
-						.affectedCount()
-						.build(),
-				)
-				.then((result) => result.affectedRows);
-			held.resolve();
-			await release.promise;
-		});
-		await held.promise;
+  it("Cheer lock 대기가 KST 자정을 넘어도 row는 캡처한 이전 날짜 시각으로 저장한다", async () => {
+    // Given - 이전 날짜 key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
+    vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+    const senderId = await createUser(prisma, 0);
+    const receiverId = await createUser(prisma, 1);
+    const held = createDeferred();
+    const release = createDeferred();
+    const dailyKey = MutationLockKeys.cheerDaily(senderId, "2026-07-26");
+    const blocker = withDatabaseTransaction(prisma, async (tx) => {
+      await tx
+        .execute(
+          sqlStatement(
+            tx,
+            sql`SELECT pg_advisory_xact_lock(hashtextextended(${dailyKey}, 0))::text`,
+          )
+            .affectedCount()
+            .build(),
+        )
+        .then((result) => result.affectedRows);
+      held.resolve();
+      await release.promise;
+    });
+    await held.promise;
 
-		const { txHost, uow } = createTransactionHarness(prisma);
-		const sendingIdentity = createValueDeferred<AdvisoryLockIdentity>();
-		const continueLockAttempt = createDeferred();
-		const realLock = new PostgresMutationLockAdapter(txHost);
-		const mutationLock: MutationLockPort = {
-			async acquire(keys) {
-				const sqlRows4 = sqlRowSpec({ pid: "pg/int4@1", databaseOid: "pg/int4@1" });
+    const { txHost, uow } = createTransactionHarness(prisma);
+    const sendingIdentity = createValueDeferred<AdvisoryLockIdentity>();
+    const continueLockAttempt = createDeferred();
+    const realLock = new PostgresMutationLockAdapter(txHost);
+    const mutationLock: MutationLockPort = {
+      async acquire(keys) {
+        const sqlRows4 = sqlRowSpec({ pid: "pg/int4@1", databaseOid: "pg/int4@1" });
 
-				const identities = decodeSqlRows(
-					sqlRows4,
-					await txHost.tx.query(
-						sqlStatement(
-							txHost.tx,
-							sql`
+        const identities = decodeSqlRows(
+          sqlRows4,
+          await txHost.tx.query(
+            sqlStatement(
+              txHost.tx,
+              sql`
 					SELECT
 						pg_backend_pid() AS pid,
 						(
@@ -1301,57 +1301,57 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
 							WHERE datname = current_database()
 						) AS "databaseOid"
 				`,
-						)
-							.returnsRow(sqlRows4)
-							.build(),
-					),
-				);
-				const identity = identities[0];
-				if (!identity) {
-					throw new Error("Could not identify the sending transaction backend");
-				}
-				sendingIdentity.resolve(identity);
-				await continueLockAttempt.promise;
-				await realLock.acquire(keys);
-			},
-		};
-		const useCase = new SendCheerUseCase(
-			new PrismaCheerRepository(txHost),
-			createCheerNotifier(),
-			createCheerLimitReader(1),
-			mutationLock,
-			uow,
-			createFollowReader(),
-		);
+            )
+              .returnsRow(sqlRows4)
+              .build(),
+          ),
+        );
+        const identity = identities[0];
+        if (!identity) {
+          throw new Error("Could not identify the sending transaction backend");
+        }
+        sendingIdentity.resolve(identity);
+        await continueLockAttempt.promise;
+        await realLock.acquire(keys);
+      },
+    };
+    const useCase = new SendCheerUseCase(
+      new PrismaCheerRepository(txHost),
+      createCheerNotifier(),
+      createCheerLimitReader(1),
+      mutationLock,
+      uow,
+      createFollowReader(),
+    );
 
-		// When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
-		const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");
-		const identity = await sendingIdentity.promise;
-		try {
-			continueLockAttempt.resolve();
-			const mismatchedIdentity = { pid: -1, databaseOid: -1 };
-			await expect(
-				waitForBlockedAdvisoryLock(prisma, dailyKey, mismatchedIdentity, {
-					timeoutMs: 40,
-					pollIntervalMs: 10,
-				}),
-			).rejects.toThrow("pid=-1, databaseOid=-1");
-			const observation = await waitForBlockedAdvisoryLock(prisma, dailyKey, identity);
-			expect(observation.waitingCount).toBe(1);
-			vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
-		} finally {
-			continueLockAttempt.resolve();
-			release.resolve();
-			await Promise.allSettled([sending, blocker]);
-		}
-		const cheer = await sending;
+    // When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
+    const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");
+    const identity = await sendingIdentity.promise;
+    try {
+      continueLockAttempt.resolve();
+      const mismatchedIdentity = { pid: -1, databaseOid: -1 };
+      await expect(
+        waitForBlockedAdvisoryLock(prisma, dailyKey, mismatchedIdentity, {
+          timeoutMs: 40,
+          pollIntervalMs: 10,
+        }),
+      ).rejects.toThrow("pid=-1, databaseOid=-1");
+      const observation = await waitForBlockedAdvisoryLock(prisma, dailyKey, identity);
+      expect(observation.waitingCount).toBe(1);
+      vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+    } finally {
+      continueLockAttempt.resolve();
+      release.resolve();
+      await Promise.allSettled([sending, blocker]);
+    }
+    const cheer = await sending;
 
-		// Then - row timestamp가 이전 날짜 key/window와 동일한 capturedAt에 고정됨
-		expect(cheer.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
-		const persisted = decodeRecord(
-			"Cheer",
-			requireRecord(await prisma.orm.public.Cheer.where((row) => row.id.eq(cheer.id)).first()),
-		);
-		expect(persisted.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
-	});
+    // Then - row timestamp가 이전 날짜 key/window와 동일한 capturedAt에 고정됨
+    expect(cheer.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
+    const persisted = decodeRecord(
+      "Cheer",
+      requireRecord(await prisma.orm.public.Cheer.where((row) => row.id.eq(cheer.id)).first()),
+    );
+    expect(persisted.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
+  });
 });

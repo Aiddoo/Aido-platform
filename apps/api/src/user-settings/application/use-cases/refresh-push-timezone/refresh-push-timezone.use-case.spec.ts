@@ -10,45 +10,45 @@ import type { Mocked } from "vitest";
 import { createUserSettingsCacheMock } from "#test/mocks/ports/index";
 
 import {
-	USER_PREFERENCE_REPOSITORY,
-	type UserPreferenceRepositoryPort,
+  USER_PREFERENCE_REPOSITORY,
+  type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port.js";
 import {
-	USER_SETTINGS_CACHE,
-	type UserSettingsCachePort,
+  USER_SETTINGS_CACHE,
+  type UserSettingsCachePort,
 } from "../../ports/user-settings-cache.port.js";
 import { RefreshPushTimezoneUseCase } from "./refresh-push-timezone.use-case.js";
 
 describe("RefreshPushTimezoneUseCase — 타임존 자가치유", () => {
-	let useCase: RefreshPushTimezoneUseCase;
-	let repo: Mocked<UserPreferenceRepositoryPort>;
-	let cache: Mocked<UserSettingsCachePort>;
+  let useCase: RefreshPushTimezoneUseCase;
+  let repo: Mocked<UserPreferenceRepositoryPort>;
+  let cache: Mocked<UserSettingsCachePort>;
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(RefreshPushTimezoneUseCase)
-			.mock<UserSettingsCachePort>(USER_SETTINGS_CACHE)
-			.impl(() => createUserSettingsCacheMock())
-			.compile();
-		useCase = unit;
-		repo = unitRef.get(USER_PREFERENCE_REPOSITORY);
-		cache = unitRef.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
-	});
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(RefreshPushTimezoneUseCase)
+      .mock<UserSettingsCachePort>(USER_SETTINGS_CACHE)
+      .impl(() => createUserSettingsCacheMock())
+      .compile();
+    useCase = unit;
+    repo = unitRef.get(USER_PREFERENCE_REPOSITORY);
+    cache = unitRef.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
+  });
 
-	it("타임존이 실제로 바뀌면(1행) activeTimezones 캐시를 무효화한다", async () => {
-		repo.refreshTimezoneIfChanged.mockResolvedValue(1);
+  it("타임존이 실제로 바뀌면(1행) activeTimezones 캐시를 무효화한다", async () => {
+    repo.refreshTimezoneIfChanged.mockResolvedValue(1);
 
-		await useCase.execute("user-1", "Asia/Seoul");
+    await useCase.execute("user-1", "Asia/Seoul");
 
-		expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
-		expect(cache.invalidateActiveTimezones).toHaveBeenCalledTimes(1);
-	});
+    expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
+    expect(cache.invalidateActiveTimezones).toHaveBeenCalledTimes(1);
+  });
 
-	it("변경이 없으면(0행) 캐시를 무효화하지 않는다 (thundering-herd 방지)", async () => {
-		repo.refreshTimezoneIfChanged.mockResolvedValue(0);
+  it("변경이 없으면(0행) 캐시를 무효화하지 않는다 (thundering-herd 방지)", async () => {
+    repo.refreshTimezoneIfChanged.mockResolvedValue(0);
 
-		await useCase.execute("user-1", "Asia/Seoul");
+    await useCase.execute("user-1", "Asia/Seoul");
 
-		expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
-		expect(cache.invalidateActiveTimezones).not.toHaveBeenCalled();
-	});
+    expect(repo.refreshTimezoneIfChanged).toHaveBeenCalledWith("user-1", "Asia/Seoul");
+    expect(cache.invalidateActiveTimezones).not.toHaveBeenCalled();
+  });
 });

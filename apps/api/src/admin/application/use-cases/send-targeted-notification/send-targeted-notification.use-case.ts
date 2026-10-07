@@ -7,20 +7,20 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { type BroadcastResult, buildBroadcastResult } from "../../../domain/broadcast-result.js";
 import { BroadcastCampaign } from "../../../domain/entities/broadcast-campaign.js";
 import {
-	ADMIN_BROADCAST_NOTIFIER,
-	type AdminBroadcastNotifierPort,
+  ADMIN_BROADCAST_NOTIFIER,
+  type AdminBroadcastNotifierPort,
 } from "../../ports/admin-broadcast-notifier.port.js";
 import {
-	ADMIN_USER_DIRECTORY,
-	type AdminUserDirectoryPort,
+  ADMIN_USER_DIRECTORY,
+  type AdminUserDirectoryPort,
 } from "../../ports/admin-user-directory.port.js";
 
 export interface SendTargetedNotificationInput {
-	title: string;
-	body: string;
-	userIds: string[];
-	action: NotificationAction | undefined;
-	force: boolean;
+  title: string;
+  body: string;
+  userIds: string[];
+  action: NotificationAction | undefined;
+  force: boolean;
 }
 
 /**
@@ -30,42 +30,42 @@ export interface SendTargetedNotificationInput {
  */
 @Injectable()
 export class SendTargetedNotificationUseCase {
-	readonly #logger = new Logger(SendTargetedNotificationUseCase.name);
+  readonly #logger = new Logger(SendTargetedNotificationUseCase.name);
 
-	constructor(
-		@Inject(ADMIN_USER_DIRECTORY)
-		private readonly userDirectory: AdminUserDirectoryPort,
-		@Inject(ADMIN_BROADCAST_NOTIFIER)
-		private readonly notifier: AdminBroadcastNotifierPort,
-	) {}
+  constructor(
+    @Inject(ADMIN_USER_DIRECTORY)
+    private readonly userDirectory: AdminUserDirectoryPort,
+    @Inject(ADMIN_BROADCAST_NOTIFIER)
+    private readonly notifier: AdminBroadcastNotifierPort,
+  ) {}
 
-	async execute(input: SendTargetedNotificationInput): Promise<BroadcastResult> {
-		// 타겟 발송은 필터가 없으므로 캠페인의 대상 필터는 사용하지 않는다(ALL 자리표시).
-		// 제목/본문 불변식 검증과 메시지 조립만 캠페인에 위임한다.
-		const campaign = BroadcastCampaign.create({
-			title: input.title,
-			body: input.body,
-			targetFilter: "ALL",
-			action: input.action,
-			force: input.force,
-		});
+  async execute(input: SendTargetedNotificationInput): Promise<BroadcastResult> {
+    // 타겟 발송은 필터가 없으므로 캠페인의 대상 필터는 사용하지 않는다(ALL 자리표시).
+    // 제목/본문 불변식 검증과 메시지 조립만 캠페인에 위임한다.
+    const campaign = BroadcastCampaign.create({
+      title: input.title,
+      body: input.body,
+      targetFilter: "ALL",
+      action: input.action,
+      force: input.force,
+    });
 
-		const existingUserIds = await this.userDirectory.findExistingUserIds(input.userIds);
+    const existingUserIds = await this.userDirectory.findExistingUserIds(input.userIds);
 
-		if (existingUserIds.length === 0) {
-			throw new ApplicationException(ErrorCode.ADMIN_1402, {
-				requested: input.userIds.length,
-			});
-		}
+    if (existingUserIds.length === 0) {
+      throw new ApplicationException(ErrorCode.ADMIN_1402, {
+        requested: input.userIds.length,
+      });
+    }
 
-		this.#logger.log(`Sending targeted notification to ${existingUserIds.length} users`);
+    this.#logger.log(`Sending targeted notification to ${existingUserIds.length} users`);
 
-		const { count } = await this.notifier.sendBatch(
-			campaign.toMessages(existingUserIds, "ADMIN_TARGETED"),
-		);
+    const { count } = await this.notifier.sendBatch(
+      campaign.toMessages(existingUserIds, "ADMIN_TARGETED"),
+    );
 
-		this.#logger.log(`Targeted notification completed: ${count} notifications sent`);
+    this.#logger.log(`Targeted notification completed: ${count} notifications sent`);
 
-		return buildBroadcastResult(existingUserIds.length, count);
-	}
+    return buildBroadcastResult(existingUserIds.length, count);
+  }
 }

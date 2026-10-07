@@ -7,12 +7,12 @@ import type { Contract as Start } from "../../snapshots/dc63ea58b2c07a750ff5d49f
 import startContract from "../../snapshots/dc63ea58b2c07a750ff5d49f7003d6feb577625730bbf2dbd0d36805090f926e/contract.json" with { type: "json" };
 
 export default class M extends Migration<Start, End> {
-	override readonly startContractJson = startContract;
-	override readonly endContractJson = endContract;
+  override readonly startContractJson = startContract;
+  override readonly endContractJson = endContract;
 
-	override get operations() {
-		return [];
-	}
+  override get operations() {
+    return [];
+  }
 }
 
 MigrationCLI.run(import.meta.url, M);

@@ -3,9 +3,9 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 
 import {
-	AdminEventNotifier,
-	type AdminNotifier,
-	PAYMENT_NOTIFIER,
+  AdminEventNotifier,
+  type AdminNotifier,
+  PAYMENT_NOTIFIER,
 } from "#api/admin-notification/index";
 import { NotificationQueueService } from "#api/notification/queue";
 
@@ -22,70 +22,70 @@ import type { SubscriptionEventPayload } from "../../application/types/subscript
  */
 @Injectable()
 export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifierPort {
-	readonly #logger = new Logger(SubscriptionEventNotifierAdapter.name);
+  readonly #logger = new Logger(SubscriptionEventNotifierAdapter.name);
 
-	constructor(
-		private readonly adminEventNotifier: AdminEventNotifier,
-		private readonly notificationQueueService: NotificationQueueService,
-		@Inject(PAYMENT_NOTIFIER)
-		private readonly paymentNotifier: AdminNotifier,
-	) {}
+  constructor(
+    private readonly adminEventNotifier: AdminEventNotifier,
+    private readonly notificationQueueService: NotificationQueueService,
+    @Inject(PAYMENT_NOTIFIER)
+    private readonly paymentNotifier: AdminNotifier,
+  ) {}
 
-	notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
-		this.adminEventNotifier.notifySubscriptionEvent(payload);
-	}
+  notifySubscriptionEvent(payload: SubscriptionEventPayload): void {
+    this.adminEventNotifier.notifySubscriptionEvent(payload);
+  }
 
-	notifyBillingIssue(userId: string): void {
-		this.notificationQueueService.enqueueBillingIssue({ userId });
-	}
+  notifyBillingIssue(userId: string): void {
+    this.notificationQueueService.enqueueBillingIssue({ userId });
+  }
 
-	reportWebhookFailure(error: unknown, payload: RevenueCatWebhookPayload): void {
-		// 1. Sentry 태깅 캡처 (결제 도메인 컨텍스트)
-		Sentry.withScope((scope) => {
-			scope.setTag("domain", "payment");
-			scope.setTag("webhook.event_type", payload.event.type);
-			scope.setTag("webhook.store", payload.event.store ?? "unknown");
-			scope.setExtra("webhook.app_user_id", payload.event.app_user_id);
-			scope.setExtra("webhook.product_id", payload.event.product_id);
-			scope.setExtra("webhook.event_id", payload.event.id);
-			Sentry.captureException(error);
-		});
+  reportWebhookFailure(error: unknown, payload: RevenueCatWebhookPayload): void {
+    // 1. Sentry 태깅 캡처 (결제 도메인 컨텍스트)
+    Sentry.withScope((scope) => {
+      scope.setTag("domain", "payment");
+      scope.setTag("webhook.event_type", payload.event.type);
+      scope.setTag("webhook.store", payload.event.store ?? "unknown");
+      scope.setExtra("webhook.app_user_id", payload.event.app_user_id);
+      scope.setExtra("webhook.product_id", payload.event.product_id);
+      scope.setExtra("webhook.event_id", payload.event.id);
+      Sentry.captureException(error);
+    });
 
-		// 2. Discord 관리자 알림 (fire-and-forget)
-		this.#notifyWebhookError(error, payload).catch((e) =>
-			this.#logger.warn(`Failed to send webhook error notification: ${e}`),
-		);
-	}
+    // 2. Discord 관리자 알림 (fire-and-forget)
+    this.#notifyWebhookError(error, payload).catch((e) =>
+      this.#logger.warn(`Failed to send webhook error notification: ${e}`),
+    );
+  }
 
-	async #notifyWebhookError(error: unknown, payload: RevenueCatWebhookPayload): Promise<void> {
-		const errorMessage = error instanceof Error ? error.message : String(error);
+  async #notifyWebhookError(error: unknown, payload: RevenueCatWebhookPayload): Promise<void> {
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
-		await this.paymentNotifier.send({
-			title: "Webhook 처리 에러",
-			body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
-			color: 0xff0000,
-			fields: [
-				{
-					name: "에러",
-					value: errorMessage.slice(0, 1024),
-					inline: false,
-				},
-				{
-					name: "이벤트 타입",
-					value: payload.event.type,
-					inline: true,
-				},
-				{
-					name: "사용자 ID",
-					value: payload.event.app_user_id,
-					inline: true,
-				},
-				{
-					name: "상품",
-					value: payload.event.product_id,
-					inline: true,
-				},
-			],
-		});
-	}
+    await this.paymentNotifier.send({
+      title: "Webhook 처리 에러",
+      body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
+      color: 0xff0000,
+      fields: [
+        {
+          name: "에러",
+          value: errorMessage.slice(0, 1024),
+          inline: false,
+        },
+        {
+          name: "이벤트 타입",
+          value: payload.event.type,
+          inline: true,
+        },
+        {
+          name: "사용자 ID",
+          value: payload.event.app_user_id,
+          inline: true,
+        },
+        {
+          name: "상품",
+          value: payload.event.product_id,
+          inline: true,
+        },
+      ],
+    });
+  }
 }

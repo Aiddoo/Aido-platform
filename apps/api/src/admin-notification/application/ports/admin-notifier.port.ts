@@ -11,18 +11,18 @@
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo.js";
 
 export type {
-	AdminNotification,
-	AdminNotificationField,
+  AdminNotification,
+  AdminNotificationField,
 } from "../../domain/value-objects/admin-notification-message.vo.js";
 
 /**
  * 알림 발송 결과
  */
 export interface AdminNotifyResult {
-	/** 발송 성공 여부 */
-	success: boolean;
-	/** 에러 메시지 (실패 시) */
-	error?: string;
+  /** 발송 성공 여부 */
+  success: boolean;
+  /** 에러 메시지 (실패 시) */
+  error?: string;
 }
 
 /**
@@ -31,14 +31,14 @@ export interface AdminNotifyResult {
  * 모든 관리자 알림 제공자는 이 인터페이스를 구현해야 합니다.
  */
 export interface AdminNotifier {
-	/** 제공자 이름 */
-	readonly name: string;
+  /** 제공자 이름 */
+  readonly name: string;
 
-	/** 알림 발송 */
-	send(notification: AdminNotification): Promise<AdminNotifyResult>;
+  /** 알림 발송 */
+  send(notification: AdminNotification): Promise<AdminNotifyResult>;
 
-	/** 제공자가 설정 완료되어 사용 가능한지 확인 */
-	isConfigured(): boolean;
+  /** 제공자가 설정 완료되어 사용 가능한지 확인 */
+  isConfigured(): boolean;
 }
 
 /**

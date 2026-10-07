@@ -1,35 +1,35 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	type CursorPaginationInfo,
-	PaginationService,
+  type CursorPaginationInfo,
+  PaginationService,
 } from "#api/shared/application/pagination/index";
 
 import {
-	computeSummary,
-	toWeeklyAchievementView,
-	type WeekLabelLocale,
-	type WeeklyAchievementSummary,
-	type WeeklyAchievementView,
+  computeSummary,
+  toWeeklyAchievementView,
+  type WeekLabelLocale,
+  type WeeklyAchievementSummary,
+  type WeeklyAchievementView,
 } from "../../../domain/weekly-achievement.js";
 import {
-	WEEKLY_ACHIEVEMENT_REPOSITORY,
-	type WeeklyAchievementRepositoryPort,
+  WEEKLY_ACHIEVEMENT_REPOSITORY,
+  type WeeklyAchievementRepositoryPort,
 } from "../../ports/weekly-achievement.repository.port.js";
 
 export interface GetWeeklyAchievementsInput {
-	userId: string;
-	year: number;
-	cursor: number | undefined;
-	size: number | undefined;
-	locale: WeekLabelLocale;
+  userId: string;
+  year: number;
+  cursor: number | undefined;
+  size: number | undefined;
+  locale: WeekLabelLocale;
 }
 
 /** 주간 달성 목록 뷰 (아이템 + 커서 페이지네이션 + 연도 요약) */
 export interface WeeklyAchievementListView {
-	items: WeeklyAchievementView[];
-	pagination: CursorPaginationInfo<number>;
-	summary: WeeklyAchievementSummary;
+  items: WeeklyAchievementView[];
+  pagination: CursorPaginationInfo<number>;
+  summary: WeeklyAchievementSummary;
 }
 
 /**
@@ -37,40 +37,40 @@ export interface WeeklyAchievementListView {
  */
 @Injectable()
 export class GetWeeklyAchievementsUseCase {
-	constructor(
-		@Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
-		private readonly repository: WeeklyAchievementRepositoryPort,
-		private readonly paginationService: PaginationService,
-	) {}
+  constructor(
+    @Inject(WEEKLY_ACHIEVEMENT_REPOSITORY)
+    private readonly repository: WeeklyAchievementRepositoryPort,
+    private readonly paginationService: PaginationService,
+  ) {}
 
-	async execute(input: GetWeeklyAchievementsInput): Promise<WeeklyAchievementListView> {
-		const { userId, year, locale } = input;
+  async execute(input: GetWeeklyAchievementsInput): Promise<WeeklyAchievementListView> {
+    const { userId, year, locale } = input;
 
-		const { cursor, size, take } = this.paginationService.normalizeCursorPagination<number>({
-			cursor: input.cursor,
-			size: input.size,
-		});
+    const { cursor, size, take } = this.paginationService.normalizeCursorPagination<number>({
+      cursor: input.cursor,
+      size: input.size,
+    });
 
-		// 페이지네이션 목록 + 연도 전체 기록(summary 계산용) 병렬 조회 (waterfall 제거)
-		const [items, yearRecords] = await Promise.all([
-			this.repository.findByYear(userId, year, cursor, take),
-			this.repository.findAllByYear(userId, year),
-		]);
+    // 페이지네이션 목록 + 연도 전체 기록(summary 계산용) 병렬 조회 (waterfall 제거)
+    const [items, yearRecords] = await Promise.all([
+      this.repository.findByYear(userId, year, cursor, take),
+      this.repository.findAllByYear(userId, year),
+    ]);
 
-		const hasNext = items.length > size;
-		const paginatedItems = hasNext ? items.slice(0, size) : items;
-		const lastItem = paginatedItems[paginatedItems.length - 1];
+    const hasNext = items.length > size;
+    const paginatedItems = hasNext ? items.slice(0, size) : items;
+    const lastItem = paginatedItems[paginatedItems.length - 1];
 
-		const pagination: CursorPaginationInfo<number> = {
-			nextCursor: hasNext && lastItem ? lastItem.week : null,
-			hasNext,
-			size,
-		};
+    const pagination: CursorPaginationInfo<number> = {
+      nextCursor: hasNext && lastItem ? lastItem.week : null,
+      hasNext,
+      size,
+    };
 
-		return {
-			items: paginatedItems.map((row) => toWeeklyAchievementView(row, locale)),
-			pagination,
-			summary: computeSummary(yearRecords),
-		};
-	}
+    return {
+      items: paginatedItems.map((row) => toWeeklyAchievementView(row, locale)),
+      pagination,
+      summary: computeSummary(yearRecords),
+    };
+  }
 }

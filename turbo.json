@@ -43,7 +43,8 @@
         "EMAIL_FROM",
         "EMAIL_FROM_NAME",
         "TOKEN_ENCRYPTION_KEY",
-        "NODE_ENV"
+        "NODE_ENV",
+        "AIDO_TEST_POSTGRES_URL"
       ],
       "env": ["TZ"]
     },
@@ -57,7 +58,8 @@
         "JWT_SECRET",
         "JWT_REFRESH_SECRET",
         "TOKEN_ENCRYPTION_KEY",
-        "NODE_ENV"
+        "NODE_ENV",
+        "AIDO_TEST_POSTGRES_URL"
       ],
       "env": ["TZ"]
     },

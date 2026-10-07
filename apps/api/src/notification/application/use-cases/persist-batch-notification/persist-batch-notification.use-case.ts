@@ -5,12 +5,12 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports
 import { withNotificationCopyRevision } from "../../messages/notification-copy-revision.js";
 import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
+  NOTIFICATION_REPOSITORY,
+  type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port.js";
 import {
-	PUSH_DISPATCH_STAGING,
-	type PushDispatchStagingRepositoryPort,
+  PUSH_DISPATCH_STAGING,
+  type PushDispatchStagingRepositoryPort,
 } from "../../ports/push-dispatch-staging.repository.port.js";
 import { PushDeliveryAfterCommitPublisher } from "../../services/push-delivery-after-commit.publisher.js";
 import type { PersistedBatchNotificationResult } from "../../types/push-delivery.types.js";
@@ -22,46 +22,46 @@ import type { PersistedBatchNotificationResult } from "../../types/push-delivery
  */
 @Injectable()
 export class PersistBatchNotificationUseCase {
-	constructor(
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
-		@Inject(PUSH_DISPATCH_STAGING)
-		private readonly pushDispatchStaging: PushDispatchStagingRepositoryPort,
-		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
-		private readonly afterCommitPublisher: PushDeliveryAfterCommitPublisher,
-	) {}
+  constructor(
+    @Inject(NOTIFICATION_REPOSITORY)
+    private readonly notificationRepository: NotificationRepositoryPort,
+    @Inject(PUSH_DISPATCH_STAGING)
+    private readonly pushDispatchStaging: PushDispatchStagingRepositoryPort,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
+    private readonly afterCommitPublisher: PushDeliveryAfterCommitPublisher,
+  ) {}
 
-	async execute(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
-		if (dataList.length === 0) {
-			return { count: 0, sourceData: [] };
-		}
+  async execute(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
+    if (dataList.length === 0) {
+      return { count: 0, sourceData: [] };
+    }
 
-		return this.uow.run(() => this.#persist(dataList));
-	}
+    return this.uow.run(() => this.#persist(dataList));
+  }
 
-	async #persist(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
-		const created = await this.notificationRepository.createManyNotificationsAndReturn(
-			dataList.map(withNotificationCopyRevision),
-		);
-		const forceKey = (userId: string, type: string): string => `${userId}\u0000${type}`;
-		const forcedKeys = new Set(
-			dataList
-				.filter((data) => data.force === true)
-				.map((data) => forceKey(data.userId, data.type)),
-		);
+  async #persist(dataList: CreateNotificationData[]): Promise<PersistedBatchNotificationResult> {
+    const created = await this.notificationRepository.createManyNotificationsAndReturn(
+      dataList.map(withNotificationCopyRevision),
+    );
+    const forceKey = (userId: string, type: string): string => `${userId}\u0000${type}`;
+    const forcedKeys = new Set(
+      dataList
+        .filter((data) => data.force === true)
+        .map((data) => forceKey(data.userId, data.type)),
+    );
 
-		const staged = await this.pushDispatchStaging.stageMany(
-			created.map((notification) => ({
-				notificationId: notification.id,
-				userId: notification.userId,
-				purpose: notification.purpose,
-				campaignKey: notification.campaignKey,
-				variantId: notification.variantId,
-				deliveryMode: "BATCH",
-				force: forcedKeys.has(forceKey(notification.userId, notification.type)),
-			})),
-		);
-		this.afterCommitPublisher.register(staged.map((dispatch) => dispatch.dispatchId));
-		return { count: created.length, sourceData: dataList };
-	}
+    const staged = await this.pushDispatchStaging.stageMany(
+      created.map((notification) => ({
+        notificationId: notification.id,
+        userId: notification.userId,
+        purpose: notification.purpose,
+        campaignKey: notification.campaignKey,
+        variantId: notification.variantId,
+        deliveryMode: "BATCH",
+        force: forcedKeys.has(forceKey(notification.userId, notification.type)),
+      })),
+    );
+    this.afterCommitPublisher.register(staged.map((dispatch) => dispatch.dispatchId));
+    return { count: created.length, sourceData: dataList };
+  }
 }

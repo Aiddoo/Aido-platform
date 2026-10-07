@@ -7,17 +7,17 @@ import type { AppVersionConfigPort } from "../../application/ports/app-version-c
 
 @Injectable()
 export class AppVersionConfigAdapter implements AppVersionConfigPort {
-	constructor(private readonly config: TypedConfigService) {}
+  constructor(private readonly config: TypedConfigService) {}
 
-	getAppVersion(): AppVersionResponse {
-		const value = this.config.appVersion;
-		if (!value.enabled || !value.iosLatestVersion || !value.androidLatestVersion) {
-			return { enabled: false };
-		}
-		return {
-			enabled: true,
-			ios: { latestVersion: value.iosLatestVersion },
-			android: { latestVersion: value.androidLatestVersion },
-		};
-	}
+  getAppVersion(): AppVersionResponse {
+    const value = this.config.appVersion;
+    if (!value.enabled || !value.iosLatestVersion || !value.androidLatestVersion) {
+      return { enabled: false };
+    }
+    return {
+      enabled: true,
+      ios: { latestVersion: value.iosLatestVersion },
+      android: { latestVersion: value.androidLatestVersion },
+    };
+  }
 }

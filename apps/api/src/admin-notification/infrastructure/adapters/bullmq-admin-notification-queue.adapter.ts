@@ -1,22 +1,22 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	type EnqueueJobOptions,
-	JOB_RUNTIME,
-	type JobRuntimePort,
+  type EnqueueJobOptions,
+  JOB_RUNTIME,
+  type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
 
 import type {
-	AdminNotificationQueuePort,
-	EnqueueSendOptions,
-	NotificationChannel,
+  AdminNotificationQueuePort,
+  EnqueueSendOptions,
+  NotificationChannel,
 } from "../../application/ports/admin-notification-queue.port.js";
 import type { AdminNotification } from "../../domain/value-objects/admin-notification-message.vo.js";
 import {
-	ADMIN_NOTIFICATION_JOB_POLICY,
-	ADMIN_NOTIFICATION_QUEUE,
-	AdminNotificationJobName,
-	type AdminNotificationSendData,
+  ADMIN_NOTIFICATION_JOB_POLICY,
+  ADMIN_NOTIFICATION_QUEUE,
+  AdminNotificationJobName,
+  type AdminNotificationSendData,
 } from "../queue/admin-notification-queue.constants.js";
 
 /**
@@ -26,24 +26,24 @@ import {
  */
 @Injectable()
 export class BullmqAdminNotificationQueueAdapter implements AdminNotificationQueuePort {
-	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
+  constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-	async enqueueSend(
-		channel: NotificationChannel,
-		notification: AdminNotification,
-		options?: EnqueueSendOptions,
-	): Promise<void> {
-		const jobOptions: EnqueueJobOptions =
-			options?.jobId === undefined
-				? ADMIN_NOTIFICATION_JOB_POLICY
-				: { ...ADMIN_NOTIFICATION_JOB_POLICY, idempotencyKey: options.jobId };
-		await this.runtime.enqueue(
-			ADMIN_NOTIFICATION_QUEUE,
-			{
-				name: AdminNotificationJobName.SEND,
-				data: { channel, notification } satisfies AdminNotificationSendData,
-			},
-			jobOptions,
-		);
-	}
+  async enqueueSend(
+    channel: NotificationChannel,
+    notification: AdminNotification,
+    options?: EnqueueSendOptions,
+  ): Promise<void> {
+    const jobOptions: EnqueueJobOptions =
+      options?.jobId === undefined
+        ? ADMIN_NOTIFICATION_JOB_POLICY
+        : { ...ADMIN_NOTIFICATION_JOB_POLICY, idempotencyKey: options.jobId };
+    await this.runtime.enqueue(
+      ADMIN_NOTIFICATION_QUEUE,
+      {
+        name: AdminNotificationJobName.SEND,
+        data: { channel, notification } satisfies AdminNotificationSendData,
+      },
+      jobOptions,
+    );
+  }
 }

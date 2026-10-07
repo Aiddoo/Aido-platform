@@ -16,23 +16,23 @@ import type { Prisma8TransactionalAdapter } from "./prisma8-transactional.adapte
  */
 @Injectable()
 export class PostgresMutationLockAdapter implements MutationLockPort {
-	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
-	async acquire(keys: readonly string[]): Promise<void> {
-		if (!this.txHost.isTransactionActive()) {
-			throw new Error("Mutation lock requires an active transaction");
-		}
+  async acquire(keys: readonly string[]): Promise<void> {
+    if (!this.txHost.isTransactionActive()) {
+      throw new Error("Mutation lock requires an active transaction");
+    }
 
-		const orderedKeys = [...new Set(keys)].sort();
-		if (orderedKeys.length === 0) {
-			return;
-		}
+    const orderedKeys = [...new Set(keys)].sort();
+    if (orderedKeys.length === 0) {
+      return;
+    }
 
-		// key 수와 무관하게 한 번 왕복합니다. 내부 정렬 subquery가 모든 호출자에게 같은
-		// 잠금 순서를 주므로 여러 댓글을 정리해도 교착 회피 규칙은 유지됩니다.
-		const plan = sqlStatement(
-			this.txHost.tx,
-			sql`
+    // key 수와 무관하게 한 번 왕복합니다. 내부 정렬 subquery가 모든 호출자에게 같은
+    // 잠금 순서를 주므로 여러 댓글을 정리해도 교착 회피 규칙은 유지됩니다.
+    const plan = sqlStatement(
+      this.txHost.tx,
+      sql`
 			WITH ordered AS MATERIALIZED (
 				SELECT requested."key"
 				FROM unnest(ARRAY[${join(orderedKeys)}]::TEXT[]) AS requested("key")
@@ -42,9 +42,9 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
 			FROM ordered
 			ORDER BY ordered."key"
   `,
-		)
-			.returnsRow({ locked: "pg/text@1" })
-			.build();
-		await this.txHost.tx.query(plan);
-	}
+    )
+      .returnsRow({ locked: "pg/text@1" })
+      .build();
+    await this.txHost.tx.query(plan);
+  }
 }

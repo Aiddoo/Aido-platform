@@ -1,4 +1,4 @@
 export interface SuggestionPrompt {
-	system: string;
-	prompt: string;
+  system: string;
+  prompt: string;
 }

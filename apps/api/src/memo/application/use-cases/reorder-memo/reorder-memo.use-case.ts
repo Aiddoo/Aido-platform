@@ -5,9 +5,9 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	planReorderRelativeTo,
-	planReorderToEdge,
-	type ReorderPlan,
+  planReorderRelativeTo,
+  planReorderToEdge,
+  type ReorderPlan,
 } from "../../../domain/services/memo-reorder.js";
 import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";
 import type { MemoMutationResult } from "../create-memo/create-memo.use-case.js";
@@ -17,10 +17,10 @@ import type { MemoMutationResult } from "../create-memo/create-memo.use-case.js"
  * targetMemoId 생략 시 맨 앞/뒤로 이동한다.
  */
 export interface ReorderMemoInput {
-	userId: string;
-	memoId: number;
-	position: "before" | "after";
-	targetMemoId?: number;
+  userId: string;
+  memoId: number;
+  position: "before" | "after";
+  targetMemoId?: number;
 }
 
 /**
@@ -31,59 +31,59 @@ export interface ReorderMemoInput {
  */
 @Injectable()
 export class ReorderMemoUseCase {
-	readonly #logger = new Logger(ReorderMemoUseCase.name);
+  readonly #logger = new Logger(ReorderMemoUseCase.name);
 
-	constructor(
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		@Inject(MEMO_REPOSITORY)
-		private readonly repository: MemoRepositoryPort,
-	) {}
+  constructor(
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    @Inject(MEMO_REPOSITORY)
+    private readonly repository: MemoRepositoryPort,
+  ) {}
 
-	async execute(input: ReorderMemoInput): Promise<MemoMutationResult> {
-		const { userId, memoId, targetMemoId } = input;
+  async execute(input: ReorderMemoInput): Promise<MemoMutationResult> {
+    const { userId, memoId, targetMemoId } = input;
 
-		return this.uow.run(async () => {
-			const memo = await this.repository.findByIdAndUserId(memoId, userId);
-			if (!memo) {
-				throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
-			}
+    return this.uow.run(async () => {
+      const memo = await this.repository.findByIdAndUserId(memoId, userId);
+      if (!memo) {
+        throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      }
 
-			if (targetMemoId === memoId) {
-				return { message: "메모 순서가 변경되었습니다.", memo: memo.toView() };
-			}
+      if (targetMemoId === memoId) {
+        return { message: "메모 순서가 변경되었습니다.", memo: memo.toView() };
+      }
 
-			const plan = await this.#planReorder(memo.sortOrder, input);
+      const plan = await this.#planReorder(memo.sortOrder, input);
 
-			await this.repository.shiftSortOrders(
-				userId,
-				plan.shift.from,
-				plan.shift.to,
-				plan.shift.delta,
-			);
-			const updated = await this.repository.updateSortOrder(memoId, plan.newSortOrder);
+      await this.repository.shiftSortOrders(
+        userId,
+        plan.shift.from,
+        plan.shift.to,
+        plan.shift.delta,
+      );
+      const updated = await this.repository.updateSortOrder(memoId, plan.newSortOrder);
 
-			this.#logger.log(
-				`Memo reordered: ${memoId} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
-			);
+      this.#logger.log(
+        `Memo reordered: ${memoId} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
+      );
 
-			return { message: "메모 순서가 변경되었습니다.", memo: updated.toView() };
-		});
-	}
+      return { message: "메모 순서가 변경되었습니다.", memo: updated.toView() };
+    });
+  }
 
-	async #planReorder(currentSortOrder: number, input: ReorderMemoInput): Promise<ReorderPlan> {
-		const { userId, targetMemoId, position } = input;
+  async #planReorder(currentSortOrder: number, input: ReorderMemoInput): Promise<ReorderPlan> {
+    const { userId, targetMemoId, position } = input;
 
-		if (targetMemoId) {
-			const target = await this.repository.findByIdAndUserId(targetMemoId, userId);
-			if (!target) {
-				throw new ApplicationException(ErrorCode.MEMO_2002, { targetMemoId });
-			}
-			return planReorderRelativeTo(currentSortOrder, target.sortOrder, position);
-		}
+    if (targetMemoId) {
+      const target = await this.repository.findByIdAndUserId(targetMemoId, userId);
+      if (!target) {
+        throw new ApplicationException(ErrorCode.MEMO_2002, { targetMemoId });
+      }
+      return planReorderRelativeTo(currentSortOrder, target.sortOrder, position);
+    }
 
-		// 맨 뒤 이동만 maxSortOrder가 필요하다 (맨 앞은 0 고정).
-		const maxSortOrder = position === "after" ? await this.repository.getMaxSortOrder(userId) : 0;
-		return planReorderToEdge(currentSortOrder, position, maxSortOrder);
-	}
+    // 맨 뒤 이동만 maxSortOrder가 필요하다 (맨 앞은 0 고정).
+    const maxSortOrder = position === "after" ? await this.repository.getMaxSortOrder(userId) : 0;
+    return planReorderToEdge(currentSortOrder, position, maxSortOrder);
+  }
 }

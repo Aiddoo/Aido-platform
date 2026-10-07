@@ -11,7 +11,7 @@ const GRACE_PERIOD_MS = 60_000;
  * cancel_reason이 CUSTOMER_SUPPORT이면 환불, 그 외(UNSUBSCRIBE 등)는 일반 취소.
  */
 export function isRefundCancellation(cancelReason: string | null | undefined): boolean {
-	return cancelReason === "CUSTOMER_SUPPORT";
+  return cancelReason === "CUSTOMER_SUPPORT";
 }
 
 /**
@@ -20,7 +20,7 @@ export function isRefundCancellation(cancelReason: string | null | undefined): b
  * 만료일이 grace period(60초)를 감안해 아직 미래이면 만료일까지 ACTIVE 유지, 아니면 CANCELLED.
  */
 export function resolveCancellationUserStatus(expiresAt: Date | null): "ACTIVE" | "CANCELLED" {
-	return expiresAt && isAfter(expiresAt, subtractMilliseconds(GRACE_PERIOD_MS))
-		? "ACTIVE"
-		: "CANCELLED";
+  return expiresAt && isAfter(expiresAt, subtractMilliseconds(GRACE_PERIOD_MS))
+    ? "ACTIVE"
+    : "CANCELLED";
 }

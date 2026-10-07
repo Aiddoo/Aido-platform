@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	createWeeklyAchievementNotificationMessage,
-	NotificationHistoryReader,
-	NotificationPublisher,
+  createWeeklyAchievementNotificationMessage,
+  NotificationHistoryReader,
+  NotificationPublisher,
 } from "#api/notification/index";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { previousIsoWeekRange } from "#api/shared/domain/date/utils/range";
@@ -14,121 +14,121 @@ import { WeeklyAchievementWriterAccess } from "#api/weekly-achievement/index";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
-	SCHEDULER_PREFERENCE_READER,
-	type SchedulerPreferenceReaderPort,
+  SCHEDULER_PREFERENCE_READER,
+  type SchedulerPreferenceReaderPort,
 } from "../ports/scheduler-preference-reader.port.js";
 import {
-	WEEKLY_ACHIEVEMENT_STATS_READER,
-	type WeeklyAchievementStatsReaderPort,
+  WEEKLY_ACHIEVEMENT_STATS_READER,
+  type WeeklyAchievementStatsReaderPort,
 } from "../ports/weekly-achievement-stats-reader.port.js";
 
 @Injectable()
 export class WeeklyAchievementStrategy implements ITimezoneStrategy {
-	readonly #logger = new Logger(WeeklyAchievementStrategy.name);
+  readonly #logger = new Logger(WeeklyAchievementStrategy.name);
 
-	constructor(
-		@Inject(WEEKLY_ACHIEVEMENT_STATS_READER)
-		private readonly reader: WeeklyAchievementStatsReaderPort,
-		@Inject(SCHEDULER_PREFERENCE_READER)
-		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationPublisher: NotificationPublisher,
-		private readonly notificationHistoryReader: NotificationHistoryReader,
-		private readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess,
-	) {}
+  constructor(
+    @Inject(WEEKLY_ACHIEVEMENT_STATS_READER)
+    private readonly reader: WeeklyAchievementStatsReaderPort,
+    @Inject(SCHEDULER_PREFERENCE_READER)
+    private readonly preferenceReader: SchedulerPreferenceReaderPort,
+    private readonly notificationPublisher: NotificationPublisher,
+    private readonly notificationHistoryReader: NotificationHistoryReader,
+    private readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess,
+  ) {}
 
-	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-		const { tz } = ctx;
-		const today = todayInTimezone(tz);
+  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
+    const { tz } = ctx;
+    const today = todayInTimezone(tz);
 
-		// 월요일 실행 → 이전 주(월~일) 집계
-		const { start, end, isoYear, isoWeek } = previousIsoWeekRange(today);
+    // 월요일 실행 → 이전 주(월~일) 집계
+    const { start, end, isoYear, isoWeek } = previousIsoWeekRange(today);
 
-		// ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
-		const [totalByUser, completedByUser] = await Promise.all([
-			this.reader.groupTotalTodosByUser({
-				tz,
-				periodStart: start,
-				periodEnd: end,
-			}),
-			this.reader.groupCompletedTodosByUser({
-				tz,
-				periodStart: start,
-				periodEnd: end,
-			}),
-		]);
+    // ─── A. DB 집계 (모든 유저, pushEnabled 무관) ──────────────
+    const [totalByUser, completedByUser] = await Promise.all([
+      this.reader.groupTotalTodosByUser({
+        tz,
+        periodStart: start,
+        periodEnd: end,
+      }),
+      this.reader.groupCompletedTodosByUser({
+        tz,
+        periodStart: start,
+        periodEnd: end,
+      }),
+    ]);
 
-		if (totalByUser.length === 0) {
-			return { sent: 0 };
-		}
+    if (totalByUser.length === 0) {
+      return { sent: 0 };
+    }
 
-		const completedMap = new Map(completedByUser.map((g) => [g.userId, g.count]));
+    const completedMap = new Map(completedByUser.map((g) => [g.userId, g.count]));
 
-		const records = totalByUser.map((g) => ({
-			userId: g.userId,
-			year: isoYear,
-			week: isoWeek,
-			totalTodos: g.count,
-			completedTodos: completedMap.get(g.userId) ?? 0,
-			achievedAt: today,
-		}));
+    const records = totalByUser.map((g) => ({
+      userId: g.userId,
+      year: isoYear,
+      week: isoWeek,
+      totalTodos: g.count,
+      completedTodos: completedMap.get(g.userId) ?? 0,
+      achievedAt: today,
+    }));
 
-		// ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-		await this.weeklyAchievementWriter.upsertMany(records);
+    // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
+    await this.weeklyAchievementWriter.upsertMany(records);
 
-		// ─── C. 알림 발송 (completed > 0 + dedup) ────
-		const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);
+    // ─── C. 알림 발송 (completed > 0 + dedup) ────
+    const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);
 
-		if (completedUserIds.length === 0) {
-			return { sent: 0 };
-		}
-		const freeRecipientIds = await this.reader.findFreeRecipientIds(completedUserIds);
-		const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
-		if (notifiableUserIds.length === 0) return { sent: 0 };
+    if (completedUserIds.length === 0) {
+      return { sent: 0 };
+    }
+    const freeRecipientIds = await this.reader.findFreeRecipientIds(completedUserIds);
+    const notifiableUserIds = completedUserIds.filter((userId) => freeRecipientIds.has(userId));
+    if (notifiableUserIds.length === 0) return { sent: 0 };
 
-		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
-			userIds: notifiableUserIds,
-			type: "WEEKLY_ACHIEVEMENT",
-			notificationDate: today,
-		});
+    const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      userIds: notifiableUserIds,
+      type: "WEEKLY_ACHIEVEMENT",
+      notificationDate: today,
+    });
 
-		const finalRecords = records.filter(
-			(r) =>
-				freeRecipientIds.has(r.userId) && r.completedTodos > 0 && !alreadyNotified.has(r.userId),
-		);
+    const finalRecords = records.filter(
+      (r) =>
+        freeRecipientIds.has(r.userId) && r.completedTodos > 0 && !alreadyNotified.has(r.userId),
+    );
 
-		if (finalRecords.length === 0) {
-			return { sent: 0 };
-		}
+    if (finalRecords.length === 0) {
+      return { sent: 0 };
+    }
 
-		const locales = await this.preferenceReader.findUserLocales(finalRecords.map((r) => r.userId));
-		const notifications = finalRecords.map((r) => {
-			const message = createWeeklyAchievementNotificationMessage({
-				completedCount: r.completedTodos,
-				totalCount: r.totalTodos,
-				locale: locales.get(r.userId) ?? DEFAULT_LOCALE,
-				variantContext: {
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
-					recipientId: r.userId,
-					occurrenceKey: toDateString(today),
-				},
-			});
-			return {
-				userId: r.userId,
-				type: "WEEKLY_ACHIEVEMENT" as const,
-				purpose: "SCHEDULED_SERVICE" as const,
-				campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
-				variantId: message.variantId,
-				title: message.title,
-				body: message.body,
-				notificationDate: today,
-			};
-		});
+    const locales = await this.preferenceReader.findUserLocales(finalRecords.map((r) => r.userId));
+    const notifications = finalRecords.map((r) => {
+      const message = createWeeklyAchievementNotificationMessage({
+        completedCount: r.completedTodos,
+        totalCount: r.totalTodos,
+        locale: locales.get(r.userId) ?? DEFAULT_LOCALE,
+        variantContext: {
+          campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
+          recipientId: r.userId,
+          occurrenceKey: toDateString(today),
+        },
+      });
+      return {
+        userId: r.userId,
+        type: "WEEKLY_ACHIEVEMENT" as const,
+        purpose: "SCHEDULED_SERVICE" as const,
+        campaignKey: SCHEDULER_CAMPAIGN_KEY.WEEKLY_ACHIEVEMENT,
+        variantId: message.variantId,
+        title: message.title,
+        body: message.body,
+        notificationDate: today,
+      };
+    });
 
-		await this.notificationPublisher.publishBatch(notifications);
+    await this.notificationPublisher.publishBatch(notifications);
 
-		this.#logger.log(
-			`Weekly achievement: tz=${tz}, records=${records.length}, sent=${notifications.length}`,
-		);
-		return { sent: notifications.length };
-	}
+    this.#logger.log(
+      `Weekly achievement: tz=${tz}, records=${records.length}, sent=${notifications.length}`,
+    );
+    return { sent: notifications.length };
+  }
 }

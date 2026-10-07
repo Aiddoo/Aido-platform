@@ -1,6 +1,6 @@
 import {
-	PROMPT_OUTPUT_DISCIPLINE_EN,
-	PROMPT_SECURITY_GUARD_EN,
+  PROMPT_OUTPUT_DISCIPLINE_EN,
+  PROMPT_SECURITY_GUARD_EN,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
@@ -8,7 +8,7 @@ import type { SuggestionContext } from "../../types.js";
 import type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
 
 function buildPatternRulesEn(minOccurrences: number): string {
-	return `<rules>
+  return `<rules>
 - Return only strongly grounded suggestions, 0-5 total. If evidence is weak, do not invent filler.
 - title becomes a to-do immediately after acceptance. Use a concrete action and amount, such as "Morning stretch 10 min". Ban abstract titles such as "focus time" or "workout plan".
 - Repetition normally needs the same title ${minOccurrences}+ times. Two repeats require confidence >= 0.75.
@@ -30,12 +30,12 @@ const STARTER_RULES_EN = `<rules>
 </rules>`;
 
 export function buildSuggestionPromptEn(
-	context: SuggestionContext,
-	minOccurrences: number,
+  context: SuggestionContext,
+  minOccurrences: number,
 ): SuggestionPrompt {
-	const isStarter = context.todos.length > 0 && context.todos.length < minOccurrences;
-	const mode = isStarter ? "STARTER" : "PATTERN";
-	const system = `<role>
+  const isStarter = context.todos.length > 0 && context.todos.length < minOccurrences;
+  const mode = isStarter ? "STARTER" : "PATTERN";
+  const system = `<role>
 You are a coach who analyzes the user's to-do data and suggests actionable routines.
 </role>
 
@@ -52,12 +52,12 @@ ${isStarter ? STARTER_RULES_EN : buildPatternRulesEn(minOccurrences)}
 
 ${PROMPT_OUTPUT_DISCIPLINE_EN}`;
 
-	return {
-		system,
-		prompt: `<context_json>\n${encodeUntrustedJson({
-			mode,
-			todoCount: context.todos.length,
-			...context,
-		})}\n</context_json>\n<task>Analyze the user data and suggest personalized routines. Write title and reason in English. Check grounding internally, then return only the structured result.</task>`,
-	};
+  return {
+    system,
+    prompt: `<context_json>\n${encodeUntrustedJson({
+      mode,
+      todoCount: context.todos.length,
+      ...context,
+    })}\n</context_json>\n<task>Analyze the user data and suggest personalized routines. Write title and reason in English. Check grounding internally, then return only the structured result.</task>`,
+  };
 }

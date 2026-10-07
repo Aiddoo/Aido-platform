@@ -10,16 +10,16 @@ import type { TodoCategoryWithCountView } from "../../application/ports/todo-cat
  */
 @Injectable()
 export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
-	constructor(private readonly cacheService: CacheService) {}
+  constructor(private readonly cacheService: CacheService) {}
 
-	wrapList(
-		userId: string,
-		factory: () => Promise<TodoCategoryWithCountView[]>,
-	): Promise<TodoCategoryWithCountView[]> {
-		return this.cacheService.wrapTodoCategories(userId, factory);
-	}
+  wrapList(
+    userId: string,
+    factory: () => Promise<TodoCategoryWithCountView[]>,
+  ): Promise<TodoCategoryWithCountView[]> {
+    return this.cacheService.wrapTodoCategories(userId, factory);
+  }
 
-	invalidate(userId: string): Promise<void> {
-		return this.cacheService.invalidateTodoCategories(userId);
-	}
+  invalidate(userId: string): Promise<void> {
+    return this.cacheService.invalidateTodoCategories(userId);
+  }
 }

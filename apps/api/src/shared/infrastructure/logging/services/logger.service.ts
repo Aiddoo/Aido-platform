@@ -9,73 +9,73 @@ import type { LogContext } from "../interfaces/logger.interface.js";
  */
 @Injectable()
 export class LoggerService implements NestLoggerService {
-	constructor(private readonly pino: PinoLogger) {}
+  constructor(private readonly pino: PinoLogger) {}
 
-	/**
-	 * 로그 컨텍스트 설정
-	 */
-	setContext(context: string): void {
-		this.pino.setContext(context);
-	}
+  /**
+   * 로그 컨텍스트 설정
+   */
+  setContext(context: string): void {
+    this.pino.setContext(context);
+  }
 
-	log(message: string, context?: LogContext | string): void {
-		if (typeof context === "string") {
-			this.pino.setContext(context);
-			this.pino.info(message);
-		} else {
-			this.pino.info(context ?? {}, message);
-		}
-	}
+  log(message: string, context?: LogContext | string): void {
+    if (typeof context === "string") {
+      this.pino.setContext(context);
+      this.pino.info(message);
+    } else {
+      this.pino.info(context ?? {}, message);
+    }
+  }
 
-	error(message: string, trace?: string, context?: LogContext | string): void {
-		const logData: LogContext = typeof context === "object" ? context : {};
-		if (trace) {
-			logData.stack = trace;
-		}
-		if (typeof context === "string") {
-			this.pino.setContext(context);
-		}
-		this.pino.error(logData, message);
-	}
+  error(message: string, trace?: string, context?: LogContext | string): void {
+    const logData: LogContext = typeof context === "object" ? context : {};
+    if (trace) {
+      logData.stack = trace;
+    }
+    if (typeof context === "string") {
+      this.pino.setContext(context);
+    }
+    this.pino.error(logData, message);
+  }
 
-	warn(message: string, context?: LogContext | string): void {
-		if (typeof context === "string") {
-			this.pino.setContext(context);
-			this.pino.warn(message);
-		} else {
-			this.pino.warn(context ?? {}, message);
-		}
-	}
+  warn(message: string, context?: LogContext | string): void {
+    if (typeof context === "string") {
+      this.pino.setContext(context);
+      this.pino.warn(message);
+    } else {
+      this.pino.warn(context ?? {}, message);
+    }
+  }
 
-	debug(message: string, context?: LogContext | string): void {
-		if (typeof context === "string") {
-			this.pino.setContext(context);
-			this.pino.debug(message);
-		} else {
-			this.pino.debug(context ?? {}, message);
-		}
-	}
+  debug(message: string, context?: LogContext | string): void {
+    if (typeof context === "string") {
+      this.pino.setContext(context);
+      this.pino.debug(message);
+    } else {
+      this.pino.debug(context ?? {}, message);
+    }
+  }
 
-	/**
-	 * VERBOSE 레벨 로그 (debug로 매핑)
-	 */
-	verbose(message: string, context?: LogContext | string): void {
-		this.debug(message, context);
-	}
+  /**
+   * VERBOSE 레벨 로그 (debug로 매핑)
+   */
+  verbose(message: string, context?: LogContext | string): void {
+    this.debug(message, context);
+  }
 
-	fatal(message: string, context?: LogContext | string): void {
-		if (typeof context === "string") {
-			this.pino.setContext(context);
-			this.pino.fatal(message);
-		} else {
-			this.pino.fatal(context ?? {}, message);
-		}
-	}
+  fatal(message: string, context?: LogContext | string): void {
+    if (typeof context === "string") {
+      this.pino.setContext(context);
+      this.pino.fatal(message);
+    } else {
+      this.pino.fatal(context ?? {}, message);
+    }
+  }
 
-	/**
-	 * 구조화된 로그 출력
-	 */
-	logWithData(level: "info" | "warn" | "error" | "debug", message: string, data: LogContext): void {
-		this.pino[level](data, message);
-	}
+  /**
+   * 구조화된 로그 출력
+   */
+  logWithData(level: "info" | "warn" | "error" | "debug", message: string, data: LogContext): void {
+    this.pino[level](data, message);
+  }
 }

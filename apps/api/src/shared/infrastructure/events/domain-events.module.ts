@@ -13,12 +13,12 @@ import { EventEmitterDomainEventPublisher } from "./event-emitter-domain-event.p
  */
 @Global()
 @Module({
-	providers: [
-		{
-			provide: DOMAIN_EVENT_PUBLISHER,
-			useClass: EventEmitterDomainEventPublisher,
-		},
-	],
-	exports: [DOMAIN_EVENT_PUBLISHER],
+  providers: [
+    {
+      provide: DOMAIN_EVENT_PUBLISHER,
+      useClass: EventEmitterDomainEventPublisher,
+    },
+  ],
+  exports: [DOMAIN_EVENT_PUBLISHER],
 })
 export class DomainEventsModule {}

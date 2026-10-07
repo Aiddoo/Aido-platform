@@ -1,17 +1,17 @@
 import { ErrorCode } from "@aido/errors";
 import { TODO_ITEM_LIMITS } from "@aido/validators";
 import {
-	Body,
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Logger,
-	Param,
-	Patch,
-	Post,
-	Query,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 
@@ -20,131 +20,131 @@ import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/uti
 import { Timezone } from "#api/shared/presentation/decorators/index";
 import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
-	ApiBadRequestError,
-	ApiCreatedResponse,
-	ApiDoc,
-	ApiForbiddenError,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiBadRequestError,
+  ApiCreatedResponse,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
 import {
-	GetFriendTodosUseCase,
-	GetTodoByIdUseCase,
-	GetTodoResourceLimitUseCase,
-	GetTodoSummaryUseCase,
-	GetTodosUseCase,
+  GetFriendTodosUseCase,
+  GetTodoByIdUseCase,
+  GetTodoResourceLimitUseCase,
+  GetTodoSummaryUseCase,
+  GetTodosUseCase,
 } from "../application/queries/index.js";
 import {
-	AddTodoItemUseCase,
-	ChangeTodoCategoryUseCase,
-	CreateRecurringTodosUseCase,
-	CreateTodoUseCase,
-	DeleteTodoItemUseCase,
-	DeleteTodoUseCase,
-	ReorderTodoItemsUseCase,
-	ReorderTodoUseCase,
-	ToggleTodoCompleteUseCase,
-	UpdateTodoItemUseCase,
-	UpdateTodoScheduleUseCase,
-	UpdateTodoTitleUseCase,
-	UpdateTodoUseCase,
-	UpdateTodoVisibilityUseCase,
+  AddTodoItemUseCase,
+  ChangeTodoCategoryUseCase,
+  CreateRecurringTodosUseCase,
+  CreateTodoUseCase,
+  DeleteTodoItemUseCase,
+  DeleteTodoUseCase,
+  ReorderTodoItemsUseCase,
+  ReorderTodoUseCase,
+  ToggleTodoCompleteUseCase,
+  UpdateTodoItemUseCase,
+  UpdateTodoScheduleUseCase,
+  UpdateTodoTitleUseCase,
+  UpdateTodoUseCase,
+  UpdateTodoVisibilityUseCase,
 } from "../application/use-cases/index.js";
 import {
-	ChangeTodoCategoryDto,
-	CreateRecurringTodoDto,
-	CreateRecurringTodoResponseDto,
-	CreateTodoDto,
-	CreateTodoItemDto,
-	CreateTodoResponseDto,
-	DeleteTodoResponseDto,
-	GetFriendTodosQueryDto,
-	GetTodosQueryDto,
-	ReorderTodoDto,
-	ReorderTodoItemsDto,
-	ReorderTodoResponseDto,
-	TodoIdParamDto,
-	TodoItemIdParamDto,
-	TodoListResponseDto,
-	TodoResourceLimitQueryDto,
-	TodoResourceLimitResponseDto,
-	TodoResponseDto,
-	TodoSummaryResponseDto,
-	ToggleTodoCompleteDto,
-	UpdateTodoDto,
-	UpdateTodoItemDto,
-	UpdateTodoResponseDto,
-	UpdateTodoScheduleDto,
-	UpdateTodoTitleDto,
-	UpdateTodoVisibilityDto,
+  ChangeTodoCategoryDto,
+  CreateRecurringTodoDto,
+  CreateRecurringTodoResponseDto,
+  CreateTodoDto,
+  CreateTodoItemDto,
+  CreateTodoResponseDto,
+  DeleteTodoResponseDto,
+  GetFriendTodosQueryDto,
+  GetTodosQueryDto,
+  ReorderTodoDto,
+  ReorderTodoItemsDto,
+  ReorderTodoResponseDto,
+  TodoIdParamDto,
+  TodoItemIdParamDto,
+  TodoListResponseDto,
+  TodoResourceLimitQueryDto,
+  TodoResourceLimitResponseDto,
+  TodoResponseDto,
+  TodoSummaryResponseDto,
+  ToggleTodoCompleteDto,
+  UpdateTodoDto,
+  UpdateTodoItemDto,
+  UpdateTodoResponseDto,
+  UpdateTodoScheduleDto,
+  UpdateTodoTitleDto,
+  UpdateTodoVisibilityDto,
 } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.TODOS)
 @ApiBearerAuth()
 @Controller("todos")
 export class TodoController {
-	readonly #logger = new Logger(TodoController.name);
+  readonly #logger = new Logger(TodoController.name);
 
-	constructor(
-		private readonly getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
-		private readonly getTodoSummaryUseCase: GetTodoSummaryUseCase,
-		private readonly getTodosUseCase: GetTodosUseCase,
-		private readonly getTodoByIdUseCase: GetTodoByIdUseCase,
-		private readonly getFriendTodosUseCase: GetFriendTodosUseCase,
-		private readonly createTodoUseCase: CreateTodoUseCase,
-		private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
-		private readonly updateTodoUseCase: UpdateTodoUseCase,
-		private readonly toggleTodoCompleteUseCase: ToggleTodoCompleteUseCase,
-		private readonly updateTodoVisibilityUseCase: UpdateTodoVisibilityUseCase,
-		private readonly changeTodoCategoryUseCase: ChangeTodoCategoryUseCase,
-		private readonly updateTodoScheduleUseCase: UpdateTodoScheduleUseCase,
-		private readonly updateTodoTitleUseCase: UpdateTodoTitleUseCase,
-		private readonly reorderTodoUseCase: ReorderTodoUseCase,
-		private readonly deleteTodoUseCase: DeleteTodoUseCase,
-		private readonly addTodoItemUseCase: AddTodoItemUseCase,
-		private readonly reorderTodoItemsUseCase: ReorderTodoItemsUseCase,
-		private readonly updateTodoItemUseCase: UpdateTodoItemUseCase,
-		private readonly deleteTodoItemUseCase: DeleteTodoItemUseCase,
-	) {}
+  constructor(
+    private readonly getTodoResourceLimitUseCase: GetTodoResourceLimitUseCase,
+    private readonly getTodoSummaryUseCase: GetTodoSummaryUseCase,
+    private readonly getTodosUseCase: GetTodosUseCase,
+    private readonly getTodoByIdUseCase: GetTodoByIdUseCase,
+    private readonly getFriendTodosUseCase: GetFriendTodosUseCase,
+    private readonly createTodoUseCase: CreateTodoUseCase,
+    private readonly createRecurringTodosUseCase: CreateRecurringTodosUseCase,
+    private readonly updateTodoUseCase: UpdateTodoUseCase,
+    private readonly toggleTodoCompleteUseCase: ToggleTodoCompleteUseCase,
+    private readonly updateTodoVisibilityUseCase: UpdateTodoVisibilityUseCase,
+    private readonly changeTodoCategoryUseCase: ChangeTodoCategoryUseCase,
+    private readonly updateTodoScheduleUseCase: UpdateTodoScheduleUseCase,
+    private readonly updateTodoTitleUseCase: UpdateTodoTitleUseCase,
+    private readonly reorderTodoUseCase: ReorderTodoUseCase,
+    private readonly deleteTodoUseCase: DeleteTodoUseCase,
+    private readonly addTodoItemUseCase: AddTodoItemUseCase,
+    private readonly reorderTodoItemsUseCase: ReorderTodoItemsUseCase,
+    private readonly updateTodoItemUseCase: UpdateTodoItemUseCase,
+    private readonly deleteTodoItemUseCase: DeleteTodoItemUseCase,
+  ) {}
 
-	@Get("resource-limit")
-	@ApiDoc({
-		summary: "카테고리당 활성 할 일 리소스 제한 정보 조회",
-		operationId: "getTodoResourceLimit",
-		description: `카테고리당 활성(미완료) 할 일 최대 한도를 조회합니다.
+  @Get("resource-limit")
+  @ApiDoc({
+    summary: "카테고리당 활성 할 일 리소스 제한 정보 조회",
+    operationId: "getTodoResourceLimit",
+    description: `카테고리당 활성(미완료) 할 일 최대 한도를 조회합니다.
 categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수도 함께 반환합니다.
 
 **응답 필드**
 - \`maxPerCategory\`: 카테고리당 최대 활성 할 일 수 (모든 구독 동일, ADMIN은 무제한)
 - \`activeCount\`: 해당 카테고리의 현재 활성 할 일 개수 (categoryId 지정 시)`,
-	})
-	@ApiSuccessResponse({ type: TodoResourceLimitResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getResourceLimit(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: TodoResourceLimitQueryDto }) query: TodoResourceLimitQueryDto,
-	): Promise<TodoResourceLimitResponseDto> {
-		return this.getTodoResourceLimitUseCase.execute({
-			userId: user.userId,
-			categoryId: query.categoryId,
-		});
-	}
+  })
+  @ApiSuccessResponse({ type: TodoResourceLimitResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getResourceLimit(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: TodoResourceLimitQueryDto }) query: TodoResourceLimitQueryDto,
+  ): Promise<TodoResourceLimitResponseDto> {
+    return this.getTodoResourceLimitUseCase.execute({
+      userId: user.userId,
+      categoryId: query.categoryId,
+    });
+  }
 
-	@Get("summary")
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC) — '오늘' 날짜 경계 판단",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "오늘의 할 일 요약 조회 (홈 위젯용)",
-		operationId: "getTodoSummary",
-		description: `오늘 할 일 진행률과 현재 스트릭, 상위 할 일 목록을 한 번에 조회합니다.
+  @Get("summary")
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC) — '오늘' 날짜 경계 판단",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "오늘의 할 일 요약 조회 (홈 위젯용)",
+    operationId: "getTodoSummary",
+    description: `오늘 할 일 진행률과 현재 스트릭, 상위 할 일 목록을 한 번에 조회합니다.
 홈 화면 위젯 스냅샷 갱신용 경량 엔드포인트입니다.
 
 **응답 필드**
@@ -154,31 +154,31 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`isComplete\`: 100% 달성 여부 (할 일이 1개 이상이고 전부 완료)
 - \`currentStreak\`: 현재 연속 달성 일수
 - \`topTodos\`: 오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개)`,
-	})
-	@ApiSuccessResponse({ type: TodoSummaryResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getSummary(
-		@CurrentUser() user: CurrentUserPayload,
-		@Timezone() tz: string,
-	): Promise<TodoSummaryResponseDto> {
-		// 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"의 UTC midnight으로 변환해 전달
-		return this.getTodoSummaryUseCase.execute({
-			userId: user.userId,
-			today: todayInTimezone(tz),
-		});
-	}
+  })
+  @ApiSuccessResponse({ type: TodoSummaryResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getSummary(
+    @CurrentUser() user: CurrentUserPayload,
+    @Timezone() tz: string,
+  ): Promise<TodoSummaryResponseDto> {
+    // 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"의 UTC midnight으로 변환해 전달
+    return this.getTodoSummaryUseCase.execute({
+      userId: user.userId,
+      today: todayInTimezone(tz),
+    });
+  }
 
-	@Post()
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "할 일 생성",
-		operationId: "createTodo",
-		description: `새로운 할 일을 생성합니다.
+  @Post()
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "할 일 생성",
+    operationId: "createTodo",
+    description: `새로운 할 일을 생성합니다.
 
 **필수 필드**
 - \`title\`: 할 일 제목 (1-200자)
@@ -218,52 +218,52 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - **카운터 뱃지**: \`itemStats.completed\` / \`itemStats.total\` (예: 1/3)
 - **진행률 바**: \`itemStats.completed / itemStats.total * 100\` (예: 33%)
 - **펼침/접힘 토글**: \`itemStats.total > 0\`이면 토글 버튼 표시`,
-	})
-	@ApiCreatedResponse({ type: CreateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	@ApiForbiddenError(ErrorCode.TODO_0811)
-	async create(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
-		@Timezone() tz: string,
-	): Promise<CreateTodoResponseDto> {
-		this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
+  })
+  @ApiCreatedResponse({ type: CreateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiForbiddenError(ErrorCode.TODO_0811)
+  async create(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
+    @Timezone() tz: string,
+  ): Promise<CreateTodoResponseDto> {
+    this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
 
-		const todo = await this.createTodoUseCase.execute({
-			userId: user.userId,
-			title: dto.title,
-			categoryId: dto.categoryId,
-			startDate: parseDateOnly(dto.startDate),
-			endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-			scheduledTime: dto.scheduledTime
-				? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-				: undefined,
-			isAllDay: dto.isAllDay,
-			visibility: dto.visibility,
-			items: dto.items,
-		});
+    const todo = await this.createTodoUseCase.execute({
+      userId: user.userId,
+      title: dto.title,
+      categoryId: dto.categoryId,
+      startDate: parseDateOnly(dto.startDate),
+      endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
+      scheduledTime: dto.scheduledTime
+        ? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+        : undefined,
+      isAllDay: dto.isAllDay,
+      visibility: dto.visibility,
+      items: dto.items,
+    });
 
-		this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
+    this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
 
-		return {
-			message: "할 일이 생성되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "할 일이 생성되었습니다.",
+      todo,
+    };
+  }
 
-	@Post("recurring")
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "반복 할 일 생성",
-		operationId: "createRecurringTodo",
-		description: `날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
+  @Post("recurring")
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "반복 할 일 생성",
+    operationId: "createRecurringTodo",
+    description: `날짜 범위와 요일 조합에 따라 여러 개의 독립적인 할 일을 일괄 생성합니다.
 
 **필수 필드**
 - \`title\`: 할 일 제목 (1-200자)
@@ -277,51 +277,51 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 **제한사항**
 - 한 번에 최대 100개까지 생성 가능
 - 활성(미완료) 할 일 한도를 초과하면 전체 요청 거부`,
-	})
-	@ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	@ApiBadRequestError(ErrorCode.TODO_0812)
-	@ApiForbiddenError(ErrorCode.TODO_0813)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	async createRecurring(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
-		@Timezone() tz: string,
-	): Promise<CreateRecurringTodoResponseDto> {
-		this.#logger.debug(
-			`반복 Todo 생성: user=${user.userId}, title=${dto.title}, range=${dto.startDate}~${dto.endDate}, days=${dto.daysOfWeek.join(",")}`,
-		);
+  })
+  @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiBadRequestError(ErrorCode.TODO_0812)
+  @ApiForbiddenError(ErrorCode.TODO_0813)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  async createRecurring(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
+    @Timezone() tz: string,
+  ): Promise<CreateRecurringTodoResponseDto> {
+    this.#logger.debug(
+      `반복 Todo 생성: user=${user.userId}, title=${dto.title}, range=${dto.startDate}~${dto.endDate}, days=${dto.daysOfWeek.join(",")}`,
+    );
 
-		const result = await this.createRecurringTodosUseCase.execute({
-			data: {
-				userId: user.userId,
-				title: dto.title,
-				categoryId: dto.categoryId,
-				startDate: dto.startDate,
-				endDate: dto.endDate,
-				daysOfWeek: dto.daysOfWeek,
-				scheduledTime: dto.scheduledTime,
-				isAllDay: dto.isAllDay,
-				visibility: dto.visibility,
-			},
-			timezone: tz,
-		});
+    const result = await this.createRecurringTodosUseCase.execute({
+      data: {
+        userId: user.userId,
+        title: dto.title,
+        categoryId: dto.categoryId,
+        startDate: dto.startDate,
+        endDate: dto.endDate,
+        daysOfWeek: dto.daysOfWeek,
+        scheduledTime: dto.scheduledTime,
+        isAllDay: dto.isAllDay,
+        visibility: dto.visibility,
+      },
+      timezone: tz,
+    });
 
-		this.#logger.log(`반복 Todo 생성 완료: ${result.count}개, user=${user.userId}`);
+    this.#logger.log(`반복 Todo 생성 완료: ${result.count}개, user=${user.userId}`);
 
-		return {
-			message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
-			todos: result.todos,
-			count: result.count,
-		};
-	}
+    return {
+      message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
+      todos: result.todos,
+      count: result.count,
+    };
+  }
 
-	@Get()
-	@ApiDoc({
-		summary: "할 일 목록 조회",
-		operationId: "getTodos",
-		description: `사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
+  @Get()
+  @ApiDoc({
+    summary: "할 일 목록 조회",
+    operationId: "getTodos",
+    description: `사용자의 할 일 목록을 커서 기반 페이지네이션으로 조회합니다.
 
 **쿼리 파라미터**
 - \`cursor\`: 페이지네이션 커서
@@ -398,106 +398,106 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
    - \`startDate=2026-01-15&endDate=2026-01-15\` → ✅ 반환
    - \`startDate=2026-01-10&endDate=2026-01-20\` → ✅ 반환 (범위 내에 포함)
    - \`startDate=2026-01-16&endDate=2026-01-20\` → ❌ 미반환`,
-	})
-	@ApiQuery({
-		name: "cursor",
-		required: false,
-		description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
-		schema: { type: "number" },
-		example: 123,
-	})
-	@ApiQuery({
-		name: "size",
-		required: false,
-		description: "페이지 크기 (1-200)",
-		schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
-		example: 20,
-	})
-	@ApiQuery({
-		name: "completed",
-		required: false,
-		description: "완료 상태 필터 (true: 완료만, false: 미완료만, 미지정: 전체)",
-		schema: { type: "boolean" },
-	})
-	@ApiQuery({
-		name: "categoryId",
-		required: false,
-		description: "카테고리 ID 필터 (특정 카테고리의 할 일만 조회)",
-		schema: { type: "number" },
-		example: 1,
-	})
-	@ApiQuery({
-		name: "startDate",
-		required: false,
-		description:
-			"시작일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. endDate와 함께 사용 시 범위 조회합니다.",
-		schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-		example: "2026-01-01",
-	})
-	@ApiQuery({
-		name: "endDate",
-		required: false,
-		description:
-			"종료일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. startDate와 함께 사용 시 범위 조회합니다. startDate보다 이전 날짜를 지정하면 400 에러가 발생합니다.",
-		schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
-		example: "2026-01-31",
-	})
-	@ApiSuccessResponse({ type: TodoListResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async findMany(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetTodosQueryDto }) query: GetTodosQueryDto,
-	): Promise<TodoListResponseDto> {
-		this.#logger.debug(
-			`Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
-		);
+  })
+  @ApiQuery({
+    name: "cursor",
+    required: false,
+    description: "페이지네이션 커서 (다음 페이지 요청 시 이전 응답의 nextCursor 값 사용)",
+    schema: { type: "number" },
+    example: 123,
+  })
+  @ApiQuery({
+    name: "size",
+    required: false,
+    description: "페이지 크기 (1-200)",
+    schema: { type: "number", minimum: 1, maximum: 200, default: 20 },
+    example: 20,
+  })
+  @ApiQuery({
+    name: "completed",
+    required: false,
+    description: "완료 상태 필터 (true: 완료만, false: 미완료만, 미지정: 전체)",
+    schema: { type: "boolean" },
+  })
+  @ApiQuery({
+    name: "categoryId",
+    required: false,
+    description: "카테고리 ID 필터 (특정 카테고리의 할 일만 조회)",
+    schema: { type: "number" },
+    example: 1,
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: false,
+    description:
+      "시작일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. endDate와 함께 사용 시 범위 조회합니다.",
+    schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+    example: "2026-01-01",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: false,
+    description:
+      "종료일 (YYYY-MM-DD). 단독 사용 시 해당 날짜의 할 일만 반환합니다. startDate와 함께 사용 시 범위 조회합니다. startDate보다 이전 날짜를 지정하면 400 에러가 발생합니다.",
+    schema: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" },
+    example: "2026-01-31",
+  })
+  @ApiSuccessResponse({ type: TodoListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async findMany(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetTodosQueryDto }) query: GetTodosQueryDto,
+  ): Promise<TodoListResponseDto> {
+    this.#logger.debug(
+      `Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
+    );
 
-		const result = await this.getTodosUseCase.execute({
-			userId: user.userId,
-			cursor: query.cursor,
-			size: query.size,
-			completed: query.completed,
-			categoryId: query.categoryId,
-			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
-		});
+    const result = await this.getTodosUseCase.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      size: query.size,
+      completed: query.completed,
+      categoryId: query.categoryId,
+      // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+      startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+      endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+    });
 
-		return {
-			items: result.items,
-			pagination: result.pagination,
-		};
-	}
+    return {
+      items: result.items,
+      pagination: result.pagination,
+    };
+  }
 
-	@Get(":id")
-	@ApiDoc({
-		summary: "할 일 상세 조회",
-		operationId: "getTodoById",
-		description: `특정 할 일의 상세 정보를 조회합니다.
+  @Get(":id")
+  @ApiDoc({
+    summary: "할 일 상세 조회",
+    operationId: "getTodoById",
+    description: `특정 할 일의 상세 정보를 조회합니다.
 
 본인 소유의 할 일만 조회할 수 있습니다.`,
-	})
-	@ApiSuccessResponse({ type: TodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	async findById(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-	): Promise<TodoResponseDto> {
-		this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: TodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  async findById(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+  ): Promise<TodoResponseDto> {
+    this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
 
-		return this.getTodoByIdUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-		});
-	}
+    return this.getTodoByIdUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+    });
+  }
 
-	@Get("friends/:userId")
-	@ApiDoc({
-		summary: "친구의 할 일 목록 조회",
-		operationId: "getFriendTodos",
-		description: `친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
+  @Get("friends/:userId")
+  @ApiDoc({
+    summary: "친구의 할 일 목록 조회",
+    operationId: "getFriendTodos",
+    description: `친구의 공개(PUBLIC) 할 일 목록을 조회합니다.
 
 맞팔 관계여야만 조회 가능하며, PRIVATE 할 일은 표시되지 않습니다.
 
@@ -529,101 +529,101 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | 맞팔 관계가 아닌 경우 | \`403 Forbidden\` (FOLLOW_0906) |
 | startDate가 endDate보다 이후 | \`400 Bad Request\` (SYS_0002) |
 | 잘못된 날짜 형식 | \`400 Bad Request\` (SYS_0002) |`,
-	})
-	@ApiSuccessResponse({ type: TodoListResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.FOLLOW_0906)
-	async findFriendTodos(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
-		@Query({ schema: GetFriendTodosQueryDto }) query: GetFriendTodosQueryDto,
-	): Promise<TodoListResponseDto> {
-		this.#logger.debug(`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: TodoListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.FOLLOW_0906)
+  async findFriendTodos(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+    @Query({ schema: GetFriendTodosQueryDto }) query: GetFriendTodosQueryDto,
+  ): Promise<TodoListResponseDto> {
+    this.#logger.debug(`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`);
 
-		const result = await this.getFriendTodosUseCase.execute({
-			userId: user.userId,
-			friendUserId: params.userId,
-			cursor: query.cursor,
-			size: query.size,
-			// DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
-			startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
-			endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
-		});
+    const result = await this.getFriendTodosUseCase.execute({
+      userId: user.userId,
+      friendUserId: params.userId,
+      cursor: query.cursor,
+      size: query.size,
+      // DATE 타입 필드는 시간 정보가 없으므로 parseDateOnly 사용
+      startDate: query.startDate ? parseDateOnly(query.startDate) : undefined,
+      endDate: query.endDate ? parseDateOnly(query.endDate) : undefined,
+    });
 
-		return {
-			items: result.items,
-			pagination: result.pagination,
-		};
-	}
+    return {
+      items: result.items,
+      pagination: result.pagination,
+    };
+  }
 
-	@Patch(":id")
-	@HttpCode(HttpStatus.OK)
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "할 일 수정",
-		operationId: "updateTodo",
-		description: `할 일의 정보를 부분 수정합니다.
+  @Patch(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "할 일 수정",
+    operationId: "updateTodo",
+    description: `할 일의 정보를 부분 수정합니다.
 
 **수정 가능 필드**: title, categoryId, startDate, endDate, scheduledTime, isAllDay, visibility, completed`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async update(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
-		@Timezone() tz: string,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async update(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
+    @Timezone() tz: string,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.updateTodoUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			data: {
-				title: dto.title,
-				categoryId: dto.categoryId,
-				startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
-				endDate: dto.endDate === null ? null : dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-				scheduledTime:
-					dto.scheduledTime === null
-						? null
-						: dto.scheduledTime && dto.startDate
-							? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-							: undefined,
-				isAllDay: dto.isAllDay,
-				visibility: dto.visibility,
-				completed: dto.completed,
-			},
-		});
+    const todo = await this.updateTodoUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      data: {
+        title: dto.title,
+        categoryId: dto.categoryId,
+        startDate: dto.startDate ? parseDateOnly(dto.startDate) : undefined,
+        endDate: dto.endDate === null ? null : dto.endDate ? parseDateOnly(dto.endDate) : undefined,
+        scheduledTime:
+          dto.scheduledTime === null
+            ? null
+            : dto.scheduledTime && dto.startDate
+              ? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+              : undefined,
+        isAllDay: dto.isAllDay,
+        visibility: dto.visibility,
+        completed: dto.completed,
+      },
+    });
 
-		this.#logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
+    this.#logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
 
-		return {
-			message: "할 일이 수정되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "할 일이 수정되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/complete")
-	@HttpCode(HttpStatus.OK)
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "할 일 완료 상태 토글",
-		operationId: "toggleTodoComplete",
-		description: `할 일의 완료 상태를 변경합니다.
+  @Patch(":id/complete")
+  @HttpCode(HttpStatus.OK)
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "할 일 완료 상태 토글",
+    operationId: "toggleTodoComplete",
+    description: `할 일의 완료 상태를 변경합니다.
 
 **요청 필드**: \`completed\` (boolean, 필수)
 
@@ -632,263 +632,263 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - 하위 항목이 전부 완료(3/3)되어도 부모 할 일은 **자동 완료되지 않습니다**
 - 부모 할 일의 완료 여부만 스트릭/마일스톤/일일 완료 알림에 반영됩니다
 - 하위 항목의 완료 토글은 \`PATCH /todos/:id/items/:itemId\` API를 사용하세요`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async toggleComplete(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
-		@Timezone() tz: string,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async toggleComplete(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
+    @Timezone() tz: string,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
+    );
 
-		const todo = await this.toggleTodoCompleteUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			completed: dto.completed,
-			timezone: tz,
-		});
+    const todo = await this.toggleTodoCompleteUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      completed: dto.completed,
+      timezone: tz,
+    });
 
-		return {
-			message: dto.completed ? "할 일이 완료되었습니다." : "할 일이 미완료로 변경되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: dto.completed ? "할 일이 완료되었습니다." : "할 일이 미완료로 변경되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/visibility")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "할 일 공개 범위 변경",
-		operationId: "updateTodoVisibility",
-		description: `할 일의 공개 범위를 변경합니다.
+  @Patch(":id/visibility")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "할 일 공개 범위 변경",
+    operationId: "updateTodoVisibility",
+    description: `할 일의 공개 범위를 변경합니다.
 
 **요청 필드**: \`visibility\` (PUBLIC/PRIVATE, 필수)`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateVisibility(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: UpdateTodoVisibilityDto }) dto: UpdateTodoVisibilityDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async updateVisibility(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: UpdateTodoVisibilityDto }) dto: UpdateTodoVisibilityDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
+    );
 
-		const todo = await this.updateTodoVisibilityUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			visibility: dto.visibility,
-		});
+    const todo = await this.updateTodoVisibilityUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      visibility: dto.visibility,
+    });
 
-		return {
-			message: `공개 범위가 ${dto.visibility}로 변경되었습니다.`,
-			todo,
-		};
-	}
+    return {
+      message: `공개 범위가 ${dto.visibility}로 변경되었습니다.`,
+      todo,
+    };
+  }
 
-	@Patch(":id/category")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "할 일 카테고리 변경",
-		operationId: "updateTodoCategory",
-		description: `할 일의 카테고리를 변경합니다.
+  @Patch(":id/category")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "할 일 카테고리 변경",
+    operationId: "updateTodoCategory",
+    description: `할 일의 카테고리를 변경합니다.
 
 **요청 필드**: \`categoryId\` (number, 필수)`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateCategory(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: ChangeTodoCategoryDto }) dto: ChangeTodoCategoryDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async updateCategory(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: ChangeTodoCategoryDto }) dto: ChangeTodoCategoryDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
+    );
 
-		const todo = await this.changeTodoCategoryUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			categoryId: dto.categoryId,
-		});
+    const todo = await this.changeTodoCategoryUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      categoryId: dto.categoryId,
+    });
 
-		return {
-			message: "카테고리가 변경되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "카테고리가 변경되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/schedule")
-	@HttpCode(HttpStatus.OK)
-	@ApiHeader({
-		name: "X-Timezone",
-		required: false,
-		description: "사용자 타임존 (IANA, 기본값: UTC)",
-		example: "Asia/Seoul",
-	})
-	@ApiDoc({
-		summary: "할 일 일정 변경",
-		operationId: "updateTodoSchedule",
-		description: `할 일의 날짜와 시간을 변경합니다.
+  @Patch(":id/schedule")
+  @HttpCode(HttpStatus.OK)
+  @ApiHeader({
+    name: "X-Timezone",
+    required: false,
+    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    example: "Asia/Seoul",
+  })
+  @ApiDoc({
+    summary: "할 일 일정 변경",
+    operationId: "updateTodoSchedule",
+    description: `할 일의 날짜와 시간을 변경합니다.
 
 **요청 필드** (\`startDate\` 필수, 나머지 선택)
 - \`startDate\`: 시작일 (YYYY-MM-DD)
 - \`endDate\`: 종료일 (YYYY-MM-DD)
 - \`scheduledTime\`: 예정 시간 (HH:mm, 24시간 형식). \`X-Timezone\` 헤더 기반으로 UTC 변환되어 저장됩니다.
 - \`isAllDay\`: 종일 여부`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateSchedule(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
-		@Timezone() tz: string,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async updateSchedule(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
+    @Timezone() tz: string,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
+    );
 
-		const todo = await this.updateTodoScheduleUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			schedule: {
-				startDate: parseDateOnly(dto.startDate),
-				endDate: dto.endDate ? parseDateOnly(dto.endDate) : null,
-				scheduledTime: dto.scheduledTime
-					? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
-					: null,
-				isAllDay: dto.isAllDay ?? true,
-			},
-		});
+    const todo = await this.updateTodoScheduleUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      schedule: {
+        startDate: parseDateOnly(dto.startDate),
+        endDate: dto.endDate ? parseDateOnly(dto.endDate) : null,
+        scheduledTime: dto.scheduledTime
+          ? this.#parseScheduledTime(dto.startDate, dto.scheduledTime, tz)
+          : null,
+        isAllDay: dto.isAllDay ?? true,
+      },
+    });
 
-		return {
-			message: "일정이 변경되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "일정이 변경되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/title")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "할 일 제목 수정",
-		operationId: "updateTodoTitle",
-		description: `할 일의 제목을 수정합니다.
+  @Patch(":id/title")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "할 일 제목 수정",
+    operationId: "updateTodoTitle",
+    description: `할 일의 제목을 수정합니다.
 
 **요청 필드**
 - \`title\`: 할 일 제목 (1-200자, 필수)`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateTitle(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: UpdateTodoTitleDto }) dto: UpdateTodoTitleDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async updateTitle(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: UpdateTodoTitleDto }) dto: UpdateTodoTitleDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
 
-		const todo = await this.updateTodoTitleUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			title: dto.title,
-		});
+    const todo = await this.updateTodoTitleUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      title: dto.title,
+    });
 
-		return {
-			message: "할 일이 수정되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "할 일이 수정되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/reorder")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "할 일 순서 변경",
-		operationId: "reorderTodo",
-		description: `할 일을 다른 할 일의 앞 또는 뒤로 이동합니다. 드래그 앤 드롭 UI에 적합합니다.
+  @Patch(":id/reorder")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "할 일 순서 변경",
+    operationId: "reorderTodo",
+    description: `할 일을 다른 할 일의 앞 또는 뒤로 이동합니다. 드래그 앤 드롭 UI에 적합합니다.
 
 **요청 필드**
 - \`targetTodoId\` (선택): 기준이 되는 할 일 ID. 생략 시 맨 앞/뒤로 이동
 - \`position\` (필수): 기준 할 일의 앞(\`before\`) 또는 뒤(\`after\`)`,
-	})
-	@ApiSuccessResponse({ type: ReorderTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async reorder(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: ReorderTodoDto }) dto: ReorderTodoDto,
-	): Promise<ReorderTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: ReorderTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async reorder(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: ReorderTodoDto }) dto: ReorderTodoDto,
+  ): Promise<ReorderTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
+    );
 
-		const todo = await this.reorderTodoUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-			targetTodoId: dto.targetTodoId,
-			position: dto.position,
-		});
+    const todo = await this.reorderTodoUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+      targetTodoId: dto.targetTodoId,
+      position: dto.position,
+    });
 
-		return {
-			message: "할 일 순서가 변경되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "할 일 순서가 변경되었습니다.",
+      todo,
+    };
+  }
 
-	@Delete(":id")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "할 일 삭제",
-		operationId: "deleteTodo",
-		description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
+  @Delete(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "할 일 삭제",
+    operationId: "deleteTodo",
+    description: `특정 할 일을 삭제합니다. 삭제된 할 일은 복구할 수 없습니다.
 
 할 일을 삭제하면 해당 투두의 모든 하위 항목도 함께 삭제됩니다 (Cascade).`,
-	})
-	@ApiSuccessResponse({ type: DeleteTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	async delete(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-	): Promise<DeleteTodoResponseDto> {
-		this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: DeleteTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  async delete(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+  ): Promise<DeleteTodoResponseDto> {
+    this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
 
-		await this.deleteTodoUseCase.execute({
-			id: params.id,
-			userId: user.userId,
-		});
+    await this.deleteTodoUseCase.execute({
+      id: params.id,
+      userId: user.userId,
+    });
 
-		this.#logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
+    this.#logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
 
-		return {
-			message: "할 일이 삭제되었습니다.",
-		};
-	}
+    return {
+      message: "할 일이 삭제되었습니다.",
+    };
+  }
 
-	// ===== 하위 항목 (체크리스트) 관리 =====
-	// 선언 순서: POST → reorder(정적) → PATCH :itemId(동적) → DELETE :itemId
+  // ===== 하위 항목 (체크리스트) 관리 =====
+  // 선언 순서: POST → reorder(정적) → PATCH :itemId(동적) → DELETE :itemId
 
-	@Post(":id/items")
-	@ApiDoc({
-		summary: "하위 항목 추가",
-		operationId: "addTodoItem",
-		description: `할 일에 하위 항목(체크리스트)을 추가합니다.
+  @Post(":id/items")
+  @ApiDoc({
+    summary: "하위 항목 추가",
+    operationId: "addTodoItem",
+    description: `할 일에 하위 항목(체크리스트)을 추가합니다.
 
 **요청 필드**
 - \`title\` (필수): 하위 항목 제목 (1-200자)
@@ -913,37 +913,37 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | 할 일 없음 | TODO_0801 | 404 |
 | 하위 항목 한도 초과 (${TODO_ITEM_LIMITS.MAX_PER_TODO}개) | TODO_0821 | 403 |
 | 유효성 검증 실패 | SYS_0002 | 400 |`,
-	})
-	@ApiCreatedResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiForbiddenError(ErrorCode.TODO_0821)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async addItem(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: CreateTodoItemDto }) dto: CreateTodoItemDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`);
+  })
+  @ApiCreatedResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiForbiddenError(ErrorCode.TODO_0821)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async addItem(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: CreateTodoItemDto }) dto: CreateTodoItemDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`);
 
-		const todo = await this.addTodoItemUseCase.execute({
-			todoId: params.id,
-			userId: user.userId,
-			title: dto.title,
-		});
+    const todo = await this.addTodoItemUseCase.execute({
+      todoId: params.id,
+      userId: user.userId,
+      title: dto.title,
+    });
 
-		return {
-			message: "하위 항목이 추가되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "하위 항목이 추가되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/items/reorder")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "하위 항목 순서 변경",
-		operationId: "reorderTodoItems",
-		description: `하위 항목의 순서를 일괄 변경합니다. 드래그 앤 드롭 UI에 적합합니다.
+  @Patch(":id/items/reorder")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "하위 항목 순서 변경",
+    operationId: "reorderTodoItems",
+    description: `하위 항목의 순서를 일괄 변경합니다. 드래그 앤 드롭 UI에 적합합니다.
 
 **요청 필드**
 - \`itemIds\` (필수): 새로운 순서대로 정렬된 하위 항목 ID 배열
@@ -962,37 +962,37 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`itemIds\`에는 해당 투두의 **전체** 하위 항목 ID를 새로운 순서대로 포함해야 합니다
 - 일부 ID만 전달하면 sortOrder 충돌이 발생하므로 \`400 Bad Request\` 에러 반환
 - 존재하지 않거나 다른 투두의 ID가 포함되면 TODO_0822 에러 반환`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_0822)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async reorderItems(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
-		@Body({ schema: ReorderTodoItemsDto }) dto: ReorderTodoItemsDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiNotFoundError(ErrorCode.TODO_0822)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async reorderItems(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
+    @Body({ schema: ReorderTodoItemsDto }) dto: ReorderTodoItemsDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`);
 
-		const todo = await this.reorderTodoItemsUseCase.execute({
-			todoId: params.id,
-			userId: user.userId,
-			itemIds: dto.itemIds,
-		});
+    const todo = await this.reorderTodoItemsUseCase.execute({
+      todoId: params.id,
+      userId: user.userId,
+      itemIds: dto.itemIds,
+    });
 
-		return {
-			message: "하위 항목 순서가 변경되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "하위 항목 순서가 변경되었습니다.",
+      todo,
+    };
+  }
 
-	@Patch(":id/items/:itemId")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "하위 항목 수정",
-		operationId: "updateTodoItem",
-		description: `하위 항목의 제목 또는 완료 상태를 수정합니다.
+  @Patch(":id/items/:itemId")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "하위 항목 수정",
+    operationId: "updateTodoItem",
+    description: `하위 항목의 제목 또는 완료 상태를 수정합니다.
 
 **요청 필드** (최소 1개 필수)
 - \`title\` (선택): 변경할 제목 (1-200자)
@@ -1018,43 +1018,43 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | 할 일 없음 | TODO_0801 | 404 |
 | 하위 항목 없음 | TODO_0822 | 404 |
 | 유효성 검증 실패 | SYS_0002 | 400 |`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_0822)
-	@ApiBadRequestError(ErrorCode.SYS_0002)
-	async updateItem(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
-		@Body({ schema: UpdateTodoItemDto }) dto: UpdateTodoItemDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiNotFoundError(ErrorCode.TODO_0822)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async updateItem(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
+    @Body({ schema: UpdateTodoItemDto }) dto: UpdateTodoItemDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
+    );
 
-		const todo = await this.updateTodoItemUseCase.execute({
-			todoId: params.id,
-			itemId: params.itemId,
-			userId: user.userId,
-			data: {
-				title: dto.title,
-				completed: dto.completed,
-			},
-		});
+    const todo = await this.updateTodoItemUseCase.execute({
+      todoId: params.id,
+      itemId: params.itemId,
+      userId: user.userId,
+      data: {
+        title: dto.title,
+        completed: dto.completed,
+      },
+    });
 
-		return {
-			message: "하위 항목이 수정되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "하위 항목이 수정되었습니다.",
+      todo,
+    };
+  }
 
-	@Delete(":id/items/:itemId")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "하위 항목 삭제",
-		operationId: "deleteTodoItem",
-		description: `하위 항목을 삭제합니다. 삭제 후 복구할 수 없습니다.
+  @Delete(":id/items/:itemId")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "하위 항목 삭제",
+    operationId: "deleteTodoItem",
+    description: `하위 항목을 삭제합니다. 삭제 후 복구할 수 없습니다.
 
 **응답**
 - 부모 할 일 전체 객체를 반환합니다 (삭제된 항목이 제외된 상태)
@@ -1071,43 +1071,43 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 | 인증 실패 | AUTH_0107 | 401 |
 | 할 일 없음 | TODO_0801 | 404 |
 | 하위 항목 없음 | TODO_0822 | 404 |`,
-	})
-	@ApiSuccessResponse({ type: UpdateTodoResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.TODO_0801)
-	@ApiNotFoundError(ErrorCode.TODO_0822)
-	async deleteItem(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
-	): Promise<UpdateTodoResponseDto> {
-		this.#logger.debug(
-			`Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
-		);
+  })
+  @ApiSuccessResponse({ type: UpdateTodoResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.TODO_0801)
+  @ApiNotFoundError(ErrorCode.TODO_0822)
+  async deleteItem(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
+  ): Promise<UpdateTodoResponseDto> {
+    this.#logger.debug(
+      `Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
+    );
 
-		const todo = await this.deleteTodoItemUseCase.execute({
-			todoId: params.id,
-			itemId: params.itemId,
-			userId: user.userId,
-		});
+    const todo = await this.deleteTodoItemUseCase.execute({
+      todoId: params.id,
+      itemId: params.itemId,
+      userId: user.userId,
+    });
 
-		return {
-			message: "하위 항목이 삭제되었습니다.",
-			todo,
-		};
-	}
+    return {
+      message: "하위 항목이 삭제되었습니다.",
+      todo,
+    };
+  }
 
-	/**
-	 * HH:mm 형식의 시간을 UTC Date 객체로 변환
-	 *
-	 * 사용자의 로컬 시간을 X-Timezone 헤더 기반으로 UTC 변환하여 저장합니다.
-	 * Google Calendar 패턴: 시간 이벤트는 TIMESTAMPTZ(UTC)로 저장
-	 *
-	 * @param dateStr - YYYY-MM-DD 형식의 날짜 문자열
-	 * @param timeStr - HH:mm 형식의 시간 문자열
-	 * @param tz - IANA 타임존 (예: "Asia/Seoul", "America/New_York")
-	 * @example parseScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
-	 */
-	#parseScheduledTime(dateStr: string, timeStr: string, tz: string): Date {
-		return parseLocalDateTime(dateStr, timeStr, tz);
-	}
+  /**
+   * HH:mm 형식의 시간을 UTC Date 객체로 변환
+   *
+   * 사용자의 로컬 시간을 X-Timezone 헤더 기반으로 UTC 변환하여 저장합니다.
+   * Google Calendar 패턴: 시간 이벤트는 TIMESTAMPTZ(UTC)로 저장
+   *
+   * @param dateStr - YYYY-MM-DD 형식의 날짜 문자열
+   * @param timeStr - HH:mm 형식의 시간 문자열
+   * @param tz - IANA 타임존 (예: "Asia/Seoul", "America/New_York")
+   * @example parseScheduledTime("2026-01-15", "14:00", "Asia/Seoul") → 2026-01-15T05:00:00.000Z
+   */
+  #parseScheduledTime(dateStr: string, timeStr: string, tz: string): Date {
+    return parseLocalDateTime(dateStr, timeStr, tz);
+  }
 }

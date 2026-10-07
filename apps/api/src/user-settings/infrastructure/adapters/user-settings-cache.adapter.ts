@@ -12,20 +12,20 @@ import type { PreferenceSnapshot } from "../../domain/services/preference-view.j
  */
 @Injectable()
 export class UserSettingsCacheAdapter implements UserSettingsCachePort {
-	constructor(private readonly cacheService: CacheService) {}
+  constructor(private readonly cacheService: CacheService) {}
 
-	wrapUserPreference(
-		userId: string,
-		factory: () => Promise<PreferenceSnapshot>,
-	): Promise<PreferenceSnapshot> {
-		return this.cacheService.wrapUserPreference(userId, factory);
-	}
+  wrapUserPreference(
+    userId: string,
+    factory: () => Promise<PreferenceSnapshot>,
+  ): Promise<PreferenceSnapshot> {
+    return this.cacheService.wrapUserPreference(userId, factory);
+  }
 
-	invalidateUserPreference(userId: string): Promise<void> {
-		return this.cacheService.invalidateUserPreference(userId);
-	}
+  invalidateUserPreference(userId: string): Promise<void> {
+    return this.cacheService.invalidateUserPreference(userId);
+  }
 
-	invalidateActiveTimezones(): Promise<void> {
-		return this.cacheService.invalidateActiveTimezones();
-	}
+  invalidateActiveTimezones(): Promise<void> {
+    return this.cacheService.invalidateActiveTimezones();
+  }
 }

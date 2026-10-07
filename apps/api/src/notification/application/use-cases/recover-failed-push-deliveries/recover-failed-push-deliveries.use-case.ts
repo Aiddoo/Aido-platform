@@ -3,13 +3,13 @@ import { Inject, Injectable } from "@nestjs/common";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
 
 import {
-	PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-	type PushDeliveryLifecycleRepositoryPort,
+  PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
+  type PushDeliveryLifecycleRepositoryPort,
 } from "../../ports/push-delivery-lifecycle.repository.port.js";
 import type { PushDeliveryPublication } from "../../types/push-delivery.types.js";
 
 interface RecoverFailedPushDeliveriesInput {
-	readonly publications: readonly PushDeliveryPublication[];
+  readonly publications: readonly PushDeliveryPublication[];
 }
 
 /**
@@ -19,19 +19,19 @@ interface RecoverFailedPushDeliveriesInput {
  */
 @Injectable()
 export class RecoverFailedPushDeliveriesUseCase {
-	constructor(
-		@Inject(PUSH_DELIVERY_LIFECYCLE_REPOSITORY)
-		private readonly lifecycle: PushDeliveryLifecycleRepositoryPort,
-		@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
-	) {}
+  constructor(
+    @Inject(PUSH_DELIVERY_LIFECYCLE_REPOSITORY)
+    private readonly lifecycle: PushDeliveryLifecycleRepositoryPort,
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWorkPort,
+  ) {}
 
-	execute(input: RecoverFailedPushDeliveriesInput): Promise<number> {
-		return this.uow.run(() =>
-			this.lifecycle.reopenFailedPublications({
-				publications: input.publications,
-				availableAt: new Date(),
-				error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
-			}),
-		);
-	}
+  execute(input: RecoverFailedPushDeliveriesInput): Promise<number> {
+    return this.uow.run(() =>
+      this.lifecycle.reopenFailedPublications({
+        publications: input.publications,
+        availableAt: new Date(),
+        error: "DELIVERY_RUNTIME_RETRIES_EXHAUSTED",
+      }),
+    );
+  }
 }

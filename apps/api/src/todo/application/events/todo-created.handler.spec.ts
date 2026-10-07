@@ -11,53 +11,53 @@ import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.por
 import { TodoCreatedHandler } from "./todo-created.handler.js";
 
 describe("TodoCreatedHandler — 생성 이벤트 핸들러", () => {
-	let handler: TodoCreatedHandler;
-	let todoReminder: TodoReminderPort;
+  let handler: TodoCreatedHandler;
+  let todoReminder: TodoReminderPort;
 
-	beforeEach(async () => {
-		todoReminder = {
-			scheduleReminder: vi.fn().mockResolvedValue(undefined),
-			cancelReminder: vi.fn(),
-		};
+  beforeEach(async () => {
+    todoReminder = {
+      scheduleReminder: vi.fn().mockResolvedValue(undefined),
+      cancelReminder: vi.fn(),
+    };
 
-		const { unit } = await TestBed.solitary(TodoCreatedHandler)
-			.mock(TODO_REMINDER)
-			.impl(() => todoReminder)
-			.compile();
+    const { unit } = await TestBed.solitary(TodoCreatedHandler)
+      .mock(TODO_REMINDER)
+      .impl(() => todoReminder)
+      .compile();
 
-		handler = unit;
-	});
+    handler = unit;
+  });
 
-	it("scheduledTime이 있으면 리마인더 스케줄 완료까지 기다린다", async () => {
-		// Given
-		const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
+  it("scheduledTime이 있으면 리마인더 스케줄 완료까지 기다린다", async () => {
+    // Given
+    const scheduledTime = new Date("2026-03-01T06:00:00.000Z");
 
-		// When
-		await handler.handle(new TodoCreatedEvent(1, "user-123", scheduledTime));
+    // When
+    await handler.handle(new TodoCreatedEvent(1, "user-123", scheduledTime));
 
-		// Then
-		expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(1, scheduledTime, "user-123");
-	});
+    // Then
+    expect(todoReminder.scheduleReminder).toHaveBeenCalledWith(1, scheduledTime, "user-123");
+  });
 
-	it("scheduledTime이 null이면 리마인더를 스케줄하지 않는다", async () => {
-		// Given & When
-		await handler.handle(new TodoCreatedEvent(1, "user-123", null));
+  it("scheduledTime이 null이면 리마인더를 스케줄하지 않는다", async () => {
+    // Given & When
+    await handler.handle(new TodoCreatedEvent(1, "user-123", null));
 
-		// Then
-		expect(todoReminder.scheduleReminder).not.toHaveBeenCalled();
-		expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
-	});
+    // Then
+    expect(todoReminder.scheduleReminder).not.toHaveBeenCalled();
+    expect(todoReminder.cancelReminder).not.toHaveBeenCalled();
+  });
 
-	it("리마인더 스케줄 실패를 이벤트 publisher까지 전파한다", async () => {
-		// Given - scheduler 내부 취소/enqueue 실패
-		const error = new Error("scheduler down");
-		const rejected = Promise.reject(error);
-		void rejected.catch(() => undefined);
-		vi.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
+  it("리마인더 스케줄 실패를 이벤트 publisher까지 전파한다", async () => {
+    // Given - scheduler 내부 취소/enqueue 실패
+    const error = new Error("scheduler down");
+    const rejected = Promise.reject(error);
+    void rejected.catch(() => undefined);
+    vi.mocked(todoReminder.scheduleReminder).mockReturnValue(rejected);
 
-		// When & Then - handler에서 성공으로 삼키지 않음
-		await expect(handler.handle(new TodoCreatedEvent(1, "user-123", new Date()))).rejects.toBe(
-			error,
-		);
-	});
+    // When & Then - handler에서 성공으로 삼키지 않음
+    await expect(handler.handle(new TodoCreatedEvent(1, "user-123", new Date()))).rejects.toBe(
+      error,
+    );
+  });
 });

@@ -11,6 +11,6 @@ import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";
  * @returns 야간 시간대 여부
  */
 export function isNightTime(tz: string = "UTC", date: Date = new Date()): boolean {
-	const localHour = dayjs(date).tz(resolveTimezone(tz)).hour();
-	return localHour >= NIGHT_TIME_CONFIG.START_HOUR || localHour < NIGHT_TIME_CONFIG.END_HOUR;
+  const localHour = dayjs(date).tz(resolveTimezone(tz)).hour();
+  return localHour >= NIGHT_TIME_CONFIG.START_HOUR || localHour < NIGHT_TIME_CONFIG.END_HOUR;
 }

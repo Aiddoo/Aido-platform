@@ -5,15 +5,15 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
-	type FollowWithUser,
+  FOLLOW_REPOSITORY,
+  type FollowRepositoryPort,
+  type FollowWithUser,
 } from "../../ports/follow.repository.port.js";
 import { FriendshipEffects } from "../../services/friendship-effects.service.js";
 
 export interface AcceptFriendRequestInput {
-	userId: string;
-	requesterUserId: string;
+  userId: string;
+  requesterUserId: string;
 }
 
 /**
@@ -24,86 +24,86 @@ export interface AcceptFriendRequestInput {
  */
 @Injectable()
 export class AcceptFriendRequestUseCase {
-	readonly #logger = new Logger(AcceptFriendRequestUseCase.name);
+  readonly #logger = new Logger(AcceptFriendRequestUseCase.name);
 
-	constructor(
-		@Inject(FOLLOW_REPOSITORY)
-		private readonly followRepository: FollowRepositoryPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		private readonly effects: FriendshipEffects,
-	) {}
+  constructor(
+    @Inject(FOLLOW_REPOSITORY)
+    private readonly followRepository: FollowRepositoryPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    private readonly effects: FriendshipEffects,
+  ) {}
 
-	async execute(input: AcceptFriendRequestInput): Promise<FollowWithUser> {
-		const { userId, requesterUserId } = input;
+  async execute(input: AcceptFriendRequestInput): Promise<FollowWithUser> {
+    const { userId, requesterUserId } = input;
 
-		const request = await this.followRepository.findByFollowerAndFollowing(requesterUserId, userId);
-		if (!request?.isPending()) {
-			throw new ApplicationException(ErrorCode.FOLLOW_0903, {
-				targetUserId: requesterUserId,
-			});
-		}
+    const request = await this.followRepository.findByFollowerAndFollowing(requesterUserId, userId);
+    if (!request?.isPending()) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0903, {
+        targetUserId: requesterUserId,
+      });
+    }
 
-		const myFollow = await this.uow.run(async () => {
-			const [maxSortUser, maxSortRequester] = await Promise.all([
-				this.followRepository.getMaxSortOrderForFriends(userId),
-				this.followRepository.getMaxSortOrderForFriends(requesterUserId),
-			]);
+    const myFollow = await this.uow.run(async () => {
+      const [maxSortUser, maxSortRequester] = await Promise.all([
+        this.followRepository.getMaxSortOrderForFriends(userId),
+        this.followRepository.getMaxSortOrderForFriends(requesterUserId),
+      ]);
 
-			request.accept(maxSortRequester + 1);
-			await this.followRepository.update(request.id, request.toUpdate());
+      request.accept(maxSortRequester + 1);
+      await this.followRepository.update(request.id, request.toUpdate());
 
-			const existingReverse = await this.followRepository.findByFollowerAndFollowing(
-				userId,
-				requesterUserId,
-			);
+      const existingReverse = await this.followRepository.findByFollowerAndFollowing(
+        userId,
+        requesterUserId,
+      );
 
-			if (existingReverse) {
-				existingReverse.accept(maxSortUser + 1);
-			}
+      if (existingReverse) {
+        existingReverse.accept(maxSortUser + 1);
+      }
 
-			const createdFollow = existingReverse
-				? await this.followRepository.update(existingReverse.id, existingReverse.toUpdate())
-				: await this.followRepository.create({
-						followerId: userId,
-						followingId: requesterUserId,
-						status: "ACCEPTED",
-						sortOrder: maxSortUser + 1,
-					});
+      const createdFollow = existingReverse
+        ? await this.followRepository.update(existingReverse.id, existingReverse.toUpdate())
+        : await this.followRepository.create({
+            followerId: userId,
+            followingId: requesterUserId,
+            status: "ACCEPTED",
+            sortOrder: maxSortUser + 1,
+          });
 
-			const followWithUser = await this.followRepository.findByIdWithUser(createdFollow.id);
-			if (!followWithUser) {
-				throw new ApplicationException(ErrorCode.SYS_0001, {
-					detail: "Failed to retrieve created follow with user info",
-					context: { followId: createdFollow.id, userId, requesterUserId },
-				});
-			}
-			return followWithUser;
-		});
+      const followWithUser = await this.followRepository.findByIdWithUser(createdFollow.id);
+      if (!followWithUser) {
+        throw new ApplicationException(ErrorCode.SYS_0001, {
+          detail: "Failed to retrieve created follow with user info",
+          context: { followId: createdFollow.id, userId, requesterUserId },
+        });
+      }
+      return followWithUser;
+    });
 
-		this.#logger.log(`Friend request accepted: ${requesterUserId} <-> ${userId}`);
+    this.#logger.log(`Friend request accepted: ${requesterUserId} <-> ${userId}`);
 
-		await this.effects.invalidateFriendshipCaches(userId, requesterUserId);
+    await this.effects.invalidateFriendshipCaches(userId, requesterUserId);
 
-		const userName = myFollow.follower.profile?.name ?? myFollow.follower.userTag;
-		const requesterName = myFollow.following.profile?.name ?? myFollow.following.userTag;
+    const userName = myFollow.follower.profile?.name ?? myFollow.follower.userTag;
+    const requesterName = myFollow.following.profile?.name ?? myFollow.following.userTag;
 
-		this.effects.notifyMutual({
-			userId,
-			friendId: requesterUserId,
-			friendName: requesterName,
-		});
-		this.effects.notifyMutual({
-			userId: requesterUserId,
-			friendId: userId,
-			friendName: userName,
-		});
+    this.effects.notifyMutual({
+      userId,
+      friendId: requesterUserId,
+      friendName: requesterName,
+    });
+    this.effects.notifyMutual({
+      userId: requesterUserId,
+      friendId: userId,
+      friendName: userName,
+    });
 
-		await Promise.all([
-			this.effects.checkFirstFriendMilestone(userId),
-			this.effects.checkFirstFriendMilestone(requesterUserId),
-		]);
+    await Promise.all([
+      this.effects.checkFirstFriendMilestone(userId),
+      this.effects.checkFirstFriendMilestone(requesterUserId),
+    ]);
 
-		return myFollow;
-	}
+    return myFollow;
+  }
 }

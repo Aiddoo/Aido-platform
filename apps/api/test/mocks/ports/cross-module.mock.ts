@@ -13,40 +13,40 @@ import type { TodoNotificationPort } from "#api/todo/application/ports/todo-noti
  */
 
 export function createCategoryOwnershipMock(): CategoryOwnershipPort {
-	return {
-		validateOwnership: vi.fn(),
-	};
+  return {
+    validateOwnership: vi.fn(),
+  };
 }
 
 export function createTodoCacheMock(): TodoCachePort {
-	return {
-		invalidateTodoCategories: vi.fn(),
-		readFriendTodosFirstPage: vi
-			.fn()
-			.mockResolvedValue({ generation: "test-generation", page: undefined }),
-		storeFriendTodosFirstPageIfCurrent: vi.fn(),
-		invalidateFriendTodos: vi.fn(),
-	};
+  return {
+    invalidateTodoCategories: vi.fn(),
+    readFriendTodosFirstPage: vi
+      .fn()
+      .mockResolvedValue({ generation: "test-generation", page: undefined }),
+    storeFriendTodosFirstPageIfCurrent: vi.fn(),
+    invalidateFriendTodos: vi.fn(),
+  };
 }
 
 export function createFriendMock(): FriendPort {
-	return {
-		isMutualFriend: vi.fn(),
-		getMutualFriendIds: vi.fn(),
-		getUserDisplayName: vi.fn(),
-	};
+  return {
+    isMutualFriend: vi.fn(),
+    getMutualFriendIds: vi.fn(),
+    getUserDisplayName: vi.fn(),
+  };
 }
 
 export function createStreakMock(): StreakPort {
-	return {
-		recordTodoToggle: vi.fn(),
-		getStreakContext: vi.fn(),
-	};
+  return {
+    recordTodoToggle: vi.fn(),
+    getStreakContext: vi.fn(),
+  };
 }
 
 export function createTodoNotificationMock(): TodoNotificationPort {
-	return {
-		enqueueFriendCompleted: vi.fn(),
-		enqueueMilestoneReached: vi.fn(),
-	};
+  return {
+    enqueueFriendCompleted: vi.fn(),
+    enqueueMilestoneReached: vi.fn(),
+  };
 }

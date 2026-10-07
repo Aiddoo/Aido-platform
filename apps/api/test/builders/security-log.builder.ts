@@ -11,61 +11,61 @@
  */
 
 import type {
-	SecurityEvent,
-	SecurityLog,
+  SecurityEvent,
+  SecurityLog,
 } from "#api/shared/infrastructure/database/database.types";
 
 let idCounter = 1;
 
 export class SecurityLogBuilder {
-	private data: SecurityLog;
+  private data: SecurityLog;
 
-	private constructor(userId: string, event: SecurityEvent) {
-		this.data = {
-			id: idCounter++,
-			userId,
-			event,
-			ipAddress: "127.0.0.1",
-			userAgent: "Mozilla/5.0 (Test Browser)",
-			metadata: null,
-			createdAt: new Date(),
-		};
-	}
+  private constructor(userId: string, event: SecurityEvent) {
+    this.data = {
+      id: idCounter++,
+      userId,
+      event,
+      ipAddress: "127.0.0.1",
+      userAgent: "Mozilla/5.0 (Test Browser)",
+      metadata: null,
+      createdAt: new Date(),
+    };
+  }
 
-	static create(userId: string, event: SecurityEvent): SecurityLogBuilder {
-		return new SecurityLogBuilder(userId, event);
-	}
+  static create(userId: string, event: SecurityEvent): SecurityLogBuilder {
+    return new SecurityLogBuilder(userId, event);
+  }
 
-	static resetIdCounter(): void {
-		idCounter = 1;
-	}
+  static resetIdCounter(): void {
+    idCounter = 1;
+  }
 
-	withId(id: number): SecurityLogBuilder {
-		this.data.id = id;
-		return this;
-	}
+  withId(id: number): SecurityLogBuilder {
+    this.data.id = id;
+    return this;
+  }
 
-	withIpAddress(ip: string): SecurityLogBuilder {
-		this.data.ipAddress = ip;
-		return this;
-	}
+  withIpAddress(ip: string): SecurityLogBuilder {
+    this.data.ipAddress = ip;
+    return this;
+  }
 
-	withUserAgent(ua: string): SecurityLogBuilder {
-		this.data.userAgent = ua;
-		return this;
-	}
+  withUserAgent(ua: string): SecurityLogBuilder {
+    this.data.userAgent = ua;
+    return this;
+  }
 
-	withMetadata(metadata: Record<string, unknown>): SecurityLogBuilder {
-		this.data.metadata = metadata as SecurityLog["metadata"];
-		return this;
-	}
+  withMetadata(metadata: Record<string, unknown>): SecurityLogBuilder {
+    this.data.metadata = metadata as SecurityLog["metadata"];
+    return this;
+  }
 
-	withCreatedAt(date: Date): SecurityLogBuilder {
-		this.data.createdAt = date;
-		return this;
-	}
+  withCreatedAt(date: Date): SecurityLogBuilder {
+    this.data.createdAt = date;
+    return this;
+  }
 
-	build(): SecurityLog {
-		return { ...this.data };
-	}
+  build(): SecurityLog {
+    return { ...this.data };
+  }
 }

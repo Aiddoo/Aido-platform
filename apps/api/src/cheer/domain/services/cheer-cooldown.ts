@@ -3,9 +3,9 @@ import { CHEER_LIMITS } from "@aido/validators";
 import { calculateCooldown } from "#api/shared/domain/date/utils/cooldown";
 
 export interface CheerCooldown {
-	isActive: boolean;
-	remainingSeconds: number;
-	canCheerAt: Date | null;
+  isActive: boolean;
+  remainingSeconds: number;
+  canCheerAt: Date | null;
 }
 
 /**
@@ -14,9 +14,9 @@ export interface CheerCooldown {
  * 마지막 응원 시각으로부터 CHEER_LIMITS.COOLDOWN_HOURS 동안 재응원을 제한하는 정책을 계산한다.
  */
 export function evaluateCheerCooldown(lastCheerTime: Date | null): CheerCooldown {
-	const { isActive, remainingSeconds, endsAt } = calculateCooldown(
-		lastCheerTime,
-		CHEER_LIMITS.COOLDOWN_HOURS,
-	);
-	return { isActive, remainingSeconds, canCheerAt: endsAt };
+  const { isActive, remainingSeconds, endsAt } = calculateCooldown(
+    lastCheerTime,
+    CHEER_LIMITS.COOLDOWN_HOURS,
+  );
+  return { isActive, remainingSeconds, canCheerAt: endsAt };
 }

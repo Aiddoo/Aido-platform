@@ -22,46 +22,46 @@ import { HandleWebhookEventUseCase } from "../application/use-cases/handle-webho
 import { SubscriptionController } from "./subscription.controller.js";
 
 describe("SubscriptionController — 구독 컨트롤러 (thin delegation)", () => {
-	let controller: SubscriptionController;
-	let handleWebhookEventUseCase: Mocked<HandleWebhookEventUseCase>;
+  let controller: SubscriptionController;
+  let handleWebhookEventUseCase: Mocked<HandleWebhookEventUseCase>;
 
-	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(SubscriptionController).compile();
+  beforeEach(async () => {
+    const { unit, unitRef } = await TestBed.solitary(SubscriptionController).compile();
 
-		controller = unit;
-		handleWebhookEventUseCase = unitRef.get(HandleWebhookEventUseCase);
-	});
+    controller = unit;
+    handleWebhookEventUseCase = unitRef.get(HandleWebhookEventUseCase);
+  });
 
-	describe("handleRevenueCatWebhook", () => {
-		const validPayload = SubscriptionEventBuilder.initialPurchase()
-			.withAppUserId("user-123")
-			.withProductId("premium_monthly")
-			.withPrice(4900, "KRW")
-			.build();
+  describe("handleRevenueCatWebhook", () => {
+    const validPayload = SubscriptionEventBuilder.initialPurchase()
+      .withAppUserId("user-123")
+      .withProductId("premium_monthly")
+      .withPrice(4900, "KRW")
+      .build();
 
-		it("원시 request.body를 UseCase로 위임하고 결과를 반환한다", async () => {
-			// Given
-			const request = { body: validPayload } as unknown as Request;
-			handleWebhookEventUseCase.execute.mockResolvedValue({ received: true });
+    it("원시 request.body를 UseCase로 위임하고 결과를 반환한다", async () => {
+      // Given
+      const request = { body: validPayload } as unknown as Request;
+      handleWebhookEventUseCase.execute.mockResolvedValue({ received: true });
 
-			// When
-			const result = await controller.handleRevenueCatWebhook(request);
+      // When
+      const result = await controller.handleRevenueCatWebhook(request);
 
-			// Then — 파싱 없이 원시 본문을 그대로 전달 (검증은 use-case 소유)
-			expect(handleWebhookEventUseCase.execute).toHaveBeenCalledWith(validPayload);
-			expect(result).toEqual({ received: true });
-		});
+      // Then — 파싱 없이 원시 본문을 그대로 전달 (검증은 use-case 소유)
+      expect(handleWebhookEventUseCase.execute).toHaveBeenCalledWith(validPayload);
+      expect(result).toEqual({ received: true });
+    });
 
-		it("Lock 경합(SUBSCRIPTION_1605)은 잡지 않고 그대로 전파한다 (필터가 429 처리)", async () => {
-			// Given
-			const request = { body: validPayload } as unknown as Request;
-			const lockError = new ApplicationException(ErrorCode.SUBSCRIPTION_1605, {
-				appUserId: "user-123",
-			});
-			handleWebhookEventUseCase.execute.mockRejectedValue(lockError);
+    it("Lock 경합(SUBSCRIPTION_1605)은 잡지 않고 그대로 전파한다 (필터가 429 처리)", async () => {
+      // Given
+      const request = { body: validPayload } as unknown as Request;
+      const lockError = new ApplicationException(ErrorCode.SUBSCRIPTION_1605, {
+        appUserId: "user-123",
+      });
+      handleWebhookEventUseCase.execute.mockRejectedValue(lockError);
 
-			// When & Then — try/catch 없이 GlobalExceptionFilter로 전파
-			await expect(controller.handleRevenueCatWebhook(request)).rejects.toBe(lockError);
-		});
-	});
+      // When & Then — try/catch 없이 GlobalExceptionFilter로 전파
+      await expect(controller.handleRevenueCatWebhook(request)).rejects.toBe(lockError);
+    });
+  });
 });

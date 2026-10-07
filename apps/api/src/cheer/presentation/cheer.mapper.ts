@@ -10,44 +10,44 @@ import type { CheerWithRelations } from "../application/ports/cheer.repository.p
 import type { CheerLimitInfo as ReaderLimitInfo } from "../application/services/cheer.reader.js";
 
 export abstract class CheerMapper {
-	static toDetailDto(cheer: CheerWithRelations, appVersion?: string): CheerDetail {
-		return {
-			id: cheer.id,
-			senderId: cheer.senderId,
-			receiverId: cheer.receiverId,
-			message: cheer.message,
-			createdAt: toISOString(cheer.createdAt),
-			readAt: toISOStringOrNull(cheer.readAt ?? null),
-			sender: {
-				id: cheer.sender.id,
-				userTag: cheer.sender.userTag,
-				name: cheer.sender.profile?.name ?? null,
-				profileImage: resolveProfileImage(cheer.sender.profile?.profileImage ?? null, appVersion),
-			},
-		};
-	}
+  static toDetailDto(cheer: CheerWithRelations, appVersion?: string): CheerDetail {
+    return {
+      id: cheer.id,
+      senderId: cheer.senderId,
+      receiverId: cheer.receiverId,
+      message: cheer.message,
+      createdAt: toISOString(cheer.createdAt),
+      readAt: toISOStringOrNull(cheer.readAt ?? null),
+      sender: {
+        id: cheer.sender.id,
+        userTag: cheer.sender.userTag,
+        name: cheer.sender.profile?.name ?? null,
+        profileImage: resolveProfileImage(cheer.sender.profile?.profileImage ?? null, appVersion),
+      },
+    };
+  }
 
-	static toDto(cheer: CheerWithRelations): Cheer {
-		return {
-			id: cheer.id,
-			senderId: cheer.senderId,
-			receiverId: cheer.receiverId,
-			message: cheer.message,
-			createdAt: toISOString(cheer.createdAt),
-			readAt: toISOStringOrNull(cheer.readAt ?? null),
-		};
-	}
+  static toDto(cheer: CheerWithRelations): Cheer {
+    return {
+      id: cheer.id,
+      senderId: cheer.senderId,
+      receiverId: cheer.receiverId,
+      message: cheer.message,
+      createdAt: toISOString(cheer.createdAt),
+      readAt: toISOStringOrNull(cheer.readAt ?? null),
+    };
+  }
 
-	static toDetailDtoList(cheers: CheerWithRelations[], appVersion?: string): CheerDetail[] {
-		return cheers.map((cheer) => CheerMapper.toDetailDto(cheer, appVersion));
-	}
+  static toDetailDtoList(cheers: CheerWithRelations[], appVersion?: string): CheerDetail[] {
+    return cheers.map((cheer) => CheerMapper.toDetailDto(cheer, appVersion));
+  }
 
-	static toLimitInfoDto(limitInfo: ReaderLimitInfo): CheerLimitInfo {
-		return {
-			dailyLimit: limitInfo.dailyLimit,
-			usedToday: limitInfo.used,
-			remainingToday: limitInfo.remaining,
-			isUnlimited: limitInfo.dailyLimit === null,
-		};
-	}
+  static toLimitInfoDto(limitInfo: ReaderLimitInfo): CheerLimitInfo {
+    return {
+      dailyLimit: limitInfo.dailyLimit,
+      usedToday: limitInfo.used,
+      remainingToday: limitInfo.remaining,
+      isUnlimited: limitInfo.dailyLimit === null,
+    };
+  }
 }

@@ -5,16 +5,16 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import { Notification } from "../../../domain/entities/notification.aggregate.js";
 import {
-	NOTIFICATION_CACHE,
-	type NotificationCachePort,
+  NOTIFICATION_CACHE,
+  type NotificationCachePort,
 } from "../../ports/notification-cache.port.js";
 import {
-	NOTIFICATION_INBOX_READER,
-	type NotificationInboxReaderPort,
+  NOTIFICATION_INBOX_READER,
+  type NotificationInboxReaderPort,
 } from "../../ports/notification-inbox.reader.port.js";
 import {
-	NOTIFICATION_REPOSITORY,
-	type NotificationRepositoryPort,
+  NOTIFICATION_REPOSITORY,
+  type NotificationRepositoryPort,
 } from "../../ports/notification.repository.port.js";
 
 /**
@@ -25,36 +25,36 @@ import {
  */
 @Injectable()
 export class MarkAsReadUseCase {
-	readonly #logger = new Logger(MarkAsReadUseCase.name);
+  readonly #logger = new Logger(MarkAsReadUseCase.name);
 
-	constructor(
-		@Inject(NOTIFICATION_INBOX_READER)
-		private readonly notificationInboxReader: NotificationInboxReaderPort,
-		@Inject(NOTIFICATION_REPOSITORY)
-		private readonly notificationRepository: NotificationRepositoryPort,
-		@Inject(NOTIFICATION_CACHE)
-		private readonly cache: NotificationCachePort,
-	) {}
+  constructor(
+    @Inject(NOTIFICATION_INBOX_READER)
+    private readonly notificationInboxReader: NotificationInboxReaderPort,
+    @Inject(NOTIFICATION_REPOSITORY)
+    private readonly notificationRepository: NotificationRepositoryPort,
+    @Inject(NOTIFICATION_CACHE)
+    private readonly cache: NotificationCachePort,
+  ) {}
 
-	async execute(userId: string, notificationId: number): Promise<void> {
-		const record = await this.notificationInboxReader.findNotificationById(notificationId);
+  async execute(userId: string, notificationId: number): Promise<void> {
+    const record = await this.notificationInboxReader.findNotificationById(notificationId);
 
-		if (!record) {
-			throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {
-				notificationId,
-			});
-		}
+    if (!record) {
+      throw new ApplicationException(ErrorCode.NOTIFICATION_1004, {
+        notificationId,
+      });
+    }
 
-		const notification = Notification.reconstitute(record);
-		if (!notification.planMarkRead(userId)) {
-			return;
-		}
+    const notification = Notification.reconstitute(record);
+    if (!notification.planMarkRead(userId)) {
+      return;
+    }
 
-		const changed = await this.notificationRepository.markAsRead(notificationId, userId);
-		if (changed) {
-			await this.cache.invalidateUnreadCount(userId);
-		}
+    const changed = await this.notificationRepository.markAsRead(notificationId, userId);
+    if (changed) {
+      await this.cache.invalidateUnreadCount(userId);
+    }
 
-		this.#logger.debug(`Notification read processed: id=${notificationId}`);
-	}
+    this.#logger.debug(`Notification read processed: id=${notificationId}`);
+  }
 }

@@ -28,28 +28,28 @@ import { WeatherController } from "./presentation/weather.controller.js";
  * WeatherFacade로 배치 조회한다.
  */
 @Module({
-	imports: [HttpClientModule.register({ name: "weather", retry: false, throwOnHttpError: false })],
-	controllers: [WeatherController],
-	providers: [
-		{
-			provide: WeatherForecastAccess,
-			inject: [GetForecastsByGridBatchUseCase],
-			useFactory: (getForecastsByGridBatchUseCase: GetForecastsByGridBatchUseCase) =>
-				new WeatherForecastAccess(getForecastsByGridBatchUseCase),
-		},
-		WeatherForecastReader,
-		{
-			provide: WEATHER_LOCATION_REPOSITORY,
-			useClass: PrismaWeatherLocationRepository,
-		},
-		{ provide: WEATHER_PROVIDER, useClass: KmaWeatherProvider },
-		{ provide: AIR_QUALITY_PROVIDER, useClass: AirkoreaProvider },
-		{ provide: LIFESTYLE_INDEX_PROVIDER, useClass: KmaLifestyleIndexProvider },
-		{ provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
-		// 조회 캐시 포트 (application → CacheService/CacheKeys 직접 의존 역전)
-		{ provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
-		...WEATHER_PROVIDERS,
-	],
-	exports: [WeatherForecastAccess],
+  imports: [HttpClientModule.register({ name: "weather", retry: false, throwOnHttpError: false })],
+  controllers: [WeatherController],
+  providers: [
+    {
+      provide: WeatherForecastAccess,
+      inject: [GetForecastsByGridBatchUseCase],
+      useFactory: (getForecastsByGridBatchUseCase: GetForecastsByGridBatchUseCase) =>
+        new WeatherForecastAccess(getForecastsByGridBatchUseCase),
+    },
+    WeatherForecastReader,
+    {
+      provide: WEATHER_LOCATION_REPOSITORY,
+      useClass: PrismaWeatherLocationRepository,
+    },
+    { provide: WEATHER_PROVIDER, useClass: KmaWeatherProvider },
+    { provide: AIR_QUALITY_PROVIDER, useClass: AirkoreaProvider },
+    { provide: LIFESTYLE_INDEX_PROVIDER, useClass: KmaLifestyleIndexProvider },
+    { provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
+    // 조회 캐시 포트 (application → CacheService/CacheKeys 직접 의존 역전)
+    { provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
+    ...WEATHER_PROVIDERS,
+  ],
+  exports: [WeatherForecastAccess],
 })
 export class WeatherModule {}

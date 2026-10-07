@@ -1,9 +1,9 @@
 import { Global, Module } from "@nestjs/common";
 
 import {
-	AFTER_COMMIT_TASK_REGISTRY,
-	MUTATION_LOCK,
-	UNIT_OF_WORK,
+  AFTER_COMMIT_TASK_REGISTRY,
+  MUTATION_LOCK,
+  UNIT_OF_WORK,
 } from "#api/shared/application/ports/index";
 
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
@@ -13,14 +13,14 @@ import { PostgresPool } from "./postgres-pool.js";
 
 @Global()
 @Module({
-	providers: [
-		PostgresPool,
-		DatabaseService,
-		ClsUnitOfWork,
-		{ provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
-		{ provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
-		{ provide: MUTATION_LOCK, useClass: PostgresMutationLockAdapter },
-	],
-	exports: [DatabaseService, UNIT_OF_WORK, AFTER_COMMIT_TASK_REGISTRY, MUTATION_LOCK],
+  providers: [
+    PostgresPool,
+    DatabaseService,
+    ClsUnitOfWork,
+    { provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },
+    { provide: AFTER_COMMIT_TASK_REGISTRY, useExisting: ClsUnitOfWork },
+    { provide: MUTATION_LOCK, useClass: PostgresMutationLockAdapter },
+  ],
+  exports: [DatabaseService, UNIT_OF_WORK, AFTER_COMMIT_TASK_REGISTRY, MUTATION_LOCK],
 })
 export class DatabaseModule {}

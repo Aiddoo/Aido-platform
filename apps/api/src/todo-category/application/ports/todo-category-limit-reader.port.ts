@@ -7,6 +7,6 @@
 export const TODO_CATEGORY_LIMIT_READER = Symbol("TODO_CATEGORY_LIMIT_READER");
 
 export interface TodoCategoryLimitReaderPort {
-	/** 트랜잭션 내 사용자 카테고리 최대 보유량 (null이면 무제한) */
-	getMaxCountInTx(userId: string): Promise<number | null>;
+  /** 트랜잭션 내 사용자 카테고리 최대 보유량 (null이면 무제한) */
+  getMaxCountInTx(userId: string): Promise<number | null>;
 }

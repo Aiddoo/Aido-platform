@@ -1,12 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	USER_PREFERENCE_REPOSITORY,
-	type UserPreferenceRepositoryPort,
+  USER_PREFERENCE_REPOSITORY,
+  type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port.js";
 import {
-	USER_SETTINGS_CACHE,
-	type UserSettingsCachePort,
+  USER_SETTINGS_CACHE,
+  type UserSettingsCachePort,
 } from "../../ports/user-settings-cache.port.js";
 
 /**
@@ -17,15 +17,15 @@ import {
  */
 @Injectable()
 export class UpsertPushTimezoneUseCase {
-	constructor(
-		@Inject(USER_PREFERENCE_REPOSITORY)
-		private readonly preferenceRepository: UserPreferenceRepositoryPort,
-		@Inject(USER_SETTINGS_CACHE)
-		private readonly cache: UserSettingsCachePort,
-	) {}
+  constructor(
+    @Inject(USER_PREFERENCE_REPOSITORY)
+    private readonly preferenceRepository: UserPreferenceRepositoryPort,
+    @Inject(USER_SETTINGS_CACHE)
+    private readonly cache: UserSettingsCachePort,
+  ) {}
 
-	async execute(userId: string, timezone: string): Promise<void> {
-		await this.preferenceRepository.upsertTimezone(userId, timezone);
-		await this.cache.invalidateActiveTimezones();
-	}
+  async execute(userId: string, timezone: string): Promise<void> {
+    await this.preferenceRepository.upsertTimezone(userId, timezone);
+    await this.cache.invalidateActiveTimezones();
+  }
 }

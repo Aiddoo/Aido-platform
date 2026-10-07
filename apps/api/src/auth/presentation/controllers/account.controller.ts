@@ -1,16 +1,16 @@
 import { ErrorCode } from "@aido/errors";
 import {
-	Header,
-	Headers,
-	Body,
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Param,
-	Patch,
-	Req,
+  Header,
+  Headers,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Req,
 } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
@@ -18,30 +18,30 @@ import type { Request } from "express";
 
 import { GetCurrentUserQuery, ListLinkedAccountsQuery } from "#api/auth/application/queries/index";
 import {
-	DeleteAccountUseCase,
-	UnlinkOAuthAccountUseCase,
-	UpdateProfileUseCase,
+  DeleteAccountUseCase,
+  UnlinkOAuthAccountUseCase,
+  UpdateProfileUseCase,
 } from "#api/auth/application/use-cases/index";
 import { AuthMapper } from "#api/auth/presentation/auth.mapper";
 import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
-	ApiBadRequestError,
-	ApiDoc,
-	ApiErrorResponse,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiBadRequestError,
+  ApiDoc,
+  ApiErrorResponse,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import {
-	CurrentUserDto,
-	DeleteAccountDto,
-	DeleteAccountResponseDto,
-	LinkedAccountsResponseDto,
-	MessageResponseDto,
-	UpdateProfileDto,
-	UpdateProfileResponseDto,
+  CurrentUserDto,
+  DeleteAccountDto,
+  DeleteAccountResponseDto,
+  LinkedAccountsResponseDto,
+  MessageResponseDto,
+  UpdateProfileDto,
+  UpdateProfileResponseDto,
 } from "../dtos/index.js";
 import { extractMetadata } from "./auth-controller.utils.js";
 
@@ -49,25 +49,25 @@ import { extractMetadata } from "./auth-controller.utils.js";
 @ApiBearerAuth()
 @Controller("auth")
 export class AccountController {
-	constructor(
-		private readonly getCurrentUserQuery: GetCurrentUserQuery,
-		private readonly updateProfileUseCase: UpdateProfileUseCase,
-		private readonly listLinkedAccountsQuery: ListLinkedAccountsQuery,
-		private readonly unlinkOAuthAccountUseCase: UnlinkOAuthAccountUseCase,
-		private readonly deleteAccountUseCase: DeleteAccountUseCase,
-	) {}
+  constructor(
+    private readonly getCurrentUserQuery: GetCurrentUserQuery,
+    private readonly updateProfileUseCase: UpdateProfileUseCase,
+    private readonly listLinkedAccountsQuery: ListLinkedAccountsQuery,
+    private readonly unlinkOAuthAccountUseCase: UnlinkOAuthAccountUseCase,
+    private readonly deleteAccountUseCase: DeleteAccountUseCase,
+  ) {}
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Get("me")
-	@ApiDoc({
-		summary: "내 정보 조회",
-		operationId: "getCurrentUser",
-		description: `
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Get("me")
+  @ApiDoc({
+    summary: "내 정보 조회",
+    operationId: "getCurrentUser",
+    description: `
 ## 👤 내 정보 조회
 현재 로그인된 사용자 정보를 조회합니다.
 
@@ -82,29 +82,29 @@ export class AccountController {
 - \`CREDENTIAL\`: 이메일/비밀번호 로그인
 - \`APPLE\`, \`GOOGLE\`, \`KAKAO\`, \`NAVER\`: 소셜 로그인
 		`,
-	})
-	@ApiSuccessResponse({ type: CurrentUserDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getMe(
-		@CurrentUser() user: CurrentUserPayload,
-		@Headers("x-app-version") appVersion?: string,
-	) {
-		const result = await this.getCurrentUserQuery.execute(user.userId, user.email, user.sessionId);
-		return AuthMapper.toCurrentUserResponse(result, appVersion);
-	}
+  })
+  @ApiSuccessResponse({ type: CurrentUserDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getMe(
+    @CurrentUser() user: CurrentUserPayload,
+    @Headers("x-app-version") appVersion?: string,
+  ) {
+    const result = await this.getCurrentUserQuery.execute(user.userId, user.email, user.sessionId);
+    return AuthMapper.toCurrentUserResponse(result, appVersion);
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Patch("profile")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "프로필 수정",
-		operationId: "updateProfile",
-		description: `
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Patch("profile")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "프로필 수정",
+    operationId: "updateProfile",
+    description: `
 ## 👤 프로필 수정
 이름/프로필 이미지를 수정합니다.
 
@@ -115,24 +115,24 @@ export class AccountController {
 - \`name\`: 이름 (1~20자, null=삭제)
 - \`profileImage\`: 아이콘 키 또는 이미지 URL (500자 이내, null=삭제)
 		`,
-	})
-	@ApiSuccessResponse({ type: UpdateProfileResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async updateProfile(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: UpdateProfileDto }) dto: UpdateProfileDto,
+  })
+  @ApiSuccessResponse({ type: UpdateProfileResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async updateProfile(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: UpdateProfileDto }) dto: UpdateProfileDto,
 
-		@Headers("x-app-version") appVersion?: string,
-	) {
-		const result = await this.updateProfileUseCase.execute(user.userId, dto);
-		return AuthMapper.toUpdateProfileResponse(result, appVersion);
-	}
+    @Headers("x-app-version") appVersion?: string,
+  ) {
+    const result = await this.updateProfileUseCase.execute(user.userId, dto);
+    return AuthMapper.toUpdateProfileResponse(result, appVersion);
+  }
 
-	@Get("linked-accounts")
-	@ApiDoc({
-		summary: "소셜 계정 연결 상태 조회",
-		operationId: "getLinkedAccounts",
-		description: `
+  @Get("linked-accounts")
+  @ApiDoc({
+    summary: "소셜 계정 연결 상태 조회",
+    operationId: "getLinkedAccounts",
+    description: `
 ## 🔗 소셜 계정 연결 상태 조회
 
 현재 사용자의 소셜 계정 연결 상태를 조회합니다.
@@ -163,19 +163,19 @@ export class AccountController {
 }
 \`\`\`
 		`,
-	})
-	@ApiSuccessResponse({ type: LinkedAccountsResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
-		return this.listLinkedAccountsQuery.execute(user.userId);
-	}
+  })
+  @ApiSuccessResponse({ type: LinkedAccountsResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getLinkedAccounts(@CurrentUser() user: CurrentUserPayload) {
+    return this.listLinkedAccountsQuery.execute(user.userId);
+  }
 
-	@Delete("linked-accounts/:provider")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "소셜 계정 연결 해제",
-		operationId: "unlinkSocialAccount",
-		description: `
+  @Delete("linked-accounts/:provider")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "소셜 계정 연결 해제",
+    operationId: "unlinkSocialAccount",
+    description: `
 ## 🔓 소셜 계정 연결 해제
 
 연결된 소셜 계정을 해제합니다.
@@ -195,33 +195,33 @@ export class AccountController {
 | \`USER_0610\` | 400 | 마지막 로그인 수단은 해제할 수 없습니다 |
 | \`USER_0603\` | 404 | 연결된 계정을 찾을 수 없습니다 |
 		`,
-	})
-	@ApiParam({
-		name: "provider",
-		description: "연결 해제할 소셜 로그인 제공자",
-		enum: ["APPLE", "GOOGLE", "KAKAO", "NAVER"],
-		example: "GOOGLE",
-	})
-	@ApiSuccessResponse({ type: MessageResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.USER_0610)
-	@ApiNotFoundError(ErrorCode.USER_0603)
-	async unlinkAccount(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param("provider") provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
-		@Req() req: Request,
-	) {
-		const metadata = extractMetadata(req);
-		return this.unlinkOAuthAccountUseCase.execute(user.userId, provider, metadata);
-	}
+  })
+  @ApiParam({
+    name: "provider",
+    description: "연결 해제할 소셜 로그인 제공자",
+    enum: ["APPLE", "GOOGLE", "KAKAO", "NAVER"],
+    example: "GOOGLE",
+  })
+  @ApiSuccessResponse({ type: MessageResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.USER_0610)
+  @ApiNotFoundError(ErrorCode.USER_0603)
+  async unlinkAccount(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param("provider") provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+    @Req() req: Request,
+  ) {
+    const metadata = extractMetadata(req);
+    return this.unlinkOAuthAccountUseCase.execute(user.userId, provider, metadata);
+  }
 
-	@Delete("account")
-	@Throttle({ default: { ttl: 3600000, limit: 3 } })
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "회원 탈퇴",
-		operationId: "deleteAccount",
-		description: `
+  @Delete("account")
+  @Throttle({ default: { ttl: 3600000, limit: 3 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "회원 탈퇴",
+    operationId: "deleteAccount",
+    description: `
 ## 👋 회원 탈퇴
 계정을 탈퇴 처리합니다 (30일 복구 기간).
 
@@ -246,17 +246,17 @@ export class AccountController {
 - 소셜 계정: \`POST /auth/exchange\` (OAuth 플로우)
 - 복구 시 응답에 \`accountRestored: true\` 포함
 		`,
-	})
-	@ApiSuccessResponse({ type: DeleteAccountResponseDto })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0612 })
-	@ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
-	async deleteAccount(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
-		@Req() req: Request,
-	) {
-		const metadata = extractMetadata(req);
-		return this.deleteAccountUseCase.execute(user.userId, user.sessionId, dto, metadata);
-	}
+  })
+  @ApiSuccessResponse({ type: DeleteAccountResponseDto })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0612 })
+  @ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+  async deleteAccount(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: DeleteAccountDto }) dto: DeleteAccountDto,
+    @Req() req: Request,
+  ) {
+    const metadata = extractMetadata(req);
+    return this.deleteAccountUseCase.execute(user.userId, user.sessionId, dto, metadata);
+  }
 }

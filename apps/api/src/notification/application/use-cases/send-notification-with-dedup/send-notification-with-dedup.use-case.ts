@@ -4,18 +4,18 @@ import { subtractMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
 import type { NotificationRecord } from "../../../domain/records/notification.record.js";
 import {
-	buildDedupContextFields,
-	buildDedupKey,
-	resolveDedupStrategy,
+  buildDedupContextFields,
+  buildDedupKey,
+  resolveDedupStrategy,
 } from "../../../domain/services/notification-dedup.js";
 import type { CreateNotificationData } from "../../ports/notification-data.js";
 import {
-	NOTIFICATION_DEDUP_LOCK,
-	type NotificationDedupLockPort,
+  NOTIFICATION_DEDUP_LOCK,
+  type NotificationDedupLockPort,
 } from "../../ports/notification-dedup.port.js";
 import {
-	NOTIFICATION_HISTORY_READER,
-	type NotificationHistoryReaderPort,
+  NOTIFICATION_HISTORY_READER,
+  type NotificationHistoryReaderPort,
 } from "../../ports/notification-history.reader.port.js";
 import { SendNotificationUseCase } from "../send-notification/send-notification.use-case.js";
 
@@ -29,50 +29,50 @@ import { SendNotificationUseCase } from "../send-notification/send-notification.
  */
 @Injectable()
 export class SendNotificationWithDedupUseCase {
-	readonly #logger = new Logger(SendNotificationWithDedupUseCase.name);
+  readonly #logger = new Logger(SendNotificationWithDedupUseCase.name);
 
-	constructor(
-		private readonly sendNotification: SendNotificationUseCase,
-		@Inject(NOTIFICATION_DEDUP_LOCK)
-		private readonly dedupLock: NotificationDedupLockPort,
-		@Inject(NOTIFICATION_HISTORY_READER)
-		private readonly notificationHistoryReader: NotificationHistoryReaderPort,
-	) {}
+  constructor(
+    private readonly sendNotification: SendNotificationUseCase,
+    @Inject(NOTIFICATION_DEDUP_LOCK)
+    private readonly dedupLock: NotificationDedupLockPort,
+    @Inject(NOTIFICATION_HISTORY_READER)
+    private readonly notificationHistoryReader: NotificationHistoryReaderPort,
+  ) {}
 
-	async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
-		const strategy = resolveDedupStrategy(data.type);
+  async execute(data: CreateNotificationData): Promise<NotificationRecord | null> {
+    const strategy = resolveDedupStrategy(data.type);
 
-		if (!strategy) {
-			return this.sendNotification.execute(data);
-		}
+    if (!strategy) {
+      return this.sendNotification.execute(data);
+    }
 
-		const dedupKey = buildDedupKey(data, strategy);
-		const release = await this.dedupLock.acquire(dedupKey);
+    const dedupKey = buildDedupKey(data, strategy);
+    const release = await this.dedupLock.acquire(dedupKey);
 
-		if (!release) {
-			this.#logger.debug(`Notification dedup: lock busy for ${data.type}, userId=${data.userId}`);
-			return null;
-		}
+    if (!release) {
+      this.#logger.debug(`Notification dedup: lock busy for ${data.type}, userId=${data.userId}`);
+      return null;
+    }
 
-		try {
-			const since = subtractMilliseconds(strategy.windowMs);
-			const contextFields = buildDedupContextFields(data, strategy);
-			const params = {
-				userId: data.userId,
-				type: data.type,
-				since,
-				...contextFields,
-			};
+    try {
+      const since = subtractMilliseconds(strategy.windowMs);
+      const contextFields = buildDedupContextFields(data, strategy);
+      const params = {
+        userId: data.userId,
+        type: data.type,
+        since,
+        ...contextFields,
+      };
 
-			const exists = await this.notificationHistoryReader.existsRecentNotification(params);
-			if (exists) {
-				this.#logger.debug(`Notification dedup: skipped ${data.type} for userId=${data.userId}`);
-				return null;
-			}
+      const exists = await this.notificationHistoryReader.existsRecentNotification(params);
+      if (exists) {
+        this.#logger.debug(`Notification dedup: skipped ${data.type} for userId=${data.userId}`);
+        return null;
+      }
 
-			return await this.sendNotification.execute(data);
-		} finally {
-			await release();
-		}
-	}
+      return await this.sendNotification.execute(data);
+    } finally {
+      await release();
+    }
+  }
 }

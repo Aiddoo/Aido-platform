@@ -19,84 +19,84 @@ import type { UserNotificationSettingsPort } from "#api/notification/application
 
 /** NotificationRepositoryPort mock 팩토리. */
 export function createNotificationRepositoryMock(): NotificationRepositoryPort {
-	return {
-		createNotification: vi.fn(),
-		createManyNotificationsAndReturn: vi.fn(),
-		markAsRead: vi.fn(),
-		markAsOpened: vi.fn(),
-		markAllAsRead: vi.fn(),
-		deleteNotificationsByActorId: vi.fn(),
-	};
+  return {
+    createNotification: vi.fn(),
+    createManyNotificationsAndReturn: vi.fn(),
+    markAsRead: vi.fn(),
+    markAsOpened: vi.fn(),
+    markAllAsRead: vi.fn(),
+    deleteNotificationsByActorId: vi.fn(),
+  };
 }
 
 export function createNotificationInboxReaderMock(): NotificationInboxReaderPort {
-	return {
-		findNotificationById: vi.fn(),
-		findNotificationsByUser: vi.fn(),
-		countUnread: vi.fn(),
-	};
+  return {
+    findNotificationById: vi.fn(),
+    findNotificationsByUser: vi.fn(),
+    countUnread: vi.fn(),
+  };
 }
 
 export function createNotificationHistoryReaderMock(): NotificationHistoryReaderPort {
-	return {
-		existsRecentNotification: vi.fn(),
-		findAlreadyNotifiedUserIds: vi.fn(),
-		hasMilestoneNotification: vi.fn(),
-	};
+  return {
+    existsRecentNotification: vi.fn(),
+    findAlreadyNotifiedUserIds: vi.fn(),
+    hasMilestoneNotification: vi.fn(),
+  };
 }
 
 export function createPushTokenRepositoryMock(): PushTokenRepositoryPort {
-	return {
-		registerPushToken: vi.fn(),
-		findPushTokensByUser: vi.fn(),
-		findActivePushTokensByUsers: vi.fn(),
-		deletePushToken: vi.fn(),
-		deleteAllPushTokensByUser: vi.fn(),
-		deactivateInvalidTokens: vi.fn(),
-	};
+  return {
+    registerPushToken: vi.fn(),
+    findPushTokensByUser: vi.fn(),
+    findActivePushTokensByUsers: vi.fn(),
+    deletePushToken: vi.fn(),
+    deleteAllPushTokensByUser: vi.fn(),
+    deactivateInvalidTokens: vi.fn(),
+  };
 }
 
 export function createActivePushTokenReaderMock(): ActivePushTokenReaderPort {
-	return {
-		findByUserId: vi.fn(),
-		findByUserIds: vi.fn(),
-	};
+  return {
+    findByUserId: vi.fn(),
+    findByUserIds: vi.fn(),
+  };
 }
 
 export function createNotificationRecipientPreferenceReaderMock(): NotificationRecipientPreferenceReaderPort {
-	return { getPreference: vi.fn() };
+  return { getPreference: vi.fn() };
 }
 
 export function createNotificationRecipientLocaleReaderMock(): NotificationRecipientLocaleReaderPort {
-	return { getLocale: vi.fn(), getLocales: vi.fn() };
+  return { getLocale: vi.fn(), getLocales: vi.fn() };
 }
 
 export function createPushReceiptRepositoryMock(): PushReceiptRepositoryPort {
-	return {
-		findPendingPushReceipts: vi.fn(),
-		recordPushReceipts: vi.fn(),
-	};
+  return {
+    findPendingPushReceipts: vi.fn(),
+    recordPushReceipts: vi.fn(),
+  };
 }
 
 /** MarketingPushOptOutTokenPort mock 팩토리. */
 export function createMarketingPushOptOutTokenMock(): MarketingPushOptOutTokenPort {
-	return {
-		issue: vi.fn(),
-		verify: vi.fn(),
-	};
+  return {
+    issue: vi.fn(),
+    verify: vi.fn(),
+  };
 }
 
 /** UserNotificationSettingsPort mock 팩토리. */
 export function createUserNotificationSettingsMock(): UserNotificationSettingsPort {
-	return {
-		upsertPushTimezone: vi.fn(),
-		upsertPushLocale: vi.fn(),
-		getPreferenceRecord: vi.fn(),
-		getPreferenceRecordsByUserIds: vi.fn(),
-		getConsentRecord: vi.fn(),
-		getConsentRecordsByUserIds: vi.fn(),
-		updateMarketingPushConsent: vi.fn(),
-	};
+  return {
+    upsertPushTimezone: vi.fn(),
+    upsertPushLocale: vi.fn(),
+    getPreferenceRecord: vi.fn(),
+    getPreferenceRecordsByUserIds: vi.fn(),
+    getConsentRecord: vi.fn(),
+    getConsentRecordsByUserIds: vi.fn(),
+    updateMarketingPushConsent: vi.fn(),
+  };
 }
 import type { NotificationRecipientLocaleReaderPort } from "#api/notification/application/ports/notification-recipient-locale.reader.port";
 import type { NotificationRecipientPreferenceReaderPort } from "#api/notification/application/ports/notification-recipient-preference.reader.port";

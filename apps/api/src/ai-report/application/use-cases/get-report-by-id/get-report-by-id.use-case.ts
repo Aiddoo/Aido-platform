@@ -6,8 +6,8 @@ import { EntitlementService } from "#api/shared/application/entitlement/entitlem
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	AI_REPORT_REPOSITORY,
-	type AiReportRepositoryPort,
+  AI_REPORT_REPOSITORY,
+  type AiReportRepositoryPort,
 } from "../../ports/ai-report.repository.port.js";
 
 /**
@@ -15,24 +15,24 @@ import {
  */
 @Injectable()
 export class GetReportByIdUseCase {
-	constructor(
-		@Inject(AI_REPORT_REPOSITORY)
-		private readonly aiReportRepository: AiReportRepositoryPort,
-		private readonly entitlementService: EntitlementService,
-	) {}
+  constructor(
+    @Inject(AI_REPORT_REPOSITORY)
+    private readonly aiReportRepository: AiReportRepositoryPort,
+    private readonly entitlementService: EntitlementService,
+  ) {}
 
-	async execute(userId: string, id: number): Promise<AiReportDto> {
-		const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
-		if (!hasPremium) {
-			throw new ApplicationException(ErrorCode.AI_1308);
-		}
+  async execute(userId: string, id: number): Promise<AiReportDto> {
+    const hasPremium = await this.entitlementService.hasPremiumAccess(userId);
+    if (!hasPremium) {
+      throw new ApplicationException(ErrorCode.AI_1308);
+    }
 
-		const report = await this.aiReportRepository.findByIdAndUserId(id, userId);
+    const report = await this.aiReportRepository.findByIdAndUserId(id, userId);
 
-		if (!report) {
-			throw new ApplicationException(ErrorCode.AI_1304, { reportId: id });
-		}
+    if (!report) {
+      throw new ApplicationException(ErrorCode.AI_1304, { reportId: id });
+    }
 
-		return report.toView();
-	}
+    return report.toView();
+  }
 }

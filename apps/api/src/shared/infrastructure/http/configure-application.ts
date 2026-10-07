@@ -1,7 +1,7 @@
 import {
-	BadRequestException,
-	type INestApplication,
-	StandardSchemaValidationPipe,
+  BadRequestException,
+  type INestApplication,
+  StandardSchemaValidationPipe,
 } from "@nestjs/common";
 import helmet from "helmet";
 
@@ -11,9 +11,9 @@ import { createCorsOptions } from "#api/shared/infrastructure/config/utils/cors-
 import { configureRequestIdentity } from "./configure-request-identity.js";
 
 export interface ApplicationConfiguration {
-	nodeEnv: EnvConfig["NODE_ENV"];
-	corsOrigins: string[];
-	enableShutdownHooks?: boolean;
+  nodeEnv: EnvConfig["NODE_ENV"];
+  corsOrigins: string[];
+  enableShutdownHooks?: boolean;
 }
 
 /**
@@ -23,25 +23,25 @@ export interface ApplicationConfiguration {
  * 여기서 중복 등록하지 않는다.
  */
 export function configureApplication(
-	app: INestApplication,
-	config: ApplicationConfiguration,
+  app: INestApplication,
+  config: ApplicationConfiguration,
 ): void {
-	configureRequestIdentity(app);
-	app.use(helmet());
-	app.enableCors(createCorsOptions(config.nodeEnv, config.corsOrigins));
-	app.useGlobalPipes(
-		new StandardSchemaValidationPipe({
-			exceptionFactory: (issues) =>
-				new BadRequestException({
-					statusCode: 400,
-					message: "Validation failed",
-					errors: issues,
-				}),
-		}),
-	);
-	app.setGlobalPrefix("v1", { exclude: ["health"] });
+  configureRequestIdentity(app);
+  app.use(helmet());
+  app.enableCors(createCorsOptions(config.nodeEnv, config.corsOrigins));
+  app.useGlobalPipes(
+    new StandardSchemaValidationPipe({
+      exceptionFactory: (issues) =>
+        new BadRequestException({
+          statusCode: 400,
+          message: "Validation failed",
+          errors: issues,
+        }),
+    }),
+  );
+  app.setGlobalPrefix("v1", { exclude: ["health"] });
 
-	if (config.enableShutdownHooks !== false) {
-		app.enableShutdownHooks();
-	}
+  if (config.enableShutdownHooks !== false) {
+    app.enableShutdownHooks();
+  }
 }

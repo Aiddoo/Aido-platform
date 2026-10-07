@@ -11,18 +11,18 @@ import type { CheerRepositoryPort } from "#api/cheer/application/ports/cheer.rep
  */
 
 export function createCheerRepositoryMock(): CheerRepositoryPort {
-	return {
-		findById: vi.fn(),
-		findLastCheerToUser: vi.fn(),
-		markAsRead: vi.fn(),
-		markManyAsRead: vi.fn(),
-		findReceivedCheers: vi.fn(),
-		findSentCheers: vi.fn(),
-		countTodayCheers: vi.fn(),
-		countSentSince: vi.fn(),
-		countReceived: vi.fn(),
-		countSent: vi.fn(),
-		countUnreadReceived: vi.fn(),
-		createWithRelations: vi.fn(),
-	};
+  return {
+    findById: vi.fn(),
+    findLastCheerToUser: vi.fn(),
+    markAsRead: vi.fn(),
+    markManyAsRead: vi.fn(),
+    findReceivedCheers: vi.fn(),
+    findSentCheers: vi.fn(),
+    countTodayCheers: vi.fn(),
+    countSentSince: vi.fn(),
+    countReceived: vi.fn(),
+    countSent: vi.fn(),
+    countUnreadReceived: vi.fn(),
+    createWithRelations: vi.fn(),
+  };
 }

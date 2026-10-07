@@ -1,20 +1,20 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
 import {
-	JOB_RUNTIME,
-	type JobData,
-	type JobRuntimePort,
+  JOB_RUNTIME,
+  type JobData,
+  type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
 import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
 import { TimezoneAwareReminderOrchestrator } from "../../application/services/timezone-aware-reminder.orchestrator.js";
 import {
-	TIMEZONE_REMINDER_LEGACY_QUEUE,
-	TIMEZONE_REMINDER_QUEUE,
-	TIMEZONE_REMINDER_WORKER_POLICY,
-	type TimezoneReminderJobMap,
-	TimezoneReminderJobName,
-	TimezoneReminderRuntimeJobSchema,
+  TIMEZONE_REMINDER_LEGACY_QUEUE,
+  TIMEZONE_REMINDER_QUEUE,
+  TIMEZONE_REMINDER_WORKER_POLICY,
+  type TimezoneReminderJobMap,
+  TimezoneReminderJobName,
+  TimezoneReminderRuntimeJobSchema,
 } from "./timezone-reminder-queue.constants.js";
 
 /**
@@ -30,76 +30,76 @@ import {
  */
 type TimezoneReminderJob = NamedJob<TimezoneReminderJobMap>;
 type TimezoneReminderJobLike = {
-	readonly name: string;
-	readonly data: JobData;
+  readonly name: string;
+  readonly data: JobData;
 };
 
 @Injectable()
 export class TimezoneReminderProcessor implements OnModuleInit {
-	readonly #logger = new Logger(TimezoneReminderProcessor.name);
+  readonly #logger = new Logger(TimezoneReminderProcessor.name);
 
-	constructor(
-		private readonly orchestrator: TimezoneAwareReminderOrchestrator,
-		@Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
-	) {}
+  constructor(
+    private readonly orchestrator: TimezoneAwareReminderOrchestrator,
+    @Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
+  ) {}
 
-	async onModuleInit(): Promise<void> {
-		if (!this.runtime) return;
-		await this.runtime.work<TimezoneReminderJob>(
-			TIMEZONE_REMINDER_QUEUE,
-			async (jobs) => {
-				for (const job of jobs) await this.process(job.data);
-			},
-			TIMEZONE_REMINDER_WORKER_POLICY,
-		);
-		await this.runtime.work<JobData>(
-			TIMEZONE_REMINDER_LEGACY_QUEUE,
-			async (jobs) => {
-				for (const job of jobs) await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
-			},
-			TIMEZONE_REMINDER_WORKER_POLICY,
-		);
-	}
+  async onModuleInit(): Promise<void> {
+    if (!this.runtime) return;
+    await this.runtime.work<TimezoneReminderJob>(
+      TIMEZONE_REMINDER_QUEUE,
+      async (jobs) => {
+        for (const job of jobs) await this.process(job.data);
+      },
+      TIMEZONE_REMINDER_WORKER_POLICY,
+    );
+    await this.runtime.work<JobData>(
+      TIMEZONE_REMINDER_LEGACY_QUEUE,
+      async (jobs) => {
+        for (const job of jobs) await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
+      },
+      TIMEZONE_REMINDER_WORKER_POLICY,
+    );
+  }
 
-	onStalled(jobId: string): void {
-		this.#logger.warn(`Job stalled: jobId=${jobId}`);
-	}
+  onStalled(jobId: string): void {
+    this.#logger.warn(`Job stalled: jobId=${jobId}`);
+  }
 
-	onError(error: Error): void {
-		this.#logger.error(`Worker error: ${error.message}`, error.stack);
-	}
+  onError(error: Error): void {
+    this.#logger.error(`Worker error: ${error.message}`, error.stack);
+  }
 
-	onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
-		this.#logger.error(
-			`Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
-			error.stack,
-		);
-	}
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
+    this.#logger.error(
+      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
+      error.stack,
+    );
+  }
 
-	async process(untrustedJob: TimezoneReminderJobLike): Promise<void> {
-		const parsedJob = TimezoneReminderRuntimeJobSchema.safeParse(untrustedJob);
-		if (!parsedJob.success) {
-			this.#logger.warn(`Invalid timezone reminder job: name=${untrustedJob.name}`);
-			return;
-		}
-		const job = parsedJob.data;
-		switch (job.name) {
-			case TimezoneReminderJobName.SWEEP_REMINDERS:
-				this.#logger.debug("Processing timezone reminder sweep...");
-				await this.orchestrator.handleMinuteSweep();
-				break;
-			case TimezoneReminderJobName.REMINDER_HOUR_CHANGED:
-				this.#logger.debug(`Processing reminder hour changed: userId=${job.data.userId}`);
-				await this.orchestrator.handleReminderHourChanged(job.data);
-				break;
-			case TimezoneReminderJobName.SOCIAL_DIGEST:
-				this.#logger.debug(`Processing social digest: tz=${job.data.timezone}`);
-				await this.orchestrator.handleSocialDigest(job.data);
-				break;
-			default: {
-				const _exhaustive: never = job;
-				void _exhaustive;
-			}
-		}
-	}
+  async process(untrustedJob: TimezoneReminderJobLike): Promise<void> {
+    const parsedJob = TimezoneReminderRuntimeJobSchema.safeParse(untrustedJob);
+    if (!parsedJob.success) {
+      this.#logger.warn(`Invalid timezone reminder job: name=${untrustedJob.name}`);
+      return;
+    }
+    const job = parsedJob.data;
+    switch (job.name) {
+      case TimezoneReminderJobName.SWEEP_REMINDERS:
+        this.#logger.debug("Processing timezone reminder sweep...");
+        await this.orchestrator.handleMinuteSweep();
+        break;
+      case TimezoneReminderJobName.REMINDER_HOUR_CHANGED:
+        this.#logger.debug(`Processing reminder hour changed: userId=${job.data.userId}`);
+        await this.orchestrator.handleReminderHourChanged(job.data);
+        break;
+      case TimezoneReminderJobName.SOCIAL_DIGEST:
+        this.#logger.debug(`Processing social digest: tz=${job.data.timezone}`);
+        await this.orchestrator.handleSocialDigest(job.data);
+        break;
+      default: {
+        const _exhaustive: never = job;
+        void _exhaustive;
+      }
+    }
+  }
 }

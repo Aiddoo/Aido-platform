@@ -6,47 +6,47 @@ import { NotificationPublisher } from "../../publishers/notification.publisher.j
 import { NotificationRecipientLocaleReader } from "../../readers/notification-recipient-locale.reader.js";
 
 export interface SendCheerNotificationInput {
-	readonly cheerId: number;
-	readonly senderId: string;
-	readonly receiverId: string;
-	readonly senderName: string;
-	readonly message?: string;
+  readonly cheerId: number;
+  readonly senderId: string;
+  readonly receiverId: string;
+  readonly senderName: string;
+  readonly message?: string;
 }
 
 @Injectable()
 export class SendCheerNotificationUseCase {
-	readonly #logger = new Logger(SendCheerNotificationUseCase.name);
+  readonly #logger = new Logger(SendCheerNotificationUseCase.name);
 
-	constructor(
-		private readonly notificationPublisher: NotificationPublisher,
-		private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
-	) {}
+  constructor(
+    private readonly notificationPublisher: NotificationPublisher,
+    private readonly recipientLocaleReader: NotificationRecipientLocaleReader,
+  ) {}
 
-	async execute(input: SendCheerNotificationInput): Promise<void> {
-		const locale = await this.recipientLocaleReader.getRecipientLocale(input.receiverId);
-		const variantContext = {
-			campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
-			recipientId: input.receiverId,
-			occurrenceKey: String(input.cheerId),
-		};
-		const message = createCheerReceivedNotificationMessage({
-			senderName: input.senderName,
-			message: input.message,
-			locale,
-			variantContext,
-		});
+  async execute(input: SendCheerNotificationInput): Promise<void> {
+    const locale = await this.recipientLocaleReader.getRecipientLocale(input.receiverId);
+    const variantContext = {
+      campaignKey: TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.CHEER_RECEIVED,
+      recipientId: input.receiverId,
+      occurrenceKey: String(input.cheerId),
+    };
+    const message = createCheerReceivedNotificationMessage({
+      senderName: input.senderName,
+      message: input.message,
+      locale,
+      variantContext,
+    });
 
-		await this.notificationPublisher.publishWithDeduplication({
-			userId: input.receiverId,
-			type: "CHEER_RECEIVED",
-			title: message.title,
-			body: message.body,
-			cheerId: input.cheerId,
-			friendId: input.senderId,
-			metadata: input.message ? { message: input.message } : undefined,
-			campaignKey: variantContext.campaignKey,
-			variantId: message.variantId,
-		});
-		this.#logger.log(`Cheer notification sent: from=${input.senderId}, to=${input.receiverId}`);
-	}
+    await this.notificationPublisher.publishWithDeduplication({
+      userId: input.receiverId,
+      type: "CHEER_RECEIVED",
+      title: message.title,
+      body: message.body,
+      cheerId: input.cheerId,
+      friendId: input.senderId,
+      metadata: input.message ? { message: input.message } : undefined,
+      campaignKey: variantContext.campaignKey,
+      variantId: message.variantId,
+    });
+    this.#logger.log(`Cheer notification sent: from=${input.senderId}, to=${input.receiverId}`);
+  }
 }

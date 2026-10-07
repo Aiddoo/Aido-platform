@@ -8,5 +8,5 @@
  * 런타임 형태 보증이 필요하면 호출부에서 별도 검증(zod 등)한다.
  */
 export async function readJson<T>(response: Response): Promise<T> {
-	return (await response.json()) as T;
+  return (await response.json()) as T;
 }

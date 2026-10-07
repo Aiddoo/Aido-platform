@@ -13,18 +13,18 @@ import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.por
  */
 @Injectable()
 export class TodoRescheduledHandler {
-	constructor(
-		@Inject(TODO_REMINDER)
-		private readonly todoReminder: TodoReminderPort,
-	) {}
+  constructor(
+    @Inject(TODO_REMINDER)
+    private readonly todoReminder: TodoReminderPort,
+  ) {}
 
-	@OnEvent(TODO_EVENTS.RESCHEDULED, { suppressErrors: false })
-	async handle(event: TodoRescheduledEvent): Promise<void> {
-		if (event.scheduledTime) {
-			await this.todoReminder.scheduleReminder(event.todoId, event.scheduledTime, event.userId);
-			return;
-		}
+  @OnEvent(TODO_EVENTS.RESCHEDULED, { suppressErrors: false })
+  async handle(event: TodoRescheduledEvent): Promise<void> {
+    if (event.scheduledTime) {
+      await this.todoReminder.scheduleReminder(event.todoId, event.scheduledTime, event.userId);
+      return;
+    }
 
-		await this.todoReminder.cancelReminder(event.todoId);
-	}
+    await this.todoReminder.cancelReminder(event.todoId);
+  }
 }

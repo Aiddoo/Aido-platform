@@ -4,12 +4,12 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { CurrentUser, type CurrentUserPayload } from "#api/auth/presentation/decorators/index";
 import {
-	ApiBadRequestError,
-	ApiDoc,
-	ApiForbiddenError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiBadRequestError,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { GetConsentUseCase } from "../application/use-cases/get-consent/get-consent.use-case.js";
@@ -18,33 +18,33 @@ import { UpdateMarketingConsentUseCase } from "../application/use-cases/update-m
 import { UpdateMarketingPushConsentUseCase } from "../application/use-cases/update-marketing-push-consent/update-marketing-push-consent.use-case.js";
 import { UpdatePreferenceUseCase } from "../application/use-cases/update-preference/update-preference.use-case.js";
 import {
-	ConsentResponseDto,
-	PreferenceResponseDto,
-	UpdateMarketingConsentDto,
-	UpdateMarketingConsentResponseDto,
-	UpdateMarketingPushConsentDto,
-	UpdateMarketingPushConsentResponseDto,
-	UpdatePreferenceDto,
-	UpdatePreferenceResponseDto,
+  ConsentResponseDto,
+  PreferenceResponseDto,
+  UpdateMarketingConsentDto,
+  UpdateMarketingConsentResponseDto,
+  UpdateMarketingPushConsentDto,
+  UpdateMarketingPushConsentResponseDto,
+  UpdatePreferenceDto,
+  UpdatePreferenceResponseDto,
 } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.USER_AUTH)
 @ApiBearerAuth()
 @Controller("auth")
 export class SettingsController {
-	constructor(
-		private readonly getPreferenceUseCase: GetPreferenceUseCase,
-		private readonly updatePreferenceUseCase: UpdatePreferenceUseCase,
-		private readonly getConsentUseCase: GetConsentUseCase,
-		private readonly updateMarketingConsentUseCase: UpdateMarketingConsentUseCase,
-		private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
-	) {}
+  constructor(
+    private readonly getPreferenceUseCase: GetPreferenceUseCase,
+    private readonly updatePreferenceUseCase: UpdatePreferenceUseCase,
+    private readonly getConsentUseCase: GetConsentUseCase,
+    private readonly updateMarketingConsentUseCase: UpdateMarketingConsentUseCase,
+    private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsentUseCase,
+  ) {}
 
-	@Get("preference")
-	@ApiDoc({
-		summary: "사용자 설정 조회",
-		operationId: "getPushPreference",
-		description: `사용자 설정(알림, 표시)을 조회합니다.
+  @Get("preference")
+  @ApiDoc({
+    summary: "사용자 설정 조회",
+    operationId: "getPushPreference",
+    description: `사용자 설정(알림, 표시)을 조회합니다.
 
 **인증 필요**: \`Authorization: Bearer {accessToken}\`
 
@@ -68,19 +68,19 @@ export class SettingsController {
 - 1분 단위 설정 가능
 
 **프리미엄 전용**: 아침/저녁 리마인더 시간 커스텀은 프리미엄 구독 사용자 전용. 무료 유저는 08:00/19:00 고정.`,
-	})
-	@ApiSuccessResponse({ type: PreferenceResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getPreference(@CurrentUser() user: CurrentUserPayload) {
-		return this.getPreferenceUseCase.execute(user.userId);
-	}
+  })
+  @ApiSuccessResponse({ type: PreferenceResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getPreference(@CurrentUser() user: CurrentUserPayload) {
+    return this.getPreferenceUseCase.execute(user.userId);
+  }
 
-	@Patch("preference")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "사용자 설정 수정",
-		operationId: "updatePushPreference",
-		description: `사용자 설정을 수정합니다. 최소 1개 필드 필수.
+  @Patch("preference")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "사용자 설정 수정",
+    operationId: "updatePushPreference",
+    description: `사용자 설정을 수정합니다. 최소 1개 필드 필수.
 
 **요청 Body (최소 1개 필수)**
 | 필드 | 타입 | 설명 |
@@ -101,23 +101,23 @@ export class SettingsController {
 **타임존 검증**: 유효하지 않은 IANA 타임존은 \`400 SYS_0002\`. 유효한 별칭은 정규 IANA 타임존으로 저장.
 
 **주의**: 야간 푸시 허용 시 \`pushEnabled\`가 true여야 함. 사용자당 시간당 최대 15건.`,
-	})
-	@ApiSuccessResponse({ type: UpdatePreferenceResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.PREFERENCE_1701)
-	@ApiBadRequestError(ErrorCode.PREFERENCE_1702)
-	async updatePreference(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: UpdatePreferenceDto }) dto: UpdatePreferenceDto,
-	) {
-		return this.updatePreferenceUseCase.execute(user.userId, dto);
-	}
+  })
+  @ApiSuccessResponse({ type: UpdatePreferenceResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.PREFERENCE_1701)
+  @ApiBadRequestError(ErrorCode.PREFERENCE_1702)
+  async updatePreference(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: UpdatePreferenceDto }) dto: UpdatePreferenceDto,
+  ) {
+    return this.updatePreferenceUseCase.execute(user.userId, dto);
+  }
 
-	@Get("consent")
-	@ApiDoc({
-		summary: "약관 동의 상태 조회",
-		operationId: "getConsent",
-		description: `현재 사용자의 약관 동의 상태를 조회합니다.
+  @Get("consent")
+  @ApiDoc({
+    summary: "약관 동의 상태 조회",
+    operationId: "getConsent",
+    description: `현재 사용자의 약관 동의 상태를 조회합니다.
 
 **응답 필드**
 | 필드 | 타입 | 설명 |
@@ -126,19 +126,19 @@ export class SettingsController {
 | \`privacyAgreedAt\` | string? | 개인정보처리방침 동의 시점 |
 | \`agreedTermsVersion\` | string? | 동의한 약관 버전 |
 | \`marketingAgreedAt\` | string? | 마케팅 수신 동의 시점 (null = 미동의/철회) |`,
-	})
-	@ApiSuccessResponse({ type: ConsentResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getConsent(@CurrentUser() user: CurrentUserPayload) {
-		return this.getConsentUseCase.execute(user.userId);
-	}
+  })
+  @ApiSuccessResponse({ type: ConsentResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getConsent(@CurrentUser() user: CurrentUserPayload) {
+    return this.getConsentUseCase.execute(user.userId);
+  }
 
-	@Patch("consent/marketing")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "마케팅 수신 동의 변경",
-		operationId: "updateMarketingConsent",
-		description: `마케팅 수신 동의를 변경합니다.
+  @Patch("consent/marketing")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "마케팅 수신 동의 변경",
+    operationId: "updateMarketingConsent",
+    description: `마케팅 수신 동의를 변경합니다.
 
 **요청 Body**
 | 필드 | 타입 | 설명 |
@@ -149,30 +149,30 @@ export class SettingsController {
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | \`marketingAgreedAt\` | string? | 동의 시 현재 시점, 철회 시 null |`,
-	})
-	@ApiSuccessResponse({ type: UpdateMarketingConsentResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async updateMarketingConsent(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: UpdateMarketingConsentDto }) dto: UpdateMarketingConsentDto,
-	) {
-		return this.updateMarketingConsentUseCase.execute(user.userId, dto.agreed);
-	}
+  })
+  @ApiSuccessResponse({ type: UpdateMarketingConsentResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async updateMarketingConsent(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: UpdateMarketingConsentDto }) dto: UpdateMarketingConsentDto,
+  ) {
+    return this.updateMarketingConsentUseCase.execute(user.userId, dto.agreed);
+  }
 
-	@Patch("consent/marketing-push")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "광고성 앱 푸시 수신 동의 변경",
-		operationId: "updateMarketingPushConsent",
-		description:
-			"광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다.",
-	})
-	@ApiSuccessResponse({ type: UpdateMarketingPushConsentResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async updateMarketingPushConsent(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: UpdateMarketingPushConsentDto }) dto: UpdateMarketingPushConsentDto,
-	) {
-		return this.updateMarketingPushConsentUseCase.execute(user.userId, dto.agreed);
-	}
+  @Patch("consent/marketing-push")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "광고성 앱 푸시 수신 동의 변경",
+    operationId: "updateMarketingPushConsent",
+    description:
+      "광고성 앱 푸시 수신 동의를 변경합니다. 야간 광고성 푸시는 별도로 발송하지 않습니다.",
+  })
+  @ApiSuccessResponse({ type: UpdateMarketingPushConsentResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async updateMarketingPushConsent(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: UpdateMarketingPushConsentDto }) dto: UpdateMarketingPushConsentDto,
+  ) {
+    return this.updateMarketingPushConsentUseCase.execute(user.userId, dto.agreed);
+  }
 }

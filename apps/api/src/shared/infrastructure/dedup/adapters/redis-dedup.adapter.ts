@@ -16,53 +16,53 @@ import type { IDedupProvider } from "../interfaces/dedup.interface.js";
  */
 @Injectable()
 export class RedisDedupAdapter implements IDedupProvider {
-	readonly #logger = new Logger(RedisDedupAdapter.name);
-	readonly #redis: Redis;
-	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
+  readonly #logger = new Logger(RedisDedupAdapter.name);
+  readonly #redis: Redis;
+  readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
 
-	constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {
-		this.#redis = redis;
-	}
+  constructor(@Inject(REDIS_COMMAND_CLIENT) redis: Redis) {
+    this.#redis = redis;
+  }
 
-	async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
-		if (members.length === 0) return new Set();
+  async filterMembers(setKey: string, members: string[]): Promise<Set<string>> {
+    if (members.length === 0) return new Set();
 
-		const key = this.#key(setKey);
+    const key = this.#key(setKey);
 
-		try {
-			const results = await this.#redis.smismember(key, ...members);
-			return new Set(members.filter((_, i) => results[i] === 1));
-		} catch (error) {
-			this.#errorSampler.warn("DEDUP_FILTER_MEMBERS", error);
-			return new Set();
-		}
-	}
+    try {
+      const results = await this.#redis.smismember(key, ...members);
+      return new Set(members.filter((_, i) => results[i] === 1));
+    } catch (error) {
+      this.#errorSampler.warn("DEDUP_FILTER_MEMBERS", error);
+      return new Set();
+    }
+  }
 
-	async isMember(setKey: string, member: string): Promise<boolean> {
-		try {
-			return (await this.#redis.sismember(this.#key(setKey), member)) === 1;
-		} catch (error) {
-			this.#errorSampler.warn("DEDUP_IS_MEMBER", error);
-			return false;
-		}
-	}
+  async isMember(setKey: string, member: string): Promise<boolean> {
+    try {
+      return (await this.#redis.sismember(this.#key(setKey), member)) === 1;
+    } catch (error) {
+      this.#errorSampler.warn("DEDUP_IS_MEMBER", error);
+      return false;
+    }
+  }
 
-	async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
-		if (members.length === 0) return;
+  async addMembers(setKey: string, members: string[], ttlMs: number): Promise<void> {
+    if (members.length === 0) return;
 
-		const key = this.#key(setKey);
+    const key = this.#key(setKey);
 
-		try {
-			const pipeline = this.#redis.pipeline();
-			pipeline.sadd(key, ...members);
-			pipeline.pexpire(key, ttlMs);
-			await pipeline.exec();
-		} catch (error) {
-			this.#errorSampler.warn("DEDUP_ADD_MEMBERS", error);
-		}
-	}
+    try {
+      const pipeline = this.#redis.pipeline();
+      pipeline.sadd(key, ...members);
+      pipeline.pexpire(key, ttlMs);
+      await pipeline.exec();
+    } catch (error) {
+      this.#errorSampler.warn("DEDUP_ADD_MEMBERS", error);
+    }
+  }
 
-	#key(setKey: string): string {
-		return setKey;
-	}
+  #key(setKey: string): string {
+    return setKey;
+  }
 }

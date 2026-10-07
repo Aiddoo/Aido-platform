@@ -10,26 +10,26 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
  * 프레젠테이션(zod)에서 이미 검증되지만 도메인 경계에서도 방어한다(동일 상한이라 유효 입력은 통과).
  */
 export class NudgeMessage {
-	private constructor(private readonly text: string | null) {}
+  private constructor(private readonly text: string | null) {}
 
-	static of(value?: string | null): NudgeMessage {
-		if (value == null) {
-			return new NudgeMessage(null);
-		}
-		if (value.length > NUDGE_LIMITS.MAX_MESSAGE_LENGTH) {
-			throw new DomainException(ErrorCode.SYS_0002, {
-				maxLength: NUDGE_LIMITS.MAX_MESSAGE_LENGTH,
-			});
-		}
-		return new NudgeMessage(value);
-	}
+  static of(value?: string | null): NudgeMessage {
+    if (value == null) {
+      return new NudgeMessage(null);
+    }
+    if (value.length > NUDGE_LIMITS.MAX_MESSAGE_LENGTH) {
+      throw new DomainException(ErrorCode.SYS_0002, {
+        maxLength: NUDGE_LIMITS.MAX_MESSAGE_LENGTH,
+      });
+    }
+    return new NudgeMessage(value);
+  }
 
-	/** 저장/전송용 원시값 (미설정 시 undefined — Prisma 기본값 유지) */
-	get raw(): string | undefined {
-		return this.text ?? undefined;
-	}
+  /** 저장/전송용 원시값 (미설정 시 undefined — Prisma 기본값 유지) */
+  get raw(): string | undefined {
+    return this.text ?? undefined;
+  }
 
-	get value(): string | null {
-		return this.text;
-	}
+  get value(): string | null {
+    return this.text;
+  }
 }

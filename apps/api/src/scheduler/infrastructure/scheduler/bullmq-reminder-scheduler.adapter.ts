@@ -3,13 +3,13 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import type {
-	IReminderScheduler,
-	ReminderCancellationResult,
+  IReminderScheduler,
+  ReminderCancellationResult,
 } from "../../application/ports/reminder-scheduler.port.js";
 import {
-	allReminderLabels,
-	planReminderJobs,
-	REMINDER_IMMEDIATE_LABEL,
+  allReminderLabels,
+  planReminderJobs,
+  REMINDER_IMMEDIATE_LABEL,
 } from "../../domain/services/reminder-plan.js";
 
 export const TODO_REMINDER_QUEUE = "todo-reminder.v1";
@@ -17,13 +17,13 @@ export const TODO_REMINDER_LEGACY_QUEUE = "todo-reminder";
 export const TODO_REMINDER_JOB_NAME = "send-reminder";
 
 export interface ReminderJobData {
-	todoId: number;
-	userId: string;
-	stageLabel: string;
+  todoId: number;
+  userId: string;
+  stageLabel: string;
 }
 
 export interface TodoReminderJobMap {
-	[TODO_REMINDER_JOB_NAME]: ReminderJobData;
+  [TODO_REMINDER_JOB_NAME]: ReminderJobData;
 }
 
 /**
@@ -38,78 +38,78 @@ export interface TodoReminderJobMap {
  */
 @Injectable()
 export class BullMQReminderSchedulerAdapter implements IReminderScheduler {
-	readonly #logger = new Logger(BullMQReminderSchedulerAdapter.name);
+  readonly #logger = new Logger(BullMQReminderSchedulerAdapter.name);
 
-	constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
+  constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
-	scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
-		return this.#scheduleAsync(todoId, scheduledTime, userId);
-	}
+  scheduleReminder(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+    return this.#scheduleAsync(todoId, scheduledTime, userId);
+  }
 
-	cancelReminder(todoId: number): Promise<ReminderCancellationResult> {
-		return this.#cancelAsync(todoId);
-	}
+  cancelReminder(todoId: number): Promise<ReminderCancellationResult> {
+    return this.#cancelAsync(todoId);
+  }
 
-	async #scheduleAsync(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
-		// 기존 잡 제거 (재스케줄링 지원)
-		await this.#cancelAsync(todoId);
+  async #scheduleAsync(todoId: number, scheduledTime: Date, userId: string): Promise<void> {
+    // 기존 잡 제거 (재스케줄링 지원)
+    await this.#cancelAsync(todoId);
 
-		const jobs = planReminderJobs(scheduledTime.getTime(), Date.now());
+    const jobs = planReminderJobs(scheduledTime.getTime(), Date.now());
 
-		// scheduledTime이 이미 과거면 아무것도 안 함
-		if (jobs.length === 0) {
-			this.#logger.debug(`Scheduled time already passed: todoId=${todoId}, skipping`);
-			return;
-		}
+    // scheduledTime이 이미 과거면 아무것도 안 함
+    if (jobs.length === 0) {
+      this.#logger.debug(`Scheduled time already passed: todoId=${todoId}, skipping`);
+      return;
+    }
 
-		for (const job of jobs) {
-			await this.runtime.enqueue(
-				TODO_REMINDER_QUEUE,
-				{
-					name: TODO_REMINDER_JOB_NAME,
-					data: { todoId, userId, stageLabel: job.label },
-				},
-				{
-					idempotencyKey: `reminder_${todoId}_${job.label}`,
-					startAfter: new Date(Date.now() + job.delay),
-					retryLimit: 2,
-					retryDelaySeconds: 5,
-					retryBackoff: true,
-					expireInSeconds: 10 * 60,
-					retentionSeconds: 24 * 60 * 60,
-					deleteAfterSeconds: 24 * 60 * 60,
-				},
-			);
+    for (const job of jobs) {
+      await this.runtime.enqueue(
+        TODO_REMINDER_QUEUE,
+        {
+          name: TODO_REMINDER_JOB_NAME,
+          data: { todoId, userId, stageLabel: job.label },
+        },
+        {
+          idempotencyKey: `reminder_${todoId}_${job.label}`,
+          startAfter: new Date(Date.now() + job.delay),
+          retryLimit: 2,
+          retryDelaySeconds: 5,
+          retryBackoff: true,
+          expireInSeconds: 10 * 60,
+          retentionSeconds: 24 * 60 * 60,
+          deleteAfterSeconds: 24 * 60 * 60,
+        },
+      );
 
-			if (job.label === REMINDER_IMMEDIATE_LABEL) {
-				this.#logger.debug(`Immediate reminder scheduled: todoId=${todoId}`);
-			} else {
-				this.#logger.debug(
-					`Reminder scheduled: todoId=${todoId}, stage=${job.label}, delay=${Math.round(job.delay / 1000)}s`,
-				);
-			}
-		}
-	}
+      if (job.label === REMINDER_IMMEDIATE_LABEL) {
+        this.#logger.debug(`Immediate reminder scheduled: todoId=${todoId}`);
+      } else {
+        this.#logger.debug(
+          `Reminder scheduled: todoId=${todoId}, stage=${job.label}, delay=${Math.round(job.delay / 1000)}s`,
+        );
+      }
+    }
+  }
 
-	async #cancelAsync(todoId: number): Promise<ReminderCancellationResult> {
-		let cancellationStatus: ReminderCancellationResult["status"] = "missing";
+  async #cancelAsync(todoId: number): Promise<ReminderCancellationResult> {
+    let cancellationStatus: ReminderCancellationResult["status"] = "missing";
 
-		for (const label of allReminderLabels()) {
-			const jobId = `reminder_${todoId}_${label}`;
-			try {
-				const result = await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
-				if (result.status === "cancelled") {
-					cancellationStatus = "cancelled";
-					this.#logger.debug(`Reminder cancelled: todoId=${todoId}, stage=${label}`);
-				}
-			} catch (error) {
-				throw new Error(
-					`Reminder cancellation failed: todoId=${todoId}, stage=${label}, runtime=job-runtime`,
-					{ cause: error },
-				);
-			}
-		}
+    for (const label of allReminderLabels()) {
+      const jobId = `reminder_${todoId}_${label}`;
+      try {
+        const result = await this.runtime.cancel(TODO_REMINDER_QUEUE, jobId);
+        if (result.status === "cancelled") {
+          cancellationStatus = "cancelled";
+          this.#logger.debug(`Reminder cancelled: todoId=${todoId}, stage=${label}`);
+        }
+      } catch (error) {
+        throw new Error(
+          `Reminder cancellation failed: todoId=${todoId}, stage=${label}, runtime=job-runtime`,
+          { cause: error },
+        );
+      }
+    }
 
-		return { status: cancellationStatus };
-	}
+    return { status: cancellationStatus };
+  }
 }

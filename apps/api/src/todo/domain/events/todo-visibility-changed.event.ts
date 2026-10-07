@@ -7,10 +7,10 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoVisibilityChangedEvent {
-	readonly eventName = TODO_EVENTS.VISIBILITY_CHANGED;
+  readonly eventName = TODO_EVENTS.VISIBILITY_CHANGED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+  ) {}
 }

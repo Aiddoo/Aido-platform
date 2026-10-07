@@ -8,8 +8,8 @@ import { isAfter } from "#api/shared/domain/date/utils/compare";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 import type { FindTodosParams, GetTodosParams } from "../../types.js";
 
@@ -21,43 +21,43 @@ export type GetTodosInput = GetTodosParams;
  */
 @Injectable()
 export class GetTodosUseCase {
-	constructor(
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		private readonly paginationService: PaginationService,
-	) {}
+  constructor(
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    private readonly paginationService: PaginationService,
+  ) {}
 
-	async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoResponse, number>> {
-		const params = input;
+  async execute(input: GetTodosInput): Promise<CursorPaginatedResponse<TodoResponse, number>> {
+    const params = input;
 
-		if (params.startDate && params.endDate && isAfter(params.startDate, params.endDate)) {
-			throw new ApplicationException(ErrorCode.SYS_0002, {
-				message: "startDate must be less than or equal to endDate",
-				startDate: params.startDate,
-				endDate: params.endDate,
-			});
-		}
+    if (params.startDate && params.endDate && isAfter(params.startDate, params.endDate)) {
+      throw new ApplicationException(ErrorCode.SYS_0002, {
+        message: "startDate must be less than or equal to endDate",
+        startDate: params.startDate,
+        endDate: params.endDate,
+      });
+    }
 
-		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
-			cursor: params.cursor,
-			size: params.size,
-		});
+    const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+      cursor: params.cursor,
+      size: params.size,
+    });
 
-		const repoParams: FindTodosParams = {
-			userId: params.userId,
-			cursor,
-			size,
-			completed: params.completed,
-			categoryId: params.categoryId,
-			startDate: params.startDate,
-			endDate: params.endDate,
-		};
+    const repoParams: FindTodosParams = {
+      userId: params.userId,
+      cursor,
+      size,
+      completed: params.completed,
+      categoryId: params.categoryId,
+      startDate: params.startDate,
+      endDate: params.endDate,
+    };
 
-		const items = await this.todoReadRepository.findManyByUserId(repoParams);
+    const items = await this.todoReadRepository.findManyByUserId(repoParams);
 
-		return this.paginationService.createCursorPaginatedResponse<TodoResponse, number>({
-			items,
-			size,
-		});
-	}
+    return this.paginationService.createCursorPaginatedResponse<TodoResponse, number>({
+      items,
+      size,
+    });
+  }
 }

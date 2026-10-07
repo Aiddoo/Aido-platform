@@ -11,12 +11,12 @@ export type BroadcastMetadata = { externalUrl: string } | undefined;
 
 /** 관리자 발송 알림 한 건 (벤더 중립 도메인 값) */
 export interface AdminBroadcastMessage {
-	userId: string;
-	type: AdminBroadcastType;
-	title: string;
-	body: string;
-	action?: NotificationAction;
-	metadata?: { externalUrl: string };
-	/** 사용자 푸시 수신 설정을 무시하는 강제 발송 여부 */
-	force: boolean;
+  userId: string;
+  type: AdminBroadcastType;
+  title: string;
+  body: string;
+  action?: NotificationAction;
+  metadata?: { externalUrl: string };
+  /** 사용자 푸시 수신 설정을 무시하는 강제 발송 여부 */
+  force: boolean;
 }

@@ -5,19 +5,19 @@ export type Provider = UserRegisteredEventPayload["provider"];
 
 /** 가입 방식 → 표시 라벨 */
 export const PROVIDER_LABELS: Record<Provider, string> = {
-	credential: "이메일",
-	apple: "Apple",
-	google: "Google",
-	kakao: "Kakao",
-	naver: "Naver",
+  credential: "이메일",
+  apple: "Apple",
+  google: "Google",
+  kakao: "Kakao",
+  naver: "Naver",
 };
 
 /**
  * 가입 방식 → 기기 추정 라벨 (Apple/Google만 추정 가능)
  */
 export const PROVIDER_DEVICE_LABELS: Partial<Record<Provider, string>> = {
-	apple: "🍎 iOS (추정)",
-	google: "🤖 Android (추정)",
+  apple: "🍎 iOS (추정)",
+  google: "🤖 Android (추정)",
 };
 
 /**
@@ -27,13 +27,13 @@ export const PROVIDER_DEVICE_LABELS: Partial<Record<Provider, string>> = {
  * 미매핑 값은 원문을 그대로 반환한다.
  */
 const ACCOUNT_PROVIDER_LABELS: Record<string, string> = {
-	CREDENTIAL: "이메일",
-	APPLE: "Apple",
-	GOOGLE: "Google",
-	KAKAO: "Kakao",
-	NAVER: "Naver",
+  CREDENTIAL: "이메일",
+  APPLE: "Apple",
+  GOOGLE: "Google",
+  KAKAO: "Kakao",
+  NAVER: "Naver",
 };
 
 export function accountProviderLabel(provider: string): string {
-	return ACCOUNT_PROVIDER_LABELS[provider] ?? provider;
+  return ACCOUNT_PROVIDER_LABELS[provider] ?? provider;
 }

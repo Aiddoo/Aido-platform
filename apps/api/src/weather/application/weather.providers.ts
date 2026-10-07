@@ -4,8 +4,8 @@ import { GetWeatherForecastUseCase } from "./queries/get-weather-forecast/get-we
 import { UpsertLocationUseCase } from "./use-cases/upsert-location/upsert-location.use-case.js";
 
 export const WEATHER_PROVIDERS = [
-	GetWeatherForecastUseCase,
-	GetWeatherConditionsUseCase,
-	GetForecastsByGridBatchUseCase,
-	UpsertLocationUseCase,
+  GetWeatherForecastUseCase,
+  GetWeatherConditionsUseCase,
+  GetForecastsByGridBatchUseCase,
+  UpsertLocationUseCase,
 ] as const;

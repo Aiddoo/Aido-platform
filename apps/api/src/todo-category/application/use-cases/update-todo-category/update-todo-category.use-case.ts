@@ -5,17 +5,17 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import type { TodoCategory } from "../../../domain/entities/todo-category.aggregate.js";
 import {
-	TODO_CATEGORY_CACHE,
-	type TodoCategoryCachePort,
+  TODO_CATEGORY_CACHE,
+  type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port.js";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
+  TODO_CATEGORY_REPOSITORY,
+  type TodoCategoryRepositoryPort,
 } from "../../ports/todo-category.repository.port.js";
 
 export interface UpdateTodoCategoryInput {
-	name?: string;
-	color?: string;
+  name?: string;
+  color?: string;
 }
 
 /**
@@ -24,41 +24,41 @@ export interface UpdateTodoCategoryInput {
  */
 @Injectable()
 export class UpdateTodoCategoryUseCase {
-	readonly #logger = new Logger(UpdateTodoCategoryUseCase.name);
+  readonly #logger = new Logger(UpdateTodoCategoryUseCase.name);
 
-	constructor(
-		@Inject(TODO_CATEGORY_REPOSITORY)
-		private readonly repository: TodoCategoryRepositoryPort,
-		@Inject(TODO_CATEGORY_CACHE)
-		private readonly cache: TodoCategoryCachePort,
-	) {}
+  constructor(
+    @Inject(TODO_CATEGORY_REPOSITORY)
+    private readonly repository: TodoCategoryRepositoryPort,
+    @Inject(TODO_CATEGORY_CACHE)
+    private readonly cache: TodoCategoryCachePort,
+  ) {}
 
-	async execute(id: number, userId: string, data: UpdateTodoCategoryInput): Promise<TodoCategory> {
-		const category = await this.repository.findByIdAndUserId(id, userId);
-		if (!category) {
-			throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-				categoryId: id,
-			});
-		}
+  async execute(id: number, userId: string, data: UpdateTodoCategoryInput): Promise<TodoCategory> {
+    const category = await this.repository.findByIdAndUserId(id, userId);
+    if (!category) {
+      throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
+        categoryId: id,
+      });
+    }
 
-		if (data.name && data.name !== category.name) {
-			const duplicate = await this.repository.existsByUserIdAndName(userId, data.name, id);
-			if (duplicate) {
-				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
-					name: data.name,
-				});
-			}
-		}
+    if (data.name && data.name !== category.name) {
+      const duplicate = await this.repository.existsByUserIdAndName(userId, data.name, id);
+      if (duplicate) {
+        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0853, {
+          name: data.name,
+        });
+      }
+    }
 
-		category.updateDetails(data);
+    category.updateDetails(data);
 
-		const updated = await this.repository.update(id, {
-			name: data.name === undefined ? undefined : category.name,
-			color: data.color === undefined ? undefined : category.color,
-		});
+    const updated = await this.repository.update(id, {
+      name: data.name === undefined ? undefined : category.name,
+      color: data.color === undefined ? undefined : category.color,
+    });
 
-		await this.cache.invalidate(userId);
-		this.#logger.debug(`카테고리 수정: id=${id}, userId=${userId}`);
-		return updated;
-	}
+    await this.cache.invalidate(userId);
+    this.#logger.debug(`카테고리 수정: id=${id}, userId=${userId}`);
+    return updated;
+  }
 }

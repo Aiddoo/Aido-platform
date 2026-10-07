@@ -1,11 +1,11 @@
 import type { TodoCommentSort } from "@aido/validators";
 
 import type {
-	TodoCommentOverviewCursor,
-	TodoCommentOverviewRootRecord,
-	TodoConversationCursor,
-	TodoConversationRecord,
-	TodoConversationScope,
+  TodoCommentOverviewCursor,
+  TodoCommentOverviewRootRecord,
+  TodoConversationCursor,
+  TodoConversationRecord,
+  TodoConversationScope,
 } from "../types.js";
 
 export const TODO_COMMENT_CURSOR_CODEC = Symbol("TODO_COMMENT_CURSOR_CODEC");
@@ -15,12 +15,12 @@ export const TODO_COMMENT_CURSOR_CODEC = Symbol("TODO_COMMENT_CURSOR_CODEC");
  * 암호화와 직렬화 방식은 infrastructure가 소유한다.
  */
 export interface TodoCommentCursorCodecPort {
-	decodeConversation(cursor: string, sort: TodoCommentSort): TodoConversationCursor;
-	encodeConversation(
-		record: TodoConversationRecord,
-		sort: TodoCommentSort,
-		scope?: TodoConversationScope,
-	): string;
-	decodeOverview(cursor: string, sort: TodoCommentSort): TodoCommentOverviewCursor;
-	encodeOverview(record: TodoCommentOverviewRootRecord, sort: TodoCommentSort): string;
+  decodeConversation(cursor: string, sort: TodoCommentSort): TodoConversationCursor;
+  encodeConversation(
+    record: TodoConversationRecord,
+    sort: TodoCommentSort,
+    scope?: TodoConversationScope,
+  ): string;
+  decodeOverview(cursor: string, sort: TodoCommentSort): TodoCommentOverviewCursor;
+  encodeOverview(record: TodoCommentOverviewRootRecord, sort: TodoCommentSort): string;
 }

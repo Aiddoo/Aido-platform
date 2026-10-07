@@ -1,13 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	type ConsentSeedInput,
-	USER_CONSENT_REPOSITORY,
-	type UserConsentRepositoryPort,
+  type ConsentSeedInput,
+  USER_CONSENT_REPOSITORY,
+  type UserConsentRepositoryPort,
 } from "../../ports/user-consent.repository.port.js";
 import {
-	USER_PREFERENCE_REPOSITORY,
-	type UserPreferenceRepositoryPort,
+  USER_PREFERENCE_REPOSITORY,
+  type UserPreferenceRepositoryPort,
 } from "../../ports/user-preference.repository.port.js";
 
 /**
@@ -16,18 +16,18 @@ import {
  */
 @Injectable()
 export class SeedUserSettingsUseCase {
-	constructor(
-		@Inject(USER_CONSENT_REPOSITORY)
-		private readonly consentRepository: UserConsentRepositoryPort,
-		@Inject(USER_PREFERENCE_REPOSITORY)
-		private readonly preferenceRepository: UserPreferenceRepositoryPort,
-	) {}
+  constructor(
+    @Inject(USER_CONSENT_REPOSITORY)
+    private readonly consentRepository: UserConsentRepositoryPort,
+    @Inject(USER_PREFERENCE_REPOSITORY)
+    private readonly preferenceRepository: UserPreferenceRepositoryPort,
+  ) {}
 
-	async execute(userId: string, consent: ConsentSeedInput): Promise<void> {
-		await this.consentRepository.create(userId, consent);
-		await this.preferenceRepository.create(userId, {
-			pushEnabled: true,
-			nightPushEnabled: true,
-		});
-	}
+  async execute(userId: string, consent: ConsentSeedInput): Promise<void> {
+    await this.consentRepository.create(userId, consent);
+    await this.preferenceRepository.create(userId, {
+      pushEnabled: true,
+      nightPushEnabled: true,
+    });
+  }
 }

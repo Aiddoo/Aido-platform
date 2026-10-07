@@ -24,24 +24,24 @@ import { TodoCategoryController } from "./presentation/todo-category.controller.
  * DefaultTodoCategorySeeder를 사용한다.
  */
 @Module({
-	controllers: [TodoCategoryController],
-	providers: [
-		{
-			provide: TODO_CATEGORY_REPOSITORY,
-			useClass: PrismaTodoCategoryRepository,
-		},
-		{ provide: TODO_CATEGORY_CACHE, useClass: TodoCategoryCacheAdapter },
-		{
-			provide: TODO_CATEGORY_LIMIT_READER,
-			useClass: TodoCategoryLimitReaderAdapter,
-		},
-		TodoCategoryReader,
-		CreateTodoCategoryUseCase,
-		UpdateTodoCategoryUseCase,
-		DeleteTodoCategoryUseCase,
-		ReorderTodoCategoryUseCase,
-		DefaultTodoCategorySeeder,
-	],
-	exports: [TodoCategoryReader, DefaultTodoCategorySeeder],
+  controllers: [TodoCategoryController],
+  providers: [
+    {
+      provide: TODO_CATEGORY_REPOSITORY,
+      useClass: PrismaTodoCategoryRepository,
+    },
+    { provide: TODO_CATEGORY_CACHE, useClass: TodoCategoryCacheAdapter },
+    {
+      provide: TODO_CATEGORY_LIMIT_READER,
+      useClass: TodoCategoryLimitReaderAdapter,
+    },
+    TodoCategoryReader,
+    CreateTodoCategoryUseCase,
+    UpdateTodoCategoryUseCase,
+    DeleteTodoCategoryUseCase,
+    ReorderTodoCategoryUseCase,
+    DefaultTodoCategorySeeder,
+  ],
+  exports: [TodoCategoryReader, DefaultTodoCategorySeeder],
 })
 export class TodoCategoryModule {}

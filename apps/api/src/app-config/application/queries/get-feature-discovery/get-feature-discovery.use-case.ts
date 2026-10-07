@@ -1,19 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	FEATURE_DISCOVERY_CONFIG,
-	type FeatureDiscoveryConfig,
-	type FeatureDiscoveryConfigPort,
+  FEATURE_DISCOVERY_CONFIG,
+  type FeatureDiscoveryConfig,
+  type FeatureDiscoveryConfigPort,
 } from "../../ports/feature-discovery-config.port.js";
 
 @Injectable()
 export class GetFeatureDiscoveryUseCase {
-	constructor(
-		@Inject(FEATURE_DISCOVERY_CONFIG)
-		private readonly config: FeatureDiscoveryConfigPort,
-	) {}
+  constructor(
+    @Inject(FEATURE_DISCOVERY_CONFIG)
+    private readonly config: FeatureDiscoveryConfigPort,
+  ) {}
 
-	execute(): FeatureDiscoveryConfig {
-		return this.config.getFeatureDiscovery();
-	}
+  execute(): FeatureDiscoveryConfig {
+    return this.config.getFeatureDiscovery();
+  }
 }

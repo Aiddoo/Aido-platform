@@ -5,12 +5,12 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { buildDailySummaryMessage } from "../../../domain/services/admin-message.factory.js";
 import { computePreviousKstDayRange } from "../../../domain/services/signup-report-period.js";
 import {
-	ADMIN_NOTIFICATION_QUEUE_PORT,
-	type AdminNotificationQueuePort,
+  ADMIN_NOTIFICATION_QUEUE_PORT,
+  type AdminNotificationQueuePort,
 } from "../../ports/admin-notification-queue.port.js";
 import {
-	SIGNUP_STATS_READER,
-	type SignupStatsReaderPort,
+  SIGNUP_STATS_READER,
+  type SignupStatsReaderPort,
 } from "../../ports/signup-stats.reader.port.js";
 
 /**
@@ -21,42 +21,42 @@ import {
  */
 @Injectable()
 export class DispatchDailySignupSummaryUseCase {
-	readonly #logger = new Logger(DispatchDailySignupSummaryUseCase.name);
+  readonly #logger = new Logger(DispatchDailySignupSummaryUseCase.name);
 
-	constructor(
-		@Inject(SIGNUP_STATS_READER)
-		private readonly reader: SignupStatsReaderPort,
-		@Inject(ADMIN_NOTIFICATION_QUEUE_PORT)
-		private readonly queue: AdminNotificationQueuePort,
-	) {}
+  constructor(
+    @Inject(SIGNUP_STATS_READER)
+    private readonly reader: SignupStatsReaderPort,
+    @Inject(ADMIN_NOTIFICATION_QUEUE_PORT)
+    private readonly queue: AdminNotificationQueuePort,
+  ) {}
 
-	async execute(): Promise<void> {
-		this.#logger.log("Starting daily signup summary job...");
+  async execute(): Promise<void> {
+    this.#logger.log("Starting daily signup summary job...");
 
-		try {
-			const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(now());
+    try {
+      const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(now());
 
-			const { signupsByProvider, totalUsers } = await this.reader.getSignupStats(startUtc, endUtc);
+      const { signupsByProvider, totalUsers } = await this.reader.getSignupStats(startUtc, endUtc);
 
-			const message = buildDailySummaryMessage({
-				signupsByProvider,
-				totalUsers,
-				reportDateStr,
-			});
+      const message = buildDailySummaryMessage({
+        signupsByProvider,
+        totalUsers,
+        reportDateStr,
+      });
 
-			await this.queue.enqueueSend("admin", message.toPayload(), {
-				jobId: `signup-summary_${reportDateStr}`,
-			});
+      await this.queue.enqueueSend("admin", message.toPayload(), {
+        jobId: `signup-summary_${reportDateStr}`,
+      });
 
-			const previousDayTotal = signupsByProvider.reduce((sum, group) => sum + group.count, 0);
-			this.#logger.log(
-				`Daily signup summary job enqueued: ${previousDayTotal} new, ${totalUsers} total`,
-			);
-		} catch (error) {
-			this.#logger.error(
-				`Daily signup summary job failed: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
-	}
+      const previousDayTotal = signupsByProvider.reduce((sum, group) => sum + group.count, 0);
+      this.#logger.log(
+        `Daily signup summary job enqueued: ${previousDayTotal} new, ${totalUsers} total`,
+      );
+    } catch (error) {
+      this.#logger.error(
+        `Daily signup summary job failed: ${error}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
 }

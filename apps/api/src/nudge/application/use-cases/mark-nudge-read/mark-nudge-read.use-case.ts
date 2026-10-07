@@ -7,8 +7,8 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { NUDGE_REPOSITORY, type NudgeRepositoryPort } from "../../ports/nudge.repository.port.js";
 
 export interface MarkNudgeReadInput {
-	userId: string;
-	nudgeId: number;
+  userId: string;
+  nudgeId: number;
 }
 
 /**
@@ -17,25 +17,25 @@ export interface MarkNudgeReadInput {
  */
 @Injectable()
 export class MarkNudgeReadUseCase {
-	readonly #logger = new Logger(MarkNudgeReadUseCase.name);
+  readonly #logger = new Logger(MarkNudgeReadUseCase.name);
 
-	constructor(
-		@Inject(NUDGE_REPOSITORY)
-		private readonly nudgeRepository: NudgeRepositoryPort,
-	) {}
+  constructor(
+    @Inject(NUDGE_REPOSITORY)
+    private readonly nudgeRepository: NudgeRepositoryPort,
+  ) {}
 
-	async execute(input: MarkNudgeReadInput): Promise<void> {
-		const { userId, nudgeId } = input;
+  async execute(input: MarkNudgeReadInput): Promise<void> {
+    const { userId, nudgeId } = input;
 
-		const nudge = await this.nudgeRepository.findById(nudgeId);
-		if (!nudge?.isReceivedBy(userId)) {
-			throw new ApplicationException(ErrorCode.NUDGE_1105, { nudgeId });
-		}
-		if (!nudge.markRead(now())) {
-			return;
-		}
+    const nudge = await this.nudgeRepository.findById(nudgeId);
+    if (!nudge?.isReceivedBy(userId)) {
+      throw new ApplicationException(ErrorCode.NUDGE_1105, { nudgeId });
+    }
+    if (!nudge.markRead(now())) {
+      return;
+    }
 
-		await this.nudgeRepository.saveRead(nudge);
-		this.#logger.debug(`Nudge 읽음 처리: id=${nudgeId}`);
-	}
+    await this.nudgeRepository.saveRead(nudge);
+    this.#logger.debug(`Nudge 읽음 처리: id=${nudgeId}`);
+  }
 }

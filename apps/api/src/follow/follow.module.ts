@@ -26,22 +26,22 @@ import { FollowController } from "./presentation/follow.controller.js";
  * 컨트롤러는 endpoint UseCase를 직접 사용하고 크로스모듈에는 읽기 capability만 공개한다.
  */
 @Module({
-	imports: [NotificationModule],
-	controllers: [FollowController],
-	providers: [
-		{ provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
-		{ provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
-		{ provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
-		FollowReader,
-		FriendshipEffects,
-		SendFriendRequestUseCase,
-		SendFriendRequestByTagUseCase,
-		AcceptFriendRequestUseCase,
-		RejectFriendRequestUseCase,
-		RemoveFriendUseCase,
-		ReorderFriendUseCase,
-		SearchUsersUseCase,
-	],
-	exports: [FollowReader],
+  imports: [NotificationModule],
+  controllers: [FollowController],
+  providers: [
+    { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },
+    { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
+    { provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
+    FollowReader,
+    FriendshipEffects,
+    SendFriendRequestUseCase,
+    SendFriendRequestByTagUseCase,
+    AcceptFriendRequestUseCase,
+    RejectFriendRequestUseCase,
+    RemoveFriendUseCase,
+    ReorderFriendUseCase,
+    SearchUsersUseCase,
+  ],
+  exports: [FollowReader],
 })
 export class FollowModule {}

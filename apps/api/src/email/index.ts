@@ -9,8 +9,8 @@ export * from "./application/ports/email-sender.port.js";
 export * from "./application/senders/transactional-email.sender.js";
 export * from "./domain/templates/index.js";
 export {
-	EmailMessage,
-	type EmailTag,
-	type EmailType,
+  EmailMessage,
+  type EmailTag,
+  type EmailType,
 } from "./domain/value-objects/email-message.vo.js";
 export * from "./email.module.js";

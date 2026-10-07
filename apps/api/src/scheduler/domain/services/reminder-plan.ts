@@ -6,14 +6,14 @@
  */
 
 export interface ReminderStage {
-	readonly leadTimeMs: number;
-	readonly label: string;
+  readonly leadTimeMs: number;
+  readonly label: string;
 }
 
 /** 리마인더 단계 (큰 leadTime부터 정렬) */
 export const REMINDER_STAGES: readonly ReminderStage[] = [
-	{ leadTimeMs: 60 * 60 * 1000, label: "60min" },
-	{ leadTimeMs: 10 * 60 * 1000, label: "10min" },
+  { leadTimeMs: 60 * 60 * 1000, label: "60min" },
+  { leadTimeMs: 10 * 60 * 1000, label: "10min" },
 ] as const;
 
 /** 최대 리드 타임 (복구/크론 범위 계산용) */
@@ -27,8 +27,8 @@ export const REMINDER_LEAD_TIME_MS = REMINDER_MAX_LEAD_TIME_MS;
 
 /** 예약할 단일 리마인더 잡 (label + 지연 ms) */
 export interface PlannedReminderJob {
-	readonly label: string;
-	readonly delay: number;
+  readonly label: string;
+  readonly delay: number;
 }
 
 /**
@@ -39,26 +39,26 @@ export interface PlannedReminderJob {
  * - 모든 단계가 이미 지났지만 scheduledTime은 미래라면 즉시 발송 잡 1건을 계획한다.
  */
 export function planReminderJobs(scheduledMs: number, nowMs: number): PlannedReminderJob[] {
-	if (scheduledMs <= nowMs) {
-		return [];
-	}
+  if (scheduledMs <= nowMs) {
+    return [];
+  }
 
-	const jobs: PlannedReminderJob[] = [];
-	for (const stage of REMINDER_STAGES) {
-		const delay = scheduledMs - stage.leadTimeMs - nowMs;
-		if (delay > 0) {
-			jobs.push({ label: stage.label, delay });
-		}
-	}
+  const jobs: PlannedReminderJob[] = [];
+  for (const stage of REMINDER_STAGES) {
+    const delay = scheduledMs - stage.leadTimeMs - nowMs;
+    if (delay > 0) {
+      jobs.push({ label: stage.label, delay });
+    }
+  }
 
-	if (jobs.length === 0) {
-		jobs.push({ label: REMINDER_IMMEDIATE_LABEL, delay: 0 });
-	}
+  if (jobs.length === 0) {
+    jobs.push({ label: REMINDER_IMMEDIATE_LABEL, delay: 0 });
+  }
 
-	return jobs;
+  return jobs;
 }
 
 /** 특정 todoId의 모든 단계 잡 라벨(취소 시 순회용) */
 export function allReminderLabels(): string[] {
-	return [...REMINDER_STAGES.map((s) => s.label), REMINDER_IMMEDIATE_LABEL];
+  return [...REMINDER_STAGES.map((s) => s.label), REMINDER_IMMEDIATE_LABEL];
 }

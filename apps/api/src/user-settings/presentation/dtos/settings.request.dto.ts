@@ -1,7 +1,7 @@
 import {
-	updateMarketingConsentSchema,
-	updateMarketingPushConsentSchema,
-	updatePreferenceSchema,
+  updateMarketingConsentSchema,
+  updateMarketingPushConsentSchema,
+  updatePreferenceSchema,
 } from "@aido/validators";
 import type { z } from "zod";
 
@@ -9,10 +9,10 @@ export const UpdatePreferenceDto = updatePreferenceSchema.meta({ id: "UpdatePref
 export type UpdatePreferenceDto = z.infer<typeof UpdatePreferenceDto>;
 
 export const UpdateMarketingConsentDto = updateMarketingConsentSchema.meta({
-	id: "UpdateMarketingConsentDto",
+  id: "UpdateMarketingConsentDto",
 });
 export type UpdateMarketingConsentDto = z.infer<typeof UpdateMarketingConsentDto>;
 export const UpdateMarketingPushConsentDto = updateMarketingPushConsentSchema.meta({
-	id: "UpdateMarketingPushConsentDto",
+  id: "UpdateMarketingPushConsentDto",
 });
 export type UpdateMarketingPushConsentDto = z.infer<typeof UpdateMarketingPushConsentDto>;

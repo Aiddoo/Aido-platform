@@ -9,69 +9,69 @@
  */
 
 import type {
-	AccountProvider,
-	LoginAttempt,
+  AccountProvider,
+  LoginAttempt,
 } from "#api/shared/infrastructure/database/database.types";
 
 let idCounter = 1;
 
 export class LoginAttemptBuilder {
-	private data: LoginAttempt;
+  private data: LoginAttempt;
 
-	private constructor(email: string) {
-		this.data = {
-			id: idCounter++,
-			email,
-			provider: "CREDENTIAL" as AccountProvider,
-			ipAddress: "127.0.0.1",
-			userAgent: "Mozilla/5.0 (Test Browser)",
-			success: true,
-			failureReason: null,
-			createdAt: new Date(),
-		};
-	}
+  private constructor(email: string) {
+    this.data = {
+      id: idCounter++,
+      email,
+      provider: "CREDENTIAL" as AccountProvider,
+      ipAddress: "127.0.0.1",
+      userAgent: "Mozilla/5.0 (Test Browser)",
+      success: true,
+      failureReason: null,
+      createdAt: new Date(),
+    };
+  }
 
-	static create(email: string): LoginAttemptBuilder {
-		return new LoginAttemptBuilder(email);
-	}
+  static create(email: string): LoginAttemptBuilder {
+    return new LoginAttemptBuilder(email);
+  }
 
-	static resetIdCounter(): void {
-		idCounter = 1;
-	}
+  static resetIdCounter(): void {
+    idCounter = 1;
+  }
 
-	withId(id: number): LoginAttemptBuilder {
-		this.data.id = id;
-		return this;
-	}
+  withId(id: number): LoginAttemptBuilder {
+    this.data.id = id;
+    return this;
+  }
 
-	withProvider(provider: AccountProvider): LoginAttemptBuilder {
-		this.data.provider = provider;
-		return this;
-	}
+  withProvider(provider: AccountProvider): LoginAttemptBuilder {
+    this.data.provider = provider;
+    return this;
+  }
 
-	withIpAddress(ip: string): LoginAttemptBuilder {
-		this.data.ipAddress = ip;
-		return this;
-	}
+  withIpAddress(ip: string): LoginAttemptBuilder {
+    this.data.ipAddress = ip;
+    return this;
+  }
 
-	withUserAgent(ua: string): LoginAttemptBuilder {
-		this.data.userAgent = ua;
-		return this;
-	}
+  withUserAgent(ua: string): LoginAttemptBuilder {
+    this.data.userAgent = ua;
+    return this;
+  }
 
-	/** 로그인 실패 */
-	failed(reason: string): LoginAttemptBuilder {
-		this.data.success = false;
-		this.data.failureReason = reason;
-		return this;
-	}
+  /** 로그인 실패 */
+  failed(reason: string): LoginAttemptBuilder {
+    this.data.success = false;
+    this.data.failureReason = reason;
+    return this;
+  }
 
-	withCreatedAt(date: Date): LoginAttemptBuilder {
-		this.data.createdAt = date;
-		return this;
-	}
+  withCreatedAt(date: Date): LoginAttemptBuilder {
+    this.data.createdAt = date;
+    return this;
+  }
 
-	build(): LoginAttempt {
-		return { ...this.data };
-	}
+  build(): LoginAttempt {
+    return { ...this.data };
+  }
 }

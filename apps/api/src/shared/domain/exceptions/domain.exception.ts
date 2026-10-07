@@ -9,8 +9,8 @@ import { ErrorCodedException } from "./error-coded.exception.js";
  * (예: 이미 완료된 할 일을 다시 완료 처리, 도메인 한도 초과)
  */
 export class DomainException extends ErrorCodedException {
-	constructor(errorCode: ErrorCodeType, details?: unknown, message?: string) {
-		super(errorCode, details, message);
-		this.name = "DomainException";
-	}
+  constructor(errorCode: ErrorCodeType, details?: unknown, message?: string) {
+    super(errorCode, details, message);
+    this.name = "DomainException";
+  }
 }

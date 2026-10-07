@@ -16,32 +16,32 @@ type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 
 /** 필수 purchased_at_ms → Date. 누락 시 SUBSCRIPTION_1604. */
 export function requirePurchasedAt(event: RevenueCatEvent, reason: string): Date {
-	if (!event.purchased_at_ms) {
-		throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-			reason,
-			eventType: event.type,
-		});
-	}
-	return new Date(event.purchased_at_ms);
+  if (!event.purchased_at_ms) {
+    throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
+      reason,
+      eventType: event.type,
+    });
+  }
+  return new Date(event.purchased_at_ms);
 }
 
 /** 필수 expiration_at_ms → Date. 누락 시 SUBSCRIPTION_1604. */
 export function requireExpiresAt(event: RevenueCatEvent, reason: string): Date {
-	if (!event.expiration_at_ms) {
-		throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-			reason,
-			eventType: event.type,
-		});
-	}
-	return new Date(event.expiration_at_ms);
+  if (!event.expiration_at_ms) {
+    throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
+      reason,
+      eventType: event.type,
+    });
+  }
+  return new Date(event.expiration_at_ms);
 }
 
 /** 선택 expiration_at_ms → Date | undefined. */
 export function optionalExpiresAt(event: RevenueCatEvent): Date | undefined {
-	return event.expiration_at_ms ? new Date(event.expiration_at_ms) : undefined;
+  return event.expiration_at_ms ? new Date(event.expiration_at_ms) : undefined;
 }
 
 /** 선택 expiration_at_ms → Date | null (fallback 로직용). */
 export function nullableExpiresAt(event: RevenueCatEvent): Date | null {
-	return event.expiration_at_ms ? new Date(event.expiration_at_ms) : null;
+  return event.expiration_at_ms ? new Date(event.expiration_at_ms) : null;
 }

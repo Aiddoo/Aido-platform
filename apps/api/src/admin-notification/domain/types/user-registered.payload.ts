@@ -9,12 +9,12 @@
  * 회원가입 이벤트 페이로드
  */
 export interface UserRegisteredEventPayload {
-	/** 신규 사용자 ID */
-	userId: string;
-	/** 이메일 */
-	email: string;
-	/** 가입 방식 */
-	provider: "credential" | "apple" | "google" | "kakao" | "naver";
-	/** 가입 시각 (ISO string) */
-	registeredAt: string;
+  /** 신규 사용자 ID */
+  userId: string;
+  /** 이메일 */
+  email: string;
+  /** 가입 방식 */
+  provider: "credential" | "apple" | "google" | "kakao" | "naver";
+  /** 가입 시각 (ISO string) */
+  registeredAt: string;
 }

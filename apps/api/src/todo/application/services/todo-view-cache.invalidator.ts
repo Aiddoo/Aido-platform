@@ -11,19 +11,19 @@ import type { TodoReadRepositoryPort } from "../ports/todo-read.repository.port.
  * 모듈 경계 규칙(todo/index.ts) 때문이다.
  */
 export class TodoViewCacheInvalidator {
-	constructor(
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		private readonly cache: TodoCachePort,
-	) {}
+  constructor(
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    private readonly cache: TodoCachePort,
+  ) {}
 
-	/** 할 일이 사라졌으면 지울 캐시도 없다 — 조용히 넘어간다. */
-	async invalidateForTodo(todoId: number): Promise<void> {
-		const ownerUserId = await this.todoReadRepository.findOwnerId(todoId);
+  /** 할 일이 사라졌으면 지울 캐시도 없다 — 조용히 넘어간다. */
+  async invalidateForTodo(todoId: number): Promise<void> {
+    const ownerUserId = await this.todoReadRepository.findOwnerId(todoId);
 
-		if (ownerUserId === null) {
-			return;
-		}
+    if (ownerUserId === null) {
+      return;
+    }
 
-		await this.cache.invalidateFriendTodos(ownerUserId);
-	}
+    await this.cache.invalidateFriendTodos(ownerUserId);
+  }
 }

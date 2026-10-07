@@ -3,12 +3,12 @@ import { addMilliseconds } from "./arithmetic.js";
 import { now } from "./core.js";
 
 export interface CooldownResult {
-	/** 쿨다운이 현재 활성 상태인지 */
-	isActive: boolean;
-	/** 남은 시간 (초 단위, 올림) */
-	remainingSeconds: number;
-	/** 쿨다운 종료 시각 (비활성이면 null) */
-	endsAt: Date | null;
+  /** 쿨다운이 현재 활성 상태인지 */
+  isActive: boolean;
+  /** 남은 시간 (초 단위, 올림) */
+  remainingSeconds: number;
+  /** 쿨다운 종료 시각 (비활성이면 null) */
+  endsAt: Date | null;
 }
 
 /**
@@ -18,25 +18,25 @@ export interface CooldownResult {
  * @param cooldownHours - 쿨다운 시간 (시 단위)
  */
 export function calculateCooldown(
-	lastActionTime: Date | null | undefined,
-	cooldownHours: number,
+  lastActionTime: Date | null | undefined,
+  cooldownHours: number,
 ): CooldownResult {
-	if (!lastActionTime) {
-		return { isActive: false, remainingSeconds: 0, endsAt: null };
-	}
+  if (!lastActionTime) {
+    return { isActive: false, remainingSeconds: 0, endsAt: null };
+  }
 
-	const cooldownMs = cooldownHours * TIME_UNIT.MS_PER_HOUR;
-	const endsAt = addMilliseconds(cooldownMs, lastActionTime);
-	const currentTime = now();
+  const cooldownMs = cooldownHours * TIME_UNIT.MS_PER_HOUR;
+  const endsAt = addMilliseconds(cooldownMs, lastActionTime);
+  const currentTime = now();
 
-	if (currentTime >= endsAt) {
-		return { isActive: false, remainingSeconds: 0, endsAt: null };
-	}
+  if (currentTime >= endsAt) {
+    return { isActive: false, remainingSeconds: 0, endsAt: null };
+  }
 
-	const remainingMs = endsAt.getTime() - currentTime.getTime();
-	return {
-		isActive: true,
-		remainingSeconds: Math.ceil(remainingMs / TIME_UNIT.MS_PER_SECOND),
-		endsAt,
-	};
+  const remainingMs = endsAt.getTime() - currentTime.getTime();
+  return {
+    isActive: true,
+    remainingSeconds: Math.ceil(remainingMs / TIME_UNIT.MS_PER_SECOND),
+    endsAt,
+  };
 }

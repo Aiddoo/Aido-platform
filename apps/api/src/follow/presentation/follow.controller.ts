@@ -1,32 +1,32 @@
 import { ErrorCode } from "@aido/errors";
 import {
-	Header,
-	Headers,
-	Body,
-	Controller,
-	Delete,
-	Get,
-	HttpCode,
-	HttpStatus,
-	Logger,
-	Param,
-	Patch,
-	Post,
-	Query,
+  Header,
+  Headers,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
 import { UserIdParamDto } from "#api/shared/presentation/dtos/index";
 import {
-	ApiBadRequestError,
-	ApiConflictError,
-	ApiCreatedResponse,
-	ApiDoc,
-	ApiForbiddenError,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiBadRequestError,
+  ApiConflictError,
+  ApiCreatedResponse,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
@@ -38,21 +38,21 @@ import { RemoveFriendUseCase } from "../application/use-cases/remove-friend/remo
 import { ReorderFriendUseCase } from "../application/use-cases/reorder-friend/reorder-friend.use-case.js";
 import { SendFriendRequestByTagUseCase } from "../application/use-cases/send-friend-request-by-tag/send-friend-request-by-tag.use-case.js";
 import {
-	AcceptFriendRequestResponseDto,
-	FollowResourceLimitResponseDto,
-	FriendsListResponseDto,
-	GetFollowsQueryDto,
-	GetFriendsQueryDto,
-	ReceivedRequestsResponseDto,
-	RejectFriendRequestResponseDto,
-	RemoveFriendResponseDto,
-	ReorderFriendDto,
-	ReorderFriendResponseDto,
-	SearchUsersQueryDto,
-	SearchUsersResponseDto,
-	SendFriendRequestResponseDto,
-	SentRequestsResponseDto,
-	UserTagParamDto,
+  AcceptFriendRequestResponseDto,
+  FollowResourceLimitResponseDto,
+  FriendsListResponseDto,
+  GetFollowsQueryDto,
+  GetFriendsQueryDto,
+  ReceivedRequestsResponseDto,
+  RejectFriendRequestResponseDto,
+  RemoveFriendResponseDto,
+  ReorderFriendDto,
+  ReorderFriendResponseDto,
+  SearchUsersQueryDto,
+  SearchUsersResponseDto,
+  SendFriendRequestResponseDto,
+  SentRequestsResponseDto,
+  UserTagParamDto,
 } from "./dtos/index.js";
 import { FollowMapper } from "./follow.mapper.js";
 
@@ -71,295 +71,295 @@ import { FollowMapper } from "./follow.mapper.js";
 @ApiBearerAuth()
 @Controller("follows")
 export class FollowController {
-	readonly #logger = new Logger(FollowController.name);
+  readonly #logger = new Logger(FollowController.name);
 
-	constructor(
-		private readonly followReader: FollowReader,
-		private readonly sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase,
-		private readonly acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
-		private readonly rejectFriendRequestUseCase: RejectFriendRequestUseCase,
-		private readonly removeFriendUseCase: RemoveFriendUseCase,
-		private readonly reorderFriendUseCase: ReorderFriendUseCase,
-		private readonly searchUsersUseCase: SearchUsersUseCase,
-	) {}
+  constructor(
+    private readonly followReader: FollowReader,
+    private readonly sendFriendRequestByTagUseCase: SendFriendRequestByTagUseCase,
+    private readonly acceptFriendRequestUseCase: AcceptFriendRequestUseCase,
+    private readonly rejectFriendRequestUseCase: RejectFriendRequestUseCase,
+    private readonly removeFriendUseCase: RemoveFriendUseCase,
+    private readonly reorderFriendUseCase: ReorderFriendUseCase,
+    private readonly searchUsersUseCase: SearchUsersUseCase,
+  ) {}
 
-	@Post(":userTag")
-	@ApiParam({
-		name: "userTag",
-		description: "친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",
-		example: "JOHN2026",
-		schema: { type: "string", pattern: "^[A-Z0-9]{8}$" },
-	})
-	@ApiDoc({
-		summary: "친구 요청 보내기",
-		operationId: "sendFriendRequest",
-		description: `특정 사용자에게 친구 요청을 보냅니다.
+  @Post(":userTag")
+  @ApiParam({
+    name: "userTag",
+    description: "친구 요청을 보낼 대상 Aido ID (8자 영문 대문자·숫자, 예: JOHN2026)",
+    example: "JOHN2026",
+    schema: { type: "string", pattern: "^[A-Z0-9]{8}$" },
+  })
+  @ApiDoc({
+    summary: "친구 요청 보내기",
+    operationId: "sendFriendRequest",
+    description: `특정 사용자에게 친구 요청을 보냅니다.
 
 상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).`,
-	})
-	@ApiCreatedResponse({ type: SendFriendRequestResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.FOLLOW_0904)
-	@ApiNotFoundError(ErrorCode.FOLLOW_0905)
-	@ApiConflictError(ErrorCode.FOLLOW_0901)
-	@ApiConflictError(ErrorCode.FOLLOW_0902)
-	@ApiForbiddenError(ErrorCode.FOLLOW_0909)
-	async sendRequest(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: UserTagParamDto }) params: UserTagParamDto,
-	): Promise<SendFriendRequestResponseDto> {
-		this.#logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
+  })
+  @ApiCreatedResponse({ type: SendFriendRequestResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.FOLLOW_0904)
+  @ApiNotFoundError(ErrorCode.FOLLOW_0905)
+  @ApiConflictError(ErrorCode.FOLLOW_0901)
+  @ApiConflictError(ErrorCode.FOLLOW_0902)
+  @ApiForbiddenError(ErrorCode.FOLLOW_0909)
+  async sendRequest(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: UserTagParamDto }) params: UserTagParamDto,
+  ): Promise<SendFriendRequestResponseDto> {
+    this.#logger.debug(`친구 요청 보내기: ${user.userId} -> ${params.userTag}`);
 
-		const result = await this.sendFriendRequestByTagUseCase.execute({
-			userId: user.userId,
-			targetUserTag: params.userTag,
-		});
+    const result = await this.sendFriendRequestByTagUseCase.execute({
+      userId: user.userId,
+      targetUserTag: params.userTag,
+    });
 
-		const message = result.autoAccepted ? "친구가 되었습니다." : "친구 요청을 보냈습니다.";
+    const message = result.autoAccepted ? "친구가 되었습니다." : "친구 요청을 보냈습니다.";
 
-		this.#logger.log(
-			`친구 요청 완료: ${user.userId} -> ${params.userTag}, autoAccepted=${result.autoAccepted}`,
-		);
+    this.#logger.log(
+      `친구 요청 완료: ${user.userId} -> ${params.userTag}, autoAccepted=${result.autoAccepted}`,
+    );
 
-		return {
-			message,
-			follow: FollowMapper.toResponse(result.follow),
-			autoAccepted: result.autoAccepted,
-		};
-	}
+    return {
+      message,
+      follow: FollowMapper.toResponse(result.follow),
+      autoAccepted: result.autoAccepted,
+    };
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Patch(":userId/accept")
-	@HttpCode(HttpStatus.OK)
-	@ApiParam({
-		name: "userId",
-		description: "수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
-		example: "clz7x5p8k0005qz0z8z8z8z8z",
-	})
-	@ApiDoc({
-		summary: "친구 요청 수락",
-		operationId: "acceptFriendRequest",
-		description: `받은 친구 요청을 수락합니다.
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Patch(":userId/accept")
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: "userId",
+    description: "수락할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+    example: "clz7x5p8k0005qz0z8z8z8z8z",
+  })
+  @ApiDoc({
+    summary: "친구 요청 수락",
+    operationId: "acceptFriendRequest",
+    description: `받은 친구 요청을 수락합니다.
 
 수락 시 양방향 친구 관계가 성립됩니다.`,
-	})
-	@ApiSuccessResponse({ type: AcceptFriendRequestResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.FOLLOW_0903)
-	async acceptRequest(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+  })
+  @ApiSuccessResponse({ type: AcceptFriendRequestResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.FOLLOW_0903)
+  async acceptRequest(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
 
-		@Headers("x-app-version") appVersion?: string,
-	): Promise<AcceptFriendRequestResponseDto> {
-		this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
+    @Headers("x-app-version") appVersion?: string,
+  ): Promise<AcceptFriendRequestResponseDto> {
+    this.#logger.debug(`친구 요청 수락: ${params.userId} -> ${user.userId}`);
 
-		const result = await this.acceptFriendRequestUseCase.execute({
-			userId: user.userId,
-			requesterUserId: params.userId,
-		});
+    const result = await this.acceptFriendRequestUseCase.execute({
+      userId: user.userId,
+      requesterUserId: params.userId,
+    });
 
-		this.#logger.log(`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`);
+    this.#logger.log(`친구 요청 수락 완료: ${params.userId} <-> ${user.userId}`);
 
-		return {
-			message: "친구 요청을 수락했습니다.",
-			friend: FollowMapper.toFriendUser(result, appVersion),
-		};
-	}
+    return {
+      message: "친구 요청을 수락했습니다.",
+      friend: FollowMapper.toFriendUser(result, appVersion),
+    };
+  }
 
-	@Patch(":userId/reject")
-	@HttpCode(HttpStatus.OK)
-	@ApiParam({
-		name: "userId",
-		description: "거절할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
-		example: "clz7x5p8k0005qz0z8z8z8z8z",
-	})
-	@ApiDoc({
-		summary: "친구 요청 거절",
-		operationId: "rejectFriendRequest",
-		description: `받은 친구 요청을 거절합니다.
+  @Patch(":userId/reject")
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: "userId",
+    description: "거절할 친구 요청의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+    example: "clz7x5p8k0005qz0z8z8z8z8z",
+  })
+  @ApiDoc({
+    summary: "친구 요청 거절",
+    operationId: "rejectFriendRequest",
+    description: `받은 친구 요청을 거절합니다.
 
 거절된 요청은 삭제되며 상대방은 다시 요청을 보낼 수 있습니다.`,
-	})
-	@ApiSuccessResponse({ type: RejectFriendRequestResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.FOLLOW_0903)
-	async rejectRequest(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
-	): Promise<RejectFriendRequestResponseDto> {
-		this.#logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
+  })
+  @ApiSuccessResponse({ type: RejectFriendRequestResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.FOLLOW_0903)
+  async rejectRequest(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+  ): Promise<RejectFriendRequestResponseDto> {
+    this.#logger.debug(`친구 요청 거절: ${params.userId} -> ${user.userId}`);
 
-		await this.rejectFriendRequestUseCase.execute({
-			userId: user.userId,
-			requesterUserId: params.userId,
-		});
+    await this.rejectFriendRequestUseCase.execute({
+      userId: user.userId,
+      requesterUserId: params.userId,
+    });
 
-		this.#logger.log(`친구 요청 거절 완료: ${params.userId} X ${user.userId}`);
+    this.#logger.log(`친구 요청 거절 완료: ${params.userId} X ${user.userId}`);
 
-		return { message: "친구 요청을 거절했습니다." };
-	}
+    return { message: "친구 요청을 거절했습니다." };
+  }
 
-	@Delete(":userId")
-	@HttpCode(HttpStatus.OK)
-	@ApiParam({
-		name: "userId",
-		description: "삭제할 친구의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
-		example: "clz7x5p8k0005qz0z8z8z8z8z",
-	})
-	@ApiDoc({
-		summary: "친구 삭제 / 요청 철회",
-		operationId: "removeFriend",
-		description: `친구 관계를 삭제하거나 보낸 친구 요청을 철회합니다.
+  @Delete(":userId")
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: "userId",
+    description: "삭제할 친구의 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+    example: "clz7x5p8k0005qz0z8z8z8z8z",
+  })
+  @ApiDoc({
+    summary: "친구 삭제 / 요청 철회",
+    operationId: "removeFriend",
+    description: `친구 관계를 삭제하거나 보낸 친구 요청을 철회합니다.
 
 친구인 경우 양방향 관계가 모두 삭제되고, 요청만 보낸 상태라면 요청이 철회됩니다.`,
-	})
-	@ApiSuccessResponse({ type: RemoveFriendResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.FOLLOW_0907)
-	async remove(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: UserIdParamDto }) params: UserIdParamDto,
-	): Promise<RemoveFriendResponseDto> {
-		this.#logger.debug(`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`);
+  })
+  @ApiSuccessResponse({ type: RemoveFriendResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.FOLLOW_0907)
+  async remove(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
+  ): Promise<RemoveFriendResponseDto> {
+    this.#logger.debug(`친구 삭제/요청 철회: ${user.userId} X ${params.userId}`);
 
-		await this.removeFriendUseCase.execute({
-			userId: user.userId,
-			targetUserId: params.userId,
-		});
+    await this.removeFriendUseCase.execute({
+      userId: user.userId,
+      targetUserId: params.userId,
+    });
 
-		this.#logger.log(`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`);
+    this.#logger.log(`친구 삭제/요청 철회 완료: ${user.userId} X ${params.userId}`);
 
-		return { message: "친구를 삭제했습니다." };
-	}
+    return { message: "친구를 삭제했습니다." };
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Patch("friends/:followId/reorder")
-	@HttpCode(HttpStatus.OK)
-	@ApiParam({
-		name: "followId",
-		description: "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
-		example: "clz7x5p8k0010qz0z8z8z8z8z",
-	})
-	@ApiDoc({
-		summary: "친구 순서 변경",
-		operationId: "reorderFriend",
-		description: `친구 목록에서 특정 친구의 순서를 변경합니다.
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Patch("friends/:followId/reorder")
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: "followId",
+    description: "순서를 변경할 친구의 팔로우 관계 ID (CUID 25자, 예: clz7x5p8k0010qz0z8z8z8z8z)",
+    example: "clz7x5p8k0010qz0z8z8z8z8z",
+  })
+  @ApiDoc({
+    summary: "친구 순서 변경",
+    operationId: "reorderFriend",
+    description: `친구 목록에서 특정 친구의 순서를 변경합니다.
 
 **요청 필드**
 - \`targetFollowId\` (선택): 기준이 되는 Follow ID. 생략 시 맨 앞/뒤로 이동
 - \`position\` (필수): 기준의 앞(\`before\`) 또는 뒤(\`after\`)`,
-	})
-	@ApiSuccessResponse({ type: ReorderFriendResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiNotFoundError(ErrorCode.FOLLOW_0910)
-	async reorderFriend(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param("followId") followId: string,
-		@Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
+  })
+  @ApiSuccessResponse({ type: ReorderFriendResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.FOLLOW_0910)
+  async reorderFriend(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param("followId") followId: string,
+    @Body({ schema: ReorderFriendDto }) dto: ReorderFriendDto,
 
-		@Headers("x-app-version") appVersion?: string,
-	): Promise<ReorderFriendResponseDto> {
-		this.#logger.debug(`친구 순서 변경: user=${user.userId}, followId=${followId}`);
+    @Headers("x-app-version") appVersion?: string,
+  ): Promise<ReorderFriendResponseDto> {
+    this.#logger.debug(`친구 순서 변경: user=${user.userId}, followId=${followId}`);
 
-		const result = await this.reorderFriendUseCase.execute({
-			followId,
-			userId: user.userId,
-			targetFollowId: dto.targetFollowId,
-			position: dto.position,
-		});
+    const result = await this.reorderFriendUseCase.execute({
+      followId,
+      userId: user.userId,
+      targetFollowId: dto.targetFollowId,
+      position: dto.position,
+    });
 
-		this.#logger.log(`친구 순서 변경 완료: followId=${followId}`);
+    this.#logger.log(`친구 순서 변경 완료: followId=${followId}`);
 
-		return {
-			message: "친구 순서가 변경되었습니다.",
-			friend: FollowMapper.toFriendUser(result, appVersion),
-		};
-	}
+    return {
+      message: "친구 순서가 변경되었습니다.",
+      friend: FollowMapper.toFriendUser(result, appVersion),
+    };
+  }
 
-	@Get("resource-limit")
-	@ApiDoc({
-		summary: "친구 리소스 제한 정보 조회",
-		operationId: "getFollowResourceLimit",
-		description: `현재 친구 수와 최대 한도를 조회합니다.
+  @Get("resource-limit")
+  @ApiDoc({
+    summary: "친구 리소스 제한 정보 조회",
+    operationId: "getFollowResourceLimit",
+    description: `현재 친구 수와 최대 한도를 조회합니다.
 
 **응답 필드**
 - \`friendCount\`: 현재 친구 수
 - \`maxCount\`: 최대 한도 (null이면 무제한)`,
-	})
-	@ApiSuccessResponse({ type: FollowResourceLimitResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getResourceLimit(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<FollowResourceLimitResponseDto> {
-		return this.followReader.getResourceLimitInfo(user.userId);
-	}
+  })
+  @ApiSuccessResponse({ type: FollowResourceLimitResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getResourceLimit(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<FollowResourceLimitResponseDto> {
+    return this.followReader.getResourceLimitInfo(user.userId);
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Get("friends")
-	@ApiDoc({
-		summary: "친구 목록 조회",
-		operationId: "getFriends",
-		description: `나와 맞팔 관계인 친구 목록을 조회합니다.
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Get("friends")
+  @ApiDoc({
+    summary: "친구 목록 조회",
+    operationId: "getFriends",
+    description: `나와 맞팔 관계인 친구 목록을 조회합니다.
 
 **쿼리 파라미터**
 - \`cursor\`: 페이지네이션 커서
 - \`limit\`: 페이지 크기 (1-50, 기본값: 20)
 - \`search\`: Aido ID로 검색`,
-	})
-	@ApiSuccessResponse({ type: FriendsListResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getFriends(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetFriendsQueryDto }) query: GetFriendsQueryDto,
+  })
+  @ApiSuccessResponse({ type: FriendsListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getFriends(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetFriendsQueryDto }) query: GetFriendsQueryDto,
 
-		@Headers("x-app-version") appVersion?: string,
-	): Promise<FriendsListResponseDto> {
-		this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
+    @Headers("x-app-version") appVersion?: string,
+  ): Promise<FriendsListResponseDto> {
+    this.#logger.debug(`친구 목록 조회: user=${user.userId}`);
 
-		const [result, totalCount] = await Promise.all([
-			this.followReader.getFriends({
-				userId: user.userId,
-				cursor: query.cursor,
-				size: query.limit,
-				search: query.search,
-			}),
-			this.followReader.countFriends(user.userId),
-		]);
+    const [result, totalCount] = await Promise.all([
+      this.followReader.getFriends({
+        userId: user.userId,
+        cursor: query.cursor,
+        size: query.limit,
+        search: query.search,
+      }),
+      this.followReader.countFriends(user.userId),
+    ]);
 
-		return {
-			friends: result.items.map((item) => FollowMapper.toFriendUser(item, appVersion)),
-			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
-	}
+    return {
+      friends: result.items.map((item) => FollowMapper.toFriendUser(item, appVersion)),
+      totalCount,
+      hasMore: result.pagination.hasNext,
+    };
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Get("search")
-	@ApiDoc({
-		summary: "사용자 검색 (이름 또는 Aido ID)",
-		operationId: "searchUsers",
-		description: `이름 또는 Aido ID로 전체 사용자를 검색합니다. (인스타그램 스타일 디스커버리)
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Get("search")
+  @ApiDoc({
+    summary: "사용자 검색 (이름 또는 Aido ID)",
+    operationId: "searchUsers",
+    description: `이름 또는 Aido ID로 전체 사용자를 검색합니다. (인스타그램 스타일 디스커버리)
 
 본인·탈퇴·비활성(ACTIVE 외) 사용자는 제외됩니다. 결과에는 관계 상태
 (isFollowing/isFollower/isFriend/requestPending)가 포함되어 동명이인을 Aido ID로 구분할 수 있습니다.
@@ -368,114 +368,114 @@ export class FollowController {
 - \`q\`: 검색어 (이름 또는 Aido ID, 2-50자)
 - \`cursor\`: 페이지네이션 커서 (불투명 문자열, 이전 응답의 nextCursor)
 - \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
-	})
-	@ApiSuccessResponse({ type: SearchUsersResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiBadRequestError(ErrorCode.FOLLOW_0911)
-	async searchUsers(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: SearchUsersQueryDto }) query: SearchUsersQueryDto,
+  })
+  @ApiSuccessResponse({ type: SearchUsersResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.FOLLOW_0911)
+  async searchUsers(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: SearchUsersQueryDto }) query: SearchUsersQueryDto,
 
-		@Headers("x-app-version") appVersion?: string,
-	): Promise<SearchUsersResponseDto> {
-		this.#logger.debug(`사용자 검색: user=${user.userId}, q=${query.q}`);
+    @Headers("x-app-version") appVersion?: string,
+  ): Promise<SearchUsersResponseDto> {
+    this.#logger.debug(`사용자 검색: user=${user.userId}, q=${query.q}`);
 
-		const result = await this.searchUsersUseCase.execute({
-			viewerId: user.userId,
-			query: query.q,
-			cursor: query.cursor,
-			size: query.limit,
-		});
+    const result = await this.searchUsersUseCase.execute({
+      viewerId: user.userId,
+      query: query.q,
+      cursor: query.cursor,
+      size: query.limit,
+    });
 
-		return {
-			items: result.items.map((item) => FollowMapper.toSearchUser(item, appVersion)),
-			totalCount: result.totalCount,
-			hasMore: result.hasMore,
-			nextCursor: result.nextCursor,
-		};
-	}
+    return {
+      items: result.items.map((item) => FollowMapper.toSearchUser(item, appVersion)),
+      totalCount: result.totalCount,
+      hasMore: result.hasMore,
+      nextCursor: result.nextCursor,
+    };
+  }
 
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Get("requests/received")
-	@ApiDoc({
-		summary: "받은 친구 요청 목록",
-		operationId: "getReceivedFriendRequests",
-		description: `나에게 친구 요청을 보낸 사용자 목록을 조회합니다.
-
-**쿼리 파라미터**
-- \`cursor\`: 페이지네이션 커서
-- \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
-	})
-	@ApiSuccessResponse({ type: ReceivedRequestsResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getReceivedRequests(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
-
-		@Headers("x-app-version") appVersion?: string,
-	): Promise<ReceivedRequestsResponseDto> {
-		this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
-
-		const [result, totalCount] = await Promise.all([
-			this.followReader.getReceivedRequests({
-				userId: user.userId,
-				cursor: query.cursor,
-				size: query.limit,
-			}),
-			this.followReader.countReceivedRequests(user.userId),
-		]);
-
-		return {
-			requests: result.items.map((item) => FollowMapper.toReceivedRequest(item, appVersion)),
-			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
-	}
-
-	@Header("Vary", "Origin, X-App-Version")
-	@ApiHeader({
-		name: "x-app-version",
-		required: false,
-		description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
-	})
-	@Get("requests/sent")
-	@ApiDoc({
-		summary: "보낸 친구 요청 목록",
-		operationId: "getSentFriendRequests",
-		description: `내가 친구 요청을 보낸 사용자 목록을 조회합니다.
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Get("requests/received")
+  @ApiDoc({
+    summary: "받은 친구 요청 목록",
+    operationId: "getReceivedFriendRequests",
+    description: `나에게 친구 요청을 보낸 사용자 목록을 조회합니다.
 
 **쿼리 파라미터**
 - \`cursor\`: 페이지네이션 커서
 - \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
-	})
-	@ApiSuccessResponse({ type: SentRequestsResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	async getSentRequests(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
+  })
+  @ApiSuccessResponse({ type: ReceivedRequestsResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getReceivedRequests(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
 
-		@Headers("x-app-version") appVersion?: string,
-	): Promise<SentRequestsResponseDto> {
-		this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
+    @Headers("x-app-version") appVersion?: string,
+  ): Promise<ReceivedRequestsResponseDto> {
+    this.#logger.debug(`받은 친구 요청 목록 조회: user=${user.userId}`);
 
-		const [result, totalCount] = await Promise.all([
-			this.followReader.getSentRequests({
-				userId: user.userId,
-				cursor: query.cursor,
-				size: query.limit,
-			}),
-			this.followReader.countSentRequests(user.userId),
-		]);
+    const [result, totalCount] = await Promise.all([
+      this.followReader.getReceivedRequests({
+        userId: user.userId,
+        cursor: query.cursor,
+        size: query.limit,
+      }),
+      this.followReader.countReceivedRequests(user.userId),
+    ]);
 
-		return {
-			requests: result.items.map((item) => FollowMapper.toSentRequest(item, appVersion)),
-			totalCount,
-			hasMore: result.pagination.hasNext,
-		};
-	}
+    return {
+      requests: result.items.map((item) => FollowMapper.toReceivedRequest(item, appVersion)),
+      totalCount,
+      hasMore: result.pagination.hasNext,
+    };
+  }
+
+  @Header("Vary", "Origin, X-App-Version")
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+  })
+  @Get("requests/sent")
+  @ApiDoc({
+    summary: "보낸 친구 요청 목록",
+    operationId: "getSentFriendRequests",
+    description: `내가 친구 요청을 보낸 사용자 목록을 조회합니다.
+
+**쿼리 파라미터**
+- \`cursor\`: 페이지네이션 커서
+- \`limit\`: 페이지 크기 (1-50, 기본값: 20)`,
+  })
+  @ApiSuccessResponse({ type: SentRequestsResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  async getSentRequests(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetFollowsQueryDto }) query: GetFollowsQueryDto,
+
+    @Headers("x-app-version") appVersion?: string,
+  ): Promise<SentRequestsResponseDto> {
+    this.#logger.debug(`보낸 친구 요청 목록 조회: user=${user.userId}`);
+
+    const [result, totalCount] = await Promise.all([
+      this.followReader.getSentRequests({
+        userId: user.userId,
+        cursor: query.cursor,
+        size: query.limit,
+      }),
+      this.followReader.countSentRequests(user.userId),
+    ]);
+
+    return {
+      requests: result.items.map((item) => FollowMapper.toSentRequest(item, appVersion)),
+      totalCount,
+      hasMore: result.pagination.hasNext,
+    };
+  }
 }

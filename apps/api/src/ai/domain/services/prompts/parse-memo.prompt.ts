@@ -1,39 +1,39 @@
 import dayjs from "dayjs";
 
 import {
-	PROMPT_OUTPUT_DISCIPLINE,
-	PROMPT_SECURITY_GUARD,
+  PROMPT_OUTPUT_DISCIPLINE,
+  PROMPT_SECURITY_GUARD,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeMemoForPrompt } from "#api/shared/domain/prompt/sanitize";
 
 import { buildTimeContext, buildTimeRulesText } from "./time-rules.js";
 
 export interface ParseMemoPrompt {
-	system: string;
-	prompt: string;
+  system: string;
+  prompt: string;
 }
 
 export interface CategoryInfo {
-	id: number;
-	name: string;
+  id: number;
+  name: string;
 }
 
 export function buildParseMemoPrompt(
-	content: string,
-	tz: string = "UTC",
-	now: Date = new Date(),
-	categories: CategoryInfo[] = [],
+  content: string,
+  tz: string = "UTC",
+  now: Date = new Date(),
+  categories: CategoryInfo[] = [],
 ): ParseMemoPrompt {
-	const ctx = buildTimeContext(tz, now);
-	const timeRules = buildTimeRulesText(ctx);
-	const safeContent = sanitizeMemoForPrompt(content);
+  const ctx = buildTimeContext(tz, now);
+  const timeRules = buildTimeRulesText(ctx);
+  const safeContent = sanitizeMemoForPrompt(content);
 
-	const categoryRule =
-		categories.length > 0
-			? "- 각 todo의 categoryId는 context.categories에 실제로 있는 id 중 의미가 가장 가까운 값만 사용한다."
-			: "";
+  const categoryRule =
+    categories.length > 0
+      ? "- 각 todo의 categoryId는 context.categories에 실제로 있는 id 중 의미가 가장 가까운 값만 사용한다."
+      : "";
 
-	const system = `<role>
+  const system = `<role>
 당신은 한국어 메모를 분석하여 실행 가능한 할 일(Todo) 목록으로 변환하는 전문가입니다.
 메모에서 독립적인 할 일을 1~5개 추출하고, 각 할 일에 구체적인 실행 단계가 있으면 서브투두(items)를 0~5개 추출합니다.
 </role>
@@ -99,7 +99,7 @@ ${timeRules}
 
 ${PROMPT_OUTPUT_DISCIPLINE}`;
 
-	const prompt = `<context_json>
+  const prompt = `<context_json>
 ${encodeUntrustedJson({ timezone: tz, categories })}
 </context_json>
 <user_input_json>
@@ -107,5 +107,5 @@ ${encodeUntrustedJson({ memo: safeContent })}
 </user_input_json>
 <task>메모를 실행 가능한 할 일 목록으로 변환한다. 내부적으로 품질을 확인한 뒤 구조화 결과만 반환한다.</task>`;
 
-	return { system, prompt };
+  return { system, prompt };
 }

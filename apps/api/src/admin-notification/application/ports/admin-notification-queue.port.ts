@@ -5,8 +5,8 @@ export type NotificationChannel = "admin" | "payment";
 
 /** enqueueSend 옵션 */
 export interface EnqueueSendOptions {
-	/** 멱등 잡 ID (중복 등록 방지) */
-	jobId?: string;
+  /** 멱등 잡 ID (중복 등록 방지) */
+  jobId?: string;
 }
 
 /**
@@ -16,11 +16,11 @@ export interface EnqueueSendOptions {
  * 어댑터가 BullMQ 큐로 위임한다.
  */
 export interface AdminNotificationQueuePort {
-	enqueueSend(
-		channel: NotificationChannel,
-		notification: AdminNotification,
-		options?: EnqueueSendOptions,
-	): Promise<void>;
+  enqueueSend(
+    channel: NotificationChannel,
+    notification: AdminNotification,
+    options?: EnqueueSendOptions,
+  ): Promise<void>;
 }
 
 export const ADMIN_NOTIFICATION_QUEUE_PORT = Symbol("ADMIN_NOTIFICATION_QUEUE_PORT");

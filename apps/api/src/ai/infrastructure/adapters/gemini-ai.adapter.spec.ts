@@ -20,216 +20,216 @@ import { BusinessException } from "#api/shared/application/exceptions/business-e
 import { GeminiAiAdapter } from "./gemini-ai.adapter.js";
 
 const { generateObject } = vi.hoisted(() => ({
-	generateObject: vi.fn<(options: unknown) => Promise<unknown>>(),
+  generateObject: vi.fn<(options: unknown) => Promise<unknown>>(),
 }));
 
 vi.mock("ai", async (importOriginal) => {
-	const sdk = await importOriginal<typeof import("ai")>();
-	return { ...sdk, generateObject };
+  const sdk = await importOriginal<typeof import("ai")>();
+  return { ...sdk, generateObject };
 });
 
 vi.mock("@ai-sdk/google", () => ({
-	createGoogleGenerativeAI: vi.fn(() => vi.fn(() => "mock-model")),
+  createGoogleGenerativeAI: vi.fn(() => vi.fn(() => "mock-model")),
 }));
 
 const mockConfigService = {
-	get: vi.fn(),
+  get: vi.fn(),
 };
 
 async function createProvider(): Promise<GeminiAiAdapter> {
-	const module: TestingModule = await Test.createTestingModule({
-		providers: [GeminiAiAdapter, { provide: ConfigService, useValue: mockConfigService }],
-	}).compile();
+  const module: TestingModule = await Test.createTestingModule({
+    providers: [GeminiAiAdapter, { provide: ConfigService, useValue: mockConfigService }],
+  }).compile();
 
-	return module.get<GeminiAiAdapter>(GeminiAiAdapter);
+  return module.get<GeminiAiAdapter>(GeminiAiAdapter);
 }
 
 describe("GeminiAiAdapter — Gemini AI 프로바이더", () => {
-	describe("isAvailable", () => {
-		it("API 키가 설정되어 있으면 true를 반환한다", async () => {
-			// Given - API 키가 설정됨
-			mockConfigService.get.mockReturnValue("test-api-key");
+  describe("isAvailable", () => {
+    it("API 키가 설정되어 있으면 true를 반환한다", async () => {
+      // Given - API 키가 설정됨
+      mockConfigService.get.mockReturnValue("test-api-key");
 
-			// When - 새 인스턴스 생성 (생성자에서 API 키를 읽음)
-			const provider = await createProvider();
+      // When - 새 인스턴스 생성 (생성자에서 API 키를 읽음)
+      const provider = await createProvider();
 
-			// Then - isAvailable이 true 반환
-			expect(provider.isAvailable()).toBe(true);
-		});
+      // Then - isAvailable이 true 반환
+      expect(provider.isAvailable()).toBe(true);
+    });
 
-		it("API 키가 없으면 false를 반환한다", async () => {
-			// Given - API 키가 설정되지 않음
-			mockConfigService.get.mockReturnValue(undefined);
+    it("API 키가 없으면 false를 반환한다", async () => {
+      // Given - API 키가 설정되지 않음
+      mockConfigService.get.mockReturnValue(undefined);
 
-			// When - 새 인스턴스 생성
-			const provider = await createProvider();
+      // When - 새 인스턴스 생성
+      const provider = await createProvider();
 
-			// Then - isAvailable이 false 반환
-			expect(provider.isAvailable()).toBe(false);
-		});
+      // Then - isAvailable이 false 반환
+      expect(provider.isAvailable()).toBe(false);
+    });
 
-		it("API 키가 빈 문자열이면 false를 반환한다", async () => {
-			// Given - API 키가 빈 문자열
-			mockConfigService.get.mockReturnValue("");
+    it("API 키가 빈 문자열이면 false를 반환한다", async () => {
+      // Given - API 키가 빈 문자열
+      mockConfigService.get.mockReturnValue("");
 
-			// When - 새 인스턴스 생성
-			const provider = await createProvider();
+      // When - 새 인스턴스 생성
+      const provider = await createProvider();
 
-			// Then - isAvailable이 false 반환
-			expect(provider.isAvailable()).toBe(false);
-		});
-	});
+      // Then - isAvailable이 false 반환
+      expect(provider.isAvailable()).toBe(false);
+    });
+  });
 
-	describe("generateStructured", () => {
-		const testSchema = z.object({
-			title: z.string(),
-			startDate: z.string(),
-			isAllDay: z.boolean(),
-		});
+  describe("generateStructured", () => {
+    const testSchema = z.object({
+      title: z.string(),
+      startDate: z.string(),
+      isAllDay: z.boolean(),
+    });
 
-		it("API 키가 없으면 BusinessException을 던진다", async () => {
-			// Given - API 키가 설정되지 않음
-			mockConfigService.get.mockReturnValue(undefined);
-			const provider = await createProvider();
+    it("API 키가 없으면 BusinessException을 던진다", async () => {
+      // Given - API 키가 설정되지 않음
+      mockConfigService.get.mockReturnValue(undefined);
+      const provider = await createProvider();
 
-			// When & Then - BusinessException이 발생함
-			await expect(
-				provider.generateStructured({
-					prompt: "테스트 프롬프트",
-					schema: testSchema,
-				}),
-			).rejects.toThrow(BusinessException);
-		});
+      // When & Then - BusinessException이 발생함
+      await expect(
+        provider.generateStructured({
+          prompt: "테스트 프롬프트",
+          schema: testSchema,
+        }),
+      ).rejects.toThrow(BusinessException);
+    });
 
-		it("Vercel AI SDK generateObject를 호출한다", async () => {
-			// Given - API 키가 설정되고 generateObject가 결과 반환
-			generateObject.mockResolvedValue({
-				object: {
-					title: "테스트 할 일",
-					startDate: "2025-01-26",
-					isAllDay: true,
-				},
-				usage: {
-					inputTokens: 100,
-					outputTokens: 50,
-				},
-			});
+    it("Vercel AI SDK generateObject를 호출한다", async () => {
+      // Given - API 키가 설정되고 generateObject가 결과 반환
+      generateObject.mockResolvedValue({
+        object: {
+          title: "테스트 할 일",
+          startDate: "2025-01-26",
+          isAllDay: true,
+        },
+        usage: {
+          inputTokens: 100,
+          outputTokens: 50,
+        },
+      });
 
-			mockConfigService.get.mockReturnValue("test-api-key");
-			const provider = await createProvider();
+      mockConfigService.get.mockReturnValue("test-api-key");
+      const provider = await createProvider();
 
-			// When - generateStructured 호출
-			const result = await provider.generateStructured({
-				prompt: "내일 회의",
-				schema: testSchema,
-				maxOutputTokens: 200,
-			});
+      // When - generateStructured 호출
+      const result = await provider.generateStructured({
+        prompt: "내일 회의",
+        schema: testSchema,
+        maxOutputTokens: 200,
+      });
 
-			// Then - 올바른 인자로 generateObject가 호출됨
-			expect(generateObject).toHaveBeenCalledWith(
-				expect.objectContaining({
-					prompt: "내일 회의",
-					maxOutputTokens: 200,
-				}),
-			);
-			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty("temperature");
-			expect(result.output).toEqual({
-				title: "테스트 할 일",
-				startDate: "2025-01-26",
-				isAllDay: true,
-			});
-			expect(result.model).toBe("google:gemini-3.1-flash-lite");
-			expect(result.usage).toEqual({
-				input: 100,
-				output: 50,
-			});
-		});
+      // Then - 올바른 인자로 generateObject가 호출됨
+      expect(generateObject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          prompt: "내일 회의",
+          maxOutputTokens: 200,
+        }),
+      );
+      expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty("temperature");
+      expect(result.output).toEqual({
+        title: "테스트 할 일",
+        startDate: "2025-01-26",
+        isAllDay: true,
+      });
+      expect(result.model).toBe("google:gemini-3.1-flash-lite");
+      expect(result.usage).toEqual({
+        input: 100,
+        output: 50,
+      });
+    });
 
-		it("기본 maxOutputTokens만 적용하고 Gemini 3 권장 sampling 기본값을 유지한다", async () => {
-			// Given - API 키가 설정됨
-			generateObject.mockResolvedValue({
-				object: { title: "테스트", startDate: "2025-01-26", isAllDay: true },
-				usage: { inputTokens: 100, outputTokens: 50 },
-			});
+    it("기본 maxOutputTokens만 적용하고 Gemini 3 권장 sampling 기본값을 유지한다", async () => {
+      // Given - API 키가 설정됨
+      generateObject.mockResolvedValue({
+        object: { title: "테스트", startDate: "2025-01-26", isAllDay: true },
+        usage: { inputTokens: 100, outputTokens: 50 },
+      });
 
-			mockConfigService.get.mockReturnValue("test-api-key");
-			const provider = await createProvider();
+      mockConfigService.get.mockReturnValue("test-api-key");
+      const provider = await createProvider();
 
-			// When - 기본 옵션으로 호출
-			await provider.generateStructured({
-				prompt: "테스트",
-				schema: testSchema,
-			});
+      // When - 기본 옵션으로 호출
+      await provider.generateStructured({
+        prompt: "테스트",
+        schema: testSchema,
+      });
 
-			// Then - 기본값이 사용됨
-			expect(generateObject).toHaveBeenCalledWith(
-				expect.objectContaining({
-					maxOutputTokens: 150,
-				}),
-			);
-			expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty("temperature");
-		});
+      // Then - 기본값이 사용됨
+      expect(generateObject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxOutputTokens: 150,
+        }),
+      );
+      expect(generateObject.mock.calls[0]?.[0]).not.toHaveProperty("temperature");
+    });
 
-		it("generateObject 에러를 전파한다", async () => {
-			// Given - generateObject가 에러를 던짐
-			generateObject.mockRejectedValue(new Error("API error"));
+    it("generateObject 에러를 전파한다", async () => {
+      // Given - generateObject가 에러를 던짐
+      generateObject.mockRejectedValue(new Error("API error"));
 
-			mockConfigService.get.mockReturnValue("test-api-key");
-			const provider = await createProvider();
+      mockConfigService.get.mockReturnValue("test-api-key");
+      const provider = await createProvider();
 
-			// When & Then - 에러가 전파됨
-			await expect(
-				provider.generateStructured({
-					prompt: "테스트",
-					schema: testSchema,
-				}),
-			).rejects.toThrow("API error");
-		});
+      // When & Then - 에러가 전파됨
+      await expect(
+        provider.generateStructured({
+          prompt: "테스트",
+          schema: testSchema,
+        }),
+      ).rejects.toThrow("API error");
+    });
 
-		it("429 에러 시 aiRateLimitExceeded BusinessException을 던진다", async () => {
-			// Given - generateObject가 429 에러를 던짐
-			generateObject.mockRejectedValue(
-				new APICallError({
-					message: "Rate limit exceeded",
-					url: "https://test.invalid",
-					requestBodyValues: {},
-					statusCode: 429,
-				}),
-			);
+    it("429 에러 시 aiRateLimitExceeded BusinessException을 던진다", async () => {
+      // Given - generateObject가 429 에러를 던짐
+      generateObject.mockRejectedValue(
+        new APICallError({
+          message: "Rate limit exceeded",
+          url: "https://test.invalid",
+          requestBodyValues: {},
+          statusCode: 429,
+        }),
+      );
 
-			mockConfigService.get.mockReturnValue("test-api-key");
-			const provider = await createProvider();
+      mockConfigService.get.mockReturnValue("test-api-key");
+      const provider = await createProvider();
 
-			// When & Then - BusinessException이 발생함
-			await expect(
-				provider.generateStructured({
-					prompt: "테스트",
-					schema: testSchema,
-				}),
-			).rejects.toThrow(BusinessException);
-		});
+      // When & Then - BusinessException이 발생함
+      await expect(
+        provider.generateStructured({
+          prompt: "테스트",
+          schema: testSchema,
+        }),
+      ).rejects.toThrow(BusinessException);
+    });
 
-		it("429가 아닌 APICallError는 그대로 전파한다", async () => {
-			// Given - generateObject가 500 에러를 던짐
-			generateObject.mockRejectedValue(
-				new APICallError({
-					message: "Internal server error",
-					url: "https://test.invalid",
-					requestBodyValues: {},
-					statusCode: 500,
-				}),
-			);
+    it("429가 아닌 APICallError는 그대로 전파한다", async () => {
+      // Given - generateObject가 500 에러를 던짐
+      generateObject.mockRejectedValue(
+        new APICallError({
+          message: "Internal server error",
+          url: "https://test.invalid",
+          requestBodyValues: {},
+          statusCode: 500,
+        }),
+      );
 
-			mockConfigService.get.mockReturnValue("test-api-key");
-			const provider = await createProvider();
+      mockConfigService.get.mockReturnValue("test-api-key");
+      const provider = await createProvider();
 
-			// When & Then - 원래 에러가 전파됨
-			await expect(
-				provider.generateStructured({
-					prompt: "테스트",
-					schema: testSchema,
-				}),
-			).rejects.toThrow("Internal server error");
-		});
-	});
+      // When & Then - 원래 에러가 전파됨
+      await expect(
+        provider.generateStructured({
+          prompt: "테스트",
+          schema: testSchema,
+        }),
+      ).rejects.toThrow("Internal server error");
+    });
+  });
 });

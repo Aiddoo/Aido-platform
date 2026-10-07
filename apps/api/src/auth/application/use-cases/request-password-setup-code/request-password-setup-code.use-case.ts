@@ -4,10 +4,10 @@ import { PasswordWorkflow } from "../../workflows/password.workflow.js";
 
 @Injectable()
 export class RequestPasswordSetupCodeUseCase {
-	constructor(private readonly workflow: PasswordWorkflow) {}
-	execute(
-		userId: Parameters<PasswordWorkflow["requestPasswordSetupCode"]>[0],
-	): ReturnType<PasswordWorkflow["requestPasswordSetupCode"]> {
-		return this.workflow.requestPasswordSetupCode(userId);
-	}
+  constructor(private readonly workflow: PasswordWorkflow) {}
+  execute(
+    userId: Parameters<PasswordWorkflow["requestPasswordSetupCode"]>[0],
+  ): ReturnType<PasswordWorkflow["requestPasswordSetupCode"]> {
+    return this.workflow.requestPasswordSetupCode(userId);
+  }
 }

@@ -5,9 +5,9 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import type {
-	AdminNotification,
-	AdminNotifier,
-	AdminNotifyResult,
+  AdminNotification,
+  AdminNotifier,
+  AdminNotifyResult,
 } from "../../application/ports/admin-notifier.port.js";
 
 /**
@@ -20,64 +20,64 @@ import type {
  */
 @Injectable()
 export class DiscordWebhookProvider implements AdminNotifier {
-	readonly name = "discord";
-	readonly #logger = new Logger(DiscordWebhookProvider.name);
-	readonly #webhookUrl: string | undefined;
+  readonly name = "discord";
+  readonly #logger = new Logger(DiscordWebhookProvider.name);
+  readonly #webhookUrl: string | undefined;
 
-	constructor(
-		webhookUrl: string | undefined,
-		private readonly http: HttpClient,
-	) {
-		this.#webhookUrl = webhookUrl;
-	}
+  constructor(
+    webhookUrl: string | undefined,
+    private readonly http: HttpClient,
+  ) {
+    this.#webhookUrl = webhookUrl;
+  }
 
-	isConfigured(): boolean {
-		return !!this.#webhookUrl;
-	}
+  isConfigured(): boolean {
+    return !!this.#webhookUrl;
+  }
 
-	async send(notification: AdminNotification): Promise<AdminNotifyResult> {
-		const webhookUrl = this.#webhookUrl;
-		if (!webhookUrl) {
-			this.#logger.debug("Discord webhook not configured, skipping notification");
-			return { success: false, error: "Webhook URL not configured" };
-		}
+  async send(notification: AdminNotification): Promise<AdminNotifyResult> {
+    const webhookUrl = this.#webhookUrl;
+    if (!webhookUrl) {
+      this.#logger.debug("Discord webhook not configured, skipping notification");
+      return { success: false, error: "Webhook URL not configured" };
+    }
 
-		try {
-			const { data: response } = await this.http.request(webhookUrl, {
-				method: "POST",
-				responseType: "response",
-				retry: false,
-				throwOnHttpError: false,
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					embeds: [
-						{
-							title: notification.title,
-							description: notification.body,
-							color: notification.color ?? 0x5865f2,
-							fields: notification.fields ?? [],
-							timestamp: toISOString(now()),
-						},
-					],
-				}),
-			});
+    try {
+      const { data: response } = await this.http.request(webhookUrl, {
+        method: "POST",
+        responseType: "response",
+        retry: false,
+        throwOnHttpError: false,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          embeds: [
+            {
+              title: notification.title,
+              description: notification.body,
+              color: notification.color ?? 0x5865f2,
+              fields: notification.fields ?? [],
+              timestamp: toISOString(now()),
+            },
+          ],
+        }),
+      });
 
-			if (!response.ok) {
-				const errorText = await response.text();
-				this.#logger.error(`Discord webhook failed: ${response.status} ${errorText}`);
-				return {
-					success: false,
-					error: `HTTP ${response.status}: ${errorText}`,
-				};
-			}
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.#logger.error(`Discord webhook failed: ${response.status} ${errorText}`);
+        return {
+          success: false,
+          error: `HTTP ${response.status}: ${errorText}`,
+        };
+      }
 
-			return { success: true };
-		} catch (error) {
-			this.#logger.error(`Discord webhook error: ${error}`);
-			return {
-				success: false,
-				error: error instanceof Error ? error.message : "Unknown error",
-			};
-		}
-	}
+      return { success: true };
+    } catch (error) {
+      this.#logger.error(`Discord webhook error: ${error}`);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
 }

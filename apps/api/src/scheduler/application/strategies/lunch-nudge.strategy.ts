@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	createLunchNudgeNotificationMessage,
-	NotificationHistoryReader,
-	NotificationPublisher,
+  createLunchNudgeNotificationMessage,
+  NotificationHistoryReader,
+  NotificationPublisher,
 } from "#api/notification/index";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -13,12 +13,12 @@ import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 import { SCHEDULER_CAMPAIGN_KEY } from "../../domain/services/notification-campaign.js";
 import type { ITimezoneStrategy, TimezoneContext } from "../../domain/services/timezone-context.js";
 import {
-	SCHEDULED_REMINDER_READER,
-	type ScheduledReminderReaderPort,
+  SCHEDULED_REMINDER_READER,
+  type ScheduledReminderReaderPort,
 } from "../ports/scheduled-reminder-reader.port.js";
 import {
-	SCHEDULER_PREFERENCE_READER,
-	type SchedulerPreferenceReaderPort,
+  SCHEDULER_PREFERENCE_READER,
+  type SchedulerPreferenceReaderPort,
 } from "../ports/scheduler-preference-reader.port.js";
 
 /**
@@ -29,70 +29,70 @@ import {
  */
 @Injectable()
 export class LunchNudgeStrategy implements ITimezoneStrategy {
-	readonly #logger = new Logger(LunchNudgeStrategy.name);
+  readonly #logger = new Logger(LunchNudgeStrategy.name);
 
-	constructor(
-		@Inject(SCHEDULED_REMINDER_READER)
-		private readonly reader: ScheduledReminderReaderPort,
-		@Inject(SCHEDULER_PREFERENCE_READER)
-		private readonly preferenceReader: SchedulerPreferenceReaderPort,
-		private readonly notificationPublisher: NotificationPublisher,
-		private readonly notificationHistoryReader: NotificationHistoryReader,
-	) {}
+  constructor(
+    @Inject(SCHEDULED_REMINDER_READER)
+    private readonly reader: ScheduledReminderReaderPort,
+    @Inject(SCHEDULER_PREFERENCE_READER)
+    private readonly preferenceReader: SchedulerPreferenceReaderPort,
+    private readonly notificationPublisher: NotificationPublisher,
+    private readonly notificationHistoryReader: NotificationHistoryReader,
+  ) {}
 
-	async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
-		const { tz } = ctx;
-		const today = todayInTimezone(tz);
-		const tomorrow = addDays(1, today);
+  async execute(ctx: TimezoneContext): Promise<{ sent: number }> {
+    const { tz } = ctx;
+    const today = todayInTimezone(tz);
+    const tomorrow = addDays(1, today);
 
-		// 오늘 할일이 있지만 완료가 0개인 유저 조회
-		const users = await this.reader.findLunchNudgeUsers({
-			tz,
-			today,
-			tomorrow,
-		});
+    // 오늘 할일이 있지만 완료가 0개인 유저 조회
+    const users = await this.reader.findLunchNudgeUsers({
+      tz,
+      today,
+      tomorrow,
+    });
 
-		if (users.length === 0) {
-			return { sent: 0 };
-		}
+    if (users.length === 0) {
+      return { sent: 0 };
+    }
 
-		// 중복 방지
-		const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
-			userIds: users.map((u) => u.id),
-			type: "LUNCH_NUDGE",
-			notificationDate: today,
-		});
+    // 중복 방지
+    const alreadyNotified = await this.notificationHistoryReader.findAlreadyNotifiedUserIds({
+      userIds: users.map((u) => u.id),
+      type: "LUNCH_NUDGE",
+      notificationDate: today,
+    });
 
-		const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
+    const filteredUsers = users.filter((u) => !alreadyNotified.has(u.id));
 
-		if (filteredUsers.length === 0) {
-			return { sent: 0 };
-		}
+    if (filteredUsers.length === 0) {
+      return { sent: 0 };
+    }
 
-		const locales = await this.preferenceReader.findUserLocales(filteredUsers.map((u) => u.id));
-		const notifications = filteredUsers.map((user) => {
-			const message = createLunchNudgeNotificationMessage({
-				locale: locales.get(user.id) ?? DEFAULT_LOCALE,
-				variantContext: {
-					campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-					recipientId: user.id,
-					occurrenceKey: toDateString(today),
-				},
-			});
-			return {
-				userId: user.id,
-				type: "LUNCH_NUDGE" as const,
-				purpose: "ENGAGEMENT" as const,
-				campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
-				variantId: message.variantId,
-				title: message.title,
-				body: message.body,
-				notificationDate: today,
-			};
-		});
+    const locales = await this.preferenceReader.findUserLocales(filteredUsers.map((u) => u.id));
+    const notifications = filteredUsers.map((user) => {
+      const message = createLunchNudgeNotificationMessage({
+        locale: locales.get(user.id) ?? DEFAULT_LOCALE,
+        variantContext: {
+          campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+          recipientId: user.id,
+          occurrenceKey: toDateString(today),
+        },
+      });
+      return {
+        userId: user.id,
+        type: "LUNCH_NUDGE" as const,
+        purpose: "ENGAGEMENT" as const,
+        campaignKey: SCHEDULER_CAMPAIGN_KEY.LUNCH_NUDGE,
+        variantId: message.variantId,
+        title: message.title,
+        body: message.body,
+        notificationDate: today,
+      };
+    });
 
-		await this.notificationPublisher.publishBatch(notifications);
-		this.#logger.log(`Lunch nudge: tz=${tz}, count=${notifications.length}`);
-		return { sent: notifications.length };
-	}
+    await this.notificationPublisher.publishBatch(notifications);
+    this.#logger.log(`Lunch nudge: tz=${tz}, count=${notifications.length}`);
+    return { sent: notifications.length };
+  }
 }

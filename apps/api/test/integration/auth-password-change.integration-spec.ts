@@ -36,285 +36,285 @@ import { TestDatabase } from "../setup/test-database.js";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
-	let module: TestingModule;
-	let authService: CredentialAuthWorkflow;
-	let passwordManagementService: PasswordWorkflow;
-	let fakeEmailService: FakeEmailService;
-	let testDb: TestDatabase;
-	let databaseService: DatabaseService;
+  let module: TestingModule;
+  let authService: CredentialAuthWorkflow;
+  let passwordManagementService: PasswordWorkflow;
+  let fakeEmailService: FakeEmailService;
+  let testDb: TestDatabase;
+  let databaseService: DatabaseService;
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		testDb = new TestDatabase();
-		databaseService = createTestDatabaseService(await testDb.start());
-		fakeEmailService = new FakeEmailService();
+    testDb = new TestDatabase();
+    databaseService = createTestDatabaseService(await testDb.start());
+    fakeEmailService = new FakeEmailService();
 
-		module = await createAuthTestModule(databaseService, fakeEmailService);
-		authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
-		passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
-	}, 60000);
+    module = await createAuthTestModule(databaseService, fakeEmailService);
+    authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
+    passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
+  }, 60000);
 
-	beforeEach(async () => {
-		vi.clearAllMocks();
-		await testDb.cleanup();
-		fakeEmailService.clear();
-	});
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await testDb.cleanup();
+    fakeEmailService.clear();
+  });
 
-	afterAll(async () => {
-		try {
-			if (module) await module.close();
-		} finally {
-			if (testDb) await testDb.stop();
-		}
-	});
+  afterAll(async () => {
+    try {
+      if (module) await module.close();
+    } finally {
+      if (testDb) await testDb.stop();
+    }
+  });
 
-	/**
-	 * FakeEmailService에서 인증 코드를 안전하게 가져오는 헬퍼
-	 */
-	function getCode(email: string): string {
-		const code = fakeEmailService.getLastCode(email);
-		if (!code) throw new Error(`No code found for ${email}`);
-		return code;
-	}
+  /**
+   * FakeEmailService에서 인증 코드를 안전하게 가져오는 헬퍼
+   */
+  function getCode(email: string): string {
+    const code = fakeEmailService.getLastCode(email);
+    if (!code) throw new Error(`No code found for ${email}`);
+    return code;
+  }
 
-	/**
-	 * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
-	 * @returns userId
-	 */
-	async function createCredentialUser(email: string, password: string): Promise<string> {
-		const registerResult = await authService.register({
-			email,
-			password,
-			passwordConfirm: password,
-			termsAgreed: true,
-			privacyAgreed: true,
-			marketingAgreed: false,
-		});
+  /**
+   * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
+   * @returns userId
+   */
+  async function createCredentialUser(email: string, password: string): Promise<string> {
+    const registerResult = await authService.register({
+      email,
+      password,
+      passwordConfirm: password,
+      termsAgreed: true,
+      privacyAgreed: true,
+      marketingAgreed: false,
+    });
 
-		const verifyCode = getCode(email);
-		await authService.verifyEmail({ email, code: verifyCode });
+    const verifyCode = getCode(email);
+    await authService.verifyEmail({ email, code: verifyCode });
 
-		fakeEmailService.clear();
+    fakeEmailService.clear();
 
-		return registerResult.userId;
-	}
+    return registerResult.userId;
+  }
 
-	/**
-	 * 로그인 후 sessionId를 반환하는 헬퍼
-	 */
-	async function loginAndGetSession(email: string, password: string): Promise<string> {
-		const result = await authService.login({ email, password });
-		return result.sessionId;
-	}
+  /**
+   * 로그인 후 sessionId를 반환하는 헬퍼
+   */
+  async function loginAndGetSession(email: string, password: string): Promise<string> {
+    const result = await authService.login({ email, password });
+    return result.sessionId;
+  }
 
-	/**
-	 * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
-	 * @returns userId
-	 */
-	async function createSocialOnlyUser(
-		email: string,
-		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
-	): Promise<string> {
-		const prisma = testDb.getClient();
-		const user = decodeRecord(
-			"User",
-			await prisma.orm.public.User.create(
-				encodeCreate("User", {
-					email,
-					userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-					status: "ACTIVE",
-					emailVerifiedAt: new Date(),
-				}),
-			),
-		);
+  /**
+   * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
+   * @returns userId
+   */
+  async function createSocialOnlyUser(
+    email: string,
+    provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
+  ): Promise<string> {
+    const prisma = testDb.getClient();
+    const user = decodeRecord(
+      "User",
+      await prisma.orm.public.User.create(
+        encodeCreate("User", {
+          email,
+          userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
+          status: "ACTIVE",
+          emailVerifiedAt: new Date(),
+        }),
+      ),
+    );
 
-		decodeRecord(
-			"Account",
-			await prisma.orm.public.Account.create(
-				encodeCreate("Account", {
-					userId: user.id,
-					provider,
-					providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-				}),
-			),
-		);
+    decodeRecord(
+      "Account",
+      await prisma.orm.public.Account.create(
+        encodeCreate("Account", {
+          userId: user.id,
+          provider,
+          providerAccountId: `${provider.toLowerCase()}-${user.id}`,
+        }),
+      ),
+    );
 
-		return user.id;
-	}
+    return user.id;
+  }
 
-	describe("changePassword", () => {
-		it("현재 비밀번호 확인 후 새 비밀번호로 변경한다", async () => {
-			// Given
-			const email = "change-pw@example.com";
-			const currentPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			const userId = await createCredentialUser(email, currentPassword);
+  describe("changePassword", () => {
+    it("현재 비밀번호 확인 후 새 비밀번호로 변경한다", async () => {
+      // Given
+      const email = "change-pw@example.com";
+      const currentPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      const userId = await createCredentialUser(email, currentPassword);
 
-			const sessionId = await loginAndGetSession(email, currentPassword);
+      const sessionId = await loginAndGetSession(email, currentPassword);
 
-			// When
-			const result = await passwordManagementService.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-				undefined,
-				sessionId,
-			);
+      // When
+      const result = await passwordManagementService.changePassword(
+        userId,
+        currentPassword,
+        newPassword,
+        undefined,
+        sessionId,
+      );
 
-			// Then
-			expect(result.message).toContain("비밀번호가 변경되었습니다");
+      // Then
+      expect(result.message).toContain("비밀번호가 변경되었습니다");
 
-			// DB 검증: 비밀번호 해시가 변경됨
-			const prisma = testDb.getClient();
-			const account = decodeRecord(
-				"Account",
-				await prisma.orm.public.Account.where((row) =>
-					and(row.userId.eq(userId), row.provider.eq("CREDENTIAL")),
-				).first(),
-			);
-			expect(account?.password).toBeTruthy();
-		});
+      // DB 검증: 비밀번호 해시가 변경됨
+      const prisma = testDb.getClient();
+      const account = decodeRecord(
+        "Account",
+        await prisma.orm.public.Account.where((row) =>
+          and(row.userId.eq(userId), row.provider.eq("CREDENTIAL")),
+        ).first(),
+      );
+      expect(account?.password).toBeTruthy();
+    });
 
-		it("변경 후 새 비밀번호로 로그인할 수 있다", async () => {
-			// Given
-			const email = "change-login-new@example.com";
-			const currentPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			const userId = await createCredentialUser(email, currentPassword);
-			const sessionId = await loginAndGetSession(email, currentPassword);
+    it("변경 후 새 비밀번호로 로그인할 수 있다", async () => {
+      // Given
+      const email = "change-login-new@example.com";
+      const currentPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      const userId = await createCredentialUser(email, currentPassword);
+      const sessionId = await loginAndGetSession(email, currentPassword);
 
-			await passwordManagementService.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-				undefined,
-				sessionId,
-			);
+      await passwordManagementService.changePassword(
+        userId,
+        currentPassword,
+        newPassword,
+        undefined,
+        sessionId,
+      );
 
-			// When
-			const loginResult = await authService.login({
-				email,
-				password: newPassword,
-			});
+      // When
+      const loginResult = await authService.login({
+        email,
+        password: newPassword,
+      });
 
-			// Then
-			expect(loginResult.tokens.accessToken).toBeDefined();
-			expect(loginResult.tokens.refreshToken).toBeDefined();
-		});
+      // Then
+      expect(loginResult.tokens.accessToken).toBeDefined();
+      expect(loginResult.tokens.refreshToken).toBeDefined();
+    });
 
-		it("변경 후 이전 비밀번호로는 로그인할 수 없다", async () => {
-			// Given
-			const email = "change-login-old@example.com";
-			const currentPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			const userId = await createCredentialUser(email, currentPassword);
-			const sessionId = await loginAndGetSession(email, currentPassword);
+    it("변경 후 이전 비밀번호로는 로그인할 수 없다", async () => {
+      // Given
+      const email = "change-login-old@example.com";
+      const currentPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      const userId = await createCredentialUser(email, currentPassword);
+      const sessionId = await loginAndGetSession(email, currentPassword);
 
-			await passwordManagementService.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-				undefined,
-				sessionId,
-			);
+      await passwordManagementService.changePassword(
+        userId,
+        currentPassword,
+        newPassword,
+        undefined,
+        sessionId,
+      );
 
-			// When & Then
-			await expect(authService.login({ email, password: currentPassword })).rejects.toThrow(
-				ApplicationException,
-			);
-		});
+      // When & Then
+      await expect(authService.login({ email, password: currentPassword })).rejects.toThrow(
+        ApplicationException,
+      );
+    });
 
-		it("현재 세션은 유지되고 다른 세션은 폐기된다", async () => {
-			// Given
-			const email = "change-sessions@example.com";
-			const currentPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			const userId = await createCredentialUser(email, currentPassword);
+    it("현재 세션은 유지되고 다른 세션은 폐기된다", async () => {
+      // Given
+      const email = "change-sessions@example.com";
+      const currentPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      const userId = await createCredentialUser(email, currentPassword);
 
-			// 두 세션 생성
-			const currentSessionId = await loginAndGetSession(email, currentPassword);
-			const otherSessionId = await loginAndGetSession(email, currentPassword);
+      // 두 세션 생성
+      const currentSessionId = await loginAndGetSession(email, currentPassword);
+      const otherSessionId = await loginAndGetSession(email, currentPassword);
 
-			// When
-			await passwordManagementService.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-				undefined,
-				currentSessionId,
-			);
+      // When
+      await passwordManagementService.changePassword(
+        userId,
+        currentPassword,
+        newPassword,
+        undefined,
+        currentSessionId,
+      );
 
-			// Then
-			const prisma = testDb.getClient();
+      // Then
+      const prisma = testDb.getClient();
 
-			const currentSession = decodeRecord(
-				"Session",
-				await prisma.orm.public.Session.where((row) => row.id.eq(currentSessionId)).first(),
-			);
-			expect(currentSession?.revokedAt).toBeNull();
+      const currentSession = decodeRecord(
+        "Session",
+        await prisma.orm.public.Session.where((row) => row.id.eq(currentSessionId)).first(),
+      );
+      expect(currentSession?.revokedAt).toBeNull();
 
-			const otherSession = decodeRecord(
-				"Session",
-				await prisma.orm.public.Session.where((row) => row.id.eq(otherSessionId)).first(),
-			);
-			expect(otherSession?.revokedAt).not.toBeNull();
-			expect(otherSession?.revokedReason).toBe("PASSWORD_CHANGED");
-		});
+      const otherSession = decodeRecord(
+        "Session",
+        await prisma.orm.public.Session.where((row) => row.id.eq(otherSessionId)).first(),
+      );
+      expect(otherSession?.revokedAt).not.toBeNull();
+      expect(otherSession?.revokedReason).toBe("PASSWORD_CHANGED");
+    });
 
-		it("잘못된 현재 비밀번호를 입력하면 에러를 던진다", async () => {
-			// Given
-			const email = "change-wrong-pw@example.com";
-			const currentPassword = "Password123!";
-			const userId = await createCredentialUser(email, currentPassword);
+    it("잘못된 현재 비밀번호를 입력하면 에러를 던진다", async () => {
+      // Given
+      const email = "change-wrong-pw@example.com";
+      const currentPassword = "Password123!";
+      const userId = await createCredentialUser(email, currentPassword);
 
-			// When & Then
-			await expect(
-				passwordManagementService.changePassword(userId, "WrongPassword999!", "NewPassword456!"),
-			).rejects.toThrow(ApplicationException);
-		});
+      // When & Then
+      await expect(
+        passwordManagementService.changePassword(userId, "WrongPassword999!", "NewPassword456!"),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("소셜 전용 사용자가 비밀번호 변경을 시도하면 에러를 던진다", async () => {
-			// Given
-			const email = "social-change@example.com";
-			const userId = await createSocialOnlyUser(email);
+    it("소셜 전용 사용자가 비밀번호 변경을 시도하면 에러를 던진다", async () => {
+      // Given
+      const email = "social-change@example.com";
+      const userId = await createSocialOnlyUser(email);
 
-			// When & Then
-			await expect(
-				passwordManagementService.changePassword(userId, "AnyPassword123!", "NewPassword456!"),
-			).rejects.toThrow(ApplicationException);
-		});
+      // When & Then
+      await expect(
+        passwordManagementService.changePassword(userId, "AnyPassword123!", "NewPassword456!"),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("SecurityLog에 PASSWORD_CHANGED 이벤트와 metadata가 기록된다", async () => {
-			// Given
-			const email = "change-seclog@example.com";
-			const currentPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			const userId = await createCredentialUser(email, currentPassword);
-			const sessionId = await loginAndGetSession(email, currentPassword);
+    it("SecurityLog에 PASSWORD_CHANGED 이벤트와 metadata가 기록된다", async () => {
+      // Given
+      const email = "change-seclog@example.com";
+      const currentPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      const userId = await createCredentialUser(email, currentPassword);
+      const sessionId = await loginAndGetSession(email, currentPassword);
 
-			// When
-			await passwordManagementService.changePassword(
-				userId,
-				currentPassword,
-				newPassword,
-				{ ip: "10.0.0.1", userAgent: "IntegrationTest/1.0" },
-				sessionId,
-			);
+      // When
+      await passwordManagementService.changePassword(
+        userId,
+        currentPassword,
+        newPassword,
+        { ip: "10.0.0.1", userAgent: "IntegrationTest/1.0" },
+        sessionId,
+      );
 
-			// Then
-			const prisma = testDb.getClient();
-			const logs = decodeRecord(
-				"SecurityLog",
-				await prisma.orm.public.SecurityLog.where((row) =>
-					and(row.userId.eq(userId), row.event.eq("PASSWORD_CHANGED")),
-				).all(),
-			);
+      // Then
+      const prisma = testDb.getClient();
+      const logs = decodeRecord(
+        "SecurityLog",
+        await prisma.orm.public.SecurityLog.where((row) =>
+          and(row.userId.eq(userId), row.event.eq("PASSWORD_CHANGED")),
+        ).all(),
+      );
 
-			// PASSWORD_CHANGED는 changePassword에서 기록됨
-			const changeLog = logs.find((log) => log.ipAddress === "10.0.0.1");
-			expect(changeLog).toBeDefined();
-			expect(changeLog?.userAgent).toBe("IntegrationTest/1.0");
-		});
-	});
+      // PASSWORD_CHANGED는 changePassword에서 기록됨
+      const changeLog = logs.find((log) => log.ipAddress === "10.0.0.1");
+      expect(changeLog).toBeDefined();
+      expect(changeLog?.userAgent).toBe("IntegrationTest/1.0");
+    });
+  });
 });

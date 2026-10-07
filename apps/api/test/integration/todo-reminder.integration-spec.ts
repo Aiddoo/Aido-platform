@@ -28,194 +28,194 @@ import { createMockJob as createJob } from "#test/mocks/bull-job.mock";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 function createMockJob(data: { todoId: number; userId: string; stageLabel: string }) {
-	return createJob("todo-reminder", data);
+  return createJob("todo-reminder", data);
 }
 
 describe("TodoReminderProcessor 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let processor: TodoReminderProcessor;
+  let module: TestingModule;
+  let processor: TodoReminderProcessor;
 
-	// Mock 리마인더 리더 포트 (투두 유효성 조회 + dedup 판정)
-	const mockReader = {
-		findActiveTodo: vi.fn(),
-		existsRecentReminderNotification: vi.fn(),
-	};
+  // Mock 리마인더 리더 포트 (투두 유효성 조회 + dedup 판정)
+  const mockReader = {
+    findActiveTodo: vi.fn(),
+    existsRecentReminderNotification: vi.fn(),
+  };
 
-	const mockNotificationPublisher = { publish: vi.fn() };
-	const mockRecipientLocaleReader = { getRecipientLocale: vi.fn().mockResolvedValue("ko") };
+  const mockNotificationPublisher = { publish: vi.fn() };
+  const mockRecipientLocaleReader = { getRecipientLocale: vi.fn().mockResolvedValue("ko") };
 
-	// 테스트 데이터
-	const mockUserId = "user-reminder-123";
-	const mockTodoId = 42;
+  // 테스트 데이터
+  const mockUserId = "user-reminder-123";
+  const mockTodoId = 42;
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		module = await Test.createTestingModule({
-			providers: [
-				TodoReminderProcessor,
-				{
-					provide: TODO_REMINDER_READER,
-					useValue: mockReader,
-				},
-				{
-					provide: NotificationPublisher,
-					useValue: mockNotificationPublisher,
-				},
-				{
-					provide: NotificationRecipientLocaleReader,
-					useValue: mockRecipientLocaleReader,
-				},
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        TodoReminderProcessor,
+        {
+          provide: TODO_REMINDER_READER,
+          useValue: mockReader,
+        },
+        {
+          provide: NotificationPublisher,
+          useValue: mockNotificationPublisher,
+        },
+        {
+          provide: NotificationRecipientLocaleReader,
+          useValue: mockRecipientLocaleReader,
+        },
+      ],
+    }).compile();
 
-		processor = module.get<TodoReminderProcessor>(TodoReminderProcessor);
-	});
+    processor = module.get<TodoReminderProcessor>(TodoReminderProcessor);
+  });
 
-	afterAll(async () => {
-		await module.close();
-		vi.restoreAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+    vi.restoreAllMocks();
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-		TodoBuilder.resetIdCounter();
-		NotificationBuilder.resetIdCounter();
-	});
+  beforeEach(() => {
+    vi.clearAllMocks();
+    TodoBuilder.resetIdCounter();
+    NotificationBuilder.resetIdCounter();
+  });
 
-	describe("리마인더 처리 통합 테스트", () => {
-		it("유효한 todo — 리마인더 알림이 생성된다", async () => {
-			// Given - 완료되지 않은 유효한 투두
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withTitle("운동하기")
-				.build();
-			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
-			mockReader.existsRecentReminderNotification.mockResolvedValue(false);
-			mockNotificationPublisher.publish.mockResolvedValue(
-				NotificationBuilder.create(mockUserId).withId(1).build(),
-			);
+  describe("리마인더 처리 통합 테스트", () => {
+    it("유효한 todo — 리마인더 알림이 생성된다", async () => {
+      // Given - 완료되지 않은 유효한 투두
+      const mockTodo = TodoBuilder.create(mockUserId)
+        .withId(mockTodoId)
+        .withTitle("운동하기")
+        .build();
+      mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+      mockReader.existsRecentReminderNotification.mockResolvedValue(false);
+      mockNotificationPublisher.publish.mockResolvedValue(
+        NotificationBuilder.create(mockUserId).withId(1).build(),
+      );
 
-			const job = createMockJob({
-				todoId: mockTodoId,
-				userId: mockUserId,
-				stageLabel: "1시간 전",
-			});
+      const job = createMockJob({
+        todoId: mockTodoId,
+        userId: mockUserId,
+        stageLabel: "1시간 전",
+      });
 
-			// When - 리마인더 잡 처리
-			await processor.process(job);
+      // When - 리마인더 잡 처리
+      await processor.process(job);
 
-			// Then - 알림이 생성되어야 함
-			expect(mockNotificationPublisher.publish).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUserId,
-					type: "TODO_REMINDER",
-					todoId: mockTodoId,
-					metadata: { stage: "1시간 전" },
-				}),
-			);
-		});
+      // Then - 알림이 생성되어야 함
+      expect(mockNotificationPublisher.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: mockUserId,
+          type: "TODO_REMINDER",
+          todoId: mockTodoId,
+          metadata: { stage: "1시간 전" },
+        }),
+      );
+    });
 
-		it("완료된 todo — 알림이 생성되지 않는다", async () => {
-			// Given - 완료된 투두 (completed: false 필터에 걸림 → null 반환)
-			mockReader.findActiveTodo.mockResolvedValue(null);
+    it("완료된 todo — 알림이 생성되지 않는다", async () => {
+      // Given - 완료된 투두 (completed: false 필터에 걸림 → null 반환)
+      mockReader.findActiveTodo.mockResolvedValue(null);
 
-			const job = createMockJob({
-				todoId: mockTodoId,
-				userId: mockUserId,
-				stageLabel: "1시간 전",
-			});
+      const job = createMockJob({
+        todoId: mockTodoId,
+        userId: mockUserId,
+        stageLabel: "1시간 전",
+      });
 
-			// When - 리마인더 잡 처리
-			await processor.process(job);
+      // When - 리마인더 잡 처리
+      await processor.process(job);
 
-			// Then - 알림이 생성되지 않아야 함
-			expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
-		});
+      // Then - 알림이 생성되지 않아야 함
+      expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
+    });
 
-		it("삭제된 todo — 알림이 생성되지 않는다", async () => {
-			// Given - 삭제된 투두 (findFirst returns null)
-			mockReader.findActiveTodo.mockResolvedValue(null);
+    it("삭제된 todo — 알림이 생성되지 않는다", async () => {
+      // Given - 삭제된 투두 (findFirst returns null)
+      mockReader.findActiveTodo.mockResolvedValue(null);
 
-			const job = createMockJob({
-				todoId: 9999,
-				userId: mockUserId,
-				stageLabel: "30분 전",
-			});
+      const job = createMockJob({
+        todoId: 9999,
+        userId: mockUserId,
+        stageLabel: "30분 전",
+      });
 
-			// When - 리마인더 잡 처리
-			await processor.process(job);
+      // When - 리마인더 잡 처리
+      await processor.process(job);
 
-			// Then - 알림이 생성되지 않아야 함
-			expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
-		});
+      // Then - 알림이 생성되지 않아야 함
+      expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
+    });
 
-		it("24시간 내 동일 스테이지 알림 존재 — 중복 알림이 생성되지 않는다", async () => {
-			// Given - 유효한 투두 + 이미 동일 스테이지 알림이 존재
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withTitle("공부하기")
-				.build();
-			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
-			mockReader.existsRecentReminderNotification.mockResolvedValue(true);
+    it("24시간 내 동일 스테이지 알림 존재 — 중복 알림이 생성되지 않는다", async () => {
+      // Given - 유효한 투두 + 이미 동일 스테이지 알림이 존재
+      const mockTodo = TodoBuilder.create(mockUserId)
+        .withId(mockTodoId)
+        .withTitle("공부하기")
+        .build();
+      mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+      mockReader.existsRecentReminderNotification.mockResolvedValue(true);
 
-			const job = createMockJob({
-				todoId: mockTodoId,
-				userId: mockUserId,
-				stageLabel: "1시간 전",
-			});
+      const job = createMockJob({
+        todoId: mockTodoId,
+        userId: mockUserId,
+        stageLabel: "1시간 전",
+      });
 
-			// When - 리마인더 잡 처리
-			await processor.process(job);
+      // When - 리마인더 잡 처리
+      await processor.process(job);
 
-			// Then - 중복 알림이 생성되지 않아야 함
-			expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
-		});
+      // Then - 중복 알림이 생성되지 않아야 함
+      expect(mockNotificationPublisher.publish).not.toHaveBeenCalled();
+    });
 
-		it("다단계 리마인더 — 각 스테이지별 알림 메시지가 다르다", async () => {
-			// Given - 동일 투두에 대해 서로 다른 스테이지
-			const mockTodo = TodoBuilder.create(mockUserId)
-				.withId(mockTodoId)
-				.withTitle("회의 참석")
-				.build();
-			mockReader.findActiveTodo.mockResolvedValue(mockTodo);
-			mockReader.existsRecentReminderNotification.mockResolvedValue(false);
-			mockNotificationPublisher.publish.mockResolvedValue(
-				NotificationBuilder.create(mockUserId).withId(1).build(),
-			);
+    it("다단계 리마인더 — 각 스테이지별 알림 메시지가 다르다", async () => {
+      // Given - 동일 투두에 대해 서로 다른 스테이지
+      const mockTodo = TodoBuilder.create(mockUserId)
+        .withId(mockTodoId)
+        .withTitle("회의 참석")
+        .build();
+      mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+      mockReader.existsRecentReminderNotification.mockResolvedValue(false);
+      mockNotificationPublisher.publish.mockResolvedValue(
+        NotificationBuilder.create(mockUserId).withId(1).build(),
+      );
 
-			const stages = ["1시간 전", "30분 전"];
-			const sentMessages: Array<{ title: string; body: string }> = [];
+      const stages = ["1시간 전", "30분 전"];
+      const sentMessages: Array<{ title: string; body: string }> = [];
 
-			for (const stage of stages) {
-				vi.clearAllMocks();
-				mockReader.findActiveTodo.mockResolvedValue(mockTodo);
-				mockReader.existsRecentReminderNotification.mockResolvedValue(false);
-				mockNotificationPublisher.publish.mockResolvedValue(
-					NotificationBuilder.create(mockUserId).withId(1).build(),
-				);
+      for (const stage of stages) {
+        vi.clearAllMocks();
+        mockReader.findActiveTodo.mockResolvedValue(mockTodo);
+        mockReader.existsRecentReminderNotification.mockResolvedValue(false);
+        mockNotificationPublisher.publish.mockResolvedValue(
+          NotificationBuilder.create(mockUserId).withId(1).build(),
+        );
 
-				const job = createMockJob({
-					todoId: mockTodoId,
-					userId: mockUserId,
-					stageLabel: stage,
-				});
+        const job = createMockJob({
+          todoId: mockTodoId,
+          userId: mockUserId,
+          stageLabel: stage,
+        });
 
-				// When - 각 스테이지별 리마인더 잡 처리
-				await processor.process(job);
+        // When - 각 스테이지별 리마인더 잡 처리
+        await processor.process(job);
 
-				// Then - 각 스테이지별 알림이 생성되어야 함
-				const callArg = mockNotificationPublisher.publish.mock.calls[0]?.[0];
-				sentMessages.push({
-					title: callArg.title,
-					body: callArg.body,
-				});
+        // Then - 각 스테이지별 알림이 생성되어야 함
+        const callArg = mockNotificationPublisher.publish.mock.calls[0]?.[0];
+        sentMessages.push({
+          title: callArg.title,
+          body: callArg.body,
+        });
 
-				expect(callArg.metadata.stage).toBe(stage);
-			}
+        expect(callArg.metadata.stage).toBe(stage);
+      }
 
-			// Then - 스테이지별 메타데이터가 각각 다른 값이어야 함
-			expect(sentMessages).toHaveLength(2);
-		});
-	});
+      // Then - 스테이지별 메타데이터가 각각 다른 값이어야 함
+      expect(sentMessages).toHaveLength(2);
+    });
+  });
 });

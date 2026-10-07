@@ -10,10 +10,10 @@ import type { z } from "zod";
  * 토큰 사용량 정보
  */
 export interface TokenUsage {
-	/** 입력 토큰 수 */
-	input: number;
-	/** 출력 토큰 수 */
-	output: number;
+  /** 입력 토큰 수 */
+  input: number;
+  /** 출력 토큰 수 */
+  output: number;
 }
 
 /**
@@ -28,40 +28,40 @@ export type AiModelHint = "default";
  * 구조화된 생성 옵션
  */
 export interface GenerateStructuredOptions<T> {
-	/** 시스템 메시지 (역할, 규칙, 제약 조건) */
-	system?: string;
-	/** 프롬프트 텍스트 */
-	prompt: string;
-	/** 출력 스키마 (Zod) */
-	schema: z.ZodSchema<T>;
-	/** 최대 출력 토큰 수 */
-	maxOutputTokens?: number;
-	/** 모델 선택 힌트 (라우터가 있는 환경에서만 의미 있음) */
-	modelHint?: AiModelHint;
+  /** 시스템 메시지 (역할, 규칙, 제약 조건) */
+  system?: string;
+  /** 프롬프트 텍스트 */
+  prompt: string;
+  /** 출력 스키마 (Zod) */
+  schema: z.ZodSchema<T>;
+  /** 최대 출력 토큰 수 */
+  maxOutputTokens?: number;
+  /** 모델 선택 힌트 (라우터가 있는 환경에서만 의미 있음) */
+  modelHint?: AiModelHint;
 }
 
 /**
  * 구조화된 생성 결과
  */
 export interface GenerateStructuredResult<T> {
-	/** 파싱된 출력 객체 */
-	output: T;
-	/** 사용된 모델명 */
-	model: string;
-	/** 토큰 사용량 */
-	usage: TokenUsage;
+  /** 파싱된 출력 객체 */
+  output: T;
+  /** 사용된 모델명 */
+  model: string;
+  /** 토큰 사용량 */
+  usage: TokenUsage;
 }
 
 /** AI SDK/HTTP 구현이 application 경계에 전달하는 호출 실패. */
 export class AiProviderCallError extends Error {
-	constructor(
-		message: string,
-		readonly statusCode: number | undefined,
-		options?: ErrorOptions,
-	) {
-		super(message, options);
-		this.name = AiProviderCallError.name;
-	}
+  constructor(
+    message: string,
+    readonly statusCode: number | undefined,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = AiProviderCallError.name;
+  }
 }
 
 /**
@@ -78,23 +78,23 @@ export class AiProviderCallError extends Error {
  * ```
  */
 export interface AiProvider {
-	/**
-	 * 구조화된 출력 생성
-	 *
-	 * @param options - 생성 옵션
-	 * @returns 구조화된 결과
-	 * @throws AI 호출 실패 시 에러
-	 */
-	generateStructured<T>(
-		options: GenerateStructuredOptions<T>,
-	): Promise<GenerateStructuredResult<T>>;
+  /**
+   * 구조화된 출력 생성
+   *
+   * @param options - 생성 옵션
+   * @returns 구조화된 결과
+   * @throws AI 호출 실패 시 에러
+   */
+  generateStructured<T>(
+    options: GenerateStructuredOptions<T>,
+  ): Promise<GenerateStructuredResult<T>>;
 
-	/**
-	 * Provider 가용성 확인
-	 *
-	 * @returns API 키 설정 여부
-	 */
-	isAvailable(): boolean;
+  /**
+   * Provider 가용성 확인
+   *
+   * @returns API 키 설정 여부
+   */
+  isAvailable(): boolean;
 }
 
 /** AI Provider 주입 토큰 */

@@ -7,12 +7,12 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoToggledEvent {
-	readonly eventName = TODO_EVENTS.TOGGLED;
+  readonly eventName = TODO_EVENTS.TOGGLED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-		public readonly completed: boolean,
-		public readonly timezone: string,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+    public readonly completed: boolean,
+    public readonly timezone: string,
+  ) {}
 }

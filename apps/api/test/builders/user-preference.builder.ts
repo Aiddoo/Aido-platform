@@ -14,118 +14,118 @@
  * ```
  */
 import type {
-	TimeFormat,
-	UserPreference,
+  TimeFormat,
+  UserPreference,
 } from "#api/shared/infrastructure/database/database.types";
 
 export class UserPreferenceBuilder {
-	private data: UserPreference;
-	private static idCounter = 0;
+  private data: UserPreference;
+  private static idCounter = 0;
 
-	private constructor(userId: string) {
-		UserPreferenceBuilder.idCounter += 1;
-		this.data = {
-			id: `pref-${UserPreferenceBuilder.idCounter}`,
-			userId,
-			pushEnabled: true,
-			nightPushEnabled: false,
-			timezone: "UTC",
-			locale: "ko",
-			morningReminderHour: 8,
-			morningReminderMinute: 0,
-			eveningReminderHour: 18,
-			eveningReminderMinute: 0,
-			timeFormat: "TWELVE_HOUR",
-			weatherMorningEnabled: false,
-			weatherMorningHour: 7,
-			weatherMorningMinute: 0,
-			weatherEveningEnabled: false,
-			weatherEveningHour: 18,
-			weatherEveningMinute: 0,
-			currentStreak: 0,
-			longestStreak: 0,
-			lastCompletedDate: null,
-		};
-	}
+  private constructor(userId: string) {
+    UserPreferenceBuilder.idCounter += 1;
+    this.data = {
+      id: `pref-${UserPreferenceBuilder.idCounter}`,
+      userId,
+      pushEnabled: true,
+      nightPushEnabled: false,
+      timezone: "UTC",
+      locale: "ko",
+      morningReminderHour: 8,
+      morningReminderMinute: 0,
+      eveningReminderHour: 18,
+      eveningReminderMinute: 0,
+      timeFormat: "TWELVE_HOUR",
+      weatherMorningEnabled: false,
+      weatherMorningHour: 7,
+      weatherMorningMinute: 0,
+      weatherEveningEnabled: false,
+      weatherEveningHour: 18,
+      weatherEveningMinute: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastCompletedDate: null,
+    };
+  }
 
-	static create(userId: string): UserPreferenceBuilder {
-		return new UserPreferenceBuilder(userId);
-	}
+  static create(userId: string): UserPreferenceBuilder {
+    return new UserPreferenceBuilder(userId);
+  }
 
-	/** ID 카운터 리셋 (테스트 간 격리용) */
-	static resetIdCounter(): void {
-		UserPreferenceBuilder.idCounter = 0;
-	}
+  /** ID 카운터 리셋 (테스트 간 격리용) */
+  static resetIdCounter(): void {
+    UserPreferenceBuilder.idCounter = 0;
+  }
 
-	// === ID 관련 ===
+  // === ID 관련 ===
 
-	withId(id: string): UserPreferenceBuilder {
-		this.data.id = id;
-		return this;
-	}
+  withId(id: string): UserPreferenceBuilder {
+    this.data.id = id;
+    return this;
+  }
 
-	// === 푸시 설정 ===
+  // === 푸시 설정 ===
 
-	withPushEnabled(enabled = true): UserPreferenceBuilder {
-		this.data.pushEnabled = enabled;
-		return this;
-	}
+  withPushEnabled(enabled = true): UserPreferenceBuilder {
+    this.data.pushEnabled = enabled;
+    return this;
+  }
 
-	withPushDisabled(): UserPreferenceBuilder {
-		this.data.pushEnabled = false;
-		return this;
-	}
+  withPushDisabled(): UserPreferenceBuilder {
+    this.data.pushEnabled = false;
+    return this;
+  }
 
-	withNightPushEnabled(enabled = true): UserPreferenceBuilder {
-		this.data.nightPushEnabled = enabled;
-		return this;
-	}
+  withNightPushEnabled(enabled = true): UserPreferenceBuilder {
+    this.data.nightPushEnabled = enabled;
+    return this;
+  }
 
-	// === 타임존 & 리마인더 ===
+  // === 타임존 & 리마인더 ===
 
-	withLocale(locale: string): UserPreferenceBuilder {
-		this.data.locale = locale;
-		return this;
-	}
+  withLocale(locale: string): UserPreferenceBuilder {
+    this.data.locale = locale;
+    return this;
+  }
 
-	withTimezone(timezone: string): UserPreferenceBuilder {
-		this.data.timezone = timezone;
-		return this;
-	}
+  withTimezone(timezone: string): UserPreferenceBuilder {
+    this.data.timezone = timezone;
+    return this;
+  }
 
-	withMorningReminderHour(hour: number): UserPreferenceBuilder {
-		this.data.morningReminderHour = hour;
-		return this;
-	}
+  withMorningReminderHour(hour: number): UserPreferenceBuilder {
+    this.data.morningReminderHour = hour;
+    return this;
+  }
 
-	withMorningReminderMinute(minute: number): UserPreferenceBuilder {
-		this.data.morningReminderMinute = minute;
-		return this;
-	}
+  withMorningReminderMinute(minute: number): UserPreferenceBuilder {
+    this.data.morningReminderMinute = minute;
+    return this;
+  }
 
-	withEveningReminderHour(hour: number): UserPreferenceBuilder {
-		this.data.eveningReminderHour = hour;
-		return this;
-	}
+  withEveningReminderHour(hour: number): UserPreferenceBuilder {
+    this.data.eveningReminderHour = hour;
+    return this;
+  }
 
-	withEveningReminderMinute(minute: number): UserPreferenceBuilder {
-		this.data.eveningReminderMinute = minute;
-		return this;
-	}
+  withEveningReminderMinute(minute: number): UserPreferenceBuilder {
+    this.data.eveningReminderMinute = minute;
+    return this;
+  }
 
-	withTimeFormat(format: TimeFormat): UserPreferenceBuilder {
-		this.data.timeFormat = format;
-		return this;
-	}
+  withTimeFormat(format: TimeFormat): UserPreferenceBuilder {
+    this.data.timeFormat = format;
+    return this;
+  }
 
-	// === 빌드 ===
+  // === 빌드 ===
 
-	build(): UserPreference {
-		return { ...this.data };
-	}
+  build(): UserPreference {
+    return { ...this.data };
+  }
 
-	/** 여러 개 생성 */
-	static createMany(userIds: string[]): UserPreference[] {
-		return userIds.map((userId) => UserPreferenceBuilder.create(userId).build());
-	}
+  /** 여러 개 생성 */
+  static createMany(userIds: string[]): UserPreference[] {
+    return userIds.map((userId) => UserPreferenceBuilder.create(userId).build());
+  }
 }

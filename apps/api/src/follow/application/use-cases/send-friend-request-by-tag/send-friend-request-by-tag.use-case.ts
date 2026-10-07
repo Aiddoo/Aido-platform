@@ -5,17 +5,17 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import { UserTag } from "../../../domain/value-objects/user-tag.vo.js";
 import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
+  FOLLOW_REPOSITORY,
+  type FollowRepositoryPort,
 } from "../../ports/follow.repository.port.js";
 import {
-	type SendFriendRequestResult,
-	SendFriendRequestUseCase,
+  type SendFriendRequestResult,
+  SendFriendRequestUseCase,
 } from "../send-friend-request/send-friend-request.use-case.js";
 
 export interface SendFriendRequestByTagInput {
-	userId: string;
-	targetUserTag: string;
+  userId: string;
+  targetUserTag: string;
 }
 
 /**
@@ -24,24 +24,24 @@ export interface SendFriendRequestByTagInput {
  */
 @Injectable()
 export class SendFriendRequestByTagUseCase {
-	constructor(
-		@Inject(FOLLOW_REPOSITORY)
-		private readonly followRepository: FollowRepositoryPort,
-		private readonly sendFriendRequest: SendFriendRequestUseCase,
-	) {}
+  constructor(
+    @Inject(FOLLOW_REPOSITORY)
+    private readonly followRepository: FollowRepositoryPort,
+    private readonly sendFriendRequest: SendFriendRequestUseCase,
+  ) {}
 
-	async execute(input: SendFriendRequestByTagInput): Promise<SendFriendRequestResult> {
-		const targetTag = UserTag.of(input.targetUserTag);
-		const targetUser = await this.followRepository.findUserByTag(targetTag.value);
-		if (!targetUser) {
-			throw new ApplicationException(ErrorCode.FOLLOW_0905, {
-				userTag: input.targetUserTag,
-			});
-		}
+  async execute(input: SendFriendRequestByTagInput): Promise<SendFriendRequestResult> {
+    const targetTag = UserTag.of(input.targetUserTag);
+    const targetUser = await this.followRepository.findUserByTag(targetTag.value);
+    if (!targetUser) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0905, {
+        userTag: input.targetUserTag,
+      });
+    }
 
-		return this.sendFriendRequest.execute({
-			userId: input.userId,
-			targetUserId: targetUser.id,
-		});
-	}
+    return this.sendFriendRequest.execute({
+      userId: input.userId,
+      targetUserId: targetUser.id,
+    });
+  }
 }

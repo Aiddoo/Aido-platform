@@ -6,33 +6,33 @@ import type { AccountProvider } from "#api/auth/domain/types";
 
 import type { TokenPair } from "../../ports/auth-crypto.port.js";
 import {
-	AUTH_LOGIN_ATTEMPT_REPOSITORY,
-	AUTH_SECURITY_LOG_REPOSITORY,
-	AUTH_USER_REPOSITORY,
-	type AuthLoginAttemptRepositoryPort,
-	type AuthSecurityLogRepositoryPort,
-	type AuthUserRepositoryPort,
+  AUTH_LOGIN_ATTEMPT_REPOSITORY,
+  AUTH_SECURITY_LOG_REPOSITORY,
+  AUTH_USER_REPOSITORY,
+  type AuthLoginAttemptRepositoryPort,
+  type AuthSecurityLogRepositoryPort,
+  type AuthUserRepositoryPort,
 } from "../../ports/auth-persistence.port.js";
 import { SessionService } from "../../services/session.service.js";
 
 export interface IssueLoginInput {
-	userId: string;
-	email: string;
-	role: UserRole;
-	provider: AccountProvider;
-	ip: string;
-	userAgent: string;
-	deviceFingerprint: string;
-	/** 소셜 로그인은 { provider } 메타데이터를 보안 로그에 남긴다(크레덴셜은 생략) */
-	securityMetadata?: Record<string, unknown>;
+  userId: string;
+  email: string;
+  role: UserRole;
+  provider: AccountProvider;
+  ip: string;
+  userAgent: string;
+  deviceFingerprint: string;
+  /** 소셜 로그인은 { provider } 메타데이터를 보안 로그에 남긴다(크레덴셜은 생략) */
+  securityMetadata?: Record<string, unknown>;
 }
 
 export interface IssueLoginOutcome {
-	sessionId: string;
-	tokens: TokenPair;
-	userTag: string;
-	name: string | null;
-	profileImage: string | null;
+  sessionId: string;
+  tokens: TokenPair;
+  userTag: string;
+  name: string | null;
+  profileImage: string | null;
 }
 
 /**
@@ -45,50 +45,50 @@ export interface IssueLoginOutcome {
  */
 @Injectable()
 export class IssueLoginUseCase {
-	constructor(
-		private readonly sessionService: SessionService,
-		@Inject(AUTH_LOGIN_ATTEMPT_REPOSITORY)
-		private readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort,
-		@Inject(AUTH_SECURITY_LOG_REPOSITORY)
-		private readonly securityLogRepository: AuthSecurityLogRepositoryPort,
-		@Inject(AUTH_USER_REPOSITORY)
-		private readonly userRepository: AuthUserRepositoryPort,
-	) {}
+  constructor(
+    private readonly sessionService: SessionService,
+    @Inject(AUTH_LOGIN_ATTEMPT_REPOSITORY)
+    private readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort,
+    @Inject(AUTH_SECURITY_LOG_REPOSITORY)
+    private readonly securityLogRepository: AuthSecurityLogRepositoryPort,
+    @Inject(AUTH_USER_REPOSITORY)
+    private readonly userRepository: AuthUserRepositoryPort,
+  ) {}
 
-	async execute(input: IssueLoginInput): Promise<IssueLoginOutcome> {
-		const { sessionId, tokens } = await this.sessionService.createSessionWithTokens({
-			userId: input.userId,
-			email: input.email,
-			role: input.role,
-			deviceFingerprint: input.deviceFingerprint,
-			userAgent: input.userAgent,
-			ipAddress: input.ip,
-		});
+  async execute(input: IssueLoginInput): Promise<IssueLoginOutcome> {
+    const { sessionId, tokens } = await this.sessionService.createSessionWithTokens({
+      userId: input.userId,
+      email: input.email,
+      role: input.role,
+      deviceFingerprint: input.deviceFingerprint,
+      userAgent: input.userAgent,
+      ipAddress: input.ip,
+    });
 
-		await this.loginAttemptRepository.create({
-			email: input.email,
-			provider: input.provider,
-			ipAddress: input.ip,
-			userAgent: input.userAgent,
-			success: true,
-		});
+    await this.loginAttemptRepository.create({
+      email: input.email,
+      provider: input.provider,
+      ipAddress: input.ip,
+      userAgent: input.userAgent,
+      success: true,
+    });
 
-		await this.securityLogRepository.create({
-			userId: input.userId,
-			event: SECURITY_EVENT.LOGIN_SUCCESS,
-			ipAddress: input.ip,
-			userAgent: input.userAgent,
-			...(input.securityMetadata ? { metadata: input.securityMetadata } : {}),
-		});
+    await this.securityLogRepository.create({
+      userId: input.userId,
+      event: SECURITY_EVENT.LOGIN_SUCCESS,
+      ipAddress: input.ip,
+      userAgent: input.userAgent,
+      ...(input.securityMetadata ? { metadata: input.securityMetadata } : {}),
+    });
 
-		const userWithProfile = await this.userRepository.findByIdWithProfile(input.userId);
+    const userWithProfile = await this.userRepository.findByIdWithProfile(input.userId);
 
-		return {
-			sessionId,
-			tokens,
-			userTag: userWithProfile?.userTag ?? "",
-			name: userWithProfile?.profile?.name ?? null,
-			profileImage: userWithProfile?.profile?.profileImage ?? null,
-		};
-	}
+    return {
+      sessionId,
+      tokens,
+      userTag: userWithProfile?.userTag ?? "",
+      name: userWithProfile?.profile?.name ?? null,
+      profileImage: userWithProfile?.profile?.profileImage ?? null,
+    };
+  }
 }

@@ -11,14 +11,14 @@ import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repos
 
 /** 메모 변경 계열 유스케이스의 공통 결과(메시지 + 메모 뷰). */
 export interface MemoMutationResult {
-	message: string;
-	memo: MemoResponse;
+  message: string;
+  memo: MemoResponse;
 }
 
 /** 메모 생성 입력. 사용자당 한도 확인 후 정렬 최상단에 생성한다. */
 export interface CreateMemoInput {
-	userId: string;
-	content: string;
+  userId: string;
+  content: string;
 }
 
 /**
@@ -29,33 +29,33 @@ export interface CreateMemoInput {
  */
 @Injectable()
 export class CreateMemoUseCase {
-	readonly #logger = new Logger(CreateMemoUseCase.name);
+  readonly #logger = new Logger(CreateMemoUseCase.name);
 
-	constructor(
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		@Inject(MEMO_REPOSITORY)
-		private readonly repository: MemoRepositoryPort,
-	) {}
+  constructor(
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    @Inject(MEMO_REPOSITORY)
+    private readonly repository: MemoRepositoryPort,
+  ) {}
 
-	async execute(input: CreateMemoInput): Promise<MemoMutationResult> {
-		const memo = await this.uow.run(async () => {
-			const count = await this.repository.countByUserId(input.userId);
-			if (count >= MEMO_LIMITS.MAX_PER_USER) {
-				throw new ApplicationException(ErrorCode.MEMO_2003, {
-					current: count,
-					limit: MEMO_LIMITS.MAX_PER_USER,
-				});
-			}
+  async execute(input: CreateMemoInput): Promise<MemoMutationResult> {
+    const memo = await this.uow.run(async () => {
+      const count = await this.repository.countByUserId(input.userId);
+      if (count >= MEMO_LIMITS.MAX_PER_USER) {
+        throw new ApplicationException(ErrorCode.MEMO_2003, {
+          current: count,
+          limit: MEMO_LIMITS.MAX_PER_USER,
+        });
+      }
 
-			const content = MemoContent.of(input.content);
-			const maxSortOrder = await this.repository.getMaxSortOrder(input.userId);
+      const content = MemoContent.of(input.content);
+      const maxSortOrder = await this.repository.getMaxSortOrder(input.userId);
 
-			return this.repository.create(input.userId, content.value, maxSortOrder + 1);
-		});
+      return this.repository.create(input.userId, content.value, maxSortOrder + 1);
+    });
 
-		this.#logger.log(`Memo created: ${memo.id} for user: ${input.userId}`);
+    this.#logger.log(`Memo created: ${memo.id} for user: ${input.userId}`);
 
-		return { message: "메모가 생성되었습니다.", memo: memo.toView() };
-	}
+    return { message: "메모가 생성되었습니다.", memo: memo.toView() };
+  }
 }

@@ -1,7 +1,7 @@
 /** 특정 날짜의 투두 완료 현황 */
 export interface TodoCompletionStats {
-	total: number;
-	completed: number;
+  total: number;
+  completed: number;
 }
 
 /**
@@ -11,8 +11,8 @@ export interface TodoCompletionStats {
  * (todo 모듈 순환을 피하기 위해 어댑터가 직접 집계 쿼리로 위임)
  */
 export interface TodoCompletionStatsReaderPort {
-	/** [dayStart, dayEnd) 구간의 total/completed 카운트 */
-	countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats>;
+  /** [dayStart, dayEnd) 구간의 total/completed 카운트 */
+  countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats>;
 }
 
 export const TODO_COMPLETION_STATS_READER = Symbol("TODO_COMPLETION_STATS_READER");

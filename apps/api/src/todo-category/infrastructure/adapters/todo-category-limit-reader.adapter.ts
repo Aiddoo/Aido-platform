@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
 
 import {
-	EntitlementService,
-	Resource,
+  EntitlementService,
+  Resource,
 } from "#api/shared/application/entitlement/entitlement.service";
 
 import type { TodoCategoryLimitReaderPort } from "../../application/ports/todo-category-limit-reader.port.js";
@@ -12,13 +12,13 @@ import type { TodoCategoryLimitReaderPort } from "../../application/ports/todo-c
  */
 @Injectable()
 export class TodoCategoryLimitReaderAdapter implements TodoCategoryLimitReaderPort {
-	constructor(private readonly entitlementService: EntitlementService) {}
+  constructor(private readonly entitlementService: EntitlementService) {}
 
-	async getMaxCountInTx(userId: string): Promise<number | null> {
-		const { maxCount } = await this.entitlementService.getResourceLimitInTx(
-			userId,
-			Resource.CATEGORY,
-		);
-		return maxCount;
-	}
+  async getMaxCountInTx(userId: string): Promise<number | null> {
+    const { maxCount } = await this.entitlementService.getResourceLimitInTx(
+      userId,
+      Resource.CATEGORY,
+    );
+    return maxCount;
+  }
 }

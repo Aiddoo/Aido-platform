@@ -6,23 +6,23 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports
 import { ApplicationException } from "#api/shared/domain/index";
 
 import {
-	planReorderRelativeTo,
-	planReorderToEdge,
-	type ReorderPlan,
+  planReorderRelativeTo,
+  planReorderToEdge,
+  type ReorderPlan,
 } from "../../../domain/services/reorder-position.js";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
 /** Todo 순서 변경 입력. */
 export interface ReorderTodoInput {
-	id: number;
-	userId: string;
-	targetTodoId: number | undefined;
-	position: ReorderPosition;
+  id: number;
+  userId: string;
+  targetTodoId: number | undefined;
+  position: ReorderPosition;
 }
 
 /**
@@ -35,69 +35,69 @@ export interface ReorderTodoInput {
  */
 @Injectable()
 export class ReorderTodoUseCase {
-	readonly #logger = new Logger(ReorderTodoUseCase.name);
+  readonly #logger = new Logger(ReorderTodoUseCase.name);
 
-	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		@Inject(TODO_CACHE)
-		private readonly todoCache: TodoCachePort,
-	) {}
+  constructor(
+    @Inject(TODO_REPOSITORY)
+    private readonly todoRepository: TodoRepositoryPort,
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    @Inject(TODO_CACHE)
+    private readonly todoCache: TodoCachePort,
+  ) {}
 
-	async execute(input: ReorderTodoInput): Promise<TodoResponse> {
-		const { id, userId, targetTodoId, position } = input;
+  async execute(input: ReorderTodoInput): Promise<TodoResponse> {
+    const { id, userId, targetTodoId, position } = input;
 
-		// 1. 트랜잭션 안에서 소유권 확인 → 새 sortOrder 계산·시프트 → 영속화
-		await this.uow.run(async () => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-			if (!todo) {
-				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-			}
+    // 1. 트랜잭션 안에서 소유권 확인 → 새 sortOrder 계산·시프트 → 영속화
+    await this.uow.run(async () => {
+      const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+      if (!todo) {
+        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      }
 
-			// 자기 자신을 기준으로 지정하면 이동 없음
-			if (targetTodoId === id) {
-				return;
-			}
+      // 자기 자신을 기준으로 지정하면 이동 없음
+      if (targetTodoId === id) {
+        return;
+      }
 
-			let plan: ReorderPlan;
-			if (targetTodoId) {
-				const targetTodo = await this.todoRepository.findByIdAndUserId(targetTodoId, userId);
-				if (!targetTodo) {
-					throw new ApplicationException(ErrorCode.TODO_0810, {
-						targetTodoId,
-					});
-				}
-				plan = planReorderRelativeTo(todo.getSortOrder(), targetTodo.getSortOrder(), position);
-			} else {
-				const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId);
-				plan = planReorderToEdge(todo.getSortOrder(), position, maxSortOrder);
-			}
+      let plan: ReorderPlan;
+      if (targetTodoId) {
+        const targetTodo = await this.todoRepository.findByIdAndUserId(targetTodoId, userId);
+        if (!targetTodo) {
+          throw new ApplicationException(ErrorCode.TODO_0810, {
+            targetTodoId,
+          });
+        }
+        plan = planReorderRelativeTo(todo.getSortOrder(), targetTodo.getSortOrder(), position);
+      } else {
+        const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId);
+        plan = planReorderToEdge(todo.getSortOrder(), position, maxSortOrder);
+      }
 
-			await this.todoRepository.shiftSortOrders(
-				userId,
-				plan.shift.from,
-				plan.shift.to,
-				plan.shift.delta,
-			);
-			await this.todoRepository.updateSortOrder(id, plan.newSortOrder);
+      await this.todoRepository.shiftSortOrders(
+        userId,
+        plan.shift.from,
+        plan.shift.to,
+        plan.shift.delta,
+      );
+      await this.todoRepository.updateSortOrder(id, plan.newSortOrder);
 
-			this.#logger.log(
-				`Todo reordered: ${id} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
-			);
-		});
+      this.#logger.log(
+        `Todo reordered: ${id} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
+      );
+    });
 
-		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
-		await this.todoCache.invalidateFriendTodos(userId);
+    // 친구 공개 투두 캐시 무효화 (TX 커밋 후)
+    await this.todoCache.invalidateFriendTodos(userId);
 
-		// 2. 응답 재조회
-		const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
-		if (!response) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
-		return response;
-	}
+    // 2. 응답 재조회
+    const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
+    if (!response) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+    }
+    return response;
+  }
 }

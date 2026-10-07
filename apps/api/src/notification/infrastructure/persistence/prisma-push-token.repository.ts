@@ -4,9 +4,9 @@ import { all, and } from "@prisma/orm-postgres/orm-client";
 
 import { now } from "#api/shared/domain/date/utils/core";
 import {
-	decodeRecord,
-	encodeCreate,
-	encodePatch,
+  decodeRecord,
+  encodeCreate,
+  encodePatch,
 } from "#api/shared/infrastructure/database/database-records";
 import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
@@ -14,99 +14,99 @@ import { isRecordNotFoundError } from "#api/shared/infrastructure/database/prism
 import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
-	FindPushTokensParams,
-	RegisterPushTokenData,
+  FindPushTokensParams,
+  RegisterPushTokenData,
 } from "../../application/ports/notification-data.js";
 import {
-	PushTokenNotFoundError,
-	type PushTokenRepositoryPort,
+  PushTokenNotFoundError,
+  type PushTokenRepositoryPort,
 } from "../../application/ports/push-token.repository.port.js";
 import type { PushTokenRecord } from "../../domain/records/notification.record.js";
 
 @Injectable()
 export class PrismaPushTokenRepository implements PushTokenRepositoryPort {
-	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
-	private get client() {
-		return this.txHost.tx;
-	}
+  private get client() {
+    return this.txHost.tx;
+  }
 
-	async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
-		const deviceId = data.deviceId ?? "default";
-		const platform = data.platform ?? "IOS";
+  async registerPushToken(data: RegisterPushTokenData): Promise<PushTokenRecord> {
+    const deviceId = data.deviceId ?? "default";
+    const platform = data.platform ?? "IOS";
 
-		return this.client.orm.public.PushToken.where((row) =>
-			and(row.userId.eq(data.userId), row.deviceId.eq(varchar(deviceId, 255))),
-		)
-			.upsert({
-				conflictOn: encodePatch("PushToken", { userId: data.userId, deviceId }),
-				create: encodeCreate("PushToken", {
-					userId: data.userId,
-					token: data.token,
-					deviceId,
-					platform,
-					isActive: true,
-					payloadVersion: data.payloadVersion ?? 1,
-					appVersion: data.appVersion,
-				}),
-				update: encodePatch("PushToken", {
-					token: data.token,
-					platform,
-					isActive: true,
-					payloadVersion: data.payloadVersion ?? 1,
-					appVersion: data.appVersion,
-					updatedAt: now(),
-				}),
-			})
-			.then((row) => decodeRecord("PushToken", row));
-	}
+    return this.client.orm.public.PushToken.where((row) =>
+      and(row.userId.eq(data.userId), row.deviceId.eq(varchar(deviceId, 255))),
+    )
+      .upsert({
+        conflictOn: encodePatch("PushToken", { userId: data.userId, deviceId }),
+        create: encodeCreate("PushToken", {
+          userId: data.userId,
+          token: data.token,
+          deviceId,
+          platform,
+          isActive: true,
+          payloadVersion: data.payloadVersion ?? 1,
+          appVersion: data.appVersion,
+        }),
+        update: encodePatch("PushToken", {
+          token: data.token,
+          platform,
+          isActive: true,
+          payloadVersion: data.payloadVersion ?? 1,
+          appVersion: data.appVersion,
+          updatedAt: now(),
+        }),
+      })
+      .then((row) => decodeRecord("PushToken", row));
+  }
 
-	async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
-		return this.client.orm.public.PushToken.where((row) =>
-			and(row.userId.eq(params.userId), params.activeOnly ? row.isActive.eq(true) : all()),
-		)
-			.orderBy((row) => row.updatedAt.desc())
-			.all()
-			.then((row) => decodeRecord("PushToken", row));
-	}
+  async findPushTokensByUser(params: FindPushTokensParams): Promise<PushTokenRecord[]> {
+    return this.client.orm.public.PushToken.where((row) =>
+      and(row.userId.eq(params.userId), params.activeOnly ? row.isActive.eq(true) : all()),
+    )
+      .orderBy((row) => row.updatedAt.desc())
+      .all()
+      .then((row) => decodeRecord("PushToken", row));
+  }
 
-	async findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]> {
-		return this.client.orm.public.PushToken.where((row) =>
-			and(row.userId.in(userIds), row.isActive.eq(true)),
-		)
-			.all()
-			.then((row) => decodeRecord("PushToken", row));
-	}
+  async findActivePushTokensByUsers(userIds: string[]): Promise<PushTokenRecord[]> {
+    return this.client.orm.public.PushToken.where((row) =>
+      and(row.userId.in(userIds), row.isActive.eq(true)),
+    )
+      .all()
+      .then((row) => decodeRecord("PushToken", row));
+  }
 
-	async deletePushToken(userId: string, deviceId: string): Promise<PushTokenRecord> {
-		try {
-			return decodeRecord(
-				"PushToken",
-				requireRecord(
-					await this.client.orm.public.PushToken.where((row) =>
-						and(row.userId.eq(userId), row.deviceId.eq(varchar(deviceId, 255))),
-					).delete(),
-				),
-			);
-		} catch (error) {
-			if (isRecordNotFoundError(error)) {
-				throw new PushTokenNotFoundError();
-			}
-			throw error;
-		}
-	}
+  async deletePushToken(userId: string, deviceId: string): Promise<PushTokenRecord> {
+    try {
+      return decodeRecord(
+        "PushToken",
+        requireRecord(
+          await this.client.orm.public.PushToken.where((row) =>
+            and(row.userId.eq(userId), row.deviceId.eq(varchar(deviceId, 255))),
+          ).delete(),
+        ),
+      );
+    } catch (error) {
+      if (isRecordNotFoundError(error)) {
+        throw new PushTokenNotFoundError();
+      }
+      throw error;
+    }
+  }
 
-	async deleteAllPushTokensByUser(userId: string): Promise<{ count: number }> {
-		return this.client.orm.public.PushToken.where((row) => row.userId.eq(userId))
-			.deleteAndCount()
-			.then((count) => ({ count }));
-	}
+  async deleteAllPushTokensByUser(userId: string): Promise<{ count: number }> {
+    return this.client.orm.public.PushToken.where((row) => row.userId.eq(userId))
+      .deleteAndCount()
+      .then((count) => ({ count }));
+  }
 
-	async deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }> {
-		return this.client.orm.public.PushToken.where((row) =>
-			row.token.in(tokens.map((value) => varchar(value, 255))),
-		)
-			.updateAndCount(encodePatch("PushToken", { isActive: false }))
-			.then((count) => ({ count }));
-	}
+  async deactivateInvalidTokens(tokens: string[]): Promise<{ count: number }> {
+    return this.client.orm.public.PushToken.where((row) =>
+      row.token.in(tokens.map((value) => varchar(value, 255))),
+    )
+      .updateAndCount(encodePatch("PushToken", { isActive: false }))
+      .then((count) => ({ count }));
+  }
 }

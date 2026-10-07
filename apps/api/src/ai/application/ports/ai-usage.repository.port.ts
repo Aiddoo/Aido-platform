@@ -8,21 +8,21 @@
 
 /** AI 사용량 스냅샷 (저장소 중립 표현). */
 export interface AiUsageSnapshot {
-	/** 현재 카운트 */
-	count: number;
-	/** 마지막 리셋 시각 (없으면 null) */
-	resetAt: Date | null;
+  /** 현재 카운트 */
+  count: number;
+  /** 마지막 리셋 시각 (없으면 null) */
+  resetAt: Date | null;
 }
 
 export interface AiUsageRepositoryPort {
-	/** 사용량 스냅샷 조회 (없으면 null). */
-	findUsage(userId: string): Promise<AiUsageSnapshot | null>;
-	/** 카운트 +1. */
-	increment(userId: string): Promise<void>;
-	/** 카운트를 1로 리셋하고 리셋 시각 갱신 (새로운 달). */
-	resetAndIncrement(userId: string): Promise<void>;
-	/** 카운트 -1 (0 미만 방지, 트랜잭션 밖 보상 경로). */
-	decrement(userId: string): Promise<void>;
+  /** 사용량 스냅샷 조회 (없으면 null). */
+  findUsage(userId: string): Promise<AiUsageSnapshot | null>;
+  /** 카운트 +1. */
+  increment(userId: string): Promise<void>;
+  /** 카운트를 1로 리셋하고 리셋 시각 갱신 (새로운 달). */
+  resetAndIncrement(userId: string): Promise<void>;
+  /** 카운트 -1 (0 미만 방지, 트랜잭션 밖 보상 경로). */
+  decrement(userId: string): Promise<void>;
 }
 
 /** AI 사용량 저장소 주입 토큰. */

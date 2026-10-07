@@ -5,13 +5,13 @@ import { type NotificationRouting, notificationRoutingSchema } from "@aido/valid
  * 알림마다 metadata 모양이 달라 통과하지 못하면 빈 값으로 둔다.
  */
 export function toNotificationRouting(metadata: unknown): NotificationRouting | undefined {
-	const parsed = notificationRoutingSchema.safeParse(metadata);
+  const parsed = notificationRoutingSchema.safeParse(metadata);
 
-	if (!parsed.success) {
-		return undefined;
-	}
+  if (!parsed.success) {
+    return undefined;
+  }
 
-	const hasRouting = Object.values(parsed.data).some((value) => value !== undefined);
+  const hasRouting = Object.values(parsed.data).some((value) => value !== undefined);
 
-	return hasRouting ? parsed.data : undefined;
+  return hasRouting ? parsed.data : undefined;
 }

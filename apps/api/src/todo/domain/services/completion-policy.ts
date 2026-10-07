@@ -3,10 +3,10 @@ export type TodoCompletionMilestone = "FIRST_COMPLETE" | "COUNT_10" | "COUNT_50"
 
 /** 누적 완료 카운트 → 마일스톤 매핑 (도메인 정책) */
 const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> = new Map([
-	[1, "FIRST_COMPLETE"],
-	[10, "COUNT_10"],
-	[50, "COUNT_50"],
-	[100, "COUNT_100"],
+  [1, "FIRST_COMPLETE"],
+  [10, "COUNT_10"],
+  [50, "COUNT_50"],
+  [100, "COUNT_100"],
 ]);
 
 /**
@@ -14,7 +14,7 @@ const COMPLETION_MILESTONES: ReadonlyMap<number, TodoCompletionMilestone> = new 
  * (정확 일치 — 지나친 카운트는 재발화하지 않음)
  */
 export function milestoneForCount(completedCount: number): TodoCompletionMilestone | null {
-	return COMPLETION_MILESTONES.get(completedCount) ?? null;
+  return COMPLETION_MILESTONES.get(completedCount) ?? null;
 }
 
 /**
@@ -22,7 +22,7 @@ export function milestoneForCount(completedCount: number): TodoCompletionMilesto
  * 할 일이 하나도 없는 날은 완료로 치지 않습니다.
  */
 export function isAllCompletedToday(stats: { total: number; completed: number }): boolean {
-	return stats.total > 0 && stats.total === stats.completed;
+  return stats.total > 0 && stats.total === stats.completed;
 }
 
 /**
@@ -31,11 +31,11 @@ export function isAllCompletedToday(stats: { total: number; completed: number })
  * 할 일이 없는 날은 완료율 0이며 완료로 치지 않습니다.
  */
 export function summarizeCompletion(stats: { total: number; completed: number }): {
-	completionRate: number;
-	isComplete: boolean;
+  completionRate: number;
+  isComplete: boolean;
 } {
-	return {
-		completionRate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
-		isComplete: isAllCompletedToday(stats),
-	};
+  return {
+    completionRate: stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0,
+    isComplete: isAllCompletedToday(stats),
+  };
 }

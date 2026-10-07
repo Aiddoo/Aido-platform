@@ -23,14 +23,14 @@ import { WebhookSignatureGuard } from "../infrastructure/guards/webhook-signatur
 @Controller("webhooks")
 @SkipThrottle()
 export class SubscriptionController {
-	constructor(private readonly handleWebhookEventUseCase: HandleWebhookEventUseCase) {}
+  constructor(private readonly handleWebhookEventUseCase: HandleWebhookEventUseCase) {}
 
-	@Post("revenuecat")
-	@Public()
-	@ApiExcludeEndpoint()
-	@UseGuards(WebhookSignatureGuard)
-	@HttpCode(HttpStatus.OK)
-	handleRevenueCatWebhook(@Req() request: Request): Promise<{ received: true }> {
-		return this.handleWebhookEventUseCase.execute(request.body);
-	}
+  @Post("revenuecat")
+  @Public()
+  @ApiExcludeEndpoint()
+  @UseGuards(WebhookSignatureGuard)
+  @HttpCode(HttpStatus.OK)
+  handleRevenueCatWebhook(@Req() request: Request): Promise<{ received: true }> {
+    return this.handleWebhookEventUseCase.execute(request.body);
+  }
 }

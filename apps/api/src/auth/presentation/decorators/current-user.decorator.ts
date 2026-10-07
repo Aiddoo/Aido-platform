@@ -21,16 +21,16 @@ import type { CurrentUserPayload } from "#api/auth/infrastructure/strategies/jwt
  * ```
  */
 export const CurrentUser = createParamDecorator(
-	(data: keyof CurrentUserPayload | undefined, ctx: ExecutionContext) => {
-		const request = ctx.switchToHttp().getRequest<Request>();
-		const user = request.user as CurrentUserPayload | undefined;
+  (data: keyof CurrentUserPayload | undefined, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest<Request>();
+    const user = request.user as CurrentUserPayload | undefined;
 
-		if (!user) {
-			return undefined;
-		}
+    if (!user) {
+      return undefined;
+    }
 
-		return data ? user[data] : user;
-	},
+    return data ? user[data] : user;
+  },
 );
 
 // 타입 재export (이름 변경으로 충돌 방지)

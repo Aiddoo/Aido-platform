@@ -4,33 +4,33 @@ import type { InquiryCategory } from "@aido/validators";
  * 문의 이메일 템플릿
  */
 export interface InquiryTemplateData {
-	userEmail: string;
-	category: InquiryCategory;
-	categoryLabel: string;
-	content: string;
-	submittedAt: string;
+  userEmail: string;
+  category: InquiryCategory;
+  categoryLabel: string;
+  content: string;
+  submittedAt: string;
 }
 
 function escapeHtml(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("'", "&#39;");
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 export function getInquirySubject(categoryLabel: string): string {
-	return `[Aido 문의접수] [${categoryLabel}]`;
+  return `[Aido 문의접수] [${categoryLabel}]`;
 }
 
 export function getInquiryHtml(data: InquiryTemplateData): string {
-	const escapedUserEmail = escapeHtml(data.userEmail);
-	const escapedCategoryLabel = escapeHtml(data.categoryLabel);
-	const escapedSubmittedAt = escapeHtml(data.submittedAt);
-	const escapedContent = escapeHtml(data.content);
+  const escapedUserEmail = escapeHtml(data.userEmail);
+  const escapedCategoryLabel = escapeHtml(data.categoryLabel);
+  const escapedSubmittedAt = escapeHtml(data.submittedAt);
+  const escapedContent = escapeHtml(data.content);
 
-	return `
+  return `
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -136,7 +136,7 @@ export function getInquiryHtml(data: InquiryTemplateData): string {
 }
 
 export function getInquiryText(data: InquiryTemplateData): string {
-	return `
+  return `
 [Aido 문의접수] [${data.categoryLabel}] ${data.userEmail}
 
 [접수 정보]

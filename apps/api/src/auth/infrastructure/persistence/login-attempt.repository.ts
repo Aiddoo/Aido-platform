@@ -7,111 +7,111 @@ import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/
 import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import type {
-	AccountProvider,
-	LoginAttempt,
+  AccountProvider,
+  LoginAttempt,
 } from "#api/shared/infrastructure/database/database.types";
 import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 @Injectable()
 export class LoginAttemptRepository {
-	constructor(private readonly database: DatabaseService) {}
+  constructor(private readonly database: DatabaseService) {}
 
-	/**
-	 * 로그인 시도 기록 생성
-	 *
-	 * Rate limiting 및 보안 분석을 위해 모든 로그인 시도를 기록합니다.
-	 *
-	 * @param data.email - 로그인 시도한 이메일
-	 * @param data.provider - 인증 방식 (CREDENTIAL, KAKAO, APPLE, GOOGLE, NAVER)
-	 *                        OAuth 로그인의 경우 해당 provider, 이메일 로그인은 CREDENTIAL
-	 * @param data.ipAddress - 클라이언트 IP 주소
-	 * @param data.userAgent - 클라이언트 User-Agent
-	 * @param data.success - 로그인 성공 여부
-	 * @param data.failureReason - 실패 사유 (실패 시)
-	 * @param tx - 트랜잭션 클라이언트 (선택)
-	 * @returns 생성된 LoginAttempt 레코드
-	 */
-	async create(
-		data: {
-			email: string;
-			provider?: AccountProvider;
-			ipAddress: string;
-			userAgent: string;
-			success: boolean;
-			failureReason?: string;
-		},
-		tx?: TransactionHost<Prisma8TransactionalAdapter>["tx"],
-	): Promise<LoginAttempt> {
-		const client = tx ?? this.database.db;
-		return client.orm.public.LoginAttempt.create(
-			encodeCreate("LoginAttempt", {
-				email: data.email,
-				provider: data.provider,
-				ipAddress: data.ipAddress,
-				userAgent: data.userAgent,
-				success: data.success,
-				failureReason: data.failureReason,
-			}),
-		).then((row) => decodeRecord("LoginAttempt", row));
-	}
+  /**
+   * 로그인 시도 기록 생성
+   *
+   * Rate limiting 및 보안 분석을 위해 모든 로그인 시도를 기록합니다.
+   *
+   * @param data.email - 로그인 시도한 이메일
+   * @param data.provider - 인증 방식 (CREDENTIAL, KAKAO, APPLE, GOOGLE, NAVER)
+   *                        OAuth 로그인의 경우 해당 provider, 이메일 로그인은 CREDENTIAL
+   * @param data.ipAddress - 클라이언트 IP 주소
+   * @param data.userAgent - 클라이언트 User-Agent
+   * @param data.success - 로그인 성공 여부
+   * @param data.failureReason - 실패 사유 (실패 시)
+   * @param tx - 트랜잭션 클라이언트 (선택)
+   * @returns 생성된 LoginAttempt 레코드
+   */
+  async create(
+    data: {
+      email: string;
+      provider?: AccountProvider;
+      ipAddress: string;
+      userAgent: string;
+      success: boolean;
+      failureReason?: string;
+    },
+    tx?: TransactionHost<Prisma8TransactionalAdapter>["tx"],
+  ): Promise<LoginAttempt> {
+    const client = tx ?? this.database.db;
+    return client.orm.public.LoginAttempt.create(
+      encodeCreate("LoginAttempt", {
+        email: data.email,
+        provider: data.provider,
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent,
+        success: data.success,
+        failureReason: data.failureReason,
+      }),
+    ).then((row) => decodeRecord("LoginAttempt", row));
+  }
 
-	async countRecentFailuresByEmail(email: string, since: Date): Promise<number> {
-		return this.database.db.orm.public.LoginAttempt.where((row) =>
-			and(
-				row.email.eq(varchar(email, 255)),
-				row.success.eq(false),
-				row.createdAt.gte(databaseTimestamp(since)),
-			),
-		)
-			.aggregate((aggregate) => ({ count: aggregate.count() }))
-			.then(({ count }) => count);
-	}
+  async countRecentFailuresByEmail(email: string, since: Date): Promise<number> {
+    return this.database.db.orm.public.LoginAttempt.where((row) =>
+      and(
+        row.email.eq(varchar(email, 255)),
+        row.success.eq(false),
+        row.createdAt.gte(databaseTimestamp(since)),
+      ),
+    )
+      .aggregate((aggregate) => ({ count: aggregate.count() }))
+      .then(({ count }) => count);
+  }
 
-	async countRecentFailuresByIp(ipAddress: string, since: Date): Promise<number> {
-		return this.database.db.orm.public.LoginAttempt.where((row) =>
-			and(
-				row.ipAddress.eq(varchar(ipAddress, 45)),
-				row.success.eq(false),
-				row.createdAt.gte(databaseTimestamp(since)),
-			),
-		)
-			.aggregate((aggregate) => ({ count: aggregate.count() }))
-			.then(({ count }) => count);
-	}
+  async countRecentFailuresByIp(ipAddress: string, since: Date): Promise<number> {
+    return this.database.db.orm.public.LoginAttempt.where((row) =>
+      and(
+        row.ipAddress.eq(varchar(ipAddress, 45)),
+        row.success.eq(false),
+        row.createdAt.gte(databaseTimestamp(since)),
+      ),
+    )
+      .aggregate((aggregate) => ({ count: aggregate.count() }))
+      .then(({ count }) => count);
+  }
 
-	async findLastSuccessByEmail(email: string): Promise<LoginAttempt | null> {
-		return this.database.db.orm.public.LoginAttempt.where((row) =>
-			and(row.email.eq(varchar(email, 255)), row.success.eq(true)),
-		)
-			.orderBy((row) => row.createdAt.desc())
-			.first()
-			.then((row) => decodeRecord("LoginAttempt", row));
-	}
+  async findLastSuccessByEmail(email: string): Promise<LoginAttempt | null> {
+    return this.database.db.orm.public.LoginAttempt.where((row) =>
+      and(row.email.eq(varchar(email, 255)), row.success.eq(true)),
+    )
+      .orderBy((row) => row.createdAt.desc())
+      .first()
+      .then((row) => decodeRecord("LoginAttempt", row));
+  }
 
-	async findLastFailureByEmail(email: string): Promise<LoginAttempt | null> {
-		return this.database.db.orm.public.LoginAttempt.where((row) =>
-			and(row.email.eq(varchar(email, 255)), row.success.eq(false)),
-		)
-			.orderBy((row) => row.createdAt.desc())
-			.first()
-			.then((row) => decodeRecord("LoginAttempt", row));
-	}
+  async findLastFailureByEmail(email: string): Promise<LoginAttempt | null> {
+    return this.database.db.orm.public.LoginAttempt.where((row) =>
+      and(row.email.eq(varchar(email, 255)), row.success.eq(false)),
+    )
+      .orderBy((row) => row.createdAt.desc())
+      .first()
+      .then((row) => decodeRecord("LoginAttempt", row));
+  }
 
-	// 감사 로그 목적으로 삭제하지 않음
-	async clearRecentFailuresByEmail(_email: string, _since: Date): Promise<void> {
-		// 감사 로그 목적으로 삭제하지 않음
-		// 필요시 별도 플래그 추가 가능
-	}
+  // 감사 로그 목적으로 삭제하지 않음
+  async clearRecentFailuresByEmail(_email: string, _since: Date): Promise<void> {
+    // 감사 로그 목적으로 삭제하지 않음
+    // 필요시 별도 플래그 추가 가능
+  }
 
-	// 배치 작업용, 30일 보관
-	async deleteOld(retentionDays = 30): Promise<number> {
-		const cutoff = subtractDays(retentionDays);
+  // 배치 작업용, 30일 보관
+  async deleteOld(retentionDays = 30): Promise<number> {
+    const cutoff = subtractDays(retentionDays);
 
-		const result = {
-			count: await this.database.db.orm.public.LoginAttempt.where((row) =>
-				row.createdAt.lt(databaseTimestamp(cutoff)),
-			).deleteAndCount(),
-		};
-		return result.count;
-	}
+    const result = {
+      count: await this.database.db.orm.public.LoginAttempt.where((row) =>
+        row.createdAt.lt(databaseTimestamp(cutoff)),
+      ).deleteAndCount(),
+    };
+    return result.count;
+  }
 }

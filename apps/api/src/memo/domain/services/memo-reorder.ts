@@ -8,15 +8,15 @@
 
 /** 사이 구간 sortOrder 일괄 증감 계획 (to=null 이면 끝까지). */
 export interface ReorderShift {
-	from: number;
-	to: number | null;
-	delta: number;
+  from: number;
+  to: number | null;
+  delta: number;
 }
 
 /** 재정렬 계획: 대상의 새 sortOrder + 사이 구간 시프트. */
 export interface ReorderPlan {
-	newSortOrder: number;
-	shift: ReorderShift;
+  newSortOrder: number;
+  shift: ReorderShift;
 }
 
 /**
@@ -26,23 +26,23 @@ export interface ReorderPlan {
  * 한 칸 당기고(-1) 목표도 한 칸 보정, 뒤면 사이 블록을 한 칸 민다(+1).
  */
 export function planReorderRelativeTo(
-	currentSortOrder: number,
-	targetSortOrder: number,
-	position: "before" | "after",
+  currentSortOrder: number,
+  targetSortOrder: number,
+  position: "before" | "after",
 ): ReorderPlan {
-	const desired = position === "before" ? targetSortOrder : targetSortOrder + 1;
+  const desired = position === "before" ? targetSortOrder : targetSortOrder + 1;
 
-	if (currentSortOrder < desired) {
-		return {
-			newSortOrder: desired - 1,
-			shift: { from: currentSortOrder + 1, to: desired - 1, delta: -1 },
-		};
-	}
+  if (currentSortOrder < desired) {
+    return {
+      newSortOrder: desired - 1,
+      shift: { from: currentSortOrder + 1, to: desired - 1, delta: -1 },
+    };
+  }
 
-	return {
-		newSortOrder: desired,
-		shift: { from: desired, to: currentSortOrder - 1, delta: 1 },
-	};
+  return {
+    newSortOrder: desired,
+    shift: { from: desired, to: currentSortOrder - 1, delta: 1 },
+  };
 }
 
 /**
@@ -50,19 +50,19 @@ export function planReorderRelativeTo(
  * after 는 호출부가 조회한 maxSortOrder 를 전달해야 한다.
  */
 export function planReorderToEdge(
-	currentSortOrder: number,
-	position: "before" | "after",
-	maxSortOrder: number,
+  currentSortOrder: number,
+  position: "before" | "after",
+  maxSortOrder: number,
 ): ReorderPlan {
-	if (position === "before") {
-		return {
-			newSortOrder: 0,
-			shift: { from: 0, to: currentSortOrder - 1, delta: 1 },
-		};
-	}
+  if (position === "before") {
+    return {
+      newSortOrder: 0,
+      shift: { from: 0, to: currentSortOrder - 1, delta: 1 },
+    };
+  }
 
-	return {
-		newSortOrder: maxSortOrder,
-		shift: { from: currentSortOrder + 1, to: null, delta: -1 },
-	};
+  return {
+    newSortOrder: maxSortOrder,
+    shift: { from: currentSortOrder + 1, to: null, delta: -1 },
+  };
 }

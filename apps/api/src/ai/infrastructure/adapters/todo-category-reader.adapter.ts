@@ -3,8 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { TodoCategoryReader } from "#api/todo-category/index";
 
 import type {
-	UserCategory,
-	UserCategoryReaderPort,
+  UserCategory,
+  UserCategoryReaderPort,
 } from "../../application/ports/user-category-reader.port.js";
 
 /**
@@ -14,10 +14,10 @@ import type {
  */
 @Injectable()
 export class TodoCategoryReaderAdapter implements UserCategoryReaderPort {
-	constructor(private readonly todoCategoryReader: TodoCategoryReader) {}
+  constructor(private readonly todoCategoryReader: TodoCategoryReader) {}
 
-	async findByUserId(userId: string): Promise<UserCategory[]> {
-		const categories = await this.todoCategoryReader.listForUser(userId);
-		return categories.map((c) => ({ id: c.id, name: c.name }));
-	}
+  async findByUserId(userId: string): Promise<UserCategory[]> {
+    const categories = await this.todoCategoryReader.listForUser(userId);
+    return categories.map((c) => ({ id: c.id, name: c.name }));
+  }
 }

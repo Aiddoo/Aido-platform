@@ -12,18 +12,18 @@ const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
  * 경계에서도 방어한다(동일 정규식이라 유효 입력은 통과).
  */
 export class CategoryColor {
-	private constructor(private readonly hex: string) {}
+  private constructor(private readonly hex: string) {}
 
-	static of(value: string): CategoryColor {
-		if (!HEX_COLOR.test(value)) {
-			throw new DomainException(ErrorCode.SYS_0002, {
-				message: "HEX 색상 코드 형식이 아닙니다",
-			});
-		}
-		return new CategoryColor(value);
-	}
+  static of(value: string): CategoryColor {
+    if (!HEX_COLOR.test(value)) {
+      throw new DomainException(ErrorCode.SYS_0002, {
+        message: "HEX 색상 코드 형식이 아닙니다",
+      });
+    }
+    return new CategoryColor(value);
+  }
 
-	get value(): string {
-		return this.hex;
-	}
+  get value(): string {
+    return this.hex;
+  }
 }

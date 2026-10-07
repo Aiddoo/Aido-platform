@@ -8,6 +8,6 @@
 export const CHEER_LIMIT_READER = Symbol("CHEER_LIMIT_READER");
 
 export interface CheerLimitReaderPort {
-	/** 트랜잭션 내 사용자 일일 응원 한도 (null이면 무제한) */
-	getDailyLimitInTx(userId: string): Promise<number | null>;
+  /** 트랜잭션 내 사용자 일일 응원 한도 (null이면 무제한) */
+  getDailyLimitInTx(userId: string): Promise<number | null>;
 }

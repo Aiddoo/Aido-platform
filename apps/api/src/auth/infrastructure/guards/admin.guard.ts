@@ -22,22 +22,22 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
  */
 @Injectable()
 export class AdminGuard implements CanActivate {
-	constructor(readonly _reflector: Reflector) {}
+  constructor(readonly _reflector: Reflector) {}
 
-	canActivate(context: ExecutionContext): boolean {
-		const request = context.switchToHttp().getRequest<Request & { user?: CurrentUserPayload }>();
-		const user = request.user;
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<Request & { user?: CurrentUserPayload }>();
+    const user = request.user;
 
-		if (!user) {
-			throw new ApplicationException(ErrorCode.AUTH_0101, {
-				reason: "User information not found",
-			});
-		}
+    if (!user) {
+      throw new ApplicationException(ErrorCode.AUTH_0101, {
+        reason: "User information not found",
+      });
+    }
 
-		if (user.role !== "ADMIN") {
-			throw new ApplicationException(ErrorCode.ADMIN_1401);
-		}
+    if (user.role !== "ADMIN") {
+      throw new ApplicationException(ErrorCode.ADMIN_1401);
+    }
 
-		return true;
-	}
+    return true;
+  }
 }

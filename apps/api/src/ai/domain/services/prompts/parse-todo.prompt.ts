@@ -1,6 +1,6 @@
 import {
-	PROMPT_OUTPUT_DISCIPLINE,
-	PROMPT_SECURITY_GUARD,
+  PROMPT_OUTPUT_DISCIPLINE,
+  PROMPT_SECURITY_GUARD,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/prompt/sanitize";
 
@@ -8,26 +8,26 @@ import type { CategoryInfo } from "./parse-memo.prompt.js";
 import { buildTimeContext, buildTimeRulesText } from "./time-rules.js";
 
 export interface ParseTodoPrompt {
-	system: string;
-	prompt: string;
+  system: string;
+  prompt: string;
 }
 
 export function buildParseTodoPrompt(
-	text: string,
-	tz: string = "UTC",
-	now: Date = new Date(),
-	categories: CategoryInfo[] = [],
+  text: string,
+  tz: string = "UTC",
+  now: Date = new Date(),
+  categories: CategoryInfo[] = [],
 ): ParseTodoPrompt {
-	const ctx = buildTimeContext(tz, now);
-	const timeRules = buildTimeRulesText(ctx);
-	const safeText = sanitizeForPrompt(text);
+  const ctx = buildTimeContext(tz, now);
+  const timeRules = buildTimeRulesText(ctx);
+  const safeText = sanitizeForPrompt(text);
 
-	const categoryRule =
-		categories.length > 0
-			? "- context의 categories 중 의미가 가장 가까운 id를 categoryId로 사용한다. 반드시 제공된 id만 사용한다."
-			: "";
+  const categoryRule =
+    categories.length > 0
+      ? "- context의 categories 중 의미가 가장 가까운 id를 categoryId로 사용한다. 반드시 제공된 id만 사용한다."
+      : "";
 
-	const system = `<role>
+  const system = `<role>
 당신은 한국어 자연어 입력을 구조화된 할 일(Todo) 데이터로 변환하는 전문가입니다.
 </role>
 
@@ -74,7 +74,7 @@ ${timeRules}
 
 ${PROMPT_OUTPUT_DISCIPLINE}`;
 
-	const prompt = `<context_json>
+  const prompt = `<context_json>
 ${encodeUntrustedJson({ timezone: tz, categories })}
 </context_json>
 <user_input_json>
@@ -82,5 +82,5 @@ ${encodeUntrustedJson({ text: safeText })}
 </user_input_json>
 <task>사용자 입력을 할 일로 변환한다. 먼저 규칙 일치 여부를 내부적으로 확인한 뒤 구조화 결과만 반환한다.</task>`;
 
-	return { system, prompt };
+  return { system, prompt };
 }

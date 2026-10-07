@@ -6,33 +6,33 @@
  */
 
 export interface ProfileTemplateInput {
-	readonly completionRate: number;
-	readonly rateChange: number | null;
+  readonly completionRate: number;
+  readonly rateChange: number | null;
 }
 
 /**
  * 데이터 프로필에 따른 summary 작성 템플릿 반환
  */
 export function selectProfileTemplate(
-	input: ProfileTemplateInput,
-	locale: "ko" | "en" = "ko",
+  input: ProfileTemplateInput,
+  locale: "ko" | "en" = "ko",
 ): string {
-	const { completionRate, rateChange } = input;
-	const templates = locale === "en" ? TEMPLATES_EN : TEMPLATES_KO;
+  const { completionRate, rateChange } = input;
+  const templates = locale === "en" ? TEMPLATES_EN : TEMPLATES_KO;
 
-	if (completionRate >= 80) {
-		return templates.highAchiever;
-	}
+  if (completionRate >= 80) {
+    return templates.highAchiever;
+  }
 
-	if (completionRate < 50) {
-		return templates.encouragement;
-	}
+  if (completionRate < 50) {
+    return templates.encouragement;
+  }
 
-	if (rateChange !== null && Math.abs(rateChange) >= 15) {
-		return templates.bigChange;
-	}
+  if (rateChange !== null && Math.abs(rateChange) >= 15) {
+    return templates.bigChange;
+  }
 
-	return templates.deepAnalysis;
+  return templates.deepAnalysis;
 }
 
 const TEMPLATE_HIGH_ACHIEVER = `## ★ summary 작성법: 축하 + 숨은 약점 발굴
@@ -60,10 +60,10 @@ const TEMPLATE_DEEP_ANALYSIS = `## ★ summary 작성법: 심층 패턴 분석
 4문장: 맞춤 전략 — 다음 단계로 가기 위한 구체적 행동`;
 
 const TEMPLATES_KO = {
-	highAchiever: TEMPLATE_HIGH_ACHIEVER,
-	encouragement: TEMPLATE_ENCOURAGEMENT,
-	bigChange: TEMPLATE_BIG_CHANGE,
-	deepAnalysis: TEMPLATE_DEEP_ANALYSIS,
+  highAchiever: TEMPLATE_HIGH_ACHIEVER,
+  encouragement: TEMPLATE_ENCOURAGEMENT,
+  bigChange: TEMPLATE_BIG_CHANGE,
+  deepAnalysis: TEMPLATE_DEEP_ANALYSIS,
 } as const;
 
 const TEMPLATE_HIGH_ACHIEVER_EN = `## ★ How to write the summary: celebrate + uncover a hidden weakness
@@ -91,8 +91,8 @@ Sentence 3: habit maturity — where they stand based on perfect-day ratio and s
 Sentence 4: tailored strategy — the concrete next step`;
 
 const TEMPLATES_EN = {
-	highAchiever: TEMPLATE_HIGH_ACHIEVER_EN,
-	encouragement: TEMPLATE_ENCOURAGEMENT_EN,
-	bigChange: TEMPLATE_BIG_CHANGE_EN,
-	deepAnalysis: TEMPLATE_DEEP_ANALYSIS_EN,
+  highAchiever: TEMPLATE_HIGH_ACHIEVER_EN,
+  encouragement: TEMPLATE_ENCOURAGEMENT_EN,
+  bigChange: TEMPLATE_BIG_CHANGE_EN,
+  deepAnalysis: TEMPLATE_DEEP_ANALYSIS_EN,
 } as const;

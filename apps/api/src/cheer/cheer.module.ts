@@ -22,16 +22,16 @@ import { CheerController } from "./presentation/cheer.controller.js";
  * 제한 정책: FREE 하루 3회 / ACTIVE 무제한, 동일 친구 24시간 쿨다운.
  */
 @Module({
-	imports: [FollowModule, NotificationModule],
-	controllers: [CheerController],
-	providers: [
-		{ provide: CHEER_REPOSITORY, useClass: PrismaCheerRepository },
-		{ provide: CHEER_NOTIFIER, useClass: CheerNotifierAdapter },
-		{ provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
-		CheerReader,
-		SendCheerUseCase,
-		MarkCheerReadUseCase,
-		MarkManyCheersReadUseCase,
-	],
+  imports: [FollowModule, NotificationModule],
+  controllers: [CheerController],
+  providers: [
+    { provide: CHEER_REPOSITORY, useClass: PrismaCheerRepository },
+    { provide: CHEER_NOTIFIER, useClass: CheerNotifierAdapter },
+    { provide: CHEER_LIMIT_READER, useClass: CheerLimitReaderAdapter },
+    CheerReader,
+    SendCheerUseCase,
+    MarkCheerReadUseCase,
+    MarkManyCheersReadUseCase,
+  ],
 })
 export class CheerModule {}

@@ -5,11 +5,11 @@ export const EMAIL_SENDER = Symbol("EMAIL_SENDER");
 
 /** 이메일 발송 결과 */
 export interface EmailSendResult {
-	success: boolean;
-	messageId?: string;
-	error?: string;
-	/** 재시도 횟수 (디버깅용) */
-	retryCount?: number;
+  success: boolean;
+  messageId?: string;
+  error?: string;
+  /** 재시도 횟수 (디버깅용) */
+  retryCount?: number;
 }
 
 /**
@@ -20,5 +20,5 @@ export interface EmailSendResult {
  * 백오프·미설정 시 폴백 같은 트랜스포트 관심사는 어댑터가 소유한다.
  */
 export interface EmailSenderPort {
-	send(message: EmailMessage): Promise<EmailSendResult>;
+  send(message: EmailMessage): Promise<EmailSendResult>;
 }

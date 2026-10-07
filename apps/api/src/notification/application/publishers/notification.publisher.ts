@@ -6,21 +6,21 @@ import type { SendNotificationUseCase } from "../use-cases/send-notification/sen
 
 /** 다른 모듈에 노출하는 알림 발행 capability. */
 export class NotificationPublisher {
-	constructor(
-		private readonly sendNotification: SendNotificationUseCase,
-		private readonly sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
-		private readonly sendBatchNotification: SendBatchNotificationUseCase,
-	) {}
+  constructor(
+    private readonly sendNotification: SendNotificationUseCase,
+    private readonly sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
+    private readonly sendBatchNotification: SendBatchNotificationUseCase,
+  ) {}
 
-	publish(data: CreateNotificationData): Promise<NotificationRecord | null> {
-		return this.sendNotification.execute(data);
-	}
+  publish(data: CreateNotificationData): Promise<NotificationRecord | null> {
+    return this.sendNotification.execute(data);
+  }
 
-	publishWithDeduplication(data: CreateNotificationData): Promise<NotificationRecord | null> {
-		return this.sendNotificationWithDeduplication.execute(data);
-	}
+  publishWithDeduplication(data: CreateNotificationData): Promise<NotificationRecord | null> {
+    return this.sendNotificationWithDeduplication.execute(data);
+  }
 
-	publishBatch(items: CreateNotificationData[]): Promise<{ count: number }> {
-		return this.sendBatchNotification.execute(items);
-	}
+  publishBatch(items: CreateNotificationData[]): Promise<{ count: number }> {
+    return this.sendBatchNotification.execute(items);
+  }
 }

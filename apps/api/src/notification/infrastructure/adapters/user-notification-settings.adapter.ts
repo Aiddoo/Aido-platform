@@ -1,12 +1,12 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import {
-	USER_NOTIFICATION_SETTINGS_ACCESS,
-	type UserConsentRecord,
-	type UserConsentRecordWithId,
-	type UserNotificationSettingsAccessPort,
-	type UserPreferenceRecord,
-	type UserPreferenceRecordWithId,
+  USER_NOTIFICATION_SETTINGS_ACCESS,
+  type UserConsentRecord,
+  type UserConsentRecordWithId,
+  type UserNotificationSettingsAccessPort,
+  type UserPreferenceRecord,
+  type UserPreferenceRecordWithId,
 } from "#api/user-settings/index";
 
 import type { UserNotificationSettingsPort } from "../../application/ports/user-notification-settings.port.js";
@@ -16,36 +16,36 @@ import type { UserNotificationSettingsPort } from "../../application/ports/user-
  */
 @Injectable()
 export class UserNotificationSettingsAdapter implements UserNotificationSettingsPort {
-	constructor(
-		@Inject(USER_NOTIFICATION_SETTINGS_ACCESS)
-		private readonly userSettingsAccess: UserNotificationSettingsAccessPort,
-	) {}
+  constructor(
+    @Inject(USER_NOTIFICATION_SETTINGS_ACCESS)
+    private readonly userSettingsAccess: UserNotificationSettingsAccessPort,
+  ) {}
 
-	upsertPushTimezone(userId: string, timezone: string): Promise<void> {
-		return this.userSettingsAccess.upsertPushTimezone(userId, timezone);
-	}
+  upsertPushTimezone(userId: string, timezone: string): Promise<void> {
+    return this.userSettingsAccess.upsertPushTimezone(userId, timezone);
+  }
 
-	upsertPushLocale(userId: string, locale: string): Promise<void> {
-		return this.userSettingsAccess.upsertPushLocale(userId, locale);
-	}
+  upsertPushLocale(userId: string, locale: string): Promise<void> {
+    return this.userSettingsAccess.upsertPushLocale(userId, locale);
+  }
 
-	getPreferenceRecord(userId: string): Promise<UserPreferenceRecord | null> {
-		return this.userSettingsAccess.getPreferenceRecord(userId);
-	}
+  getPreferenceRecord(userId: string): Promise<UserPreferenceRecord | null> {
+    return this.userSettingsAccess.getPreferenceRecord(userId);
+  }
 
-	getPreferenceRecordsByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]> {
-		return this.userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
-	}
+  getPreferenceRecordsByUserIds(userIds: string[]): Promise<UserPreferenceRecordWithId[]> {
+    return this.userSettingsAccess.getPreferenceRecordsByUserIds(userIds);
+  }
 
-	getConsentRecord(userId: string): Promise<UserConsentRecord | null> {
-		return this.userSettingsAccess.getConsentRecord(userId);
-	}
+  getConsentRecord(userId: string): Promise<UserConsentRecord | null> {
+    return this.userSettingsAccess.getConsentRecord(userId);
+  }
 
-	getConsentRecordsByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]> {
-		return this.userSettingsAccess.getConsentRecordsByUserIds(userIds);
-	}
+  getConsentRecordsByUserIds(userIds: string[]): Promise<UserConsentRecordWithId[]> {
+    return this.userSettingsAccess.getConsentRecordsByUserIds(userIds);
+  }
 
-	async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
-		await this.userSettingsAccess.updateMarketingPushConsent(userId, agreed);
-	}
+  async updateMarketingPushConsent(userId: string, agreed: boolean): Promise<void> {
+    await this.userSettingsAccess.updateMarketingPushConsent(userId, agreed);
+  }
 }

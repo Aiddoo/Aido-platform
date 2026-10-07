@@ -5,7 +5,7 @@
  * 어댑터가 notification 큐로 위임한다.
  */
 export interface StreakMilestoneNotifierPort {
-	notifyStreak3Reached(userId: string): void;
+  notifyStreak3Reached(userId: string): void;
 }
 
 export const STREAK_MILESTONE_NOTIFIER = Symbol("STREAK_MILESTONE_NOTIFIER");

@@ -3,9 +3,9 @@ import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
 import { calculateCooldown } from "#api/shared/domain/date/utils/cooldown";
 
 export interface NudgeCooldown {
-	isActive: boolean;
-	remainingSeconds: number;
-	cooldownEndsAt: Date | null;
+  isActive: boolean;
+  remainingSeconds: number;
+  cooldownEndsAt: Date | null;
 }
 
 /**
@@ -15,17 +15,17 @@ export interface NudgeCooldown {
  * 리마인드 콕 찌르기는 동일 친구 단위로 REMIND_NUDGE_LIMITS.COOLDOWN_HOURS(1h) 동안 재전송을 제한한다.
  */
 export function evaluateNudgeCooldown(lastNudgeTime: Date | null): NudgeCooldown {
-	const { isActive, remainingSeconds, endsAt } = calculateCooldown(
-		lastNudgeTime,
-		NUDGE_LIMITS.COOLDOWN_HOURS,
-	);
-	return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
+  const { isActive, remainingSeconds, endsAt } = calculateCooldown(
+    lastNudgeTime,
+    NUDGE_LIMITS.COOLDOWN_HOURS,
+  );
+  return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
 }
 
 export function evaluateRemindNudgeCooldown(lastNudgeTime: Date | null): NudgeCooldown {
-	const { isActive, remainingSeconds, endsAt } = calculateCooldown(
-		lastNudgeTime,
-		REMIND_NUDGE_LIMITS.COOLDOWN_HOURS,
-	);
-	return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
+  const { isActive, remainingSeconds, endsAt } = calculateCooldown(
+    lastNudgeTime,
+    REMIND_NUDGE_LIMITS.COOLDOWN_HOURS,
+  );
+  return { isActive, remainingSeconds, cooldownEndsAt: endsAt };
 }

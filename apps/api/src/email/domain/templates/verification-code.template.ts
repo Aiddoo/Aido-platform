@@ -2,16 +2,16 @@
  * 이메일 인증 코드 템플릿
  */
 export interface VerificationCodeTemplateData {
-	code: string;
-	expiryMinutes: number;
+  code: string;
+  expiryMinutes: number;
 }
 
 export function getVerificationCodeSubject(): string {
-	return "[Aido] 이메일 인증 코드";
+  return "[Aido] 이메일 인증 코드";
 }
 
 export function getVerificationCodeHtml(data: VerificationCodeTemplateData): string {
-	return `
+  return `
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -75,7 +75,7 @@ export function getVerificationCodeHtml(data: VerificationCodeTemplateData): str
 }
 
 export function getVerificationCodeText(data: VerificationCodeTemplateData): string {
-	return `
+  return `
 [Aido] 이메일 인증 코드
 
 인증 코드: ${data.code}

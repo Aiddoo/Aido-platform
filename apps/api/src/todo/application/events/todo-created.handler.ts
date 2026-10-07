@@ -13,17 +13,17 @@ import { TODO_REMINDER, type TodoReminderPort } from "../ports/todo-reminder.por
  */
 @Injectable()
 export class TodoCreatedHandler {
-	constructor(
-		@Inject(TODO_REMINDER)
-		private readonly todoReminder: TodoReminderPort,
-	) {}
+  constructor(
+    @Inject(TODO_REMINDER)
+    private readonly todoReminder: TodoReminderPort,
+  ) {}
 
-	@OnEvent(TODO_EVENTS.CREATED, { suppressErrors: false })
-	async handle(event: TodoCreatedEvent): Promise<void> {
-		if (!event.scheduledTime) {
-			return;
-		}
+  @OnEvent(TODO_EVENTS.CREATED, { suppressErrors: false })
+  async handle(event: TodoCreatedEvent): Promise<void> {
+    if (!event.scheduledTime) {
+      return;
+    }
 
-		await this.todoReminder.scheduleReminder(event.todoId, event.scheduledTime, event.userId);
-	}
+    await this.todoReminder.scheduleReminder(event.todoId, event.scheduledTime, event.userId);
+  }
 }

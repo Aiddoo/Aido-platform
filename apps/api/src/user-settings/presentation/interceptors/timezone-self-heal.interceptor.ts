@@ -1,11 +1,11 @@
 import type { CurrentUserPayload } from "@aido/validators";
 import {
-	type CallHandler,
-	type ExecutionContext,
-	Injectable,
-	Logger,
-	type NestInterceptor,
-	type OnModuleDestroy,
+  type CallHandler,
+  type ExecutionContext,
+  Injectable,
+  Logger,
+  type NestInterceptor,
+  type OnModuleDestroy,
 } from "@nestjs/common";
 import type { Observable } from "rxjs";
 
@@ -27,70 +27,70 @@ import { RefreshPushTimezoneUseCase } from "../../application/use-cases/refresh-
  */
 @Injectable()
 export class TimezoneSelfHealInterceptor implements NestInterceptor, OnModuleDestroy {
-	readonly #logger = new Logger(TimezoneSelfHealInterceptor.name);
+  readonly #logger = new Logger(TimezoneSelfHealInterceptor.name);
 
-	/** userId → 마지막으로 반영한 tz + 반영 시각(epoch ms) */
-	readonly #seen = new Map<string, { tz: string; at: number }>();
+  /** userId → 마지막으로 반영한 tz + 반영 시각(epoch ms) */
+  readonly #seen = new Map<string, { tz: string; at: number }>();
 
-	readonly #cleanupInterval: NodeJS.Timeout;
+  readonly #cleanupInterval: NodeJS.Timeout;
 
-	static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
+  static readonly THROTTLE_MS = 60 * 60 * 1000; // 1시간
 
-	constructor(private readonly refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase) {
-		this.#cleanupInterval = setInterval(
-			() => this.#cleanup(),
-			TimezoneSelfHealInterceptor.THROTTLE_MS,
-		);
-	}
+  constructor(private readonly refreshPushTimezoneUseCase: RefreshPushTimezoneUseCase) {
+    this.#cleanupInterval = setInterval(
+      () => this.#cleanup(),
+      TimezoneSelfHealInterceptor.THROTTLE_MS,
+    );
+  }
 
-	onModuleDestroy(): void {
-		clearInterval(this.#cleanupInterval);
-	}
+  onModuleDestroy(): void {
+    clearInterval(this.#cleanupInterval);
+  }
 
-	intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-		const request = context.switchToHttp().getRequest();
-		const user = request.user as CurrentUserPayload | undefined;
-		const timezone = normalizeIanaTimezone(request.headers?.["x-timezone"]);
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user as CurrentUserPayload | undefined;
+    const timezone = normalizeIanaTimezone(request.headers?.["x-timezone"]);
 
-		if (user?.userId && timezone) {
-			this.#heal(user.userId, timezone);
-		}
+    if (user?.userId && timezone) {
+      this.#heal(user.userId, timezone);
+    }
 
-		return next.handle();
-	}
+    return next.handle();
+  }
 
-	#heal(userId: string, timezone: string): void {
-		const now = Date.now();
-		const seen = this.#seen.get(userId);
+  #heal(userId: string, timezone: string): void {
+    const now = Date.now();
+    const seen = this.#seen.get(userId);
 
-		// 같은 tz를 스로틀 창 안에서 이미 반영했으면 재요청하지 않는다.
-		if (seen && seen.tz === timezone && now - seen.at < TimezoneSelfHealInterceptor.THROTTLE_MS) {
-			return;
-		}
+    // 같은 tz를 스로틀 창 안에서 이미 반영했으면 재요청하지 않는다.
+    if (seen && seen.tz === timezone && now - seen.at < TimezoneSelfHealInterceptor.THROTTLE_MS) {
+      return;
+    }
 
-		this.#seen.set(userId, { tz: timezone, at: now });
+    this.#seen.set(userId, { tz: timezone, at: now });
 
-		// fire-and-forget — 응답을 블로킹하지 않음. 저장값과 다를 때만 실제 쓰기가 발생.
-		this.refreshPushTimezoneUseCase.execute(userId, timezone).catch((error) => {
-			this.#logger.error(
-				`Failed to self-heal timezone: userId=${userId}, tz=${timezone}, error=${error}`,
-			);
-		});
-	}
+    // fire-and-forget — 응답을 블로킹하지 않음. 저장값과 다를 때만 실제 쓰기가 발생.
+    this.refreshPushTimezoneUseCase.execute(userId, timezone).catch((error) => {
+      this.#logger.error(
+        `Failed to self-heal timezone: userId=${userId}, tz=${timezone}, error=${error}`,
+      );
+    });
+  }
 
-	#cleanup(): void {
-		const cutoff = Date.now() - TimezoneSelfHealInterceptor.THROTTLE_MS;
-		let cleaned = 0;
+  #cleanup(): void {
+    const cutoff = Date.now() - TimezoneSelfHealInterceptor.THROTTLE_MS;
+    let cleaned = 0;
 
-		for (const [userId, entry] of this.#seen.entries()) {
-			if (entry.at < cutoff) {
-				this.#seen.delete(userId);
-				cleaned++;
-			}
-		}
+    for (const [userId, entry] of this.#seen.entries()) {
+      if (entry.at < cutoff) {
+        this.#seen.delete(userId);
+        cleaned++;
+      }
+    }
 
-		if (cleaned > 0) {
-			this.#logger.debug(`Timezone self-heal cleanup: removed ${cleaned} expired entries`);
-		}
-	}
+    if (cleaned > 0) {
+      this.#logger.debug(`Timezone self-heal cleanup: removed ${cleaned} expired entries`);
+    }
+  }
 }

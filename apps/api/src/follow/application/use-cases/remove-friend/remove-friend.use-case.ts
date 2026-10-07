@@ -5,14 +5,14 @@ import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	FOLLOW_REPOSITORY,
-	type FollowRepositoryPort,
+  FOLLOW_REPOSITORY,
+  type FollowRepositoryPort,
 } from "../../ports/follow.repository.port.js";
 import { FriendshipEffects } from "../../services/friendship-effects.service.js";
 
 export interface RemoveFriendInput {
-	userId: string;
-	targetUserId: string;
+  userId: string;
+  targetUserId: string;
 }
 
 /**
@@ -21,38 +21,38 @@ export interface RemoveFriendInput {
  */
 @Injectable()
 export class RemoveFriendUseCase {
-	readonly #logger = new Logger(RemoveFriendUseCase.name);
+  readonly #logger = new Logger(RemoveFriendUseCase.name);
 
-	constructor(
-		@Inject(FOLLOW_REPOSITORY)
-		private readonly followRepository: FollowRepositoryPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		private readonly effects: FriendshipEffects,
-	) {}
+  constructor(
+    @Inject(FOLLOW_REPOSITORY)
+    private readonly followRepository: FollowRepositoryPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    private readonly effects: FriendshipEffects,
+  ) {}
 
-	async execute(input: RemoveFriendInput): Promise<void> {
-		const { userId, targetUserId } = input;
+  async execute(input: RemoveFriendInput): Promise<void> {
+    const { userId, targetUserId } = input;
 
-		const myFollow = await this.followRepository.findByFollowerAndFollowing(userId, targetUserId);
-		if (!myFollow) {
-			throw new ApplicationException(ErrorCode.FOLLOW_0907, { targetUserId });
-		}
+    const myFollow = await this.followRepository.findByFollowerAndFollowing(userId, targetUserId);
+    if (!myFollow) {
+      throw new ApplicationException(ErrorCode.FOLLOW_0907, { targetUserId });
+    }
 
-		await this.uow.run(async () => {
-			await this.followRepository.delete(myFollow.id);
+    await this.uow.run(async () => {
+      await this.followRepository.delete(myFollow.id);
 
-			const theirFollow = await this.followRepository.findByFollowerAndFollowing(
-				targetUserId,
-				userId,
-			);
-			if (theirFollow) {
-				await this.followRepository.delete(theirFollow.id);
-			}
-		});
+      const theirFollow = await this.followRepository.findByFollowerAndFollowing(
+        targetUserId,
+        userId,
+      );
+      if (theirFollow) {
+        await this.followRepository.delete(theirFollow.id);
+      }
+    });
 
-		await this.effects.invalidateFriendshipCaches(userId, targetUserId);
+    await this.effects.invalidateFriendshipCaches(userId, targetUserId);
 
-		this.#logger.log(`Follow removed: ${userId} X ${targetUserId}`);
-	}
+    this.#logger.log(`Follow removed: ${userId} X ${targetUserId}`);
+  }
 }

@@ -7,33 +7,33 @@ import { type EmailSenderPort, type EmailSendResult } from "../ports/email-sende
 
 /** 인증 및 문의 템플릿을 외부 이메일 공급자로 발송하는 공개 capability. */
 export class TransactionalEmailSender {
-	constructor(private readonly sender: EmailSenderPort) {}
+  constructor(private readonly sender: EmailSenderPort) {}
 
-	sendVerificationCode(
-		to: string,
-		data: VerificationCodeTemplateData,
-		idempotencyKey?: string,
-	): Promise<EmailSendResult> {
-		return this.sender.send(EmailMessage.verificationCode(to, data, idempotencyKey));
-	}
+  sendVerificationCode(
+    to: string,
+    data: VerificationCodeTemplateData,
+    idempotencyKey?: string,
+  ): Promise<EmailSendResult> {
+    return this.sender.send(EmailMessage.verificationCode(to, data, idempotencyKey));
+  }
 
-	sendPasswordResetCode(
-		to: string,
-		data: PasswordResetTemplateData,
-		idempotencyKey?: string,
-	): Promise<EmailSendResult> {
-		return this.sender.send(EmailMessage.passwordReset(to, data, idempotencyKey));
-	}
+  sendPasswordResetCode(
+    to: string,
+    data: PasswordResetTemplateData,
+    idempotencyKey?: string,
+  ): Promise<EmailSendResult> {
+    return this.sender.send(EmailMessage.passwordReset(to, data, idempotencyKey));
+  }
 
-	sendPasswordSetupCode(
-		to: string,
-		data: PasswordSetupTemplateData,
-		idempotencyKey?: string,
-	): Promise<EmailSendResult> {
-		return this.sender.send(EmailMessage.passwordSetup(to, data, idempotencyKey));
-	}
+  sendPasswordSetupCode(
+    to: string,
+    data: PasswordSetupTemplateData,
+    idempotencyKey?: string,
+  ): Promise<EmailSendResult> {
+    return this.sender.send(EmailMessage.passwordSetup(to, data, idempotencyKey));
+  }
 
-	sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
-		return this.sender.send(EmailMessage.inquiry(to, data));
-	}
+  sendInquiry(to: string, data: InquiryTemplateData): Promise<EmailSendResult> {
+    return this.sender.send(EmailMessage.inquiry(to, data));
+  }
 }

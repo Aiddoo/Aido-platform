@@ -46,6 +46,7 @@ jobs:
       run: ${{ steps.policy.outputs.run }}
       api: ${{ steps.policy.outputs.api }}
       mobile: ${{ steps.policy.outputs.mobile }}
+      shared: ${{ steps.policy.outputs.shared }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -100,12 +101,13 @@ jobs:
             core.setOutput('run', plan.run);
             core.setOutput('api', scope.api);
             core.setOutput('mobile', scope.mobile);
+            core.setOutput('shared', scope.shared);
             await core.summary.addRaw(`CI policy: **${plan.reason}**. API=${scope.api}, mobile=${scope.mobile}, shared=${scope.shared}. Heavy checks: **${plan.run ? 'run' : 'deferred'}**. Base: ${plan.base} (${baseSha}). Head: ${headSha}. Ancestors: ${plan.ancestors.join(', ') || 'none'}.`).write();
 
   lint:
     name: Lint & Type Check
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -132,126 +134,85 @@ jobs:
         run: pnpm --filter @aido/mobile check:conventions
 
   test-unit:
-    name: Test - Unit & Coverage
+    name: Test - Mobile & Contracts
     needs: gate
-    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true')
+    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - uses: ./.github/actions/setup
         with:
-          generate-prisma: ${{ needs.gate.outputs.api }}
-          install-scope: ${{ needs.gate.outputs.mobile == 'true' && 'all' || 'api' }}
-
-      # 각 테스트 출력을 파일로 남기고 실패 시 아티팩트 업로드 — 플레이크 재현용
-      #
-      # api는 아래 커버리지 스텝이 같은 유닛 스위트를 돌리므로 여기서 제외한다.
-      # (예전에는 양쪽에서 돌아 2600여 건이 매 CI마다 두 번 실행됐다.)
-      - name: Run unit tests
-        if: needs.gate.outputs.mobile == 'true'
+          generate-prisma: 'false'
+          install-scope: all
+      - name: Run mobile and contract unit tests
         run: pnpm turbo run test --filter='!@aido/api' 2>&1 | tee /tmp/test-unit.log
-
-      # gate에서 누적 의존성 범위를 결정하고 Turbo는 입력 해시로 검증 결과를 재사용한다.
-      - name: Run API unit tests with coverage
-        if: needs.gate.outputs.api == 'true'
-        run: pnpm turbo run test:cov --filter=@aido/api 2>&1 | tee /tmp/test-coverage.log
-
-      - name: Upload unit test logs (failure only)
+      - name: Upload unit test logs
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-unit-logs-${{ github.run_id }}
-          path: /tmp/test-*.log
+          path: /tmp/test-unit.log
           retention-days: 14
 
-  test-integration:
-    name: Test - Integration
+  verify-api:
+    name: Verify API
     needs: gate
     if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup
-        with:
-          generate-prisma: ${{ needs.gate.outputs.api }}
-          install-scope: api
-
-      # gate에서 API 영향이 없는 변경은 러너 자체를 건너뛴다.
-      - name: Run integration tests
-        run: pnpm turbo run test:integration --filter=@aido/api 2>&1 | tee /tmp/test-integration.log
-
-      - name: Upload integration test logs (failure only)
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: test-integration-logs-${{ github.run_id }}
-          path: /tmp/test-integration.log
-          retention-days: 14
-
-  test-e2e:
-    name: Test - E2E
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup
-        with:
-          generate-prisma: ${{ needs.gate.outputs.api }}
-          install-scope: api
-
-      - name: Run E2E tests
+    timeout-minutes: 30
+    # GitHub starts, health-checks and stops the service; no container wrapper script.
+    services:
+      postgres:
+        image: postgres:16-alpine
         env:
-          JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
-          JWT_EXPIRES_IN: 15m
-          JWT_REFRESH_EXPIRES_IN: 7d
-          EMAIL_FROM: noreply@test.aido.app
-          EMAIL_FROM_NAME: Aido Test
-          TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
-          NODE_ENV: test
-        run: pnpm turbo run test:e2e --filter=@aido/api 2>&1 | tee /tmp/test-e2e.log
-
-      - name: Upload E2E test logs (failure only)
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      AIDO_TEST_POSTGRES_URL: postgresql://test_user:test_password@127.0.0.1:5432/postgres
+      JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
+      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      EMAIL_FROM: noreply@test.aido.app
+      EMAIL_FROM_NAME: Aido Test
+      TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+        with:
+          install-scope: api
+      - name: Unit tests and coverage
+        run: pnpm turbo run test:cov --filter=@aido/api 2>&1 | tee /tmp/test-api-unit.log
+      - name: PostgreSQL integration tests
+        run: pnpm turbo run test:integration --filter=@aido/api 2>&1 | tee /tmp/test-api-integration.log
+      - name: HTTP and released-client E2E
+        run: pnpm turbo run test:e2e --filter=@aido/api 2>&1 | tee /tmp/test-api-e2e.log
+      - name: Build API and dependency closure
+        run: pnpm turbo run build --filter='!@aido/mobile'
+      - name: Upload API test logs
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-e2e-logs-${{ github.run_id }}
-          path: /tmp/test-e2e.log
+          name: test-api-logs-${{ github.run_id }}
+          path: /tmp/test-api-*.log
           retention-days: 14
-
-  build:
-    name: Build
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup
-        with:
-          generate-prisma: ${{ needs.gate.outputs.api }}
-          install-scope: api
-
-      - name: Build
-        run: pnpm turbo run build --filter='!@aido/mobile'
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
   # 필수 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
   docker:
     name: Build & Push Image
-    needs: [gate, lint, test-unit, test-integration, test-e2e, build]
-    if: needs.gate.outputs.api == 'true' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [gate, lint, test-unit, verify-api]
+    if: >-
+      ${{ !cancelled() && needs.gate.outputs.api == 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success' && (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:

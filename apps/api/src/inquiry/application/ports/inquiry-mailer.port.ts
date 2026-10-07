@@ -5,8 +5,8 @@ export const INQUIRY_MAILER = Symbol("INQUIRY_MAILER");
 
 /** 문의 전달 결과 (성공 여부 + 실패 사유) */
 export interface InquiryDeliveryResult {
-	readonly success: boolean;
-	readonly error?: string;
+  readonly success: boolean;
+  readonly error?: string;
 }
 
 /**
@@ -17,5 +17,5 @@ export interface InquiryDeliveryResult {
  * 테스트는 실제 전송 대신 스텁 어댑터로 대체한다.
  */
 export interface InquiryMailerPort {
-	deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult>;
+  deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult>;
 }

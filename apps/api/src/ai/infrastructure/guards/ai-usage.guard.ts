@@ -9,7 +9,7 @@ import { GetAiUsageUseCase } from "../../application/queries/get-ai-usage/get-ai
 
 /** 인증 페이로드가 첨부된 Request 타입 (캐스트 없이 user 접근). */
 interface AuthenticatedRequest extends Request {
-	user?: CurrentUserPayload;
+  user?: CurrentUserPayload;
 }
 
 /**
@@ -24,26 +24,26 @@ interface AuthenticatedRequest extends Request {
  */
 @Injectable()
 export class AiUsageGuard implements CanActivate {
-	constructor(private readonly getAiUsageUseCase: GetAiUsageUseCase) {}
+  constructor(private readonly getAiUsageUseCase: GetAiUsageUseCase) {}
 
-	async canActivate(context: ExecutionContext): Promise<boolean> {
-		const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-		const user = request.user;
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const user = request.user;
 
-		if (!user) {
-			// JwtAuthGuard가 먼저 실행되어야 함
-			throw new ApplicationException(ErrorCode.AUTH_0107);
-		}
+    if (!user) {
+      // JwtAuthGuard가 먼저 실행되어야 함
+      throw new ApplicationException(ErrorCode.AUTH_0107);
+    }
 
-		const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
+    const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
-		if (usage.isExceeded()) {
-			throw new ApplicationException(ErrorCode.AI_1303, {
-				used: usage.used,
-				limit: usage.limit,
-			});
-		}
+    if (usage.isExceeded()) {
+      throw new ApplicationException(ErrorCode.AI_1303, {
+        used: usage.used,
+        limit: usage.limit,
+      });
+    }
 
-		return true;
-	}
+    return true;
+  }
 }

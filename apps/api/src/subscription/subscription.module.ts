@@ -16,24 +16,24 @@ import { PrismaSubscriptionRepository } from "./infrastructure/persistence/prism
 import { SubscriptionController } from "./presentation/subscription.controller.js";
 
 @Module({
-	imports: [AdminNotificationModule, NotificationModule],
-	controllers: [SubscriptionController],
-	providers: [
-		HandleWebhookEventUseCase,
-		WebhookSignatureGuard,
-		{
-			provide: SUBSCRIPTION_REPOSITORY,
-			useClass: PrismaSubscriptionRepository,
-		},
-		{ provide: SUBSCRIPTION_CACHE, useClass: SubscriptionCacheAdapter },
-		{
-			provide: SUBSCRIPTION_EVENT_NOTIFIER,
-			useClass: SubscriptionEventNotifierAdapter,
-		},
-		{
-			provide: SUBSCRIPTION_WEBHOOK_LOCK,
-			useClass: SubscriptionWebhookLockAdapter,
-		},
-	],
+  imports: [AdminNotificationModule, NotificationModule],
+  controllers: [SubscriptionController],
+  providers: [
+    HandleWebhookEventUseCase,
+    WebhookSignatureGuard,
+    {
+      provide: SUBSCRIPTION_REPOSITORY,
+      useClass: PrismaSubscriptionRepository,
+    },
+    { provide: SUBSCRIPTION_CACHE, useClass: SubscriptionCacheAdapter },
+    {
+      provide: SUBSCRIPTION_EVENT_NOTIFIER,
+      useClass: SubscriptionEventNotifierAdapter,
+    },
+    {
+      provide: SUBSCRIPTION_WEBHOOK_LOCK,
+      useClass: SubscriptionWebhookLockAdapter,
+    },
+  ],
 })
 export class SubscriptionModule {}

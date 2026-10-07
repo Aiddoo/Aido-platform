@@ -12,55 +12,55 @@ import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/dat
 
 import type { PushReceiptResult } from "../../application/ports/push-provider.port.js";
 import type {
-	PendingPushReceipt,
-	PushReceiptRepositoryPort,
+  PendingPushReceipt,
+  PushReceiptRepositoryPort,
 } from "../../application/ports/push-receipt.repository.port.js";
 
 @Injectable()
 export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
-	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
-	private get client() {
-		return this.txHost.tx;
-	}
+  private get client() {
+    return this.txHost.tx;
+  }
 
-	async findPendingPushReceipts(limit: number): Promise<PendingPushReceipt[]> {
-		const rows = decodeRecord(
-			"PushDeliveryAttempt",
-			await this.client.orm.public.PushDeliveryAttempt.where((row) =>
-				and(row.status.eq("TICKET_ACCEPTED"), row.expoTicketId.isNotNull()),
-			)
-				.select("expoTicketId")
-				.include("pushToken", (related) => related.select("token"))
-				.orderBy((row) => row.createdAt.asc())
-				.limit(limit)
-				.all(),
-		);
-		return rows.flatMap((row) =>
-			row.expoTicketId
-				? [{ ticketId: row.expoTicketId, token: requireRecord(row.pushToken).token }]
-				: [],
-		);
-	}
+  async findPendingPushReceipts(limit: number): Promise<PendingPushReceipt[]> {
+    const rows = decodeRecord(
+      "PushDeliveryAttempt",
+      await this.client.orm.public.PushDeliveryAttempt.where((row) =>
+        and(row.status.eq("TICKET_ACCEPTED"), row.expoTicketId.isNotNull()),
+      )
+        .select("expoTicketId")
+        .include("pushToken", (related) => related.select("token"))
+        .orderBy((row) => row.createdAt.asc())
+        .limit(limit)
+        .all(),
+    );
+    return rows.flatMap((row) =>
+      row.expoTicketId
+        ? [{ ticketId: row.expoTicketId, token: requireRecord(row.pushToken).token }]
+        : [],
+    );
+  }
 
-	async recordPushReceipts(results: PushReceiptResult[]): Promise<string[]> {
-		if (results.length === 0) return [];
+  async recordPushReceipts(results: PushReceiptResult[]): Promise<string[]> {
+    if (results.length === 0) return [];
 
-		const receiptCheckedAt = now();
-		const values = results.map(
-			(result) =>
-				sql`(
+    const receiptCheckedAt = now();
+    const values = results.map(
+      (result) =>
+        sql`(
 					${result.ticketId}::VARCHAR(100),
 					${result.delivered ? "DELIVERED" : "FAILED"}::"PushDeliveryStatus",
 					${result.errorCode ?? null}::VARCHAR(100),
 					${result.error?.slice(0, 500) ?? null}::VARCHAR(500)
 				)`,
-		);
-		await this.client
-			.execute(
-				sqlStatement(
-					this.client,
-					sql`
+    );
+    await this.client
+      .execute(
+        sqlStatement(
+          this.client,
+          sql`
 			UPDATE "PushDeliveryAttempt" AS attempt
 			SET
 				"status" = receipt."status",
@@ -73,24 +73,24 @@ export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
 			) AS receipt("ticketId", "status", "errorCode", "errorMessage")
 			WHERE attempt."expoTicketId" = receipt."ticketId"
 		`,
-				)
-					.affectedCount()
-					.build(),
-			)
-			.then((result) => result.affectedRows);
+        )
+          .affectedCount()
+          .build(),
+      )
+      .then((result) => result.affectedRows);
 
-		const invalidTicketIds = results.flatMap((result) =>
-			result.errorCode === "DeviceNotRegistered" ? [result.ticketId] : [],
-		);
-		if (invalidTicketIds.length === 0) return [];
-		const attempts = decodeRecord(
-			"PushDeliveryAttempt",
-			await this.client.orm.public.PushDeliveryAttempt.where((row) =>
-				row.expoTicketId.in(invalidTicketIds.map((value) => varchar(value, 100))),
-			)
-				.include("pushToken", (related) => related.select("token"))
-				.all(),
-		);
-		return attempts.map((attempt) => requireRecord(attempt.pushToken).token);
-	}
+    const invalidTicketIds = results.flatMap((result) =>
+      result.errorCode === "DeviceNotRegistered" ? [result.ticketId] : [],
+    );
+    if (invalidTicketIds.length === 0) return [];
+    const attempts = decodeRecord(
+      "PushDeliveryAttempt",
+      await this.client.orm.public.PushDeliveryAttempt.where((row) =>
+        row.expoTicketId.in(invalidTicketIds.map((value) => varchar(value, 100))),
+      )
+        .include("pushToken", (related) => related.select("token"))
+        .all(),
+    );
+    return attempts.map((attempt) => requireRecord(attempt.pushToken).token);
+  }
 }

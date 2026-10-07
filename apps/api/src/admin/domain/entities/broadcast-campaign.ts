@@ -4,10 +4,10 @@ import type { NotificationAction } from "@aido/validators";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import type {
-	AdminBroadcastMessage,
-	AdminBroadcastType,
-	BroadcastMetadata,
-	BroadcastTargetFilter,
+  AdminBroadcastMessage,
+  AdminBroadcastType,
+  BroadcastMetadata,
+  BroadcastTargetFilter,
 } from "../broadcast-message.js";
 
 /**
@@ -18,63 +18,63 @@ import type {
  * (도메인이 "무엇을 보내는가"의 규칙을 소유 — 전송 수단은 인프라 관심사)
  */
 export class BroadcastCampaign {
-	private constructor(
-		private readonly _targetFilter: BroadcastTargetFilter,
-		private readonly title: string,
-		private readonly body: string,
-		private readonly action: NotificationAction | undefined,
-		private readonly force: boolean,
-	) {}
+  private constructor(
+    private readonly _targetFilter: BroadcastTargetFilter,
+    private readonly title: string,
+    private readonly body: string,
+    private readonly action: NotificationAction | undefined,
+    private readonly force: boolean,
+  ) {}
 
-	/**
-	 * 캠페인을 생성하며 도메인 불변식을 검증한다.
-	 * 제목/본문이 공백뿐이면 SYS_0002(검증 실패)로 거부한다.
-	 */
-	static create(input: {
-		title: string;
-		body: string;
-		targetFilter: BroadcastTargetFilter;
-		action?: NotificationAction;
-		force?: boolean;
-	}): BroadcastCampaign {
-		const title = input.title.trim();
-		const body = input.body.trim();
+  /**
+   * 캠페인을 생성하며 도메인 불변식을 검증한다.
+   * 제목/본문이 공백뿐이면 SYS_0002(검증 실패)로 거부한다.
+   */
+  static create(input: {
+    title: string;
+    body: string;
+    targetFilter: BroadcastTargetFilter;
+    action?: NotificationAction;
+    force?: boolean;
+  }): BroadcastCampaign {
+    const title = input.title.trim();
+    const body = input.body.trim();
 
-		if (title.length === 0 || body.length === 0) {
-			throw new DomainException(ErrorCode.SYS_0002, {
-				reason: "브로드캐스트 제목/본문은 비어 있을 수 없습니다",
-			});
-		}
+    if (title.length === 0 || body.length === 0) {
+      throw new DomainException(ErrorCode.SYS_0002, {
+        reason: "브로드캐스트 제목/본문은 비어 있을 수 없습니다",
+      });
+    }
 
-		return new BroadcastCampaign(
-			input.targetFilter,
-			title,
-			body,
-			input.action,
-			input.force ?? false,
-		);
-	}
+    return new BroadcastCampaign(
+      input.targetFilter,
+      title,
+      body,
+      input.action,
+      input.force ?? false,
+    );
+  }
 
-	get targetFilter(): BroadcastTargetFilter {
-		return this._targetFilter;
-	}
+  get targetFilter(): BroadcastTargetFilter {
+    return this._targetFilter;
+  }
 
-	/** 외부 URL 액션이 있으면 externalUrl 메타데이터를 파생한다 */
-	#metadata(): BroadcastMetadata {
-		return this.action?.url ? { externalUrl: this.action.url } : undefined;
-	}
+  /** 외부 URL 액션이 있으면 externalUrl 메타데이터를 파생한다 */
+  #metadata(): BroadcastMetadata {
+    return this.action?.url ? { externalUrl: this.action.url } : undefined;
+  }
 
-	/** 대상 사용자 ID 목록으로부터 발송 메시지를 조립한다 */
-	toMessages(userIds: string[], type: AdminBroadcastType): AdminBroadcastMessage[] {
-		const metadata = this.#metadata();
-		return userIds.map((userId) => ({
-			userId,
-			type,
-			title: this.title,
-			body: this.body,
-			action: this.action,
-			metadata,
-			force: this.force,
-		}));
-	}
+  /** 대상 사용자 ID 목록으로부터 발송 메시지를 조립한다 */
+  toMessages(userIds: string[], type: AdminBroadcastType): AdminBroadcastMessage[] {
+    const metadata = this.#metadata();
+    return userIds.map((userId) => ({
+      userId,
+      type,
+      title: this.title,
+      body: this.body,
+      action: this.action,
+      metadata,
+      force: this.force,
+    }));
+  }
 }

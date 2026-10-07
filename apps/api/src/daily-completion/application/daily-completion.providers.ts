@@ -2,6 +2,6 @@ import { GetDailyCompletionsUseCase } from "./queries/get-daily-completions/get-
 import { GetFriendDailyCompletionsUseCase } from "./queries/get-friend-daily-completions/get-friend-daily-completions.use-case.js";
 
 export const DAILY_COMPLETION_PROVIDERS = [
-	GetDailyCompletionsUseCase,
-	GetFriendDailyCompletionsUseCase,
+  GetDailyCompletionsUseCase,
+  GetFriendDailyCompletionsUseCase,
 ] as const;

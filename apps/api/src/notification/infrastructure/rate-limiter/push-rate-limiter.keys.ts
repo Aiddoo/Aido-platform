@@ -10,33 +10,33 @@
  * 불필요한 리셋을 피한다).
  */
 export const PushRateLimiterKeys = {
-	/**
-	 * 일반 푸시 슬라이딩 윈도우 키 (per-user)
-	 * @example push-rate:user_123
-	 */
-	general: (userId: string): string => `push-rate:${userId}`,
+  /**
+   * 일반 푸시 슬라이딩 윈도우 키 (per-user)
+   * @example push-rate:user_123
+   */
+  general: (userId: string): string => `push-rate:${userId}`,
 
-	/**
-	 * 인게이지먼트(재참여) 레이트리미트 키 (per-user, per-local-date)
-	 * @example push-engagement:user_123:2026-03-09
-	 */
-	engagement: (userId: string, localDate: string): string =>
-		`push-engagement:${userId}:${localDate}`,
+  /**
+   * 인게이지먼트(재참여) 레이트리미트 키 (per-user, per-local-date)
+   * @example push-engagement:user_123:2026-03-09
+   */
+  engagement: (userId: string, localDate: string): string =>
+    `push-engagement:${userId}:${localDate}`,
 
-	/**
-	 * 인게이지먼트가 없는 배치 슬롯의 placeholder 키 (Lua 인자 정렬용, 미사용 슬롯)
-	 * @example push-engagement:unused:0
-	 */
-	engagementPlaceholder: (index: number): string => `push-engagement:unused:${index}`,
+  /**
+   * 인게이지먼트가 없는 배치 슬롯의 placeholder 키 (Lua 인자 정렬용, 미사용 슬롯)
+   * @example push-engagement:unused:0
+   */
+  engagementPlaceholder: (index: number): string => `push-engagement:unused:${index}`,
 
-	/** 날짜·sliding window와 독립된 dispatch 일반 quota 예약 marker. */
-	generalReservation: (userId: string, reservationId: string): string =>
-		`push-rate-reservation:general:${userId}:${reservationId}`,
+  /** 날짜·sliding window와 독립된 dispatch 일반 quota 예약 marker. */
+  generalReservation: (userId: string, reservationId: string): string =>
+    `push-rate-reservation:general:${userId}:${reservationId}`,
 
-	/** 날짜와 독립된 dispatch 참여 유도 quota 예약 marker. */
-	engagementReservation: (userId: string, reservationId: string): string =>
-		`push-rate-reservation:engagement:${userId}:${reservationId}`,
+  /** 날짜와 독립된 dispatch 참여 유도 quota 예약 marker. */
+  engagementReservation: (userId: string, reservationId: string): string =>
+    `push-rate-reservation:engagement:${userId}:${reservationId}`,
 
-	reservationPlaceholder: (phase: "general" | "engagement", index = 0): string =>
-		`push-rate-reservation:unused:${phase}:${index}`,
+  reservationPlaceholder: (phase: "general" | "engagement", index = 0): string =>
+    `push-rate-reservation:unused:${phase}:${index}`,
 } as const;

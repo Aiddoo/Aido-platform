@@ -6,10 +6,10 @@ import type { CreateNotificationData } from "./notification-data.js";
 export const NOTIFICATION_REPOSITORY = Symbol("NOTIFICATION_REPOSITORY");
 
 export class DuplicateNotificationError extends Error {
-	constructor() {
-		super("Notification already exists");
-		this.name = "DuplicateNotificationError";
-	}
+  constructor() {
+    super("Notification already exists");
+    this.name = "DuplicateNotificationError";
+  }
 }
 
 /**
@@ -18,14 +18,14 @@ export class DuplicateNotificationError extends Error {
  * 어댑터(Prisma)는 CLS TransactionHost 기반으로 활성 트랜잭션에 참여한다.
  */
 export interface NotificationRepositoryPort {
-	createNotification(data: CreateNotificationData): Promise<NotificationRecord>;
-	createManyNotificationsAndReturn(
-		dataList: CreateNotificationData[],
-	): Promise<NotificationRecord[]>;
-	markAsRead(id: number, userId: string): Promise<boolean>;
-	markAsOpened(id: number, userId: string): Promise<boolean>;
-	markAllAsRead(userId: string, types?: readonly NotificationType[]): Promise<{ count: number }>;
-	deleteNotificationsByActorId(
-		actorId: string,
-	): Promise<{ count: number; affectedUserIds: string[] }>;
+  createNotification(data: CreateNotificationData): Promise<NotificationRecord>;
+  createManyNotificationsAndReturn(
+    dataList: CreateNotificationData[],
+  ): Promise<NotificationRecord[]>;
+  markAsRead(id: number, userId: string): Promise<boolean>;
+  markAsOpened(id: number, userId: string): Promise<boolean>;
+  markAllAsRead(userId: string, types?: readonly NotificationType[]): Promise<{ count: number }>;
+  deleteNotificationsByActorId(
+    actorId: string,
+  ): Promise<{ count: number; affectedUserIds: string[] }>;
 }

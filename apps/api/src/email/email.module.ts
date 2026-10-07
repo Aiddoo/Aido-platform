@@ -12,17 +12,17 @@ import { ResendEmailSenderAdapter } from "./infrastructure/adapters/resend-email
  * export하여 inquiry·auth 등 소비 모듈이 주입한다.
  */
 @Module({
-	providers: [
-		{
-			provide: TransactionalEmailSender,
-			inject: [EMAIL_SENDER],
-			useFactory: (emailSender: EmailSenderPort) => new TransactionalEmailSender(emailSender),
-		},
-		{
-			provide: EMAIL_SENDER,
-			useClass: ResendEmailSenderAdapter,
-		},
-	],
-	exports: [TransactionalEmailSender],
+  providers: [
+    {
+      provide: TransactionalEmailSender,
+      inject: [EMAIL_SENDER],
+      useFactory: (emailSender: EmailSenderPort) => new TransactionalEmailSender(emailSender),
+    },
+    {
+      provide: EMAIL_SENDER,
+      useClass: ResendEmailSenderAdapter,
+    },
+  ],
+  exports: [TransactionalEmailSender],
 })
 export class EmailModule {}

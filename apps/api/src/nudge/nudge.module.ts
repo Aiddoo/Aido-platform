@@ -5,8 +5,8 @@ import { NotificationModule } from "#api/notification/index";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 import {
-	NUDGE_INTERACTION_CONFIG,
-	type NudgeInteractionConfigPort,
+  NUDGE_INTERACTION_CONFIG,
+  type NudgeInteractionConfigPort,
 } from "./application/ports/nudge-interaction.config.port.js";
 import { NUDGE_LIMIT_READER } from "./application/ports/nudge-limit-reader.port.js";
 import { NUDGE_NOTIFIER } from "./application/ports/nudge-notifier.port.js";
@@ -40,29 +40,29 @@ import { NudgeController } from "./presentation/nudge.controller.js";
  * 기존 전송 알림은 커밋 후 큐에 등록하며, 답장·감사는 같은 UoW에서 알림과 push outbox를 기록한다.
  */
 @Module({
-	imports: [FollowModule, NotificationModule],
-	controllers: [NudgeController, NudgeInteractionController],
-	providers: [
-		{
-			provide: NUDGE_INTERACTION_CONFIG,
-			inject: [TypedConfigService],
-			useFactory: (config: TypedConfigService): NudgeInteractionConfigPort => ({
-				isEnabled: config.get("NUDGE_INTERACTIONS_ENABLED"),
-			}),
-		},
-		{ provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
-		{ provide: NUDGE_NOTIFIER, useClass: NudgeNotifierAdapter },
-		{ provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
-		NudgeReader,
-		SendNudgeUseCase,
-		SendRemindNudgeUseCase,
-		MarkNudgeReadUseCase,
-		GetNudgeInteractionAvailabilityUseCase,
-		GetNudgeInteractionsUseCase,
-		GetNudgeInteractionUseCase,
-		GetNudgeThanksPreviewUseCase,
-		ReplyToNudgeUseCase,
-		SendNudgeThanksUseCase,
-	],
+  imports: [FollowModule, NotificationModule],
+  controllers: [NudgeController, NudgeInteractionController],
+  providers: [
+    {
+      provide: NUDGE_INTERACTION_CONFIG,
+      inject: [TypedConfigService],
+      useFactory: (config: TypedConfigService): NudgeInteractionConfigPort => ({
+        isEnabled: config.get("NUDGE_INTERACTIONS_ENABLED"),
+      }),
+    },
+    { provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
+    { provide: NUDGE_NOTIFIER, useClass: NudgeNotifierAdapter },
+    { provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
+    NudgeReader,
+    SendNudgeUseCase,
+    SendRemindNudgeUseCase,
+    MarkNudgeReadUseCase,
+    GetNudgeInteractionAvailabilityUseCase,
+    GetNudgeInteractionsUseCase,
+    GetNudgeInteractionUseCase,
+    GetNudgeThanksPreviewUseCase,
+    ReplyToNudgeUseCase,
+    SendNudgeThanksUseCase,
+  ],
 })
 export class NudgeModule {}

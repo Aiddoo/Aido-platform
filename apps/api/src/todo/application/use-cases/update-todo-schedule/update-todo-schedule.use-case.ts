@@ -3,21 +3,21 @@ import type { Todo as TodoResponse } from "@aido/validators";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	DOMAIN_EVENT_PUBLISHER,
-	type DomainEventPublisherPort,
-	UNIT_OF_WORK,
-	type UnitOfWorkPort,
+  DOMAIN_EVENT_PUBLISHER,
+  type DomainEventPublisherPort,
+  UNIT_OF_WORK,
+  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import {
-	TodoSchedule,
-	type TodoScheduleProps,
+  TodoSchedule,
+  type TodoScheduleProps,
 } from "../../../domain/value-objects/todo-schedule.vo.js";
 import { TODO_CACHE, type TodoCachePort } from "../../ports/todo-cache.port.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repository.port.js";
 
@@ -28,9 +28,9 @@ import { TODO_REPOSITORY, type TodoRepositoryPort } from "../../ports/todo.repos
  * 입력은 파싱 완료된 Date 값만 운반합니다.
  */
 export interface UpdateTodoScheduleInput {
-	id: number;
-	userId: string;
-	schedule: TodoScheduleProps;
+  id: number;
+  userId: string;
+  schedule: TodoScheduleProps;
 }
 
 /**
@@ -42,56 +42,56 @@ export interface UpdateTodoScheduleInput {
  */
 @Injectable()
 export class UpdateTodoScheduleUseCase {
-	readonly #logger = new Logger(UpdateTodoScheduleUseCase.name);
+  readonly #logger = new Logger(UpdateTodoScheduleUseCase.name);
 
-	constructor(
-		@Inject(TODO_REPOSITORY)
-		private readonly todoRepository: TodoRepositoryPort,
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-		@Inject(TODO_CACHE)
-		private readonly todoCache: TodoCachePort,
-		@Inject(DOMAIN_EVENT_PUBLISHER)
-		private readonly eventPublisher: DomainEventPublisherPort,
-	) {}
+  constructor(
+    @Inject(TODO_REPOSITORY)
+    private readonly todoRepository: TodoRepositoryPort,
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+    @Inject(TODO_CACHE)
+    private readonly todoCache: TodoCachePort,
+    @Inject(DOMAIN_EVENT_PUBLISHER)
+    private readonly eventPublisher: DomainEventPublisherPort,
+  ) {}
 
-	async execute(input: UpdateTodoScheduleInput): Promise<TodoResponse> {
-		const { id, userId, schedule } = input;
+  async execute(input: UpdateTodoScheduleInput): Promise<TodoResponse> {
+    const { id, userId, schedule } = input;
 
-		// TX 안에서 로드 → 일정 전이(VO가 날짜 불변식 보장) → 애그리게잇 상태로 영속화
-		const events = await this.uow.run(async () => {
-			const todo = await this.todoRepository.findByIdAndUserId(id, userId);
-			if (!todo) {
-				throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-			}
+    // TX 안에서 로드 → 일정 전이(VO가 날짜 불변식 보장) → 애그리게잇 상태로 영속화
+    const events = await this.uow.run(async () => {
+      const todo = await this.todoRepository.findByIdAndUserId(id, userId);
+      if (!todo) {
+        throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+      }
 
-			todo.reschedule(TodoSchedule.create(schedule));
+      todo.reschedule(TodoSchedule.create(schedule));
 
-			const snapshot = todo.toPersistence();
-			await this.todoRepository.updateSchedule(id, {
-				startDate: snapshot.startDate,
-				endDate: snapshot.endDate,
-				scheduledTime: snapshot.scheduledTime,
-				isAllDay: snapshot.isAllDay,
-			});
-			return todo.pullDomainEvents();
-		});
+      const snapshot = todo.toPersistence();
+      await this.todoRepository.updateSchedule(id, {
+        startDate: snapshot.startDate,
+        endDate: snapshot.endDate,
+        scheduledTime: snapshot.scheduledTime,
+        isAllDay: snapshot.isAllDay,
+      });
+      return todo.pullDomainEvents();
+    });
 
-		this.#logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
+    this.#logger.log(`Todo schedule updated: ${id} for user: ${userId}`);
 
-		// 저장(TX 커밋) 완료 후 이벤트 발행 (리마인더 재스케줄/취소는 이벤트 핸들러)
-		await this.eventPublisher.publishAll(events);
+    // 저장(TX 커밋) 완료 후 이벤트 발행 (리마인더 재스케줄/취소는 이벤트 핸들러)
+    await this.eventPublisher.publishAll(events);
 
-		// 친구 공개 투두 캐시 무효화 (TX 커밋 후)
-		await this.todoCache.invalidateFriendTodos(userId);
+    // 친구 공개 투두 캐시 무효화 (TX 커밋 후)
+    await this.todoCache.invalidateFriendTodos(userId);
 
-		// 응답 재조회
-		const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
-		if (!response) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
-		}
-		return response;
-	}
+    // 응답 재조회
+    const response = await this.todoReadRepository.findByIdAndUserId(id, userId);
+    if (!response) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: id });
+    }
+    return response;
+  }
 }

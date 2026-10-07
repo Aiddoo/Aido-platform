@@ -17,20 +17,20 @@ import { WeeklyAchievementController } from "./presentation/weekly-achievement.c
  * Facade를 export하여 스케줄러(미이관 모듈)가 배럴로 주입한다.
  */
 @Module({
-	controllers: [WeeklyAchievementController],
-	providers: [
-		{
-			provide: WeeklyAchievementWriterAccess,
-			inject: [UpsertWeeklyAchievementsUseCase],
-			useFactory: (upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase) =>
-				new WeeklyAchievementWriterAccess(upsertWeeklyAchievementsUseCase),
-		},
-		{
-			provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
-			useClass: PrismaWeeklyAchievementRepository,
-		},
-		...WEEKLY_ACHIEVEMENT_PROVIDERS,
-	],
-	exports: [WeeklyAchievementWriterAccess],
+  controllers: [WeeklyAchievementController],
+  providers: [
+    {
+      provide: WeeklyAchievementWriterAccess,
+      inject: [UpsertWeeklyAchievementsUseCase],
+      useFactory: (upsertWeeklyAchievementsUseCase: UpsertWeeklyAchievementsUseCase) =>
+        new WeeklyAchievementWriterAccess(upsertWeeklyAchievementsUseCase),
+    },
+    {
+      provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
+      useClass: PrismaWeeklyAchievementRepository,
+    },
+    ...WEEKLY_ACHIEVEMENT_PROVIDERS,
+  ],
+  exports: [WeeklyAchievementWriterAccess],
 })
 export class WeeklyAchievementModule {}

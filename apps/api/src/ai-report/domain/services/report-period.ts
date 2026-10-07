@@ -6,18 +6,18 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import type { ReportType } from "../types.js";
 
 const MONTH_NAMES_EN = [
-	"January",
-	"February",
-	"March",
-	"April",
-	"May",
-	"June",
-	"July",
-	"August",
-	"September",
-	"October",
-	"November",
-	"December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 /**
@@ -30,21 +30,21 @@ const MONTH_NAMES_EN = [
  * computePeriodLabel("MONTHLY", 2026, 3, "en")  → "March 2026"
  */
 export function computePeriodLabel(
-	type: ReportType,
-	year: number,
-	period: number,
-	locale: SupportedLocale = "ko",
+  type: ReportType,
+  year: number,
+  period: number,
+  locale: SupportedLocale = "ko",
 ): string {
-	if (locale === "en") {
-		if (type === "WEEKLY") {
-			return `Week ${period}, ${year}`;
-		}
-		return `${MONTH_NAMES_EN[period - 1]} ${year}`;
-	}
-	if (type === "WEEKLY") {
-		return `${year}년 ${period}주차`;
-	}
-	return `${year}년 ${period}월`;
+  if (locale === "en") {
+    if (type === "WEEKLY") {
+      return `Week ${period}, ${year}`;
+    }
+    return `${MONTH_NAMES_EN[period - 1]} ${year}`;
+  }
+  if (type === "WEEKLY") {
+    return `${year}년 ${period}주차`;
+  }
+  return `${year}년 ${period}월`;
 }
 
 /**
@@ -54,29 +54,29 @@ export function computePeriodLabel(
  * MONTHLY: 해당 월 1일 ~ 마지막 날
  */
 export function computeDateRange(
-	type: ReportType,
-	year: number,
-	period: number,
+  type: ReportType,
+  year: number,
+  period: number,
 ): { startDate: string; endDate: string } {
-	if (type === "WEEKLY") {
-		// ISO week: 해당 연도, 해당 주차의 월요일 ~ 일요일
-		const monday = dayjs.utc().year(year).isoWeek(period).startOf("isoWeek");
-		const sunday = monday.endOf("isoWeek");
-		return {
-			startDate: toDateString(monday.toDate()),
-			endDate: toDateString(sunday.toDate()),
-		};
-	}
+  if (type === "WEEKLY") {
+    // ISO week: 해당 연도, 해당 주차의 월요일 ~ 일요일
+    const monday = dayjs.utc().year(year).isoWeek(period).startOf("isoWeek");
+    const sunday = monday.endOf("isoWeek");
+    return {
+      startDate: toDateString(monday.toDate()),
+      endDate: toDateString(sunday.toDate()),
+    };
+  }
 
-	// MONTHLY: 해당 월 1일 ~ 마지막 날
-	const monthStart = dayjs
-		.utc()
-		.year(year)
-		.month(period - 1)
-		.startOf("month");
-	const monthEnd = monthStart.endOf("month");
-	return {
-		startDate: toDateString(monthStart.toDate()),
-		endDate: toDateString(monthEnd.toDate()),
-	};
+  // MONTHLY: 해당 월 1일 ~ 마지막 날
+  const monthStart = dayjs
+    .utc()
+    .year(year)
+    .month(period - 1)
+    .startOf("month");
+  const monthEnd = monthStart.endOf("month");
+  return {
+    startDate: toDateString(monthStart.toDate()),
+    endDate: toDateString(monthEnd.toDate()),
+  };
 }

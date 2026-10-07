@@ -9,5 +9,5 @@ import { z } from "zod";
  * (어댑터는 no-cast를 유지하고, 벤더(Prisma) 타입 불일치는 여기서만 흡수한다.)
  */
 export function toInputJson(value: unknown): JsonValue {
-	return z.json().parse(value);
+  return z.json().parse(value);
 }

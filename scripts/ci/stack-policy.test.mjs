@@ -135,3 +135,28 @@ test('하나의 PR이 두 릴리스 스택에 속할 수 없다', () => {
   // Then
   assert.throws(plan, /only one/);
 });
+
+test('서버 구조 스택도 같은 누적 tip 정책으로 검증한다', () => {
+  // Given
+  const labels = [{ name: 'stack:server-architecture' }];
+  const first = { ...pull(6, 'refactor/server-prisma8-foundation', 'develop'), labels };
+  const last = {
+    ...pull(7, 'refactor/server-ci-conventions', first.head.ref),
+    labels: [...labels, { name: 'ci:stack-tip' }],
+  };
+  // When
+  const result = planPullRequestCI(last, [bottom, top, first, last], repository);
+  // Then
+  assert.equal(result.run, true);
+  assert.deepEqual(result.ancestors, ['sha-6']);
+});
+
+test('서버 스택 브랜치도 라벨 등록 전 무거운 검증을 보류한다', () => {
+  // Given
+  const current = pull(6, 'refactor/server-prisma8-foundation', 'develop', { stack: false });
+  // When
+  const result = planPullRequestCI(current, [], repository);
+  // Then
+  assert.equal(result.reason, 'awaiting-stack-metadata');
+  assert.equal(result.run, false);
+});

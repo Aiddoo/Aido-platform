@@ -6,23 +6,23 @@ import type { SendNotificationUseCase } from "../use-cases/send-notification/sen
 import { NotificationPublisher } from "./notification.publisher.js";
 
 describe("NotificationPublisher", () => {
-	it("발행 요청을 목적별 유스케이스에 위임한다", async () => {
-		const send = { execute: vi.fn().mockResolvedValue(null) };
-		const sendWithDeduplication = { execute: vi.fn().mockResolvedValue(null) };
-		const sendBatch = { execute: vi.fn().mockResolvedValue({ count: 1 }) };
-		const publisher = new NotificationPublisher(
-			send as unknown as SendNotificationUseCase,
-			sendWithDeduplication as unknown as SendNotificationWithDedupUseCase,
-			sendBatch as unknown as SendBatchNotificationUseCase,
-		);
-		const input = { userId: "user-1", type: "SYSTEM_NOTICE" as const, title: "제목", body: "본문" };
+  it("발행 요청을 목적별 유스케이스에 위임한다", async () => {
+    const send = { execute: vi.fn().mockResolvedValue(null) };
+    const sendWithDeduplication = { execute: vi.fn().mockResolvedValue(null) };
+    const sendBatch = { execute: vi.fn().mockResolvedValue({ count: 1 }) };
+    const publisher = new NotificationPublisher(
+      send as unknown as SendNotificationUseCase,
+      sendWithDeduplication as unknown as SendNotificationWithDedupUseCase,
+      sendBatch as unknown as SendBatchNotificationUseCase,
+    );
+    const input = { userId: "user-1", type: "SYSTEM_NOTICE" as const, title: "제목", body: "본문" };
 
-		await publisher.publish(input);
-		await publisher.publishWithDeduplication(input);
-		await publisher.publishBatch([input]);
+    await publisher.publish(input);
+    await publisher.publishWithDeduplication(input);
+    await publisher.publishBatch([input]);
 
-		expect(send.execute).toHaveBeenCalledWith(input);
-		expect(sendWithDeduplication.execute).toHaveBeenCalledWith(input);
-		expect(sendBatch.execute).toHaveBeenCalledWith([input]);
-	});
+    expect(send.execute).toHaveBeenCalledWith(input);
+    expect(sendWithDeduplication.execute).toHaveBeenCalledWith(input);
+    expect(sendBatch.execute).toHaveBeenCalledWith([input]);
+  });
 });

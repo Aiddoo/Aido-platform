@@ -13,8 +13,8 @@
  */
 export { NOTIFICATION_QUEUE } from "./infrastructure/queue/notification-queue.constants.js";
 export {
-	PUSH_DELIVERY_DEAD_LETTER_QUEUE,
-	PUSH_DELIVERY_QUEUE,
+  PUSH_DELIVERY_DEAD_LETTER_QUEUE,
+  PUSH_DELIVERY_QUEUE,
 } from "./infrastructure/queue/push-delivery-queue.constants.js";
 export { NotificationQueueModule } from "./infrastructure/queue/notification-queue.module.js";
 export { NotificationQueueService } from "./infrastructure/queue/notification-queue.service.js";

@@ -2,9 +2,9 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 
 import {
-	decodeRecord,
-	encodeCreate,
-	encodePatch,
+  decodeRecord,
+  encodeCreate,
+  encodePatch,
 } from "#api/shared/infrastructure/database/database-records";
 import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
@@ -19,37 +19,37 @@ import { UserLocation } from "../../domain/entities/user-location.entity.js";
  */
 @Injectable()
 export class PrismaWeatherLocationRepository implements WeatherLocationRepositoryPort {
-	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
+  constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
-	private get client() {
-		return this.txHost.tx;
-	}
+  private get client() {
+    return this.txHost.tx;
+  }
 
-	async findByUserId(userId: string): Promise<UserLocation | null> {
-		const row = decodeRecord(
-			"UserLocation",
-			await this.client.orm.public.UserLocation.where((row) => row.userId.eq(userId)).first(),
-		);
-		return row ? UserLocation.reconstitute(row) : null;
-	}
+  async findByUserId(userId: string): Promise<UserLocation | null> {
+    const row = decodeRecord(
+      "UserLocation",
+      await this.client.orm.public.UserLocation.where((row) => row.userId.eq(userId)).first(),
+    );
+    return row ? UserLocation.reconstitute(row) : null;
+  }
 
-	async upsert(location: UserLocation): Promise<UserLocation> {
-		const data = {
-			latitude: location.latitude,
-			longitude: location.longitude,
-			gridX: location.gridX,
-			gridY: location.gridY,
-		};
-		const row = decodeRecord(
-			"UserLocation",
-			await this.client.orm.public.UserLocation.where((row) =>
-				row.userId.eq(location.userId),
-			).upsert({
-				conflictOn: encodePatch("UserLocation", { userId: location.userId }),
-				create: encodeCreate("UserLocation", { userId: location.userId, ...data }),
-				update: encodePatch("UserLocation", data),
-			}),
-		);
-		return UserLocation.reconstitute(row);
-	}
+  async upsert(location: UserLocation): Promise<UserLocation> {
+    const data = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      gridX: location.gridX,
+      gridY: location.gridY,
+    };
+    const row = decodeRecord(
+      "UserLocation",
+      await this.client.orm.public.UserLocation.where((row) =>
+        row.userId.eq(location.userId),
+      ).upsert({
+        conflictOn: encodePatch("UserLocation", { userId: location.userId }),
+        create: encodeCreate("UserLocation", { userId: location.userId, ...data }),
+        update: encodePatch("UserLocation", data),
+      }),
+    );
+    return UserLocation.reconstitute(row);
+  }
 }

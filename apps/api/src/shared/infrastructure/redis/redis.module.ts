@@ -1,12 +1,12 @@
 import {
-	type DynamicModule,
-	Global,
-	Inject,
-	Logger,
-	Module,
-	type OnApplicationShutdown,
-	Optional,
-	type Provider,
+  type DynamicModule,
+  Global,
+  Inject,
+  Logger,
+  Module,
+  type OnApplicationShutdown,
+  Optional,
+  type Provider,
 } from "@nestjs/common";
 import { Redis, type RedisOptions } from "ioredis";
 
@@ -14,9 +14,9 @@ import { withTimeout } from "#api/shared/application/utils/with-timeout.util";
 
 import { TypedConfigService } from "../config/services/config.service.js";
 import {
-	buildBullRedisOptions,
-	buildCommandRedisOptions,
-	type RedisConnectionSettings,
+  buildBullRedisOptions,
+  buildCommandRedisOptions,
+  type RedisConnectionSettings,
 } from "./redis-client.factory.js";
 import { REDIS_CLIENT, REDIS_COMMAND_CLIENT } from "./redis.constants.js";
 
@@ -30,9 +30,9 @@ const QUIT_TIMEOUT_MS = 3_000;
  * fake를 주입할 수 있도록 좁혀 둔다.
  */
 export interface RedisLifecycleClient {
-	status: string;
-	quit(): Promise<"OK">;
-	disconnect(reconnect?: boolean): void;
+  status: string;
+  quit(): Promise<"OK">;
+  disconnect(reconnect?: boolean): void;
 }
 
 /**
@@ -54,118 +54,118 @@ export interface RedisLifecycleClient {
 @Global()
 @Module({})
 export class RedisModule implements OnApplicationShutdown {
-	private static readonly logger = new Logger(RedisModule.name);
-	private shutdownPromise: Promise<void> | null = null;
+  private static readonly logger = new Logger(RedisModule.name);
+  private shutdownPromise: Promise<void> | null = null;
 
-	constructor(
-		@Optional()
-		@Inject(REDIS_CLIENT)
-		private readonly bullClient: RedisLifecycleClient | null,
-		@Optional()
-		@Inject(REDIS_COMMAND_CLIENT)
-		private readonly commandClient: RedisLifecycleClient | null,
-	) {}
+  constructor(
+    @Optional()
+    @Inject(REDIS_CLIENT)
+    private readonly bullClient: RedisLifecycleClient | null,
+    @Optional()
+    @Inject(REDIS_COMMAND_CLIENT)
+    private readonly commandClient: RedisLifecycleClient | null,
+  ) {}
 
-	static forRoot(): DynamicModule {
-		const bullProvider: Provider = {
-			provide: REDIS_CLIENT,
-			useFactory: (configService: TypedConfigService): Redis | null =>
-				configService.job.backend === "redis" || configService.job.redisDrainEnabled
-					? RedisModule.createClient(configService, buildBullRedisOptions, "main")
-					: null,
-			inject: [TypedConfigService],
-		};
+  static forRoot(): DynamicModule {
+    const bullProvider: Provider = {
+      provide: REDIS_CLIENT,
+      useFactory: (configService: TypedConfigService): Redis | null =>
+        configService.job.backend === "redis" || configService.job.redisDrainEnabled
+          ? RedisModule.createClient(configService, buildBullRedisOptions, "main")
+          : null,
+      inject: [TypedConfigService],
+    };
 
-		const commandProvider: Provider = {
-			provide: REDIS_COMMAND_CLIENT,
-			useFactory: (configService: TypedConfigService): Redis | null =>
-				configService.cache.type === "redis"
-					? RedisModule.createClient(configService, buildCommandRedisOptions, "command")
-					: null,
-			inject: [TypedConfigService],
-		};
+    const commandProvider: Provider = {
+      provide: REDIS_COMMAND_CLIENT,
+      useFactory: (configService: TypedConfigService): Redis | null =>
+        configService.cache.type === "redis"
+          ? RedisModule.createClient(configService, buildCommandRedisOptions, "command")
+          : null,
+      inject: [TypedConfigService],
+    };
 
-		return {
-			module: RedisModule,
-			providers: [TypedConfigService, bullProvider, commandProvider],
-			exports: [REDIS_CLIENT, REDIS_COMMAND_CLIENT],
-		};
-	}
+    return {
+      module: RedisModule,
+      providers: [TypedConfigService, bullProvider, commandProvider],
+      exports: [REDIS_CLIENT, REDIS_COMMAND_CLIENT],
+    };
+  }
 
-	/**
-	 * 테스트용 모듈 설정
-	 *
-	 * @param client BullMQ용 클라이언트
-	 * @param commandClient 명령용 클라이언트 (생략 시 client 재사용)
-	 */
-	static forTesting(client: Redis, commandClient: Redis = client): DynamicModule {
-		return {
-			module: RedisModule,
-			providers: [
-				{ provide: REDIS_CLIENT, useValue: client },
-				{ provide: REDIS_COMMAND_CLIENT, useValue: commandClient },
-			],
-			exports: [REDIS_CLIENT, REDIS_COMMAND_CLIENT],
-		};
-	}
+  /**
+   * 테스트용 모듈 설정
+   *
+   * @param client BullMQ용 클라이언트
+   * @param commandClient 명령용 클라이언트 (생략 시 client 재사용)
+   */
+  static forTesting(client: Redis, commandClient: Redis = client): DynamicModule {
+    return {
+      module: RedisModule,
+      providers: [
+        { provide: REDIS_CLIENT, useValue: client },
+        { provide: REDIS_COMMAND_CLIENT, useValue: commandClient },
+      ],
+      exports: [REDIS_CLIENT, REDIS_COMMAND_CLIENT],
+    };
+  }
 
-	/**
-	 * BullMQ Worker/Queue가 같은 훅에서 먼저 정리된 뒤(Nest가 의존 역순 호출)
-	 * 연결을 닫는다 — onModuleDestroy에서 닫으면 in-flight 명령이
-	 * "Connection is closed." unhandled rejection을 일으킨다.
-	 */
-	async onApplicationShutdown(): Promise<void> {
-		this.shutdownPromise ??= this.closeClients();
-		await this.shutdownPromise;
-	}
+  /**
+   * BullMQ Worker/Queue가 같은 훅에서 먼저 정리된 뒤(Nest가 의존 역순 호출)
+   * 연결을 닫는다 — onModuleDestroy에서 닫으면 in-flight 명령이
+   * "Connection is closed." unhandled rejection을 일으킨다.
+   */
+  async onApplicationShutdown(): Promise<void> {
+    this.shutdownPromise ??= this.closeClients();
+    await this.shutdownPromise;
+  }
 
-	private async closeClients(): Promise<void> {
-		await Promise.allSettled([
-			this.shutdownClient(this.commandClient, "command"),
-			this.shutdownClient(this.bullClient, "main"),
-		]);
-	}
+  private async closeClients(): Promise<void> {
+    await Promise.allSettled([
+      this.shutdownClient(this.commandClient, "command"),
+      this.shutdownClient(this.bullClient, "main"),
+    ]);
+  }
 
-	private async shutdownClient(client: RedisLifecycleClient | null, name: string): Promise<void> {
-		if (!client || client.status === "end") {
-			return;
-		}
+  private async shutdownClient(client: RedisLifecycleClient | null, name: string): Promise<void> {
+    if (!client || client.status === "end") {
+      return;
+    }
 
-		try {
-			// Redis 다운 중 종료 시 quit이 오프라인 큐에 걸려 hang할 수 있다
-			await withTimeout(client.quit(), QUIT_TIMEOUT_MS, "Redis quit");
-			RedisModule.logger.log(`Redis[${name}] disconnected`);
-		} catch {
-			client.disconnect();
-			RedisModule.logger.warn(`Redis[${name}] force-disconnected`);
-		}
-	}
+    try {
+      // Redis 다운 중 종료 시 quit이 오프라인 큐에 걸려 hang할 수 있다
+      await withTimeout(client.quit(), QUIT_TIMEOUT_MS, "Redis quit");
+      RedisModule.logger.log(`Redis[${name}] disconnected`);
+    } catch {
+      client.disconnect();
+      RedisModule.logger.warn(`Redis[${name}] force-disconnected`);
+    }
+  }
 
-	private static createClient(
-		configService: TypedConfigService,
-		buildOptions: (settings: RedisConnectionSettings) => RedisOptions,
-		name: string,
-	): Redis {
-		const settings: RedisConnectionSettings = {
-			url: configService.redisUrl,
-			...configService.redis,
-		};
+  private static createClient(
+    configService: TypedConfigService,
+    buildOptions: (settings: RedisConnectionSettings) => RedisOptions,
+    name: string,
+  ): Redis {
+    const settings: RedisConnectionSettings = {
+      url: configService.redisUrl,
+      ...configService.redis,
+    };
 
-		const options = buildOptions(settings);
-		const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
+    const options = buildOptions(settings);
+    const client = settings.url ? new Redis(settings.url, options) : new Redis(options);
 
-		client.on("connect", () => {
-			RedisModule.logger.log(`Redis[${name}] connected`);
-		});
+    client.on("connect", () => {
+      RedisModule.logger.log(`Redis[${name}] connected`);
+    });
 
-		client.on("error", (error) => {
-			RedisModule.logger.error(`Redis[${name}] error: ${error.message}`);
-		});
+    client.on("error", (error) => {
+      RedisModule.logger.error(`Redis[${name}] error: ${error.message}`);
+    });
 
-		client.on("close", () => {
-			RedisModule.logger.warn(`Redis[${name}] connection closed`);
-		});
+    client.on("close", () => {
+      RedisModule.logger.warn(`Redis[${name}] connection closed`);
+    });
 
-		return client;
-	}
+    return client;
+  }
 }

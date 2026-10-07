@@ -4,16 +4,16 @@ import type { RedisOptions } from "ioredis";
  * Redis 연결 설정 (config.service의 redisUrl/redis getter에서 조립)
  */
 export interface RedisConnectionSettings {
-	/** REDIS_URL — 존재하면 host/port/password/db보다 우선 */
-	url?: string;
-	host?: string;
-	port?: number;
-	password?: string;
-	db?: number;
-	/** 연결 수립 타임아웃 (명령용 클라이언트에만 적용) */
-	connectTimeoutMs: number;
-	/** 명령 응답 타임아웃 (명령용 클라이언트에만 적용) */
-	commandTimeoutMs: number;
+  /** REDIS_URL — 존재하면 host/port/password/db보다 우선 */
+  url?: string;
+  host?: string;
+  port?: number;
+  password?: string;
+  db?: number;
+  /** 연결 수립 타임아웃 (명령용 클라이언트에만 적용) */
+  connectTimeoutMs: number;
+  /** 명령 응답 타임아웃 (명령용 클라이언트에만 적용) */
+  commandTimeoutMs: number;
 }
 
 /**
@@ -25,12 +25,12 @@ export interface RedisConnectionSettings {
  *   (블로킹 대기가 타임아웃으로 끊기거나 재연결 중 잡이 유실됨)
  */
 export function buildBullRedisOptions(settings: RedisConnectionSettings): RedisOptions {
-	return {
-		...baseHostOptions(settings),
-		maxRetriesPerRequest: null,
-		enableReadyCheck: true,
-		connectionName: "aido-main",
-	};
+  return {
+    ...baseHostOptions(settings),
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+    connectionName: "aido-main",
+  };
 }
 
 /**
@@ -46,26 +46,26 @@ export function buildBullRedisOptions(settings: RedisConnectionSettings): RedisO
  * half-open probe 역할을 하므로 복구 시 별도 조치 없이 정상화된다.
  */
 export function buildCommandRedisOptions(settings: RedisConnectionSettings): RedisOptions {
-	return {
-		...baseHostOptions(settings),
-		maxRetriesPerRequest: 1,
-		enableOfflineQueue: false,
-		commandTimeout: settings.commandTimeoutMs,
-		connectTimeout: settings.connectTimeoutMs,
-		enableReadyCheck: true,
-		connectionName: "aido-command",
-	};
+  return {
+    ...baseHostOptions(settings),
+    maxRetriesPerRequest: 1,
+    enableOfflineQueue: false,
+    commandTimeout: settings.commandTimeoutMs,
+    connectTimeout: settings.connectTimeoutMs,
+    enableReadyCheck: true,
+    connectionName: "aido-command",
+  };
 }
 
 function baseHostOptions(settings: RedisConnectionSettings): RedisOptions {
-	if (settings.url) {
-		return {};
-	}
+  if (settings.url) {
+    return {};
+  }
 
-	return {
-		host: settings.host ?? "localhost",
-		port: settings.port ?? 6379,
-		password: settings.password,
-		db: settings.db ?? 0,
-	};
+  return {
+    host: settings.host ?? "localhost",
+    port: settings.port ?? 6379,
+    password: settings.password,
+    db: settings.db ?? 0,
+  };
 }

@@ -10,31 +10,31 @@
 import type { Provider } from "@nestjs/common";
 
 import {
-	type ProvisioningConsent,
-	USER_PROVISIONING_SEEDER,
-	type UserProvisioningSeederPort,
+  type ProvisioningConsent,
+  USER_PROVISIONING_SEEDER,
+  type UserProvisioningSeederPort,
 } from "#api/auth/application/ports/user-provisioning-seeder.port";
 import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
 
 export const provisioningSeederTestProvider: Provider = {
-	provide: USER_PROVISIONING_SEEDER,
-	useFactory: (
-		consentRepository: UserConsentRepository,
-		preferenceRepository: UserPreferenceRepository,
-		defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
-	): UserProvisioningSeederPort => ({
-		async seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
-			await consentRepository.create(userId, consent);
-			await preferenceRepository.create(userId, {
-				pushEnabled: true,
-				nightPushEnabled: true,
-			});
-		},
-		async seedDefaultCategories(userId: string): Promise<void> {
-			await defaultTodoCategorySeeder.seed(userId);
-		},
-	}),
-	inject: [UserConsentRepository, UserPreferenceRepository, DefaultTodoCategorySeeder],
+  provide: USER_PROVISIONING_SEEDER,
+  useFactory: (
+    consentRepository: UserConsentRepository,
+    preferenceRepository: UserPreferenceRepository,
+    defaultTodoCategorySeeder: DefaultTodoCategorySeeder,
+  ): UserProvisioningSeederPort => ({
+    async seedDefaultSettings(userId: string, consent: ProvisioningConsent): Promise<void> {
+      await consentRepository.create(userId, consent);
+      await preferenceRepository.create(userId, {
+        pushEnabled: true,
+        nightPushEnabled: true,
+      });
+    },
+    async seedDefaultCategories(userId: string): Promise<void> {
+      await defaultTodoCategorySeeder.seed(userId);
+    },
+  }),
+  inject: [UserConsentRepository, UserPreferenceRepository, DefaultTodoCategorySeeder],
 };

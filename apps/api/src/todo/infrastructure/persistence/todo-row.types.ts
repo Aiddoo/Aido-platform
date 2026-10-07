@@ -9,23 +9,23 @@ import type { Todo, TodoCategory } from "#api/shared/infrastructure/database/dat
 
 /** 쓰기 aggregate에 필요한 하위 항목만 조회한다. */
 export const TODO_ITEMS_INCLUDE = {
-	items: {
-		select: {
-			id: true,
-			title: true,
-			completed: true,
-			sortOrder: true,
-			createdAt: true,
-			updatedAt: true,
-		},
-		orderBy: { sortOrder: "asc" },
-	},
+  items: {
+    select: {
+      id: true,
+      title: true,
+      completed: true,
+      sortOrder: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: { sortOrder: "asc" },
+  },
 };
 
 /** 공개 읽기 응답은 기존 카테고리 projection을 유지한다. */
 export const TODO_CATEGORY_INCLUDE = {
-	category: { select: { id: true, name: true, color: true, sortOrder: true } },
-	...TODO_ITEMS_INCLUDE,
+  category: { select: { id: true, name: true, color: true, sortOrder: true } },
+  ...TODO_ITEMS_INCLUDE,
 };
 
 export type TodoAggregateRow = Todo & { items: TodoItemData[] };
@@ -34,12 +34,12 @@ export type TodoAggregateRow = Todo & { items: TodoItemData[] };
  * 하위 항목 행 데이터
  */
 export interface TodoItemData {
-	id: number;
-	title: string;
-	completed: boolean;
-	sortOrder: number;
-	createdAt: Date;
-	updatedAt: Date;
+  id: number;
+  title: string;
+  completed: boolean;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -48,5 +48,5 @@ export interface TodoItemData {
  * `TODO_CATEGORY_INCLUDE`에서 파생 — Prisma 결과와 정확히 일치하므로 `as` 단언이 불필요합니다.
  */
 export type TodoWithCategory = TodoAggregateRow & {
-	category: Pick<TodoCategory, "id" | "name" | "color" | "sortOrder"> | null;
+  category: Pick<TodoCategory, "id" | "name" | "color" | "sortOrder"> | null;
 };

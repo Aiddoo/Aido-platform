@@ -2,16 +2,16 @@
  * 비밀번호 재설정 이메일 템플릿
  */
 export interface PasswordResetTemplateData {
-	code: string;
-	expiryMinutes: number;
+  code: string;
+  expiryMinutes: number;
 }
 
 export function getPasswordResetSubject(): string {
-	return "[Aido] 비밀번호 재설정 코드";
+  return "[Aido] 비밀번호 재설정 코드";
 }
 
 export function getPasswordResetHtml(data: PasswordResetTemplateData): string {
-	return `
+  return `
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -86,7 +86,7 @@ export function getPasswordResetHtml(data: PasswordResetTemplateData): string {
 }
 
 export function getPasswordResetText(data: PasswordResetTemplateData): string {
-	return `
+  return `
 [Aido] 비밀번호 재설정 코드
 
 비밀번호 재설정 코드: ${data.code}

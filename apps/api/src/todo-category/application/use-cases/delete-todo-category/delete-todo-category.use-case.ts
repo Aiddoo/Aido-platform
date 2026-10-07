@@ -2,27 +2,27 @@ import { ErrorCode } from "@aido/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {
-	MUTATION_LOCK,
-	MutationLockKeys,
-	type MutationLockPort,
-	UNIT_OF_WORK,
-	type UnitOfWorkPort,
+  MUTATION_LOCK,
+  MutationLockKeys,
+  type MutationLockPort,
+  UNIT_OF_WORK,
+  type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
-	TODO_CATEGORY_CACHE,
-	type TodoCategoryCachePort,
+  TODO_CATEGORY_CACHE,
+  type TodoCategoryCachePort,
 } from "../../ports/todo-category-cache.port.js";
 import {
-	TODO_CATEGORY_REPOSITORY,
-	type TodoCategoryRepositoryPort,
+  TODO_CATEGORY_REPOSITORY,
+  type TodoCategoryRepositoryPort,
 } from "../../ports/todo-category.repository.port.js";
 
 export interface DeleteTodoCategoryInput {
-	userId: string;
-	categoryId: number;
-	moveToCategoryId?: number;
+  userId: string;
+  categoryId: number;
+  moveToCategoryId?: number;
 }
 
 /**
@@ -33,65 +33,65 @@ export interface DeleteTodoCategoryInput {
  */
 @Injectable()
 export class DeleteTodoCategoryUseCase {
-	readonly #logger = new Logger(DeleteTodoCategoryUseCase.name);
+  readonly #logger = new Logger(DeleteTodoCategoryUseCase.name);
 
-	constructor(
-		@Inject(TODO_CATEGORY_REPOSITORY)
-		private readonly repository: TodoCategoryRepositoryPort,
-		@Inject(TODO_CATEGORY_CACHE)
-		private readonly cache: TodoCategoryCachePort,
-		@Inject(MUTATION_LOCK)
-		private readonly mutationLock: MutationLockPort,
-		@Inject(UNIT_OF_WORK)
-		private readonly uow: UnitOfWorkPort,
-	) {}
+  constructor(
+    @Inject(TODO_CATEGORY_REPOSITORY)
+    private readonly repository: TodoCategoryRepositoryPort,
+    @Inject(TODO_CATEGORY_CACHE)
+    private readonly cache: TodoCategoryCachePort,
+    @Inject(MUTATION_LOCK)
+    private readonly mutationLock: MutationLockPort,
+    @Inject(UNIT_OF_WORK)
+    private readonly uow: UnitOfWorkPort,
+  ) {}
 
-	async execute(input: DeleteTodoCategoryInput): Promise<void> {
-		const { userId, categoryId, moveToCategoryId } = input;
+  async execute(input: DeleteTodoCategoryInput): Promise<void> {
+    const { userId, categoryId, moveToCategoryId } = input;
 
-		await this.uow.run(async () => {
-			await this.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
+    await this.uow.run(async () => {
+      await this.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
 
-			const category = await this.repository.findByIdAndUserId(categoryId, userId);
-			if (!category) {
-				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-					categoryId,
-				});
-			}
+      const category = await this.repository.findByIdAndUserId(categoryId, userId);
+      if (!category) {
+        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
+          categoryId,
+        });
+      }
 
-			const total = await this.repository.countByUserId(userId);
-			if (total <= 1) {
-				throw new ApplicationException(ErrorCode.TODO_CATEGORY_0854);
-			}
+      const total = await this.repository.countByUserId(userId);
+      if (total <= 1) {
+        throw new ApplicationException(ErrorCode.TODO_CATEGORY_0854);
+      }
 
-			const todoCount = await this.repository.getTodoCount(categoryId);
-			if (todoCount > 0) {
-				if (!moveToCategoryId) {
-					throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
-						categoryId,
-						todoCount,
-					});
-				}
-				if (moveToCategoryId === categoryId) {
-					throw new ApplicationException(ErrorCode.SYS_0002, {
-						message: "삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다",
-						categoryId,
-						moveToCategoryId,
-					});
-				}
-				const moveTarget = await this.repository.findByIdAndUserId(moveToCategoryId, userId);
-				if (!moveTarget) {
-					throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
-						categoryId: moveToCategoryId,
-					});
-				}
-				await this.repository.moveTodosToCategory(categoryId, moveToCategoryId);
-			}
+      const todoCount = await this.repository.getTodoCount(categoryId);
+      if (todoCount > 0) {
+        if (!moveToCategoryId) {
+          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0855, {
+            categoryId,
+            todoCount,
+          });
+        }
+        if (moveToCategoryId === categoryId) {
+          throw new ApplicationException(ErrorCode.SYS_0002, {
+            message: "삭제할 카테고리와 이동 대상 카테고리가 같을 수 없습니다",
+            categoryId,
+            moveToCategoryId,
+          });
+        }
+        const moveTarget = await this.repository.findByIdAndUserId(moveToCategoryId, userId);
+        if (!moveTarget) {
+          throw new ApplicationException(ErrorCode.TODO_CATEGORY_0851, {
+            categoryId: moveToCategoryId,
+          });
+        }
+        await this.repository.moveTodosToCategory(categoryId, moveToCategoryId);
+      }
 
-			await this.repository.delete(categoryId);
-		});
+      await this.repository.delete(categoryId);
+    });
 
-		await this.cache.invalidate(userId);
-		this.#logger.debug(`카테고리 삭제: id=${categoryId}, userId=${userId}`);
-	}
+    await this.cache.invalidate(userId);
+    this.#logger.debug(`카테고리 삭제: id=${categoryId}, userId=${userId}`);
+  }
 }

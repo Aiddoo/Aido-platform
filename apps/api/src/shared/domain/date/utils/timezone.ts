@@ -15,19 +15,19 @@ export const DEFAULT_DELIVERY_TIMEZONE = "Asia/Seoul";
 
 /** 신뢰할 수 없는 값을 런타임이 지원하는 정규 IANA 타임존으로 변환한다. */
 export function normalizeIanaTimezone(value: unknown): string | null {
-	if (typeof value !== "string" || value.trim().length === 0) return null;
-	try {
-		return new Intl.DateTimeFormat("en-US", {
-			timeZone: value,
-		}).resolvedOptions().timeZone;
-	} catch {
-		return null;
-	}
+  if (typeof value !== "string" || value.trim().length === 0) return null;
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: value,
+    }).resolvedOptions().timeZone;
+  } catch {
+    return null;
+  }
 }
 
 /** 잘못 저장된 레거시 값도 스케줄러를 중단시키지 않도록 UTC로 격리한다. */
 export function resolveTimezone(value: unknown): string {
-	return normalizeIanaTimezone(value) ?? DEFAULT_TIMEZONE;
+  return normalizeIanaTimezone(value) ?? DEFAULT_TIMEZONE;
 }
 
 /**
@@ -43,11 +43,11 @@ export function resolveTimezone(value: unknown): string {
  * 일반 날짜경계 수학은 `resolveTimezone`(→UTC)을 유지한다.
  */
 export function resolveDeliveryTimezone(value: unknown): string {
-	const normalized = normalizeIanaTimezone(value);
-	if (normalized === null || normalized === DEFAULT_TIMEZONE) {
-		return DEFAULT_DELIVERY_TIMEZONE;
-	}
-	return normalized;
+  const normalized = normalizeIanaTimezone(value);
+  if (normalized === null || normalized === DEFAULT_TIMEZONE) {
+    return DEFAULT_DELIVERY_TIMEZONE;
+  }
+  return normalized;
 }
 
 /**
@@ -60,8 +60,8 @@ export function resolveDeliveryTimezone(value: unknown): string {
  * @example todayInTimezone("America/New_York") // EST 기준 오늘 → UTC midnight
  */
 export function todayInTimezone(tz: string = DEFAULT_TIMEZONE): Date {
-	const localDateStr = dayjs().tz(resolveTimezone(tz)).format("YYYY-MM-DD");
-	return dayjs.utc(localDateStr).startOf("day").toDate();
+  const localDateStr = dayjs().tz(resolveTimezone(tz)).format("YYYY-MM-DD");
+  return dayjs.utc(localDateStr).startOf("day").toDate();
 }
 
 /**
@@ -74,11 +74,11 @@ export function todayInTimezone(tz: string = DEFAULT_TIMEZONE): Date {
  * @example parseLocalDateTime("2026-01-15", "14:00", "America/New_York") → 2026-01-15T19:00:00.000Z
  */
 export function parseLocalDateTime(
-	dateStr: string,
-	timeStr: string,
-	tz: string = DEFAULT_TIMEZONE,
+  dateStr: string,
+  timeStr: string,
+  tz: string = DEFAULT_TIMEZONE,
 ): Date {
-	return dayjs.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz)).utc().toDate();
+  return dayjs.tz(`${dateStr}T${timeStr}:00`, resolveTimezone(tz)).utc().toDate();
 }
 
 /**
@@ -90,8 +90,8 @@ export function parseLocalDateTime(
  *   // KST 2/7 → 2026-02-07T00:00:00.000Z
  */
 export function startOfDayInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
-	const localDateStr = dayjs(date).tz(resolveTimezone(tz)).format("YYYY-MM-DD");
-	return dayjs.utc(localDateStr).startOf("day").toDate();
+  const localDateStr = dayjs(date).tz(resolveTimezone(tz)).format("YYYY-MM-DD");
+  return dayjs.utc(localDateStr).startOf("day").toDate();
 }
 
 /**
@@ -104,7 +104,7 @@ export function startOfDayInTimezone(date: Date = now(), tz: string = DEFAULT_TI
  * @example toLocalTimeString(new Date('2026-01-15T14:00:00Z'), 'America/New_York') // "09:00"
  */
 export function toLocalTimeString(date: Date, tz: string = DEFAULT_TIMEZONE): string {
-	return dayjs(date).tz(resolveTimezone(tz)).format("HH:mm");
+  return dayjs(date).tz(resolveTimezone(tz)).format("HH:mm");
 }
 
 /**
@@ -116,18 +116,18 @@ export function toLocalTimeString(date: Date, tz: string = DEFAULT_TIMEZONE): st
  *   // KST 2/11 자정 → 2026-02-10T15:00:00.000Z
  */
 export function midnightInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
-	return dayjs(date).tz(resolveTimezone(tz)).startOf("day").utc().toDate();
+  return dayjs(date).tz(resolveTimezone(tz)).startOf("day").utc().toDate();
 }
 
 export interface DayWindowInTimezone {
-	/** 로컬 달력 날짜를 UTC 자정 Date로 표현한 DATE 컬럼 비교용 값 */
-	date: Date;
-	/** versioned lock key에 넣는 YYYY-MM-DD 로컬 날짜 */
-	localDate: string;
-	/** 로컬 자정의 실제 UTC instant */
-	startsAt: Date;
-	/** 다음 로컬 자정의 실제 UTC instant (exclusive) */
-	endsAt: Date;
+  /** 로컬 달력 날짜를 UTC 자정 Date로 표현한 DATE 컬럼 비교용 값 */
+  date: Date;
+  /** versioned lock key에 넣는 YYYY-MM-DD 로컬 날짜 */
+  localDate: string;
+  /** 로컬 자정의 실제 UTC instant */
+  startsAt: Date;
+  /** 다음 로컬 자정의 실제 UTC instant (exclusive) */
+  endsAt: Date;
 }
 
 /**
@@ -137,19 +137,19 @@ export interface DayWindowInTimezone {
  * 날짜에서도 정확한 다음 로컬 자정을 구한다.
  */
 export function dayWindowInTimezone(
-	date: Date = now(),
-	tz: string = DEFAULT_TIMEZONE,
+  date: Date = now(),
+  tz: string = DEFAULT_TIMEZONE,
 ): DayWindowInTimezone {
-	const resolvedTimezone = resolveTimezone(tz);
-	const localDate = dayjs(date).tz(resolvedTimezone).format("YYYY-MM-DD");
-	const nextLocalDate = dayjs.utc(localDate).add(1, "day").format("YYYY-MM-DD");
+  const resolvedTimezone = resolveTimezone(tz);
+  const localDate = dayjs(date).tz(resolvedTimezone).format("YYYY-MM-DD");
+  const nextLocalDate = dayjs.utc(localDate).add(1, "day").format("YYYY-MM-DD");
 
-	return {
-		date: dayjs.utc(localDate).startOf("day").toDate(),
-		localDate,
-		startsAt: dayjs.tz(localDate, resolvedTimezone).utc().toDate(),
-		endsAt: dayjs.tz(nextLocalDate, resolvedTimezone).utc().toDate(),
-	};
+  return {
+    date: dayjs.utc(localDate).startOf("day").toDate(),
+    localDate,
+    startsAt: dayjs.tz(localDate, resolvedTimezone).utc().toDate(),
+    endsAt: dayjs.tz(nextLocalDate, resolvedTimezone).utc().toDate(),
+  };
 }
 
 /**
@@ -163,5 +163,5 @@ export function dayWindowInTimezone(
  *   // KST 2026-12-15 → KST 2026-12-01 00:00 → 2026-11-30T15:00:00.000Z
  */
 export function firstOfMonthInTimezone(date: Date = now(), tz: string = DEFAULT_TIMEZONE): Date {
-	return dayjs(date).tz(resolveTimezone(tz)).startOf("month").utc().toDate();
+  return dayjs(date).tz(resolveTimezone(tz)).startOf("month").utc().toDate();
 }

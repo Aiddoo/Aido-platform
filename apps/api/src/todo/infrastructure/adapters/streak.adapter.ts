@@ -9,23 +9,23 @@ import type { StreakPort } from "../../application/ports/streak.port.js";
  */
 @Injectable()
 export class StreakAdapter implements StreakPort {
-	constructor(
-		@Inject(USER_STREAK_ACCESS)
-		private readonly userStreakAccess: UserStreakAccessPort,
-	) {}
+  constructor(
+    @Inject(USER_STREAK_ACCESS)
+    private readonly userStreakAccess: UserStreakAccessPort,
+  ) {}
 
-	async recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
-		await this.userStreakAccess.recordTodoToggle(userId, completed, timezone);
-	}
+  async recordTodoToggle(userId: string, completed: boolean, timezone: string): Promise<void> {
+    await this.userStreakAccess.recordTodoToggle(userId, completed, timezone);
+  }
 
-	async getStreakContext(userId: string): Promise<{
-		currentStreak: number;
-		lastCompletedDate: Date | null;
-	}> {
-		const record = await this.userStreakAccess.getPreferenceRecord(userId);
-		return {
-			currentStreak: record?.currentStreak ?? 0,
-			lastCompletedDate: record?.lastCompletedDate ?? null,
-		};
-	}
+  async getStreakContext(userId: string): Promise<{
+    currentStreak: number;
+    lastCompletedDate: Date | null;
+  }> {
+    const record = await this.userStreakAccess.getPreferenceRecord(userId);
+    return {
+      currentStreak: record?.currentStreak ?? 0,
+      lastCompletedDate: record?.lastCompletedDate ?? null,
+    };
+  }
 }

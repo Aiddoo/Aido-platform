@@ -4,12 +4,12 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
-	ApiDoc,
-	ApiForbiddenError,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
@@ -17,11 +17,11 @@ import { GetReportByIdUseCase } from "../application/use-cases/get-report-by-id/
 import { GetReportStatusUseCase } from "../application/use-cases/get-report-status/get-report-status.use-case.js";
 import { GetReportsUseCase } from "../application/use-cases/get-reports/get-reports.use-case.js";
 import {
-	AiReportIdParamDto,
-	AiReportListResponseDto,
-	AiReportResponseDto,
-	GetAiReportsQueryDto,
-	ReportStatusResponseDto,
+  AiReportIdParamDto,
+  AiReportListResponseDto,
+  AiReportResponseDto,
+  GetAiReportsQueryDto,
+  ReportStatusResponseDto,
 } from "./dtos/index.js";
 
 /**
@@ -57,20 +57,20 @@ import {
 @ApiBearerAuth()
 @Controller("ai/reports")
 export class AiReportController {
-	constructor(
-		private readonly getReportStatusUseCase: GetReportStatusUseCase,
-		private readonly getReportsUseCase: GetReportsUseCase,
-		private readonly getReportByIdUseCase: GetReportByIdUseCase,
-	) {}
+  constructor(
+    private readonly getReportStatusUseCase: GetReportStatusUseCase,
+    private readonly getReportsUseCase: GetReportsUseCase,
+    private readonly getReportByIdUseCase: GetReportByIdUseCase,
+  ) {}
 
-	/**
-	 * GET /ai/reports/status - 리포트 상태 조회
-	 */
-	@Get("status")
-	@ApiDoc({
-		summary: "AI 리포트 상태 조회",
-		operationId: "getAiReportStatus",
-		description: `다음 주간/월간 리포트 예정일과 최신 리포트를 반환합니다.
+  /**
+   * GET /ai/reports/status - 리포트 상태 조회
+   */
+  @Get("status")
+  @ApiDoc({
+    summary: "AI 리포트 상태 조회",
+    operationId: "getAiReportStatus",
+    description: `다음 주간/월간 리포트 예정일과 최신 리포트를 반환합니다.
 
 ## 📊 응답 필드
 | 필드 | 타입 | 설명 |
@@ -137,27 +137,27 @@ export class AiReportController {
 ### 비활동 리포트
 할 일을 하나도 만들지 않은 주/월에도 리포트가 생성됩니다.
 \`hasActivity: false\`일 때 AI 요약에는 격려성 메시지가 담기므로, UI에서 별도 분기 없이 그대로 표시해도 됩니다.`,
-	})
-	@ApiSuccessResponse({ type: ReportStatusResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.AI_1308)
-	async getStatus(
-		@CurrentUser() user: CurrentUserPayload,
-		@Timezone() tz: string,
-	): Promise<ReportStatusResponseDto> {
-		const status = await this.getReportStatusUseCase.execute(user.userId, tz);
+  })
+  @ApiSuccessResponse({ type: ReportStatusResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.AI_1308)
+  async getStatus(
+    @CurrentUser() user: CurrentUserPayload,
+    @Timezone() tz: string,
+  ): Promise<ReportStatusResponseDto> {
+    const status = await this.getReportStatusUseCase.execute(user.userId, tz);
 
-		return { status };
-	}
+    return { status };
+  }
 
-	/**
-	 * GET /ai/reports - 리포트 목록 조회
-	 */
-	@Get()
-	@ApiDoc({
-		summary: "AI 리포트 목록 조회",
-		operationId: "getAiReports",
-		description: `주간/월간 AI 분석 리포트 목록을 조회합니다. 최신순으로 정렬됩니다.
+  /**
+   * GET /ai/reports - 리포트 목록 조회
+   */
+  @Get()
+  @ApiDoc({
+    summary: "AI 리포트 목록 조회",
+    operationId: "getAiReports",
+    description: `주간/월간 AI 분석 리포트 목록을 조회합니다. 최신순으로 정렬됩니다.
 
 ## 📋 쿼리 파라미터
 | 파라미터 | 타입 | 필수 | 기본값 | 설명 |
@@ -174,30 +174,30 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 
 프리미엄 가입 직후에는 아직 리포트가 없으므로 빈 배열이 반환됩니다.
 첫 주간 리포트는 가입 후 돌아오는 **월요일 08:00 KST** 이후, 첫 월간 리포트는 **다음 달 1일 08:00 KST** 이후 조회 가능합니다.`,
-	})
-	@ApiSuccessResponse({ type: AiReportListResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.AI_1308)
-	async getReports(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
-	): Promise<AiReportListResponseDto> {
-		const reports = await this.getReportsUseCase.execute(user.userId, {
-			type: query.type as "WEEKLY" | "MONTHLY" | undefined,
-			limit: query.limit,
-		});
+  })
+  @ApiSuccessResponse({ type: AiReportListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.AI_1308)
+  async getReports(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
+  ): Promise<AiReportListResponseDto> {
+    const reports = await this.getReportsUseCase.execute(user.userId, {
+      type: query.type as "WEEKLY" | "MONTHLY" | undefined,
+      limit: query.limit,
+    });
 
-		return { reports };
-	}
+    return { reports };
+  }
 
-	/**
-	 * GET /ai/reports/:id - 리포트 상세 조회
-	 */
-	@Get(":id")
-	@ApiDoc({
-		summary: "AI 리포트 상세 조회",
-		operationId: "getAiReportById",
-		description: `특정 AI 분석 리포트의 상세 정보를 조회합니다.
+  /**
+   * GET /ai/reports/:id - 리포트 상세 조회
+   */
+  @Get(":id")
+  @ApiDoc({
+    summary: "AI 리포트 상세 조회",
+    operationId: "getAiReportById",
+    description: `특정 AI 분석 리포트의 상세 정보를 조회합니다.
 
 ## 📊 리포트 필드
 | 필드 | 타입 | 설명 |
@@ -216,17 +216,17 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 | \`aiTips\` | string[] | AI 팁 (1~3개, 한국어) |
 | \`hasActivity\` | boolean | 해당 기간 할 일 존재 여부 |
 | \`generatedAt\` | string | 리포트 생성 시각 (ISO 8601) |`,
-	})
-	@ApiSuccessResponse({ type: AiReportResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.AI_1308)
-	@ApiNotFoundError(ErrorCode.AI_1304)
-	async getReport(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: AiReportIdParamDto }) params: AiReportIdParamDto,
-	): Promise<AiReportResponseDto> {
-		const report = await this.getReportByIdUseCase.execute(user.userId, params.id);
+  })
+  @ApiSuccessResponse({ type: AiReportResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.AI_1308)
+  @ApiNotFoundError(ErrorCode.AI_1304)
+  async getReport(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: AiReportIdParamDto }) params: AiReportIdParamDto,
+  ): Promise<AiReportResponseDto> {
+    const report = await this.getReportByIdUseCase.execute(user.userId, params.id);
 
-		return { report };
-	}
+    return { report };
+  }
 }

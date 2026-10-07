@@ -56,11 +56,11 @@ export type PushDispatchStatus = NativeEnums["PushDispatchStatus"]["values"][num
 export type PushRateLimitPhase = NativeEnums["PushRateLimitPhase"]["values"][number];
 export type ReportType = NativeEnums["ReportType"]["values"][number];
 export type RetentionExperimentStageName =
-	NativeEnums["RetentionExperimentStageName"]["values"][number];
+  NativeEnums["RetentionExperimentStageName"]["values"][number];
 export type RetentionExperimentStageStatus =
-	NativeEnums["RetentionExperimentStageStatus"]["values"][number];
+  NativeEnums["RetentionExperimentStageStatus"]["values"][number];
 export type RetentionExperimentVariant =
-	NativeEnums["RetentionExperimentVariant"]["values"][number];
+  NativeEnums["RetentionExperimentVariant"]["values"][number];
 export type RetentionOutboxStatus = NativeEnums["RetentionOutboxStatus"]["values"][number];
 export type SecurityEvent = NativeEnums["SecurityEvent"]["values"][number];
 export type SubscriptionStatus = NativeEnums["SubscriptionStatus"]["values"][number];

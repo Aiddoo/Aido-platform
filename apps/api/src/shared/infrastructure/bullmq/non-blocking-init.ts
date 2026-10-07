@@ -14,14 +14,14 @@ import { toErrorMessage } from "#api/shared/application/utils/error-message.util
  * @returns 절대 reject하지 않는 프로미스 — 테스트에서 완료 대기용
  */
 export async function runInBackground(
-	logger: Pick<Logger, "error">,
-	label: string,
-	task: () => Promise<void>,
+  logger: Pick<Logger, "error">,
+  label: string,
+  task: () => Promise<void>,
 ): Promise<void> {
-	try {
-		// async 함수라 task()의 동기 throw도 catch로 흡수된다 (부트스트랩 크래시 방지)
-		await task();
-	} catch (error: unknown) {
-		logger.error(`${label} failed: ${toErrorMessage(error)}`);
-	}
+  try {
+    // async 함수라 task()의 동기 throw도 catch로 흡수된다 (부트스트랩 크래시 방지)
+    await task();
+  } catch (error: unknown) {
+    logger.error(`${label} failed: ${toErrorMessage(error)}`);
+  }
 }

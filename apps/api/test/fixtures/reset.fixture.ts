@@ -25,15 +25,15 @@ import { AccountFixture, UserFixture } from "./user.fixture.js";
  * ```
  */
 export function resetAllFixtures(): void {
-	UserFixture.reset();
-	AccountFixture.reset();
-	TodoFixture.reset();
-	TodoCategoryFixture.reset();
-	SessionFixture.reset();
-	VerificationFixture.reset();
-	NotificationFixture.reset();
-	PushTokenFixture.reset();
-	FollowFixture.reset();
-	NudgeFixture.reset();
-	CheerFixture.reset();
+  UserFixture.reset();
+  AccountFixture.reset();
+  TodoFixture.reset();
+  TodoCategoryFixture.reset();
+  SessionFixture.reset();
+  VerificationFixture.reset();
+  NotificationFixture.reset();
+  PushTokenFixture.reset();
+  FollowFixture.reset();
+  NudgeFixture.reset();
+  CheerFixture.reset();
 }

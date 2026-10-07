@@ -8,17 +8,17 @@ import type { NotificationRecord } from "../../../domain/records/notification.re
 import { visibleNotificationTypes } from "../../../domain/services/notification-client-capability.js";
 import type { NotificationType } from "../../../domain/types/notification-type.js";
 import {
-	NOTIFICATION_INBOX_READER,
-	type NotificationInboxReaderPort,
+  NOTIFICATION_INBOX_READER,
+  type NotificationInboxReaderPort,
 } from "../../ports/notification-inbox.reader.port.js";
 
 export interface GetNotificationsInput {
-	userId: string;
-	cursor?: number;
-	size?: number;
-	unreadOnly?: boolean;
-	category?: NotificationCategory;
-	appVersion?: string;
+  userId: string;
+  cursor?: number;
+  size?: number;
+  unreadOnly?: boolean;
+  category?: NotificationCategory;
+  appVersion?: string;
 }
 
 /**
@@ -28,42 +28,42 @@ export interface GetNotificationsInput {
  */
 @Injectable()
 export class GetNotificationsUseCase {
-	readonly #logger = new Logger(GetNotificationsUseCase.name);
+  readonly #logger = new Logger(GetNotificationsUseCase.name);
 
-	constructor(
-		@Inject(NOTIFICATION_INBOX_READER)
-		private readonly notificationInboxReader: NotificationInboxReaderPort,
-		private readonly paginationService: PaginationService,
-	) {}
+  constructor(
+    @Inject(NOTIFICATION_INBOX_READER)
+    private readonly notificationInboxReader: NotificationInboxReaderPort,
+    private readonly paginationService: PaginationService,
+  ) {}
 
-	async execute(
-		input: GetNotificationsInput,
-	): Promise<CursorPaginatedResponse<NotificationRecord, number>> {
-		const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
-			cursor: input.cursor,
-			size: input.size,
-		});
+  async execute(
+    input: GetNotificationsInput,
+  ): Promise<CursorPaginatedResponse<NotificationRecord, number>> {
+    const { cursor, size } = this.paginationService.normalizeCursorPagination<number>({
+      cursor: input.cursor,
+      size: input.size,
+    });
 
-		const types: NotificationType[] | undefined =
-			input.category && input.category !== "ALL"
-				? [...CATEGORY_TYPE_MAP[input.category]]
-				: undefined;
+    const types: NotificationType[] | undefined =
+      input.category && input.category !== "ALL"
+        ? [...CATEGORY_TYPE_MAP[input.category]]
+        : undefined;
 
-		const notifications = await this.notificationInboxReader.findNotificationsByUser({
-			userId: input.userId,
-			cursor,
-			size,
-			unreadOnly: input.unreadOnly,
-			types: visibleNotificationTypes(input.appVersion, types),
-		});
+    const notifications = await this.notificationInboxReader.findNotificationsByUser({
+      userId: input.userId,
+      cursor,
+      size,
+      unreadOnly: input.unreadOnly,
+      types: visibleNotificationTypes(input.appVersion, types),
+    });
 
-		this.#logger.debug(
-			`Notifications listed: ${notifications.length} items for user: ${input.userId}`,
-		);
+    this.#logger.debug(
+      `Notifications listed: ${notifications.length} items for user: ${input.userId}`,
+    );
 
-		return this.paginationService.createCursorPaginatedResponse<NotificationRecord, number>({
-			items: notifications,
-			size,
-		});
-	}
+    return this.paginationService.createCursorPaginatedResponse<NotificationRecord, number>({
+      items: notifications,
+      size,
+    });
+  }
 }

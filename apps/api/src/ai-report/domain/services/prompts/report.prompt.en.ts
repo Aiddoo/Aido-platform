@@ -1,7 +1,7 @@
 import { now } from "#api/shared/domain/date/utils/core";
 import {
-	PROMPT_OUTPUT_DISCIPLINE_EN,
-	PROMPT_SECURITY_GUARD_EN,
+  PROMPT_OUTPUT_DISCIPLINE_EN,
+  PROMPT_SECURITY_GUARD_EN,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
@@ -41,37 +41,37 @@ ${PROMPT_SECURITY_GUARD_EN}
 ${PROMPT_OUTPUT_DISCIPLINE_EN}`;
 
 export function buildReportPromptEn(
-	data: AggregatedReportData,
-	periodLabel: string,
-	type: ReportType,
-	options: BuildReportPromptOptions,
+  data: AggregatedReportData,
+  periodLabel: string,
+  type: ReportType,
+  options: BuildReportPromptOptions,
 ): ReportPrompt {
-	const insights = data.hasActivity ? computeDerivedInsights(data, "en") : null;
-	const context = {
-		periodLabel,
-		type,
-		hasActivity: data.hasActivity,
-		stats: data.hasActivity ? data : null,
-		derivedInsights: insights,
-		seasonalContext: data.hasActivity ? getKoreanSeasonalContext(now(), "en") : null,
-		coachProfile:
-			data.hasActivity && insights
-				? selectProfileTemplate(
-						{
-							completionRate: data.completionRate,
-							rateChange: insights.rateChange,
-						},
-						"en",
-					)
-				: null,
-		previousTips: options.prevTips,
-	};
-	const task = data.hasActivity
-		? `Analyze ${periodLabel} and write coaching the user can apply during the next ${type === "WEEKLY" ? "7 days" : "month"}.`
-		: `No to-dos were registered during ${periodLabel}. Kindly acknowledge the break and suggest 1-2 tiny to-dos for the next period.`;
+  const insights = data.hasActivity ? computeDerivedInsights(data, "en") : null;
+  const context = {
+    periodLabel,
+    type,
+    hasActivity: data.hasActivity,
+    stats: data.hasActivity ? data : null,
+    derivedInsights: insights,
+    seasonalContext: data.hasActivity ? getKoreanSeasonalContext(now(), "en") : null,
+    coachProfile:
+      data.hasActivity && insights
+        ? selectProfileTemplate(
+            {
+              completionRate: data.completionRate,
+              rateChange: insights.rateChange,
+            },
+            "en",
+          )
+        : null,
+    previousTips: options.prevTips,
+  };
+  const task = data.hasActivity
+    ? `Analyze ${periodLabel} and write coaching the user can apply during the next ${type === "WEEKLY" ? "7 days" : "month"}.`
+    : `No to-dos were registered during ${periodLabel}. Kindly acknowledge the break and suggest 1-2 tiny to-dos for the next period.`;
 
-	return {
-		system: REPORT_SYSTEM_EN,
-		prompt: `<context_json>\n${encodeUntrustedJson(context)}\n</context_json>\n<task>${task} Check grounding internally, then return only the structured result.</task>`,
-	};
+  return {
+    system: REPORT_SYSTEM_EN,
+    prompt: `<context_json>\n${encodeUntrustedJson(context)}\n</context_json>\n<task>${task} Check grounding internally, then return only the structured result.</task>`,
+  };
 }

@@ -5,14 +5,14 @@ import { Inject, Injectable } from "@nestjs/common";
 import { ApplicationException } from "#api/shared/domain/index";
 
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../../ports/todo-read.repository.port.js";
 
 /** 단일 Todo 조회 입력. */
 export interface GetTodoByIdInput {
-	id: number;
-	userId: string;
+  id: number;
+  userId: string;
 }
 
 /**
@@ -20,18 +20,18 @@ export interface GetTodoByIdInput {
  */
 @Injectable()
 export class GetTodoByIdUseCase {
-	constructor(
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-	) {}
+  constructor(
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+  ) {}
 
-	async execute(input: GetTodoByIdInput): Promise<TodoResponse> {
-		const todo = await this.todoReadRepository.findByIdAndUserId(input.id, input.userId);
+  async execute(input: GetTodoByIdInput): Promise<TodoResponse> {
+    const todo = await this.todoReadRepository.findByIdAndUserId(input.id, input.userId);
 
-		if (!todo) {
-			throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.id });
-		}
+    if (!todo) {
+      throw new ApplicationException(ErrorCode.TODO_0801, { todoId: input.id });
+    }
 
-		return todo;
-	}
+    return todo;
+  }
 }

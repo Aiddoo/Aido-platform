@@ -28,37 +28,37 @@ export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 const TRACE_PROPAGATION_TARGETS = [/^https:\/\/api\.aido\.kr/] as const;
 
 export interface SentryInstrumentOptions {
-	enabled: boolean;
-	environment: AppEnvironment;
-	tracesSampleRate: number;
-	tracePropagationTargets: readonly RegExp[];
+  enabled: boolean;
+  environment: AppEnvironment;
+  tracesSampleRate: number;
+  tracePropagationTargets: readonly RegExp[];
 }
 
 /** process.env 호환 — 필요한 키(APP_ENV/NODE_ENV/SENTRY_*)만 읽는다 */
 type SentryEnvSource = Record<string, string | undefined>;
 
 export function resolveSentryOptions(env: SentryEnvSource): SentryInstrumentOptions {
-	const environment = resolveAppEnvironment(env);
-	const isProduction = environment === "production";
+  const environment = resolveAppEnvironment(env);
+  const isProduction = environment === "production";
 
-	return {
-		enabled: isProduction && Boolean(env.SENTRY_DSN),
-		environment,
-		tracesSampleRate:
-			env.SENTRY_TRACES_SAMPLE_RATE !== undefined
-				? Number(env.SENTRY_TRACES_SAMPLE_RATE)
-				: isProduction
-					? 0.2
-					: 1.0,
-		tracePropagationTargets: TRACE_PROPAGATION_TARGETS,
-	};
+  return {
+    enabled: isProduction && Boolean(env.SENTRY_DSN),
+    environment,
+    tracesSampleRate:
+      env.SENTRY_TRACES_SAMPLE_RATE !== undefined
+        ? Number(env.SENTRY_TRACES_SAMPLE_RATE)
+        : isProduction
+          ? 0.2
+          : 1.0,
+    tracePropagationTargets: TRACE_PROPAGATION_TARGETS,
+  };
 }
 
 function resolveAppEnvironment(env: SentryEnvSource): AppEnvironment {
-	const appEnv = APP_ENVIRONMENTS.find((value) => value === env.APP_ENV);
-	if (appEnv) {
-		return appEnv;
-	}
+  const appEnv = APP_ENVIRONMENTS.find((value) => value === env.APP_ENV);
+  if (appEnv) {
+    return appEnv;
+  }
 
-	return env.NODE_ENV === "production" ? "production" : "development";
+  return env.NODE_ENV === "production" ? "production" : "development";
 }

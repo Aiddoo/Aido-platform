@@ -11,10 +11,10 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
  */
 @Injectable()
 export class JwtRefreshGuard extends AuthGuard("jwt-refresh") {
-	override handleRequest<TUser>(err: Error | null, user: TUser | false): TUser {
-		if (err || !user) {
-			throw new ApplicationException(ErrorCode.AUTH_0104);
-		}
-		return user;
-	}
+  override handleRequest<TUser>(err: Error | null, user: TUser | false): TUser {
+    if (err || !user) {
+      throw new ApplicationException(ErrorCode.AUTH_0104);
+    }
+    return user;
+  }
 }

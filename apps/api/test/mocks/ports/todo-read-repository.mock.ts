@@ -8,15 +8,15 @@ import type { TodoReadRepositoryPort } from "#api/todo/application/ports/todo-re
  * 응답 read model을 반환하는 조회 포트. 개별 메서드 mock API는 `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createTodoReadRepositoryMock(): TodoReadRepositoryPort {
-	return {
-		findByIdAndUserId: vi.fn(),
-		findOwnerId: vi.fn(),
-		findManyByRecurrenceGroupId: vi.fn(),
-		findManyByUserId: vi.fn(),
-		findPublicTodosByUserId: vi.fn(),
-		countActiveByCategory: vi.fn(),
-		countCompletedByUser: vi.fn(),
-		getTodayTodoStats: vi.fn(),
-		findTodayTopTodos: vi.fn(),
-	};
+  return {
+    findByIdAndUserId: vi.fn(),
+    findOwnerId: vi.fn(),
+    findManyByRecurrenceGroupId: vi.fn(),
+    findManyByUserId: vi.fn(),
+    findPublicTodosByUserId: vi.fn(),
+    countActiveByCategory: vi.fn(),
+    countCompletedByUser: vi.fn(),
+    getTodayTodoStats: vi.fn(),
+    findTodayTopTodos: vi.fn(),
+  };
 }

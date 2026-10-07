@@ -12,15 +12,15 @@ import { ResponseTransformInterceptor } from "#api/shared/presentation/intercept
  * GlobalExceptionFilter는 Sentry 캡처를 직접 수행한다.
  */
 @Module({
-	providers: [
-		{
-			provide: APP_FILTER,
-			useClass: GlobalExceptionFilter,
-		},
-		{
-			provide: APP_INTERCEPTOR,
-			useClass: ResponseTransformInterceptor,
-		},
-	],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseTransformInterceptor,
+    },
+  ],
 })
 export class SharedKernelModule {}

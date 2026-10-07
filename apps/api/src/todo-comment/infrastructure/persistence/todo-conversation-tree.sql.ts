@@ -3,11 +3,11 @@ import sql, { type Sql } from "sql-template-tag";
 import type { ConversationPageMode, TodoConversationScope } from "../../application/types.js";
 
 interface TodoConversationTreeInput {
-	todoId: number;
-	mode: ConversationPageMode;
-	scope: TodoConversationScope;
-	anchorCommentId?: string;
-	anchorThreadId?: string;
+  todoId: number;
+  mode: ConversationPageMode;
+  scope: TodoConversationScope;
+  anchorCommentId?: string;
+  anchorThreadId?: string;
 }
 
 /**
@@ -15,9 +15,9 @@ interface TodoConversationTreeInput {
  * TODO 범위 페이지에서만 모든 root를 seed한다.
  */
 export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput): Sql {
-	const targetThreadCte =
-		input.mode === "FOCUS"
-			? sql`
+  const targetThreadCte =
+    input.mode === "FOCUS"
+      ? sql`
 				target_thread AS (
 					SELECT COALESCE(target."rootId", target."id") AS "threadId"
 					FROM "TodoComment" AS target
@@ -25,23 +25,23 @@ export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput):
 						AND target."id" = ${input.anchorCommentId ?? null}::TEXT
 				)
 			`
-			: input.scope === "THREAD"
-				? sql`
+      : input.scope === "THREAD"
+        ? sql`
 					target_thread AS (
 						SELECT ${input.anchorThreadId ?? null}::TEXT AS "threadId"
 					)
 				`
-				: sql`
+        : sql`
 					target_thread AS (
 						SELECT NULL::TEXT AS "threadId"
 					)
 				`;
-	const rootThreadCondition =
-		input.mode === "FOCUS" || input.scope === "THREAD"
-			? sql`comment."id" = (SELECT "threadId" FROM target_thread)`
-			: sql`TRUE`;
+  const rootThreadCondition =
+    input.mode === "FOCUS" || input.scope === "THREAD"
+      ? sql`comment."id" = (SELECT "threadId" FROM target_thread)`
+      : sql`TRUE`;
 
-	return sql`
+  return sql`
 		visible_sibling_order AS (
 			SELECT
 				comment."id",

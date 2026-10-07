@@ -5,19 +5,19 @@
  * 페이지 단위 반복 처리합니다.
  */
 export async function forEachBatch<T extends { id: string }>(opts: {
-	fetchPage: (cursor: string | undefined, take: number) => PromiseLike<T[]>;
-	batchSize: number;
-	onBatch: (batch: T[]) => Promise<void>;
+  fetchPage: (cursor: string | undefined, take: number) => PromiseLike<T[]>;
+  batchSize: number;
+  onBatch: (batch: T[]) => Promise<void>;
 }): Promise<void> {
-	let cursor: string | undefined;
-	// while (true) 와 동일 for(;;)
-	for (;;) {
-		const page = await opts.fetchPage(cursor, opts.batchSize);
-		if (page.length === 0) break;
-		await opts.onBatch(page);
-		if (page.length < opts.batchSize) break;
-		const lastItem = page.at(-1);
-		if (!lastItem) break;
-		cursor = lastItem.id;
-	}
+  let cursor: string | undefined;
+  // while (true) 와 동일 for(;;)
+  for (;;) {
+    const page = await opts.fetchPage(cursor, opts.batchSize);
+    if (page.length === 0) break;
+    await opts.onBatch(page);
+    if (page.length < opts.batchSize) break;
+    const lastItem = page.at(-1);
+    if (!lastItem) break;
+    cursor = lastItem.id;
+  }
 }

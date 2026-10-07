@@ -9,23 +9,23 @@
  * 평문(value)은 생성 시점에만 존재하며 이메일로 전달된다. DB에는 hash만 저장된다.
  */
 export class VerificationCode {
-	private constructor(
-		private readonly plaintext: string,
-		private readonly digest: string,
-	) {}
+  private constructor(
+    private readonly plaintext: string,
+    private readonly digest: string,
+  ) {}
 
-	/** 새 인증 코드를 생성한다(평문 + 해시). */
-	static create(plaintext: string, digest: string): VerificationCode {
-		return new VerificationCode(plaintext, digest);
-	}
+  /** 새 인증 코드를 생성한다(평문 + 해시). */
+  static create(plaintext: string, digest: string): VerificationCode {
+    return new VerificationCode(plaintext, digest);
+  }
 
-	/** 이메일로 전달할 평문 코드. */
-	get value(): string {
-		return this.plaintext;
-	}
+  /** 이메일로 전달할 평문 코드. */
+  get value(): string {
+    return this.plaintext;
+  }
 
-	/** DB에 저장할 해시. */
-	get hash(): string {
-		return this.digest;
-	}
+  /** DB에 저장할 해시. */
+  get hash(): string {
+    return this.digest;
+  }
 }

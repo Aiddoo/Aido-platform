@@ -9,9 +9,9 @@ import type { UserLocaleMap } from "./scheduler-read-models.js";
 export const SCHEDULER_PREFERENCE_READER = Symbol("SCHEDULER_PREFERENCE_READER");
 
 export interface SchedulerPreferenceReaderPort {
-	/** 활성화된 고유 타임존 목록 (모든 유저 대상, 캐시 스루) */
-	findActiveTimezones(): Promise<string[]>;
+  /** 활성화된 고유 타임존 목록 (모든 유저 대상, 캐시 스루) */
+  findActiveTimezones(): Promise<string[]>;
 
-	/** 유저들의 푸시 로케일 일괄 조회 (preference 없으면 ko) */
-	findUserLocales(userIds: string[]): Promise<UserLocaleMap>;
+  /** 유저들의 푸시 로케일 일괄 조회 (preference 없으면 ko) */
+  findUserLocales(userIds: string[]): Promise<UserLocaleMap>;
 }

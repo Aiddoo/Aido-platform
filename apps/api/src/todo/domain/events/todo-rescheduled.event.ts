@@ -7,11 +7,11 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoRescheduledEvent {
-	readonly eventName = TODO_EVENTS.RESCHEDULED;
+  readonly eventName = TODO_EVENTS.RESCHEDULED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-		public readonly scheduledTime: Date | null,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+    public readonly scheduledTime: Date | null,
+  ) {}
 }

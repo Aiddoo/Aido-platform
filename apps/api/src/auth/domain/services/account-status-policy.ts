@@ -17,16 +17,16 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
  *   소셜 로그인=식별 불가 시 플레이스홀더). 기존 계약을 그대로 보존한다.
  */
 export function assertStatusAllowsLogin(status: string, identifier: string): void {
-	switch (status) {
-		case "LOCKED":
-			throw new DomainException(ErrorCode.USER_0607, {
-				email: identifier,
-				remainingMinutes: undefined,
-			});
-		case "SUSPENDED":
-			throw new DomainException(ErrorCode.USER_0605, { userId: identifier });
-		default:
-			// ACTIVE, PENDING_VERIFY는 상태 게이트에서 통과
-			break;
-	}
+  switch (status) {
+    case "LOCKED":
+      throw new DomainException(ErrorCode.USER_0607, {
+        email: identifier,
+        remainingMinutes: undefined,
+      });
+    case "SUSPENDED":
+      throw new DomainException(ErrorCode.USER_0605, { userId: identifier });
+    default:
+      // ACTIVE, PENDING_VERIFY는 상태 게이트에서 통과
+      break;
+  }
 }

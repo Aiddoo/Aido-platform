@@ -14,63 +14,63 @@ import { HttpClient } from "@nestjs/http-client";
 import { DiscordWebhookProvider } from "./discord-webhook.provider.js";
 
 describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
-	it("name이 discord이다", () => {
-		// Given
-		const provider = new DiscordWebhookProvider(
-			undefined,
-			new HttpClient({ retry: false, throwOnHttpError: false }),
-		);
+  it("name이 discord이다", () => {
+    // Given
+    const provider = new DiscordWebhookProvider(
+      undefined,
+      new HttpClient({ retry: false, throwOnHttpError: false }),
+    );
 
-		// When
-		const name = provider.name;
+    // When
+    const name = provider.name;
 
-		// Then
-		expect(name).toBe("discord");
-	});
+    // Then
+    expect(name).toBe("discord");
+  });
 
-	it("webhookUrl이 없으면 isConfigured가 false이다", () => {
-		// Given
-		const provider = new DiscordWebhookProvider(
-			undefined,
-			new HttpClient({ retry: false, throwOnHttpError: false }),
-		);
+  it("webhookUrl이 없으면 isConfigured가 false이다", () => {
+    // Given
+    const provider = new DiscordWebhookProvider(
+      undefined,
+      new HttpClient({ retry: false, throwOnHttpError: false }),
+    );
 
-		// When
-		const configured = provider.isConfigured();
+    // When
+    const configured = provider.isConfigured();
 
-		// Then
-		expect(configured).toBe(false);
-	});
+    // Then
+    expect(configured).toBe(false);
+  });
 
-	it("webhookUrl이 있으면 isConfigured가 true이다", () => {
-		// Given
-		const provider = new DiscordWebhookProvider(
-			"https://discord.com/api/webhooks/test-id/test-token",
-			new HttpClient({ retry: false, throwOnHttpError: false }),
-		);
+  it("webhookUrl이 있으면 isConfigured가 true이다", () => {
+    // Given
+    const provider = new DiscordWebhookProvider(
+      "https://discord.com/api/webhooks/test-id/test-token",
+      new HttpClient({ retry: false, throwOnHttpError: false }),
+    );
 
-		// When
-		const configured = provider.isConfigured();
+    // When
+    const configured = provider.isConfigured();
 
-		// Then
-		expect(configured).toBe(true);
-	});
+    // Then
+    expect(configured).toBe(true);
+  });
 
-	it("webhookUrl이 없으면 send에서 전송을 건너뛴다", async () => {
-		// Given
-		const provider = new DiscordWebhookProvider(
-			undefined,
-			new HttpClient({ retry: false, throwOnHttpError: false }),
-		);
+  it("webhookUrl이 없으면 send에서 전송을 건너뛴다", async () => {
+    // Given
+    const provider = new DiscordWebhookProvider(
+      undefined,
+      new HttpClient({ retry: false, throwOnHttpError: false }),
+    );
 
-		// When
-		const result = await provider.send({
-			title: "테스트",
-			body: "테스트 본문",
-		});
+    // When
+    const result = await provider.send({
+      title: "테스트",
+      body: "테스트 본문",
+    });
 
-		// Then
-		expect(result.success).toBe(false);
-		expect(result.error).toContain("Webhook URL not configured");
-	});
+    // Then
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("Webhook URL not configured");
+  });
 });

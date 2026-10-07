@@ -8,9 +8,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 
 import type {
-	AiProvider,
-	GenerateStructuredOptions,
-	GenerateStructuredResult,
+  AiProvider,
+  GenerateStructuredOptions,
+  GenerateStructuredResult,
 } from "../../application/ports/ai-provider.port.js";
 import { GeminiAiAdapter } from "./gemini-ai.adapter.js";
 
@@ -18,19 +18,19 @@ export const AI_PROVIDER_GEMINI = Symbol("AI_PROVIDER_GEMINI");
 
 @Injectable()
 export class AiRouterAdapter implements AiProvider {
-	constructor(@Inject(AI_PROVIDER_GEMINI) private readonly gemini: GeminiAiAdapter) {}
+  constructor(@Inject(AI_PROVIDER_GEMINI) private readonly gemini: GeminiAiAdapter) {}
 
-	async generateStructured<T>(
-		options: GenerateStructuredOptions<T>,
-	): Promise<GenerateStructuredResult<T>> {
-		return this.#selectProvider(options.modelHint).generateStructured(options);
-	}
+  async generateStructured<T>(
+    options: GenerateStructuredOptions<T>,
+  ): Promise<GenerateStructuredResult<T>> {
+    return this.#selectProvider(options.modelHint).generateStructured(options);
+  }
 
-	isAvailable(): boolean {
-		return this.gemini.isAvailable();
-	}
+  isAvailable(): boolean {
+    return this.gemini.isAvailable();
+  }
 
-	#selectProvider(_hint: GenerateStructuredOptions<unknown>["modelHint"]): AiProvider {
-		return this.gemini;
-	}
+  #selectProvider(_hint: GenerateStructuredOptions<unknown>["modelHint"]): AiProvider {
+    return this.gemini;
+  }
 }

@@ -4,8 +4,8 @@ import { UserLocation } from "../../../domain/entities/user-location.entity.js";
 import { Coordinate } from "../../../domain/value-objects/coordinate.vo.js";
 import { WEATHER_CACHE, type WeatherCachePort } from "../../ports/weather-cache.port.js";
 import {
-	WEATHER_LOCATION_REPOSITORY,
-	type WeatherLocationRepositoryPort,
+  WEATHER_LOCATION_REPOSITORY,
+  type WeatherLocationRepositoryPort,
 } from "../../ports/weather-location.repository.port.js";
 
 /**
@@ -13,35 +13,35 @@ import {
  * 이전 격자의 캐시를 무효화한다.
  */
 export interface UpsertLocationInput {
-	userId: string;
-	latitude: number;
-	longitude: number;
+  userId: string;
+  latitude: number;
+  longitude: number;
 }
 
 @Injectable()
 export class UpsertLocationUseCase {
-	constructor(
-		@Inject(WEATHER_LOCATION_REPOSITORY)
-		private readonly repository: WeatherLocationRepositoryPort,
-		@Inject(WEATHER_CACHE)
-		private readonly cache: WeatherCachePort,
-	) {}
+  constructor(
+    @Inject(WEATHER_LOCATION_REPOSITORY)
+    private readonly repository: WeatherLocationRepositoryPort,
+    @Inject(WEATHER_CACHE)
+    private readonly cache: WeatherCachePort,
+  ) {}
 
-	async execute(input: UpsertLocationInput): Promise<UserLocation> {
-		// 좌표 불변식 검증 + 격자 파생은 도메인이 소유
-		const location = UserLocation.create(
-			input.userId,
-			Coordinate.of(input.latitude, input.longitude),
-		);
+  async execute(input: UpsertLocationInput): Promise<UserLocation> {
+    // 좌표 불변식 검증 + 격자 파생은 도메인이 소유
+    const location = UserLocation.create(
+      input.userId,
+      Coordinate.of(input.latitude, input.longitude),
+    );
 
-		const oldLocation = await this.repository.findByUserId(input.userId);
-		const saved = await this.repository.upsert(location);
+    const oldLocation = await this.repository.findByUserId(input.userId);
+    const saved = await this.repository.upsert(location);
 
-		// 격자가 변경되면 구 격자의 캐시 무효화
-		if (oldLocation && !oldLocation.grid.equals(saved.grid)) {
-			await this.cache.invalidateGrid(oldLocation.gridX, oldLocation.gridY);
-		}
+    // 격자가 변경되면 구 격자의 캐시 무효화
+    if (oldLocation && !oldLocation.grid.equals(saved.grid)) {
+      await this.cache.invalidateGrid(oldLocation.gridX, oldLocation.gridY);
+    }
 
-		return saved;
-	}
+    return saved;
+  }
 }

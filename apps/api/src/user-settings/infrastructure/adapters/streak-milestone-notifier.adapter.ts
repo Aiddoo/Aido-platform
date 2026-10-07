@@ -12,12 +12,12 @@ import type { StreakMilestoneNotifierPort } from "../../application/ports/streak
  */
 @Injectable()
 export class StreakMilestoneNotifierAdapter implements StreakMilestoneNotifierPort {
-	constructor(private readonly notificationQueueService: NotificationQueueService) {}
+  constructor(private readonly notificationQueueService: NotificationQueueService) {}
 
-	notifyStreak3Reached(userId: string): void {
-		this.notificationQueueService.enqueueMilestoneReached({
-			userId,
-			milestone: "STREAK_3",
-		});
-	}
+  notifyStreak3Reached(userId: string): void {
+    this.notificationQueueService.enqueueMilestoneReached({
+      userId,
+      milestone: "STREAK_3",
+    });
+  }
 }

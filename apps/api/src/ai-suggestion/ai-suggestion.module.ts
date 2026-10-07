@@ -38,22 +38,22 @@ import { AiSuggestionController } from "./presentation/ai-suggestion.controller.
  * - NotificationModule: 새 제안 생성 시 알림 발송(프로세서)
  */
 @Module({
-	imports: [AiModule, AiReportModule, NotificationModule, TodoModule, WeatherModule],
-	controllers: [AiSuggestionController],
-	providers: [
-		{
-			provide: AI_SUGGESTION_REPOSITORY,
-			useClass: PrismaAiSuggestionRepository,
-		},
-		{ provide: RECURRING_TODO_CREATOR, useClass: RecurringTodoCreatorAdapter },
-		{ provide: WEEKLY_REPORT_READER, useClass: WeeklyReportReaderAdapter },
-		SuggestionContextBuilder,
-		GetPendingSuggestionsUseCase,
-		HandleSuggestionActionUseCase,
-		AnalyzeAndCreateSuggestionsUseCase,
-		SuggestionAnalysisJob,
-		SuggestionAnalysisProcessor,
-		AiSuggestionQueueMaintenanceService,
-	],
+  imports: [AiModule, AiReportModule, NotificationModule, TodoModule, WeatherModule],
+  controllers: [AiSuggestionController],
+  providers: [
+    {
+      provide: AI_SUGGESTION_REPOSITORY,
+      useClass: PrismaAiSuggestionRepository,
+    },
+    { provide: RECURRING_TODO_CREATOR, useClass: RecurringTodoCreatorAdapter },
+    { provide: WEEKLY_REPORT_READER, useClass: WeeklyReportReaderAdapter },
+    SuggestionContextBuilder,
+    GetPendingSuggestionsUseCase,
+    HandleSuggestionActionUseCase,
+    AnalyzeAndCreateSuggestionsUseCase,
+    SuggestionAnalysisJob,
+    SuggestionAnalysisProcessor,
+    AiSuggestionQueueMaintenanceService,
+  ],
 })
 export class AiSuggestionModule {}

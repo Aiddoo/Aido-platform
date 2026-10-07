@@ -10,14 +10,14 @@ import type { NotificationType } from "../types/notification-type.js";
 
 /** 서비스 이용을 직접 수행한 결과가 아닌 재방문/참여 유도 알림 */
 export const MARKETING_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
-	new Set<NotificationType>([
-		"AI_SUGGESTION",
-		"WINBACK",
-		"SOCIAL_DIGEST",
-		"NUDGE_SUGGEST",
-		"LUNCH_NUDGE",
-		"STREAK_AT_RISK",
-	]);
+  new Set<NotificationType>([
+    "AI_SUGGESTION",
+    "WINBACK",
+    "SOCIAL_DIGEST",
+    "NUDGE_SUGGEST",
+    "LUNCH_NUDGE",
+    "STREAK_AT_RISK",
+  ]);
 
 export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TYPES;
 
@@ -28,18 +28,18 @@ export const AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES = MARKETING_NOTIFICATION_TY
  * - WEATHER_EVENING: 사용자가 직접 선택한 저녁 시간
  */
 export const NIGHT_EXEMPT_NOTIFICATION_TYPES: ReadonlySet<NotificationType> =
-	new Set<NotificationType>(["WEATHER_MORNING", "WEATHER_EVENING"]);
+  new Set<NotificationType>(["WEATHER_MORNING", "WEATHER_EVENING"]);
 
 /** 마케팅 동의가 필요한 알림 타입인지 */
 export function isMarketingNotification(type: NotificationType): boolean {
-	return MARKETING_NOTIFICATION_TYPES.has(type);
+  return MARKETING_NOTIFICATION_TYPES.has(type);
 }
 
 export function isAutomatedEngagementNotification(type: NotificationType): boolean {
-	return AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES.has(type);
+  return AUTOMATED_ENGAGEMENT_NOTIFICATION_TYPES.has(type);
 }
 
 /** 야간 발송 예외 타입인지 */
 export function isNightExemptNotification(type: NotificationType): boolean {
-	return NIGHT_EXEMPT_NOTIFICATION_TYPES.has(type);
+  return NIGHT_EXEMPT_NOTIFICATION_TYPES.has(type);
 }

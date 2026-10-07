@@ -8,46 +8,46 @@ import type { SortOrder } from "../constants/pagination.constant.js";
  * 페이지네이션 정보
  */
 export interface PaginationInfo {
-	page: number;
-	size: number;
-	total: number;
-	totalPages: number;
-	hasNext: boolean;
-	hasPrevious: boolean;
+  page: number;
+  size: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 /**
  * 페이지네이션 응답
  */
 export interface PaginatedResponse<T> {
-	items: T[];
-	pagination: PaginationInfo;
+  items: T[];
+  pagination: PaginationInfo;
 }
 
 /**
  * 페이지네이션 입력 파라미터
  */
 export interface PaginationParams {
-	page?: number;
-	size?: number;
+  page?: number;
+  size?: number;
 }
 
 /**
  * 정규화된 페이지네이션 파라미터
  */
 export interface NormalizedPagination {
-	page: number;
-	size: number;
-	skip: number;
-	take: number;
+  page: number;
+  size: number;
+  skip: number;
+  take: number;
 }
 
 /**
  * 정렬 파라미터
  */
 export interface SortParams {
-	sortBy?: string;
-	sortOrder?: SortOrder;
+  sortBy?: string;
+  sortOrder?: SortOrder;
 }
 
 // ============================================
@@ -65,34 +65,34 @@ export type CursorType = string | number;
  * 커서 기반 페이지네이션 입력 파라미터
  */
 export interface CursorPaginationParams<T extends CursorType = string> {
-	cursor?: T;
-	size?: number;
+  cursor?: T;
+  size?: number;
 }
 
 /**
  * 커서 기반 페이지네이션 정보
  */
 export interface CursorPaginationInfo<T extends CursorType = string> {
-	nextCursor: T | null;
-	hasNext: boolean;
-	size: number;
+  nextCursor: T | null;
+  hasNext: boolean;
+  size: number;
 }
 
 /**
  * 커서 기반 페이지네이션 응답
  */
 export interface CursorPaginatedResponse<TItem, TCursor extends CursorType = string> {
-	items: TItem[];
-	pagination: CursorPaginationInfo<TCursor>;
+  items: TItem[];
+  pagination: CursorPaginationInfo<TCursor>;
 }
 
 /**
  * 정규화된 커서 페이지네이션 파라미터
  */
 export interface NormalizedCursorPagination<T extends CursorType = string> {
-	cursor: T | undefined;
-	size: number;
-	take: number;
+  cursor: T | undefined;
+  size: number;
+  take: number;
 }
 
 // ============================================

@@ -23,51 +23,51 @@ import { type ILockProvider, LOCK_PROVIDER } from "./interfaces/lock.interface.j
 @Global()
 @Module({})
 export class LockModule {
-	/**
-	 * 프로덕션용 모듈 설정
-	 *
-	 * 환경변수:
-	 * - CACHE_TYPE: 'memory' | 'redis' (기본값: 'memory')
-	 *   캐시와 동일한 환경변수를 사용하여 인프라 일관성 유지
-	 */
-	static forRoot(): DynamicModule {
-		const lockProvider: Provider = {
-			provide: LOCK_PROVIDER,
-			useFactory: (configService: TypedConfigService, redis?: Redis): ILockProvider => {
-				const cacheType = configService.cache.type;
+  /**
+   * 프로덕션용 모듈 설정
+   *
+   * 환경변수:
+   * - CACHE_TYPE: 'memory' | 'redis' (기본값: 'memory')
+   *   캐시와 동일한 환경변수를 사용하여 인프라 일관성 유지
+   */
+  static forRoot(): DynamicModule {
+    const lockProvider: Provider = {
+      provide: LOCK_PROVIDER,
+      useFactory: (configService: TypedConfigService, redis?: Redis): ILockProvider => {
+        const cacheType = configService.cache.type;
 
-				if (cacheType === "redis" && redis) {
-					return new RedisLockAdapter(redis);
-				}
+        if (cacheType === "redis" && redis) {
+          return new RedisLockAdapter(redis);
+        }
 
-				return new InMemoryLockAdapter();
-			},
-			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
-		};
+        return new InMemoryLockAdapter();
+      },
+      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+    };
 
-		return {
-			module: LockModule,
-			providers: [TypedConfigService, lockProvider],
-			exports: [LOCK_PROVIDER],
-		};
-	}
+    return {
+      module: LockModule,
+      providers: [TypedConfigService, lockProvider],
+      exports: [LOCK_PROVIDER],
+    };
+  }
 
-	/**
-	 * 테스트용 모듈 설정
-	 *
-	 * 특정 어댑터를 직접 주입하여 사용
-	 *
-	 * @example
-	 * const mockAdapter = { acquire: vi.fn(), isLocked: vi.fn() };
-	 * const module = await Test.createTestingModule({
-	 *   imports: [LockModule.forTesting(mockAdapter)],
-	 * }).compile();
-	 */
-	static forTesting(adapter: ILockProvider): DynamicModule {
-		return {
-			module: LockModule,
-			providers: [{ provide: LOCK_PROVIDER, useValue: adapter }],
-			exports: [LOCK_PROVIDER],
-		};
-	}
+  /**
+   * 테스트용 모듈 설정
+   *
+   * 특정 어댑터를 직접 주입하여 사용
+   *
+   * @example
+   * const mockAdapter = { acquire: vi.fn(), isLocked: vi.fn() };
+   * const module = await Test.createTestingModule({
+   *   imports: [LockModule.forTesting(mockAdapter)],
+   * }).compile();
+   */
+  static forTesting(adapter: ILockProvider): DynamicModule {
+    return {
+      module: LockModule,
+      providers: [{ provide: LOCK_PROVIDER, useValue: adapter }],
+      exports: [LOCK_PROVIDER],
+    };
+  }
 }

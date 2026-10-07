@@ -8,101 +8,101 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 /** 아침 리마인더 수신자 (오늘 시작 투두 개수 포함) */
 export interface ReminderCountUser {
-	readonly id: string;
-	readonly preference: { readonly locale: string } | null;
-	readonly _count: { readonly todos: number };
+  readonly id: string;
+  readonly preference: { readonly locale: string } | null;
+  readonly _count: { readonly todos: number };
 }
 
 /** 저녁/스트릭 판정 수신자 (오늘 투두 완료 상태 + 스트릭 정보) */
 export interface UserWithTodosAndStreak {
-	readonly id: string;
-	readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
-	readonly preference: {
-		readonly currentStreak: number;
-		readonly lastCompletedDate: Date | null;
-		readonly locale: string;
-	} | null;
+  readonly id: string;
+  readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
+  readonly preference: {
+    readonly currentStreak: number;
+    readonly lastCompletedDate: Date | null;
+    readonly locale: string;
+  } | null;
 }
 
 /** ID만 필요한 수신자 (점심 넛지·주간/월간 리포트·활성 유저 목록) */
 export interface UserIdRow {
-	readonly id: string;
+  readonly id: string;
 }
 
 /** Win-back 대상 (마지막 접속 시각 포함) */
 export interface WinbackUser {
-	readonly id: string;
-	readonly lastActiveAt: Date | null;
+  readonly id: string;
+  readonly lastActiveAt: Date | null;
 }
 
 /** 온보딩 대상 (가입 시각 포함) */
 export interface OnboardingCandidate {
-	readonly id: string;
-	readonly createdAt: Date;
+  readonly id: string;
+  readonly createdAt: Date;
 }
 
 /** 유저별 투두 집계 (groupBy 결과) */
 export interface UserTodoCount {
-	readonly userId: string;
-	readonly count: number;
+  readonly userId: string;
+  readonly count: number;
 }
 
 /** 팔로우 관계에서 조회된 상대 유저 (활동성·프로필명) */
 export interface FollowRelationUser {
-	readonly id: string;
-	readonly lastActiveAt: Date | null;
-	readonly profile: { readonly name: string | null } | null;
+  readonly id: string;
+  readonly lastActiveAt: Date | null;
+  readonly profile: { readonly name: string | null } | null;
 }
 
 /** 넛지 추천용 맞팔 관계 (양방향 상대 정보 포함) */
 export interface NudgeSuggestFollow {
-	readonly followerId: string;
-	readonly followingId: string;
-	readonly follower: FollowRelationUser;
-	readonly following: FollowRelationUser;
+  readonly followerId: string;
+  readonly followingId: string;
+  readonly follower: FollowRelationUser;
+  readonly following: FollowRelationUser;
 }
 
 /** 소셜 다이제스트 후보 (오늘 투두 완료 상태) */
 export interface SocialDigestCandidate {
-	readonly id: string;
-	readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
+  readonly id: string;
+  readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
 }
 
 /** 맞팔 관계 ID 쌍 */
 export interface FollowPair {
-	readonly followerId: string;
-	readonly followingId: string;
+  readonly followerId: string;
+  readonly followingId: string;
 }
 
 /** 오늘 투두를 가진 친구 (프로필명 + 완료 상태) */
 export interface FriendWithTodos {
-	readonly id: string;
-	readonly profile: { readonly name: string | null } | null;
-	readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
+  readonly id: string;
+  readonly profile: { readonly name: string | null } | null;
+  readonly todos: ReadonlyArray<{ readonly completed: boolean }>;
 }
 
 /** 날씨 알림 수신자 (위치 있음 — 위치는 조회 후 필터로 non-null 확정) */
 export interface WeatherReminderUser {
-	readonly id: string;
-	readonly preference: { readonly locale: string } | null;
-	readonly location: {
-		readonly latitude: number;
-		readonly longitude: number;
-		readonly gridX: number;
-		readonly gridY: number;
-	} | null;
+  readonly id: string;
+  readonly preference: { readonly locale: string } | null;
+  readonly location: {
+    readonly latitude: number;
+    readonly longitude: number;
+    readonly gridX: number;
+    readonly gridY: number;
+  } | null;
 }
 
 /** 날씨 폴백 수신자 (위치 없음) */
 export interface WeatherFallbackUser {
-	readonly id: string;
-	readonly preference: { readonly locale: string } | null;
+  readonly id: string;
+  readonly preference: { readonly locale: string } | null;
 }
 
 /** 리마인더 발송 대상 투두 (미완료 확인 결과) */
 export interface ActiveTodo {
-	readonly id: number;
-	readonly title: string;
+  readonly id: number;
+  readonly title: string;
 }
 
 /** 유저 ID → 푸시 로케일 매핑 */

@@ -10,14 +10,14 @@ import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/active-push-token.
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/marketing-push-opt-out-token.port.js";
 import { NOTIFICATION_CACHE } from "./application/ports/notification-cache.port.js";
 import {
-	NOTIFICATION_DEDUP,
-	NOTIFICATION_DEDUP_LOCK,
+  NOTIFICATION_DEDUP,
+  NOTIFICATION_DEDUP_LOCK,
 } from "./application/ports/notification-dedup.port.js";
 import { NOTIFICATION_HISTORY_READER } from "./application/ports/notification-history.reader.port.js";
 import { NOTIFICATION_INBOX_READER } from "./application/ports/notification-inbox.reader.port.js";
 import {
-	NOTIFICATION_RECIPIENT_LOCALE_READER,
-	type NotificationRecipientLocaleReaderPort,
+  NOTIFICATION_RECIPIENT_LOCALE_READER,
+  type NotificationRecipientLocaleReaderPort,
 } from "./application/ports/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/notification-recipient-preference.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/notification.repository.port.js";
@@ -27,8 +27,8 @@ import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/push-delive
 import { PUSH_DISPATCH_STAGING } from "./application/ports/push-dispatch-staging.repository.port.js";
 import { PUSH_PROVIDER } from "./application/ports/push-provider.port.js";
 import {
-	PUSH_RATE_LIMITER,
-	type PushRateLimiterPort,
+  PUSH_RATE_LIMITER,
+  type PushRateLimiterPort,
 } from "./application/ports/push-rate-limiter.port.js";
 import { PUSH_RECEIPT_REPOSITORY } from "./application/ports/push-receipt.repository.port.js";
 import { PUSH_TOKEN_REPOSITORY } from "./application/ports/push-token.repository.port.js";
@@ -100,174 +100,174 @@ import { NotificationController } from "./presentation/notification.controller.j
  * Provider 추상화(PUSH_PROVIDER 포트)로 Expo → FCM/APNs 교체를 어댑터 추가만으로 대비.
  */
 @Module({
-	// notification → user-settings 단방향 DI(푸시 발송 전 사용자 설정 조회).
-	// 역방향(user-settings → notification)은 경량 `@/notification/queue` 서브엔트리로만
-	// 참조하므로 ES 초기화 순환이 없다 → forwardRef 불필요.
-	imports: [NotificationQueueModule, UserSettingsModule],
-	controllers: [NotificationController, NotificationInboxController],
-	providers: [
-		// 크로스 모듈 호환 경계 + endpoint UseCase
-		{
-			provide: NotificationPublisher,
-			inject: [
-				SendNotificationUseCase,
-				SendNotificationWithDedupUseCase,
-				SendBatchNotificationUseCase,
-			],
-			useFactory: (
-				sendNotification: SendNotificationUseCase,
-				sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
-				sendBatchNotification: SendBatchNotificationUseCase,
-			) =>
-				new NotificationPublisher(
-					sendNotification,
-					sendNotificationWithDeduplication,
-					sendBatchNotification,
-				),
-		},
-		{
-			provide: NotificationHistoryReader,
-			inject: [FindAlreadyNotifiedUsersUseCase],
-			useFactory: (findAlreadyNotifiedUsers: FindAlreadyNotifiedUsersUseCase) =>
-				new NotificationHistoryReader(findAlreadyNotifiedUsers),
-		},
-		{
-			provide: NotificationRecipientLocaleReader,
-			inject: [NOTIFICATION_RECIPIENT_LOCALE_READER],
-			useFactory: (localeReader: NotificationRecipientLocaleReaderPort) =>
-				new NotificationRecipientLocaleReader(localeReader),
-		},
-		GetNotificationsUseCase,
-		GetUnreadCountUseCase,
-		MarkAsReadUseCase,
-		MarkNotificationOpenedUseCase,
-		MarkAllAsReadUseCase,
-		RegisterPushTokenUseCase,
-		UnregisterPushTokenUseCase,
-		OptOutMarketingPushUseCase,
-		// 크로스모듈 발송/디스패치 use-cases
-		SendNotificationUseCase,
-		SendNotificationWithDedupUseCase,
-		PersistBatchNotificationUseCase,
-		FinalizeBatchNotificationUseCase,
-		SendBatchNotificationUseCase,
-		FindAlreadyNotifiedUsersUseCase,
-		SendFollowRequestNotificationUseCase,
-		SendFollowAcceptedNotificationUseCase,
-		SendNudgeNotificationUseCase,
-		SendCheerNotificationUseCase,
-		SendBillingIssueNotificationUseCase,
-		SendFriendCompletionNotificationsUseCase,
-		SendMilestoneNotificationUseCase,
-		ReconcilePushReceiptsUseCase,
-		// 책임별 persistence 포트 바인딩
-		PrismaNotificationRepository,
-		{ provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
-		PrismaNotificationReader,
-		{ provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
-		{ provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
-		PrismaPushTokenRepository,
-		{ provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
-		PrismaPushReceiptRepository,
-		{ provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
-		PrismaPushDispatchStagingRepository,
-		{ provide: PUSH_DISPATCH_STAGING, useExisting: PrismaPushDispatchStagingRepository },
-		PrismaPushDeliveryOutboxRepository,
-		{
-			provide: PUSH_DELIVERY_OUTBOX_REPOSITORY,
-			useExisting: PrismaPushDeliveryOutboxRepository,
-		},
-		PrismaPushDeliveryLifecycleRepository,
-		{
-			provide: PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
-			useExisting: PrismaPushDeliveryLifecycleRepository,
-		},
-		NotificationAccountCleanup,
-		HmacMarketingPushOptOutTokenAdapter,
-		{
-			provide: MARKETING_PUSH_OPT_OUT_TOKEN,
-			useExisting: HmacMarketingPushOptOutTokenAdapter,
-		},
-		// user-settings의 공개 알림 설정 capability에 연결하는 ACL 어댑터
-		{
-			provide: USER_NOTIFICATION_SETTINGS,
-			useClass: UserNotificationSettingsAdapter,
-		},
-		// 조회 캐시 포트 (application → CacheService 직접 의존 역전)
-		{ provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
-		NotificationDedupAdapter,
-		{
-			provide: NOTIFICATION_DEDUP,
-			useExisting: NotificationDedupAdapter,
-		},
-		{
-			provide: NOTIFICATION_DEDUP_LOCK,
-			useClass: NotificationDedupLockAdapter,
-		},
-		// 캐시를 포함한 수신자 조회 capability
-		CachedActivePushTokenReaderAdapter,
-		{
-			provide: ACTIVE_PUSH_TOKEN_READER,
-			useExisting: CachedActivePushTokenReaderAdapter,
-		},
-		CachedNotificationRecipientPreferenceAdapter,
-		{
-			provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
-			useExisting: CachedNotificationRecipientPreferenceAdapter,
-		},
-		{
-			provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
-			useExisting: CachedNotificationRecipientPreferenceAdapter,
-		},
-		// application 전달 정책 + durable outbox/queue 경계
-		PushDeliveryAfterCommitPublisher,
-		PushDeliveryEligibilityService,
-		PushNotificationDeliveryService,
-		PushNotificationPayloadFactory,
-		DeliverPushNotificationsUseCase,
-		PublishPushDeliveryOutboxUseCase,
-		RecoverFailedPushDeliveriesUseCase,
-		RelayPushDeliveryOutboxUseCase,
-		PushDeliveryQueueService,
-		{ provide: PUSH_DELIVERY_JOB_ENQUEUER, useExisting: PushDeliveryQueueService },
-		PushDeliveryQueueProcessor,
-		// Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
-		{
-			provide: PUSH_PROVIDER,
-			useClass: ExpoPushProvider,
-		},
-		// Push Rate Limiter (Strategy Pattern)
-		{
-			provide: PUSH_RATE_LIMITER,
-			useFactory: (
-				configService: TypedConfigService,
-				database: DatabaseService,
-				redis?: Redis,
-			): PushRateLimiterPort => {
-				return createPushRateLimiter({
-					backend: configService.pushRateLimitBackend,
-					database,
-					...(redis && { redis }),
-				});
-			},
-			inject: [
-				TypedConfigService,
-				DatabaseService,
-				{ token: REDIS_COMMAND_CLIENT, optional: true },
-			],
-		},
-		// 알림 큐 프로세서
-		NotificationQueueProcessor,
-	],
-	exports: [
-		NotificationPublisher,
-		NotificationHistoryReader,
-		NotificationRecipientLocaleReader,
-		NotificationAccountCleanup,
-		NotificationQueueModule,
-		PUSH_PROVIDER,
-		PUSH_RATE_LIMITER,
-		MARKETING_PUSH_OPT_OUT_TOKEN,
-	],
+  // notification → user-settings 단방향 DI(푸시 발송 전 사용자 설정 조회).
+  // 역방향(user-settings → notification)은 경량 `@/notification/queue` 서브엔트리로만
+  // 참조하므로 ES 초기화 순환이 없다 → forwardRef 불필요.
+  imports: [NotificationQueueModule, UserSettingsModule],
+  controllers: [NotificationController, NotificationInboxController],
+  providers: [
+    // 크로스 모듈 호환 경계 + endpoint UseCase
+    {
+      provide: NotificationPublisher,
+      inject: [
+        SendNotificationUseCase,
+        SendNotificationWithDedupUseCase,
+        SendBatchNotificationUseCase,
+      ],
+      useFactory: (
+        sendNotification: SendNotificationUseCase,
+        sendNotificationWithDeduplication: SendNotificationWithDedupUseCase,
+        sendBatchNotification: SendBatchNotificationUseCase,
+      ) =>
+        new NotificationPublisher(
+          sendNotification,
+          sendNotificationWithDeduplication,
+          sendBatchNotification,
+        ),
+    },
+    {
+      provide: NotificationHistoryReader,
+      inject: [FindAlreadyNotifiedUsersUseCase],
+      useFactory: (findAlreadyNotifiedUsers: FindAlreadyNotifiedUsersUseCase) =>
+        new NotificationHistoryReader(findAlreadyNotifiedUsers),
+    },
+    {
+      provide: NotificationRecipientLocaleReader,
+      inject: [NOTIFICATION_RECIPIENT_LOCALE_READER],
+      useFactory: (localeReader: NotificationRecipientLocaleReaderPort) =>
+        new NotificationRecipientLocaleReader(localeReader),
+    },
+    GetNotificationsUseCase,
+    GetUnreadCountUseCase,
+    MarkAsReadUseCase,
+    MarkNotificationOpenedUseCase,
+    MarkAllAsReadUseCase,
+    RegisterPushTokenUseCase,
+    UnregisterPushTokenUseCase,
+    OptOutMarketingPushUseCase,
+    // 크로스모듈 발송/디스패치 use-cases
+    SendNotificationUseCase,
+    SendNotificationWithDedupUseCase,
+    PersistBatchNotificationUseCase,
+    FinalizeBatchNotificationUseCase,
+    SendBatchNotificationUseCase,
+    FindAlreadyNotifiedUsersUseCase,
+    SendFollowRequestNotificationUseCase,
+    SendFollowAcceptedNotificationUseCase,
+    SendNudgeNotificationUseCase,
+    SendCheerNotificationUseCase,
+    SendBillingIssueNotificationUseCase,
+    SendFriendCompletionNotificationsUseCase,
+    SendMilestoneNotificationUseCase,
+    ReconcilePushReceiptsUseCase,
+    // 책임별 persistence 포트 바인딩
+    PrismaNotificationRepository,
+    { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
+    PrismaNotificationReader,
+    { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
+    { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+    PrismaPushTokenRepository,
+    { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
+    PrismaPushReceiptRepository,
+    { provide: PUSH_RECEIPT_REPOSITORY, useExisting: PrismaPushReceiptRepository },
+    PrismaPushDispatchStagingRepository,
+    { provide: PUSH_DISPATCH_STAGING, useExisting: PrismaPushDispatchStagingRepository },
+    PrismaPushDeliveryOutboxRepository,
+    {
+      provide: PUSH_DELIVERY_OUTBOX_REPOSITORY,
+      useExisting: PrismaPushDeliveryOutboxRepository,
+    },
+    PrismaPushDeliveryLifecycleRepository,
+    {
+      provide: PUSH_DELIVERY_LIFECYCLE_REPOSITORY,
+      useExisting: PrismaPushDeliveryLifecycleRepository,
+    },
+    NotificationAccountCleanup,
+    HmacMarketingPushOptOutTokenAdapter,
+    {
+      provide: MARKETING_PUSH_OPT_OUT_TOKEN,
+      useExisting: HmacMarketingPushOptOutTokenAdapter,
+    },
+    // user-settings의 공개 알림 설정 capability에 연결하는 ACL 어댑터
+    {
+      provide: USER_NOTIFICATION_SETTINGS,
+      useClass: UserNotificationSettingsAdapter,
+    },
+    // 조회 캐시 포트 (application → CacheService 직접 의존 역전)
+    { provide: NOTIFICATION_CACHE, useClass: NotificationCacheAdapter },
+    NotificationDedupAdapter,
+    {
+      provide: NOTIFICATION_DEDUP,
+      useExisting: NotificationDedupAdapter,
+    },
+    {
+      provide: NOTIFICATION_DEDUP_LOCK,
+      useClass: NotificationDedupLockAdapter,
+    },
+    // 캐시를 포함한 수신자 조회 capability
+    CachedActivePushTokenReaderAdapter,
+    {
+      provide: ACTIVE_PUSH_TOKEN_READER,
+      useExisting: CachedActivePushTokenReaderAdapter,
+    },
+    CachedNotificationRecipientPreferenceAdapter,
+    {
+      provide: NOTIFICATION_RECIPIENT_PREFERENCE_READER,
+      useExisting: CachedNotificationRecipientPreferenceAdapter,
+    },
+    {
+      provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
+      useExisting: CachedNotificationRecipientPreferenceAdapter,
+    },
+    // application 전달 정책 + durable outbox/queue 경계
+    PushDeliveryAfterCommitPublisher,
+    PushDeliveryEligibilityService,
+    PushNotificationDeliveryService,
+    PushNotificationPayloadFactory,
+    DeliverPushNotificationsUseCase,
+    PublishPushDeliveryOutboxUseCase,
+    RecoverFailedPushDeliveriesUseCase,
+    RelayPushDeliveryOutboxUseCase,
+    PushDeliveryQueueService,
+    { provide: PUSH_DELIVERY_JOB_ENQUEUER, useExisting: PushDeliveryQueueService },
+    PushDeliveryQueueProcessor,
+    // Push Provider (Strategy Pattern — Expo, 향후 FCM/APNs)
+    {
+      provide: PUSH_PROVIDER,
+      useClass: ExpoPushProvider,
+    },
+    // Push Rate Limiter (Strategy Pattern)
+    {
+      provide: PUSH_RATE_LIMITER,
+      useFactory: (
+        configService: TypedConfigService,
+        database: DatabaseService,
+        redis?: Redis,
+      ): PushRateLimiterPort => {
+        return createPushRateLimiter({
+          backend: configService.pushRateLimitBackend,
+          database,
+          ...(redis && { redis }),
+        });
+      },
+      inject: [
+        TypedConfigService,
+        DatabaseService,
+        { token: REDIS_COMMAND_CLIENT, optional: true },
+      ],
+    },
+    // 알림 큐 프로세서
+    NotificationQueueProcessor,
+  ],
+  exports: [
+    NotificationPublisher,
+    NotificationHistoryReader,
+    NotificationRecipientLocaleReader,
+    NotificationAccountCleanup,
+    NotificationQueueModule,
+    PUSH_PROVIDER,
+    PUSH_RATE_LIMITER,
+    MARKETING_PUSH_OPT_OUT_TOKEN,
+  ],
 })
 export class NotificationModule {}

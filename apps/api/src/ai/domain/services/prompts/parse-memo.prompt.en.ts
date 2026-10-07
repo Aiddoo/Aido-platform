@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
 
 import {
-	PROMPT_OUTPUT_DISCIPLINE_EN,
-	PROMPT_SECURITY_GUARD_EN,
+  PROMPT_OUTPUT_DISCIPLINE_EN,
+  PROMPT_SECURITY_GUARD_EN,
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeMemoForPrompt } from "#api/shared/domain/prompt/sanitize";
 
@@ -14,21 +14,21 @@ import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules.js";
  * 구조·규칙·예시 골격은 한국어 버전과 동일하다.
  */
 export function buildParseMemoPromptEn(
-	content: string,
-	tz: string = "UTC",
-	now: Date = new Date(),
-	categories: CategoryInfo[] = [],
+  content: string,
+  tz: string = "UTC",
+  now: Date = new Date(),
+  categories: CategoryInfo[] = [],
 ): ParseMemoPrompt {
-	const ctx = buildTimeContext(tz, now, "en");
-	const timeRules = buildTimeRulesTextEn(ctx);
-	const safeContent = sanitizeMemoForPrompt(content);
+  const ctx = buildTimeContext(tz, now, "en");
+  const timeRules = buildTimeRulesTextEn(ctx);
+  const safeContent = sanitizeMemoForPrompt(content);
 
-	const categoryRule =
-		categories.length > 0
-			? "- For each to-do, use only an id present in context.categories, choosing the closest semantic match."
-			: "";
+  const categoryRule =
+    categories.length > 0
+      ? "- For each to-do, use only an id present in context.categories, choosing the closest semantic match."
+      : "";
 
-	const system = `<role>
+  const system = `<role>
 You are an expert at analyzing a memo and turning it into an actionable to-do list.
 Extract 1-5 independent to-dos from the memo, and for each to-do extract 0-5 concrete sub-steps (items) when present.
 </role>
@@ -94,7 +94,7 @@ Output:
 
 ${PROMPT_OUTPUT_DISCIPLINE_EN}`;
 
-	const prompt = `<context_json>
+  const prompt = `<context_json>
 ${encodeUntrustedJson({ timezone: tz, categories })}
 </context_json>
 <user_input_json>
@@ -102,5 +102,5 @@ ${encodeUntrustedJson({ memo: safeContent })}
 </user_input_json>
 <task>Convert the memo into an actionable to-do list. Check quality internally, then return only the structured result.</task>`;
 
-	return { system, prompt };
+  return { system, prompt };
 }

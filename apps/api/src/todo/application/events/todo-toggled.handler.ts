@@ -10,13 +10,13 @@ import { FRIEND_PORT, type FriendPort } from "../ports/friend.port.js";
 import { STREAK_PORT, type StreakPort } from "../ports/streak.port.js";
 import { TODO_NOTIFICATION, type TodoNotificationPort } from "../ports/todo-notification.port.js";
 import {
-	TODO_READ_REPOSITORY,
-	type TodoReadRepositoryPort,
+  TODO_READ_REPOSITORY,
+  type TodoReadRepositoryPort,
 } from "../ports/todo-read.repository.port.js";
 import {
-	TODO_REMINDER,
-	type TodoReminderCancellationResult,
-	type TodoReminderPort,
+  TODO_REMINDER,
+  type TodoReminderCancellationResult,
+  type TodoReminderPort,
 } from "../ports/todo-reminder.port.js";
 
 /**
@@ -34,108 +34,108 @@ import {
  */
 @Injectable()
 export class TodoToggledHandler {
-	readonly #logger = new Logger(TodoToggledHandler.name);
+  readonly #logger = new Logger(TodoToggledHandler.name);
 
-	constructor(
-		@Inject(TODO_READ_REPOSITORY)
-		private readonly todoReadRepository: TodoReadRepositoryPort,
-		@Inject(FRIEND_PORT)
-		private readonly friendPort: FriendPort,
-		@Inject(TODO_NOTIFICATION)
-		private readonly todoNotification: TodoNotificationPort,
-		@Inject(STREAK_PORT)
-		private readonly streakPort: StreakPort,
-		@Inject(TODO_REMINDER)
-		private readonly todoReminder: TodoReminderPort,
-	) {}
+  constructor(
+    @Inject(TODO_READ_REPOSITORY)
+    private readonly todoReadRepository: TodoReadRepositoryPort,
+    @Inject(FRIEND_PORT)
+    private readonly friendPort: FriendPort,
+    @Inject(TODO_NOTIFICATION)
+    private readonly todoNotification: TodoNotificationPort,
+    @Inject(STREAK_PORT)
+    private readonly streakPort: StreakPort,
+    @Inject(TODO_REMINDER)
+    private readonly todoReminder: TodoReminderPort,
+  ) {}
 
-	@OnEvent(TODO_EVENTS.TOGGLED, { suppressErrors: false })
-	async handle(event: TodoToggledEvent): Promise<void> {
-		const { todoId, userId, completed, timezone } = event;
+  @OnEvent(TODO_EVENTS.TOGGLED, { suppressErrors: false })
+  async handle(event: TodoToggledEvent): Promise<void> {
+    const { todoId, userId, completed, timezone } = event;
 
-		const sideEffects: Promise<void>[] = [];
-		let cancellation: Promise<TodoReminderCancellationResult> | undefined;
-		if (completed) {
-			cancellation = this.todoReminder.cancelReminder(todoId);
-			sideEffects.push(this.#checkAndEnqueueFriendCompleted(userId, timezone));
-			sideEffects.push(this.#checkAndEnqueueMilestone(userId));
-		}
+    const sideEffects: Promise<void>[] = [];
+    let cancellation: Promise<TodoReminderCancellationResult> | undefined;
+    if (completed) {
+      cancellation = this.todoReminder.cancelReminder(todoId);
+      sideEffects.push(this.#checkAndEnqueueFriendCompleted(userId, timezone));
+      sideEffects.push(this.#checkAndEnqueueMilestone(userId));
+    }
 
-		// 스트릭은 양방향 갱신
-		sideEffects.push(this.#recordStreakSafely(userId, completed, timezone));
+    // 스트릭은 양방향 갱신
+    sideEffects.push(this.#recordStreakSafely(userId, completed, timezone));
 
-		const outcomes = await Promise.allSettled(
-			cancellation ? [cancellation, ...sideEffects] : sideEffects,
-		);
-		const cancellationOutcome = cancellation ? outcomes[0] : undefined;
-		if (cancellationOutcome?.status === "rejected") {
-			throw cancellationOutcome.reason;
-		}
-	}
+    const outcomes = await Promise.allSettled(
+      cancellation ? [cancellation, ...sideEffects] : sideEffects,
+    );
+    const cancellationOutcome = cancellation ? outcomes[0] : undefined;
+    if (cancellationOutcome?.status === "rejected") {
+      throw cancellationOutcome.reason;
+    }
+  }
 
-	async #recordStreakSafely(userId: string, completed: boolean, timezone: string): Promise<void> {
-		try {
-			await this.streakPort.recordTodoToggle(userId, completed, timezone);
-		} catch (error) {
-			this.#logger.error(
-				`Failed to record streak toggle: userId=${userId}, ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
-	}
+  async #recordStreakSafely(userId: string, completed: boolean, timezone: string): Promise<void> {
+    try {
+      await this.streakPort.recordTodoToggle(userId, completed, timezone);
+    } catch (error) {
+      this.#logger.error(
+        `Failed to record streak toggle: userId=${userId}, ${error}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
 
-	/**
-	 * 오늘 할일 전체 완료 시 친구들에게 알림 큐에 등록
-	 */
-	async #checkAndEnqueueFriendCompleted(userId: string, timezone: string): Promise<void> {
-		try {
-			const today = todayInTimezone(timezone);
-			const stats = await this.todoReadRepository.getTodayTodoStats(userId, today);
+  /**
+   * 오늘 할일 전체 완료 시 친구들에게 알림 큐에 등록
+   */
+  async #checkAndEnqueueFriendCompleted(userId: string, timezone: string): Promise<void> {
+    try {
+      const today = todayInTimezone(timezone);
+      const stats = await this.todoReadRepository.getTodayTodoStats(userId, today);
 
-			if (isAllCompletedToday(stats)) {
-				const [friendIds, userName] = await Promise.all([
-					this.friendPort.getMutualFriendIds(userId),
-					this.friendPort.getUserDisplayName(userId),
-				]);
+      if (isAllCompletedToday(stats)) {
+        const [friendIds, userName] = await Promise.all([
+          this.friendPort.getMutualFriendIds(userId),
+          this.friendPort.getUserDisplayName(userId),
+        ]);
 
-				if (friendIds.length > 0) {
-					this.todoNotification.enqueueFriendCompleted({
-						friendId: userId,
-						friendName: userName,
-						notifyUserIds: friendIds,
-						timezone,
-					});
+        if (friendIds.length > 0) {
+          this.todoNotification.enqueueFriendCompleted({
+            friendId: userId,
+            friendName: userName,
+            notifyUserIds: friendIds,
+            timezone,
+          });
 
-					this.#logger.log(`Friend completed event enqueued for ${friendIds.length} friends`);
-				}
-			}
-		} catch (error) {
-			this.#logger.error(
-				`Failed to check/enqueue friend completed event: ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
-	}
+          this.#logger.log(`Friend completed event enqueued for ${friendIds.length} friends`);
+        }
+      }
+    } catch (error) {
+      this.#logger.error(
+        `Failed to check/enqueue friend completed event: ${error}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
 
-	/**
-	 * 마일스톤 달성 여부 체크 및 알림 큐 등록
-	 */
-	async #checkAndEnqueueMilestone(userId: string): Promise<void> {
-		try {
-			const count = await this.todoReadRepository.countCompletedByUser(userId);
-			const milestone = milestoneForCount(count);
-			if (!milestone) {
-				return;
-			}
-			this.todoNotification.enqueueMilestoneReached({
-				userId,
-				milestone,
-			});
-		} catch (error) {
-			this.#logger.error(
-				`Failed to check milestone event: userId=${userId}, ${error}`,
-				error instanceof Error ? error.stack : undefined,
-			);
-		}
-	}
+  /**
+   * 마일스톤 달성 여부 체크 및 알림 큐 등록
+   */
+  async #checkAndEnqueueMilestone(userId: string): Promise<void> {
+    try {
+      const count = await this.todoReadRepository.countCompletedByUser(userId);
+      const milestone = milestoneForCount(count);
+      if (!milestone) {
+        return;
+      }
+      this.todoNotification.enqueueMilestoneReached({
+        userId,
+        milestone,
+      });
+    } catch (error) {
+      this.#logger.error(
+        `Failed to check milestone event: userId=${userId}, ${error}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
 }

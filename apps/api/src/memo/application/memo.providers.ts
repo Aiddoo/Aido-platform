@@ -10,14 +10,14 @@ import { ToggleMemoPinUseCase } from "./use-cases/toggle-memo-pin/toggle-memo-pi
 import { UpdateMemoUseCase } from "./use-cases/update-memo/update-memo.use-case.js";
 
 export const MEMO_PROVIDERS = [
-	CreateMemoUseCase,
-	UpdateMemoUseCase,
-	ToggleMemoPinUseCase,
-	ReorderMemoUseCase,
-	DeleteMemoUseCase,
-	ConvertMemoToTodoUseCase,
-	ConvertMemoToTodosUseCase,
-	GetMemoUseCase,
-	GetMemosUseCase,
-	GetMemoResourceLimitUseCase,
+  CreateMemoUseCase,
+  UpdateMemoUseCase,
+  ToggleMemoPinUseCase,
+  ReorderMemoUseCase,
+  DeleteMemoUseCase,
+  ConvertMemoToTodoUseCase,
+  ConvertMemoToTodosUseCase,
+  GetMemoUseCase,
+  GetMemosUseCase,
+  GetMemoResourceLimitUseCase,
 ] as const;

@@ -9,10 +9,10 @@ import type { WeeklyAchievementRepositoryPort } from "#api/weekly-achievement/ap
  * 포트 확장 시 누락을 타입 에러로 잡습니다. 메서드 mock API는 `vi.mocked(mock.method)`로 접근합니다.
  */
 export function createWeeklyAchievementRepositoryMock(): WeeklyAchievementRepositoryPort {
-	return {
-		findByYear: vi.fn(),
-		findAllByYear: vi.fn(),
-		findByYearAndWeek: vi.fn(),
-		upsertMany: vi.fn(),
-	};
+  return {
+    findByYear: vi.fn(),
+    findAllByYear: vi.fn(),
+    findByYearAndWeek: vi.fn(),
+    upsertMany: vi.fn(),
+  };
 }

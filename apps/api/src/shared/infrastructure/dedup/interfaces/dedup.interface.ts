@@ -10,33 +10,33 @@
 export const DEDUP_PROVIDER = Symbol("DEDUP_PROVIDER");
 
 export interface IDedupProvider {
-	/**
-	 * 배치 멤버십 확인 — Set에 이미 존재하는 멤버만 반환
-	 *
-	 * @param setKey 소비 모듈이 소유한 keyspace에서 생성한 Set 키
-	 * @param members 확인할 멤버 목록
-	 * @returns Set에 존재하는 멤버들의 Set
-	 *
-	 */
-	filterMembers(setKey: string, members: string[]): Promise<Set<string>>;
+  /**
+   * 배치 멤버십 확인 — Set에 이미 존재하는 멤버만 반환
+   *
+   * @param setKey 소비 모듈이 소유한 keyspace에서 생성한 Set 키
+   * @param members 확인할 멤버 목록
+   * @returns Set에 존재하는 멤버들의 Set
+   *
+   */
+  filterMembers(setKey: string, members: string[]): Promise<Set<string>>;
 
-	/**
-	 * 단건 멤버십 확인
-	 *
-	 * @param setKey Set 키
-	 * @param member 확인할 멤버
-	 * @returns 존재 여부
-	 *
-	 */
-	isMember(setKey: string, member: string): Promise<boolean>;
+  /**
+   * 단건 멤버십 확인
+   *
+   * @param setKey Set 키
+   * @param member 확인할 멤버
+   * @returns 존재 여부
+   *
+   */
+  isMember(setKey: string, member: string): Promise<boolean>;
 
-	/**
-	 * 멤버 추가 (TTL 자동 설정/갱신)
-	 *
-	 * @param setKey Set 키
-	 * @param members 추가할 멤버 목록
-	 * @param ttlMs TTL (밀리초) — PEXPIRE로 갱신
-	 *
-	 */
-	addMembers(setKey: string, members: string[], ttlMs: number): Promise<void>;
+  /**
+   * 멤버 추가 (TTL 자동 설정/갱신)
+   *
+   * @param setKey Set 키
+   * @param members 추가할 멤버 목록
+   * @param ttlMs TTL (밀리초) — PEXPIRE로 갱신
+   *
+   */
+  addMembers(setKey: string, members: string[], ttlMs: number): Promise<void>;
 }

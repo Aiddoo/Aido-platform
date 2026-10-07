@@ -5,12 +5,12 @@ import type { CursorPaginatedResponse } from "#api/shared/application/pagination
 export const TODO_CACHE = Symbol("TODO_CACHE");
 
 export interface FriendTodosFirstPageCacheRead {
-	/**
-	 * 조회와 저장 사이에 무효화가 있었는지 판별하는 불투명 토큰.
-	 * application은 값을 해석하지 않고 저장 시 그대로 돌려준다.
-	 */
-	readonly generation: string;
-	readonly page: CursorPaginatedResponse<TodoResponse, number> | undefined;
+  /**
+   * 조회와 저장 사이에 무효화가 있었는지 판별하는 불투명 토큰.
+   * application은 값을 해석하지 않고 저장 시 그대로 돌려준다.
+   */
+  readonly generation: string;
+  readonly page: CursorPaginatedResponse<TodoResponse, number> | undefined;
 }
 
 /**
@@ -23,32 +23,32 @@ export interface FriendTodosFirstPageCacheRead {
  * 모든 쓰기 use-case가 TX 커밋 후 직접 호출합니다.
  */
 export interface TodoCachePort {
-	invalidateTodoCategories(userId: string): Promise<void>;
+  invalidateTodoCategories(userId: string): Promise<void>;
 
-	/**
-	 * 친구 공개 투두 첫 페이지 조회.
-	 * 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정).
-	 */
-	readFriendTodosFirstPage(
-		ownerUserId: string,
-		startDate: string,
-		endDate: string,
-		size: number,
-	): Promise<FriendTodosFirstPageCacheRead>;
+  /**
+   * 친구 공개 투두 첫 페이지 조회.
+   * 날짜 세그먼트는 YYYY-MM-DD 또는 "-"(미지정).
+   */
+  readFriendTodosFirstPage(
+    ownerUserId: string,
+    startDate: string,
+    endDate: string,
+    size: number,
+  ): Promise<FriendTodosFirstPageCacheRead>;
 
-	/**
-	 * 친구 공개 투두 첫 페이지 저장.
-	 * 캐시 값은 소유자의 PUBLIC 첫 페이지(뷰어 무관 공유).
-	 */
-	storeFriendTodosFirstPageIfCurrent(
-		ownerUserId: string,
-		startDate: string,
-		endDate: string,
-		size: number,
-		generation: string,
-		page: CursorPaginatedResponse<TodoResponse, number>,
-	): Promise<void>;
+  /**
+   * 친구 공개 투두 첫 페이지 저장.
+   * 캐시 값은 소유자의 PUBLIC 첫 페이지(뷰어 무관 공유).
+   */
+  storeFriendTodosFirstPageIfCurrent(
+    ownerUserId: string,
+    startDate: string,
+    endDate: string,
+    size: number,
+    generation: string,
+    page: CursorPaginatedResponse<TodoResponse, number>,
+  ): Promise<void>;
 
-	/** 소유자의 친구 공개 투두 캐시 전체 무효화 (모든 날짜 범위·size 변형 포함). */
-	invalidateFriendTodos(ownerUserId: string): Promise<void>;
+  /** 소유자의 친구 공개 투두 캐시 전체 무효화 (모든 날짜 범위·size 변형 포함). */
+  invalidateFriendTodos(ownerUserId: string): Promise<void>;
 }

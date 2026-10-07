@@ -8,13 +8,13 @@ import { PostgresPool } from "./postgres-pool.js";
 /** PostgreSQL contract와 native Prisma ORM의 수명주기를 소유한다. */
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
-	readonly db;
+  readonly db;
 
-	constructor(pool: PostgresPool) {
-		this.db = postgres<Contract>({ contractJson, pg: pool.pool });
-	}
+  constructor(pool: PostgresPool) {
+    this.db = postgres<Contract>({ contractJson, pg: pool.pool });
+  }
 
-	async onModuleDestroy() {
-		await this.db.close();
-	}
+  async onModuleDestroy() {
+    await this.db.close();
+  }
 }

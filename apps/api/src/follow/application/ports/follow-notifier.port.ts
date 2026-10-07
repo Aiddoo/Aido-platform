@@ -7,28 +7,28 @@
  */
 
 export interface FollowNewNotification {
-	followerId: string;
-	followingId: string;
-	followerName: string;
+  followerId: string;
+  followingId: string;
+  followerName: string;
 }
 
 export interface FollowMutualNotification {
-	userId: string;
-	friendId: string;
-	friendName: string;
+  userId: string;
+  friendId: string;
+  friendName: string;
 }
 
 export interface FirstFriendMilestoneNotification {
-	userId: string;
+  userId: string;
 }
 
 export const FOLLOW_NOTIFIER = Symbol("FOLLOW_NOTIFIER");
 
 export interface FollowNotifierPort {
-	/** 새 친구 요청 알림 */
-	notifyFollowNew(payload: FollowNewNotification): void;
-	/** 맞팔(친구 성립) 알림 */
-	notifyFollowMutual(payload: FollowMutualNotification): void;
-	/** 첫 친구 마일스톤 알림 */
-	notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void;
+  /** 새 친구 요청 알림 */
+  notifyFollowNew(payload: FollowNewNotification): void;
+  /** 맞팔(친구 성립) 알림 */
+  notifyFollowMutual(payload: FollowMutualNotification): void;
+  /** 첫 친구 마일스톤 알림 */
+  notifyFirstFriendMilestone(payload: FirstFriendMilestoneNotification): void;
 }

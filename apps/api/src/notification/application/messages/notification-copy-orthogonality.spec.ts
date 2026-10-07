@@ -10,65 +10,65 @@
  */
 import type { NotificationVariantContext } from "./notification-copy.types.js";
 import {
-	createEveningReminderNotificationMessage,
-	createMorningReminderNotificationMessage,
-	createWinbackNotificationMessage,
+  createEveningReminderNotificationMessage,
+  createMorningReminderNotificationMessage,
+  createWinbackNotificationMessage,
 } from "./notification-messages.js";
 
 const context: NotificationVariantContext = {
-	campaignKey: "orthogonality-test",
-	recipientId: "user-1",
-	occurrenceKey: "2026-07-16",
+  campaignKey: "orthogonality-test",
+  recipientId: "user-1",
+  occurrenceKey: "2026-07-16",
 };
 
 describe("직교성: timezone ⊥ 카피 언어", () => {
-	it("아침 리마인더 — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
-		const ko = createMorningReminderNotificationMessage({
-			count: 3,
-			locale: "ko",
-			variantContext: context,
-		});
-		const en = createMorningReminderNotificationMessage({
-			count: 3,
-			locale: "en",
-			variantContext: context,
-		});
+  it("아침 리마인더 — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
+    const ko = createMorningReminderNotificationMessage({
+      count: 3,
+      locale: "ko",
+      variantContext: context,
+    });
+    const en = createMorningReminderNotificationMessage({
+      count: 3,
+      locale: "en",
+      variantContext: context,
+    });
 
-		expect(ko.variantId).toBe(en.variantId);
-		expect(ko.title).not.toBe(en.title);
-	});
+    expect(ko.variantId).toBe(en.variantId);
+    expect(ko.title).not.toBe(en.title);
+  });
 
-	it("Win-back — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
-		const ko = createWinbackNotificationMessage({
-			inactiveDays: 7,
-			locale: "ko",
-			variantContext: context,
-		});
-		const en = createWinbackNotificationMessage({
-			inactiveDays: 7,
-			locale: "en",
-			variantContext: context,
-		});
+  it("Win-back — 같은 컨텍스트면 ko/en variant 선택은 동일하고 문구만 다르다", () => {
+    const ko = createWinbackNotificationMessage({
+      inactiveDays: 7,
+      locale: "ko",
+      variantContext: context,
+    });
+    const en = createWinbackNotificationMessage({
+      inactiveDays: 7,
+      locale: "en",
+      variantContext: context,
+    });
 
-		expect(ko.variantId).toBe(en.variantId);
-		expect(ko.title).not.toBe(en.title);
-	});
+    expect(ko.variantId).toBe(en.variantId);
+    expect(ko.title).not.toBe(en.title);
+  });
 
-	it("저녁 리마인더 — 언어가 달라도 분기/선택은 동일하다", () => {
-		const ko = createEveningReminderNotificationMessage({
-			completed: 2,
-			total: 3,
-			locale: "ko",
-			variantContext: context,
-		});
-		const en = createEveningReminderNotificationMessage({
-			completed: 2,
-			total: 3,
-			locale: "en",
-			variantContext: context,
-		});
+  it("저녁 리마인더 — 언어가 달라도 분기/선택은 동일하다", () => {
+    const ko = createEveningReminderNotificationMessage({
+      completed: 2,
+      total: 3,
+      locale: "ko",
+      variantContext: context,
+    });
+    const en = createEveningReminderNotificationMessage({
+      completed: 2,
+      total: 3,
+      locale: "en",
+      variantContext: context,
+    });
 
-		expect(ko.variantId).toBe(en.variantId);
-		expect(ko.title).not.toBe(en.title);
-	});
+    expect(ko.variantId).toBe(en.variantId);
+    expect(ko.title).not.toBe(en.title);
+  });
 });

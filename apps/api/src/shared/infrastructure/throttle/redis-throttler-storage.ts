@@ -58,22 +58,22 @@ const THROTTLE_INCREMENT_SCRIPT = `
  *         fail-open으로 흡수된다
  */
 function isNumberQuad(raw: unknown): raw is [number, number, number, number] {
-	return Array.isArray(raw) && raw.length === 4 && raw.every((value) => typeof value === "number");
+  return Array.isArray(raw) && raw.length === 4 && raw.every((value) => typeof value === "number");
 }
 
 function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
-	if (!isNumberQuad(raw)) {
-		throw new Error(`Unexpected throttle script result: ${JSON.stringify(raw)}`);
-	}
+  if (!isNumberQuad(raw)) {
+    throw new Error(`Unexpected throttle script result: ${JSON.stringify(raw)}`);
+  }
 
-	const [totalHits, timeToExpire, isBlocked, timeToBlockExpire] = raw;
+  const [totalHits, timeToExpire, isBlocked, timeToBlockExpire] = raw;
 
-	return {
-		totalHits,
-		timeToExpire,
-		isBlocked: isBlocked === 1,
-		timeToBlockExpire,
-	};
+  return {
+    totalHits,
+    timeToExpire,
+    isBlocked: isBlocked === 1,
+    timeToBlockExpire,
+  };
 }
 
 /**
@@ -84,47 +84,47 @@ function parseThrottleResult(raw: unknown): ThrottlerStorageRecord {
  * - Redis 장애 시 fail-open (요청 허용)
  */
 export class RedisThrottlerStorage implements ThrottlerStorage {
-	readonly #logger = new Logger(RedisThrottlerStorage.name);
-	readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
-	readonly #redis: Redis;
-	readonly #keyPrefix = "throttle:";
+  readonly #logger = new Logger(RedisThrottlerStorage.name);
+  readonly #errorSampler = new RedisErrorLogSampler(this.#logger);
+  readonly #redis: Redis;
+  readonly #keyPrefix = "throttle:";
 
-	constructor(redis: Redis) {
-		this.#redis = redis;
-	}
+  constructor(redis: Redis) {
+    this.#redis = redis;
+  }
 
-	async increment(
-		key: string,
-		ttl: number,
-		limit: number,
-		blockDuration: number,
-		throttlerName: string,
-	): Promise<ThrottlerStorageRecord> {
-		const hitKey = `${this.#keyPrefix}${throttlerName}:${key}`;
-		const blockKey = `${hitKey}:blocked`;
+  async increment(
+    key: string,
+    ttl: number,
+    limit: number,
+    blockDuration: number,
+    throttlerName: string,
+  ): Promise<ThrottlerStorageRecord> {
+    const hitKey = `${this.#keyPrefix}${throttlerName}:${key}`;
+    const blockKey = `${hitKey}:blocked`;
 
-		try {
-			const raw = await this.#redis.eval(
-				THROTTLE_INCREMENT_SCRIPT,
-				2,
-				hitKey,
-				blockKey,
-				ttl,
-				limit,
-				blockDuration,
-			);
+    try {
+      const raw = await this.#redis.eval(
+        THROTTLE_INCREMENT_SCRIPT,
+        2,
+        hitKey,
+        blockKey,
+        ttl,
+        limit,
+        blockDuration,
+      );
 
-			return parseThrottleResult(raw);
-		} catch (error) {
-			this.#errorSampler.warn("THROTTLE_INCREMENT", error);
+      return parseThrottleResult(raw);
+    } catch (error) {
+      this.#errorSampler.warn("THROTTLE_INCREMENT", error);
 
-			// fail-open: Redis 장애 시 요청 허용
-			return {
-				totalHits: 0,
-				timeToExpire: 0,
-				isBlocked: false,
-				timeToBlockExpire: 0,
-			};
-		}
-	}
+      // fail-open: Redis 장애 시 요청 허용
+      return {
+        totalHits: 0,
+        timeToExpire: 0,
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      };
+    }
+  }
 }

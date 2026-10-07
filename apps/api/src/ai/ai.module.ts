@@ -7,8 +7,8 @@ import { AI_USAGE_REPOSITORY } from "./application/ports/ai-usage.repository.por
 import { USER_CATEGORY_READER } from "./application/ports/user-category-reader.port.js";
 import { AiUsageMeter } from "./application/services/ai-usage-meter.service.js";
 import {
-	AI_PROVIDER_GEMINI,
-	AiRouterAdapter,
+  AI_PROVIDER_GEMINI,
+  AiRouterAdapter,
 } from "./infrastructure/adapters/ai-router.adapter.js";
 import { GeminiAiAdapter } from "./infrastructure/adapters/gemini-ai.adapter.js";
 import { PrismaAiUsageRepository } from "./infrastructure/adapters/prisma-ai-usage.repository.js";
@@ -41,17 +41,17 @@ import { AiController } from "./presentation/ai.controller.js";
  * | `GOOGLE_GENERATIVE_AI_API_KEY` | ✅ | Google AI API 키 |
  */
 @Module({
-	imports: [TodoCategoryModule],
-	controllers: [AiController],
-	providers: [
-		AiUsageGuard,
-		AiUsageMeter,
-		{ provide: AI_PROVIDER_GEMINI, useClass: GeminiAiAdapter },
-		{ provide: AI_PROVIDER, useClass: AiRouterAdapter },
-		{ provide: AI_USAGE_REPOSITORY, useClass: PrismaAiUsageRepository },
-		{ provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
-		...AI_PROVIDERS,
-	],
-	exports: [AI_PROVIDER],
+  imports: [TodoCategoryModule],
+  controllers: [AiController],
+  providers: [
+    AiUsageGuard,
+    AiUsageMeter,
+    { provide: AI_PROVIDER_GEMINI, useClass: GeminiAiAdapter },
+    { provide: AI_PROVIDER, useClass: AiRouterAdapter },
+    { provide: AI_USAGE_REPOSITORY, useClass: PrismaAiUsageRepository },
+    { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
+    ...AI_PROVIDERS,
+  ],
+  exports: [AI_PROVIDER],
 })
 export class AiModule {}

@@ -6,9 +6,9 @@ import type { TodoViewCachePort } from "../../application/ports/todo-view-cache.
 
 @Injectable()
 export class TodoViewCacheAdapter implements TodoViewCachePort {
-	constructor(private readonly invalidator: TodoViewCacheInvalidator) {}
+  constructor(private readonly invalidator: TodoViewCacheInvalidator) {}
 
-	invalidateForTodo(todoId: number): Promise<void> {
-		return this.invalidator.invalidateForTodo(todoId);
-	}
+  invalidateForTodo(todoId: number): Promise<void> {
+    return this.invalidator.invalidateForTodo(todoId);
+  }
 }

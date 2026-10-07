@@ -10,29 +10,29 @@ import { GetWeatherConditionsUseCase } from "../application/queries/get-weather-
 import { GetWeatherForecastUseCase } from "../application/queries/get-weather-forecast/get-weather-forecast.use-case.js";
 import { UpsertLocationUseCase } from "../application/use-cases/upsert-location/upsert-location.use-case.js";
 import {
-	GetForecastQueryDto,
-	LocationResponseDto,
-	UpdateLocationDto,
-	WeatherConditionsResponseDto,
-	WeatherForecastResponseDto,
+  GetForecastQueryDto,
+  LocationResponseDto,
+  UpdateLocationDto,
+  WeatherConditionsResponseDto,
+  WeatherForecastResponseDto,
 } from "./dtos/index.js";
 
 @ApiTags(SWAGGER_TAGS.WEATHER)
 @ApiBearerAuth()
 @Controller("weather")
 export class WeatherController {
-	constructor(
-		private readonly upsertLocationUseCase: UpsertLocationUseCase,
-		private readonly getWeatherForecastUseCase: GetWeatherForecastUseCase,
-		private readonly getWeatherConditionsUseCase: GetWeatherConditionsUseCase,
-	) {}
+  constructor(
+    private readonly upsertLocationUseCase: UpsertLocationUseCase,
+    private readonly getWeatherForecastUseCase: GetWeatherForecastUseCase,
+    private readonly getWeatherConditionsUseCase: GetWeatherConditionsUseCase,
+  ) {}
 
-	@Put("location")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "위치 등록/수정",
-		operationId: "updateLocation",
-		description: `
+  @Put("location")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "위치 등록/수정",
+    operationId: "updateLocation",
+    description: `
 GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)로 자동 변환됩니다.
 날씨 예보, 부가 정보 조회, 오전/오후 날씨 알림의 기준 위치로 사용됩니다.
 
@@ -47,30 +47,30 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 ### 응답 필드
 - \`gridX\`, \`gridY\`: 기상청 격자 좌표 (내부 캐시 키로 사용, 클라이언트는 무시해도 됨)
 		`,
-	})
-	@ApiSuccessResponse({ type: LocationResponseDto })
-	async updateLocation(
-		@CurrentUser() user: CurrentUserPayload,
-		@Body({ schema: UpdateLocationDto }) dto: UpdateLocationDto,
-	) {
-		const location = await this.upsertLocationUseCase.execute({
-			userId: user.userId,
-			latitude: dto.latitude,
-			longitude: dto.longitude,
-		});
-		return {
-			latitude: location.latitude,
-			longitude: location.longitude,
-			gridX: location.gridX,
-			gridY: location.gridY,
-		};
-	}
+  })
+  @ApiSuccessResponse({ type: LocationResponseDto })
+  async updateLocation(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: UpdateLocationDto }) dto: UpdateLocationDto,
+  ) {
+    const location = await this.upsertLocationUseCase.execute({
+      userId: user.userId,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+    });
+    return {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      gridX: location.gridX,
+      gridY: location.gridY,
+    };
+  }
 
-	@Get("forecast")
-	@ApiDoc({
-		summary: "날씨 예보 조회",
-		operationId: "getWeatherForecast",
-		description: `
+  @Get("forecast")
+  @ApiDoc({
+    summary: "날씨 예보 조회",
+    operationId: "getWeatherForecast",
+    description: `
 기상청 단기예보 기반 날씨 예보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -129,29 +129,29 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 | WEATHER_1901 | 기상청 API 장애 + fallback 캐시 없음 | "날씨 정보를 불러올 수 없습니다" 표시 후 재시도 |
 | WEATHER_1902 | 위치 미등록 | PUT /weather/location 호출 유도 |
 		`,
-	})
-	@ApiSuccessResponse({ type: WeatherForecastResponseDto })
-	async getForecast(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
-	) {
-		const date = query.date ? parseDateOnly(query.date) : now();
-		const { forecast, location } = await this.getWeatherForecastUseCase.execute({
-			userId: user.userId,
-			date,
-		});
-		return {
-			latitude: location.latitude,
-			longitude: location.longitude,
-			...forecast,
-		};
-	}
+  })
+  @ApiSuccessResponse({ type: WeatherForecastResponseDto })
+  async getForecast(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
+  ) {
+    const date = query.date ? parseDateOnly(query.date) : now();
+    const { forecast, location } = await this.getWeatherForecastUseCase.execute({
+      userId: user.userId,
+      date,
+    });
+    return {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      ...forecast,
+    };
+  }
 
-	@Get("conditions")
-	@ApiDoc({
-		summary: "날씨 부가 정보 조회",
-		operationId: "getWeatherConditions",
-		description: `
+  @Get("conditions")
+  @ApiDoc({
+    summary: "날씨 부가 정보 조회",
+    operationId: "getWeatherConditions",
+    description: `
 체감온도, 자외선지수, 일출/일몰, 미세먼지 등 부가 정보를 조회합니다.
 
 ### 쿼리 파라미터
@@ -194,16 +194,16 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
 |------|------|----------------|
 | WEATHER_1902 | 위치 미등록 | PUT /weather/location 호출 유도 |
 		`,
-	})
-	@ApiSuccessResponse({ type: WeatherConditionsResponseDto })
-	async getConditions(
-		@CurrentUser() user: CurrentUserPayload,
-		@Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
-	) {
-		const date = query.date ? parseDateOnly(query.date) : now();
-		return this.getWeatherConditionsUseCase.execute({
-			userId: user.userId,
-			date,
-		});
-	}
+  })
+  @ApiSuccessResponse({ type: WeatherConditionsResponseDto })
+  async getConditions(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
+  ) {
+    const date = query.date ? parseDateOnly(query.date) : now();
+    return this.getWeatherConditionsUseCase.execute({
+      userId: user.userId,
+      date,
+    });
+  }
 }

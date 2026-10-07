@@ -24,37 +24,37 @@ import { THROTTLER_STORAGE } from "./throttle.constants.js";
  */
 @Module({})
 export class ThrottleModule {
-	static forRoot(): DynamicModule {
-		const storageProvider: Provider = {
-			provide: THROTTLER_STORAGE,
-			useFactory: (
-				configService: TypedConfigService,
-				redis?: Redis,
-			): ThrottlerStorage | undefined => {
-				if (configService.cache.type === "redis" && redis) {
-					return new RedisThrottlerStorage(redis);
-				}
+  static forRoot(): DynamicModule {
+    const storageProvider: Provider = {
+      provide: THROTTLER_STORAGE,
+      useFactory: (
+        configService: TypedConfigService,
+        redis?: Redis,
+      ): ThrottlerStorage | undefined => {
+        if (configService.cache.type === "redis" && redis) {
+          return new RedisThrottlerStorage(redis);
+        }
 
-				return undefined;
-			},
-			inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
-		};
+        return undefined;
+      },
+      inject: [TypedConfigService, { token: REDIS_COMMAND_CLIENT, optional: true }],
+    };
 
-		return {
-			module: ThrottleModule,
-			providers: [TypedConfigService, storageProvider],
-			exports: [THROTTLER_STORAGE],
-		};
-	}
+    return {
+      module: ThrottleModule,
+      providers: [TypedConfigService, storageProvider],
+      exports: [THROTTLER_STORAGE],
+    };
+  }
 
-	/**
-	 * 테스트용 모듈 설정
-	 */
-	static forTesting(storage?: ThrottlerStorage): DynamicModule {
-		return {
-			module: ThrottleModule,
-			providers: [{ provide: THROTTLER_STORAGE, useValue: storage }],
-			exports: [THROTTLER_STORAGE],
-		};
-	}
+  /**
+   * 테스트용 모듈 설정
+   */
+  static forTesting(storage?: ThrottlerStorage): DynamicModule {
+    return {
+      module: ThrottleModule,
+      providers: [{ provide: THROTTLER_STORAGE, useValue: storage }],
+      exports: [THROTTLER_STORAGE],
+    };
+  }
 }

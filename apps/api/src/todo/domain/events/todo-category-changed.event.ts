@@ -8,11 +8,11 @@
 import { TODO_EVENTS } from "./todo-event-names.js";
 
 export class TodoCategoryChangedEvent {
-	readonly eventName = TODO_EVENTS.CATEGORY_CHANGED;
+  readonly eventName = TODO_EVENTS.CATEGORY_CHANGED;
 
-	constructor(
-		public readonly todoId: number,
-		public readonly userId: string,
-		public readonly categoryId: number,
-	) {}
+  constructor(
+    public readonly todoId: number,
+    public readonly userId: string,
+    public readonly categoryId: number,
+  ) {}
 }

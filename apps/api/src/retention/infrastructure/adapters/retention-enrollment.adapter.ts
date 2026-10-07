@@ -7,16 +7,16 @@ import { EnrollRetentionExperimentUseCase } from "../../application/use-cases/en
 /** 공개 enrollment capability를 리텐션 내부 UseCase에 연결한다. */
 @Injectable()
 export class RetentionEnrollmentAdapter implements RetentionEnrollmentPort {
-	constructor(
-		private readonly enrollRetentionExperimentUseCase: EnrollRetentionExperimentUseCase,
-		private readonly activateRetentionExperimentUseCase: ActivateRetentionExperimentUseCase,
-	) {}
+  constructor(
+    private readonly enrollRetentionExperimentUseCase: EnrollRetentionExperimentUseCase,
+    private readonly activateRetentionExperimentUseCase: ActivateRetentionExperimentUseCase,
+  ) {}
 
-	enrollNewUser(userId: string, isActivated: boolean): Promise<void> {
-		return this.enrollRetentionExperimentUseCase.execute(userId, isActivated);
-	}
+  enrollNewUser(userId: string, isActivated: boolean): Promise<void> {
+    return this.enrollRetentionExperimentUseCase.execute(userId, isActivated);
+  }
 
-	activateNewUser(userId: string): Promise<void> {
-		return this.activateRetentionExperimentUseCase.execute(userId);
-	}
+  activateNewUser(userId: string): Promise<void> {
+    return this.activateRetentionExperimentUseCase.execute(userId);
+  }
 }

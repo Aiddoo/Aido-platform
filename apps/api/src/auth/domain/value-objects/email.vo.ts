@@ -23,21 +23,21 @@ const EMAIL_FORMAT = z.email().pipe(z.string().max(255));
  * 않는다(기존 동작 보존).
  */
 export class Email {
-	private constructor(private readonly address: string) {}
+  private constructor(private readonly address: string) {}
 
-	static of(value: string): Email {
-		const result = EMAIL_FORMAT.safeParse(value);
-		if (!result.success) {
-			throw new DomainException(ErrorCode.SYS_0002, { email: value });
-		}
-		return new Email(result.data);
-	}
+  static of(value: string): Email {
+    const result = EMAIL_FORMAT.safeParse(value);
+    if (!result.success) {
+      throw new DomainException(ErrorCode.SYS_0002, { email: value });
+    }
+    return new Email(result.data);
+  }
 
-	get value(): string {
-		return this.address;
-	}
+  get value(): string {
+    return this.address;
+  }
 
-	equals(other: Email): boolean {
-		return this.address === other.address;
-	}
+  equals(other: Email): boolean {
+    return this.address === other.address;
+  }
 }

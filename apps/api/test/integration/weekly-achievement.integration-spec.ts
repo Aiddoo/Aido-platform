@@ -35,265 +35,265 @@ import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let getWeeklyAchievementUseCase: GetWeeklyAchievementUseCase;
-	let getWeeklyAchievementsUseCase: GetWeeklyAchievementsUseCase;
+  let module: TestingModule;
+  let getWeeklyAchievementUseCase: GetWeeklyAchievementUseCase;
+  let getWeeklyAchievementsUseCase: GetWeeklyAchievementsUseCase;
 
-	// Mock 데이터베이스 서비스
-	const nativeContext = createMockDatabaseContext();
-	const mockWeeklyAchievementDb = nativeContext.orm.public.WeeklyAchievement;
+  // Mock 데이터베이스 서비스
+  const nativeContext = createMockDatabaseContext();
+  const mockWeeklyAchievementDb = nativeContext.orm.public.WeeklyAchievement;
 
-	// 테스트 데이터
-	const mockUserId = "user-weekly-123";
-	const mockYear = 2026;
+  // 테스트 데이터
+  const mockUserId = "user-weekly-123";
+  const mockYear = 2026;
 
-	function createWeeklyAchievement(overrides: {
-		id?: number;
-		week: number;
-		totalTodos: number;
-		completedTodos: number;
-	}) {
-		return databaseFixture("WeeklyAchievement", {
-			id: overrides.id ?? overrides.week,
-			userId: mockUserId,
-			year: mockYear,
-			week: overrides.week,
-			totalTodos: overrides.totalTodos,
-			completedTodos: overrides.completedTodos,
-			achievedAt: new Date("2026-03-15T00:00:00.000Z"),
-			createdAt: new Date(),
-			updatedAt: new Date(),
-		});
-	}
+  function createWeeklyAchievement(overrides: {
+    id?: number;
+    week: number;
+    totalTodos: number;
+    completedTodos: number;
+  }) {
+    return databaseFixture("WeeklyAchievement", {
+      id: overrides.id ?? overrides.week,
+      userId: mockUserId,
+      year: mockYear,
+      week: overrides.week,
+      totalTodos: overrides.totalTodos,
+      completedTodos: overrides.completedTodos,
+      achievedAt: new Date("2026-03-15T00:00:00.000Z"),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(mock DB)
-		module = await Test.createTestingModule({
-			providers: [
-				...WEEKLY_ACHIEVEMENT_PROVIDERS,
-				PaginationService,
-				{
-					provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
-					useClass: PrismaWeeklyAchievementRepository,
-				},
-				{
-					// 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (mock DB 전달)
-					provide: TransactionHost,
-					useValue: { tx: nativeContext },
-				},
-				{
-					provide: UNIT_OF_WORK,
-					useValue: createUnitOfWorkMock(),
-				},
-			],
-		}).compile();
+    // 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(mock DB)
+    module = await Test.createTestingModule({
+      providers: [
+        ...WEEKLY_ACHIEVEMENT_PROVIDERS,
+        PaginationService,
+        {
+          provide: WEEKLY_ACHIEVEMENT_REPOSITORY,
+          useClass: PrismaWeeklyAchievementRepository,
+        },
+        {
+          // 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (mock DB 전달)
+          provide: TransactionHost,
+          useValue: { tx: nativeContext },
+        },
+        {
+          provide: UNIT_OF_WORK,
+          useValue: createUnitOfWorkMock(),
+        },
+      ],
+    }).compile();
 
-		await module.init();
-		getWeeklyAchievementUseCase = module.get(GetWeeklyAchievementUseCase);
-		getWeeklyAchievementsUseCase = module.get(GetWeeklyAchievementsUseCase);
-	});
+    await module.init();
+    getWeeklyAchievementUseCase = module.get(GetWeeklyAchievementUseCase);
+    getWeeklyAchievementsUseCase = module.get(GetWeeklyAchievementsUseCase);
+  });
 
-	afterAll(async () => {
-		await module.close();
-		vi.restoreAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+    vi.restoreAllMocks();
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-	describe("목록 조회 통합 테스트", () => {
-		it("목록 조회 — 연도별 주간 달성 현황이 반환된다", async () => {
-			// Given - 주간 달성 데이터 준비
-			const items = [
-				createWeeklyAchievement({
-					id: 3,
-					week: 12,
-					totalTodos: 10,
-					completedTodos: 8,
-				}),
-				createWeeklyAchievement({
-					id: 2,
-					week: 11,
-					totalTodos: 7,
-					completedTodos: 7,
-				}),
-			];
-			const yearRecords = [
-				createWeeklyAchievement({
-					id: 1,
-					week: 10,
-					totalTodos: 5,
-					completedTodos: 3,
-				}),
-				createWeeklyAchievement({
-					id: 2,
-					week: 11,
-					totalTodos: 7,
-					completedTodos: 7,
-				}),
-				createWeeklyAchievement({
-					id: 3,
-					week: 12,
-					totalTodos: 10,
-					completedTodos: 8,
-				}),
-			];
+  describe("목록 조회 통합 테스트", () => {
+    it("목록 조회 — 연도별 주간 달성 현황이 반환된다", async () => {
+      // Given - 주간 달성 데이터 준비
+      const items = [
+        createWeeklyAchievement({
+          id: 3,
+          week: 12,
+          totalTodos: 10,
+          completedTodos: 8,
+        }),
+        createWeeklyAchievement({
+          id: 2,
+          week: 11,
+          totalTodos: 7,
+          completedTodos: 7,
+        }),
+      ];
+      const yearRecords = [
+        createWeeklyAchievement({
+          id: 1,
+          week: 10,
+          totalTodos: 5,
+          completedTodos: 3,
+        }),
+        createWeeklyAchievement({
+          id: 2,
+          week: 11,
+          totalTodos: 7,
+          completedTodos: 7,
+        }),
+        createWeeklyAchievement({
+          id: 3,
+          week: 12,
+          totalTodos: 10,
+          completedTodos: 8,
+        }),
+      ];
 
-			mockWeeklyAchievementDb.all
-				.mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", items)))
-				.mockResolvedValueOnce(yearRecords);
+      mockWeeklyAchievementDb.all
+        .mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", items)))
+        .mockResolvedValueOnce(yearRecords);
 
-			// When - 목록 조회
-			const result = await getWeeklyAchievementsUseCase.execute({
-				userId: mockUserId,
-				year: mockYear,
-				cursor: undefined,
-				size: 20,
-				locale: "ko",
-			});
+      // When - 목록 조회
+      const result = await getWeeklyAchievementsUseCase.execute({
+        userId: mockUserId,
+        year: mockYear,
+        cursor: undefined,
+        size: 20,
+        locale: "ko",
+      });
 
-			// Then - 목록 및 summary가 반환되어야 함
-			expect(result.items).toHaveLength(2);
-			expect(result.summary).toBeDefined();
-			expect(result.pagination).toBeDefined();
-		});
+      // Then - 목록 및 summary가 반환되어야 함
+      expect(result.items).toHaveLength(2);
+      expect(result.summary).toBeDefined();
+      expect(result.pagination).toBeDefined();
+    });
 
-		it("목록 조회 — summary에 streak/averageRate이 올바르게 계산된다", async () => {
-			// Given - 연속 주차 달성 데이터 (10, 11, 12주차 연속)
-			const yearRecords = [
-				createWeeklyAchievement({
-					id: 1,
-					week: 10,
-					totalTodos: 5,
-					completedTodos: 5,
-				}),
-				createWeeklyAchievement({
-					id: 2,
-					week: 11,
-					totalTodos: 10,
-					completedTodos: 10,
-				}),
-				createWeeklyAchievement({
-					id: 3,
-					week: 12,
-					totalTodos: 8,
-					completedTodos: 4,
-				}),
-			];
+    it("목록 조회 — summary에 streak/averageRate이 올바르게 계산된다", async () => {
+      // Given - 연속 주차 달성 데이터 (10, 11, 12주차 연속)
+      const yearRecords = [
+        createWeeklyAchievement({
+          id: 1,
+          week: 10,
+          totalTodos: 5,
+          completedTodos: 5,
+        }),
+        createWeeklyAchievement({
+          id: 2,
+          week: 11,
+          totalTodos: 10,
+          completedTodos: 10,
+        }),
+        createWeeklyAchievement({
+          id: 3,
+          week: 12,
+          totalTodos: 8,
+          completedTodos: 4,
+        }),
+      ];
 
-			mockWeeklyAchievementDb.all
-				.mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", yearRecords)))
-				.mockResolvedValueOnce(yearRecords);
+      mockWeeklyAchievementDb.all
+        .mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", yearRecords)))
+        .mockResolvedValueOnce(yearRecords);
 
-			// When - 목록 조회
-			const result = await getWeeklyAchievementsUseCase.execute({
-				userId: mockUserId,
-				year: mockYear,
-				cursor: undefined,
-				size: 20,
-				locale: "ko",
-			});
+      // When - 목록 조회
+      const result = await getWeeklyAchievementsUseCase.execute({
+        userId: mockUserId,
+        year: mockYear,
+        cursor: undefined,
+        size: 20,
+        locale: "ko",
+      });
 
-			// Then - summary 계산 검증
-			expect(result.summary.totalWeeks).toBe(3);
-			expect(result.summary.perfectWeeks).toBe(2);
-			expect(result.summary.currentStreak).toBe(3);
-			expect(result.summary.bestStreak).toBe(3);
-			// averageRate = (100 + 100 + 50) / 3 = 83
-			expect(result.summary.averageRate).toBe(83);
-		});
+      // Then - summary 계산 검증
+      expect(result.summary.totalWeeks).toBe(3);
+      expect(result.summary.perfectWeeks).toBe(2);
+      expect(result.summary.currentStreak).toBe(3);
+      expect(result.summary.bestStreak).toBe(3);
+      // averageRate = (100 + 100 + 50) / 3 = 83
+      expect(result.summary.averageRate).toBe(83);
+    });
 
-		it("목록 조회 — 다음 페이지 커서가 올바르게 설정된다", async () => {
-			// Given - size보다 1개 더 많은 아이템 (hasNext = true)
-			const items = [
-				createWeeklyAchievement({
-					id: 3,
-					week: 12,
-					totalTodos: 5,
-					completedTodos: 5,
-				}),
-				createWeeklyAchievement({
-					id: 2,
-					week: 11,
-					totalTodos: 5,
-					completedTodos: 5,
-				}),
-				createWeeklyAchievement({
-					id: 1,
-					week: 10,
-					totalTodos: 5,
-					completedTodos: 5,
-				}),
-			];
-			const yearRecords = items;
+    it("목록 조회 — 다음 페이지 커서가 올바르게 설정된다", async () => {
+      // Given - size보다 1개 더 많은 아이템 (hasNext = true)
+      const items = [
+        createWeeklyAchievement({
+          id: 3,
+          week: 12,
+          totalTodos: 5,
+          completedTodos: 5,
+        }),
+        createWeeklyAchievement({
+          id: 2,
+          week: 11,
+          totalTodos: 5,
+          completedTodos: 5,
+        }),
+        createWeeklyAchievement({
+          id: 1,
+          week: 10,
+          totalTodos: 5,
+          completedTodos: 5,
+        }),
+      ];
+      const yearRecords = items;
 
-			mockWeeklyAchievementDb.all
-				.mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", items)))
-				.mockResolvedValueOnce(yearRecords);
+      mockWeeklyAchievementDb.all
+        .mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", items)))
+        .mockResolvedValueOnce(yearRecords);
 
-			// When - size=2로 조회 (3개 반환 → hasNext = true)
-			const result = await getWeeklyAchievementsUseCase.execute({
-				userId: mockUserId,
-				year: mockYear,
-				cursor: undefined,
-				size: 2,
-				locale: "ko",
-			});
+      // When - size=2로 조회 (3개 반환 → hasNext = true)
+      const result = await getWeeklyAchievementsUseCase.execute({
+        userId: mockUserId,
+        year: mockYear,
+        cursor: undefined,
+        size: 2,
+        locale: "ko",
+      });
 
-			// Then - 다음 페이지 커서가 설정되어야 함
-			expect(result.pagination.hasNext).toBe(true);
-			expect(result.pagination.nextCursor).toBe(11);
-			expect(result.items).toHaveLength(2);
-		});
-	});
+      // Then - 다음 페이지 커서가 설정되어야 함
+      expect(result.pagination.hasNext).toBe(true);
+      expect(result.pagination.nextCursor).toBe(11);
+      expect(result.items).toHaveLength(2);
+    });
+  });
 
-	describe("상세 조회 통합 테스트", () => {
-		it("상세 조회 — 특정 주차의 달성 현황이 반환된다", async () => {
-			// Given - 특정 주차 데이터
-			const mockAchievement = createWeeklyAchievement({
-				id: 1,
-				week: 10,
-				totalTodos: 8,
-				completedTodos: 6,
-			});
-			asMock(mockWeeklyAchievementDb.first).mockResolvedValue(
-				databaseFixture("WeeklyAchievement", mockAchievement),
-			);
+  describe("상세 조회 통합 테스트", () => {
+    it("상세 조회 — 특정 주차의 달성 현황이 반환된다", async () => {
+      // Given - 특정 주차 데이터
+      const mockAchievement = createWeeklyAchievement({
+        id: 1,
+        week: 10,
+        totalTodos: 8,
+        completedTodos: 6,
+      });
+      asMock(mockWeeklyAchievementDb.first).mockResolvedValue(
+        databaseFixture("WeeklyAchievement", mockAchievement),
+      );
 
-			// When - 상세 조회
-			const result = await getWeeklyAchievementUseCase.execute({
-				userId: mockUserId,
-				year: mockYear,
-				week: 10,
-				locale: "ko",
-			});
+      // When - 상세 조회
+      const result = await getWeeklyAchievementUseCase.execute({
+        userId: mockUserId,
+        year: mockYear,
+        week: 10,
+        locale: "ko",
+      });
 
-			// Then - 해당 주차 데이터가 반환되어야 함
-			expect(result.year).toBe(mockYear);
-			expect(result.week).toBe(10);
-			expect(result.totalTodos).toBe(8);
-			expect(result.completedTodos).toBe(6);
-			expect(result.completionRate).toBe(75);
-		});
+      // Then - 해당 주차 데이터가 반환되어야 함
+      expect(result.year).toBe(mockYear);
+      expect(result.week).toBe(10);
+      expect(result.totalTodos).toBe(8);
+      expect(result.completedTodos).toBe(6);
+      expect(result.completionRate).toBe(75);
+    });
 
-		it("상세 조회 — 존재하지 않는 주차는 에러를 반환한다", async () => {
-			// Given - 존재하지 않는 주차
-			asMock(mockWeeklyAchievementDb.first).mockResolvedValue(
-				databaseFixture("WeeklyAchievement", null),
-			);
+    it("상세 조회 — 존재하지 않는 주차는 에러를 반환한다", async () => {
+      // Given - 존재하지 않는 주차
+      asMock(mockWeeklyAchievementDb.first).mockResolvedValue(
+        databaseFixture("WeeklyAchievement", null),
+      );
 
-			// When & Then - 에러 발생 검증
-			await expect(
-				getWeeklyAchievementUseCase.execute({
-					userId: mockUserId,
-					year: mockYear,
-					week: 99,
-					locale: "ko",
-				}),
-			).rejects.toThrow(ApplicationException);
-		});
-	});
+      // When & Then - 에러 발생 검증
+      await expect(
+        getWeeklyAchievementUseCase.execute({
+          userId: mockUserId,
+          year: mockYear,
+          week: 99,
+          locale: "ko",
+        }),
+      ).rejects.toThrow(ApplicationException);
+    });
+  });
 });

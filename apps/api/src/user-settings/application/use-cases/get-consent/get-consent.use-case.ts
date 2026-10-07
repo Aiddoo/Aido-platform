@@ -3,8 +3,8 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { buildConsentView } from "../../../domain/services/consent-view.js";
 import {
-	USER_CONSENT_REPOSITORY,
-	type UserConsentRepositoryPort,
+  USER_CONSENT_REPOSITORY,
+  type UserConsentRepositoryPort,
 } from "../../ports/user-consent.repository.port.js";
 
 /**
@@ -12,13 +12,13 @@ import {
  */
 @Injectable()
 export class GetConsentUseCase {
-	constructor(
-		@Inject(USER_CONSENT_REPOSITORY)
-		private readonly consentRepository: UserConsentRepositoryPort,
-	) {}
+  constructor(
+    @Inject(USER_CONSENT_REPOSITORY)
+    private readonly consentRepository: UserConsentRepositoryPort,
+  ) {}
 
-	async execute(userId: string): Promise<ConsentResponse> {
-		const consent = await this.consentRepository.findByUserId(userId);
-		return buildConsentView(consent);
-	}
+  async execute(userId: string): Promise<ConsentResponse> {
+    const consent = await this.consentRepository.findByUserId(userId);
+    return buildConsentView(consent);
+  }
 }

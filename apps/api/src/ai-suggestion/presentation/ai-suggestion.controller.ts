@@ -4,12 +4,12 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import { Timezone } from "#api/shared/presentation/decorators/index";
 import {
-	ApiDoc,
-	ApiForbiddenError,
-	ApiNotFoundError,
-	ApiSuccessResponse,
-	ApiUnauthorizedError,
-	SWAGGER_TAGS,
+  ApiDoc,
+  ApiForbiddenError,
+  ApiNotFoundError,
+  ApiSuccessResponse,
+  ApiUnauthorizedError,
+  SWAGGER_TAGS,
 } from "#api/shared/presentation/swagger/index";
 
 import { CurrentUser, type CurrentUserPayload } from "../../auth/presentation/decorators/index.js";
@@ -17,10 +17,10 @@ import { GetPendingSuggestionsUseCase } from "../application/use-cases/get-pendi
 import { HandleSuggestionActionUseCase } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.js";
 import { AiSuggestionMapper } from "./ai-suggestion.mapper.js";
 import {
-	SuggestionActionDto,
-	SuggestionActionResponseDto,
-	SuggestionIdParamDto,
-	SuggestionListResponseDto,
+  SuggestionActionDto,
+  SuggestionActionResponseDto,
+  SuggestionIdParamDto,
+  SuggestionListResponseDto,
 } from "./dtos/index.js";
 
 /**
@@ -65,19 +65,19 @@ import {
 @ApiBearerAuth()
 @Controller("ai/suggestions")
 export class AiSuggestionController {
-	constructor(
-		private readonly getPendingSuggestionsUseCase: GetPendingSuggestionsUseCase,
-		private readonly handleSuggestionActionUseCase: HandleSuggestionActionUseCase,
-	) {}
+  constructor(
+    private readonly getPendingSuggestionsUseCase: GetPendingSuggestionsUseCase,
+    private readonly handleSuggestionActionUseCase: HandleSuggestionActionUseCase,
+  ) {}
 
-	/**
-	 * GET /ai/suggestions - 대기 중인 제안 목록 조회
-	 */
-	@Get()
-	@ApiDoc({
-		summary: "AI 제안 목록 조회",
-		operationId: "getAiSuggestions",
-		description: `대기 중인(PENDING) AI 제안 목록을 조회합니다.
+  /**
+   * GET /ai/suggestions - 대기 중인 제안 목록 조회
+   */
+  @Get()
+  @ApiDoc({
+    summary: "AI 제안 목록 조회",
+    operationId: "getAiSuggestions",
+    description: `대기 중인(PENDING) AI 제안 목록을 조회합니다.
 만료되지 않은 PENDING 상태의 제안만 반환됩니다.
 
 ## 📊 제안 필드
@@ -212,27 +212,27 @@ export class AiSuggestionController {
 - 매일 갱신되므로, **앱 시작 시 1회 호출**이면 충분합니다.
 - KST 07:30 이후 호출하면 새 제안을 확인할 수 있습니다.
 - 빈 배열이라면 "아직 분석할 데이터가 부족합니다" 등의 안내를 표시하세요.`,
-	})
-	@ApiSuccessResponse({ type: SuggestionListResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.AI_1309)
-	async getPendingSuggestions(
-		@CurrentUser() user: CurrentUserPayload,
-	): Promise<SuggestionListResponseDto> {
-		const suggestions = await this.getPendingSuggestionsUseCase.execute(user.userId);
+  })
+  @ApiSuccessResponse({ type: SuggestionListResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.AI_1309)
+  async getPendingSuggestions(
+    @CurrentUser() user: CurrentUserPayload,
+  ): Promise<SuggestionListResponseDto> {
+    const suggestions = await this.getPendingSuggestionsUseCase.execute(user.userId);
 
-		return { suggestions: AiSuggestionMapper.toManyResponse(suggestions) };
-	}
+    return { suggestions: AiSuggestionMapper.toManyResponse(suggestions) };
+  }
 
-	/**
-	 * PATCH /ai/suggestions/:id - 제안 수락 또는 거절
-	 */
-	@Patch(":id")
-	@HttpCode(HttpStatus.OK)
-	@ApiDoc({
-		summary: "AI 제안 수락/거절",
-		operationId: "handleAiSuggestion",
-		description: `AI 제안을 수락하거나 거절합니다.
+  /**
+   * PATCH /ai/suggestions/:id - 제안 수락 또는 거절
+   */
+  @Patch(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "AI 제안 수락/거절",
+    operationId: "handleAiSuggestion",
+    description: `AI 제안을 수락하거나 거절합니다.
 
 ## 📝 요청 본문
 | 필드 | 타입 | 필수 | 기본값 | 설명 |
@@ -249,27 +249,27 @@ export class AiSuggestionController {
 
 ## ❌ dismiss 시 동작
 - 제안 상태가 \`DISMISSED\`로 변경되고, 더 이상 목록에 나타나지 않습니다.`,
-	})
-	@ApiSuccessResponse({ type: SuggestionActionResponseDto })
-	@ApiUnauthorizedError(ErrorCode.AUTH_0107)
-	@ApiForbiddenError(ErrorCode.AI_1309)
-	@ApiNotFoundError(ErrorCode.AI_1305)
-	async handleSuggestion(
-		@CurrentUser() user: CurrentUserPayload,
-		@Param({ schema: SuggestionIdParamDto }) params: SuggestionIdParamDto,
-		@Body({ schema: SuggestionActionDto }) body: SuggestionActionDto,
-		@Timezone() tz: string,
-	): Promise<SuggestionActionResponseDto> {
-		const result = await this.handleSuggestionActionUseCase.execute({
-			userId: user.userId,
-			suggestionId: params.id,
-			action: body.action,
-			categoryId: body.categoryId,
-			startDate: body.startDate,
-			endDate: body.endDate,
-			timezone: tz,
-		});
+  })
+  @ApiSuccessResponse({ type: SuggestionActionResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.AI_1309)
+  @ApiNotFoundError(ErrorCode.AI_1305)
+  async handleSuggestion(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: SuggestionIdParamDto }) params: SuggestionIdParamDto,
+    @Body({ schema: SuggestionActionDto }) body: SuggestionActionDto,
+    @Timezone() tz: string,
+  ): Promise<SuggestionActionResponseDto> {
+    const result = await this.handleSuggestionActionUseCase.execute({
+      userId: user.userId,
+      suggestionId: params.id,
+      action: body.action,
+      categoryId: body.categoryId,
+      startDate: body.startDate,
+      endDate: body.endDate,
+      timezone: tz,
+    });
 
-		return AiSuggestionMapper.toActionResponse(result);
-	}
+    return AiSuggestionMapper.toActionResponse(result);
+  }
 }

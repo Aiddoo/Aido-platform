@@ -10,17 +10,17 @@ import { FeatureDiscoveryConfigAdapter } from "./infrastructure/adapters/feature
 import { AppConfigController } from "./presentation/app-config.controller.js";
 
 @Module({
-	imports: [EnvironmentConfigModule],
-	controllers: [AppConfigController],
-	providers: [
-		...APP_CONFIG_PROVIDERS,
-		AppVersionConfigAdapter,
-		{ provide: APP_VERSION_CONFIG, useExisting: AppVersionConfigAdapter },
-		FeatureDiscoveryConfigAdapter,
-		{
-			provide: FEATURE_DISCOVERY_CONFIG,
-			useExisting: FeatureDiscoveryConfigAdapter,
-		},
-	],
+  imports: [EnvironmentConfigModule],
+  controllers: [AppConfigController],
+  providers: [
+    ...APP_CONFIG_PROVIDERS,
+    AppVersionConfigAdapter,
+    { provide: APP_VERSION_CONFIG, useExisting: AppVersionConfigAdapter },
+    FeatureDiscoveryConfigAdapter,
+    {
+      provide: FEATURE_DISCOVERY_CONFIG,
+      useExisting: FeatureDiscoveryConfigAdapter,
+    },
+  ],
 })
 export class AppConfigModule {}

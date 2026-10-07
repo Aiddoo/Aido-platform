@@ -36,216 +36,216 @@ import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let getPreference: GetPreferenceUseCase;
-	let updatePreference: UpdatePreferenceUseCase;
-	let updateMarketingConsent: UpdateMarketingConsentUseCase;
+  let module: TestingModule;
+  let getPreference: GetPreferenceUseCase;
+  let updatePreference: UpdatePreferenceUseCase;
+  let updateMarketingConsent: UpdateMarketingConsentUseCase;
 
-	const nativeContext = createMockDatabaseContext();
-	const mockUserPreferenceDb = nativeContext.orm.public.UserPreference;
+  const nativeContext = createMockDatabaseContext();
+  const mockUserPreferenceDb = nativeContext.orm.public.UserPreference;
 
-	const mockUserConsentDb = nativeContext.orm.public.UserConsent;
+  const mockUserConsentDb = nativeContext.orm.public.UserConsent;
 
-	const mockDatabaseService = createMockDatabaseService(nativeContext);
+  const mockDatabaseService = createMockDatabaseService(nativeContext);
 
-	const mockEntitlementService = {
-		hasPremiumAccess: vi.fn(),
-	};
+  const mockEntitlementService = {
+    hasPremiumAccess: vi.fn(),
+  };
 
-	const mockCacheService = {
-		wrapUserPreference: vi
-			.fn()
-			.mockImplementation((_id: string, factory: () => Promise<unknown>) => factory()),
-		invalidateUserPreference: vi.fn(),
-		invalidateActiveTimezones: vi.fn(),
-	};
+  const mockCacheService = {
+    wrapUserPreference: vi
+      .fn()
+      .mockImplementation((_id: string, factory: () => Promise<unknown>) => factory()),
+    invalidateUserPreference: vi.fn(),
+    invalidateActiveTimezones: vi.fn(),
+  };
 
-	const mockReminderEnqueuer = {
-		enqueueReminderHourChanged: vi.fn(),
-	};
+  const mockReminderEnqueuer = {
+    enqueueReminderHourChanged: vi.fn(),
+  };
 
-	const mockUserId = TEST_CUID.USER_1;
+  const mockUserId = TEST_CUID.USER_1;
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		module = await Test.createTestingModule({
-			providers: [
-				GetPreferenceUseCase,
-				UpdatePreferenceUseCase,
-				UpdateMarketingConsentUseCase,
-				UserPreferenceRepository,
-				UserConsentRepository,
-				{
-					provide: USER_PREFERENCE_REPOSITORY,
-					useExisting: UserPreferenceRepository,
-				},
-				{
-					provide: USER_CONSENT_REPOSITORY,
-					useExisting: UserConsentRepository,
-				},
-				{ provide: DatabaseService, useValue: mockDatabaseService },
-				{
-					// CLS 트랜잭션 스텁 — tx가 mock DB 클라이언트를 반환
-					provide: TransactionHost,
-					useValue: { tx: nativeContext },
-				},
-				{ provide: EntitlementService, useValue: mockEntitlementService },
-				{ provide: CacheService, useValue: mockCacheService },
-				// application은 USER_SETTINGS_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
-				{ provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
-				{ provide: REMINDER_SCHEDULE_ENQUEUER, useValue: mockReminderEnqueuer },
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        GetPreferenceUseCase,
+        UpdatePreferenceUseCase,
+        UpdateMarketingConsentUseCase,
+        UserPreferenceRepository,
+        UserConsentRepository,
+        {
+          provide: USER_PREFERENCE_REPOSITORY,
+          useExisting: UserPreferenceRepository,
+        },
+        {
+          provide: USER_CONSENT_REPOSITORY,
+          useExisting: UserConsentRepository,
+        },
+        { provide: DatabaseService, useValue: mockDatabaseService },
+        {
+          // CLS 트랜잭션 스텁 — tx가 mock DB 클라이언트를 반환
+          provide: TransactionHost,
+          useValue: { tx: nativeContext },
+        },
+        { provide: EntitlementService, useValue: mockEntitlementService },
+        { provide: CacheService, useValue: mockCacheService },
+        // application은 USER_SETTINGS_CACHE 포트에 의존 — 실제 어댑터가 mock CacheService를 래핑
+        { provide: USER_SETTINGS_CACHE, useClass: UserSettingsCacheAdapter },
+        { provide: REMINDER_SCHEDULE_ENQUEUER, useValue: mockReminderEnqueuer },
+      ],
+    }).compile();
 
-		getPreference = module.get(GetPreferenceUseCase);
-		updatePreference = module.get(UpdatePreferenceUseCase);
-		updateMarketingConsent = module.get(UpdateMarketingConsentUseCase);
-	});
+    getPreference = module.get(GetPreferenceUseCase);
+    updatePreference = module.get(UpdatePreferenceUseCase);
+    updateMarketingConsent = module.get(UpdateMarketingConsentUseCase);
+  });
 
-	afterAll(async () => {
-		await module.close();
-		vi.restoreAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+    vi.restoreAllMocks();
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-		UserPreferenceBuilder.resetIdCounter();
-	});
+  beforeEach(() => {
+    vi.clearAllMocks();
+    UserPreferenceBuilder.resetIdCounter();
+  });
 
-	describe("설정 조회 통합 테스트", () => {
-		it("설정 조회 — 기존 설정이 있으면 반환한다", async () => {
-			const mockPreference = UserPreferenceBuilder.create(mockUserId)
-				.withTimezone("Asia/Seoul")
-				.withMorningReminderHour(7)
-				.withMorningReminderMinute(30)
-				.build();
+  describe("설정 조회 통합 테스트", () => {
+    it("설정 조회 — 기존 설정이 있으면 반환한다", async () => {
+      const mockPreference = UserPreferenceBuilder.create(mockUserId)
+        .withTimezone("Asia/Seoul")
+        .withMorningReminderHour(7)
+        .withMorningReminderMinute(30)
+        .build();
 
-			mockUserPreferenceDb.first.mockResolvedValue(
-				databaseFixture("UserPreference", mockPreference),
-			);
-			mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+      mockUserPreferenceDb.first.mockResolvedValue(
+        databaseFixture("UserPreference", mockPreference),
+      );
+      mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
 
-			const result = await getPreference.execute(mockUserId);
+      const result = await getPreference.execute(mockUserId);
 
-			expect(result.timezone).toBe("Asia/Seoul");
-			expect(result.morningReminderHour).toBe(7);
-			expect(result.morningReminderMinute).toBe(30);
-		});
+      expect(result.timezone).toBe("Asia/Seoul");
+      expect(result.morningReminderHour).toBe(7);
+      expect(result.morningReminderMinute).toBe(30);
+    });
 
-		it("설정 조회 — 설정이 없으면 기본값을 반환한다", async () => {
-			mockUserPreferenceDb.first.mockResolvedValue(databaseFixture("UserPreference", null));
-			mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+    it("설정 조회 — 설정이 없으면 기본값을 반환한다", async () => {
+      mockUserPreferenceDb.first.mockResolvedValue(databaseFixture("UserPreference", null));
+      mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
 
-			const result = await getPreference.execute(mockUserId);
+      const result = await getPreference.execute(mockUserId);
 
-			expect(result.pushEnabled).toBe(false);
-			expect(result.nightPushEnabled).toBe(false);
-			expect(result.timezone).toBe("UTC");
-			expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
-			expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
-			expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
-			expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
-		});
+      expect(result.pushEnabled).toBe(false);
+      expect(result.nightPushEnabled).toBe(false);
+      expect(result.timezone).toBe("UTC");
+      expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
+      expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
+      expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
+      expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
+    });
 
-		it("설정 조회 — 무료 유저는 리마인더 시간이 기본값으로 오버라이드된다", async () => {
-			const mockPreference = UserPreferenceBuilder.create(mockUserId)
-				.withMorningReminderHour(6)
-				.withMorningReminderMinute(30)
-				.withEveningReminderHour(20)
-				.withEveningReminderMinute(30)
-				.build();
+    it("설정 조회 — 무료 유저는 리마인더 시간이 기본값으로 오버라이드된다", async () => {
+      const mockPreference = UserPreferenceBuilder.create(mockUserId)
+        .withMorningReminderHour(6)
+        .withMorningReminderMinute(30)
+        .withEveningReminderHour(20)
+        .withEveningReminderMinute(30)
+        .build();
 
-			mockUserPreferenceDb.first.mockResolvedValue(
-				databaseFixture("UserPreference", mockPreference),
-			);
-			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+      mockUserPreferenceDb.first.mockResolvedValue(
+        databaseFixture("UserPreference", mockPreference),
+      );
+      mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
-			const result = await getPreference.execute(mockUserId);
+      const result = await getPreference.execute(mockUserId);
 
-			expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
-			expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
-			expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
-			expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
-			expect(result.pushEnabled).toBe(mockPreference.pushEnabled);
-		});
-	});
+      expect(result.morningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_HOUR);
+      expect(result.morningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.MORNING_REMINDER_MINUTE);
+      expect(result.eveningReminderHour).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_HOUR);
+      expect(result.eveningReminderMinute).toBe(USER_PREFERENCE_DEFAULTS.EVENING_REMINDER_MINUTE);
+      expect(result.pushEnabled).toBe(mockPreference.pushEnabled);
+    });
+  });
 
-	describe("설정 수정 통합 테스트", () => {
-		it("설정 수정 — 프리미엄 유저가 리마인더 시간을 변경하면 캐시 무효화 및 큐 enqueue된다", async () => {
-			mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
-			const updatedPreference = UserPreferenceBuilder.create(mockUserId)
-				.withMorningReminderHour(7)
-				.withMorningReminderMinute(30)
-				.withTimezone("Asia/Seoul")
-				.build();
-			mockUserPreferenceDb.upsert.mockResolvedValue(
-				databaseFixture("UserPreference", updatedPreference),
-			);
+  describe("설정 수정 통합 테스트", () => {
+    it("설정 수정 — 프리미엄 유저가 리마인더 시간을 변경하면 캐시 무효화 및 큐 enqueue된다", async () => {
+      mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+      const updatedPreference = UserPreferenceBuilder.create(mockUserId)
+        .withMorningReminderHour(7)
+        .withMorningReminderMinute(30)
+        .withTimezone("Asia/Seoul")
+        .build();
+      mockUserPreferenceDb.upsert.mockResolvedValue(
+        databaseFixture("UserPreference", updatedPreference),
+      );
 
-			const result = await updatePreference.execute(mockUserId, {
-				morningReminderHour: 7,
-				morningReminderMinute: 30,
-			});
+      const result = await updatePreference.execute(mockUserId, {
+        morningReminderHour: 7,
+        morningReminderMinute: 30,
+      });
 
-			expect(result.morningReminderHour).toBe(7);
-			expect(result.morningReminderMinute).toBe(30);
-			expect(mockCacheService.invalidateUserPreference).toHaveBeenCalledWith(mockUserId);
-			expect(mockReminderEnqueuer.enqueueReminderHourChanged).toHaveBeenCalledWith(
-				expect.objectContaining({
-					userId: mockUserId,
-					morningReminderHour: 7,
-					morningReminderMinute: 30,
-				}),
-			);
-		});
+      expect(result.morningReminderHour).toBe(7);
+      expect(result.morningReminderMinute).toBe(30);
+      expect(mockCacheService.invalidateUserPreference).toHaveBeenCalledWith(mockUserId);
+      expect(mockReminderEnqueuer.enqueueReminderHourChanged).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: mockUserId,
+          morningReminderHour: 7,
+          morningReminderMinute: 30,
+        }),
+      );
+    });
 
-		it("설정 수정 — 무료 유저가 리마인더 시간 변경 시 PREFERENCE_1701을 반환한다", async () => {
-			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
+    it("설정 수정 — 무료 유저가 리마인더 시간 변경 시 PREFERENCE_1701을 반환한다", async () => {
+      mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
-			await expect(
-				updatePreference.execute(mockUserId, { morningReminderHour: 6 }),
-			).rejects.toMatchObject({ errorCode: "PREFERENCE_1701" });
-		});
+      await expect(
+        updatePreference.execute(mockUserId, { morningReminderHour: 6 }),
+      ).rejects.toMatchObject({ errorCode: "PREFERENCE_1701" });
+    });
 
-		it("설정 수정 — 범위 밖의 아침 리마인더 시간은 PREFERENCE_1702를 반환한다", async () => {
-			mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
+    it("설정 수정 — 범위 밖의 아침 리마인더 시간은 PREFERENCE_1702를 반환한다", async () => {
+      mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
 
-			await expect(
-				updatePreference.execute(mockUserId, { morningReminderHour: 13 }),
-			).rejects.toMatchObject({ errorCode: "PREFERENCE_1702" });
-		});
+      await expect(
+        updatePreference.execute(mockUserId, { morningReminderHour: 13 }),
+      ).rejects.toMatchObject({ errorCode: "PREFERENCE_1702" });
+    });
 
-		it("설정 수정 — 유효하지 않은 IANA 타임존은 SYS_0002이며 DB를 호출하지 않는다", async () => {
-			await expect(
-				updatePreference.execute(mockUserId, {
-					timezone: "Invalid/Timezone",
-				}),
-			).rejects.toMatchObject({
-				errorCode: "SYS_0002",
-				details: { field: "timezone" },
-			});
-			expect(mockUserPreferenceDb.upsert).not.toHaveBeenCalled();
-		});
-	});
+    it("설정 수정 — 유효하지 않은 IANA 타임존은 SYS_0002이며 DB를 호출하지 않는다", async () => {
+      await expect(
+        updatePreference.execute(mockUserId, {
+          timezone: "Invalid/Timezone",
+        }),
+      ).rejects.toMatchObject({
+        errorCode: "SYS_0002",
+        details: { field: "timezone" },
+      });
+      expect(mockUserPreferenceDb.upsert).not.toHaveBeenCalled();
+    });
+  });
 
-	describe("마케팅 동의 통합 테스트", () => {
-		it("마케팅 동의 — 동의/철회 시 marketingAgreedAt이 올바르게 설정된다", async () => {
-			const consentWithMarketing = UserConsentBuilder.create(mockUserId)
-				.withMarketingConsent()
-				.build();
-			mockUserConsentDb.upsert.mockResolvedValue(
-				databaseFixture("UserConsent", consentWithMarketing),
-			);
+  describe("마케팅 동의 통합 테스트", () => {
+    it("마케팅 동의 — 동의/철회 시 marketingAgreedAt이 올바르게 설정된다", async () => {
+      const consentWithMarketing = UserConsentBuilder.create(mockUserId)
+        .withMarketingConsent()
+        .build();
+      mockUserConsentDb.upsert.mockResolvedValue(
+        databaseFixture("UserConsent", consentWithMarketing),
+      );
 
-			const agreedResult = await updateMarketingConsent.execute(mockUserId, true);
-			expect(agreedResult.marketingAgreedAt).not.toBeNull();
+      const agreedResult = await updateMarketingConsent.execute(mockUserId, true);
+      expect(agreedResult.marketingAgreedAt).not.toBeNull();
 
-			const consentWithout = UserConsentBuilder.create(mockUserId).build();
-			mockUserConsentDb.upsert.mockResolvedValue(databaseFixture("UserConsent", consentWithout));
+      const consentWithout = UserConsentBuilder.create(mockUserId).build();
+      mockUserConsentDb.upsert.mockResolvedValue(databaseFixture("UserConsent", consentWithout));
 
-			const revokedResult = await updateMarketingConsent.execute(mockUserId, false);
-			expect(revokedResult.marketingAgreedAt).toBeNull();
-		});
-	});
+      const revokedResult = await updateMarketingConsent.execute(mockUserId, false);
+      expect(revokedResult.marketingAgreedAt).toBeNull();
+    });
+  });
 });

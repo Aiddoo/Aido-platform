@@ -1,23 +1,23 @@
 import {
-	appleMobileCallbackSchema,
-	changePasswordSchema,
-	deleteAccountSchema,
-	exchangeCodeSchema,
-	forgotPasswordSchema,
-	googleMobileCallbackSchema,
-	kakaoMobileCallbackSchema,
-	linkSocialAccountSchema,
-	loginSchema,
-	naverMobileCallbackSchema,
-	refreshTokenSchema,
-	registerSchema,
-	resendVerificationSchema,
-	resetPasswordSchema,
-	revokeSessionSchema,
-	setPasswordSchema,
-	unlinkAccountSchema,
-	updateProfileSchema,
-	verifyEmailSchema,
+  appleMobileCallbackSchema,
+  changePasswordSchema,
+  deleteAccountSchema,
+  exchangeCodeSchema,
+  forgotPasswordSchema,
+  googleMobileCallbackSchema,
+  kakaoMobileCallbackSchema,
+  linkSocialAccountSchema,
+  loginSchema,
+  naverMobileCallbackSchema,
+  refreshTokenSchema,
+  registerSchema,
+  resendVerificationSchema,
+  resetPasswordSchema,
+  revokeSessionSchema,
+  setPasswordSchema,
+  unlinkAccountSchema,
+  updateProfileSchema,
+  verifyEmailSchema,
 } from "@aido/validators";
 import type { z } from "zod";
 
@@ -47,19 +47,19 @@ export const UpdateProfileDto = updateProfileSchema.meta({ id: "UpdateProfileDto
 export type UpdateProfileDto = z.infer<typeof UpdateProfileDto>;
 
 export const AppleMobileCallbackDto = appleMobileCallbackSchema.meta({
-	id: "AppleMobileCallbackDto",
+  id: "AppleMobileCallbackDto",
 });
 export type AppleMobileCallbackDto = z.infer<typeof AppleMobileCallbackDto>;
 export const GoogleMobileCallbackDto = googleMobileCallbackSchema.meta({
-	id: "GoogleMobileCallbackDto",
+  id: "GoogleMobileCallbackDto",
 });
 export type GoogleMobileCallbackDto = z.infer<typeof GoogleMobileCallbackDto>;
 export const KakaoMobileCallbackDto = kakaoMobileCallbackSchema.meta({
-	id: "KakaoMobileCallbackDto",
+  id: "KakaoMobileCallbackDto",
 });
 export type KakaoMobileCallbackDto = z.infer<typeof KakaoMobileCallbackDto>;
 export const NaverMobileCallbackDto = naverMobileCallbackSchema.meta({
-	id: "NaverMobileCallbackDto",
+  id: "NaverMobileCallbackDto",
 });
 export type NaverMobileCallbackDto = z.infer<typeof NaverMobileCallbackDto>;
 export const LinkSocialAccountDto = linkSocialAccountSchema.meta({ id: "LinkSocialAccountDto" });

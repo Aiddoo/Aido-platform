@@ -19,49 +19,49 @@ import { AdminNotificationProcessor } from "./infrastructure/queue/admin-notific
 import { DailySignupSummaryScheduler } from "./infrastructure/scheduler/daily-signup-summary.scheduler.js";
 
 function isTestRuntime(config: TypedConfigService): boolean {
-	return config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
+  return config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
 }
 
 @Module({
-	imports: [
-		DatabaseModule,
-		HttpClientModule.register({ name: "discord", retry: false, throwOnHttpError: false }),
-	],
-	providers: [
-		AdminEventNotifier,
-		EnqueueUserRegisteredUseCase,
-		EnqueueSubscriptionEventUseCase,
-		SendAdminNotificationUseCase,
-		DispatchDailySignupSummaryUseCase,
-		AdminNotificationProcessor,
-		DailySignupSummaryScheduler,
-		{
-			provide: ADMIN_NOTIFICATION_QUEUE_PORT,
-			useClass: BullmqAdminNotificationQueueAdapter,
-		},
-		{
-			provide: SIGNUP_STATS_READER,
-			useClass: PrismaSignupStatsReader,
-		},
-		{
-			provide: ADMIN_NOTIFIER,
-			useFactory: (config: TypedConfigService, http: HttpClient) =>
-				new DiscordWebhookProvider(
-					isTestRuntime(config) ? undefined : config.discordSignupWebhookUrl,
-					http,
-				),
-			inject: [TypedConfigService, getHttpClientToken("discord")],
-		},
-		{
-			provide: PAYMENT_NOTIFIER,
-			useFactory: (config: TypedConfigService, http: HttpClient) =>
-				new DiscordWebhookProvider(
-					isTestRuntime(config) ? undefined : config.discordPaymentWebhookUrl,
-					http,
-				),
-			inject: [TypedConfigService, getHttpClientToken("discord")],
-		},
-	],
-	exports: [AdminEventNotifier, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],
+  imports: [
+    DatabaseModule,
+    HttpClientModule.register({ name: "discord", retry: false, throwOnHttpError: false }),
+  ],
+  providers: [
+    AdminEventNotifier,
+    EnqueueUserRegisteredUseCase,
+    EnqueueSubscriptionEventUseCase,
+    SendAdminNotificationUseCase,
+    DispatchDailySignupSummaryUseCase,
+    AdminNotificationProcessor,
+    DailySignupSummaryScheduler,
+    {
+      provide: ADMIN_NOTIFICATION_QUEUE_PORT,
+      useClass: BullmqAdminNotificationQueueAdapter,
+    },
+    {
+      provide: SIGNUP_STATS_READER,
+      useClass: PrismaSignupStatsReader,
+    },
+    {
+      provide: ADMIN_NOTIFIER,
+      useFactory: (config: TypedConfigService, http: HttpClient) =>
+        new DiscordWebhookProvider(
+          isTestRuntime(config) ? undefined : config.discordSignupWebhookUrl,
+          http,
+        ),
+      inject: [TypedConfigService, getHttpClientToken("discord")],
+    },
+    {
+      provide: PAYMENT_NOTIFIER,
+      useFactory: (config: TypedConfigService, http: HttpClient) =>
+        new DiscordWebhookProvider(
+          isTestRuntime(config) ? undefined : config.discordPaymentWebhookUrl,
+          http,
+        ),
+      inject: [TypedConfigService, getHttpClientToken("discord")],
+    },
+  ],
+  exports: [AdminEventNotifier, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],
 })
 export class AdminNotificationModule {}
