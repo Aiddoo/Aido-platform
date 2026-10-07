@@ -118,7 +118,7 @@ export interface AuthSessionRepositoryPort {
   findActiveByUserId(userId: string): Promise<AuthSessionRecord[]>;
   rotateToken(id: string, data: RotateAuthSessionInput): Promise<AuthSessionRecord | null>;
   revoke(id: string, reason: string): Promise<unknown>;
-  revokeByTokenFamily(tokenFamily: string, reason: string): Promise<number>;
+  revokeByTokenFamily(tokenFamily: string, reason: string): Promise<readonly string[]>;
   revokeAllByUserId(userId: string, reason: string, excludeSessionId?: string): Promise<number>;
 }
 

@@ -1,7 +1,14 @@
-import type { CredentialAuthWorkflow } from "../../workflows/auth/credential-auth.workflow.js";
+import { toISOString } from "#api/shared/domain/date/utils/format";
+
+import type { AuthSessionRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
+import type { SessionInfo } from "../../types/auth/index.js";
+
+export interface ListActiveSessionsInput {
+  readonly userId: string;
+}
 
 interface ListActiveSessionsDependencies {
-  readonly workflow: CredentialAuthWorkflow;
+  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "findActiveByUserId">;
 }
 
 export class ListActiveSessions {
@@ -10,9 +17,18 @@ export class ListActiveSessions {
   constructor(dependencies: ListActiveSessionsDependencies) {
     this.#dependencies = dependencies;
   }
-  execute(
-    userId: Parameters<CredentialAuthWorkflow["getActiveSessions"]>[0],
-  ): ReturnType<CredentialAuthWorkflow["getActiveSessions"]> {
-    return this.#dependencies.workflow.getActiveSessions(userId);
+
+  async execute(input: ListActiveSessionsInput): Promise<SessionInfo[]> {
+    const sessions = await this.#dependencies.sessionRepository.findActiveByUserId(input.userId);
+    return sessions.map((session) => ({
+      id: session.id,
+      deviceName: null,
+      deviceType: null,
+      ipAddress: session.ipAddress,
+      userAgent: session.userAgent,
+      lastActiveAt: toISOString(session.lastUsedAt),
+      createdAt: toISOString(session.createdAt),
+      isCurrent: false,
+    }));
   }
 }

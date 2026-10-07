@@ -54,7 +54,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 
   describe("register", () => {
     it("회원가입 요청을 서비스에 위임하고 매퍼를 통해 응답을 반환해야 한다", async () => {
-      // Given -회원가입 DTO와 서비스 응답이 준비되었을 때
+      // Given - 회원가입 DTO와 서비스 응답이 준비되었을 때
       const dto = {
         email: "test@example.com",
         password: "Password1!",
@@ -71,10 +71,10 @@ describe("AuthController — 인증 컨트롤러", () => {
       };
       registerUseCase.execute.mockResolvedValue(serviceResult);
 
-      // When -register를 호출하면
+      // When - register를 호출하면
       const result = await controller.register(dto as unknown as RegisterDto, mockReq);
 
-      // Then -서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
+      // Then - 서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
       expect(registerUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
       expect(result).toEqual({
         message: serviceResult.message,
@@ -86,7 +86,7 @@ describe("AuthController — 인증 컨트롤러", () => {
 
   describe("login", () => {
     it("로그인 요청을 서비스에 위임하고 매퍼를 통해 토큰 응답을 반환해야 한다", async () => {
-      // Given -로그인 DTO와 서비스 응답이 준비되었을 때
+      // Given - 로그인 DTO와 서비스 응답이 준비되었을 때
       const dto = {
         email: "test@example.com",
         password: "Password1!",
@@ -105,10 +105,10 @@ describe("AuthController — 인증 컨트롤러", () => {
       };
       loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
 
-      // When -login을 호출하면
+      // When - login을 호출하면
       const result = await controller.login(dto as unknown as LoginDto, mockReq);
 
-      // Then -서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
+      // Then - 서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
       expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
       expect(result).toEqual({
         userId: serviceResult.userId,
@@ -124,17 +124,20 @@ describe("AuthController — 인증 컨트롤러", () => {
 
   describe("logoutAll", () => {
     it("전체 로그아웃 요청을 서비스에 위임하고 메시지를 반환해야 한다", async () => {
-      // Given -인증된 사용자가 있을 때
+      // Given - 인증된 사용자가 있을 때
       logoutAllUseCase.execute.mockResolvedValue({
         message: "모든 기기에서 로그아웃되었습니다.",
         revokedCount: 3,
       });
 
-      // When -logoutAll을 호출하면
+      // When - logoutAll을 호출하면
       const result = await controller.logoutAll(mockUser, mockReq);
 
-      // Then -서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
-      expect(logoutAllUseCase.execute).toHaveBeenCalledWith(mockUser.userId, expect.any(Object));
+      // Then - 서비스에 userId를 전달하고 메시지 응답을 반환해야 한다
+      expect(logoutAllUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        metadata: expect.any(Object),
+      });
       expect(result).toEqual({
         message: "모든 기기에서 로그아웃되었습니다.",
       });

@@ -69,7 +69,7 @@ export class SessionController {
   @ApiSuccessResponse({ type: SessionListDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getSessions(@CurrentUser() user: CurrentUserPayload) {
-    const sessions = await this.listActiveSessionsQuery.execute(user.userId);
+    const sessions = await this.listActiveSessionsQuery.execute({ userId: user.userId });
 
     const sessionsWithCurrent = sessions.map((session) => ({
       ...session,
@@ -120,7 +120,11 @@ export class SessionController {
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.revokeSessionUseCase.execute(user.userId, sessionId, metadata);
+    const result = await this.revokeSessionUseCase.execute({
+      userId: user.userId,
+      sessionId,
+      metadata,
+    });
     return result;
   }
 }

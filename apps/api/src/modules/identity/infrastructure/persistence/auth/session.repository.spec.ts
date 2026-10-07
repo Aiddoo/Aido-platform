@@ -1,19 +1,8 @@
 import { and, or } from "@prisma/orm-postgres/orm-client";
+import { vi } from "vitest";
 
-import { varchar } from "#api/platform/database/database-values";
+import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import { SessionBuilder } from "#test/builders/index";
-/**
- * SessionRepository 단위 테스트
- *
- * @description
- * 세션 저장소의 CRUD, 토큰 로테이션, 폐기 메서드를 검증한다.
- * 트랜잭션 지원, 버전 기반 낙관적 잠금, 만료 삭제를 확인한다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test session.repository.spec.ts
- * ```
- */
 import {
   assertNativeWhere,
   createMockTransactionHost,
@@ -24,6 +13,8 @@ import {
 import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { SessionRepository } from "./session.repository.js";
+
+const currentTime = new Date("2026-12-31T23:59:00.000Z");
 
 describe("SessionRepository — 세션 리포지토리", () => {
   let repository: SessionRepository;
@@ -39,12 +30,15 @@ describe("SessionRepository — 세션 리포지토리", () => {
     .withExpiresAt(new Date("2024-12-31"))
     .build();
 
-  beforeEach(async () => {
-    // Given - Suites가 모든 의존성을 자동으로 mock
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(currentTime);
     db = createMockDatabaseContext();
 
     repository = new SessionRepository(createMockTransactionHost(db));
   });
+
+  afterEach(() => vi.useRealTimers());
 
   describe("create", () => {
     it("새 세션을 생성한다", async () => {
@@ -102,26 +96,6 @@ describe("SessionRepository — 세션 리포지토리", () => {
           }),
         ),
       );
-    });
-
-    it("활성 트랜잭션 클라이언트로 세션을 생성한다", async () => {
-      // Given - 세션 생성 데이터 준비
-      const createData = {
-        userId: "user-123",
-        tokenFamily: "family-123",
-        tokenVersion: 1,
-        deviceFingerprint: "device-fp",
-        userAgent: "Mozilla/5.0",
-        ipAddress: "127.0.0.1",
-        expiresAt: new Date("2024-12-31"),
-      };
-      db.orm.public.Session.create.mockResolvedValue(databaseFixture("Session", mockSession));
-
-      // When - 활성 트랜잭션 클라이언트로 세션 생성 실행
-      await repository.create(createData);
-
-      // Then - 활성 트랜잭션 클라이언트를 통해 생성되었는지 검증
-      expect(db.orm.public.Session.create).toHaveBeenCalled();
     });
   });
 
@@ -189,22 +163,6 @@ describe("SessionRepository — 세션 리포지토리", () => {
     });
   });
 
-  describe("findByTokenFamily", () => {
-    it("토큰 패밀리로 활성 세션을 찾는다", async () => {
-      // Given - 활성 세션 조회 Mock 설정
-      db.orm.public.Session.first.mockResolvedValue(databaseFixture("Session", mockSession));
-
-      // When - 토큰 패밀리로 세션 조회 실행
-      const result = await repository.findByTokenFamily("family-123");
-
-      // Then - 조회된 활성 세션 검증
-      expect(result).toEqual(mockSession);
-      assertNativeWhere("Session", db.orm.public.Session.where.mock.calls[0]?.[0], (row) =>
-        and(row.tokenFamily.eq(varchar("family-123", 36)), row.revokedAt.isNull()),
-      );
-    });
-  });
-
   describe("findActiveByUserId", () => {
     it("사용자의 활성 세션 목록을 반환한다", async () => {
       // Given - 여러 활성 세션 Mock 설정
@@ -223,7 +181,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
         and(
           row.userId.eq("user-123"),
           row.revokedAt.isNull(),
-          row.expiresAt.gt(expect.any(String)),
+          row.expiresAt.gt(databaseTimestamp(currentTime)),
         ),
       );
     });
@@ -249,7 +207,9 @@ describe("SessionRepository — 세션 리포지토리", () => {
         .withTokenVersion(2)
         .withPreviousTokenHash("old-hash")
         .build();
-      db.orm.public.Session.update.mockResolvedValue(databaseFixture("Session", rotatedSession));
+      db.orm.public.Session.updateAll.mockReturnValue(
+        nativeRows(databaseFixture("Session", [rotatedSession])),
+      );
 
       // When - 토큰 로테이션 실행
       const result = await repository.rotateToken("session-123", {
@@ -266,40 +226,14 @@ describe("SessionRepository — 세션 리포지토리", () => {
         and(row.id.eq("session-123"), row.tokenVersion.eq(1), row.revokedAt.isNull()),
       );
       expect(db.orm.public.Session.first).not.toHaveBeenCalled();
-      expect(db.orm.public.Session.update).toHaveBeenCalledWith(
+      expect(db.orm.public.Session.updateAll).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
             refreshTokenHash: "new-hash",
             tokenVersion: 2,
             previousTokenHash: "old-hash",
             expiresAt: new Date("2025-01-15"),
-            lastUsedAt: expect.any(String),
-          }),
-        ),
-      );
-    });
-
-    it("rotateToken 호출 시 expiresAt도 함께 업데이트한다", async () => {
-      // Given
-      const sessionId = "session-123";
-      const rotateData = {
-        refreshTokenHash: "new-hash",
-        tokenVersion: 2,
-        previousTokenHash: "old-hash",
-        expectedTokenVersion: 1,
-        expiresAt: new Date("2025-01-15"),
-      };
-
-      db.orm.public.Session.update.mockResolvedValue(databaseFixture("Session", mockSession));
-
-      // When
-      await repository.rotateToken(sessionId, rotateData);
-
-      // Then
-      expect(db.orm.public.Session.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Session", {
-            expiresAt: rotateData.expiresAt,
+            lastUsedAt: currentTime,
           }),
         ),
       );
@@ -307,7 +241,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 
     it("버전 불일치 시 null을 반환한다", async () => {
       // Given - 버전 불일치 상황 Mock 설정 (업데이트 count: 0)
-      db.orm.public.Session.update.mockResolvedValue(null);
+      db.orm.public.Session.updateAll.mockReturnValue(nativeRows([]));
 
       // When - 버전 불일치 상태로 토큰 로테이션 실행
       const result = await repository.rotateToken("session-123", {
@@ -320,27 +254,6 @@ describe("SessionRepository — 세션 리포지토리", () => {
 
       // Then - null 반환 검증
       expect(result).toBeNull();
-    });
-  });
-
-  describe("updateLastUsedAt", () => {
-    it("마지막 사용 시간을 업데이트한다", async () => {
-      // Given - 업데이트 Mock 설정
-      const updatedSession = SessionBuilder.create("user-123")
-        .withId("session-123")
-        .withLastUsedAt(new Date())
-        .build();
-      db.orm.public.Session.update.mockResolvedValue(databaseFixture("Session", updatedSession));
-
-      // When - 마지막 사용 시간 업데이트 실행
-      await repository.updateLastUsedAt("session-123");
-
-      // Then - 업데이트 호출 검증
-      expect(db.orm.public.Session.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Session", { lastUsedAt: expect.any(String) }),
-        ),
-      );
     });
   });
 
@@ -362,7 +275,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
       expect(db.orm.public.Session.update).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
-            revokedAt: expect.any(String),
+            revokedAt: currentTime,
             revokedReason: "user_logout",
           }),
         ),
@@ -373,17 +286,23 @@ describe("SessionRepository — 세션 리포지토리", () => {
   describe("revokeByTokenFamily", () => {
     it("토큰 패밀리 전체를 폐기한다", async () => {
       // Given - 여러 세션 폐기 Mock 설정
-      db.orm.public.Session.updateAndCount.mockResolvedValue(3);
+      db.orm.public.Session.updateAll.mockReturnValue(
+        nativeRows([{ id: "session-1" }, { id: "session-2" }]),
+      );
 
       // When - 토큰 패밀리 전체 폐기 실행
       const result = await repository.revokeByTokenFamily("family-123", "token_reuse_detected");
 
-      // Then - 폐기된 세션 수 검증
-      expect(result).toBe(3);
-      expect(db.orm.public.Session.updateAndCount).toHaveBeenCalledWith(
+      // Then - 실제 폐기된 세션의 캐시만 무효화할 수 있도록 식별자를 반환한다
+      expect(result).toEqual(["session-1", "session-2"]);
+      expect(db.orm.public.Session.select).toHaveBeenCalledWith("id");
+      assertNativeWhere("Session", db.orm.public.Session.where.mock.calls.at(-1)?.[0], (row) =>
+        and(row.tokenFamily.eq(varchar("family-123", 36)), row.revokedAt.isNull()),
+      );
+      expect(db.orm.public.Session.updateAll).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
-            revokedAt: expect.any(String),
+            revokedAt: currentTime,
             revokedReason: "token_reuse_detected",
           }),
         ),
@@ -404,7 +323,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
       expect(db.orm.public.Session.updateAndCount).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
-            revokedAt: expect.any(String),
+            revokedAt: currentTime,
             revokedReason: "password_changed",
           }),
         ),
@@ -427,7 +346,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
       expect(db.orm.public.Session.updateAndCount).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
-            revokedAt: expect.any(String),
+            revokedAt: currentTime,
             revokedReason: "logout_all",
           }),
         ),
@@ -446,7 +365,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
       // Then - 삭제된 세션 수 검증
       expect(result).toBe(10);
       assertNativeWhere("Session", db.orm.public.Session.where.mock.calls.at(-1)?.[0], (row) =>
-        or(row.expiresAt.lt(expect.any(String)), row.revokedAt.isNotNull()),
+        or(row.expiresAt.lt(databaseTimestamp(currentTime)), row.revokedAt.isNotNull()),
       );
     });
   });

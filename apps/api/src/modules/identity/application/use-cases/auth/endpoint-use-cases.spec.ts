@@ -7,7 +7,7 @@ import {
 } from "../../workflows/auth/index.js";
 import { ExchangeOAuthCode } from "./exchange-oauth-code.use-case.js";
 import { LoginWithPassword } from "./login-with-password.use-case.js";
-import { GetCurrentUser, ListActiveSessions } from "./queries.public.js";
+import { GetCurrentUser } from "./queries.public.js";
 import { Register } from "./register.use-case.js";
 import { RequestPasswordReset } from "./request-password-reset.use-case.js";
 import { SetPassword } from "./set-password.use-case.js";
@@ -42,13 +42,10 @@ describe("인증 endpoint UseCase", () => {
   it("계정 query를 command와 분리한다", async () => {
     const service = mock<CredentialAuthWorkflow>();
     const currentUser = new GetCurrentUser({ workflow: service });
-    const sessions = new ListActiveSessions({ workflow: service });
 
     await currentUser.execute("user-1", "user@example.com", "session-1");
-    await sessions.execute("user-1");
 
     expect(service.getCurrentUser).toHaveBeenCalledWith("user-1", "user@example.com", "session-1");
-    expect(service.getActiveSessions).toHaveBeenCalledWith("user-1");
   });
 
   it("비밀번호 endpoint를 독립 실행 단위로 위임한다", async () => {

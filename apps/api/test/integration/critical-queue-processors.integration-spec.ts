@@ -176,7 +176,7 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
         ).first(),
       ),
     );
-    const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
+    const publication = await claimReadyRetentionOutbox(harness, outbox.id);
     expect(publication).toEqual({ id: outbox.id, attempts: 1 });
 
     // When
@@ -405,10 +405,20 @@ async function createRetentionPublication(harness: CriticalQueueProcessorHarness
       ).first(),
     ),
   );
-  const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
-  if (!publication) throw new Error("Retention publication was not claimed");
+  const publication = await claimReadyRetentionOutbox(harness, outbox.id);
   await harness.retentionRepository.markOutboxPublished(publication);
   return { outbox, publication };
+}
+
+async function claimReadyRetentionOutbox(harness: CriticalQueueProcessorHarness, outboxId: string) {
+  // DB DEFAULT 시계와 Node 시계의 차이 대신 같은 업무 시각으로 발행 가능 여부를 검증한다.
+  const claimAt = new Date("2026-07-02T00:00:00.000Z");
+  await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+    row.id.eq(outboxId),
+  ).updateAndCount(encodePatch("RetentionPushOutbox", { availableAt: claimAt }));
+  const [publication] = await harness.retentionRepository.claimOutboxes(1, claimAt);
+  if (publication === undefined) throw new Error("준비한 Retention outbox를 claim하지 못했습니다.");
+  return publication;
 }
 
 async function createPushReadyUser(

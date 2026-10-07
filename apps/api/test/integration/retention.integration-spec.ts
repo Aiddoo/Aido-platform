@@ -271,11 +271,13 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
   });
 
   it("동시 relay가 SKIP LOCKED로 서로 다른 outbox를 한 번씩 claim한다", async () => {
+    // Given
+    const claimAt = new Date("2026-07-02T00:00:00.000Z");
     const userId = await createUser("claimbox@example.com");
     await repository.enroll({
       userId,
       variant: "TREATMENT",
-      startedAt: new Date(),
+      startedAt: claimAt,
     });
     const stages = decodeRecord(
       "RetentionExperimentStage",
@@ -300,10 +302,15 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       });
     }
 
-    const now = new Date();
+    // DB DEFAULT availableAt과 Node Date.now의 clock 차이에 의존하지 않는다.
+    await prisma.orm.public.RetentionPushOutbox.where((row) =>
+      row.stageId.in(stages.map((stage) => stage.id)),
+    ).updateAndCount(encodePatch("RetentionPushOutbox", { availableAt: claimAt }));
+
+    // When
     const batches = await Promise.all([
-      repository.claimOutboxes(1, now),
-      repository.claimOutboxes(1, now),
+      repository.claimOutboxes(1, claimAt),
+      repository.claimOutboxes(1, claimAt),
     ]);
     const claimed = batches.flat();
     const stored = decodeRecord(
@@ -313,6 +320,7 @@ describe("신규 사용자 리텐션 V2 통합 테스트 (실제 DB)", () => {
       ).all(),
     );
 
+    // Then
     expect(claimed).toHaveLength(2);
     expect(new Set(claimed.map((outbox) => outbox.id)).size).toBe(2);
     expect(claimed.every((outbox) => outbox.attempts === 1)).toBe(true);

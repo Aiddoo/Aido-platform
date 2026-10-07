@@ -283,7 +283,7 @@ export class AuthController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async logout(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
     const metadata = extractMetadata(req);
-    await this.logoutUseCase.execute(user.userId, user.sessionId, metadata);
+    await this.logoutUseCase.execute({ userId: user.userId, sessionId: user.sessionId, metadata });
     return AuthMapper.toMessageResponse("로그아웃되었습니다.");
   }
 
@@ -315,7 +315,7 @@ export class AuthController {
   @ApiSuccessResponse({ type: MessageResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async logoutAll(@CurrentUser() user: CurrentUserPayload, @Req() req: Request) {
-    await this.logoutAllUseCase.execute(user.userId, extractMetadata(req));
+    await this.logoutAllUseCase.execute({ userId: user.userId, metadata: extractMetadata(req) });
     return AuthMapper.toMessageResponse("모든 기기에서 로그아웃되었습니다.");
   }
 
@@ -351,16 +351,16 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   @ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
   async refresh(@Req() req: Request) {
     const payload = req.user as RefreshTokenPayload;
-    const result = await this.refreshTokensUseCase.execute(
-      payload.refreshToken,
-      {
+    const result = await this.refreshTokensUseCase.execute({
+      refreshToken: payload.refreshToken,
+      verifiedPayload: {
         userId: payload.userId,
         email: payload.email,
         sessionId: payload.sessionId,
         role: payload.role,
       },
-      extractMetadata(req),
-    );
+      metadata: extractMetadata(req),
+    });
     return AuthMapper.toRefreshTokensResponse(result);
   }
 

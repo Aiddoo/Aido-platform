@@ -10,6 +10,18 @@ import request from "supertest";
 import { vi } from "vitest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+import {
+  AUTH_CACHE,
+  type AuthCachePort,
+} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import {
+  AUTH_TOKEN_ISSUER,
+  type AuthTokenIssuerPort,
+} from "#api/modules/identity/application/ports/auth/auth-crypto.port";
+import {
+  REVOKE_REASON,
+  TOKEN_REUSE_GRACE_PERIOD_MS,
+} from "#api/modules/identity/domain/constants/auth/auth.constants";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -759,6 +771,60 @@ describe("인증 E2E", () => {
         .expect(401);
 
       expect(slidingWindowRes.body.success).toBe(false);
+    });
+
+    it("grace 기간 이후 이전 Refresh Token을 재사용하면 캐시된 Access Token도 즉시 거부한다", async () => {
+      // Given
+      const email = "security-family-cache@example.com";
+      await ctx.helpers.createVerifiedUser(email, securityPassword);
+      const login = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/login")
+        .send({ email, password: securityPassword })
+        .expect(200);
+      const originalRefreshToken: string = login.body.data.refreshToken;
+      const tokenIssuer = ctx.module.get<AuthTokenIssuerPort>(AUTH_TOKEN_ISSUER);
+      const authCache = ctx.module.get<AuthCachePort>(AUTH_CACHE);
+      const client = ctx.testDatabase.getClient();
+      const session = requireRecord(
+        await client.orm.public.Session.where((row) =>
+          row.refreshTokenHash.eq(varchar(tokenIssuer.hashRefreshToken(originalRefreshToken), 64)),
+        ).first(),
+      );
+      const refreshed = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/refresh")
+        .set("Authorization", `Bearer ${originalRefreshToken}`)
+        .expect(200);
+      const accessToken: string = refreshed.body.data.accessToken;
+      await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      expect(await authCache.getSession(session.id)).toBeDefined();
+      await client.orm.public.Session.where((row) => row.id.eq(session.id)).update(
+        encodePatch("Session", {
+          lastUsedAt: new Date(Date.now() - TOKEN_REUSE_GRACE_PERIOD_MS - 1_000),
+        }),
+      );
+
+      // When
+      const reused = await request(ctx.app.getHttpServer())
+        .post("/v1/auth/refresh")
+        .set("Authorization", `Bearer ${originalRefreshToken}`)
+        .expect(401);
+      const denied = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(401);
+
+      // Then
+      expect(reused.body.error.code).toBe("SESSION_0704");
+      expect(await authCache.getSession(session.id)).toBeUndefined();
+      expect(denied.body.error.code).toBe("AUTH_0101");
+      const revoked = requireRecord(
+        await client.orm.public.Session.where((row) => row.id.eq(session.id)).first(),
+      );
+      expect(revoked.revokedAt).not.toBeNull();
+      expect(revoked.revokedReason).toBe(REVOKE_REASON.TOKEN_REUSE_DETECTED);
     });
 
     it("로그인 실패 5회 후 계정 잠금", async () => {

@@ -1,300 +1,217 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { ErrorCode } from "@aido/api/errors";
+import { vi } from "vitest";
 
-import type { Session } from "#api/platform/database/database.types";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { SessionBuilder } from "#test/builders/index";
+import {
+  StubAuthSessionRepository,
+  StubAuthTokenIssuer,
+} from "#test/mocks/ports/auth-session.stub";
 
-import { type AuthTokenIssuerPort, type TokenPair } from "../../ports/auth/auth-crypto.port.js";
-import { type AuthSessionRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
 import {
   type CreateSessionParams,
-  type CreateSessionResult,
   SessionService,
   type SessionValidatable,
 } from "./session.service.js";
 
-describe("SessionService — 세션 서비스", () => {
+const currentTime = new Date("2026-12-31T23:59:00.000Z");
+const sessionId = "session-abc";
+const input: CreateSessionParams = {
+  userId: "user-123",
+  email: "test@example.com",
+  role: "USER",
+  deviceFingerprint: "device-fp-123",
+  userAgent: "Mozilla/5.0 (Test Browser)",
+  ipAddress: "127.0.0.1",
+};
+
+describe("SessionService — 세션 생성과 유효성", () => {
   let service: SessionService;
-  let sessionRepo: Mocked<AuthSessionRepositoryPort>;
-  let tokenService: Mocked<AuthTokenIssuerPort>;
+  let sessionRepository: StubAuthSessionRepository;
+  let tokenService: StubAuthTokenIssuer;
 
-  // 재사용 가능한 테스트 데이터
-  const mockUserId = "user-123";
-  const mockEmail = "test@example.com";
-  const mockSessionId = "session-abc";
-  const mockTokenFamily = "token-family-hex";
-  const mockRefreshTokenHash = "hashed-refresh-token";
-  const mockRefreshExpiresInSeconds = 604800; // 7일
-
-  const mockTokens: TokenPair = {
-    accessToken: "access-token",
-    refreshToken: "refresh-token",
-    expiresIn: 900,
-  };
-
-  const mockParams: CreateSessionParams = {
-    userId: mockUserId,
-    email: mockEmail,
-    role: "USER",
-    deviceFingerprint: "device-fp-123",
-    userAgent: "Mozilla/5.0 (Test Browser)",
-    ipAddress: "127.0.0.1",
-  };
-
-  beforeEach(async () => {
-    // Suites가 모든 의존성을 자동으로 mock
-    const sessionServiceDependencies = mockDeep<ConstructorParameters<typeof SessionService>[0]>(
-      {},
-    );
-    const unit = new SessionService(sessionServiceDependencies);
-
-    service = unit;
-    sessionRepo = sessionServiceDependencies.sessionRepository;
-    tokenService = sessionServiceDependencies.tokenService;
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(currentTime);
+    sessionRepository = new StubAuthSessionRepository();
+    tokenService = new StubAuthTokenIssuer();
+    service = new SessionService({ sessionRepository, tokenService });
   });
 
+  afterEach(() => vi.useRealTimers());
+
   describe("createSessionWithTokens", () => {
-    /**
-     * createSessionWithTokens 성공 시나리오 mock 설정 헬퍼
-     */
-    const setupCreateSessionSuccess = (session: Session) => {
-      tokenService.generateTokenFamily.mockReturnValue(mockTokenFamily);
-      tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(mockRefreshExpiresInSeconds);
-      sessionRepo.create.mockResolvedValue(session);
-      tokenService.generateTokenPair.mockResolvedValue(mockTokens);
-      tokenService.hashRefreshToken.mockReturnValue(mockRefreshTokenHash);
-      sessionRepo.updateRefreshTokenHash.mockResolvedValue({
-        ...session,
-        refreshTokenHash: mockRefreshTokenHash,
-      });
-    };
-
-    it("세션 생성 + 토큰 발급 + refreshTokenHash 업데이트를 순서대로 수행한다", async () => {
-      // Given
-      const mockSession = SessionBuilder.create(mockUserId)
-        .withId(mockSessionId)
-        .withTokenFamily(mockTokenFamily)
-        .build();
-      setupCreateSessionSuccess(mockSession);
+    it("저장된 세션 ID로 토큰을 발급하고 정확한 만료일과 Refresh Token 해시를 저장한다", async () => {
+      // Given - 고정 시각과 빈 세션 저장소
 
       // When
-      const result = await service.createSessionWithTokens(mockParams);
+      const result = await service.createSessionWithTokens(input);
 
       // Then
-      expect(result).toEqual<CreateSessionResult>({
-        sessionId: mockSessionId,
-        tokens: mockTokens,
-        tokenFamily: mockTokenFamily,
+      expect(sessionRepository.sessions.size).toBe(1);
+      expect(result).toEqual({
+        sessionId: "session-1",
+        tokenFamily: "token-family-1",
+        tokens: {
+          accessToken: "access:session-1:1",
+          refreshToken: "refresh:session-1:1",
+          expiresIn: 900,
+        },
       });
-    });
-
-    it("tokenFamily를 생성하여 세션에 전달한다", async () => {
-      // Given
-      const mockSession = SessionBuilder.create(mockUserId)
-        .withId(mockSessionId)
-        .withTokenFamily(mockTokenFamily)
-        .build();
-      setupCreateSessionSuccess(mockSession);
-
-      // When
-      await service.createSessionWithTokens(mockParams);
-
-      // Then
-      expect(tokenService.generateTokenFamily).toHaveBeenCalledTimes(1);
-      expect(sessionRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: mockUserId,
-          tokenFamily: mockTokenFamily,
+      expect(sessionRepository.creations).toEqual([
+        {
+          userId: input.userId,
+          tokenFamily: result.tokenFamily,
           tokenVersion: 1,
-          deviceFingerprint: mockParams.deviceFingerprint,
-          userAgent: mockParams.userAgent,
-          ipAddress: mockParams.ipAddress,
-        }),
-      );
-    });
-
-    it("refreshTokenExpiresInSeconds 기반으로 expiresAt을 계산한다", async () => {
-      // Given
-      const mockSession = SessionBuilder.create(mockUserId).withId(mockSessionId).build();
-      setupCreateSessionSuccess(mockSession);
-
-      // When
-      await service.createSessionWithTokens(mockParams);
-
-      // Then
-      expect(tokenService.getRefreshTokenExpiresInSeconds).toHaveBeenCalledTimes(1);
-      expect(sessionRepo.create).toHaveBeenCalledWith(
+          deviceFingerprint: input.deviceFingerprint,
+          userAgent: input.userAgent,
+          ipAddress: input.ipAddress,
+          expiresAt: new Date("2027-01-07T23:59:00.000Z"),
+        },
+      ]);
+      expect(tokenService.issued).toEqual([
+        {
+          userId: input.userId,
+          email: input.email,
+          sessionId: result.sessionId,
+          role: input.role,
+          tokenFamily: result.tokenFamily,
+          tokenVersion: 1,
+        },
+      ]);
+      expect(sessionRepository.sessions.get(result.sessionId)).toEqual(
         expect.objectContaining({
-          expiresAt: expect.any(Date),
+          userId: input.userId,
+          tokenFamily: result.tokenFamily,
+          tokenVersion: 1,
+          refreshTokenHash: tokenService.hashRefreshToken(result.tokens.refreshToken),
+          expiresAt: new Date("2027-01-07T23:59:00.000Z"),
         }),
       );
     });
 
-    it("생성된 세션 ID로 토큰 쌍을 발급한다", async () => {
+    it("세션 저장이 실패하면 토큰을 발급하지 않고 오류를 전파한다", async () => {
       // Given
-      const mockSession = SessionBuilder.create(mockUserId)
-        .withId(mockSessionId)
-        .withTokenFamily(mockTokenFamily)
-        .build();
-      setupCreateSessionSuccess(mockSession);
+      vi.spyOn(sessionRepository, "create").mockRejectedValueOnce(
+        new Error("DB connection failed"),
+      );
 
       // When
-      await service.createSessionWithTokens(mockParams);
+      const pending = service.createSessionWithTokens(input);
 
       // Then
-      expect(tokenService.generateTokenPair).toHaveBeenCalledWith(
-        mockUserId,
-        mockEmail,
-        mockSessionId,
-        "USER",
-        mockTokenFamily,
-        1,
-      );
+      await expect(pending).rejects.toThrow("DB connection failed");
+      expect(sessionRepository.sessions.size).toBe(0);
+      expect(tokenService.issued).toEqual([]);
     });
 
-    it("refreshToken을 해싱하여 세션에 업데이트한다", async () => {
+    it("토큰 발급이 실패하면 Refresh Token 해시를 저장하지 않고 오류를 전파한다", async () => {
       // Given
-      const mockSession = SessionBuilder.create(mockUserId).withId(mockSessionId).build();
-      setupCreateSessionSuccess(mockSession);
+      vi.spyOn(tokenService, "generateTokenPair").mockRejectedValueOnce(
+        new Error("Token generation failed"),
+      );
 
       // When
-      await service.createSessionWithTokens(mockParams);
+      const pending = service.createSessionWithTokens(input);
 
       // Then
-      expect(tokenService.hashRefreshToken).toHaveBeenCalledWith(mockTokens.refreshToken);
-      expect(sessionRepo.updateRefreshTokenHash).toHaveBeenCalledWith(
-        mockSessionId,
-        mockRefreshTokenHash,
+      await expect(pending).rejects.toThrow("Token generation failed");
+      expect(sessionRepository.sessions.get("session-1")?.refreshTokenHash).toBe(
+        "pending:session-1",
       );
+      expect(tokenService.issued).toEqual([]);
     });
 
-    it("Repository 호출은 활성 트랜잭션(CLS)에 참여한다 — tx 인자를 전달하지 않는다", async () => {
+    it("Refresh Token 해시 저장이 실패하면 발급 결과를 반환하지 않고 오류를 전파한다", async () => {
       // Given
-      const mockSession = SessionBuilder.create(mockUserId).withId(mockSessionId).build();
-      setupCreateSessionSuccess(mockSession);
+      vi.spyOn(sessionRepository, "updateRefreshTokenHash").mockRejectedValueOnce(
+        new Error("Update failed"),
+      );
 
       // When
-      await service.createSessionWithTokens(mockParams);
+      const pending = service.createSessionWithTokens(input);
 
       // Then
-      expect(sessionRepo.create).toHaveBeenCalledWith(expect.any(Object));
-      expect(sessionRepo.updateRefreshTokenHash).toHaveBeenCalledWith(
-        mockSessionId,
-        mockRefreshTokenHash,
+      await expect(pending).rejects.toThrow("Update failed");
+      expect(sessionRepository.sessions.get("session-1")?.refreshTokenHash).toBe(
+        "pending:session-1",
       );
-    });
-
-    it("세션 생성 실패 시 에러가 전파된다", async () => {
-      // Given
-      tokenService.generateTokenFamily.mockReturnValue(mockTokenFamily);
-      tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(mockRefreshExpiresInSeconds);
-      sessionRepo.create.mockRejectedValue(new Error("DB connection failed"));
-
-      // When & Then
-      await expect(service.createSessionWithTokens(mockParams)).rejects.toThrow(
-        "DB connection failed",
-      );
-    });
-
-    it("토큰 발급 실패 시 에러가 전파된다", async () => {
-      // Given
-      const mockSession = SessionBuilder.create(mockUserId).withId(mockSessionId).build();
-      tokenService.generateTokenFamily.mockReturnValue(mockTokenFamily);
-      tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(mockRefreshExpiresInSeconds);
-      sessionRepo.create.mockResolvedValue(mockSession);
-      tokenService.generateTokenPair.mockRejectedValue(new Error("Token generation failed"));
-
-      // When & Then
-      await expect(service.createSessionWithTokens(mockParams)).rejects.toThrow(
-        "Token generation failed",
-      );
-    });
-
-    it("refreshTokenHash 업데이트 실패 시 에러가 전파된다", async () => {
-      // Given
-      const mockSession = SessionBuilder.create(mockUserId).withId(mockSessionId).build();
-      tokenService.generateTokenFamily.mockReturnValue(mockTokenFamily);
-      tokenService.getRefreshTokenExpiresInSeconds.mockReturnValue(mockRefreshExpiresInSeconds);
-      sessionRepo.create.mockResolvedValue(mockSession);
-      tokenService.generateTokenPair.mockResolvedValue(mockTokens);
-      tokenService.hashRefreshToken.mockReturnValue(mockRefreshTokenHash);
-      sessionRepo.updateRefreshTokenHash.mockRejectedValue(new Error("Update failed"));
-
-      // When & Then
-      await expect(service.createSessionWithTokens(mockParams)).rejects.toThrow("Update failed");
+      expect(tokenService.issued).toHaveLength(1);
     });
   });
 
   describe("assertSessionValid", () => {
-    it("세션이 null이면 sessionNotFound를 던진다", () => {
-      // Given
-      const session = null;
+    it.each([null, undefined])("세션이 %s이면 기존 오류 코드와 세션 ID를 유지한다", (session) => {
+      // Given - 고정된 세션 ID와 부재 상태
 
-      // When & Then
-      expect(() => service.assertSessionValid(session)).toThrow(ApplicationException);
+      // When
+      const validate = () => service.assertSessionValid(session, sessionId);
+
+      // Then
+      expect(validate).toThrowError(
+        expect.objectContaining({
+          errorCode: ErrorCode.SESSION_0701,
+          details: { sessionId },
+        }),
+      );
     });
 
-    it("세션이 undefined이면 sessionNotFound를 던진다", () => {
+    it.each(["Date", "string"])("폐기와 만료가 겹친 %s 세션은 폐기 오류를 우선한다", (format) => {
       // Given
-      const session = undefined;
-
-      // When & Then
-      expect(() => service.assertSessionValid(session)).toThrow(ApplicationException);
-    });
-
-    it("세션이 폐기(revokedAt)되었으면 sessionRevoked를 던진다", () => {
-      // Given
+      const revokedAt = new Date(currentTime.getTime() - 2);
       const session: SessionValidatable = {
-        revokedAt: new Date(),
-        expiresAt: new Date(Date.now() + 86400000),
+        revokedAt: format === "Date" ? revokedAt : revokedAt.toISOString(),
+        expiresAt: new Date(currentTime.getTime() - 1),
       };
 
-      // When & Then
-      expect(() => service.assertSessionValid(session)).toThrow(ApplicationException);
+      // When
+      const validate = () => service.assertSessionValid(session, sessionId);
+
+      // Then
+      expect(validate).toThrowError(
+        expect.objectContaining({
+          errorCode: ErrorCode.SESSION_0703,
+          details: { sessionId, reason: undefined },
+        }),
+      );
     });
 
-    it("세션이 만료(expiresAt < now)되었으면 sessionExpired를 던진다", () => {
-      // Given
-      const session: SessionValidatable = {
-        revokedAt: null,
-        expiresAt: new Date(Date.now() - 1000),
-      };
+    it.each(["Date", "string"])(
+      "현재보다 1ms 전에 만료된 %s 세션은 만료 오류를 반환한다",
+      (format) => {
+        // Given
+        const expiresAt = new Date(currentTime.getTime() - 1);
+        const session = {
+          revokedAt: null,
+          expiresAt: format === "Date" ? expiresAt : expiresAt.toISOString(),
+        };
 
-      // When & Then
-      expect(() => service.assertSessionValid(session)).toThrow(ApplicationException);
-    });
+        // When
+        const validate = () => service.assertSessionValid(session, sessionId);
 
-    it("유효한 세션이면 에러를 던지지 않는다", () => {
-      // Given
-      const session: SessionValidatable = {
-        revokedAt: null,
-        expiresAt: new Date(Date.now() + 86400000),
-      };
+        // Then
+        expect(validate).toThrowError(
+          expect.objectContaining({
+            errorCode: ErrorCode.SESSION_0702,
+            details: { sessionId },
+          }),
+        );
+      },
+    );
 
-      // When & Then
-      expect(() => service.assertSessionValid(session)).not.toThrow();
-    });
+    it.each(["Date", "string"])(
+      "현재와 만료 시각이 같은 %s 세션은 기존 경계대로 유효하다",
+      (format) => {
+        // Given
+        const session = {
+          revokedAt: null,
+          expiresAt: format === "Date" ? currentTime : currentTime.toISOString(),
+        };
 
-    it("CachedSession (string expiresAt)도 정상 처리한다", () => {
-      // Given
-      const futureDate = new Date(Date.now() + 86400000);
-      const session: SessionValidatable = {
-        revokedAt: null,
-        expiresAt: futureDate.toISOString(),
-      };
+        // When
+        const validate = () => service.assertSessionValid(session, sessionId);
 
-      // When & Then
-      expect(() => service.assertSessionValid(session)).not.toThrow();
-    });
-
-    it("sessionId를 전달하면 에러 메시지에 포함된다", () => {
-      // Given
-      const session = null;
-      const sessionId = "test-session-id";
-
-      // When & Then
-      expect(() => service.assertSessionValid(session, sessionId)).toThrow(ApplicationException);
-    });
+        // Then
+        expect(validate).not.toThrow();
+      },
+    );
   });
 });

@@ -1,6 +1,6 @@
 # Prisma 가이드
 
-**Version**: 2.0.0 · **Last Updated**: 2026-10-06 · **Owner**: Aido Platform Team
+**Version**: 2.1.0 · **Last Updated**: 2026-10-07 · **Owner**: Aido Platform Team
 
 Prisma 8 PostgreSQL ORM과 contract migration graph를 사용한다. ORM은 `@prisma/orm-postgres@8.0.0-rc.14`, CLI는 `prisma@8.0.0-rc.20`으로 고정한다. 두 패키지의 릴리스 번호는 독립적이며 현재 RC 버전이다.
 
@@ -41,6 +41,22 @@ const user = await this.txHost.tx.orm.public.User.where({ id: userId })
 필요한 필드와 관계만 `select`/`include`로 조회한다. 그룹 집계는 ORM `groupBy().aggregate()`를 사용한다. raw SQL은 재귀 관계, 원자적 claim/counter, advisory lock처럼 단일 SQL의 원자성이 필요한 경우에 한정한다. 값은 항상 바인딩하고 반환 column codec을 명시한다.
 
 `database-records.ts`의 `encodeCreate`/`encodePatch`/`decodeRecord`는 기존 port의 `Date`, 문자열, `type` 표현을 native 계약 codec과 변환한다. nullable 필드의 `null`은 지우기, `undefined`는 변경 생략이다. JSON 내부의 문자열은 날짜로 변환하지 않는다. 신규 문자열 ID는 기존 공개 CUID 검증 규칙을 만족한다. DateString/TimestampString/TimestamptzString codec으로 대량 날짜 조회의 Temporal 객체 생성을 피한다.
+
+## 조건부 쓰기와 동시성
+
+현재 고정된 ORM rc.14의 단건 `.where(predicate).update()`는 일치하는 행을 먼저 읽고
+실제 UPDATE에는 PK 조건을 사용한다. `version`, `revokedAt`, 상태 등 선행 조건이 쓰는
+순간에도 유지되어야 하는 compare-and-set에는 이 경로를 사용하지 않는다.
+
+`SessionRepository.rotateToken`은 `.where(id + expectedTokenVersion + revokedAt IS NULL)`의
+`.updateAll(patch)` 반환 행을 사용한다. 조건이 실제 UPDATE에 남으므로 같은 버전의 동시
+요청은 정확히 하나만 성공하고 나머지는 `null`로 변환한다. 패밀리 폐기는
+`.select("id").updateAll(patch)`로 실제 변경한 ID만 받아 캐시를 무효화한다. PK 단건 수정까지
+기계적으로 바꾸지 않고, 반환 값과 not-found 의미를 port 계약에 맞춘다.
+
+이 차이는 실제 PostgreSQL에서 row lock으로 두 UPDATE를 대기시켜 검증했다. Unit에서
+조건 객체를 확인하는 것으로 경쟁 안전성을 증명하지 않는다. 공급자 버전 변경 시에도 같은
+Integration을 유지한다. 다른 Context의 조건부 쓰기는 각 단계에서 별도로 검증한다.
 
 ## 트랜잭션과 오류
 

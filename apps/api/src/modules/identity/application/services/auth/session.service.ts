@@ -1,10 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { UserRole } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
-import { isExpired } from "#api/shared/domain/date/utils/compare";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { getSessionValidity } from "../../../domain/policies/auth/session-validity.policy.js";
 import { type AuthTokenIssuerPort, type TokenPair } from "../../ports/auth/auth-crypto.port.js";
 import { type AuthSessionRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
 
@@ -23,24 +24,20 @@ export interface CreateSessionResult {
   tokenFamily: string;
 }
 
-/**
- * 세션 유효성 검증에 필요한 최소 데이터
- * DB Session과 CachedSession 모두 호환
- */
 export interface SessionValidatable {
   revokedAt: Date | string | null;
   expiresAt: Date | string;
 }
 
-/**
- * 세션 생성 + 토큰 발급 + refreshTokenHash 업데이트를 통합하는 서비스
- *
- * 자격 증명·OAuth workflow의 로그인 경로에서
- * 동일하게 반복되던 5단계 시퀀스를 단일 메서드로 제공합니다.
- */
 interface SessionServiceDependencies {
-  readonly sessionRepository: AuthSessionRepositoryPort;
-  readonly tokenService: AuthTokenIssuerPort;
+  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "create" | "updateRefreshTokenHash">;
+  readonly tokenService: Pick<
+    AuthTokenIssuerPort,
+    | "generateTokenFamily"
+    | "generateTokenPair"
+    | "hashRefreshToken"
+    | "getRefreshTokenExpiresInSeconds"
+  >;
 }
 
 export class SessionService {
@@ -50,20 +47,13 @@ export class SessionService {
     this.#dependencies = dependencies;
   }
 
-  /**
-   * 세션 생성 → 토큰 발급 → refreshTokenHash 업데이트를 원자적으로 수행
-   *
-   * 트랜잭션은 CLS로 전파된다 — 호출측이 uow.run으로 연 트랜잭션에 참여한다.
-   *
-   * @param params 세션 생성에 필요한 사용자/디바이스 정보
-   */
+  // 호출자가 연 UoW에 repository의 CLS transaction이 참여한다.
   async createSessionWithTokens(params: CreateSessionParams): Promise<CreateSessionResult> {
     const tokenFamily = this.#dependencies.tokenService.generateTokenFamily();
 
     const expiresInSeconds = this.#dependencies.tokenService.getRefreshTokenExpiresInSeconds();
     const expiresAt = addMilliseconds(expiresInSeconds * 1000);
 
-    // 1. 세션 생성 (refreshTokenHash 없이)
     const session = await this.#dependencies.sessionRepository.create({
       userId: params.userId,
       tokenFamily,
@@ -74,7 +64,6 @@ export class SessionService {
       expiresAt,
     });
 
-    // 2. 실제 세션 ID로 토큰 발급
     const tokens = await this.#dependencies.tokenService.generateTokenPair(
       params.userId,
       params.email,
@@ -84,7 +73,6 @@ export class SessionService {
       1,
     );
 
-    // 3. refreshTokenHash로 세션 업데이트
     const refreshTokenHash = this.#dependencies.tokenService.hashRefreshToken(tokens.refreshToken);
     await this.#dependencies.sessionRepository.updateRefreshTokenHash(session.id, refreshTokenHash);
 
@@ -95,33 +83,30 @@ export class SessionService {
     };
   }
 
-  /**
-   * 세션 유효성을 검증하고, 유효하지 않으면 ApplicationException을 던진다
-   *
-   * @throws sessionNotFound - 세션이 존재하지 않음
-   * @throws sessionRevoked - 세션이 폐기됨
-   * @throws sessionExpired - 세션이 만료됨
-   */
   assertSessionValid(
     session: SessionValidatable | null | undefined,
     sessionId?: string,
   ): asserts session is SessionValidatable {
-    if (!session) {
+    if (session == null) {
       throw new ApplicationException(ErrorCode.SESSION_0701, { sessionId });
     }
 
-    if (session.revokedAt) {
-      throw new ApplicationException(ErrorCode.SESSION_0703, {
-        sessionId,
-        reason: undefined,
-      });
-    }
+    const validity = getSessionValidity(
+      {
+        expiresAt: new Date(session.expiresAt),
+        revokedAt: session.revokedAt === null ? null : new Date(session.revokedAt),
+      },
+      new Date(),
+    );
 
-    const expiresAt =
-      session.expiresAt instanceof Date ? session.expiresAt : new Date(session.expiresAt);
-
-    if (isExpired(expiresAt)) {
-      throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId });
-    }
+    match(validity)
+      .with("valid", () => undefined)
+      .with("revoked", () => {
+        throw new ApplicationException(ErrorCode.SESSION_0703, { sessionId, reason: undefined });
+      })
+      .with("expired", () => {
+        throw new ApplicationException(ErrorCode.SESSION_0702, { sessionId });
+      })
+      .exhaustive();
   }
 }

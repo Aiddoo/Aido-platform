@@ -16,7 +16,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
-- [ ] 04 Identity: 계정·세션·설정·동의·계정 생명주기
+- [ ] 04 Identity: 04a 세션 완료([Issue #896](https://github.com/Aiddoo/Aido-platform/issues/896)); 계정·자격 증명·설정·동의·생명주기 남음
 - [ ] 05 Billing: Webhook·구독 상태 전이
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
@@ -129,3 +129,45 @@ Unit·Integration·E2E는 같은 시기에 별도 실행 DB로 진행했다. 실
 동시 HTTP 요청은 배열 순서 대신 Idempotency Key로 검증한다. 유한한 반복 통과로 전체 테스트의 flake 부재를 보장하지 않는다.
 전체 Stub 전환 완료나 운영 영향 없음의 보장을 뜻하지 않는다. 전체 상위 단계는 여전히 4/18 완료,
 04–17의 14단계가 남아 있다.
+
+## 04a Identity 세션
+
+[Issue #896](https://github.com/Aiddoo/Aido-platform/issues/896)에서 세션 endpoint 5개를 최소
+Port에 의존하는 실제 UseCase로 이전했다. Controller는 named input을 전달하고 composition
+root가 조립한다. CredentialAuthWorkflow에서 해당 세션 흐름을 제거했다. AuthSession의
+상태 판단과 캐시의 Date/string 판단은 같은 순수 validity policy를 사용한다. 폐기 우선,
+만료 `expiresAt < now`, grace `<= 10,000ms`, 이전 토큰 1회 재시도, 기존 오류 상세를 유지한다.
+
+| 실제 검증                                               | Before                                 | After                                                        |
+| ------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| 같은 버전의 동시 두 회전 요청                           | 단건 ORM update로 두 요청 모두 성공    | 조건을 유지하는 updateAll로 정확히 1성공·1null               |
+| grace 이후 이전 토큰 재사용 뒤 캐시된 Access Token 요청 | 이전 커밋 f878f130에서 예상401·실제200 | 실제 폐기된 세션 ID마다 캐시 무효화; 즉시401(전체 HTTP 통과) |
+
+첫 항목은 실제 PostgreSQL row lock에 두 UPDATE가 대기한 뒤 해제해 재현했다. 두 번째는
+같은 HTTP 회귀 테스트를 별도 과거 커밋 worktree에서 실행해 재현했으며 임시 worktree와 DB는
+정리했다. 임의 sleep이나 DB/socket fake timer 없이 검증한다. Raw SQL은 운영 코드에 추가하지
+않았다. PG lock 관찰 SQL은 테스트에만 있다. 처리량·p50/p95와 운영 latency는 미측정이다.
+
+기존 Workflow의 세션 Unit 27개를 새 UseCase 25개로 정리하고 fixture 기반 Session/Cache/
+SecurityLog/TokenIssuer Stub으로 상태와 기록을 확인한다. Unit의 가짜 CLS 증명은 제거하고
+실제 PG 경쟁·폐기·family 범위 테스트 3개를 추가했다. 현재 전체 04 단계 완료를 의미하지 않는다.
+
+전체 HTTP E2E 34 files / 481 tests는 265.17초에 통과했다. 초기 새 회귀 테스트의
+오류 기대값은 기존 Guard wrapping의 `AUTH_0101` 및 기존 대문자 폐기 사유와 달랐고,
+운영 동작을 바꾸지 않고 테스트를 기존 계약에 맞췄다. 이전 커밋의 실패 지점은 이 기대값보다
+앞선 HTTP 상태 검사이며 `예상401·실제200`을 별도로 확인했다.
+
+최초 전체 Integration은 44 files / 435 tests 중 5개가 실패했다. 두 retention spec이
+DB DEFAULT로 생성한 `availableAt`을 즉시 Node 시각으로 claim하는 환경 시계 의존성을
+확인했다. 실제 측정에서 DB timestamp가 Node 응답 후 시각보다 4.9ms 앞섰고, 독립 실행에서도
+같은 위치가 실패했다. 테스트 outbox의 `availableAt`과 claim 기준을 같은 고정 업무 시각으로
+지정했다. 운영 claim/worker 정책은 바꾸지 않았다. 수정 후 대상 2 files / 12 tests가 seed 101·202·303 및 미국·한국 timezone에서 통과했다.
+전체 Integration 재검증도 통과했다. 유한한 반복 통과를 전체 flake 부재의 보장으로 쓰지 않는다.
+
+최종 검증: Unit 453 files / 2,865 tests(14.96초), Integration 44 files / 435 tests(119.72초),
+E2E 34 files / 481 tests(265.17초), lint·format·workspace typecheck 통과.
+핵심 Unit 11 files / 73 tests는 seed 40401에서 통과했고, Session 생성/회전 Stub 최종 검토
+6 files / 37 tests는 seed 41041에서 통과했다. 실제 PG 회전 3 tests는 미국·한국 timezone으로도
+재검증했다. CredentialAuthWorkflow는 세션 흐름을 제거해 순수 356줄 줄었다. 새 script·패키지·
+Action job, DB schema/migration·운영 key/TTL·공유 REST 계약 변경은 없다. 실행 시간 차이로
+운영 성능 향상률을 주장하지 않는다. Identity 상위 단계는 아직 진행 중이며 전체 4/18 완료다.

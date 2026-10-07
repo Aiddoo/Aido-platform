@@ -75,11 +75,11 @@ export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUri> =
 
 export const listActiveSessionsProvider: FactoryProvider<ListActiveSessions> = {
   provide: ListActiveSessions,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof ListActiveSessions>[0]["workflow"]) =>
-    new ListActiveSessions({ workflow }),
+  inject: [AUTH_SESSION_REPOSITORY],
+  useFactory: (
+    sessionRepository: ConstructorParameters<typeof ListActiveSessions>[0]["sessionRepository"],
+  ) => new ListActiveSessions({ sessionRepository }),
 };
-
 export const listLinkedAccountsProvider: FactoryProvider<ListLinkedAccounts> = {
   provide: ListLinkedAccounts,
   inject: [OAuthWorkflow],
@@ -196,18 +196,34 @@ export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {
 
 export const logoutProvider: FactoryProvider<Logout> = {
   provide: Logout,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof Logout>[0]["workflow"]) =>
-    new Logout({ workflow }),
+  inject: [AUTH_SESSION_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  useFactory: (
+    sessionRepository: ConstructorParameters<typeof Logout>[0]["sessionRepository"],
+    securityLogRepository: ConstructorParameters<typeof Logout>[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof Logout>[0]["cacheService"],
+  ) =>
+    new Logout({
+      sessionRepository,
+      securityLogRepository,
+      cacheService,
+      logger: new Logger(Logout.name),
+    }),
 };
-
 export const logoutAllProvider: FactoryProvider<LogoutAll> = {
   provide: LogoutAll,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof LogoutAll>[0]["workflow"]) =>
-    new LogoutAll({ workflow }),
+  inject: [AUTH_SESSION_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  useFactory: (
+    sessionRepository: ConstructorParameters<typeof LogoutAll>[0]["sessionRepository"],
+    securityLogRepository: ConstructorParameters<typeof LogoutAll>[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof LogoutAll>[0]["cacheService"],
+  ) =>
+    new LogoutAll({
+      sessionRepository,
+      securityLogRepository,
+      cacheService,
+      logger: new Logger(LogoutAll.name),
+    }),
 };
-
 export const provisionUserProvider: FactoryProvider<ProvisionUser> = {
   provide: ProvisionUser,
   inject: [
@@ -232,11 +248,21 @@ export const provisionUserProvider: FactoryProvider<ProvisionUser> = {
 
 export const refreshTokensProvider: FactoryProvider<RefreshTokens> = {
   provide: RefreshTokens,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof RefreshTokens>[0]["workflow"]) =>
-    new RefreshTokens({ workflow }),
+  inject: [AUTH_SESSION_REPOSITORY, AUTH_TOKEN_ISSUER, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  useFactory: (
+    sessionRepository: ConstructorParameters<typeof RefreshTokens>[0]["sessionRepository"],
+    tokenService: ConstructorParameters<typeof RefreshTokens>[0]["tokenService"],
+    securityLogRepository: ConstructorParameters<typeof RefreshTokens>[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof RefreshTokens>[0]["cacheService"],
+  ) =>
+    new RefreshTokens({
+      sessionRepository,
+      tokenService,
+      securityLogRepository,
+      cacheService,
+      logger: new Logger(RefreshTokens.name),
+    }),
 };
-
 export const registerProvider: FactoryProvider<Register> = {
   provide: Register,
   inject: [CredentialAuthWorkflow],
@@ -274,11 +300,19 @@ export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
 
 export const revokeSessionProvider: FactoryProvider<RevokeSession> = {
   provide: RevokeSession,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof RevokeSession>[0]["workflow"]) =>
-    new RevokeSession({ workflow }),
+  inject: [AUTH_SESSION_REPOSITORY, AUTH_SECURITY_LOG_REPOSITORY, AUTH_CACHE],
+  useFactory: (
+    sessionRepository: ConstructorParameters<typeof RevokeSession>[0]["sessionRepository"],
+    securityLogRepository: ConstructorParameters<typeof RevokeSession>[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof RevokeSession>[0]["cacheService"],
+  ) =>
+    new RevokeSession({
+      sessionRepository,
+      securityLogRepository,
+      cacheService,
+      logger: new Logger(RevokeSession.name),
+    }),
 };
-
 export const setPasswordProvider: FactoryProvider<SetPassword> = {
   provide: SetPassword,
   inject: [PasswordWorkflow],
@@ -325,7 +359,6 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
     AUTH_SECURITY_LOG_REPOSITORY,
     AUTH_PASSWORD_HASHER,
     SessionService,
-    AUTH_TOKEN_ISSUER,
     VerificationService,
     AUTH_CACHE,
     AUTH_REGISTRATION_NOTIFIER,
@@ -346,7 +379,6 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
     >[0]["securityLogRepository"],
     passwordService: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["passwordService"],
     sessionService: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["sessionService"],
-    tokenService: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["tokenService"],
     verificationService: ConstructorParameters<
       typeof CredentialAuthWorkflow
     >[0]["verificationService"],
@@ -369,7 +401,6 @@ export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkf
       securityLogRepository,
       passwordService,
       sessionService,
-      tokenService,
       verificationService,
       cacheService,
       adminEventNotifier,

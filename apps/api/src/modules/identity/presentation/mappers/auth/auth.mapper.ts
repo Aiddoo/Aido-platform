@@ -68,18 +68,6 @@ export abstract class AuthMapper {
     };
   }
 
-  /**
-   * 토큰 갱신 결과를 API 응답 형식으로 변환합니다.
-   *
-   * @param result - 토큰 갱신 처리 결과
-   * @returns 갱신된 토큰 응답 객체
-   *
-   * @example
-   * ```typescript
-   * const result = await authService.refreshTokens(refreshToken);
-   * return AuthMapper.toRefreshTokensResponse(result);
-   * ```
-   */
   static toRefreshTokensResponse(result: RefreshTokensResult) {
     return {
       accessToken: result.tokens.accessToken,
