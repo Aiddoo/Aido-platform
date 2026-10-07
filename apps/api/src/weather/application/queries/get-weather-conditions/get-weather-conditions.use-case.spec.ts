@@ -5,7 +5,7 @@
  * - 병합은 Promise.allSettled 기반: 실패한 프로바이더의 필드는 null로 강등(graceful degradation)
  * - 예보 조회 실패 시 lifestyle 계산 입력은 기본값(0, 0)으로 폴백
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

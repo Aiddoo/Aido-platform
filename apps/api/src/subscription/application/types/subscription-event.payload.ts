@@ -5,7 +5,7 @@
  * SubscriptionService 및 AdminEventNotifier에서 사용됩니다.
  */
 
-import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";
+import type { RevenueCatEventType, RevenueCatStore } from "@aido/api/vocabulary";
 
 /**
  * 구독 이벤트 페이로드

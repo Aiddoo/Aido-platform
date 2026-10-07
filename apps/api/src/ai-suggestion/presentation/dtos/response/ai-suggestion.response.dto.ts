@@ -1,4 +1,4 @@
-import { suggestionActionResponseSchema, suggestionListResponseSchema } from "@aido/validators";
+import { suggestionActionResponseSchema, suggestionListResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const SuggestionListResponseDto = suggestionListResponseSchema.meta({

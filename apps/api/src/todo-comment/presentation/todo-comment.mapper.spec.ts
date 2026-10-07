@@ -1,4 +1,4 @@
-import type { TodoComment, TodoCommentOverviewResponse } from "@aido/validators";
+import type { TodoComment, TodoCommentOverviewResponse } from "@aido/api";
 import { describe, expect, it } from "vitest";
 
 import { TodoCommentMapper } from "./todo-comment.mapper.js";

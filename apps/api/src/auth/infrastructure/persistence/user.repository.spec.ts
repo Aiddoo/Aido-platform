@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test user.repository.spec.ts
+ * pnpm --filter @aido/server test user.repository.spec.ts
  * ```
  */
 import { vi } from "vitest";

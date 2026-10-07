@@ -8,7 +8,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  * 동작하는지 검증한다. HTTP 계약(예외 정규화)은 e2e가 담당하고, 여기서는
  * 애플리케이션 예외(ApplicationException) 발생 여부만 확인한다.
  *
- * 실행: pnpm --filter @aido/api test follow.integration-spec
+ * 실행: pnpm --filter @aido/server test follow.integration-spec
  */
 import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";

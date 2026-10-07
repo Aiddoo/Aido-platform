@@ -8,12 +8,12 @@ import { createHash } from "node:crypto";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test oauth-token-verifier.service.spec.ts
+ * pnpm --filter @aido/server test oauth-token-verifier.service.spec.ts
  * ```
  */
 import { createServer, type Server } from "node:http";
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HttpClient, getHttpClientToken } from "@nestjs/http-client";

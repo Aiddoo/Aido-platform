@@ -18,7 +18,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test auth-password-setup.integration-spec
+ * pnpm --filter @aido/server test auth-password-setup.integration-spec
  * ```
  */
 import { vi } from "vitest";

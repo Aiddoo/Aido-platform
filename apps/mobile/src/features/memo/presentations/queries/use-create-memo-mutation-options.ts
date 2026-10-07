@@ -1,4 +1,4 @@
-import type { CreateMemoInput } from '@aido/validators';
+import type { CreateMemoInput } from '@aido/api';
 import { useMemoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';

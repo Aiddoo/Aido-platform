@@ -1,4 +1,4 @@
-import type { UserRole } from "@aido/validators";
+import type { UserRole } from "@aido/api/vocabulary";
 
 export const AUTH_PASSWORD_HASHER = Symbol("AUTH_PASSWORD_HASHER");
 export const AUTH_TOKEN_ISSUER = Symbol("AUTH_TOKEN_ISSUER");

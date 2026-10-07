@@ -1,4 +1,4 @@
-import type { ReportStats } from "@aido/validators";
+import type { ReportStats } from "@aido/api";
 
 export const LATEST_REPORT_STATS_READER = Symbol("LATEST_REPORT_STATS_READER");
 

@@ -4,7 +4,7 @@ import {
   todoCommentCursorPaginationSchema,
   todoCommentOverviewResponseSchema,
   todoConversationResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 
 const comment = {
   id: "cm1todoacomment00000000001",

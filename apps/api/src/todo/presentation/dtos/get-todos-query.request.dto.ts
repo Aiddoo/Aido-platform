@@ -1,4 +1,4 @@
-import { getTodosQuerySchema } from "@aido/validators";
+import { getTodosQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetTodosQueryDto = getTodosQuerySchema.meta({

@@ -16,7 +16,7 @@
  *   .build();
  * ```
  */
-import type { RevenueCatWebhookPayload } from "@aido/validators";
+import type { RevenueCatWebhookPayload } from "@aido/api";
 
 type EventData = RevenueCatWebhookPayload["event"];
 

@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { DayOfWeek, Todo } from "@aido/validators";
+import type { DayOfWeek, Todo } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { toDateString } from "#api/shared/domain/date/utils/format";

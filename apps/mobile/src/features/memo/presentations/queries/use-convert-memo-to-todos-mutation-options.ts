@@ -1,4 +1,4 @@
-import type { ConvertMemoToTodosInput } from '@aido/validators';
+import type { ConvertMemoToTodosInput } from '@aido/api';
 import { useActivationService, useMemoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';

@@ -6,7 +6,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  * PrismaTodoCategoryRepository(Mock DB)·캐시 어댑터·EntitlementService와 함께 DI로 조립되고
  * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
- * 실행: pnpm --filter @aido/api test:integration -- --testPathPattern=todo-category.integration
+ * 실행: pnpm --filter @aido/server test:integration -- --testPathPattern=todo-category.integration
  */
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";

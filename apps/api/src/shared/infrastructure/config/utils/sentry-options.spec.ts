@@ -8,7 +8,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test sentry-options
+ * pnpm --filter @aido/server test sentry-options
  * ```
  */
 import { resolveSentryOptions } from "./sentry-options.js";

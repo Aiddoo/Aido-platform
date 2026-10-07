@@ -65,7 +65,7 @@ toast.error(t('friend:toast.sendFailed'));
 
 - 서버 에러: `errors` 네임스페이스, **키 = ErrorCode 그대로** (145개 전 코드 커버). `error-handler.ts`의 `resolveMessage`가 카탈로그 → 서버 message → `errors:fallback` 순으로 해석
 - 보안 마스킹 그룹(EMAIL_0502/0507, USER_0602 등)은 **두 언어 모두 동일 문구 유지** — 번역 시에도 그룹 단위로 같게
-- `@aido/validators`의 zod message는 서버 소유(한국어 유지) — 모바일 폼은 필드+에러타입 → `validation:*` 키로 표시
+- `@aido/api`의 zod message는 서버 소유(한국어 유지) — 모바일 폼은 필드+에러타입 → `validation:*` 키로 표시
 
 ### 비번역 대상
 
@@ -84,7 +84,7 @@ toast.error(t('friend:toast.sendFailed'));
 ## 자산 배치 원칙 (모노레포)
 
 - **카탈로그(locales/\*.json)는 앱 소유** — 소비자가 모바일 하나뿐이라 패키지화하지 않는다 (dist 빌드 체인·Metro 우회 비용만 추가). 서버 푸시 템플릿과 중복 문자열 0건 확인됨 (2026-07)
-- **공유 계약은 `@aido/errors`의 ErrorCode뿐** — 클라 errors.json이 코드를 키로 소비. 메시지 문구는 서버(정중체)/클라(구어체)로 의도적 분리 유지
+- **공유 계약은 `@aido/api/errors`의 ErrorCode뿐** — 클라 errors.json이 코드를 키로 소비. 메시지 문구는 서버(정중체)/클라(구어체)로 의도적 분리 유지
 - **서버 발송·생성 텍스트(푸시 템플릿, AI 프롬프트)는 서버 소유** — `apps/api/src/modules/notification/templates/locales/`
 - **저장된 히스토리는 생성 당시 언어 유지가 설계** — 과거 알림 title/body, 과거 AI 리포트 본문은 언어 변경 후에도 그대로 (본문-라벨 일관성)
 

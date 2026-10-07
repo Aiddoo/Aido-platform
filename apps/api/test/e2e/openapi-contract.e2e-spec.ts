@@ -6,7 +6,7 @@
  * 의도치 않게 변하지 않음을 보증하는 상시 계약 게이트입니다(CI e2e에서 실행).
  * 모든 서버 변경에 대해 "클라이언트 영향 0"을 기계적으로 증명하는 장치입니다.
  *
- * 의도된 계약 변경 시에만 `pnpm --filter @aido/api test:e2e openapi-contract --update`로 스냅샷을 갱신하고,
+ * 의도된 계약 변경 시에만 `pnpm --filter @aido/server test:e2e openapi-contract --update`로 스냅샷을 갱신하고,
  * PR 리뷰에서 스냅샷 diff를 계약 변경으로 취급합니다.
  */
 

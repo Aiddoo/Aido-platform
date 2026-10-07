@@ -1,4 +1,4 @@
-import { featureDiscoveryResponseSchema } from "@aido/validators";
+import { featureDiscoveryResponseSchema } from "@aido/api";
 
 describe("feature discovery response contract", () => {
   it("rejects incomplete enabled and leaking disabled variants", () => {

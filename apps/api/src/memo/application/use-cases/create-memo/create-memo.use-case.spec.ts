@@ -1,7 +1,7 @@
 /**
  * CreateMemoUseCase 단위 테스트
  */
-import { MEMO_LIMITS } from "@aido/validators";
+import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

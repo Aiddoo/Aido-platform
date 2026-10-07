@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test admin.guard.spec.ts
+ * pnpm --filter @aido/server test admin.guard.spec.ts
  * ```
  */
 import { TestBed } from "@suites/unit";

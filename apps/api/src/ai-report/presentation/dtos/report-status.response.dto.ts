@@ -1,4 +1,4 @@
-import { reportStatusResponseSchema } from "@aido/validators";
+import { reportStatusResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const ReportStatusResponseDto = reportStatusResponseSchema.meta({

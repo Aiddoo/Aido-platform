@@ -1,4 +1,4 @@
-import { getCheersQuerySchema } from "@aido/validators";
+import { getCheersQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetCheersQueryDto = getCheersQuerySchema.meta({

@@ -1,9 +1,6 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import { TestBed } from "@suites/unit";
 import { vi, type MockedFunction } from "vitest";
 
-import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
-import { nativeSqlParameters } from "#test/mocks/database.mock";
+import { createMockTransactionHost, nativeSqlParameters } from "#test/mocks/database.mock";
 import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
@@ -18,11 +15,9 @@ describe("PostgresMutationLockAdapter — 트랜잭션 advisory lock", () => {
     tx.query.mockResolvedValue([]);
     isTransactionActive = vi.fn(() => true);
 
-    const { unit } = await TestBed.solitary(PostgresMutationLockAdapter)
-      .mock<TransactionHost<Prisma8TransactionalAdapter>>(TransactionHost)
-      .impl(() => ({ tx, isTransactionActive }))
-      .compile();
-    adapter = unit;
+    const transactionHost = createMockTransactionHost(tx);
+    transactionHost.isTransactionActive.mockImplementation(isTransactionActive);
+    adapter = new PostgresMutationLockAdapter(transactionHost);
   });
 
   it("활성 TransactionHost 연결에서 중복 제거한 키를 정렬 순서로 parameterized advisory lock 한다", async () => {

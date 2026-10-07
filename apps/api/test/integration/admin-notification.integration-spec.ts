@@ -15,7 +15,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test admin-notification.integration-spec
+ * pnpm --filter @aido/server test admin-notification.integration-spec
  * ```
  */
 import type { Job } from "bullmq";

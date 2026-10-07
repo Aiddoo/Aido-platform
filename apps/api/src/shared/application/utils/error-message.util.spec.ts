@@ -3,7 +3,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test error-message.util
+ * pnpm --filter @aido/server test error-message.util
  * ```
  */
 import { toErrorMessage } from "./error-message.util.js";

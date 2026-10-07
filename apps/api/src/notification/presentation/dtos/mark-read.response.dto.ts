@@ -1,4 +1,4 @@
-import { markReadResponseSchema } from "@aido/validators";
+import { markReadResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const MarkReadResponseDto = markReadResponseSchema.meta({ id: "MarkReadResponseDto" });

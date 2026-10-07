@@ -1,4 +1,4 @@
-import { getNudgesQuerySchema } from "@aido/validators";
+import { getNudgesQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetNudgesQueryDto = getNudgesQuerySchema.meta({

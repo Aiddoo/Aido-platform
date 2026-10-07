@@ -1,7 +1,7 @@
 /**
- * Nudge 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/validators). 계약 불변.
+ * Nudge 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/api). 계약 불변.
  */
-import type { Nudge, NudgeDetail, NudgeLimitInfo, RemindNudge } from "@aido/validators";
+import type { Nudge, NudgeDetail, NudgeLimitInfo, RemindNudge } from "@aido/api";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { resolveProfileImage } from "#api/shared/presentation/profile/profile-image.resolver";

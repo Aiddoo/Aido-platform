@@ -1,4 +1,4 @@
-import { deleteTodoCategoryQuerySchema } from "@aido/validators";
+import { deleteTodoCategoryQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const DeleteTodoCategoryQueryDto = deleteTodoCategoryQuerySchema.meta({

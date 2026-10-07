@@ -12,7 +12,7 @@ import type {
   ResetPasswordResponse,
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   AuthTokens,

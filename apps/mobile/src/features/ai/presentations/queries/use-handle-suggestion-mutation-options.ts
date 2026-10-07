@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useAiService, useLogger } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/presentations/activation-mutations';
 import type { AiSuggestionActionInput } from '@src/features/ai/models/ai.model';

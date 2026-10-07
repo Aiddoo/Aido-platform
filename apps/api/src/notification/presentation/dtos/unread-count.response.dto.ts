@@ -1,4 +1,4 @@
-import { unreadCountResponseSchema } from "@aido/validators";
+import { unreadCountResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const UnreadCountResponseDto = unreadCountResponseSchema.meta({

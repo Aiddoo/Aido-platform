@@ -1,4 +1,4 @@
-import type { DayOfWeek, Todo as TodoResponse } from "@aido/validators";
+import type { DayOfWeek, Todo as TodoResponse } from "@aido/api";
 
 import type { CreateRecurringTodosResult } from "#api/todo/index";
 

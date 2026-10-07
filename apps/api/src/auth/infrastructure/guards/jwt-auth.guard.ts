@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { ExecutionContext, HttpException, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { AuthGuard } from "@nestjs/passport";

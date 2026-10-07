@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import { beforeEach, describe, expect, it, vi, type Mocked } from "vitest";
 

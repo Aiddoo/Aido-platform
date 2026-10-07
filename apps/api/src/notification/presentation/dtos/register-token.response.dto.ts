@@ -1,4 +1,4 @@
-import { registerTokenResponseSchema } from "@aido/validators";
+import { registerTokenResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const RegisterTokenResponseDto = registerTokenResponseSchema.meta({

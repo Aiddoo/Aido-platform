@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test range
+ * pnpm --filter @aido/server test range
  * ```
  */
 import { previousIsoWeekRange } from "./range.js";

@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test badge-calculator
+ * pnpm --filter @aido/server test badge-calculator
  * ```
  */
 import { type BadgeCalculatorInput, calculateBadges } from "./badge-calculator.js";

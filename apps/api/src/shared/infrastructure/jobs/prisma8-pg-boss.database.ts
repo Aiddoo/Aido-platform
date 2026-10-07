@@ -1,4 +1,4 @@
-import { z } from "@aido/validators";
+import { z } from "@aido/api";
 import { param } from "@prisma/orm-postgres/relational-core/expression";
 import type { Db } from "pg-boss";
 

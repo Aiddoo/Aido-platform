@@ -7,7 +7,7 @@ import { TestBed } from "@suites/unit";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test todo-reminder.processor
+ * pnpm --filter @aido/server test todo-reminder.processor
  * ```
  */
 import type { Mocked } from "vitest";

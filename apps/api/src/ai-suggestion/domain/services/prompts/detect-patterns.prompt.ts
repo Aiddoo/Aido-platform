@@ -1,6 +1,6 @@
 import type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
 export type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
-import { dayOfWeekSchema } from "@aido/validators";
+import { dayOfWeekSchema } from "@aido/api";
 import { z } from "zod";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";

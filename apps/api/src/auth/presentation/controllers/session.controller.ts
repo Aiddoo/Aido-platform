@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";

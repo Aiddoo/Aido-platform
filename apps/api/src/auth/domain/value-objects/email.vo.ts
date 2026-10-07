@@ -1,12 +1,12 @@
-import { ErrorCode } from "@aido/errors";
-import { z } from "@aido/validators";
+import { z } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 /**
  * 이메일 형식 검증 스키마.
  *
- * @aido/validators `emailSchema`의 형식 규칙(z.email + 최대 255자)과 동일한 원시
+ * @aido/api `emailSchema`의 형식 규칙(z.email + 최대 255자)과 동일한 원시
  * (z.email())를 사용해 정규식 드리프트를 배제한다. 정규화(trim·소문자화)는
  * 프레젠테이션 계층(emailSchema)이 소유하므로 여기서는 다시 수행하지 않는다
  * → 이미 정규화·검증을 통과한 입력에 대해 `.value === 입력`(byte-identical).

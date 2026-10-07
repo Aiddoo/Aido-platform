@@ -2,7 +2,7 @@
 
 > Version 3.0.0 · Updated 2026-08-14 · Owner: Aido Platform Team
 
-이 문서는 신규·수정 코드의 작성 규칙이다. 구조적 이유는 [architecture.md](./architecture.md), DTO는 [validators.md](./validators.md), DB는 [prisma.md](./prisma.md), 테스트는 [testing-guide.md](./testing-guide.md)를 따른다.
+이 문서는 신규·수정 코드의 작성 규칙이다. 구조적 이유는 [architecture.md](./architecture.md), DTO는 [rest-contracts.md](./rest-contracts.md), DB는 [prisma.md](./prisma.md), 테스트는 [testing-guide.md](./testing-guide.md)를 따른다.
 
 ## 1. 기본 원칙
 
@@ -66,7 +66,7 @@ Controller는 HTTP 경계다.
 해야 하는 일:
 
 - decorator, auth/role guard, Swagger 선언
-- `@aido/validators` DTO 수신
+- `@aido/api` DTO 수신
 - header/param/query/body를 application input으로 변환
 - endpoint UseCase 직접 호출
 - 응답 DTO 또는 mapper로 변환

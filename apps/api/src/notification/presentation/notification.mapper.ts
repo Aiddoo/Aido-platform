@@ -3,7 +3,7 @@ import {
   type NotificationInboxItem as NotificationDto,
   type NotificationMetadata,
   notificationMetadataSchema,
-} from "@aido/validators";
+} from "@aido/api";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 

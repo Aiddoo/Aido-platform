@@ -5,7 +5,7 @@ import { TestBed } from "@suites/unit";
  * build(): 병렬 데이터 수집, WeatherForecastAccess 실패 graceful degradation, 스트릭 정보 없음
  * detectMissingRoutines(): 빠뜨린 루틴 감지, 이번 주 존재 시 무시, 2회 미만 무시
  *
- * @execute pnpm --filter @aido/api test -- suggestion-context.builder.spec
+ * @execute pnpm --filter @aido/server test -- suggestion-context.builder.spec
  */
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone.js";

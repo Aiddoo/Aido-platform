@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { CurrentUserPayload } from "@aido/validators";
+import type { CurrentUserPayload } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
 import type { Request } from "express";
 

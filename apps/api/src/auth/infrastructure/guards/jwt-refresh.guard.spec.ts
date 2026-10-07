@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test jwt-refresh.guard.spec.ts
+ * pnpm --filter @aido/server test jwt-refresh.guard.spec.ts
  * ```
  */
 import { TestBed } from "@suites/unit";

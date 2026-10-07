@@ -4,7 +4,7 @@
  * 현재 메모 개수와 사용자당 한도(MEMO_LIMITS.MAX_PER_USER) 반환을 검증한다.
  */
 
-import { MEMO_LIMITS } from "@aido/validators";
+import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

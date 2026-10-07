@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { VERIFICATION_CODE } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { VerificationType } from "#api/auth/domain/types";

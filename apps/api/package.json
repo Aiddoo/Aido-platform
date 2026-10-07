@@ -1,5 +1,5 @@
 {
-  "name": "@aido/api",
+  "name": "@aido/server",
   "version": "1.0.0",
   "private": true,
   "description": "Aido API Server",
@@ -20,7 +20,7 @@
     "build": "nest build",
     "clean": "rm -rf dist coverage *.tsbuildinfo",
     "db:deploy": "sh scripts/migrate.sh",
-    "db:generate": "turbo run contract:emit --filter=@aido/api",
+    "db:generate": "turbo run contract:emit --filter=@aido/server",
     "db:migrate": "prisma db migrate",
     "dev": "nest start --watch",
     "format": "oxfmt src test",
@@ -45,8 +45,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.88",
-    "@aido/errors": "workspace:*",
-    "@aido/validators": "workspace:*",
+    "@aido/api": "workspace:*",
     "@nestjs-cls/transactional": "catalog:nest12",
     "@nestjs/common": "catalog:nest12",
     "@nestjs/config": "catalog:nest12",

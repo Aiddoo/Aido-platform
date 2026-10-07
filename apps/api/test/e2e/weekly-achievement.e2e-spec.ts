@@ -10,7 +10,7 @@
  * 2. 특정 주 달성 상세 조회 (GET /weekly-achievements/:year/:week)
  *
  * 실행 명령:
- * pnpm --filter @aido/api test:e2e -- weekly-achievement.e2e-spec
+ * pnpm --filter @aido/server test:e2e -- weekly-achievement.e2e-spec
  */
 
 import request from "supertest";

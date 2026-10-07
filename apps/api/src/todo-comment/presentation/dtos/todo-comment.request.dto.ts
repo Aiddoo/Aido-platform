@@ -5,7 +5,7 @@ import {
   todoCommentIdParamSchema,
   todoDetailsParamSchema,
   updateTodoCommentSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const TodoDetailsParamDto = todoDetailsParamSchema.meta({

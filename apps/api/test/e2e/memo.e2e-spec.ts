@@ -1,4 +1,4 @@
-import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/validators";
+import { convertMemoToTodosResponseSchema, todoSchema } from "@aido/api";
 /**
  * Memo E2E 테스트
  *

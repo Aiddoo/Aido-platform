@@ -2,7 +2,7 @@ import {
   getNudgeInteractionsQuerySchema,
   replyToNudgeSchema,
   sendNudgeThanksSchema,
-} from "@aido/validators";
+} from "@aido/api";
 
 describe("콕 주고받기 요청 계약", () => {
   it("쿼리를 생략하면 받은 콕 20개부터 조회한다", () => {

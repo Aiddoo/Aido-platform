@@ -2,7 +2,7 @@ import {
   updateMarketingConsentSchema,
   updateMarketingPushConsentSchema,
   updatePreferenceSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const UpdatePreferenceDto = updatePreferenceSchema.meta({ id: "UpdatePreferenceDto" });

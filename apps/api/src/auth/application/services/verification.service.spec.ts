@@ -7,7 +7,7 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-import { VERIFICATION_CODE } from "@aido/validators";
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

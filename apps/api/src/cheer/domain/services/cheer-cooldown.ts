@@ -1,4 +1,4 @@
-import { CHEER_LIMITS } from "@aido/validators";
+import { CHEER_LIMITS } from "@aido/api/vocabulary";
 
 import { calculateCooldown } from "#api/shared/domain/date/utils/cooldown";
 

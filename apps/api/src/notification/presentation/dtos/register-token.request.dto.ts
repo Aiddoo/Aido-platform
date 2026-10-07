@@ -1,4 +1,4 @@
-import { registerPushTokenSchema } from "@aido/validators";
+import { registerPushTokenSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const RegisterPushTokenDto = registerPushTokenSchema.meta({ id: "RegisterPushTokenDto" });

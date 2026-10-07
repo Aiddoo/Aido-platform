@@ -1,4 +1,4 @@
-import type { AppVersionResponse } from "@aido/validators";
+import type { AppVersionResponse } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {

@@ -5,7 +5,7 @@
  * - 요청 시점에 프리미엄 게이팅을 적용한다(비프리미엄은 리마인더 기본값 고정).
  * - 레코드가 없으면 기본 스냅샷을 사용한다.
  */
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

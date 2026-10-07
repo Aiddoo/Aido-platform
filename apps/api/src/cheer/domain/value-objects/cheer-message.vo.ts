@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { CHEER_LIMITS } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { CHEER_LIMITS } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 

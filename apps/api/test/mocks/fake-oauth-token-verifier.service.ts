@@ -5,7 +5,7 @@
  * E2E 테스트에서 OAuth 로그인 플로우를 테스트할 때 사용합니다.
  */
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import type { VerifiedProfile } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";

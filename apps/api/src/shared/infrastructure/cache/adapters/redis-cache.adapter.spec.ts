@@ -8,7 +8,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test redis-cache.adapter
+ * pnpm --filter @aido/server test redis-cache.adapter
  * ```
  */
 import RedisMock from "ioredis-mock";

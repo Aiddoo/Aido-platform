@@ -1,4 +1,4 @@
-import { sendFriendRequestParamSchema } from "@aido/validators";
+import { sendFriendRequestParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const UserTagParamDto = sendFriendRequestParamSchema.meta({

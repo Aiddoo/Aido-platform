@@ -1,4 +1,4 @@
-import { memoIdParamSchema } from "@aido/validators";
+import { memoIdParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const MemoIdParamDto = memoIdParamSchema.meta({ id: "MemoIdParamDto", apiParameter: true });

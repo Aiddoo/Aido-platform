@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test cache-keys
+ * pnpm --filter @aido/server test cache-keys
  * ```
  */
 import { CacheKeys } from "./cache-keys.js";

@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test user-consent.repository
+ * pnpm --filter @aido/server test user-consent.repository
  * ```
  */
 import { vi } from "vitest";

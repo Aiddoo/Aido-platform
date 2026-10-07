@@ -1,4 +1,4 @@
-import { profileIconKeySchema } from '@aido/validators';
+import { profileIconKeySchema } from '@aido/api';
 import { z } from 'zod';
 
 export const appIconKeySchema = profileIconKeySchema;

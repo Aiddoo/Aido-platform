@@ -8,7 +8,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test login-attempt.repository.spec.ts
+ * pnpm --filter @aido/server test login-attempt.repository.spec.ts
  * ```
  */
 import { vi } from "vitest";

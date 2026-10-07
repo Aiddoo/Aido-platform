@@ -396,13 +396,13 @@ ctx.fakeOAuthTokenVerifierService.clear();
 
 ```bash
 # 전체 E2E 테스트
-pnpm --filter @aido/api test:e2e
+pnpm --filter @aido/server test:e2e
 
 # 특정 파일
-pnpm --filter @aido/api test:e2e -- auth.e2e-spec
+pnpm --filter @aido/server test:e2e -- auth.e2e-spec
 
 # 특정 테스트
-pnpm --filter @aido/api test:e2e -- -t "회원가입"
+pnpm --filter @aido/server test:e2e -- -t "회원가입"
 ```
 
 ---

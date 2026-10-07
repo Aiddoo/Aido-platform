@@ -1,4 +1,4 @@
-import type { UpdateMarketingPushConsentResponse } from "@aido/validators";
+import type { UpdateMarketingPushConsentResponse } from "@aido/api";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { buildMarketingPushConsentView } from "../../../domain/services/consent-view.js";

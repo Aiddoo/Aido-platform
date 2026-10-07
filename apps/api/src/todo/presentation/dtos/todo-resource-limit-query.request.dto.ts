@@ -1,4 +1,4 @@
-import { todoResourceLimitQuerySchema } from "@aido/validators";
+import { todoResourceLimitQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const TodoResourceLimitQueryDto = todoResourceLimitQuerySchema.meta({

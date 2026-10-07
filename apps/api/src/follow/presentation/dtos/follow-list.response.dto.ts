@@ -2,7 +2,7 @@ import {
   friendsListResponseSchema,
   receivedRequestsResponseSchema,
   sentRequestsResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const FriendsListResponseDto = friendsListResponseSchema.meta({

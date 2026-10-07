@@ -8,7 +8,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test gemini.provider
+ * pnpm --filter @aido/server test gemini.provider
  * ```
  */
 import { APICallError } from "ai";

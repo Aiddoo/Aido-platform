@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test encryption.service
+ * pnpm --filter @aido/server test encryption.service
  * ```
  */
 import type { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";

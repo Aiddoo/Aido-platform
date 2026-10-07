@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { AiReport as AiReportDto } from "@aido/validators";
+import type { AiReport as AiReportDto } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";

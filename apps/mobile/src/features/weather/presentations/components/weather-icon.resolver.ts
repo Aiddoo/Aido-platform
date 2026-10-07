@@ -1,4 +1,4 @@
-import type { PrecipitationType, SkyCondition } from '@aido/validators';
+import type { PrecipitationType, SkyCondition } from '@aido/api';
 import {
   WeatherClearIcon,
   WeatherCloudyIcon,

@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { TodoDetailsResponse } from "@aido/validators";
+import type { TodoDetailsResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";

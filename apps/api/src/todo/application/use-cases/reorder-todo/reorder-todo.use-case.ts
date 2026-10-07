@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { ReorderPosition, Todo as TodoResponse } from "@aido/validators";
+import type { ReorderPosition, Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";

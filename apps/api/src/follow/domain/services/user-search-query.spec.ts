@@ -3,7 +3,7 @@
  *
  * 검색어 정규화(NFC 결합·공백 정리·대문자 태그)와 빈 검색어 방어(FOLLOW_0911)를 검증한다.
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 

@@ -1,4 +1,4 @@
-import { getMemosQuerySchema } from "@aido/validators";
+import { getMemosQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetMemosQueryDto = getMemosQuerySchema.meta({

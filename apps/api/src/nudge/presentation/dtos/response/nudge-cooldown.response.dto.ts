@@ -1,4 +1,4 @@
-import { nudgeCooldownInfoSchema } from "@aido/validators";
+import { nudgeCooldownInfoSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const NudgeCooldownResponseDto = nudgeCooldownInfoSchema.meta({

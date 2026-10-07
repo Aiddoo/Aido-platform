@@ -6,7 +6,7 @@ import {
   notificationTitleSchema,
   pushNotificationDataSchema,
   todoCommentNotificationRoutingSchema,
-} from "@aido/validators";
+} from "@aido/api";
 
 const COMMENT_ID = "cmt92zn3n000b7voxx9quc2th";
 const THREAD_ROOT_ID = "cmt92zn3n000a7voxx9quc2tg";

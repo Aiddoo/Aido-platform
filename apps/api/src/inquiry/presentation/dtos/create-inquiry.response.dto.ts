@@ -1,4 +1,4 @@
-import { createInquiryResponseSchema } from "@aido/validators";
+import { createInquiryResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const CreateInquiryResponseDto = createInquiryResponseSchema.meta({

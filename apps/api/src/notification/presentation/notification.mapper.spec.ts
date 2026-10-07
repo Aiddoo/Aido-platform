@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test notification.mapper
+ * pnpm --filter @aido/server test notification.mapper
  * ```
  */
 import { NotificationBuilder } from "#test/builders/index";

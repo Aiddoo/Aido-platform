@@ -1,4 +1,4 @@
-import { suggestionActionSchema } from "@aido/validators";
+import { suggestionActionSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const SuggestionActionDto = suggestionActionSchema.meta({ id: "SuggestionActionDto" });

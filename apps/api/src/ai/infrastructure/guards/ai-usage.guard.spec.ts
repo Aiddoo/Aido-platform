@@ -6,10 +6,10 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test ai-usage.guard
+ * pnpm --filter @aido/server test ai-usage.guard
  * ```
  */
-import type { CurrentUserPayload } from "@aido/validators";
+import type { CurrentUserPayload } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

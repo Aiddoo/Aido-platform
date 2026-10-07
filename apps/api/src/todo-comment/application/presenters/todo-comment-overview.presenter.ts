@@ -1,4 +1,4 @@
-import type { TodoCommentOverviewItem } from "@aido/validators";
+import type { TodoCommentOverviewItem } from "@aido/api";
 
 import type { TodoCommentOverviewItemRecord } from "../types.js";
 import { toTodoCommentAuthorResponse, toTodoCommentResponse } from "./todo-comment.presenter.js";

@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { UpdatePreferenceInput, UpdatePreferenceResponse } from "@aido/validators";
+import type { UpdatePreferenceInput, UpdatePreferenceResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";

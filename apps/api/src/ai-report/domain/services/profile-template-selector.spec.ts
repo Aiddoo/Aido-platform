@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test profile-template-selector
+ * pnpm --filter @aido/server test profile-template-selector
  * ```
  */
 import { selectProfileTemplate } from "./profile-template-selector.js";

@@ -1,4 +1,4 @@
-import type { GrowthSummaryQuery, GrowthSummaryResponse } from "@aido/validators";
+import type { GrowthSummaryQuery, GrowthSummaryResponse } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";

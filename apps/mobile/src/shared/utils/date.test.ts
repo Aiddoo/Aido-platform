@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@aido/validators';
+import type { DayOfWeek } from '@aido/api';
 import { i18n } from '@src/shared/i18n';
 
 import {

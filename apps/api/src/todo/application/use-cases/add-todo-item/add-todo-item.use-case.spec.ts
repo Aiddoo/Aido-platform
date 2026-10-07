@@ -6,9 +6,9 @@
  * (한도·sortOrder 계획은 애그리게잇 planItemAddition이 소유)
  */
 
-import { ErrorCode } from "@aido/errors";
-import type { Todo as TodoResponse } from "@aido/validators";
-import { TODO_ITEM_LIMITS } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

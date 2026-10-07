@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 /**
  * JwtStrategy 단위 테스트
  *
@@ -8,7 +8,7 @@ import { ErrorCode } from "@aido/errors";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test jwt.strategy.spec.ts
+ * pnpm --filter @aido/server test jwt.strategy.spec.ts
  * ```
  */
 import { TestBed } from "@suites/unit";

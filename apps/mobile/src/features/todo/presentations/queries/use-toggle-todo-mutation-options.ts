@@ -1,4 +1,4 @@
-import type { ToggleTodoCompleteInput } from '@aido/validators';
+import type { ToggleTodoCompleteInput } from '@aido/api';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCompletionForActivation } from '@src/features/activation/presentations/activation-mutations';
 import { useTrack } from '@src/shared/analytics';

@@ -1,4 +1,4 @@
-import { getNotificationsQuerySchema } from "@aido/validators";
+import { getNotificationsQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetNotificationsQueryDto = getNotificationsQuerySchema.meta({

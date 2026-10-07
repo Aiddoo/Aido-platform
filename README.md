@@ -38,8 +38,7 @@ aido/
 │   ├── api/          # NestJS 백엔드
 │   └── mobile/       # Expo 모바일 앱
 ├── packages/
-│   ├── validators/   # Zod 스키마 (@aido/validators)
-│   └── errors/       # 에러 정의 (@aido/errors)
+│   └── api/          # REST 계약·오류 코드·순수 공용 타입 (@aido/api)
 ├── tooling/
 │   ├── typescript/   # TypeScript 프리셋
 │   ├── vitest/       # Vitest 프리셋
@@ -119,20 +118,20 @@ pnpm dev
 
 ## 패키지
 
-| 패키지                                    | 설명              |
-| ----------------------------------------- | ----------------- |
-| [@aido/api](./apps/api)                   | NestJS 백엔드 API |
-| [@aido/mobile](./apps/mobile)             | Expo 모바일 앱    |
-| [@aido/validators](./packages/validators) | Zod 스키마        |
-| [@aido/errors](./packages/errors)         | 에러 정의         |
+| 패키지                             | 설명              |
+| ---------------------------------- | ----------------- |
+| [@aido/server](./apps/api)         | NestJS 백엔드 API |
+| [@aido/mobile](./apps/mobile)      | Expo 모바일 앱    |
+| [@aido/api](./packages/api)        | Zod 스키마        |
+| [@aido/api/errors](./packages/api) | 에러 정의         |
 
 ## 개발 가이드
 
 - **커밋**: Conventional Commits (`pnpm commit`)
 - **린트/포맷**: Oxlint + Oxfmt (`pnpm lint && pnpm format:check`)
 - **타입**: TypeScript strict 모드
-- **DTO**: Zod 스키마 (`@aido/validators`)
-- **에러 코드**: `@aido/errors`의 `ErrorCode` 사용 (하드코딩 금지)
+- **DTO**: Zod 스키마 (`@aido/api`)
+- **에러 코드**: `@aido/api/errors`의 `ErrorCode` 사용 (하드코딩 금지)
 - **AI 에이전트 워크플로우**: [AGENTS.md](./AGENTS.md) 참조
 
 ## API 문서

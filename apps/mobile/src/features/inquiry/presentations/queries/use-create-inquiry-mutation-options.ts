@@ -1,4 +1,4 @@
-import type { CreateInquiryInput } from '@aido/validators';
+import type { CreateInquiryInput } from '@aido/api';
 import { useInquiryService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';

@@ -6,7 +6,7 @@ RUN corepack enable && apk add --no-cache openssl
 
 FROM base AS pruner
 COPY . .
-RUN pnpm dlx "turbo@$(node -p 'require("./package.json").devDependencies.turbo')" prune @aido/api --docker --out-dir=out/api && \
+RUN pnpm dlx "turbo@$(node -p 'require("./package.json").devDependencies.turbo')" prune @aido/server --docker --out-dir=out/api && \
     pnpm dlx "turbo@$(node -p 'require("./package.json").devDependencies.turbo')" prune @aido/database-migrate --docker --out-dir=out/migrate
 
 FROM base AS deps
@@ -17,14 +17,14 @@ RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild argon2 @swc/
 
 FROM deps AS builder
 COPY --from=pruner /app/out/api/full/ ./
-RUN pnpm --filter @aido/errors build && pnpm --filter @aido/validators build
-RUN pnpm --filter @aido/api db:generate && pnpm --filter @aido/api build
-RUN pnpm --filter @aido/api deploy --legacy --prod --prefer-offline /app/production
+RUN pnpm --filter @aido/api build
+RUN pnpm --filter @aido/server db:generate && pnpm --filter @aido/server build
+RUN pnpm --filter @aido/server deploy --legacy --prod --prefer-offline /app/production
 
 FROM deps AS development
 COPY --from=pruner /app/out/api/full/ ./
-RUN pnpm --filter @aido/errors build && pnpm --filter @aido/validators build
-RUN pnpm --filter @aido/api db:generate
+RUN pnpm --filter @aido/api build
+RUN pnpm --filter @aido/server db:generate
 WORKDIR /app/apps/api
 ENV NODE_ENV=development
 EXPOSE 8080

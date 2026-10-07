@@ -4,7 +4,7 @@
  * GWT 패턴 — 날짜 불변식 검증
  */
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/index";
 

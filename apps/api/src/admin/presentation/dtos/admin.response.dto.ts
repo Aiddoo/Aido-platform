@@ -1,4 +1,4 @@
-import { broadcastResultSchema, growthSummaryResponseSchema } from "@aido/validators";
+import { broadcastResultSchema, growthSummaryResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 /**

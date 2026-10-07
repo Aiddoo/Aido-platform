@@ -1,4 +1,4 @@
-import type { AppVersionResponse, FeatureDiscoveryResponse } from "@aido/validators";
+import type { AppVersionResponse, FeatureDiscoveryResponse } from "@aido/api";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 

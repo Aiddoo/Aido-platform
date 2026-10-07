@@ -5,8 +5,8 @@
  * 오라클: 레거시 TodoService.reorderItems 집합 검증 분기 재현
  */
 
-import { ErrorCode } from "@aido/errors";
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

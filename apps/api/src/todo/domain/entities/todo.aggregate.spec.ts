@@ -4,8 +4,8 @@
  * GWT 패턴 적용 — 완료 상태 전이·생성 계획·하위 항목 불변식·도메인 이벤트 적립 검증
  */
 
-import { ErrorCode } from "@aido/errors";
-import { TODO_ITEM_LIMITS } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/index";
 

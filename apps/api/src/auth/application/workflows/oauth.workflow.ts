@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { OAUTH_PROVIDERS } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {

@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
 import isLeapYear from "dayjs/plugin/isLeapYear.js";
 import isoWeek from "dayjs/plugin/isoWeek.js";

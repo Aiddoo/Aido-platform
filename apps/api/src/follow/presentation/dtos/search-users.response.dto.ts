@@ -1,4 +1,4 @@
-import { searchUsersResponseSchema } from "@aido/validators";
+import { searchUsersResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const SearchUsersResponseDto = searchUsersResponseSchema.meta({

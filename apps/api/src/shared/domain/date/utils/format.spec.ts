@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test format
+ * pnpm --filter @aido/server test format
  * ```
  */
 import {

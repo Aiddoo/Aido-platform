@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";

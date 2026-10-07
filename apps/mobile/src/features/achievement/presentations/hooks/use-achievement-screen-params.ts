@@ -1,4 +1,4 @@
-import { weeklyAchievementParamSchema } from '@aido/validators';
+import { weeklyAchievementParamSchema } from '@aido/api';
 import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
 import { useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';

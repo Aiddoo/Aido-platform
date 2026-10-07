@@ -1,4 +1,4 @@
-import { emailSchema, userTagParamSchema } from "@aido/validators";
+import { emailSchema, userTagParamSchema } from "@aido/api";
 
 import { DELETED_COMMENT_AUTHOR } from "./system-user.js";
 

@@ -1,4 +1,4 @@
-import type { ConsentResponse } from "@aido/validators";
+import type { ConsentResponse } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { buildConsentView } from "../../../domain/services/consent-view.js";

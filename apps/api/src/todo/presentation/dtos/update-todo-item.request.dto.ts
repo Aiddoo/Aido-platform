@@ -1,4 +1,4 @@
-import { updateTodoItemSchema } from "@aido/validators";
+import { updateTodoItemSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const UpdateTodoItemDto = updateTodoItemSchema.meta({ id: "UpdateTodoItemDto" });

@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@aido/validators';
+import type { DayOfWeek } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todos-mutation-options';
 import { useTrack } from '@src/shared/analytics';

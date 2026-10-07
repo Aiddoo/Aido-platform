@@ -1,11 +1,11 @@
+import type { Todo as TodoResponse } from "@aido/api";
 /**
  * GetTodoByIdUseCase 단위 테스트
  *
  * - read model 저장소에서 (id, userId)로 단건 조회 후 그대로 반환
  * - 없으면 TODO_0801 (소유자 스코프 조회이므로 타인 소유 = 미존재와 동일)
  */
-import { ErrorCode } from "@aido/errors";
-import type { Todo as TodoResponse } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

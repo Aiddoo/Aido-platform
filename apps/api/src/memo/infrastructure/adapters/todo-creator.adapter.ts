@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 
 import {

@@ -297,10 +297,10 @@ describe('클래스명 — 한국어 설명', () => {
 ## 실행 명령어
 
 ```bash
-pnpm --filter @aido/api test                     # 전체 단위 테스트
-pnpm --filter @aido/api test notification.service.spec  # 특정 파일
-pnpm --filter @aido/api test:watch               # Watch 모드
-pnpm --filter @aido/api test:cov                 # 커버리지
+pnpm --filter @aido/server test                     # 전체 단위 테스트
+pnpm --filter @aido/server test notification.service.spec  # 특정 파일
+pnpm --filter @aido/server test:watch               # Watch 모드
+pnpm --filter @aido/server test:cov                 # 커버리지
 ```
 
 ---

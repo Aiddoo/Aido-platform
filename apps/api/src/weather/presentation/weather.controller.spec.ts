@@ -4,7 +4,7 @@
  * Suites + Builder + GWT 패턴 적용. 컨트롤러는 endpoint UseCase를 직접 주입받는다.
  *
  * 실행 명령:
- * pnpm --filter @aido/api test weather.controller.spec
+ * pnpm --filter @aido/server test weather.controller.spec
  */
 
 import { TestBed } from "@suites/unit";

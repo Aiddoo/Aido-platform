@@ -1,4 +1,4 @@
-import type { RevenueCatEventType, RevenueCatStore } from "@aido/validators";
+import type { RevenueCatEventType, RevenueCatStore } from "@aido/api/vocabulary";
 
 /** Discord 알림에서 사용하는 내부 이벤트 키 */
 export type SubscriptionEventKey =

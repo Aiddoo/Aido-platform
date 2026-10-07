@@ -5,7 +5,7 @@
  * - 없으면 ACHIEVEMENT_1801 (year/week 컨텍스트 포함)
  * - 라벨/날짜범위는 로케일에 따라 도메인 규칙(ISO 주차 목요일 기준)으로 계산된다
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

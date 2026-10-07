@@ -8,8 +8,8 @@
  *
  * @see https://docs.nestjs.com/recipes/suites
  */
-import { ErrorCode } from "@aido/errors";
-import { LOGIN_ATTEMPT } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { LOGIN_ATTEMPT } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 import { vi } from "vitest";

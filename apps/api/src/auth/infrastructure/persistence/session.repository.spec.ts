@@ -11,7 +11,7 @@ import { SessionBuilder } from "#test/builders/index";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test session.repository.spec.ts
+ * pnpm --filter @aido/server test session.repository.spec.ts
  * ```
  */
 import {

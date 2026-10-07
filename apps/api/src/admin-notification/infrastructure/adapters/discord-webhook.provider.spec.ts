@@ -8,7 +8,7 @@ import { HttpClient } from "@nestjs/http-client";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test discord-webhook.provider
+ * pnpm --filter @aido/server test discord-webhook.provider
  * ```
  */
 import { DiscordWebhookProvider } from "./discord-webhook.provider.js";

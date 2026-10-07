@@ -240,7 +240,7 @@ assert(
   'follow.controller.ts must describe direct add with Aido ID',
 );
 
-const followValidator = read('packages/validators/src/domains/follow/follow.request.ts');
+const followValidator = read('packages/api/src/domains/follow/follow.request.ts');
 assert(
   !followValidator.includes('검색어: 이름 또는 사용자 태그'),
   'follow.request.ts has stale tag terminology',

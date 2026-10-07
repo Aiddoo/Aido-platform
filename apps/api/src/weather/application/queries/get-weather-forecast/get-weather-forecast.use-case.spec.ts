@@ -5,7 +5,7 @@
  * - 위치 미등록 시 WEATHER_1902 (예보 조회로 진입하지 않음)
  * - 캐시/프로바이더/폴백 오케스트레이션은 WeatherForecastReader 소유이므로 여기서는 위임만 검증
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

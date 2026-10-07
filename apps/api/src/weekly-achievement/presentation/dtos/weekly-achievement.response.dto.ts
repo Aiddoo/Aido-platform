@@ -3,7 +3,7 @@ import {
   weeklyAchievementListResponseSchema,
   weeklyAchievementSchema,
   weeklyAchievementSummarySchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const WeeklyAchievementDto = weeklyAchievementSchema.meta({ id: "WeeklyAchievementDto" });

@@ -1,4 +1,4 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {

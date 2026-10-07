@@ -1,4 +1,4 @@
-import { verifyEmailSchema } from '@aido/validators';
+import { verifyEmailSchema } from '@aido/api';
 import { useLocalSearchParams } from 'expo-router';
 
 export const verifyEmailScreenParamsSchema = verifyEmailSchema.pick({ email: true });

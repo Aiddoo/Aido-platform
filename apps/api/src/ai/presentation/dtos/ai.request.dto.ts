@@ -1,4 +1,4 @@
-import { parseMemoRequestSchema, parseTodoRequestSchema } from "@aido/validators";
+import { parseMemoRequestSchema, parseTodoRequestSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const ParseTodoRequestDto = parseTodoRequestSchema.meta({ id: "ParseTodoRequestDto" });

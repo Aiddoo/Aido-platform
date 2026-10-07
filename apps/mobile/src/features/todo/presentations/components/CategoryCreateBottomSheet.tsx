@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/validators';
+import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateTodoCategoryMutationOptions } from '@src/features/todo/presentations/queries/use-create-todo-category-mutation-options';
 import { isApiError } from '@src/shared/errors';

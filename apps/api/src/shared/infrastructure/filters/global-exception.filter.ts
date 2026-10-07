@@ -1,4 +1,4 @@
-import { ErrorCode, Errors } from "@aido/errors";
+import { ErrorCode, Errors } from "@aido/api/errors";
 import {
   type ArgumentsHost,
   Catch,

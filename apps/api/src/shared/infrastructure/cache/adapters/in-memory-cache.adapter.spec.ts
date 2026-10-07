@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test in-memory-cache.adapter
+ * pnpm --filter @aido/server test in-memory-cache.adapter
  * ```
  */
 import { describeCacheAdapterContract } from "./cache-adapter.contract.js";

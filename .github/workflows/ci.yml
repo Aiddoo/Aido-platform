@@ -127,7 +127,7 @@ jobs:
 
       - name: Type Check
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
-        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/api' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
+        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Mobile conventions
         if: needs.gate.outputs.mobile == 'true'
@@ -146,7 +146,7 @@ jobs:
           generate-prisma: 'false'
           install-scope: all
       - name: Run mobile and contract unit tests
-        run: pnpm turbo run test --filter='!@aido/api' 2>&1 | tee /tmp/test-unit.log
+        run: pnpm turbo run test --filter='!@aido/server' 2>&1 | tee /tmp/test-unit.log
       - name: Upload unit test logs
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -191,11 +191,11 @@ jobs:
         with:
           install-scope: api
       - name: Unit tests and coverage
-        run: pnpm turbo run test:cov --filter=@aido/api 2>&1 | tee /tmp/test-api-unit.log
+        run: pnpm turbo run test:cov --filter=@aido/server 2>&1 | tee /tmp/test-api-unit.log
       - name: PostgreSQL integration tests
-        run: pnpm turbo run test:integration --filter=@aido/api 2>&1 | tee /tmp/test-api-integration.log
+        run: pnpm turbo run test:integration --filter=@aido/server 2>&1 | tee /tmp/test-api-integration.log
       - name: HTTP and released-client E2E
-        run: pnpm turbo run test:e2e --filter=@aido/api 2>&1 | tee /tmp/test-api-e2e.log
+        run: pnpm turbo run test:e2e --filter=@aido/server 2>&1 | tee /tmp/test-api-e2e.log
       - name: Build API and dependency closure
         run: pnpm turbo run build --filter='!@aido/mobile'
       - name: Upload API test logs

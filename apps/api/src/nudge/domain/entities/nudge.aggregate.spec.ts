@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { describe, expect, it } from "vitest";
 
 import { NudgeBuilder } from "#test/builders/nudge.builder";

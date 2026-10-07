@@ -7,7 +7,7 @@ import {
   todoCategorySchema,
   todoCategoryWithCountSchema,
   updateTodoCategoryResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const TodoCategoryDto = todoCategorySchema.meta({ id: "TodoCategoryDto" });

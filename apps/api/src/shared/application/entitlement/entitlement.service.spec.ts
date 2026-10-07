@@ -15,7 +15,7 @@ import {
   FOLLOW_LIMITS,
   NUDGE_LIMITS,
   TODO_CATEGORY_LIMITS,
-} from "@aido/validators";
+} from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 import { type Mock } from "vitest";

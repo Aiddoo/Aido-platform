@@ -5,7 +5,7 @@
  * (Prisma 파생 행 타입은 infrastructure/persistence/todo-row.types.ts 참조)
  */
 
-import type { DayOfWeek } from "@aido/validators";
+import type { DayOfWeek } from "@aido/api/vocabulary";
 
 /**
  * Todo 생성 시 필요한 데이터

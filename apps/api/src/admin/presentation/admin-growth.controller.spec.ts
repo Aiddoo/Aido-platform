@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/validators";
+import type { CurrentUserPayload } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

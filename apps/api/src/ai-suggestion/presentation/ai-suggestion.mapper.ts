@@ -4,8 +4,8 @@
  * Suggestion 도메인 애그리게잇을 응답 DTO로 변환하는 Static 메서드를 제공합니다.
  */
 
-import type { RecurringSuggestion, SuggestionActionResponse } from "@aido/validators";
-import { dayOfWeekSchema } from "@aido/validators";
+import type { RecurringSuggestion, SuggestionActionResponse } from "@aido/api";
+import { dayOfWeekSchema } from "@aido/api";
 import { z } from "zod";
 
 import type { SuggestionActionResult } from "../application/use-cases/handle-suggestion-action/handle-suggestion-action.use-case.js";

@@ -2,7 +2,7 @@ import {
   cheerDetailSchema,
   receivedCheersResponseSchema,
   sentCheersResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const CheerDetailDto = cheerDetailSchema.meta({ id: "CheerDetailDto" });

@@ -9,7 +9,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test timezone-aware-reminder.orchestrator
+ * pnpm --filter @aido/server test timezone-aware-reminder.orchestrator
  * ```
  */
 import type { Mocked } from "vitest";

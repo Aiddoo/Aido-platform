@@ -1,4 +1,4 @@
-import type { ErrorCodeType } from "@aido/errors";
+import type { ErrorCodeType } from "@aido/api/errors";
 
 /**
  * 에러 응답 인터페이스

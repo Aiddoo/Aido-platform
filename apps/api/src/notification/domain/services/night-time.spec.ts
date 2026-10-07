@@ -6,10 +6,10 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test night-time.util
+ * pnpm --filter @aido/server test night-time.util
  * ```
  */
-import { NIGHT_TIME_CONFIG } from "@aido/validators";
+import { NIGHT_TIME_CONFIG } from "@aido/api/vocabulary";
 
 import { isNightTime } from "./night-time.js";
 

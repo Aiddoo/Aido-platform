@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test account.controller.spec.ts
+ * pnpm --filter @aido/server test account.controller.spec.ts
  * ```
  */
 

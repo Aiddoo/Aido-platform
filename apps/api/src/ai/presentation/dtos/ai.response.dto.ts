@@ -6,7 +6,7 @@ import {
   parseMemoResponseSchema,
   parseTodoMetaSchema,
   parseTodoResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const ParsedTodoDataDto = parsedTodoDataSchema.meta({ id: "ParsedTodoDataDto" });

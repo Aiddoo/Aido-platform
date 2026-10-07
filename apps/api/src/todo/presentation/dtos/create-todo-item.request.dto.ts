@@ -1,4 +1,4 @@
-import { createTodoItemSchema } from "@aido/validators";
+import { createTodoItemSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const CreateTodoItemDto = createTodoItemSchema.meta({ id: "CreateTodoItemDto" });

@@ -1,4 +1,4 @@
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";

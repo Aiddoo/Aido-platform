@@ -8,7 +8,7 @@ import { TestBed } from "@suites/unit";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test ai.controller
+ * pnpm --filter @aido/server test ai.controller
  * ```
  */
 import type { Mocked } from "vitest";

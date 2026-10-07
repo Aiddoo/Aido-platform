@@ -1,4 +1,4 @@
-import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/validators";
+import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";

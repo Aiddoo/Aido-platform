@@ -3,7 +3,7 @@ import {
   dayPatternItemSchema,
   reportStatsSchema,
   timePatternItemSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and } from "@prisma/orm-postgres/orm-client";

@@ -10,7 +10,7 @@ import type { MockInstance } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test kma-lifestyle-index.provider.spec
+ * pnpm --filter @aido/server test kma-lifestyle-index.provider.spec
  * ```
  */
 import type { Mocked } from "vitest";

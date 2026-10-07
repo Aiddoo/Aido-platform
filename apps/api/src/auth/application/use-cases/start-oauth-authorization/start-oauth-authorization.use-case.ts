@@ -1,4 +1,4 @@
-import { OAUTH_PROVIDERS } from "@aido/validators";
+import { OAUTH_PROVIDERS } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
 import type { OAuthMode } from "../../ports/oauth-identity-provider.port.js";

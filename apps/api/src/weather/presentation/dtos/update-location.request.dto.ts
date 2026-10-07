@@ -1,4 +1,4 @@
-import { updateLocationSchema } from "@aido/validators";
+import { updateLocationSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const UpdateLocationDto = updateLocationSchema.meta({ id: "UpdateLocationDto" });

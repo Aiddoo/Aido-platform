@@ -1,4 +1,4 @@
-import { dayOfWeekSchema } from '@aido/validators';
+import { dayOfWeekSchema } from '@aido/api';
 import { z } from 'zod';
 
 import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';

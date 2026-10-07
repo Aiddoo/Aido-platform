@@ -9,7 +9,7 @@ import {
   SUBSCRIPTION_NUDGE_LIMITS,
   SUBSCRIPTION_TODO_CATEGORY_LIMITS,
   TODO_CATEGORY_LIMITS,
-} from "@aido/validators";
+} from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {

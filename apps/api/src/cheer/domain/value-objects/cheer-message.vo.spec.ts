@@ -1,4 +1,4 @@
-import { CHEER_LIMITS } from "@aido/validators";
+import { CHEER_LIMITS } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 

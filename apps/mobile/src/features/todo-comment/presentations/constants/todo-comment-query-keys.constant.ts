@@ -1,4 +1,4 @@
-import type { TodoCommentSort } from '@aido/validators';
+import type { TodoCommentSort } from '@aido/api';
 
 export const TODO_COMMENT_QUERY_TIMING = {
   latestStaleTime: 30_000,

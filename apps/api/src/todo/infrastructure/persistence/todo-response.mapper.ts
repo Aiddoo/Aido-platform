@@ -1,4 +1,4 @@
-import type { Todo } from "@aido/validators";
+import type { Todo } from "@aido/api";
 /**
  * Todo 매퍼
  *

@@ -8,7 +8,7 @@ import {
   todoSchema,
   todoSummaryResponseSchema,
   updateTodoResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const TodoResponseDto = todoSchema.meta({ id: "TodoResponseDto" });

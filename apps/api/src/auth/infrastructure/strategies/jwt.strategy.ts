@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { CurrentUserPayload } from "@aido/validators";
+import type { CurrentUserPayload } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
@@ -15,7 +15,7 @@ import { type CachedSession, CacheService } from "#api/shared/infrastructure/cac
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
 /**
- * @aido/validators에서 re-export (하위 호환성 유지)
+ * @aido/api에서 re-export (하위 호환성 유지)
  */
 export type { CurrentUserPayload };
 

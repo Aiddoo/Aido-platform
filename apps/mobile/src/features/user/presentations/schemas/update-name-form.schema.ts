@@ -1,4 +1,4 @@
-import { updateProfileSchema } from '@aido/validators';
+import { updateProfileSchema } from '@aido/api';
 import { z } from 'zod';
 
 export const updateNameFormSchema = z.object({

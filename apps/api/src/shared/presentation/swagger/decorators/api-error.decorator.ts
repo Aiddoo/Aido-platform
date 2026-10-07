@@ -1,4 +1,4 @@
-import { type ErrorCodeType, Errors } from "@aido/errors";
+import { type ErrorCodeType, Errors } from "@aido/api/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
 import { ApiResponse } from "@nestjs/swagger";
 

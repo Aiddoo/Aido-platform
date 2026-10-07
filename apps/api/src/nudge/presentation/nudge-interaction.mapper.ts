@@ -1,8 +1,4 @@
-import type {
-  NudgeInteractionResponse,
-  NudgeThanksPreviewResponse,
-  NudgeSender,
-} from "@aido/validators";
+import type { NudgeInteractionResponse, NudgeThanksPreviewResponse, NudgeSender } from "@aido/api";
 
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { resolveProfileImage } from "#api/shared/presentation/profile/profile-image.resolver";

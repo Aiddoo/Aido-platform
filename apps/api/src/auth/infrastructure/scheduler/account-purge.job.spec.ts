@@ -8,7 +8,7 @@ import { TestBed } from "@suites/unit";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test account-purge.job.spec.ts
+ * pnpm --filter @aido/server test account-purge.job.spec.ts
  * ```
  */
 import { vi } from "vitest";

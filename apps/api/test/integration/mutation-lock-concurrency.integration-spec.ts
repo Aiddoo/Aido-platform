@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { ClsPluginTransactional, TransactionHost } from "@nestjs-cls/transactional";
 import { type DynamicModule, Module } from "@nestjs/common";
 import { Test, type TestingModule } from "@nestjs/testing";

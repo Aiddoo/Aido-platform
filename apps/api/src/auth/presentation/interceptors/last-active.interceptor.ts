@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/validators";
+import type { CurrentUserPayload } from "@aido/api";
 import {
   type CallHandler,
   type ExecutionContext,

@@ -7,7 +7,7 @@ import {
   memoMutationResponseSchema,
   memoResourceLimitResponseSchema,
   memoSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const MemoResponseDto = memoSchema.meta({ id: "MemoResponseDto" });

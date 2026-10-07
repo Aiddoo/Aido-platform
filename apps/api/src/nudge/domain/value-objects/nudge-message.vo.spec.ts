@@ -1,4 +1,4 @@
-import { NUDGE_LIMITS } from "@aido/validators";
+import { NUDGE_LIMITS } from "@aido/api/vocabulary";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 

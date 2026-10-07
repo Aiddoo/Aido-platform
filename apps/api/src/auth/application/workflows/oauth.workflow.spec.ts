@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 /**
  * OAuthWorkflow 테스트 (Suites 패턴)
  *

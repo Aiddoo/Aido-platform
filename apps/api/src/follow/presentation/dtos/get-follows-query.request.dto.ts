@@ -1,4 +1,4 @@
-import { getFollowsQuerySchema, getFriendsQuerySchema } from "@aido/validators";
+import { getFollowsQuerySchema, getFriendsQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetFollowsQueryDto = getFollowsQuerySchema.meta({

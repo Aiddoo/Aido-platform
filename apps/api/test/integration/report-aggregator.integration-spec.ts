@@ -16,7 +16,7 @@ import { Module, type DynamicModule } from "@nestjs/common";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test report-aggregator.integration-spec
+ * pnpm --filter @aido/server test report-aggregator.integration-spec
  * ```
  */
 import { Test, type TestingModule } from "@nestjs/testing";

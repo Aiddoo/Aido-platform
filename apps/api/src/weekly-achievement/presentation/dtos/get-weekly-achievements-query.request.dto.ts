@@ -1,4 +1,4 @@
-import { getWeeklyAchievementsQuerySchema } from "@aido/validators";
+import { getWeeklyAchievementsQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetWeeklyAchievementsQueryDto = getWeeklyAchievementsQuerySchema.meta({

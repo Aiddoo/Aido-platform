@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { TODO_COMMENT_SORT } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_COMMENT_SORT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
 import {

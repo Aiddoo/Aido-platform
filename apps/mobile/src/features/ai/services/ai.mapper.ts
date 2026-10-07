@@ -4,7 +4,7 @@ import type {
   RecurringSuggestion as RecurringSuggestionDto,
   ReportStatus as ReportStatusDto,
   SuggestionActionResponse as SuggestionActionResponseDto,
-} from '@aido/validators';
+} from '@aido/api';
 
 import {
   type AiReport,

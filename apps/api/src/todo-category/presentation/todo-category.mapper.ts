@@ -1,10 +1,10 @@
 /**
- * TodoCategory 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/validators). 계약 불변.
+ * TodoCategory 프레젠테이션 매퍼 — 애플리케이션 타입 → API 응답(@aido/api). 계약 불변.
  */
 import type {
   TodoCategory as TodoCategoryDto,
   TodoCategoryWithCount as TodoCategoryWithCountDto,
-} from "@aido/validators";
+} from "@aido/api";
 
 import { toISOString } from "#api/shared/domain/date/utils/format";
 

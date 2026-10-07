@@ -1,4 +1,4 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api";
 /**
  * user-settings 유스케이스 통합 테스트
  *
@@ -9,7 +9,7 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test user-settings.integration-spec
+ * pnpm --filter @aido/server test user-settings.integration-spec
  * ```
  */
 import { TransactionHost } from "@nestjs-cls/transactional";

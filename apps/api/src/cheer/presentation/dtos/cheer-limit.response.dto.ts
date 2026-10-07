@@ -2,7 +2,7 @@ import {
   cheerLimitInfoSchema,
   createCheerResponseSchema,
   markCheerReadResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const CheerLimitInfoDto = cheerLimitInfoSchema.meta({ id: "CheerLimitInfoDto" });

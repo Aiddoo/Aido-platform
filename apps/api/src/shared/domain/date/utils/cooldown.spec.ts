@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test cooldown
+ * pnpm --filter @aido/server test cooldown
  * ```
  */
 import { calculateCooldown } from "./cooldown.js";

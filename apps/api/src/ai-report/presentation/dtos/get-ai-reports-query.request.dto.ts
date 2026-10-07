@@ -1,4 +1,4 @@
-import { getAiReportsQuerySchema } from "@aido/validators";
+import { getAiReportsQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetAiReportsQueryDto = getAiReportsQuerySchema.meta({

@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test todo-response.mapper
+ * pnpm --filter @aido/server test todo-response.mapper
  * ```
  */
 import { TodoBuilder } from "#test/builders/index";

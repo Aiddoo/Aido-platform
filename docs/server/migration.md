@@ -14,7 +14,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 
 - [x] 00 Prisma 8 기존 변경 보존, Unit 2,895·Integration 433·E2E 480 재검증
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
-- [ ] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합
+- [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [ ] 03 modules/platform/shared·명시적 조립·로그·키 경계
 - [ ] 04 Identity: 계정·세션·설정·동의·계정 생명주기
 - [ ] 05 Billing: Webhook·구독 상태 전이

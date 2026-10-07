@@ -1,4 +1,4 @@
-import { createRecurringTodoSchema } from "@aido/validators";
+import { createRecurringTodoSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const CreateRecurringTodoDto = createRecurringTodoSchema.meta({

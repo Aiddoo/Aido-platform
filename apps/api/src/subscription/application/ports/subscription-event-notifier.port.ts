@@ -1,4 +1,4 @@
-import type { RevenueCatWebhookPayload } from "@aido/validators";
+import type { RevenueCatWebhookPayload } from "@aido/api";
 
 import type { SubscriptionEventPayload } from "../types/subscription-event.payload.js";
 

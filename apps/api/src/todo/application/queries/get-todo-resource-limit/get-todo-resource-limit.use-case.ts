@@ -1,4 +1,4 @@
-import { TODO_LIMITS } from "@aido/validators";
+import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import {

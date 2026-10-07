@@ -1,4 +1,4 @@
-import type { ReorderPosition } from "@aido/validators";
+import type { ReorderPosition } from "@aido/api/vocabulary";
 
 /**
  * sortOrder 범위 시프트 지시

@@ -9,7 +9,7 @@ import { vi, type Mock } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test redis-error-log-sampler
+ * pnpm --filter @aido/server test redis-error-log-sampler
  * ```
  */
 import { RedisErrorLogSampler } from "./redis-error-log-sampler.js";

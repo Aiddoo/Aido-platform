@@ -1,4 +1,4 @@
-import { notificationContentSchema } from "@aido/validators";
+import { notificationContentSchema } from "@aido/api";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { deterministicIndex } from "#api/shared/domain/services/deterministic-variant";

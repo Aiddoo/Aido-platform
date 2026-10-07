@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { NudgeReplyKind } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import type { NudgeReplyKind } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { FollowReader } from "#api/follow/index";

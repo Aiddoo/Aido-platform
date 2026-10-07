@@ -6,7 +6,7 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import type { Todo } from "@aido/validators";
+import type { Todo } from "@aido/api";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

@@ -129,7 +129,7 @@ export class PaginationInfoSchema {
  */
 /**
  * Swagger 문서용 커서 기반 페이지네이션 정보 스키마
- * @see numberCursorPaginationInfoSchema in packages/validators/src/domains/todo/todo.response.ts
+ * @see numberCursorPaginationInfoSchema in packages/api/src/domains/todo/todo.response.ts
  *
  * ℹ️ **커서 기반 페이지네이션**
  * - 다음 페이지는 응답받은 nextCursor를 쿼리 파라미터로 전달

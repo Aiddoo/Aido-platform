@@ -374,7 +374,7 @@ Prisma 8 CLI는 contract 생성과 별도 migration 이미지에서 사용한다
 새 서버는 1.7.x, 1.8.2 및 1.9.0의 기존 요청을 계속 수용한다. 필드 삭제, optional 필드의 required 전환, 날짜·커서 검증 강화, 성공·오류 envelope 변경은 이번 현대화에 포함하지 않는다. `app-version`은 추가 endpoint이며 기존 인증이나 API 접근에 강제 버전 조건을 붙이지 않는다.
 
 ```bash
-pnpm --filter @aido/api exec vitest run --project e2e \
+pnpm --filter @aido/server exec vitest run --project e2e \
   test/e2e/openapi-contract.e2e-spec.ts \
   test/e2e/legacy-client-compatibility.e2e-spec.ts
 ```

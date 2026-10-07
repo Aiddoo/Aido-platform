@@ -1,4 +1,4 @@
-import type { NudgeReplyKind } from "@aido/validators";
+import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 export interface NudgeSentNotification {
   nudgeId: number;

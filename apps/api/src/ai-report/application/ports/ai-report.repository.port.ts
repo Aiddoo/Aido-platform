@@ -3,7 +3,7 @@ import type {
   DayPatternItem,
   ReportStats,
   TimePatternItem,
-} from "@aido/validators";
+} from "@aido/api";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 

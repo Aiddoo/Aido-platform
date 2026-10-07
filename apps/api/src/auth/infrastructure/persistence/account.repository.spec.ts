@@ -8,7 +8,7 @@ import { and } from "@prisma/orm-postgres/orm-client";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test account.repository.spec.ts
+ * pnpm --filter @aido/server test account.repository.spec.ts
  * ```
  */
 import type { Mocked } from "vitest";

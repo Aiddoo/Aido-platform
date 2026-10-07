@@ -14,8 +14,8 @@ test('mobile and API have independent scopes', () => {
 });
 test('shared code, lock/root inputs, unknown paths and unavailable diff fail open', () => {
   for (const paths of [
-    ['packages/validators/src/todo.ts'],
-    ['packages/api/src/domains/todo/todo.response.ts'],
+    ['packages/api/src/todo.ts'],
+    ['packages/api/src/contracts/todo/todo.response.ts'],
     ['pnpm-lock.yaml'],
     ['tooling/vitest/base.ts'],
     ['new-workspace/file.ts'],

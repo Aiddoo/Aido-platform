@@ -10,7 +10,7 @@ NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높�
 | ------------------------------ | -------------------------------------------------------- |
 | API 구조·의존성                | [.claude/architecture.md](.claude/architecture.md)       |
 | Controller·UseCase·도메인 코드 | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| Zod DTO·공개 스키마            | [.claude/validators.md](.claude/validators.md)           |
+| Zod DTO·공개 스키마            | [.claude/rest-contracts.md](.claude/rest-contracts.md)   |
 | Prisma·트랜잭션·마이그레이션   | [.claude/prisma.md](.claude/prisma.md)                   |
 | 테스트                         | [.claude/testing-guide.md](.claude/testing-guide.md)     |
 | 로깅                           | [.claude/logging-guide.md](.claude/logging-guide.md)     |
@@ -36,7 +36,7 @@ HTTP → presentation → endpoint UseCase → domain + application port
 - NestJS 12/Prisma ESM: 상대 import는 `.js`, 내부 경로는 `#api/*`, 테스트는 `#test/*`를 사용한다.
 - DTO는 공유 Zod 스키마와 타입 alias이며 `@Body/Query/Param({ schema: Dto })`로 명시한다.
 - 테스트는 Vitest project(unit/integration/e2e)이며 `Mocked` 타입은 Vitest에서 import한다. Spy는 `beforeEach`에서 생성한다.
-- DTO는 `@aido/validators`, 오류는 `@aido/errors`의 `ErrorCode`를 사용한다.
+- DTO는 `@aido/api`, 오류는 `@aido/api/errors`의 `ErrorCode`를 사용한다.
 - domain에서 `@nestjs/*`, Prisma, application, infrastructure, presentation을 import하지 않는다.
 - application에서 Prisma 타입, vendor SDK, infrastructure, presentation, 타 모듈 내부 경로를 import하지 않는다.
 - 타 모듈 UseCase나 구현체를 직접 호출하지 않는다. 필요한 최소 capability를 공개 경계로 연결한다.

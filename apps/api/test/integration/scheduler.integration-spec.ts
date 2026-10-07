@@ -14,7 +14,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test scheduler.integration-spec
+ * pnpm --filter @aido/server test scheduler.integration-spec
  * ```
  */
 import { vi } from "vitest";

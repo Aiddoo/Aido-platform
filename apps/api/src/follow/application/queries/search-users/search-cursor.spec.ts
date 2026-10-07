@@ -3,7 +3,7 @@
  *
  * (rank, id) 복합 키의 인코딩/디코딩 라운드트립과 손상된 커서 방어(FOLLOW_0912)를 검증한다.
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 

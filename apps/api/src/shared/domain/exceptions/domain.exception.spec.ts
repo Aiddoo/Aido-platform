@@ -5,7 +5,7 @@
  * - 에러 코드 보존, 기본 메시지 폴백, 커스텀 메시지 우선 검증
  */
 
-import { ErrorCode, Errors } from "@aido/errors";
+import { ErrorCode, Errors } from "@aido/api/errors";
 
 import { ApplicationException } from "./application.exception.js";
 import { DomainException } from "./domain.exception.js";

@@ -1,4 +1,4 @@
-import { suggestionIdParamSchema } from "@aido/validators";
+import { suggestionIdParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const SuggestionIdParamDto = suggestionIdParamSchema.meta({

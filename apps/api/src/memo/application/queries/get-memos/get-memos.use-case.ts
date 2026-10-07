@@ -1,4 +1,4 @@
-import type { Memo as MemoResponse } from "@aido/validators";
+import type { Memo as MemoResponse } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";

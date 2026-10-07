@@ -7,7 +7,7 @@ import { UserPreferenceBuilder } from "#test/builders/index";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test user-preference.repository
+ * pnpm --filter @aido/server test user-preference.repository
  * ```
  */
 import {

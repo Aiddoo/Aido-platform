@@ -7,7 +7,7 @@
  * - 중간 실패 시 메모는 유지(delete 미호출)되고 이미 생성된 Todo는 롤백하지 않는다
  */
 
-import type { Todo } from "@aido/validators";
+import type { Todo } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

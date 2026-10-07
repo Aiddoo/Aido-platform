@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { ReportStatus } from "@aido/validators";
+import type { ReportStatus } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable } from "@nestjs/common";
 import dayjs from "dayjs";
 

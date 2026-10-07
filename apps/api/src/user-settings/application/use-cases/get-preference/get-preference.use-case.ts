@@ -1,4 +1,4 @@
-import type { PreferenceResponse } from "@aido/validators";
+import type { PreferenceResponse } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { EntitlementService } from "#api/shared/application/entitlement/entitlement.service";

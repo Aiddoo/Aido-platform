@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { MEMO_LIMITS } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import {
   Body,
   Controller,

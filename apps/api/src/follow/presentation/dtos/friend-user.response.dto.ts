@@ -1,4 +1,4 @@
-import { friendRequestUserSchema, friendUserSchema } from "@aido/validators";
+import { friendRequestUserSchema, friendUserSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const FriendUserResponseDto = friendUserSchema.meta({ id: "FriendUserResponseDto" });

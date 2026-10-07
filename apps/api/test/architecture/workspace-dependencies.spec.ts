@@ -26,6 +26,22 @@ function readWorkspaceManifests(): WorkspaceManifest[] {
 }
 
 describe("Workspace 의존성 경계", () => {
+  it("공유 REST 계약에 서버·네이티브 런타임 의존성이 없어야 한다", () => {
+    // Given
+    const sourceRoot = resolve(workspaceRoot, "packages/api/src");
+    const sources = readdirSync(sourceRoot, { recursive: true, encoding: "utf8" }).filter((file) =>
+      file.endsWith(".ts"),
+    );
+    const serverImport =
+      /(?:from|import)\s*(?:[\w\s{},*]+\s*from\s*)?["'](?:@nestjs\/|@prisma\/|@aido\/(?:server|mobile)|node:|pg["']|react-native)/;
+    // When & Then
+    for (const file of sources) {
+      const code = readFileSync(resolve(sourceRoot, file), "utf8");
+      expect(code, file).not.toMatch(serverImport);
+      if (file.startsWith("vocabulary/")) expect(code, file).not.toMatch(/from\s*["']zod["']/);
+    }
+  });
+
   it("서버와 공유 계약을 포함한 모든 패키지 이름이 고유해야 한다", () => {
     // Given
     const names = readWorkspaceManifests().map((manifest) => manifest.name);

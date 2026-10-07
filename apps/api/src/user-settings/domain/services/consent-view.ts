@@ -2,7 +2,7 @@ import type {
   ConsentResponse,
   UpdateMarketingConsentResponse,
   UpdateMarketingPushConsentResponse,
-} from "@aido/validators";
+} from "@aido/api";
 
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 

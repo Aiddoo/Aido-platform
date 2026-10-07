@@ -1,4 +1,4 @@
-import { BROADCAST_TARGET_FILTER } from "@aido/validators";
+import { BROADCAST_TARGET_FILTER } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import type { ModelAccessor } from "@prisma/orm-postgres/orm-client";
 import { all, and } from "@prisma/orm-postgres/orm-client";

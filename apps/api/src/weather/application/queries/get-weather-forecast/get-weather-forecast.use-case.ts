@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";

@@ -1,8 +1,8 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
-/** HEX 색상 코드 형식 (#RRGGBB) — @aido/validators의 hexColorRegex와 동일 */
+/** HEX 색상 코드 형식 (#RRGGBB) — @aido/api의 hexColorRegex와 동일 */
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
 /**

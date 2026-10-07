@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { TODO_ITEM_LIMITS } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_ITEM_LIMITS } from "@aido/api/vocabulary";
 
 import { now } from "#api/shared/domain/date/utils/core";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";

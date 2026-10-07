@@ -1,4 +1,4 @@
-import type { RevenueCatWebhookPayload } from "@aido/validators";
+import type { RevenueCatWebhookPayload } from "@aido/api";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 

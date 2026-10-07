@@ -1,11 +1,11 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 /**
  * CreateRecurringTodosUseCase 단위 테스트
  *
  * Suites + 포트 mock 팩토리 + GWT 패턴
  * 오라클: 레거시 TodoService.createRecurring 분기(0개·MAX 초과·한도·이벤트) 재현
  */
-import { TODO_LIMITS } from "@aido/validators";
+import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";

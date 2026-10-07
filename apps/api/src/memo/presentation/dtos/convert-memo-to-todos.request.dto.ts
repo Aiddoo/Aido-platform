@@ -1,4 +1,4 @@
-import { convertMemoToTodosSchema } from "@aido/validators";
+import { convertMemoToTodosSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const ConvertMemoToTodosDto = convertMemoToTodosSchema.meta({ id: "ConvertMemoToTodosDto" });

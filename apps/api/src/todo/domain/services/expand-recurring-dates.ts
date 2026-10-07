@@ -1,4 +1,4 @@
-import { DAY_OF_WEEK_MAP, type DayOfWeek } from "@aido/validators";
+import { DAY_OF_WEEK_MAP, type DayOfWeek } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 
 /**

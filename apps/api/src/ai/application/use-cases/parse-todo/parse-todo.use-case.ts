@@ -1,6 +1,6 @@
-import { ErrorCode } from "@aido/errors";
-import type { ParsedTodoData } from "@aido/validators";
-import { parsedTodoDataSchema } from "@aido/validators";
+import type { ParsedTodoData } from "@aido/api";
+import { parsedTodoDataSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { now } from "#api/shared/domain/date/utils/core";

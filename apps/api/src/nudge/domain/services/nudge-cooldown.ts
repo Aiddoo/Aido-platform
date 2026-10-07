@@ -1,4 +1,4 @@
-import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/validators";
+import { NUDGE_LIMITS, REMIND_NUDGE_LIMITS } from "@aido/api/vocabulary";
 
 import { calculateCooldown } from "#api/shared/domain/date/utils/cooldown";
 

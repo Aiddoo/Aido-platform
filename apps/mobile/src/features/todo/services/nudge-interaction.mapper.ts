@@ -2,7 +2,7 @@ import type {
   NudgeInteractionResponse,
   NudgeInteractionsResponse,
   NudgeThanksPreviewResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   NudgeInteraction,

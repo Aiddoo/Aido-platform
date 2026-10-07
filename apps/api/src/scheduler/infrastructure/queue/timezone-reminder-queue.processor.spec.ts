@@ -8,7 +8,7 @@ import { TestBed } from "@suites/unit";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test timezone-reminder-queue.processor
+ * pnpm --filter @aido/server test timezone-reminder-queue.processor
  * ```
  */
 import type { Mocked } from "vitest";

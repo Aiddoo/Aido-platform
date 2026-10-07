@@ -1,4 +1,4 @@
-import type { SubscriptionStatus, UserRole } from "@aido/validators";
+import type { SubscriptionStatus, UserRole } from "@aido/api";
 
 import type { AccountProvider, UserStatus, VerificationType } from "../../domain/types.js";
 import type { CreateSessionData } from "../types/index.js";

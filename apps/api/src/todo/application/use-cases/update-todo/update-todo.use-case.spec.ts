@@ -1,11 +1,11 @@
-import { ErrorCode } from "@aido/errors";
 /**
  * UpdateTodoUseCase 단위 테스트
  *
  * Suites + 포트 mock 팩토리 + GWT 패턴
  * 오라클: 레거시 TodoService.update 분기(completedAt 전이 3분기·카테고리 캐시·이벤트) 재현
  */
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";

@@ -1,4 +1,4 @@
-import { AI_SUGGESTION_LIMITS } from "@aido/validators";
+import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 

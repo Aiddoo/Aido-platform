@@ -1,4 +1,4 @@
-import type { ReplyToNudgeInput } from '@aido/validators';
+import type { ReplyToNudgeInput } from '@aido/api';
 import { useErrorReporter, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
 import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/presentations/constants/notification-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';

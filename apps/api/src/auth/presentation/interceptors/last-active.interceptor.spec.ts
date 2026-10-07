@@ -1,4 +1,4 @@
-import type { CurrentUserPayload } from "@aido/validators";
+import type { CurrentUserPayload } from "@aido/api";
 import { Logger } from "@nestjs/common";
 import { of } from "rxjs";
 import { vi, type MockInstance } from "vitest";

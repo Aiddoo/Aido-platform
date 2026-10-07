@@ -1,4 +1,4 @@
-import { createCheerSchema, markCheerReadSchema, markCheersReadSchema } from "@aido/validators";
+import { createCheerSchema, markCheerReadSchema, markCheersReadSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const SendCheerDto = createCheerSchema.meta({ id: "SendCheerDto" });

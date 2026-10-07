@@ -1,4 +1,4 @@
-import { aiReportIdParamSchema } from "@aido/validators";
+import { aiReportIdParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const AiReportIdParamDto = aiReportIdParamSchema.meta({

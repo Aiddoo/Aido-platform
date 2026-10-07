@@ -27,8 +27,12 @@ export default defineConfig({
     alias: {
       "#api": resolve(import.meta.dirname, "src"),
       "#test": resolve(import.meta.dirname, "test"),
-      "@aido/errors": resolve(import.meta.dirname, "../../packages/errors/src/index.ts"),
-      "@aido/validators": resolve(import.meta.dirname, "../../packages/validators/src/index.ts"),
+      "@aido/api/errors": resolve(import.meta.dirname, "../../packages/api/src/errors/index.ts"),
+      "@aido/api/vocabulary": resolve(
+        import.meta.dirname,
+        "../../packages/api/src/vocabulary/index.ts",
+      ),
+      "@aido/api": resolve(import.meta.dirname, "../../packages/api/src/index.ts"),
     },
   },
   test: {

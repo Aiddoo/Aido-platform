@@ -1,4 +1,4 @@
-import { FOLLOW_LIMITS } from "@aido/validators";
+import { FOLLOW_LIMITS } from "@aido/api";
 import request from "supertest";
 /**
  * Follow 리소스 제한 E2E 테스트

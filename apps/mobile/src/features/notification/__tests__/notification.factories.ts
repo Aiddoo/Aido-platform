@@ -3,7 +3,7 @@ import type {
   NotificationListResponse,
   RegisterTokenResponse,
   UnreadCountResponse,
-} from '@aido/validators';
+} from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 const generateNotificationListResponseDto = (): NotificationListResponse => ({

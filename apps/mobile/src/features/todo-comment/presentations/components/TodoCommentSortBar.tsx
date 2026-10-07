@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT } from '@aido/validators';
+import { TODO_COMMENT_SORT } from '@aido/api';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, HStack, Text } from '@src/shared/ui';
 import { Menu, type MenuKey, PressableFeedback, Spinner } from 'heroui-native';

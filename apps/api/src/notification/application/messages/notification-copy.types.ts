@@ -1,4 +1,4 @@
-import type { NudgeReplyKind } from "@aido/validators";
+import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 /** 로케일 카탈로그가 렌더링하는 제목과 본문. */
 export interface NotificationCopy {

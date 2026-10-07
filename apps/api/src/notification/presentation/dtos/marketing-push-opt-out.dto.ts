@@ -1,4 +1,4 @@
-import { marketingPushOptOutResponseSchema, marketingPushOptOutSchema } from "@aido/validators";
+import { marketingPushOptOutResponseSchema, marketingPushOptOutSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const MarketingPushOptOutDto = marketingPushOptOutSchema.meta({

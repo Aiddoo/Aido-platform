@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { NotificationAction } from "@aido/validators";
+import type { NotificationAction } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 

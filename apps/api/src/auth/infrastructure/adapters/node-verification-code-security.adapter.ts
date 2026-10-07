@@ -1,6 +1,6 @@
 import { createHash, randomInt } from "node:crypto";
 
-import { VERIFICATION_CODE } from "@aido/validators";
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 
 import type {

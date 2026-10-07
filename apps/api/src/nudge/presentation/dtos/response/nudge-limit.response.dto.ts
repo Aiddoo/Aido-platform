@@ -2,7 +2,7 @@ import {
   createNudgeResponseSchema,
   markNudgeReadResponseSchema,
   nudgeLimitInfoSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const NudgeLimitInfoDto = nudgeLimitInfoSchema.meta({ id: "NudgeLimitInfoDto" });

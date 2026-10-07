@@ -1,4 +1,4 @@
-import type { AiReport as AiReportDto } from "@aido/validators";
+import type { AiReport as AiReportDto } from "@aido/api";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 

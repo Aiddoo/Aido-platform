@@ -5,7 +5,7 @@ import { TestBed } from "@suites/unit";
  * RevenueCat 웹훅 이벤트 타입별 처리·멱등성·예외를 포트 mock으로 격리 검증한다.
  * 모든 예외는 ApplicationException(SUBSCRIPTION_16xx)으로 정규화된다.
  *
- * @execute pnpm --filter @aido/api test -- handle-webhook-event.use-case.spec
+ * @execute pnpm --filter @aido/server test -- handle-webhook-event.use-case.spec
  */
 import { vi, type Mock } from "vitest";
 import type { Mocked } from "vitest";

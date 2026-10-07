@@ -1,4 +1,4 @@
-import { appStoreVersionPattern } from "@aido/validators";
+import { appStoreVersionPattern } from "@aido/api";
 import { ApiProperty } from "@nestjs/swagger";
 
 class PlatformVersionDto {

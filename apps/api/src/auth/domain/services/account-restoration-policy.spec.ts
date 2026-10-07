@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import { ACCOUNT_DELETION } from "#api/auth/domain/constants/auth.constants";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";

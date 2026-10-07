@@ -1,4 +1,4 @@
-import { ACCOUNT_DELETION } from "@aido/validators";
+import { ACCOUNT_DELETION } from "@aido/api";
 /**
  * 회원 탈퇴 통합 테스트 (Testcontainers)
  *
@@ -17,7 +17,7 @@ import { ACCOUNT_DELETION } from "@aido/validators";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test account-deletion.integration-spec
+ * pnpm --filter @aido/server test account-deletion.integration-spec
  * ```
  */
 import { TransactionHost } from "@nestjs-cls/transactional";

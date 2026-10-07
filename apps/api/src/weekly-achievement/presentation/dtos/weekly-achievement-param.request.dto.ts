@@ -1,4 +1,4 @@
-import { weeklyAchievementParamSchema } from "@aido/validators";
+import { weeklyAchievementParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const WeeklyAchievementParamDto = weeklyAchievementParamSchema.meta({

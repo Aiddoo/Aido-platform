@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { NOTIFICATION_CATEGORY } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { NOTIFICATION_CATEGORY } from "@aido/api/vocabulary";
 import {
   Body,
   Controller,

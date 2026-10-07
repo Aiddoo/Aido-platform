@@ -55,8 +55,8 @@ services:
     volumes:
       - ./apps/api/src:/app/apps/api/src
       - ./apps/api/prisma:/app/apps/api/prisma
-      - ./packages/errors/src:/app/packages/errors/src
-      - ./packages/validators/src:/app/packages/validators/src
+      - ./packages/api/src:/app/packages/api/src
+      - ./packages/api/src:/app/packages/api/src
     healthcheck:
       test:
         ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1']

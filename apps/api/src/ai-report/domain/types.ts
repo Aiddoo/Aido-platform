@@ -1,4 +1,4 @@
-import type { CategoryBreakdownItem, DayPatternItem, TimePatternItem } from "@aido/validators";
+import type { CategoryBreakdownItem, DayPatternItem, TimePatternItem } from "@aido/api";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 

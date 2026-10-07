@@ -1,4 +1,4 @@
-import { aiReportListResponseSchema, aiReportResponseSchema } from "@aido/validators";
+import { aiReportListResponseSchema, aiReportResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const AiReportResponseDto = aiReportResponseSchema.meta({ id: "AiReportResponseDto" });

@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { AI_SUGGESTION_LIMITS, dayOfWeekSchema } from "@aido/validators";
+import { AI_SUGGESTION_LIMITS, dayOfWeekSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 import { z } from "zod";

@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT, z } from "@aido/validators";
+import { TODO_COMMENT_SORT, z } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

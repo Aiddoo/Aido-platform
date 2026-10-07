@@ -11,7 +11,7 @@
  * 3. 날씨 부가 정보 조회 (GET /weather/conditions)
  *
  * 실행 명령:
- * pnpm --filter @aido/api test:e2e -- weather.e2e-spec
+ * pnpm --filter @aido/server test:e2e -- weather.e2e-spec
  */
 
 import request from "supertest";

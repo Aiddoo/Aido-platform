@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import {
   Header,
   Headers,

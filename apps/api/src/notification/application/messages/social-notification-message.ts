@@ -256,4 +256,4 @@ export function createTodoCommentNotificationMessage(
         templateKey: "todo_comment.reply",
       });
 }
-import type { NudgeReplyKind } from "@aido/validators";
+import type { NudgeReplyKind } from "@aido/api/vocabulary";

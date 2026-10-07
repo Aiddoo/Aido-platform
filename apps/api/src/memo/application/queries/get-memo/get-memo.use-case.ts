@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { Memo as MemoResponse } from "@aido/validators";
+import type { Memo as MemoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";

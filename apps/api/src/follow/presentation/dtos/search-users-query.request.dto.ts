@@ -1,4 +1,4 @@
-import { searchUsersQuerySchema } from "@aido/validators";
+import { searchUsersQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const SearchUsersQueryDto = searchUsersQuerySchema.meta({

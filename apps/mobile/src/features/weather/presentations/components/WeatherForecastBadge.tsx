@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors/api-error';
 import { useSingleTap } from '@src/shared/hooks/useSingleTap';
 import { useTranslation } from '@src/shared/i18n';

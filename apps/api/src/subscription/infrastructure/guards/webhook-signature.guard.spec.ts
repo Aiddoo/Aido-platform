@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test webhook-signature.guard
+ * pnpm --filter @aido/server test webhook-signature.guard
  * ```
  */
 import { Test } from "@nestjs/testing";

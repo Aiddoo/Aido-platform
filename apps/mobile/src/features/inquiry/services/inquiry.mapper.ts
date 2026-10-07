@@ -1,4 +1,4 @@
-import type { CreateInquiryResponse } from '@aido/validators';
+import type { CreateInquiryResponse } from '@aido/api';
 
 import type { InquiryResult } from '../models/inquiry.model';
 

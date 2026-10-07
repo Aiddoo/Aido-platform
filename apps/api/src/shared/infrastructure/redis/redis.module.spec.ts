@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test redis.module
+ * pnpm --filter @aido/server test redis.module
  * ```
  */
 import type { Provider, ValueProvider } from "@nestjs/common";

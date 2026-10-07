@@ -8,7 +8,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test redis-client.factory
+ * pnpm --filter @aido/server test redis-client.factory
  * ```
  */
 import {

@@ -1,12 +1,12 @@
-import { ErrorCode } from "@aido/errors";
 /**
  * ChangeTodoCategoryUseCase 단위 테스트
  *
  * Suites + 포트 mock 팩토리 + GWT 패턴
  * 오라클: 레거시 TodoService.updateCategory 분기(활성/완료·한도·캐시) 재현
  */
-import type { Todo as TodoResponse } from "@aido/validators";
-import { TODO_LIMITS } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 import type { Mocked } from "vitest";

@@ -1,11 +1,11 @@
+import type { Todo as TodoResponse } from "@aido/api";
 /**
  * GetFriendTodosUseCase 단위 테스트
  *
  * - 날짜 검증 → 맞팔 권한 확인 → 첫 페이지 캐시 조회 → 미스 시 조회·캐싱
  * - 캐시는 첫 페이지(cursor 미지정)만, 권한 확인은 캐시 히트와 무관하게 매 요청 수행
  */
-import { ErrorCode } from "@aido/errors";
-import type { Todo as TodoResponse } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

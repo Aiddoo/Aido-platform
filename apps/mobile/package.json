@@ -48,8 +48,7 @@
     "generate:tab-icons": "node scripts/generate-tab-icons.mjs"
   },
   "dependencies": {
-    "@aido/errors": "workspace:^",
-    "@aido/validators": "workspace:*",
+    "@aido/api": "workspace:*",
     "@babel/runtime": "7.29.7",
     "@expo/dom-webview": "catalog:expo58",
     "@expo/metro-runtime": "catalog:expo58",
@@ -156,8 +155,7 @@
     "doctor": {
       "reactNativeDirectoryCheck": {
         "exclude": [
-          "@aido/errors",
-          "@aido/validators"
+          "@aido/api"
         ]
       }
     }

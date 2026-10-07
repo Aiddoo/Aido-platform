@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { Injectable, Logger } from "@nestjs/common";
 import Expo, { type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
 

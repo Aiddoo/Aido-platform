@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import type { UserRole } from "@aido/validators";
+import type { UserRole } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import { JwtService, TokenExpiredError } from "@nestjs/jwt";
 

@@ -1,4 +1,4 @@
-import type { NotificationCategory } from '@aido/validators';
+import type { NotificationCategory } from '@aido/api';
 import { FlashList } from '@shopify/flash-list';
 import { useRefresh } from '@src/shared/hooks/useRefresh';
 import { useToday } from '@src/shared/hooks/useToday';

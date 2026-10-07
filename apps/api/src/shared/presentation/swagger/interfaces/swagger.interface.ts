@@ -1,4 +1,4 @@
-import type { ErrorCodeType } from "@aido/errors";
+import type { ErrorCodeType } from "@aido/api/errors";
 import type { Type } from "@nestjs/common";
 import type { z } from "zod";
 

@@ -1,4 +1,4 @@
-import type { DayOfWeek } from "@aido/validators";
+import type { DayOfWeek } from "@aido/api/vocabulary";
 
 export const RECURRING_TODO_CREATOR = Symbol("RECURRING_TODO_CREATOR");
 

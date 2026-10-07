@@ -1,4 +1,4 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";

@@ -1,12 +1,12 @@
 /**
  * Auth 모듈 상수 정의
  *
- * 공유 상수는 @aido/validators에서 re-export
+ * 공유 상수는 @aido/api에서 re-export
  * API 전용 상수만 여기서 정의
  */
 
 // ============================================
-// 공유 상수 re-export (@aido/validators)
+// 공유 상수 re-export (@aido/api)
 // ============================================
 
 export {
@@ -18,7 +18,7 @@ export {
   type SecurityEvent,
   VERIFICATION_TYPE,
   type VerificationTypeValue,
-} from "@aido/validators";
+} from "@aido/api";
 
 // ============================================
 // API 전용 상수

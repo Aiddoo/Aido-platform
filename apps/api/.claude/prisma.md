@@ -15,14 +15,14 @@ Prisma 8 PostgreSQL ORM과 contract migration graph를 사용한다. ORM은 `@pr
 
 ## 명령
 
-| 명령                                                   | 용도                                     |
-| ------------------------------------------------------ | ---------------------------------------- |
-| `pnpm db:generate`                                     | 계약 JSON과 타입 생성                    |
-| `pnpm db:plan -- --name <name> --from <hash>`          | 명시한 이전 계약에서 migration 계획 생성 |
-| `pnpm db:migrate`                                      | 로컬 DB에 검토된 graph 적용              |
-| `pnpm db:verify`                                       | 현재 계약과 실제 스키마 비교             |
-| `pnpm --filter @aido/api db:deploy`                    | URL 검증·pg-boss·기존 DB 등록·graph 적용 |
-| `pnpm --filter @aido/api exec prisma migration status` | 적용 상태와 경로 확인                    |
+| 명령                                                      | 용도                                     |
+| --------------------------------------------------------- | ---------------------------------------- |
+| `pnpm db:generate`                                        | 계약 JSON과 타입 생성                    |
+| `pnpm db:plan -- --name <name> --from <hash>`             | 명시한 이전 계약에서 migration 계획 생성 |
+| `pnpm db:migrate`                                         | 로컬 DB에 검토된 graph 적용              |
+| `pnpm db:verify`                                          | 현재 계약과 실제 스키마 비교             |
+| `pnpm --filter @aido/server db:deploy`                    | URL 검증·pg-boss·기존 DB 등록·graph 적용 |
+| `pnpm --filter @aido/server exec prisma migration status` | 적용 상태와 경로 확인                    |
 
 계약 변경 후 먼저 emit하고 plan한다. 변경한 `migration.ts`는 `node prisma/migrations8/app/<dir>/migration.ts --config prisma.config.ts`로 self-emit한다. `ops.json`과 `migration.json`을 손으로 수정하지 않는다. 물리 스키마가 같은 codec 전환도 `migration new --from <hash>`로 0-operation graph edge를 남긴다. 적용된 migration과 snapshot은 변경하지 않는다. 신규 변경은 새 migration으로 연결한다.
 

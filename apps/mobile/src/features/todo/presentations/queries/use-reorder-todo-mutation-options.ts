@@ -1,4 +1,4 @@
-import type { ReorderTodoInput } from '@aido/validators';
+import type { ReorderTodoInput } from '@aido/api';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';

@@ -8,10 +8,10 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test todo.controller
+ * pnpm --filter @aido/server test todo.controller
  * ```
  */
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

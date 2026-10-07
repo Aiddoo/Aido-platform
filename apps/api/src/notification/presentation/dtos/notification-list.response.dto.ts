@@ -1,4 +1,4 @@
-import { notificationListResponseSchema } from "@aido/validators";
+import { notificationListResponseSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const NotificationListResponseDto = notificationListResponseSchema.meta({

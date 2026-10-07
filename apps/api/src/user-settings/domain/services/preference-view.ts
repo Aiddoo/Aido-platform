@@ -2,7 +2,7 @@ import {
   type PreferenceResponse,
   type UpdatePreferenceResponse,
   USER_PREFERENCE_DEFAULTS,
-} from "@aido/validators";
+} from "@aido/api";
 
 import { DEFAULT_LOCALE } from "#api/shared/domain/locale";
 

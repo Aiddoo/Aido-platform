@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test korean-seasonal-context
+ * pnpm --filter @aido/server test korean-seasonal-context
  * ```
  */
 import { getKoreanSeasonalContext } from "./korean-seasonal-context.js";

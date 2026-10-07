@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { InquiryCategory } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import type { InquiryCategory } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { now } from "#api/shared/domain/date/utils/core";

@@ -1,4 +1,4 @@
-import { NIGHT_TIME_CONFIG } from "@aido/validators";
+import { NIGHT_TIME_CONFIG } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 
 import { resolveTimezone } from "#api/shared/domain/date/utils/timezone";

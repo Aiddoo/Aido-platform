@@ -4,7 +4,7 @@ import {
   type DayOfWeek,
   dayIndexToDayOfWeek,
   reportStatsSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import dayjs from "dayjs";
 

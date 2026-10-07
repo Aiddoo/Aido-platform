@@ -1,4 +1,4 @@
-import type { Todo, TodoCommentSort, TodoDetailsResponse } from "@aido/validators";
+import type { Todo, TodoCommentSort, TodoDetailsResponse } from "@aido/api";
 
 import type { ThreadPlacement } from "../domain/value-objects/thread-placement.vo.js";
 

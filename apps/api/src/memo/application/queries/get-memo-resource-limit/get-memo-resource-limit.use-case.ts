@@ -1,4 +1,4 @@
-import { MEMO_LIMITS } from "@aido/validators";
+import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { MEMO_REPOSITORY, type MemoRepositoryPort } from "../../ports/memo.repository.port.js";

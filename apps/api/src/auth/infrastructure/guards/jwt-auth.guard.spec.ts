@@ -7,11 +7,11 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test jwt-auth.guard.spec.ts
+ * pnpm --filter @aido/server test jwt-auth.guard.spec.ts
  * ```
  */
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { Reflector } from "@nestjs/core";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";

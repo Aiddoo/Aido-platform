@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import type { Logger } from "@nestjs/common";
 import type { HttpClient } from "@nestjs/http-client";
 

@@ -9,7 +9,7 @@ import {
   type TodoComment,
   type TodoCommentOverviewResponse,
   type TodoConversationResponse,
-} from "@aido/validators";
+} from "@aido/api";
 import request from "supertest";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";

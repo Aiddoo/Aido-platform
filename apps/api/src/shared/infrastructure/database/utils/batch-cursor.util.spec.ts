@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test batch-cursor.util
+ * pnpm --filter @aido/server test batch-cursor.util
  * ```
  */
 import { forEachBatch } from "./batch-cursor.util.js";

@@ -1,4 +1,4 @@
-import { notificationContentSchema } from "@aido/validators";
+import { notificationContentSchema } from "@aido/api";
 
 import * as en from "./locales/en.js";
 import * as ko from "./locales/ko.js";

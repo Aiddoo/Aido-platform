@@ -1,10 +1,6 @@
-import { ErrorCode } from "@aido/errors";
-import type {
-  TodoCommentSort,
-  TodoConversationFocus,
-  TodoConversationResponse,
-} from "@aido/validators";
-import { TODO_COMMENT_LIMITS } from "@aido/validators";
+import type { TodoCommentSort, TodoConversationFocus, TodoConversationResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
+import { TODO_COMMENT_LIMITS } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { ApplicationException } from "#api/shared/domain/index";

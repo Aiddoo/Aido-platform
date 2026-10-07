@@ -3,7 +3,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test region-code.spec
+ * pnpm --filter @aido/server test region-code.spec
  * ```
  */
 

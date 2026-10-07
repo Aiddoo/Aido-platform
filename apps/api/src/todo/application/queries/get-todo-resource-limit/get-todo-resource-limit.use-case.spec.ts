@@ -4,7 +4,7 @@
  * - 카테고리당 활성 Todo 상한(TODO_LIMITS.MAX_PER_CATEGORY, 전 구독 동일)과 현재 개수를 합성
  * - categoryId가 있으면 활성 개수까지 조회하고, 없으면 상한만 반환한다
  */
-import { TODO_LIMITS } from "@aido/validators";
+import { TODO_LIMITS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

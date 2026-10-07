@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { VERIFICATION_CODE } from "@aido/validators";
+import { VERIFICATION_CODE } from "@aido/api/vocabulary";
 
 import { NodeVerificationCodeSecurityAdapter } from "./node-verification-code-security.adapter.js";
 

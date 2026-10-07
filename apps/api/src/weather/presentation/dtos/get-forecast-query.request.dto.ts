@@ -1,4 +1,4 @@
-import { getForecastQuerySchema } from "@aido/validators";
+import { getForecastQuerySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetForecastQueryDto = getForecastQuerySchema.meta({

@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test auth.controller.spec.ts
+ * pnpm --filter @aido/server test auth.controller.spec.ts
  * ```
  */
 

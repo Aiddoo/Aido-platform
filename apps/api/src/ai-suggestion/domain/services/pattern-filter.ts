@@ -4,7 +4,7 @@
  * 서비스 오케스트레이션에서 분리된 도메인 순수 로직.
  * 외부 의존성(DB/Queue/Network) 없이 입력 → 출력만으로 정의되어 테스트·재사용이 용이.
  */
-import { AI_SUGGESTION_LIMITS } from "@aido/validators";
+import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 
 import type { SuggestionContext } from "../types.js";
 import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt.js";

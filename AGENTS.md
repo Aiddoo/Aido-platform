@@ -30,8 +30,7 @@ NestJS 12 ESM · Prisma 8 RC · PostgreSQL 16 · Expo SDK 58 · React Native 0.8
 ```
 apps/api            NestJS 백엔드
 apps/mobile         Expo 모바일 앱
-packages/validators Zod 스키마 (@aido/validators)
-packages/errors     에러 코드 (@aido/errors)
+packages/api        REST 스키마·오류 계약·순수 공용 타입 (@aido/api)
 tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 ```
 
@@ -62,7 +61,7 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | API 기능 추가 (실용형 DDD·Clean Architecture, 참조 구현: todo) | [`apps/api/AGENTS.md`](apps/api/AGENTS.md) → [`apps/api/.claude/architecture.md`](apps/api/.claude/architecture.md) → [`apps/api/.claude/api-conventions.md`](apps/api/.claude/api-conventions.md) |
 | Mobile 기능 추가 (Feature-based)                               | [`apps/mobile/AGENTS.md`](apps/mobile/AGENTS.md) → [`apps/mobile/.claude/architecture.md`](apps/mobile/.claude/architecture.md)                                                                    |
-| Zod 스키마 / DTO 추가                                          | [`apps/api/.claude/validators.md`](apps/api/.claude/validators.md)                                                                                                                                 |
+| Zod 스키마 / DTO 추가                                          | [`apps/api/.claude/rest-contracts.md`](apps/api/.claude/rest-contracts.md)                                                                                                                         |
 | Prisma 스키마 변경                                             | [`apps/api/.claude/prisma.md`](apps/api/.claude/prisma.md)                                                                                                                                         |
 | 단위/통합/E2E 테스트                                           | `apps/{api,mobile}/.claude/testing-guide.md`                                                                                                                                                       |
 | Mobile UI 컴포넌트                                             | [`apps/mobile/.claude/ui-components.md`](apps/mobile/.claude/ui-components.md)                                                                                                                     |
@@ -79,8 +78,8 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 - **린트/포맷**: Oxlint + Oxfmt — `pnpm lint`, `pnpm format:check`, `pnpm format`
 - **커밋**: Conventional Commits (`pnpm commit` 권장)
 - **타입**: `strict: true` 유지
-- **DTO**: `@aido/validators`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
-- **에러 코드**: `@aido/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
+- **DTO**: `@aido/api`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
+- **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
 - **API 문서**: Swagger UI는 `http://localhost:8080/api-docs`
 - **AGENTS.md**: Claude/Codex 공통 지침의 단일 원본. 세션 컨텍스트에 포함되므로 _얇게 유지_. 상세는 `.claude/*.md`로 분리
 

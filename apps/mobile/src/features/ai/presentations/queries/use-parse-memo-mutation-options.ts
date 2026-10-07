@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';
 import { useTrack } from '@src/shared/analytics';

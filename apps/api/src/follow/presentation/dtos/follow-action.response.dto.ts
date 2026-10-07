@@ -4,7 +4,7 @@ import {
   removeFriendResponseSchema,
   reorderFriendResponseSchema,
   sendFriendRequestResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const SendFriendRequestResponseDto = sendFriendRequestResponseSchema.meta({

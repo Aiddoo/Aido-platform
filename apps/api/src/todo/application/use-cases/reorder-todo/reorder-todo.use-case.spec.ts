@@ -5,8 +5,8 @@
  * 오라클: 레거시 TodoService.reorder 분기(상대 이동·엣지 이동·자기 자신·타깃 없음) 재현
  */
 
-import { ErrorCode } from "@aido/errors";
-import type { Todo as TodoResponse } from "@aido/validators";
+import type { Todo as TodoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

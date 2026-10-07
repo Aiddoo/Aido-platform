@@ -2,7 +2,7 @@ import type {
   TodoCommentCursorPagination,
   TodoConversationConnection,
   TodoConversationItem,
-} from "@aido/validators";
+} from "@aido/api";
 
 import type { TodoCommentRecord, TodoConversationRecord } from "../types.js";
 import { toTodoCommentResponse } from "./todo-comment.presenter.js";

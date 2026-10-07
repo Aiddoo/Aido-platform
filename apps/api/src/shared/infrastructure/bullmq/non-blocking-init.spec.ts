@@ -9,7 +9,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test non-blocking-init
+ * pnpm --filter @aido/server test non-blocking-init
  * ```
  */
 import { runInBackground } from "./non-blocking-init.js";

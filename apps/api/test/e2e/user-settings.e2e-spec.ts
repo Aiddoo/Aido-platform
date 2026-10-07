@@ -11,7 +11,7 @@
  * 3. 마케팅 동의 수정 (PATCH /auth/consent/marketing)
  *
  * 실행 명령:
- * pnpm --filter @aido/api test:e2e -- user-settings.e2e-spec
+ * pnpm --filter @aido/server test:e2e -- user-settings.e2e-spec
  */
 
 import request from "supertest";

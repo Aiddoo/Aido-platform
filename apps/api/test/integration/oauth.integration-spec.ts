@@ -17,7 +17,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test oauth.integration-spec
+ * pnpm --filter @aido/server test oauth.integration-spec
  * ```
  */
 import { Logger } from "@nestjs/common";

@@ -3,7 +3,7 @@ import {
   createRemindNudgeSchema,
   markNudgeReadSchema,
   markNudgesReadSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const SendNudgeDto = createNudgeSchema.meta({ id: "SendNudgeDto" });

@@ -1,4 +1,4 @@
-import { reorderMemoSchema } from "@aido/validators";
+import { reorderMemoSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const ReorderMemoDto = reorderMemoSchema.meta({ id: "ReorderMemoDto" });

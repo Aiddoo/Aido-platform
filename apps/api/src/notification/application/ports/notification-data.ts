@@ -1,4 +1,4 @@
-import type { NotificationActionType } from "@aido/validators";
+import type { NotificationActionType } from "@aido/api";
 
 import type { NotificationType } from "../../domain/types/notification-type.js";
 

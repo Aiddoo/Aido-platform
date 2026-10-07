@@ -7,8 +7,8 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm --filter @aido/mobile check:conventions",
     "clean": "turbo run clean && rm -rf node_modules",
     "commit": "cz",
-    "db:generate": "pnpm --filter @aido/api db:generate",
-    "db:migrate": "pnpm --filter @aido/api db:migrate",
+    "db:generate": "pnpm --filter @aido/server db:generate",
+    "db:migrate": "pnpm --filter @aido/server db:migrate",
     "dev": "turbo run dev",
     "docker:dev:build": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml build",
     "docker:dev:down": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml down",
@@ -31,12 +31,12 @@
     "test": "turbo run test",
     "test:all": "turbo run test && turbo run test:integration && turbo run test:e2e",
     "test:cov": "turbo run test:cov",
-    "test:coverage": "pnpm --filter @aido/api test:coverage && pnpm --filter @aido/mobile test:coverage",
-    "test:e2e": "turbo run test:e2e --filter=@aido/api",
+    "test:coverage": "pnpm --filter @aido/server test:coverage && pnpm --filter @aido/mobile test:coverage",
+    "test:e2e": "turbo run test:e2e --filter=@aido/server",
     "typecheck": "turbo run typecheck",
-    "test:integration": "turbo run test:integration --filter=@aido/api",
-    "db:plan": "pnpm --filter @aido/api db:plan",
-    "db:verify": "pnpm --filter @aido/api db:verify"
+    "test:integration": "turbo run test:integration --filter=@aido/server",
+    "db:plan": "pnpm --filter @aido/server db:plan",
+    "db:verify": "pnpm --filter @aido/server db:verify"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",

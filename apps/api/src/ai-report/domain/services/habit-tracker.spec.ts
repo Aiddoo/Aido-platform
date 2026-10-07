@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test habit-tracker
+ * pnpm --filter @aido/server test habit-tracker
  * ```
  */
 import dayjs from "dayjs";

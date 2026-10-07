@@ -1,6 +1,6 @@
-import { ErrorCode } from "@aido/errors";
-import type { Memo as MemoResponse } from "@aido/validators";
-import { MEMO_LIMITS } from "@aido/validators";
+import type { Memo as MemoResponse } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
+import { MEMO_LIMITS } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";

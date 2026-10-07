@@ -5,7 +5,7 @@
  * 실패 시 보상 감소를 캡슐화한다(SRP/DRY). 한도 판정 자체는 순수 도메인 규칙을
  * 사용하고, 저장소 접근은 포트로 역전한다.
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import {

@@ -14,7 +14,6 @@
 import { createHash, createHmac } from "node:crypto";
 import { parseArgs } from "node:util";
 
-import { ErrorCode, type ErrorCodeType, HttpStatus } from "@aido/errors";
 import {
   currentUserSchema,
   deleteTodoCommentResponseSchema,
@@ -24,7 +23,8 @@ import {
   todoConversationResponseSchema,
   todoDetailsResponseSchema,
   z,
-} from "@aido/validators";
+} from "@aido/api";
+import { ErrorCode, type ErrorCodeType, HttpStatus } from "@aido/api/errors";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 
 import {

@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
 import type { AiService } from '@src/features/ai/services/ai.service';
 import { isApiError } from '@src/shared/errors';

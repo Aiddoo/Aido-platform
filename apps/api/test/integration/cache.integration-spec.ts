@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test:integration -- cache
+ * pnpm --filter @aido/server test:integration -- cache
  * ```
  */
 import { ConfigModule } from "@nestjs/config";

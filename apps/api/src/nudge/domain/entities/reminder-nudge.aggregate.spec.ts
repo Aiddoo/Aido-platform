@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import { NUDGE_LIMITS } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import { NUDGE_LIMITS } from "@aido/api/vocabulary";
 import { describe, expect, it } from "vitest";
 
 import { ReminderNudge } from "./reminder-nudge.aggregate.js";

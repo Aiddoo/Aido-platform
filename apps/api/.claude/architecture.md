@@ -168,7 +168,7 @@ commit
 ## 9. Error, logging, security
 
 - Domain invariant 위반은 `DomainException`, application 규칙 위반은 `ApplicationException`으로 표현한다.
-- 공개 오류는 `@aido/errors`의 `ErrorCode`를 사용한다. `HttpException`을 비즈니스 로직에서 직접 생성하지 않는다.
+- 공개 오류는 `@aido/api/errors`의 `ErrorCode`를 사용한다. `HttpException`을 비즈니스 로직에서 직접 생성하지 않는다.
 - `GlobalExceptionFilter`가 상태 코드와 응답 wrapping을 정규화한다.
 - 운영 로그는 구조화하고 비밀번호, token, authorization code, 원문 개인정보를 기록하지 않는다.
 - OAuth token 등 저장이 필요한 비밀은 기존 encryption 경계를 사용한다.
@@ -180,7 +180,7 @@ commit
 리팩터링에서 다음은 승인 없이 변경하지 않는다.
 
 - HTTP route/method/header/query/body/response/status
-- Zod/Swagger/`@aido/validators` 공개 export
+- Zod/Swagger/`@aido/api` 공개 export
 - ErrorCode/message/details/wrapping
 - Prisma schema/migration/data
 - queue name/job payload/enqueue 조건

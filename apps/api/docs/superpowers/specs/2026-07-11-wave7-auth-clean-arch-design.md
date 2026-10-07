@@ -14,7 +14,7 @@ apps/api의 마지막 미이관 모듈이자 최대 모듈인 `auth`를 나머�
 **절대 불변(클라이언트 영향 zero)**:
 
 - `test/e2e/__snapshots__/openapi-contract.e2e-spec.ts.snap` **diff 0** — 매 커밋 게이트.
-- request/response 형태, **에러코드(@aido/errors)**, 상태코드, 시맨틱 동결. `BusinessExceptions`→`ApplicationException`/`DomainException` 변환 시 필터가 정규화하는 최종 errorCode + details가 byte-identical해야 함.
+- request/response 형태, **에러코드(@aido/api/errors)**, 상태코드, 시맨틱 동결. `BusinessExceptions`→`ApplicationException`/`DomainException` 변환 시 필터가 정규화하는 최종 errorCode + details가 byte-identical해야 함.
 - 라우트 ~35개(아래 §7 인벤토리) 전부 경로·메서드·인증·throttle 불변.
 - 전역 `APP_GUARD`(JwtAuthGuard) · `APP_INTERCEPTOR`(LastActiveInterceptor) 등록 순서·동작 불변(`app.module.ts:156,166`).
 - 세션 회전/재사용 탐지, 락아웃, 30일 grace 소프트삭제, OAuth state CSRF, exchange-code 1회성, 토큰 재사용 tokenFamily 폐기 — 모든 보안 시맨틱 보존.

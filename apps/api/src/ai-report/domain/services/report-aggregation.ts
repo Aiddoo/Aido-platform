@@ -1,9 +1,4 @@
-import type {
-  CategoryBreakdownItem,
-  DayOfWeek,
-  DayPatternItem,
-  TimePatternItem,
-} from "@aido/validators";
+import type { CategoryBreakdownItem, DayOfWeek, DayPatternItem, TimePatternItem } from "@aido/api";
 import dayjs from "dayjs";
 
 import type {

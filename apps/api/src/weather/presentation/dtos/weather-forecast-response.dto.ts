@@ -1,8 +1,4 @@
-import {
-  locationResponseSchema,
-  weatherConditionsSchema,
-  weatherForecastSchema,
-} from "@aido/validators";
+import { locationResponseSchema, weatherConditionsSchema, weatherForecastSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const WeatherForecastResponseDto = weatherForecastSchema.meta({

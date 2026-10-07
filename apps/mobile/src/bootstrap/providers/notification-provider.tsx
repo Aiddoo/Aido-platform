@@ -1,4 +1,4 @@
-import { pushNotificationDataSchema, type PushNotificationData } from '@aido/validators';
+import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
 import { useAutomaticPushRegistration } from '@src/features/activation/presentations/hooks/use-automatic-push-registration';
 import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
 import { getNotificationResponseDisposition } from '@src/features/notification/presentations/navigation/notification-response-disposition';

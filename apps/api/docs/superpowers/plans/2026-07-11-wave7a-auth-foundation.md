@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **클라이언트 영향 zero**: `test/e2e/__snapshots__/openapi-contract.e2e-spec.ts.snap` **diff 0**. request/response·에러코드(@aido/errors)·상태코드·시맨틱 동결.
+- **클라이언트 영향 zero**: `test/e2e/__snapshots__/openapi-contract.e2e-spec.ts.snap` **diff 0**. request/response·에러코드(@aido/api/errors)·상태코드·시맨틱 동결.
 - **로직 무변경**: 이 커밋은 파일 이동 + 임포트 경로 치환만. 함수 본문·클래스 로직·DI 토큰·프로바이더 배열 순서 변경 금지.
 - **전역 파이프라인 불변**: `app.module.ts`의 `APP_GUARD`(JwtAuthGuard)·`APP_INTERCEPTOR`(LastActiveInterceptor) 등록 순서·동작 불변.
 - **auth는 CLEAN_MODULES 미등록** — 이 커밋에서 `scripts/check-boundaries.mjs`·`scripts/check-no-cast.mjs` 수정 금지.

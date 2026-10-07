@@ -1,4 +1,4 @@
-import { updateTodoCategorySchema } from "@aido/validators";
+import { updateTodoCategorySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const UpdateTodoCategoryDto = updateTodoCategorySchema.meta({ id: "UpdateTodoCategoryDto" });

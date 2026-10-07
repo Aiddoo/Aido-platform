@@ -1,4 +1,4 @@
-import { cheerIdParamSchema } from "@aido/validators";
+import { cheerIdParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const CheerIdParamDto = cheerIdParamSchema.meta({

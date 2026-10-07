@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { RevenueCatWebhookPayload } from "@aido/validators";
+import type { RevenueCatWebhookPayload } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 

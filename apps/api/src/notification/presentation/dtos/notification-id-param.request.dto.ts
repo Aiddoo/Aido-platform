@@ -1,4 +1,4 @@
-import { notificationIdParamSchema } from "@aido/validators";
+import { notificationIdParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const NotificationIdParamDto = notificationIdParamSchema.meta({

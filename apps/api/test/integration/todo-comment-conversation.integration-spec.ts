@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { z } from "@aido/validators";
+import { z } from "@aido/api";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test } from "@nestjs/testing";
 import sql from "sql-template-tag";

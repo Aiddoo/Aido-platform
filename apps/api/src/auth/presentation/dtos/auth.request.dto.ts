@@ -18,7 +18,7 @@ import {
   unlinkAccountSchema,
   updateProfileSchema,
   verifyEmailSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const RegisterDto = registerSchema.meta({ id: "RegisterDto" });

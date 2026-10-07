@@ -3,7 +3,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test wgs84-to-utmk.spec
+ * pnpm --filter @aido/server test wgs84-to-utmk.spec
  * ```
  */
 

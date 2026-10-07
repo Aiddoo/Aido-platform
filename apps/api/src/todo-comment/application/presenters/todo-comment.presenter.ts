@@ -1,4 +1,4 @@
-import type { TodoComment, TodoCommentAuthor } from "@aido/validators";
+import type { TodoComment, TodoCommentAuthor } from "@aido/api";
 
 import { getTodoCommentViewerPermissions } from "../../domain/services/todo-comment-permission.js";
 import type { TodoCommentParticipantAuthorRecord, TodoCommentRecord } from "../types.js";

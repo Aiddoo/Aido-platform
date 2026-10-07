@@ -1,4 +1,4 @@
-import { USER_PREFERENCE_DEFAULTS } from "@aido/validators";
+import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

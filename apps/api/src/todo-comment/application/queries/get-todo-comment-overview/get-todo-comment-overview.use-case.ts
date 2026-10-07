@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { TodoCommentOverviewResponse, TodoCommentSort } from "@aido/validators";
+import type { TodoCommentOverviewResponse, TodoCommentSort } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { ApplicationException } from "#api/shared/domain/index";

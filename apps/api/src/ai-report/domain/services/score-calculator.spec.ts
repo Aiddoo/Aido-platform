@@ -6,7 +6,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test score-calculator
+ * pnpm --filter @aido/server test score-calculator
  * ```
  */
 import { calculateConsistencyScore, calculateProductivityScore } from "./score-calculator.js";

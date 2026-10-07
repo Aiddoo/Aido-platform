@@ -1,4 +1,4 @@
-# @aido/api
+# @aido/server
 
 > **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
 
@@ -59,8 +59,8 @@ Controller → Service → Repository → Database
 pnpm install
 
 # API 로컬 실행
-pnpm --filter @aido/api db:migrate
-pnpm --filter @aido/api dev
+pnpm --filter @aido/server db:migrate
+pnpm --filter @aido/server dev
 ```
 
 ## Docker 실행 (개발)

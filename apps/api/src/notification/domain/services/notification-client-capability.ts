@@ -1,4 +1,4 @@
-import { NOTIFICATION_TYPE } from "@aido/validators";
+import { NOTIFICATION_TYPE } from "@aido/api/vocabulary";
 
 import { isVersionAtLeast } from "#api/shared/domain/version/compare-version";
 

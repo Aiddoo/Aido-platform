@@ -4,7 +4,7 @@ import {
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
   updatePreferenceResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const PreferenceResponseDto = preferenceResponseSchema.meta({ id: "PreferenceResponseDto" });

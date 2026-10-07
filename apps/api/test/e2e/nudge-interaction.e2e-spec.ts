@@ -1,4 +1,3 @@
-import { ErrorCode } from "@aido/errors";
 import {
   createNudgeResponseSchema,
   createTodoResponseSchema,
@@ -9,7 +8,8 @@ import {
   nudgeThanksPreviewResponseSchema,
   sendNudgeThanksResponseSchema,
   type NudgeReplyKind,
-} from "@aido/validators";
+} from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { and } from "@prisma/orm-postgres/orm-client";
 import request from "supertest";
 import { z } from "zod";

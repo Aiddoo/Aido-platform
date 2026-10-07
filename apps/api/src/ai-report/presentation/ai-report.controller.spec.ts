@@ -6,7 +6,7 @@
  * - GWT: Given/When/Then 주석으로 테스트 구조 명확화
  */
 
-import type { AiReport as AiReportDto, ReportStatus } from "@aido/validators";
+import type { AiReport as AiReportDto, ReportStatus } from "@aido/api";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

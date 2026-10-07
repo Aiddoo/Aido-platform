@@ -1,4 +1,4 @@
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 /**
  * GetFriendDailyCompletionsUseCase 단위 테스트
  *

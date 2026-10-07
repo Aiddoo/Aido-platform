@@ -5,7 +5,7 @@ import type {
   TodoCommentOverviewResponse,
   TodoConversationResponse,
   TodoDetailsResponse,
-} from "@aido/validators";
+} from "@aido/api";
 
 import { resolveProfileImage } from "#api/shared/presentation/profile/profile-image.resolver";
 

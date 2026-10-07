@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test in-memory-lock.adapter
+ * pnpm --filter @aido/server test in-memory-lock.adapter
  * ```
  */
 import { InMemoryLockAdapter } from "./in-memory-lock.adapter.js";

@@ -1,11 +1,11 @@
+import type { Todo as TodoResponse } from "@aido/api";
 /**
  * GetTodosUseCase 단위 테스트
  *
  * - 날짜 범위 검증(startDate ≤ endDate) → 커서 정규화 → 저장소 조회 → 커서 응답 합성
  * - 정규화/응답 합성은 PaginationService가 소유하므로 여기서는 위임·파라미터 매핑만 검증한다
  */
-import { ErrorCode } from "@aido/errors";
-import type { Todo as TodoResponse } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 

@@ -1,4 +1,4 @@
-import type { VerifyEmailInput } from '@aido/validators';
+import type { VerifyEmailInput } from '@aido/api';
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';

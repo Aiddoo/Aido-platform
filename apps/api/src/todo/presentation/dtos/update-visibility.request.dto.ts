@@ -1,4 +1,4 @@
-import { updateTodoVisibilitySchema } from "@aido/validators";
+import { updateTodoVisibilitySchema } from "@aido/api";
 import type { z } from "zod";
 
 export const UpdateTodoVisibilityDto = updateTodoVisibilitySchema.meta({

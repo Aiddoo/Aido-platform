@@ -1,4 +1,4 @@
-import { TODO_ITEM_LIMITS } from '@aido/validators';
+import { TODO_ITEM_LIMITS } from '@aido/api';
 import { z } from 'zod';
 
 export const subTodoSchema = z.object({

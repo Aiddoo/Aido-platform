@@ -7,7 +7,7 @@ import { TestBed } from "@suites/unit";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test weather-morning.strategy.spec
+ * pnpm --filter @aido/server test weather-morning.strategy.spec
  * ```
  */
 import dayjs from "dayjs";

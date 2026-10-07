@@ -17,7 +17,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test daily-completion.integration-spec
+ * pnpm --filter @aido/server test daily-completion.integration-spec
  * ```
  */
 import { Test, type TestingModule } from "@nestjs/testing";

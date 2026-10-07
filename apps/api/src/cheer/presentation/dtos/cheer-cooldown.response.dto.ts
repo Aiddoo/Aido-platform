@@ -1,4 +1,4 @@
-import { cheerCooldownInfoSchema } from "@aido/validators";
+import { cheerCooldownInfoSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const CheerCooldownResponseDto = cheerCooldownInfoSchema.meta({

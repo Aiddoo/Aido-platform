@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test memo.controller
+ * pnpm --filter @aido/server test memo.controller
  * ```
  */
 

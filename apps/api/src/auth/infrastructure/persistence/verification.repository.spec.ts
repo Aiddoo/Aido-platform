@@ -16,7 +16,7 @@ import { VerificationBuilder } from "#test/builders/index";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test verification.repository.spec.ts
+ * pnpm --filter @aido/server test verification.repository.spec.ts
  * ```
  */
 import {

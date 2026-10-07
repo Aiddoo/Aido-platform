@@ -7,10 +7,10 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test subscription.controller
+ * pnpm --filter @aido/server test subscription.controller
  * ```
  */
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { TestBed } from "@suites/unit";
 import type { Request } from "express";
 import type { Mocked } from "vitest";

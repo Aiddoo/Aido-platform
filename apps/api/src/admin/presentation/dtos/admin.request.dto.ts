@@ -2,7 +2,7 @@ import {
   broadcastNotificationSchema,
   growthSummaryQuerySchema,
   targetedNotificationSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 /**

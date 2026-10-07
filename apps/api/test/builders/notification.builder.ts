@@ -1,4 +1,4 @@
-import { z } from "@aido/validators";
+import { z } from "@aido/api";
 
 /**
  * Notification 모델 테스트 데이터 빌더

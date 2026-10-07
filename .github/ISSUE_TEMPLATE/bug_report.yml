@@ -29,8 +29,8 @@ body:
       options:
         - apps/api
         - apps/mobile
-        - packages/validators
-        - packages/errors
+        - packages/api
+        - packages/api
         - tooling/*
         - multiple
     validations:

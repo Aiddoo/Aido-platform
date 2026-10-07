@@ -1,4 +1,4 @@
-import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/validators";
+import { NOTIFICATION_ACTION_TYPE, type PushNotificationData } from "@aido/api";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { FEATURE_DISCOVERY_CAMPAIGN_KEY } from "../../domain/services/feature-marketing-capability.js";

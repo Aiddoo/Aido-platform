@@ -5,7 +5,7 @@
  * AI 기능을 테스트할 수 있게 해주는 Mock Provider입니다.
  */
 
-import type { ParsedTodoData } from "@aido/validators";
+import type { ParsedTodoData } from "@aido/api";
 
 import type {
   AiProvider,

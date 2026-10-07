@@ -1,4 +1,4 @@
-import type { InquiryCategory } from "@aido/validators";
+import type { InquiryCategory } from "@aido/api/vocabulary";
 
 /**
  * 문의 이메일 템플릿

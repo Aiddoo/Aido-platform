@@ -1,4 +1,4 @@
-import type * as Validators from "@aido/validators";
+import type * as Validators from "@aido/api";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 

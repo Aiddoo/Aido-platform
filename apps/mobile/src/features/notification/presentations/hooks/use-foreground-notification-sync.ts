@@ -1,4 +1,4 @@
-import { pushNotificationDataSchema } from '@aido/validators';
+import { pushNotificationDataSchema } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { FRIEND_QUERY_KEYS } from '@src/features/friend/presentations/constants/friend-query-keys.constant';
 import { TODO_QUERY_KEYS } from '@src/features/todo/presentations/constants/todo-query-keys.constant';

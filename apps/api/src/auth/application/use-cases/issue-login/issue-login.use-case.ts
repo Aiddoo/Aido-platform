@@ -1,4 +1,4 @@
-import type { UserRole } from "@aido/validators";
+import type { UserRole } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";

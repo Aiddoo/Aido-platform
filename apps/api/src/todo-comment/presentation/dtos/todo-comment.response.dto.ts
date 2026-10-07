@@ -6,7 +6,7 @@ import {
   todoCommentOverviewResponseSchema,
   todoConversationResponseSchema,
   todoDetailsResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const TodoDetailsResponseDto = todoDetailsResponseSchema.meta({

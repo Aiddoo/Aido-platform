@@ -1,4 +1,4 @@
-import { featureDiscoveryResponseSchema } from "@aido/validators";
+import { featureDiscoveryResponseSchema } from "@aido/api";
 import request from "supertest";
 import { vi } from "vitest";
 

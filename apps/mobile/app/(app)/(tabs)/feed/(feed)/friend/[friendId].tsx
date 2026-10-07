@@ -1,4 +1,4 @@
-import { dateSchema, userIdParamSchema } from '@aido/validators';
+import { dateSchema, userIdParamSchema } from '@aido/api';
 import { useFriendById } from '@src/features/friend/presentations/hooks/use-friend-by-id';
 import { Calendar } from '@src/features/todo/presentations/components/Calendar/Calendar';
 import { FriendCalendar } from '@src/features/todo/presentations/components/Calendar/FriendCalendar';

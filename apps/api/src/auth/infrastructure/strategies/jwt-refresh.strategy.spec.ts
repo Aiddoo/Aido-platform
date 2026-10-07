@@ -9,7 +9,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test jwt-refresh.strategy.spec.ts
+ * pnpm --filter @aido/server test jwt-refresh.strategy.spec.ts
  * ```
  */
 

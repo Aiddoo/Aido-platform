@@ -10,7 +10,7 @@ import type { MockInstance } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test kasi-sun-time.provider.spec
+ * pnpm --filter @aido/server test kasi-sun-time.provider.spec
  * ```
  */
 import type { Mocked } from "vitest";

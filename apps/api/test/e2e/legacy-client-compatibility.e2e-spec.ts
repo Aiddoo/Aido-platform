@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 import { z } from "zod";
 

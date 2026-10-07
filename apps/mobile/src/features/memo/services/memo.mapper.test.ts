@@ -1,4 +1,4 @@
-import { memoListResponseSchema } from '@aido/validators';
+import { memoListResponseSchema } from '@aido/api';
 
 import { toMemoPage } from './memo.mapper';
 

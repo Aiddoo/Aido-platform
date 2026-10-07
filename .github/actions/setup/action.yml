@@ -27,7 +27,7 @@ runs:
         INSTALL_SCOPE: ${{ inputs.install-scope }}
       run: |
         if [[ "$INSTALL_SCOPE" == "api" ]]; then
-          pnpm install --frozen-lockfile --filter=@aido/api... --filter=@aido/monorepo
+          pnpm install --frozen-lockfile --filter=@aido/server... --filter=@aido/monorepo
         else
           pnpm install --frozen-lockfile
         fi
@@ -35,5 +35,5 @@ runs:
 
     - name: Emit ORM contracts
       if: inputs.generate-prisma == 'true'
-      run: pnpm turbo run contract:emit --filter=@aido/api
+      run: pnpm turbo run contract:emit --filter=@aido/server
       shell: bash

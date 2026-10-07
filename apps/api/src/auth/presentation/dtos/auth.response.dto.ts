@@ -16,7 +16,7 @@ import {
   unlinkAccountResponseSchema,
   updateProfileResponseSchema,
   userProfileSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const AuthTokensDto = authTokensSchema.meta({ id: "AuthTokensDto" });

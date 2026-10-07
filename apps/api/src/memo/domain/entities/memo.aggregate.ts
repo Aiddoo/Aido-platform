@@ -1,4 +1,4 @@
-import type { Memo as MemoResponse } from "@aido/validators";
+import type { Memo as MemoResponse } from "@aido/api";
 
 import { toISOString } from "#api/shared/domain/date/utils/format";
 import { AggregateRoot } from "#api/shared/domain/index";
@@ -73,7 +73,7 @@ export class Memo extends AggregateRoot<MemoProps> {
     return this.props.content.toTodoTitle();
   }
 
-  /** 응답 뷰(@aido/validators Memo)로 직렬화한다. */
+  /** 응답 뷰(@aido/api Memo)로 직렬화한다. */
   toView(): MemoResponse {
     return {
       id: this.props.id,

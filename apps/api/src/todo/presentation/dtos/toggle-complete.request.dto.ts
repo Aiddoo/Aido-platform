@@ -1,4 +1,4 @@
-import { toggleTodoCompleteSchema } from "@aido/validators";
+import { toggleTodoCompleteSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const ToggleTodoCompleteDto = toggleTodoCompleteSchema.meta({ id: "ToggleTodoCompleteDto" });

@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { UserRole } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import type { UserRole } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";

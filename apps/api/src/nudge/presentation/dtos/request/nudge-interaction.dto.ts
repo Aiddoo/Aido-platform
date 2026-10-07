@@ -4,7 +4,7 @@ import {
   nudgeTodoIdParamSchema,
   replyToNudgeSchema,
   sendNudgeThanksSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const GetNudgeInteractionsQueryDto = getNudgeInteractionsQuerySchema.meta({

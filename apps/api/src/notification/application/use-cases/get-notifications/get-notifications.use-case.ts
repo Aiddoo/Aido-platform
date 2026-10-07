@@ -1,4 +1,4 @@
-import { CATEGORY_TYPE_MAP, type NotificationCategory } from "@aido/validators";
+import { CATEGORY_TYPE_MAP, type NotificationCategory } from "@aido/api/vocabulary";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";

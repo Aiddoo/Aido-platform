@@ -8,7 +8,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test notification-queue.service
+ * pnpm --filter @aido/server test notification-queue.service
  * ```
  */
 import type { Mocked } from "vitest";

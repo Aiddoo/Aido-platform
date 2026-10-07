@@ -1,4 +1,5 @@
-import { ErrorCode, isErrorCode } from '@aido/errors';
+import { successEnvelopeSchema } from '@aido/api';
+import { ErrorCode, isErrorCode } from '@aido/api/errors';
 import type { HttpClient, RequestConfig } from '@src/core/ports/http';
 import { ApiError } from '@src/shared/errors/api-error';
 import {
@@ -18,12 +19,6 @@ import {
 import { z } from 'zod';
 
 import { resolveMessage } from './error-handler';
-
-const successEnvelopeSchema = z.object({
-  success: z.literal(true),
-  data: z.unknown(),
-  timestamp: z.number(),
-});
 
 const errorEnvelopeSchema = z.object({
   error: z.object({

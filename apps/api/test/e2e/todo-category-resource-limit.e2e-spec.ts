@@ -1,4 +1,4 @@
-import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/validators";
+import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/api";
 import request from "supertest";
 /**
  * TodoCategory 리소스 제한 E2E 테스트

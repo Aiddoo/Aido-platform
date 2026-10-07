@@ -3,7 +3,7 @@ import {
   nudgeDetailSchema,
   receivedNudgesResponseSchema,
   sentNudgesResponseSchema,
-} from "@aido/validators";
+} from "@aido/api";
 import type { z } from "zod";
 
 export const NudgeDetailDto = nudgeDetailSchema.meta({ id: "NudgeDetailDto" });

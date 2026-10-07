@@ -1,4 +1,4 @@
-import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from "@aido/validators";
+import { TODO_COMMENT_LIMITS, TODO_COMMENT_SORT } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, or } from "@prisma/orm-postgres/orm-client";

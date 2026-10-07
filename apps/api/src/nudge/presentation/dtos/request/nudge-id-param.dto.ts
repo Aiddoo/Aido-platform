@@ -1,4 +1,4 @@
-import { nudgeIdParamSchema } from "@aido/validators";
+import { nudgeIdParamSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const NudgeIdParamDto = nudgeIdParamSchema.meta({

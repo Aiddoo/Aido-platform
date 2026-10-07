@@ -14,7 +14,7 @@ import type {
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test security-log.repository.spec.ts
+ * pnpm --filter @aido/server test security-log.repository.spec.ts
  * ```
  */
 import { SecurityLogBuilder } from "#test/builders/index";

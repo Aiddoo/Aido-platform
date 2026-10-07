@@ -1,5 +1,5 @@
-import { ErrorCode } from "@aido/errors";
-import type { NudgeReplyKind } from "@aido/validators";
+import { ErrorCode } from "@aido/api/errors";
+import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 

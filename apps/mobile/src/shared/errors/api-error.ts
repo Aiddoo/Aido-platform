@@ -1,10 +1,10 @@
-import type { ErrorCodeType } from '@aido/errors';
+import type { ErrorCodeType } from '@aido/api/errors';
 
 import type { BusinessError } from './result';
 
 /**
  * 서버 비즈니스 에러 (4xx)
- * - code: @aido/errors의 비즈니스 에러 코드
+ * - code: @aido/api/errors의 비즈니스 에러 코드
  * - status: HTTP 상태 코드
  * - details: 서버가 제공하는 추가 정보
  */

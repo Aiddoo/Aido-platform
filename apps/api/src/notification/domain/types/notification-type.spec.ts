@@ -1,4 +1,4 @@
-import type { NotificationType as ContractNotificationType } from "@aido/validators";
+import type { NotificationType as ContractNotificationType } from "@aido/api/vocabulary";
 
 import type { NotificationType as DomainNotificationType } from "./notification-type.js";
 

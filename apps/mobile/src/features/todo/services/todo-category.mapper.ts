@@ -1,7 +1,7 @@
 import type {
   TodoCategory as TodoCategoryDTO,
   TodoCategoryWithCount as TodoCategoryWithCountDTO,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type { TodoCategory, TodoCategoryWithCount } from '../models/todo-category.model';
 

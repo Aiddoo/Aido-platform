@@ -1,4 +1,4 @@
-import { INQUIRY_CATEGORY } from '@aido/validators';
+import { INQUIRY_CATEGORY } from '@aido/api';
 import { createMockHttpClient } from '@src/shared/__tests__';
 
 import {

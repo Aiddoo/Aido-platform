@@ -1,7 +1,7 @@
 import {
   featureDiscoveryMinAppVersionPattern,
   featureDiscoveryUtcDateTimePattern,
-} from "@aido/validators";
+} from "@aido/api";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class FeatureDiscoveryDisabledResponseDto {
@@ -57,7 +57,7 @@ const featureDiscoveryEnabledSchema = {
   },
 };
 
-/** Direct wire schema matching @aido/validators' strict discriminated union. */
+/** Direct wire schema matching @aido/api' strict discriminated union. */
 export const featureDiscoveryResponseOpenApiSchema = {
   oneOf: [featureDiscoveryDisabledSchema, featureDiscoveryEnabledSchema],
   discriminator: {

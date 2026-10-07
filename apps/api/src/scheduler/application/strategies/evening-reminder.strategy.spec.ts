@@ -9,7 +9,7 @@ import { vi } from "vitest";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test evening-reminder.strategy
+ * pnpm --filter @aido/server test evening-reminder.strategy
  * ```
  */
 import type { Mocked } from "vitest";

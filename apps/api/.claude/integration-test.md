@@ -71,6 +71,6 @@ User의 profile/preference/consent 등 복합 fixture는 `createUserDatabaseFixt
 - 기존 사용자 데이터·index OID·계약 marker·migration graph, SQLSTATE, rollback, 오래된 클라이언트의 응답을 함께 검증한다.
 
 ```sh
-pnpm --filter @aido/api test:integration
-pnpm --filter @aido/api exec vitest run --project integration prisma8-transaction
+pnpm --filter @aido/server test:integration
+pnpm --filter @aido/server exec vitest run --project integration prisma8-transaction
 ```

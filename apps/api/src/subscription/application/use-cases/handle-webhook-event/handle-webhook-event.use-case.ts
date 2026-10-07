@@ -1,9 +1,9 @@
-import { ErrorCode } from "@aido/errors";
 import {
   type RevenueCatEventType,
   type RevenueCatWebhookPayload,
   revenueCatWebhookPayloadSchema,
-} from "@aido/validators";
+} from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";

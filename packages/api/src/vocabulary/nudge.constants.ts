@@ -1,0 +1,21 @@
+export const NUDGE_LIMITS = {
+  FREE_DAILY_LIMIT: 3,
+  COOLDOWN_HOURS: 24,
+  MAX_MESSAGE_LENGTH: 200,
+} as const;
+
+export const REMIND_NUDGE_LIMITS = {
+  COOLDOWN_HOURS: 1,
+  MAX_MESSAGE_LENGTH: 200,
+} as const;
+
+export const SUBSCRIPTION_NUDGE_LIMITS = {
+  FREE: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+  ACTIVE: null, // 무제한
+  EXPIRED: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+  CANCELLED: NUDGE_LIMITS.FREE_DAILY_LIMIT,
+} as const;
+
+export const NUDGE_REPLY_KINDS = ["STARTING", "THANKFUL", "LATER"] as const;
+
+export type NudgeReplyKind = (typeof NUDGE_REPLY_KINDS)[number];

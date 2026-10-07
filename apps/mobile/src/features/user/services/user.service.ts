@@ -1,8 +1,4 @@
-import {
-  currentUserSchema,
-  type UpdateProfileInput,
-  updateProfileResponseSchema,
-} from '@aido/validators';
+import { currentUserSchema, type UpdateProfileInput, updateProfileResponseSchema } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';

@@ -7,7 +7,7 @@
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test lambert-projection.spec
+ * pnpm --filter @aido/server test lambert-projection.spec
  * ```
  */
 

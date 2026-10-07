@@ -1,4 +1,4 @@
-import type { DayOfWeek } from "@aido/validators";
+import type { DayOfWeek } from "@aido/api/vocabulary";
 
 /**
  * AI가 감지한 반복 패턴

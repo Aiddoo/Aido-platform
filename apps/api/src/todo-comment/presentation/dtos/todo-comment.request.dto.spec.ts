@@ -2,7 +2,7 @@ import {
   TODO_COMMENT_LIMITS,
   TODO_COMMENT_SORT,
   getTodoCommentOverviewQuerySchema,
-} from "@aido/validators";
+} from "@aido/api";
 
 describe("getTodoCommentOverviewQuerySchema", () => {
   it("정렬과 페이지 크기의 기본값을 채운다", () => {

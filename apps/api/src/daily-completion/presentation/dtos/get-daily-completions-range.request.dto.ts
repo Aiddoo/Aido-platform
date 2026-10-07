@@ -1,4 +1,4 @@
-import { getDailyCompletionsRangeSchema } from "@aido/validators";
+import { getDailyCompletionsRangeSchema } from "@aido/api";
 import type { z } from "zod";
 
 export const GetDailyCompletionsRangeDto = getDailyCompletionsRangeSchema.meta({

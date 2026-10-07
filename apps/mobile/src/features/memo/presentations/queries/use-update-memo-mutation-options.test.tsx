@@ -1,4 +1,4 @@
-import type { Memo } from '@aido/validators';
+import type { Memo } from '@aido/api';
 import { createMockHttpClient } from '@src/shared/__tests__';
 import { ok } from '@src/shared/errors/result';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

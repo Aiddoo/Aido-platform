@@ -4,7 +4,7 @@ import {
   notificationTypeSchema,
   getNotificationsQuerySchema,
   type NotificationType,
-} from '@aido/validators';
+} from '@aido/api';
 import { z } from 'zod';
 
 export const notificationSchema = z.object({

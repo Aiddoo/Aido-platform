@@ -1,4 +1,4 @@
-import type { InquiryCategory } from "@aido/validators";
+import type { InquiryCategory } from "@aido/api/vocabulary";
 
 /**
  * 문의 제출 도메인 값 — 벤더 중립 전달 페이로드.

@@ -1,4 +1,4 @@
-import { appVersionResponseSchema } from '@aido/validators';
+import { appVersionResponseSchema } from '@aido/api';
 import type { AppStoreListingGateway } from '@src/core/ports/app-store';
 import type { JsonFetcher } from '@src/core/ports/json-fetcher';
 import type { NativeApplicationMetadataGateway } from '@src/core/ports/native-application-metadata';

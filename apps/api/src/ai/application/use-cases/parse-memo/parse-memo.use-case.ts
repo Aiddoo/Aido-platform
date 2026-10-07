@@ -1,6 +1,6 @@
-import { ErrorCode } from "@aido/errors";
-import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/validators";
-import { llmParsedMemoResultSchema, parsedMemoDataSchema } from "@aido/validators";
+import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/api";
+import { llmParsedMemoResultSchema, parsedMemoDataSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { now } from "#api/shared/domain/date/utils/core";

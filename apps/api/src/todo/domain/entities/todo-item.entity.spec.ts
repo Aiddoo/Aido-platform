@@ -4,7 +4,7 @@
  * GWT 패턴 — 제목 불변식(TodoTitle 공유)·완료 전이·저장 스냅샷 검증
  */
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 
 import { DomainException } from "#api/shared/domain/index";
 

@@ -6,7 +6,7 @@ import type {
   Todo,
   TodoDetailsResponse,
   TodoSummaryResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   AiUsage,

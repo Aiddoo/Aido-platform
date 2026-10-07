@@ -1,6 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 
-import { ErrorCode } from "@aido/errors";
+import { ErrorCode } from "@aido/api/errors";
 import { CanActivate, ExecutionContext, Injectable, Logger } from "@nestjs/common";
 import type { Request } from "express";
 

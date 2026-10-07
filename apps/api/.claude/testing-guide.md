@@ -168,18 +168,18 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ```bash
 # Unit
-pnpm --filter @aido/api test                     # 전체
-pnpm --filter @aido/api test {파일명}             # 특정 파일
-pnpm --filter @aido/api test:watch               # Watch 모드
-pnpm --filter @aido/api test:cov                 # 커버리지
+pnpm --filter @aido/server test                     # 전체
+pnpm --filter @aido/server test {파일명}             # 특정 파일
+pnpm --filter @aido/server test:watch               # Watch 모드
+pnpm --filter @aido/server test:cov                 # 커버리지
 
 # Integration
-pnpm --filter @aido/api test:integration         # 전체
+pnpm --filter @aido/server test:integration         # 전체
 
 # E2E
-pnpm --filter @aido/api test:e2e                 # 전체
-pnpm --filter @aido/api test:e2e -- {파일명}      # 특정 파일
-pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
+pnpm --filter @aido/server test:e2e                 # 전체
+pnpm --filter @aido/server test:e2e -- {파일명}      # 특정 파일
+pnpm --filter @aido/server test:e2e -- -t "패턴"    # 특정 테스트
 ```
 
 ---
@@ -217,10 +217,10 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 실패를 재현할 때 seed를 로그와 PR 검증 기록에 남깁니다. 동일 프로젝트의 DB 파일은 직렬 실행하며, 독립된 프로세스로 반복할 때는 각 실행이 자체 관리형 DB를 소유합니다.
 
 ```bash
-pnpm --filter @aido/api exec vitest run --project unit --sequence.shuffle --sequence.seed=101
-pnpm --filter @aido/api exec vitest run --project integration --sequence.shuffle --sequence.seed=101
-pnpm --filter @aido/api exec vitest run --project e2e --sequence.shuffle --sequence.seed=101
-pnpm --filter @aido/api exec vitest run --project integration \
+pnpm --filter @aido/server exec vitest run --project unit --sequence.shuffle --sequence.seed=101
+pnpm --filter @aido/server exec vitest run --project integration --sequence.shuffle --sequence.seed=101
+pnpm --filter @aido/server exec vitest run --project e2e --sequence.shuffle --sequence.seed=101
+pnpm --filter @aido/server exec vitest run --project integration \
   test/integration/push-delivery-outbox.integration-spec.ts \
   test/integration/mutation-lock-concurrency.integration-spec.ts \
   --sequence.shuffle --sequence.seed=1001

@@ -32,11 +32,11 @@ export default mergeConfig(
 `vi.spyOn`은 `beforeEach` 또는 테스트 내부에서 등록합니다. `beforeAll`에서 만든 spy는 `restoreMocks`가 다음 테스트 전에 복원하므로 이후 테스트에 적용되지 않습니다. ESM 모듈 mock은 `vi.mock`과 `vi.hoisted`를 사용하며, 생성자 mock은 일반 함수로 작성합니다.
 
 ```bash
-pnpm --filter @aido/validators test
-pnpm --filter @aido/validators exec vitest --coverage
-pnpm --filter @aido/api exec vitest run --project unit
-pnpm --filter @aido/api exec vitest run --project integration
-pnpm --filter @aido/api exec vitest run --project e2e
+pnpm --filter @aido/api test
+pnpm --filter @aido/api exec vitest --coverage
+pnpm --filter @aido/server exec vitest run --project unit
+pnpm --filter @aido/server exec vitest run --project integration
+pnpm --filter @aido/server exec vitest run --project e2e
 ```
 
 API의 통합 및 E2E 프로젝트는 각각 독립된 관리형 PostgreSQL을 준비하고 종료합니다. 자세한 규칙은 [API 테스트 가이드](../../apps/api/.claude/testing-guide.md)를 참고합니다.
