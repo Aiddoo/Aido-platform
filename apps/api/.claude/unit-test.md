@@ -1,82 +1,56 @@
 # 서버 Unit 테스트
 
-순수 Domain/Application은 직접 생성하고 fixture 기반 Port Stub/Fake를 우선 사용한다.
-Nest DI가 필요한 Infrastructure/Presentation은 기존 `@suites/unit`을 사용한다.
-관련 실행·격리 규칙은 [testing-guide.md](./testing-guide.md)를 따른다.
+순수 Domain/Application은 직접 생성한다. 상태나 발송 기록이 필요하면 기존 fixture와 작은 Port Stub/Fake를 사용한다. 전체 실행 선택은 [testing-guide.md](./testing-guide.md)를 참고한다.
 
-## 이름과 구조
+## 의미 있는 케이스
 
-- `describe("CreateTodo — 할 일 생성")`처럼 클래스명과 한국어 업무 설명을 함께 쓴다.
-- `it("한도를 초과하면 저장 없이 오류를 반환한다")`처럼 조건과 관찰 가능한 결과를 쓴다.
-- 기술 용어, 필드명, HTTP method, 오류 코드, Given / When / Then은 영어를 유지해도 된다.
-- 대상 파일 옆에 `<name>.spec.ts`를 둔다. Integration은 `.integration-spec.ts`, E2E는 `.e2e-spec.ts`다.
-- Given / When / Then 순서를 유지한다. 단계 주석은 간단히 쓰고 코드 동작을 설명하는 긴 주석은 추가하지 않는다.
-- 정상·누락·null·false·0·중복·만료·권한 거부·재시도 분기를 실제 업무 요구에 따라 검증한다.
+- `describe("CreateTodo — 할 일 생성")`, `it("권한이 없으면 저장 없이 오류를 반환한다")`처럼 한국어로 조건과 결과를 쓴다. Given / When / Then 순서는 유지하되 코드로 충분한 단계에 긴 주석을 붙이지 않는다.
+- 정상·누락·null·false·0·중복·만료·권한·retry는 실제 계약에 필요한 경우만 검증한다. 입력이 다른데 같은 행동을 반복하는 케이스는 모을 수 있다.
+- Aggregate/VO의 생성·`reconstitute()`와 공개 행동을 사용한다. private/protected state나 내부 메서드를 spy하지 않는다. 상태 없는 조회/전달 테스트를 위해 Aggregate·DB를 만들지 않는다.
+- 결과·저장/발송 상태·실패 우선순위를 확인한다. 반복 횟수·batch miss·외부 호출0·민감정보 비노출이 요구일 때는 호출 관찰도 의미 있다. 단순 forwarding이나 구현의 줄별 복사 테스트는 피한다.
 
-## Application 의존성 fixture
+## fixture와 의존성
 
-- consumer-owned Port를 구현한 작은 Stub을 주입한다. 테스트 결과와 발송·저장 기록으로 업무 동작을 검증한다.
-- 상태가 필요하면 기존 `FakeEmailService` 등 Fake를 재사용한다. 타입에 `implements`를 명시해 Port 변경을 컴파일 단계에서 확인한다.
-- 한 파일에서만 쓰는 작은 Stub은 spec에 둔다. 여러 spec에서 재사용할 때 `test/mocks/<capability>.stub.ts`로 추출한다. 운영 public barrel에 테스트 도구를 export하지 않는다.
-- 생성자에는 명시적인 의존성 객체를 전달한다. lazy deep mock을 spread하면 아직 읽지 않은 dependency가 복사되지 않을 수 있으므로 사용하지 않는다.
-- 단순 반환값, 발송 기록과 실패 횟수는 Stub이 소유한다. 모든 Port를 다시 조합하는 범용 fake framework는 만들지 않는다.
-- 새로운 필드는 소유 fixture의 기본값 한곳에 추가하고, 시나리오별 override만 유지한다.
-- Domain 상태는 Aggregate/VO의 `reconstitute()`로 복원한다. protected/private state에 spy하지 않는다.
-- mock/spy는 retry·batch 호출 수·민감정보 비노출 등 상호작용 자체가 계약일 때 사용한다. 기존 `vitest-mock-extended`를 재사용하며 반환값만 필요한 Port에는 깊은 mock을 기본으로 만들지 않는다.
-- `createUnitOfWorkMock()`은 콜백 실행만 검증한다. 실제 CLS·rollback·durable attempt 증가는 PostgreSQL Integration에서 검증한다.
+생성자에는 소비자가 실제 사용하는 의존성을 명시적으로 전달한다. `ConstructorParameters<typeof UseCase>[0]["dependency"]` 또는 기존 consumer Port의 좁은 타입을 사용할 수 있다. full Port로 cast하거나 lazy deep mock을 spread해 타입/필드를 숨기지 않는다.
+
+- 반환값과 mutable 상태·발송 기록은 작은 Stub이 소유한다. 한 spec에서만 쓰면 그 spec에 두고, 여러 곳에서 실제 재사용될 때만 `test/mocks`로 옮긴다. 전체 Port를 재조합하는 범용 fake framework는 필요 없다.
+- 기존 `test/builders`, `test/fixtures`, `test/mocks`를 먼저 확인한다. 의미 있는 새 필드는 소유 fixture 기본값 한곳에 추가하고 각 시나리오에서는 차이만 덮어쓴다. 실제 raw 공급자 응답은 기본 정상값과 자동 merge하지 않는다. 필수 누락·잘못된 타입이 원래 schema에서 거절되는지 확인한다.
+- 타입에 `implements`/기존 Port를 연결하고 실제 mutable 설정을 `clear()`/resetter로 복원한다. ID 고정값은 관계·경쟁·에러의 의미를 명확히 하는 fixture에서 사용할 수 있다. 모든 값을 Builder로 만들 필요는 없다.
+- 상호작용 검증은 설치된 Vitest와 `vitest-mock-extended`를 재사용한다. 반환값만 필요한 의존성에 deep mock을 기본으로 쓰지 않는다. 특정 matcher helper나 새 mock 라이브러리를 의무화하지 않는다.
+- `createUnitOfWorkMock()`과 callback Stub은 실행 순서·실패 전달만 검증한다. CLS·DB rollback·row lock·durable attempt는 [실제 PG](./integration-test.md)에서 검증한다.
 
 실제 예제:
 
-- [TransactionalEmailSender spec](../src/modules/notification/application/senders/email/transactional-email.sender.spec.ts): `EmailSenderPort` Stub에 메시지를 기록하고 템플릿·태그·결과를 검증한다.
-- [VerificationService spec](../src/modules/identity/application/services/auth/verification.service.spec.ts): 기존 `FakeEmailService`를 재사용해 발송된 코드와 실패 시 미발송을 검증한다. Repository/security/logger의 typed mock은 현재 남아 있으며 Identity 전환 단계에서 필요한 상태 fixture를 정리한다.
+- [TransactionalEmailSender](../src/modules/notification/application/senders/email/transactional-email.sender.spec.ts): state Stub에 실제 템플릿·태그·결과를 기록한다.
+- [ReconcilePushReceipts](../src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.spec.ts): 캐시 상태와 commit gate로 실패 전달/커밋 뒤 무효화를 검증한다. 실제 receipt rollback 증거와 분리한다.
+- [Weather 조건 조회](../src/modules/weather/application/use-cases/forecast/get-weather-conditions.use-case.spec.ts): 실제 Application 흐름과 fixture의 시간·날짜·부분 결과 경계를 확인한다.
 
-## Infrastructure·Presentation
+## 날짜와 timer
 
-Nest decorator/token 연결이 필요한 클래스는 `TestBed.solitary()` 또는 `Test.createTestingModule()`로
-검증한다. Application factory provider를 bare class provider로 대체하지 않는다. 실제 Module 조립은
-Integration/E2E가 검증한다. 외부 API Adapter는 실제 SDK와 fixture `Response`를 사용해 wire 형식과 오류 정규화를 검증한다.
-`fetch` 주입이 가능하면 생성자로 Stub을 전달한다. SDK가 이를 지원하지 않으면 격리된 spec에서
-Vitest의 `vi.stubGlobal("fetch", stub.fetch)`를 사용하고 `afterEach`에서 `vi.unstubAllGlobals()`로
-복원한다. 해당 suite에서 concurrent 테스트를 실행하지 않으며 준비되지 않은 요청은 실패시키고
-실제 네트워크로 전달하지 않는다. SDK 전체 mock을 기본으로 사용하지 않는다.
+날짜 판단만 필요한 테스트는 Date만 fake하고 `finally` 또는 `afterEach`에서 복원한다. PostgreSQL/socket/job가 사용하는 native timer는 유지한다.
 
-[Resend Adapter spec](../src/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter.spec.ts)은
-실제 Resend SDK, JSON fixture와 HTTP Stub을 조합한다. retry는
-[이메일 Integration](../test/integration/email.integration-spec.ts)에서 fake timer의 공식
-`runAllTimersAsync()`로 진행한다. 대기 완료를 polling하거나 non-null assertion으로 결과를 반환하지 않는다.
-
-Repository는 `createMockDatabaseContext()`와 `createMockTransactionHost(context)`를 사용한다.
-Prisma 8의 재귀 generic 타입을 Suites의 DeepPartial로 확장하거나 타입 단언으로 우회하지 않는다.
-`.all()` 결과는 `nativeRows(databaseFixture(model, rows))`, 단건은 `databaseFixture(model, row)`로
-만든다. 조건·정렬은 기존 `assertNativeWhere`·`assertNativeOrder`로 검증한다.
-실제 rollback·row lock·동시 실행·constraint는 PostgreSQL Integration에서 확인한다.
-
-## 데이터와 격리
-
-- `#test/builders/index`의 Builder로 상태를 표현하고 `#test/fixtures/index`의 fixture를 재사용한다.
-- DB 삽입에는 `test/setup/user-database-fixture.ts` 같은 소유 fixture를 사용한다.
-- `clearMocks`·`restoreMocks`와 fixture ID reset은 전역 setup이 소유한다.
-- spy는 `beforeEach`에서 생성한다. `beforeAll` spy는 첫 테스트 전에 복원될 수 있다.
-- 테스트 간 mutable 상태를 공유하지 않는다. Date 입력/출력과 nullable 상태도 실제 계약으로 검증한다.
-- 외부 결과와 부수효과를 검증한다. private 메서드, 내부 변수명, 단순 구현 복사 테스트는 만들지 않는다.
-- 타입 단언이나 테스트 기대값 변경으로 회귀를 숨기지 않는다.
-
-```bash
-pnpm --filter @aido/server test
-pnpm --filter @aido/server test get-feature-discovery.use-case.spec.ts
-pnpm --filter @aido/server test:cov
+```ts
+vi.useFakeTimers({ toFake: ["Date"] });
+vi.setSystemTime(new Date("2026-07-23T16:00:00Z"));
+try {
+  // Given / When / Then: 같은 instant에서 요구한 날짜·시간 결과 확인
+} finally {
+  vi.useRealTimers();
+}
 ```
 
-## 중요한 결과와 결정적인 실행
+UTC 저장 instant, calendar DATE, 사용자 timezone, 공급자 timezone을 구분한다. KST 자정·UTC 날짜 교차·Sunday ISO week·DST 전환은 변경한 판단이 영향을 받는 경우에 넣는다. 같은 instant를 process TZ만 바꿨을 때 결과가 달라져야 하는지 먼저 정한다. Dayjs timezone 값에 단순 add/subtract가 DST offset을 보정한다고 가정하지 않고 실제 요청 기간의 UTC 경계를 확인한다. 기존 timezone helper를 재사용하며 테스트용 새 시간 API를 만들지 않는다.
 
-테스트는 사용자 동작·권한·저장 정합성·중복 발송·쿼리 수·재시도 계약을 보호한다. 인스턴스 존재,
-단순 필드 shape, private 메서드 호출, mock 호출만으로 CLS/rollback을 증명하는 테스트는 추가하지 않는다.
-같은 업무 흐름의 중복 검증은 하나의 시나리오로 모으며, 개수를 늘리기 위해 테스트를 나누지 않는다.
+timer 자체가 계약인 retry/backoff 테스트는 fake timer를 쓸 수 있다. DB가 없는 격리된 suite에서 공식 timer advancement로 진행하고 globals/env/timer를 복원한다. 임의 sleep이나 polling으로 완료를 추측하지 않는다.
 
-- 날짜·만료·쿨다운은 `vi.useFakeTimers()`와 `vi.setSystemTime()` 또는 주입한 고정 Clock을 사용한다. 순수 Unit은 매 테스트 후 `vi.useRealTimers()`로 복원한다.
-- 실제 DB/socket/job runtime의 timer 전체를 fake로 바꾸지 않는다. 날짜만 제어하거나 영속 timestamp를 명시하고 I/O 수명주기는 실제로 실행한다.
-- 입력에 따라 반환이 달라지는 mock은 설치된 Vitest 5의 `vi.when(spy, { onUnmatched: 'throw' }).calledWith(...).thenResolve(...)`를 사용할 수 있다. 정확한 matcher를 먼저 등록하고 무관한 호출이 성공 결과를 받지 않게 한다. 새로운 spy를 매 테스트에서 생성한다.
-- 비동시 테스트에서만 globals/env를 대체하고 매 테스트 후 복원한다. 동시 요청 검증은 배열 인덱스 대신 업무 식별자로 결과를 비교한다.
-- 변경된 핵심 경로는 순서 shuffle seed와 timezone을 바꿔 반복한다. 통과 조건·seed를 기록하되 유한한 반복으로 flake가 영구적으로 없다고 보장하지 않는다.
+## Infrastructure·Presentation과 공급자 wire
 
-공식 API: [Vitest conditional mocking](https://vitest.dev/guide/recipes/conditional-mocking), [fake timers](https://vitest.dev/api/vi.html#vi-usefaketimers).
+Nest metadata/DI가 필요한 대상은 기존 `TestBed.solitary()` 또는 `Test.createTestingModule()`을 사용할 수 있다. 실제 Module 조립이 요구라면 운영 factory provider를 재사용하는 Integration/HTTP로 확인한다. Application factory를 bare class provider로 바꾸거나 테스트 전용 조립을 정답으로 삼지 않는다.
+
+현재 서버의 공급자 검증은 설치된 실제 SDK + fetch/HTTP Stub + fixture `Response`를 사용한다. MSW 공통 harness는 현재 서버에 없다. 기존 Stub으로 충분하면 문서 패턴을 맞추려고 MSW나 다른 의존성을 추가하지 않는다. 해당 작업에 이미 MSW 환경이 있는 경우에도 unmatched 요청을 차단하고 테스트 사이 handlers를 복원하는 같은 격리 원칙을 적용한다.
+
+- [Resend Adapter](../src/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter.spec.ts), [StubResendHttp](../test/mocks/resend-http.stub.ts): SDK의 payload·헤더·오류를 고정 HTTP 응답으로 확인한다. 미준비 요청은 실제 네트워크로 전달하지 않는다.
+- [Gemini Adapter](../src/modules/ai-assistance/infrastructure/adapters/parsing/gemini-ai.adapter.spec.ts): 실제 Google factory/설치 SDK의 wire와 schema-invalid raw JSON 거절을 확인한다. Fake/schema 통과는 실제 모델의 의미 품질이나 유료 가치 증거가 아니다.
+- fetch 주입 또는 해당 suite의 `vi.stubGlobal`/spy를 이용한다. global/env 교체는 비동시 suite에서만 하고 `afterEach`에 복원한다. SDK 전체 mock은 기본으로 쓰지 않는다. 불가피한 경우 실제 오류 타입·schema 검증 경계를 남기고 검증하지 못한 wire 범위를 기록한다.
+
+ORM mock의 `.all()` 결과는 `nativeRows(databaseFixture(...))`, 단건은 필요한 projection 필드와 실제 null을 반환한다. `assertNativeWhere`/`assertNativeOrder`로 AST·바인딩을 확인할 수 있지만 SQL의 실제 실행 의미를 입증하지는 않는다.

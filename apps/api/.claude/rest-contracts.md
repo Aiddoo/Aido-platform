@@ -1,43 +1,46 @@
 # 공유 REST 계약
 
-정본은 [`packages/api`](../../../packages/api/README.md)다. 실행 서버는 `@aido/server`,
-공유 계약은 `@aido/api`이며 NestJS·Prisma 구현을 모바일에 노출하지 않는다.
+요청·응답·Zod·HTTP mapper를 바꿀 때 참고한다. 공유 계약의 정본은 [packages/api](../../../packages/api/README.md)다. 서버 실행 패키지는 `@aido/server`, REST 계약 패키지는 `@aido/api`다.
 
-## 소유와 의존성
+## 경계와 소유
 
-- `@aido/api`: 요청·응답 Zod 스키마와 inferred type, 성공 envelope.
-- `@aido/api/errors`: 안정된 오류 코드와 HTTP 오류 계약.
-- `@aido/api/vocabulary`: Zod·HTTP·ORM 없이 쓰는 순수 상수와 union type.
-- 서버 Domain은 내부 상태·VO를 소유한다. HTTP DTO를 Entity로 저장하지 않는다.
-- Application은 업무 입력과 read model을 소유한다. Presentation은 공유 요청을 검증하고
-  내부 입력으로 변환하며, 저장 결과를 공개 응답에 매핑한다.
-- 클라이언트 Service는 공유 스키마로 응답을 검증한 뒤 앱 모델로 변환한다.
+| 경계                   | 소유                                               |
+| ---------------------- | -------------------------------------------------- |
+| `@aido/api`            | 요청·응답 Zod schema, inferred type, 성공 envelope |
+| `@aido/api/errors`     | 안정된 오류 code·HTTP 오류 계약                    |
+| `@aido/api/vocabulary` | Zod·HTTP·ORM 없는 순수 상수·union                  |
+| Domain                 | 내부 값·상태·순수 업무 판단                        |
+| Application            | 업무 입력·read model·흐름·locale별 콘텐츠 조립     |
+| Presentation           | HTTP DTO 검증, 원시값 변환, 공개 응답 매핑         |
 
-## 파일과 검증
+Domain에 HTTP DTO나 transport serialization을 넣지 않는다. Application의 내부 계약을 새로 정리할 때는 공개 응답과의 우연한 결합을 줄이되, 현재 UseCase 중에는 공유 응답 타입을 쓰는 기존 구현도 있다. 이를 문서만으로 이미 분리됐다고 표현하지 않는다.
 
-`packages/api/src/contracts/<feature>`에 `<feature>.request.ts`, `<feature>.response.ts`,
-필요할 때만 `<feature>.common.ts`를 둔다. Zod schema에서 `z.infer`로 공개 타입을 얻는다.
-별도 Nest DTO class나 decorator는 공유 패키지에 두지 않는다. 서버 Presentation의 DTO는
-schema와 type alias이며 `@Body/Query/Param({ schema: Dto })`로 검증을 명시한다.
+## Schema와 서버 DTO
 
-새 필드는 API 설명과 실제 소비 의미를 함께 작성한다. `.describe()`는 OpenAPI 계약이다.
-기존 field required/optional/nullable/default, 날짜와 epoch milliseconds, validation 메시지를
-리팩터링 중 바꾸지 않는다. PATCH `undefined`는 미제공, 허용된 `null`은 초기화이며
-`false`·`0`은 누락이 아니다. 필수 scalar에 nullish fallback을 적용하지 않는다.
+`packages/api/src/contracts/<feature>`에서 `<feature>.request.ts`, `<feature>.response.ts`, 필요한 경우 `<feature>.common.ts`가 schema를 소유한다. 공개 타입은 `z.infer`로 얻으며 별도 Nest DTO class/validation decorator를 공유 패키지에 넣지 않는다.
 
-## 호환성과 다국어
+서버 Presentation DTO는 공유 schema의 meta와 type alias다. `@Body/Query/Param({ schema: Dto })`로 runtime 검증을 명시한다. 응답 envelope와 상태는 기존 Controller/platform HTTP 경계를 따른다. schema를 Server ORM 타입에서 자동 파생해 DB 표현을 클라이언트로 노출하지 않는다.
 
-고정된 구 앱 fixture와 OpenAPI fingerprint는 현재 schema로 재생성하지 않는다. 서버·앱
-기능 변경에서 기존 오류 코드·HTTP 상태·응답 shape를 먼저 유지한다. Domain은 번역된 문장을
-판단하지 않으며 locale별 사용자 메시지는 Presentation이 소유한다. 기존 한국어 validation
-메시지는 호환 계약으로 유지하고 언어 확장은 코드 기반 오류 번역 경계에서 다룬다.
+필드의 `.describe()`와 `.meta()`는 실제 공개 설명/Swagger 계약이다. 추가 필드는 단위·시점·nullable 의미와 소비를 함께 설명한다. HTTP input/output mapper는 날짜·epoch·enum 표현을 명시적으로 변환한다.
 
-## 검증 명령
+## 입력과 시간 의미
 
-```sh
-pnpm --filter @aido/api test
-pnpm --filter @aido/server test:e2e
-pnpm lint
-pnpm format:check
-pnpm typecheck
-```
+- required/optional/nullable/default와 validation 메시지는 계약이다. 리팩터링 중 바꾸지 않는다.
+- PATCH undefined는 미제공, 허용된 null은 초기화다. false·0을 누락으로 처리하지 않는다.
+- 필수 scalar에 nullish fallback을 덧붙여 유효하지 않은 입력을 감추지 않는다.
+- `YYYY-MM-DD` calendar label과 instant ISO datetime·epoch milliseconds를 구분한다. process-local Date 파싱으로 사용자 날짜/요일을 이동시키지 않는다.
+- timezone·locale header/default와 지원 범위도 계약이다. 예를 들어 전역 좌표 VO가 생겼어도 기존 Weather HTTP의 한국 bbox·1901/1902·fallback 범위가 해외 지원으로 바뀐 것은 아니다.
+
+## 오류·copy·호환
+
+공개 오류는 기존 ErrorCode/HTTP 상태/details/envelope를 유지하고 GlobalExceptionFilter가 변환한다. Domain은 번역된 문장을 판정하지 않는다. 기존 한국어 validation 문구는 현재 계약으로 보존하고, 사용자 표시·AI prompt·notification/email copy는 Application typed catalog 또는 Presentation에서 다룬다.
+
+API 필드를 제거하거나 의미를 바꾸는 작업은 요청 범위와 실제 소비자·배포 전략을 확인한다. 소비가 없는 내부 forwarding alias/helper는 유지 명분이 없으면 제거할 수 있으나, 배포된 구 앱 계약이나 queue/DB 운영 호환과 혼동하지 않는다.
+
+고정된 released app fixture를 현재 schema로 재생성하지 않는다. snapshot 갱신으로 회귀를 감추지 않는다. 의도된 변경은 변경 내용을 검토하고 해당 계약·소비자 검증으로 확인한다.
+
+## 검증 선택
+
+공유 schema를 바꾸면 영향을 받는 `@aido/api` 테스트와 서버 HTTP·구 앱 fingerprint/OpenAPI 사례를 선택한다. 내부 mapper만 바꾸면 실제 경계 값·null/default/error regression을 확인한다. 문구·링크만 바꾸면 코드와 참조 확인으로 충분할 수 있다.
+
+실행 명령과 격리 조건은 [testing-guide.md](testing-guide.md)에 있다. 단순 수정마다 모든 package/E2E/lint/typecheck를 중복 실행하는 고정 recipe를 두지 않는다.

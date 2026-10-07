@@ -1,288 +1,122 @@
-# API Code Conventions
+# 서버 코드 작성 기준
 
-> Version 4.0.0 · Updated 2026-10-07 · Owner: Aido Platform Team
+Controller·UseCase·Port를 작성하거나 역할을 정리할 때 참고한다. 경계의 이유는 [architecture.md](architecture.md), 공개 HTTP 계약은 [rest-contracts.md](rest-contracts.md), 이름의 기준은 [naming.md](../../../docs/server/naming.md)에 있다. 수정 대상과 가까운 실제 구현을 사례로 선택한다.
 
-이 문서는 신규·수정 코드의 작성 규칙이다. 구조적 이유는 [architecture.md](./architecture.md), DTO는 [rest-contracts.md](./rest-contracts.md), DB는 [prisma.md](./prisma.md), 테스트는 [testing-guide.md](./testing-guide.md)를 따른다.
+## 책임과 추상화
 
-## 1. 기본 원칙
+한 클래스는 함께 바뀌는 업무 책임을 맡는다. 작은 클래스 수나 인터페이스 수 자체가 품질 지표는 아니다. 한 줄 전달 Facade, 형식적인 Aggregate, 필드마다 생기는 VO, 구현 하나를 다시 전달하는 Registry를 추가하지 않는다. 역할이 사라진 helper·forwarder·export는 실제 소비를 확인해 제거한다. API·DB·queue/cache 운영 호환에 필요한 경계는 함께 제거하지 않는다.
 
-- 기존 모듈의 현재 패턴과 `src/modules/planning`를 먼저 읽는다.
-- 한 클래스는 하나의 역할과 하나의 변경 이유를 가진다.
-- 전달만 하는 Facade, Service, Manager, Helper, Utils, Impl을 만들지 않는다.
-- 추상화는 교체·격리·모듈 경계 가치가 있을 때만 추가한다.
-- 공개 계약을 유지하는 리팩터링에서는 snapshot을 갱신해 회귀를 승인하지 않는다.
+현재 사례에서 판단할 수 있는 기준:
 
-포맷은 Oxfmt가 소유한다. 서버는 2칸 들여쓰기·double quote·LF·세미콜론으로 통일한다.
-`pnpm lint`가 레이어 import·runtime cycle·kebab-case 파일명을 검사한다.
+| 기준                               | 실제 사례                                                           |
+| ---------------------------------- | ------------------------------------------------------------------- |
+| 상태 행동과 조회 projection 분리   | Notification Aggregate와 Application NotificationRecord             |
+| 작은 consumer 계약                 | UpsertLocation이 location 저장·cache invalidate·grid resolve만 소비 |
+| 공급자 구현에서 정책/계산 격리     | Coordinate와 KmaWeatherGridResolver                                 |
+| 한 객체를 최소 공개 token으로 연결 | WeatherForecastReader의 `useExisting` binding                       |
+| 사용자 표시와 숫자 규칙 분리       | AI report read model/locale label과 Domain report 집계              |
 
-## 2. 파일과 역할
+SOLID를 새 Base class나 계층을 만드는 이유로 사용하지 않는다. 실제 변경 이유, 교체 지점, 필요한 capability로 설명한다.
 
-| 역할           | 위치·형식                                                                                            |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| Aggregate Root | `domain/aggregates/<slice>/<name>.aggregate.ts`                                                      |
-| 자식 Entity    | `domain/entities/<slice>/<name>.entity.ts`                                                           |
-| Value Object   | `domain/value-objects/<slice>/<name>.vo.ts`                                                          |
-| 순수 판단      | `domain/policies/<slice>/<name>.policy.ts` 또는 기존 `domain/services/<slice>/<specific-name>.ts`    |
-| Domain event   | `domain/events/<slice>/<event>.event.ts`                                                             |
-| 쓰기 UseCase   | `application/use-cases/<slice>/<verb-object>.use-case.ts`                                            |
-| 읽기 UseCase   | `application/use-cases/<slice>/<verb-object>.use-case.ts`                                            |
-| Port           | `application/ports/<slice>/<capability>.<role>.port.ts`                                              |
-| Adapter        | `infrastructure/adapters/<slice>/<purpose>.adapter.ts`                                               |
-| Prisma 구현    | `infrastructure/persistence/<slice>/prisma-<capability>.<role>.ts` 또는 모듈의 기존 persistence 구조 |
-| Cache keyspace | `infrastructure/cache/<slice>/<slice>-cache.keyspace.ts`                                             |
-| Queue contract | `infrastructure/jobs/<slice>/<slice>-queue.constants.ts`                                             |
-| Queue consumer | `<purpose>.processor.ts` 또는 `<purpose>.job-handler.ts`                                             |
-| HTTP mapper    | `presentation/mappers/<slice>/<purpose>.mapper.ts`                                                   |
+## TypeScript와 입력 의미
 
-역할 접미사:
+- 파일·폴더는 kebab-case, 클래스·타입은 PascalCase, 변수·필드는 camelCase다. ESM 상대 import는 `.js`, 별칭은 `#api/*`/`#test/*`를 사용한다.
+- 순수 Application은 생성자 객체로 의존성을 받고 `readonly #dependencies`에 보관한다. 입력의 재할당 없는 속성도 readonly로 표현한다. 가변 Domain 상태를 기계적으로 readonly로 만들지는 않는다.
+- 의존성 타입은 전체 공급자 API보다 실제 사용하는 `Pick`이 명확할 수 있다. 단일 메서드 Port는 그 자체로 최소 계약일 수 있으므로 Pick을 반복할 필요는 없다.
+- null/undefined presence는 의미를 드러내는 비교를 사용한다. boolean은 `!flag`로 검사할 수 있지만 `0`·`false`·빈 문자열을 입력 누락으로 바꾸지 않는다.
+- PATCH의 `undefined`는 미제공, 허용된 `null`은 초기화다. 초기화 가능한 필드에 `input.field ?? existing.field`를 쓰지 않는다.
+- Repository의 조회 실패, cache miss 등은 각 Port의 기존 null/undefined 계약을 따른다. 값을 확인하지 않고 cast/non-null assertion으로 넘기지 않는다.
+- snapshot의 Date/배열/중첩 가변 값은 필요한 깊이만큼 방어적으로 복사한다. `readonly`만으로 외부 mutation이 차단되지는 않는다.
 
-- 상태 저장: `Repository`
-- 조회: `Reader`
-- 임시 상태: `Store`
-- 외부 API/SDK: `Client`
-- 발송: `Sender`
-- append-only 기록: `Recorder`
-- 이벤트 발행: `Publisher`
-- 경계 변환: `Adapter`
-- 순수 판단: `Policy`
-- 복수 정보 해석: `Resolver`
-- 구현 선택: `Registry`
-- 큐 소비: `JobHandler` 또는 기존 Nest 관례의 `Processor`
+코드가 설명하는 동작을 주석으로 반복하지 않는다. lock 순서, Required UoW, retry/idempotency, 오류 우선순위, 구 앱 호환처럼 코드만으로 드러나지 않는 이유는 남긴다.
 
-### 경계 안에서 사용하는 이름
+## Controller와 DTO
 
-- 파일·폴더는 kebab-case, 클래스는 PascalCase, 변수·필드는 camelCase로 역할을 일치시킨다.
-- DI 필드는 클래스의 업무 이름을 그대로 드러낸다. `getNudgeInteraction`, `nudgeRepository`,
-  `notificationPublisher`처럼 읽고, `useCase`, `repository`, `publisher`로 여러 책임을 축약하지 않는다.
-- 단수 식별자는 `nudgeId`, 복수 식별자는 `friendIds`, 시각은 `repliedAt`, 수정 시각은 `replyUpdatedAt`이다.
-- 내부 boolean은 `isEnabled`처럼 판단 의미를 나타낸다. 이미 공개된 `enabled` 등 API 필드는 mapper에서
-  기존 이름을 유지하며, 내부 명명 정리 때문에 DTO·DB 컬럼·알림 payload를 변경하지 않는다.
-- 파일의 기본 단위는 역할이다. Aggregate 복원은 `reconstitute`, 쓰기·읽기 endpoint 흐름은 `execute`,
-  DTO 변환은 `toDto`, 저장 변환은 `toPersistence`처럼 해당 경계의 기존 이름을 사용한다.
-- Nest 공식 provider/module 방식으로 DI를 구성하고, DDD 레이어·Port 이름은 이 저장소 규칙을 적용한다.
-  Nest가 모든 프로젝트에 Aggregate나 VO를 강제하는 것으로 해석하지 않는다.
+Controller는 decorator/guard/Swagger, DTO 검증, 원시값의 Application 입력 변환, 결과의 HTTP 매핑을 담당한다. Repository·SDK·transaction·업무 상태 판단은 Controller에 두지 않는다. UseCase를 직접 주입한다.
 
-## 3. Controller
-
-Controller는 HTTP 경계다.
-
-해야 하는 일:
-
-- decorator, auth/role guard, Swagger 선언
-- `@aido/api` DTO 수신
-- header/param/query/body를 application input으로 변환
-- endpoint UseCase 직접 호출
-- 응답 DTO 또는 mapper로 변환
-
-하지 않는 일:
-
-- repository/Prisma 직접 호출
-- 상태 전이와 비즈니스 분기
-- transaction 시작
-- 외부 SDK 호출
-- 전달 전용 Facade 호출
+[TodoController](../src/modules/planning/presentation/controllers/todos/todo.controller.ts)의 실제 시그니처 발췌:
 
 ```ts
-@Post()
 async create(
-  @CurrentUser("id") userId: string,
-  @Body() request: CreateTodoRequestDto,
-): Promise<TodoResponseDto> {
-  return this.createTodo.execute({
-    userId,
-    title: request.title,
-    scheduledAt: request.scheduledAt,
-  });
-}
+  @CurrentUser() user: CurrentUserPayload,
+  @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
+  @Timezone() timezone: string,
+): Promise<CreateTodoResponseDto> {
 ```
 
-## 4. UseCase
+이 경계는 `user.userId`, DATE `parseDateOnly`, 사용자 zone의 시각 `parseLocalDateTime`을 입력으로 만든다. `CurrentUser("id")`나 존재하지 않는 `scheduledAt` 예제를 새 코드의 계약으로 복사하지 않는다. shared schema의 optional/null/default는 [REST 계약](rest-contracts.md) 기준으로 유지한다.
 
-- 클래스명은 `<Verb><Object>`이며 파일 접미사는 `.use-case.ts`다.
-- 공개 실행 메서드는 `execute` 하나다.
-- 입력이 있으면 단일 `XxxInput`, 없으면 무인자다.
-- 입력 속성은 재할당하지 않는 계약이므로 `readonly`를 사용한다. 지역 변수나 mutable domain state에 기계적으로 붙이지 않는다.
-- 반환 객체는 `XxxResult` 또는 실제 read model 이름을 사용한다.
-- 순수 TypeScript로 작성한다. Nest decorator와 Logger 구현은 Composition Root에서 조립한다.
-- Prisma와 vendor 타입은 금지한다.
-- 권한, orchestration, transaction, port 호출 순서를 담당한다.
-- 상태 전이 규칙은 Aggregate/VO/Policy에 위임한다.
+## UseCase와 Domain
+
+UseCase는 `<Verb><Object>` 이름과 `execute` 진입점을 사용한다. 한 endpoint 또는 명확한 background workflow의 입력·권한·port 호출·transaction 순서를 조정한다. 유사 코드가 있다는 이유만으로 unrelated 흐름을 범용 executor에 합치지 않는다.
+
+[GetMemo](../src/modules/notes/application/use-cases/memos/get-memo.use-case.ts)의 실제 흐름 발췌:
 
 ```ts
-export interface UpdateTodoTitleInput {
-  readonly userId: string;
-  readonly todoId: string;
-  readonly title: string;
-}
-
-interface UpdateTodoTitleDependencies {
-  readonly todoRepository: TodoRepositoryPort;
-  readonly unitOfWork: UnitOfWorkPort;
-}
-
-export class UpdateTodoTitle {
-  readonly #dependencies: UpdateTodoTitleDependencies;
-
-  constructor(dependencies: UpdateTodoTitleDependencies) {
-    this.#dependencies = dependencies;
-  }
-
-  async execute(input: UpdateTodoTitleInput): Promise<TodoResponse> {
-    return this.#dependencies.unitOfWork.run(async () => {
-      const { todoRepository } = this.#dependencies;
-      const todo = await todoRepository.findOwnedById(input.todoId, input.userId);
-      todo.changeTitle(input.title);
-      await todoRepository.updateTitle(todo);
-      return todoRepository.findResponseById(input.todoId, input.userId);
+async execute(input: GetMemoInput): Promise<GetMemoResult> {
+  const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
+  if (memo === null) {
+    throw new ApplicationException(ErrorCode.MEMO_2001, {
+      memoId: input.memoId,
     });
   }
+
+  return { memo: toMemoView(memo) };
 }
 ```
 
-실제 repository 메서드명과 반환 타입은 해당 모듈을 따른다. 예제의 이름을 존재 확인 없이 복사하지 않는다.
+읽기 UseCase에는 상태 없는 Aggregate를 만들지 않는다. 상태 전이는 해당 모델의 명명된 행동으로, 여러 입력의 순수 판단은 함수/Policy로 표현한다. 일부 필드만 바꾸는 입력은 presence 확인 후 해당 행동을 호출하며 범용 `Object.assign`으로 invariant를 우회하지 않는다.
 
-## 5. Partial update
+생성 정책과 저장 복원을 구분한다. 계획된 신규 상태는 해당 모델의 create/planCreation 규칙으로, 신뢰한 영속 상태는 reconstitute로 복원한다. 모든 primitive에 VO를 요구하지 않는다.
 
-`patch.completed !== undefined` 자체는 잘못이 아니지만 여러 필드에 반복하면 의도가 흐려진다. 입력 presence와 도메인 행동을 명시적으로 분리한다.
+## Port·Adapter·조립
+
+Port는 Application의 언어로 외부 경계를 표현한다. ORM row/client와 vendor SDK 타입을 UseCase에 반환하지 않는다. Adapter는 기존 SDK/ORM API를 사용해 경계 표현을 변환하며 공급자 policy를 중립 Domain에 넣지 않는다.
+
+[UpsertLocation](../src/modules/weather/application/use-cases/forecast/upsert-location.use-case.ts)의 실제 최소 의존성:
 
 ```ts
-if (patch.completed !== undefined) {
-  todo.changeCompletion(patch.completed);
-}
+readonly weatherLocationRepository: Pick<
+  WeatherLocationRepositoryPort,
+  "findByUserId" | "upsert"
+>;
+readonly weatherCache: Pick<WeatherCachePort, "invalidateGrid">;
+readonly weatherGridResolver: Pick<WeatherGridResolverPort, "resolveGrid">;
 ```
 
-입력 변환이 복잡하면 mapper로 정리하되, 단순 비교를 범용 helper로 감싸지 않는다. Truthy 검사로 바꾸지 않는다. `false`, `0`, 빈 문자열이 유효한 값일 수 있기 때문이다.
+순수 Application에 Nest decorator를 붙이지 않는다. Context root의 factory provider가 실제 token/구현을 주입한다. [Notes factory](../src/modules/notes/notes-memos-application.providers.ts)의 실제 발췌:
 
 ```ts
-if (patch.categoryId !== undefined) {
-  todo.changeCategory(patch.categoryId);
-}
+export const getMemoProvider: FactoryProvider<GetMemo> = {
+  provide: GetMemo,
+  inject: [MEMO_REPOSITORY],
+  useFactory: (repository: ConstructorParameters<typeof GetMemo>[0]["repository"]) =>
+    new GetMemo({ repository }),
+};
 ```
 
-도메인 상태 변경은 `Object.assign`이나 범용 patch 메서드보다 명명된 행동을 우선한다. DB에는 실제 영향 필드만 저장할 수 있다.
+타 Context에는 실제 필요한 value/type만 public으로 연결한다. 내부 UseCase·concrete Repository·테스트 helper를 묶어 export하지 않는다. 단순 public forwarding 파일이 필요한지와 runtime cycle을 함께 확인한다.
 
-## 6. Domain
+## 저장·효과·캐시
 
-- constructor는 외부에서 직접 호출하지 않는다.
-- 생성과 복원을 구분한다.
-- 원시값은 VO로 변환한 뒤 Aggregate 상태로 유지한다.
-- getter가 `Date`나 mutable collection을 그대로 노출하지 않게 한다.
-- boolean은 `is/has/can/should`, 시각은 `*At`, 기간은 `*Ms/*Seconds/*Minutes`를 사용한다.
-- vendor의 enum/필드명은 presentation 또는 infrastructure mapper 안에서만 유지한다.
-- 주석은 코드 동작이 아니라 결정 이유, transaction 이유, 호환성 이유를 설명한다.
+업무 원자성은 UoW와 실제 DB lock/constraint/conditional write로 구현한다. 활성 transaction은 CLS에서 읽고 tx 인자를 계층마다 전달하지 않는다. 실패 기록, commit 뒤 publish/queue, best-effort cache settle은 각 흐름의 기존 의미를 따른다. 외부 AI·push·email 호출은 긴 DB transaction 밖에 둔다.
 
-Aggregate가 필요하지 않은 경우:
+캐시에는 의미 기반 Port를 사용한다. raw key·TTL·pattern·Redis command는 Infrastructure keyspace에 둔다. queue name/payload/attempt/backoff/재시도 의미도 소유 Context에 응집한다. 제거하거나 바꾸려면 실제 운영 소비자와 전환 범위를 함께 처리한다.
 
-- 단순 조회 projection
-- 통계와 report read model
-- 상태 없는 formatter/mapper
-- 집합 단위 batch/claim/counter
+## 순수 라이브러리와 표시
 
-## 7. Port와 Adapter
-
-Port는 application의 언어로 정의한다.
+단순 map/filter/guard는 그대로 둔다. 묶기·중복 제거 등에서 의미가 분명하면 기존 es-toolkit을 직접 사용한다. [recorded-activity-evidence.ts](../src/modules/ai-assistance/domain/services/suggestions/recorded-activity-evidence.ts)는 다음 실제 호출로 활동을 한 번 그룹화한다.
 
 ```ts
-export const AI_TEXT_GENERATOR = Symbol('AI_TEXT_GENERATOR');
-
-export interface AiTextGeneratorPort {
-  generateTodo(input: GenerateTodoTextInput): Promise<GeneratedTodoText>;
-}
+Object.entries(groupBy(todos, (todo) => todo.title));
 ```
 
-나쁜 예:
+구분 가능한 union의 누락 없는 분기에는 기존 ts-pattern `match(...).with(...).exhaustive()`가 유용하다. boolean guard를 match로 늘리지 않는다. SDK 기본 기능을 대체하는 retry/timeout/serialization wrapper를 만들기 전에 설치된 API와 현재 호출을 확인한다.
 
-- vendor SDK 메서드와 타입을 그대로 복사한 Port
-- 한 concrete class를 감싸기만 하는 Port
-- `ServicePort`, `ManagerPort`처럼 capability가 드러나지 않는 이름
-- 같은 DB 모듈 내부 호출마다 추가한 인터페이스
+사용자 표시 copy·locale label·AI prompt/schema는 Application typed catalog 또는 Presentation에서 다룬다. Domain은 숫자·상태 판단을 소유한다. 기존 locale/기본값/문구 호환을 유지하며 작은 두 언어 선택에 범용 i18n registry를 도입하지 않는다.
 
-Adapter는 변환과 외부 I/O를 담당하며 비즈니스 규칙을 만들지 않는다. vendor 교체는 Adapter와 module binding에서 끝나야 한다.
+## 오류와 확인
 
-## 8. Repository와 Transaction
+Domain invariant는 DomainException, Application 거부는 ApplicationException과 기존 ErrorCode를 사용한다. HTTP 변환은 platform filter가 담당한다. 원문 개인정보·prompt·공급자 error를 로그에 전달하지 않는다. [logging-guide.md](logging-guide.md)에 형식과 실제 사례가 있다.
 
-- 영속 상태 변경은 `Repository`, 읽기 projection은 `Reader`로 구분한다.
-- repository는 Prisma row와 domain/read model 사이를 매핑한다.
-- UseCase에 Prisma model 또는 transaction client를 반환하지 않는다.
-- 활성 transaction은 CLS에서 읽는다. `transaction`, `tx`를 계층마다 전달하지 않는다.
-- unique/foreign-key 오류는 기존 canonical error mapping을 유지한다.
-- 회원가입 기본 카테고리처럼 특정 업무를 수행하는 클래스는 `DefaultTodoCategorySeeder`처럼 업무 이름을 사용한다. 내부에서 repository를 사용해 같은 UoW에 참여하는 것은 허용한다.
-
-## 9. Domain event와 Queue
-
-- domain event는 이미 발생한 사실을 과거형으로 명명한다.
-- Aggregate가 event를 적립하고 UseCase가 성공한 commit 뒤 발행한다.
-- 같은 transaction 안에서 반드시 성공해야 하는 핵심 저장을 비동기 event로 넘기지 않는다.
-- queue payload는 producer/consumer가 공유하는 schema로 검증한다.
-- queue/job/key 문자열과 retry/concurrency 숫자는 이름 있는 상수로 관리한다.
-- processor는 payload 검증, UseCase 호출, 재시도 가능한 오류의 로깅에 집중한다.
-
-## 10. Cache
-
-- cache key와 TTL은 컨텍스트별 keyspace 파일이 소유한다.
-- application에는 `getTodoSummary`, `invalidateUserTodos` 같은 의미 기반 메서드를 노출한다.
-- raw key 조립, wildcard pattern, Redis command는 infrastructure에 둔다.
-- 쓰기 성공 후 필요한 범위만 무효화한다.
-- 필터 조합이 많고 변경이 잦은 데이터는 캐시를 기본 선택으로 보지 않는다.
-
-## 11. Module과 public API
-
-- Module이 UseCase와 `Port → Adapter` binding을 명시적으로 등록한다.
-- `<context>-<slice>-application.providers.ts`가 순수 Application 클래스의 factory provider를 소유한다. Port → Adapter binding은 해당 Root provider/module에 둔다.
-- 공개 `index.ts`는 타 모듈이 실제로 소비하는 capability, event contract, DTO만 export한다.
-- UseCase, concrete repository, queue 구현, test helper는 공개하지 않는다.
-- 순환 의존을 `forwardRef`로 덮기 전에 capability 방향을 재검토한다.
-
-## 12. Error와 logging
-
-- Domain invariant: `DomainException`
-- Application rule: `ApplicationException`
-- Public code: `ErrorCode`
-- 비즈니스 코드에서 `HttpException`과 임의 문자열 code를 만들지 않는다.
-- log context에는 module/use-case/job과 안정적인 식별자를 포함한다.
-- token, password, authorization code, 원문 개인정보와 전체 vendor payload는 기록하지 않는다.
-
-## 13. Test
-
-- Aggregate/VO/Policy: 프레임워크 없는 단위 테스트
-- UseCase: `vitest-mock-extended`의 `mockDeep<ConstructorParameters<typeof UseCase>[0]>`와 명시적 생성자 주입
-- Module wiring/decorator/guard: Nest testing module
-- Repository/UoW/concurrency: 실제 PostgreSQL 통합 테스트
-- HTTP/error/OpenAPI: E2E
-
-Nest DI가 필요한 Infrastructure/Presentation Unit은 기존 Suites를 사용한다. 순수 Domain/Application에는 컨테이너를 올리지 않는다.
-
-## 14. 신규·수정 체크리스트
-
-1. 공개 HTTP/Zod/error/DB/queue/cache 계약의 변경 여부를 먼저 확인한다.
-2. 상태 전이와 invariant가 있으면 기존 Aggregate에 행동을 추가한다.
-3. endpoint orchestration은 하나의 UseCase `execute(input)`에 둔다.
-4. 외부 기술 또는 cross-context capability가 있을 때만 Port를 정의한다.
-5. Adapter에서 Prisma/vendor/Redis/BullMQ 타입을 변환한다.
-6. Controller에서 DTO를 input으로 변환하고 UseCase를 직접 호출한다.
-7. Module binding과 최소 public export를 추가한다.
-8. unit → integration → E2E → architecture/contract 순으로 위험에 비례해 검증한다.
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm format:check
-```
-
-## 15. 금지 검색어 점검
-
-신규 코드에서 아래 항목을 발견하면 역할과 경계를 다시 검토한다.
-
-```text
-application/facades
-*Facade
-*Manager
-*Helper
-*Utils
-*Impl
-deep import of another module
-Prisma type in application/domain
-shared CacheKeys in application
-```
-
-이름만으로 실패시키지 말고 실제 책임을 확인한다. 외부 라이브러리 고유명과 기존 호환 API는 예외일 수 있다.
+코드·문서 변경 위험에 맞는 검증을 [testing-guide.md](testing-guide.md)에서 선택한다. 구조 검토에서는 실제 consumer/module 연결을, transaction 검토에서는 native DB 증거를, HTTP 변경에서는 계약 테스트를 확인한다. 통과한 전체 검사를 파일마다 반복하거나 구현과 같은 소스 파싱 테스트를 새로 만들지 않는다.

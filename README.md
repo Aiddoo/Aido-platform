@@ -48,6 +48,8 @@ aido/
 
 ## 시작하기
 
+서버 환경 파일·인증 설정·실행 준비는 [API README](apps/api/README.md#시작하기)를 따른다. 아래 DB 연결은 로컬 개발용이다.
+
 ```bash
 # 설치
 pnpm install
@@ -55,8 +57,8 @@ pnpm install
 # DB 실행 (Docker)
 pnpm docker:up
 
-# 마이그레이션
-pnpm db:migrate
+# 로컬 DB graph 적용·검증
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/aido pnpm --filter @aido/server db:deploy
 
 # 개발 서버
 pnpm dev
@@ -78,11 +80,12 @@ pnpm dev
 
 ### 데이터베이스
 
-| 명령어             | 설명                |
-| ------------------ | ------------------- |
-| `pnpm db:migrate`  | Prisma 마이그레이션 |
-| `pnpm db:generate` | Prisma Client 생성  |
-| `pnpm db:push`     | 스키마 즉시 반영    |
+| 명령어             | 설명                                  |
+| ------------------ | ------------------------------------- |
+| `pnpm db:migrate`  | Prisma 마이그레이션                   |
+| `pnpm db:generate` | Prisma 8 contract의 runtime·타입 생성 |
+| `pnpm db:plan`     | migration graph 적용 계획 확인        |
+| `pnpm db:verify`   | DB와 contract의 일치 확인             |
 
 ### 테스트
 
@@ -136,11 +139,12 @@ pnpm dev
 
 ## API 문서
 
-- Swagger UI: `http://localhost:8080/api-docs`
-- OpenAPI JSON: `http://localhost:8080/api-docs-json`
+- Swagger UI: `http://localhost:8080/api/docs`
+- OpenAPI JSON: `http://localhost:8080/api/docs-json`
 
 ## 배포
 
+- **서버 개발 문서**: [작업별 문서 안내](docs/server/README.md)
 - **API**: AWS EC2 + Docker Compose (GitHub Actions SSH 배포). [apps/api/DEPLOYMENT.md](./apps/api/DEPLOYMENT.md)
 - **Mobile**: Expo EAS 빌드. [apps/mobile/DEPLOYMENT.md](./apps/mobile/DEPLOYMENT.md)
 

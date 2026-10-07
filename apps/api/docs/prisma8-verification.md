@@ -1,4 +1,6 @@
-# Prisma 8 전환 검증
+# Prisma 8 검증 기록
+
+운영 절차는 [.claude/prisma.md](../.claude/prisma.md)와 [DEPLOYMENT.md](../DEPLOYMENT.md), CI 실행 범위는 [CI](../../../docs/server/ci.md)에 있다. 아래는 날짜·환경이 고정된 검증 기록이며 현재 모든 변경의 완료나 운영 적용을 뜻하지 않는다.
 
 검증일: 2026-10-06. Node.js 24.21.0, pnpm 10.34.6, PostgreSQL 16,
 ARM64 Docker 이미지에서 확인했다. 운영 DB에 적용하거나 이미지를 발행하지 않았다.
@@ -20,7 +22,7 @@ ARM64 Docker 이미지에서 확인했다. 운영 DB에 적용하거나 이미�
 - `null`은 nullable 필드 지우기, `undefined`는 변경 생략으로 유지한다.
   날짜처럼 보이는 JSON 문자열은 변환하지 않는다.
 
-## 자동 검증
+## 2026-10-06 자동 검증
 
 | 검증                        | 결과                                                       |
 | --------------------------- | ---------------------------------------------------------- |
@@ -33,20 +35,7 @@ ARM64 Docker 이미지에서 확인했다. 운영 DB에 적용하거나 이미�
 | 의존성                      | frozen lockfile / offline install 통과                     |
 | 빌드                        | API 및 migration ARM64 Docker 이미지 빌드 통과             |
 
-재현 명령:
-
-```sh
-pnpm lint
-pnpm format:check
-pnpm typecheck
-pnpm --filter @aido/api test:cov
-pnpm --filter @aido/api test:integration
-pnpm --filter @aido/api test:e2e
-node --test scripts/ci/*.test.mjs
-actionlint
-docker build --target production -f apps/api/Dockerfile -t aido-api-check .
-docker build --target migrate -f apps/api/Dockerfile -t aido-migrate-check .
-```
+재현할 때는 현재 package script의 `@aido/server` 필터와 [CI](../../../docs/server/ci.md)의 project를 사용한다. 이 기록의 테스트 수를 최신 suite 결과로 재사용하거나 변경 없이 전체 suite를 반복 실행하지 않는다.
 
 ## DB 전환과 실패 검증
 
@@ -67,7 +56,7 @@ docker build --target migrate -f apps/api/Dockerfile -t aido-migrate-check .
   재실행을 확인했다. DDL lock 대기는 5초로 제한하며 schema 변경은 native
   migration transaction에서 처리한다.
 
-## 성능 측정
+## 2026-10-06 로컬 성능 측정
 
 수동 performance project에서 동일 데이터와 pool을 사용해 기존 8쿼리 구성과
 준비된 ORM 5쿼리를 교차 실행했다. 두 방식의 최종 도메인 결과도 비교했다.
@@ -107,3 +96,11 @@ API와 migration 모두 contract emit 및 graph 검증을 다시 실행한다.
 공식 API 근거: [runtime](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/runtime.md),
 [queries](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/queries-postgres.md),
 [migrations](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/migrations.md).
+
+## Notification14 추가 근거와 범위
+
+`20261007T1840_push_receipt_token_fingerprint`는 nullable VARCHAR(64) 1개 추가 edge다. 기존 데이터/직전 native client CRUD/재적용은 격리 PostgreSQL migration fixture 1개에서 확인했다(seed 141011, 7.16초). Receipt/outbox/retention/rate 대상 fixture는 5개 파일, 37개 테스트를 통과했다(seed 141020, 26.36초). 실제 발송 token SHA256 저장·rotation·terminal replay·15분/24시간 조회 경계·legacy null 처리는 외부 network 없이 실제 DB에서 확인했다.
+
+B Infrastructure 검증은 36개 파일, 176개 테스트(seed 141024, 3.13초)이며 설치 Expo SDK 7.2.0과 Resend 6.32.0의 준비된 HTTP fixture를 포함한다. API 전체 gate·source SHA와 추가 after-commit/rollback 근거는 [migration.md](../../../docs/server/migration.md)의 Notification14 기록을 따른다. 위 수치는 서로 다른 범위이므로 합산하거나 전체 suite 성공을 대신하지 않는다.
+
+이 추가 검증은 새 운영 DB adoption·실제 Expo 전달·production BullMQ drain·ABA 등록 세대 구분·발송 중 token 회전의 attempt 생략을 해소했다는 증거가 아니다. runtime/library 버전은 package/lockfile을 따르며 업데이트 시 해당 실제 DB/SDK 경계를 다시 검증한다. Notification14 변경의 성능 향상은 측정하지 않았다.

@@ -2,6 +2,7 @@
 
 [Epic #882](https://github.com/Aiddoo/Aido-platform/issues/882)의 진행 기록이다.
 완료된 검증과 남은 작업을 구분한다. 코드 전환 완료가 운영 배포 완료를 의미하지 않는다.
+아래 단계별 수치·판단은 당시 조건의 기록이며 현행 작업 지침은 [문서 안내](README.md)에서 찾는다.
 
 ## 기준과 불변 계약
 
@@ -31,8 +32,8 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [ ] 16 ORM·N+1·성능·컨테이너 검증
 - [ ] 17 미사용 의존성·내부 레거시·빈 폴더 정리와 최종 검증
 
-모든 Context는 같은 Domain/Application/Infrastructure/Presentation 패턴과 파일 접미사를
-따른다. Domain/Application은 순수 TypeScript, 데이터 소유자는 Gateway 구현을 소유하며
+전환의 정본은 같은 Domain/Application/Infrastructure/Presentation 패턴과 파일 접미사다.
+완료된 Context와 남은 범위는 위 체크리스트로 구분한다. Domain/Application은 순수 TypeScript, 데이터 소유자는 Gateway 구현을 소유하며
 Composition Root가 의존성을 연결한다. 상태 없는 문의 전달·조회에 가짜 Aggregate나 DB를 만들지 않는다.
 
 서버는 접근·한도·전체 집계·저장 정합성을 판단하고 클라이언트는 표시·입력·상호작용을 계산한다.

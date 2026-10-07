@@ -1,215 +1,52 @@
-# Aido API 종합 테스팅 가이드
+# 서버 테스트: 검증 범위 선택
 
-**Version**: 5.0.0 · **Last Updated**: 2026-10-07 · **Owner**: Aido Platform Team
+이 문서는 테스트 종류와 완료 판단의 진입점이다. 작성할 테스트에 필요한 상세 문서만 읽는다.
 
-> 테스트 유형 선택 기준 + 공유 인프라 + 공통 규칙. 각 유형별 상세는 개별 가이드 참조.
+| 작업                                                         | 참고                                         |
+| ------------------------------------------------------------ | -------------------------------------------- |
+| 순수 Domain/Application, fixture·Stub, 공급자 Adapter의 wire | [unit-test.md](./unit-test.md)               |
+| 실제 Module 조립, PostgreSQL transaction·경쟁 조건·migration | [integration-test.md](./integration-test.md) |
+| HTTP validation·권한·응답·구 클라이언트 계약                 | [e2e-test.md](./e2e-test.md)                 |
 
-## 관련 문서
+## 무엇을 검증할지
 
-| 문서                                         | 내용                                       |
-| -------------------------------------------- | ------------------------------------------ |
-| [unit-test.md](./unit-test.md)               | 단위 테스트 상세 (Port Stub, fixture, GWT) |
-| [integration-test.md](./integration-test.md) | 통합 테스트 상세 (Mock DB, 실제 DB)        |
-| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 상세 (createE2eApp, supertest)  |
+변경으로 실패할 수 있는 사용자 동작이나 저장 정합성을 먼저 정한다. 테스트 개수나 피라미드 비율을 목표로 삼지 않는다.
 
----
+| 위험                                                                 | 적합한 검증과 한계                                                                                      |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| 값 검증, 상태 전이, 실제 입력에 근거한 판단                          | 순수 Unit. 결과·상태·실패를 검증한다.                                                                   |
+| Application 분기, batch miss만 조회, retry·부수효과 순서             | 직접 생성 + 작은 Port Stub/Fake. callback UoW는 실제 rollback 증거가 아니다.                            |
+| SQL 조건·projection·정렬 조립                                        | native ORM mock으로 표현을 확인한다. SQL 실행 결과·constraint·동시성은 실제 PG에서 확인한다.            |
+| Module token·factory·cross-context capability 연결                   | 실제 Module을 조립한다. 동일 조립을 실행하는 HTTP/PG suite가 있다면 전달 전용 테스트를 중복하지 않는다. |
+| row lock, atomic claim/counter, rollback, 중첩 Required, durable job | 실제 PostgreSQL Integration. 비동기 mock이나 임의 sleep으로 증명하지 않는다.                            |
+| 외부 공급자 요청·헤더·retry·오류·SDK 출력 검증                       | 설치된 실제 SDK/Adapter + 고정 HTTP fixture. 실제 공급자 품질·SLA를 뜻하지 않는다.                      |
+| route·validation·권한·status·raw/envelope·호환성                     | 실제 HTTP 및 필요한 OpenAPI·배포 fingerprint 계약.                                                      |
 
-## 1. 테스트 피라미드
+단순 Controller/UseCase 위임, 인스턴스 존재, 구현을 그대로 복사한 테스트는 새로 만들지 않는다. 기존 테스트를 제거할 때는 잃는 의미 있는 assertion과 대체 증거를 확인한다. 개인정보 비노출, 호출 횟수, 쿼리 수 자체가 계약일 때는 typed spy/mock이 적합하다.
 
-```
-        /\
-       /E2E\        적은 수, 느림, 실제 환경
-      /------\
-     /Integ- \      중간, NestJS DI 검증
-    / ration  \
-   /------------\
-  /    Unit      \  많은 수, 빠름, 격리됨
- /----------------\
-```
+## 작업 중 실행과 최종 확인
 
-| 유형        | 파일 패턴               | 목적                                   | 상세 가이드                                  |
-| ----------- | ----------------------- | -------------------------------------- | -------------------------------------------- |
-| Unit        | `*.spec.ts`             | 개별 클래스/메서드 동작 검증           | [unit-test.md](./unit-test.md)               |
-| Integration | `*.integration-spec.ts` | Service + Repository DI / DB 스택 검증 | [integration-test.md](./integration-test.md) |
-| E2E         | `*.e2e-spec.ts`         | 전체 API 흐름 검증                     | [e2e-test.md](./e2e-test.md)                 |
+1. 변경한 동작과 영향을 받는 소비자의 가장 작은 기존 suite를 실행한다. 공개 계약·SQL·worker 변경이면 그 위험을 다루는 HTTP/PG 범위를 더한다.
+2. 실패를 수정한 뒤 실패한 범위와 새 수정이 영향을 주는 범위만 재실행한다. 이미 통과한 무관한 suite를 반복하지 않는다. 누적 통과 결과와 마지막 수정 이후 결과를 구분해 기록한다.
+3. 충분한 의미 검증이 끝나면 작업을 완료한다. 초기 구현에서 멈추거나, 테스트 수를 늘리려고 새 harness·의존성·중복 테스트를 만들지 않는다.
+4. 넓은 모듈/구조 변경은 소스를 동결한 뒤 완료 담당자가 관련 전체 Unit·Integration·E2E와 lint·format·typecheck를 한 번 최종 확인한다. build는 Module/배포 산출물 등 변경 위험에 맞춰 포함한다. 이후 반복은 새 변경·실패·미해결 우려가 있을 때만 한다. 문서/저위험 수정은 링크·내용·관련 정적 검사로 끝낼 수 있다.
 
----
+파일·seed·timezone·실제 실행 수·결과와 필요한 로그를 남긴다. 수집/환경 오류로 0개 테스트가 실행됐다면 기능 회귀 결과와 구분한다. Before의 기대 실패와 실제 회귀도 구분한다. 통과만으로 운영 배포·실제 공급자 성능·영구적인 flake 부재를 주장하지 않는다.
 
-## 2. 유형 선택 기준
-
-| 검증하려는 것                           | 유형                  | 이유                                     |
-| --------------------------------------- | --------------------- | ---------------------------------------- |
-| 단일 메서드의 입력 검증 / 예외 분기     | Unit                  | 직접 생성 + Port Stub으로 격리           |
-| Repository 쿼리 파라미터                | Unit                  | `toHaveBeenCalledWith`로 충분            |
-| NestJS DI 연결 정합성                   | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요               |
-| `UNIT_OF_WORK.run` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증                  |
-| 실제 DB 쿼리 + 마이그레이션 정합성      | Integration (실제 DB) | 공식 CI PG service / 로컬 Testcontainers |
-| HTTP 요청 → 응답 전체 흐름              | E2E                   | supertest + 인증 + DB                    |
-| Guard / Interceptor 동작                | E2E                   | 실제 HTTP 파이프라인 필요                |
-
----
-
-## 3. 파일 구조
-
-```text
-apps/api/
-├── src/modules/<context>/
-│   ├── domain/{aggregates,entities,value-objects,policies}/<slice>/*.spec.ts
-│   ├── application/use-cases/<slice>/*.use-case.spec.ts
-│   └── infrastructure/{persistence,adapters,jobs,subscribers}/<slice>/*.spec.ts
-└── test/
-    ├── e2e/*.e2e-spec.ts
-    ├── integration/*.integration-spec.ts
-    ├── builders/
-    ├── fixtures/
-    ├── mocks/ports/
-    └── setup/
+```sh
+pnpm --filter @aido/server exec vitest run --project unit src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.spec.ts
+pnpm --filter @aido/server exec vitest run --project integration test/integration/push-receipt-consistency.integration-spec.ts --sequence.seed=101
+pnpm --filter @aido/server exec vitest run --project e2e test/e2e/notification.e2e-spec.ts
 ```
 
-### 3.1 Application spec
+순서 의존이 의심되거나 공유 상태를 바꾼 경우에만 다른 seed·timezone으로 영향을 받는 범위를 반복한다. 현재 DB projects는 파일을 직렬 실행하고 기본으로 순서를 섞는다. 설정·스크립트의 정본은 [vitest.config.ts](../vitest.config.ts), [package.json](../package.json)이다.
 
-순수 Application은 fixture 기반 Port Stub/Fake와 명시적인 생성자 의존성 객체로 직접 생성한다.
-기존 Fake와 Builder를 재사용하고, 결과와 기록된 업무 상태를 검증한다. 호출 횟수 자체가 계약인
-retry·batch 같은 경우에만 typed mock/spy를 사용한다. Nest DI가 필요한 Infrastructure/Presentation은
-기존 Suites를 사용한다. 전체 기존 spec의 Stub 전환은 Context별 후속 작업으로 진행한다.
-[Unit 가이드](./unit-test.md)에 실제 코드와 HTTP fixture 형식을 정리했다.
+## 공통 격리와 자율 작업 범위
 
-- 이벤트는 공개 `publishAll`에 전달되는 domain event로 검증한다. protected state에 spy하지 않는다.
-- `createUnitOfWorkMock()`은 CLS 기반 무인자 콜백을 실행한다. rollback은 실제 PG 테스트에서 검증한다.
-- 영속 상태는 Aggregate/VO의 `reconstitute()`로 복원한다. 조회 결과는 기존 Builder를 재사용한다.
-- Module과 worker harness는 운영 Composition Root의 Application factory provider를 재사용한다.
+- `*.spec.ts`는 `unit`, `test/integration/**/*.integration-spec.ts`는 `integration`, `test/e2e/**/*.e2e-spec.ts`는 `e2e` project이다. `performance`는 별도 측정 목적일 때 사용한다.
+- `clearMocks`·`restoreMocks`와 fixture ID 초기화는 설정/setup이 소유한다. mutable Fake/Stub 상태는 새 인스턴스나 소유 resetter로 초기화한다. 환경 변수·global fetch·fake timer는 해당 테스트가 복원한다.
+- 허가된 저장소 작업 범위에서 관리형 임시 DB/컨테이너 생성·migration·자신의 데이터 초기화·자신이 만든 자원 정리와 가역적인 fixture/코드 교정은 계속 진행할 수 있다. 운영/공유 개발 DB를 disposable test DB처럼 쓰거나 소유하지 않은 자원을 삭제하지 않는다.
+- DB project는 `AIDO_TEST_POSTGRES_URL`의 전용 service 또는 로컬 Testcontainers에서 `aido_test_<run-id>` DB를 만든다. `DATABASE_URL`을 운영 DB fallback으로 사용하지 않는다. 종료 후 자신이 만든 DB/컨테이너가 남았다면 소유 자원만 정리하고 결과를 확인한다. 연결 URI·비밀·bearer token은 로그/보고에 출력하지 않는다.
+- 기본 테스트는 외부 공급자를 Fake 또는 HTTP fixture로 격리한다. 실제 유료/외부 호출 평가는 별도 명시된 범위와 예산이 있을 때만 수행한다.
 
-### 3.2 동작 동일성 게이트 (마이그레이션 필수)
-
-| 게이트                           | 파일                                               | 검증 내용                                                                                                                                                                 |
-| -------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **OpenAPI 계약 스냅샷**          | `test/e2e/openapi-contract.e2e-spec.ts`            | 전체 라우트·요청/응답 스키마 스냅샷 — **diff 0은 공개 명세 동일성의 근거이며 모든 운영 영향의 보장은 아님**. 의도적 계약 변경 시에만 `-u`로 재생성                        |
-| **스토어 배포 계약 fingerprint** | `test/e2e/fixtures/released-*-openapi-contract.ts` | 배포된 1.7.x(111 paths·137 schemas), 1.8.2(113 paths·140 schemas) 계약을 각각 고정. 문서 문구와 새 API 추가는 허용하되 기존 request/response/status/Zod shape 변경은 차단 |
-| **블랙박스 E2E**                 | `test/e2e/todo.e2e-spec.ts` 등                     | 리팩터링 시 **무수정 통과**가 원칙 — 테스트를 고치면 동일성 증명이 깨진다                                                                                                 |
-
----
-
-## 4. 공유 인프라
-
-### 4.1 핵심 인프라
-
-| 파일                                                   | 용도                                                                        | 사용처                      |
-| ------------------------------------------------------ | --------------------------------------------------------------------------- | --------------------------- |
-| `test/setup/suppress-logger.ts`                        | `suppressLogger()` — Logger 출력 억제                                       | Integration                 |
-| `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — native ORM context 연결                     | Integration (Mock DB)       |
-| `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                                        | E2E                         |
-| `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                                    | E2E                         |
-| `test/setup/managed-test-database.ts`                  | Vitest 실행당 공식 CI PG service / 로컬 Testcontainers + migration 수명주기 | Integration (실제 DB) + E2E |
-| `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate                            | Integration (실제 DB) + E2E |
-| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                                    | Integration (실제 DB, Auth) |
-
-### 4.2 FakeService 목록
-
-| 파일                                   | 대체 대상           |
-| -------------------------------------- | ------------------- |
-| `fake-email.service.ts`                | 이메일 발송         |
-| `fake-oauth-token-verifier.service.ts` | OAuth 토큰 검증     |
-| `fake-admin-notifier.ts`               | Discord 관리자 알림 |
-| `fake-ai.provider.ts`                  | Gemini AI           |
-| `fake-push.provider.ts`                | Expo 푸시 알림      |
-| `fake-logger.service.ts`               | Pino Logger         |
-
-### 4.3 Builder vs Fixture 선택 기준
-
-| 상황                         | 선택    | 예시                                      |
-| ---------------------------- | ------- | ----------------------------------------- |
-| 단일 엔티티 mock 반환값      | Builder | `UserBuilder.create().verified().build()` |
-| 도메인 상태가 중요한 테스트  | Builder | `.locked()`, `.expired()`, `.asPremium()` |
-| DB에 실제 삽입할 복합 데이터 | Fixture | `UserFixture.createFull()`                |
-
----
-
-## 5. 공통 규칙
-
-### DO
-
-- ✅ 테스트 이름과 준비·실행·검증 순서로 의도 표현. 주석은 동시성 보장이나 계약상 제약처럼 코드만으로 드러나지 않는 이유에 사용
-- ✅ Builder 패턴으로 테스트 데이터 생성
-- ✅ 한국어 describe/it 설명 + 유형 태그 (예: `"(Mock DB)"`, `"(실제 DB)"`)
-- ✅ `clearMocks`/`restoreMocks`는 `vitest.config.ts`에서 매 테스트 전에 적용된다. Fixture ID 리셋도 setup의 `beforeEach`가 소유한다
-- ✅ FakeService로 외부 서비스 대체 (E2E)
-
-### DON'T
-
-- ❌ Unit 테스트에서 실제 DB 연결
-- ❌ 서비스 HTTP endpoint 계약을 Integration에서 중복 검증 — 외부 공급자 HTTP Adapter wire 검증은 허용
-- ❌ 테스트 간 상태 공유
-- ❌ 하드코딩된 ID 사용 (Builder 사용)
-- ❌ 구현 세부사항 테스트 (공개 인터페이스만)
-
-> 유형별 DO/DON'T 상세는 각 개별 가이드 참조.
-
-### 전역 설정 참고
-
-`vitest.config.ts`의 `clearMocks: true`, `restoreMocks: true`가 매 테스트 전에 적용된다. `vi.spyOn()`과 `suppressLogger()`는 `beforeEach`에서 생성한다. `beforeAll`에서 만든 spy는 첫 테스트 전에 복원되므로 사용하지 않는다. 전역 setup은 fixture ID를 초기화한다. Fake 상태는 각 spec의 새 인스턴스 생성 또는 E2E resetter가 초기화한다.
-
----
-
-## 6. 실행 명령어
-
-```bash
-# Unit
-pnpm --filter @aido/server test                     # 전체
-pnpm --filter @aido/server test {파일명}             # 특정 파일
-pnpm --filter @aido/server test:watch               # Watch 모드
-pnpm --filter @aido/server test:cov                 # 커버리지
-
-# Integration
-pnpm --filter @aido/server test:integration         # 전체
-
-# E2E
-pnpm --filter @aido/server test:e2e                 # 전체
-pnpm --filter @aido/server test:e2e -- {파일명}      # 특정 파일
-pnpm --filter @aido/server test:e2e -- -t "패턴"    # 특정 테스트
-```
-
----
-
-## 7. 예제 파일 경로
-
-| 유형                     | 예제 파일                                                                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------------- |
-| **Unit (쓰기 use-case)** | `src/modules/planning/application/use-cases/todos/update-todo.use-case.spec.ts` — UoW·이벤트·포트 팩토리 |
-| Unit (읽기 query)        | `src/modules/planning/application/use-cases/todos/get-todo-summary.use-case.spec.ts`                     |
-| Integration (Mock DB)    | `test/integration/cheer.integration-spec.ts`                                                             |
-| Integration (실제 DB)    | `test/integration/auth-password-setup.integration-spec.ts`                                               |
-| E2E                      | `test/e2e/todo.e2e-spec.ts`                                                                              |
-| Builder                  | `test/builders/user.builder.ts`                                                                          |
-| FakeService              | `test/mocks/fake-*.ts`                                                                                   |
-
----
-
-**문서 버전**: 5.0.0
-**최종 수정일**: 2026-10-07
-
-## ESM과 격리
-
-- API는 NodeNext ESM이다. 내부 별칭은 `#api/*`, 테스트 별칭은 `#test/*`, 상대 경로에는 `.js`를 명시한다. `require`와 `__dirname`은 사용하지 않는다.
-- Unit, integration, E2E는 Vitest project로 나눈다. DB project는 파일을 직렬 실행하고 순서를 섞어 공유 상태 의존을 확인한다.
-- DB global setup은 `AIDO_TEST_POSTGRES_URL`이 있으면 공식 PostgreSQL service 안에 실행별 DB를 생성하고, 없으면 로컬 Testcontainers를 사용한다. 각 실행에 migration을 적용한다. `provide`/`inject`로 연결 정보를 worker에 전달하며, 자신이 만든 DB/컨테이너의 종료는 global setup의 반환 teardown이 소유한다.
-- 외부 API Adapter는 실제 SDK + fixture HTTP 응답을 우선한다. SDK가 fetch 주입을 지원하지 않으면 격리된 비동시 spec 안에서만 `vi.stubGlobal`을 사용하며 `afterEach`에서 globals/env/timer를 복원한다. 준비되지 않은 요청은 실제 외부 서비스로 전달하지 않는다. 불가피한 module mock은 실제 오류 클래스와 순수 검증 함수를 유지한다.
-- Prisma query의 select 결과는 필요한 반환 필드를 명시한다. `asMock`의 partial mock 지원은 native ORM projection이 선택한 필드만 돌려주는 테스트에서 사용한다.
-- 동시성 테스트는 transaction barrier와 PostgreSQL lock 상태를 관찰한다. 한 번의 event loop tick이나 임의 sleep으로 순서를 가정하지 않는다.
-- E2E throttle은 해당 TestingModule의 provider override로만 격리한다. 전역 prototype이나 다른 suite의 guard를 변경하지 않는다.
-- E2E reset이 실패하면 같은 환경의 후속 테스트도 차단한다. timeout은 작업을 취소하지 못하므로 오염된 환경을 재사용하지 않는다. 종료는 앱/Redis/cache를 먼저 정리한 뒤 Prisma 연결을 닫는다.
-
-## 순서 의존 검증
-
-실패를 재현할 때 seed를 로그와 PR 검증 기록에 남깁니다. 동일 프로젝트의 DB 파일은 직렬 실행하며, 독립된 프로세스로 반복할 때는 각 실행이 자체 관리형 DB를 소유합니다.
-
-```bash
-pnpm --filter @aido/server exec vitest run --project unit --sequence.shuffle --sequence.seed=101
-pnpm --filter @aido/server exec vitest run --project integration --sequence.shuffle --sequence.seed=101
-pnpm --filter @aido/server exec vitest run --project e2e --sequence.shuffle --sequence.seed=101
-pnpm --filter @aido/server exec vitest run --project integration \
-  test/integration/push-delivery-outbox.integration-spec.ts \
-  test/integration/mutation-lock-concurrency.integration-spec.ts \
-  --sequence.shuffle --sequence.seed=1001
-```
-
-릴리스 전에는 전체 프로젝트를 서로 다른 seed로 반복하고, outbox 및 mutation lock 테스트는 실제 PostgreSQL에서 별도로 반복합니다. 통과 횟수, 테스트 수, seed, 실행 시간과 실패 여부를 기록하며, 병렬 빌드나 캐시 조건이 다른 수치로 성능 향상률을 주장하지 않습니다.
+HTTP/스키마를 바꾸는 작업은 [rest-contracts.md](./rest-contracts.md), 로그를 바꾸는 작업은 [logging-guide.md](./logging-guide.md)의 관련 계약을 확인한다. 매 수정마다 모든 가이드를 다시 읽을 필요는 없다.

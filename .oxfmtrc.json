@@ -12,8 +12,9 @@
   "overrides": [
     {
       "files": [
-        "apps/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}",
-        "packages/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}"
+        "apps/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc,md}",
+        "packages/api/**/*.{js,cjs,mjs,ts,tsx,json,jsonc}",
+        "docs/server/**/*.md"
       ],
       "options": {
         "useTabs": false,

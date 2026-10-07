@@ -1,49 +1,30 @@
-# 서버 검증과 Actions
+# 서버 CI
 
-Prisma 8 기준점은 `823724b5`, Epic은 [#882](https://github.com/Aiddoo/Aido-platform/issues/882)다.
-기존 앱 계약은 고정된 배포 fixture와 OpenAPI operation fingerprint로 검증한다.
+PR 또는 배포 검증을 준비할 때 참고한다. 정본은 [ci.yml](../../.github/workflows/ci.yml), [setup action](../../.github/actions/setup/action.yml), [CI policy](../../scripts/ci/stack-policy.mjs), [dependency scope](../../scripts/ci/dependency-scope.mjs)다.
 
 ## 실행 범위
 
-중간 Stack PR은 Draft로 유지한다. `stack:server-architecture`와 기존 release Stack은
-`ci:stack-tip`을 가진 Ready tip에서 develop 대비 누적 변경을 검증한다. 부모·trunk의 현재
-SHA가 tip에 포함되지 않거나 Stack이 끊어지면 검증을 거부한다. 문서 변경은 무거운 runner를
-생략하고, 공유 계약 변경은 API와 Mobile을 모두 검증한다. 문서만 변경하면 설치·lint runner도
-생략한다. 불명확한 변경 범위는 전체 검사다.
+일반 PR은 ready일 때 검사한다. Draft와 중간 stack PR의 heavy job은 미룬다. 열린 stack에서 `ci:stack-tip`을 가진 하나의 ready tip이 현재 base와 ancestor를 포함한 누적 diff를 검증한다. 오래된 workflow head나 누락 ancestor는 실패시켜 재정렬 후 현재 head에서 다시 실행한다.
 
-API Unit/coverage·Integration·E2E·build는 `Verify API` runner에서 한 번 설치한 의존성을
-사용한다. Unit/coverage를 중복 실행하지 않는다. Mobile과 공유 계약의 Unit은 별도 runner다.
-DB Integration·E2E는 Turbo 결과를 캐시하지 않는다. 새 커밋은 GitHub concurrency로 이전
-검증을 취소한다. 이미지 발행은 main의 필수 검증 성공 후에만 가능하다.
+`apps/api`, migration tooling, production compose/deploy 변경은 API 범위다. `packages/api` 공개 계약은 API와 모바일·공유 검증에 영향을 준다. Markdown/docs-only 변경은 heavy 범위에서 제외된다. 불명확한 diff는 전체 범위로 fallback한다. CI 정책 테스트는 공식 GitHub script/Octokit action 안에서 Node test runner로 실행한다.
 
-## 공식 기능과 프로젝트 코드의 경계
+## API 작업 흐름
 
-- [setup-node](https://github.com/actions/setup-node): Node 설치와 pnpm store cache.
-- [github-script](https://github.com/actions/github-script): 인증된 Octokit과 pagination.
-- [PostgreSQL service](https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers): 시작·health check·종료.
-- upload-artifact: 실패 로그 보존. 로그 pipefail은 GitHub bash 실행 환경에서 처리한다.
-- 기존 `stack-policy.mjs`와 `dependency-scope.mjs`: Aido의 Stack 연결과 영향 범위 정책만 소유한다.
+| Job                | 역할                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| CI Scope           | 공식 Octokit pagination으로 현재 PR/stack과 누적 변경 범위 계산                                  |
+| Lint & Type Check  | Oxc lint/format 한 번, 영향 범위 typecheck                                                       |
+| Verify API         | API unit+coverage 한 번→PostgreSQL Integration→HTTP/released-client E2E→API 의존성 closure build |
+| Build & Push Image | main의 API 영향 변경이며 필요한 job 성공 시 ARM64 API/migrate 두 이미지를 같은 SHA로 발행        |
 
-API wrapper·tee wrapper·컨테이너 wrapper 스크립트는 추가하지 않는다. migration guard,
-배포 lock·health·rollback처럼 실제 안전 책임을 가진 기존 실행 경로는 유지한다.
+공식 setup action은 `.nvmrc` Node.js 버전, packageManager의 pnpm 버전, frozen lockfile과 pnpm cache를 사용한다. API만 영향이 있으면 API dependency closure를 설치하고 필요한 contract를 emit한다. GitHub Actions는 버전 주석과 commit SHA로 고정하며 업데이트의 정본은 workflow다.
 
-## 테스트 DB
+PostgreSQL 16 service는 GitHub가 시작·health check·정리한다. 테스트 helper는 `AIDO_TEST_POSTGRES_URL`을 administration 연결로 사용해 무작위 `aido_test_<run-id>` DB를 만들고 자신이 만든 DB만 정리한다. 업무 DB용 `DATABASE_URL`을 administration URL로 재사용하지 않는다. 잘못된 생성 이름·service URL을 거부하고 시작·migration 실패 시에도 resource와 환경을 정리한다. 로컬에서는 해당 변수를 생략하면 Testcontainers 수명주기를 사용한다. 테스트용 인증 값은 fixture이며 운영 접근용 값이 아니다. 준비된 HTTP fixture는 실제 SDK/library를 통해 schema·실패 계약을 검사하고 유료 vendor 호출을 CI 기본값으로 두지 않는다.
 
-CI는 명시적인 `AIDO_TEST_POSTGRES_URL`을 postgres administration DB에 연결한다. 각 Vitest
-project는 무작위 `aido_test_<run-id>` DB를 생성·마이그레이션하고 자신의 DB만 종료·삭제한다.
-`DATABASE_URL`을 administration URL로 재사용하지 않는다. 로컬에서는 해당 변수를 생략하면
-기존 Testcontainers 수명주기를 사용한다. 잘못된 생성 이름·업무 DB service URL을 거부하고
-시작·migration 실패 시 resource와 환경을 정리한다.
+API test 로그는 실패 시 upload-artifact로 14일 보관한다. Bash의 `-eo pipefail`로 tee 뒤 실패도 유지한다. Turbo와 Docker build cache는 도구 기본 경로를 사용한다. API unit을 coverage 전후로 중복 실행하거나 source-scan gate를 새로 만들지 않는다.
 
-## 측정
+## 로컬 검증과 완료 기록
 
-기준점 재검증(2026-10-07): Unit 446파일/2,895테스트, 실제 PG Integration 43파일/433테스트,
-HTTP E2E 34파일/480테스트 통과. lint·format·typecheck·monorepo build·actionlint도 통과했다.
+작업 중에는 변경한 동작의 target test와 필요한 lint/type/format을 실행하고, source가 바뀌지 않은 성공 검사를 반복하지 않는다. 최종 누적 CI는 공개 HTTP·OpenAPI·released-client fingerprint, 실제 DB/transaction 및 build를 함께 검사한다. 로컬 결과에는 command, source revision, seed, 파일/테스트 수, 실패·재실행 사유와 한계를 남긴다. coverage나 SDK schema 통과를 실제 vendor 품질/운영 배포 완료로 표현하지 않는다.
 
-전환 레이어 검증: 전체 Unit 447파일/2,902테스트, DB lifecycle Unit 13테스트,
-PostgreSQL service 연결 Integration 3파일/10테스트, 고정 계약 E2E 3파일/11테스트 통과.
-Workspace 의존성 검사도 포함한다. 타입 검사는 API를 캐시 없이 실행해 확인했다.
-
-이 변경은 workflow의 중복 설치·DB container 시작을 줄인다. API만 영향받는 실행의
-설치 위치는 정의상 5개에서 2개, API와 Mobile 실행은 5개에서 3개로 줄었다. 실제 billed time과 비용
-절감률은 아직 미측정이다. 수동 performance project를 일반 PR CI에 포함하지 않는다.
+수동 performance project와 승인된 유료 AI 평가는 일반 CI 밖의 별도 근거다. 배포 승인은 [DEPLOYMENT.md](../../apps/api/DEPLOYMENT.md)의 동일 SHA 이미지·graph·health 절차를 따른다.

@@ -1,392 +1,93 @@
-# Aido API 배포 가이드
+# 서버 배포와 롤백
 
-> **Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
+배포를 준비하거나 장애로 이전 이미지를 복구할 때 참고한다. 정본은 [deploy workflow](../../.github/workflows/deploy.yml), [배포 스크립트](../../scripts/deploy.sh), [production compose](../../docker-compose.prod.yml), [Dockerfile](./Dockerfile)이다. 문서의 절차와 로컬 검증은 실제 운영 적용 완료의 증거가 아니다.
 
-## 목차
+## 로컬 실행
 
-- [Prerequisites](#prerequisites)
-- [1. Local Development](#1-local-development)
-- [2. Production Docker (로컬 테스트)](#2-production-docker-로컬-테스트)
-- [3. 프로덕션 배포 (GitHub Actions → EC2)](#3-프로덕션-배포-github-actions--ec2)
-- [4. 환경변수 레퍼런스](#4-환경변수-레퍼런스)
-- [5. 트러블슈팅](#5-트러블슈팅)
+`.nvmrc`의 Node.js와 루트 `packageManager`의 pnpm과 Docker Compose V2를 사용한다. DB·Redis만 띄우는 `pnpm docker:up`과 API까지 띄우는 `pnpm docker:dev:up`은 별도 구성이다. 전자는 `docker-compose.yml`의 DB5432, 후자는 `docker-compose.dev.yml`의 기본 host DB5433을 사용하므로 연결을 혼동하지 않는다.
 
-## Prerequisites
-
-- Docker 24+ / Docker Compose V2
-- Node.js 24.21.0 / pnpm 10.34.6
-
----
-
-## 1. Local Development
-
-### DB-only 모드 (권장)
-
-PostgreSQL만 Docker로 실행하고, API는 네이티브로 실행합니다.
-
-```bash
-# DB 시작
-pnpm docker:up
-
-# API 개발 서버
-pnpm dev
-```
-
-### Full Docker 모드
-
-API + DB 모두 Docker로 실행합니다.
-
-```bash
-# 환경변수 설정
+```sh
 cp .env.docker.dev.example .env.docker.dev
-
-# 빌드 & 실행
 pnpm docker:dev:build
 pnpm docker:dev:up
-
-# 로그 확인
 pnpm docker:dev:logs
-
-# DB 마이그레이션
-pnpm docker:dev:migrate
-
-# 종료
-pnpm docker:dev:down
 ```
 
-> dev 모드는 소스 volume mount로 hot reload를 지원합니다.
+개발 compose는 DB health→migrate 완료→API 순서이고 source volume으로 재시작을 지원한다. 운영 이미지를 로컬에서 시험하려면 `.env.docker.prod.example`을 별도 환경에 맞춰 준비한 뒤 `docker:prod:build`/`docker:prod:up`을 사용한다. production compose는 원격 migration 허용을 명시하므로 실제 운영 연결을 로컬 시험에 재사용하지 않는다.
 
----
+## 동일 SHA의 배포 흐름
 
-## 2. Production Docker (로컬 테스트)
+main의 API 영향 변경에서 CI 검증이 성공하면 ARM64 API와 migrate 이미지를 같은 40자리 SHA 태그로 GHCR에 발행한다. deploy workflow는 이미지 발행 job 성공 여부와 두 태그를 확인한 뒤 해당 SHA를 선택한다. 배포 시점의 main HEAD를 임의로 대신 쓰지 않는다. API 영향이 없어 image job을 건너뛴 run은 자동 배포하지 않는다.
 
-로컬에서 프로덕션 이미지를 테스트합니다.
-
-```bash
-# 환경변수 설정 (모든 CHANGE_ME 값을 실제 값으로 교체)
-cp .env.docker.prod.example .env.docker.prod
-# .env.docker.prod 편집...
-
-# 빌드 & 실행 (migrate → api 순서 자동)
-pnpm docker:prod:build
-pnpm docker:prod:up
-
-# 헬스 체크 (API host port는 loopback-only)
-curl http://127.0.0.1:8080/health
-
-# 로그 확인
-pnpm docker:prod:logs
-
-# 종료
-pnpm docker:prod:down
+```text
+CI 검증 → 같은 SHA의 API/migrate 이미지 → Deploy to EC2
+  → 배포 락·SHA 확인 → migration/verify → API 교체 → health 확인
 ```
 
----
-
-## 3. 프로덕션 배포 (GitHub Actions → EC2)
-
-> 실제 운영 파이프라인. ECS/ECR을 사용하지 않는다 — EC2 한 대(t4g.small)에서 `docker compose`로 빌드·기동하며, PostgreSQL(RDS)과 pg-boss를 사용한다. Redis/Valkey는 선택적 확장 경로다.
-> 공개 요청 경로는 **client → host-local Nginx → `127.0.0.1:${PORT}` Docker API**다.
-> Compose가 API host port를 loopback에만 bind하고 Express는 이 Nginx 한 홉만 신뢰한다.
-
-### 3.1 파이프라인 개요
-
-```
-push(main) ─→ CI (lint / test / build / docker*)   * arm64 러너에서 이미지 빌드 → GHCR push (:sha 태그)
-                 │ 전 job 성공 시 (workflow_run)
-                 ▼
-        Deploy to EC2 (.github/workflows/deploy.yml)
-                 ├─ CI가 검증한 커밋 SHA 해석·검증 (40자 hex + origin/main ancestor)
-                 ├─ SSH 부트스트랩: flock 락 → git reset --hard $SHA
-                 ├─ scripts/deploy.sh: 디스크 점검 → 롤백 태깅 → GHCR pull → 기동 → 헬스 게이트
-                 └─ 러너에서 외부 검증: https://api.aido.kr/health
-```
-
-- 배포 대상은 **CI가 검증한 SHA로 고정**된다 (`workflow_run.head_sha`) — 배포 시점의 `origin/main` HEAD가 아니다.
-- `workflow_run` 트리거 특성상 `deploy.yml`은 **기본 브랜치(develop)의 파일**이 실행된다. 배포 로직 본체는 배포 대상 SHA의 `scripts/deploy.sh`.
-- 수동 배포/롤백: GitHub Actions → **Deploy to EC2 → Run workflow**. `sha` 비우면 이미지가 발행된 main의 최신 CI 성공 커밋, 이전 커밋으로 되돌릴 땐 `sha` 입력 + `force` 체크.
-
-### 3.2 배포 단계 (`scripts/deploy.sh`)
-
-서버 레이아웃: 레포 `~/apps/Aido-platform` · 배포 상태 `~/apps/deploy-state/{deploy.lock, last_deployed_sha, history.log}`
-
-| 단계        | 동작                                                                                                                                                                                                                        |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 락          | `flock` — 동시 배포 차단 (GH concurrency + 서버 락 이중 방어)                                                                                                                                                               |
-| SHA 검증    | 작업트리 == `DEPLOY_SHA`, 마지막 배포 커밋의 후손인지 확인 (역행 배포 차단, `FORCE_DEPLOY=1`로 우회)                                                                                                                        |
-| 디스크 점검 | §3.3 참조 — 부족하면 빌드 시작 전 중단                                                                                                                                                                                      |
-| 롤백 태깅   | 현재 `latest` → `:rollback` (자동 롤백 지점, 첫 실행 시 자동 시드)                                                                                                                                                          |
-| 이미지 준비 | 기본: CI(arm64 러너)가 빌드해 GHCR에 올린 `:{sha}` 이미지 pull → 로컬 이름 retag — **서버 빌드 부하 0**. pull 실패 시 컨테이너 무접촉 중단. 폴백: `--build` 또는 `GHCR_TOKEN` 부재 시 서버 로컬 빌드 (`compose build` 순차) |
-| 기동        | `compose up -d` — migrate 완료 대기 후 api 재생성                                                                                                                                                                           |
-| 헬스 게이트 | 90초 내 Docker HEALTHCHECK `healthy` **AND** `/health` 연속 3회 성공, 실패 시 자동 롤백                                                                                                                                     |
-| 정리        | dangling 이미지 + 캐시 6GB 초과분만 (**`-a` prune 금지** — 롤백 이미지가 삭제됨)                                                                                                                                            |
-
-댓글 cursor 형식을 바꾸는 배포는 서로 다른 API 버전을 동시에 서비스하지 않는다. 현재 단일 API
-컨테이너 교체 방식은 이 조건을 만족한다. 해당 배포를 이전 이미지로 롤백하면 이미 발급된 새 형식 cursor는
-`SYS_0002`로 거부되며, 클라이언트는 첫 페이지부터 다시 조회한다.
-
-댓글 알림 경로·개인정보 전환 migration은 `NOT VALID` 제약을 먼저 공개해 구 API가 깨진 URL이나
-senderId 없는 댓글 알림을 새로 쓰지 못하게 한 뒤 기존 행을 보정한다. COMMENT·REPLY는 댓글 작성자로
-senderId를 복구하고, 보낸 사람을 안전하게 알 수 없는 기존 LIKE와 orphan 알림은 제거한다. migration과 API 교체
-사이에는 구 API의 해당 알림 저장이 거부될 수
-있어 댓글 활동 알림이 일부 생략될 수 있지만, 댓글 쓰기 transaction과 다른 알림은 유지된다. 무손실 전환이
-필요하면 URL 없는 알림 writer를 먼저 배포하고 다음 릴리스에서 제약과 backfill을 적용하는 2단계 배포를 쓴다.
-
-계정 purge는 삭제된 댓글을 NULL 작성자로 만들지 않는다. migration이 개인정보와 로그인 수단이 없는
-LOCKED 시스템 작성자를 만들고, cleanup이 묘비 댓글을 그 작성자로 옮긴 뒤 원 계정을 삭제한다.
-`TodoComment.authorId`와 relation은 계속 NOT NULL이므로 migration 뒤 직전 API 이미지로 롤백해도
-기존 required relation 조회가 안전하다. 시스템 작성자는 deletedAt·인증 Account 없이 LOCKED 상태를
-유지해 purge·복구·검색·추천·가입 통계 대상에서 제외되고, 화면에서는 댓글의 deletedAt이 작성자와 본문을 숨긴다.
-계정 purge가 알림 전체를 반복 스캔하지 않도록 friendId와 metadata.senderId cleanup index는 각각 별도
-`CREATE INDEX CONCURRENTLY` migration으로 배포한다. 두 migration은 재시도와 쓰기 잠금 범위를 분리하려고
-파일당 statement 하나만 둔다. 알림 90일 보관 정책의 주기 실행은 계정 purge와 별도 운영 과제로 관리한다.
-
-### 3.3 디스크·캐시 관리
-
-모든 성장 벡터에 상한을 걸어 "디스크 꽉 참" 자체를 방지한다:
-
-| 성장 벡터          | 상한 장치                                                                     |
-| ------------------ | ----------------------------------------------------------------------------- |
-| BuildKit 빌드 캐시 | 매 배포 성공 후 6GB 초과분 LRU 정리 (`docker builder prune --max-used-space`) |
-| Docker 이미지      | `latest` + `rollback` 2세대만 유지, dangling 매회 정리                        |
-| 컨테이너 로그      | json-file 20m × 5 로테이션 (compose 설정)                                     |
-| DB 백업            | 로컬 7일 보존 + S3 업로드 (서버 cron)                                         |
-
-- 용량 예산: 29GB 디스크 기준 정상 상태 ≈ 15GB (기본 ~8 + 캐시 ≤6 + 빌드 중 임시 1세대).
-- 빌드 전 사전 점검: 여유 <3GB → 캐시 전체 정리 → 재확인 → **그래도 부족하면 빌드를 시작하지 않고 중단** (서비스 무영향).
-- 점검 명령: `df -h /`, `docker system df` (매 배포의 GH Actions 로그에도 `df` 출력됨).
-- **GHCR 보존 정책**: CI docker job이 각 패키지(`aido-platform-api`/`-migrate`) 버전을 최신 10개만 유지 (`actions/delete-package-versions`). 서버의 BuildKit 캐시는 로컬 빌드 폴백 경로에서만 사용됨.
-- **자격 증명**: GHCR push/pull 모두 워크플로우별 임시 `GITHUB_TOKEN` 사용 — 서버·레포에 장수명 레지스트리 자격 증명 없음 (서버는 stdin 로그인 후 즉시 logout).
-
-### 3.4 장애 대응 런북
-
-| 시나리오                | 자동 동작                                            | 서비스 영향          | 운영자 조치                                      |
-| ----------------------- | ---------------------------------------------------- | -------------------- | ------------------------------------------------ |
-| 디스크 <3GB (빌드 전)   | 전체 정리 → 재확인 → 부족 시 빌드 미시작 중단        | 없음                 | `df -h`/`docker system df`로 원인 확인 후 재배포 |
-| 빌드 실패 (ENOSPC 포함) | `latest` 태그 불변 → 서비스 유지, run 실패(red)      | 없음                 | 원인 수정 후 재배포                              |
-| migrate 실패            | 구 api 유지된 채 compose 비정상 종료 → 롤백 경로     | 없음                 | 마이그레이션 수정 후 재배포                      |
-| 헬스 게이트 실패        | `:rollback` → `latest` retag + `up -d --no-deps api` | 수십 초 내 자동 복구 | 원인 수정 후 재배포                              |
-| 롤백마저 실패           | FATAL 로그 + exit 2                                  | 장애                 | 아래 수동 복구                                   |
-| 동시 배포               | flock으로 후발 즉시 중단                             | 없음                 | 선행 완료 후 재시도                              |
-| 구 SHA 배포 시도        | ancestor 검사로 중단                                 | 없음                 | 의도적 롤백이면 `force` 체크                     |
-
-```bash
-# 수동 재배포 (GitHub UI): Actions → Deploy to EC2 → Run workflow (sha 비움)
-# 특정 SHA 배포: sha 입력 / 이전 커밋 롤백: sha + force 체크
-
-# 서버에서 직접 (SSH):
-cd ~/apps/Aido-platform
-bash scripts/deploy.sh --rollback                        # 이전 이미지로 즉시 롤백
-DEPLOY_SHA=$(git rev-parse HEAD) bash scripts/deploy.sh  # 현재 커밋 재배포
-
-# 롤백마저 실패했을 때 수동 복구:
-docker images | grep rollback                            # 롤백 이미지 존재 확인
-docker tag aido-platform-api:rollback aido-platform-api:latest
-docker compose -f docker-compose.prod.yml up -d --no-deps api
-docker logs --tail 100 aido-prod-api                     # 원인 확인
-```
+서버 repository는 `~/apps/Aido-platform`, 배포 상태는 `~/apps/deploy-state`다. workflow와 서버 `flock`이 동시 배포를 막는다. script는 작업 tree SHA·기존 배포 ancestry·최소 3GB 디스크 여유를 확인하고 현재 이미지를 rollback 태그로 보존한다. 기본은 GHCR pull이며 `--build` 또는 토큰 부재에서는 서버에서 migrate/API를 순차 빌드한다.
 
-### 3.5 DB 마이그레이션 규율
-
-- 마이그레이션은 **forward-only** — 자동 롤백은 API 컨테이너만 되돌리고 DB는 이미 신 스키마다.
-- 따라서 모든 마이그레이션은 **직전 릴리스의 API와 호환**되어야 한다 (expand → contract: 먼저 추가만 하는 릴리스, 구 컬럼 제거는 다음 릴리스에서).
-- 기존 운영 테이블의 인덱스는 PostgreSQL `CREATE INDEX CONCURRENTLY`로 생성하고 해당 migration에 `BEGIN`/`COMMIT`을 넣지 않는다. 실제 DB lock 회귀 테스트로 기존 쓰기가 계속 완료되는지 검증한다.
-- concurrent build 실패 시 invalid index가 남을 수 있다. 재시도 전에 `pg_index.indisvalid`와 migrate 로그를 확인하고, 운영 절차에 따라 invalid index 정리 및 migration 상태 복구 후 다시 배포한다.
-
-### 3.6 보안 수칙
-
-- `.env.docker.prod`는 **서버 전용** (레포 미포함, `.gitignore` 제외 유지). 시크릿 로테이션 = 서버에서 파일 수정 후 재배포.
-- 배포 디렉터리(`~/apps/Aido-platform`)에서 **`git clean` 금지** — untracked인 `.env.docker.prod`가 삭제된다. (`git reset --hard`는 untracked를 건드리지 않아 안전.)
-- GH Secrets: `EC2_HOST` / `EC2_USER` / `EC2_SSH_PRIVATE_KEY` (배포 SSH), `TURBO_TOKEN` (Turbo 원격 캐시). 시크릿은 이미지 빌드에 유입되지 않는다 (`env_file`은 런타임 주입만, build args 없음).
-
-### 3.7 `develop` → `main` 릴리스 브랜치 정합
-
-앱 출시 버전은 package.json을 Expo 설정이 직접 참조한다. EAS remote/autoIncrement와
-fingerprint 정책을 유지하며 모바일 스토어 제출은 서버 main 배포와 별개다.
-
-`APP_VERSION_CHECK_ENABLED`의 기본값은 `false`다. 기존 환경변수만으로 새 서버를 실행할 수 있다.
-스토어 버전 확인을 활성화할 때는 `APP_VERSION_CHECK_IOS_LATEST_VERSION`과
-`APP_VERSION_CHECK_ANDROID_LATEST_VERSION`에 각 스토어에 실제 공개된 `MAJOR.MINOR.PATCH`를 설정한다.
-심사 중인 앱 버전을 미리 설정하지 않는다. 버전 확인은 사용자 요청의 안내이며 기존 앱의 API 접근을 막지 않는다.
-현재 설정은 서버 시작 시 읽으므로 운영 `.env.docker.prod` 변경은 다음 정상 배포/재기동부터 반영된다.
-앱 출시 버전은 package.json, 빌드 번호는 EAS, 스토어 공개 버전은 서버 운영 설정이 각각 소유한다.
-
-버전 설정만 변경할 때는 기존 환경변수를 출력하지 않는 스크립트를 사용한다. 지정한 세 키만
-변경하며, 나머지 파일 내용과 권한은 보존한다. 변경 전 원본은 지정한 새 디렉터리에
-디렉터리 `0700` / 파일 `0600` 권한으로 백업한다. 중복 키나 잘못된 버전은 쓰기 전에 거절한다.
-개발·예제 파일은 버전값을 준비해도 `false`를 유지하며, 운영 활성화는 두 스토어 공개 확인 후
-`--enabled true --published`로 명시한다. 비공개 env와 백업 파일은 커밋하지 않는다.
-
-```bash
-python3 scripts/update-app-version-env.py \
-  --ios 1.10.0 --android 1.10.0 --enabled true --published \
-  --backup-dir .secrets/app-version-before-1.10.0 .env .env.docker.prod
-```
-
-운영 env 변경은 배포 락을 잡고 진행한다. 코드·DB 변경이 없는 설정 반영은 실행 중 이미지와
-`latest` 이미지가 같은지 확인한 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로
-재생성할 수 있다. 헬스체크와 `/v1/app-config/app-version` 응답을 확인하고, 실패하면 env 백업을
-복구한 뒤 같은 이미지로 API를 재생성한다. 단순 `docker restart`는 env 파일 변경을 반영하지 않는다.
-
-기능 PR과 릴리스 PR의 merge 방식을 구분한다.
-
-| PR 방향             | merge 방식                     | 이유                                                                     |
-| ------------------- | ------------------------------ | ------------------------------------------------------------------------ |
-| feature → `develop` | Squash merge 허용              | 기능 단위로 이력을 정리한다.                                             |
-| `develop` → `main`  | **Create a merge commit 필수** | 두 브랜치의 공통 조상을 유지해 다음 릴리스 PR의 중복 diff·충돌을 막는다. |
-
-`develop` → `main` 릴리스 PR은 squash merge 또는 rebase merge하지 않는다. GitHub CLI를 사용할 때도 `--merge`를 명시한다.
-
-```bash
-gh pr merge <PR_NUMBER> --merge
-```
-
-병합 직후에는 `main`의 merge commit을 `develop`에 fast-forward하고 원격 두 브랜치가 같은 커밋을 가리키는지 확인한다. 이 단계까지가 릴리스 머지의 완료 조건이다.
-
-```bash
-git fetch origin main develop
-git switch develop
-git merge --ff-only origin/main
-git push origin develop
-git fetch origin main develop
-git rev-parse origin/main
-git rev-parse origin/develop
-```
-
-마지막 두 커밋 해시는 반드시 같아야 한다. `--ff-only`가 실패하면 그 사이 `develop`에 새 변경이 들어온 것이므로 강제 푸시하지 않고 일반 merge로 양쪽 변경을 보존한다.
-
-릴리스 PR을 열기 전에는 원격 브랜치를 갱신하고 실제 순 변경을 확인한다.
+production compose는 host API 포트를 `127.0.0.1:${PORT:-8080}`에만 bind한다. 공개 경로는 host Nginx→loopback API 한 홉이며 서버는 이 proxy 경계를 따른다. API container 내부 포트 8080, memory 512M/CPU 1, Node heap 384MiB는 현재 구성값이다.
 
-```bash
-git fetch origin main develop
-git diff --stat origin/main..origin/develop
-```
+migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는 Docker healthy와 `/health` 연속 3회 성공을 함께 요구하고, workflow는 공개 `/health`도 확인한다. 실패하면 이전 API image로 복구한다. 성공 뒤 dangling 이미지와 BuildKit cache 6GB 초과분만 정리하며 `prune -a`로 rollback image를 제거하지 않는다.
 
-과거 릴리스가 이미 squash merge되어 같은 변경이 다시 보이면 먼저 브랜치 이력을 정합화한다. 이때 `ours` 전략은 **main의 릴리스 tree와 해당 시점 develop tree가 완전히 동일함을 확인한 경우에만** develop 내용을 보존하는 일회성 복구에 사용한다. tree가 다르면 일반 merge로 충돌을 파일별 검토하며 해결해야 한다.
+## DB 전환: API보다 먼저 적용
 
-```bash
-git rev-parse origin/main^{tree}
-git rev-parse <RELEASE_SOURCE_DEVELOP_COMMIT>^{tree}
+Prisma ORM rc.14/CLI rc.20은 RC이며 production API와 migration 이미지를 분리한다. API에는 runtime·generated contract, migrate 이미지에는 CLI·contract source·graph·DB guard가 있다. 정확한 생성·CAS 규칙은 [.claude/prisma.md](./.claude/prisma.md)를 참고한다.
 
-# 위 두 tree가 동일할 때만 사용
-git switch develop
-git merge -s ours origin/main -m "chore: main 릴리스 이력을 develop에 동기화"
-git push origin develop
-```
+`migrate.sh`는 API/pg-boss URL을 먼저 검증하고 pg-boss migration, application graph와 실제 `db verify`를 수행한다. 기본 remote guard는 의도한 deployment의 `AIDO_ALLOW_REMOTE_DB=1`로만 허용한다. pg-boss 별도 URL도 같은 guard 대상이며 DDL lock_timeout은 5초다.
 
-정합화 후 GitHub의 `develop` → `main` PR 파일 목록에 이미 배포된 변경이 다시 나타나지 않고, merge 상태가 `MERGEABLE`인지 확인한다.
+| DB 상태             | 처리                                                           |
+| ------------------- | -------------------------------------------------------------- |
+| 빈 DB               | baseline→후속 graph→schema/marker verify                       |
+| marker 없는 기존 DB | 시스템 댓글 작성자 불변식·baseline schema 검증 뒤 기존 DB 등록 |
+| 기존 marker         | 재서명 없이 현재 위치부터 graph 적용                           |
+| 이미 target marker  | no-op migrate 전후에도 실제 schema verify; drift면 중단        |
 
----
+baseline 등록은 `db sign --contract <baseline> --no-advance-ref`이며 기존 migration 이력과 업무 데이터를 지우지 않는다. 운영 DB가 baseline과 일치하는지는 실제 환경에서 확인해야 한다. 로컬 migration 성공을 운영 adoption 성공으로 대신하지 않는다.
 
-## 4. 환경변수 레퍼런스
+Notification14의 `20261007T1840_push_receipt_token_fingerprint`는 nullable `PushDeliveryAttempt.tokenFingerprint VARCHAR(64)` additive 1개다. target contract는 `5eefdf63886315410d0378bf753a05f415396e235f83795390bd693cec24dd95`이며 신규 API가 해당 열에 쓰므로 DDL·verify 성공 후 API를 띄운다. 기존 행은 null로 남고 receipt 상태만 반영하며 이전 token을 추측해 비활성화하지 않는다. 새 값은 실제 발송 token의 SHA256이며 token 원문 snapshot/backfill을 저장하지 않는다.
 
-| 변수                                        | 필수  | 기본값        | 설명                                                                                                                                  |
-| ------------------------------------------- | ----- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                                  | -     | development   | 런타임 모드 (빌드 최적화 기준)                                                                                                        |
-| `APP_ENV`                                   | -     | NODE_ENV 폴백 | 배포 환경 (`development`/`staging`/`production`). **Sentry는 `production`에서만 발송** — 개발서버는 반드시 `APP_ENV=development` 설정 |
-| `PORT`                                      | -     | 8080          | API 포트                                                                                                                              |
-| `DATABASE_URL`                              | Y     | -             | PostgreSQL 연결 URL                                                                                                                   |
-| `JWT_SECRET`                                | Y     | -             | JWT 서명 키 (min 32자)                                                                                                                |
-| `JWT_REFRESH_SECRET`                        | Y     | -             | Refresh 토큰 키 (min 32자)                                                                                                            |
-| `JWT_EXPIRES_IN`                            | -     | 15m           | Access 토큰 만료                                                                                                                      |
-| `JWT_REFRESH_EXPIRES_IN`                    | -     | 7d            | Refresh 토큰 만료                                                                                                                     |
-| `TOKEN_ENCRYPTION_KEY`                      | Y     | -             | AES-256-GCM 키 (min 32자)                                                                                                             |
-| `CORS_ORIGINS`                              | -     | localhost     | 허용 오리진 (쉼표 구분)                                                                                                               |
-| `THROTTLE_TTL`                              | -     | 60000         | Rate limit 윈도우 (ms)                                                                                                                |
-| `THROTTLE_LIMIT`                            | -     | 100           | Rate limit 횟수                                                                                                                       |
-| `GOOGLE_CLIENT_ID`                          | Prod* | -             | Google OAuth                                                                                                                          |
-| `GOOGLE_CLIENT_SECRET`                      | Prod* | -             | Google OAuth                                                                                                                          |
-| `KAKAO_CLIENT_ID`                           | Prod* | -             | Kakao OAuth                                                                                                                           |
-| `NAVER_CLIENT_ID`                           | Prod* | -             | Naver OAuth                                                                                                                           |
-| `RESEND_API_KEY`                            | Prod  | -             | Resend 이메일 API 키                                                                                                                  |
-| `EXPO_ACCESS_TOKEN`                         | -     | -             | 푸시 알림                                                                                                                             |
-| `PUSH_RATE_LIMIT_BACKEND`                   | -     | postgres      | 푸시 빈도 제한 저장소 (`postgres`/`redis`/`memory`). 운영은 postgres, Redis/Valkey 도입 시 redis 선택                                 |
-| `JOB_BACKEND`                               | -     | postgres      | durable job runtime (`postgres`=pg-boss, `redis`=BullMQ)                                                                              |
-| `RETENTION_ONBOARDING_V2_ENABLED`           | -     | false         | 신규 가입자 리텐션 V2 실험 활성화                                                                                                     |
-| `RETENTION_ONBOARDING_V2_TREATMENT_PERCENT` | -     | 50            | 리텐션 V2 treatment 배정 비율(0~100)                                                                                                  |
-| `GOOGLE_GENERATIVE_AI_API_KEY`              | -     | -             | AI 기능                                                                                                                               |
-| `DISCORD_SIGNUP_WEBHOOK_URL`                | -     | -             | 가입 알림 웹훅                                                                                                                        |
+댓글 system-author invariant, 기존 unique index를 constraint로 채택하는 graph, subscription-event receipt graph도 해당 migration 경로에 포함된다. schema marker의 강제 변경이나 이미 적용된 graph 수정으로 실패를 우회하지 않는다.
 
-> *Prod: 프로덕션에서 OAuth 최소 1개 필수
+## Job 전환과 잔존 작업
 
----
+기본 `JOB_BACKEND=postgres`와 `PUSH_RATE_LIMIT_BACKEND=postgres`는 별도 선택이다. Redis/BullMQ는 선택 backend·기존 작업 drain을 위해 남아 있다. `JOB_REDIS_DRAIN_ENABLED=true`의 전환 runtime은 신규 enqueue를 PostgreSQL로 보내고 기존 Redis 작업을 처리하며 이전 scheduler를 정리한다.
 
-## 5. 트러블슈팅
+job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이다. production compose에는 별도 `stop_grace_period`가 없어 컨테이너 종료 유예가 이 대기보다 충분하다고 보장하지 않는다. 배포 시 종료 유예와 active 작업의 drain 결과를 별도로 확인한다.
 
-### pnpm install 실패 (lockfile mismatch)
+기존 waiting/delayed/active/retry 작업의 payload·job name·queue alias·재시도 의미는 drain이 확인되기 전 유지한다. production BullMQ가 비었다는 확인 없이 legacy queue/key/worker를 일괄 삭제하지 않는다. 새 backend health만으로 과거 queue가 비었다고 판단하지 않는다. [`push-notifications.md`](./docs/push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다.
 
-```bash
-# 로컬에서 lockfile 업데이트 후 재빌드
-pnpm install
-pnpm docker:dev:build --no-cache
-```
+## 롤백의 범위
 
-### Migration 실패
+workflow 수동 실행은 특정 SHA와 force를 지원한다. 서버의 `scripts/deploy.sh --rollback` 또는 자동 rollback은 이전 API를 `--no-deps`로 재생성하고 migrate를 다시 실행하지 않는다. 이미지 rollback은 application graph·marker·DDL·업무 데이터 rollback이 아니다.
 
-```bash
-# 로그 확인
-pnpm docker:prod:logs
+nullable fingerprint 열은 남아 있어 이전 native client CRUD가 가능한 경우에도 이전 API의 receipt 처리 보호는 사라진다. 모든 과거 이미지의 schema/동작 호환을 보장하지 않는다. 파괴적 DDL·data 변환의 되돌리기는 별도 forward migration 또는 검토된 복구 절차가 필요하다. DB를 drop하거나 marker를 재서명하지 않는다.
 
-# 수동 마이그레이션
-pnpm docker:prod:migrate
-```
+새 cursor를 발급한 API를 이전 형식으로 되돌리면 클라이언트가 첫 페이지부터 다시 조회해야 할 수 있다. 공개 routing/payload·개인정보 보정처럼 API와 schema가 함께 바뀌는 릴리스는 해당 graph의 rollout 제한을 [migration.md](../../docs/server/migration.md)와 함께 확인한다.
 
-### Health check 실패
+## 환경 설정과 공개 버전
 
-```bash
-# 컨테이너 내부에서 확인
-docker exec aido-prod-api wget -qO- http://localhost:8080/health
-```
+설정 정본은 `src/platform/config/schemas`와 `.env*.example`이다. env 원문·secret·backup은 로그나 Git에 넣지 않는다. 운영은 OAuth 최소 1개와 Resend key가 필요하다.
 
-### 이미지 크기 최적화
+| 설정                                                     | 기본/용도                                                |
+| -------------------------------------------------------- | -------------------------------------------------------- |
+| DATABASE_URL / PGBOSS_DATABASE_URL                       | API DB / 별도 미설정 시 같은 pg-boss DB                  |
+| NODE_ENV / APP_ENV                                       | 런타임 / 배포 환경. Sentry는 production APP_ENV에서 발송 |
+| PORT                                                     | host 기본 8080, API container 8080                       |
+| JWT_SECRET / JWT_REFRESH_SECRET / TOKEN_ENCRYPTION_KEY   | 시작 검증에 필요한 32자 이상 값                          |
+| JOB_BACKEND / JOB_SCHEMA                                 | postgres / pgboss                                        |
+| JOB_REDIS_DRAIN_ENABLED                                  | false; 잔존 Redis job 전환은 확인한 경우에만 사용        |
+| CACHE_TYPE / PUSH_RATE_LIMIT_BACKEND                     | memory / postgres; 서로 다른 capability                  |
+| REDIS_*                                                  | Redis backend 또는 drain 연결 설정                       |
+| EXPO_ACCESS_TOKEN / RESEND_API_KEY                       | Expo / 이메일 공급자                                     |
+| GOOGLE_GENERATIVE_AI_API_KEY                             | 기존 Gemini 모델 공급자; 유료 호출은 별도 범위           |
+| RETENTION_ONBOARDING_V2_ENABLED                          | 기본 false; treatment 배정은 별도 운영 설정              |
+| DISCORD_SIGNUP_WEBHOOK_URL / DISCORD_PAYMENT_WEBHOOK_URL | 운영 가입/결제 채널                                      |
 
-```bash
-# 이미지 크기 확인
-docker images aido-platform-api
-```
+Swagger는 development에서 `/api/docs`, `/api/admin/docs`로만 제공한다. OS push 권한·외부 공급자 도착·LLM 의미 품질은 `/health` 성공만으로 확인되지 않는다.
 
-Production 이미지는 `node:24.21.0-alpine3.24` + production deps만 포함하여 경량화됩니다.
+스토어 공개 버전은 API `/v1/app-config/app-version` 설정으로 안내하며 API 접근을 차단하지 않는다. 두 store 공개 후에만 `scripts/update-app-version-env.py`의 `--enabled true --published`를 사용한다. script는 app-version 3개 키만 수정하고 private backup을 만들며 나머지 내용·권한을 보존한다. 실행 예시의 버전은 해당 release의 실제 공개값으로 선택한다.
 
-## 1.10 ESM 런타임
+env만 반영할 때는 배포 락과 같은 image 확인 뒤 API만 `--no-deps --no-build --pull never --force-recreate`로 재생성한다. `docker restart`는 env_file 변경을 반영하지 않는다. 실패하면 private env backup과 같은 image로 복구한다.
 
-NestJS 12, Prisma 8 RC, NodeNext ESM을 사용한다. API package의 `#api/*` imports는 개발 중 source를, 배포 중 `dist/src`를 가리킨다. 상대 import에는 `.js`를 명시한다.
-
-`bootstrap.ts`가 instrumentation을 먼저 초기화하고 `main.ts`를 동적으로 불러온다. 개발 Nest CLI와 production start는 같은 진입 순서를 따른다. ESM dependency가 먼저 평가되어 Sentry가 늦게 시작되는 순서를 만들지 않는다.
-
-SIGTERM/SIGINT는 단일 handler가 한 번만 처리한다. Nest 모듈 종료로 worker와 Redis/Prisma 연결을 정리한 뒤 Sentry를 flush한다. 같은 프로세스에서 `enableShutdownHooks`와 별도 signal handler가 중복 종료하지 않는다.
-
-DB migration 이미지는 애플리케이션 runtime과 분리한다. Prisma와 pg-boss의 두 DB URL을 먼저 검증하고 migration을 실행한다. 원격 DB는 명시적인 `AIDO_ALLOW_REMOTE_DB=1`이 필요하며 URL 오류에 자격증명을 출력하지 않는다.
-
-Prisma 8 CLI는 contract 생성과 별도 migration 이미지에서 사용한다. API production dependency에는 단일 ORM runtime과 PostgreSQL pool만 포함하고 CLI는 dev dependency로 유지한다. Migration workspace는 CLI와 ORM을 직접 의존하며 contract source·JSON·native graph를 포함한다. 기존 DB는 baseline 스키마 검증 후에만 계약 marker를 등록하고, marker가 있는 DB는 재등록하지 않는다. 자세한 절차는 [.claude/prisma.md](.claude/prisma.md)를 따른다.
-
-공개 route, HTTP status, 오류 envelope, 기존 스토어 클라이언트 계약은 유지한다. Zod는 기존 공개 검증 규칙을 유지하는 4.3 patch 계열을 사용하며, CUID/date-time 규칙을 바꾸는 업데이트는 별도 계약 변경으로 다룬다.
-
-### CI 실행 범위와 스크립트
-
-공식 `actions/github-script`의 Octokit으로 PR·스택·배포 run을 조회한다. 스택 tip은 base부터 tip까지 누적 diff를 검증하고, diff를 확정하지 못하면 전체 검증을 실행한다. 프로젝트 고유 규칙은 `scripts/ci/stack-policy.mjs`, `dependency-scope.mjs`와 해당 Node 테스트에 둔다. 별도의 GitHub API wrapper는 없다.
-
-문서 변경은 lint/format만 실행한다. API 영향이 없으면 integration/E2E/API build/Docker job을 시작하지 않는다. API 전용 job은 API 의존성만 설치한다. Turbo의 generation·검증 캐시를 사용하고 Docker API/migration 캐시 scope를 분리한다. Docker 발행은 모든 서버 검증 성공 후에만 수행한다. 이미지 job이 생략된 CI run은 자동 배포도 생략한다. 수동 SHA도 API/migration 두 이미지 manifest를 확인한 후 SSH에 연결한다.
-
-로그는 workflow의 `shell: bash`가 제공하는 `-eo pipefail`과 `tee`로 기록하고, 실패 시 공식 `actions/upload-artifact`로 업로드한다. `run-with-tee.sh` 및 전용 shell 테스트는 제거했다. 서버 배포의 락·health check·실패 롤백은 `scripts/deploy.sh`, DB URL 안전장치와 두 DB의 migration은 기존 전용 스크립트로 유지한다. 공식 Actions가 이 프로젝트의 DB/배포 의미를 대체하지는 않는다.
-
-## 구 클라이언트 릴리스 gate
-
-새 서버는 1.7.x, 1.8.2 및 1.9.0의 기존 요청을 계속 수용한다. 필드 삭제, optional 필드의 required 전환, 날짜·커서 검증 강화, 성공·오류 envelope 변경은 이번 현대화에 포함하지 않는다. `app-version`은 추가 endpoint이며 기존 인증이나 API 접근에 강제 버전 조건을 붙이지 않는다.
-
-```bash
-pnpm --filter @aido/server exec vitest run --project e2e \
-  test/e2e/openapi-contract.e2e-spec.ts \
-  test/e2e/legacy-client-compatibility.e2e-spec.ts
-```
-
-배포 전 published OpenAPI fingerprint와 고정된 구 클라이언트 payload의 실제 HTTP 테스트가 모두 통과해야 한다. 기존 release fixture를 현재 구현에 맞춰 다시 생성하지 않는다. 구 payload gate는 인증·토큰 갱신·할 일·댓글·알림·날짜·커서와 오류 envelope를 확인하고, 새 응답 필드는 이전 strip parser가 무시하는지 검증한다. DB/queue migration은 기존 서버의 동작과 데이터 해석을 유지해야 하며, 파괴적 변경은 별도 rollout으로 분리한다.
-
-pg-boss는 12.27.0과 schema 37을 유지한다. 12.35.1은 schema 43으로 migration하며, `migrate: false`인 기존 12.27 runtime은 schema가 다르면 재시작하지 못한다. 따라서 이번 릴리스에는 pg-boss schema upgrade를 포함하지 않는다. 구 서버 이미지로 rollback할 수 있는 DB 구조를 유지한다. 이 예외는 [구 버전의 schema 검사](https://github.com/timgit/pg-boss/blob/12.27.0/src/contractor.ts)와 격리 PostgreSQL 재시작 검증을 기준으로 결정했다.
-
-검증 중 별도 schema를 사용할 때는 API와 migration에 같은 `JOB_SCHEMA` 값을 전달한다. migration script는 이를 `PGBOSS_SCHEMA`로 연결한다. 기존 개발 계정이나 기존 schema를 삭제해서 검증 환경을 맞추지 않는다.
-
-### 1.11.0 콕 찌르기 답장·감사
-
-`NUDGE_INTERACTIONS_ENABLED` 기본값은 `false`다. 새 앱은 availability 응답으로 진입점을 표시하므로 서버 기능이 꺼져 있어도 기존 앱 기능을 사용할 수 있다. 두 additive migration을 적용하고 native/계약 검증을 마친 뒤 운영 `.env.docker.prod`에 `true`를 설정한다. 환경 변경은 위의 배포 락·private backup 절차를 따른다.
-
-기존 알림 API는 새 reply/thanks 타입을 pagination 전에 제외한다. 새 push는 1.11.0 이상 device에만 보내고, 오래된 앱의 토큰·일반 찌르기·알림 계약은 유지한다. 스토어 최신 버전 설정은 실제 공개 이후 별도로 바꾼다. 빌드 완료만으로 공개 버전을 올리지 않는다.
+릴리스 `develop`→`main`은 merge commit으로 공통 조상을 유지한다. main 반영 뒤 develop 이력을 동기화하고 다음 release diff를 확인한다. 검증 완료·merge 완료·이미지 발행·배포 health·실제 DB verify는 각각의 결과로 기록하며, 이 문서는 아직 수행하지 않은 작업을 완료로 표시하지 않는다.

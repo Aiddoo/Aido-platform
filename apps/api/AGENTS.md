@@ -1,71 +1,36 @@
 # Aido API
 
-> Version 3.0.0 · Updated 2026-10-07 · Owner: Aido Platform Team
+서버 작업의 진입점이다. 현재 구현은 `src/modules`, 실행 기술은 `src/platform`, 순수 공통 코드는 `src/shared`에 있다. 필요한 범위의 코드와 문서를 읽고 요청한 결과까지 구현·확인한다.
 
-NestJS API 작업의 세션 진입점이다. 이 파일은 우선순위가 높은 규칙만 담는다. 세부 설계는 링크된 문서를 읽고, 구조가 불명확하면 `src/modules/planning`의 현재 코드를 기준으로 판단한다.
+## 작업에 맞는 문서
 
-## 작업 전 읽기
+| 판단할 내용                     | 참고                                                     |
+| ------------------------------- | -------------------------------------------------------- |
+| 레이어·상태 소유·모듈 공개 경계 | [.claude/architecture.md](.claude/architecture.md)       |
+| Controller·UseCase·Port 작성    | [.claude/api-conventions.md](.claude/api-conventions.md) |
+| Zod·HTTP 응답·구 앱 호환        | [.claude/rest-contracts.md](.claude/rest-contracts.md)   |
+| ORM·트랜잭션·마이그레이션       | [.claude/prisma.md](.claude/prisma.md)                   |
+| 검증 범위·격리된 테스트 실행    | [.claude/testing-guide.md](.claude/testing-guide.md)     |
+| 로그·개인정보·공급자 오류       | [.claude/logging-guide.md](.claude/logging-guide.md)     |
+| 파일·역할 명명                  | [docs/server/naming.md](../../docs/server/naming.md)     |
+| 배포 준비                       | [DEPLOYMENT.md](DEPLOYMENT.md)                           |
 
-| 작업                           | 필수 문서                                                |
-| ------------------------------ | -------------------------------------------------------- |
-| API 구조·의존성                | [.claude/architecture.md](.claude/architecture.md)       |
-| Controller·UseCase·도메인 코드 | [.claude/api-conventions.md](.claude/api-conventions.md) |
-| Zod DTO·공개 스키마            | [.claude/rest-contracts.md](.claude/rest-contracts.md)   |
-| Prisma·트랜잭션·마이그레이션   | [.claude/prisma.md](.claude/prisma.md)                   |
-| 테스트                         | [.claude/testing-guide.md](.claude/testing-guide.md)     |
-| 로깅                           | [.claude/logging-guide.md](.claude/logging-guide.md)     |
-| 배포                           | [DEPLOYMENT.md](DEPLOYMENT.md)                           |
+모든 문서를 작업마다 읽을 필요는 없다. 수정 대상의 실제 코드가 상세 사례이며, 아래 규칙과 다른 기존 구현은 완료된 전환으로 가정하지 않는다.
 
-## 정본 구조
+## 유지할 경계
 
-```text
-HTTP → presentation → endpoint UseCase → domain + application port
-                                      infrastructure adapter → DB/Redis/queue/vendor
-```
+- HTTP → Presentation → UseCase → Domain/Port → Infrastructure 순서로 책임을 나눈다. Controller는 UseCase를 직접 주입한다.
+- Domain은 순수 업무 규칙, Application은 흐름과 consumer-owned Port를 소유한다. Nest·ORM·vendor I/O는 조립/Infrastructure에 둔다.
+- 상태 전이·값 검증이 있을 때만 Aggregate·Entity·VO를 사용한다. 조회·집계·렌더링에 형식적인 상태 모델이나 전달 전용 Facade를 만들지 않는다.
+- 외부 Context는 실제 필요한 capability만 `*-*.public.ts`로 소비한다. 내부 Repository·UseCase를 공개하거나 순환을 `forwardRef`로 덮기 전에 방향을 확인한다.
+- DTO는 `@aido/api`, 오류는 `@aido/api/errors`, 순수 공용 상수는 `@aido/api/vocabulary`를 쓴다. 상대 import는 `.js`, 서버 별칭은 `#api/*`, 테스트는 `#test/*`다.
+- 트랜잭션은 `UNIT_OF_WORK.run`과 활성 CLS transaction을 사용한다. 외부 발송은 DB transaction 밖에서 실행하고 기존 커밋·재시도·실패 격리 의미를 보존한다.
+- HTTP·DB·queue·cache 계약을 의도 없이 변경하지 않는다. 요청에 포함된 계약 변경은 소비자·배포 영향을 함께 처리한다.
 
-- `domain`: 순수 TypeScript. Aggregate, Entity, VO, Policy, domain event를 소유한다.
-- `application`: endpoint 흐름과 consumer-owned port를 소유한다. 순수 TypeScript이며 의존성을 생성자 객체로 받는다.
-- `infrastructure`: Prisma, Redis, pg-boss, 외부 SDK, port 구현을 소유한다.
-- `presentation`: HTTP DTO 검증, 원시값 변환, Swagger, 응답 매핑을 소유한다.
-- Context는 `src/modules/<context>`, 공용 기술 구현은 `src/platform`, 순수 공통 코드는 `src/shared`에 둔다.
-- Composition Root의 `*-application.providers.ts`가 factory provider로 순수 Application 클래스를 조립한다.
-- Controller는 UseCase를 직접 주입한다. 전달 전용 Facade는 만들지 않는다.
-- Port는 DB 내부 호출마다 만들지 않는다. 외부 공급자, 캐시, 큐, 크로스 컨텍스트 capability처럼 교체·격리 가치가 있을 때 만든다.
+## 완료와 실행 범위
 
-## 절대 규칙
+요청한 동작, 관련 호출 경로와 오류·호환 조건을 확인하고 발생한 회귀까지 해결한다. 검증은 변경 위험에 맞게 선택하며 통과한 검사를 이유 없이 반복하지 않는다. 문서만 바꾼 작업에는 링크·경로·사실 확인을 사용하고 서버 전체 테스트를 관성적으로 실행하지 않는다.
 
-- 공개 HTTP route/method/header/query/body/response/status를 의도 없이 바꾸지 않는다.
-- NestJS 12/Prisma ESM: 상대 import는 `.js`, 내부 경로는 `#api/*`, 테스트는 `#test/*`를 사용한다.
-- DTO는 공유 Zod 스키마와 타입 alias이며 `@Body/Query/Param({ schema: Dto })`로 명시한다.
-- 테스트는 Vitest project(unit/integration/e2e)이며 `Mocked` 타입은 Vitest에서 import한다. Spy는 `beforeEach`에서 생성한다.
-- DTO는 `@aido/api`, 오류는 `@aido/api/errors`의 `ErrorCode`를 사용한다.
-- domain에서 `@nestjs/*`, Prisma, application, infrastructure, presentation을 import하지 않는다.
-- application에서 Prisma 타입, vendor SDK, infrastructure, presentation, 타 모듈 내부 경로를 import하지 않는다.
-- 타 모듈 UseCase나 구현체를 직접 호출하지 않는다. 필요한 최소 capability를 공개 경계로 연결한다.
-- 트랜잭션은 `UNIT_OF_WORK.run(async () => ...)`를 사용한다. repository가 CLS의 활성 transaction을 읽는다.
-- 단건 상태 전이는 Aggregate가 판단한다. batch update, atomic claim/counter 등 집합 원자성은 명명된 port 뒤 SQL에 둔다.
-- 커밋 후 필요한 부수효과만 domain event/queue로 보낸다. enqueue 실패 격리 의미를 임의로 바꾸지 않는다.
-- application은 모듈 cache port에 의존한다. 공유 `CacheService`나 전역 `CacheKeys`를 직접 사용하지 않는다.
-- Redis key, TTL, queue name, job payload와 retry 의미는 해당 컨텍스트의 infrastructure에 응집한다.
-- `as`, non-null assertion, deep import, concrete repository 공개를 추가하지 않는다.
+생산 접근과 외부 발송이 차단된 폐기 가능한 로컬 fixture/test DB임이 확인된 테스트는 매 단계 승인을 기다리지 않고 실행·수정·관련 재검증한다. 기존 작업자 데이터나 운영 대상에 대한 삭제·마이그레이션, 실제 유료 호출·외부 발송은 그 작업의 승인 범위를 확인한다.
 
-## 명명
-
-- Aggregate: `domain/aggregates/<slice>/<name>.aggregate.ts`
-- Entity: `domain/entities/<slice>/<name>.entity.ts`
-- VO: `domain/value-objects/<slice>/<name>.vo.ts`
-- UseCase: `application/use-cases/<slice>/<verb-object>.use-case.ts`
-- 읽기 UseCase도 같은 위치와 `.use-case.ts` 접미사를 사용한다.
-- Port: `application/ports/<slice>/<capability>.<role>.port.ts`
-- Adapter: `infrastructure/adapters/<slice>/<purpose>.adapter.ts`
-- 역할명은 `Repository`, `Reader`, `Store`, `Client`, `Sender`, `Recorder`, `Publisher`, `Adapter`, `Policy`, `Resolver`, `Registry`, `JobHandler` 중 실제 책임을 표현한다.
-
-## 완료 조건
-
-```bash
-pnpm typecheck
-pnpm lint
-pnpm format:check
-```
-
-위 명령은 항상 실행한다. Oxlint의 `no-restricted-imports`가 domain/application 의존성 경계를 검사한다. 변경 위험에 따라 API unit/integration/E2E를 추가한다. 공개 계약을 건드리는 작업은 OpenAPI snapshot과 배포 클라이언트 fingerprint의 의도치 않은 diff가 없어야 한다.
+결과에는 무엇이 달라졌는지, 실제 확인한 범위와 남은 한계를 적는다. 향후 계획을 현재 완료 상태로 표현하지 않는다.
