@@ -108,4 +108,4 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
     TimezoneSelfHealInterceptor,
   ],
 })
-export class UserSettingsModule {}
+export class IdentitySettingsModule {}

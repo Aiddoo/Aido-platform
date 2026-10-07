@@ -15,6 +15,11 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+  Public,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Locale, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -27,11 +32,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-  Public,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { GetNotifications } from "../../../application/use-cases/delivery/get-notifications.use-case.js";
 import { GetUnreadCount } from "../../../application/use-cases/delivery/get-unread-count.use-case.js";
 import { MarkAllAsRead } from "../../../application/use-cases/delivery/mark-all-as-read.use-case.js";

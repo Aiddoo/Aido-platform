@@ -1,14 +1,14 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Put, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { ApiDoc, ApiSuccessResponse, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { GetWeatherConditions } from "../../../application/use-cases/forecast/get-weather-conditions.use-case.js";
 import { GetWeatherForecast } from "../../../application/use-cases/forecast/get-weather-forecast.use-case.js";
 import { UpsertLocation } from "../../../application/use-cases/forecast/upsert-location.use-case.js";

@@ -11,6 +11,5 @@ export function createUserSettingsCacheMock(): UserSettingsCachePort {
   return {
     wrapUserPreference: vi.fn(),
     invalidateUserPreference: vi.fn(),
-    invalidateActiveTimezones: vi.fn(),
   };
 }

@@ -26,7 +26,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     });
     const query = new GetPreference(fixture);
     await query.execute({ userId: fixture.userId });
-    fixture.cache.activeTimezones.add("UTC");
+    fixture.reminderTimezoneCache.activeTimezones.add("UTC");
     // When
     const result = await new UpdatePreference(fixture).execute({
       userId: fixture.userId,
@@ -47,7 +47,7 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
       weatherMorningMinute: 0,
     });
     expect(reloaded).toMatchObject({ pushEnabled: false, weatherMorningMinute: 0 });
-    expect(fixture.cache.activeTimezones.size).toBe(0);
+    expect(fixture.reminderTimezoneCache.activeTimezones.size).toBe(0);
     expect(fixture.reminderEnqueuer.jobs).toEqual([]);
   });
   it("프리미엄 변경은 최신 저장 타임존으로 잡을 등록하고 지정한 리마인더 필드만 바꾼다", async () => {
@@ -158,5 +158,49 @@ describe("UpdatePreference — 부분 수정과 리마인더 즉시 반영", () 
     // Then
     expect(fixture.preferenceRepository.records.get(fixture.userId)?.timezone).toBe("UTC");
     expect((await query.execute({ userId: fixture.userId })).timezone).toBe("UTC");
+  });
+  it("활성 timezone 캐시 삭제 실패를 전달하며 이미 저장된 설정을 되돌리지 않는다", async () => {
+    // Given: 이전 설정 응답이 캐시되어 있고 목록 무효화가 실패한다.
+    const fixture = createUserSettingsFixture();
+    await fixture.preferenceReader.read(fixture.userId);
+    const failure = new Error("synthetic cache unavailable");
+    vi.spyOn(fixture.reminderTimezoneCache, "invalidateActiveTimezones").mockRejectedValueOnce(
+      failure,
+    );
+    // When/Then: 기존 실패를 전달하고 이미 저장된 변경·설정 캐시 갱신은 유지한다.
+    await expect(
+      new UpdatePreference(fixture).execute({ userId: fixture.userId, pushEnabled: false }),
+    ).rejects.toBe(failure);
+    expect(fixture.preferenceRepository.records.get(fixture.userId)).toMatchObject({
+      pushEnabled: false,
+    });
+    expect(fixture.cache.snapshots.has(fixture.userId)).toBe(false);
+    expect(fixture.reminderEnqueuer.jobs).toEqual([]);
+  });
+  it("timezone 목록 무효화가 완료될 때까지 응답과 완료 로그를 기다린다", async () => {
+    // Given: 새 timezone은 저장할 수 있지만 캐시 삭제가 아직 완료되지 않았다.
+    const fixture = createUserSettingsFixture();
+    const entered = Promise.withResolvers<void>();
+    const deletion = Promise.withResolvers<void>();
+    vi.spyOn(fixture.reminderTimezoneCache, "invalidateActiveTimezones").mockImplementation(() => {
+      entered.resolve();
+      return deletion.promise;
+    });
+    // When: 저장 흐름이 목록 삭제에 도달한다.
+    const execution = new UpdatePreference(fixture).execute({
+      userId: fixture.userId,
+      timezone: "Asia/Seoul",
+    });
+    try {
+      await entered.promise;
+      // Then: 캐시 삭제 전 완료 로그를 남기지 않고, 삭제 완료 뒤 응답한다.
+      expect(fixture.logger.log).not.toHaveBeenCalled();
+      deletion.resolve();
+      await expect(execution).resolves.toMatchObject({ timezone: "Asia/Seoul" });
+      expect(fixture.logger.log).toHaveBeenCalledTimes(1);
+    } finally {
+      deletion.resolve();
+      await execution;
+    }
   });
 });

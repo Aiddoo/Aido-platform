@@ -9,6 +9,7 @@ import {
   StubUserPreferenceRepository,
   StubUserConsentRepository,
   StubUserSettingsCache,
+  StubReminderTimezoneCache,
   StubPreferenceEntitlement,
   StubReminderScheduleEnqueuer,
   StubStreakMilestoneNotifier,
@@ -35,6 +36,7 @@ export function createUserSettingsFixture(
     input.consent === null ? [] : [[userId, consent]],
   );
   const cache = new StubUserSettingsCache();
+  const reminderTimezoneCache = new StubReminderTimezoneCache();
   const preferenceReader = new UserPreferenceReader({ preferenceRepository, cache });
   const entitlement = new StubPreferenceEntitlement();
   if (input.premium) entitlement.premiumUserIds.add(userId);
@@ -50,6 +52,7 @@ export function createUserSettingsFixture(
     preferenceRepository,
     consentRepository,
     cache,
+    reminderTimezoneCache,
     entitlement,
     reminderEnqueuer,
     milestoneNotifier,

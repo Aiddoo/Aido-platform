@@ -63,14 +63,21 @@ export class TestDatabase {
     if (this.client) return this.client;
 
     const { connectionUri } = assertManagedTestDatabaseEnvironment(this.env);
+    const client = this.createClient(connectionUri);
+
+    try {
+      await client
+        .runtime()
+        .query(client.raw.sql`SELECT 1 AS value`.returnsRow({ value: "pg/int4@1" }).build());
+    } catch (error) {
+      // 실패한 연결을 공개하지 않고 부분 자원을 정리한다. 최초 probe 오류를 보존한다.
+      await client.close().catch(() => undefined);
+      throw error;
+    }
+
+    this.client = client;
     this.connectionUri = connectionUri;
-    this.client = this.createClient(connectionUri);
-
-    await this.client
-      .runtime()
-      .query(this.client.raw.sql`SELECT 1 AS value`.returnsRow({ value: "pg/int4@1" }).build());
-
-    return this.client;
+    return client;
   }
 
   /**

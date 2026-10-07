@@ -26,6 +26,7 @@ import type { PreferenceSnapshot } from "#api/modules/identity/application/read-
 import type { UserConsentRecord } from "#api/modules/identity/domain/records/settings/user-consent.record";
 import type { UserPreferenceRecord } from "#api/modules/identity/domain/records/settings/user-preference.record";
 import type { StreakState } from "#api/modules/identity/domain/value-objects/settings/streak.vo";
+import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import { UserPreferenceBuilder } from "#test/builders/user-preference.builder";
 
 export class StubUserPreferenceRepository implements UserPreferenceRepositoryPort {
@@ -195,8 +196,6 @@ export class StubUserConsentRepository implements UserConsentRepositoryPort {
 
 export class StubUserSettingsCache implements UserSettingsCachePort {
   readonly snapshots = new Map<string, PreferenceSnapshot>();
-  readonly activeTimezones = new Set<string>();
-  activeTimezoneInvalidations = 0;
   async wrapUserPreference(
     userId: string,
     factory: () => Promise<PreferenceSnapshot>,
@@ -210,6 +209,12 @@ export class StubUserSettingsCache implements UserSettingsCachePort {
   async invalidateUserPreference(userId: string): Promise<void> {
     this.snapshots.delete(userId);
   }
+}
+
+export class StubReminderTimezoneCache implements ReminderTimezoneCachePort {
+  readonly activeTimezones = new Set<string>();
+  activeTimezoneInvalidations = 0;
+
   async invalidateActiveTimezones(): Promise<void> {
     this.activeTimezoneInvalidations += 1;
     this.activeTimezones.clear();

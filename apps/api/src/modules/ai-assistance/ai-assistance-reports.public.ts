@@ -1,4 +1,4 @@
-export { AiReportModule } from "./ai-assistance-reports.module.js";
+export { AiAssistanceReportsModule } from "./ai-assistance-reports.module.js";
 export {
   LATEST_REPORT_STATS_READER,
   type LatestReportStatsReaderPort,

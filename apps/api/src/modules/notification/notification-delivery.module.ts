@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
-import { UserSettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
@@ -92,7 +92,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
 
 @Module({
   // Identity 설정의 역방향 큐 참조는 jobs.public 경계로 분리한다.
-  imports: [NotificationQueueModule, UserSettingsModule],
+  imports: [NotificationQueueModule, IdentitySettingsModule],
   controllers: [NotificationController, NotificationInboxController],
   providers: [
     // 크로스 모듈 호환 경계 + endpoint UseCase

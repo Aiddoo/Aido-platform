@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 
-import { UserSettingsModule } from "../identity/identity-settings.module.js";
-import { NotificationDeliveryModule } from "../notification/notification-delivery.module.js";
-import { NotificationRemindersModule } from "../notification/notification-reminders.module.js";
+import { IdentitySettingsModule } from "../identity/identity-settings.public.js";
+import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
+import { NotificationRemindersModule } from "../notification/notification-reminders.public.js";
 import { SocialFriendsModule } from "../social/social-friends.public.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
@@ -40,7 +40,7 @@ import { TodoController } from "./presentation/controllers/todos/todo.controller
     NotificationDeliveryModule,
     PlanningCategoriesModule,
     NotificationRemindersModule,
-    UserSettingsModule,
+    IdentitySettingsModule,
   ],
   controllers: [TodoController],
   providers: [

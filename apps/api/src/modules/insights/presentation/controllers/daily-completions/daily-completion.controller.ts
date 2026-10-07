@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiDoc,
@@ -11,10 +15,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";
 import { GetDailyCompletions } from "../../../application/use-cases/daily-completions/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletions } from "../../../application/use-cases/daily-completions/get-friend-daily-completions.use-case.js";

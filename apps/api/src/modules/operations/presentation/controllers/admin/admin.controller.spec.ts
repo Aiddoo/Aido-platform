@@ -4,10 +4,9 @@
  * 컨트롤러의 DTO→UseCase 입력 매핑과 결과 반환을 검증한다.
  */
 
-import { TestBed } from "@suites/unit";
-import type { Mocked } from "vitest";
+import { mock, type MockProxy } from "vitest-mock-extended";
 
-import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
+import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
 
 import { BroadcastNotification } from "../../../application/use-cases/admin/broadcast-notification.use-case.js";
 import { SendTargetedNotification } from "../../../application/use-cases/admin/send-targeted-notification.use-case.js";
@@ -43,8 +42,8 @@ function makeTargetedDto(
 
 describe("AdminController — 관리자 컨트롤러", () => {
   let controller: AdminController;
-  let broadcastNotificationUseCase: Mocked<BroadcastNotification>;
-  let sendTargetedNotificationUseCase: Mocked<SendTargetedNotification>;
+  let broadcastNotificationUseCase: MockProxy<BroadcastNotification>;
+  let sendTargetedNotificationUseCase: MockProxy<SendTargetedNotification>;
 
   const mockUser: CurrentUserPayload = {
     userId: "admin-123",
@@ -53,12 +52,10 @@ describe("AdminController — 관리자 컨트롤러", () => {
     role: "ADMIN",
   };
 
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(AdminController).compile();
-
-    controller = unit;
-    broadcastNotificationUseCase = unitRef.get(BroadcastNotification);
-    sendTargetedNotificationUseCase = unitRef.get(SendTargetedNotification);
+  beforeEach(() => {
+    broadcastNotificationUseCase = mock<BroadcastNotification>();
+    sendTargetedNotificationUseCase = mock<SendTargetedNotification>();
+    controller = new AdminController(broadcastNotificationUseCase, sendTargetedNotificationUseCase);
   });
 
   describe("broadcastNotification", () => {

@@ -7,7 +7,7 @@ import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/pers
 import type {
   GenerateStructuredOptions,
   GenerateStructuredResult,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
 import type { CreateSuggestionInput } from "#api/modules/ai-assistance/application/ports/suggestions/ai-suggestion.repository.port";
 import type { RecurringTodoCreatorPort } from "#api/modules/ai-assistance/application/ports/suggestions/recurring-todo-creator.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";

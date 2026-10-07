@@ -14,6 +14,10 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -28,10 +32,6 @@ import {
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { ConvertMemoToTodo } from "../../../application/use-cases/memos/convert-memo-to-todo.use-case.js";
 import { ConvertMemoToTodos } from "../../../application/use-cases/memos/convert-memo-to-todos.use-case.js";
 import { CreateMemo } from "../../../application/use-cases/memos/create-memo.use-case.js";

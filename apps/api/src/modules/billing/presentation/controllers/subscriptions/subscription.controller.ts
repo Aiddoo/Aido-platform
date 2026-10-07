@@ -3,7 +3,7 @@ import { ApiExcludeEndpoint } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import type { Request } from "express";
 
-import { Public } from "#api/modules/identity/presentation/decorators/auth/index";
+import { Public } from "#api/modules/identity/identity-auth-http.public";
 
 import { HandleWebhookEvent } from "../../../application/use-cases/subscriptions/handle-webhook-event.use-case.js";
 import { WebhookSignatureGuard } from "../../../infrastructure/guards/subscriptions/webhook-signature.guard.js";

@@ -54,4 +54,4 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
     },
   ],
 })
-export class SubscriptionModule {}
+export class BillingSubscriptionsModule {}

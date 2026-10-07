@@ -8,20 +8,20 @@ import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
 import { AccessModule } from "#api/modules/access/access.module";
-import { AiModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { AiReportModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
-import { AiSuggestionModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
+import { AiAssistanceParsingModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { AiAssistanceReportsModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
+import { AiAssistanceSuggestionsModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-discovery.public";
-import { SubscriptionModule } from "#api/modules/billing/billing-subscriptions.public";
+import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import {
-  AuthModule,
+  IdentityAuthModule,
   JwtAuthGuard,
   LastActiveInterceptor,
 } from "#api/modules/identity/identity-auth.public";
 import {
   TimezoneSelfHealInterceptor,
-  UserSettingsModule,
+  IdentitySettingsModule,
 } from "#api/modules/identity/identity-settings.public";
 import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
@@ -59,13 +59,10 @@ import { AppService } from "./app.service.js";
 
 @Module({
   imports: [
-    // 1. Configuration (Must be loaded first)
     AppConfigModule,
 
-    // 2. Monitoring
     SentryModule.forRoot(),
 
-    // 3. Infrastructure
     DatabaseModule,
     // CLS 트랜잭션 플러그인 — UNIT_OF_WORK(ClsUnitOfWork)가 사용하는
     // TransactionHost를 전역 제공. withTransaction이 자체 CLS 스코프를 열므로
@@ -90,7 +87,6 @@ import { AppService } from "./app.service.js";
     DedupModule.forRoot(),
     LockModule.forRoot(),
     JobRuntimeModule,
-    // 4. Global Modules
     AccessModule,
     LoggerModule.forRootAsync(),
     SharedKernelModule,
@@ -109,14 +105,13 @@ import { AppService } from "./app.service.js";
       }),
     }),
 
-    // 5. Features
     OperationsAdminModule,
     OperationsNotificationsModule,
     AppConfigDiscoveryModule,
-    AiModule,
-    AiReportModule,
-    AiSuggestionModule,
-    AuthModule,
+    AiAssistanceParsingModule,
+    AiAssistanceReportsModule,
+    AiAssistanceSuggestionsModule,
+    IdentityAuthModule,
     SocialCheersModule,
     InsightsDailyCompletionsModule,
     SocialFriendsModule,
@@ -126,23 +121,20 @@ import { AppService } from "./app.service.js";
     NotificationDeliveryModule,
     SocialNudgesModule,
     NotificationRemindersModule,
-    SubscriptionModule,
+    BillingSubscriptionsModule,
     PlanningTodosModule,
     EngagementCommentsModule,
     PlanningCategoriesModule,
-    UserSettingsModule,
+    IdentitySettingsModule,
     WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
   ],
-  // Controllers
   controllers: [AppController],
 
-  // Providers
   providers: [
     AppService,
     ThrottlerGuard,
 
-    // Global Guards
     {
       provide: APP_GUARD,
       useExisting: JwtAuthGuard,

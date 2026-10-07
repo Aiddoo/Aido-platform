@@ -23,9 +23,6 @@ export {
 } from "./application/ports/settings/user-settings-access.port.js";
 export type { UserConsentRecord } from "./domain/records/settings/user-consent.record.js";
 export type { UserPreferenceRecord } from "./domain/records/settings/user-preference.record.js";
-export {
-  computeEffectiveStreak,
-  type EffectiveStreakResult,
-} from "./domain/services/settings/effective-streak.js";
+export { computeEffectiveStreak } from "./domain/services/settings/effective-streak.js";
 export { TimezoneSelfHealInterceptor } from "./presentation/interceptors/settings/timezone-self-heal.interceptor.js";
-export { UserSettingsModule } from "./identity-settings.module.js";
+export { IdentitySettingsModule } from "./identity-settings.module.js";

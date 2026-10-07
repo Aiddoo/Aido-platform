@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { Controller, Get, Logger, Param, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Locale } from "#api/platform/http/decorators/index";
 import {
   ApiDoc,
@@ -11,10 +15,6 @@ import {
 } from "#api/platform/http/swagger/index";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";
 import { GetWeeklyAchievement } from "../../../application/use-cases/weekly-achievements/get-weekly-achievement.use-case.js";
 import { GetWeeklyAchievements } from "../../../application/use-cases/weekly-achievements/get-weekly-achievements.use-case.js";

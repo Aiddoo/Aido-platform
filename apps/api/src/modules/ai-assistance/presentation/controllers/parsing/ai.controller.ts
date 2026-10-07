@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Locale, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -14,10 +18,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { GetAiUsage } from "../../../application/use-cases/parsing/get-ai-usage.use-case.js";
 import { ParseMemo } from "../../../application/use-cases/parsing/parse-memo.use-case.js";
 import { ParseTodo } from "../../../application/use-cases/parsing/parse-todo.use-case.js";

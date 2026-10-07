@@ -1,5 +1,7 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { REMINDER_TIMEZONE_CACHE } from "#api/modules/notification/notification-reminders-cache.public";
+
 import { PREFERENCE_ENTITLEMENT } from "./application/ports/settings/preference-entitlement.port.js";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/settings/reminder-schedule.enqueuer.port.js";
 import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/settings/streak-milestone.notifier.port.js";
@@ -105,13 +107,16 @@ export const onTodoToggledProvider: FactoryProvider<OnTodoToggled> = {
 
 export const refreshPushTimezoneProvider: FactoryProvider<RefreshPushTimezone> = {
   provide: RefreshPushTimezone,
-  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
+  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE, REMINDER_TIMEZONE_CACHE],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof RefreshPushTimezone
     >[0]["preferenceRepository"],
     cache: ConstructorParameters<typeof RefreshPushTimezone>[0]["cache"],
-  ) => new RefreshPushTimezone({ preferenceRepository, cache }),
+    reminderTimezoneCache: ConstructorParameters<
+      typeof RefreshPushTimezone
+    >[0]["reminderTimezoneCache"],
+  ) => new RefreshPushTimezone({ preferenceRepository, cache, reminderTimezoneCache }),
 };
 
 export const seedUserSettingsProvider: FactoryProvider<SeedUserSettings> = {
@@ -159,18 +164,23 @@ export const updatePreferenceProvider: FactoryProvider<UpdatePreference> = {
     USER_PREFERENCE_REPOSITORY,
     PREFERENCE_ENTITLEMENT,
     USER_SETTINGS_CACHE,
+    REMINDER_TIMEZONE_CACHE,
     REMINDER_SCHEDULE_ENQUEUER,
   ],
   useFactory: (
     preferenceRepository: ConstructorParameters<typeof UpdatePreference>[0]["preferenceRepository"],
     entitlement: ConstructorParameters<typeof UpdatePreference>[0]["entitlement"],
     cache: ConstructorParameters<typeof UpdatePreference>[0]["cache"],
+    reminderTimezoneCache: ConstructorParameters<
+      typeof UpdatePreference
+    >[0]["reminderTimezoneCache"],
     reminderEnqueuer: ConstructorParameters<typeof UpdatePreference>[0]["reminderEnqueuer"],
   ) =>
     new UpdatePreference({
       preferenceRepository,
       entitlement,
       cache,
+      reminderTimezoneCache,
       reminderEnqueuer,
       logger: new Logger(UpdatePreference.name),
     }),
@@ -187,11 +197,14 @@ export const upsertPushLocaleProvider: FactoryProvider<UpsertPushLocale> = {
 
 export const upsertPushTimezoneProvider: FactoryProvider<UpsertPushTimezone> = {
   provide: UpsertPushTimezone,
-  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE],
+  inject: [USER_PREFERENCE_REPOSITORY, USER_SETTINGS_CACHE, REMINDER_TIMEZONE_CACHE],
   useFactory: (
     preferenceRepository: ConstructorParameters<
       typeof UpsertPushTimezone
     >[0]["preferenceRepository"],
     cache: ConstructorParameters<typeof UpsertPushTimezone>[0]["cache"],
-  ) => new UpsertPushTimezone({ preferenceRepository, cache }),
+    reminderTimezoneCache: ConstructorParameters<
+      typeof UpsertPushTimezone
+    >[0]["reminderTimezoneCache"],
+  ) => new UpsertPushTimezone({ preferenceRepository, cache, reminderTimezoneCache }),
 };

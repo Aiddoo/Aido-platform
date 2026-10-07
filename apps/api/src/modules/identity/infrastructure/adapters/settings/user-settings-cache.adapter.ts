@@ -4,7 +4,6 @@ import {
   UserSettingsCacheKey,
   USER_SETTINGS_CACHE_TTL_MS,
 } from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
-import { ReminderCacheKey } from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { UserSettingsCachePort } from "../../../application/ports/settings/user-settings-cache.port.js";
@@ -27,9 +26,5 @@ export class UserSettingsCacheAdapter implements UserSettingsCachePort {
 
   invalidateUserPreference(userId: string): Promise<void> {
     return this.cacheService.del(UserSettingsCacheKey.preference(userId));
-  }
-
-  invalidateActiveTimezones(): Promise<void> {
-    return this.cacheService.del(ReminderCacheKey.activeTimezones());
   }
 }

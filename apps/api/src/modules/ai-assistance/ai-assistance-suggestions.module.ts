@@ -3,11 +3,11 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 
-import { NotificationDeliveryModule } from "../notification/notification-delivery.module.js";
-import { PlanningTodosModule } from "../planning/planning-todos.module.js";
+import { NotificationDeliveryModule } from "../notification/notification-delivery.public.js";
+import { PlanningTodosModule } from "../planning/planning-todos.public.js";
 import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
-import { AiModule } from "./ai-assistance-parsing.module.js";
-import { AiReportModule } from "./ai-assistance-reports.module.js";
+import { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
+import { AiAssistanceReportsModule } from "./ai-assistance-reports.module.js";
 import {
   analyzeAndCreateSuggestionsProvider,
   getPendingSuggestionsProvider,
@@ -36,9 +36,9 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
  * - 매일 KST 07:30 크론 → per-user 패턴 분석(BullMQ) → 새 제안 생성 + 알림
  *
  * ### 크로스모듈(전부 포트/어댑터로 역전)
- * - AiModule: AI_PROVIDER(Gemini)로 제안 생성
+ * - AiAssistanceParsingModule: AI_PROVIDER(Gemini)로 제안 생성
  * - PlanningTodosModule: 수락 시 RECURRING_TODO_CREATOR가 반복 생성 UseCase에 위임
- * - AiReportModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
+ * - AiAssistanceReportsModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
  * - WeatherForecastModule: 날씨 기반 제안을 위한 격자 예보 조회
  * - NotificationDeliveryModule: 새 제안 생성 시 알림 발송(프로세서)
  */
@@ -46,8 +46,8 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
   imports: [
     AccessModule,
     IdentityUserAccessModule,
-    AiModule,
-    AiReportModule,
+    AiAssistanceParsingModule,
+    AiAssistanceReportsModule,
     NotificationDeliveryModule,
     PlanningTodosModule,
     WeatherForecastModule,
@@ -69,4 +69,4 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
     AiSuggestionQueueMaintenanceService,
   ],
 })
-export class AiSuggestionModule {}
+export class AiAssistanceSuggestionsModule {}

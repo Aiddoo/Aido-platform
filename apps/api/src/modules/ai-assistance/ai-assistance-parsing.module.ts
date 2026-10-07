@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessModule, AI_QUOTA as ACCESS_AI_QUOTA } from "#api/modules/access/access-quota.public";
 
-import { PlanningCategoriesModule } from "../planning/planning-categories.module.js";
+import { PlanningCategoriesModule } from "../planning/planning-categories.public.js";
 import { AI_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
 import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
@@ -24,4 +24,4 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
   ],
   exports: [AI_PROVIDER],
 })
-export class AiModule {}
+export class AiAssistanceParsingModule {}

@@ -5,11 +5,11 @@ import { ApiResponse, ApiTags, type SchemaObject } from "@nestjs/swagger";
 import type { HealthCheckResult } from "@nestjs/terminus";
 import { HealthCheck, HealthCheckService } from "@nestjs/terminus";
 
-import { Public } from "#api/modules/identity/presentation/decorators/auth/index";
+import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { ApiDoc, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
 
-import { BullHealthIndicator } from "./indicators/bull.health.js";
 import { DatabaseHealthIndicator } from "./indicators/database.health.js";
+import { JobRuntimeHealthIndicator } from "./indicators/job-runtime.health.js";
 
 function describeHealthResponse(status: "ok" | "error"): SchemaObject {
   const indicator: SchemaObject = {
@@ -39,7 +39,7 @@ export class HealthController {
   constructor(
     private readonly health: HealthCheckService,
     private readonly databaseHealth: DatabaseHealthIndicator,
-    private readonly bullHealth: BullHealthIndicator,
+    private readonly jobRuntimeHealth: JobRuntimeHealthIndicator,
   ) {}
 
   @Get()
@@ -57,15 +57,16 @@ export class HealthController {
 | 항목 | 설명 |
 |------|------|
 | \`database\` | PostgreSQL 데이터베이스 연결 상태 |
-| \`queues\` | BullMQ 큐 상태 (일시정지 여부, 잡 카운트) |
+| \`queues\` | 선택된 영속 작업 backend의 큐 상태와 잡 카운트 |
 
 ### 응답 상태
 - \`up\`: 정상 동작 중
 - \`down\`: 서비스 이상
 
-> \`queues\`는 Redis 장애 시에도 \`up\`을 유지하고 \`degraded: true\` +
-> \`reason\`을 덧붙입니다 (Redis 다운은 태스크 재시작으로 해결되지 않으므로
-> 503을 만들지 않음). 모니터링 알람은 \`degraded\` 필드를 기준으로 합니다.
+> \`queues\`는 작업 backend 장애 시에도 \`up\`을 유지하고 \`degraded: true\`를
+> 덧붙입니다. 상태 조회 실패나 시간 초과의 \`reason\`은 \`job_runtime_health_timeout\`입니다.
+> 큐 장애는 프로세스 재시작으로 해결되지 않으므로 503을 만들지 않습니다.
+> 모니터링 알람은 \`degraded\` 필드를 기준으로 합니다.
 
 ### 사용 예시
 \`\`\`bash
@@ -117,7 +118,7 @@ curl https://api.aido.com/health
     this.#logger.debug("헬스 체크 요청");
     const result = await this.health.check([
       () => this.databaseHealth.isHealthy("database"),
-      () => this.bullHealth.isHealthy("queues"),
+      () => this.jobRuntimeHealth.isHealthy("queues"),
     ]);
     this.#logger.log(`헬스 체크 완료: ${result.status}`);
     return { ...result, instanceId: INSTANCE_ID };

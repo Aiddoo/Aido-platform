@@ -488,9 +488,6 @@ importers:
       '@aido/typescript-config':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@aido/vitest-config':
-        specifier: workspace:*
-        version: link:../../tooling/vitest
       '@nestjs/cli':
         specifier: catalog:nest12
         version: 12.0.8(@swc/cli@0.8.1(@swc/core@1.16.13)(chokidar@5.0.0))(@swc/core@1.16.13)(@types/node@24.13.3)(fork-ts-checker-webpack-plugin@9.1.0(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.13)(esbuild@0.28.2)))(prettier@3.9.9)(ts-loader@9.6.2(typescript@6.0.3)(webpack@5.106.2(@swc/core@1.16.13)(esbuild@0.28.2)))(tsconfig-paths-webpack-plugin@4.2.0)(webpack-node-externals@3.0.0)(webpack@5.106.2(@swc/core@1.16.13)(esbuild@0.28.2))

@@ -5,7 +5,7 @@ import type {
   AiProvider,
   GenerateStructuredOptions,
   GenerateStructuredResult,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
 import { SuggestionContextBuilder } from "#api/modules/ai-assistance/application/services/suggestions/suggestion-context.builder";
 import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";

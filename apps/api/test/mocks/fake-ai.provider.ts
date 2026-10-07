@@ -5,7 +5,7 @@ import type {
   GenerateStructuredOptions,
   GenerateStructuredResult,
   TokenUsage,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
 import { createParsedTodoResponse } from "#test/fixtures/ai-response.fixture";
 
 export interface FakeAiProviderOptions {

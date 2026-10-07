@@ -3,7 +3,7 @@ import { vi, type Mocked } from "vitest";
 
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
-import { BullHealthIndicator } from "./bull.health.js";
+import { JobRuntimeHealthIndicator } from "./job-runtime.health.js";
 
 function runtime(): Mocked<JobRuntimePort> {
   return {
@@ -29,10 +29,10 @@ function runtime(): Mocked<JobRuntimePort> {
   };
 }
 
-describe("BullHealthIndicator — 영속 job runtime 상태 확인", () => {
+describe("JobRuntimeHealthIndicator — 영속 job runtime 상태 확인", () => {
   it("선택된 backend와 큐 카운트를 up 응답으로 반환한다", async () => {
     const jobRuntime = runtime();
-    const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
     const result = await indicator.isHealthy("queues");
 
@@ -61,7 +61,7 @@ describe("BullHealthIndicator — 영속 job runtime 상태 확인", () => {
       reason: "job_runtime_unavailable",
       queues: {},
     });
-    const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
     const result = await indicator.isHealthy("queues");
 
@@ -75,7 +75,7 @@ describe("BullHealthIndicator — 영속 job runtime 상태 확인", () => {
   it("health 수집 실패도 up + degraded로 정규화한다", async () => {
     const jobRuntime = runtime();
     jobRuntime.health.mockRejectedValue(new Error("database unavailable"));
-    const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
     const result = await indicator.isHealthy("queues");
 
@@ -90,7 +90,7 @@ describe("BullHealthIndicator — 영속 job runtime 상태 확인", () => {
     vi.useFakeTimers();
     const jobRuntime = runtime();
     jobRuntime.health.mockReturnValue(new Promise(() => {}));
-    const indicator = new BullHealthIndicator(new HealthIndicatorService(), jobRuntime);
+    const indicator = new JobRuntimeHealthIndicator(new HealthIndicatorService(), jobRuntime);
 
     const pending = indicator.isHealthy("queues");
     await vi.advanceTimersByTimeAsync(2_000);

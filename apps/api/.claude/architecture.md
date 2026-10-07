@@ -99,4 +99,4 @@ commit
 
 Oxlint import/cycle 규칙은 일부 기계적 경계를, 타입 검사는 계약 연결을 확인한다. 상태 소유·추상화 가치·실제 Module 조립·transaction은 코드 검토와 적절한 실행 증거가 필요하다. 새 소스 파싱 검사나 중복 architecture test를 기본으로 추가하지 않는다.
 
-문서의 기준이 모든 기존 코드에 적용됐다고 가정하지 않는다. Operations/Support/AppConfig 등에는 후속 전환 대상이 남아 있으며 계획된 경로를 현재 경로로 링크하지 않는다. 작업 범위의 코드와 [전환 기록](../../../docs/server/migration.md)을 확인하고, 위험에 맞는 검증은 [testing-guide.md](testing-guide.md)에서 선택한다.
+Context별 현재 구현과 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에서 확인한다. 계획된 경로를 현재 경로로 링크하거나 회귀 검증을 운영 배포 완료로 표현하지 않는다. 변경 위험에 맞는 검증은 [testing-guide.md](testing-guide.md)에서 선택한다.

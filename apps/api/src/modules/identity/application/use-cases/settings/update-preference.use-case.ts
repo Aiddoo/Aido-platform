@@ -4,6 +4,7 @@ import type {
 } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
+import type { ReminderTimezoneCachePort } from "#api/modules/notification/notification-reminders-cache.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { normalizeIanaTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -23,10 +24,8 @@ export type UpdatePreferenceInput = Readonly<PreferenceChanges> & {
 interface UpdatePreferenceDependencies {
   readonly preferenceRepository: Pick<UserPreferenceRepositoryPort, "upsert">;
   readonly entitlement: PreferenceEntitlementPort;
-  readonly cache: Pick<
-    UserSettingsCachePort,
-    "invalidateUserPreference" | "invalidateActiveTimezones"
-  >;
+  readonly cache: Pick<UserSettingsCachePort, "invalidateUserPreference">;
+  readonly reminderTimezoneCache: ReminderTimezoneCachePort;
   readonly reminderEnqueuer: Pick<ReminderScheduleEnqueuerPort, "enqueueReminderHourChanged">;
   readonly logger: ApplicationLogger;
 }
@@ -82,7 +81,7 @@ export class UpdatePreference {
     await this.#dependencies.cache.invalidateUserPreference(userId);
 
     if (input.timezone !== undefined || input.pushEnabled !== undefined) {
-      await this.#dependencies.cache.invalidateActiveTimezones();
+      await this.#dependencies.reminderTimezoneCache.invalidateActiveTimezones();
     }
 
     this.#dependencies.logger.log({

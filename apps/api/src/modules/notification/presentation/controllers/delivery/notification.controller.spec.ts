@@ -1,4 +1,4 @@
-import { TestBed } from "@suites/unit";
+import { mock, type MockProxy } from "vitest-mock-extended";
 /**
  * NotificationController 컨트롤러 단위 테스트
  *
@@ -11,23 +11,26 @@ import { TestBed } from "@suites/unit";
  * pnpm --filter @aido/server test notification.controller
  * ```
  */
-import type { Mocked } from "vitest";
 
-import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
+import type { CurrentUserPayload } from "#api/modules/identity/identity-auth-http.public";
 
+import { GetNotifications } from "../../../application/use-cases/delivery/get-notifications.use-case.js";
 import { GetUnreadCount } from "../../../application/use-cases/delivery/get-unread-count.use-case.js";
 import { MarkAllAsRead } from "../../../application/use-cases/delivery/mark-all-as-read.use-case.js";
 import { MarkAsRead } from "../../../application/use-cases/delivery/mark-as-read.use-case.js";
+import { MarkNotificationOpened } from "../../../application/use-cases/delivery/mark-notification-opened.use-case.js";
+import { OptOutMarketingPush } from "../../../application/use-cases/delivery/opt-out-marketing-push.use-case.js";
 import { RegisterPushToken } from "../../../application/use-cases/delivery/register-push-token.use-case.js";
+import { UnregisterPushToken } from "../../../application/use-cases/delivery/unregister-push-token.use-case.js";
 import type { RegisterPushTokenDto } from "../../schemas/delivery/index.js";
 import { NotificationController } from "./notification.controller.js";
 
 describe("NotificationController — 알림 컨트롤러", () => {
   let controller: NotificationController;
-  let getUnreadCountUseCase: Mocked<GetUnreadCount>;
-  let markAllAsReadUseCase: Mocked<MarkAllAsRead>;
-  let markAsReadUseCase: Mocked<MarkAsRead>;
-  let registerPushTokenUseCase: Mocked<RegisterPushToken>;
+  let getUnreadCountUseCase: MockProxy<GetUnreadCount>;
+  let markAllAsReadUseCase: MockProxy<MarkAllAsRead>;
+  let markAsReadUseCase: MockProxy<MarkAsRead>;
+  let registerPushTokenUseCase: MockProxy<RegisterPushToken>;
 
   const mockUser: CurrentUserPayload = {
     userId: "user-123",
@@ -36,14 +39,21 @@ describe("NotificationController — 알림 컨트롤러", () => {
     role: "USER",
   };
 
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary(NotificationController).compile();
-
-    controller = unit;
-    getUnreadCountUseCase = unitRef.get(GetUnreadCount);
-    markAllAsReadUseCase = unitRef.get(MarkAllAsRead);
-    markAsReadUseCase = unitRef.get(MarkAsRead);
-    registerPushTokenUseCase = unitRef.get(RegisterPushToken);
+  beforeEach(() => {
+    getUnreadCountUseCase = mock<GetUnreadCount>();
+    markAllAsReadUseCase = mock<MarkAllAsRead>();
+    markAsReadUseCase = mock<MarkAsRead>();
+    registerPushTokenUseCase = mock<RegisterPushToken>();
+    controller = new NotificationController(
+      mock<GetNotifications>(),
+      getUnreadCountUseCase,
+      markAsReadUseCase,
+      mock<MarkNotificationOpened>(),
+      markAllAsReadUseCase,
+      registerPushTokenUseCase,
+      mock<UnregisterPushToken>(),
+      mock<OptOutMarketingPush>(),
+    );
   });
 
   describe("getUnreadCount", () => {

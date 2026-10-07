@@ -2,6 +2,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiDoc,
@@ -12,10 +16,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { GetPendingSuggestions } from "../../../application/use-cases/suggestions/get-pending-suggestions.use-case.js";
 import { HandleSuggestionAction } from "../../../application/use-cases/suggestions/handle-suggestion-action.use-case.js";
 import { AiSuggestionMapper } from "../../mappers/suggestions/ai-suggestion.mapper.js";

@@ -6,31 +6,14 @@
 import type {
   Account,
   AccountProvider,
-  SubscriptionStatus,
   User,
   UserPreference,
   UserProfile,
-  UserRole,
-  UserStatus,
 } from "#api/platform/database/database.types";
 
 let userCounter = 0;
 
-/**
- * User Fixture 팩토리
- *
- * @example
- * ```typescript
- * // 기본 User 생성
- * const user = UserFixture.create();
- *
- * // 커스텀 속성으로 생성
- * const user = UserFixture.create({ email: 'custom@example.com' });
- *
- * // User + Profile 함께 생성
- * const { user, profile } = UserFixture.createWithProfile();
- * ```
- */
+/** 사용자 record. nullable override의 null은 보존하며 undefined는 기본값을 쓴다. */
 export const UserFixture = {
   /**
    * User 엔티티 생성
@@ -43,12 +26,12 @@ export const UserFixture = {
       id: overrides.id ?? `user-${id}`,
       email: overrides.email ?? `test-${id}@example.com`,
       userTag: overrides.userTag ?? `USR${String(id).padStart(5, "0")}`,
-      role: overrides.role ?? ("USER" as UserRole),
-      status: overrides.status ?? ("ACTIVE" as UserStatus),
+      role: overrides.role ?? "USER",
+      status: overrides.status ?? "ACTIVE",
       emailVerifiedAt: overrides.emailVerifiedAt === undefined ? now : overrides.emailVerifiedAt,
       twoFactorEnabled: overrides.twoFactorEnabled ?? false,
       twoFactorSecret: overrides.twoFactorSecret ?? null,
-      subscriptionStatus: overrides.subscriptionStatus ?? ("FREE" as SubscriptionStatus),
+      subscriptionStatus: overrides.subscriptionStatus ?? "FREE",
       subscriptionExpiresAt: overrides.subscriptionExpiresAt ?? null,
       revenueCatUserId: overrides.revenueCatUserId ?? null,
       aiUsageCount: overrides.aiUsageCount ?? 0,
@@ -140,7 +123,7 @@ export const AccountFixture = {
     return {
       id: overrides.id ?? id,
       userId: overrides.userId ?? `user-${id}`,
-      provider: overrides.provider ?? ("CREDENTIAL" as AccountProvider),
+      provider: overrides.provider ?? "CREDENTIAL",
       providerAccountId: overrides.providerAccountId ?? `provider-${id}`,
       password: overrides.password ?? null,
       accessToken: overrides.accessToken ?? null,

@@ -14,6 +14,10 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
+import {
   ApiBadRequestError,
   ApiConflictError,
   ApiCreatedResponse,
@@ -25,10 +29,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { CreateTodoCategory } from "../../../application/use-cases/categories/create-todo-category.use-case.js";
 import { DeleteTodoCategory } from "../../../application/use-cases/categories/delete-todo-category.use-case.js";
 import { GetTodoCategories } from "../../../application/use-cases/categories/get-todo-categories.use-case.js";

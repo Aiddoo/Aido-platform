@@ -18,6 +18,10 @@ import { UpdatePreference } from "#api/modules/identity/application/use-cases/se
 import { UpsertPushTimezone } from "#api/modules/identity/application/use-cases/settings/upsert-push-timezone.use-case";
 import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
 import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
+import {
+  REMINDER_TIMEZONE_CACHE,
+  type ReminderTimezoneCachePort,
+} from "#api/modules/notification/notification-reminders-cache.public";
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/database-values";
@@ -184,7 +188,9 @@ describe("사용자 설정 저장·캐시·동시 스트릭 (실제 PostgreSQL)"
     // Given
     const cache = context.module.get<UserSettingsCachePort>(USER_SETTINGS_CACHE);
     const invalidatePreference = vi.spyOn(cache, "invalidateUserPreference");
-    const invalidateTimezones = vi.spyOn(cache, "invalidateActiveTimezones");
+    const reminderTimezoneCache =
+      context.module.get<ReminderTimezoneCachePort>(REMINDER_TIMEZONE_CACHE);
+    const invalidateTimezones = vi.spyOn(reminderTimezoneCache, "invalidateActiveTimezones");
     const refresh = context.module.get(RefreshPushTimezone);
 
     // When

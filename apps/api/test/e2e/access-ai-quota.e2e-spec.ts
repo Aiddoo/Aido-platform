@@ -6,12 +6,12 @@ import {
   type EntitlementReaderPort,
   Feature,
 } from "#api/modules/access/access-entitlement.public";
+import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import {
-  AI_PROVIDER,
   AiProviderCallError,
   type GenerateStructuredOptions,
   type GenerateStructuredResult,
-} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+} from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 

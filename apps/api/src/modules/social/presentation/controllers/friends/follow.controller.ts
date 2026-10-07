@@ -15,6 +15,10 @@ import {
 } from "@nestjs/common";
 import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiBadRequestError,
@@ -28,10 +32,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { AcceptFriendRequest } from "../../../application/use-cases/friends/accept-friend-request.use-case.js";
 import { GetFriendResourceLimit } from "../../../application/use-cases/friends/get-friend-resource-limit.use-case.js";
 import { GetFriends } from "../../../application/use-cases/friends/get-friends.use-case.js";

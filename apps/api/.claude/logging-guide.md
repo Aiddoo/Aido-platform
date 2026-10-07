@@ -29,7 +29,7 @@ log는 필요한 성공 이벤트, warn은 격리된 실패·처리 가능한 �
 
 로그 정리와 caller의 오류 계약은 구분한다. 기존 sender result.error, queue throw identity, retry 여부를 log 비노출만을 위해 임의로 바꾸지 않는다. 반대로 호출자가 실패를 격리해야 하는 흐름에 logging 변경 때문에 예외를 새로 전파하지 않는다.
 
-전역 filter는 공개 오류 응답을 유지하면서 query와 예외 message 원문을 합치지 않는다. 기존 sanitized frame·errorCode/type 처리와 5xx Sentry 캡처를 확인한다. 이 범위의 검증을 Sentry 전체 데이터 정제 완료로 확대하지 않는다. Operations 등 후속 대상의 기존 raw log가 모두 정리됐다고 주장하지 않는다.
+전역 filter는 공개 오류 응답을 유지하면서 query와 예외 message 원문을 합치지 않는다. 기존 sanitized frame·errorCode/type 처리와 5xx Sentry 캡처를 확인한다. 이 범위의 검증을 Sentry 전체 데이터 정제 완료로 확대하지 않는다. 모듈별 발송·문의 로그의 실제 검증 범위는 [전환 기록](../../../docs/server/migration.md)에 남긴다.
 
 ## HTTP와 설정
 

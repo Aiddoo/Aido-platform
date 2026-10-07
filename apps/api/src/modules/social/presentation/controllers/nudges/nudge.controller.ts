@@ -14,6 +14,10 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
@@ -29,10 +33,6 @@ import {
 } from "#api/platform/http/swagger/index";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { GetNudgeCooldown } from "../../../application/use-cases/nudges/get-nudge-cooldown.use-case.js";
 import { GetNudgeLimit } from "../../../application/use-cases/nudges/get-nudge-limit.use-case.js";
 import { GetReceivedNudges } from "../../../application/use-cases/nudges/get-received-nudges.use-case.js";

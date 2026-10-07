@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import { mock } from "vitest-mock-extended";
 
 import { encodeCreate } from "#api/platform/database/database-records";
+import { createEntityId } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { PostgresPool } from "#api/platform/database/postgres-pool";
 import { JobRuntimeLifecycle } from "#api/platform/jobs/job-runtime.module";
@@ -79,6 +80,7 @@ it("종료 중 활성 worker가 native DB 저장을 마친 뒤 연결이 닫힌�
       encodeCreate(
         "User",
         UserFixture.create({
+          id: createEntityId(),
           email: "controlled-worker@shutdown.test",
           userTag: "SHUT0001",
         }),

@@ -4,7 +4,7 @@ import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
-import { UserSettingsModule } from "#api/modules/identity/identity-settings.public";
+import { IdentitySettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import {
   NotificationEmailModule,
@@ -128,7 +128,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     NotificationDeliveryModule,
     NotificationEmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.
-    UserSettingsModule,
+    IdentitySettingsModule,
     PlanningCategoriesModule,
     NotificationRetentionModule,
     EngagementCommentsModule,
@@ -249,4 +249,4 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
   ],
   exports: [JwtAuthGuard, JwtRefreshGuard, LastActiveInterceptor],
 })
-export class AuthModule {}
+export class IdentityAuthModule {}

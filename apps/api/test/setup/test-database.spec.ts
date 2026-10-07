@@ -47,6 +47,58 @@ describe("TestDatabase", () => {
     expect(createTestDatabaseClient).not.toHaveBeenCalled();
   });
 
+  describe("연결 probe 실패 생명주기", () => {
+    it("SELECT 1이 실패하면 client를 닫고 미시작 상태로 돌아가 새 client로 재시도한다", async () => {
+      // Given - native client는 생성됐지만 첫 연결 확인이 실패한다
+      const probeError = new Error("synthetic probe failure");
+      const firstClient = createFakeTestDatabaseClient(
+        vi.fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>(),
+      );
+      vi.spyOn(firstClient.runtime(), "query").mockRejectedValueOnce(probeError);
+      const retryClient = createFakeTestDatabaseClient(
+        vi.fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>(),
+      );
+      const createClient = vi
+        .fn<(uri: string) => TestDatabaseClient>()
+        .mockReturnValueOnce(firstClient)
+        .mockReturnValueOnce(retryClient);
+      const database = new TestDatabase({ env: MANAGED_ENV, createClient });
+      try {
+        // When - 실제 start의 native SELECT 1 경로에서 실패한다
+        await expect(database.start()).rejects.toBe(probeError);
+        // Then - 부분 자원을 닫고 client와 연결 정보를 공개하지 않는다
+        expect.soft(firstClient.close).toHaveBeenCalledTimes(1);
+        expect.soft(() => database.getClient()).toThrow("TestDatabase not started");
+        expect.soft(() => database.getConnectionUri()).toThrow("TestDatabase not started");
+        await expect.soft(database.start()).resolves.toBe(retryClient);
+        expect.soft(database.getClient()).toBe(retryClient);
+      } finally {
+        await database.stop();
+      }
+    });
+
+    it("실패 client의 close도 실패하면 정리 실패로 원래 probe 오류를 덮지 않는다", async () => {
+      // Given - 연결 확인과 부분 client 정리 모두 실패한다
+      const probeError = new Error("synthetic original probe failure");
+      const failedClient = createFakeTestDatabaseClient(
+        vi.fn<ReturnType<TestDatabaseClient["runtime"]>["execute"]>(),
+      );
+      vi.spyOn(failedClient.runtime(), "query").mockRejectedValueOnce(probeError);
+      failedClient.close.mockRejectedValueOnce(new Error("synthetic close failure"));
+      const database = new TestDatabase({ env: MANAGED_ENV, createClient: () => failedClient });
+      try {
+        // When - 실제 시작 실패의 cleanup 경로를 실행한다
+        await expect(database.start()).rejects.toBe(probeError);
+        // Then - close 시도는 보장하고 실패한 client/URI는 미시작 상태다
+        expect.soft(failedClient.close).toHaveBeenCalledTimes(1);
+        expect.soft(() => database.getClient()).toThrow("TestDatabase not started");
+        expect.soft(() => database.getConnectionUri()).toThrow("TestDatabase not started");
+      } finally {
+        await database.stop().catch(() => undefined);
+      }
+    });
+  });
+
   // TRUNCATE는 ACCESS EXCLUSIVE 락을 잡는다. 앞 테스트가 남긴 작업과 겹치면 교착으로
   // 튕기는데, 이건 드문 경합이지 설계 결함이 아니다 — 물러섰다 다시 잡는 게 맞다.
   describe("TRUNCATE 교착 재시도", () => {

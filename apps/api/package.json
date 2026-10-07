@@ -89,7 +89,6 @@
   },
   "devDependencies": {
     "@aido/typescript-config": "workspace:*",
-    "@aido/vitest-config": "workspace:*",
     "@nestjs/cli": "catalog:nest12",
     "@nestjs/schematics": "catalog:nest12",
     "@nestjs/testing": "catalog:nest12",

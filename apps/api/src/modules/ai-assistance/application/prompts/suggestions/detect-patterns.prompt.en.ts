@@ -66,6 +66,6 @@ ${PROMPT_OUTPUT_DISCIPLINE_EN}`;
       todoCount: context.todos.length,
       ...context,
       recordedActivities: context.recordedActivities ?? collectRecordedActivities(context.todos),
-    })}\n</context_json>\n<task>Analyze the user data and suggest personalized routines. Write title and reason in English. Check grounding internally, then return only the structured result.</task>`,
+    })}\n</context_json>\n<task>Analyze the user data and suggest personalized routines. Keep each recorded activity title and stated amount unchanged regardless of locale. Write reason in English. Check grounding internally, then return only the structured result.</task>`,
   };
 }

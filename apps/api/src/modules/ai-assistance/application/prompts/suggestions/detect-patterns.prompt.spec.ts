@@ -61,7 +61,9 @@ describe("buildSuggestionPrompt — locale 분기", () => {
     expect(system).toContain("suggests actionable routines");
     expect(system).toContain("1-2");
     expect(system).toContain("Evidence is insufficient to claim repetition");
-    expect(prompt).toContain("Write title and reason in English.");
+    expect(prompt).toContain(
+      "Keep each recorded activity title and stated amount unchanged regardless of locale. Write reason in English.",
+    );
     expect(prompt).toContain('"title": "운동"');
     expect(system).not.toContain("루틴을 제안하는 코치야");
   });

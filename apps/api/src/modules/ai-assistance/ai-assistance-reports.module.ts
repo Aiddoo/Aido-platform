@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 
-import { AiModule } from "./ai-assistance-parsing.module.js";
+import { AiAssistanceParsingModule } from "./ai-assistance-parsing.module.js";
 import {
   generateReportProvider,
   getReportByIdProvider,
@@ -31,11 +31,11 @@ import { AiReportController } from "./presentation/controllers/reports/ai-report
  * - 크론 작업을 통한 자동 리포트 생성
  *
  * ### 의존성
- * - AiModule: AI Provider (Gemini)를 통한 분석 콘텐츠 생성
+ * - AiAssistanceParsingModule: AI Provider (Gemini)를 통한 분석 콘텐츠 생성
  * - 알림 발송은 SchedulerModule의 Strategy에서 담당
  */
 @Module({
-  imports: [AccessModule, IdentityUserAccessModule, AiModule],
+  imports: [AccessModule, IdentityUserAccessModule, AiAssistanceParsingModule],
   controllers: [AiReportController],
   providers: [
     LatestReportStatsReader,
@@ -54,4 +54,4 @@ import { AiReportController } from "./presentation/controllers/reports/ai-report
   ],
   exports: [LATEST_REPORT_STATS_READER],
 })
-export class AiReportModule {}
+export class AiAssistanceReportsModule {}

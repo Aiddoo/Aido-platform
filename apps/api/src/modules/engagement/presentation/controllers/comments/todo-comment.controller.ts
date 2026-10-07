@@ -17,7 +17,7 @@ import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/presentation/decorators/auth/index";
+} from "#api/modules/identity/identity-auth-http.public";
 import {
   ApiBadRequestError,
   ApiCreatedResponse,

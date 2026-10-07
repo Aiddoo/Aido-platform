@@ -29,8 +29,8 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 13 AI Assistance: 권한·수락 원자성·현지 DATE·한/영 prompt·기록 기반 추천 검증([Issue #923](https://github.com/Aiddoo/Aido-platform/issues/923)); 자연어 평가 한계는 아래 기록
 - [x] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker·한/영 문구([Issue #925](https://github.com/Aiddoo/Aido-platform/issues/925))
 - [x] 15 Support·Operations·App Config: 발송 입력·표현 책임·로그·HTTP 계약 검증([Issue #929](https://github.com/Aiddoo/Aido-platform/issues/929))
-- [ ] 16 ORM·N+1·성능·컨테이너 검증
-- [ ] 17 미사용 의존성·내부 레거시·빈 폴더 정리와 최종 검증
+- [x] 16 ORM·성능 측정·종료 수명주기·컨테이너·최종 스택 CI 정책 검증
+- [x] 17 미사용 의존성·내부 레거시·빈 폴더 정리와 최종 로컬 검증
 
 전환의 정본은 같은 Domain/Application/Infrastructure/Presentation 패턴과 파일 접미사다.
 완료된 Context와 남은 범위는 위 체크리스트로 구분한다. Domain/Application은 순수 TypeScript, 데이터 소유자는 Gateway 구현을 소유하며
@@ -1225,3 +1225,35 @@ Production Compose에는 `stop_grace_period: 120s`를 지정했다. 기본 JobRu
 SQL 수는 37.5% 감소했다. 시간은 한 번의 로컬 합성 데이터·warm pool 측정이며 운영 latency·부하·수익/재방문 효과를 증명하지 않는다. CPU는 PostgreSQL 서버 CPU가 아니라 샘플 실행 중 Node process CPU 합계다. RSS는 fixture seeding과 두 방식이 공유한 process의 표본 최대값이며 방식별 메모리 개선 근거가 아니다. 소유 fixture DB 잔여는 0개다.
 
 첫 측정 이후 observer의 반환 타입이 공식 Promise<void>와 맞지 않아 typecheck가 실패했다. async로 수정하고 다시 측정한 위 결과만 최종 소스의 수치로 사용했다. 최초 측정 수치를 수정 후 결과라고 표시하지 않는다. production 코드·DDL·모델·SDK 버전·일반 CI performance job은 추가하지 않았다.
+
+## 17 최종 명명·경계·의존성·검증
+
+[Issue #937](https://github.com/Aiddoo/Aido-platform/issues/937)의 구현이다. Identity Auth/Settings, Billing Subscriptions, AI Parsing/Reports/Suggestions의 6개 Module 이름과 실제 소비자를 Context/slice 명칭으로 통일했다. 외부 Controller의 Identity HTTP decorator는 Module을 재export하지 않는 경량 public을 사용한다. 실제 소비가 없는 public export와 전달용 queries 파일 3개를 제거했고 업무 event·key·legacy backend 소비는 보존했다.
+
+활성 timezone 캐시 무효화는 Notification의 최소 `ReminderTimezoneCachePort`와 실제 CacheService Adapter가 소유한다. 기존 독립 TimezoneReminderQueueModule에 연결하고 Identity의 3개 UseCase가 이 capability를 직접 사용한다. Identity cache Adapter가 Notification 내부 keyspace를 참조하던 방향을 제거했으며 키·TTL·조건·await·실패 의미는 유지했다. forwarding Adapter·Registry·새 스크립트를 추가하지 않았다.
+
+영어 제안 task의 “title과 reason 모두 영어” 지시가 원본 활동 제목 유지 규칙과 충돌했다. 원본 제목·분량을 언어와 관계없이 유지하고 reason만 영어로 쓰도록 정렬했다. 기존 Unit 49개와 실제 Google 합성 호출 2개에서 KO 제목/EN locale의 PATTERN `러닝 30분`과 STARTER `러닝`을 확인했다. 실제 분량·요일·null time을 보존했고 STARTER의 raw 조언은 canonical normalizer에서 기록 1개 기반 reason으로 교체했다. live Before·전체 workflow·유료 구매 가치의 보편적 증명으로 표현하지 않는다. 모델·sampling·schema·retry·token 설정은 유지했다.
+
+API가 사용하지 않는 직접 `@aido/vitest-config` 선언과 해당 lock importer만 제거했다. 공유 tooling과 다른 실제 소비자는 유지했다. UserFixture의 불필요한 enum assertion 4개를 제거하고 nullable override의 null/undefined 의미를 유지했다. 깨끗한 macOS 임시 snapshot에서 CI와 같은 filtered frozen install(14.4초), contract emit, 좁힌 타입과 기존 SWC/Vitest 소비자 10개가 통과했다. root Git hook만 명시적으로 건너뛰었고 dependency postinstall은 실행했다. Linux CI 실행이나 모든 의존성이 미사용이라는 뜻은 아니다.
+
+### 발견·수정한 테스트 격리 문제
+
+- TestDatabase가 probe 성공 전에 client/URI를 공개해 실패 client를 재사용하던 경로를 기존 typed native-client Stub으로 재현했다. Before 2개 실패·기존 4개 통과, After 6개 통과(1.68초). 실패 자원을 닫고 probe 성공 뒤 상태를 공개하며 cleanup 실패가 원래 probe 오류를 덮지 않는다.
+- 최초 전체 PG 498개 실행에서는 새 종료 테스트의 UserFixture 기본 `user-1`이 다른 파일의 남은 row와 충돌해 1개 실패·497개 통과(231.24초)했다. 기존 `createEntityId()`를 명시 override하여 소유 ID를 생성했다. 대상 종료·설정 11개(9.24초)와 같은 seed의 전체 498개(202.79초)가 통과했다. 첫 실패를 숨기거나 운영 종료 실패로 주장하지 않는다.
+- Controller 2개 spec의 Suites StubbedInstance/Vitest Mocked 타입 불일치 6개를 기존 mock-extended direct constructor로 정렬했다. 기존 case/assertion은 유지했고 대상 8개가 통과했다.
+
+### 최종 로컬 검증
+
+- 최종 Unit/coverage: 494 files / 3,096 tests, seed171104·Asia/Seoul, 24.70초 전체 통과. 마지막 Health 클래스·설명 정리 뒤 재실행했다.
+- 전체 PG: 59 files / 498 tests, seed171101·Asia/Seoul, 수정 후 202.79초 전체 통과. 위 최초 실패·대상 재검증을 구분했다.
+- 전체 HTTP E2E: 41 files / 543 tests, seed171102·Asia/Seoul, 296.88초 통과. 이후 vendor-neutral `JobRuntimeHealthIndicator`로 클래스·파일·내부 DI를 정렬했고 기존 Health Unit 11개(2.19초)·실제 Health/OpenAPI E2E 6개(8.49초)를 확인했다. 마지막 변경 후 모든 543개를 한 번 더 실행했다고 기록하지 않는다.
+- `/health` OpenAPI snapshot은 description만 변경했다. 이전 snapshot으로 실제 1개 실패·3개 통과 뒤 기대 문구를 갱신했고 최종 normal run이 통과했다. path/schema/status/필드는 유지했다. 공개 API 소스 99개와 실제 released fixture 2개는 parent148fd2dd와 byte가 같다.
+- 공유 REST 17개·Mobile 182 suites / 1,537 tests 통과, Turbo 3 tasks / 0 cached / 45.673초. Mobile convention 통과. Mobile 코드는 변경하지 않았다.
+- 전체 lint·format 3,203 files / 1.417초·typecheck 통과. 마지막 source 후 typecheck 5 tasks / 4 cached / 21.093초 통과. 빌드와 commit hook 결과는 최종 PR에도 기록한다.
+- Root 실행에서 생성한 소유 PG DB 4개 잔여 0. 기존 빈 source directory 15개를 제거했다. Git은 빈 폴더를 version하지 않으므로 tracked 파일 삭제 15개라고 표현하지 않는다.
+
+새 package·실행 script·Action job은 없다. 실제 운영 Redis/BullMQ 잔여 drain이 확인되지 않았으므로 필요한 기존 backend·queue 계약을 일괄 삭제하지 않았다. 세 독립 peer review에서 새 차단 결함은 발견하지 못했으며 이는 운영 무영향 보장이 아니다.
+
+### 원격 적용 상태
+
+로컬 구현·검증은 완료했다. 마지막 ready tip의 실제 CI, 동일 tree develop/main 재사용, native graph 운영 적용과 SHA/digest·health·queue의 SSH 확인은 아직 진행 전이다. 운영 읽기 전용 preflight에서 PG16.13·예약 댓글 작성자 불변식과 기존 pg-boss12.27.0을 확인했고 새 receipt 열은 아직 없다. 운영 데이터 쓰기·배포 완료로 표시하지 않는다. 적용 결과는 Issue/PR에 실제 run·SHA·digest·확인 조건을 갱신한다.

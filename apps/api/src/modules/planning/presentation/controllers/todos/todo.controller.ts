@@ -14,6 +14,10 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiQuery, ApiTags } from "@nestjs/swagger";
 
+import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
@@ -29,10 +33,6 @@ import {
 import { parseDateOnly } from "#api/shared/domain/date/utils/parse";
 import { parseLocalDateTime, todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { AddTodoItem } from "../../../application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "../../../application/use-cases/todos/change-todo-category.use-case.js";
 import { CreateRecurringTodos } from "../../../application/use-cases/todos/create-recurring-todos.use-case.js";
