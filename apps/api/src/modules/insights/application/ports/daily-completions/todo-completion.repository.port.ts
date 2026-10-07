@@ -1,13 +1,13 @@
-import type { TodoAggregateByDate } from "../../../domain/policies/daily-completions/daily-completion.js";
+import type { TodoAggregateByDate } from "../../../domain/records/daily-completions/daily-completion.record.js";
 
 /** TodoCompletionRepositoryPort DI 토큰 */
 export const TODO_COMPLETION_REPOSITORY = Symbol("TODO_COMPLETION_REPOSITORY");
 
 /** 날짜 범위 집계 조회 파라미터 (반열림 구간 [startDate, endDate)) */
 export interface AggregateByDateRangeParams {
-  userId: string;
-  startDate: Date;
-  endDate: Date;
+  readonly userId: string;
+  readonly startDate: Date;
+  readonly endDate: Date;
 }
 
 /**

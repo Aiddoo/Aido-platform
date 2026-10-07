@@ -11,9 +11,8 @@ import type {
   AggregateByDateRangeParams,
   TodoCompletionRepositoryPort,
 } from "../../../application/ports/daily-completions/todo-completion.repository.port.js";
-import type { TodoAggregateByDate } from "../../../domain/policies/daily-completions/daily-completion.js";
+import type { TodoAggregateByDate } from "../../../domain/records/daily-completions/daily-completion.record.js";
 
-/** Aggregate counts and distinct categories in PostgreSQL, then load each category once. */
 @Injectable()
 export class PrismaTodoCompletionRepository implements TodoCompletionRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}

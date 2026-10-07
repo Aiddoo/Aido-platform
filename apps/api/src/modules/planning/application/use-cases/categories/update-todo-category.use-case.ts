@@ -3,6 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
+  type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
@@ -32,6 +33,7 @@ interface UpdateTodoCategoryDependencies {
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -44,7 +46,7 @@ export class UpdateTodoCategory {
 
   async execute(input: UpdateTodoCategoryInput): Promise<TodoCategory> {
     const { id, userId, data } = input;
-    const updated = await this.#dependencies.unitOfWork.run(async () => {
+    const { updated, events } = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.todoCategory(userId)]);
       const category = await this.#dependencies.repository.findByIdAndUserId(id, userId);
       if (category === null) {
@@ -68,13 +70,15 @@ export class UpdateTodoCategory {
 
       category.updateDetails(data);
 
-      return this.#dependencies.repository.update(id, {
+      const updated = await this.#dependencies.repository.update(id, {
         name: data.name === undefined ? undefined : category.name,
         color: data.color === undefined ? undefined : category.color,
       });
+      return { updated, events: category.pullDomainEvents() };
     });
 
     await this.#dependencies.cache.invalidate(userId);
+    await this.#dependencies.eventPublisher.publishAll(events);
     this.#dependencies.logger.debug({
       event: PlanningCategoryLogEvent.UPDATED,
       userId,

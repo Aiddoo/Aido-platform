@@ -1,18 +1,17 @@
-import {
-  buildWeeklyAchievementSnapshot,
-  type WeeklyAchievementUpsert,
-} from "../../../domain/policies/weekly-achievements/weekly-achievement.js";
+import { buildWeeklyAchievementSnapshot } from "../../../domain/policies/weekly-achievements/weekly-achievement.policy.js";
+import type { WeeklyAchievementUpsert } from "../../../domain/records/weekly-achievements/weekly-achievement.record.js";
+import type { WeeklyAchievementWriterPort } from "../../ports/weekly-achievements/weekly-achievement-writer.port.js";
 import { type WeeklyAchievementRepositoryPort } from "../../ports/weekly-achievements/weekly-achievement.repository.port.js";
 
 export interface UpsertWeeklyAchievementsInput {
-  records: WeeklyAchievementUpsert[];
+  readonly records: readonly WeeklyAchievementUpsert[];
 }
 
 interface UpsertWeeklyAchievementsDependencies {
-  readonly repository: WeeklyAchievementRepositoryPort;
+  readonly repository: Pick<WeeklyAchievementRepositoryPort, "upsertMany">;
 }
 
-export class UpsertWeeklyAchievements {
+export class UpsertWeeklyAchievements implements WeeklyAchievementWriterPort {
   readonly #dependencies: UpsertWeeklyAchievementsDependencies;
 
   constructor(dependencies: UpsertWeeklyAchievementsDependencies) {
@@ -24,7 +23,6 @@ export class UpsertWeeklyAchievements {
       return;
     }
 
-    // 도메인 불변식(완료 수 ≤ 전체 수, 주차 범위) 검증 후 영속
     const snapshots = input.records.map(buildWeeklyAchievementSnapshot);
     await this.#dependencies.repository.upsertMany(snapshots);
   }

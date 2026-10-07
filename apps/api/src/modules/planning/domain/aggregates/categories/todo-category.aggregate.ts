@@ -1,5 +1,6 @@
 import { AggregateRoot } from "#api/shared/domain/index";
 
+import { TodoCategoryUpdatedEvent } from "../../events/categories/todo-category-updated.event.js";
 import { CategoryColor } from "../../value-objects/categories/category-color.vo.js";
 import { CategoryName } from "../../value-objects/categories/category-name.vo.js";
 
@@ -77,8 +78,12 @@ export class TodoCategory extends AggregateRoot<{
   updateDetails(changes: { name?: string; color?: string }): void {
     const name = changes.name === undefined ? this.props.name : CategoryName.of(changes.name);
     const color = changes.color === undefined ? this.props.color : CategoryColor.of(changes.color);
+    const changed = name.value !== this.name || color.value !== this.color;
     this.props.name = name;
     this.props.color = color;
+    if (changed) {
+      this.raise(new TodoCategoryUpdatedEvent(this.userId, this.id));
+    }
   }
 
   isOwnedBy(userId: string): boolean {

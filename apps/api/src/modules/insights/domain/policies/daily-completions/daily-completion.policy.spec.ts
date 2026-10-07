@@ -1,11 +1,5 @@
-/**
- * daily-completion 도메인 순수 계산 단위 테스트
- */
-import {
-  buildDailyCompletionsRange,
-  type TodoAggregateByDate,
-  toSummaries,
-} from "./daily-completion.js";
+import type { TodoAggregateByDate } from "../../records/daily-completions/daily-completion.record.js";
+import { buildDailyCompletionsRange, toSummaries } from "./daily-completion.policy.js";
 
 function aggregate(overrides: Partial<TodoAggregateByDate> & { date: Date }): TodoAggregateByDate {
   return {
@@ -78,5 +72,28 @@ describe("daily-completion 도메인", () => {
         endDate: "2026-01-31",
       });
     });
+  });
+
+  it("입력의 색상 배열과 조회 범위가 변경되어도 계산 결과를 유지한다", () => {
+    // Given
+    const categoryColors = ["#123456"];
+    const dateRange = { startDate: "2028-02-29", endDate: "2028-02-29" };
+    const range = buildDailyCompletionsRange(
+      [
+        aggregate({
+          date: new Date("2028-02-29T00:00:00Z"),
+          total: 1,
+          completed: 1,
+          categoryColors,
+        }),
+      ],
+      dateRange,
+    );
+    // When
+    categoryColors.push("#654321");
+    dateRange.endDate = "2028-03-01";
+    // Then
+    expect(range.completions[0]?.categoryColors).toEqual(["#123456"]);
+    expect(range.dateRange).toEqual({ startDate: "2028-02-29", endDate: "2028-02-29" });
   });
 });

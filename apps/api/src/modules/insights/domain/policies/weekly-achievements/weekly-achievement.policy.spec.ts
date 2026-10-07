@@ -1,19 +1,14 @@
-/**
- * weekly-achievement 도메인 순수 계산 단위 테스트
- *
- * 주차 라벨·날짜 범위·streak·요약·뷰 변환·불변식을 검증한다.
- */
+import type {
+  WeeklyAchievementRecord,
+  WeeklyAchievementRow,
+  WeeklyAchievementUpsert,
+} from "../../records/weekly-achievements/weekly-achievement.record.js";
 import {
   buildWeeklyAchievementSnapshot,
   computeDateRange,
   computeStreak,
   computeSummary,
-  computeWeekLabel,
-  toWeeklyAchievementView,
-  type WeeklyAchievementRecord,
-  type WeeklyAchievementRow,
-  type WeeklyAchievementUpsert,
-} from "./weekly-achievement.js";
+} from "./weekly-achievement.policy.js";
 
 function row(overrides?: Partial<WeeklyAchievementRow>): WeeklyAchievementRow {
   return {
@@ -28,32 +23,6 @@ function row(overrides?: Partial<WeeklyAchievementRow>): WeeklyAchievementRow {
 }
 
 describe("weekly-achievement 도메인", () => {
-  describe("computeWeekLabel — en 로케일", () => {
-    it("en 라벨은 'Week N of MMM' 형식이다 (모바일 캘린더 표기와 일치)", () => {
-      expect(computeWeekLabel(2026, 10, "en")).toBe("Week 1 of Mar");
-    });
-
-    it("locale 생략 시 한국어 라벨을 유지한다 (하위 호환)", () => {
-      expect(computeWeekLabel(2026, 10)).toBe("3월 1주차");
-    });
-  });
-
-  describe("computeWeekLabel", () => {
-    it("일반 주차의 라벨을 생성한다", () => {
-      const label = computeWeekLabel(2026, 10);
-      expect(label).toMatch(/^\d+월 \d+주차$/);
-      expect(label).toContain("3월");
-    });
-
-    it("연초 주차의 라벨을 생성한다", () => {
-      expect(computeWeekLabel(2026, 1)).toMatch(/^\d+월 \d+주차$/);
-    });
-
-    it("연말 주차의 라벨을 생성한다", () => {
-      expect(computeWeekLabel(2025, 52)).toMatch(/^\d+월 \d+주차$/);
-    });
-  });
-
   describe("computeDateRange", () => {
     it("월요일~일요일 범위를 반환한다", () => {
       const range = computeDateRange(2026, 10);
@@ -177,36 +146,6 @@ describe("weekly-achievement 도메인", () => {
     });
   });
 
-  describe("toWeeklyAchievementView", () => {
-    it("레코드를 응답 뷰로 변환한다", () => {
-      const view = toWeeklyAchievementView(
-        row({
-          id: 42,
-          year: 2026,
-          week: 10,
-          totalTodos: 15,
-          completedTodos: 14,
-          achievedAt: new Date("2026-03-08T11:00:00.000Z"),
-        }),
-      );
-      expect(view.id).toBe(42);
-      expect(view.year).toBe(2026);
-      expect(view.week).toBe(10);
-      expect(view.weekLabel).toMatch(/\d+월 \d+주차/);
-      expect(view.dateRange.startDate).toBe("2026-03-02");
-      expect(view.dateRange.endDate).toBe("2026-03-08");
-      expect(view.totalTodos).toBe(15);
-      expect(view.completedTodos).toBe(14);
-      expect(view.completionRate).toBe(93);
-      expect(view.achievedAt).toBe("2026-03-08T11:00:00.000Z");
-    });
-
-    it("totalTodos가 0이면 completionRate는 0이다", () => {
-      const view = toWeeklyAchievementView(row({ totalTodos: 0, completedTodos: 0 }));
-      expect(view.completionRate).toBe(0);
-    });
-  });
-
   describe("buildWeeklyAchievementSnapshot — 불변식", () => {
     function upsert(overrides?: Partial<WeeklyAchievementUpsert>): WeeklyAchievementUpsert {
       return {
@@ -234,5 +173,39 @@ describe("weekly-achievement 도메인", () => {
     it("주차가 ISO 범위를 벗어나면 SYS_0002로 실패한다", () => {
       expect(() => buildWeeklyAchievementSnapshot(upsert({ week: 54 }))).toThrow();
     });
+  });
+
+  it("입력의 Date를 변경해도 검증된 주간 스냅샷은 기존 시각을 유지한다", () => {
+    // Given
+    const achievedAt = new Date("2028-03-06T00:00:00Z");
+    const input = {
+      userId: "user-1",
+      year: 2028,
+      week: 9,
+      totalTodos: 2,
+      completedTodos: 1,
+      achievedAt,
+    };
+    const snapshot = buildWeeklyAchievementSnapshot(input);
+    // When
+    achievedAt.setUTCDate(7);
+    // Then
+    expect(snapshot.achievedAt.toISOString()).toBe("2028-03-06T00:00:00.000Z");
+    expect(snapshot).not.toBe(input);
+  });
+
+  it("윤년의 주차와 연말 53주에서 다음 해 1주까지의 연속 기록을 유지한다", () => {
+    // Given
+    const records = [
+      { year: 2026, week: 53 },
+      { year: 2027, week: 1 },
+    ];
+    // When
+    const range = computeDateRange(2028, 9);
+    const streak = computeStreak(records);
+    // Then
+    expect(range).toEqual({ startDate: "2028-02-28", endDate: "2028-03-05" });
+    expect(computeDateRange(2026, 53)).toEqual({ startDate: "2026-12-28", endDate: "2027-01-03" });
+    expect(streak).toEqual({ currentStreak: 2, bestStreak: 2 });
   });
 });

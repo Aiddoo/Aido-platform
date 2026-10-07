@@ -9,11 +9,13 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
+import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";
 import { GetWeeklyAchievement } from "../../../application/use-cases/weekly-achievements/get-weekly-achievement.use-case.js";
 import { GetWeeklyAchievements } from "../../../application/use-cases/weekly-achievements/get-weekly-achievements.use-case.js";
 import {
@@ -30,8 +32,8 @@ export class WeeklyAchievementController {
   readonly #logger = new Logger(WeeklyAchievementController.name);
 
   constructor(
-    private readonly getWeeklyAchievementsUseCase: GetWeeklyAchievements,
-    private readonly getWeeklyAchievementUseCase: GetWeeklyAchievement,
+    private readonly readWeeklyAchievements: GetWeeklyAchievements,
+    private readonly readWeeklyAchievement: GetWeeklyAchievement,
   ) {}
 
   @Get()
@@ -94,11 +96,15 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
   async getWeeklyAchievements(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetWeeklyAchievementsQueryDto }) query: GetWeeklyAchievementsQueryDto,
-    @Locale() locale: "ko" | "en" | undefined,
+    @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementListResponseDto> {
-    this.#logger.debug(`주간 달성 목록 조회: user=${user.userId}, year=${query.year}`);
+    this.#logger.debug({
+      event: InsightsLogEvent.WEEKLY_ACHIEVEMENTS_READ,
+      userId: user.userId,
+      year: query.year,
+    });
 
-    return this.getWeeklyAchievementsUseCase.execute({
+    return this.readWeeklyAchievements.execute({
       userId: user.userId,
       year: query.year,
       cursor: query.cursor,
@@ -146,13 +152,16 @@ GET /weekly-achievements/2026/10
   async getWeeklyAchievement(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: WeeklyAchievementParamDto }) params: WeeklyAchievementParamDto,
-    @Locale() locale: "ko" | "en" | undefined,
+    @Locale() locale: SupportedLocale | undefined,
   ): Promise<WeeklyAchievementDetailResponseDto> {
-    this.#logger.debug(
-      `주간 달성 상세 조회: user=${user.userId}, year=${params.year}, week=${params.week}`,
-    );
+    this.#logger.debug({
+      event: InsightsLogEvent.WEEKLY_ACHIEVEMENT_READ,
+      userId: user.userId,
+      year: params.year,
+      week: params.week,
+    });
 
-    return this.getWeeklyAchievementUseCase.execute({
+    return this.readWeeklyAchievement.execute({
       userId: user.userId,
       year: params.year,
       week: params.week,

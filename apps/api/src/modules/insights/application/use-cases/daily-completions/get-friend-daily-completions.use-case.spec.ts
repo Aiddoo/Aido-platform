@@ -1,147 +1,134 @@
-import { ErrorCode } from "@aido/api/errors";
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import {
+  createInsightsFixture,
+  createTodoAggregateFixture,
+  INSIGHTS_TIME,
+} from "#test/fixtures/insights.fixture";
 
-import { ApplicationException } from "#api/shared/domain/index";
-
-import type {
-  DailyCompletionsRange,
-  TodoAggregateByDate,
-} from "../../../domain/policies/daily-completions/daily-completion.js";
-import { type DailyCompletionCachePort } from "../../ports/daily-completions/daily-completion-cache.port.js";
-import { type FriendPort } from "../../ports/daily-completions/friend.port.js";
-import { type TodoCompletionRepositoryPort } from "../../ports/daily-completions/todo-completion.repository.port.js";
+import { GetDailyCompletions } from "./get-daily-completions.use-case.js";
 import { GetFriendDailyCompletions } from "./get-friend-daily-completions.use-case.js";
 
-function buildAggregates(): TodoAggregateByDate[] {
-  return [
-    {
-      date: new Date("2026-01-15T00:00:00.000Z"),
-      total: 2,
-      completed: 2,
-      categoryColors: ["#FF6B43"],
-    },
-  ];
-}
+const RANGE = { startDate: "2028-02-01", endDate: "2028-02-29" };
 
-describe("GetFriendDailyCompletions — 친구 기간별 완료 현황 조회", () => {
-  let useCase: GetFriendDailyCompletions;
-  let repository: Mocked<TodoCompletionRepositoryPort>;
-  let cache: Mocked<DailyCompletionCachePort>;
-  let friendPort: Mocked<FriendPort>;
-
-  const input = {
-    userId: "viewer-123",
-    friendUserId: "friend-456",
-    startDate: "2026-01-01",
-    endDate: "2026-01-31",
-  };
-
-  beforeEach(async () => {
-    const getFriendDailyCompletionsDependencies = mockDeep<
-      ConstructorParameters<typeof GetFriendDailyCompletions>[0]
-    >({
-      repository: {
-        aggregatePublicByDateRange: vi.fn().mockResolvedValue([]),
-      },
-      cache: {
-        getPublicRange: vi.fn().mockResolvedValue(undefined),
-        setPublicRange: vi.fn().mockResolvedValue(undefined),
-      },
-      friendPort: { isMutualFriend: vi.fn().mockResolvedValue(true) },
-    });
-    const unit = new GetFriendDailyCompletions(getFriendDailyCompletionsDependencies);
-
-    useCase = unit;
-    repository = getFriendDailyCompletionsDependencies.repository;
-    cache = getFriendDailyCompletionsDependencies.cache;
-    friendPort = getFriendDailyCompletionsDependencies.friendPort;
+describe("GetFriendDailyCompletions — 친구 공개 완료 조회", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(INSIGHTS_TIME);
   });
+  afterEach(() => vi.useRealTimers());
 
-  it("맞팔 관계가 아니면 FOLLOW_0906을 던진다", async () => {
+  it("맞팔 친구 소유의 PUBLIC 집계만 종료일을 포함해 조회하고 자신의 집계와 캐시를 분리한다", async () => {
     // Given
-    friendPort.isMutualFriend.mockResolvedValue(false);
-
-    // When / Then
-    await expect(useCase.execute(input)).rejects.toMatchObject({
-      errorCode: ErrorCode.FOLLOW_0906,
-    });
-    await expect(useCase.execute(input)).rejects.toBeInstanceOf(ApplicationException);
-    expect(repository.aggregatePublicByDateRange).not.toHaveBeenCalled();
-  });
-
-  it("친구의 PUBLIC 투두만 반열림 구간 [start, end+1일)로 집계한다", async () => {
+    const fixture = createInsightsFixture();
+    fixture.repository.publicAggregates.set(fixture.userId, [
+      createTodoAggregateFixture({ total: 2, completed: 2 }),
+    ]);
+    fixture.repository.ownAggregates.set(fixture.userId, [
+      createTodoAggregateFixture({ total: 5, completed: 4 }),
+    ]);
+    const publicQuery = vi.spyOn(fixture.repository, "aggregatePublicByDateRange");
     // When
-    await useCase.execute(input);
-
-    // Then - 소유자(친구) 기준, 종료일 포함 위해 end에 +1일
-    expect(friendPort.isMutualFriend).toHaveBeenCalledWith("viewer-123", "friend-456");
-    expect(repository.aggregatePublicByDateRange).toHaveBeenCalledWith({
-      userId: "friend-456",
-      startDate: new Date("2026-01-01T00:00:00.000Z"),
-      endDate: new Date("2026-02-01T00:00:00.000Z"),
+    const own = await new GetDailyCompletions(fixture).execute({
+      userId: fixture.userId,
+      ...RANGE,
     });
-  });
-
-  it("집계를 일일 완료 요약으로 조립해 반환한다", async () => {
-    // Given
-    repository.aggregatePublicByDateRange.mockResolvedValue(buildAggregates());
-
-    // When
-    const result = await useCase.execute(input);
-
+    const result = await new GetFriendDailyCompletions(fixture).execute({
+      userId: fixture.viewerId,
+      friendUserId: fixture.userId,
+      ...RANGE,
+    });
+    fixture.repository.publicAggregates.clear();
+    const cached = await new GetFriendDailyCompletions(fixture).execute({
+      userId: fixture.viewerId,
+      friendUserId: fixture.userId,
+      ...RANGE,
+    });
     // Then
-    expect(result.completions).toHaveLength(1);
-    expect(result.totalCompleteDays).toBe(1);
-    expect(result.dateRange).toEqual({
-      startDate: "2026-01-01",
-      endDate: "2026-01-31",
+    expect(publicQuery).toHaveBeenCalledTimes(1);
+    expect(publicQuery).toHaveBeenCalledWith({
+      userId: fixture.userId,
+      startDate: new Date("2028-02-01T00:00:00Z"),
+      endDate: new Date("2028-03-01T00:00:00Z"),
     });
+    expect(result.completions[0]).toMatchObject({
+      totalTodos: 2,
+      completedTodos: 2,
+      isComplete: true,
+      completionRate: 100,
+    });
+    expect(result.totalCompleteDays).toBe(1);
+    expect(own.completions[0]).toMatchObject({
+      totalTodos: 5,
+      completedTodos: 4,
+      completionRate: 80,
+    });
+    expect(cached).toEqual(result);
+    expect(
+      (await fixture.cache.readPublicRange(fixture.viewerId, RANGE.startDate, RANGE.endDate)).value,
+    ).toBeUndefined();
   });
 
-  it("캐시 히트 시에도 맞팔 검증은 수행하고 저장소는 호출하지 않는다", async () => {
-    // Given - 소유자 기준 공개 범위 캐시에 결과가 있음
-    const cachedResult: DailyCompletionsRange = {
-      completions: [
-        {
-          date: "2026-01-15",
-          totalTodos: 2,
-          completedTodos: 2,
-          isComplete: true,
-          completionRate: 100,
-          categoryColors: ["#FF6B43"],
-        },
-      ],
-      totalCompleteDays: 1,
-      dateRange: { startDate: "2026-01-01", endDate: "2026-01-31" },
-    };
-    cache.getPublicRange.mockResolvedValue(cachedResult);
-
+  it("공개 결과가 캐시에 있어도 맞팔 해제 후에는 권한 오류가 날짜 파싱보다 우선한다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    fixture.repository.publicAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
+    const useCase = new GetFriendDailyCompletions(fixture);
+    await useCase.execute({ userId: fixture.viewerId, friendUserId: fixture.userId, ...RANGE });
+    fixture.followReader.mutualPairs.clear();
     // When
-    const result = await useCase.execute(input);
-
-    // Then - 권한 확인은 캐시 히트와 무관하게 수행, 저장소 미호출
-    expect(result).toBe(cachedResult);
-    expect(friendPort.isMutualFriend).toHaveBeenCalled();
-    expect(cache.getPublicRange).toHaveBeenCalledWith("friend-456", "2026-01-01", "2026-01-31");
-    expect(repository.aggregatePublicByDateRange).not.toHaveBeenCalled();
-    expect(cache.setPublicRange).not.toHaveBeenCalled();
+    const execution = useCase.execute({
+      userId: fixture.viewerId,
+      friendUserId: fixture.userId,
+      startDate: "invalid",
+      endDate: "invalid",
+    });
+    // Then
+    await expect(execution).rejects.toMatchObject({
+      errorCode: "FOLLOW_0906",
+      details: { targetUserId: fixture.userId },
+    });
+    expect(
+      (await fixture.cache.readPublicRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value
+        ?.completions,
+    ).toHaveLength(1);
   });
 
-  it("캐시 미스 시 계산 결과를 소유자 기준 키로 캐싱한다", async () => {
-    // Given - 캐시 미스 (기본 mock)
-    repository.aggregatePublicByDateRange.mockResolvedValue(buildAggregates());
-
-    // When
-    const result = await useCase.execute(input);
-
-    // Then - 뷰어가 아니라 소유자(친구) 키로 저장
-    expect(cache.setPublicRange).toHaveBeenCalledWith(
-      "friend-456",
-      "2026-01-01",
-      "2026-01-31",
-      result,
+  it("무효화와 겹친 이전 PUBLIC 조회도 이후 공개 캐시를 덮어쓰지 않는다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    fixture.repository.publicAggregates.set(fixture.userId, [
+      createTodoAggregateFixture({ completed: 0 }),
+    ]);
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const aggregate = fixture.repository.aggregatePublicByDateRange.bind(fixture.repository);
+    vi.spyOn(fixture.repository, "aggregatePublicByDateRange").mockImplementationOnce(
+      async (input) => {
+        const snapshot = await aggregate(input);
+        entered.resolve();
+        await release.promise;
+        return snapshot;
+      },
     );
+    const useCase = new GetFriendDailyCompletions(fixture);
+    const input = { userId: fixture.viewerId, friendUserId: fixture.userId, ...RANGE };
+    const staleRead = useCase.execute(input);
+    await Promise.race([
+      entered.promise,
+      staleRead.then(() => {
+        throw new Error("집계 gate 전에 요청이 끝났습니다.");
+      }),
+    ]);
+    // When
+    try {
+      await fixture.cache.invalidate(fixture.userId);
+      fixture.repository.publicAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
+    } finally {
+      release.resolve();
+      await staleRead;
+    }
+    const fresh = await useCase.execute(input);
+    // Then
+    expect((await staleRead).completions[0]?.completedTodos).toBe(0);
+    expect(fresh.completions[0]?.completedTodos).toBe(3);
   });
 });

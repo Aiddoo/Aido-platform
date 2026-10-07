@@ -23,8 +23,8 @@ import {
   TimezoneSelfHealInterceptor,
   UserSettingsModule,
 } from "#api/modules/identity/identity-settings.public";
-import { DailyCompletionModule } from "#api/modules/insights/insights-daily-completions.public";
-import { WeeklyAchievementModule } from "#api/modules/insights/insights-weekly-achievements.public";
+import { InsightsDailyCompletionsModule } from "#api/modules/insights/insights-daily-completions.public";
+import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { NotesMemosModule } from "#api/modules/notes/notes-memos.public";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
 import { SchedulerModule } from "#api/modules/notification/notification-reminders.public";
@@ -118,7 +118,7 @@ import { AppService } from "./app.service.js";
     AiSuggestionModule,
     AuthModule,
     SocialCheersModule,
-    DailyCompletionModule,
+    InsightsDailyCompletionsModule,
     SocialFriendsModule,
     HealthModule,
     InquiryModule,
@@ -132,7 +132,7 @@ import { AppService } from "./app.service.js";
     PlanningCategoriesModule,
     UserSettingsModule,
     WeatherModule,
-    WeeklyAchievementModule,
+    InsightsWeeklyAchievementsModule,
   ],
   // Controllers
   controllers: [AppController],

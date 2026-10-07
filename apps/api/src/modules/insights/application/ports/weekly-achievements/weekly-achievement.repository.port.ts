@@ -1,7 +1,7 @@
 import type {
   WeeklyAchievementRow,
   WeeklyAchievementUpsert,
-} from "../../../domain/policies/weekly-achievements/weekly-achievement.js";
+} from "../../../domain/records/weekly-achievements/weekly-achievement.record.js";
 
 /** WeeklyAchievementRepositoryPort DI 토큰 */
 export const WEEKLY_ACHIEVEMENT_REPOSITORY = Symbol("WEEKLY_ACHIEVEMENT_REPOSITORY");
@@ -32,5 +32,5 @@ export interface WeeklyAchievementRepositoryPort {
   ): Promise<WeeklyAchievementRow | null>;
 
   /** 여러 주간 달성 기록을 트랜잭션으로 일괄 upsert */
-  upsertMany(snapshots: WeeklyAchievementUpsert[]): Promise<void>;
+  upsertMany(snapshots: readonly WeeklyAchievementUpsert[]): Promise<void>;
 }

@@ -1,4 +1,4 @@
-import type { WeeklyAchievementWriterAccess } from "#api/modules/insights/insights-weekly-achievements.public";
+import type { WeeklyAchievementWriterPort } from "#api/modules/insights/insights-weekly-achievements.public";
 import type {
   NotificationHistoryReader,
   NotificationPublisher,
@@ -23,7 +23,7 @@ interface WeeklyAchievementStrategyDependencies {
   readonly preferenceReader: SchedulerPreferenceReaderPort;
   readonly notificationPublisher: NotificationPublisher;
   readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly weeklyAchievementWriter: WeeklyAchievementWriterAccess;
+  readonly weeklyAchievementWriter: WeeklyAchievementWriterPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -71,7 +71,7 @@ export class WeeklyAchievementStrategy implements ITimezoneStrategy {
     }));
 
     // ─── B. 기록 저장 (모든 유저 — pushEnabled/dedup 무관) ─────
-    await this.#dependencies.weeklyAchievementWriter.upsertMany(records);
+    await this.#dependencies.weeklyAchievementWriter.execute({ records });
 
     // ─── C. 알림 발송 (completed > 0 + dedup) ────
     const completedUserIds = records.filter((r) => r.completedTodos > 0).map((r) => r.userId);

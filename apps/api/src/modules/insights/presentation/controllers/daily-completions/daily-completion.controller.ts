@@ -15,9 +15,10 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
+import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";
 import { GetDailyCompletions } from "../../../application/use-cases/daily-completions/get-daily-completions.use-case.js";
 import { GetFriendDailyCompletions } from "../../../application/use-cases/daily-completions/get-friend-daily-completions.use-case.js";
-import type { DailyCompletionsRange } from "../../../domain/policies/daily-completions/daily-completion.js";
+import type { DailyCompletionsRange } from "../../../domain/records/daily-completions/daily-completion.record.js";
 import {
   DailyCompletionsRangeResponseDto,
   GetDailyCompletionsRangeDto,
@@ -30,8 +31,8 @@ export class DailyCompletionController {
   readonly #logger = new Logger(DailyCompletionController.name);
 
   constructor(
-    private readonly getDailyCompletionsUseCase: GetDailyCompletions,
-    private readonly getFriendDailyCompletionsUseCase: GetFriendDailyCompletions,
+    private readonly readDailyCompletions: GetDailyCompletions,
+    private readonly readFriendDailyCompletions: GetFriendDailyCompletions,
   ) {}
 
   @Get()
@@ -127,19 +128,13 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
   ): Promise<DailyCompletionsRangeResponseDto> {
-    this.#logger.debug(
-      `일일 완료 현황 조회: user=${user.userId}, range=${query.startDate}~${query.endDate}`,
-    );
+    this.#logger.debug({ event: InsightsLogEvent.DAILY_COMPLETIONS_READ, userId: user.userId });
 
-    const result = await this.getDailyCompletionsUseCase.execute({
+    const result = await this.readDailyCompletions.execute({
       userId: user.userId,
       startDate: query.startDate,
       endDate: query.endDate,
     });
-
-    this.#logger.debug(
-      `일일 완료 현황 조회 완료: user=${user.userId}, days=${result.completions.length}, completeDays=${result.totalCompleteDays}`,
-    );
 
     return this.#mapToResponse(result);
   }
@@ -197,11 +192,13 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @Query({ schema: GetDailyCompletionsRangeDto }) query: GetDailyCompletionsRangeDto,
   ): Promise<DailyCompletionsRangeResponseDto> {
-    this.#logger.debug(
-      `친구 일일 완료 현황 조회: friendUserId=${params.userId}, user=${user.userId}, range=${query.startDate}~${query.endDate}`,
-    );
+    this.#logger.debug({
+      event: InsightsLogEvent.FRIEND_DAILY_COMPLETIONS_READ,
+      userId: user.userId,
+      friendUserId: params.userId,
+    });
 
-    const result = await this.getFriendDailyCompletionsUseCase.execute({
+    const result = await this.readFriendDailyCompletions.execute({
       userId: user.userId,
       friendUserId: params.userId,
       startDate: query.startDate,
@@ -213,13 +210,13 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
 
   #mapToResponse(result: DailyCompletionsRange): DailyCompletionsRangeResponseDto {
     return {
-      completions: result.completions.map((c) => ({
-        date: c.date,
-        totalTodos: c.totalTodos,
-        completedTodos: c.completedTodos,
-        isComplete: c.isComplete,
-        completionRate: c.completionRate,
-        categoryColors: c.categoryColors,
+      completions: result.completions.map((completion) => ({
+        date: completion.date,
+        totalTodos: completion.totalTodos,
+        completedTodos: completion.completedTodos,
+        isComplete: completion.isComplete,
+        completionRate: completion.completionRate,
+        categoryColors: [...completion.categoryColors],
       })),
       totalCompleteDays: result.totalCompleteDays,
       dateRange: {

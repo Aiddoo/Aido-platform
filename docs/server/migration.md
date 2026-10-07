@@ -22,8 +22,8 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 07 Planning: 할 일·항목·카테고리·반복 일정 정합성 검증([PR #912](https://github.com/Aiddoo/Aido-platform/pull/912))
 - [x] 08 Social: 친구·응원·넛지 상태·경쟁·ORM·공개 capability 검증([PR #913](https://github.com/Aiddoo/Aido-platform/pull/913))
 - [x] 09 Notes: 메모와 전환·부분 성공·동시 변경 검증([PR #916](https://github.com/Aiddoo/Aido-platform/pull/916))
-- [x] 10 Engagement: 댓글·반응·대화·정리([Issue #915](https://github.com/Aiddoo/Aido-platform/issues/915))
-- [ ] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917), 구현 예정)
+- [x] 10 Engagement: 댓글·반응·대화·정리([Issue #915](https://github.com/Aiddoo/Aido-platform/issues/915), [PR #918](https://github.com/Aiddoo/Aido-platform/pull/918))
+- [x] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917))
 - [ ] 12 Weather: 위치·좌표·격자·공급자 Port·지역별 선택 정책·도메인 응답 정규화; 한국 API 유지, 해외 공급자는 동일 인터페이스로 추가
 - [ ] 13 AI Assistance: 기존 모델 유지·유료 추천·기록 기반 습관 제안·한/영 prompt·언어 확장·파싱/보고서/추천 품질 검증
 - [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
@@ -825,7 +825,90 @@ scalar 사용·token provider 누락과 HTTP enum 필드명 오류는 assertion�
 
 실행 시간은 공유 CPU/DB의 테스트 기록이며 운영 latency 개선률이 아니다. 새 schema·migration·
 패키지·실행 script·Action job은 없다. 상위11/18 구현·검증 완료, Insights부터7단계가 남았다.
-커밋·Draft PR은 검증 결과와 함께 보존한다. merge·운영 배포는 하지 않았다.
+한국어 커밋b32e9d6e와 Draft PR #918로 보존했다. commit hook typecheck5/5 cached(65ms), workspace build4/4(9.047초,3cached) 통과. merge·운영 배포는 하지 않았다.
+
+## 11 Insights 구현과 실제 After
+
+[Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917)의 구현이다. Daily는 순수 집계
+Policy와 readonly Record를 유지하고 의미 없는 Aggregate를 추가하지 않는다. Weekly의 영속
+Record·집계 정책과 언어별 응답 mapper/catalog를 분리한다. ko/en은 공유 SupportedLocale를
+사용하며 새로운 언어는 catalog에 추가한다. Date·색상 배열을 복사하여 원본 변경이 snapshot을
+바꾸지 않게 한다. 기존 연속 주차·연도 전체 요약·반열림 날짜 범위 계산은 유지한다.
+
+| 실제 HTTP Before                                                | After 대상 검증              |
+| --------------------------------------------------------------- | ---------------------------- |
+| warm Daily→category 색상 변경→이전 색상                         | 새 색상 반영                 |
+| warm Daily→category 삭제·Todo 이동→이전 색상                    | 이동 대상 색상 반영          |
+| 조회 aggregate를 지연→Todo 완료·무효화→이전 조회가 cache 재등록 | 다음 GET에서 fresh 완료값    |
+| 2028-02-30 요청200·dateRange Feb30/데이터 Mar1                  | 400·정상 윤년 날짜 의미 유지 |
+
+캐시 Before3개는 실제 native PG/HTTP/UoW/event/cache를 사용하고 aggregate 반환 시점만
+Promise gate로 제어했다(10.53초, seed111001·LA). invalid DATE Before도 실제 HTTP200을
+관찰했다(7.37초, seed111004·LA). DATE/ISO/DST 정상 baseline은 이미 통과했으며 날짜 계산
+전체를 새로 고쳤다고 표현하지 않는다. Date·배열 alias Before는 순수 값 검증으로 구분한다.
+
+Planning의 기존 CacheService와 generation namespace 방식을 재사용했다. Daily self/public
+조회는 generation/value/generation을 읽고, 저장은 캡처한 generation namespace만 사용한다.
+무효화 뒤 늦은 SET이 old key를 재생성해도 현재 조회에서는 보이지 않는다. generation 키
+유실 시 UUID로 새 세대를 만들고 기존 v1 무효화 prefix와 세대 키를 공유한다. v1 data는 읽지
+않으며 이전 인스턴스의 무효화가 세대를 끊는 경계를 검증했다. 값 TTL10분·세대1일이다.
+새 Redis primitive·Lua·범용 cache framework·실행 script는 추가하지 않았다.
+
+캐시 hit의 Redis GET은1→3회이며 miss에는 세대 초기화/저장 확인 비용이 있다. 이는 stale
+refill 방지의 비용이다. Redis 장애의 기존 fail-open/TTL 의미는 유지하며 혼합 배포의 모든
+이전 인스턴스 응답이나 강한 원자 CAS·운영 latency 개선을 보장하지 않는다.
+
+카테고리 수정은 Aggregate의 변경 event, 삭제는 성공한 커밋 뒤 domain event를 발행한다.
+기존 event publisher를 재사용하고 Insights는 기존 Todo7종+Category2종을 구독한다. 이미
+커밋된 요청을 subscriber cache 실패 때문에 실패시키지 않으며 로그는 event/userId/errorType만
+담는다. 요청 본문·원문 error·stack을 로그로 출력하지 않는다.
+
+불가능한 날짜 검증은 공유 dateSchema를 재사용한다. 직접 dateSchema를 노출한 초기 시도는
+OpenAPI format/pattern과 배포 클라이언트 fingerprint를 바꿔 계약3개가 실패했다. 기존 공개
+pattern을 유지하고 내부 refine에서 dateSchema로 검사하도록 교정한 뒤 기존 OpenAPI와
+1.7.x/1.8.2 계약4개가 통과했다(8.06초, seed111022). snapshot·배포 fixture는 변경하지 않았다.
+
+Composition은 직접 factory와 InsightsDailyCompletionsModule/InsightsWeeklyAchievementsModule로
+통일했다. Follow consumer-owned 최소 Port는 기존 FOLLOW_READER를 useExisting으로 연결하고
+전달 adapter를 제거했다. Weekly writer도 token→기존 Upsert UseCase로 연결하여 전달 Access와
+중복 barrel·Controller 전달 Unit·미사용 mock·Weekly Mock Integration을 제거했다.
+
+### SQL과 대상 검증
+
+동일 actual PG fixture/driver hook으로 TX 제어·fixture·검증 쿼리를 제외했다.
+
+| 경로                                    | Before SQL | After SQL |
+| --------------------------------------- | ---------- | --------- |
+| Weekly cursor 목록+연도 전체 요약       | 3          | 2         |
+| Weekly 직접 cursor Repository           | 2          | 1         |
+| Weekly 일반 목록+요약                   | 2          | 2         |
+| Daily 9Todo×3Category 집계              | 2          | 2         |
+| Daily 빈 집계                           | 1          | 1         |
+| Weekly 3행 upsert / 같은 key 3행 update | 3 / 3      | 3 / 3     |
+
+Cursor의 같은 사용자·연도 anchor 존재 조건을 native ORM relation exists에 포함한다. 정상/
+missing/타인/다른 연도/first week/무커서6경계와 정렬·size+1·반환 날짜를 실제 DB로 비교했다.
+단순 week<cursor로 바꾸어 missing anchor의 빈 페이지 의미를 바꾸지 않는다. 원래 Daily는
+일괄 집계라 N+1이 없었다. 현재 rc.14 native ORM에 bulk upsert API가 없어 기존 singleton ORM과
+UoW를 유지하며 raw bulk SQL이나 SDK 재구현을 추가하지 않는다. 중복 input last-write와 두 번째
+FK23503 실패 시 성공 prefix 전체 rollback을 실제 DB로 검증했다.
+
+Domain/adapter4files34tests(233ms), Application/subscriber6files26tests, 실제 PG 신규7+
+기존 Daily13(seed111011·서울12.51초, seed111012·LA12.96초), 기존 Daily HTTP19 무수정+
+seeded Weekly8+새 cache/date4(seed111004·LA22.60초)가 통과했다. 환경 종속5초 assertion은
+정확한31일/93Todo/48완료/8완료일 검증으로 바꾸고 SQL 예산은 별도로 검증한다. Unit Stub은
+준비 집계/페이지/세대 상태만 보유하며 SQL·DB rollback·Redis 원자성을 모사하지 않는다.
+최종 전체 shuffle seed111030 검증은 통과했다.
+
+- Unit: 489 files / 2,945 tests, 23.37초.
+- Integration: 54 files / 460 tests, 252.37초.
+- E2E: 41 files / 518 tests, 316.10초.
+- 공유 REST 계약: 2 files / 17 tests, 717ms.
+- Workspace lint·format·typecheck 통과. 기존 OpenAPI·구 앱 fixture 무수정. Root 소유 DB4개 잔여0 확인.
+
+테스트 시간은 공유 CPU/DB 실행 기록이며 운영 latency 개선률이 아니다. 상위12/18 구현·검증
+완료, Weather부터6단계가 남았다. 새 migration·패키지·실행 script·Action job은 없다.
+한국어 커밋·Draft PR로 보존하며 merge·운영 배포는 하지 않았다.
 
 ## AI 후속 요구와 검증 범위
 

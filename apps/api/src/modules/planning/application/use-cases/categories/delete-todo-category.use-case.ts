@@ -3,11 +3,13 @@ import { ErrorCode } from "@aido/api/errors";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
+  type DomainEventPublisherPort,
   type MutationLockPort,
   type UnitOfWorkPort,
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { TodoCategoryDeletedEvent } from "../../../domain/events/categories/todo-category-deleted.event.js";
 import { PlanningCategoryLogEvent } from "../../observability/categories/planning-category-log.events.js";
 import { type TodoCategoryCachePort } from "../../ports/categories/todo-category-cache.port.js";
 import { type TodoCategoryRepositoryPort } from "../../ports/categories/todo-category.repository.port.js";
@@ -32,6 +34,7 @@ interface DeleteTodoCategoryDependencies {
   readonly cache: TodoCategoryCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly eventPublisher: DomainEventPublisherPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -94,6 +97,9 @@ export class DeleteTodoCategory {
     });
 
     await this.#dependencies.cache.invalidate(userId);
+    await this.#dependencies.eventPublisher.publishAll([
+      new TodoCategoryDeletedEvent(userId, categoryId),
+    ]);
     this.#dependencies.logger.debug({
       event: PlanningCategoryLogEvent.DELETED,
       userId,

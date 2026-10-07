@@ -1,138 +1,136 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import {
+  createInsightsFixture,
+  createTodoAggregateFixture,
+  INSIGHTS_TIME,
+} from "#test/fixtures/insights.fixture";
 
-import type {
-  DailyCompletionsRange,
-  TodoAggregateByDate,
-} from "../../../domain/policies/daily-completions/daily-completion.js";
-import { type DailyCompletionCachePort } from "../../ports/daily-completions/daily-completion-cache.port.js";
-import { type TodoCompletionRepositoryPort } from "../../ports/daily-completions/todo-completion.repository.port.js";
 import { GetDailyCompletions } from "./get-daily-completions.use-case.js";
 
-function buildAggregates(): TodoAggregateByDate[] {
-  return [
-    {
-      date: new Date("2026-01-15T00:00:00.000Z"),
-      total: 3,
-      completed: 3,
-      categoryColors: ["#FF6B43"],
-    },
-    {
-      date: new Date("2026-01-16T00:00:00.000Z"),
-      total: 4,
-      completed: 2,
-      categoryColors: ["#FF6B43", "#4A90D9"],
-    },
-  ];
-}
+const RANGE = { startDate: "2028-02-01", endDate: "2028-02-29" };
 
-describe("GetDailyCompletions — 기간별 완료 현황 조회", () => {
-  let useCase: GetDailyCompletions;
-  let repository: Mocked<TodoCompletionRepositoryPort>;
-  let cache: Mocked<DailyCompletionCachePort>;
-
-  const input = {
-    userId: "user-123",
-    startDate: "2026-01-01",
-    endDate: "2026-01-31",
-  };
-
-  beforeEach(async () => {
-    const getDailyCompletionsDependencies = mockDeep<
-      ConstructorParameters<typeof GetDailyCompletions>[0]
-    >({
-      repository: { aggregateByDateRange: vi.fn().mockResolvedValue([]) },
-      cache: {
-        getRange: vi.fn().mockResolvedValue(undefined),
-        setRange: vi.fn().mockResolvedValue(undefined),
-        invalidate: vi.fn().mockResolvedValue(undefined),
-      },
-    });
-    const unit = new GetDailyCompletions(getDailyCompletionsDependencies);
-
-    useCase = unit;
-    repository = getDailyCompletionsDependencies.repository;
-    cache = getDailyCompletionsDependencies.cache;
+describe("GetDailyCompletions — 일일 완료 조회", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(INSIGHTS_TIME);
   });
+  afterEach(() => vi.useRealTimers());
 
-  it("반열림 구간 [start, end+1일)로 집계를 조회한다", async () => {
-    // Given - 캐시 미스 (기본 mock)
-
-    // When
-    await useCase.execute(input);
-
-    // Then - 종료일 포함을 위해 end에 +1일
-    expect(repository.aggregateByDateRange).toHaveBeenCalledWith({
-      userId: "user-123",
-      startDate: new Date("2026-01-01T00:00:00.000Z"),
-      endDate: new Date("2026-02-01T00:00:00.000Z"),
-    });
-  });
-
-  it("집계를 일일 완료 요약으로 조립해 반환한다", async () => {
+  it("윤년 종료일을 포함하는 반열림 조회로 집계하고 날짜별 완료율·색상·완료일 수를 반환한다", async () => {
     // Given
-    repository.aggregateByDateRange.mockResolvedValue(buildAggregates());
-
+    const fixture = createInsightsFixture();
+    fixture.repository.ownAggregates.set(fixture.userId, [
+      createTodoAggregateFixture(),
+      createTodoAggregateFixture({
+        date: new Date("2028-02-28T00:00:00Z"),
+        total: 4,
+        completed: 2,
+        categoryColors: ["#123456", "#654321"],
+      }),
+    ]);
+    const query = vi.spyOn(fixture.repository, "aggregateByDateRange");
     // When
-    const result = await useCase.execute(input);
-
-    // Then
-    expect(result.completions).toHaveLength(2);
-    expect(result.totalCompleteDays).toBe(1);
-    expect(result.dateRange).toEqual({
-      startDate: "2026-01-01",
-      endDate: "2026-01-31",
+    const result = await new GetDailyCompletions(fixture).execute({
+      userId: fixture.userId,
+      ...RANGE,
     });
-  });
-
-  it("캐시 히트 시 저장소를 호출하지 않고 캐시 값을 반환한다", async () => {
-    // Given - 캐시에 결과가 있음
-    const cachedResult: DailyCompletionsRange = {
+    // Then
+    expect(query).toHaveBeenCalledWith({
+      userId: fixture.userId,
+      startDate: new Date("2028-02-01T00:00:00Z"),
+      endDate: new Date("2028-03-01T00:00:00Z"),
+    });
+    expect(result).toEqual({
+      dateRange: RANGE,
+      totalCompleteDays: 1,
       completions: [
         {
-          date: "2026-01-15",
+          date: "2028-02-28",
+          totalTodos: 4,
+          completedTodos: 2,
+          isComplete: false,
+          completionRate: 50,
+          categoryColors: ["#123456", "#654321"],
+        },
+        {
+          date: "2028-02-29",
           totalTodos: 3,
           completedTodos: 3,
           isComplete: true,
           completionRate: 100,
-          categoryColors: ["#FF6B43"],
+          categoryColors: ["#123456"],
         },
       ],
-      totalCompleteDays: 1,
-      dateRange: { startDate: "2026-01-01", endDate: "2026-01-31" },
-    };
-    cache.getRange.mockResolvedValue(cachedResult);
-
-    // When
-    const result = await useCase.execute(input);
-
-    // Then - 저장소 미호출, 재캐싱도 없음
-    expect(result).toBe(cachedResult);
-    expect(cache.getRange).toHaveBeenCalledWith("user-123", "2026-01-01", "2026-01-31");
-    expect(repository.aggregateByDateRange).not.toHaveBeenCalled();
-    expect(cache.setRange).not.toHaveBeenCalled();
+    });
   });
 
-  it("캐시 미스 시 계산 결과를 정규화된 키로 캐싱한다", async () => {
-    // Given - 캐시 미스 (기본 mock)
-    repository.aggregateByDateRange.mockResolvedValue(buildAggregates());
-
+  it("첫 조회를 캐싱한 뒤 저장소 준비 상태가 사라져도 같은 범위 결과를 반환한다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    fixture.repository.ownAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
+    const useCase = new GetDailyCompletions(fixture);
+    const first = await useCase.execute({ userId: fixture.userId, ...RANGE });
+    fixture.repository.ownAggregates.clear();
     // When
-    const result = await useCase.execute(input);
-
-    // Then - YYYY-MM-DD 키 세그먼트로 결과 저장
-    expect(cache.setRange).toHaveBeenCalledWith("user-123", "2026-01-01", "2026-01-31", result);
-  });
-
-  it("집계가 없으면 빈 결과를 반환한다", async () => {
-    // Given - 집계 없음 (기본 mock)
-
-    // When
-    const result = await useCase.execute(input);
-
+    const cached = await useCase.execute({ userId: fixture.userId, ...RANGE });
     // Then
-    expect(result.completions).toEqual([]);
-    expect(result.totalCompleteDays).toBe(0);
+    expect(cached).toEqual(first);
+    expect(
+      (await fixture.cache.readRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value,
+    ).toEqual(first);
+    expect(
+      (await fixture.cache.readRange("other-user", RANGE.startDate, RANGE.endDate)).value,
+    ).toBeUndefined();
+  });
+
+  it("집계가 없으면 범위를 보존한 빈 완료 현황을 반환한다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    // When
+    const result = await new GetDailyCompletions(fixture).execute({
+      userId: fixture.userId,
+      ...RANGE,
+    });
+    // Then
+    expect(result).toEqual({ completions: [], totalCompleteDays: 0, dateRange: RANGE });
+  });
+
+  it("진행 중인 오래된 조회는 무효화 이후 캐시에 저장되지 않아 다음 조회가 새 완료 상태를 반환한다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    fixture.repository.ownAggregates.set(fixture.userId, [
+      createTodoAggregateFixture({ completed: 0 }),
+    ]);
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const aggregate = fixture.repository.aggregateByDateRange.bind(fixture.repository);
+    vi.spyOn(fixture.repository, "aggregateByDateRange").mockImplementationOnce(async (input) => {
+      const snapshot = await aggregate(input);
+      entered.resolve();
+      await release.promise;
+      return snapshot;
+    });
+    const useCase = new GetDailyCompletions(fixture);
+    const staleRead = useCase.execute({ userId: fixture.userId, ...RANGE });
+    await Promise.race([
+      entered.promise,
+      staleRead.then(() => {
+        throw new Error("집계 gate 전에 요청이 끝났습니다.");
+      }),
+    ]);
+    // When
+    try {
+      await fixture.cache.invalidate(fixture.userId);
+      fixture.repository.ownAggregates.set(fixture.userId, [createTodoAggregateFixture()]);
+    } finally {
+      release.resolve();
+      await staleRead;
+    }
+    const fresh = await useCase.execute({ userId: fixture.userId, ...RANGE });
+    // Then
+    expect((await staleRead).completions[0]?.completedTodos).toBe(0);
+    expect(fresh.completions[0]?.completedTodos).toBe(3);
+    expect(
+      (await fixture.cache.readRange(fixture.userId, RANGE.startDate, RANGE.endDate)).value,
+    ).toEqual(fresh);
   });
 });

@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 
+import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
-import { WeeklyAchievementModule } from "../insights/insights-weekly-achievements.module.js";
 import { WeatherModule } from "../weather/weather-forecast.module.js";
 import { RE_ENGAGEMENT_READER } from "./application/ports/reminders/re-engagement-reader.port.js";
 import { REMINDER_SCHEDULER } from "./application/ports/reminders/reminder-scheduler.port.js";
@@ -57,7 +57,7 @@ import {
     DatabaseModule,
     NotificationModule,
     WeatherModule,
-    WeeklyAchievementModule,
+    InsightsWeeklyAchievementsModule,
   ],
   providers: [
     // 오케스트레이터 + 전략 (application)

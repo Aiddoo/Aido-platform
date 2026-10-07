@@ -63,9 +63,9 @@ describe("Bounded Context별 cache keyspace 계약", () => {
     expect(TodoCacheKey.friendTodosFirstPage("user-1", "-", "-", 20)).toBe(
       "aido:v1:todo:friend-view-v1:user-1:-:-:20",
     );
-    expect(DailyCompletionCacheKey.range("user-1", "2026-01-01", "2026-01-31")).toBe(
-      "aido:v1:daily-completion:range-v1:user-1:2026-01-01:2026-01-31",
-    );
+    expect(
+      DailyCompletionCacheKey.range("user-1", "generation-1", "2026-01-01", "2026-01-31"),
+    ).toBe("aido:v1:daily-completion:range-v2:user-1:generation-1:own:2026-01-01:2026-01-31");
     expect(NotificationCacheKey.pushTokens("user-1")).toBe(
       "aido:v1:notification:push-tokens:user-1",
     );

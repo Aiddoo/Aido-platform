@@ -2,6 +2,11 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 
 import {
+  TODO_CATEGORY_EVENTS,
+  type TodoCategoryDeletedEvent,
+  type TodoCategoryUpdatedEvent,
+} from "#api/modules/planning/planning-categories.public";
+import {
   TODO_EVENTS,
   type TodoCategoryChangedEvent,
   type TodoCreatedEvent,
@@ -12,27 +17,23 @@ import {
   type TodoVisibilityChangedEvent,
 } from "#api/modules/planning/planning-todos.public";
 
+import { InsightsLogEvent } from "../../../application/observability/insights-log.events.js";
 import {
   DAILY_COMPLETION_CACHE,
   type DailyCompletionCachePort,
 } from "../../../application/ports/daily-completions/daily-completion-cache.port.js";
 
-/** 일별 완료 캐시를 무효화해야 하는 투두 쓰기 이벤트의 합집합 */
-type TodoWriteEvent =
+type CompletionSourceChangedEvent =
   | TodoCreatedEvent
   | TodoDeletedEvent
   | TodoToggledEvent
   | TodoRescheduledEvent
   | TodoUpdatedEvent
   | TodoCategoryChangedEvent
-  | TodoVisibilityChangedEvent;
+  | TodoVisibilityChangedEvent
+  | TodoCategoryUpdatedEvent
+  | TodoCategoryDeletedEvent;
 
-/**
- * 투두 쓰기 이벤트 구독 → 일별 완료 캐시 무효화 핸들러
- *
- * 크로스모듈 결합은 도메인 이벤트 구독으로만 (todo 내부 호출 금지).
- * 무효화 실패는 로깅만 하고 삼킨다(fire-and-forget) — TTL이 staleness 백스톱.
- */
 @Injectable()
 export class DailyCompletionCacheInvalidator {
   readonly #logger = new Logger(DailyCompletionCacheInvalidator.name);
@@ -51,14 +52,17 @@ export class DailyCompletionCacheInvalidator {
   @OnEvent(TODO_EVENTS.UPDATED)
   @OnEvent(TODO_EVENTS.CATEGORY_CHANGED)
   @OnEvent(TODO_EVENTS.VISIBILITY_CHANGED)
-  async handle(event: TodoWriteEvent): Promise<void> {
+  @OnEvent(TODO_CATEGORY_EVENTS.UPDATED)
+  @OnEvent(TODO_CATEGORY_EVENTS.DELETED)
+  async handle(event: CompletionSourceChangedEvent): Promise<void> {
     try {
       await this.cache.invalidate(event.userId);
     } catch (error) {
-      this.#logger.error(
-        `Failed to invalidate daily-completion cache for user ${event.userId}: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#logger.warn({
+        event: InsightsLogEvent.DAILY_COMPLETION_CACHE_INVALIDATION_FAILED,
+        userId: event.userId,
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
     }
   }
 }

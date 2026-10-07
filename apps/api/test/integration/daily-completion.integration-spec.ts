@@ -1,113 +1,46 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-/**
- * DailyCompletion 통합 테스트 (Testcontainers)
- *
- * @description
- * endpoint use-case → Prisma 어댑터가 실제 PostgreSQL DB와
- * 함께 올바르게 작동하는지 검증합니다.
- * Testcontainers를 사용하여 독립적인 PostgreSQL 컨테이너에서 테스트합니다.
- *
- * 통합 테스트의 목적:
- * - Facade → use-case → Prisma 어댑터 → PostgreSQL 전체 스택 검증
- * - 날짜별 Todo 집계 로직 검증
- * - 캘린더 데이터 조회 검증
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test daily-completion.integration-spec
- * ```
- */
-import { Test, type TestingModule } from "@nestjs/testing";
 import dayjs from "dayjs";
-import { vi } from "vitest";
 
-import { DAILY_COMPLETION_CACHE } from "#api/modules/insights/application/ports/daily-completions/daily-completion-cache.port";
-import { FRIEND_PORT } from "#api/modules/insights/application/ports/daily-completions/friend.port";
 import { TODO_COMPLETION_REPOSITORY } from "#api/modules/insights/application/ports/daily-completions/todo-completion.repository.port";
 import { GetDailyCompletions } from "#api/modules/insights/application/use-cases/daily-completions/get-daily-completions.use-case";
 import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
-import { DAILY_COMPLETION_PROVIDERS } from "#api/modules/insights/insights-daily-completions.providers";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
 import {
-  createDailyCompletionCacheMock,
-  createDailyCompletionFriendMock,
-} from "#test/mocks/ports/index";
-import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
-import { suppressLogger } from "#test/setup/suppress-logger";
+  createE2eApp,
+  destroyE2eApp,
+  type E2eTestContext,
+} from "#test/e2e/helpers/e2e-app-factory";
+import { UserFixture } from "#test/fixtures/index";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import { TestDatabase } from "../setup/test-database.js";
 
 describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
-  let module: TestingModule;
+  let context: E2eTestContext;
   let getDailyCompletionsUseCase: GetDailyCompletions;
   let repository: PrismaTodoCompletionRepository;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
-  const cache = createDailyCompletionCacheMock();
-  const friend = createDailyCompletionFriendMock();
-
-  // 테스트 스위트 시작 시 한 번만 실행
   beforeAll(async () => {
-    suppressLogger();
-
-    // TestContainer 시작 및 Database 연결
     testDb = new TestDatabase();
     databaseService = createTestDatabaseService(await testDb.start());
-
-    // 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(실제 DB)
-    module = await Test.createTestingModule({
-      providers: [
-        ...DAILY_COMPLETION_PROVIDERS,
-        {
-          provide: TODO_COMPLETION_REPOSITORY,
-          useClass: PrismaTodoCompletionRepository,
-        },
-        {
-          // 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
-          provide: TransactionHost,
-          useValue: { tx: createDatabaseContext(databaseService.db) },
-        },
-        {
-          provide: DAILY_COMPLETION_CACHE,
-          // 통합 테스트는 DB 경로를 검증하므로 기본 undefined를 반환하는 mock 사용
-          useValue: cache,
-        },
-        { provide: FRIEND_PORT, useValue: friend },
-      ],
-    }).compile();
-
-    await module.init();
-    getDailyCompletionsUseCase = module.get(GetDailyCompletions);
-    repository = module.get(TODO_COMPLETION_REPOSITORY);
-  }, 60000); // 컨테이너 시작에 시간이 걸릴 수 있음
+    context = await createE2eApp({ testDatabase: testDb });
+    getDailyCompletionsUseCase = context.module.get(GetDailyCompletions);
+    repository = context.module.get(TODO_COMPLETION_REPOSITORY);
+  });
 
   function getDailyCompletions(userId: string, startDate: string, endDate: string) {
     return getDailyCompletionsUseCase.execute({ userId, startDate, endDate });
   }
 
-  // 각 테스트 전 데이터 초기화
   beforeEach(async () => {
-    vi.clearAllMocks();
-    await testDb.cleanup();
+    await context.reset();
   });
-
-  // 테스트 스위트 종료 시 정리
   afterAll(async () => {
-    try {
-      if (module) {
-        await module.close();
-      }
-    } finally {
-      if (testDb) {
-        await testDb.stop();
-      }
-    }
+    if (context !== undefined) await destroyE2eApp(context);
+    else if (testDb !== undefined) await testDb.stop();
   });
 
   /**
@@ -116,13 +49,11 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   async function createTestUser(
     email = "test@example.com",
   ): Promise<{ id: string; defaultCategoryId: number }> {
-    // userTag는 8자리 제한 (VarChar(8))
-    const userTag = Date.now().toString(36).toUpperCase().slice(-8);
     const user = decodeRecord(
       "User",
       await createUserDatabaseFixture(
         databaseService.db,
-        encodeCreate("User", { email, status: "ACTIVE", userTag }),
+        encodeCreate("User", UserFixture.create({ email, status: "ACTIVE" })),
         { profile: encodePatch("UserProfile", { id: createEntityId(), name: "Test User" }) },
       ),
     );
@@ -164,7 +95,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       encodeCreate("Todo", {
         userId,
         categoryId,
-        title: `Test Todo ${Date.now()}`,
+        title: "일일 완료 집계 fixture",
         startDate: dateValue,
         completed,
       }),
@@ -192,26 +123,6 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     }
     await Promise.all(promises);
   }
-
-  describe("배선 확인", () => {
-    it("조회 UseCase가 정의되어 있어야 한다", () => {
-      // Given - DI 컨테이너가 구성됨
-
-      // When - UseCase 인스턴스 확인
-
-      // Then - UseCase가 정의되어 있어야 함
-      expect(getDailyCompletionsUseCase).toBeDefined();
-    });
-
-    it("repository가 연결되어 있어야 한다", () => {
-      // Given - DI 컨테이너가 구성됨
-
-      // When - 레포지토리 인스턴스 확인
-
-      // Then - 레포지토리가 정의되어 있어야 함
-      expect(repository).toBeDefined();
-    });
-  });
 
   describe("DailyCompletionRepository.aggregateByDateRange", () => {
     it("날짜 범위 내 Todo를 날짜별로 집계해야 한다", async () => {
@@ -294,7 +205,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
     });
   });
 
-  describe("일일 완료 조회 (Facade)", () => {
+  describe("일일 완료 조회", () => {
     it("날짜 범위 내 완료 현황을 반환해야 한다", async () => {
       // Given
       const user = await createTestUser();
@@ -425,7 +336,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
   });
 
   describe("대량 데이터 처리", () => {
-    it("한 달 전체 데이터를 효율적으로 처리해야 한다", async () => {
+    it("한 달의 완료 현황을 빠짐없이 날짜별로 반환해야 한다", async () => {
       // Given - 한 달 동안 매일 3개씩 Todo 생성
       const user = await createTestUser();
       const promises = [];
@@ -436,13 +347,15 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
       await Promise.all(promises);
 
       // When - 한 달 전체 조회
-      const startTime = Date.now();
       const result = await getDailyCompletions(user.id, "2026-01-01", "2026-01-31");
-      const duration = Date.now() - startTime;
 
-      // Then - 31일 데이터가 5초 이내에 반환됨
+      // Then - 모든 날짜와 완료 수가 정확히 반환됨
       expect(result.completions).toHaveLength(31);
-      expect(duration).toBeLessThan(5000);
+      expect(result.completions.at(0)?.date).toBe("2026-01-01");
+      expect(result.completions.at(-1)?.date).toBe("2026-01-31");
+      expect(result.completions.reduce((total, day) => total + day.totalTodos, 0)).toBe(93);
+      expect(result.completions.reduce((total, day) => total + day.completedTodos, 0)).toBe(48);
+      expect(result.totalCompleteDays).toBe(8);
     });
   });
 });

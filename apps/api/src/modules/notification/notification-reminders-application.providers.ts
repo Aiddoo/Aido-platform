@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { WeeklyAchievementWriterAccess } from "#api/modules/insights/insights-weekly-achievements.public";
+import { WEEKLY_ACHIEVEMENT_WRITER } from "#api/modules/insights/insights-weekly-achievements.public";
 import {
   NotificationPublisher,
   NotificationHistoryReader,
@@ -371,7 +371,7 @@ export const weeklyAchievementStrategyProvider: FactoryProvider<WeeklyAchievemen
     SCHEDULER_PREFERENCE_READER,
     NotificationPublisher,
     NotificationHistoryReader,
-    WeeklyAchievementWriterAccess,
+    WEEKLY_ACHIEVEMENT_WRITER,
   ],
   useFactory: (
     reader: ConstructorParameters<typeof WeeklyAchievementStrategy>[0]["reader"],

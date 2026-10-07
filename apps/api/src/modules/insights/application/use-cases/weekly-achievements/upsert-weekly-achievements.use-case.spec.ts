@@ -1,66 +1,80 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { ErrorCode } from "@aido/api/errors";
 
-import type { WeeklyAchievementUpsert } from "../../../domain/policies/weekly-achievements/weekly-achievement.js";
-import { type WeeklyAchievementRepositoryPort } from "../../ports/weekly-achievements/weekly-achievement.repository.port.js";
+import {
+  createInsightsFixture,
+  createWeeklyAchievementWriteFixture,
+  INSIGHTS_TIME,
+} from "#test/fixtures/insights.fixture";
+
 import { UpsertWeeklyAchievements } from "./upsert-weekly-achievements.use-case.js";
 
-function record(overrides: Partial<WeeklyAchievementUpsert> = {}): WeeklyAchievementUpsert {
-  return {
-    userId: "user-1",
-    year: 2026,
-    week: 10,
-    totalTodos: 5,
-    completedTodos: 3,
-    achievedAt: new Date("2026-03-09T00:00:00.000Z"),
-    ...overrides,
-  };
-}
-
-describe("UpsertWeeklyAchievements — 일괄 upsert use-case", () => {
-  let useCase: UpsertWeeklyAchievements;
-  let repository: Mocked<WeeklyAchievementRepositoryPort>;
-
-  beforeEach(async () => {
-    const upsertWeeklyAchievementsDependencies = mockDeep<
-      ConstructorParameters<typeof UpsertWeeklyAchievements>[0]
-    >({});
-    const unit = new UpsertWeeklyAchievements(upsertWeeklyAchievementsDependencies);
-
-    useCase = unit;
-    repository = upsertWeeklyAchievementsDependencies.repository;
+describe("UpsertWeeklyAchievements", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(INSIGHTS_TIME);
   });
+  afterEach(() => vi.useRealTimers());
 
-  it("레코드가 비어 있으면 저장소를 호출하지 않는다", async () => {
-    // Given - 빈 레코드 배열
-
-    // When - upsert를 실행하면
+  it("빈 배치는 저장 요청을 만들지 않는다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    const save = vi.spyOn(fixture.weeklyRepository, "upsertMany");
+    const useCase = new UpsertWeeklyAchievements({ repository: fixture.weeklyRepository });
+    // When
     await useCase.execute({ records: [] });
-
-    // Then - 저장소 upsertMany가 호출되지 않는다
-    expect(repository.upsertMany).not.toHaveBeenCalled();
+    // Then
+    expect(save).not.toHaveBeenCalled();
+    expect(fixture.weeklyRepository.rows.size).toBe(0);
   });
 
-  it("불변식을 통과한 스냅샷을 저장소에 위임한다", async () => {
-    // Given - 유효한 두 레코드
-    repository.upsertMany.mockResolvedValue(undefined);
-    const records = [record(), record({ userId: "user-2", week: 11 })];
-
-    // When - upsert를 실행하면
-    await useCase.execute({ records });
-
-    // Then - 저장소에 그대로 위임된다
-    expect(repository.upsertMany).toHaveBeenCalledWith(records);
-  });
-
-  it("완료 수가 전체 수를 초과하면 도메인 불변식으로 실패한다", async () => {
-    // Given - completedTodos > totalTodos 인 잘못된 레코드
-    const invalid = record({ totalTodos: 2, completedTodos: 5 });
-
-    // When/Then - SYS_0002 도메인 예외로 실패하고 저장소를 호출하지 않는다
-    await expect(useCase.execute({ records: [invalid] })).rejects.toMatchObject({
-      errorCode: "SYS_0002",
+  it("여러 사용자·주차를 저장하고 같은 주차의 재집계는 기존 기록을 갱신한다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    const first = createWeeklyAchievementWriteFixture();
+    const second = createWeeklyAchievementWriteFixture({ userId: fixture.viewerId, week: 11 });
+    const useCase = new UpsertWeeklyAchievements({ repository: fixture.weeklyRepository });
+    // When
+    await useCase.execute({ records: [first, second] });
+    const before = await fixture.weeklyRepository.findByYearAndWeek(
+      first.userId,
+      first.year,
+      first.week,
+    );
+    await useCase.execute({ records: [{ ...first, completedTodos: 5 }] });
+    const after = await fixture.weeklyRepository.findByYearAndWeek(
+      first.userId,
+      first.year,
+      first.week,
+    );
+    // Then
+    expect(fixture.weeklyRepository.rows.size).toBe(2);
+    expect(after).toEqual({
+      id: before?.id,
+      year: first.year,
+      week: first.week,
+      totalTodos: 5,
+      completedTodos: 5,
+      achievedAt: first.achievedAt,
     });
-    expect(repository.upsertMany).not.toHaveBeenCalled();
+    expect(
+      await fixture.weeklyRepository.findByYearAndWeek(second.userId, second.year, second.week),
+    ).toMatchObject({ completedTodos: 3, week: 11 });
+  });
+
+  it("배치 뒤쪽의 완료 수가 잘못되어도 앞쪽 기록을 저장 요청하지 않는다", async () => {
+    // Given
+    const fixture = createInsightsFixture();
+    const save = vi.spyOn(fixture.weeklyRepository, "upsertMany");
+    const records = [
+      createWeeklyAchievementWriteFixture(),
+      createWeeklyAchievementWriteFixture({ week: 11, totalTodos: 2, completedTodos: 5 }),
+    ];
+    const useCase = new UpsertWeeklyAchievements({ repository: fixture.weeklyRepository });
+    // When, Then
+    await expect(useCase.execute({ records })).rejects.toMatchObject({
+      errorCode: ErrorCode.SYS_0002,
+    });
+    expect(save).not.toHaveBeenCalled();
+    expect(fixture.weeklyRepository.rows.size).toBe(0);
   });
 });

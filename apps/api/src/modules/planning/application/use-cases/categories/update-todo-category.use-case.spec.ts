@@ -7,6 +7,7 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import type { MutationLockPort, UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { PLANNING_TIME } from "#test/fixtures/planning-todo.fixture";
 import { TodoCategoryFixture } from "#test/fixtures/todo.fixture";
+import { StubPlanningEventPublisher } from "#test/mocks/ports/planning-todo.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import { TodoCategory } from "../../../domain/aggregates/categories/todo-category.aggregate.js";
@@ -16,6 +17,7 @@ import { UpdateTodoCategory } from "./update-todo-category.use-case.js";
 describe("카테고리 수정", () => {
   let savedCategory: ReturnType<typeof TodoCategoryFixture.create>;
   let unitOfWork: UnitOfWorkPort;
+  let eventPublisher: StubPlanningEventPublisher;
   let useCase: UpdateTodoCategory;
   let repository: Mocked<ConstructorParameters<typeof UpdateTodoCategory>[0]["repository"]>;
   let cache: Mocked<TodoCategoryCachePort>;
@@ -27,11 +29,13 @@ describe("카테고리 수정", () => {
     cache = mock<TodoCategoryCachePort>();
     const mutationLock = mock<MutationLockPort>();
     unitOfWork = createUnitOfWorkMock();
+    eventPublisher = new StubPlanningEventPublisher();
     useCase = new UpdateTodoCategory({
       repository,
       cache,
       mutationLock,
       unitOfWork,
+      eventPublisher,
       logger: mock<ApplicationLogger>(),
     });
 
@@ -72,6 +76,7 @@ describe("카테고리 수정", () => {
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0851 });
     expect(repository.update).not.toHaveBeenCalled();
     expect(cache.invalidate).not.toHaveBeenCalled();
+    expect(eventPublisher.events).toEqual([]);
   });
 
   it("이름 변경 시 중복이면 TODO_CATEGORY_0853", async () => {
@@ -83,6 +88,7 @@ describe("카테고리 수정", () => {
     ).rejects.toMatchObject({ errorCode: ErrorCode.TODO_CATEGORY_0853 });
     expect(repository.update).not.toHaveBeenCalled();
     expect(cache.invalidate).not.toHaveBeenCalled();
+    expect(eventPublisher.events).toEqual([]);
   });
 
   it("수정한 이름과 색상을 저장하고 캐시를 무효화한다", async () => {
@@ -104,6 +110,7 @@ describe("카테고리 수정", () => {
     try {
       await Promise.race([callbackFinished.promise, execution]);
       expect(cache.invalidate).not.toHaveBeenCalled();
+      expect(eventPublisher.events).toEqual([]);
     } finally {
       releaseCallback.resolve();
       await execution;
@@ -122,6 +129,9 @@ describe("카테고리 수정", () => {
       color: "#FF0000",
     });
     expect(cache.invalidate).toHaveBeenCalledWith("category-user");
+    expect(eventPublisher.events).toEqual([
+      { eventName: "todo-category.updated", userId: "category-user", categoryId: 1 },
+    ]);
   });
 
   it("이름이 기존과 같으면 중복 검사를 건너뛴다", async () => {

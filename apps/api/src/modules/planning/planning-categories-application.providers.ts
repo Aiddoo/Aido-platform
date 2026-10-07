@@ -1,7 +1,11 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import {
+  DOMAIN_EVENT_PUBLISHER,
+  MUTATION_LOCK,
+  UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
 
 import { TODO_CATEGORY_CACHE } from "./application/ports/categories/todo-category-cache.port.js";
 import { TODO_CATEGORY_LIMIT_READER } from "./application/ports/categories/todo-category-limit-reader.port.js";
@@ -77,18 +81,26 @@ export const createTodoCategoryProvider: FactoryProvider<CreateTodoCategory> = {
 
 export const deleteTodoCategoryProvider: FactoryProvider<DeleteTodoCategory> = {
   provide: DeleteTodoCategory,
-  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE, MUTATION_LOCK, UNIT_OF_WORK],
+  inject: [
+    TODO_CATEGORY_REPOSITORY,
+    TODO_CATEGORY_CACHE,
+    MUTATION_LOCK,
+    UNIT_OF_WORK,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     repository: ConstructorParameters<typeof DeleteTodoCategory>[0]["repository"],
     cache: ConstructorParameters<typeof DeleteTodoCategory>[0]["cache"],
     mutationLock: ConstructorParameters<typeof DeleteTodoCategory>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof DeleteTodoCategory>[0]["unitOfWork"],
+    eventPublisher: ConstructorParameters<typeof DeleteTodoCategory>[0]["eventPublisher"],
   ) =>
     new DeleteTodoCategory({
       repository,
       cache,
       mutationLock,
       unitOfWork,
+      eventPublisher,
       logger: new Logger(DeleteTodoCategory.name),
     }),
 };
@@ -113,18 +125,26 @@ export const reorderTodoCategoryProvider: FactoryProvider<ReorderTodoCategory> =
 
 export const updateTodoCategoryProvider: FactoryProvider<UpdateTodoCategory> = {
   provide: UpdateTodoCategory,
-  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE, MUTATION_LOCK, UNIT_OF_WORK],
+  inject: [
+    TODO_CATEGORY_REPOSITORY,
+    TODO_CATEGORY_CACHE,
+    MUTATION_LOCK,
+    UNIT_OF_WORK,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
   useFactory: (
     repository: ConstructorParameters<typeof UpdateTodoCategory>[0]["repository"],
     cache: ConstructorParameters<typeof UpdateTodoCategory>[0]["cache"],
     mutationLock: ConstructorParameters<typeof UpdateTodoCategory>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof UpdateTodoCategory>[0]["unitOfWork"],
+    eventPublisher: ConstructorParameters<typeof UpdateTodoCategory>[0]["eventPublisher"],
   ) =>
     new UpdateTodoCategory({
       repository,
       cache,
       mutationLock,
       unitOfWork,
+      eventPublisher,
       logger: new Logger(UpdateTodoCategory.name),
     }),
 };
