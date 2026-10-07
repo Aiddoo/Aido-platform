@@ -31,6 +31,6 @@ export class SubscriptionController {
   @UseGuards(WebhookSignatureGuard)
   @HttpCode(HttpStatus.OK)
   handleRevenueCatWebhook(@Req() request: Request): Promise<{ received: true }> {
-    return this.handleWebhookEventUseCase.execute(request.body);
+    return this.handleWebhookEventUseCase.execute({ body: request.body });
   }
 }

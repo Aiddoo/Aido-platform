@@ -10,8 +10,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 /**
  * RevenueCat Webhook 서명 검증 가드
  *
- * RevenueCat는 HMAC이 아닌 단순 Authorization 헤더 비교 방식.
- * Dashboard에서 설정한 authorization_header 값이 그대로 전송됨.
+ * Dashboard에서 설정한 Authorization 헤더를 검증한다.
  *
  * - webhook secret 미설정 시 개발 환경으로 간주하여 통과
  * - timing-safe comparison으로 타이밍 공격 방지

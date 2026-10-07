@@ -1,13 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { or } from "@prisma/orm-postgres/orm-client";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { varchar } from "#api/platform/database/database-values";
-import type * as PrismaModels from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { isRecordNotFoundError } from "#api/platform/database/prisma-error.util";
+import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
+import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -45,9 +43,21 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
       "Subscription",
       await this.client.orm.public.Subscription.where((row) =>
         row.revenueCatId.eq(varchar(revenueCatId, 255)),
-      ).first(),
+      )
+        .select(
+          "id",
+          "userId",
+          "revenueCatId",
+          "productId",
+          "status",
+          "startedAt",
+          "expiresAt",
+          "cancelledAt",
+          "lastProcessedEventId",
+        )
+        .first(),
     );
-    return row ? PrismaSubscriptionRepository.toDomain(row) : null;
+    return row === null ? null : Subscription.reconstitute(row);
   }
 
   /**
@@ -66,25 +76,50 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
       .then((row) => decodeRecord("User", row));
   }
 
+  async findUserById(userId: string): Promise<SubscriptionUser | null> {
+    return this.client.orm.public.User.where((row) => row.id.eq(userId))
+      .select("id", "email", "subscriptionStatus", "subscriptionExpiresAt", "revenueCatUserId")
+      .include("profile", (related) => related.select("name"))
+      .first()
+      .then((row) => decodeRecord("User", row));
+  }
+
+  async findOtherEntitlementExpiry(
+    userId: string,
+    excludedRevenueCatId: string,
+    at: Date,
+  ): Promise<Date | null> {
+    const subscription = decodeRecord(
+      "Subscription",
+      await this.client.orm.public.Subscription.where((row) =>
+        and(
+          row.userId.eq(userId),
+          row.revenueCatId.neq(varchar(excludedRevenueCatId, 255)),
+          or(row.status.eq("ACTIVE"), row.status.eq("CANCELLED")),
+          row.expiresAt.gt(databaseTimestamp(at)),
+        ),
+      )
+        .select("expiresAt")
+        .orderBy((row) => row.expiresAt.desc())
+        .first(),
+    );
+    return subscription?.expiresAt ?? null;
+  }
+
   /**
    * 구독 생성 (INITIAL_PURCHASE용)
    */
   async create(data: CreateSubscriptionData): Promise<void> {
-    decodeRecord(
-      "Subscription",
-      await this.client.orm.public.Subscription.create(
-        encodeCreate("Subscription", {
-          userId: data.userId,
-          revenueCatId: data.revenueCatId,
-          productId: data.productId,
-          status: data.status,
-          startedAt: data.startedAt,
-          expiresAt: data.expiresAt,
-          ...(data.lastProcessedEventId && {
-            lastProcessedEventId: data.lastProcessedEventId,
-          }),
-        }),
-      ),
+    await this.client.orm.public.Subscription.create(
+      encodeCreate("Subscription", {
+        userId: data.userId,
+        revenueCatId: data.revenueCatId,
+        productId: data.productId,
+        status: data.status,
+        startedAt: data.startedAt,
+        expiresAt: data.expiresAt,
+        lastProcessedEventId: data.lastProcessedEventId,
+      }),
     );
   }
 
@@ -92,22 +127,13 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
    * 구독 상태 업데이트
    */
   async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {
-    try {
-      decodeRecord(
-        "Subscription",
-        requireRecord(
-          await this.client.orm.public.Subscription.where((row) =>
-            row.revenueCatId.eq(varchar(revenueCatId, 255)),
-          ).update(encodePatch("Subscription", data)),
-        ),
-      );
-    } catch (error) {
-      if (isRecordNotFoundError(error)) {
-        throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-          reason: `Subscription not found: ${revenueCatId}`,
-        });
-      }
-      throw error;
+    const updated = await this.client.orm.public.Subscription.where((row) =>
+      row.revenueCatId.eq(varchar(revenueCatId, 255)),
+    ).updateAndCount(encodePatch("Subscription", data));
+    if (updated === 0) {
+      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
+        reason: `Subscription not found: ${revenueCatId}`,
+      });
     }
   }
 
@@ -118,36 +144,15 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
     userId: string,
     data: UpdateUserSubscriptionStatusData,
   ): Promise<void> {
-    decodeRecord(
-      "User",
-      requireRecord(
-        await this.client.orm.public.User.where((row) => row.id.eq(userId)).update(
-          encodePatch("User", {
-            subscriptionStatus: data.subscriptionStatus,
-            ...(data.subscriptionExpiresAt !== undefined && {
-              subscriptionExpiresAt: data.subscriptionExpiresAt,
-            }),
-            ...(data.revenueCatUserId !== undefined && {
-              revenueCatUserId: data.revenueCatUserId,
-            }),
-          }),
-        ),
-      ),
+    const updated = await this.client.orm.public.User.where((row) =>
+      row.id.eq(userId),
+    ).updateAndCount(
+      encodePatch("User", {
+        subscriptionStatus: data.subscriptionStatus,
+        subscriptionExpiresAt: data.subscriptionExpiresAt,
+        revenueCatUserId: data.revenueCatUserId,
+      }),
     );
-  }
-
-  /** Prisma 행 → Subscription 애그리게잇 */
-  private static toDomain(row: PrismaModels.Subscription): Subscription {
-    return Subscription.reconstitute({
-      id: row.id,
-      userId: row.userId,
-      revenueCatId: row.revenueCatId,
-      productId: row.productId,
-      status: row.status,
-      startedAt: row.startedAt,
-      expiresAt: row.expiresAt,
-      cancelledAt: row.cancelledAt,
-      lastProcessedEventId: row.lastProcessedEventId,
-    });
+    if (updated === 0) throw new DatabaseRecordNotFoundError();
   }
 }

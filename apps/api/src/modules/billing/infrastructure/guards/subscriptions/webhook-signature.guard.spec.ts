@@ -9,7 +9,8 @@
  * pnpm --filter @aido/server test webhook-signature.guard
  * ```
  */
-import { Test } from "@nestjs/testing";
+import { Logger } from "@nestjs/common";
+import { Test, type TestingModule } from "@nestjs/testing";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -27,8 +28,10 @@ interface GuardConfigStub {
  * TypedConfigService 부분 스텁으로 가드 인스턴스를 생성한다.
  * (useValue는 any이므로 부분 객체를 캐스트 없이 주입할 수 있다)
  */
+let moduleRef: TestingModule | undefined;
+
 async function createGuard(config: GuardConfigStub): Promise<WebhookSignatureGuard> {
-  const moduleRef = await Test.createTestingModule({
+  moduleRef = await Test.createTestingModule({
     providers: [WebhookSignatureGuard, { provide: TypedConfigService, useValue: config }],
   }).compile();
 
@@ -36,6 +39,14 @@ async function createGuard(config: GuardConfigStub): Promise<WebhookSignatureGua
 }
 
 describe("WebhookSignatureGuard — 가드", () => {
+  beforeEach(() => {
+    vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+  });
+  afterEach(async () => {
+    await moduleRef?.close();
+    moduleRef = undefined;
+  });
   describe("webhook secret이 설정된 경우", () => {
     let guard: WebhookSignatureGuard;
 

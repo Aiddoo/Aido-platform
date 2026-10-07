@@ -5,7 +5,7 @@
 
 ## 기준과 불변 계약
 
-Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/Aido-platform/pull/884)로
+Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/Aido-platform/pull/884)로
 보존했다. ORM·CLI는 현재 RC다. 기존 `/v1` URL·HTTP 상태·응답·오류 코드·날짜·정렬·페이지네이션,
 로그인·토큰·구독·사용량·알림·반복 일정의 의미를 유지한다. CUID와 숫자 ID, 적용된 DB migration
 이력을 보존한다. 내부 레거시 구현을 제거하더라도 기존 앱이 소비하는 필드는 현행 계약으로 유지한다.
@@ -17,7 +17,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
 - [x] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 완료([PR #903](https://github.com/Aiddoo/Aido-platform/pull/903)), 04e 설정·동의 검증 완료([Issue #904](https://github.com/Aiddoo/Aido-platform/issues/904))
-- [ ] 05 Billing: Webhook·구독 상태 전이
+- [x] 05 Billing: Webhook·구독 상태 전이·성공 원장·권한 정합성 검증([Issue #906](https://github.com/Aiddoo/Aido-platform/issues/906))
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
 - [ ] 08 Social: 친구·응원·넛지
@@ -387,3 +387,62 @@ opaque location key와 target local date·forecast revision을 cache address에 
 검토 후보다. 실제 fixture로 재현 후 개선하며, 후보만으로 확인된 버그나 측정된 성능 개선이라고
 기록하지 않는다. 설치 HTTP client의 인스턴스별 fetch 주입과 기존 codec·테스트 도구를 재사용해
 한국/해외 공급자가 같은 normalized domain 결과를 반환하는 계약을 검증한다.
+
+## 05 Billing 구독 상태 전이와 성공 처리 원장
+
+[Issue #906](https://github.com/Aiddoo/Aido-platform/issues/906)에서 구독 Aggregate의 생성·복원·
+갱신·취소·환불·만료·상품 변경·기간 연장을 명명된 행동으로 정리했다. Vendor payload의
+시각 검증은 Application mapper, 권한 보존 기간 판단은 순수 Domain policy가 소유한다.
+Controller는 `execute({ body })`를 호출하고 기존 composition factory가 최소 Port를 조립한다.
+
+Webhook 성공 원장 `(provider, eventId)`의 compound PK와 native ORM conflict-skip claim을
+Subscription/User 쓰기와 같은 transaction에 넣었다. 기존 Redis appUserId 잠금은 유지하고,
+공개 User mutation capability로 canonical User 행 잠금을 재사용해 alias가 다른 동시 요청도
+직렬화한다. 행 잠금의 기존 SQL을 재사용했으며 새로운 생산 raw SQL은 추가하지 않았다.
+원장은 성공 처리 이력이다. 실패한 payload를 durable queue에 접수하는 기능은 아니며,
+업무 처리 실패의 기존 HTTP 200·보고 계약을 유지한다. 잠금 경합은 기존 1605/429다.
+
+실제 PostgreSQL에서 다음 오류를 수정 전 재현했다.
+
+- 만료 A → 갱신 B → 동일 A 재전송, 또는 더 오래된 기간의 새 만료 이벤트가 현재 사용자를
+  `FREE`로 돌렸다. 2 tests 실패, 6.77초. 원장과 Aggregate의 과거 기간 no-op으로 보호한다.
+- 서로 다른 체인 A/B에서 과거 A의 만료·환불이 유효한 B를 남겨두고 사용자 권한을 해제했다.
+  같은 실제 PG fixture에서 수정 전 2 tests 실패(4.96초) → 수정 후 2 tests 통과(6.17초).
+  잠금 안에서 exact User PK를 다시 읽고 다른 체인의 최대 유효 만료일을 조회한다. 기존
+  `ACTIVE` 권한만 `min(현재 만료일, 다른 체인의 만료일)`까지 보존하며 기존 무료·취소 상태를
+  자동 활성화하지 않는다. 다른 사용자·환불/만료된 체인·현재 체인·이미 지난 기간은 제외한다.
+
+과거 기간 없는 만료와 현재 기간의 만료는 기존 의미를 유지한다. RevenueCat의
+`event_timestamp_ms`는 이벤트 생성 시각이므로 모든 업무 전이에 공통 정렬 기준으로 사용하지
+않는다. 과거 갱신/연장 등 모든 종류의 역순 이벤트를 해결했다고 확대하지 않는다.
+
+`SubscriptionEventReceipt`는 별도 payload·User FK 없이 provider/id/type/processedAt만 보관한다.
+Migration graph는 기존 `3b9e2226…` → `d80a48c1…`의 additive table 생성 1건이다. 기존 구독과
+`lastProcessedEventId`를 보존하며 구 이력 전체의 ID·정확한 처리 시각을 만들어내지 않는다.
+독립 DB에서 이전 계약으로 데이터를 저장하고 migration한 뒤, 이전 ORM으로 읽기·쓰기와
+새 ORM으로 읽기·원장 쓰기를 검증했다(1 test, 4.61초). 이 검증은 이전 runtime 호환성이고
+이전 migration graph로 자동 역방향 DDL rollback이 가능하다는 보장은 아니다.
+
+구독 캐시는 Identity profile/Access entitlement의 공개 invalidation capability로 연결한다.
+기존 key·TTL과 commit 이후 순서를 유지한다. 실제 HTTP에서 같은 JWT의 warm profile과
+entitlement cache가 구매·환불·늦은 만료 뒤 현재 권한을 반영하는지 검증했다. Authorization의
+Bearer/raw secret, 잘못된 인증 401, malformed payload 200, 실제 잠금 429와 해제 후 같은
+이벤트 재시도까지 7 tests 통과(6.43초, seed 50522).
+
+조회 수가 chain 수에 따라 증가하는 N+1은 추가하지 않았다. FREE/CANCELLED 하향 전이는
+fresh User와 최대 유효 만료일을 조회하는 bounded SELECT 2개를 추가한다. positive 전이에
+이 추가 조회는 없다. 처리 원장 claim 비용도 추가되므로 이 정합성 개선을 쿼리 수 절감이나
+운영 성능 향상으로 보고하지 않는다. latency·처리량·billed Actions 절감률은 미측정이다.
+
+최종 검증 결과:
+
+- 전체 Unit: 481 files / 2,918 tests, 16.88초, seed 50523. 전달-only Controller 2개와 Mock DB 구독 Integration 8개를 제거하고 상태·실제 DB 검증으로 대체했다.
+- 전체 Integration: 48 files / 471 tests, 170.78초, seed 50523. 기존 Stub spec도 포함하는 전체 project 수다. 신규 Billing 17개와 migration 호환 1개는 실제 PG에서 실행했다.
+- 전체 E2E: 35 files / 493 tests, 256.37초, seed 50523. 구 앱 계약 fixture와 OpenAPI snapshot 변경 없음.
+- Billing Unit: 8 files / 94 tests, 882ms, seed 50517. Billing 실제 PG: 17 tests, 10.34초, seed 303.
+- HTTP E2E는 America/Los_Angeles·seed 50524에서도 7 tests 통과(9.64초). Date만 고정하고 네트워크 timer는 실제로 실행했다.
+- Workspace lint·format·typecheck 통과. 첫 새 HTTP helper 타입 오류와 신규 CLI migration의 포맷 실패는 입력 타입 및 Oxfmt·공식 self-emit으로 수정했다.
+
+운영 latency·처리량·공통 cache in-flight fill race·전체 이전 이미지 rollback은 검증 범위가 아니다.
+새로운 실행 script·패키지·Action job은 추가하지 않았다. 상위 6/18 검증 완료,
+06–17의 12단계가 남았다. commit/Stack PR 게시를 진행하며 운영 배포·merge는 하지 않았다.

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 
+import type { EntitlementSubscriptionInvalidatorPort } from "../../../application/ports/entitlement/subscription-cache-invalidator.port.js";
 import type {
   CachedSubscriptionState,
   EntitlementCachePort,
@@ -12,8 +13,14 @@ import {
 } from "../../cache/entitlement/entitlement-cache.keyspace.js";
 
 @Injectable()
-export class EntitlementCacheAdapter implements EntitlementCachePort {
+export class EntitlementCacheAdapter
+  implements EntitlementCachePort, EntitlementSubscriptionInvalidatorPort
+{
   constructor(private readonly cacheService: CacheService) {}
+
+  invalidateSubscription(userId: string): Promise<void> {
+    return this.cacheService.del(EntitlementCacheKey.subscription(userId));
+  }
 
   wrapSubscription(
     userId: string,

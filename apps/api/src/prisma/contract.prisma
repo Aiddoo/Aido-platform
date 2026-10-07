@@ -578,6 +578,15 @@ namespace public {
     @@index([userId], map: "Session_userId_idx")
   }
 
+  model SubscriptionEventReceipt {
+    provider    VarChar(30)
+    eventId     VarChar(255)
+    eventType   VarChar(50)
+    processedAt TimestampString(3)
+
+    @@id([provider, eventId], map: "SubscriptionEventReceipt_pkey")
+  }
+
   model Subscription {
     id                   Int                         @id(map: "Subscription_pkey") @default(autoincrement())
     userId               String

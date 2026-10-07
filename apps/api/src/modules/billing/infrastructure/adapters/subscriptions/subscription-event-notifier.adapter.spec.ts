@@ -1,4 +1,4 @@
-import { vi, type Mock } from "vitest";
+import { vi } from "vitest";
 /**
  * SubscriptionEventNotifierAdapter 단위 테스트
  *
@@ -12,11 +12,14 @@ vi.mock("@sentry/nestjs", () => ({
   withScope: vi.fn((cb: (scope: typeof mockScope) => void) => cb(mockScope)),
 }));
 
+import { Logger } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { TestBed } from "@suites/unit";
 
 import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
 import { SubscriptionEventBuilder } from "#test/builders/index";
+import { SUBSCRIPTION_TIME } from "#test/fixtures/subscription.fixture";
+import { FakeAdminNotifier } from "#test/mocks/fake-admin-notifier";
 
 import { SubscriptionEventNotifierAdapter } from "./subscription-event-notifier.adapter.js";
 
@@ -24,31 +27,31 @@ const captureException = vi.mocked(Sentry.captureException);
 
 describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
   let adapter: SubscriptionEventNotifierAdapter;
-  let mockNotifier: { name: string; send: Mock; isConfigured: Mock };
+  let notifier: FakeAdminNotifier;
+  let payload: ReturnType<SubscriptionEventBuilder["build"]>;
 
   beforeEach(async () => {
-    mockNotifier = {
-      name: "fake",
-      send: vi.fn().mockResolvedValue({ success: true }),
-      isConfigured: vi.fn().mockReturnValue(true),
-    };
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SUBSCRIPTION_TIME);
+    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+    notifier = new FakeAdminNotifier();
+    payload = SubscriptionEventBuilder.initialPurchase()
+      .withAppUserId("user-123")
+      .withProductId("premium_monthly")
+      .build();
 
     const { unit } = await TestBed.solitary(SubscriptionEventNotifierAdapter)
       .mock(PAYMENT_NOTIFIER)
-      .impl(() => mockNotifier)
+      .impl(() => notifier)
       .compile();
 
     adapter = unit;
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
-
-  const payload = SubscriptionEventBuilder.initialPurchase()
-    .withAppUserId("user-123")
-    .withProductId("premium_monthly")
-    .build();
 
   it("Sentry에 결제 도메인 컨텍스트를 태깅해 캡처한다", () => {
     // Given
@@ -72,10 +75,9 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
 
     // When
     adapter.reportWebhookFailure(error, payload);
-    await new Promise((resolve) => setTimeout(resolve, 0)); // fire-and-forget 대기
 
     // Then
-    expect(mockNotifier.send).toHaveBeenCalledWith(
+    expect(notifier.getSentNotifications()).toEqual([
       expect.objectContaining({
         title: "Webhook 처리 에러",
         body: "RevenueCat 웹훅 처리 중 에러가 발생했습니다.",
@@ -90,15 +92,15 @@ describe("SubscriptionEventNotifierAdapter — 웹훅 실패 보고", () => {
           expect.objectContaining({ name: "상품", value: "premium_monthly" }),
         ]),
       }),
-    );
+    ]);
   });
 
   it("Discord 전송 실패는 삼킨다 (호출자에 전파 없음)", async () => {
     // Given
-    mockNotifier.send.mockRejectedValue(new Error("Discord down"));
+    vi.spyOn(notifier, "send").mockRejectedValueOnce(new Error("Discord down"));
 
     // When & Then — 동기 호출은 throw하지 않는다
     expect(() => adapter.reportWebhookFailure(new Error("x"), payload)).not.toThrow();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await vi.waitFor(() => expect(Logger.prototype.warn).toHaveBeenCalledTimes(1));
   });
 });

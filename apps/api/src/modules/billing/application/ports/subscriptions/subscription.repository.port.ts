@@ -23,7 +23,7 @@ export interface CreateSubscriptionData {
   status: SubscriptionStatusValue;
   startedAt: Date;
   expiresAt: Date;
-  lastProcessedEventId?: string;
+  lastProcessedEventId?: string | null;
 }
 
 /** 구독 상태 업데이트 데이터 */
@@ -32,7 +32,7 @@ export interface UpdateSubscriptionStatusData {
   expiresAt?: Date;
   cancelledAt?: Date | null;
   productId?: string;
-  lastProcessedEventId?: string;
+  lastProcessedEventId?: string | null;
 }
 
 /** User 테이블 구독 상태 동기화 데이터 */
@@ -50,6 +50,12 @@ export interface UpdateUserSubscriptionStatusData {
 export interface SubscriptionRepositoryPort {
   findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
   findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
+  findUserById(userId: string): Promise<SubscriptionUser | null>;
+  findOtherEntitlementExpiry(
+    userId: string,
+    excludedRevenueCatId: string,
+    at: Date,
+  ): Promise<Date | null>;
   create(data: CreateSubscriptionData): Promise<void>;
   updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
   updateUserSubscriptionStatus(

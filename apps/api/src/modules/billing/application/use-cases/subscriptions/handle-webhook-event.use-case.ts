@@ -1,52 +1,50 @@
-import {
-  type RevenueCatEventType,
-  type RevenueCatWebhookPayload,
-  revenueCatWebhookPayloadSchema,
-} from "@aido/api";
+import { type RevenueCatWebhookPayload, revenueCatWebhookPayloadSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { match } from "ts-pattern";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import type { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
 import {
   isRefundCancellation,
   resolveCancellationUserStatus,
 } from "../../../domain/services/subscriptions/cancellation-user-status.js";
+import { resolveNegativeSubscriptionProjection } from "../../../domain/services/subscriptions/negative-subscription-projection.policy.js";
+import { TransactionId } from "../../../domain/value-objects/subscriptions/transaction-id.vo.js";
+import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
+import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
+import type { SubscriptionEventNotifierPort } from "../../ports/subscriptions/subscription-event-notifier.port.js";
+import type { SubscriptionEventReceiptRepositoryPort } from "../../ports/subscriptions/subscription-event-receipt.repository.port.js";
+import type { SubscriptionUserMutationLockPort } from "../../ports/subscriptions/subscription-user-mutation-lock.port.js";
+import type { SubscriptionWebhookLockPort } from "../../ports/subscriptions/subscription-webhook-lock.port.js";
+import type {
+  SubscriptionRepositoryPort,
+  SubscriptionUser,
+  UpdateUserSubscriptionStatusData,
+} from "../../ports/subscriptions/subscription.repository.port.js";
+import type { SubscriptionEventPayload } from "../../types/subscriptions/subscription-event.payload.js";
+import { baseEventPayload } from "./subscription-event-payload.mapper.js";
 import {
   nullableExpiresAt,
   optionalExpiresAt,
   requireExpiresAt,
   requirePurchasedAt,
-} from "../../../domain/services/subscriptions/webhook-timestamps.js";
-import { TransactionId } from "../../../domain/value-objects/subscriptions/transaction-id.vo.js";
-import { type SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
-import { type SubscriptionEventNotifierPort } from "../../ports/subscriptions/subscription-event-notifier.port.js";
-import { type SubscriptionWebhookLockPort } from "../../ports/subscriptions/subscription-webhook-lock.port.js";
-import {
-  type SubscriptionRepositoryPort,
-  type SubscriptionUser,
-} from "../../ports/subscriptions/subscription.repository.port.js";
-import type { SubscriptionEventPayload } from "../../types/subscriptions/subscription-event.payload.js";
-import { baseEventPayload } from "./subscription-event-payload.mapper.js";
+} from "./subscription-webhook-timestamps.js";
 
 type RevenueCatEvent = RevenueCatWebhookPayload["event"];
 
-/**
- * RevenueCat 웹훅 이벤트 처리 use-case.
- *
- * `execute(body)`가 오케스트레이션(Zod 검증 → 처리 → 실패 보고)을 소유해 컨트롤러는
- * thin하게 유지된다. 항상 `{ received: true }`를 반환하되, Lock 경합(SUBSCRIPTION_1605)만
- * rethrow해 필터가 429로 변환한다(RevenueCat 재시도 유도). 그 외 에러는 notifier 포트로
- * 보고(Sentry·Discord)한 뒤 200으로 삼켜 무한 재시도를 막는다.
- *
- * 처리 플로우(`#process`): Lock 획득 → 사용자 조회 → event.id 중복 체크 → 이벤트 타입별
- * 트랜잭션 처리 → (DB 변경 시) 캐시 무효화 + 큐 잡 등록 → Lock 해제. 멱등성은 byte-identical.
- */
+export interface HandleWebhookEventInput {
+  readonly body: unknown;
+}
+
 interface HandleWebhookEventDependencies {
   readonly subscriptionRepository: SubscriptionRepositoryPort;
+  readonly receiptRepository: SubscriptionEventReceiptRepositoryPort;
+  readonly userMutationLock: SubscriptionUserMutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly cache: SubscriptionCachePort;
   readonly notifier: SubscriptionEventNotifierPort;
@@ -54,206 +52,290 @@ interface HandleWebhookEventDependencies {
   readonly logger: ApplicationLogger;
 }
 
+interface SubscriptionTransition {
+  readonly userState: UpdateUserSubscriptionStatusData;
+  readonly payload: SubscriptionEventPayload;
+}
+
 export class HandleWebhookEvent {
-  /** 무시할 이벤트 타입 (로그만 남김) */
-  readonly #IGNORED_EVENTS = new Set(["TEST", "SUBSCRIBER_ALIAS"]);
-
-  /** 이벤트 타입별 핸들러 맵 */
-  readonly #eventHandlers = new Map<
-    RevenueCatEventType,
-    (user: SubscriptionUser, event: RevenueCatEvent) => Promise<SubscriptionEventPayload | null>
-  >([
-    ["INITIAL_PURCHASE", (u, ev) => this.#handleInitialPurchase(u, ev)],
-    ["RENEWAL", (u, ev) => this.#handleRenewal(u, ev)],
-    ["CANCELLATION", (u, ev) => this.#handleCancellation(u, ev)],
-    ["UNCANCELLATION", (u, ev) => this.#handleUncancellation(u, ev)],
-    ["EXPIRATION", (u, ev) => this.#handleExpiration(u, ev)],
-    ["BILLING_ISSUE", (u, ev) => Promise.resolve(this.#handleBillingIssue(u, ev))],
-    ["NON_RENEWING_PURCHASE", (u, ev) => this.#handleInitialPurchase(u, ev)],
-    ["PRODUCT_CHANGE", (u, ev) => this.#handleProductChange(u, ev)],
-    ["SUBSCRIPTION_EXTENDED", (u, ev) => this.#handleSubscriptionExtended(u, ev)],
-    ["TRANSFER", (u, ev) => this.#handleTransfer(u, ev)],
-  ]);
-
   readonly #dependencies: HandleWebhookEventDependencies;
 
   constructor(dependencies: HandleWebhookEventDependencies) {
     this.#dependencies = dependencies;
   }
 
-  /**
-   * 웹훅 요청 본문을 검증·처리하고 항상 `{ received: true }`를 반환한다.
-   *
-   * - Zod 검증 실패 → 경고 로그 후 200 (RevenueCat 재시도 방지)
-   * - Lock 경합(SUBSCRIPTION_1605) → rethrow (필터가 429로 변환, 재시도 유도)
-   * - 그 외 에러 → notifier로 실패 보고(Sentry·Discord) 후 200
-   */
-  async execute(body: unknown): Promise<{ received: true }> {
-    const parseResult = revenueCatWebhookPayloadSchema.safeParse(body);
+  async execute(input: HandleWebhookEventInput): Promise<{ received: true }> {
+    const parseResult = revenueCatWebhookPayloadSchema.safeParse(input.body);
     if (!parseResult.success) {
-      this.#dependencies.logger.warn(
-        `Invalid webhook payload: ${JSON.stringify(parseResult.error.issues)}`,
-      );
+      this.#dependencies.logger.warn({
+        event: BillingLogEvent.WEBHOOK_INVALID,
+        issueCount: parseResult.error.issues.length,
+      });
       return { received: true };
     }
 
     const payload = parseResult.data;
     try {
-      await this.#process(payload);
+      await this.#process(payload.event);
     } catch (error) {
-      // Lock 경합 → 429 반환 (RevenueCat 재시도 유도)
-      // SUBSCRIPTION_1605는 httpStatus=429이므로 GlobalExceptionFilter가 그대로 처리
       if (
         error instanceof ApplicationException &&
         error.errorCode === ErrorCode.SUBSCRIPTION_1605
       ) {
-        this.#dependencies.logger.warn(`Lock contention, returning 429: ${error.message}`);
+        this.#dependencies.logger.warn({ event: BillingLogEvent.WEBHOOK_LOCK_CONTENDED });
         throw error;
       }
 
-      // 그 외 에러 → Sentry + Discord 알림 (200 반환, 무한 재시도 방지)
+      // 기존 실패 보고와 HTTP 200 계약을 유지한다.
       this.#dependencies.notifier.reportWebhookFailure(error, payload);
-      this.#dependencies.logger.error(
-        `Failed to process webhook event: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#dependencies.logger.error({
+        event: BillingLogEvent.WEBHOOK_FAILED,
+        eventType: payload.event.type,
+        errorCode: error instanceof ApplicationException ? error.errorCode : undefined,
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
     }
 
     return { received: true };
   }
 
-  async #process(payload: RevenueCatWebhookPayload): Promise<void> {
-    const { event } = payload;
-    const appUserId = event.app_user_id;
-    const eventType = event.type;
-
-    this.#dependencies.logger.log(
-      `Processing webhook event: type=${eventType}, appUserId=${appUserId}, productId=${event.product_id}${event.id ? `, eventId=${event.id}` : ""}`,
-    );
-
-    // 1. Lock 획득
-    const release = await this.#dependencies.webhookLock.acquire(appUserId);
-
-    if (!release) {
-      this.#dependencies.logger.warn(
-        `Lock contention for appUserId=${appUserId}, event=${eventType} — will retry via 429`,
-      );
-      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1605, {
-        appUserId,
-      });
+  async #process(event: RevenueCatEvent): Promise<void> {
+    const { subscriptionRepository, webhookLock, unitOfWork, userMutationLock, receiptRepository } =
+      this.#dependencies;
+    this.#dependencies.logger.log({
+      event: BillingLogEvent.WEBHOOK_STARTED,
+      eventType: event.type,
+      eventId: event.id,
+    });
+    const release = await webhookLock.acquire(event.app_user_id);
+    if (release === null) {
+      throw new ApplicationException(ErrorCode.SUBSCRIPTION_1605, { appUserId: event.app_user_id });
     }
 
     try {
-      const user = await this.#dependencies.subscriptionRepository.findUserByAppUserId(appUserId);
-
-      if (!user) {
+      const user = await subscriptionRepository.findUserByAppUserId(event.app_user_id);
+      if (user === null) {
         throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
-          appUserId,
+          appUserId: event.app_user_id,
         });
       }
+      if (!this.#isSupported(event)) {
+        this.#dependencies.logger.log({
+          event: BillingLogEvent.WEBHOOK_IGNORED,
+          eventType: event.type,
+          userId: user.id,
+        });
+        return;
+      }
 
-      // 2. event.id 기반 중복 체크 (event.id가 있고, 기존 구독이 있는 경우)
-      const eventId = event.id;
-      if (eventId) {
+      const eventId = event.id === "" ? undefined : event.id;
+      const eventPayload = await unitOfWork.run(async () => {
+        if (!(await userMutationLock.lockById(user.id))) {
+          throw new ApplicationException(ErrorCode.SUBSCRIPTION_1602, {
+            appUserId: event.app_user_id,
+          });
+        }
+        // 처리 원장은 업무 변경과 함께 커밋한다. 실패한 트랜잭션은 다시 처리할 수 있다.
+        if (
+          eventId !== undefined &&
+          !(await receiptRepository.claim({
+            eventId,
+            eventType: event.type,
+            processedAt: now(),
+          }))
+        ) {
+          this.#dependencies.logger.debug({
+            event: BillingLogEvent.WEBHOOK_DUPLICATE,
+            eventType: event.type,
+            userId: user.id,
+            eventId,
+          });
+          return null;
+        }
+
         const transactionId = event.original_transaction_id ?? event.transaction_id;
-        if (transactionId) {
-          const existing =
-            await this.#dependencies.subscriptionRepository.findByRevenueCatId(transactionId);
-          if (existing?.wasProcessedWith(eventId)) {
-            this.#dependencies.logger.log(
-              `Duplicate event detected: eventId=${eventId}, transactionId=${transactionId} — skipping`,
-            );
-            return;
-          }
-        }
-      }
+        const subscription =
+          transactionId !== undefined && transactionId !== ""
+            ? await subscriptionRepository.findByRevenueCatId(transactionId)
+            : null;
+        // 배포 이전 마지막 이벤트 ID도 중복 처리하지 않는다.
+        if (eventId !== undefined && subscription?.wasProcessedWith(eventId)) return null;
+        return this.#applyEvent(user, event, subscription, eventId);
+      });
 
-      // 3. 무시할 이벤트 타입 처리
-      if (this.#IGNORED_EVENTS.has(eventType)) {
-        this.#dependencies.logger.log(`Ignored event: ${eventType} for appUserId=${appUserId}`);
+      if (eventPayload === null) {
+        this.#dependencies.logger.debug({
+          event: BillingLogEvent.WEBHOOK_NO_CHANGE,
+          eventType: event.type,
+          userId: user.id,
+        });
         return;
       }
-
-      // 4. 이벤트 타입별 핸들러 실행
-      const handler = this.#eventHandlers.get(eventType);
-      if (!handler) {
-        this.#dependencies.logger.warn(`Unknown event type: ${eventType}`);
-        return;
-      }
-
-      const eventPayload = await handler(user, event);
-
-      // 5. 캐시 무효화 + 큐 잡 등록 (DB 변경이 있었을 때만)
-      if (eventPayload) {
-        await this.#dependencies.cache.invalidate(user.id);
-
-        this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
-
-        if (eventType === "BILLING_ISSUE") {
-          this.#dependencies.notifier.notifyBillingIssue(user.id);
-        }
-
-        this.#dependencies.logger.log(
-          `Subscription event processed: ${eventType} for userId=${user.id}`,
-        );
-      }
+      await this.#dependencies.cache.invalidate(user.id);
+      this.#dependencies.notifier.notifySubscriptionEvent(eventPayload);
+      if (event.type === "BILLING_ISSUE") this.#dependencies.notifier.notifyBillingIssue(user.id);
+      this.#dependencies.logger.log({
+        event: BillingLogEvent.WEBHOOK_COMPLETED,
+        eventType: event.type,
+        userId: user.id,
+      });
     } finally {
-      // 6. Lock 해제
       await release();
     }
   }
 
-  /**
-   * INITIAL_PURCHASE: 최초 구매
-   *
-   * Subscription 레코드 생성 + User 상태 ACTIVE
-   * 멱등성: 동일 transactionId 구독이 이미 있으면 skip → null 반환 (이벤트 미발행)
-   */
-  async #handleInitialPurchase(
+  #isSupported(event: RevenueCatEvent): boolean {
+    return match(event.type)
+      .with(
+        "INITIAL_PURCHASE",
+        "NON_RENEWING_PURCHASE",
+        "RENEWAL",
+        "CANCELLATION",
+        "UNCANCELLATION",
+        "EXPIRATION",
+        "BILLING_ISSUE",
+        "PRODUCT_CHANGE",
+        "SUBSCRIPTION_EXTENDED",
+        "TRANSFER",
+        () => true,
+      )
+      .otherwise(() => false);
+  }
+
+  async #applyEvent(
     user: SubscriptionUser,
     event: RevenueCatEvent,
+    subscription: Subscription | null,
+    eventId: string | undefined,
   ): Promise<SubscriptionEventPayload | null> {
-    const transactionId = this.#resolveTransactionId(event);
-
-    const startedAt = requirePurchasedAt(event, "Missing purchased_at_ms for INITIAL_PURCHASE");
-    const expiresAt = requireExpiresAt(event, "Missing expiration_at_ms for INITIAL_PURCHASE");
-
-    const skipped = await this.#dependencies.unitOfWork.run(async () => {
-      // 멱등성 가드: 중복 webhook 재전송 대비
-      const existing =
-        await this.#dependencies.subscriptionRepository.findByRevenueCatId(transactionId);
-      if (existing) {
-        this.#dependencies.logger.log(
-          `Subscription already exists for transactionId=${transactionId}, skipping create`,
-        );
-        return true;
+    const { subscriptionRepository } = this.#dependencies;
+    if (event.type === "TRANSFER") {
+      const existingUser = await subscriptionRepository.findUserByAppUserId(event.app_user_id);
+      if (existingUser?.id !== user.id) {
+        await subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+          subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
+          revenueCatUserId: event.app_user_id,
+        });
       }
-
-      await this.#dependencies.subscriptionRepository.create({
-        userId: user.id,
-        revenueCatId: transactionId,
-        productId: event.product_id,
-        status: "ACTIVE",
-        startedAt,
-        expiresAt,
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: "ACTIVE",
-        subscriptionExpiresAt: expiresAt,
-      });
-      return false;
-    });
-
-    if (skipped) {
-      return null;
+      return baseEventPayload(user, event);
     }
 
-    this.#dependencies.logger.log(
-      `Initial purchase processed: userId=${user.id}, productId=${event.product_id}, transactionId=${transactionId}`,
-    );
+    const transactionId = TransactionId.resolve(
+      event.original_transaction_id,
+      event.transaction_id,
+      event.type,
+    ).value;
+    if (event.type === "BILLING_ISSUE") return baseEventPayload(user, event, transactionId);
+    if (event.type === "INITIAL_PURCHASE" || event.type === "NON_RENEWING_PURCHASE") {
+      return this.#createSubscription(user, event, transactionId, subscription, eventId);
+    }
 
+    // RENEWAL이 요구하는 시각 오류는 기존처럼 구독 없음 오류보다 우선한다.
+    const renewalExpiresAt =
+      event.type === "RENEWAL"
+        ? requireExpiresAt(
+            event.expiration_at_ms,
+            event.type,
+            "Missing expiration_at_ms for RENEWAL",
+          )
+        : undefined;
+    if (subscription === null) {
+      throw new ApplicationException(
+        ErrorCode.SUBSCRIPTION_1604,
+        event.type === "RENEWAL"
+          ? {
+              reason: `Subscription not found for RENEWAL: ${transactionId}`,
+              eventType: event.type,
+            }
+          : { reason: `Subscription not found: ${transactionId}` },
+      );
+    }
+
+    const transition = this.#planTransition(
+      user,
+      event,
+      transactionId,
+      subscription,
+      eventId,
+      renewalExpiresAt,
+    );
+    if (transition === null) return null;
+    await subscriptionRepository.updateStatus(transactionId, subscription.persistenceState);
+    const userState = await this.#resolveUserProjection(
+      user.id,
+      transactionId,
+      transition.userState,
+    );
+    if (userState !== null) {
+      await subscriptionRepository.updateUserSubscriptionStatus(user.id, userState);
+    }
+    return transition.payload;
+  }
+
+  async #resolveUserProjection(
+    userId: string,
+    transactionId: string,
+    requestedState: UpdateUserSubscriptionStatusData,
+  ): Promise<UpdateUserSubscriptionStatusData | null> {
+    if (
+      requestedState.subscriptionStatus !== "FREE" &&
+      requestedState.subscriptionStatus !== "CANCELLED"
+    ) {
+      return requestedState;
+    }
+
+    const { subscriptionRepository } = this.#dependencies;
+    const user = await subscriptionRepository.findUserById(userId);
+    if (user === null) return requestedState;
+    const at = now();
+    const otherExpiresAt = await subscriptionRepository.findOtherEntitlementExpiry(
+      userId,
+      transactionId,
+      at,
+    );
+    const projection = resolveNegativeSubscriptionProjection({
+      currentStatus: user.subscriptionStatus,
+      currentExpiresAt: user.subscriptionExpiresAt,
+      otherExpiresAt,
+      at,
+    });
+    if (projection === null) return requestedState;
+    if (projection.expiresAt.getTime() === user.subscriptionExpiresAt?.getTime()) return null;
+    return { subscriptionStatus: projection.status, subscriptionExpiresAt: projection.expiresAt };
+  }
+
+  async #createSubscription(
+    user: SubscriptionUser,
+    event: RevenueCatEvent,
+    transactionId: string,
+    existing: Subscription | null,
+    eventId: string | undefined,
+  ): Promise<SubscriptionEventPayload | null> {
+    const startedAt = requirePurchasedAt(
+      event.purchased_at_ms,
+      event.type,
+      "Missing purchased_at_ms for INITIAL_PURCHASE",
+    );
+    const expiresAt = requireExpiresAt(
+      event.expiration_at_ms,
+      event.type,
+      "Missing expiration_at_ms for INITIAL_PURCHASE",
+    );
+    if (existing !== null) return null;
+    const { subscriptionRepository } = this.#dependencies;
+    await subscriptionRepository.create({
+      userId: user.id,
+      revenueCatId: transactionId,
+      productId: event.product_id,
+      status: "ACTIVE",
+      startedAt,
+      expiresAt,
+      ...(eventId !== undefined && { lastProcessedEventId: eventId }),
+    });
+    await subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: expiresAt,
+    });
     return {
       ...baseEventPayload(user, event, transactionId),
       purchasedAt: toISOString(startedAt),
@@ -261,328 +343,75 @@ export class HandleWebhookEvent {
       priceUsd: event.price,
       priceInPurchasedCurrency: event.price_in_purchased_currency,
       purchasedCurrency: event.currency,
-    } satisfies SubscriptionEventPayload;
+    };
   }
 
-  /**
-   * RENEWAL: 갱신
-   *
-   * Subscription 갱신 + User 상태 ACTIVE + expiresAt 업데이트
-   * 멱등성: 동일 expiresAt으로 이미 갱신되었으면 skip → null 반환 (이벤트 미발행)
-   */
-  async #handleRenewal(
+  #planTransition(
     user: SubscriptionUser,
     event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload | null> {
-    const transactionId = this.#resolveTransactionId(event);
-
-    const expiresAt = requireExpiresAt(event, "Missing expiration_at_ms for RENEWAL");
-
-    const skipped = await this.#dependencies.unitOfWork.run(async () => {
-      // 멱등성 가드: 동일 expiresAt으로 이미 갱신되었으면 skip
-      const existing =
-        await this.#dependencies.subscriptionRepository.findByRevenueCatId(transactionId);
-      if (!existing) {
-        throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
-          reason: `Subscription not found for RENEWAL: ${transactionId}`,
-          eventType: event.type,
-        });
-      }
-      if (existing.isActiveWithSameExpiry(expiresAt)) {
-        this.#dependencies.logger.log(
-          `Already renewed with same expiresAt, skipping: transactionId=${transactionId}`,
-        );
-        return true;
-      }
-
-      await this.#dependencies.subscriptionRepository.updateStatus(transactionId, {
-        status: "ACTIVE",
-        expiresAt,
-        cancelledAt: null,
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: "ACTIVE",
-        subscriptionExpiresAt: expiresAt,
-      });
-      return false;
+    transactionId: string,
+    subscription: Subscription,
+    eventId: string | undefined,
+    renewalExpiresAt: Date | undefined,
+  ): SubscriptionTransition | null {
+    const payload = baseEventPayload(user, event, transactionId);
+    const expiresAt = optionalExpiresAt(event.expiration_at_ms);
+    const activeUserState: UpdateUserSubscriptionStatusData = {
+      subscriptionStatus: "ACTIVE",
+      ...(expiresAt !== undefined && { subscriptionExpiresAt: expiresAt }),
+    };
+    const payloadWithExpiry = (): SubscriptionEventPayload => ({
+      ...payload,
+      expiresAt: expiresAt === undefined ? undefined : toISOString(expiresAt),
     });
-
-    if (skipped) {
-      return null;
-    }
-
-    this.#dependencies.logger.log(
-      `Renewal processed: userId=${user.id}, transactionId=${transactionId}, newExpiresAt=${toISOString(expiresAt)}`,
-    );
-
-    return {
-      ...baseEventPayload(user, event, transactionId),
-      expiresAt: toISOString(expiresAt),
-      priceUsd: event.price,
-      priceInPurchasedCurrency: event.price_in_purchased_currency,
-      purchasedCurrency: event.currency,
-    } satisfies SubscriptionEventPayload;
-  }
-
-  /**
-   * CANCELLATION: 취소 또는 환불
-   *
-   * - 일반 취소 (UNSUBSCRIBE 등): Subscription CANCELLED + User는 만료일까지 ACTIVE 유지
-   * - 환불 (CUSTOMER_SUPPORT): Subscription EXPIRED + User 즉시 FREE (접근 권한 회수)
-   *
-   * RevenueCat은 환불을 별도 이벤트로 보내지 않고 CANCELLATION + cancel_reason으로 구분합니다.
-   */
-  async #handleCancellation(
-    user: SubscriptionUser,
-    event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload> {
-    const transactionId = this.#resolveTransactionId(event);
-    const webhookExpiresAt = nullableExpiresAt(event);
-    const isRefund = isRefundCancellation(event.cancel_reason);
-
-    await this.#dependencies.unitOfWork.run(async () => {
-      // webhook expiresAt 없으면 DB 기존값 fallback
-      let expiresAt = webhookExpiresAt;
-      if (!expiresAt) {
-        const existing =
-          await this.#dependencies.subscriptionRepository.findByRevenueCatId(transactionId);
-        expiresAt = existing?.expiresAt ?? null;
-      }
-
-      // 환불: Subscription EXPIRED, 일반 취소: Subscription CANCELLED
-      await this.#dependencies.subscriptionRepository.updateStatus(transactionId, {
-        status: isRefund ? "EXPIRED" : "CANCELLED",
-        cancelledAt: now(),
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      if (isRefund) {
-        // 환불: 즉시 접근 권한 회수
-        await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-          subscriptionStatus: "FREE",
-          subscriptionExpiresAt: null,
-        });
-      } else {
-        // 일반 취소: 만료일까지 ACTIVE 유지 (60초 grace period로 clock skew 대응)
-        const userStatus = resolveCancellationUserStatus(expiresAt);
-
-        await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-          subscriptionStatus: userStatus,
-          ...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-        });
-      }
-    });
-
-    this.#dependencies.logger.log(
-      `Cancellation processed: userId=${user.id}, transactionId=${transactionId}, isRefund=${isRefund}, expiresAt=${webhookExpiresAt ? toISOString(webhookExpiresAt) : "N/A"}`,
-    );
-
-    return {
-      ...baseEventPayload(user, event, transactionId),
-      expiresAt: webhookExpiresAt ? toISOString(webhookExpiresAt) : undefined,
-      cancelReason: event.cancel_reason,
-    } satisfies SubscriptionEventPayload;
-  }
-
-  /**
-   * UNCANCELLATION: 취소 철회
-   *
-   * Subscription ACTIVE + cancelledAt null
-   */
-  async #handleUncancellation(
-    user: SubscriptionUser,
-    event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload> {
-    const transactionId = this.#resolveTransactionId(event);
-    const expiresAt = optionalExpiresAt(event);
-
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.subscriptionRepository.updateStatus(transactionId, {
-        status: "ACTIVE",
-        cancelledAt: null,
-        ...(expiresAt && { expiresAt }),
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: "ACTIVE",
-        ...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-      });
-    });
-
-    this.#dependencies.logger.log(
-      `Uncancellation processed: userId=${user.id}, transactionId=${transactionId}`,
-    );
-
-    return {
-      ...baseEventPayload(user, event, transactionId),
-      expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
-    } satisfies SubscriptionEventPayload;
-  }
-
-  /**
-   * EXPIRATION: 만료
-   *
-   * Subscription EXPIRED + User FREE (무료 사용자로 복귀)
-   * subscriptionExpiresAt도 null로 초기화
-   */
-  async #handleExpiration(
-    user: SubscriptionUser,
-    event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload> {
-    const transactionId = this.#resolveTransactionId(event);
-
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.subscriptionRepository.updateStatus(transactionId, {
-        status: "EXPIRED",
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: "FREE",
-        subscriptionExpiresAt: null,
-      });
-    });
-
-    this.#dependencies.logger.log(
-      `Expiration processed: userId=${user.id}, transactionId=${transactionId}`,
-    );
-
-    return baseEventPayload(user, event, transactionId);
-  }
-
-  /**
-   * BILLING_ISSUE: 결제 문제 감지
-   *
-   * 로그만 남기고 구독은 유지합니다.
-   */
-  #handleBillingIssue(user: SubscriptionUser, event: RevenueCatEvent): SubscriptionEventPayload {
-    const transactionId = this.#resolveTransactionId(event);
-    this.#dependencies.logger.log(
-      `Billing issue detected: userId=${user.id}, productId=${event.product_id}, store=${event.store ?? "unknown"}`,
-    );
-
-    return baseEventPayload(user, event, transactionId);
-  }
-
-  /**
-   * PRODUCT_CHANGE: 상품 변경
-   *
-   * Subscription productId 업데이트
-   */
-  async #handleProductChange(
-    user: SubscriptionUser,
-    event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload> {
-    const transactionId = this.#resolveTransactionId(event);
-    const expiresAt = optionalExpiresAt(event);
-
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.subscriptionRepository.updateStatus(transactionId, {
-        productId: event.product_id,
-        ...(expiresAt && { expiresAt }),
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: "ACTIVE",
-        ...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-      });
-    });
-
-    this.#dependencies.logger.log(
-      `Product change processed: userId=${user.id}, newProductId=${event.product_id}, transactionId=${transactionId}`,
-    );
-
-    return {
-      ...baseEventPayload(user, event, transactionId),
-      expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
-    } satisfies SubscriptionEventPayload;
-  }
-
-  /**
-   * SUBSCRIPTION_EXTENDED: 구독 연장
-   *
-   * Apple/Google이 서비스 크레딧 등으로 구독을 연장할 때 발생합니다.
-   * expiresAt 갱신 + ACTIVE 유지
-   */
-  async #handleSubscriptionExtended(
-    user: SubscriptionUser,
-    event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload> {
-    const transactionId = this.#resolveTransactionId(event);
-    const expiresAt = optionalExpiresAt(event);
-
-    await this.#dependencies.unitOfWork.run(async () => {
-      await this.#dependencies.subscriptionRepository.updateStatus(transactionId, {
-        status: "ACTIVE",
-        ...(expiresAt && { expiresAt }),
-        ...(event.id && { lastProcessedEventId: event.id }),
-      });
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: "ACTIVE",
-        ...(expiresAt && { subscriptionExpiresAt: expiresAt }),
-      });
-    });
-
-    this.#dependencies.logger.log(
-      `Subscription extended: userId=${user.id}, transactionId=${transactionId}, newExpiresAt=${expiresAt ? toISOString(expiresAt) : "N/A"}`,
-    );
-
-    return {
-      ...baseEventPayload(user, event, transactionId),
-      expiresAt: expiresAt ? toISOString(expiresAt) : undefined,
-    } satisfies SubscriptionEventPayload;
-  }
-
-  /**
-   * TRANSFER: 구독 이전
-   *
-   * RevenueCat에서 구독이 다른 사용자로 이전될 때 발생합니다.
-   * revenueCatUserId를 새 appUserId로 갱신합니다.
-   * subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
-   */
-  async #handleTransfer(
-    user: SubscriptionUser,
-    event: RevenueCatEvent,
-  ): Promise<SubscriptionEventPayload> {
-    const newAppUserId = event.app_user_id;
-
-    // revenueCatUserId를 새 appUserId로 갱신
-    // subscriptionStatus는 현재 상태 유지 (TRANSFER는 상태 변경이 아닌 ID 매핑 변경)
-    await this.#dependencies.unitOfWork.run(async () => {
-      const existingUser =
-        await this.#dependencies.subscriptionRepository.findUserByAppUserId(newAppUserId);
-
-      // 이미 올바른 매핑이면 skip (idempotency)
-      if (existingUser?.id === user.id) {
-        return;
-      }
-
-      await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-        subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
-        revenueCatUserId: newAppUserId,
-      });
-    });
-
-    this.#dependencies.logger.log(
-      `Transfer: userId=${user.id}, revenueCatUserId → ${newAppUserId}`,
-    );
-
-    return baseEventPayload(user, event);
-  }
-
-  /**
-   * transactionId 추출 (빈 문자열 방지)
-   *
-   * RevenueCat은 original_transaction_id를 갱신 체인 식별에 사용합니다.
-   * 둘 다 없으면 webhook 처리 실패로 간주합니다.
-   */
-  #resolveTransactionId(event: RevenueCatEvent): string {
-    return TransactionId.resolve(event.original_transaction_id, event.transaction_id, event.type)
-      .value;
+    return match(event.type)
+      .with("RENEWAL", () => {
+        if (renewalExpiresAt === undefined || !subscription.renew(renewalExpiresAt, eventId))
+          return null;
+        return {
+          userState: { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: renewalExpiresAt },
+          payload: {
+            ...payload,
+            expiresAt: toISOString(renewalExpiresAt),
+            priceUsd: event.price,
+            priceInPurchasedCurrency: event.price_in_purchased_currency,
+            purchasedCurrency: event.currency,
+          },
+        } satisfies SubscriptionTransition;
+      })
+      .with("CANCELLATION", () => {
+        const refunded = isRefundCancellation(event.cancel_reason);
+        const cancellationExpiresAt = expiresAt ?? subscription.expiresAt;
+        subscription.cancel({ refunded, cancelledAt: now(), eventId });
+        return {
+          userState: refunded
+            ? { subscriptionStatus: "FREE", subscriptionExpiresAt: null }
+            : {
+                subscriptionStatus: resolveCancellationUserStatus(cancellationExpiresAt),
+                subscriptionExpiresAt: cancellationExpiresAt,
+              },
+          payload: { ...payloadWithExpiry(), cancelReason: event.cancel_reason },
+        } satisfies SubscriptionTransition;
+      })
+      .with("UNCANCELLATION", () => {
+        subscription.uncancel(expiresAt, eventId);
+        return { userState: activeUserState, payload: payloadWithExpiry() };
+      })
+      .with("EXPIRATION", () => {
+        if (!subscription.expire(nullableExpiresAt(event.expiration_at_ms), eventId)) return null;
+        return {
+          userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
+          payload,
+        } satisfies SubscriptionTransition;
+      })
+      .with("PRODUCT_CHANGE", () => {
+        subscription.changeProduct(event.product_id, expiresAt, eventId);
+        return { userState: activeUserState, payload: payloadWithExpiry() };
+      })
+      .with("SUBSCRIPTION_EXTENDED", () => {
+        subscription.extend(expiresAt, eventId);
+        return { userState: activeUserState, payload: payloadWithExpiry() };
+      })
+      .otherwise(() => null);
   }
 }

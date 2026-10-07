@@ -20,7 +20,7 @@ export function isRefundCancellation(cancelReason: string | null | undefined): b
  * 만료일이 grace period(60초)를 감안해 아직 미래이면 만료일까지 ACTIVE 유지, 아니면 CANCELLED.
  */
 export function resolveCancellationUserStatus(expiresAt: Date | null): "ACTIVE" | "CANCELLED" {
-  return expiresAt && isAfter(expiresAt, subtractMilliseconds(GRACE_PERIOD_MS))
+  return expiresAt !== null && isAfter(expiresAt, subtractMilliseconds(GRACE_PERIOD_MS))
     ? "ACTIVE"
     : "CANCELLED";
 }

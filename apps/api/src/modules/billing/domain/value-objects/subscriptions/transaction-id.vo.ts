@@ -21,7 +21,7 @@ export class TransactionId {
     eventType: string,
   ): TransactionId {
     const resolved = originalTransactionId ?? transactionId;
-    if (!resolved) {
+    if (resolved === undefined || resolved === null || resolved === "") {
       throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
         reason: "Missing transaction_id and original_transaction_id",
         eventType,
