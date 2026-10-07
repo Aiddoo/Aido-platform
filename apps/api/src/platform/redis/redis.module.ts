@@ -109,11 +109,7 @@ export class RedisModule implements OnApplicationShutdown {
     };
   }
 
-  /**
-   * BullMQ Worker/Queue가 같은 훅에서 먼저 정리된 뒤(Nest가 의존 역순 호출)
-   * 연결을 닫는다 — onModuleDestroy에서 닫으면 in-flight 명령이
-   * "Connection is closed." unhandled rejection을 일으킨다.
-   */
+  /** beforeApplicationShutdown에서 worker drain을 마친 뒤 Redis 연결을 닫는다. */
   async onApplicationShutdown(): Promise<void> {
     this.shutdownPromise ??= this.closeClients();
     await this.shutdownPromise;

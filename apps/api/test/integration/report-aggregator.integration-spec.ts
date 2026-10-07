@@ -171,7 +171,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
   afterAll(async () => {
     try {
       if (module) {
-        await module.get(DatabaseService).onModuleDestroy();
+        await module.get(DatabaseService).onApplicationShutdown();
         expect(
           (
             await prismaClient.orm.public.User.aggregate((aggregate) => ({

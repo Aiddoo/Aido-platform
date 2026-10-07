@@ -5,7 +5,7 @@ import {
   Injectable,
   Module,
   type OnApplicationBootstrap,
-  type OnApplicationShutdown,
+  type BeforeApplicationShutdown,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
@@ -136,14 +136,14 @@ export const jobRuntimeProvider: FactoryProvider<JobRuntimePort> = {
 };
 
 @Injectable()
-export class JobRuntimeLifecycle implements OnApplicationBootstrap, OnApplicationShutdown {
+export class JobRuntimeLifecycle implements OnApplicationBootstrap, BeforeApplicationShutdown {
   constructor(@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort) {}
 
   async onApplicationBootstrap(): Promise<void> {
     await this.runtime.start();
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  async beforeApplicationShutdown(): Promise<void> {
     await this.runtime.stop();
   }
 }

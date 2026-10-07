@@ -43,7 +43,7 @@ export function createTestClient(
 
 /** TestDatabase owns teardown; Nest fixture shutdown must not dispose that client. */
 export function createTestDatabaseService(client: TestDatabaseClient): DatabaseService {
-  return { db: client, async onModuleDestroy() {} };
+  return { db: client, async onApplicationShutdown() {} };
 }
 
 export function createDatabaseContext(client: TestDatabaseClient): Prisma8Transaction {

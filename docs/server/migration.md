@@ -1194,3 +1194,18 @@ Operations/Support/AppConfig Module 클래스 이름을 파일명에 맞췄다. 
 - actionlint 1.7.12·범위 lint/format·상대 링크 5개 통과. 독립 읽기 리뷰에서도 새 핵심 proof 결함은 확인하지 못했다.
 
 중간 Draft 문서 PR의 실제 run 37676024890은 5개 job이 모두 skipped였다. 이 기록을 workflow 메타데이터가 생성되지 않았다는 뜻으로 표현하지 않는다. 최종 tip·원격 artifact 재사용·이미지 발행·배포·청구 비용은 아직 실제 실행 전이며 이후 Issue/PR에 결과를 기록한다. 자세한 적용 기준은 [CI 문서](ci.md)다.
+
+## 16b 종료 중 작업과 DB 수명주기
+
+[Issue #931](https://github.com/Aiddoo/Aido-platform/issues/931)의 수정이다. Nest의 `onModuleDestroy`에서 native DB를 먼저 닫고 `onApplicationShutdown`에서 worker를 기다리던 순서 때문에 종료 중 작업의 새 쓰기가 실패했다. worker drain을 `beforeApplicationShutdown`, DB close를 `onApplicationShutdown`으로 옮겼다. 시작·backend·큐 이름·retry·timeout 계약은 유지한다.
+
+Before의 실제 Nest Module·native PostgreSQL 회귀 1개(seed116001, Asia/Seoul, 2.99초)는 `DRIVER.NOT_CONNECTED`와 저장 값 0을 확인하며 실패했다. Nest는 종료 hook 실패를 수집하므로 `app.close()`의 reject를 문제로 주장하지 않는다. 수정 후 같은 쓰기 검증에서 저장 값 1과 drain 완료 뒤 DB close를 확인했다.
+
+- lifecycle Unit 1 file / 9 tests: seed116011, 736ms 통과.
+- 실제 PG 종료·기존 보고서 집계 2 files / 9 tests: seed116012, Asia/Seoul, 6.86초 통과.
+- 중앙 UserFixture·Promise.withResolvers·명시적 undefined 검사로 정리한 최종 종료 사례 1 file / 1 test: seed116014, Asia/Seoul, 3.02초 통과. 이후 erased generic 타입 표시만 추가하고 범위 type/lint/format을 확인했다.
+- 소유 fixture DB 잔여 0. 해당 변경과 함께 수행한 workspace typecheck·build도 통과했다.
+
+Production Compose에는 `stop_grace_period: 120s`를 지정했다. 기본 JobRuntime 대기 90초와 HTTP·자원 종료 여유를 고려한 값이며, 비밀값을 해석하지 않은 실제 Compose 출력에서 120s와 migration 성공 의존성을 확인했다. 운영 컨테이너의 실제 적용은 배포 후 확인한다.
+
+테스트는 실제 DB와 제어 가능한 JobRuntimePort를 사용한다. 실제 pg-boss/BullMQ backend drain, timeout보다 오래 걸리는 작업, 모든 비동기 작업·HTTP 요청의 완료까지 증명하지 않는다. 제한 시간·force close 동작은 변경하지 않았다.

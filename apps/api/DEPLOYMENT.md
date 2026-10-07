@@ -53,7 +53,7 @@ Notification14의 `20261007T1840_push_receipt_token_fingerprint`는 nullable `Pu
 
 기본 `JOB_BACKEND=postgres`와 `PUSH_RATE_LIMIT_BACKEND=postgres`는 별도 선택이다. Redis/BullMQ는 선택 backend·기존 작업 drain을 위해 남아 있다. `JOB_REDIS_DRAIN_ENABLED=true`의 전환 runtime은 신규 enqueue를 PostgreSQL로 보내고 기존 Redis 작업을 처리하며 이전 scheduler를 정리한다.
 
-job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이다. production compose에는 별도 `stop_grace_period`가 없어 컨테이너 종료 유예가 이 대기보다 충분하다고 보장하지 않는다. 배포 시 종료 유예와 active 작업의 drain 결과를 별도로 확인한다.
+job runtime의 기본 graceful 종료 대기는 `JOB_SHUTDOWN_TIMEOUT_MS=90000`이며 production Compose의 `stop_grace_period`는 120초다. 기본 작업 대기 뒤 HTTP·자원 종료 여유를 둔다. 종료 대기를 더 길게 설정한다면 Compose 유예도 함께 늘린다. 제한 시간을 넘는 작업의 완료나 모든 background 작업의 drain까지 보장하는 설정은 아니다. 실제 적용 값과 active 작업 상태는 배포 후 확인한다.
 
 기존 waiting/delayed/active/retry 작업의 payload·job name·queue alias·재시도 의미는 drain이 확인되기 전 유지한다. production BullMQ가 비었다는 확인 없이 legacy queue/key/worker를 일괄 삭제하지 않는다. 새 backend health만으로 과거 queue가 비었다고 판단하지 않는다. [`push-notifications.md`](./docs/push-notifications.md)는 delivery fence/receipt/cache와 남는 전달 한계를 정리한다.
 

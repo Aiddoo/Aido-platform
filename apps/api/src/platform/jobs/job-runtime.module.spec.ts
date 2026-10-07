@@ -163,7 +163,7 @@ describe("JobRuntimeLifecycle — 선택 runtime 수명주기", () => {
     const lifecycle = new JobRuntimeLifecycle(runtime);
 
     await lifecycle.onApplicationBootstrap();
-    await lifecycle.onApplicationShutdown();
+    await lifecycle.beforeApplicationShutdown();
 
     expect(runtime.start).toHaveBeenCalledTimes(1);
     expect(runtime.stop).toHaveBeenCalledTimes(1);
