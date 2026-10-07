@@ -5,7 +5,7 @@ import {
   planReorderToEdge,
   type ReorderPlan,
   type ReorderPosition,
-} from "../../services/friends/friend-reorder.js";
+} from "../../policies/friends/friend-reorder.policy.js";
 import {
   FriendshipStatus,
   type FriendshipStatusValue,
@@ -21,18 +21,15 @@ export interface FriendshipProps {
   updatedAt: Date;
 }
 
-/**
- * Friendship — 팔로우(친구) 관계 애그리게잇.
- *
- * 한 방향의 팔로우 관계를 나타내며, 상태(FriendshipStatus VO)와 정렬 순서를 소유한다.
- * 상태 판별과 재정렬 계획 계산 등 관계에 관한 규칙을 캡슐화한다. 세터는 없다(불변 조회 모델).
- */
 export class Friendship extends AggregateRoot<
   Omit<FriendshipProps, "status"> & { status: FriendshipStatus }
 > {
   static reconstitute(props: FriendshipProps): Friendship {
     return new Friendship({
-      ...props,
+      id: props.id,
+      followerId: props.followerId,
+      followingId: props.followingId,
+      sortOrder: props.sortOrder,
       status: FriendshipStatus.of(props.status),
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
@@ -87,12 +84,10 @@ export class Friendship extends AggregateRoot<
     };
   }
 
-  /** 기준 대상(targetSortOrder)의 앞/뒤로 이동하는 재정렬 계획 */
   planReorderRelativeTo(targetSortOrder: number, position: ReorderPosition): ReorderPlan {
     return planReorderRelativeTo(this.props.sortOrder, targetSortOrder, position);
   }
 
-  /** 목록의 맨 앞/뒤로 이동하는 재정렬 계획 */
   planReorderToEdge(position: ReorderPosition, maxSortOrder: number): ReorderPlan {
     return planReorderToEdge(this.props.sortOrder, position, maxSortOrder);
   }

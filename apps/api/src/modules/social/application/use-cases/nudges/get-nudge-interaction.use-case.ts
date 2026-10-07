@@ -1,12 +1,12 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NudgeInteractionPolicy } from "../../../domain/policies/nudges/nudge-interaction.policy.js";
+import type { NudgeInteractionResult } from "../../models/nudges/nudge-interaction.models.js";
 import { type NudgeInteractionConfigPort } from "../../ports/nudges/nudge-interaction.config.port.js";
 import { type NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.port.js";
-import type { NudgeInteractionResult } from "../../services/nudges/nudge-interaction.types.js";
 
 export interface GetNudgeInteractionInput {
   readonly userId: string;
@@ -14,9 +14,9 @@ export interface GetNudgeInteractionInput {
 }
 
 interface GetNudgeInteractionDependencies {
-  readonly nudgeRepository: NudgeRepositoryPort;
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findInteractionById">;
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly followReader: FollowReader;
+  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class GetNudgeInteraction {
@@ -35,7 +35,7 @@ export class GetNudgeInteraction {
       input.nudgeId,
       input.userId,
     );
-    if (!nudge) {
+    if (nudge === null) {
       throw new ApplicationException(ErrorCode.NUDGE_1105);
     }
     const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(input.userId);

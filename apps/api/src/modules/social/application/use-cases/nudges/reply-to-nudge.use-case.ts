@@ -1,17 +1,17 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { NudgeReplyKind } from "@aido/api/vocabulary";
 
-import type { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Nudge } from "../../../domain/aggregates/nudges/nudge.aggregate.js";
 import { NudgeInteractionPolicy } from "../../../domain/policies/nudges/nudge-interaction.policy.js";
+import type { NudgeInteractionResult } from "../../models/nudges/nudge-interaction.models.js";
 import { type NudgeInteractionConfigPort } from "../../ports/nudges/nudge-interaction.config.port.js";
 import { type NudgeNotifierPort } from "../../ports/nudges/nudge-notifier.port.js";
 import { type NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.port.js";
-import type { NudgeInteractionResult } from "../../services/nudges/nudge-interaction.types.js";
 
 export interface ReplyToNudgeInput {
   readonly userId: string;
@@ -20,11 +20,14 @@ export interface ReplyToNudgeInput {
 }
 
 interface ReplyToNudgeDependencies {
-  readonly nudgeRepository: NudgeRepositoryPort;
+  readonly nudgeRepository: Pick<
+    NudgeRepositoryPort,
+    "findInteractionById" | "lockInteractionTodo" | "saveReply"
+  >;
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly nudgeNotifier: NudgeNotifierPort;
+  readonly nudgeNotifier: Pick<NudgeNotifierPort, "recordInteraction">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly followReader: FollowReader;
+  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class ReplyToNudge {
@@ -44,7 +47,7 @@ export class ReplyToNudge {
         input.nudgeId,
         input.userId,
       );
-      if (!existingNudge || existingNudge.receiverId !== input.userId) {
+      if (existingNudge === null || existingNudge.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
 
@@ -52,14 +55,14 @@ export class ReplyToNudge {
         existingNudge.todoId,
         input.userId,
       );
-      if (!todo) {
+      if (todo === null) {
         throw new ApplicationException(ErrorCode.NUDGE_1109);
       }
       const record = await this.#dependencies.nudgeRepository.findInteractionById(
         input.nudgeId,
         input.userId,
       );
-      if (!record || record.receiverId !== input.userId) {
+      if (record === null || record.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
       const friendIds = await this.#dependencies.followReader.getCurrentMutualFriendIds(
@@ -98,7 +101,7 @@ export class ReplyToNudge {
         nudge.id,
         input.userId,
       );
-      if (!updatedNudge) {
+      if (updatedNudge === null) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
       return { ...updatedNudge, isAvailable: true };

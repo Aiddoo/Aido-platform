@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { chunk } from "es-toolkit";
 
-import type { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -27,11 +27,14 @@ export interface SendNudgeThanksResult {
 const THANKS_BATCH_SIZE = 100;
 
 interface SendNudgeThanksDependencies {
-  readonly nudgeRepository: NudgeRepositoryPort;
+  readonly nudgeRepository: Pick<
+    NudgeRepositoryPort,
+    "findInteractionById" | "findThanksCandidates" | "lockInteractionTodo" | "saveThanksBatch"
+  >;
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly nudgeNotifier: NudgeNotifierPort;
+  readonly nudgeNotifier: Pick<NudgeNotifierPort, "recordInteractions">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly followReader: FollowReader;
+  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class SendNudgeThanks {
@@ -51,7 +54,7 @@ export class SendNudgeThanks {
         input.todoId,
         input.userId,
       );
-      if (!todo) {
+      if (todo === null) {
         throw new ApplicationException(ErrorCode.TODO_0801);
       }
       if (!todo.completed) {
@@ -66,7 +69,7 @@ export class SendNudgeThanks {
         input.userId,
       );
       if (
-        !cutoffNudge ||
+        cutoffNudge === null ||
         cutoffNudge.receiverId !== input.userId ||
         cutoffNudge.todoId !== input.todoId
       ) {

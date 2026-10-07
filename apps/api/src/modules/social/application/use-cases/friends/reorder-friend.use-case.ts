@@ -1,34 +1,41 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type {
   ReorderPlan,
   ReorderPosition,
-} from "../../../domain/services/friends/friend-reorder.js";
+} from "../../../domain/policies/friends/friend-reorder.policy.js";
+import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
 import {
   type FollowRepositoryPort,
   type FollowWithUser,
 } from "../../ports/friends/follow.repository.port.js";
 
 export interface ReorderFriendInput {
-  followId: string;
-  userId: string;
-  targetFollowId?: string;
-  position: ReorderPosition;
+  readonly followId: string;
+  readonly userId: string;
+  readonly targetFollowId?: string;
+  readonly position: ReorderPosition;
 }
 
-/**
- * 친구 순서 변경 use-case.
- *
- * 재정렬 계획(새 sortOrder + 사이 구간 시프트)은 순수 도메인 서비스가 계산하고,
- * 이 use-case는 트랜잭션 안에서 시프트 → 대상 갱신을 적용한다.
- */
 interface ReorderFriendDependencies {
-  readonly followRepository: FollowRepositoryPort;
+  readonly followRepository: Pick<
+    FollowRepositoryPort,
+    | "findAcceptedByIdAndFollowerId"
+    | "findByIdWithUser"
+    | "getMaxSortOrderForFriends"
+    | "shiftFriendSortOrders"
+    | "updateFollowSortOrder"
+  >;
   readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -43,20 +50,20 @@ export class ReorderFriend {
     const { followId, userId, targetFollowId, position } = input;
 
     return this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.friendList(userId)]);
       const follow = await this.#dependencies.followRepository.findAcceptedByIdAndFollowerId(
         followId,
         userId,
       );
-      if (!follow) {
+      if (follow === null) {
         throw new ApplicationException(ErrorCode.FOLLOW_0910, {
           targetFollowId: followId,
         });
       }
 
-      // 자기 자신 기준으로 이동하면 위치 변화 없음 — 현재 상태 그대로 반환
       if (targetFollowId === followId) {
         const withUser = await this.#dependencies.followRepository.findByIdWithUser(followId);
-        if (!withUser) {
+        if (withUser === null) {
           throw new ApplicationException(ErrorCode.FOLLOW_0910, {
             targetFollowId: followId,
           });
@@ -65,12 +72,12 @@ export class ReorderFriend {
       }
 
       let plan: ReorderPlan;
-      if (targetFollowId) {
+      if (targetFollowId !== undefined) {
         const target = await this.#dependencies.followRepository.findAcceptedByIdAndFollowerId(
           targetFollowId,
           userId,
         );
-        if (!target) {
+        if (target === null) {
           throw new ApplicationException(ErrorCode.FOLLOW_0910, {
             targetFollowId,
           });
@@ -93,9 +100,12 @@ export class ReorderFriend {
         plan.newSortOrder,
       );
 
-      this.#dependencies.logger.log(
-        `친구 순서 변경 완료: followId=${followId}, sortOrder=${plan.newSortOrder}, userId=${userId}`,
-      );
+      this.#dependencies.logger.log({
+        event: SocialFriendLogEvent.REORDERED,
+        followId,
+        userId,
+        sortOrder: plan.newSortOrder,
+      });
 
       return updated;
     });

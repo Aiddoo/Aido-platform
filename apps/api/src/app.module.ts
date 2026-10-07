@@ -32,9 +32,9 @@ import { AdminModule } from "#api/modules/operations/operations-admin.public";
 import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
-import { CheerModule } from "#api/modules/social/social-cheers.public";
-import { FollowModule } from "#api/modules/social/social-friends.public";
-import { NudgeModule } from "#api/modules/social/social-nudges.public";
+import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
+import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
+import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { InquiryModule } from "#api/modules/support/support-inquiries.public";
 import { WeatherModule } from "#api/modules/weather/weather-forecast.module";
 import { CacheModule } from "#api/platform/cache/index";
@@ -117,14 +117,14 @@ import { AppService } from "./app.service.js";
     AiReportModule,
     AiSuggestionModule,
     AuthModule,
-    CheerModule,
+    SocialCheersModule,
     DailyCompletionModule,
-    FollowModule,
+    SocialFriendsModule,
     HealthModule,
     InquiryModule,
     MemoModule,
     NotificationModule,
-    NudgeModule,
+    SocialNudgesModule,
     SchedulerModule,
     SubscriptionModule,
     PlanningTodosModule,

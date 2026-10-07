@@ -8,10 +8,11 @@ import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { databaseDate, databaseTimestamp } from "#api/platform/database/database-values";
 import type * as PrismaModels from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import {
+  DatabaseRecordNotFoundError,
+  requireRecord,
+} from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
-import { startOfDay } from "#api/shared/domain/date/utils/range";
 
 import type {
   CreateNudgeInput,
@@ -47,11 +48,6 @@ type ReminderNudgeRowWithRelations = PrismaModels.ReminderNudge & {
   sender: UserBriefRow | null;
 };
 
-/**
- * NudgeRepositoryPort의 Prisma 어댑터.
- * 단건 조회는 Nudge/ReminderNudge 애그리게잇을, 목록/생성은 관계 포함 프로젝션을 반환한다.
- * 트랜잭션은 CLS(TransactionHost.tx)로 전파된다.
- */
 @Injectable()
 export class PrismaNudgeRepository implements NudgeRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
@@ -101,6 +97,9 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   }
 
   private static toWithRelations(row: NudgeRowWithRelations): NudgeWithRelations {
+    const sender = requireRecord(row.sender);
+    const receiver = requireRecord(row.receiver);
+    const todo = requireRecord(row.todo);
     return {
       id: row.id,
       senderId: row.senderId,
@@ -110,19 +109,19 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       readAt: row.readAt,
       createdAt: row.createdAt,
       sender: {
-        id: requireRecord(row.sender).id,
-        userTag: requireRecord(row.sender).userTag,
-        profile: requireRecord(row.sender).profile,
+        id: sender.id,
+        userTag: sender.userTag,
+        profile: sender.profile,
       },
       receiver: {
-        id: requireRecord(row.receiver).id,
-        userTag: requireRecord(row.receiver).userTag,
-        profile: requireRecord(row.receiver).profile,
+        id: receiver.id,
+        userTag: receiver.userTag,
+        profile: receiver.profile,
       },
       todo: {
-        id: requireRecord(row.todo).id,
-        title: requireRecord(row.todo).title,
-        completed: requireRecord(row.todo).completed,
+        id: todo.id,
+        title: todo.title,
+        completed: todo.completed,
       },
     };
   }
@@ -130,6 +129,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   private static toRemindWithRelations(
     row: ReminderNudgeRowWithRelations,
   ): ReminderNudgeWithRelations {
+    const sender = requireRecord(row.sender);
     return {
       id: row.id,
       senderId: row.senderId,
@@ -137,9 +137,9 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       message: row.message,
       createdAt: row.createdAt,
       sender: {
-        id: requireRecord(row.sender).id,
-        userTag: requireRecord(row.sender).userTag,
-        profile: requireRecord(row.sender).profile,
+        id: sender.id,
+        userTag: sender.userTag,
+        profile: sender.profile,
       },
     };
   }
@@ -149,7 +149,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       "Nudge",
       await this.client.orm.public.Nudge.where((row) => row.id.eq(id)).first(),
     );
-    return row ? PrismaNudgeRepository.toNudge(row) : null;
+    return row === null ? null : PrismaNudgeRepository.toNudge(row);
   }
 
   async findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null> {
@@ -161,7 +161,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row ? PrismaNudgeRepository.toNudge(row) : null;
+    return row === null ? null : PrismaNudgeRepository.toNudge(row);
   }
 
   async findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null> {
@@ -173,7 +173,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row ? PrismaNudgeRepository.toNudge(row) : null;
+    return row === null ? null : PrismaNudgeRepository.toNudge(row);
   }
 
   async findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null> {
@@ -185,7 +185,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row ? PrismaNudgeRepository.toReminderNudge(row) : null;
+    return row === null ? null : PrismaNudgeRepository.toReminderNudge(row);
   }
 
   async findTargetTodo(todoId: number): Promise<TargetTodoRecord | null> {
@@ -195,7 +195,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .select("userId", "visibility", "startDate", "endDate")
         .first(),
     );
-    if (!row) {
+    if (row === null) {
       return null;
     }
     return {
@@ -214,18 +214,14 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 
   async saveReply(nudge: Nudge): Promise<void> {
     const state = nudge.toPersistence();
-    decodeRecord(
-      "Nudge",
-      requireRecord(
-        await this.client.orm.public.Nudge.where((row) => row.id.eq(nudge.id)).update(
-          encodePatch("Nudge", {
-            replyKind: state.replyKind,
-            repliedAt: state.repliedAt,
-            replyUpdatedAt: state.replyUpdatedAt,
-          }),
-        ),
-      ),
+    const affected = await this.client.orm.public.Nudge.where({ id: nudge.id }).updateAndCount(
+      encodePatch("Nudge", {
+        replyKind: state.replyKind,
+        repliedAt: state.repliedAt,
+        replyUpdatedAt: state.replyUpdatedAt,
+      }),
     );
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
     await this.saveRead(nudge);
   }
 
@@ -237,6 +233,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   }
 
   private static toInteraction(row: NudgeInteractionRow): NudgeInteractionRecord {
+    const todo = requireRecord(row.todo);
     return {
       ...PrismaNudgeRepository.toWithRelations(row),
       replyKind: row.replyKind,
@@ -244,11 +241,11 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       replyUpdatedAt: row.replyUpdatedAt,
       thankedAt: row.thankedAt,
       todo: {
-        id: requireRecord(row.todo).id,
-        title: requireRecord(row.todo).title,
-        completed: requireRecord(row.todo).completed,
-        ownerId: requireRecord(row.todo).userId,
-        visibility: requireRecord(row.todo).visibility,
+        id: todo.id,
+        title: todo.title,
+        completed: todo.completed,
+        ownerId: todo.userId,
+        visibility: todo.visibility,
       },
     };
   }
@@ -287,7 +284,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   }
 
   async lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
-    const sqlRows1 = sqlRowSpec({
+    const interactionTodoRow = sqlRowSpec({
       id: "pg/int4@1",
       ownerId: "pg/text@1",
       title: "pg/text@1",
@@ -297,7 +294,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 
     // 완료·공개 상태 변경과 답장·감사 저장을 같은 행 잠금으로 직렬화한다.
     const rows = decodeSqlRows(
-      sqlRows1,
+      interactionTodoRow,
       await this.client.query(
         sqlStatement(
           this.client,
@@ -306,7 +303,7 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 			FROM "Todo" WHERE "id" = ${todoId} AND "userId" = ${userId} FOR UPDATE
 		`,
         )
-          .returnsRow(sqlRows1)
+          .returnsRow(interactionTodoRow)
           .build(),
       ),
     );
@@ -399,11 +396,8 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       ),
     )
       .groupBy("senderId")
-      .aggregate((aggregate) => ({ max_id: aggregate.max("id") }))
-      .then((rows) =>
-        rows.map((row) => ({ ...decodeRecord("Nudge", row), _max: { id: row.max_id } })),
-      );
-    return compact(groups.map((group) => group._max.id)).sort((left, right) => right - left);
+      .aggregate((aggregate) => ({ max_id: aggregate.max("id") }));
+    return compact(groups.map((group) => group.max_id)).sort((left, right) => right - left);
   }
 
   async #findThanksCandidatesByIds(ids: readonly number[]): Promise<NudgeInteractionRecord[]> {
@@ -452,20 +446,6 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
     }
     const rows = decodeRecord("Nudge", await nudges.all());
     return rows.map((row) => PrismaNudgeRepository.toWithRelations(row));
-  }
-
-  async countTodayNudges(senderId: string, date: Date): Promise<number> {
-    const dayStart = startOfDay(date);
-    const dayEnd = addDays(1, dayStart);
-    return this.client.orm.public.Nudge.where((row) =>
-      and(
-        row.senderId.eq(senderId),
-        row.createdAt.gte(databaseTimestamp(dayStart)),
-        row.createdAt.lt(databaseTimestamp(dayEnd)),
-      ),
-    )
-      .aggregate((aggregate) => ({ count: aggregate.count() }))
-      .then(({ count }) => count);
   }
 
   async countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {

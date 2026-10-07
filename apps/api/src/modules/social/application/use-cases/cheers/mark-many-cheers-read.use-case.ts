@@ -1,18 +1,15 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
+import { CheerLogEvent } from "../../observability/cheers/cheer-log.events.js";
 import { type CheerRepositoryPort } from "../../ports/cheers/cheer.repository.port.js";
 
 export interface MarkManyCheersReadInput {
-  userId: string;
-  cheerIds: number[];
+  readonly userId: string;
+  readonly cheerIds: number[];
 }
 
-/**
- * 여러 응원 읽음 처리 use-case.
- * 수신자 소유 + 미읽음 조건으로 일괄 갱신하고 처리된 개수를 반환한다.
- */
 interface MarkManyCheersReadDependencies {
-  readonly cheerRepository: CheerRepositoryPort;
+  readonly cheerRepository: Pick<CheerRepositoryPort, "markManyAsRead">;
   readonly logger: ApplicationLogger;
 }
 
@@ -28,7 +25,11 @@ export class MarkManyCheersRead {
       input.cheerIds,
       input.userId,
     );
-    this.#dependencies.logger.debug(`${count}건 응원 읽음 처리: user=${input.userId}`);
+    this.#dependencies.logger.debug({
+      event: CheerLogEvent.MANY_READ,
+      userId: input.userId,
+      count,
+    });
     return count;
   }
 }

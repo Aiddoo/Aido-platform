@@ -1,126 +1,120 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
+import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { FollowReader } from "#api/modules/social/social-friends.public";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-
-import { ReminderNudge } from "../../../domain/aggregates/nudges/reminder-nudge.aggregate.js";
-import { type NudgeNotifierPort } from "../../ports/nudges/nudge-notifier.port.js";
-import {
-  type NudgeRepositoryPort,
-  type ReminderNudgeWithRelations,
-} from "../../ports/nudges/nudge.repository.port.js";
 import { SendRemindNudge } from "./send-remind-nudge.use-case.js";
 
-const createdRemind: ReminderNudgeWithRelations = {
-  id: 5,
-  senderId: "s",
-  receiverId: "r",
-  message: null,
-  createdAt: new Date(),
-  sender: {
-    id: "s",
-    userTag: "SENDER12",
-    profile: { name: "S", profileImage: null },
-  },
-};
-
-describe("SendRemindNudge", () => {
-  let useCase: SendRemindNudge;
-  let repo: Mocked<NudgeRepositoryPort>;
-  let notifier: Mocked<NudgeNotifierPort>;
-  let follow: Mocked<FollowReader>;
-  let mutationLock: Mocked<MutationLockPort>;
-  let uow: Mocked<UnitOfWorkPort>;
-
-  beforeEach(async () => {
-    const sendRemindNudgeDependencies = mockDeep<ConstructorParameters<typeof SendRemindNudge>[0]>({
-      mutationLock: { acquire: vi.fn() },
-    });
-    const unit = new SendRemindNudge(sendRemindNudgeDependencies);
-    useCase = unit;
-    repo = sendRemindNudgeDependencies.nudgeRepository;
-    notifier = sendRemindNudgeDependencies.notifier;
-    follow = sendRemindNudgeDependencies.followReader;
-    mutationLock = sendRemindNudgeDependencies.mutationLock;
-    uow = sendRemindNudgeDependencies.unitOfWork;
-
-    uow.run.mockImplementation((work) => work());
-    follow.isMutualFriend.mockResolvedValue(true);
-    repo.countTodayTodos.mockResolvedValue(0);
-    repo.findLastRemindNudge.mockResolvedValue(null);
-    repo.createRemindNudge.mockResolvedValue(createdRemind);
+describe("할 일이 없는 친구에게 리마인드 콕 보내기", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("자기 자신이면 NUDGE_1104", async () => {
-    await expect(useCase.execute({ senderId: "s", receiverId: "s" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
-  });
-
-  it("친구가 아니면 NUDGE_1103", async () => {
-    follow.isMutualFriend.mockResolvedValue(false);
-    await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
-  });
-
-  it("친구가 오늘 할 일이 있으면 NUDGE_1107", async () => {
-    repo.countTodayTodos.mockResolvedValue(2);
-    await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
-  });
-
-  it("쿨다운 중이면 NUDGE_1108", async () => {
-    repo.findLastRemindNudge.mockResolvedValue(
-      ReminderNudge.reconstitute({
-        id: 3,
-        senderId: "s",
-        receiverId: "r",
-        message: null,
-        createdAt: new Date(),
+  it.each([
+    { receiverId: "sender", code: "NUDGE_1104" },
+    { receiverId: "other", code: "NUDGE_1103" },
+  ])("$code 조건이면 리마인드와 알림을 저장하지 않는다", async (input) => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    // When / Then
+    await expect(
+      new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+        senderId: "sender",
+        receiverId: input.receiverId,
+        timezone: "UTC",
       }),
-    );
-    await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
+    ).rejects.toMatchObject({ errorCode: input.code });
+    expect(fixture.nudgeRepository.reminders.size).toBe(0);
+    expect(fixture.nudgeNotifier.notifications).toEqual([]);
   });
-
-  it("성공 시 생성 + 알림 enqueue (todoId 없음)", async () => {
-    const result = await useCase.execute({ senderId: "s", receiverId: "r" });
-    expect(result.id).toBe(5);
-    expect(notifier.notifyNudgeSent).toHaveBeenCalledWith(
-      expect.objectContaining({ nudgeId: 5, senderId: "s", receiverId: "r" }),
-    );
-    const payload = notifier.notifyNudgeSent.mock.calls[0]?.[0];
-    expect(payload?.todoId).toBeUndefined();
-    expect(payload?.todoTitle).toBeUndefined();
+  it("친구에게 오늘 할 일이 있으면 NUDGE_1107로 거부한다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    fixture.addTodo();
+    // When / Then
+    await expect(
+      new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+        senderId: "sender",
+        receiverId: "receiver",
+        timezone: "UTC",
+      }),
+    ).rejects.toMatchObject({ errorCode: "NUDGE_1107" });
+    expect(fixture.nudgeRepository.reminders.size).toBe(0);
   });
-
-  it("친구 쿨다운 키를 오늘 Todo와 최근 reminder guarded read 전에 UoW 안에서 잠근다", async () => {
-    // Given - guarded read 호출 순서 기록
-    const events: string[] = [];
-    mutationLock.acquire.mockImplementation(async () => {
-      events.push("lock");
+  it("한 시간 내 재요청은 남은 쿨다운과 NUDGE_1108로 거부한다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    fixture.nudgeRepository.seedReminder({
+      senderId: "sender",
+      receiverId: "receiver",
+      message: null,
+      createdAt: new Date(SOCIAL_TIME.getTime() - 1000),
     });
-    repo.countTodayTodos.mockImplementation(async () => {
-      events.push("today-todo-read");
-      return 0;
-    });
-    repo.findLastRemindNudge.mockImplementation(async () => {
-      events.push("cooldown-read");
-      return null;
-    });
-
+    // When / Then
+    await expect(
+      new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+        senderId: "sender",
+        receiverId: "receiver",
+        timezone: "UTC",
+      }),
+    ).rejects.toMatchObject({ errorCode: "NUDGE_1108", details: { remainingSeconds: 3599 } });
+    expect(fixture.nudgeRepository.reminders.size).toBe(1);
+  });
+  it("오늘 할 일이 없으면 todoId 없는 리마인드를 저장하고 알림을 만든다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
     // When
-    await useCase.execute({ senderId: "s", receiverId: "r" }, "Asia/Seoul");
-
+    const result = await new SendRemindNudge({
+      ...fixture,
+      notifier: fixture.nudgeNotifier,
+    }).execute({
+      senderId: "sender",
+      receiverId: "receiver",
+      message: "작게 시작해요",
+      timezone: "UTC",
+    });
     // Then
-    expect(mutationLock.acquire).toHaveBeenCalledWith(["mutation:v1:remind-nudge:cooldown:s:r"]);
-    expect(events).toEqual(["lock", "today-todo-read", "cooldown-read"]);
+    expect(fixture.nudgeRepository.reminders.get(result.id)).toMatchObject({
+      senderId: "sender",
+      receiverId: "receiver",
+      message: "작게 시작해요",
+    });
+    expect(fixture.nudgeNotifier.notifications).toEqual([
+      {
+        nudgeId: result.id,
+        senderId: "sender",
+        receiverId: "receiver",
+        senderName: "sender",
+        message: "작게 시작해요",
+      },
+    ]);
+  });
+  it("친구 쿨다운 키를 오늘 할 일과 최근 리마인드 조회 전에 획득한다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    const events: string[] = [];
+    fixture.mutationLock.acquire = async (keys) => {
+      fixture.lockCalls.push([...keys]);
+      events.push("lock");
+    };
+    const count = fixture.nudgeRepository.countTodayTodos.bind(fixture.nudgeRepository);
+    vi.spyOn(fixture.nudgeRepository, "countTodayTodos").mockImplementation(async (...input) => {
+      events.push("today");
+      return count(...input);
+    });
+    // When
+    await new SendRemindNudge({ ...fixture, notifier: fixture.nudgeNotifier }).execute({
+      senderId: "sender",
+      receiverId: "receiver",
+      timezone: "UTC",
+    });
+    // Then
+    expect(events).toEqual(["lock", "today"]);
+    expect(fixture.lockCalls).toEqual([
+      [MutationLockKeys.remindNudgeCooldown("sender", "receiver")],
+    ]);
   });
 });

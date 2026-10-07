@@ -1,90 +1,94 @@
-import { vi, type Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
+import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { FollowReader } from "#api/modules/social/social-friends.public";
-import { NudgeBuilder } from "#test/builders/nudge.builder";
-import { createNudgeRepositoryMock } from "#test/mocks/ports/nudge.mock";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
-
-import { type NudgeNotifierPort } from "../../ports/nudges/nudge-notifier.port.js";
-import { type NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.port.js";
 import { SendNudgeThanks } from "./send-nudge-thanks.use-case.js";
 
 describe("콕에 감사 일괄 전하기", () => {
-  let useCase: SendNudgeThanks;
-  let nudgeRepository: Mocked<NudgeRepositoryPort>;
-  let nudgeNotifier: Mocked<NudgeNotifierPort>;
-
-  beforeEach(async () => {
-    const sendNudgeThanksDependencies = mockDeep<ConstructorParameters<typeof SendNudgeThanks>[0]>({
-      nudgeRepository: createNudgeRepositoryMock(),
-      nudgeInteractionConfig: { isEnabled: true },
-      nudgeNotifier: {
-        notifyNudgeSent: vi.fn(),
-        recordInteraction: vi.fn(),
-        recordInteractions: vi.fn(),
-      },
-      unitOfWork: createUnitOfWorkMock(),
-    });
-    const unit = new SendNudgeThanks(sendNudgeThanksDependencies);
-    useCase = unit;
-    nudgeRepository = sendNudgeThanksDependencies.nudgeRepository;
-    nudgeNotifier = sendNudgeThanksDependencies.nudgeNotifier;
-    const cutoff = NudgeBuilder.create("friend", "owner", 10).withId(1000).buildInteraction();
-    nudgeRepository.lockInteractionTodo.mockResolvedValue({ ...cutoff.todo, completed: true });
-    nudgeRepository.findInteractionById.mockResolvedValue(cutoff);
-    const followReader: Mocked<FollowReader> = sendNudgeThanksDependencies.followReader;
-    followReader.getCurrentMutualFriendIds.mockResolvedValue(["friend"]);
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("친구가 천 명이어도 저장과 알림을 100명씩 열 번 호출한다", async () => {
+  it("친구 천 명의 상태를 100명씩 갱신하고 알림을 열 배치로 기록한다", async () => {
     // Given
-    const candidates = Array.from({ length: 1000 }, (_, index) =>
-      NudgeBuilder.create(`friend-${index}`, "owner", 10)
-        .withId(index + 1)
-        .buildInteraction(),
-    );
-    nudgeRepository.findThanksCandidates.mockResolvedValue(candidates);
-
+    const fixture = createSocialInteractionFixture();
+    const todo = fixture.addTodo({ id: 10, completed: true });
+    const friendIds: string[] = [];
+    for (let index = 0; index < 1000; index += 1) {
+      const friendId = `friend-${index}`;
+      friendIds.push(friendId);
+      fixture.nudgeRepository.seed({
+        id: index + 1,
+        senderId: friendId,
+        receiverId: "receiver",
+        todoId: todo.id,
+      });
+    }
+    const followReader = { getCurrentMutualFriendIds: async () => [...friendIds] };
+    const save = vi.spyOn(fixture.nudgeRepository, "saveThanksBatch");
     // When
-    const result = await useCase.execute({ userId: "owner", todoId: 10, throughNudgeId: 1000 });
-
+    const result = await new SendNudgeThanks({ ...fixture, followReader }).execute({
+      userId: "receiver",
+      todoId: todo.id,
+      throughNudgeId: 1000,
+    });
     // Then
     expect(result.sentCount).toBe(1000);
-    expect(nudgeRepository.saveThanksBatch).toHaveBeenCalledTimes(10);
-    expect(nudgeNotifier.recordInteractions).toHaveBeenCalledTimes(10);
-    expect(nudgeNotifier.recordInteraction).not.toHaveBeenCalled();
-    for (const [ids] of nudgeRepository.saveThanksBatch.mock.calls) expect(ids).toHaveLength(100);
+    expect(
+      [...fixture.nudgeRepository.records.values()].every(
+        (record) => record.thankedAt?.getTime() === SOCIAL_TIME.getTime(),
+      ),
+    ).toBe(true);
+    expect(fixture.nudgeNotifier.batchSizes).toEqual(Array(10).fill(100));
+    expect(fixture.nudgeNotifier.interactions).toHaveLength(1000);
+    expect(save).toHaveBeenCalledTimes(10);
+    for (const [ids] of save.mock.calls) expect(ids).toHaveLength(100);
   });
-
-  it("이미 감사한 상태는 Entity가 제외하며 전송 수에 포함하지 않는다", async () => {
+  it("이미 감사한 상태는 추가 저장과 알림 없이 전송 개수에서 제외한다", async () => {
     // Given
-    const candidate = NudgeBuilder.create("friend", "owner", 10).withId(1).buildInteraction();
-    nudgeRepository.findThanksCandidates.mockResolvedValue([
-      { ...candidate, thankedAt: new Date() },
-    ]);
-
+    const fixture = createSocialInteractionFixture();
+    const todo = fixture.addTodo({ completed: true });
+    const record = fixture.nudgeRepository.seed({
+      senderId: "sender",
+      receiverId: "receiver",
+      todoId: todo.id,
+      thankedAt: SOCIAL_TIME,
+    });
+    const save = vi.spyOn(fixture.nudgeRepository, "saveThanksBatch");
     // When
-    const result = await useCase.execute({ userId: "owner", todoId: 10, throughNudgeId: 1000 });
-
+    const result = await new SendNudgeThanks(fixture).execute({
+      userId: "receiver",
+      todoId: todo.id,
+      throughNudgeId: record.id,
+    });
     // Then
     expect(result.sentCount).toBe(0);
-    expect(nudgeNotifier.recordInteractions).not.toHaveBeenCalled();
-    expect(nudgeRepository.saveThanksBatch).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(fixture.nudgeNotifier.interactions).toEqual([]);
   });
-
-  it("배치 저장 실패는 전송을 진행하지 않고 트랜잭션으로 오류를 전달한다", async () => {
+  it("배치 저장 실패는 원본 오류를 전파하고 해당 배치의 알림을 기록하지 않는다", async () => {
     // Given
-    nudgeRepository.findThanksCandidates.mockResolvedValue([
-      NudgeBuilder.create("friend", "owner", 10).withId(1).buildInteraction(),
-    ]);
-    nudgeRepository.saveThanksBatch.mockRejectedValue(new Error("저장 실패"));
-
-    // When
-    const result = useCase.execute({ userId: "owner", todoId: 10, throughNudgeId: 1000 });
-
-    // Then
-    await expect(result).rejects.toThrow("저장 실패");
-    expect(nudgeNotifier.recordInteractions).not.toHaveBeenCalled();
+    const fixture = createSocialInteractionFixture();
+    const todo = fixture.addTodo({ completed: true });
+    const record = fixture.nudgeRepository.seed({
+      senderId: "sender",
+      receiverId: "receiver",
+      todoId: todo.id,
+    });
+    const error = new Error("배치 저장 실패");
+    vi.spyOn(fixture.nudgeRepository, "saveThanksBatch").mockRejectedValueOnce(error);
+    // When / Then
+    await expect(
+      new SendNudgeThanks(fixture).execute({
+        userId: "receiver",
+        todoId: todo.id,
+        throughNudgeId: record.id,
+      }),
+    ).rejects.toBe(error);
+    expect(fixture.nudgeRepository.records.get(record.id)?.thankedAt).toBeNull();
+    expect(fixture.nudgeNotifier.interactions).toEqual([]);
   });
 });

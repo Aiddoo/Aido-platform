@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import {
   MutationLockKeys,
@@ -11,8 +11,9 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { evaluateCheerCooldown } from "../../../domain/services/cheers/cheer-cooldown.js";
+import { evaluateCheerCooldown } from "../../../domain/policies/cheers/cheer-cooldown.policy.js";
 import { CheerMessage } from "../../../domain/value-objects/cheers/cheer-message.vo.js";
+import { CheerLogEvent } from "../../observability/cheers/cheer-log.events.js";
 import { type CheerLimitReaderPort } from "../../ports/cheers/cheer-limit-reader.port.js";
 import { type CheerNotifierPort } from "../../ports/cheers/cheer-notifier.port.js";
 import {
@@ -21,24 +22,22 @@ import {
 } from "../../ports/cheers/cheer.repository.port.js";
 
 export interface SendCheerInput {
-  senderId: string;
-  receiverId: string;
-  message?: string;
+  readonly senderId: string;
+  readonly receiverId: string;
+  readonly message?: string;
+  readonly timezone: string;
 }
 
-/**
- * 응원 보내기 use-case.
- *
- * 자기 자신 체크 → 친구 관계 확인 후, 트랜잭션 안에서 일일 한도·쿨다운을 검사하고 응원을 생성한다
- * (TOCTOU 방지). 생성 후 알림을 enqueue한다.
- */
 interface SendCheerDependencies {
-  readonly cheerRepository: CheerRepositoryPort;
-  readonly notifier: CheerNotifierPort;
+  readonly cheerRepository: Pick<
+    CheerRepositoryPort,
+    "countSentSince" | "createWithRelations" | "findLastCheerToUser"
+  >;
+  readonly notifier: Pick<CheerNotifierPort, "notifyCheerSent">;
   readonly limitReader: CheerLimitReaderPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly followReader: FollowReader;
+  readonly followReader: Pick<FollowReaderPort, "isMutualFriend">;
   readonly logger: ApplicationLogger;
 }
 
@@ -49,7 +48,7 @@ export class SendCheer {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: SendCheerInput, tz: string = "UTC"): Promise<CheerWithRelations> {
+  async execute(input: SendCheerInput): Promise<CheerWithRelations> {
     const { senderId, receiverId, message } = input;
 
     if (senderId === receiverId) {
@@ -65,11 +64,11 @@ export class SendCheer {
 
     const cheerMessage = CheerMessage.of(message);
     const capturedAt = now();
-    const quotaWindow = dayWindowInTimezone(capturedAt, tz);
+    const quotaWindow = dayWindowInTimezone(capturedAt, input.timezone);
 
     const cheer = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([
-        MutationLockKeys.cheerDaily(senderId, quotaWindow.localDate),
+        MutationLockKeys.cheerDailyQuota(senderId),
         MutationLockKeys.cheerCooldown(senderId, receiverId),
       ]);
 
@@ -89,7 +88,7 @@ export class SendCheer {
         senderId,
         receiverId,
       );
-      if (lastCheer) {
+      if (lastCheer !== null) {
         const cooldown = evaluateCheerCooldown(lastCheer.createdAt);
         if (cooldown.isActive) {
           throw new ApplicationException(ErrorCode.CHEER_1202, {
@@ -107,7 +106,12 @@ export class SendCheer {
       });
     });
 
-    this.#dependencies.logger.log(`Cheer sent: senderId=${senderId}, receiverId=${receiverId}`);
+    this.#dependencies.logger.log({
+      event: CheerLogEvent.SENT,
+      cheerId: cheer.id,
+      senderId,
+      receiverId,
+    });
 
     const senderName = cheer.sender.profile?.name ?? cheer.sender.userTag;
     this.#dependencies.notifier.notifyCheerSent({

@@ -27,14 +27,14 @@ import { type CheerLimitReaderPort } from "#api/modules/social/application/ports
 import type { CheerNotifierPort } from "#api/modules/social/application/ports/cheers/cheer-notifier.port";
 import type { NudgeLimitReaderPort } from "#api/modules/social/application/ports/nudges/nudge-limit-reader.port";
 import type { NudgeNotifierPort } from "#api/modules/social/application/ports/nudges/nudge-notifier.port";
-import { CheerReader } from "#api/modules/social/application/services/cheers/cheer.reader";
-import { NudgeReader } from "#api/modules/social/application/services/nudges/nudge.reader";
+import { GetCheerLimit } from "#api/modules/social/application/use-cases/cheers/get-cheer-limit.use-case";
 import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send-cheer.use-case";
+import { GetNudgeLimit } from "#api/modules/social/application/use-cases/nudges/get-nudge-limit.use-case";
 import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
 import { SendRemindNudge } from "#api/modules/social/application/use-cases/nudges/send-remind-nudge.use-case";
 import { PrismaCheerRepository } from "#api/modules/social/infrastructure/persistence/cheers/prisma-cheer.repository";
 import { PrismaNudgeRepository } from "#api/modules/social/infrastructure/persistence/nudges/prisma-nudge.repository";
-import { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -45,7 +45,6 @@ import { PostgresMutationLockAdapter } from "#api/platform/database/postgres-mut
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import type { Prisma8Transaction as TransactionClient } from "#api/platform/database/prisma8-transactional.adapter";
-import type { PaginationService } from "#api/shared/application/pagination/index";
 import {
   MutationLockKeys,
   type MutationLockPort,
@@ -606,10 +605,8 @@ async function completeWithin<T>(promise: Promise<T>, timeoutMs: number): Promis
   }
 }
 
-function createFollowReader(): FollowReader {
-  return {
-    isMutualFriend: async () => true,
-  } as unknown as FollowReader;
+function createFollowReaderStub(): Pick<FollowReaderPort, "isMutualFriend"> {
+  return { isMutualFriend: async () => true };
 }
 
 function createCheerNotifier(): CheerNotifierPort {
@@ -884,14 +881,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createCheerLimitReader(DAILY_LIMIT),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReader(),
+      followReader: createFollowReaderStub(),
       logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
     });
 
     // When - 같은 일일 한도를 동시에 소비
     const summary = summarize(
       await Promise.allSettled(
-        receiverIds.map((receiverId) => useCase.execute({ senderId, receiverId }, "UTC")),
+        receiverIds.map((receiverId) => useCase.execute({ senderId, receiverId, timezone: "UTC" })),
       ),
     );
 
@@ -923,14 +920,16 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createCheerLimitReader(null),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReader(),
+      followReader: createFollowReaderStub(),
       logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
     });
 
     // When - 동일 대상을 동시에 응원
     const summary = summarize(
       await Promise.allSettled(
-        Array.from({ length: CONCURRENCY }, () => useCase.execute({ senderId, receiverId }, "UTC")),
+        Array.from({ length: CONCURRENCY }, () =>
+          useCase.execute({ senderId, receiverId, timezone: "UTC" }),
+        ),
       ),
     );
 
@@ -962,14 +961,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createNudgeLimitReader(DAILY_LIMIT),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReader(),
+      followReader: createFollowReaderStub(),
       logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
     });
 
     // When - 같은 일일 한도를 동시에 소비
     const summary = summarize(
       await Promise.allSettled(
-        todoIds.map((todoId) => useCase.execute({ senderId, receiverId, todoId }, "UTC")),
+        todoIds.map((todoId) => useCase.execute({ senderId, receiverId, todoId, timezone: "UTC" })),
       ),
     );
 
@@ -1002,7 +1001,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createNudgeLimitReader(null),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReader(),
+      followReader: createFollowReaderStub(),
       logger: mock<ConstructorParameters<typeof SendNudge>[0]["logger"]>(),
     });
 
@@ -1010,7 +1009,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const summary = summarize(
       await Promise.allSettled(
         Array.from({ length: CONCURRENCY }, () =>
-          useCase.execute({ senderId, receiverId, todoId }, "UTC"),
+          useCase.execute({ senderId, receiverId, todoId, timezone: "UTC" }),
         ),
       ),
     );
@@ -1043,14 +1042,16 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       notifier: createNudgeNotifier(),
       mutationLock: new PostgresMutationLockAdapter(txHost),
       unitOfWork: uow,
-      followReader: createFollowReader(),
+      followReader: createFollowReaderStub(),
       logger: mock<ConstructorParameters<typeof SendRemindNudge>[0]["logger"]>(),
     });
 
     // When - 동일 친구에게 동시에 reminder-Nudge 전송
     const summary = summarize(
       await Promise.allSettled(
-        Array.from({ length: CONCURRENCY }, () => useCase.execute({ senderId, receiverId }, "UTC")),
+        Array.from({ length: CONCURRENCY }, () =>
+          useCase.execute({ senderId, receiverId, timezone: "UTC" }),
+        ),
       ),
     );
 
@@ -1213,15 +1214,13 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ].map((value) => encodeCreate("Cheer", value)),
     );
     const { txHost } = createTransactionHarness(prisma);
-    const reader = new CheerReader({
+    const reader = new GetCheerLimit({
       cheerRepository: new PrismaCheerRepository(txHost),
-      paginationService: {} as PaginationService,
       entitlementReader: createReaderEntitlement(3),
-      logger: mock<ConstructorParameters<typeof CheerReader>[0]["logger"]>(),
     });
 
     // When
-    const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
+    const result = await reader.execute({ userId: senderId, timezone: "Asia/Seoul" });
 
     // Then - prior local day는 제외하고 early local day는 포함
     expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
@@ -1249,28 +1248,26 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       ].map((value) => encodeCreate("Nudge", value)),
     );
     const { txHost } = createTransactionHarness(prisma);
-    const reader = new NudgeReader({
+    const reader = new GetNudgeLimit({
       nudgeRepository: new PrismaNudgeRepository(txHost),
-      paginationService: {} as PaginationService,
       entitlementReader: createReaderEntitlement(3),
-      logger: mock<ConstructorParameters<typeof NudgeReader>[0]["logger"]>(),
     });
 
     // When
-    const result = await reader.getLimitInfo(senderId, "Asia/Seoul");
+    const result = await reader.execute({ userId: senderId, timezone: "Asia/Seoul" });
 
     // Then - prior local day는 제외하고 early local day는 포함
     expect(result).toEqual({ dailyLimit: 3, used: 1, remaining: 2 });
   });
 
   it("Cheer lock 대기가 KST 자정을 넘어도 row는 캡처한 이전 날짜 시각으로 저장한다", async () => {
-    // Given - 이전 날짜 key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
+    // Given - sender quota key를 별도 트랜잭션이 보유해 send를 실제 DB에서 대기시킴
     vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
     const senderId = await createUser(prisma, 0);
     const receiverId = await createUser(prisma, 1);
     const held = createDeferred();
     const release = createDeferred();
-    const dailyKey = MutationLockKeys.cheerDaily(senderId, "2026-07-26");
+    const dailyKey = MutationLockKeys.cheerDailyQuota(senderId);
     const blocker = withDatabaseTransaction(prisma, async (tx) => {
       await tx
         .execute(
@@ -1329,12 +1326,12 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
       limitReader: createCheerLimitReader(1),
       mutationLock: mutationLock,
       unitOfWork: uow,
-      followReader: createFollowReader(),
+      followReader: createFollowReaderStub(),
       logger: mock<ConstructorParameters<typeof SendCheer>[0]["logger"]>(),
     });
 
     // When - lock wait가 시작된 뒤 애플리케이션 시계를 다음 로컬 날짜로 이동
-    const sending = useCase.execute({ senderId, receiverId }, "Asia/Seoul");
+    const sending = useCase.execute({ senderId, receiverId, timezone: "Asia/Seoul" });
     const identity = await sendingIdentity.promise;
     try {
       continueLockAttempt.resolve();

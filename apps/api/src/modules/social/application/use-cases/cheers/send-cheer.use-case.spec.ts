@@ -1,145 +1,135 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
+import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { FollowReader } from "#api/modules/social/social-friends.public";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-
-import { type CheerLimitReaderPort } from "../../ports/cheers/cheer-limit-reader.port.js";
-import { type CheerNotifierPort } from "../../ports/cheers/cheer-notifier.port.js";
-import {
-  type CheerRepositoryPort,
-  type CheerWithRelations,
-} from "../../ports/cheers/cheer.repository.port.js";
 import { SendCheer } from "./send-cheer.use-case.js";
 
-const createdCheer: CheerWithRelations = {
-  id: 1,
-  senderId: "s",
-  receiverId: "r",
-  message: "hi",
-  readAt: null,
-  createdAt: new Date(),
-  sender: {
-    id: "s",
-    userTag: "SENDER12",
-    profile: { name: "S", profileImage: null },
-  },
-  receiver: { id: "r", userTag: "RECEIVER", profile: null },
-};
-
-describe("SendCheer", () => {
-  let useCase: SendCheer;
-  let repo: Mocked<CheerRepositoryPort>;
-  let notifier: Mocked<CheerNotifierPort>;
-  let limitReader: Mocked<CheerLimitReaderPort>;
-  let follow: Mocked<FollowReader>;
-  let mutationLock: Mocked<MutationLockPort>;
-  let uow: Mocked<UnitOfWorkPort>;
-
-  beforeEach(async () => {
-    const sendCheerDependencies = mockDeep<ConstructorParameters<typeof SendCheer>[0]>({
-      mutationLock: { acquire: vi.fn() },
-    });
-    const unit = new SendCheer(sendCheerDependencies);
-    useCase = unit;
-    repo = sendCheerDependencies.cheerRepository;
-    notifier = sendCheerDependencies.notifier;
-    limitReader = sendCheerDependencies.limitReader;
-    follow = sendCheerDependencies.followReader;
-    mutationLock = sendCheerDependencies.mutationLock;
-    uow = sendCheerDependencies.unitOfWork;
-
-    uow.run.mockImplementation((work) => work());
-    follow.isMutualFriend.mockResolvedValue(true);
-    limitReader.getDailyLimitInTx.mockResolvedValue(3);
-    repo.countSentSince.mockResolvedValue(0);
-    repo.findLastCheerToUser.mockResolvedValue(null);
-    repo.createWithRelations.mockResolvedValue(createdCheer);
+describe("친구에게 응원 보내기", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
   });
-
-  it("자기 자신이면 CHEER_1204", async () => {
-    await expect(useCase.execute({ senderId: "s", receiverId: "s" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
-  });
-
-  it("친구가 아니면 CHEER_1203", async () => {
-    follow.isMutualFriend.mockResolvedValue(false);
-    await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
-  });
-
-  it("일일 한도 초과면 CHEER_1201", async () => {
-    repo.countSentSince.mockResolvedValue(3);
-    await expect(useCase.execute({ senderId: "s", receiverId: "r" })).rejects.toBeInstanceOf(
-      ApplicationException,
-    );
-  });
-
-  it("성공 시 응원 생성 + 알림 enqueue", async () => {
-    const result = await useCase.execute({
-      senderId: "s",
-      receiverId: "r",
-      message: "hi",
-    });
-    expect(result.id).toBe(1);
-    expect(notifier.notifyCheerSent).toHaveBeenCalledWith(
-      expect.objectContaining({ cheerId: 1, senderId: "s", receiverId: "r" }),
-    );
-  });
-
-  it("무제한(null)이면 한도 체크를 통과한다", async () => {
-    limitReader.getDailyLimitInTx.mockResolvedValue(null);
-    repo.countSentSince.mockResolvedValue(999);
-    const result = await useCase.execute({ senderId: "s", receiverId: "r" });
-    expect(result.id).toBe(1);
-  });
-
-  it("같은 시각 기준의 일일·쿨다운 키를 guarded read 전에 UoW 안에서 잠근다", async () => {
-    // Given - KST 자정 직전 시작하고 lock 대기 중 다음 날로 넘어가는 상황
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
-    const events: string[] = [];
-    mutationLock.acquire.mockImplementation(async () => {
-      events.push("lock");
-      vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
-    });
-    limitReader.getDailyLimitInTx.mockImplementation(async () => {
-      events.push("limit");
-      return 3;
-    });
-    repo.countSentSince.mockImplementation(async () => {
-      events.push("daily-count");
-      return 0;
-    });
-    repo.findLastCheerToUser.mockImplementation(async () => {
-      events.push("cooldown-read");
-      return null;
-    });
-
-    // When
-    await useCase.execute({ senderId: "s", receiverId: "r" }, "Asia/Seoul");
-
-    // Then - lock key와 quota 시작점 모두 7/26 KST 기준이고 lock이 먼저임
-    expect(mutationLock.acquire).toHaveBeenCalledWith([
-      "mutation:v1:cheer:daily:s:2026-07-26",
-      "mutation:v1:cheer:cooldown:s:r",
-    ]);
-    expect(repo.countSentSince).toHaveBeenCalledWith(
-      "s",
-      new Date("2026-07-25T15:00:00.000Z"),
-      new Date("2026-07-26T15:00:00.000Z"),
-    );
-    expect(repo.createWithRelations).toHaveBeenCalledWith(
-      expect.objectContaining({
-        createdAt: new Date("2026-07-26T14:59:59.900Z"),
-      }),
-    );
-    expect(events).toEqual(["lock", "limit", "daily-count", "cooldown-read"]);
+  afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it.each([
+    { name: "자기 자신", receiverId: "sender", code: "CHEER_1204" },
+    { name: "친구가 아닌 사용자", receiverId: "other", code: "CHEER_1203" },
+  ])("$name 에게는 $code 오류로 거부하고 응원이나 알림을 저장하지 않는다", async (input) => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    // When / Then
+    await expect(
+      new SendCheer({
+        ...fixture,
+        notifier: fixture.cheerNotifier,
+        limitReader: fixture.cheerLimitReader,
+      }).execute({ senderId: "sender", receiverId: input.receiverId, timezone: "UTC" }),
+    ).rejects.toMatchObject({ errorCode: input.code });
+    expect(fixture.cheerRepository.records.size).toBe(0);
+    expect(fixture.cheerNotifier.notifications).toEqual([]);
+  });
+  it("일일 한도에 도달하면 추가 저장 없이 CHEER_1201로 거부한다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    for (let index = 0; index < 3; index += 1)
+      fixture.cheerRepository.seed({ senderId: "sender", receiverId: `previous-${index}` });
+    // When / Then
+    await expect(
+      new SendCheer({
+        ...fixture,
+        notifier: fixture.cheerNotifier,
+        limitReader: fixture.cheerLimitReader,
+      }).execute({ senderId: "sender", receiverId: "receiver", timezone: "UTC" }),
+    ).rejects.toMatchObject({ errorCode: "CHEER_1201", details: { limit: 3 } });
+    expect(fixture.cheerRepository.records.size).toBe(3);
+    expect(fixture.cheerNotifier.notifications).toEqual([]);
+  });
+  it("같은 친구의 24시간 쿨다운 동안은 구체적인 오류와 남은 시간을 반환한다", async () => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    fixture.cheerRepository.seed({
+      senderId: "sender",
+      receiverId: "receiver",
+      createdAt: new Date(SOCIAL_TIME.getTime() - 1000),
+    });
+    // When / Then
+    await expect(
+      new SendCheer({
+        ...fixture,
+        notifier: fixture.cheerNotifier,
+        limitReader: fixture.cheerLimitReader,
+      }).execute({ senderId: "sender", receiverId: "receiver", timezone: "UTC" }),
+    ).rejects.toMatchObject({ errorCode: "CHEER_1202", details: { remainingSeconds: 86399 } });
+    expect(fixture.cheerRepository.records.size).toBe(1);
+  });
+  it.each(["FREE", "ACTIVE"])(
+    "%s 사용자의 성공 응원을 저장하고 프로필이 없으면 태그를 알림에 사용한다",
+    async (subscriptionStatus) => {
+      // Given
+      const fixture = createSocialInteractionFixture();
+      const sender = fixture.addUser("sender", null);
+      fixture.database.users.set("sender", { role: "USER", subscriptionStatus });
+      if (subscriptionStatus === "ACTIVE")
+        for (let index = 0; index < 4; index += 1)
+          fixture.cheerRepository.seed({ senderId: "sender", receiverId: `previous-${index}` });
+      // When
+      const result = await new SendCheer({
+        ...fixture,
+        notifier: fixture.cheerNotifier,
+        limitReader: fixture.cheerLimitReader,
+      }).execute({
+        senderId: "sender",
+        receiverId: "receiver",
+        message: "응원해요",
+        timezone: "UTC",
+      });
+      // Then
+      expect(fixture.cheerRepository.records.get(result.id)).toMatchObject({
+        senderId: "sender",
+        receiverId: "receiver",
+        message: "응원해요",
+        createdAt: SOCIAL_TIME,
+      });
+      expect(fixture.cheerNotifier.notifications).toEqual([
+        {
+          cheerId: result.id,
+          senderId: "sender",
+          receiverId: "receiver",
+          senderName: sender.userTag,
+          message: "응원해요",
+        },
+      ]);
+    },
+  );
+  it("잠금 대기 중 자정이 지나도 시작 시각의 quota 구간과 저장 시각을 사용한다", async () => {
+    // Given
+    vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+    const fixture = createSocialInteractionFixture();
+    const count = vi.spyOn(fixture.cheerRepository, "countSentSince");
+    fixture.mutationLock.acquire = async (keys) => {
+      fixture.lockCalls.push([...keys]);
+      vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+    };
+    // When
+    const result = await new SendCheer({
+      ...fixture,
+      notifier: fixture.cheerNotifier,
+      limitReader: fixture.cheerLimitReader,
+    }).execute({ senderId: "sender", receiverId: "receiver", timezone: "Asia/Seoul" });
+    // Then
+    expect(fixture.lockCalls).toEqual([
+      [
+        MutationLockKeys.cheerDailyQuota("sender"),
+        MutationLockKeys.cheerCooldown("sender", "receiver"),
+      ],
+    ]);
+    expect(count).toHaveBeenCalledWith(
+      "sender",
+      new Date("2026-07-25T15:00:00Z"),
+      new Date("2026-07-26T15:00:00Z"),
+    );
+    expect(result.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
   });
 });

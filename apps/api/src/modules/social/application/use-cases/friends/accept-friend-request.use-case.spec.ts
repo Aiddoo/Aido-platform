@@ -1,176 +1,106 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { createFollowRepositoryMock } from "#test/mocks/ports/follow.mock";
-import { createUnitOfWorkMock } from "#test/mocks/ports/index";
-
-import { Friendship } from "../../../domain/aggregates/friends/friendship.aggregate.js";
-import {
-  type FollowRepositoryPort,
-  type FollowWithUser,
-} from "../../ports/friends/follow.repository.port.js";
-import { FriendshipEffects } from "../../services/friends/friendship-effects.service.js";
 import { AcceptFriendRequest } from "./accept-friend-request.use-case.js";
 
-const ME = "u-me";
-const REQUESTER = "u-req";
-
-const friendship = (
-  id: string,
-  followerId: string,
-  followingId: string,
-  status: "PENDING" | "ACCEPTED" = "PENDING",
-): Friendship =>
-  Friendship.reconstitute({
-    id,
-    followerId,
-    followingId,
-    status,
-    sortOrder: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+describe("친구 요청 수락", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-const withUser = (id: string): FollowWithUser => ({
-  id,
-  followerId: ME,
-  followingId: REQUESTER,
-  status: "ACCEPTED",
-  sortOrder: 1,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-  follower: {
-    id: ME,
-    userTag: "MEMEME12",
-    profile: { name: "나", profileImage: null },
-  },
-  following: {
-    id: REQUESTER,
-    userTag: "REQ12345",
-    profile: { name: "상대", profileImage: null },
-  },
-});
+  it.each(["missing", "ACCEPTED"])(
+    "%s 요청은 재수락하지 않고 기존 관계를 유지한다",
+    async (status) => {
+      // Given
+      const fixture = createSocialFriendFixture();
+      fixture.addUser("me");
+      fixture.addUser("friend");
+      if (status === "ACCEPTED") fixture.addMutual("me", "friend");
+      const before = structuredClone([...fixture.followRepository.follows.values()]);
+      // When / Then
+      await expect(
+        new AcceptFriendRequest(fixture).execute({ userId: "me", requesterUserId: "friend" }),
+      ).rejects.toMatchObject({ errorCode: "FOLLOW_0903" });
+      expect([...fixture.followRepository.follows.values()]).toEqual(before);
+      expect(fixture.notifier.mutual).toEqual([]);
+    },
+  );
 
-describe("AcceptFriendRequest — 친구 요청 수락", () => {
-  let useCase: AcceptFriendRequest;
-  let repo: Mocked<FollowRepositoryPort>;
-  let uow: Mocked<UnitOfWorkPort>;
-  let effects: Mocked<FriendshipEffects>;
-
-  beforeEach(async () => {
-    const acceptFriendRequestDependencies = mockDeep<
-      ConstructorParameters<typeof AcceptFriendRequest>[0]
-    >({ followRepository: createFollowRepositoryMock(), unitOfWork: createUnitOfWorkMock() });
-    const unit = new AcceptFriendRequest(acceptFriendRequestDependencies);
-    useCase = unit;
-    repo = acceptFriendRequestDependencies.followRepository;
-    uow = acceptFriendRequestDependencies.unitOfWork;
-    effects = acceptFriendRequestDependencies.effects;
-
-    repo.getMaxSortOrderForFriends.mockResolvedValue(0);
-  });
-
-  it("받은 PENDING 요청이 없으면 FOLLOW_0903, 트랜잭션 미실행", async () => {
-    // Given
-    repo.findByFollowerAndFollowing.mockResolvedValue(null);
-
-    // When / Then
-    await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
-      { errorCode: "FOLLOW_0903" },
-    );
-    expect(uow.run).not.toHaveBeenCalled();
-  });
-
-  it("요청이 PENDING이 아니면(이미 ACCEPTED) FOLLOW_0903", async () => {
-    // Given
-    repo.findByFollowerAndFollowing.mockResolvedValue(
-      friendship("req-1", REQUESTER, ME, "ACCEPTED"),
-    );
-
-    // When / Then
-    await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
-      { errorCode: "FOLLOW_0903" },
-    );
-  });
-
-  it("수락 성공: 요청 ACCEPTED 갱신 + 역방향 생성 + 맞팔 알림/캐시 무효화", async () => {
-    // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("req-1", REQUESTER, ME)) // 받은 PENDING 요청
-      .mockResolvedValueOnce(null); // 역방향 관계 없음 → create
-    repo.create.mockResolvedValue(friendship("rev-1", ME, REQUESTER, "ACCEPTED"));
-    repo.findByIdWithUser.mockResolvedValue(withUser("rev-1"));
-
-    // When
-    const result = await useCase.execute({
-      userId: ME,
-      requesterUserId: REQUESTER,
-    });
-
-    // Then
-    expect(repo.update).toHaveBeenCalledWith(
-      "req-1",
-      expect.objectContaining({ status: "ACCEPTED" }),
-    );
-    expect(repo.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        followerId: ME,
-        followingId: REQUESTER,
+  it.each([false, true])(
+    "역방향 요청 존재=%s일 때 양방향 ACCEPTED와 각 사용자의 정렬 순서를 저장한다",
+    async (reverseExists) => {
+      // Given
+      const fixture = createSocialFriendFixture();
+      fixture.addUser("me");
+      fixture.addUser("friend");
+      fixture.addUser("existing");
+      fixture.addMutual("me", "existing", 2);
+      fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
+      if (reverseExists) fixture.followRepository.seed({ followerId: "me", followingId: "friend" });
+      // When
+      const result = await new AcceptFriendRequest(fixture).execute({
+        userId: "me",
+        requesterUserId: "friend",
+      });
+      // Then
+      expect(result).toMatchObject({
+        followerId: "me",
+        followingId: "friend",
         status: "ACCEPTED",
-      }),
-    );
-    expect(effects.invalidateFriendshipCaches).toHaveBeenCalledWith(ME, REQUESTER);
-    expect(effects.notifyMutual).toHaveBeenCalledTimes(2);
-    expect(effects.checkFirstFriendMilestone).toHaveBeenCalledWith(ME);
-    expect(effects.checkFirstFriendMilestone).toHaveBeenCalledWith(REQUESTER);
-    expect(result.id).toBe("rev-1");
-  });
+        sortOrder: 3,
+      });
+      expect(
+        await fixture.followRepository.findByFollowerAndFollowing("friend", "me"),
+      ).toMatchObject({ status: "ACCEPTED", sortOrder: 0 });
+      expect(fixture.notifier.mutual).toHaveLength(2);
+      expect(fixture.notifier.milestones).toEqual([{ userId: "friend" }]);
+    },
+  );
 
-  it("역방향 관계가 이미 있으면 create 대신 update로 ACCEPTED 전환", async () => {
+  it("UoW가 완료되기 전에는 관계 캐시나 알림을 변경하지 않는다", async () => {
     // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("req-1", REQUESTER, ME)) // 받은 PENDING
-      .mockResolvedValueOnce(friendship("rev-old", ME, REQUESTER, "PENDING")); // 역방향 존재
-    repo.update.mockResolvedValue(friendship("rev-old", ME, REQUESTER, "ACCEPTED"));
-    repo.findByIdWithUser.mockResolvedValue(withUser("rev-old"));
-
+    const fixture = createSocialFriendFixture();
+    fixture.addUser("me");
+    fixture.addUser("friend");
+    fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
+    await fixture.reader.countFriends("me");
+    const entered = Promise.withResolvers<void>();
+    const released = Promise.withResolvers<void>();
+    fixture.unitOfWork.run = async (work) => {
+      const result = await work();
+      entered.resolve();
+      await released.promise;
+      return result;
+    };
     // When
-    await useCase.execute({ userId: ME, requesterUserId: REQUESTER });
-
-    // Then
-    expect(repo.create).not.toHaveBeenCalled();
-    expect(repo.update).toHaveBeenCalledTimes(2); // 요청 + 역방향
+    const execution = new AcceptFriendRequest(fixture).execute({
+      userId: "me",
+      requesterUserId: "friend",
+    });
+    try {
+      await Promise.race([entered.promise, execution]);
+      // Then
+      expect(fixture.cache.friendCounts.get("me")).toBe(0);
+      expect(fixture.notifier.mutual).toEqual([]);
+    } finally {
+      released.resolve();
+      await execution;
+    }
+    expect(fixture.cache.friendCounts.has("me")).toBe(false);
+    expect(fixture.notifier.mutual).toHaveLength(2);
   });
 
-  it("부수효과(캐시 무효화)는 트랜잭션 커밋 이후 수행된다", async () => {
+  it("저장한 관계의 사용자 프로젝션이 없으면 SYS_0001을 전달하고 알림을 보내지 않는다", async () => {
     // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("req-1", REQUESTER, ME))
-      .mockResolvedValueOnce(null);
-    repo.create.mockResolvedValue(friendship("rev-1", ME, REQUESTER, "ACCEPTED"));
-    repo.findByIdWithUser.mockResolvedValue(withUser("rev-1"));
-
-    // When
-    await useCase.execute({ userId: ME, requesterUserId: REQUESTER });
-
-    // Then
-    const runOrder = uow.run.mock.invocationCallOrder[0] ?? 0;
-    const invalidateOrder = effects.invalidateFriendshipCaches.mock.invocationCallOrder[0] ?? 0;
-    expect(invalidateOrder).toBeGreaterThan(runOrder);
-  });
-
-  it("생성된 팔로우의 사용자 정보 조회 실패 시 SYS_0001", async () => {
-    // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("req-1", REQUESTER, ME))
-      .mockResolvedValueOnce(null);
-    repo.create.mockResolvedValue(friendship("rev-1", ME, REQUESTER, "ACCEPTED"));
-    repo.findByIdWithUser.mockResolvedValue(null);
-
+    const fixture = createSocialFriendFixture();
+    fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
     // When / Then
-    await expect(useCase.execute({ userId: ME, requesterUserId: REQUESTER })).rejects.toMatchObject(
-      { errorCode: "SYS_0001" },
-    );
+    await expect(
+      new AcceptFriendRequest(fixture).execute({ userId: "me", requesterUserId: "friend" }),
+    ).rejects.toMatchObject({ errorCode: "SYS_0001" });
+    expect(fixture.notifier.mutual).toEqual([]);
   });
 });

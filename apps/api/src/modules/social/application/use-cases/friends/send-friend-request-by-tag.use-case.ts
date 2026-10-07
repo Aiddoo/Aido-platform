@@ -8,17 +8,13 @@ import type { SendFriendRequest } from "./send-friend-request.use-case.js";
 import { type SendFriendRequestResult } from "./send-friend-request.use-case.js";
 
 export interface SendFriendRequestByTagInput {
-  userId: string;
-  targetUserTag: string;
+  readonly userId: string;
+  readonly targetUserTag: string;
 }
 
-/**
- * userTag로 친구 요청 보내기 use-case.
- * 태그를 사용자 ID로 해석한 뒤 SendFriendRequestUseCase에 위임한다.
- */
 interface SendFriendRequestByTagDependencies {
-  readonly followRepository: FollowRepositoryPort;
-  readonly sendFriendRequest: SendFriendRequest;
+  readonly followRepository: Pick<FollowRepositoryPort, "findUserByTag">;
+  readonly sendFriendRequest: Pick<SendFriendRequest, "execute">;
 }
 
 export class SendFriendRequestByTag {
@@ -31,7 +27,7 @@ export class SendFriendRequestByTag {
   async execute(input: SendFriendRequestByTagInput): Promise<SendFriendRequestResult> {
     const targetTag = UserTag.of(input.targetUserTag);
     const targetUser = await this.#dependencies.followRepository.findUserByTag(targetTag.value);
-    if (!targetUser) {
+    if (targetUser === null) {
       throw new ApplicationException(ErrorCode.FOLLOW_0905, {
         userTag: input.targetUserTag,
       });

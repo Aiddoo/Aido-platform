@@ -4,19 +4,16 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { NudgeLogEvent } from "../../observability/nudges/nudge-log.events.js";
 import { type NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.port.js";
 
 export interface MarkNudgeReadInput {
-  userId: string;
-  nudgeId: number;
+  readonly userId: string;
+  readonly nudgeId: number;
 }
 
-/**
- * 콕 찌르기 읽음 처리 use-case.
- * 수신자 소유 검증 후 미읽음 콕 찌르기를 읽음 처리한다(이미 읽음이면 no-op).
- */
 interface MarkNudgeReadDependencies {
-  readonly nudgeRepository: NudgeRepositoryPort;
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findById" | "saveRead">;
   readonly logger: ApplicationLogger;
 }
 
@@ -31,7 +28,7 @@ export class MarkNudgeRead {
     const { userId, nudgeId } = input;
 
     const nudge = await this.#dependencies.nudgeRepository.findById(nudgeId);
-    if (!nudge?.isReceivedBy(userId)) {
+    if (nudge === null || !nudge.isReceivedBy(userId)) {
       throw new ApplicationException(ErrorCode.NUDGE_1105, { nudgeId });
     }
     if (!nudge.markRead(now())) {
@@ -39,6 +36,6 @@ export class MarkNudgeRead {
     }
 
     await this.#dependencies.nudgeRepository.saveRead(nudge);
-    this.#dependencies.logger.debug(`Nudge 읽음 처리: id=${nudgeId}`);
+    this.#dependencies.logger.debug({ event: NudgeLogEvent.READ, userId, nudgeId });
   }
 }

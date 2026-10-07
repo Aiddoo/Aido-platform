@@ -65,6 +65,9 @@ export function createDatabaseTransactionFixture(client: TestDatabaseClient | Pr
   const host = mock<TransactionHost<Prisma8TransactionalAdapter>>();
   const fallback = "runtime" in client ? createDatabaseContext(client) : client;
   Object.defineProperty(host, "tx", { get: () => active.getStore() ?? fallback });
+  host.isTransactionActive.mockImplementation(
+    () => active.getStore() !== undefined || !("runtime" in client),
+  );
   const uow: UnitOfWorkPort = {
     async run(work) {
       if (active.getStore() !== undefined || !("runtime" in client)) return work();

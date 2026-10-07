@@ -1,3 +1,5 @@
+import { AggregateRoot } from "#api/shared/domain/index";
+
 export interface CheerProps {
   id: number;
   senderId: string;
@@ -7,17 +9,14 @@ export interface CheerProps {
   createdAt: Date;
 }
 
-/**
- * Cheer — 응원 애그리게잇.
- *
- * 한 건의 응원(발신자→수신자, 선택적 메시지)을 나타내며, 읽음 여부·수신자 소유 판별 등
- * 응원에 관한 규칙을 캡슐화한다. 세터는 없다(불변 조회 모델).
- */
 export class Cheer extends AggregateRoot<CheerProps> {
   static reconstitute(props: CheerProps): Cheer {
     return new Cheer({
-      ...props,
-      readAt: props.readAt ? new Date(props.readAt) : null,
+      id: props.id,
+      senderId: props.senderId,
+      receiverId: props.receiverId,
+      message: props.message,
+      readAt: props.readAt !== null ? new Date(props.readAt) : null,
       createdAt: new Date(props.createdAt),
     });
   }
@@ -39,7 +38,7 @@ export class Cheer extends AggregateRoot<CheerProps> {
   }
 
   get readAt(): Date | null {
-    return this.props.readAt ? new Date(this.props.readAt) : null;
+    return this.props.readAt !== null ? new Date(this.props.readAt) : null;
   }
 
   get createdAt(): Date {
@@ -50,9 +49,13 @@ export class Cheer extends AggregateRoot<CheerProps> {
     return this.props.readAt !== null;
   }
 
+  markRead(at: Date): boolean {
+    if (this.isRead()) return false;
+    this.props.readAt = new Date(at);
+    return true;
+  }
+
   isReceivedBy(userId: string): boolean {
     return this.props.receiverId === userId;
   }
 }
-
-import { AggregateRoot } from "#api/shared/domain/index";

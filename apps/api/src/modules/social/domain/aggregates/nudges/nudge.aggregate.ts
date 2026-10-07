@@ -53,11 +53,11 @@ export class Nudge extends AggregateRoot<NudgeProps> {
       todoId: props.todoId,
       message: props.message,
       replyKind: props.replyKind,
-      readAt: props.readAt ? new Date(props.readAt) : null,
+      readAt: props.readAt !== null ? new Date(props.readAt) : null,
       createdAt: new Date(props.createdAt),
-      repliedAt: props.repliedAt ? new Date(props.repliedAt) : null,
-      replyUpdatedAt: props.replyUpdatedAt ? new Date(props.replyUpdatedAt) : null,
-      thankedAt: props.thankedAt ? new Date(props.thankedAt) : null,
+      repliedAt: props.repliedAt !== null ? new Date(props.repliedAt) : null,
+      replyUpdatedAt: props.replyUpdatedAt !== null ? new Date(props.replyUpdatedAt) : null,
+      thankedAt: props.thankedAt !== null ? new Date(props.thankedAt) : null,
     });
   }
 
@@ -82,7 +82,7 @@ export class Nudge extends AggregateRoot<NudgeProps> {
   }
 
   get readAt(): Date | null {
-    return this.props.readAt ? new Date(this.props.readAt) : null;
+    return this.props.readAt !== null ? new Date(this.props.readAt) : null;
   }
 
   get createdAt(): Date {
@@ -94,15 +94,15 @@ export class Nudge extends AggregateRoot<NudgeProps> {
   }
 
   get repliedAt(): Date | null {
-    return this.props.repliedAt ? new Date(this.props.repliedAt) : null;
+    return this.props.repliedAt !== null ? new Date(this.props.repliedAt) : null;
   }
 
   get replyUpdatedAt(): Date | null {
-    return this.props.replyUpdatedAt ? new Date(this.props.replyUpdatedAt) : null;
+    return this.props.replyUpdatedAt !== null ? new Date(this.props.replyUpdatedAt) : null;
   }
 
   get thankedAt(): Date | null {
-    return this.props.thankedAt ? new Date(this.props.thankedAt) : null;
+    return this.props.thankedAt !== null ? new Date(this.props.thankedAt) : null;
   }
 
   isRead(): boolean {

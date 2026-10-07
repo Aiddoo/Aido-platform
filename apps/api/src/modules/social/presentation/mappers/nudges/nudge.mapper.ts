@@ -6,11 +6,11 @@ import type { Nudge, NudgeDetail, NudgeLimitInfo, RemindNudge } from "@aido/api"
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
+import type { NudgeLimitSnapshot } from "../../../application/models/nudges/nudge-read.models.js";
 import type {
   NudgeWithRelations,
   ReminderNudgeWithRelations,
 } from "../../../application/ports/nudges/nudge.repository.port.js";
-import type { NudgeLimitInfo as ReaderLimitInfo } from "../../../application/services/nudges/nudge.reader.js";
 
 export abstract class NudgeMapper {
   static toDetailDto(nudge: NudgeWithRelations, appVersion?: string): NudgeDetail {
@@ -62,7 +62,7 @@ export abstract class NudgeMapper {
     };
   }
 
-  static toLimitInfoDto(limitInfo: ReaderLimitInfo): NudgeLimitInfo {
+  static toLimitInfoDto(limitInfo: NudgeLimitSnapshot): NudgeLimitInfo {
     return {
       dailyLimit: limitInfo.dailyLimit,
       usedToday: limitInfo.used,

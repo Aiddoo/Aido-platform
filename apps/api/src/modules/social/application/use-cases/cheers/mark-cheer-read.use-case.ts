@@ -1,21 +1,19 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { CheerLogEvent } from "../../observability/cheers/cheer-log.events.js";
 import { type CheerRepositoryPort } from "../../ports/cheers/cheer.repository.port.js";
 
 export interface MarkCheerReadInput {
-  userId: string;
-  cheerId: number;
+  readonly userId: string;
+  readonly cheerId: number;
 }
 
-/**
- * 응원 읽음 처리 use-case.
- * 수신자 소유 검증 후 미읽음 응원을 읽음 처리한다(이미 읽음이면 no-op).
- */
 interface MarkCheerReadDependencies {
-  readonly cheerRepository: CheerRepositoryPort;
+  readonly cheerRepository: Pick<CheerRepositoryPort, "findById" | "saveRead">;
   readonly logger: ApplicationLogger;
 }
 
@@ -30,14 +28,14 @@ export class MarkCheerRead {
     const { userId, cheerId } = input;
 
     const cheer = await this.#dependencies.cheerRepository.findById(cheerId);
-    if (!cheer?.isReceivedBy(userId)) {
+    if (cheer === null || !cheer.isReceivedBy(userId)) {
       throw new ApplicationException(ErrorCode.CHEER_1205, { cheerId });
     }
-    if (cheer.isRead()) {
+    if (!cheer.markRead(now())) {
       return;
     }
 
-    await this.#dependencies.cheerRepository.markAsRead(cheerId);
-    this.#dependencies.logger.debug(`Cheer 읽음 처리: id=${cheerId}`);
+    await this.#dependencies.cheerRepository.saveRead(cheer);
+    this.#dependencies.logger.debug({ event: CheerLogEvent.READ, userId, cheerId });
   }
 }

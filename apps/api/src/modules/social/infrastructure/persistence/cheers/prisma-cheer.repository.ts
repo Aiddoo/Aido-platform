@@ -5,11 +5,12 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp } from "#api/platform/database/database-values";
 import type { Cheer as CheerRow } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import {
+  DatabaseRecordNotFoundError,
+  requireRecord,
+} from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
-import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { startOfDay } from "#api/shared/domain/date/utils/range";
 
 import type {
   CheerRepositoryPort,
@@ -29,11 +30,6 @@ type CheerRowWithRelations = CheerRow & {
   receiver: UserBriefRow | null;
 };
 
-/**
- * CheerRepositoryPort의 Prisma 어댑터.
- * 단건 조회는 Cheer 애그리게잇을, 목록/생성은 CheerWithRelations 프로젝션을 반환한다.
- * 트랜잭션은 CLS(TransactionHost.tx)로 전파된다.
- */
 @Injectable()
 export class PrismaCheerRepository implements CheerRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
@@ -54,6 +50,8 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
   }
 
   private static toWithRelations(row: CheerRowWithRelations): CheerWithRelations {
+    const sender = requireRecord(row.sender);
+    const receiver = requireRecord(row.receiver);
     return {
       id: row.id,
       senderId: row.senderId,
@@ -62,14 +60,14 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       readAt: row.readAt,
       createdAt: row.createdAt,
       sender: {
-        id: requireRecord(row.sender).id,
-        userTag: requireRecord(row.sender).userTag,
-        profile: requireRecord(row.sender).profile,
+        id: sender.id,
+        userTag: sender.userTag,
+        profile: sender.profile,
       },
       receiver: {
-        id: requireRecord(row.receiver).id,
-        userTag: requireRecord(row.receiver).userTag,
-        profile: requireRecord(row.receiver).profile,
+        id: receiver.id,
+        userTag: receiver.userTag,
+        profile: receiver.profile,
       },
     };
   }
@@ -79,7 +77,7 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
       "Cheer",
       await this.client.orm.public.Cheer.where((row) => row.id.eq(id)).first(),
     );
-    return row ? PrismaCheerRepository.toCheer(row) : null;
+    return row === null ? null : PrismaCheerRepository.toCheer(row);
   }
 
   async findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null> {
@@ -91,27 +89,20 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
         .orderBy((row) => row.createdAt.desc())
         .first(),
     );
-    return row ? PrismaCheerRepository.toCheer(row) : null;
+    return row === null ? null : PrismaCheerRepository.toCheer(row);
   }
 
-  async markAsRead(id: number): Promise<void> {
-    decodeRecord(
-      "Cheer",
-      requireRecord(
-        await this.client.orm.public.Cheer.where((row) => row.id.eq(id)).update(
-          encodePatch("Cheer", { readAt: now() }),
-        ),
-      ),
+  async saveRead(cheer: Cheer): Promise<void> {
+    const affected = await this.client.orm.public.Cheer.where({ id: cheer.id }).updateAndCount(
+      encodePatch("Cheer", { readAt: cheer.readAt }),
     );
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
   }
 
-  async markManyAsRead(ids: number[], receiverId: string): Promise<number> {
-    const result = {
-      count: await this.client.orm.public.Cheer.where((row) =>
-        and(row.id.in(ids), row.receiverId.eq(receiverId), row.readAt.isNull()),
-      ).updateAndCount(encodePatch("Cheer", { readAt: now() })),
-    };
-    return result.count;
+  async markManyAsRead(ids: readonly number[], receiverId: string): Promise<number> {
+    return this.client.orm.public.Cheer.where((row) =>
+      and(row.id.in([...ids]), row.receiverId.eq(receiverId), row.readAt.isNull()),
+    ).updateAndCount(encodePatch("Cheer", { readAt: now() }));
   }
 
   async findReceivedCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
@@ -166,20 +157,6 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
     }
     const rows = decodeRecord("Cheer", await cheers.all());
     return rows.map((row) => PrismaCheerRepository.toWithRelations(row));
-  }
-
-  async countTodayCheers(senderId: string, date: Date): Promise<number> {
-    const dayStart = startOfDay(date);
-    const dayEnd = addDays(1, dayStart);
-    return this.client.orm.public.Cheer.where((row) =>
-      and(
-        row.senderId.eq(senderId),
-        row.createdAt.gte(databaseTimestamp(dayStart)),
-        row.createdAt.lt(databaseTimestamp(dayEnd)),
-      ),
-    )
-      .aggregate((aggregate) => ({ count: aggregate.count() }))
-      .then(({ count }) => count);
   }
 
   async countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {

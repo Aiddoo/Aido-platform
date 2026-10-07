@@ -1,8 +1,8 @@
+import type { NudgeLimitSnapshot } from "../../../application/models/nudges/nudge-read.models.js";
 import type {
   NudgeWithRelations,
   ReminderNudgeWithRelations,
 } from "../../../application/ports/nudges/nudge.repository.port.js";
-import type { NudgeLimitInfo } from "../../../application/services/nudges/nudge.reader.js";
 import { NudgeMapper } from "./nudge.mapper.js";
 
 const createdAt = new Date("2026-01-01T00:00:00.000Z");
@@ -68,7 +68,7 @@ describe("NudgeMapper", () => {
   });
 
   it("toLimitInfoDto: 무제한 판별", () => {
-    const info: NudgeLimitInfo = { dailyLimit: null, used: 5, remaining: null };
+    const info: NudgeLimitSnapshot = { dailyLimit: null, used: 5, remaining: null };
     expect(NudgeMapper.toLimitInfoDto(info)).toEqual({
       dailyLimit: null,
       usedToday: 5,

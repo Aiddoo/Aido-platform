@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { UserSettingsModule } from "../identity/identity-settings.module.js";
 import { NotificationModule } from "../notification/notification-delivery.module.js";
 import { SchedulerModule } from "../notification/notification-reminders.module.js";
-import { FollowModule } from "../social/social-friends.module.js";
+import { SocialFriendsModule } from "../social/social-friends.public.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
@@ -34,7 +34,7 @@ import { TodoController } from "./presentation/controllers/todos/todo.controller
 
 @Module({
   imports: [
-    FollowModule,
+    SocialFriendsModule,
     NotificationModule,
     PlanningCategoriesModule,
     SchedulerModule,

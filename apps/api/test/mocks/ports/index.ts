@@ -6,10 +6,8 @@
  * 팩토리는 포트 인터페이스를 반환하며, 포트 확장 시 누락을 타입 에러로 잡습니다.
  * 개별 메서드 mock API는 spec에서 `vi.mocked(mock.method)`로 접근합니다.
  */
-export * from "./cheer.mock.js";
 export * from "./cross-module.mock.js";
 export * from "./daily-completion.mock.js";
-export * from "./follow.mock.js";
 export * from "./memo.mock.js";
 export * from "./notification.mock.js";
 export * from "./notification-cache.mock.js";

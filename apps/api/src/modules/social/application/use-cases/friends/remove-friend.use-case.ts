@@ -1,25 +1,27 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
 import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
 import type { FriendshipEffects } from "../../services/friends/friendship-effects.service.js";
 
 export interface RemoveFriendInput {
-  userId: string;
-  targetUserId: string;
+  readonly userId: string;
+  readonly targetUserId: string;
 }
 
-/**
- * 친구 삭제 / 보낸 요청 철회 use-case.
- * 내 방향 관계를 삭제하고, 상대 방향 관계가 있으면 함께 삭제(양방향 정리)한다.
- */
 interface RemoveFriendDependencies {
-  readonly followRepository: FollowRepositoryPort;
+  readonly followRepository: Pick<FollowRepositoryPort, "findByFollowerAndFollowing" | "delete">;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly effects: FriendshipEffects;
+  readonly mutationLock: MutationLockPort;
+  readonly effects: Pick<FriendshipEffects, "invalidateFriendshipCaches">;
   readonly logger: ApplicationLogger;
 }
 
@@ -33,28 +35,33 @@ export class RemoveFriend {
   async execute(input: RemoveFriendInput): Promise<void> {
     const { userId, targetUserId } = input;
 
-    const myFollow = await this.#dependencies.followRepository.findByFollowerAndFollowing(
-      userId,
-      targetUserId,
-    );
-    if (!myFollow) {
-      throw new ApplicationException(ErrorCode.FOLLOW_0907, { targetUserId });
-    }
-
     await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.friendPair(userId, targetUserId),
+        MutationLockKeys.friendList(userId),
+        MutationLockKeys.friendList(targetUserId),
+      ]);
+      const myFollow = await this.#dependencies.followRepository.findByFollowerAndFollowing(
+        userId,
+        targetUserId,
+      );
+      if (myFollow === null) {
+        throw new ApplicationException(ErrorCode.FOLLOW_0907, { targetUserId });
+      }
+
       await this.#dependencies.followRepository.delete(myFollow.id);
 
       const theirFollow = await this.#dependencies.followRepository.findByFollowerAndFollowing(
         targetUserId,
         userId,
       );
-      if (theirFollow) {
+      if (theirFollow !== null) {
         await this.#dependencies.followRepository.delete(theirFollow.id);
       }
     });
 
     await this.#dependencies.effects.invalidateFriendshipCaches(userId, targetUserId);
 
-    this.#dependencies.logger.log(`Follow removed: ${userId} X ${targetUserId}`);
+    this.#dependencies.logger.log({ event: SocialFriendLogEvent.REMOVED, userId, targetUserId });
   }
 }

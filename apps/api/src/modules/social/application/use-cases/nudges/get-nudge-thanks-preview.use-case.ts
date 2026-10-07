@@ -1,11 +1,11 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import type { NudgeThanksPreviewResult } from "../../models/nudges/nudge-interaction.models.js";
 import { type NudgeInteractionConfigPort } from "../../ports/nudges/nudge-interaction.config.port.js";
 import { type NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.port.js";
-import type { NudgeThanksPreviewResult } from "../../services/nudges/nudge-interaction.types.js";
 
 export interface GetNudgeThanksPreviewInput {
   readonly userId: string;
@@ -16,9 +16,16 @@ export interface GetNudgeThanksPreviewInput {
 }
 
 interface GetNudgeThanksPreviewDependencies {
-  readonly nudgeRepository: NudgeRepositoryPort;
+  readonly nudgeRepository: Pick<
+    NudgeRepositoryPort,
+    | "findInteractionById"
+    | "findInteractionTodo"
+    | "findLastReceivedNudgeId"
+    | "findThanksCandidatePage"
+    | "findThanksCandidates"
+  >;
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly followReader: FollowReader;
+  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
 }
 
 export class GetNudgeThanksPreview {
@@ -36,7 +43,7 @@ export class GetNudgeThanksPreview {
       input.todoId,
       input.userId,
     );
-    if (!todo) {
+    if (todo === null) {
       throw new ApplicationException(ErrorCode.TODO_0801);
     }
     if (!todo.completed) {
@@ -48,7 +55,7 @@ export class GetNudgeThanksPreview {
         input.throughNudgeId,
         input.userId,
       );
-      if (!cutoff || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
+      if (cutoff === null || cutoff.todoId !== input.todoId || cutoff.receiverId !== input.userId) {
         throw new ApplicationException(ErrorCode.NUDGE_1105);
       }
     }

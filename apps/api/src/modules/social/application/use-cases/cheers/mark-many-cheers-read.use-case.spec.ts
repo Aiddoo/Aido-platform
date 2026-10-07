@@ -1,61 +1,41 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
+import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { createCheerRepositoryMock } from "#test/mocks/ports/cheer.mock";
-
-import { type CheerRepositoryPort } from "../../ports/cheers/cheer.repository.port.js";
 import { MarkManyCheersRead } from "./mark-many-cheers-read.use-case.js";
 
-const USER = "u-receiver";
-
-describe("MarkManyCheersRead — 여러 응원 일괄 읽음 처리", () => {
-  let useCase: MarkManyCheersRead;
-  let repo: Mocked<CheerRepositoryPort>;
-
-  beforeEach(async () => {
-    const markManyCheersReadDependencies = mockDeep<
-      ConstructorParameters<typeof MarkManyCheersRead>[0]
-    >({ cheerRepository: createCheerRepositoryMock() });
-    const unit = new MarkManyCheersRead(markManyCheersReadDependencies);
-    useCase = unit;
-    repo = markManyCheersReadDependencies.cheerRepository;
+describe("응원 일괄 읽음 처리", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("수신자 소유 + 미읽음 조건으로 일괄 갱신하고 처리 개수를 반환한다", async () => {
+  it("수신자 소유의 미읽음만 한 번 갱신하고 중복 ID나 타인 소유는 개수에 포함하지 않는다", async () => {
     // Given
-    repo.markManyAsRead.mockResolvedValue(3);
-
+    const fixture = createSocialInteractionFixture();
+    const unread = fixture.cheerRepository.seed({ senderId: "sender", receiverId: "receiver" });
+    const read = fixture.cheerRepository.seed({
+      senderId: "sender",
+      receiverId: "receiver",
+      readAt: new Date(SOCIAL_TIME.getTime() - 10000),
+    });
+    const other = fixture.cheerRepository.seed({ senderId: "sender", receiverId: "other" });
+    const useCase = new MarkManyCheersRead(fixture);
     // When
     const count = await useCase.execute({
-      userId: USER,
-      cheerIds: [1, 2, 3, 4],
+      userId: "receiver",
+      cheerIds: [unread.id, unread.id, read.id, other.id, 99999],
     });
-
     // Then
-    expect(repo.markManyAsRead).toHaveBeenCalledWith([1, 2, 3, 4], USER);
-    expect(count).toBe(3);
-  });
-
-  it("처리 대상이 없으면(이미 모두 읽음/타인 소유) 0을 반환한다 (멱등)", async () => {
-    // Given
-    repo.markManyAsRead.mockResolvedValue(0);
-
-    // When
-    const count = await useCase.execute({ userId: USER, cheerIds: [1, 2] });
-
-    // Then
-    expect(count).toBe(0);
-  });
-
-  it("빈 배열이면 저장소에 그대로 위임하고 0을 반환한다", async () => {
-    // Given
-    repo.markManyAsRead.mockResolvedValue(0);
-
-    // When
-    const count = await useCase.execute({ userId: USER, cheerIds: [] });
-
-    // Then
-    expect(repo.markManyAsRead).toHaveBeenCalledWith([], USER);
-    expect(count).toBe(0);
+    expect(count).toBe(1);
+    expect(fixture.cheerRepository.records.get(unread.id)?.readAt).toEqual(SOCIAL_TIME);
+    expect(fixture.cheerRepository.records.get(read.id)?.readAt).toEqual(read.readAt);
+    expect(fixture.cheerRepository.records.get(other.id)?.readAt).toBeNull();
+    expect(
+      await useCase.execute({ userId: "receiver", cheerIds: [unread.id, read.id, other.id] }),
+    ).toBe(0);
+    expect(await useCase.execute({ userId: "receiver", cheerIds: [] })).toBe(0);
   });
 });

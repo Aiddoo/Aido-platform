@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
-import { FollowModule } from "#api/modules/social/social-friends.module";
+import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import {
@@ -23,27 +23,19 @@ import {
   getNudgeInteractionProvider,
   getNudgeThanksPreviewProvider,
   markNudgeReadProvider,
-  nudgeReaderProvider,
+  getReceivedNudgesProvider,
+  getSentNudgesProvider,
+  getNudgeLimitProvider,
+  getNudgeCooldownProvider,
+  getRemindNudgeCooldownProvider,
   replyToNudgeProvider,
   sendNudgeThanksProvider,
   sendNudgeProvider,
   sendRemindNudgeProvider,
 } from "./social-nudges-application.providers.js";
 
-/**
- * Nudge 모듈 (DDD 클린아키텍처 · use-case 기반).
- *
- * 친구의 할 일을 콕 찌르거나(sendNudge), 오늘 할 일이 없는 친구를 독촉한다(sendRemindNudge).
- * 컨트롤러는 endpoint별 UseCase와 Reader를 직접 주입한다.
- *
- * 제한 정책:
- * - 콕 찌르기: FREE 하루 3회 / ACTIVE 무제한, 동일 Todo 24시간 쿨다운, 오늘의 공개 할 일만 대상
- * - 리마인드 콕 찌르기: 일일 제한 없음, 동일 친구 1시간 쿨다운, 친구가 오늘 할 일이 없을 때만
- *
- * 기존 전송 알림은 커밋 후 큐에 등록하며, 답장·감사는 같은 UoW에서 알림과 push outbox를 기록한다.
- */
 @Module({
-  imports: [AccessModule, FollowModule, NotificationModule],
+  imports: [AccessModule, SocialFriendsModule, NotificationModule],
   controllers: [NudgeController, NudgeInteractionController],
   providers: [
     {
@@ -56,7 +48,11 @@ import {
     { provide: NUDGE_REPOSITORY, useClass: PrismaNudgeRepository },
     { provide: NUDGE_NOTIFIER, useClass: NudgeNotifierAdapter },
     { provide: NUDGE_LIMIT_READER, useClass: NudgeLimitReaderAdapter },
-    nudgeReaderProvider,
+    getReceivedNudgesProvider,
+    getSentNudgesProvider,
+    getNudgeLimitProvider,
+    getNudgeCooldownProvider,
+    getRemindNudgeCooldownProvider,
     sendNudgeProvider,
     sendRemindNudgeProvider,
     markNudgeReadProvider,
@@ -68,4 +64,4 @@ import {
     sendNudgeThanksProvider,
   ],
 })
-export class NudgeModule {}
+export class SocialNudgesModule {}

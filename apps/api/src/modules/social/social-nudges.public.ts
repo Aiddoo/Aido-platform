@@ -1,1 +1,1 @@
-export { NudgeModule } from "./social-nudges.module.js";
+export { SocialNudgesModule } from "./social-nudges.module.js";

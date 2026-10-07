@@ -6,8 +6,8 @@ import type { Cheer, CheerDetail, CheerLimitInfo } from "@aido/api";
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
+import type { CheerLimitSnapshot } from "../../../application/models/cheers/cheer-read.models.js";
 import type { CheerWithRelations } from "../../../application/ports/cheers/cheer.repository.port.js";
-import type { CheerLimitInfo as ReaderLimitInfo } from "../../../application/services/cheers/cheer.reader.js";
 
 export abstract class CheerMapper {
   static toDetailDto(cheer: CheerWithRelations, appVersion?: string): CheerDetail {
@@ -42,7 +42,7 @@ export abstract class CheerMapper {
     return cheers.map((cheer) => CheerMapper.toDetailDto(cheer, appVersion));
   }
 
-  static toLimitInfoDto(limitInfo: ReaderLimitInfo): CheerLimitInfo {
+  static toLimitInfoDto(limitInfo: CheerLimitSnapshot): CheerLimitInfo {
     return {
       dailyLimit: limitInfo.dailyLimit,
       usedToday: limitInfo.used,

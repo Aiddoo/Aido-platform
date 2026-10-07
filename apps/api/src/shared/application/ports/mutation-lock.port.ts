@@ -14,14 +14,22 @@ export interface MutationLockPort {
 const MUTATION_KEY_PREFIX = "mutation:v1";
 
 export const MutationLockKeys = {
-  cheerDaily(senderId: string, localDate: string): string {
-    return `${MUTATION_KEY_PREFIX}:cheer:daily:${senderId}:${localDate}`;
+  friendPair(userId: string, targetUserId: string): string {
+    const [smallerId, largerId] =
+      userId < targetUserId ? [userId, targetUserId] : [targetUserId, userId];
+    return `${MUTATION_KEY_PREFIX}:friend:pair:${smallerId}:${largerId}`;
+  },
+  friendList(userId: string): string {
+    return `${MUTATION_KEY_PREFIX}:friend:list:${userId}`;
+  },
+  cheerDailyQuota(senderId: string): string {
+    return `${MUTATION_KEY_PREFIX}:cheer:daily-quota:${senderId}`;
+  },
+  nudgeDailyQuota(senderId: string): string {
+    return `${MUTATION_KEY_PREFIX}:nudge:daily-quota:${senderId}`;
   },
   cheerCooldown(senderId: string, receiverId: string): string {
     return `${MUTATION_KEY_PREFIX}:cheer:cooldown:${senderId}:${receiverId}`;
-  },
-  nudgeDaily(senderId: string, localDate: string): string {
-    return `${MUTATION_KEY_PREFIX}:nudge:daily:${senderId}:${localDate}`;
   },
   nudgeCooldown(senderId: string, todoId: number): string {
     return `${MUTATION_KEY_PREFIX}:nudge:cooldown:${senderId}:${todoId}`;

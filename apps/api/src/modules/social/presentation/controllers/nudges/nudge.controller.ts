@@ -7,7 +7,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Post,
@@ -34,7 +33,11 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
-import { NudgeReader } from "../../../application/services/nudges/nudge.reader.js";
+import { GetNudgeCooldown } from "../../../application/use-cases/nudges/get-nudge-cooldown.use-case.js";
+import { GetNudgeLimit } from "../../../application/use-cases/nudges/get-nudge-limit.use-case.js";
+import { GetReceivedNudges } from "../../../application/use-cases/nudges/get-received-nudges.use-case.js";
+import { GetRemindNudgeCooldown } from "../../../application/use-cases/nudges/get-remind-nudge-cooldown.use-case.js";
+import { GetSentNudges } from "../../../application/use-cases/nudges/get-sent-nudges.use-case.js";
 import { MarkNudgeRead } from "../../../application/use-cases/nudges/mark-nudge-read.use-case.js";
 import { SendNudge } from "../../../application/use-cases/nudges/send-nudge.use-case.js";
 import { SendRemindNudge } from "../../../application/use-cases/nudges/send-remind-nudge.use-case.js";
@@ -57,10 +60,12 @@ import {
 @ApiBearerAuth()
 @Controller("nudges")
 export class NudgeController {
-  readonly #logger = new Logger(NudgeController.name);
-
   constructor(
-    private readonly nudgeReader: NudgeReader,
+    private readonly getReceivedNudgesUseCase: GetReceivedNudges,
+    private readonly getSentNudgesUseCase: GetSentNudges,
+    private readonly getNudgeLimitUseCase: GetNudgeLimit,
+    private readonly getNudgeCooldownUseCase: GetNudgeCooldown,
+    private readonly getRemindNudgeCooldownUseCase: GetRemindNudgeCooldown,
     private readonly sendNudgeUseCase: SendNudge,
     private readonly sendRemindNudgeUseCase: SendRemindNudge,
     private readonly markNudgeReadUseCase: MarkNudgeRead,
@@ -101,23 +106,13 @@ export class NudgeController {
     @Body({ schema: SendNudgeDto }) dto: SendNudgeDto,
     @Timezone() tz: string,
   ): Promise<CreateNudgeResponseDto> {
-    this.#logger.debug(
-      `콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}, todoId=${dto.todoId}`,
-    );
-
-    const nudge = await this.sendNudgeUseCase.execute(
-      {
-        senderId: user.userId,
-        receiverId: dto.receiverId,
-        todoId: dto.todoId,
-        message: dto.message,
-      },
-      tz,
-    );
-
-    this.#logger.log(
-      `콕 찌르기 완료: id=${nudge.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
-    );
+    const nudge = await this.sendNudgeUseCase.execute({
+      senderId: user.userId,
+      receiverId: dto.receiverId,
+      todoId: dto.todoId,
+      message: dto.message,
+      timezone: tz,
+    });
 
     return {
       message: "콕! 찔렀습니다 👆",
@@ -149,23 +144,17 @@ export class NudgeController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<ReceivedNudgesResponseDto> {
-    this.#logger.debug(`받은 콕 찌름 목록 조회: userId=${user.userId}`);
-
-    const [result, totalCount, unreadCount] = await Promise.all([
-      this.nudgeReader.getReceivedNudges({
-        userId: user.userId,
-        cursor: query.cursor,
-        size: query.limit,
-      }),
-      this.nudgeReader.countReceivedNudges(user.userId),
-      this.nudgeReader.countUnreadReceivedNudges(user.userId),
-    ]);
+    const result = await this.getReceivedNudgesUseCase.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      size: query.limit,
+    });
 
     return {
       nudges: NudgeMapper.toDetailDtoList(result.items, appVersion),
-      totalCount,
-      unreadCount,
-      hasMore: result.pagination.hasNext,
+      totalCount: result.totalCount,
+      unreadCount: result.unreadCount,
+      hasMore: result.hasMore,
     };
   }
 
@@ -193,21 +182,16 @@ export class NudgeController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<SentNudgesResponseDto> {
-    this.#logger.debug(`보낸 콕 찌름 목록 조회: userId=${user.userId}`);
-
-    const [result, totalCount] = await Promise.all([
-      this.nudgeReader.getSentNudges({
-        userId: user.userId,
-        cursor: query.cursor,
-        size: query.limit,
-      }),
-      this.nudgeReader.countSentNudges(user.userId),
-    ]);
+    const result = await this.getSentNudgesUseCase.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      size: query.limit,
+    });
 
     return {
       nudges: NudgeMapper.toDetailDtoList(result.items, appVersion),
-      totalCount,
-      hasMore: result.pagination.hasNext,
+      totalCount: result.totalCount,
+      hasMore: result.hasMore,
     };
   }
 
@@ -231,7 +215,10 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() tz: string,
   ): Promise<NudgeLimitInfoDto> {
-    const limitInfo = await this.nudgeReader.getLimitInfo(user.userId, tz);
+    const limitInfo = await this.getNudgeLimitUseCase.execute({
+      userId: user.userId,
+      timezone: tz,
+    });
 
     return NudgeMapper.toLimitInfoDto(limitInfo);
   }
@@ -256,7 +243,10 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Param("userId") targetUserId: string,
   ): Promise<NudgeCooldownResponseDto> {
-    const cooldownInfo = await this.nudgeReader.getCooldownInfoForUser(user.userId, targetUserId);
+    const cooldownInfo = await this.getNudgeCooldownUseCase.execute({
+      senderId: user.userId,
+      receiverId: targetUserId,
+    });
 
     return {
       canNudge: !cooldownInfo.isActive,
@@ -297,20 +287,12 @@ export class NudgeController {
     @Body({ schema: SendRemindNudgeDto }) dto: SendRemindNudgeDto,
     @Timezone() tz: string,
   ): Promise<CreateRemindNudgeResponseDto> {
-    this.#logger.debug(`리마인드 콕 찌르기: senderId=${user.userId}, receiverId=${dto.receiverId}`);
-
-    const remindNudge = await this.sendRemindNudgeUseCase.execute(
-      {
-        senderId: user.userId,
-        receiverId: dto.receiverId,
-        message: dto.message,
-      },
-      tz,
-    );
-
-    this.#logger.log(
-      `리마인드 콕 찌르기 완료: id=${remindNudge.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
-    );
+    const remindNudge = await this.sendRemindNudgeUseCase.execute({
+      senderId: user.userId,
+      receiverId: dto.receiverId,
+      message: dto.message,
+      timezone: tz,
+    });
 
     return {
       message: "할일 좀 만들어! 콕 찔렀습니다 👆",
@@ -337,7 +319,10 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Param("userId") targetUserId: string,
   ): Promise<NudgeCooldownResponseDto> {
-    const cooldownInfo = await this.nudgeReader.getRemindCooldownInfo(user.userId, targetUserId);
+    const cooldownInfo = await this.getRemindNudgeCooldownUseCase.execute({
+      senderId: user.userId,
+      receiverId: targetUserId,
+    });
 
     return {
       canNudge: !cooldownInfo.isActive,
@@ -360,8 +345,6 @@ export class NudgeController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeIdParamDto }) params: NudgeIdParamDto,
   ): Promise<MarkNudgeReadResponseDto> {
-    this.#logger.debug(`콕 찌름 읽음 처리: userId=${user.userId}, id=${params.id}`);
-
     await this.markNudgeReadUseCase.execute({
       userId: user.userId,
       nudgeId: params.id,

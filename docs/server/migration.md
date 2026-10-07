@@ -20,7 +20,7 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 05 Billing: Webhook·구독 상태 전이·성공 원장·권한 정합성 검증([Issue #906](https://github.com/Aiddoo/Aido-platform/issues/906))
 - [x] 06 Access: Entitlement 정책·AI Quota 예약·보상·공개 capability 검증([Issue #908](https://github.com/Aiddoo/Aido-platform/issues/908))
 - [x] 07 Planning: 할 일·항목·카테고리·반복 일정 정합성 검증([Issue #910](https://github.com/Aiddoo/Aido-platform/issues/910))
-- [ ] 08 Social: 친구·응원·넛지
+- [x] 08 Social: 친구·응원·넛지 상태·경쟁·ORM·공개 capability 검증
 - [ ] 09 Notes: 메모와 전환
 - [ ] 10 Engagement: 댓글·반응·대화·정리
 - [ ] 11 Insights: 완료 집계·주간 달성·연속 기록
@@ -567,13 +567,105 @@ Prisma 8의 기존 `update`와 새 `updateAndCount` 모두에서 KST Node/UTC DB
 - 전체 E2E: 37 files / 505 tests, 294.46초, 같은 seed. 고정 구 앱·OpenAPI 계약 fixture 변경 없음.
 - Todo Unit 19 files / 73 tests와 기존 Todo HTTP + 새 시간 PATCH 64 tests 통과. Unit은 state Stub·독립 REST fixture·실제 pagination을 사용한다.
 - Category 실제 PG 9개: 권한·부분 PATCH·동시 변경·unique 오류·삭제 이동·outer rollback·한도·Seeder rollback 통과.
-- Workspace lint·format·typecheck 통과. commit hook build를 확인한 뒤 Draft Stack PR를 게시한다.
+- Workspace lint·format·typecheck 통과. commit hook workspace build 4/4 통과(8.632초). 커밋 `fe5e8848`로 보존했다. GitHub push 오류로 Draft Stack PR 게시를 재시도 중이다.
 
 최초 PG fixture의 명시 ID와 sequence 충돌은 자동 ID로 수정했다. 중복 read provider 등록은
 검토에서 제거했으며 assertion·schema·retry·timeout을 완화하지 않았다. Date만 고정하고
 DB/socket timer는 실제 실행한다. 테스트 시간은 성능 benchmark가 아니고 유한한 실행으로
 flake 부재를 보장하지 않는다. 신규 schema·migration·실행 script·패키지·Action job은 없다.
 상위 8/18 구현·검증 완료, Social부터 10단계가 남았다. merge·운영 배포는 하지 않았다.
+
+## 08 Social 상태·동시 요청 정합성
+
+Planning `fe5e8848` 위의 구현이다. 기존 Friendship·Cheer·Nudge·Reminder Aggregate/VO와
+도메인 정책을 재사용한다. 친구 읽기4개·응원/넛지 읽기9개를 endpoint별 직접 UseCase로 옮기고
+named readonly input·최소 Port·explicit null/undefined·구조화 event log를 사용한다.
+Composition Root는 `SocialFriendsModule/SocialCheersModule/SocialNudgesModule`로 명명하고
+외부 Context는 공개 `FOLLOW_READER` token과 최소 Reader capability로 연결한다.
+
+| 실제 PostgreSQL Before                                                | After                                                 |
+| --------------------------------------------------------------------- | ----------------------------------------------------- |
+| 동일 PENDING 요청 동시 수락 2성공·알림 호출4회                        | 1성공·1 FOLLOW0903, 알림 호출2회·양방향 관계 각1개    |
+| 서로 다른 requester 요청 동시 수락 sortOrder[0,0]                     | 둘 다 성공, sortOrder[0,1]                            |
+| 겹치는 UTC/Seoul 일일 window에서 응원·넛지 기존2회 뒤 동시2성공→used4 | sender별 quota 잠금으로 각각1성공·1기존한도오류→used3 |
+
+실제 row/advisory lock 대기를 관찰했으며 Before에서 기존 잠금을 제거하지 않았다. 알림은
+좁은 no-network Port Stub의 호출 수로 측정했고 실제 push 전달 횟수 측정은 아니다.
+Friends Before 3개 중2실패·1통과(5.62초, seed80801) → After3개 통과(3.46초, seed80803·서울;
+3.58초, seed80804·LA). Cheers/Nudges Before6개 중2실패·4통과(15.19초, seed80801·LA;
+12.55초, seed80802·서울) → After9개 통과(9.21초, seed80807·서울).
+
+친구 변경은 pair와 양측 list key를 한 번 정렬 획득한 뒤 fresh 관계·한도·정렬을 조회한다.
+Send의 self→한도→target→existing 오류 우선순위와 수락/자동수락의 서로 다른 cache·알림·
+milestone 순서를 보존했다. Accept에 새 MAX 검사를 추가하거나 차단 기능을 만들지 않았다.
+응원·넛지의 요청 timezone 날짜 window·pair cooldown·전송 후 알림과 답장/감사의 같은 UoW
+outbox·실패 격리는 유지했다. 날짜별 잠금 helper와 미사용 countToday API를 제거했다.
+새 sender quota key와 이전 버전의 mixed rollout은 서로 다른 timezone 간 상호 잠금을
+보장하지 않으므로 배포 전제로 검토한다. 개인정보/history 정책은 변경하지 않았다.
+
+### 실제 SQL 수
+
+같은 fixture·공개 SDK `afterQuery/afterExecute` driver hook을 사용했다. fixture 준비/검증과
+TX 제어를 제외한다. parent revision `fe5e8848`의 맞팔 판정도 별도 실제 PG로 재측정했다.
+
+| 경로                      | Before | After |
+| ------------------------- | ------ | ----- |
+| 단건 응원 읽음            | 3      | 2     |
+| 맞팔 판정                 | 2      | 1     |
+| profile 포함 응원3행 목록 | 1      | 1     |
+
+native `updateAndCount/updateAll/deleteAndCount`로 불필요한 PK 사전 조회를 줄이며 Domain
+반환 행과 relation projection을 유지한다. 검색 count는 ORM aggregate와 relation predicate로
+바꾸고 기존 ILIKE fragment를 재사용한다. weighted rank·keyset 검색 SQL과 원자적 정렬 산술은
+동등한 ORM 표면을 확인하지 못해 유지했다. nullable profile·이름/태그·Unicode·wildcard·비활성/
+탈퇴 제외·self 상태를 실제 PG로 검증했다. 목록은 이미 N+1이 없었으며 제거했다고 쓰지 않는다.
+
+### 검증과 테스트 정리
+
+- Social Application: 30 files / 112 tests, 1.37초, seed50816. Map 기반 상태 Stub·기존 fixture·실제 pagination을 사용한다.
+- Domain/Repository: 15 files / 65 tests, 714ms, seed80809.
+- 실제 mutation-lock 기존 회귀14개: 14.35초, seed50820. 공개 Reader Port와 named timezone input으로 harness를 연결한다.
+- 기존 Social HTTP76개 assertion·schema·timeout 변경 없음. 새 동시 수락·정렬·소유권/noop HTTP2개는 10.96초(seed50819)에 통과했다.
+- 중복 Mock DB Integration3파일59개(Follow18/Cheer18/Nudge23), 전달-only Controller spec3개, 미사용 Repository mock3개를 제거했다. 업무 분기는 Unit 상태·실제 PG·HTTP로 검증한다.
+
+최초 신규 HTTP1개는 테스트에서 collection.count()를 직접 호출해 실패했다. 공식 aggregate로
+교정하고 같은 DB count=1 assertion을 유지했다. null 비교를 정리하던 중 잘못된 assignment
+구문은 되돌리고 전체 Domain 검증을 통과했다. 새 fixture 타입은 union으로 명시하고 강제 변환을
+추가하지 않았다. 가짜 UoW의 rollback 증명 표현을 제거했으며 실제 Nudge rollback HTTP는 유지했다.
+
+최종 전체 검증은 shuffle seed80820으로 통과했다.
+
+- Unit: 489 files / 2,928 tests, 18.11초.
+- Integration: 51 files / 437 tests, 183.18초. 기존 Stub spec도 포함하며 새 경쟁 검증은 실제 PG다.
+- E2E: 38 files / 507 tests, 274.94초. 고정 구 앱·OpenAPI 계약 fixture 변경 없음.
+- Workspace lint·format·typecheck 통과. commit hook에서 workspace build를 검증한다.
+
+상위 9/18 구현·검증 완료, Notes부터9단계가 남았다. GitHub 쓰기 오류로 Planning/Social
+게시를 재시도하며 로컬 Stack과 커밋·검증 기록을 보존한다.
+신규 schema·migration·패키지·실행 script·Action job은
+없다. 운영 latency·CPU/RSS·billed Actions 개선률, cache in-flight 경쟁 해결·exactly-once를
+주장하지 않는다. merge·배포는 하지 않았다.
+
+## 09 Notes 사전 재현
+
+현재 Notes 코드는 변경하지 않았다. 기존 CreateMemo·PrismaMemoRepository·native UoW에서
+메모19개 뒤 동시 생성2개가 모두 성공해21개·sortOrder19 중복을 실제 PostgreSQL로 재현했다.
+MEMO_MAX20을 기대한 동일 테스트1개가 실패했다(3.74초, seed90901·America/Los_Angeles).
+User 행 잠금에서 실제 INSERT 대기2개를 관찰했고 임의 sleep·외부 network 없이 실행했다.
+테스트 DB 잔여0개를 확인했다. transaction만으로 count→insert 경쟁이 막히지 않는 근거이며
+09단계에서 기존 한도·정렬·오류를 지키는 잠금과 실제 After 검증을 적용한다.
+
+같은 source 메모 동시 재정렬도 실제 PG에서 2성공·sortOrder[2,0,0]을 재현했다.
+3개 중2통과·1실패(5.03초, seed90903·LA; 3.85초, seed90904·서울). 내용 수정3SQL,
+목록1SQL/커서목록2SQL, 상대 재정렬5SQL을 같은 driver hook에서 관찰했다.
+
+같은 Memo의 두 HTTP 변환은201·400(SYS0002), Todo2개·Memo삭제였다. 실제 Memo 삭제
+대기2개를 관찰했다. 후속 invalid category의 일괄 변환은404·첫Todo1개·Memo유지를
+검증했으며 기존 Swagger의 부분 성공 계약이다. 2개 중1실패·1통과(5.71초, seed90902).
+임의로 일괄 실패를 전부 rollback하는 계약으로 바꾸지 않는다. native tx.execute와 PostgreSQL
+SAVEPOINT의 같은 연결 동작은 실제2개 테스트·pool.max1에서 확인했다(3.20초, seed90904).
+저장과 commit 이후 효과를 분리하되 일반 Todo 생성의 await·오류 전파를 유지하는 방안을 검토한다.
+이 조사는 실제 After·전체 Notes 완료를 뜻하지 않으며 모든 임시 테스트 DB를 정리했다.
 
 ## AI 후속 요구와 검증 범위
 

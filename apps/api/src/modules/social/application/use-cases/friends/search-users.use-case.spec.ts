@@ -1,113 +1,91 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { PaginationService } from "#api/shared/application/pagination/index";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-
-import {
-  type FollowRepositoryPort,
-  type UserSearchResult,
-} from "../../ports/friends/follow.repository.port.js";
+import type { UserSearchResult } from "../../ports/friends/follow.repository.port.js";
 import { decodeSearchCursor, encodeSearchCursor } from "./search-cursor.js";
 import { SearchUsers } from "./search-users.use-case.js";
 
-const row = (id: string, rank: number): UserSearchResult => ({
-  id,
-  userTag: "TAG00001",
-  profile: { name: "존", profileImage: null },
-  isFollowing: false,
-  isFollower: false,
-  isFriend: false,
-  requestPending: false,
-  rank,
-});
+function searchRow(id: string, rank: number): UserSearchResult {
+  return {
+    id,
+    rank,
+    userTag: "TAG00001",
+    profile: null,
+    isFollowing: false,
+    isFollower: false,
+    isFriend: false,
+    requestPending: false,
+  };
+}
 
-describe("SearchUsers", () => {
-  let useCase: SearchUsers;
-  let repo: Mocked<FollowRepositoryPort>;
-  let pagination: Mocked<PaginationService>;
-
-  beforeEach(async () => {
-    const searchUsersDependencies = mockDeep<ConstructorParameters<typeof SearchUsers>[0]>({});
-    const unit = new SearchUsers(searchUsersDependencies);
-    useCase = unit;
-    repo = searchUsersDependencies.followRepository;
-    pagination = searchUsersDependencies.paginationService;
-
-    pagination.normalizeCursorPagination.mockReturnValue({
-      cursor: undefined,
-      size: 20,
-      take: 21,
-    });
-    repo.countSearchUsers.mockResolvedValue(2);
+describe("사용자 검색", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("정규화된 nfc/upperTag로 저장소를 호출한다", async () => {
-    repo.searchUsers.mockResolvedValue([row("a", 0), row("b", 2)]);
-
-    await useCase.execute({ viewerId: "me", query: "  John  " });
-
-    expect(repo.searchUsers).toHaveBeenCalledWith(
-      expect.objectContaining({
-        viewerId: "me",
-        nfcQuery: "John",
-        upperTag: "JOHN",
-        size: 20,
-      }),
+  it("검색어를 정규화하고 관계 플래그와 프로필 null을 보존한다", async () => {
+    // Given
+    const fixture = createSocialFriendFixture();
+    const row = searchRow("friend", 0);
+    row.isFriend = true;
+    fixture.followRepository.searchResults = [row];
+    fixture.followRepository.searchTotal = 1;
+    const query = vi.spyOn(fixture.followRepository, "searchUsers");
+    // When
+    const result = await new SearchUsers(fixture).execute({ viewerId: "me", query: "  John  " });
+    // Then
+    expect(query).toHaveBeenCalledWith(
+      expect.objectContaining({ viewerId: "me", nfcQuery: "John", upperTag: "JOHN" }),
     );
+    expect(result).toEqual({ items: [row], totalCount: 1, hasMore: false, nextCursor: null });
   });
-
-  it("size+1개가 오면 hasMore=true, 초과분을 잘라내고 nextCursor를 인코딩한다", async () => {
-    pagination.normalizeCursorPagination.mockReturnValue({
-      cursor: undefined,
-      size: 2,
-      take: 3,
-    });
-    repo.searchUsers.mockResolvedValue([row("a", 0), row("b", 2), row("c", 3)]);
-
-    const result = await useCase.execute({ viewerId: "me", query: "존" });
-
+  it("초과분을 제거하고 마지막 반환 항목의 rank와 ID로 다음 커서를 만든다", async () => {
+    // Given
+    const fixture = createSocialFriendFixture();
+    fixture.followRepository.searchResults = [
+      searchRow("first", 0),
+      searchRow("second", 2),
+      searchRow("third", 3),
+    ];
+    fixture.followRepository.searchTotal = 3;
+    // When
+    const result = await new SearchUsers(fixture).execute({ viewerId: "me", query: "존", size: 2 });
+    // Then
+    expect(result.items.map((item) => item.id)).toEqual(["first", "second"]);
     expect(result.hasMore).toBe(true);
-    expect(result.items).toHaveLength(2);
-    expect(result.items.map((i) => i.id)).toEqual(["a", "b"]);
-    const { nextCursor } = result;
-    expect(nextCursor).not.toBeNull();
-    if (nextCursor != null) {
-      expect(decodeSearchCursor(nextCursor)).toEqual({ rank: 2, id: "b" });
-    }
+    expect(result.nextCursor).toBe(encodeSearchCursor({ rank: 2, id: "second" }));
   });
-
-  it("size 이하면 hasMore=false, nextCursor=null", async () => {
-    repo.searchUsers.mockResolvedValue([row("a", 0)]);
-
-    const result = await useCase.execute({ viewerId: "me", query: "존" });
-
-    expect(result.hasMore).toBe(false);
-    expect(result.nextCursor).toBeNull();
-    expect(result.totalCount).toBe(2);
-  });
-
-  it("커서가 주어지면 디코딩해 저장소에 전달한다", async () => {
-    repo.searchUsers.mockResolvedValue([row("a", 0)]);
-    const cursor = encodeSearchCursor({ rank: 1, id: "prev" });
-
-    await useCase.execute({ viewerId: "me", query: "존", cursor });
-
-    expect(repo.searchUsers).toHaveBeenCalledWith(
-      expect.objectContaining({ cursor: { rank: 1, id: "prev" } }),
+  it("유효한 커서는 검색 저장소 경계에서 디코딩한다", async () => {
+    // Given
+    const fixture = createSocialFriendFixture();
+    const cursor = encodeSearchCursor({ rank: 0, id: "first" });
+    const query = vi.spyOn(fixture.followRepository, "searchUsers");
+    // When
+    const result = await new SearchUsers(fixture).execute({ viewerId: "me", query: "존", cursor });
+    // Then
+    expect(query).toHaveBeenCalledWith(
+      expect.objectContaining({ cursor: decodeSearchCursor(cursor) }),
     );
+    expect(result).toEqual({ items: [], totalCount: 0, hasMore: false, nextCursor: null });
   });
-
-  it("빈 검색어는 FOLLOW_0911(DomainException)을 던진다", async () => {
-    await expect(useCase.execute({ viewerId: "me", query: "   " })).rejects.toBeInstanceOf(
-      DomainException,
-    );
-  });
-
-  it("손상된 커서는 FOLLOW_0912(ApplicationException)를 던진다", async () => {
+  it.each([
+    { query: "  ", cursor: undefined, code: "FOLLOW_0911" },
+    { query: "존", cursor: "broken", code: "FOLLOW_0912" },
+  ])("잘못된 검색 입력은 $code 오류로 거부하고 저장소에 접근하지 않는다", async (input) => {
+    // Given
+    const fixture = createSocialFriendFixture();
+    const query = vi.spyOn(fixture.followRepository, "searchUsers");
+    // When / Then
     await expect(
-      useCase.execute({ viewerId: "me", query: "존", cursor: "!!!broken" }),
-    ).rejects.toBeInstanceOf(ApplicationException);
+      new SearchUsers(fixture).execute({
+        viewerId: "me",
+        query: input.query,
+        cursor: input.cursor,
+      }),
+    ).rejects.toMatchObject({ errorCode: input.code });
+    expect(query).not.toHaveBeenCalled();
   });
 });

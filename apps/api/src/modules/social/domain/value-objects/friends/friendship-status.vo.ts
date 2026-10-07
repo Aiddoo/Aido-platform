@@ -4,12 +4,6 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
 
 export type FriendshipStatusValue = "PENDING" | "ACCEPTED";
 
-/**
- * FriendshipStatus — 친구 관계 상태 값 객체.
- *
- * 관계 상태(PENDING/ACCEPTED)와 그 전이 규칙을 캡슐화한다. 유효하지 않은 상태 문자열은
- * DomainException으로 거부하며(불변식), 전이는 명시적 메서드로만 수행한다.
- */
 export class FriendshipStatus {
   private constructor(private readonly value: FriendshipStatusValue) {}
 
@@ -43,7 +37,6 @@ export class FriendshipStatus {
     return this.value === "ACCEPTED";
   }
 
-  /** PENDING → ACCEPTED 전이. 이미 ACCEPTED면 멱등(그대로 ACCEPTED). */
   accept(): FriendshipStatus {
     return FriendshipStatus.accepted();
   }

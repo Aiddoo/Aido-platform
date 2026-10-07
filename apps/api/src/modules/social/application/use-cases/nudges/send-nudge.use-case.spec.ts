@@ -1,223 +1,166 @@
-import type { Mocked } from "vitest";
-import { vi } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { MutationLockKeys } from "#api/shared/application/ports/index";
+import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
+import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { FollowReader } from "#api/modules/social/social-friends.public";
-import { type MutationLockPort } from "#api/shared/application/ports/index";
-import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
-import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
-import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-
-import { Nudge } from "../../../domain/aggregates/nudges/nudge.aggregate.js";
-import { type NudgeLimitReaderPort } from "../../ports/nudges/nudge-limit-reader.port.js";
-import { type NudgeNotifierPort } from "../../ports/nudges/nudge-notifier.port.js";
-import {
-  type NudgeRepositoryPort,
-  type NudgeWithRelations,
-  type TargetTodoRecord,
-} from "../../ports/nudges/nudge.repository.port.js";
 import { SendNudge } from "./send-nudge.use-case.js";
 
-const today = todayInTimezone("UTC");
-
-const targetTodo: TargetTodoRecord = {
-  ownerId: "r",
-  visibility: "PUBLIC",
-  startDate: today,
-  endDate: null,
-};
-
-const createdNudge: NudgeWithRelations = {
-  id: 1,
-  senderId: "s",
-  receiverId: "r",
-  todoId: 10,
-  message: "hi",
-  readAt: null,
-  createdAt: new Date(),
-  sender: {
-    id: "s",
-    userTag: "SENDER12",
-    profile: { name: "S", profileImage: null },
-  },
-  receiver: { id: "r", userTag: "RECEIVER", profile: null },
-  todo: { id: 10, title: "할 일", completed: false },
-};
-
-describe("SendNudge", () => {
-  let useCase: SendNudge;
-  let repo: Mocked<NudgeRepositoryPort>;
-  let notifier: Mocked<NudgeNotifierPort>;
-  let limitReader: Mocked<NudgeLimitReaderPort>;
-  let follow: Mocked<FollowReader>;
-  let mutationLock: Mocked<MutationLockPort>;
-  let uow: Mocked<UnitOfWorkPort>;
-
-  beforeEach(async () => {
-    const sendNudgeDependencies = mockDeep<ConstructorParameters<typeof SendNudge>[0]>({
-      mutationLock: { acquire: vi.fn() },
-    });
-    const unit = new SendNudge(sendNudgeDependencies);
-    useCase = unit;
-    repo = sendNudgeDependencies.nudgeRepository;
-    notifier = sendNudgeDependencies.notifier;
-    limitReader = sendNudgeDependencies.limitReader;
-    follow = sendNudgeDependencies.followReader;
-    mutationLock = sendNudgeDependencies.mutationLock;
-    uow = sendNudgeDependencies.unitOfWork;
-
-    uow.run.mockImplementation((work) => work());
-    follow.isMutualFriend.mockResolvedValue(true);
-    repo.findTargetTodo.mockResolvedValue(targetTodo);
-    limitReader.getDailyLimitInTx.mockResolvedValue(3);
-    repo.countTodayNudges.mockResolvedValue(0);
-    repo.countSentSince.mockResolvedValue(0);
-    repo.findLastNudgeForTodo.mockResolvedValue(null);
-    repo.createNudge.mockResolvedValue(createdNudge);
+describe("친구의 할 일에 콕 보내기", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
   });
-
-  it("자기 자신이면 NUDGE_1104", async () => {
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "s", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("친구가 아니면 NUDGE_1103", async () => {
-    follow.isMutualFriend.mockResolvedValue(false);
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("Todo가 없으면 TODO_0801", async () => {
-    repo.findTargetTodo.mockResolvedValue(null);
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("수신자 소유가 아니면 TODO_0801", async () => {
-    repo.findTargetTodo.mockResolvedValue({ ...targetTodo, ownerId: "other" });
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("비공개면 TODO_0801", async () => {
-    repo.findTargetTodo.mockResolvedValue({
-      ...targetTodo,
-      visibility: "PRIVATE",
-    });
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("일일 한도 초과면 NUDGE_1101", async () => {
-    repo.countSentSince.mockResolvedValue(3);
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("성공 시 콕 찌르기 생성 + 알림 enqueue", async () => {
-    const result = await useCase.execute({
-      senderId: "s",
-      receiverId: "r",
-      todoId: 10,
-      message: "hi",
-    });
-    expect(result.id).toBe(1);
-    expect(notifier.notifyNudgeSent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nudgeId: 1,
-        senderId: "s",
-        receiverId: "r",
-        todoId: 10,
-        todoTitle: "할 일",
-      }),
-    );
-  });
-
-  it("동일 Todo 쿨다운 중이면 NUDGE_1102", async () => {
-    repo.findLastNudgeForTodo.mockResolvedValue(
-      Nudge.reconstitute({
-        id: 9,
-        senderId: "s",
-        receiverId: "r",
-        todoId: 10,
-        message: null,
-        readAt: null,
-        replyKind: null,
-        repliedAt: null,
-        replyUpdatedAt: null,
-        thankedAt: null,
-        createdAt: new Date(),
-      }),
-    );
-    await expect(
-      useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }),
-    ).rejects.toBeInstanceOf(ApplicationException);
-  });
-
-  it("무제한(null)이면 한도 체크를 통과한다", async () => {
-    limitReader.getDailyLimitInTx.mockResolvedValue(null);
-    repo.countTodayNudges.mockResolvedValue(999);
-    const result = await useCase.execute({
-      senderId: "s",
-      receiverId: "r",
-      todoId: 10,
-    });
-    expect(result.id).toBe(1);
-  });
-
-  it("같은 시각 기준의 일일·Todo 쿨다운 키를 모든 guarded read 전에 UoW 안에서 잠근다", async () => {
-    // Given - KST 자정 직전 시작하고 lock 대기 중 다음 날로 넘어가는 상황
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
-    const events: string[] = [];
-    mutationLock.acquire.mockImplementation(async () => {
-      events.push("lock");
-      vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
-    });
-    repo.findTargetTodo.mockImplementation(async () => {
-      events.push("target-read");
-      // 고정 시각(2026-07-26 KST)과 같은 날의 할 일이어야 isActiveOn을 통과한다.
-      // 모듈 상단 targetTodo는 실행 시점의 실제 오늘이라 고정 시각과 어긋난다.
-      return { ...targetTodo, startDate: new Date("2026-07-26T00:00:00.000Z") };
-    });
-    limitReader.getDailyLimitInTx.mockImplementation(async () => {
-      events.push("limit");
-      return 3;
-    });
-    repo.countSentSince.mockImplementation(async () => {
-      events.push("daily-count");
-      return 0;
-    });
-    repo.findLastNudgeForTodo.mockImplementation(async () => {
-      events.push("cooldown-read");
-      return null;
-    });
-
-    // When
-    await useCase.execute({ senderId: "s", receiverId: "r", todoId: 10 }, "Asia/Seoul");
-
-    // Then - lock key와 quota 시작점 모두 7/26 KST 기준이고 lock이 먼저임
-    expect(mutationLock.acquire).toHaveBeenCalledWith([
-      "mutation:v1:nudge:daily:s:2026-07-26",
-      "mutation:v1:nudge:cooldown:s:10",
-    ]);
-    expect(repo.countSentSince).toHaveBeenCalledWith(
-      "s",
-      new Date("2026-07-25T15:00:00.000Z"),
-      new Date("2026-07-26T15:00:00.000Z"),
-    );
-    expect(repo.createNudge).toHaveBeenCalledWith(
-      expect.objectContaining({
-        createdAt: new Date("2026-07-26T14:59:59.900Z"),
-      }),
-    );
-    expect(events).toEqual(["lock", "target-read", "limit", "daily-count", "cooldown-read"]);
+  afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it.each([
+    { name: "자기 자신", receiverId: "sender", change: "none", code: "NUDGE_1104" },
+    { name: "친구가 아닌 사용자", receiverId: "other", change: "none", code: "NUDGE_1103" },
+    { name: "삭제된 할 일", receiverId: "receiver", change: "missing", code: "TODO_0801" },
+    { name: "타인의 할 일", receiverId: "receiver", change: "owner", code: "TODO_0801" },
+    { name: "비공개 할 일", receiverId: "receiver", change: "private", code: "TODO_0801" },
+    { name: "오늘이 아닌 할 일", receiverId: "receiver", change: "date", code: "NUDGE_1106" },
+  ])("$name 은 $code 오류로 거부하고 기록이나 알림을 추가하지 않는다", async (input) => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    const todo = fixture.addTodo();
+    const record = fixture.nudgeRepository.todos.get(todo.id)!;
+    if (input.change === "missing") fixture.nudgeRepository.todos.delete(todo.id);
+    if (input.change === "owner") record.ownerId = "other";
+    if (input.change === "private") record.visibility = "PRIVATE";
+    if (input.change === "date") record.startDate = new Date("2026-07-25T00:00:00Z");
+    // When / Then
+    await expect(
+      new SendNudge({
+        ...fixture,
+        notifier: fixture.nudgeNotifier,
+        limitReader: fixture.nudgeLimitReader,
+      }).execute({
+        senderId: "sender",
+        receiverId: input.receiverId,
+        todoId: todo.id,
+        timezone: "UTC",
+      }),
+    ).rejects.toMatchObject({ errorCode: input.code });
+    expect(fixture.nudgeRepository.records.size).toBe(0);
+    expect(fixture.nudgeNotifier.notifications).toEqual([]);
+  });
+  it.each([
+    { name: "일일 한도", code: "NUDGE_1101" },
+    { name: "동일 할 일 쿨다운", code: "NUDGE_1102" },
+  ])("$name 동안은 추가 저장 없이 $code 오류로 거부한다", async (input) => {
+    // Given
+    const fixture = createSocialInteractionFixture();
+    const todo = fixture.addTodo();
+    if (input.code === "NUDGE_1101")
+      for (let index = 0; index < 3; index += 1)
+        fixture.nudgeRepository.seed({
+          senderId: "sender",
+          receiverId: "receiver",
+          todoId: todo.id + index + 1,
+        });
+    else
+      fixture.nudgeRepository.seed({ senderId: "sender", receiverId: "receiver", todoId: todo.id });
+    const before = fixture.nudgeRepository.records.size;
+    // When / Then
+    await expect(
+      new SendNudge({
+        ...fixture,
+        notifier: fixture.nudgeNotifier,
+        limitReader: fixture.nudgeLimitReader,
+      }).execute({ senderId: "sender", receiverId: "receiver", todoId: todo.id, timezone: "UTC" }),
+    ).rejects.toMatchObject({ errorCode: input.code });
+    expect(fixture.nudgeRepository.records.size).toBe(before);
+    expect(fixture.nudgeNotifier.notifications).toEqual([]);
+  });
+  it.each(["FREE", "ACTIVE"])(
+    "%s 사용자의 콕과 대상 할 일 제목을 저장된 상태에서 알림으로 전달한다",
+    async (subscriptionStatus) => {
+      // Given
+      const fixture = createSocialInteractionFixture();
+      const todo = fixture.addTodo();
+      fixture.database.users.set("sender", { role: "USER", subscriptionStatus });
+      if (subscriptionStatus === "ACTIVE")
+        for (let index = 0; index < 4; index += 1)
+          fixture.nudgeRepository.seed({
+            senderId: "sender",
+            receiverId: "receiver",
+            todoId: todo.id + index + 1,
+          });
+      // When
+      const result = await new SendNudge({
+        ...fixture,
+        notifier: fixture.nudgeNotifier,
+        limitReader: fixture.nudgeLimitReader,
+      }).execute({
+        senderId: "sender",
+        receiverId: "receiver",
+        todoId: todo.id,
+        message: "같이 해요",
+        timezone: "UTC",
+      });
+      // Then
+      expect(fixture.nudgeRepository.records.get(result.id)).toMatchObject({
+        senderId: "sender",
+        receiverId: "receiver",
+        todoId: todo.id,
+        message: "같이 해요",
+        createdAt: SOCIAL_TIME,
+      });
+      expect(fixture.nudgeNotifier.notifications).toEqual([
+        {
+          nudgeId: result.id,
+          senderId: "sender",
+          receiverId: "receiver",
+          senderName: "sender",
+          todoId: todo.id,
+          todoTitle: todo.title,
+          message: "같이 해요",
+        },
+      ]);
+    },
+  );
+  it("guarded read 전에 잠금을 획득하고 자정 대기 후에도 입력 시각의 날짜 구간을 유지한다", async () => {
+    // Given
+    vi.setSystemTime(new Date("2026-07-26T14:59:59.900Z"));
+    const fixture = createSocialInteractionFixture();
+    const todo = fixture.addTodo();
+    const events: string[] = [];
+    const originalTarget = fixture.nudgeRepository.findTargetTodo.bind(fixture.nudgeRepository);
+    vi.spyOn(fixture.nudgeRepository, "findTargetTodo").mockImplementation(async (id) => {
+      events.push("target");
+      return originalTarget(id);
+    });
+    const count = vi.spyOn(fixture.nudgeRepository, "countSentSince");
+    fixture.mutationLock.acquire = async (keys) => {
+      events.push("lock");
+      fixture.lockCalls.push([...keys]);
+      vi.setSystemTime(new Date("2026-07-26T15:00:00.100Z"));
+    };
+    // When
+    const result = await new SendNudge({
+      ...fixture,
+      notifier: fixture.nudgeNotifier,
+      limitReader: fixture.nudgeLimitReader,
+    }).execute({
+      senderId: "sender",
+      receiverId: "receiver",
+      todoId: todo.id,
+      timezone: "Asia/Seoul",
+    });
+    // Then
+    expect(events).toEqual(["lock", "target"]);
+    expect(fixture.lockCalls).toEqual([
+      [
+        MutationLockKeys.nudgeDailyQuota("sender"),
+        MutationLockKeys.nudgeCooldown("sender", todo.id),
+      ],
+    ]);
+    expect(count).toHaveBeenCalledWith(
+      "sender",
+      new Date("2026-07-25T15:00:00Z"),
+      new Date("2026-07-26T15:00:00Z"),
+    );
+    expect(result.createdAt).toEqual(new Date("2026-07-26T14:59:59.900Z"));
   });
 });

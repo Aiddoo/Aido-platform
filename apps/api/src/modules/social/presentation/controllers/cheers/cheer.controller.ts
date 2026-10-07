@@ -7,7 +7,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Post,
@@ -34,7 +33,10 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
-import { CheerReader } from "../../../application/services/cheers/cheer.reader.js";
+import { GetCheerCooldown } from "../../../application/use-cases/cheers/get-cheer-cooldown.use-case.js";
+import { GetCheerLimit } from "../../../application/use-cases/cheers/get-cheer-limit.use-case.js";
+import { GetReceivedCheers } from "../../../application/use-cases/cheers/get-received-cheers.use-case.js";
+import { GetSentCheers } from "../../../application/use-cases/cheers/get-sent-cheers.use-case.js";
 import { MarkCheerRead } from "../../../application/use-cases/cheers/mark-cheer-read.use-case.js";
 import { MarkManyCheersRead } from "../../../application/use-cases/cheers/mark-many-cheers-read.use-case.js";
 import { SendCheer } from "../../../application/use-cases/cheers/send-cheer.use-case.js";
@@ -56,10 +58,11 @@ import {
 @ApiBearerAuth()
 @Controller("cheers")
 export class CheerController {
-  readonly #logger = new Logger(CheerController.name);
-
   constructor(
-    private readonly cheerReader: CheerReader,
+    private readonly getReceivedCheersUseCase: GetReceivedCheers,
+    private readonly getSentCheersUseCase: GetSentCheers,
+    private readonly getCheerLimitUseCase: GetCheerLimit,
+    private readonly getCheerCooldownUseCase: GetCheerCooldown,
     private readonly sendCheerUseCase: SendCheer,
     private readonly markCheerReadUseCase: MarkCheerRead,
     private readonly markManyCheersReadUseCase: MarkManyCheersRead,
@@ -96,20 +99,12 @@ export class CheerController {
     @Body({ schema: SendCheerDto }) dto: SendCheerDto,
     @Timezone() tz: string,
   ): Promise<CreateCheerResponseDto> {
-    this.#logger.debug(`응원 보내기: senderId=${user.userId}, receiverId=${dto.receiverId}`);
-
-    const cheer = await this.sendCheerUseCase.execute(
-      {
-        senderId: user.userId,
-        receiverId: dto.receiverId,
-        message: dto.message,
-      },
-      tz,
-    );
-
-    this.#logger.log(
-      `응원 완료: id=${cheer.id}, senderId=${user.userId}, receiverId=${dto.receiverId}`,
-    );
+    const cheer = await this.sendCheerUseCase.execute({
+      senderId: user.userId,
+      receiverId: dto.receiverId,
+      message: dto.message,
+      timezone: tz,
+    });
 
     return {
       message: "응원을 보냈어요! 🎉",
@@ -141,23 +136,17 @@ export class CheerController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<ReceivedCheersResponseDto> {
-    this.#logger.debug(`받은 응원 목록 조회: userId=${user.userId}`);
-
-    const [result, totalCount, unreadCount] = await Promise.all([
-      this.cheerReader.getReceivedCheers({
-        userId: user.userId,
-        cursor: query.cursor,
-        size: query.limit,
-      }),
-      this.cheerReader.countReceivedCheers(user.userId),
-      this.cheerReader.countUnreadReceivedCheers(user.userId),
-    ]);
+    const result = await this.getReceivedCheersUseCase.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      size: query.limit,
+    });
 
     return {
       cheers: CheerMapper.toDetailDtoList(result.items, appVersion),
-      totalCount,
-      unreadCount,
-      hasMore: result.pagination.hasNext,
+      totalCount: result.totalCount,
+      unreadCount: result.unreadCount,
+      hasMore: result.hasMore,
     };
   }
 
@@ -185,21 +174,16 @@ export class CheerController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<SentCheersResponseDto> {
-    this.#logger.debug(`보낸 응원 목록 조회: userId=${user.userId}`);
-
-    const [result, totalCount] = await Promise.all([
-      this.cheerReader.getSentCheers({
-        userId: user.userId,
-        cursor: query.cursor,
-        size: query.limit,
-      }),
-      this.cheerReader.countSentCheers(user.userId),
-    ]);
+    const result = await this.getSentCheersUseCase.execute({
+      userId: user.userId,
+      cursor: query.cursor,
+      size: query.limit,
+    });
 
     return {
       cheers: CheerMapper.toDetailDtoList(result.items, appVersion),
-      totalCount,
-      hasMore: result.pagination.hasNext,
+      totalCount: result.totalCount,
+      hasMore: result.hasMore,
     };
   }
 
@@ -223,7 +207,10 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() tz: string,
   ): Promise<CheerLimitInfoDto> {
-    const limitInfo = await this.cheerReader.getLimitInfo(user.userId, tz);
+    const limitInfo = await this.getCheerLimitUseCase.execute({
+      userId: user.userId,
+      timezone: tz,
+    });
     return CheerMapper.toLimitInfoDto(limitInfo);
   }
 
@@ -246,7 +233,10 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Param("userId") targetUserId: string,
   ): Promise<CheerCooldownResponseDto> {
-    const cooldownInfo = await this.cheerReader.getCooldownInfoForUser(user.userId, targetUserId);
+    const cooldownInfo = await this.getCheerCooldownUseCase.execute({
+      senderId: user.userId,
+      receiverId: targetUserId,
+    });
 
     return {
       userId: targetUserId,
@@ -270,8 +260,6 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: CheerIdParamDto }) params: CheerIdParamDto,
   ): Promise<MarkCheerReadResponseDto> {
-    this.#logger.debug(`응원 읽음 처리: userId=${user.userId}, id=${params.id}`);
-
     await this.markCheerReadUseCase.execute({
       userId: user.userId,
       cheerId: params.id,
@@ -299,8 +287,6 @@ export class CheerController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: MarkCheersReadDto }) dto: MarkCheersReadDto,
   ): Promise<MarkCheerReadResponseDto> {
-    this.#logger.debug(`여러 응원 읽음 처리: userId=${user.userId}, count=${dto.cheerIds.length}`);
-
     const count = await this.markManyCheersReadUseCase.execute({
       userId: user.userId,
       cheerIds: dto.cheerIds,

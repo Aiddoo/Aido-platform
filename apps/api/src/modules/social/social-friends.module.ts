@@ -5,6 +5,7 @@ import { NotificationModule } from "#api/modules/notification/notification-deliv
 
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FOLLOW_NOTIFIER } from "./application/ports/friends/follow-notifier.port.js";
+import { FOLLOW_READER } from "./application/ports/friends/follow-reader.port.js";
 import { FOLLOW_REPOSITORY } from "./application/ports/friends/follow.repository.port.js";
 import { FollowReader } from "./application/services/friends/follow.reader.js";
 import { FollowCacheAdapter } from "./infrastructure/adapters/friends/follow-cache.adapter.js";
@@ -15,6 +16,10 @@ import {
   acceptFriendRequestProvider,
   followReaderProvider,
   friendshipEffectsProvider,
+  getFriendsProvider,
+  getReceivedFriendRequestsProvider,
+  getSentFriendRequestsProvider,
+  getFriendResourceLimitProvider,
   rejectFriendRequestProvider,
   removeFriendProvider,
   reorderFriendProvider,
@@ -23,12 +28,6 @@ import {
   sendFriendRequestProvider,
 } from "./social-friends-application.providers.js";
 
-/**
- * Follow 모듈 (DDD 클린아키텍처 · use-case 기반).
- *
- * 친구 요청/수락/거절/삭제/순서변경 + 친구·요청 목록 조회를 담당한다.
- * 컨트롤러는 endpoint UseCase를 직접 사용하고 크로스모듈에는 읽기 capability만 공개한다.
- */
 @Module({
   imports: [AccessModule, NotificationModule],
   controllers: [FollowController],
@@ -37,7 +36,13 @@ import {
     { provide: FOLLOW_CACHE, useClass: FollowCacheAdapter },
     { provide: FOLLOW_NOTIFIER, useClass: FollowNotifierAdapter },
     followReaderProvider,
+    { provide: FOLLOW_READER, useExisting: FollowReader },
     friendshipEffectsProvider,
+    getFriendsProvider,
+    getReceivedFriendRequestsProvider,
+    getSentFriendRequestsProvider,
+    getFriendResourceLimitProvider,
+
     sendFriendRequestProvider,
     sendFriendRequestByTagProvider,
     acceptFriendRequestProvider,
@@ -46,6 +51,6 @@ import {
     reorderFriendProvider,
     searchUsersProvider,
   ],
-  exports: [FollowReader],
+  exports: [FOLLOW_READER],
 })
-export class FollowModule {}
+export class SocialFriendsModule {}

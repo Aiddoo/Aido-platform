@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { FollowModule } from "#api/modules/social/social-friends.public";
+import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 
 import { DAILY_COMPLETION_CACHE } from "./application/ports/daily-completions/daily-completion-cache.port.js";
 import { FRIEND_PORT } from "./application/ports/daily-completions/friend.port.js";
@@ -20,7 +20,7 @@ import { DailyCompletionController } from "./presentation/controllers/daily-comp
  * 캐싱되고, 투두 쓰기 도메인 이벤트(@OnEvent) 구독으로 무효화된다.
  */
 @Module({
-  imports: [FollowModule],
+  imports: [SocialFriendsModule],
   controllers: [DailyCompletionController],
   providers: [
     {

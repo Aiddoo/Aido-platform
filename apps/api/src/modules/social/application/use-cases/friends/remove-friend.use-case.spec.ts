@@ -1,101 +1,81 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { createSocialFriendFixture, SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
 
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import { createFollowRepositoryMock } from "#test/mocks/ports/follow.mock";
-import { createUnitOfWorkMock } from "#test/mocks/ports/index";
-
-import { Friendship } from "../../../domain/aggregates/friends/friendship.aggregate.js";
-import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
-import { FriendshipEffects } from "../../services/friends/friendship-effects.service.js";
 import { RemoveFriend } from "./remove-friend.use-case.js";
 
-const ME = "u-me";
-const TARGET = "u-target";
-
-const friendship = (id: string, followerId: string, followingId: string): Friendship =>
-  Friendship.reconstitute({
-    id,
-    followerId,
-    followingId,
-    status: "ACCEPTED",
-    sortOrder: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+describe("친구 관계 삭제", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-describe("RemoveFriend — 친구 삭제/요청 철회", () => {
-  let useCase: RemoveFriend;
-  let repo: Mocked<FollowRepositoryPort>;
-  let uow: Mocked<UnitOfWorkPort>;
-  let effects: Mocked<FriendshipEffects>;
-
-  beforeEach(async () => {
-    const removeFriendDependencies = mockDeep<ConstructorParameters<typeof RemoveFriend>[0]>({
-      followRepository: createFollowRepositoryMock(),
-      unitOfWork: createUnitOfWorkMock(),
-    });
-    const unit = new RemoveFriend(removeFriendDependencies);
-    useCase = unit;
-    repo = removeFriendDependencies.followRepository;
-    uow = removeFriendDependencies.unitOfWork;
-    effects = removeFriendDependencies.effects;
-  });
-
-  it("내 방향 관계가 없으면 FOLLOW_0907, 트랜잭션 미실행", async () => {
+  it("내 방향 관계가 없으면 FOLLOW_0907로 거부하고 상대방 관계를 유지한다", async () => {
     // Given
-    repo.findByFollowerAndFollowing.mockResolvedValue(null);
-
+    const fixture = createSocialFriendFixture();
+    const reverse = fixture.followRepository.seed({ followerId: "friend", followingId: "me" });
     // When / Then
-    await expect(useCase.execute({ userId: ME, targetUserId: TARGET })).rejects.toMatchObject({
-      errorCode: "FOLLOW_0907",
-    });
-    expect(uow.run).not.toHaveBeenCalled();
-    expect(effects.invalidateFriendshipCaches).not.toHaveBeenCalled();
+    await expect(
+      new RemoveFriend(fixture).execute({ userId: "me", targetUserId: "friend" }),
+    ).rejects.toMatchObject({ errorCode: "FOLLOW_0907" });
+    expect(fixture.followRepository.follows.get(reverse.id)).toEqual(reverse);
   });
-
-  it("양방향 관계를 모두 삭제하고 캐시를 무효화한다", async () => {
+  it.each([false, true])(
+    "역방향 존재=%s인 관계를 제거하고 기존 맞팔 캐시를 제거한다",
+    async (reverseExists) => {
+      // Given
+      const fixture = createSocialFriendFixture();
+      fixture.addUser("me");
+      fixture.addUser("friend");
+      fixture.followRepository.seed({
+        followerId: "me",
+        followingId: "friend",
+        status: "ACCEPTED",
+      });
+      if (reverseExists)
+        fixture.followRepository.seed({
+          followerId: "friend",
+          followingId: "me",
+          status: "ACCEPTED",
+        });
+      await fixture.reader.isMutualFriend("me", "friend");
+      await fixture.reader.countFriends("me");
+      await fixture.reader.getMutualFriendIds("me");
+      // When
+      await new RemoveFriend(fixture).execute({ userId: "me", targetUserId: "friend" });
+      // Then
+      expect(fixture.followRepository.follows.size).toBe(0);
+      expect(fixture.cache.mutual.size).toBe(0);
+      expect(fixture.cache.friendCounts.size).toBe(0);
+      expect(fixture.cache.friendIds.size).toBe(0);
+    },
+  );
+  it("UoW가 완료되기 전에는 기존 친구 캐시를 제거하지 않는다", async () => {
     // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("my-1", ME, TARGET)) // 내 방향
-      .mockResolvedValueOnce(friendship("their-1", TARGET, ME)); // 상대 방향
-
+    const fixture = createSocialFriendFixture();
+    fixture.addUser("me");
+    fixture.addUser("friend");
+    fixture.addMutual("me", "friend");
+    await fixture.reader.countFriends("me");
+    const entered = Promise.withResolvers<void>();
+    const released = Promise.withResolvers<void>();
+    fixture.unitOfWork.run = async (work) => {
+      const result = await work();
+      entered.resolve();
+      await released.promise;
+      return result;
+    };
     // When
-    await useCase.execute({ userId: ME, targetUserId: TARGET });
-
-    // Then
-    expect(repo.delete).toHaveBeenCalledWith("my-1");
-    expect(repo.delete).toHaveBeenCalledWith("their-1");
-    expect(repo.delete).toHaveBeenCalledTimes(2);
-    expect(effects.invalidateFriendshipCaches).toHaveBeenCalledWith(ME, TARGET);
-  });
-
-  it("상대 방향 관계가 없으면 내 방향만 삭제한다", async () => {
-    // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("my-1", ME, TARGET)) // 내 방향
-      .mockResolvedValueOnce(null); // 상대 방향 없음
-
-    // When
-    await useCase.execute({ userId: ME, targetUserId: TARGET });
-
-    // Then
-    expect(repo.delete).toHaveBeenCalledWith("my-1");
-    expect(repo.delete).toHaveBeenCalledTimes(1);
-  });
-
-  it("캐시 무효화는 트랜잭션 커밋 이후 수행된다", async () => {
-    // Given
-    repo.findByFollowerAndFollowing
-      .mockResolvedValueOnce(friendship("my-1", ME, TARGET))
-      .mockResolvedValueOnce(null);
-
-    // When
-    await useCase.execute({ userId: ME, targetUserId: TARGET });
-
-    // Then
-    const runOrder = uow.run.mock.invocationCallOrder[0] ?? 0;
-    const invalidateOrder = effects.invalidateFriendshipCaches.mock.invocationCallOrder[0] ?? 0;
-    expect(invalidateOrder).toBeGreaterThan(runOrder);
+    const execution = new RemoveFriend(fixture).execute({ userId: "me", targetUserId: "friend" });
+    try {
+      await Promise.race([entered.promise, execution]);
+      // Then
+      expect(fixture.cache.friendCounts.get("me")).toBe(1);
+    } finally {
+      released.resolve();
+      await execution;
+    }
+    expect(fixture.cache.friendCounts.has("me")).toBe(false);
   });
 });

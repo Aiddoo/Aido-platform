@@ -1,2 +1,5 @@
-export { FollowReader } from "./application/services/friends/follow.reader.js";
-export { FollowModule } from "./social-friends.module.js";
+export {
+  FOLLOW_READER,
+  type FollowReaderPort,
+} from "./application/ports/friends/follow-reader.port.js";
+export { SocialFriendsModule } from "./social-friends.module.js";

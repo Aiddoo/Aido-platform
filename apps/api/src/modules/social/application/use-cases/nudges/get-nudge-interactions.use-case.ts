@@ -1,17 +1,17 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { FollowReader } from "#api/modules/social/social-friends.public";
+import type { FollowReaderPort } from "#api/modules/social/social-friends.public";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import { type CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { NudgeInteractionPolicy } from "../../../domain/policies/nudges/nudge-interaction.policy.js";
+import type { NudgeInteractionResult } from "../../models/nudges/nudge-interaction.models.js";
 import { type NudgeInteractionConfigPort } from "../../ports/nudges/nudge-interaction.config.port.js";
 import {
   type NudgeInteractionRecord,
   type NudgeRepositoryPort,
 } from "../../ports/nudges/nudge.repository.port.js";
-import type { NudgeInteractionResult } from "../../services/nudges/nudge-interaction.types.js";
 
 export interface GetNudgeInteractionsInput {
   readonly userId: string;
@@ -21,9 +21,9 @@ export interface GetNudgeInteractionsInput {
 }
 
 interface GetNudgeInteractionsDependencies {
-  readonly nudgeRepository: NudgeRepositoryPort;
+  readonly nudgeRepository: Pick<NudgeRepositoryPort, "findInteractions">;
   readonly nudgeInteractionConfig: NudgeInteractionConfigPort;
-  readonly followReader: FollowReader;
+  readonly followReader: Pick<FollowReaderPort, "getCurrentMutualFriendIds">;
   readonly paginationService: PaginationService;
 }
 

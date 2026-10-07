@@ -1,5 +1,5 @@
+import type { CheerLimitSnapshot } from "../../../application/models/cheers/cheer-read.models.js";
 import type { CheerWithRelations } from "../../../application/ports/cheers/cheer.repository.port.js";
-import type { CheerLimitInfo } from "../../../application/services/cheers/cheer.reader.js";
 import { CheerMapper } from "./cheer.mapper.js";
 
 const createdAt = new Date("2026-01-01T00:00:00.000Z");
@@ -43,7 +43,7 @@ describe("CheerMapper", () => {
   });
 
   it("toLimitInfoDto: 무제한 판별", () => {
-    const info: CheerLimitInfo = { dailyLimit: null, used: 5, remaining: null };
+    const info: CheerLimitSnapshot = { dailyLimit: null, used: 5, remaining: null };
     expect(CheerMapper.toLimitInfoDto(info)).toEqual({
       dailyLimit: null,
       usedToday: 5,

@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { all, and } from "@prisma/orm-postgres/orm-client";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import sql, { empty } from "sql-template-tag";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -9,6 +9,7 @@ import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import { type Follow as FollowRow } from "#api/platform/database/database.types";
 import {
+  DatabaseRecordNotFoundError,
   isUniqueConstraintViolation,
   requireRecord,
 } from "#api/platform/database/prisma-error.util";
@@ -26,7 +27,6 @@ import type {
 } from "../../../application/ports/friends/follow.repository.port.js";
 import { Friendship } from "../../../domain/aggregates/friends/friendship.aggregate.js";
 
-/** USER_BRIEF_SELECT 결과가 포함된 Follow 행 형태 */
 type FollowRowWithUser = FollowRow & {
   follower: {
     id: string;
@@ -40,13 +40,6 @@ type FollowRowWithUser = FollowRow & {
   } | null;
 };
 
-/**
- * FollowRepositoryPort의 Prisma 어댑터.
- *
- * Prisma Follow 행을 애플리케이션 타입(FollowRecord/FollowWithUser)으로 매핑한다.
- * 트랜잭션은 CLS로 전파되며(TransactionHost.tx), 유니크 제약 위반(SQLSTATE 23505)은
- * FOLLOW_0901(followRequestAlreadySent)로 번역한다.
- */
 @Injectable()
 export class PrismaFollowRepository implements FollowRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
@@ -80,6 +73,8 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
   }
 
   private static toWithUser(row: FollowRowWithUser): FollowWithUser {
+    const follower = requireRecord(row.follower);
+    const following = requireRecord(row.following);
     return {
       id: row.id,
       followerId: row.followerId,
@@ -89,14 +84,14 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       follower: {
-        id: requireRecord(row.follower).id,
-        userTag: requireRecord(row.follower).userTag,
-        profile: requireRecord(row.follower).profile,
+        id: follower.id,
+        userTag: follower.userTag,
+        profile: follower.profile,
       },
       following: {
-        id: requireRecord(row.following).id,
-        userTag: requireRecord(row.following).userTag,
-        profile: requireRecord(row.following).profile,
+        id: following.id,
+        userTag: following.userTag,
+        profile: following.profile,
       },
     };
   }
@@ -135,7 +130,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         and(row.followerId.eq(followerId), row.followingId.eq(followingId)),
       ).first(),
     );
-    return row ? PrismaFollowRepository.toFriendship(row) : null;
+    return row === null ? null : PrismaFollowRepository.toFriendship(row);
   }
 
   async findByIdWithUser(id: string): Promise<FollowWithUser | null> {
@@ -144,18 +139,11 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
   }
 
   async update(id: string, input: UpdateFollowInput): Promise<Friendship> {
-    const row = decodeRecord(
+    const rows = decodeRecord(
       "Follow",
-      requireRecord(
-        await this.client.orm.public.Follow.where((row) => row.id.eq(id)).update(
-          encodePatch("Follow", {
-            ...(input.status !== undefined && { status: input.status }),
-            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
-          }),
-        ),
-      ),
+      await this.client.orm.public.Follow.where({ id }).updateAll(encodePatch("Follow", input)),
     );
-    return PrismaFollowRepository.toFriendship(row);
+    return PrismaFollowRepository.toFriendship(requireRecord(rows[0]));
   }
 
   async updateByFollowerAndFollowing(
@@ -163,27 +151,18 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
     followingId: string,
     input: UpdateFollowInput,
   ): Promise<Friendship> {
-    const row = decodeRecord(
+    const rows = decodeRecord(
       "Follow",
-      requireRecord(
-        await this.client.orm.public.Follow.where((row) =>
-          and(row.followerId.eq(followerId), row.followingId.eq(followingId)),
-        ).update(
-          encodePatch("Follow", {
-            ...(input.status !== undefined && { status: input.status }),
-            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
-          }),
-        ),
+      await this.client.orm.public.Follow.where({ followerId, followingId }).updateAll(
+        encodePatch("Follow", input),
       ),
     );
-    return PrismaFollowRepository.toFriendship(row);
+    return PrismaFollowRepository.toFriendship(requireRecord(rows[0]));
   }
 
   async delete(id: string): Promise<void> {
-    decodeRecord(
-      "Follow",
-      requireRecord(await this.client.orm.public.Follow.where((row) => row.id.eq(id)).delete()),
-    );
+    const affected = await this.client.orm.public.Follow.where({ id }).deleteAndCount();
+    if (affected === 0) throw new DatabaseRecordNotFoundError();
   }
 
   async findMutualFriends(params: FindFollowsParams): Promise<FollowWithUser[]> {
@@ -272,16 +251,14 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         and(row.id.eq(id), row.followerId.eq(followerId), row.status.eq("ACCEPTED")),
       ).first(),
     );
-    return row ? PrismaFollowRepository.toFriendship(row) : null;
+    return row === null ? null : PrismaFollowRepository.toFriendship(row);
   }
 
   async getMaxSortOrderForFriends(followerId: string): Promise<number> {
     const result = await this.client.orm.public.Follow.where((row) =>
       and(row.followerId.eq(followerId), row.status.eq("ACCEPTED")),
-    )
-      .aggregate((aggregate) => ({ max_sortOrder: aggregate.max("sortOrder") }))
-      .then((row) => ({ ...decodeRecord("Follow", row), _max: { sortOrder: row.max_sortOrder } }));
-    return result._max.sortOrder ?? -1;
+    ).aggregate((aggregate) => ({ max_sortOrder: aggregate.max("sortOrder") }));
+    return result.max_sortOrder ?? -1;
   }
 
   async shiftFriendSortOrders(
@@ -311,27 +288,27 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
   }
 
   async updateFollowSortOrder(id: string, sortOrder: number): Promise<FollowWithUser> {
-    const row = decodeRecord(
+    const rows = decodeRecord(
       "Follow",
-      requireRecord(await this.followsWithUser.where({ id }).update({ sortOrder })),
+      await this.followsWithUser.where({ id }).updateAll({ sortOrder }),
     );
-    return PrismaFollowRepository.toWithUser(row);
+    return PrismaFollowRepository.toWithUser(requireRecord(rows[0]));
   }
 
   async isMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
-    const [myFollow, theirFollow] = await Promise.all([
-      this.client.orm.public.Follow.where((row) =>
-        and(row.followerId.eq(userId), row.followingId.eq(targetUserId), row.status.eq("ACCEPTED")),
-      )
-        .first()
-        .then((row) => decodeRecord("Follow", row)),
-      this.client.orm.public.Follow.where((row) =>
-        and(row.followerId.eq(targetUserId), row.followingId.eq(userId), row.status.eq("ACCEPTED")),
-      )
-        .first()
-        .then((row) => decodeRecord("Follow", row)),
-    ]);
-    return myFollow !== null && theirFollow !== null;
+    const { count } = await this.client.orm.public.Follow.where((row) =>
+      and(
+        row.followerId.eq(userId),
+        row.followingId.eq(targetUserId),
+        row.status.eq("ACCEPTED"),
+        row.following.some((user) =>
+          user.following.some((reverse) =>
+            and(reverse.followingId.eq(userId), reverse.status.eq("ACCEPTED")),
+          ),
+        ),
+      ),
+    ).aggregate((aggregate) => ({ count: aggregate.count() }));
+    return count > 0;
   }
 
   async countMutualFriends(userId: string): Promise<number> {
@@ -419,7 +396,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
   }
 
   async searchUsers(params: SearchUsersParams): Promise<UserSearchResult[]> {
-    const sqlRows1 = sqlRowSpec({
+    const userSearchRow = sqlRowSpec({
       id: "pg/text@1",
       userTag: "pg/text@1",
       name: { codecId: "pg/text@1", nullable: true },
@@ -433,56 +410,54 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
 
     const { viewerId, nfcQuery, upperTag, cursor, size } = params;
 
-    // 관련도 랭킹(rank)은 계산값이라 (rank, id) keyset으로 안정 페이지네이션한다.
-    // 서브쿼리 밖에서만 rank 별칭을 참조할 수 있어 바깥 WHERE에서 keyset을 적용한다.
     const keyset =
       cursor != null
         ? sql`AND (s.rank > ${cursor.rank} OR (s.rank = ${cursor.rank} AND s.id > ${cursor.id}))`
         : empty;
 
     const rows = decodeSqlRows(
-      sqlRows1,
+      userSearchRow,
       await this.client.query(
         sqlStatement(
           this.client,
           sql`
-			SELECT s.id, s."userTag", s.name, s."profileImage",
-				s."isFollowing", s."isFollower", s."isFriend", s."requestPending", s.rank
-			FROM (
-				SELECT u.id, u."userTag", p.name, p."profileImage",
-					COALESCE(fout.status = 'ACCEPTED', false) AS "isFollowing",
-					COALESCE(fin.status = 'ACCEPTED', false) AS "isFollower",
-					COALESCE(fout.status = 'ACCEPTED' AND fin.status = 'ACCEPTED', false) AS "isFriend",
-					COALESCE(fout.status = 'PENDING', false) AS "requestPending",
-					-- 관련도 랭킹(작을수록 상위). 정확 일치 > 접두어 일치 > 부분 일치 순.
-					-- 0: 태그 완전 일치, 1: 태그 접두어 일치, 2: 이름 접두어 일치, 3: 그 외 부분 일치.
-					-- 동일 rank 내에서는 id ASC로 안정 정렬(keyset 페이지네이션 tie-breaker).
-					CASE
-						WHEN u."userTag" = ${upperTag} THEN 0
-						WHEN u."userTag" ILIKE ${upperTag} || '%' THEN 1
-						WHEN p.name ILIKE ${nfcQuery} || '%' THEN 2
-						ELSE 3
-					END AS rank
-				FROM "User" u
-				LEFT JOIN "UserProfile" p ON p."userId" = u.id
-				LEFT JOIN "Follow" fout
-					ON fout."followerId" = ${viewerId} AND fout."followingId" = u.id
-				LEFT JOIN "Follow" fin
-					ON fin."followerId" = u.id AND fin."followingId" = ${viewerId}
-				WHERE u.id <> ${viewerId}
-					AND u."deletedAt" IS NULL
-					AND u.status = 'ACTIVE'
-					AND (
-						u."userTag" ILIKE '%' || ${upperTag} || '%'
-						OR p.name ILIKE '%' || ${nfcQuery} || '%'
-					)
-			) s
-			WHERE TRUE ${keyset}
-			ORDER BY s.rank ASC, s.id ASC
-			LIMIT ${size + 1}
-		`,
+      SELECT s.id, s."userTag", s.name, s."profileImage",
+        s."isFollowing", s."isFollower", s."isFriend", s."requestPending", s.rank
+      FROM (
+        SELECT u.id, u."userTag", p.name, p."profileImage",
+          COALESCE(fout.status = 'ACCEPTED', false) AS "isFollowing",
+          COALESCE(fin.status = 'ACCEPTED', false) AS "isFollower",
+          COALESCE(fout.status = 'ACCEPTED' AND fin.status = 'ACCEPTED', false) AS "isFriend",
+          COALESCE(fout.status = 'PENDING', false) AS "requestPending",
+
+
+
+          CASE
+            WHEN u."userTag" = ${upperTag} THEN 0
+            WHEN u."userTag" ILIKE ${upperTag} || '%' THEN 1
+            WHEN p.name ILIKE ${nfcQuery} || '%' THEN 2
+            ELSE 3
+          END AS rank
+        FROM "User" u
+        LEFT JOIN "UserProfile" p ON p."userId" = u.id
+        LEFT JOIN "Follow" fout
+          ON fout."followerId" = ${viewerId} AND fout."followingId" = u.id
+        LEFT JOIN "Follow" fin
+          ON fin."followerId" = u.id AND fin."followingId" = ${viewerId}
+        WHERE u.id <> ${viewerId}
+          AND u."deletedAt" IS NULL
+          AND u.status = 'ACTIVE'
+          AND (
+            u."userTag" ILIKE '%' || ${upperTag} || '%'
+            OR p.name ILIKE '%' || ${nfcQuery} || '%'
+          )
+      ) s
+      WHERE TRUE ${keyset}
+      ORDER BY s.rank ASC, s.id ASC
+      LIMIT ${size + 1}
+    `,
         )
-          .returnsRow(sqlRows1)
+          .returnsRow(userSearchRow)
           .build(),
       ),
     );
@@ -500,31 +475,24 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
   }
 
   async countSearchUsers(params: Omit<SearchUsersParams, "cursor" | "size">): Promise<number> {
-    const sqlRows2 = sqlRowSpec({ count: "pg/int8@1" });
-
     const { viewerId, nfcQuery, upperTag } = params;
-    const result = decodeSqlRows(
-      sqlRows2,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT COUNT(*) AS count
-			FROM "User" u
-			LEFT JOIN "UserProfile" p ON p."userId" = u.id
-			WHERE u.id <> ${viewerId}
-				AND u."deletedAt" IS NULL
-				AND u.status = 'ACTIVE'
-				AND (
-					u."userTag" ILIKE '%' || ${upperTag} || '%'
-					OR p.name ILIKE '%' || ${nfcQuery} || '%'
-				)
-		`,
-        )
-          .returnsRow(sqlRows2)
-          .build(),
+    const { count } = await this.client.orm.public.User.where((user) =>
+      and(
+        user.id.neq(viewerId),
+        user.deletedAt.isNull(),
+        user.status.eq("ACTIVE"),
+        or(
+          this.client.raw.sql`${user.userTag} ILIKE ${"%" + upperTag + "%"}`
+            .returns("pg/bool@1")
+            .buildAst(),
+          user.profile.some((profile) =>
+            this.client.raw.sql`${profile.name} ILIKE ${"%" + nfcQuery + "%"}`
+              .returns("pg/bool@1")
+              .buildAst(),
+          ),
+        ),
       ),
-    );
-    return Number(result[0]?.count ?? 0);
+    ).aggregate((aggregate) => ({ count: aggregate.count() }));
+    return count;
   }
 }

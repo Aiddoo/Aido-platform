@@ -1,183 +1,151 @@
-import { ErrorCode } from "@aido/api/errors";
-import { beforeEach, describe, expect, it, vi, type Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { SOCIAL_TIME } from "#test/fixtures/social-friends.fixture";
+import { createSocialInteractionFixture } from "#test/fixtures/social-interactions.fixture";
 
-import { FollowReader } from "#api/modules/social/social-friends.public";
-import { NudgeBuilder } from "#test/builders/nudge.builder";
-import { createNudgeRepositoryMock } from "#test/mocks/ports/nudge.mock";
-import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
-
-import { Nudge } from "../../../domain/aggregates/nudges/nudge.aggregate.js";
-import { type NudgeNotifierPort } from "../../ports/nudges/nudge-notifier.port.js";
-import {
-  type NudgeInteractionRecord,
-  type NudgeRepositoryPort,
-} from "../../ports/nudges/nudge.repository.port.js";
 import { ReplyToNudge } from "./reply-to-nudge.use-case.js";
 
-describe("ReplyToNudge", () => {
-  let useCase: ReplyToNudge;
-  let repository: Mocked<NudgeRepositoryPort>;
-  let notifier: Mocked<NudgeNotifierPort>;
-  let followReader: Mocked<FollowReader>;
-  let record: NudgeInteractionRecord;
-  let nudgeInteractionConfig: { isEnabled: boolean };
-  const input = { userId: "receiver", nudgeId: 1, replyKind: "STARTING" } as const;
+function replyFixture() {
+  const fixture = createSocialInteractionFixture();
+  const todo = fixture.addTodo({ id: 10 });
+  const nudge = fixture.nudgeRepository.seed({
+    senderId: "sender",
+    receiverId: "receiver",
+    todoId: todo.id,
+  });
+  const input = {
+    userId: "receiver",
+    nudgeId: nudge.id,
+    replyKind: "STARTING",
+  } satisfies Parameters<ReplyToNudge["execute"]>[0];
+  return { ...fixture, todo, nudge, input, useCase: new ReplyToNudge(fixture) };
+}
 
-  beforeEach(async () => {
-    nudgeInteractionConfig = { isEnabled: true };
-    const replyToNudgeDependencies = mockDeep<ConstructorParameters<typeof ReplyToNudge>[0]>({
-      nudgeRepository: createNudgeRepositoryMock(),
-      nudgeInteractionConfig: nudgeInteractionConfig,
-      nudgeNotifier: { notifyNudgeSent: vi.fn(), recordInteraction: vi.fn() },
-      unitOfWork: createUnitOfWorkMock(),
-    });
-    const unit = new ReplyToNudge(replyToNudgeDependencies);
-    useCase = unit;
-    repository = replyToNudgeDependencies.nudgeRepository;
-    notifier = replyToNudgeDependencies.nudgeNotifier;
-    followReader = replyToNudgeDependencies.followReader;
-    record = NudgeBuilder.create("sender", "receiver", 10).withId(1).buildInteraction();
-    repository.findInteractionById.mockImplementation(async () => record);
-    repository.lockInteractionTodo.mockResolvedValue(record.todo);
-    repository.saveReply.mockImplementation(async (nudge) => {
-      record = { ...record, ...nudge.toPersistence() };
-    });
-    followReader.getCurrentMutualFriendIds.mockResolvedValue(["sender"]);
+describe("받은 콕에 답장", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(SOCIAL_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("첫 답장은 저장한 뒤 알림을 기록하며 할 일 완료 상태는 변경하지 않는다", async () => {
+  it("첫 답장은 저장과 알림을 남기지만 할 일 완료 상태를 바꾸지 않는다", async () => {
     // Given
-    const completedBeforeReply = record.todo.completed;
-
+    const fixture = replyFixture();
     // When
-    const result = await useCase.execute(input);
-
+    const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(result.replyKind).toBe("STARTING");
-    expect(result.repliedAt).toEqual(expect.any(Date));
-    expect(result.readAt).toEqual(result.repliedAt);
-    expect(result.todo.completed).toBe(completedBeforeReply);
-    expect(repository.saveReply).toHaveBeenCalledWith(expect.any(Nudge));
-    expect(notifier.recordInteraction).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(result).toMatchObject({
+      replyKind: "STARTING",
+      repliedAt: SOCIAL_TIME,
+      replyUpdatedAt: SOCIAL_TIME,
+      readAt: SOCIAL_TIME,
+      isAvailable: true,
+    });
+    expect(fixture.nudgeRepository.records.get(fixture.nudge.id)).toMatchObject({
+      replyKind: "STARTING",
+      repliedAt: SOCIAL_TIME,
+    });
+    expect(fixture.nudgeRepository.todos.get(fixture.todo.id)?.completed).toBe(false);
+    expect(fixture.nudgeNotifier.interactions).toEqual([
+      {
         kind: "reply",
-        nudgeId: 1,
+        nudgeId: fixture.nudge.id,
+        todoId: fixture.todo.id,
         actorId: "receiver",
         recipientId: "sender",
+        actorName: "receiver",
+        todoTitle: fixture.todo.title,
         replyKind: "STARTING",
-      }),
-    );
+      },
+    ]);
   });
-
-  it("같은 답장 재요청은 저장·알림을 반복하지 않는다", async () => {
+  it("같은 답장 재요청은 저장이나 알림을 반복하지 않고 처음 시각을 보존한다", async () => {
     // Given
-    record = {
-      ...record,
-      replyKind: "STARTING",
-      repliedAt: new Date(),
-      replyUpdatedAt: new Date(),
-    };
-
+    const fixture = replyFixture();
+    await fixture.useCase.execute(fixture.input);
+    vi.setSystemTime(new Date(SOCIAL_TIME.getTime() + 10000));
+    const save = vi.spyOn(fixture.nudgeRepository, "saveReply");
     // When
-    const result = await useCase.execute(input);
-
+    const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(result.replyKind).toBe("STARTING");
-    expect(repository.saveReply).not.toHaveBeenCalled();
-    expect(notifier.recordInteraction).not.toHaveBeenCalled();
+    expect(result.replyUpdatedAt).toEqual(SOCIAL_TIME);
+    expect(save).not.toHaveBeenCalled();
+    expect(fixture.nudgeNotifier.interactions).toHaveLength(1);
   });
-
-  it("답장을 변경하면 상태만 바꾸고 알림은 다시 보내지 않는다", async () => {
+  it("답장 변경은 첫 답장 시각을 보존하고 새 알림을 추가하지 않는다", async () => {
     // Given
-    const firstRepliedAt = new Date("2026-10-04T01:00:00.000Z");
-    record = {
-      ...record,
+    const fixture = replyFixture();
+    await fixture.useCase.execute(fixture.input);
+    const updatedAt = new Date(SOCIAL_TIME.getTime() + 10000);
+    vi.setSystemTime(updatedAt);
+    // When
+    const result = await fixture.useCase.execute({ ...fixture.input, replyKind: "LATER" });
+    // Then
+    expect(result).toMatchObject({
       replyKind: "LATER",
-      repliedAt: firstRepliedAt,
-      replyUpdatedAt: firstRepliedAt,
-    };
-
-    // When
-    const result = await useCase.execute(input);
-
-    // Then
-    expect(result.replyKind).toBe("STARTING");
-    expect(result.repliedAt).toEqual(firstRepliedAt);
-    expect(repository.saveReply).toHaveBeenCalledOnce();
-    expect(notifier.recordInteraction).not.toHaveBeenCalled();
+      repliedAt: SOCIAL_TIME,
+      replyUpdatedAt: updatedAt,
+    });
+    expect(fixture.nudgeNotifier.interactions).toHaveLength(1);
   });
-
-  it("발신자는 수신자의 답장을 수정할 수 없다", async () => {
+  it.each([
+    { state: "sender", code: "NUDGE_1105" },
+    { state: "missing", code: "NUDGE_1105" },
+    { state: "unfriended", code: "NUDGE_1109" },
+    { state: "private", code: "NUDGE_1109" },
+    { state: "deleted-todo", code: "NUDGE_1105" },
+  ])("$state 상태이면 $code 오류로 거부하고 답장을 저장하지 않는다", async (input) => {
     // Given
-    const senderInput = { ...input, userId: "sender" };
-
-    // When
-    const reply = useCase.execute(senderInput);
-
-    // Then
-    await expect(reply).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1105 });
-    expect(repository.lockInteractionTodo).not.toHaveBeenCalled();
-    expect(repository.saveReply).not.toHaveBeenCalled();
+    const fixture = replyFixture();
+    if (input.state === "missing") fixture.nudgeRepository.records.delete(fixture.nudge.id);
+    if (input.state === "unfriended") fixture.followRepository.follows.clear();
+    if (input.state === "private")
+      fixture.nudgeRepository.todos.get(fixture.todo.id)!.visibility = "PRIVATE";
+    if (input.state === "deleted-todo") fixture.nudgeRepository.todos.delete(fixture.todo.id);
+    // When / Then
+    await expect(
+      fixture.useCase.execute({
+        ...fixture.input,
+        userId: input.state === "sender" ? "sender" : "receiver",
+      }),
+    ).rejects.toMatchObject({ errorCode: input.code });
+    expect(fixture.nudgeRepository.records.get(fixture.nudge.id)?.replyKind ?? null).toBeNull();
+    expect(fixture.nudgeNotifier.interactions).toEqual([]);
   });
-
-  it("현재 친구 관계가 없으면 답장을 거부한다", async () => {
+  it("행 잠금 이후 할 일이 비공개로 바뀌었다면 답장을 저장하지 않는다", async () => {
     // Given
-    followReader.getCurrentMutualFriendIds.mockResolvedValue([]);
-
-    // When
-    const reply = useCase.execute(input);
-
-    // Then
-    await expect(reply).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1109 });
-    expect(repository.saveReply).not.toHaveBeenCalled();
+    const fixture = replyFixture();
+    const lock = fixture.nudgeRepository.lockInteractionTodo.bind(fixture.nudgeRepository);
+    vi.spyOn(fixture.nudgeRepository, "lockInteractionTodo").mockImplementation(
+      async (...input) => {
+        fixture.nudgeRepository.todos.get(fixture.todo.id)!.visibility = "PRIVATE";
+        return lock(...input);
+      },
+    );
+    // When / Then
+    await expect(fixture.useCase.execute(fixture.input)).rejects.toMatchObject({
+      errorCode: "NUDGE_1109",
+    });
+    expect(fixture.nudgeRepository.records.get(fixture.nudge.id)?.replyKind).toBeNull();
   });
-
-  it("행 잠금 후 비공개가 확인되면 답장을 저장하지 않는다", async () => {
+  it("기능이 꺼져 있으면 저장소에 접근하기 전에 거부한다", async () => {
     // Given
-    repository.lockInteractionTodo.mockResolvedValue({ ...record.todo, visibility: "PRIVATE" });
-
-    // When
-    const reply = useCase.execute(input);
-
-    // Then
-    await expect(reply).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1109 });
-    expect(repository.saveReply).not.toHaveBeenCalled();
-    expect(notifier.recordInteraction).not.toHaveBeenCalled();
+    const fixture = replyFixture();
+    fixture.nudgeInteractionConfig.isEnabled = false;
+    const read = vi.spyOn(fixture.nudgeRepository, "findInteractionById");
+    // When / Then
+    await expect(fixture.useCase.execute(fixture.input)).rejects.toMatchObject({
+      errorCode: "NUDGE_1105",
+    });
+    expect(read).not.toHaveBeenCalled();
   });
-
-  it("삭제·접근 불가 상태에서는 존재 여부를 드러내지 않는다", async () => {
+  it("알림 기록 실패는 원본 오류를 UoW 호출자에게 전달한다", async () => {
     // Given
-    repository.findInteractionById.mockResolvedValue(null);
-
-    // When
-    const reply = useCase.execute(input);
-
-    // Then
-    await expect(reply).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1105 });
-  });
-
-  it("기능이 꺼져 있으면 저장소에 접근하지 않는다", async () => {
-    // Given
-    nudgeInteractionConfig.isEnabled = false;
-
-    // When
-    const reply = useCase.execute(input);
-
-    // Then
-    await expect(reply).rejects.toMatchObject({ errorCode: ErrorCode.NUDGE_1105 });
-    expect(repository.findInteractionById).not.toHaveBeenCalled();
-  });
-
-  it("알림 기록이 실패하면 실패를 전파해 같은 UoW를 롤백시킨다", async () => {
-    // Given
+    const fixture = replyFixture();
     const error = new Error("알림 저장 실패");
-    notifier.recordInteraction.mockRejectedValue(error);
-
-    // When
-    const reply = useCase.execute(input);
-
-    // Then
-    await expect(reply).rejects.toBe(error);
+    vi.spyOn(fixture.nudgeNotifier, "recordInteraction").mockRejectedValueOnce(error);
+    // When / Then
+    await expect(fixture.useCase.execute(fixture.input)).rejects.toBe(error);
+    expect(fixture.nudgeNotifier.interactions).toEqual([]);
   });
 });

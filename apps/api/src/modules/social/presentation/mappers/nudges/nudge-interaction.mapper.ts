@@ -3,11 +3,11 @@ import type { NudgeInteractionResponse, NudgeThanksPreviewResponse, NudgeSender 
 import { resolveProfileImage } from "#api/platform/http/profile/profile-image.resolver";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
-import type { NudgeUserBrief } from "../../../application/ports/nudges/nudge.repository.port.js";
 import type {
   NudgeInteractionResult,
   NudgeThanksPreviewResult,
-} from "../../../application/services/nudges/nudge-interaction.types.js";
+} from "../../../application/models/nudges/nudge-interaction.models.js";
+import type { NudgeUserBrief } from "../../../application/ports/nudges/nudge.repository.port.js";
 import { NudgeMapper } from "./nudge.mapper.js";
 
 export abstract class NudgeInteractionMapper {
