@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { Resource } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { Resource } from "#api/modules/access/access-entitlement.public";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { type TodoCategoryCachePort } from "../../ports/categories/todo-category-cache.port.js";
@@ -23,7 +23,7 @@ export interface ResourceLimitInfo {
 interface TodoCategoryReaderDependencies {
   readonly repository: TodoCategoryRepositoryPort;
   readonly cache: TodoCategoryCachePort;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimit">;
 }
 
 export class TodoCategoryReader {
@@ -35,7 +35,7 @@ export class TodoCategoryReader {
 
   async getResourceLimitInfo(userId: string): Promise<ResourceLimitInfo> {
     const [entitlement, categoryCount] = await Promise.all([
-      this.#dependencies.entitlementService.getResourceLimit(userId, Resource.CATEGORY),
+      this.#dependencies.entitlementReader.getResourceLimit(userId, Resource.CATEGORY),
       this.#dependencies.repository.countByUserId(userId),
     ]);
     return { categoryCount, maxCount: entitlement.maxCount };

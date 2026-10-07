@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
 
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
@@ -29,7 +30,7 @@ import {
  * 컨트롤러는 endpoint UseCase를 직접 사용하고 크로스모듈에는 읽기 capability만 공개한다.
  */
 @Module({
-  imports: [NotificationModule],
+  imports: [AccessModule, NotificationModule],
   controllers: [FollowController],
   providers: [
     { provide: FOLLOW_REPOSITORY, useClass: PrismaFollowRepository },

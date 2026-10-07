@@ -70,7 +70,7 @@ export const parseMemoResponseSchema = z.object({
 export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;
 
 // ============================================================================
-// LLM 내부용 스키마 (categoryId 제외 — 서비스에서 주입)
+// LLM 내부용 스키마
 // ============================================================================
 
 export const llmParsedMemoResultSchema = z.object({

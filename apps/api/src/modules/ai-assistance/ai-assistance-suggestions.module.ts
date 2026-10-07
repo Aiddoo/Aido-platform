@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+
 import { NotificationModule } from "../notification/notification-delivery.module.js";
 import { TodoModule } from "../planning/planning-todos.module.js";
 import { WeatherModule } from "../weather/weather-forecast.module.js";
@@ -40,7 +42,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
  * - NotificationModule: 새 제안 생성 시 알림 발송(프로세서)
  */
 @Module({
-  imports: [AiModule, AiReportModule, NotificationModule, TodoModule, WeatherModule],
+  imports: [AccessModule, AiModule, AiReportModule, NotificationModule, TodoModule, WeatherModule],
   controllers: [AiSuggestionController],
   providers: [
     {

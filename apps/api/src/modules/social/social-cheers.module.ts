@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
 import { FollowModule } from "#api/modules/social/social-friends.module";
 
@@ -24,7 +25,7 @@ import {
  * 제한 정책: FREE 하루 3회 / ACTIVE 무제한, 동일 친구 24시간 쿨다운.
  */
 @Module({
-  imports: [FollowModule, NotificationModule],
+  imports: [AccessModule, FollowModule, NotificationModule],
   controllers: [CheerController],
   providers: [
     { provide: CHEER_REPOSITORY, useClass: PrismaCheerRepository },

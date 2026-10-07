@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+
 import { TODO_CATEGORY_CACHE } from "./application/ports/categories/todo-category-cache.port.js";
 import { TODO_CATEGORY_LIMIT_READER } from "./application/ports/categories/todo-category-limit-reader.port.js";
 import { TODO_CATEGORY_REPOSITORY } from "./application/ports/categories/todo-category.repository.port.js";
@@ -27,6 +29,7 @@ import { TodoCategoryController } from "./presentation/controllers/categories/to
  * DefaultTodoCategorySeeder를 사용한다.
  */
 @Module({
+  imports: [AccessModule],
   controllers: [TodoCategoryController],
   providers: [
     {

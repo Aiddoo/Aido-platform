@@ -19,7 +19,7 @@ interface AuthenticatedRequest extends Request {
  * - 무료 사용자: 월 5회 제한 (KST 매월 1일 00:00 리셋)
  * - ADMIN/ACTIVE 구독자: 무제한
  *
- * 실제 원자적 차감은 파싱 핸들러의 사용량 미터가 담당하며, 이 가드는 이미 한도에
+ * 실제 원자적 차감은 파싱 핸들러의 quota 예약이 담당하며, 이 가드는 이미 한도에
  * 도달한 요청을 조기에 429로 차단하는 선검사입니다.
  */
 @Injectable()
@@ -30,14 +30,14 @@ export class AiUsageGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
 
-    if (!user) {
+    if (user === undefined) {
       // JwtAuthGuard가 먼저 실행되어야 함
       throw new ApplicationException(ErrorCode.AUTH_0107);
     }
 
     const usage = await this.getAiUsageUseCase.execute({ userId: user.userId });
 
-    if (usage.isExceeded()) {
+    if (usage.limit !== null && usage.used >= usage.limit) {
       throw new ApplicationException(ErrorCode.AI_1303, {
         used: usage.used,
         limit: usage.limit,

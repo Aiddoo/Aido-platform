@@ -1,6 +1,7 @@
 import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/api";
 import { llmParsedMemoResultSchema, parsedMemoDataSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { sumBy } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
@@ -9,9 +10,10 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { buildParseMemoPromptEn } from "../../../domain/services/parsing/prompts/parse-memo.prompt.en.js";
 import { buildParseMemoPrompt } from "../../../domain/services/parsing/prompts/parse-memo.prompt.js";
+import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
 import { type AiProvider, AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
+import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
-import type { AiUsageMeter } from "../../services/parsing/ai-usage-meter.service.js";
 import type { ParseTodoMeta } from "./parse-todo.use-case.js";
 
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
@@ -41,7 +43,7 @@ export interface ParseMemoInput {
 interface ParseMemoDependencies {
   readonly aiProvider: AiProvider;
   readonly categoryReader: UserCategoryReaderPort;
-  readonly usageMeter: AiUsageMeter;
+  readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
   readonly logger: ApplicationLogger;
 }
 
@@ -53,25 +55,35 @@ export class ParseMemo {
   }
 
   async execute(input: ParseMemoInput): Promise<ParseMemoResult> {
-    const { content, userId, timezone, categoryId, locale } = input;
+    const { userId } = input;
     const startTime = Date.now();
 
     if (!this.#dependencies.aiProvider.isAvailable()) {
-      this.#dependencies.logger.warn(`AI 서비스 불가: userId=${userId}`);
+      this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
       throw new ApplicationException(ErrorCode.AI_1301);
     }
 
-    await this.#dependencies.usageMeter.checkAndIncrement(userId);
+    const reservation = await this.#dependencies.quota.reserve(userId);
+    try {
+      return await this.#parse(input, startTime);
+    } catch (error) {
+      await this.#dependencies.quota.release(reservation);
+      throw error;
+    }
+  }
+
+  async #parse(input: ParseMemoInput, startTime: number): Promise<ParseMemoResult> {
+    const { content, userId, timezone, categoryId, locale } = input;
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const categoryIds = new Set(userCategories.map((c) => c.id));
+    const categoryIds = new Set(userCategories.map((category) => category.id));
 
     const buildMemoPrompt = locale === "en" ? buildParseMemoPromptEn : buildParseMemoPrompt;
     const { system, prompt } = buildMemoPrompt(
       content,
       timezone,
       now(),
-      userCategories.map((c) => ({ id: c.id, name: c.name })),
+      userCategories.map((category) => ({ id: category.id, name: category.name })),
     );
 
     try {
@@ -84,12 +96,17 @@ export class ParseMemo {
 
       const processingTimeMs = Date.now() - startTime;
       const todoCount = result.output.todos.length;
-      const itemCount = result.output.todos.reduce((sum, t) => sum + t.items.length, 0);
+      const itemCount = sumBy(result.output.todos, (todo) => todo.items.length);
 
-      this.#dependencies.logger.log(
-        `메모 파싱 완료: userId=${userId}, ${todoCount} todos, ${itemCount} items, ` +
-          `${processingTimeMs}ms, tokens=${result.usage.input}/${result.usage.output}`,
-      );
+      this.#dependencies.logger.log({
+        event: AiParsingLogEvent.MEMO_COMPLETED,
+        userId,
+        model: result.model,
+        processingTimeMs,
+        tokenUsage: result.usage,
+        todoCount,
+        itemCount,
+      });
 
       const data = parsedMemoDataSchema.parse({
         todos: result.output.todos.slice(0, 5).map((todo) => ({
@@ -107,18 +124,20 @@ export class ParseMemo {
         },
       };
     } catch (error) {
-      await this.#dependencies.usageMeter.decrement(userId);
-
       if (error instanceof AiProviderCallError) {
-        this.#dependencies.logger.error(
-          `AI API 호출 실패: userId=${userId}, status=${error.statusCode}, message=${error.message}`,
-        );
+        this.#dependencies.logger.error({
+          event: AiParsingLogEvent.PROVIDER_FAILED,
+          userId,
+          statusCode: error.statusCode,
+        });
         throw new ApplicationException(ErrorCode.AI_1301);
       }
 
-      this.#dependencies.logger.error(
-        `메모 파싱 실패: userId=${userId}, error=${error instanceof Error ? error.message : "Unknown"}`,
-      );
+      this.#dependencies.logger.error({
+        event: AiParsingLogEvent.OUTPUT_INVALID,
+        userId,
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
       throw new ApplicationException(ErrorCode.AI_1302, {
         details: error instanceof Error ? error.message : "Unknown error",
       });

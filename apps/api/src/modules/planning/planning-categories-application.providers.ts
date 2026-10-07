@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import { TODO_CATEGORY_CACHE } from "./application/ports/categories/todo-category-cache.port.js";
@@ -14,16 +14,16 @@ import { UpdateTodoCategory } from "./application/use-cases/categories/update-to
 
 export const todoCategoryReaderProvider: FactoryProvider<TodoCategoryReader> = {
   provide: TodoCategoryReader,
-  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE, EntitlementService],
+  inject: [TODO_CATEGORY_REPOSITORY, TODO_CATEGORY_CACHE, ENTITLEMENT_READER],
   useFactory: (
     repository: ConstructorParameters<typeof TodoCategoryReader>[0]["repository"],
     cache: ConstructorParameters<typeof TodoCategoryReader>[0]["cache"],
-    entitlementService: ConstructorParameters<typeof TodoCategoryReader>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof TodoCategoryReader>[0]["entitlementReader"],
   ) =>
     new TodoCategoryReader({
       repository,
       cache,
-      entitlementService,
+      entitlementReader,
     }),
 };
 

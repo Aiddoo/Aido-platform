@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
@@ -33,18 +33,18 @@ export const searchUsersProvider: FactoryProvider<SearchUsers> = {
 
 export const followReaderProvider: FactoryProvider<FollowReader> = {
   provide: FollowReader,
-  inject: [FOLLOW_REPOSITORY, FOLLOW_CACHE, PaginationService, EntitlementService],
+  inject: [FOLLOW_REPOSITORY, FOLLOW_CACHE, PaginationService, ENTITLEMENT_READER],
   useFactory: (
     followRepository: ConstructorParameters<typeof FollowReader>[0]["followRepository"],
     cache: ConstructorParameters<typeof FollowReader>[0]["cache"],
     paginationService: ConstructorParameters<typeof FollowReader>[0]["paginationService"],
-    entitlementService: ConstructorParameters<typeof FollowReader>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof FollowReader>[0]["entitlementReader"],
   ) =>
     new FollowReader({
       followRepository,
       cache,
       paginationService,
-      entitlementService,
+      entitlementReader,
       logger: new Logger(FollowReader.name),
     }),
 };
@@ -129,7 +129,7 @@ export const sendFriendRequestProvider: FactoryProvider<SendFriendRequest> = {
     FOLLOW_REPOSITORY,
     FOLLOW_NOTIFIER,
     UNIT_OF_WORK,
-    EntitlementService,
+    ENTITLEMENT_READER,
     FollowReader,
     FriendshipEffects,
   ],
@@ -137,7 +137,7 @@ export const sendFriendRequestProvider: FactoryProvider<SendFriendRequest> = {
     followRepository: ConstructorParameters<typeof SendFriendRequest>[0]["followRepository"],
     notifier: ConstructorParameters<typeof SendFriendRequest>[0]["notifier"],
     unitOfWork: ConstructorParameters<typeof SendFriendRequest>[0]["unitOfWork"],
-    entitlementService: ConstructorParameters<typeof SendFriendRequest>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof SendFriendRequest>[0]["entitlementReader"],
     reader: ConstructorParameters<typeof SendFriendRequest>[0]["reader"],
     effects: ConstructorParameters<typeof SendFriendRequest>[0]["effects"],
   ) =>
@@ -145,7 +145,7 @@ export const sendFriendRequestProvider: FactoryProvider<SendFriendRequest> = {
       followRepository,
       notifier,
       unitOfWork,
-      entitlementService,
+      entitlementReader,
       reader,
       effects,
       logger: new Logger(SendFriendRequest.name),

@@ -14,7 +14,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import { FOLLOW_CACHE } from "#api/modules/social/application/ports/friends/follow-cache.port";
 import { FOLLOW_NOTIFIER } from "#api/modules/social/application/ports/friends/follow-notifier.port";
@@ -124,7 +124,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
         },
         { provide: CacheService, useValue: mockCacheService },
         {
-          provide: EntitlementService,
+          provide: ENTITLEMENT_READER,
           useValue: {
             getResourceLimit: vi.fn().mockResolvedValue({
               maxCount: null,

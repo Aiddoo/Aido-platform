@@ -5,495 +5,214 @@ import {
   NUDGE_LIMITS,
   TODO_CATEGORY_LIMITS,
 } from "@aido/api/vocabulary";
-import type { Mocked } from "vitest";
-import { type Mock } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+
+import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
 
 import {
-  type EntitlementCachePort,
-  type EntitlementDatabasePort,
-} from "./entitlement-state.port.js";
-import {
-  EntitlementService,
   Feature,
   Resource,
-  type FeatureEntitlement,
-  type ResourceEntitlement,
-} from "./entitlement.service.js";
+} from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 
-describe("EntitlementService — 권한 관리 서비스", () => {
-  let service: EntitlementService;
-  let cacheService: Mocked<EntitlementCachePort>;
-  let database: Mocked<EntitlementDatabasePort>;
+describe("EntitlementService", () => {
+  it.each([{ feature: Feature.CHEER }, { feature: Feature.NUDGE }, { feature: Feature.AI_PARSE }])(
+    "ADMIN의 $feature 기능은 무료 구독에서도 무제한이다",
+    async ({ feature }) => {
+      // Given
+      const fixture = createEntitlementFixture({ role: "ADMIN" });
+      // When
+      const entitlement = await fixture.service.getFeatureLimit(fixture.userId, feature);
+      // Then
+      expect(entitlement).toEqual({ dailyLimit: null, isAdmin: true, subscriptionStatus: "FREE" });
+    },
+  );
 
-  const userId = "user-test-123";
-
-  beforeEach(async () => {
-    const entitlementServiceDependencies = mockDeep<
-      ConstructorParameters<typeof EntitlementService>[0]
-    >({});
-    const unit = new EntitlementService(entitlementServiceDependencies);
-
-    service = unit;
-    cacheService = entitlementServiceDependencies.cacheService;
-    database = entitlementServiceDependencies.database;
-  });
-
-  describe("getFeatureLimit", () => {
-    describe("ADMIN 역할", () => {
-      it.each([
-        ["CHEER", Feature.CHEER],
-        ["NUDGE", Feature.NUDGE],
-        ["AI_PARSE", Feature.AI_PARSE],
-      ] as const)("ADMIN은 %s 기능이 무제한이다", async (_name, feature) => {
-        // Given - 캐시에 ADMIN 사용자 정보 존재
-        (cacheService.wrapSubscription as Mock).mockResolvedValue({
-          status: "FREE",
-          isAdmin: true,
-        });
-
-        // When
-        const result = await service.getFeatureLimit(userId, feature);
-
-        // Then - ADMIN은 항상 무제한
-        expect(result).toEqual<FeatureEntitlement>({
-          dailyLimit: null,
-          isAdmin: true,
-          subscriptionStatus: "FREE",
-        });
-      });
-    });
-
-    describe("USER 역할 + ACTIVE 구독 (무제한)", () => {
-      it.each([
-        ["CHEER", Feature.CHEER],
-        ["NUDGE", Feature.NUDGE],
-        ["AI_PARSE", Feature.AI_PARSE],
-      ] as const)("ACTIVE 구독 + %s 기능은 무제한이다", async (_name, feature) => {
-        // Given - 캐시에 ACTIVE 구독 사용자 정보 존재
-        (cacheService.wrapSubscription as Mock).mockResolvedValue({
-          status: "ACTIVE",
-          isAdmin: false,
-        });
-
-        // When
-        const result = await service.getFeatureLimit(userId, feature);
-
-        // Then - ACTIVE 구독은 무제한
-        expect(result).toEqual<FeatureEntitlement>({
-          dailyLimit: null,
-          isAdmin: false,
-          subscriptionStatus: "ACTIVE",
-        });
-      });
-    });
-
-    describe("USER 역할 + 비프리미엄 구독 (제한 적용)", () => {
-      it.each([
-        ["FREE", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
-        ["FREE", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
-        ["FREE", "AI_PARSE", Feature.AI_PARSE, AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT],
-        ["EXPIRED", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
-        ["EXPIRED", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
-        ["EXPIRED", "AI_PARSE", Feature.AI_PARSE, AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT],
-        ["CANCELLED", "CHEER", Feature.CHEER, CHEER_LIMITS.FREE_DAILY_LIMIT],
-        ["CANCELLED", "NUDGE", Feature.NUDGE, NUDGE_LIMITS.FREE_DAILY_LIMIT],
-        ["CANCELLED", "AI_PARSE", Feature.AI_PARSE, AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT],
-      ] as const)(
-        "%s 구독 + %s 기능은 일일 %d회 제한이다",
-        async (status, _featureName, feature, expectedLimit) => {
-          // Given
-          (cacheService.wrapSubscription as Mock).mockResolvedValue({
-            status,
-            isAdmin: false,
-          });
-
-          // When
-          const result = await service.getFeatureLimit(userId, feature);
-
-          // Then
-          expect(result).toEqual<FeatureEntitlement>({
-            dailyLimit: expectedLimit,
-            isAdmin: false,
-            subscriptionStatus: status,
-          });
-        },
-      );
-    });
-
-    describe("캐시 동작", () => {
-      it("캐시 히트 시 DB 조회를 하지 않는다", async () => {
-        // Given - 캐시에 데이터 존재 (히트)
-        (cacheService.wrapSubscription as Mock).mockResolvedValue({
-          status: "FREE",
-          isAdmin: false,
-        });
-
-        // When - 기능 제한 조회
-        await service.getFeatureLimit(userId, Feature.CHEER);
-
-        // Then - DB 조회 미호출
-        expect(database.findUserState).not.toHaveBeenCalled();
-      });
-
-      it("캐시 미스 시 DB 조회 후 캐싱한다", async () => {
-        // Given - wrapSubscription이 팩토리 실행 (캐시 미스 시뮬레이션)
-        (cacheService.wrapSubscription as Mock).mockImplementation(
-          (_id: string, factory: () => Promise<unknown>) => factory(),
-        );
-        (database.findUserState as Mock).mockResolvedValue({
-          role: "USER",
-          subscriptionStatus: "FREE",
-        });
-
-        // When - 기능 제한 조회
-        const result = await service.getFeatureLimit(userId, Feature.CHEER);
-
-        // Then - DB 조회 확인
-        expect(database.findUserState).toHaveBeenCalledWith(userId);
-
-        // Then - wrapSubscription 호출 확인 (내부적으로 캐싱 처리)
-        expect(cacheService.wrapSubscription).toHaveBeenCalledWith(userId, expect.any(Function));
-
-        // Then - 올바른 결과 반환
-        expect(result).toEqual<FeatureEntitlement>({
-          dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
-          isAdmin: false,
-          subscriptionStatus: "FREE",
-        });
-      });
-
-      it("캐시 미스 + DB에 사용자 없으면 기본값(USER/FREE)을 사용한다", async () => {
-        // Given - wrapSubscription이 팩토리 실행 (캐시 미스), DB에도 사용자 없음
-        (cacheService.wrapSubscription as Mock).mockImplementation(
-          (_id: string, factory: () => Promise<unknown>) => factory(),
-        );
-        (database.findUserState as Mock).mockResolvedValue(null);
-
-        // When - CHEER 기능 제한 조회
-        const result = await service.getFeatureLimit(userId, Feature.CHEER);
-
-        // Then - 기본값(FREE) 적용으로 일일 제한
-        expect(result).toEqual<FeatureEntitlement>({
-          dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
-          isAdmin: false,
-          subscriptionStatus: "FREE",
-        });
-      });
-
-      it("캐시 미스 + DB에 ADMIN 사용자면 isAdmin: true로 캐싱한다", async () => {
-        // Given - wrapSubscription이 팩토리 실행 (캐시 미스), DB에 ADMIN 사용자 존재
-        (cacheService.wrapSubscription as Mock).mockImplementation(
-          (_id: string, factory: () => Promise<unknown>) => factory(),
-        );
-        (database.findUserState as Mock).mockResolvedValue({
-          role: "ADMIN",
-          subscriptionStatus: "FREE",
-        });
-
-        // When - 기능 제한 조회
-        const result = await service.getFeatureLimit(userId, Feature.CHEER);
-
-        // Then - ADMIN 무제한
-        expect(result).toEqual<FeatureEntitlement>({
-          dailyLimit: null,
-          isAdmin: true,
-          subscriptionStatus: "FREE",
-        });
-      });
-    });
-  });
-
-  describe("getFeatureLimitInTx", () => {
-    it("ADMIN 사용자 + NUDGE 기능은 무제한이다", async () => {
-      // Given - 트랜잭션 내 ADMIN 사용자
-      database.findUserState.mockResolvedValue({
-        role: "ADMIN",
-        subscriptionStatus: "FREE",
-      });
-
-      // When - 트랜잭션 내 NUDGE 기능 제한 조회
-      const result = await service.getFeatureLimitInTx(userId, Feature.NUDGE);
-
-      // Then - ADMIN은 무제한
-      expect(result).toEqual<FeatureEntitlement>({
+  it.each([{ feature: Feature.CHEER }, { feature: Feature.NUDGE }, { feature: Feature.AI_PARSE }])(
+    "ACTIVE 사용자의 $feature 기능은 무제한이다",
+    async ({ feature }) => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+      // When
+      const entitlement = await fixture.service.getFeatureLimit(fixture.userId, feature);
+      // Then
+      expect(entitlement).toEqual({
         dailyLimit: null,
-        isAdmin: true,
-        subscriptionStatus: "FREE",
-      });
-    });
-
-    it("ADMIN 사용자 + AI_PARSE 기능은 무제한이다", async () => {
-      // Given - 트랜잭션 내 ADMIN 사용자
-      database.findUserState.mockResolvedValue({
-        role: "ADMIN",
-        subscriptionStatus: "FREE",
-      });
-
-      // When - 트랜잭션 내 AI_PARSE 기능 제한 조회
-      const result = await service.getFeatureLimitInTx(userId, Feature.AI_PARSE);
-
-      // Then - ADMIN은 무제한
-      expect(result).toEqual<FeatureEntitlement>({
-        dailyLimit: null,
-        isAdmin: true,
-        subscriptionStatus: "FREE",
-      });
-    });
-
-    it("USER + FREE 구독 + CHEER 기능은 일일 제한이 적용된다", async () => {
-      // Given - 트랜잭션 내 FREE 구독 일반 사용자
-      database.findUserState.mockResolvedValue({
-        role: "USER",
-        subscriptionStatus: "FREE",
-      });
-
-      // When - 트랜잭션 내 CHEER 기능 제한 조회
-      const result = await service.getFeatureLimitInTx(userId, Feature.CHEER);
-
-      // Then - FREE는 일일 제한 적용
-      expect(result).toEqual<FeatureEntitlement>({
-        dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
         isAdmin: false,
-        subscriptionStatus: "FREE",
-      });
-
-      // Then - 올바른 쿼리 호출 확인
-      expect(database.findUserState).toHaveBeenCalledWith(userId);
-    });
-
-    it("USER + FREE 구독 + AI_PARSE 기능은 일일 제한이 적용된다", async () => {
-      // Given - 트랜잭션 내 FREE 구독 일반 사용자
-      database.findUserState.mockResolvedValue({
-        role: "USER",
-        subscriptionStatus: "FREE",
-      });
-
-      // When - 트랜잭션 내 AI_PARSE 기능 제한 조회
-      const result = await service.getFeatureLimitInTx(userId, Feature.AI_PARSE);
-
-      // Then - FREE는 일일 제한 적용
-      expect(result).toEqual<FeatureEntitlement>({
-        dailyLimit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
-        isAdmin: false,
-        subscriptionStatus: "FREE",
-      });
-
-      // Then - 올바른 쿼리 호출 확인
-      expect(database.findUserState).toHaveBeenCalledWith(userId);
-    });
-
-    it("사용자가 null인 경우 기본값(USER/FREE)을 사용한다", async () => {
-      // Given - 트랜잭션 내 사용자 없음
-      database.findUserState.mockResolvedValue(null);
-
-      // When - 트랜잭션 내 CHEER 기능 제한 조회
-      const result = await service.getFeatureLimitInTx(userId, Feature.CHEER);
-
-      // Then - 기본값(USER/FREE) 적용으로 일일 제한
-      expect(result).toEqual<FeatureEntitlement>({
-        dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
-        isAdmin: false,
-        subscriptionStatus: "FREE",
-      });
-    });
-
-    it("캐시를 사용하지 않고 트랜잭션으로 직접 조회한다", async () => {
-      // Given - 트랜잭션 내 사용자 존재
-      database.findUserState.mockResolvedValue({
-        role: "USER",
         subscriptionStatus: "ACTIVE",
       });
+    },
+  );
 
-      // When - 트랜잭션 내 조회
-      await service.getFeatureLimitInTx(userId, Feature.CHEER);
+  it.each([
+    { status: "FREE", feature: Feature.CHEER, limit: CHEER_LIMITS.FREE_DAILY_LIMIT },
+    { status: "FREE", feature: Feature.NUDGE, limit: NUDGE_LIMITS.FREE_DAILY_LIMIT },
+    { status: "FREE", feature: Feature.AI_PARSE, limit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
+    { status: "EXPIRED", feature: Feature.CHEER, limit: CHEER_LIMITS.FREE_DAILY_LIMIT },
+    { status: "EXPIRED", feature: Feature.NUDGE, limit: NUDGE_LIMITS.FREE_DAILY_LIMIT },
+    { status: "EXPIRED", feature: Feature.AI_PARSE, limit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
+    { status: "CANCELLED", feature: Feature.CHEER, limit: CHEER_LIMITS.FREE_DAILY_LIMIT },
+    { status: "CANCELLED", feature: Feature.NUDGE, limit: NUDGE_LIMITS.FREE_DAILY_LIMIT },
+    { status: "CANCELLED", feature: Feature.AI_PARSE, limit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
+  ])(
+    "$status 구독의 $feature 기능은 정의된 기간 한도 $limit 를 적용한다",
+    async ({ status, feature, limit }) => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: status });
+      // When
+      const entitlement = await fixture.service.getFeatureLimit(fixture.userId, feature);
+      // Then
+      expect(entitlement).toEqual({
+        dailyLimit: limit,
+        isAdmin: false,
+        subscriptionStatus: status,
+      });
+    },
+  );
 
-      // Then - 캐시 서비스 미호출 (TOCTOU 방지)
-      expect(cacheService.wrapSubscription).not.toHaveBeenCalled();
+  it.each([{ resource: Resource.FRIEND }, { resource: Resource.CATEGORY }])(
+    "ADMIN의 $resource 보유량은 무제한이다",
+    async ({ resource }) => {
+      // Given
+      const fixture = createEntitlementFixture({ role: "ADMIN" });
+      // When
+      const entitlement = await fixture.service.getResourceLimit(fixture.userId, resource);
+      // Then
+      expect(entitlement).toEqual({ maxCount: null, isAdmin: true, subscriptionStatus: "FREE" });
+    },
+  );
+
+  it.each([
+    { status: "ACTIVE", resource: Resource.FRIEND, limit: null },
+    { status: "ACTIVE", resource: Resource.CATEGORY, limit: TODO_CATEGORY_LIMITS.ACTIVE_MAX_COUNT },
+    { status: "FREE", resource: Resource.FRIEND, limit: FOLLOW_LIMITS.FREE_MAX_FRIENDS },
+    { status: "FREE", resource: Resource.CATEGORY, limit: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT },
+    { status: "CANCELLED", resource: Resource.FRIEND, limit: FOLLOW_LIMITS.FREE_MAX_FRIENDS },
+  ])(
+    "$status 사용자의 $resource 보유량은 한도 $limit 를 적용한다",
+    async ({ status, resource, limit }) => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: status });
+      // When
+      const entitlement = await fixture.service.getResourceLimit(fixture.userId, resource);
+      // Then
+      expect(entitlement).toEqual({ maxCount: limit, isAdmin: false, subscriptionStatus: status });
+    },
+  );
+
+  it("읽기 캐시는 저장 상태가 없어져도 warm snapshot을 반환하고 무효화 후 다시 조회한다", async () => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+    await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+    fixture.database.users.delete(fixture.userId);
+    // When
+    expect(await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE)).toMatchObject({
+      dailyLimit: null,
+      subscriptionStatus: "ACTIVE",
+    });
+    await fixture.cache.invalidateSubscription(fixture.userId);
+    // Then
+    expect(await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE)).toEqual({
+      dailyLimit: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT,
+      isAdmin: false,
+      subscriptionStatus: "FREE",
     });
   });
 
-  describe("getResourceLimit", () => {
-    describe("ADMIN 역할", () => {
-      it.each([
-        ["CATEGORY", Resource.CATEGORY],
-        ["FRIEND", Resource.FRIEND],
-      ] as const)("ADMIN은 %s 리소스가 무제한이다", async (_name, resource) => {
-        // Given
-        (cacheService.wrapSubscription as Mock).mockResolvedValue({
-          status: "FREE",
-          isAdmin: true,
-        });
-
-        // When
-        const result = await service.getResourceLimit(userId, resource);
-
-        // Then
-        expect(result).toEqual<ResourceEntitlement>({
-          maxCount: null,
-          isAdmin: true,
-          subscriptionStatus: "FREE",
-        });
+  it.each([
+    { status: "FREE", expected: AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT },
+    { status: "ACTIVE", expected: null },
+  ])(
+    "쓰기 판정은 warm cache와 달라진 최신 $status 상태를 사용한다",
+    async ({ status, expected }) => {
+      // Given
+      const fixture = createEntitlementFixture({
+        subscriptionStatus: status === "FREE" ? "ACTIVE" : "FREE",
       });
-    });
-
-    describe("ACTIVE 구독", () => {
-      it("ACTIVE 구독 + FRIEND 리소스는 무제한이다", async () => {
-        // Given
-        (cacheService.wrapSubscription as Mock).mockResolvedValue({
-          status: "ACTIVE",
-          isAdmin: false,
-        });
-
-        // When
-        const result = await service.getResourceLimit(userId, Resource.FRIEND);
-
-        // Then
-        expect(result).toEqual<ResourceEntitlement>({
-          maxCount: null,
-          isAdmin: false,
-          subscriptionStatus: "ACTIVE",
-        });
-      });
-
-      it("ACTIVE 구독 + CATEGORY 리소스는 30개 제한이다", async () => {
-        // Given
-        (cacheService.wrapSubscription as Mock).mockResolvedValue({
-          status: "ACTIVE",
-          isAdmin: false,
-        });
-
-        // When
-        const result = await service.getResourceLimit(userId, Resource.CATEGORY);
-
-        // Then
-        expect(result).toEqual<ResourceEntitlement>({
-          maxCount: TODO_CATEGORY_LIMITS.ACTIVE_MAX_COUNT,
-          isAdmin: false,
-          subscriptionStatus: "ACTIVE",
-        });
-      });
-    });
-
-    describe("비프리미엄 구독 (제한 적용)", () => {
-      it.each([
-        ["FREE", "CATEGORY", Resource.CATEGORY, TODO_CATEGORY_LIMITS.FREE_MAX_COUNT],
-        ["FREE", "FRIEND", Resource.FRIEND, FOLLOW_LIMITS.FREE_MAX_FRIENDS],
-        ["CANCELLED", "FRIEND", Resource.FRIEND, FOLLOW_LIMITS.FREE_MAX_FRIENDS],
-      ] as const)(
-        "%s 구독 + %s 리소스는 최대 %d개 제한이다",
-        async (status, _name, resource, expectedLimit) => {
-          // Given
-          (cacheService.wrapSubscription as Mock).mockResolvedValue({
-            status,
-            isAdmin: false,
-          });
-
-          // When
-          const result = await service.getResourceLimit(userId, resource);
-
-          // Then
-          expect(result).toEqual<ResourceEntitlement>({
-            maxCount: expectedLimit,
-            isAdmin: false,
-            subscriptionStatus: status,
-          });
-        },
+      await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: status });
+      // When
+      const entitlement = await fixture.service.getFeatureLimitInTx(
+        fixture.userId,
+        Feature.AI_PARSE,
       );
+      // Then
+      expect(entitlement).toEqual({
+        dailyLimit: expected,
+        isAdmin: false,
+        subscriptionStatus: status,
+      });
+    },
+  );
+
+  it("카테고리 쓰기 한도는 유료 cache가 남아 있어도 최신 무료 상태를 사용한다", async () => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+    await fixture.service.getResourceLimit(fixture.userId, Resource.CATEGORY);
+    fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: "FREE" });
+    // When
+    const entitlement = await fixture.service.getResourceLimitInTx(
+      fixture.userId,
+      Resource.CATEGORY,
+    );
+    // Then
+    expect(entitlement).toEqual({
+      maxCount: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
+      isAdmin: false,
+      subscriptionStatus: "FREE",
     });
   });
 
-  describe("getResourceLimitInTx", () => {
-    it("CATEGORY 한도는 활성 tx만 조회하고 base DB와 cache를 우회한다", async () => {
-      // Given - tx/base/cache가 서로 다른 클라이언트
-      database.findUserState.mockResolvedValue({ role: "USER", subscriptionStatus: "FREE" });
-      (cacheService.wrapSubscription as Mock).mockRejectedValue(
-        new Error("cache path must not be used"),
-      );
-
-      // When
-      const result = await service.getResourceLimitInTx(userId, Resource.CATEGORY);
-
-      // Then - tx 결과로 FREE category limit을 계산
-      expect(result).toEqual<ResourceEntitlement>({
-        maxCount: TODO_CATEGORY_LIMITS.FREE_MAX_COUNT,
-        isAdmin: false,
-        subscriptionStatus: "FREE",
-      });
-      expect(database.findUserState).toHaveBeenCalledWith(userId);
-      expect(cacheService.wrapSubscription).not.toHaveBeenCalled();
+  it("존재하지 않는 사용자는 읽기와 쓰기 모두 무료 기본 한도를 적용한다", async () => {
+    // Given
+    const fixture = createEntitlementFixture({ exists: false });
+    // When
+    const cached = await fixture.service.getFeatureLimit(fixture.userId, Feature.CHEER);
+    const fresh = await fixture.service.getFeatureLimitInTx(fixture.userId, Feature.CHEER);
+    // Then
+    expect(cached).toEqual({
+      dailyLimit: CHEER_LIMITS.FREE_DAILY_LIMIT,
+      isAdmin: false,
+      subscriptionStatus: "FREE",
     });
+    expect(fresh).toEqual(cached);
   });
 
-  describe("hasPremiumAccess", () => {
-    it("ADMIN 역할은 true를 반환한다", async () => {
-      // Given
-      (cacheService.wrapSubscription as Mock).mockResolvedValue({
-        status: "FREE",
-        isAdmin: true,
-      });
+  it("알 수 없는 구독 상태는 무료 기본 한도로 안전하게 판정한다", async () => {
+    // Given
+    const fixture = createEntitlementFixture({ subscriptionStatus: "UNRECOGNIZED" });
+    // When
+    const feature = await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+    const resource = await fixture.service.getResourceLimit(fixture.userId, Resource.CATEGORY);
+    // Then
+    expect(feature.dailyLimit).toBe(AI_PARSE_LIMITS.FREE_MONTHLY_LIMIT);
+    expect(resource.maxCount).toBe(TODO_CATEGORY_LIMITS.FREE_MAX_COUNT);
+    expect(await fixture.service.hasPremiumAccess(fixture.userId)).toBe(false);
+  });
 
-      // When
-      const result = await service.hasPremiumAccess(userId);
+  it.each([
+    { role: "ADMIN", status: "FREE", allowed: true },
+    { role: "USER", status: "ACTIVE", allowed: true },
+    { role: "USER", status: "FREE", allowed: false },
+    { role: "USER", status: "EXPIRED", allowed: false },
+    { role: "USER", status: "CANCELLED", allowed: false },
+  ])("$role / $status 사용자의 premium 접근은 $allowed 이다", async ({ role, status, allowed }) => {
+    // Given
+    const fixture = createEntitlementFixture({ role, subscriptionStatus: status });
+    // When
+    const result = await fixture.service.hasPremiumAccess(fixture.userId);
+    // Then
+    expect(result).toBe(allowed);
+  });
 
-      // Then
-      expect(result).toBe(true);
-    });
-
-    it("ACTIVE 구독은 true를 반환한다", async () => {
-      // Given
-      (cacheService.wrapSubscription as Mock).mockResolvedValue({
-        status: "ACTIVE",
-        isAdmin: false,
-      });
-
-      // When
-      const result = await service.hasPremiumAccess(userId);
-
-      // Then
-      expect(result).toBe(true);
-    });
-
-    it("FREE 구독은 false를 반환한다", async () => {
-      // Given
-      (cacheService.wrapSubscription as Mock).mockResolvedValue({
-        status: "FREE",
-        isAdmin: false,
-      });
-
-      // When
-      const result = await service.hasPremiumAccess(userId);
-
-      // Then
-      expect(result).toBe(false);
-    });
-
-    it("EXPIRED 구독은 false를 반환한다", async () => {
-      // Given
-      (cacheService.wrapSubscription as Mock).mockResolvedValue({
-        status: "EXPIRED",
-        isAdmin: false,
-      });
-
-      // When
-      const result = await service.hasPremiumAccess(userId);
-
-      // Then
-      expect(result).toBe(false);
-    });
-
-    it("CANCELLED 구독은 false를 반환한다", async () => {
-      // Given
-      (cacheService.wrapSubscription as Mock).mockResolvedValue({
-        status: "CANCELLED",
-        isAdmin: false,
-      });
-
-      // When
-      const result = await service.hasPremiumAccess(userId);
-
-      // Then
-      expect(result).toBe(false);
-    });
+  it.each([
+    { limit: null, used: 1_000, expected: null },
+    { limit: 5, used: 7, expected: 0 },
+    { limit: 5, used: 2, expected: 3 },
+  ])("한도 $limit 와 사용량 $used 의 남은 횟수는 $expected 이다", ({ limit, used, expected }) => {
+    // Given
+    const fixture = createEntitlementFixture();
+    // When
+    const remaining = fixture.service.calculateRemaining(limit, used);
+    // Then
+    expect(remaining).toBe(expected);
   });
 });

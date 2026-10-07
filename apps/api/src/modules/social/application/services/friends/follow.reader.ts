@@ -1,5 +1,5 @@
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { Resource } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { Resource } from "#api/modules/access/access-entitlement.public";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -28,7 +28,7 @@ interface FollowReaderDependencies {
   readonly followRepository: FollowRepositoryPort;
   readonly cache: FollowCachePort;
   readonly paginationService: PaginationService;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimit">;
   readonly logger: ApplicationLogger;
 }
 
@@ -44,7 +44,7 @@ export class FollowReader {
     userId: string,
   ): Promise<{ friendCount: number; maxCount: number | null }> {
     const [entitlement, friendCount] = await Promise.all([
-      this.#dependencies.entitlementService.getResourceLimit(userId, Resource.FRIEND),
+      this.#dependencies.entitlementReader.getResourceLimit(userId, Resource.FRIEND),
       this.countFriends(userId),
     ]);
     return { friendCount, maxCount: entitlement.maxCount };

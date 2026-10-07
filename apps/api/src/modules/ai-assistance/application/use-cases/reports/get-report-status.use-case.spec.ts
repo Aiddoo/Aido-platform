@@ -2,7 +2,6 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { AiReport } from "../../../domain/entities/reports/ai-report.entity.js";
@@ -37,7 +36,9 @@ const makeReport = (type: ReportType): AiReport =>
 describe("GetReportStatus", () => {
   let useCase: GetReportStatus;
   let mockRepository: Mocked<AiReportRepositoryPort>;
-  let mockEntitlement: Mocked<EntitlementService>;
+  let mockEntitlement: Mocked<
+    ConstructorParameters<typeof GetReportStatus>[0]["entitlementReader"]
+  >;
 
   const tz = "Asia/Seoul";
 
@@ -48,7 +49,7 @@ describe("GetReportStatus", () => {
     const unit = new GetReportStatus(getReportStatusDependencies);
     useCase = unit;
     mockRepository = getReportStatusDependencies.aiReportRepository;
-    mockEntitlement = getReportStatusDependencies.entitlementService;
+    mockEntitlement = getReportStatusDependencies.entitlementReader;
     mockEntitlement.hasPremiumAccess.mockResolvedValue(true);
     mockRepository.findLatest.mockResolvedValue(null);
   });

@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { FollowReader } from "#api/modules/social/social-friends.public";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import { UNIT_OF_WORK, MUTATION_LOCK } from "#api/shared/application/ports/index";
@@ -89,16 +89,16 @@ export const getNudgeThanksPreviewProvider: FactoryProvider<GetNudgeThanksPrevie
 
 export const nudgeReaderProvider: FactoryProvider<NudgeReader> = {
   provide: NudgeReader,
-  inject: [NUDGE_REPOSITORY, PaginationService, EntitlementService],
+  inject: [NUDGE_REPOSITORY, PaginationService, ENTITLEMENT_READER],
   useFactory: (
     nudgeRepository: ConstructorParameters<typeof NudgeReader>[0]["nudgeRepository"],
     paginationService: ConstructorParameters<typeof NudgeReader>[0]["paginationService"],
-    entitlementService: ConstructorParameters<typeof NudgeReader>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof NudgeReader>[0]["entitlementReader"],
   ) =>
     new NudgeReader({
       nudgeRepository,
       paginationService,
-      entitlementService,
+      entitlementReader,
       logger: new Logger(NudgeReader.name),
     }),
 };

@@ -1,24 +1,40 @@
 import contractJson from "../../generated/prisma8/contract.json" with { type: "json" };
 
-/** Prisma 8 drivers normalize PostgreSQL failures with kind/sqlState. */
-export function databaseSqlState(error: unknown): string | undefined {
-  if (!(error instanceof Error)) return undefined;
-  if (
-    "kind" in error &&
-    error.kind === "sql_query" &&
-    "sqlState" in error &&
-    typeof error.sqlState === "string"
-  ) {
-    return error.sqlState;
+interface DatabaseErrorMetadata {
+  readonly sqlState: string;
+  readonly constraint: string | undefined;
+}
+
+function resolveDatabaseError(error: unknown): DatabaseErrorMetadata | undefined {
+  const visited = new Set<Error>();
+  let current = error;
+  while (current instanceof Error && !visited.has(current)) {
+    visited.add(current);
+    if (
+      "kind" in current &&
+      current.kind === "sql_query" &&
+      "sqlState" in current &&
+      typeof current.sqlState === "string"
+    ) {
+      return {
+        sqlState: current.sqlState,
+        constraint:
+          "constraint" in current && typeof current.constraint === "string"
+            ? current.constraint
+            : undefined,
+      };
+    }
+    current = current.cause;
   }
   return undefined;
 }
 
+export function databaseSqlState(error: unknown): string | undefined {
+  return resolveDatabaseError(error)?.sqlState;
+}
+
 export function databaseConstraint(error: unknown): string | undefined {
-  if (databaseSqlState(error) === undefined || !(error instanceof Error)) return undefined;
-  return "constraint" in error && typeof error.constraint === "string"
-    ? error.constraint
-    : undefined;
+  return resolveDatabaseError(error)?.constraint;
 }
 
 /** Prisma 8 singleton mutations return null; repository contracts still reject missing records. */
@@ -54,8 +70,9 @@ export function isTransactionWriteConflict(error: unknown): boolean {
 
 /** PostgreSQL constraint 이름을 계약의 필드 목록으로 변환한다. */
 export function uniqueConstraintTargets(error: unknown): string[] | undefined {
-  const name = databaseConstraint(error);
-  if (databaseSqlState(error) === "23505" && name !== undefined) {
+  const metadata = resolveDatabaseError(error);
+  const name = metadata?.constraint;
+  if (metadata?.sqlState === "23505" && name !== undefined) {
     for (const table of Object.values(contractJson.storage.namespaces.public.entries.table)) {
       if (!("uniques" in table)) continue;
       for (const constraint of table.uniques) {

@@ -18,7 +18,7 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
 - [x] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 완료([PR #903](https://github.com/Aiddoo/Aido-platform/pull/903)), 04e 설정·동의 검증 완료([Issue #904](https://github.com/Aiddoo/Aido-platform/issues/904))
 - [x] 05 Billing: Webhook·구독 상태 전이·성공 원장·권한 정합성 검증([Issue #906](https://github.com/Aiddoo/Aido-platform/issues/906))
-- [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
+- [x] 06 Access: Entitlement 정책·AI Quota 예약·보상·공개 capability 검증([Issue #908](https://github.com/Aiddoo/Aido-platform/issues/908))
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
 - [ ] 08 Social: 친구·응원·넛지
 - [ ] 09 Notes: 메모와 전환
@@ -446,3 +446,65 @@ fresh User와 최대 유효 만료일을 조회하는 bounded SELECT 2개를 추
 운영 latency·처리량·공통 cache in-flight fill race·전체 이전 이미지 rollback은 검증 범위가 아니다.
 새로운 실행 script·패키지·Action job은 추가하지 않았다. 상위 6/18 검증 완료,
 06–17의 12단계가 남았다. commit/Stack PR 게시를 진행하며 운영 배포·merge는 하지 않았다.
+
+## 06 Access 권한·AI Quota 정합성
+
+[Issue #908](https://github.com/Aiddoo/Aido-platform/issues/908)의 구현이다.
+Entitlement 정책과 AI Quota를 Access가 소유하고, AI는 consumer-owned `read/reserve/release`
+capability를 사용한다. Resource 소유권·공개 범위·친구 관계는 각 Domain이 판단한다.
+일반 ABAC framework나 상태 없는 조회 Aggregate를 추가하지 않았다.
+
+| 실제 PostgreSQL Before                                    | After                                                         |
+| --------------------------------------------------------- | ------------------------------------------------------------- |
+| 사용량 4/한도 5에서 동시 요청 2개가 모두 성공해 count 6   | User 잠금 뒤 fresh 상태를 판정해 1개 성공, count 5            |
+| 새달 동시 요청 2개가 초기화 값을 덮어 count 1             | 초기화·예약을 직렬화해 count 2                                |
+| 이전 달 요청의 늦은 실패가 새달 성공 count 1을 0으로 차감 | 예약 period와 현재 period가 다르면 보상하지 않아 count 1 유지 |
+
+같은 세 Before는 기존 Meter·Repository·CLS와 실제 행 잠금 대기에서 재현했다
+(3 tests 실패, 6.71초). 수정 후 신규 실제 PG 10개는 seed 606에서 8.53초,
+seed 607·America/Los_Angeles에서 8.16초에 통과했다. 외부 AI HTTP는 호출하지 않았다.
+fresh ADMIN/구독 한도, User별 잠금 독립성, outer UoW rollback, 삭제된 User·0 사용량도 검증했다.
+
+Quota Aggregate는 월별 사용량·예약·보상·Date 방어 복사를 소유한다. Repository는 한 번의
+SELECT로 role/status/count/resetAt를 읽고 native ORM `updateAndCount`로 저장한다.
+기존 증감 counter raw SQL 두 곳을 제거했다. canonical User lock과 fresh 조회 비용이 있으므로
+이 변경을 쿼리 수 절감이나 운영 성능 향상으로 보고하지 않는다. AI network는 transaction 밖에 있다.
+
+예약 실패는 기존 오류 우선순위를 보존한다. category 조회와 prompt 생성 실패도 사용량을 보상하며,
+category 오류를 AI 출력 오류로 변환하지 않는다. 공급자·출력 오류는 기존 1301/1302를 유지한다.
+보상 실패는 구조화 로그로 남기고 원오류를 유지한다. 성공 요청은 기존처럼 사용량을 유지한다.
+period ticket은 durable 예약 원장·중복 release 방지·worker crash 복구·exactly-once를 보장하지 않는다.
+
+KST 3/1·5/1 00:00의 다음 리셋이 현재 월초를 반환하던 오류도 수정했다. 월 시작을 KST에서
+계산한 뒤 다음 월로 이동한다. 기존 period 표현(예: `2026-M04`)과 REST `used/limit/resetsAt`,
+AI 응답 envelope·오류 코드·key·TTL·한도를 유지한다. 새 HTTP 경쟁·실패·월경계·stale entitlement
+6 tests는 seed 50608에서 7.62초에 통과했다.
+
+타 Context는 공개 Reader token과 명시적인 AccessModule import로 연결한다. 전역 Module,
+구현 Service deep import, AI Meter·usage Repository·period helper·표시용 VO 및 전달-only
+Controller Unit 검증을 제거하고 fixture/Stub·실제 PG·HTTP 검증으로 대체했다.
+AI parsing 로그 key를 한곳에 모으고 원문 제목·provider 메시지를 운영 로그에서 제거했다.
+
+전체 Integration에서 Prisma 8 SDK가 commit SQL 오류를 RuntimeError의 `cause`로 감싸는
+경우 기존 판별기가 SQLSTATE 40001을 놓치는 버그를 발견했다. Error cause만 순환 안전하게
+탐색하고 SQLSTATE·constraint를 같은 normalized node에서 읽도록 수정했다. retry 횟수와
+timeout은 변경하지 않았다. 실제 Serializable commit 충돌 1개가 seed 50618에서 통과했다
+(17.03초). 오류 helper·HTTP filter 45개와 기존 push rate limiter 실제 PG 3개도 통과했다.
+
+첫 전체 회귀 실패도 기록한다. Reader token을 등록하지 않은 테스트 harness는 실제 동시성
+14개 재실행으로 수정했다. Fake AI는 강제 타입 변환 대신 요청 schema로 응답을 검증한다.
+기존 메모 fixture 4개 항목의 필수 categoryId 누락을 보완한 후 기존 request category fallback과
+assertion을 유지한 AI HTTP 36개가 통과했다(57.38초). 공개 schema·구 앱 fixture·OpenAPI
+snapshot을 완화하지 않았다.
+
+최종 전체 검증은 shuffle seed 50619로 통과했다.
+
+- Unit: 482 files / 2,950 tests, 23.19초.
+- Integration: 50 files / 482 tests, 211.52초. 기존 Stub spec도 포함하며 신규 경쟁 검증은 실제 PG다.
+- E2E: 36 files / 499 tests, 316.87초. 구 앱 fixture와 OpenAPI gate를 포함한다.
+- Workspace lint·format·typecheck 통과. commit hook에서 build를 검증한 뒤 Stack PR를 게시한다.
+
+실행 시간은 테스트 조건의 기록이며 운영 성능 비교가 아니다. 상위 7/18 구현·검증 완료,
+07–17의 11단계가 남았다. merge·운영 배포는 하지 않았다.
+신규 schema·migration·실행 script·패키지·Action job은 없다. 공통 cache in-flight fill race,
+운영 latency·CPU/RSS·billed Actions 절감률은 검증 범위가 아니다.

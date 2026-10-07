@@ -1,7 +1,8 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
 import sql from "sql-template-tag";
 
-import { EntitlementService } from "#api/modules/access/access-entitlement.public";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import {
   SUBSCRIPTION_EVENT_NOTIFIER,
   type SubscriptionEventNotifierPort,
@@ -56,7 +57,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   let context: E2eTestContext;
   let repository: SubscriptionRepositoryPort;
   let useCase: HandleWebhookEvent;
-  let entitlement: EntitlementService;
+  let entitlement: EntitlementReaderPort;
   let receipts: SubscriptionEventReceiptRepositoryPort;
   let unitOfWork: UnitOfWorkPort;
   let userId: string;
@@ -72,7 +73,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     });
     repository = context.module.get(SUBSCRIPTION_REPOSITORY);
     useCase = context.module.get(HandleWebhookEvent);
-    entitlement = context.module.get(EntitlementService);
+    entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
     receipts = context.module.get(SUBSCRIPTION_EVENT_RECEIPT_REPOSITORY);
     unitOfWork = context.module.get(UNIT_OF_WORK);
   });

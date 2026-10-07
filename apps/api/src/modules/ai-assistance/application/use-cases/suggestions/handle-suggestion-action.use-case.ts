@@ -3,7 +3,7 @@ import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
 import { z } from "zod";
 
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
@@ -40,7 +40,7 @@ export interface SuggestionActionResult {
 interface HandleSuggestionActionDependencies {
   readonly repository: AiSuggestionRepositoryPort;
   readonly recurringTodoCreator: RecurringTodoCreatorPort;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
   readonly logger: ApplicationLogger;
 }
 
@@ -146,7 +146,7 @@ export class HandleSuggestionAction {
   }
 
   async #enforcePremium(userId: string): Promise<void> {
-    const hasPremium = await this.#dependencies.entitlementService.hasPremiumAccess(userId);
+    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
     if (!hasPremium) {
       this.#dependencies.logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
       throw new ApplicationException(ErrorCode.AI_1309);

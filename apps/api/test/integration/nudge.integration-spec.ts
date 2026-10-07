@@ -12,7 +12,7 @@ import { Test, type TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
   NotificationPublisher,
@@ -83,7 +83,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
   const mockFollowReader = { isMutualFriend: vi.fn() };
   const mockNotificationQueueService = { enqueueNudgeSent: vi.fn() };
-  const mockEntitlementService = {
+  const mockEntitlementReaderPort = {
     getFeatureLimit: vi.fn(),
     getFeatureLimitInTx: vi.fn(),
     calculateRemaining: vi.fn(),
@@ -143,7 +143,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
           provide: NotificationQueueService,
           useValue: mockNotificationQueueService,
         },
-        { provide: EntitlementService, useValue: mockEntitlementService },
+        { provide: ENTITLEMENT_READER, useValue: mockEntitlementReaderPort },
       ],
     }).compile();
 
@@ -162,17 +162,17 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
     vi.clearAllMocks();
     NudgeBuilder.resetIdCounter();
     TodoBuilder.resetIdCounter();
-    mockEntitlementService.getFeatureLimit.mockResolvedValue({
+    mockEntitlementReaderPort.getFeatureLimit.mockResolvedValue({
       dailyLimit: 3,
       isAdmin: false,
       subscriptionStatus: "FREE",
     });
-    mockEntitlementService.getFeatureLimitInTx.mockResolvedValue({
+    mockEntitlementReaderPort.getFeatureLimitInTx.mockResolvedValue({
       dailyLimit: 3,
       isAdmin: false,
       subscriptionStatus: "FREE",
     });
-    mockEntitlementService.calculateRemaining.mockImplementation(
+    mockEntitlementReaderPort.calculateRemaining.mockImplementation(
       (dailyLimit: number | null, used: number) =>
         dailyLimit === null ? null : Math.max(0, dailyLimit - used),
     );
@@ -371,7 +371,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
     });
 
     it("ACTIVE 사용자는 무제한", async () => {
-      mockEntitlementService.getFeatureLimit.mockResolvedValue({
+      mockEntitlementReaderPort.getFeatureLimit.mockResolvedValue({
         dailyLimit: null,
         isAdmin: false,
         subscriptionStatus: "ACTIVE",

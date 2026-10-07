@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { Resource } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { Resource } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -33,7 +33,7 @@ interface SendFriendRequestDependencies {
   readonly followRepository: FollowRepositoryPort;
   readonly notifier: FollowNotifierPort;
   readonly unitOfWork: UnitOfWorkPort;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimit">;
   readonly reader: FollowReader;
   readonly effects: FriendshipEffects;
   readonly logger: ApplicationLogger;
@@ -56,7 +56,7 @@ export class SendFriendRequest {
 
     // 2. 리소스 한도 체크
     const [entitlement, friendCount] = await Promise.all([
-      this.#dependencies.entitlementService.getResourceLimit(userId, Resource.FRIEND),
+      this.#dependencies.entitlementReader.getResourceLimit(userId, Resource.FRIEND),
       this.#dependencies.reader.countFriends(userId),
     ]);
     if (entitlement.maxCount !== null && friendCount >= entitlement.maxCount) {

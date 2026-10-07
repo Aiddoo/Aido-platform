@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
 import { FollowModule } from "#api/modules/social/social-friends.module";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -42,7 +43,7 @@ import {
  * 기존 전송 알림은 커밋 후 큐에 등록하며, 답장·감사는 같은 UoW에서 알림과 push outbox를 기록한다.
  */
 @Module({
-  imports: [FollowModule, NotificationModule],
+  imports: [AccessModule, FollowModule, NotificationModule],
   controllers: [NudgeController, NudgeInteractionController],
   providers: [
     {

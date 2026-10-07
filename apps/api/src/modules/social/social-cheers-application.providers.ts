@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { FollowReader } from "#api/modules/social/social-friends.public";
 import { PaginationService } from "#api/shared/application/pagination/index";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
@@ -15,16 +15,16 @@ import { SendCheer } from "./application/use-cases/cheers/send-cheer.use-case.js
 
 export const cheerReaderProvider: FactoryProvider<CheerReader> = {
   provide: CheerReader,
-  inject: [CHEER_REPOSITORY, PaginationService, EntitlementService],
+  inject: [CHEER_REPOSITORY, PaginationService, ENTITLEMENT_READER],
   useFactory: (
     cheerRepository: ConstructorParameters<typeof CheerReader>[0]["cheerRepository"],
     paginationService: ConstructorParameters<typeof CheerReader>[0]["paginationService"],
-    entitlementService: ConstructorParameters<typeof CheerReader>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof CheerReader>[0]["entitlementReader"],
   ) =>
     new CheerReader({
       cheerRepository,
       paginationService,
-      entitlementService,
+      entitlementReader,
       logger: new Logger(CheerReader.name),
     }),
 };

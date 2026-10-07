@@ -2,11 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { CacheService } from "#api/platform/cache/cache.service";
 
-import type { EntitlementSubscriptionInvalidatorPort } from "../../../application/ports/entitlement/subscription-cache-invalidator.port.js";
 import type {
   CachedSubscriptionState,
   EntitlementCachePort,
-} from "../../../application/services/entitlement/entitlement-state.port.js";
+} from "../../../application/ports/entitlement/entitlement-cache.port.js";
+import type { EntitlementSubscriptionInvalidatorPort } from "../../../application/ports/entitlement/subscription-cache-invalidator.port.js";
 import {
   ENTITLEMENT_CACHE_TTL_MS,
   EntitlementCacheKey,

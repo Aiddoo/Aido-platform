@@ -3,7 +3,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  * TodoCategory 모듈 통합 테스트 (Mock DB)
  *
  * endpoint use-case·TodoCategoryReader가
- * PrismaTodoCategoryRepository(Mock DB)·캐시 어댑터·EntitlementService와 함께 DI로 조립되고
+ * PrismaTodoCategoryRepository(Mock DB)·캐시 어댑터·EntitlementReaderPort와 함께 DI로 조립되고
  * 동작하는지 검증한다. HTTP 계약은 e2e가 담당하며 여기서는 ApplicationException 발생만 확인한다.
  *
  * 실행: pnpm --filter @aido/server test:integration -- --testPathPattern=todo-category.integration
@@ -11,7 +11,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { TODO_CATEGORY_CACHE } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
 import { TODO_CATEGORY_LIMIT_READER } from "#api/modules/planning/application/ports/categories/todo-category-limit-reader.port";
 import { TODO_CATEGORY_REPOSITORY } from "#api/modules/planning/application/ports/categories/todo-category.repository.port";
@@ -105,7 +105,7 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
         { provide: UNIT_OF_WORK, useValue: mockUnitOfWork },
         { provide: TransactionHost, useValue: { tx: nativeContext } },
         {
-          provide: EntitlementService,
+          provide: ENTITLEMENT_READER,
           useValue: {
             getResourceLimit: vi.fn().mockResolvedValue({
               maxCount: null,

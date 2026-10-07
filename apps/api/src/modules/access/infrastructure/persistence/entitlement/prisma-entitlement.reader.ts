@@ -5,7 +5,7 @@ import type { Prisma8TransactionalAdapter } from "../../../../../platform/databa
 import type {
   EntitlementDatabasePort,
   EntitlementUserState,
-} from "../../../application/services/entitlement/entitlement-state.port.js";
+} from "../../../application/ports/entitlement/entitlement-state.port.js";
 
 /** Authorization reads participate in the caller's CLS transaction. */
 @Injectable()

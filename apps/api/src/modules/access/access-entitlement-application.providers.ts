@@ -1,9 +1,7 @@
 import { type FactoryProvider } from "@nestjs/common";
 
-import {
-  ENTITLEMENT_CACHE,
-  ENTITLEMENT_DATABASE,
-} from "./application/services/entitlement/entitlement-state.port.js";
+import { ENTITLEMENT_CACHE } from "./application/ports/entitlement/entitlement-cache.port.js";
+import { ENTITLEMENT_DATABASE } from "./application/ports/entitlement/entitlement-state.port.js";
 import { EntitlementService } from "./application/services/entitlement/entitlement.service.js";
 
 export const entitlementServiceProvider: FactoryProvider<EntitlementService> = {

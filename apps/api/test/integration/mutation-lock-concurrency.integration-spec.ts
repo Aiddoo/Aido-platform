@@ -11,10 +11,11 @@ import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 
 import {
-  ENTITLEMENT_CACHE,
-  ENTITLEMENT_DATABASE,
-} from "#api/modules/access/application/services/entitlement/entitlement-state.port";
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+  ENTITLEMENT_READER,
+  type EntitlementReaderPort,
+} from "#api/modules/access/access-entitlement.public";
+import { ENTITLEMENT_CACHE } from "#api/modules/access/application/ports/entitlement/entitlement-cache.port";
+import { ENTITLEMENT_DATABASE } from "#api/modules/access/application/ports/entitlement/entitlement-state.port";
 import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
 import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/prisma-entitlement.reader";
 import type { TodoCategoryCachePort } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
@@ -631,7 +632,9 @@ function createNudgeLimitReader(limit: number | null): NudgeLimitReaderPort {
   return { getDailyLimitInTx: async () => limit };
 }
 
-function createReaderEntitlement(dailyLimit: number): EntitlementService {
+function createReaderEntitlement(
+  dailyLimit: number,
+): Pick<EntitlementReaderPort, "getFeatureLimit" | "calculateRemaining"> {
   return {
     getFeatureLimit: async () => ({
       dailyLimit,
@@ -640,7 +643,7 @@ function createReaderEntitlement(dailyLimit: number): EntitlementService {
     }),
     calculateRemaining: (limit: number | null, used: number) =>
       limit === null ? null : Math.max(0, limit - used),
-  } as unknown as EntitlementService;
+  };
 }
 
 function createTodoCategoryCache(): TodoCategoryCachePort {
@@ -742,7 +745,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         ClsUnitOfWork,
         PrismaTodoCategoryRepository,
         PostgresMutationLockAdapter,
-        entitlementServiceProvider,
+        { ...entitlementServiceProvider, provide: ENTITLEMENT_READER },
         EntitlementCacheAdapter,
         { provide: ENTITLEMENT_CACHE, useExisting: EntitlementCacheAdapter },
         { provide: ENTITLEMENT_DATABASE, useClass: PrismaEntitlementReader },
@@ -1213,7 +1216,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const reader = new CheerReader({
       cheerRepository: new PrismaCheerRepository(txHost),
       paginationService: {} as PaginationService,
-      entitlementService: createReaderEntitlement(3),
+      entitlementReader: createReaderEntitlement(3),
       logger: mock<ConstructorParameters<typeof CheerReader>[0]["logger"]>(),
     });
 
@@ -1249,7 +1252,7 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
     const reader = new NudgeReader({
       nudgeRepository: new PrismaNudgeRepository(txHost),
       paginationService: {} as PaginationService,
-      entitlementService: createReaderEntitlement(3),
+      entitlementReader: createReaderEntitlement(3),
       logger: mock<ConstructorParameters<typeof NudgeReader>[0]["logger"]>(),
     });
 

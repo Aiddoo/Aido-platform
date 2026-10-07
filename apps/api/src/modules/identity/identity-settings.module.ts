@@ -1,9 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import {
-  EntitlementModule,
-  EntitlementService,
-} from "#api/modules/access/access-entitlement.public";
+import { AccessModule, ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { NotificationQueueModule } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
 
@@ -49,13 +46,13 @@ import { SettingsController } from "./presentation/controllers/settings/user-set
 import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/settings/timezone-self-heal.interceptor.js";
 
 @Module({
-  imports: [EntitlementModule, NotificationQueueModule, TimezoneReminderQueueModule],
+  imports: [AccessModule, NotificationQueueModule, TimezoneReminderQueueModule],
   controllers: [SettingsController],
   providers: [
     UserSettingsAccessAdapter,
     userPreferenceReaderProvider,
     { provide: USER_PREFERENCE_READER, useExisting: UserPreferenceReader },
-    { provide: PREFERENCE_ENTITLEMENT, useExisting: EntitlementService },
+    { provide: PREFERENCE_ENTITLEMENT, useExisting: ENTITLEMENT_READER },
     getPreferenceProvider,
     updatePreferenceProvider,
     getConsentProvider,

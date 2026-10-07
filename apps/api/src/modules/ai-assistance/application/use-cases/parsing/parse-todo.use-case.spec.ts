@@ -1,107 +1,131 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
 
-import { type AiProvider, AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
-import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
-import { AiUsageMeter } from "../../services/parsing/ai-usage-meter.service.js";
-import { type ParseTodoInput, ParseTodo } from "./parse-todo.use-case.js";
+import { AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
+import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 
-const OUTPUT = {
-  title: "팀 미팅",
-  startDate: "2026-04-12",
-  endDate: null,
-  scheduledTime: "15:00",
-  isAllDay: false,
-  isRecurring: false,
-  recurrence: null,
-  categoryId: 7,
-};
-
-describe("ParseTodo — 자연어 투두 파싱 use-case", () => {
-  let useCase: ParseTodo;
-  let aiProvider: Mocked<AiProvider>;
-  let categoryReader: Mocked<UserCategoryReaderPort>;
-  let usageMeter: Mocked<AiUsageMeter>;
-
-  const input = (categoryId?: number): ParseTodoInput => ({
-    text: "내일 3시 팀 미팅",
-    userId: "user-1",
+function createFixture() {
+  const fixture = createAiQuotaFixture();
+  fixture.aiProvider.setDefaultResponse({
+    title: "팀 미팅",
+    startDate: "2026-04-12",
+    categoryId: 7,
+  });
+  const useCase = new ParseTodo(fixture);
+  const input: ParseTodoInput = {
+    userId: fixture.userId,
+    text: "내일 팀 미팅",
     timezone: "Asia/Seoul",
-    categoryId,
+    categoryId: undefined,
     locale: "ko",
+  };
+  return { ...fixture, useCase, input };
+}
+
+describe("ParseTodo", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(AI_QUOTA_TIME);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
-  beforeEach(async () => {
-    const parseTodoDependencies = mockDeep<ConstructorParameters<typeof ParseTodo>[0]>({});
-    const unit = new ParseTodo(parseTodoDependencies);
-    useCase = unit;
-    aiProvider = parseTodoDependencies.aiProvider;
-    categoryReader = parseTodoDependencies.categoryReader;
-    usageMeter = parseTodoDependencies.usageMeter;
-
-    aiProvider.isAvailable.mockReturnValue(true);
-    categoryReader.findByUserId.mockResolvedValue([{ id: 7, name: "업무" }]);
-    aiProvider.generateStructured.mockResolvedValue({
-      output: OUTPUT,
-      model: "google:gemini-3.1-flash-lite",
-      usage: { input: 180, output: 45 },
+  it("성공한 요청은 사용량 한 회를 유지하고 데이터와 모델 정보를 반환한다", async () => {
+    // Given
+    const fixture = createFixture();
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(await fixture.quota.read(fixture.userId)).toMatchObject({ used: 1, limit: 5 });
+    expect(result.data).toMatchObject({ title: "팀 미팅", categoryId: 7 });
+    expect(result.meta).toMatchObject({
+      model: "fake:test-model",
+      processingTimeMs: 0,
+      tokenUsage: { input: 150, output: 50 },
     });
   });
 
-  it("가용하지 않으면 AI_1301을 던지고 사용량을 차감하지 않는다", async () => {
-    aiProvider.isAvailable.mockReturnValue(false);
-
-    await expect(useCase.execute(input())).rejects.toMatchObject({
-      errorCode: "AI_1301",
-    });
-    expect(usageMeter.checkAndIncrement).not.toHaveBeenCalled();
+  it("가용하지 않은 provider는 사용량을 예약하지 않고 AI_1301을 반환한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setAvailable(false);
+    // When
+    const execution = fixture.useCase.execute(fixture.input);
+    // Then
+    await expect(execution).rejects.toMatchObject({ errorCode: "AI_1301" });
+    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
-  it("성공 시 데이터/메타를 반환하고 사용량을 차감한다", async () => {
-    const result = await useCase.execute(input());
-
-    expect(usageMeter.checkAndIncrement).toHaveBeenCalledWith("user-1");
-    expect(result.data.title).toBe("팀 미팅");
-    expect(result.meta.model).toBe("google:gemini-3.1-flash-lite");
-    expect(result.meta.tokenUsage).toEqual({ input: 180, output: 45 });
+  it("한도가 소진된 요청은 provider를 호출하지 않고 AI_1303을 반환한다", async () => {
+    // Given
+    const fixture = createFixture();
+    for (let index = 0; index < 5; index += 1) await fixture.quota.reserve(fixture.userId);
+    // When
+    const execution = fixture.useCase.execute(fixture.input);
+    // Then
+    await expect(execution).rejects.toMatchObject({ errorCode: "AI_1303" });
+    expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
-  it("추론된 카테고리가 사용자 소유면 유지한다", async () => {
-    const result = await useCase.execute(input());
-    expect(result.data.categoryId).toBe(7);
-  });
-
-  it("추론된 카테고리가 사용자 소유가 아니면 undefined로 만든다", async () => {
-    aiProvider.generateStructured.mockResolvedValue({
-      output: { ...OUTPUT, categoryId: 999 },
-      model: "m",
-      usage: { input: 1, output: 1 },
-    });
-
-    const result = await useCase.execute(input());
+  it("소유하지 않은 추론 카테고리는 응답에서 제외한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setResponse({ categoryId: 999 });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
     expect(result.data.categoryId).toBeUndefined();
   });
 
-  it("명시적 categoryId가 추론값을 덮어쓴다", async () => {
-    const result = await useCase.execute(input(3));
+  it("명시한 카테고리는 추론된 카테고리보다 우선한다", async () => {
+    // Given
+    const fixture = createFixture();
+    // When
+    const result = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
+    // Then
     expect(result.data.categoryId).toBe(3);
   });
 
-  it("AI provider 호출 실패 시 사용량을 롤백하고 AI_1301을 던진다", async () => {
-    aiProvider.generateStructured.mockRejectedValue(new AiProviderCallError("boom", 500));
+  it.each([
+    { error: new AiProviderCallError("provider unavailable", 500), errorCode: "AI_1301" },
+    { error: new Error("invalid output"), errorCode: "AI_1302" },
+  ])(
+    "provider 오류는 $errorCode를 반환하고 예약 사용량을 보상한다",
+    async ({ error, errorCode }) => {
+      // Given
+      const fixture = createFixture();
+      fixture.aiProvider.setInvalidResponse(error);
+      // When
+      const execution = fixture.useCase.execute(fixture.input);
+      // Then
+      await expect(execution).rejects.toMatchObject({ errorCode });
+      expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    },
+  );
 
-    await expect(useCase.execute(input())).rejects.toMatchObject({
-      errorCode: "AI_1301",
-    });
-    expect(usageMeter.decrement).toHaveBeenCalledWith("user-1");
+  it("카테고리 조회 실패는 원래 오류를 유지하며 예약 사용량을 보상한다", async () => {
+    // Given
+    const fixture = createFixture();
+    const failure = new Error("category unavailable");
+    vi.spyOn(fixture.categoryReader, "findByUserId").mockRejectedValueOnce(failure);
+    // When
+    const execution = fixture.useCase.execute(fixture.input);
+    // Then
+    await expect(execution).rejects.toBe(failure);
+    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
-  it("그 외 오류 시 사용량을 롤백하고 AI_1302를 던진다", async () => {
-    aiProvider.generateStructured.mockRejectedValue(new Error("parse fail"));
-
-    await expect(useCase.execute(input())).rejects.toMatchObject({
-      errorCode: "AI_1302",
-    });
-    expect(usageMeter.decrement).toHaveBeenCalledWith("user-1");
+  it("prompt 생성 실패도 provider 호출 전에 예약 사용량을 보상한다", async () => {
+    // Given
+    const fixture = createFixture();
+    // When
+    const execution = fixture.useCase.execute({ ...fixture.input, timezone: "Invalid/Timezone" });
+    // Then
+    await expect(execution).rejects.toBeInstanceOf(RangeError);
+    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 });

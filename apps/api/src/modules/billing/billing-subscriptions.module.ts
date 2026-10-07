@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { EntitlementModule } from "#api/modules/access/access-entitlement.public";
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import {
   IdentityUserAccessModule,
   USER_MUTATION_LOCK,
@@ -24,12 +24,7 @@ import { PrismaSubscriptionRepository } from "./infrastructure/persistence/subsc
 import { SubscriptionController } from "./presentation/controllers/subscriptions/subscription.controller.js";
 
 @Module({
-  imports: [
-    IdentityUserAccessModule,
-    EntitlementModule,
-    AdminNotificationModule,
-    NotificationModule,
-  ],
+  imports: [IdentityUserAccessModule, AccessModule, AdminNotificationModule, NotificationModule],
   controllers: [SubscriptionController],
   providers: [
     handleWebhookEventProvider,

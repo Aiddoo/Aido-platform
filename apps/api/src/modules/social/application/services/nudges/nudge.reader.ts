@@ -1,5 +1,5 @@
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-import { Feature } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import { Feature } from "#api/modules/access/access-entitlement.public";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 import type { PaginationService } from "#api/shared/application/pagination/index";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -38,7 +38,7 @@ export interface GetNudgesParams {
 interface NudgeReaderDependencies {
   readonly nudgeRepository: NudgeRepositoryPort;
   readonly paginationService: PaginationService;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "calculateRemaining" | "getFeatureLimit">;
   readonly logger: ApplicationLogger;
 }
 
@@ -110,7 +110,7 @@ export class NudgeReader {
   async getLimitInfo(userId: string, tz: string = "UTC"): Promise<NudgeLimitInfo> {
     const capturedAt = now();
     const quotaWindow = dayWindowInTimezone(capturedAt, tz);
-    const { dailyLimit } = await this.#dependencies.entitlementService.getFeatureLimit(
+    const { dailyLimit } = await this.#dependencies.entitlementReader.getFeatureLimit(
       userId,
       Feature.NUDGE,
     );
@@ -124,7 +124,7 @@ export class NudgeReader {
     return {
       dailyLimit,
       used,
-      remaining: this.#dependencies.entitlementService.calculateRemaining(dailyLimit, used),
+      remaining: this.#dependencies.entitlementReader.calculateRemaining(dailyLimit, used),
     };
   }
 

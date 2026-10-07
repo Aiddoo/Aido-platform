@@ -1,7 +1,6 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -33,7 +32,7 @@ describe("SendFriendRequest", () => {
   let notifier: Mocked<FollowNotifierPort>;
   let reader: Mocked<FollowReader>;
   let effects: Mocked<FriendshipEffects>;
-  let entitlement: Mocked<EntitlementService>;
+  let entitlement: Mocked<ConstructorParameters<typeof SendFriendRequest>[0]["entitlementReader"]>;
   let uow: Mocked<UnitOfWorkPort>;
 
   beforeEach(async () => {
@@ -46,7 +45,7 @@ describe("SendFriendRequest", () => {
     notifier = sendFriendRequestDependencies.notifier;
     reader = sendFriendRequestDependencies.reader;
     effects = sendFriendRequestDependencies.effects;
-    entitlement = sendFriendRequestDependencies.entitlementService;
+    entitlement = sendFriendRequestDependencies.entitlementReader;
     uow = sendFriendRequestDependencies.unitOfWork;
 
     reader.countFriends.mockResolvedValue(0);

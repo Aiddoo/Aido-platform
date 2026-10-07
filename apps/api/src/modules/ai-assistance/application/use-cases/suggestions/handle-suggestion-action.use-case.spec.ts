@@ -1,7 +1,6 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
@@ -38,7 +37,9 @@ describe("HandleSuggestionAction", () => {
   let useCase: HandleSuggestionAction;
   let repo: Mocked<AiSuggestionRepositoryPort>;
   let creator: Mocked<RecurringTodoCreatorPort>;
-  let entitlement: Mocked<EntitlementService>;
+  let entitlement: Mocked<
+    ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"]
+  >;
 
   beforeEach(async () => {
     const handleSuggestionActionDependencies = mockDeep<
@@ -49,7 +50,7 @@ describe("HandleSuggestionAction", () => {
     useCase = unit;
     repo = handleSuggestionActionDependencies.repository;
     creator = handleSuggestionActionDependencies.recurringTodoCreator;
-    entitlement = handleSuggestionActionDependencies.entitlementService;
+    entitlement = handleSuggestionActionDependencies.entitlementReader;
 
     entitlement.hasPremiumAccess.mockResolvedValue(true);
   });

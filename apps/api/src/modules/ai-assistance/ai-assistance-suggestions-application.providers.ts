@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
@@ -51,36 +51,32 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
 
 export const getPendingSuggestionsProvider: FactoryProvider<GetPendingSuggestions> = {
   provide: GetPendingSuggestions,
-  inject: [AI_SUGGESTION_REPOSITORY, EntitlementService],
+  inject: [AI_SUGGESTION_REPOSITORY, ENTITLEMENT_READER],
   useFactory: (
     repository: ConstructorParameters<typeof GetPendingSuggestions>[0]["repository"],
-    entitlementService: ConstructorParameters<
-      typeof GetPendingSuggestions
-    >[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof GetPendingSuggestions>[0]["entitlementReader"],
   ) =>
     new GetPendingSuggestions({
       repository,
-      entitlementService,
+      entitlementReader,
       logger: new Logger(GetPendingSuggestions.name),
     }),
 };
 
 export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAction> = {
   provide: HandleSuggestionAction,
-  inject: [AI_SUGGESTION_REPOSITORY, RECURRING_TODO_CREATOR, EntitlementService],
+  inject: [AI_SUGGESTION_REPOSITORY, RECURRING_TODO_CREATOR, ENTITLEMENT_READER],
   useFactory: (
     repository: ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"],
     recurringTodoCreator: ConstructorParameters<
       typeof HandleSuggestionAction
     >[0]["recurringTodoCreator"],
-    entitlementService: ConstructorParameters<
-      typeof HandleSuggestionAction
-    >[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"],
   ) =>
     new HandleSuggestionAction({
       repository,
       recurringTodoCreator,
-      entitlementService,
+      entitlementReader,
       logger: new Logger(HandleSuggestionAction.name),
     }),
 };

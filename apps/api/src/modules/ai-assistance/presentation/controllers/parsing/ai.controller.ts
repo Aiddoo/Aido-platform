@@ -412,7 +412,7 @@ if (limit !== null && used >= limit) {
 
     return {
       success: true,
-      data: usage.toView(),
+      data: usage,
     };
   }
 }

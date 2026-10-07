@@ -7,7 +7,7 @@ import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from "@nestjs/
 import { SentryModule } from "@sentry/nestjs/setup";
 import { ClsModule } from "nestjs-cls";
 
-import { EntitlementModule } from "#api/modules/access/access.module";
+import { AccessModule } from "#api/modules/access/access.module";
 import { AiModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { AiReportModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AiSuggestionModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
@@ -91,7 +91,7 @@ import { AppService } from "./app.service.js";
     LockModule.forRoot(),
     JobRuntimeModule,
     // 4. Global Modules
-    EntitlementModule,
+    AccessModule,
     LoggerModule.forRootAsync(),
     SharedKernelModule,
     PaginationModule,

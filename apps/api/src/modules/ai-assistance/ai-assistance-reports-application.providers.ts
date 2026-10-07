@@ -1,6 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 
 import { AI_REPORT_REPOSITORY } from "./application/ports/reports/ai-report.repository.port.js";
@@ -28,39 +28,39 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
 
 export const getReportByIdProvider: FactoryProvider<GetReportById> = {
   provide: GetReportById,
-  inject: [AI_REPORT_REPOSITORY, EntitlementService],
+  inject: [AI_REPORT_REPOSITORY, ENTITLEMENT_READER],
   useFactory: (
     aiReportRepository: ConstructorParameters<typeof GetReportById>[0]["aiReportRepository"],
-    entitlementService: ConstructorParameters<typeof GetReportById>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof GetReportById>[0]["entitlementReader"],
   ) =>
     new GetReportById({
       aiReportRepository,
-      entitlementService,
+      entitlementReader,
     }),
 };
 
 export const getReportStatusProvider: FactoryProvider<GetReportStatus> = {
   provide: GetReportStatus,
-  inject: [AI_REPORT_REPOSITORY, EntitlementService],
+  inject: [AI_REPORT_REPOSITORY, ENTITLEMENT_READER],
   useFactory: (
     aiReportRepository: ConstructorParameters<typeof GetReportStatus>[0]["aiReportRepository"],
-    entitlementService: ConstructorParameters<typeof GetReportStatus>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof GetReportStatus>[0]["entitlementReader"],
   ) =>
     new GetReportStatus({
       aiReportRepository,
-      entitlementService,
+      entitlementReader,
     }),
 };
 
 export const getReportsProvider: FactoryProvider<GetReports> = {
   provide: GetReports,
-  inject: [AI_REPORT_REPOSITORY, EntitlementService],
+  inject: [AI_REPORT_REPOSITORY, ENTITLEMENT_READER],
   useFactory: (
     aiReportRepository: ConstructorParameters<typeof GetReports>[0]["aiReportRepository"],
-    entitlementService: ConstructorParameters<typeof GetReports>[0]["entitlementService"],
+    entitlementReader: ConstructorParameters<typeof GetReports>[0]["entitlementReader"],
   ) =>
     new GetReports({
       aiReportRepository,
-      entitlementService,
+      entitlementReader,
     }),
 };

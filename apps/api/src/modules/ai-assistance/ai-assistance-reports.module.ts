@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { AccessModule } from "#api/modules/access/access-entitlement.public";
+
 import { AiModule } from "./ai-assistance-parsing.module.js";
 import {
   generateReportProvider,
@@ -32,7 +34,7 @@ import { AiReportController } from "./presentation/controllers/reports/ai-report
  * - 알림 발송은 SchedulerModule의 Strategy에서 담당
  */
 @Module({
-  imports: [AiModule],
+  imports: [AccessModule, AiModule],
   controllers: [AiReportController],
   providers: [
     LatestReportStatsReader,

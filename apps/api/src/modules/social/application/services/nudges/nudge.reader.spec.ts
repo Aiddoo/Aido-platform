@@ -2,22 +2,20 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-
 import { type NudgeRepositoryPort } from "../../ports/nudges/nudge.repository.port.js";
 import { NudgeReader } from "./nudge.reader.js";
 
 describe("NudgeReader — 사용자 로컬 일일 한도", () => {
   let reader: NudgeReader;
   let repository: Mocked<NudgeRepositoryPort>;
-  let entitlement: Mocked<EntitlementService>;
+  let entitlement: Mocked<ConstructorParameters<typeof NudgeReader>[0]["entitlementReader"]>;
 
   beforeEach(async () => {
     const nudgeReaderDependencies = mockDeep<ConstructorParameters<typeof NudgeReader>[0]>({});
     const unit = new NudgeReader(nudgeReaderDependencies);
     reader = unit;
     repository = nudgeReaderDependencies.nudgeRepository;
-    entitlement = nudgeReaderDependencies.entitlementService;
+    entitlement = nudgeReaderDependencies.entitlementReader;
     entitlement.getFeatureLimit.mockResolvedValue({
       dailyLimit: 3,
       isAdmin: false,

@@ -2,7 +2,7 @@ import type { ReportStatus } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import dayjs from "dayjs";
 
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -21,7 +21,7 @@ const REPORT_HOUR = 8;
  */
 interface GetReportStatusDependencies {
   readonly aiReportRepository: AiReportRepositoryPort;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
 }
 
 export class GetReportStatus {
@@ -32,7 +32,7 @@ export class GetReportStatus {
   }
 
   async execute(userId: string, _timezone: string): Promise<ReportStatus> {
-    const hasPremium = await this.#dependencies.entitlementService.hasPremiumAccess(userId);
+    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
     if (!hasPremium) {
       throw new ApplicationException(ErrorCode.AI_1308);
     }

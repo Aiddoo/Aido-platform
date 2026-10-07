@@ -1,7 +1,6 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
@@ -31,7 +30,9 @@ function createSuggestion(): Suggestion {
 describe("GetPendingSuggestions", () => {
   let useCase: GetPendingSuggestions;
   let repo: Mocked<AiSuggestionRepositoryPort>;
-  let entitlement: Mocked<EntitlementService>;
+  let entitlement: Mocked<
+    ConstructorParameters<typeof GetPendingSuggestions>[0]["entitlementReader"]
+  >;
 
   beforeEach(async () => {
     const getPendingSuggestionsDependencies = mockDeep<
@@ -41,7 +42,7 @@ describe("GetPendingSuggestions", () => {
 
     useCase = unit;
     repo = getPendingSuggestionsDependencies.repository;
-    entitlement = getPendingSuggestionsDependencies.entitlementService;
+    entitlement = getPendingSuggestionsDependencies.entitlementReader;
 
     entitlement.hasPremiumAccess.mockResolvedValue(true);
   });

@@ -9,13 +9,14 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { buildParseTodoPromptEn } from "../../../domain/services/parsing/prompts/parse-todo.prompt.en.js";
 import { buildParseTodoPrompt } from "../../../domain/services/parsing/prompts/parse-todo.prompt.js";
+import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
 import {
   type AiProvider,
   AiProviderCallError,
   type TokenUsage,
 } from "../../ports/parsing/ai-provider.port.js";
+import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
-import type { AiUsageMeter } from "../../services/parsing/ai-usage-meter.service.js";
 
 /** 파싱 메타데이터 (모델·처리시간·토큰). */
 export interface ParseTodoMeta {
@@ -52,7 +53,7 @@ export interface ParseTodoInput {
 interface ParseTodoDependencies {
   readonly aiProvider: AiProvider;
   readonly categoryReader: UserCategoryReaderPort;
-  readonly usageMeter: AiUsageMeter;
+  readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
   readonly logger: ApplicationLogger;
 }
 
@@ -64,25 +65,35 @@ export class ParseTodo {
   }
 
   async execute(input: ParseTodoInput): Promise<ParseTodoResult> {
-    const { text, userId, timezone, categoryId, locale } = input;
+    const { userId } = input;
     const startTime = Date.now();
 
     if (!this.#dependencies.aiProvider.isAvailable()) {
-      this.#dependencies.logger.warn(`AI 서비스 불가: userId=${userId}`);
+      this.#dependencies.logger.warn({ event: AiParsingLogEvent.UNAVAILABLE, userId });
       throw new ApplicationException(ErrorCode.AI_1301);
     }
 
-    await this.#dependencies.usageMeter.checkAndIncrement(userId);
+    const reservation = await this.#dependencies.quota.reserve(userId);
+    try {
+      return await this.#parse(input, startTime);
+    } catch (error) {
+      await this.#dependencies.quota.release(reservation);
+      throw error;
+    }
+  }
+
+  async #parse(input: ParseTodoInput, startTime: number): Promise<ParseTodoResult> {
+    const { text, userId, timezone, categoryId, locale } = input;
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const categoryIds = new Set(userCategories.map((c) => c.id));
+    const categoryIds = new Set(userCategories.map((category) => category.id));
 
     const buildTodoPrompt = locale === "en" ? buildParseTodoPromptEn : buildParseTodoPrompt;
     const { system, prompt } = buildTodoPrompt(
       text,
       timezone,
       now(),
-      userCategories.map((c) => ({ id: c.id, name: c.name })),
+      userCategories.map((category) => ({ id: category.id, name: category.name })),
     );
 
     try {
@@ -95,10 +106,13 @@ export class ParseTodo {
 
       const processingTimeMs = Date.now() - startTime;
 
-      this.#dependencies.logger.log(
-        `투두 파싱 완료: userId=${userId}, title="${result.output.title}", ` +
-          `${processingTimeMs}ms, tokens=${result.usage.input}/${result.usage.output}`,
-      );
+      this.#dependencies.logger.log({
+        event: AiParsingLogEvent.TODO_COMPLETED,
+        userId,
+        model: result.model,
+        processingTimeMs,
+        tokenUsage: result.usage,
+      });
 
       const inferredCategoryId = categoryIds.has(result.output.categoryId ?? 0)
         ? result.output.categoryId
@@ -116,18 +130,20 @@ export class ParseTodo {
         },
       };
     } catch (error) {
-      await this.#dependencies.usageMeter.decrement(userId);
-
       if (error instanceof AiProviderCallError) {
-        this.#dependencies.logger.error(
-          `AI API 호출 실패: userId=${userId}, status=${error.statusCode}, message=${error.message}`,
-        );
+        this.#dependencies.logger.error({
+          event: AiParsingLogEvent.PROVIDER_FAILED,
+          userId,
+          statusCode: error.statusCode,
+        });
         throw new ApplicationException(ErrorCode.AI_1301);
       }
 
-      this.#dependencies.logger.error(
-        `투두 파싱 실패: userId=${userId}, error=${error instanceof Error ? error.message : "Unknown"}`,
-      );
+      this.#dependencies.logger.error({
+        event: AiParsingLogEvent.OUTPUT_INVALID,
+        userId,
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
       throw new ApplicationException(ErrorCode.AI_1302, {
         details: error instanceof Error ? error.message : "Unknown error",
       });

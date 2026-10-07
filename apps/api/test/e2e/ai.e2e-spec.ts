@@ -789,6 +789,7 @@ describe("AI E2E", () => {
           todos: [
             {
               title: "버그 수정",
+              categoryId: 999999,
               startDate: "2026-04-12",
               endDate: null,
               scheduledTime: "14:00",
@@ -799,6 +800,7 @@ describe("AI E2E", () => {
             },
             {
               title: "자료 올리기",
+              categoryId: 999999,
               startDate: "2026-04-11",
               endDate: null,
               scheduledTime: null,
@@ -833,12 +835,13 @@ describe("AI E2E", () => {
         });
       });
 
-      it("categoryId가 모든 todo에 주입됨", async () => {
+      it("소유하지 않은 추론 categoryId는 요청 categoryId로 대체한다", async () => {
         // Given
         fakeAiProvider.setRawResponse({
           todos: [
             {
               title: "할 일",
+              categoryId: 999999,
               startDate: "2026-04-11",
               endDate: null,
               scheduledTime: null,
@@ -868,6 +871,7 @@ describe("AI E2E", () => {
           todos: [
             {
               title: "테스트",
+              categoryId: 999999,
               startDate: "2026-04-11",
               endDate: null,
               scheduledTime: null,

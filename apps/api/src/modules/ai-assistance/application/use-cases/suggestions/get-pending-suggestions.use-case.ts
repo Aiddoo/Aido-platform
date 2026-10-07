@@ -1,6 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
-import type { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
@@ -14,7 +14,7 @@ import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-sugg
  */
 interface GetPendingSuggestionsDependencies {
   readonly repository: AiSuggestionRepositoryPort;
-  readonly entitlementService: EntitlementService;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
   readonly logger: ApplicationLogger;
 }
 
@@ -26,7 +26,7 @@ export class GetPendingSuggestions {
   }
 
   async execute(userId: string): Promise<Suggestion[]> {
-    const hasPremium = await this.#dependencies.entitlementService.hasPremiumAccess(userId);
+    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
     if (!hasPremium) {
       this.#dependencies.logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
       throw new ApplicationException(ErrorCode.AI_1309);

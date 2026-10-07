@@ -2,22 +2,20 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
-
 import { type CheerRepositoryPort } from "../../ports/cheers/cheer.repository.port.js";
 import { CheerReader } from "./cheer.reader.js";
 
 describe("CheerReader — 사용자 로컬 일일 한도", () => {
   let reader: CheerReader;
   let repository: Mocked<CheerRepositoryPort>;
-  let entitlement: Mocked<EntitlementService>;
+  let entitlement: Mocked<ConstructorParameters<typeof CheerReader>[0]["entitlementReader"]>;
 
   beforeEach(async () => {
     const cheerReaderDependencies = mockDeep<ConstructorParameters<typeof CheerReader>[0]>({});
     const unit = new CheerReader(cheerReaderDependencies);
     reader = unit;
     repository = cheerReaderDependencies.cheerRepository;
-    entitlement = cheerReaderDependencies.entitlementService;
+    entitlement = cheerReaderDependencies.entitlementReader;
     entitlement.getFeatureLimit.mockResolvedValue({
       dailyLimit: 3,
       isAdmin: false,
