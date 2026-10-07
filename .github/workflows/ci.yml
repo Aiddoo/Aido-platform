@@ -39,11 +39,17 @@ jobs:
   gate:
     name: CI Scope
     if: >-
-      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (!contains(join(github.event.pull_request.labels.*.name, ','), 'stack:') || contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
+      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (!contains(format(',{0}', join(github.event.pull_request.labels.*.name, ',')), ',stack:') || contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
     outputs:
-      run: ${{ steps.policy.outputs.run }}
+      run: ${{ steps.policy.outputs.run == 'true' && steps.validation.outputs.validation_reused != 'true' }}
+      validation_reused: ${{ steps.validation.outputs.validation_reused }}
+      proof_run_url: ${{ steps.validation.outputs.proof_run_url }}
       api: ${{ steps.policy.outputs.api }}
       mobile: ${{ steps.policy.outputs.mobile }}
       shared: ${{ steps.policy.outputs.shared }}
@@ -59,18 +65,21 @@ jobs:
         with:
           script: |
             const { execFileSync } = require('node:child_process');
-            const { readdirSync } = require('node:fs');
+            const { readdirSync, mkdirSync, writeFileSync } = require('node:fs');
+            const { join } = require('node:path');
             const tests = readdirSync('scripts/ci').filter((file) => file.endsWith('.test.mjs'));
             execFileSync(process.execPath, ['--test', ...tests.map((file) => `scripts/ci/${file}`)], { stdio: 'inherit' });
-            const { planPullRequestCI } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
+            const { planPullRequestCI, validationProofName } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
             const { dependencyScope } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
             const { owner, repo } = context.repo;
             const event = context.payload;
             let plan = { run: true, base: 'develop', reason: 'push-or-dispatch', ancestors: [] };
             let baseSha = '';
             let headSha = context.sha;
+            let currentPull;
             if (event.pull_request !== undefined) {
               const { data: current } = await github.rest.pulls.get({ owner, repo, pull_number: event.pull_request.number });
+              currentPull = current;
               headSha = current.head.sha;
               if (headSha !== event.pull_request.head.sha) throw new Error('The workflow head is stale; rerun for the current commit.');
               const openPulls = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
@@ -103,6 +112,122 @@ jobs:
             core.setOutput('mobile', scope.mobile);
             core.setOutput('shared', scope.shared);
             await core.summary.addRaw(`CI policy: **${plan.reason}**. API=${scope.api}, mobile=${scope.mobile}, shared=${scope.shared}. Heavy checks: **${plan.run ? 'run' : 'deferred'}**. Base: ${plan.base} (${baseSha}). Head: ${headSha}. Ancestors: ${plan.ancestors.join(', ') || 'none'}.`).write();
+            const testedCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+            const tree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
+            if (testedCommit !== context.sha) throw new Error('Unexpected checkout commit.');
+            core.setOutput('tree', tree);
+            core.setOutput('tested_commit', testedCommit);
+            core.setOutput('scope', JSON.stringify(scope));
+            const attempt = Number(process.env.GITHUB_RUN_ATTEMPT);
+            const proofDirectory = join(process.env.RUNNER_TEMP, 'ci-tree-proof');
+            if (context.eventName === 'pull_request' && plan.reason === 'cumulative-stack-tip' && Object.values(scope).some(Boolean)) {
+              const headTree = execFileSync('git', ['rev-parse', `${headSha}^{tree}`], { encoding: 'utf8' }).trim();
+              if (headTree === tree) {
+                mkdirSync(proofDirectory, { recursive: true });
+                writeFileSync(join(proofDirectory, 'proof.json'), JSON.stringify({
+                  version: 1, repository: `${owner}/${repo}`, runId: context.runId, attempt,
+                  pullNumber: currentPull.number, reason: plan.reason,
+                  stackLabel: currentPull.labels.find((label) => label.name.startsWith('stack:')).name,
+                  headSha, testedCommit, tree, baseSha, ancestors: plan.ancestors, scopes: scope,
+                }));
+                core.setOutput('proof_created', 'true');
+                core.setOutput('proof_name', validationProofName(context.runId, attempt));
+              }
+            }
+            if (context.eventName !== 'push' || !['refs/heads/main', 'refs/heads/develop'].includes(context.ref)) return;
+            try {
+              const { data: activeRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: context.runId });
+              const { data: candidates } = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: activeRun.workflow_id, event: 'pull_request', status: 'success', per_page: 100,
+              });
+              for (const run of candidates.workflow_runs.slice(0, 20)) {
+                if (run.path !== '.github/workflows/ci.yml' || run.repository.full_name !== `${owner}/${repo}` || run.head_repository?.full_name !== `${owner}/${repo}`) continue;
+                const { data: head } = await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha });
+                if (head.commit.tree.sha !== tree) continue;
+                const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, { owner, repo, run_id: run.id, per_page: 100 });
+                const matches = artifacts.filter((artifact) => artifact.name === validationProofName(run.id, run.run_attempt) && !artifact.expired);
+                if (matches.length !== 1) continue;
+                core.setOutput('candidate_run', run.id);
+                core.setOutput('candidate_artifact', matches[0].id);
+                core.setOutput('workflow_id', activeRun.workflow_id);
+                break;
+              }
+            } catch {
+              core.warning('No usable CI proof candidate; current scope will be validated.');
+            }
+
+      - name: Upload candidate checkout proof
+        if: steps.policy.outputs.proof_created == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.policy.outputs.proof_name }}
+          path: ${{ runner.temp }}/ci-tree-proof/proof.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Download candidate proof from its run
+        id: download-proof
+        if: steps.policy.outputs.candidate_run != ''
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2 (Node 24)
+        with:
+          artifact-ids: ${{ steps.policy.outputs.candidate_artifact }}
+          run-id: ${{ steps.policy.outputs.candidate_run }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/ci-proof-reuse
+          digest-mismatch: error
+
+      - name: Verify source run and required jobs
+        id: validation
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0 (Node 24)
+        env:
+          CANDIDATE_RUN: ${{ steps.policy.outputs.candidate_run }}
+          CANDIDATE_ARTIFACT: ${{ steps.policy.outputs.candidate_artifact }}
+          WORKFLOW_ID: ${{ steps.policy.outputs.workflow_id }}
+          CHECKOUT_TREE: ${{ steps.policy.outputs.tree }}
+          CHECKOUT_COMMIT: ${{ steps.policy.outputs.tested_commit }}
+          REQUIRED_SCOPE: ${{ steps.policy.outputs.scope }}
+          DOWNLOAD_OUTCOME: ${{ steps.download-proof.outcome }}
+        with:
+          script: |
+            const { readFileSync, statSync } = require('node:fs');
+            const { join } = require('node:path');
+            const { validateTreeProof } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
+            const { owner, repo } = context.repo;
+            core.setOutput('validation_reused', 'false');
+            if (context.eventName !== 'push' || process.env.CANDIDATE_RUN === '' || process.env.DOWNLOAD_OUTCOME !== 'success') return;
+            try {
+              const file = join(process.env.RUNNER_TEMP, 'ci-proof-reuse', 'proof.json');
+              if (statSync(file).size > 65536) throw new Error('Oversized proof.');
+              const proof = JSON.parse(readFileSync(file, 'utf8'));
+              const runId = Number(process.env.CANDIDATE_RUN);
+              const { data: candidateRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+              if (!Number.isSafeInteger(proof?.pullNumber) || !/^[0-9a-f]{40}$/.test(proof?.testedCommit) || !/^[0-9a-f]{40}$/.test(proof?.headSha)) throw new Error('Invalid proof identifiers.');
+              const { data: artifact } = await github.rest.actions.getArtifact({ owner, repo, artifact_id: Number(process.env.CANDIDATE_ARTIFACT) });
+              const { data: pull } = await github.rest.pulls.get({ owner, repo, pull_number: proof.pullNumber });
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, { owner, repo, run_id: runId, attempt_number: candidateRun.run_attempt, per_page: 100 });
+              const { data: testedCommit } = await github.rest.repos.getCommit({ owner, repo, ref: proof.testedCommit });
+              const { data: headCommit } = await github.rest.repos.getCommit({ owner, repo, ref: proof.headSha });
+              const { data: ancestry } = await github.rest.repos.compareCommits({ owner, repo, base: proof.headSha, head: process.env.CHECKOUT_COMMIT });
+              const { data: run } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+              const decision = validateTreeProof({
+                proof, run, artifact, pull, jobs, jobsAttempt: candidateRun.run_attempt, repository: `${owner}/${repo}`,
+                workflowId: Number(process.env.WORKFLOW_ID), currentTree: process.env.CHECKOUT_TREE,
+                requiredScope: JSON.parse(process.env.REQUIRED_SCOPE),
+                testedCommitTree: testedCommit.commit.tree.sha, headCommitTree: headCommit.commit.tree.sha,
+                headIncluded: ['ahead', 'identical'].includes(ancestry.status),
+              });
+              if (!decision.reusable) {
+                await core.summary.addRaw(`CI proof not reused: **${decision.reason}**. Validate the current scope.`).write();
+                return;
+              }
+              core.setOutput('validation_reused', 'true');
+              core.setOutput('proof_run_url', run.html_url);
+              await core.summary.addRaw(`Validation reused from [run ${run.id}, attempt ${run.run_attempt}](${run.html_url}). Head H=${proof.headSha}; tested checkout P=${proof.testedCommit}; tree=${proof.tree}. Current commit=${process.env.CHECKOUT_COMMIT}. Required jobs succeeded; current heavy jobs are deferred.`).write();
+            } catch {
+              core.warning('CI proof unavailable or invalid; current scope will be validated.');
+            }
 
   lint:
     name: Lint & Type Check
@@ -207,12 +332,12 @@ jobs:
           retention-days: 14
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
-  # 필수 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
+  # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
   docker:
     name: Build & Push Image
     needs: [gate, lint, test-unit, verify-api]
     if: >-
-      ${{ !cancelled() && needs.gate.outputs.api == 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success' && (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped') && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.lint.result == 'skipped' && needs.verify-api.result == 'skipped' && needs.test-unit.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success' && (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped'))) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:

@@ -1178,3 +1178,19 @@ Operations/Support/AppConfig Module 클래스 이름을 파일명에 맞췄다. 
 최종 workspace lint·format(3,201 files / 858ms)·fresh server typecheck(3 tasks / 2 cached / 2.973초)·diff 검사가 통과했다.
 
 위 결과는 처리 지연·Actions 청구 비용·운영 무영향의 측정이 아니다. 이번 단계에는 새 패키지·실행 script·Actions job·DDL이 없다. 다음 단계는 실제 검증 기록을 재사용하는 CI 정책, 종료 중 작업의 DB 사용 순서·컨테이너 유예, 일관성·미사용 코드 정리와 최종 누적 검증이다. 운영 배포와 SSH 확인은 아직 하지 않았다.
+
+## 16a CI: 마지막 스택 검증 재사용
+
+[Issue #930](https://github.com/Aiddoo/Aido-platform/issues/930)의 구현이다. 마지막 ready tip만 누적 변경을 검사하고, develop/main의 checkout과 실제 검증한 checkout의 Git tree가 동일하면 성공 결과를 재사용한다. `H`는 PR head, `P`는 실제 테스트 checkout이며 서로 다른 commit을 같은 SHA로 기록하지 않는다. 후보 artifact만으로 승인하지 않고 같은 저장소 CI의 성공한 최신 attempt·필요한 각 job의 실제 성공·scope·tree·ancestry·현재 tip metadata를 함께 확인한다. main의 API/migrate image build와 동일 SHA 배포는 유지한다.
+
+기존 `CI Scope`에 공식 upload/download-artifact·Octokit을 추가했고 새 job·실행 script·dependency는 만들지 않았다. 증거가 만료되거나 source/범위/attempt가 다르면 현재 범위를 실제 검증한다. 수동 dispatch도 실제 검증한다. 따라서 정상적인 동일 source의 병합은 tip 한 번이며 증거 없이 생략하는 정책은 아니다. 후보 검색은 최근 성공 PR run 100개 중 20개, artifact retention은 14일이다.
+
+기존 라벨 substring 조건도 고쳤다. `notes:stack:example` 일반 PR을 stack으로 잘못 판단하던 조건은 라벨 시작을 구분한다. canonical stack의 중간/Draft skip과 ready tip 실행은 유지한다.
+
+- 기존 순수 정책: 18개 통과, 40.95ms.
+- 구현 후 정책: 46개 통과, 41.53ms. fork·다른 tree·불충분한 scope·실패/생략 job·다른 attempt를 거부한다.
+- 실제 YAML script와 이미지 조건 offline fixture: 15개 통과, 51.41ms. closed/merged PR·H/P 분리·원본 run 재조회 중 attempt 변경·main/develop 재사용·skipped-only 발행 거부를 확인한다.
+- 기존/수정 label expression fixture: 14개 통과, 42.68ms. 원본 실패와 수정 결과, label 위치·Draft·unrelated 이벤트를 확인한다. 변경하지 않은 앞선 46+15는 반복하지 않았다.
+- actionlint 1.7.12·범위 lint/format·상대 링크 5개 통과. 독립 읽기 리뷰에서도 새 핵심 proof 결함은 확인하지 못했다.
+
+중간 Draft 문서 PR의 실제 run 37676024890은 5개 job이 모두 skipped였다. 이 기록을 workflow 메타데이터가 생성되지 않았다는 뜻으로 표현하지 않는다. 최종 tip·원격 artifact 재사용·이미지 발행·배포·청구 비용은 아직 실제 실행 전이며 이후 Issue/PR에 결과를 기록한다. 자세한 적용 기준은 [CI 문서](ci.md)다.
