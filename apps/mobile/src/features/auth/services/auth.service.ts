@@ -26,7 +26,7 @@ import {
   updateMarketingPushConsentResponseSchema,
   updatePreferenceResponseSchema,
   type VerifyEmailInput,
-} from '@aido/validators';
+} from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { TokenStore } from '@src/core/ports/token-store';
 import { ENV } from '@src/shared/config/env';

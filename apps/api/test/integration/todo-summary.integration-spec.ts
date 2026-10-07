@@ -1,6 +1,6 @@
 import { Test, type TestingModule } from "@nestjs/testing";
 /**
- * GetTodoSummaryUseCase 통합 테스트 (Mock DB)
+ * GetTodoSummary 통합 테스트 (Mock DB)
  *
  * @description
  * 오늘의 할 일 요약 use-case가 실제 NestJS DI 컨테이너에서
@@ -14,91 +14,93 @@ import { Test, type TestingModule } from "@nestjs/testing";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test todo-summary.integration-spec
+ * pnpm --filter @aido/server test todo-summary.integration-spec
  * ```
  */
 import { vi } from "vitest";
 
-import { STREAK_PORT } from "#api/todo/application/ports/streak.port";
-import { TODO_READ_REPOSITORY } from "#api/todo/application/ports/todo-read.repository.port";
-import { GetTodoSummaryUseCase } from "#api/todo/application/queries/get-todo-summary/get-todo-summary.use-case";
-import { StreakAdapter } from "#api/todo/infrastructure/adapters/streak.adapter";
-import { USER_STREAK_ACCESS } from "#api/user-settings/index";
+import { USER_STREAK_ACCESS } from "#api/modules/identity/identity-settings.public";
+import { STREAK_PORT } from "#api/modules/planning/application/ports/todos/streak.port";
+import { TODO_READ_REPOSITORY } from "#api/modules/planning/application/ports/todos/todo-read.repository.port";
+import { GetTodoSummary } from "#api/modules/planning/application/use-cases/todos/get-todo-summary.use-case";
+import { StreakAdapter } from "#api/modules/planning/infrastructure/adapters/todos/streak.adapter";
 import { createTodoReadRepositoryMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
-describe("GetTodoSummaryUseCase 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let useCase: GetTodoSummaryUseCase;
+import { getTodoSummaryProvider } from "../../src/modules/planning/planning-todos-application.providers.js";
 
-	const mockReadRepository = createTodoReadRepositoryMock();
+describe("GetTodoSummary 통합 테스트 (Mock DB)", () => {
+  let module: TestingModule;
+  let useCase: GetTodoSummary;
 
-	const mockUserStreakAccess = {
-		getPreferenceRecord: vi.fn(),
-	};
+  const mockReadRepository = createTodoReadRepositoryMock();
 
-	const today = new Date("2026-07-12T00:00:00.000Z");
+  const mockUserStreakAccess = {
+    getPreferenceRecord: vi.fn(),
+  };
 
-	beforeAll(async () => {
-		suppressLogger();
+  const today = new Date("2026-07-12T00:00:00.000Z");
 
-		module = await Test.createTestingModule({
-			providers: [
-				GetTodoSummaryUseCase,
-				{ provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
-				{ provide: STREAK_PORT, useClass: StreakAdapter },
-				{ provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
-			],
-		}).compile();
+  beforeAll(async () => {
+    suppressLogger();
 
-		useCase = module.get(GetTodoSummaryUseCase);
-	});
+    module = await Test.createTestingModule({
+      providers: [
+        getTodoSummaryProvider,
+        { provide: TODO_READ_REPOSITORY, useValue: mockReadRepository },
+        { provide: STREAK_PORT, useClass: StreakAdapter },
+        { provide: USER_STREAK_ACCESS, useValue: mockUserStreakAccess },
+      ],
+    }).compile();
 
-	afterAll(async () => {
-		await module.close();
-	});
+    useCase = module.get(GetTodoSummary);
+  });
 
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+  });
 
-	it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
-		// Given
-		vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
-			total: 2,
-			completed: 2,
-		});
-		vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
-		// lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
-		mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
-			currentStreak: 7,
-			lastCompletedDate: today,
-		});
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-		// When
-		const result = await useCase.execute({ userId: "user-123", today });
+  it("실제 DI 체인(use-case → StreakAdapter → user-settings capability)으로 요약을 합성한다", async () => {
+    // Given
+    vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
+      total: 2,
+      completed: 2,
+    });
+    vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+    // lastCompletedDate = 오늘: 스트릭 쓰기가 이미 착지한 상태 → 저장값 그대로
+    mockUserStreakAccess.getPreferenceRecord.mockResolvedValue({
+      currentStreak: 7,
+      lastCompletedDate: today,
+    });
 
-		// Then
-		expect(result.date).toBe("2026-07-12");
-		expect(result.isComplete).toBe(true);
-		expect(result.completionRate).toBe(100);
-		expect(result.currentStreak).toBe(7);
-		expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith("user-123");
-	});
+    // When
+    const result = await useCase.execute({ userId: "user-123", today });
 
-	it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
-		// Given
-		vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
-			total: 0,
-			completed: 0,
-		});
-		vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
-		mockUserStreakAccess.getPreferenceRecord.mockResolvedValue(null);
+    // Then
+    expect(result.date).toBe("2026-07-12");
+    expect(result.isComplete).toBe(true);
+    expect(result.completionRate).toBe(100);
+    expect(result.currentStreak).toBe(7);
+    expect(mockUserStreakAccess.getPreferenceRecord).toHaveBeenCalledWith("user-123");
+  });
 
-		// When
-		const result = await useCase.execute({ userId: "user-없음", today });
+  it("선호 레코드가 없는 사용자는 스트릭 0으로 응답한다", async () => {
+    // Given
+    vi.mocked(mockReadRepository.getTodayTodoStats).mockResolvedValue({
+      total: 0,
+      completed: 0,
+    });
+    vi.mocked(mockReadRepository.findManyByUserId).mockResolvedValue([]);
+    mockUserStreakAccess.getPreferenceRecord.mockResolvedValue(null);
 
-		// Then
-		expect(result.currentStreak).toBe(0);
-	});
+    // When
+    const result = await useCase.execute({ userId: "user-없음", today });
+
+    // Then
+    expect(result.currentStreak).toBe(0);
+  });
 });

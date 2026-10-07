@@ -1,0 +1,5 @@
+{
+  "name": "rate_limit_exceeded",
+  "statusCode": 429,
+  "message": "Too many requests"
+}

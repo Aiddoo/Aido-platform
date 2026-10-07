@@ -19,8 +19,9 @@ module.exports = {
     '^@assets/(.*)$': '<rootDir>/assets/$1',
 
     // Monorepo packages
-    '^@aido/validators$': '<rootDir>/../../packages/validators/src',
-    '^@aido/errors$': '<rootDir>/../../packages/errors/src',
+    '^@aido/api/vocabulary$': '<rootDir>/../../packages/api/src/vocabulary',
+    '^@aido/api$': '<rootDir>/../../packages/api/src',
+    '^@aido/api/errors$': '<rootDir>/../../packages/api/src/errors',
 
     // Native module mocks
     '^expo-secure-store$': '<rootDir>/src/shared/__tests__/mocks/expo-secure-store.ts',

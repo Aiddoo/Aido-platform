@@ -89,7 +89,7 @@ export const isSaturday = (date: Date): boolean => {
 };
 
 // DayOfWeek
-import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/validators';
+import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
 
 /** DayOfWeek 배열을 요일 순서로 정렬 후 로케일 라벨로 변환 (예: "월, 수, 금") */
 export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>

@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { useParseMemoMutationOptions } from '@src/features/ai/presentations/queries/use-parse-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/get-memo-query-options';

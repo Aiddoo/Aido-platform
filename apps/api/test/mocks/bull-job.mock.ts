@@ -10,15 +10,15 @@ import { mock } from "vitest-mock-extended";
  */
 
 export function createMockJob<T, N extends string = string>(name: N, data: T): Job<T, unknown, N> {
-	const job = mock<Job<T, unknown, N>>();
-	Object.defineProperties(job, {
-		name: { value: name, configurable: true },
-		data: { value: data, configurable: true },
-	});
-	job.updateProgress.mockResolvedValue(undefined);
-	return job;
+  const job = mock<Job<T, unknown, N>>();
+  Object.defineProperties(job, {
+    name: { value: name, configurable: true },
+    data: { value: data, configurable: true },
+  });
+  job.updateProgress.mockResolvedValue(undefined);
+  return job;
 }
 
 export function asMock<T extends (...args: never[]) => unknown>(fn: T) {
-	return vi.mocked(fn, { partial: true });
+  return vi.mocked(fn, { partial: true });
 }

@@ -7,7 +7,7 @@ import type {
   SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
-} from '@aido/validators';
+} from '@aido/api';
 import type { Page } from '@src/shared/types/page.type';
 
 import type {

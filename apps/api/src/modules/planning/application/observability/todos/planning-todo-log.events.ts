@@ -1,0 +1,16 @@
+export const PlanningTodoLogEvent = {
+  CREATED: "planning.todo.created",
+  RECURRING_CREATED: "planning.todo.recurring.created",
+  DELETED: "planning.todo.deleted",
+  CATEGORY_CHANGED: "planning.todo.category.changed",
+  UPDATED: "planning.todo.updated",
+  TITLE_UPDATED: "planning.todo.title.updated",
+  VISIBILITY_UPDATED: "planning.todo.visibility.updated",
+  SCHEDULE_UPDATED: "planning.todo.schedule.updated",
+  COMPLETION_CHANGED: "planning.todo.completion.changed",
+  REORDERED: "planning.todo.reordered",
+  ITEM_ADDED: "planning.todo.item.added",
+  ITEM_UPDATED: "planning.todo.item.updated",
+  ITEM_DELETED: "planning.todo.item.deleted",
+  ITEMS_REORDERED: "planning.todo.items.reordered",
+} as const;

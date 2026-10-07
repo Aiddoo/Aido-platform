@@ -8,7 +8,7 @@ import type {
   TodoCommentMutationResponse,
   TodoConversationItem as TodoConversationItemDTO,
   TodoConversationResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   TodoComment,

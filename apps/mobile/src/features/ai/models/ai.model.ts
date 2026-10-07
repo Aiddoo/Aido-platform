@@ -3,7 +3,7 @@ import {
   reportTypeSchema,
   suggestionActionSchema,
   suggestionStatusSchema,
-} from '@aido/validators';
+} from '@aido/api';
 import { z } from 'zod';
 
 const reportStatsSchema = z.object({

@@ -150,8 +150,8 @@ git commit -m "feat(mobile): 실제 화면형 기능 가이드 미리보기 개�
 
 - Verify: `apps/mobile/app.config.ts`
 - Verify: `apps/mobile/package.json`
-- Verify: `packages/validators/src/domains/follow/follow.request.ts`
-- Verify: `apps/api/prisma/schema.prisma`
+- Verify: `packages/api/src/domains/follow/follow.request.ts`
+- Verify: `apps/api/src/prisma/contract.prisma`
 
 **Interfaces:**
 
@@ -160,7 +160,7 @@ git commit -m "feat(mobile): 실제 화면형 기능 가이드 미리보기 개�
 
 - [ ] **Step 1: 계약 차이 확인**
 
-Run: `git diff develop -- packages/validators apps/api/prisma apps/api/src`
+Run: `git diff develop -- packages/api apps/api/prisma apps/api/src`
 
 Expected: 출력 없음
 

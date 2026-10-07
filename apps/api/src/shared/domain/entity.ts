@@ -7,5 +7,5 @@
  * props는 하위 클래스에서만 접근하며 getter로만 노출합니다.
  */
 export abstract class Entity<TProps> {
-	protected constructor(protected readonly props: TProps) {}
+  protected constructor(protected readonly props: TProps) {}
 }

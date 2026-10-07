@@ -1,311 +1,308 @@
 import type { TestingModule } from "@nestjs/testing";
-/**
- * 비밀번호 재설정 통합 테스트 (Testcontainers)
- *
- * @description
- * PasswordWorkflow.forgotPassword() 및 PasswordWorkflow.resetPassword()가
- * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
- *
- * 통합 테스트의 목적:
- * - PasswordWorkflow -> Repository -> Prisma -> PostgreSQL 전체 스택 검증
- * - forgotPassword → resetPassword → 새 비밀번호 로그인 전체 플로우
- * - 세션 무효화 및 SecurityLog 기록 확인
- * - 보안: 존재하지 않는 이메일 동일 응답
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/api test auth-password-reset.integration-spec
- * ```
- */
-import { vi } from "vitest";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { omit } from "es-toolkit";
 
-import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
+import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
+import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
+import { RequestPasswordReset } from "#api/modules/identity/application/use-cases/auth/request-password-reset.use-case";
+import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
+import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
+import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { varchar } from "#api/platform/database/database-values";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase } from "../setup/test-database.js";
 import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
-	let module: TestingModule;
-	let authService: CredentialAuthWorkflow;
-	let passwordManagementService: PasswordWorkflow;
-	let fakeEmailService: FakeEmailService;
-	let testDb: TestDatabase;
-	let databaseService: DatabaseService;
+  let module: TestingModule;
+  let register: Register;
+  let verifyEmail: VerifyEmail;
+  let requestPasswordReset: RequestPasswordReset;
+  let resetPassword: ResetPassword;
+  let loginWithPassword: LoginWithPassword;
+  let fakeEmailService: FakeEmailService;
+  let testDb: TestDatabase;
+  let databaseService: DatabaseService;
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    testDb = new TestDatabase();
+    databaseService = createTestDatabaseService(await testDb.start());
+    fakeEmailService = new FakeEmailService();
 
-		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
-		fakeEmailService = new FakeEmailService();
+    module = await createAuthTestModule(databaseService, fakeEmailService);
+    register = module.get(Register);
+    verifyEmail = module.get(VerifyEmail);
+    requestPasswordReset = module.get(RequestPasswordReset);
+    resetPassword = module.get(ResetPassword);
+    loginWithPassword = module.get(LoginWithPassword);
+  }, 60000);
 
-		module = await createAuthTestModule(databaseService, fakeEmailService);
-		authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
-		passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
-	}, 60000);
+  beforeEach(async () => {
+    suppressLogger();
+    await testDb.cleanup();
+    fakeEmailService.clear();
+  });
 
-	beforeEach(async () => {
-		vi.clearAllMocks();
-		await testDb.cleanup();
-		fakeEmailService.clear();
-	});
+  afterAll(async () => {
+    try {
+      if (module) await module.close();
+    } finally {
+      if (testDb) await testDb.stop();
+    }
+  });
 
-	afterAll(async () => {
-		try {
-			if (module) await module.close();
-		} finally {
-			if (testDb) await testDb.stop();
-		}
-	});
+  function getCode(email: string): string {
+    const code = fakeEmailService.getLastCode(email);
+    if (code == null) throw new Error(`No code found for ${email}`);
+    return code;
+  }
 
-	/**
-	 * FakeEmailService에서 인증 코드를 안전하게 가져오는 헬퍼
-	 */
-	function getCode(email: string): string {
-		const code = fakeEmailService.getLastCode(email);
-		if (!code) throw new Error(`No code found for ${email}`);
-		return code;
-	}
+  async function createSocialOnlyUser(
+    email: string,
+    provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
+  ): Promise<string> {
+    const userFixture = UserFixture.create({ email });
+    const user = await createUserDatabaseFixture(
+      testDb.getClient(),
+      encodeCreate("User", userFixture),
+      {
+        accounts: [
+          omit(
+            encodeCreate(
+              "Account",
+              AccountFixture.create({
+                userId: userFixture.id,
+                provider,
+                providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
+              }),
+            ),
+            ["id", "userId"],
+          ),
+        ],
+      },
+    );
+    return user.id;
+  }
 
-	/**
-	 * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
-	 * @returns userId
-	 */
-	async function createSocialOnlyUser(
-		email: string,
-		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
-	): Promise<string> {
-		const prisma = testDb.getPrisma();
-		const user = await prisma.user.create({
-			data: {
-				email,
-				userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-				status: "ACTIVE",
-				emailVerifiedAt: new Date(),
-			},
-		});
+  async function createCredentialUser(email: string, password: string): Promise<string> {
+    // 회원가입
+    const registerResult = await register.execute({
+      email,
+      password,
+      passwordConfirm: password,
+      termsAgreed: true,
+      privacyAgreed: true,
+      marketingAgreed: false,
+    });
 
-		await prisma.account.create({
-			data: {
-				userId: user.id,
-				provider,
-				providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-			},
-		});
+    // 이메일 인증
+    const verifyCode = getCode(email);
+    await verifyEmail.execute({ email, code: verifyCode });
 
-		return user.id;
-	}
+    fakeEmailService.clear();
 
-	/**
-	 * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
-	 * @returns userId
-	 */
-	async function createCredentialUser(email: string, password: string): Promise<string> {
-		// 회원가입
-		const registerResult = await authService.register({
-			email,
-			password,
-			passwordConfirm: password,
-			termsAgreed: true,
-			privacyAgreed: true,
-			marketingAgreed: false,
-		});
+    return registerResult.userId;
+  }
 
-		// 이메일 인증
-		const verifyCode = getCode(email);
-		await authService.verifyEmail({ email, code: verifyCode });
+  describe("forgotPassword", () => {
+    it("등록된 사용자에게 비밀번호 재설정 코드를 이메일로 발송한다", async () => {
+      // Given
+      const email = "reset-code@example.com";
+      await createCredentialUser(email, "Password123!");
 
-		fakeEmailService.clear();
+      // When
+      const result = await requestPasswordReset.execute({ email });
 
-		return registerResult.userId;
-	}
+      // Then
+      expect(result.message).toBeDefined();
+      expect(fakeEmailService.hasSentTo(email)).toBe(true);
+      expect(fakeEmailService.getLastCode(email)).toMatch(/^\d{6}$/);
+    });
 
-	describe("forgotPassword", () => {
-		it("등록된 사용자에게 비밀번호 재설정 코드를 이메일로 발송한다", async () => {
-			// Given
-			const email = "reset-code@example.com";
-			await createCredentialUser(email, "Password123!");
+    it("존재하지 않는 이메일도 동일한 응답을 반환하고 이메일을 발송하지 않는다 (보안)", async () => {
+      // Given
+      const email = "nonexistent@example.com";
 
-			// When
-			const result = await passwordManagementService.forgotPassword(email);
+      // When
+      const result = await requestPasswordReset.execute({ email });
 
-			// Then
-			expect(result.message).toBeDefined();
-			expect(fakeEmailService.hasSentTo(email)).toBe(true);
-			expect(fakeEmailService.getLastCode(email)).toMatch(/^\d{6}$/);
-		});
+      // Then
+      expect(result.message).toBeDefined();
+      expect(fakeEmailService.hasSentTo(email)).toBe(false);
+      expect(fakeEmailService.getSentCount()).toBe(0);
+    });
+  });
 
-		it("존재하지 않는 이메일도 동일한 응답을 반환하고 이메일을 발송하지 않는다 (보안)", async () => {
-			// Given
-			const email = "nonexistent@example.com";
+  describe("resetPassword", () => {
+    it("인증 코드 확인 후 비밀번호를 재설정한다", async () => {
+      // Given
+      const email = "reset-pw@example.com";
+      const originalPassword = "Password123!";
+      await createCredentialUser(email, originalPassword);
 
-			// When
-			const result = await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
+      const code = getCode(email);
 
-			// Then
-			expect(result.message).toBeDefined();
-			expect(fakeEmailService.hasSentTo(email)).toBe(false);
-			expect(fakeEmailService.getSentCount()).toBe(0);
-		});
-	});
+      // When
+      const result = await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
-	describe("resetPassword", () => {
-		it("인증 코드 확인 후 비밀번호를 재설정한다", async () => {
-			// Given
-			const email = "reset-pw@example.com";
-			const originalPassword = "Password123!";
-			await createCredentialUser(email, originalPassword);
+      // Then
+      expect(result.message).toContain("비밀번호가 재설정되었습니다");
 
-			await passwordManagementService.forgotPassword(email);
-			const code = getCode(email);
+      // DB 검증: 비밀번호 해시가 변경됨
+      const prisma = testDb.getClient();
+      const account = decodeRecord(
+        "Account",
+        await prisma.orm.public.Account.where((row) =>
+          and(
+            row.user.some((related) => related.email.eq(varchar(email, 255))),
+            row.provider.eq("CREDENTIAL"),
+          ),
+        ).first(),
+      );
+      expect(account?.password).toBeTruthy();
+    });
 
-			// When
-			const result = await passwordManagementService.resetPassword(email, code, "NewPassword456!");
+    it("재설정 후 새 비밀번호로 로그인할 수 있다", async () => {
+      // Given
+      const email = "reset-login@example.com";
+      const originalPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      await createCredentialUser(email, originalPassword);
 
-			// Then
-			expect(result.message).toContain("비밀번호가 재설정되었습니다");
+      await requestPasswordReset.execute({ email });
+      const code = getCode(email);
+      await resetPassword.execute({ email, code, newPassword });
 
-			// DB 검증: 비밀번호 해시가 변경됨
-			const prisma = testDb.getPrisma();
-			const account = await prisma.account.findFirst({
-				where: {
-					user: { email },
-					provider: "CREDENTIAL",
-				},
-			});
-			expect(account?.password).toBeTruthy();
-		});
+      // When
+      const loginResult = await loginWithPassword.execute({
+        email,
+        password: newPassword,
+      });
 
-		it("재설정 후 새 비밀번호로 로그인할 수 있다", async () => {
-			// Given
-			const email = "reset-login@example.com";
-			const originalPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			await createCredentialUser(email, originalPassword);
+      // Then
+      expect(loginResult.tokens.accessToken).toBeDefined();
+      expect(loginResult.tokens.refreshToken).toBeDefined();
+    });
 
-			await passwordManagementService.forgotPassword(email);
-			const code = getCode(email);
-			await passwordManagementService.resetPassword(email, code, newPassword);
+    it("재설정 후 이전 비밀번호로는 로그인할 수 없다", async () => {
+      // Given
+      const email = "reset-old-pw@example.com";
+      const originalPassword = "Password123!";
+      const newPassword = "NewPassword456!";
+      await createCredentialUser(email, originalPassword);
 
-			// When
-			const loginResult = await authService.login({
-				email,
-				password: newPassword,
-			});
+      await requestPasswordReset.execute({ email });
+      const code = getCode(email);
+      await resetPassword.execute({ email, code, newPassword });
 
-			// Then
-			expect(loginResult.tokens.accessToken).toBeDefined();
-			expect(loginResult.tokens.refreshToken).toBeDefined();
-		});
+      // When & Then
+      await expect(
+        loginWithPassword.execute({ email, password: originalPassword }),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("재설정 후 이전 비밀번호로는 로그인할 수 없다", async () => {
-			// Given
-			const email = "reset-old-pw@example.com";
-			const originalPassword = "Password123!";
-			const newPassword = "NewPassword456!";
-			await createCredentialUser(email, originalPassword);
+    it("재설정 후 모든 세션이 무효화된다", async () => {
+      // Given
+      const email = "reset-sessions@example.com";
+      const originalPassword = "Password123!";
+      await createCredentialUser(email, originalPassword);
 
-			await passwordManagementService.forgotPassword(email);
-			const code = getCode(email);
-			await passwordManagementService.resetPassword(email, code, newPassword);
+      // 로그인하여 세션 생성
+      await loginWithPassword.execute({ email, password: originalPassword });
+      await loginWithPassword.execute({ email, password: originalPassword });
 
-			// When & Then
-			await expect(authService.login({ email, password: originalPassword })).rejects.toThrow(
-				ApplicationException,
-			);
-		});
+      await requestPasswordReset.execute({ email });
+      const code = getCode(email);
 
-		it("재설정 후 모든 세션이 무효화된다", async () => {
-			// Given
-			const email = "reset-sessions@example.com";
-			const originalPassword = "Password123!";
-			await createCredentialUser(email, originalPassword);
+      // When
+      await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
-			// 로그인하여 세션 생성
-			await authService.login({ email, password: originalPassword });
-			await authService.login({ email, password: originalPassword });
+      // Then - 모든 세션의 revokedAt이 설정됨
+      const prisma = testDb.getClient();
+      const user = decodeRecord(
+        "User",
+        await prisma.orm.public.User.where((row) => row.email.eq(varchar(email, 255))).first(),
+      );
+      const sessions = decodeRecord(
+        "Session",
+        await prisma.orm.public.Session.where((row) => row.userId.eq(requireRecord(user).id)).all(),
+      );
 
-			await passwordManagementService.forgotPassword(email);
-			const code = getCode(email);
+      for (const session of sessions) {
+        expect(session.revokedAt).not.toBeNull();
+        expect(session.revokedReason).toBe("PASSWORD_RESET");
+      }
+    });
 
-			// When
-			await passwordManagementService.resetPassword(email, code, "NewPassword456!");
+    it("SecurityLog에 PASSWORD_CHANGED 이벤트가 기록된다", async () => {
+      // Given
+      const email = "reset-seclog@example.com";
+      await createCredentialUser(email, "Password123!");
 
-			// Then - 모든 세션의 revokedAt이 설정됨
-			const prisma = testDb.getPrisma();
-			const user = await prisma.user.findUnique({ where: { email } });
-			const sessions = await prisma.session.findMany({
-				where: { userId: user?.id },
-			});
+      await requestPasswordReset.execute({ email });
+      const code = getCode(email);
 
-			for (const session of sessions) {
-				expect(session.revokedAt).not.toBeNull();
-				expect(session.revokedReason).toBe("PASSWORD_RESET");
-			}
-		});
+      // When
+      await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
-		it("SecurityLog에 PASSWORD_CHANGED 이벤트가 기록된다", async () => {
-			// Given
-			const email = "reset-seclog@example.com";
-			await createCredentialUser(email, "Password123!");
+      // Then
+      const prisma = testDb.getClient();
+      const user = decodeRecord(
+        "User",
+        await prisma.orm.public.User.where((row) => row.email.eq(varchar(email, 255))).first(),
+      );
+      const logs = decodeRecord(
+        "SecurityLog",
+        await prisma.orm.public.SecurityLog.where((row) =>
+          and(row.userId.eq(requireRecord(user).id), row.event.eq("PASSWORD_CHANGED")),
+        ).all(),
+      );
+      expect(logs.length).toBeGreaterThanOrEqual(1);
 
-			await passwordManagementService.forgotPassword(email);
-			const code = getCode(email);
+      const resetLog = logs.find(
+        (log) =>
+          log.metadata &&
+          typeof log.metadata === "object" &&
+          (log.metadata as Record<string, unknown>).reason === "PASSWORD_RESET",
+      );
+      expect(resetLog).toBeDefined();
+    });
 
-			// When
-			await passwordManagementService.resetPassword(email, code, "NewPassword456!");
+    it("소셜 전용 사용자가 비밀번호 재설정을 시도하면 에러를 던진다", async () => {
+      // Given - 소셜 전용 사용자 (Credential 계정 없음)
+      const email = "social-only-reset@example.com";
+      await createSocialOnlyUser(email);
 
-			// Then
-			const prisma = testDb.getPrisma();
-			const user = await prisma.user.findUnique({ where: { email } });
-			const logs = await prisma.securityLog.findMany({
-				where: { userId: user?.id, event: "PASSWORD_CHANGED" },
-			});
-			expect(logs.length).toBeGreaterThanOrEqual(1);
+      // forgotPassword는 보안상 동일 응답 (에러 없음)
+      await requestPasswordReset.execute({ email });
+      const code = getCode(email);
 
-			const resetLog = logs.find(
-				(log) =>
-					log.metadata &&
-					typeof log.metadata === "object" &&
-					(log.metadata as Record<string, unknown>).reason === "PASSWORD_RESET",
-			);
-			expect(resetLog).toBeDefined();
-		});
+      // When & Then - resetPassword에서 USER_0613 에러
+      await expect(
+        resetPassword.execute({ email, code, newPassword: "NewPassword456!" }),
+      ).rejects.toThrow(ApplicationException);
+    });
 
-		it("소셜 전용 사용자가 비밀번호 재설정을 시도하면 에러를 던진다", async () => {
-			// Given - 소셜 전용 사용자 (Credential 계정 없음)
-			const email = "social-only-reset@example.com";
-			await createSocialOnlyUser(email);
+    it("잘못된 인증 코드로 재설정 시 에러를 던진다", async () => {
+      // Given
+      const email = "reset-wrong-code@example.com";
+      await createCredentialUser(email, "Password123!");
 
-			// forgotPassword는 보안상 동일 응답 (에러 없음)
-			await passwordManagementService.forgotPassword(email);
-			const code = getCode(email);
+      await requestPasswordReset.execute({ email });
 
-			// When & Then - resetPassword에서 USER_0613 에러
-			await expect(
-				passwordManagementService.resetPassword(email, code, "NewPassword456!"),
-			).rejects.toThrow(ApplicationException);
-		});
-
-		it("잘못된 인증 코드로 재설정 시 에러를 던진다", async () => {
-			// Given
-			const email = "reset-wrong-code@example.com";
-			await createCredentialUser(email, "Password123!");
-
-			await passwordManagementService.forgotPassword(email);
-
-			// When & Then
-			await expect(
-				passwordManagementService.resetPassword(email, "000000", "NewPassword456!"),
-			).rejects.toThrow(ApplicationException);
-		});
-	});
+      // When & Then
+      await expect(
+        resetPassword.execute({ email, code: "000000", newPassword: "NewPassword456!" }),
+      ).rejects.toThrow(ApplicationException);
+    });
+  });
 });

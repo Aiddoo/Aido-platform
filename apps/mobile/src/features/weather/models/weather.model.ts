@@ -1,4 +1,4 @@
-import { PRECIPITATION_TYPES, SKY_CONDITIONS } from '@aido/validators';
+import { PRECIPITATION_TYPES, SKY_CONDITIONS } from '@aido/api';
 import { z } from 'zod';
 
 export const hourlyForecastSchema = z.object({

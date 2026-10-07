@@ -44,7 +44,7 @@ type FriendSearchInput = z.infer<typeof friendSearchInputSchema>;
 /** 검색어 최소 길이 (서버 searchUsersQuerySchema q.min(2)와 동일) */
 export const SEARCH_MIN_QUERY_LENGTH = 2;
 
-/** userTag: 8자리 영문 대문자·숫자만 허용 (@aido/validators userTagParamSchema와 동일) */
+/** userTag: 8자리 영문 대문자·숫자만 허용 (@aido/api userTagParamSchema와 동일) */
 export function isValidTag(tag: string): boolean {
   return /^[A-Z0-9]{8}$/.test(tag.trim());
 }

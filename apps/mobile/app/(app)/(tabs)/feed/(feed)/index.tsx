@@ -1,4 +1,4 @@
-import { dateSchema } from '@aido/validators';
+import { dateSchema } from '@aido/api';
 import { ActivationChecklist } from '@src/features/activation/presentations/components/ActivationChecklist';
 import { useActivationChecklist } from '@src/features/activation/presentations/hooks/use-activation-progress';
 import { SuggestionEntry } from '@src/features/ai/presentations/components/SuggestionEntry';

@@ -172,7 +172,7 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
   폴더에 모은다. 폴더 `index.ts` re-export는 만들지 않고 정의 파일에서 직접 import한다.
 - HTTP transport 성공 데이터는 `unknown`이다. Service가 공유 응답 스키마 전체를 검증한 뒤
   mapper로 독립적인 client model을 만든다. 응답 타입을 generic HTTP 인자나 DTO Omit으로 단정하지 않는다.
-- form과 wire schema는 가능한 한 `@aido/validators`를 단일 원본으로 사용한다. 모바일 전용 Date,
+- form과 wire schema는 가능한 한 `@aido/api`를 단일 원본으로 사용한다. 모바일 전용 Date,
   policy, 화면 view-model만 model/mapper에서 별도로 표현한다.
 - 페이지 단위 폼은 가장 가까운 session 부모가 `useForm`, Zod resolver, submit mutation을 소유하고
   지역 `FormProvider`로 field에 전달한다. `shared/ui/FormField`만 `Controller`를 소유하고 field는
@@ -188,7 +188,7 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 - 미디어 업로드는 실제 API 계약이 있을 때만 도입한다. Expo 호환성과 유지 상태가 검증된 라이브러리를
   우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
-- 알림 wire payload는 `@aido/validators`를 단일 원본으로 사용한다. 내부 화면 경로는
+- 알림 wire payload는 `@aido/api`를 단일 원본으로 사용한다. 내부 화면 경로는
   `presentations/navigation`의 순수 resolver가 검증된 route 재료로 결정한다. domain Policy와 화면
   컴포넌트는 Expo Router나 raw metadata를 알지 않는다.
 

@@ -1,4 +1,4 @@
-import { refreshTokensSchema } from '@aido/validators';
+import { refreshTokensSchema } from '@aido/api';
 import type { SessionExpiredDetails } from '@src/core/ports/telemetry-event';
 import type { TokenStore } from '@src/core/ports/token-store';
 import { errorMessageOf, NetworkError, ServerError, TimeoutError } from '@src/shared/errors';

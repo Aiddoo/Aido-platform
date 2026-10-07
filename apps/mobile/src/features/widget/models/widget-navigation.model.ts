@@ -1,4 +1,4 @@
-import { dateSchema } from '@aido/validators';
+import { dateSchema } from '@aido/api';
 import { z } from 'zod';
 
 const widgetFeedParametersSchema = z

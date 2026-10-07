@@ -1,4 +1,4 @@
-import type { CreateTodoCommentChainInput } from '@aido/validators';
+import type { CreateTodoCommentChainInput } from '@aido/api';
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
 import { NetworkError, ServerError, TimeoutError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

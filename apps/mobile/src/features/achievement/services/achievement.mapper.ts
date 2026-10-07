@@ -2,7 +2,7 @@ import type {
   WeeklyAchievementSummary as SummaryDto,
   WeeklyAchievementDto,
   WeeklyAchievementListResponse,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   AchievementSummary,

@@ -1,332 +1,56 @@
-# 단위 테스트 가이드
+# 서버 Unit 테스트
 
-**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
+순수 Domain/Application은 직접 생성한다. 상태나 발송 기록이 필요하면 기존 fixture와 작은 Port Stub/Fake를 사용한다. 전체 실행 선택은 [testing-guide.md](./testing-guide.md)를 참고한다.
 
-> `@suites/unit` + Builder 패턴으로 개별 클래스/메서드를 격리 테스트
->
-> DI 기반 스텁 교체 — `TestBed.solitary()`가 모든 의존성을 자동 mock하므로 구현 세부사항에 결합되지 않는 테스트 작성 가능.
+## 의미 있는 케이스
 
----
+- `describe("CreateTodo — 할 일 생성")`, `it("권한이 없으면 저장 없이 오류를 반환한다")`처럼 한국어로 조건과 결과를 쓴다. Given / When / Then 순서는 유지하되 코드로 충분한 단계에 긴 주석을 붙이지 않는다.
+- 정상·누락·null·false·0·중복·만료·권한·retry는 실제 계약에 필요한 경우만 검증한다. 입력이 다른데 같은 행동을 반복하는 케이스는 모을 수 있다.
+- Aggregate/VO의 생성·`reconstitute()`와 공개 행동을 사용한다. private/protected state나 내부 메서드를 spy하지 않는다. 상태 없는 조회/전달 테스트를 위해 Aggregate·DB를 만들지 않는다.
+- 결과·저장/발송 상태·실패 우선순위를 확인한다. 반복 횟수·batch miss·외부 호출0·민감정보 비노출이 요구일 때는 호출 관찰도 의미 있다. 단순 forwarding이나 구현의 줄별 복사 테스트는 피한다.
 
-## 관련 문서
+## fixture와 의존성
 
-| 문서                                         | 내용               |
-| -------------------------------------------- | ------------------ |
-| [testing-guide.md](./testing-guide.md)       | 종합 테스팅 가이드 |
-| [integration-test.md](./integration-test.md) | 통합 테스트 가이드 |
-| [e2e-test.md](./e2e-test.md)                 | E2E 테스트 가이드  |
+생성자에는 소비자가 실제 사용하는 의존성을 명시적으로 전달한다. `ConstructorParameters<typeof UseCase>[0]["dependency"]` 또는 기존 consumer Port의 좁은 타입을 사용할 수 있다. full Port로 cast하거나 lazy deep mock을 spread해 타입/필드를 숨기지 않는다.
 
----
+- 반환값과 mutable 상태·발송 기록은 작은 Stub이 소유한다. 한 spec에서만 쓰면 그 spec에 두고, 여러 곳에서 실제 재사용될 때만 `test/mocks`로 옮긴다. 전체 Port를 재조합하는 범용 fake framework는 필요 없다.
+- 기존 `test/builders`, `test/fixtures`, `test/mocks`를 먼저 확인한다. 의미 있는 새 필드는 소유 fixture 기본값 한곳에 추가하고 각 시나리오에서는 차이만 덮어쓴다. 실제 raw 공급자 응답은 기본 정상값과 자동 merge하지 않는다. 필수 누락·잘못된 타입이 원래 schema에서 거절되는지 확인한다.
+- 타입에 `implements`/기존 Port를 연결하고 실제 mutable 설정을 `clear()`/resetter로 복원한다. ID 고정값은 관계·경쟁·에러의 의미를 명확히 하는 fixture에서 사용할 수 있다. 모든 값을 Builder로 만들 필요는 없다.
+- 상호작용 검증은 설치된 Vitest와 `vitest-mock-extended`를 재사용한다. 반환값만 필요한 의존성에 deep mock을 기본으로 쓰지 않는다. 특정 matcher helper나 새 mock 라이브러리를 의무화하지 않는다.
+- `createUnitOfWorkMock()`과 callback Stub은 실행 순서·실패 전달만 검증한다. CLS·DB rollback·row lock·durable attempt는 [실제 PG](./integration-test.md)에서 검증한다.
 
-## 개요
+실제 예제:
 
-| 항목            | 설명                                                                                     |
-| --------------- | ---------------------------------------------------------------------------------------- |
-| **파일 위치**   | 테스트 대상과 같은 폴더 (`src/{name}/`)                                                  |
-| **명명 규칙**   | `{파일명}.spec.ts`                                                                       |
-| **핵심 도구**   | `@suites/unit` (TestBed.solitary) + `@suites/doubles.vitest` adapter + `vitest` (Mocked) |
-| **데이터 생성** | Builder 패턴 (`@test/builders`)                                                          |
-| **실행 속도**   | 빠름 (DB 연결 없음, 모든 의존성 자동 Mock)                                               |
+- [TransactionalEmailSender](../src/modules/notification/application/senders/email/transactional-email.sender.spec.ts): state Stub에 실제 템플릿·태그·결과를 기록한다.
+- [ReconcilePushReceipts](../src/modules/notification/application/use-cases/delivery/reconcile-push-receipts.use-case.spec.ts): 캐시 상태와 commit gate로 실패 전달/커밋 뒤 무효화를 검증한다. 실제 receipt rollback 증거와 분리한다.
+- [Weather 조건 조회](../src/modules/weather/application/use-cases/forecast/get-weather-conditions.use-case.spec.ts): 실제 Application 흐름과 fixture의 시간·날짜·부분 결과 경계를 확인한다.
 
----
+## 날짜와 timer
 
-## 핵심 라이브러리
+날짜 판단만 필요한 테스트는 Date만 fake하고 `finally` 또는 `afterEach`에서 복원한다. PostgreSQL/socket/job가 사용하는 native timer는 유지한다.
 
-| 패키지         | 역할                  | import                                                 |
-| -------------- | --------------------- | ------------------------------------------------------ |
-| `@suites/unit` | 자동 Mock DI 컨테이너 | `import { TestBed } from "@suites/unit"`               |
-| `vitest`       | Mock 타입 유틸리티    | `import type { Mocked } from "@suites/doubles.vitest"` |
-
----
-
-## Suites 패턴
-
-### 기본 사용법
-
-모든 단위 테스트는 `TestBed.solitary()`를 사용합니다. Suites가 생성자 의존성을 자동으로 Mock합니다.
-
-```typescript
-import { TestBed } from "@suites/unit";
-import type { Mocked } from "vitest";
-import { {Feature}Service } from "#api/{name}/{name}.service";
-import { {Feature}Repository } from "#api/{name}/{name}.repository";
-
-describe("{Feature}Service — 기능 설명", () => {
-  let service: {Feature}Service;
-  let repo: Mocked<{Feature}Repository>;
-
-  beforeEach(async () => {
-    const { unit, unitRef } = await TestBed.solitary({Feature}Service).compile();
-    service = unit;
-    repo = unitRef.get({Feature}Repository);
-  });
-
-  it("사용자를 조회해야 한다", async () => {
-    // Given
-    repo.findById.mockResolvedValue({ id: "1", email: "test@example.com" });
-
-    // When
-    const result = await service.findById("1");
-
-    // Then
-    expect(result.email).toBe("test@example.com");
-  });
-});
-```
-
-### Provider Override
-
-토큰 기반 주입이나 특수한 Mock이 필요한 경우:
-
-```typescript
-beforeEach(async () => {
-  const mockPushProvider = {
-    name: "expo",
-    validateToken: vi.fn().mockReturnValue(true),
-    sendBatch: vi.fn().mockResolvedValue({ total: 1, successCount: 1 }),
-  };
-
-  const { unit, unitRef } = await TestBed.solitary({Feature}Service)
-    .mock(PUSH_PROVIDER)
-    .impl(() => mockPushProvider)
-    .compile();
-
-  service = unit;
-  pushProvider = mockPushProvider as unknown as Mocked<PushProvider>;
-});
-```
-
-### 예외: Suites 미사용
-
-순수 함수/상수 테스트는 DI가 불필요하므로 Suites 없이 직접 테스트합니다:
-
-- `cache-keys.spec.ts` - 캐시 키 생성 함수
-- `date.util.spec.ts` - 날짜 유틸리티
-- `notification-templates.spec.ts` - 알림 템플릿 상수
-- `in-memory-cache.adapter.spec.ts` - 캐시 어댑터
-
-외부 SDK의 **모듈 레벨 mock**(`vi.mock()`)이 필요한 경우에도 `Test.createTestingModule()`을 사용합니다:
-
-- `gemini.provider.spec.ts` - AI SDK(`ai` 패키지)를 `vi.mock("ai")`로 모킹. Suites는 모듈 레벨 mock을 지원하지 않으므로 이 방식이 정당함
-
----
-
-## Builder 패턴
-
-[Prisma 공식 권장](https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing) Builder 패턴으로 테스트 데이터를 생성합니다.
-
-### 사용법
-
-```typescript
-import { UserBuilder, VerificationBuilder, LoginAttemptBuilder } from '@test/builders';
-
-// 기본 사용자
-const user = UserBuilder.create().build();
-
-// 커스텀 사용자
-const admin = UserBuilder.create().withEmail('admin@example.com').asAdmin().verified().build();
-
-// 만료된 인증
-const expired = VerificationBuilder.create('user-123', 'PASSWORD_RESET').expired().build();
-
-// 실패한 로그인 시도
-const attempt = LoginAttemptBuilder.create('test@example.com').asFailed().build();
-```
-
-### `buildWithRelations()` — 관계 데이터 포함 빌드
-
-`build()`는 단일 엔티티를, `buildWithRelations()`는 관계 객체(sender, receiver 등)가 포함된 데이터를 반환합니다.
-Service에서 join/include 결과를 기대하는 메서드를 테스트할 때 사용합니다:
-
-```typescript
-// 관계 없는 기본 빌드
-const cheer = CheerBuilder.create(senderId, receiverId).build();
-
-// 관계 포함 빌드 — sender/receiver 프로필 등 포함
-const cheerWithRelations = CheerBuilder.create(senderId, receiverId)
-  .withMessage('잘했어!')
-  .withSenderProfile({ name: '테스트유저', profileImage: null })
-  .buildWithRelations();
-
-// 목록 mock에서 여러 Builder 조합
-mockRepo.findMany.mockResolvedValue([
-  CheerBuilder.create('sender-1', userId).withId(1).buildWithRelations(),
-  CheerBuilder.create('sender-2', userId).withId(2).buildWithRelations(),
-]);
-```
-
-> **현재 `buildWithRelations()` 지원 Builder**: `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder`
-
-### ID 카운터 리셋
-
-일부 Builder는 자동 증가 ID를 사용합니다. `beforeEach`에서 리셋:
-
-```typescript
-beforeEach(() => {
-  NotificationBuilder.resetIdCounter();
-  VerificationBuilder.resetIdCounter();
-});
-```
-
-### 새 Builder 작성 기준
-
-**생성 시점**: Prisma 모델이 추가되면 대응하는 Builder도 함께 생성합니다.
-
-**파일 위치**: `test/builders/{model}.builder.ts` → `test/builders/index.ts`에서 re-export
-
-**구조 규칙**:
-
-```typescript
-import type { {Model} } from "#api/generated/prisma/client";
-
-export class {Model}Builder {
-  private data: {Model};
-  private static idCounter = 0;  // auto-increment ID 모델만
-
-  // 1. private constructor — 모든 필드에 합리적 기본값 설정
-  private constructor(/* 필수 외래키만 파라미터 */) {
-    this.data = { id: ..., /* 기본값 */ };
-  }
-
-  // 2. static create() — 필수 외래키를 파라미터로 받음
-  static create(userId: string): {Model}Builder { ... }
-
-  // 3. static resetIdCounter() — auto-increment ID 모델만
-  static resetIdCounter(): void { ... }
-
-  // 4. 체이닝 메서드 — 카테고리별 그룹핑
-  //    - with{Field}(): 단일 필드 설정 (범용)
-  //    - as{State}(): 도메인 상태 전환 (여러 필드를 한 번에 변경)
-  withTitle(title: string): {Model}Builder { ... }   // 단일 필드
-  completed(completedAt?: Date): {Model}Builder { ... } // 상태 전환 (completed + completedAt)
-
-  // 5. build() — 스프레드로 복사본 반환
-  build(): {Model} { return { ...this.data }; }
-
-  // 6. buildWithRelations() — join/include 결과 모킹 시 (필요한 모델만)
-  buildWithRelations(): {Model}WithRelations { ... }
-
-  // 7. static createMany() — 배열 mock 반환값용
-  static createMany(count: number): {Model}[] { ... }
+```ts
+vi.useFakeTimers({ toFake: ["Date"] });
+vi.setSystemTime(new Date("2026-07-23T16:00:00Z"));
+try {
+  // Given / When / Then: 같은 instant에서 요구한 날짜·시간 결과 확인
+} finally {
+  vi.useRealTimers();
 }
 ```
 
-**체이닝 메서드 네이밍**:
+UTC 저장 instant, calendar DATE, 사용자 timezone, 공급자 timezone을 구분한다. KST 자정·UTC 날짜 교차·Sunday ISO week·DST 전환은 변경한 판단이 영향을 받는 경우에 넣는다. 같은 instant를 process TZ만 바꿨을 때 결과가 달라져야 하는지 먼저 정한다. Dayjs timezone 값에 단순 add/subtract가 DST offset을 보정한다고 가정하지 않고 실제 요청 기간의 UTC 경계를 확인한다. 기존 timezone helper를 재사용하며 테스트용 새 시간 API를 만들지 않는다.
 
-| 패턴                        | 용도                  | 예시                                                      |
-| --------------------------- | --------------------- | --------------------------------------------------------- |
-| `with{Field}()`             | 단일 필드 설정        | `.withEmail("a@b.com")`, `.withMessage("화이팅")`         |
-| `as{State}()` / `{state}()` | 도메인 상태 전환      | `.verified()`, `.asAdmin()`, `.completed()`, `.expired()` |
-| `buildWithRelations()`      | 관계 데이터 포함 빌드 | `CheerBuilder`, `NudgeBuilder`, `NotificationBuilder`     |
+timer 자체가 계약인 retry/backoff 테스트는 fake timer를 쓸 수 있다. DB가 없는 격리된 suite에서 공식 timer advancement로 진행하고 globals/env/timer를 복원한다. 임의 sleep이나 polling으로 완료를 추측하지 않는다.
 
-**`create()` 파라미터 기준**: 외래키(FK)만 파라미터로 받고, 나머지는 기본값 → 체이닝으로 override.
+## Infrastructure·Presentation과 공급자 wire
 
-```typescript
-// FK가 없는 모델 → 파라미터 없음
-UserBuilder.create();
+Nest metadata/DI가 필요한 대상은 기존 `TestBed.solitary()` 또는 `Test.createTestingModule()`을 사용할 수 있다. 실제 Module 조립이 요구라면 운영 factory provider를 재사용하는 Integration/HTTP로 확인한다. Application factory를 bare class provider로 바꾸거나 테스트 전용 조립을 정답으로 삼지 않는다.
 
-// FK 1개 → userId
-TodoBuilder.create(userId);
+현재 서버의 공급자 검증은 설치된 실제 SDK + fetch/HTTP Stub + fixture `Response`를 사용한다. MSW 공통 harness는 현재 서버에 없다. 기존 Stub으로 충분하면 문서 패턴을 맞추려고 MSW나 다른 의존성을 추가하지 않는다. 해당 작업에 이미 MSW 환경이 있는 경우에도 unmatched 요청을 차단하고 테스트 사이 handlers를 복원하는 같은 격리 원칙을 적용한다.
 
-// FK 2개 → senderId, receiverId
-CheerBuilder.create(senderId, receiverId);
+- [Resend Adapter](../src/modules/notification/infrastructure/adapters/email/resend-email-sender.adapter.spec.ts), [StubResendHttp](../test/mocks/resend-http.stub.ts): SDK의 payload·헤더·오류를 고정 HTTP 응답으로 확인한다. 미준비 요청은 실제 네트워크로 전달하지 않는다.
+- [Gemini Adapter](../src/modules/ai-assistance/infrastructure/adapters/parsing/gemini-ai.adapter.spec.ts): 실제 Google factory/설치 SDK의 wire와 schema-invalid raw JSON 거절을 확인한다. Fake/schema 통과는 실제 모델의 의미 품질이나 유료 가치 증거가 아니다.
+- fetch 주입 또는 해당 suite의 `vi.stubGlobal`/spy를 이용한다. global/env 교체는 비동시 suite에서만 하고 `afterEach`에 복원한다. SDK 전체 mock은 기본으로 쓰지 않는다. 불가피한 경우 실제 오류 타입·schema 검증 경계를 남기고 검증하지 못한 wire 범위를 기록한다.
 
-// 복합 키 → 필수 식별 필드
-VerificationBuilder.create(userId, type);
-```
-
-> 전체 Builder 목록: `test/builders/index.ts` 참조
-
----
-
-## GWT 주석 형식
-
-각 `it` 블록은 준비·실행·검증 순서로 작성합니다. 코드로 읽히는 동작을 주석으로 반복하지 않고, 동시성 보장이나 계약상 제약처럼 이유가 필요한 부분만 설명합니다.
-
-### 정상 케이스
-
-```typescript
-it('유효한 토큰을 등록해야 한다', async () => {
-  // Given - 유효한 Expo 푸시 토큰 데이터 준비
-  const data = { userId: mockUserId, token: 'ExponentPushToken[xxx]' };
-  const expectedToken = PushTokenBuilder.create(mockUserId).build();
-  notificationRepo.registerPushToken.mockResolvedValue(expectedToken);
-
-  // When - 푸시 토큰 등록 요청
-  const result = await service.registerPushToken(data);
-
-  // Then - 토큰 검증 및 저장 확인
-  expect(pushProvider.validateToken).toHaveBeenCalledWith(data.token);
-  expect(result).toEqual(expectedToken);
-});
-```
-
-### 예외 케이스
-
-```typescript
-it('유효하지 않은 토큰이면 예외를 던져야 한다', async () => {
-  // Given - 유효하지 않은 토큰
-  pushProvider.validateToken.mockReturnValue(false);
-
-  // When & Then - ApplicationException(ErrorCode) 발생
-  await expect(useCase.execute({ userId: mockUserId, token: 'invalid' })).rejects.toMatchObject({
-    errorCode: 'NOTIFICATION_1001',
-  });
-  expect(notificationRepo.registerPushToken).not.toHaveBeenCalled();
-});
-```
-
----
-
-## 테스트 구조
-
-```typescript
-describe('클래스명 — 한국어 설명', () => {
-  // 변수 선언 + beforeEach (Suites 설정)
-
-  describe('메서드명', () => {
-    it('조건일 때 동작해야 한다', () => {
-      // Given / When / Then
-    });
-  });
-});
-```
-
----
-
-## 실행 명령어
-
-```bash
-pnpm --filter @aido/api test                     # 전체 단위 테스트
-pnpm --filter @aido/api test notification.service.spec  # 특정 파일
-pnpm --filter @aido/api test:watch               # Watch 모드
-pnpm --filter @aido/api test:cov                 # 커버리지
-```
-
----
-
-## DO / DON'T
-
-### DO
-
-- ✅ `TestBed.solitary()` 패턴 사용 (`@suites/unit`)
-- ✅ Builder 패턴으로 테스트 데이터 생성 (`@test/builders`)
-- ✅ 테스트 이름과 준비·실행·검증 순서로 의도 표현. 코드로 드러나는 동작은 주석으로 반복하지 않는다
-- ✅ 각 테스트 케이스는 독립적으로 실행 가능
-- ✅ Edge case와 에러 케이스 테스트 포함
-- ✅ `beforeEach`에서 Builder ID 카운터 리셋
-- ✅ 한국어 describe/it 설명
-
-### DON'T
-
-- ❌ 실제 DB 연결 (Integration 테스트에서 담당)
-- ❌ `Test.createTestingModule()` 직접 사용 (Suites 사용)
-- ❌ 테스트 간 상태 공유 (`beforeAll` 대신 `beforeEach`)
-- ❌ 구현 세부사항 테스트 (공개 인터페이스만)
-- ❌ 하드코딩된 ID (Builder 사용)
-- ❌ 수동 Mock 객체 생성 (Suites 자동 Mock)
-
----
-
-**문서 버전**: 4.0.0
-**최종 수정일**: 2026-10-01
+ORM mock의 `.all()` 결과는 `nativeRows(databaseFixture(...))`, 단건은 필요한 projection 필드와 실제 null을 반환한다. `assertNativeWhere`/`assertNativeOrder`로 AST·바인딩을 확인할 수 있지만 SQL의 실제 실행 의미를 입증하지는 않는다.

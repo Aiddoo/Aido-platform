@@ -365,7 +365,6 @@
       "dependencyProfile": {
         "pg-boss": "12.27.0",
         "@nestjs/core": "12.1.2",
-        "@prisma/client": "7.10.0",
         "zod": "4.3.6"
       },
       "completedAt": "2026-10-02T01:51:05.027021+09:00",

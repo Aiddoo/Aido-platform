@@ -10,7 +10,7 @@ import {
   searchUsersResponseSchema,
   sendFriendRequestResponseSchema,
   sentRequestsResponseSchema,
-} from '@aido/validators';
+} from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';

@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@aido/validators';
+import type { DayOfWeek } from '@aido/api';
 import { useToday } from '@src/shared/hooks/useToday';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';

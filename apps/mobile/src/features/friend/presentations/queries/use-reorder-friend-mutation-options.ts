@@ -1,4 +1,4 @@
-import type { ReorderFriendInput } from '@aido/validators';
+import type { ReorderFriendInput } from '@aido/api';
 import { useFriendService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics/use-track';
 import { unwrap } from '@src/shared/errors/result';

@@ -1,4 +1,4 @@
-import { datetimeSchema } from '@aido/validators';
+import { datetimeSchema } from '@aido/api';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { z } from 'zod';
 

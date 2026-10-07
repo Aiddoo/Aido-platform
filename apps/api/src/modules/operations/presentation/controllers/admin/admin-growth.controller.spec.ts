@@ -1,0 +1,50 @@
+import type { CurrentUserPayload } from "@aido/api";
+import { TestBed } from "@suites/unit";
+import type { Mocked } from "vitest";
+
+import { IS_ADMIN_KEY } from "#api/modules/identity/presentation/decorators/auth/admin.decorator";
+
+import { GetGrowthSummary } from "../../../application/use-cases/admin/get-growth-summary.use-case.js";
+import { AdminGrowthController } from "./admin-growth.controller.js";
+
+describe("AdminGrowthController — 관리자 성장 지표", () => {
+  it("관리자 전용 summary 요청을 facade에 위임한다", async () => {
+    // Given - 관리자 컨트롤러, facade, 명시 cohort 범위
+    const { unit, unitRef } = await TestBed.solitary(AdminGrowthController).compile();
+    const getGrowthSummaryQuery: Mocked<GetGrowthSummary> = unitRef.get(GetGrowthSummary);
+    const admin: CurrentUserPayload = {
+      userId: "admin-1",
+      email: "admin@example.com",
+      sessionId: "session-1",
+      role: "ADMIN",
+    };
+    const query = {
+      cohortFrom: "2026-06-01",
+      cohortTo: "2026-06-30",
+    };
+    const summary = {
+      cohortFrom: "2026-06-01",
+      cohortTo: "2026-06-30",
+      measurementStartedAt: null,
+      totalActiveUsers: 0,
+      signups: 0,
+      dau: 0,
+      wau: 0,
+      mau: 0,
+      activation24h: { eligible: 0, achieved: 0, rate: 0 },
+      d1: null,
+      d7: null,
+      d30: null,
+      d7RetainedActivatedUsers: null,
+    };
+    getGrowthSummaryQuery.execute.mockResolvedValue(summary);
+
+    // When - 성장 요약 endpoint를 호출하면
+    const result = await unit.getGrowthSummary(admin, query);
+
+    // Then - query를 그대로 위임하고 AdminGuard 메타데이터를 보존한다
+    expect(getGrowthSummaryQuery.execute).toHaveBeenCalledWith(query);
+    expect(result).toEqual(summary);
+    expect(Reflect.getMetadata(IS_ADMIN_KEY, unit.getGrowthSummary)).toBe(true);
+  });
+});

@@ -10,7 +10,7 @@ import type {
   ResendVerificationResponse,
   ResetPasswordResponse,
   UpdateMarketingConsentResponse,
-} from '@aido/validators';
+} from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 import type { Consent } from '../models/auth.model';

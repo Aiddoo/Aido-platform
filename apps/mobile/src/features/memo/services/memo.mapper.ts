@@ -1,4 +1,4 @@
-import type { Memo, MemoListResponse, MemoResourceLimitResponse } from '@aido/validators';
+import type { Memo, MemoListResponse, MemoResourceLimitResponse } from '@aido/api';
 
 import type { MemoItem, MemoPage, MemoResourceLimit } from '../models/memo.model';
 

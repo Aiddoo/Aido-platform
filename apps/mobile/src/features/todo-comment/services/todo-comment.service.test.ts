@@ -1,4 +1,4 @@
-import { TODO_COMMENT_SORT } from '@aido/validators';
+import { TODO_COMMENT_SORT } from '@aido/api';
 import { createMockHttpClient } from '@src/shared/__tests__/create-mock-http-client';
 import { ParseError } from '@src/shared/errors/infra-error';
 

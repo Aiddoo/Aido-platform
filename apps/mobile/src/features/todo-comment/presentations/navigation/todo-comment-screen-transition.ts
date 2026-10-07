@@ -1,4 +1,4 @@
-import type { TodoCommentSort } from '@aido/validators';
+import type { TodoCommentSort } from '@aido/api';
 
 import {
   areTodoCommentRoutesEqual,

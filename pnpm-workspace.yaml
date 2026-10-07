@@ -11,12 +11,13 @@ onlyBuiltDependencies:
   - argon2
   - esbuild
   - prisma
-  - '@prisma/engines'
   - '@sentry/cli'
 
 overrides:
-  '@nestjs-cls/transactional-adapter-prisma@2.0.1>prisma': '-'
-  'prisma@7.10.0>mysql2': '3.23.1'
+  pg: 8.23.1
+  '@types/pg': 8.23.1
+  # HealthService uses native SQL; the optional generated-client health indicator is unused.
+  '@nestjs/terminus@12.1.0>@prisma/client': '-'
   '@xhmikosr/decompress@^11': ^11.1.3
   '@grpc/grpc-js@^1.14.0': ^1.14.4
   '@hono/node-server@^1': ^1.19.13
@@ -51,6 +52,14 @@ overrides:
   'ws@^7': ^7.5.11
   'ws@^8': ^8.21.0
   'yauzl@^3': ^3.2.1
+
+# Prisma 8 rc.20's unused Composer/Alchemy tooling pins this Effect RC while its
+# adapters declare the final 4.0.1. Scoped to those exact adapters; runtime untouched.
+peerDependencyRules:
+  allowedVersions:
+    '@effect/sql-d1@4.0.1>effect': 4.0.0-rc.115
+    '@effect/sql-sqlite-do@4.0.1>effect': 4.0.0-rc.115
+    '@effect/vitest@4.0.1>effect': 4.0.0-rc.115
 
 packageExtensions:
   '@expo/image-utils@0.8.17':
@@ -135,7 +144,6 @@ catalogs:
     'uniwind': '1.12.0'
   nest12:
     '@nestjs-cls/transactional': '4.0.1'
-    '@nestjs-cls/transactional-adapter-prisma': '2.0.1'
     '@nestjs/cli': '12.0.8'
     '@nestjs/common': '12.1.2'
     '@nestjs/config': '12.0.1'
@@ -149,10 +157,7 @@ catalogs:
     '@nestjs/terminus': '12.1.0'
     '@nestjs/testing': '12.1.2'
     '@nestjs/throttler': '6.7.1'
-    '@prisma/adapter-pg': '7.10.0'
-    '@prisma/client': '7.10.0'
     'nestjs-cls': '7.0.1'
-    'prisma': '7.10.0'
 
 patchedDependencies:
   '@sentry/react-native@8.28.0': patches/@sentry__react-native@8.28.0.patch

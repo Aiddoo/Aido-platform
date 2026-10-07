@@ -1,0 +1,102 @@
+import type { Mocked } from "vitest";
+import { vi } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
+
+import { NotificationBuilder } from "#test/builders/index";
+import { createNotificationRepositoryMock } from "#test/mocks/ports/notification.mock";
+import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
+
+import type { CreateNotificationData } from "../../ports/delivery/notification-data.js";
+import { type PushDispatchStagingRepositoryPort } from "../../ports/delivery/push-dispatch-staging.repository.port.js";
+import { PersistBatchNotification } from "./persist-batch-notification.use-case.js";
+
+function createPushDispatchStagingMock(): PushDispatchStagingRepositoryPort {
+  return {
+    stage: vi.fn(),
+    stageMany: vi.fn(),
+  };
+}
+
+describe("PersistBatchNotification", () => {
+  let useCase: PersistBatchNotification;
+  let repository: Mocked<
+    ConstructorParameters<typeof PersistBatchNotification>[0]["notificationRepository"]
+  >;
+  let staging: Mocked<
+    ConstructorParameters<typeof PersistBatchNotification>[0]["pushDispatchStaging"]
+  >;
+  let unitOfWork: Mocked<ConstructorParameters<typeof PersistBatchNotification>[0]["unitOfWork"]>;
+  let afterCommitPublisher: Mocked<
+    ConstructorParameters<typeof PersistBatchNotification>[0]["afterCommitPublisher"]
+  >;
+
+  beforeEach(async () => {
+    NotificationBuilder.resetIdCounter();
+    const persistBatchNotificationDependencies = mockDeep<
+      ConstructorParameters<typeof PersistBatchNotification>[0]
+    >({
+      notificationRepository: createNotificationRepositoryMock(),
+      pushDispatchStaging: createPushDispatchStagingMock(),
+      unitOfWork: createUnitOfWorkMock(),
+    });
+    const unit = new PersistBatchNotification(persistBatchNotificationDependencies);
+    useCase = unit;
+    repository = persistBatchNotificationDependencies.notificationRepository;
+    staging = persistBatchNotificationDependencies.pushDispatchStaging;
+    unitOfWork = persistBatchNotificationDependencies.unitOfWork;
+    afterCommitPublisher = persistBatchNotificationDependencies.afterCommitPublisher;
+    staging.stageMany.mockResolvedValue([
+      { dispatchId: 101, notificationId: 1 },
+      { dispatchId: 102, notificationId: 2 },
+    ]);
+  });
+
+  it("알림과 BATCH dispatch를 같은 UOW에 저장하고 커밋 후 발행 ID를 등록한다", async () => {
+    const dataList: CreateNotificationData[] = [
+      {
+        userId: "u1",
+        type: "SYSTEM_NOTICE",
+        title: "공지",
+        body: "본문",
+        force: true,
+      },
+      { userId: "u2", type: "FOLLOW_NEW", title: "t", body: "b" },
+    ];
+    repository.createManyNotificationsAndReturn.mockResolvedValue([
+      NotificationBuilder.create("u1").withId(1).asSystemNotice().build(),
+      NotificationBuilder.create("u2").withId(2).asFollowNew("f1").build(),
+    ]);
+
+    const result = await useCase.execute(dataList);
+
+    expect(unitOfWork.run).toHaveBeenCalledTimes(1);
+    expect(repository.createManyNotificationsAndReturn).toHaveBeenCalledWith(dataList);
+    expect(staging.stageMany).toHaveBeenCalledWith([
+      expect.objectContaining({
+        notificationId: 1,
+        userId: "u1",
+        deliveryMode: "BATCH",
+        force: true,
+      }),
+      expect.objectContaining({
+        notificationId: 2,
+        userId: "u2",
+        deliveryMode: "BATCH",
+        force: false,
+      }),
+    ]);
+    expect(afterCommitPublisher.register).toHaveBeenCalledWith([101, 102]);
+    expect(result).toEqual({ count: 2, sourceData: dataList });
+  });
+
+  it("빈 입력은 UOW, DB, staging, 발행 등록을 모두 건너뛴다", async () => {
+    await expect(useCase.execute([])).resolves.toEqual({
+      count: 0,
+      sourceData: [],
+    });
+    expect(unitOfWork.run).not.toHaveBeenCalled();
+    expect(repository.createManyNotificationsAndReturn).not.toHaveBeenCalled();
+    expect(staging.stageMany).not.toHaveBeenCalled();
+    expect(afterCommitPublisher.register).not.toHaveBeenCalled();
+  });
+});

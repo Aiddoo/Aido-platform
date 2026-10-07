@@ -1,4 +1,4 @@
-import type { PushNotificationData } from '@aido/validators';
+import type { PushNotificationData } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, unwrap } from '@src/shared/errors';

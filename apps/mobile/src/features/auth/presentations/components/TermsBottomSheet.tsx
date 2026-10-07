@@ -1,4 +1,4 @@
-import type { RegisterInput } from '@aido/validators';
+import type { RegisterInput } from '@aido/api';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';

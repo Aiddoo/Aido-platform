@@ -4,124 +4,107 @@
  * 타입 안전한 User 및 관련 엔티티 테스트 데이터 생성
  */
 import type {
-	Account,
-	AccountProvider,
-	SubscriptionStatus,
-	User,
-	UserPreference,
-	UserProfile,
-	UserRole,
-	UserStatus,
-} from "#api/generated/prisma/client";
+  Account,
+  AccountProvider,
+  User,
+  UserPreference,
+  UserProfile,
+} from "#api/platform/database/database.types";
 
 let userCounter = 0;
 
-/**
- * User Fixture 팩토리
- *
- * @example
- * ```typescript
- * // 기본 User 생성
- * const user = UserFixture.create();
- *
- * // 커스텀 속성으로 생성
- * const user = UserFixture.create({ email: 'custom@example.com' });
- *
- * // User + Profile 함께 생성
- * const { user, profile } = UserFixture.createWithProfile();
- * ```
- */
+/** 사용자 record. nullable override의 null은 보존하며 undefined는 기본값을 쓴다. */
 export const UserFixture = {
-	/**
-	 * User 엔티티 생성
-	 */
-	create: (overrides: Partial<User> = {}): User => {
-		const id = ++userCounter;
-		const now = new Date();
+  /**
+   * User 엔티티 생성
+   */
+  create: (overrides: Partial<User> = {}): User => {
+    const id = ++userCounter;
+    const now = new Date();
 
-		return {
-			id: overrides.id ?? `user-${id}`,
-			email: overrides.email ?? `test-${id}@example.com`,
-			userTag: overrides.userTag ?? `USR${String(id).padStart(5, "0")}`,
-			role: overrides.role ?? ("USER" as UserRole),
-			status: overrides.status ?? ("ACTIVE" as UserStatus),
-			emailVerifiedAt: overrides.emailVerifiedAt ?? now,
-			twoFactorEnabled: overrides.twoFactorEnabled ?? false,
-			twoFactorSecret: overrides.twoFactorSecret ?? null,
-			subscriptionStatus: overrides.subscriptionStatus ?? ("FREE" as SubscriptionStatus),
-			subscriptionExpiresAt: overrides.subscriptionExpiresAt ?? null,
-			revenueCatUserId: overrides.revenueCatUserId ?? null,
-			aiUsageCount: overrides.aiUsageCount ?? 0,
-			aiUsageResetAt: overrides.aiUsageResetAt ?? now,
-			createdAt: overrides.createdAt ?? now,
-			updatedAt: overrides.updatedAt ?? now,
-			lastLoginAt: overrides.lastLoginAt ?? null,
-			lastActiveAt: overrides.lastActiveAt ?? null,
-			deletedAt: overrides.deletedAt ?? null,
-		};
-	},
+    return {
+      id: overrides.id ?? `user-${id}`,
+      email: overrides.email ?? `test-${id}@example.com`,
+      userTag: overrides.userTag ?? `USR${String(id).padStart(5, "0")}`,
+      role: overrides.role ?? "USER",
+      status: overrides.status ?? "ACTIVE",
+      emailVerifiedAt: overrides.emailVerifiedAt === undefined ? now : overrides.emailVerifiedAt,
+      twoFactorEnabled: overrides.twoFactorEnabled ?? false,
+      twoFactorSecret: overrides.twoFactorSecret ?? null,
+      subscriptionStatus: overrides.subscriptionStatus ?? "FREE",
+      subscriptionExpiresAt: overrides.subscriptionExpiresAt ?? null,
+      revenueCatUserId: overrides.revenueCatUserId ?? null,
+      aiUsageCount: overrides.aiUsageCount ?? 0,
+      aiUsageResetAt: overrides.aiUsageResetAt ?? now,
+      createdAt: overrides.createdAt ?? now,
+      updatedAt: overrides.updatedAt ?? now,
+      lastLoginAt: overrides.lastLoginAt ?? null,
+      lastActiveAt: overrides.lastActiveAt ?? null,
+      deletedAt: overrides.deletedAt ?? null,
+    };
+  },
 
-	/**
-	 * User + Profile 함께 생성
-	 */
-	createWithProfile: (
-		userOverrides: Partial<User> = {},
-		profileOverrides: Partial<UserProfile> = {},
-	): { user: User; profile: UserProfile } => {
-		const user = UserFixture.create(userOverrides);
+  /**
+   * User + Profile 함께 생성
+   */
+  createWithProfile: (
+    userOverrides: Partial<User> = {},
+    profileOverrides: Partial<UserProfile> = {},
+  ): { user: User; profile: UserProfile } => {
+    const user = UserFixture.create(userOverrides);
 
-		const profile: UserProfile = {
-			id: profileOverrides.id ?? `profile-${userCounter}`,
-			userId: user.id,
-			name: profileOverrides.name ?? `User ${userCounter}`,
-			profileImage: profileOverrides.profileImage ?? null,
-		};
+    const profile: UserProfile = {
+      id: profileOverrides.id ?? `profile-${userCounter}`,
+      userId: user.id,
+      name: profileOverrides.name === undefined ? `User ${userCounter}` : profileOverrides.name,
+      profileImage: profileOverrides.profileImage ?? null,
+    };
 
-		return { user, profile };
-	},
+    return { user, profile };
+  },
 
-	/**
-	 * User + Profile + Preference 함께 생성
-	 */
-	createFull: (
-		userOverrides: Partial<User> = {},
-		profileOverrides: Partial<UserProfile> = {},
-		preferenceOverrides: Partial<UserPreference> = {},
-	): { user: User; profile: UserProfile; preference: UserPreference } => {
-		const { user, profile } = UserFixture.createWithProfile(userOverrides, profileOverrides);
+  /**
+   * User + Profile + Preference 함께 생성
+   */
+  createFull: (
+    userOverrides: Partial<User> = {},
+    profileOverrides: Partial<UserProfile> = {},
+    preferenceOverrides: Partial<UserPreference> = {},
+  ): { user: User; profile: UserProfile; preference: UserPreference } => {
+    const { user, profile } = UserFixture.createWithProfile(userOverrides, profileOverrides);
 
-		const preference: UserPreference = {
-			id: preferenceOverrides.id ?? `pref-${userCounter}`,
-			userId: user.id,
-			pushEnabled: preferenceOverrides.pushEnabled ?? true,
-			nightPushEnabled: preferenceOverrides.nightPushEnabled ?? false,
-			timezone: preferenceOverrides.timezone ?? "UTC",
-			locale: preferenceOverrides.locale ?? "ko",
-			morningReminderHour: preferenceOverrides.morningReminderHour ?? 8,
-			morningReminderMinute: preferenceOverrides.morningReminderMinute ?? 0,
-			eveningReminderHour: preferenceOverrides.eveningReminderHour ?? 18,
-			eveningReminderMinute: preferenceOverrides.eveningReminderMinute ?? 0,
-			timeFormat: preferenceOverrides.timeFormat ?? "TWELVE_HOUR",
-			weatherMorningEnabled: preferenceOverrides.weatherMorningEnabled ?? false,
-			weatherMorningHour: preferenceOverrides.weatherMorningHour ?? 7,
-			weatherMorningMinute: preferenceOverrides.weatherMorningMinute ?? 0,
-			weatherEveningEnabled: preferenceOverrides.weatherEveningEnabled ?? false,
-			weatherEveningHour: preferenceOverrides.weatherEveningHour ?? 18,
-			weatherEveningMinute: preferenceOverrides.weatherEveningMinute ?? 0,
-			currentStreak: preferenceOverrides.currentStreak ?? 0,
-			longestStreak: preferenceOverrides.longestStreak ?? 0,
-			lastCompletedDate: preferenceOverrides.lastCompletedDate ?? null,
-		};
+    const preference: UserPreference = {
+      id: preferenceOverrides.id ?? `pref-${userCounter}`,
+      userId: user.id,
+      pushEnabled: preferenceOverrides.pushEnabled ?? true,
+      nightPushEnabled: preferenceOverrides.nightPushEnabled ?? false,
+      timezone: preferenceOverrides.timezone ?? "UTC",
+      locale: preferenceOverrides.locale ?? "ko",
+      morningReminderHour: preferenceOverrides.morningReminderHour ?? 8,
+      morningReminderMinute: preferenceOverrides.morningReminderMinute ?? 0,
+      eveningReminderHour: preferenceOverrides.eveningReminderHour ?? 18,
+      eveningReminderMinute: preferenceOverrides.eveningReminderMinute ?? 0,
+      timeFormat: preferenceOverrides.timeFormat ?? "TWELVE_HOUR",
+      weatherMorningEnabled: preferenceOverrides.weatherMorningEnabled ?? false,
+      weatherMorningHour: preferenceOverrides.weatherMorningHour ?? 7,
+      weatherMorningMinute: preferenceOverrides.weatherMorningMinute ?? 0,
+      weatherEveningEnabled: preferenceOverrides.weatherEveningEnabled ?? false,
+      weatherEveningHour: preferenceOverrides.weatherEveningHour ?? 18,
+      weatherEveningMinute: preferenceOverrides.weatherEveningMinute ?? 0,
+      currentStreak: preferenceOverrides.currentStreak ?? 0,
+      longestStreak: preferenceOverrides.longestStreak ?? 0,
+      lastCompletedDate: preferenceOverrides.lastCompletedDate ?? null,
+    };
 
-		return { user, profile, preference };
-	},
+    return { user, profile, preference };
+  },
 
-	/**
-	 * 카운터 리셋 (테스트 간 격리)
-	 */
-	reset: (): void => {
-		userCounter = 0;
-	},
+  /**
+   * 카운터 리셋 (테스트 간 격리)
+   */
+  reset: (): void => {
+    userCounter = 0;
+  },
 };
 
 /**
@@ -130,43 +113,43 @@ export const UserFixture = {
 let accountCounter = 0;
 
 export const AccountFixture = {
-	/**
-	 * Account 엔티티 생성
-	 */
-	create: (overrides: Partial<Account> = {}): Account => {
-		const id = ++accountCounter;
-		const now = new Date();
+  /**
+   * Account 엔티티 생성
+   */
+  create: (overrides: Partial<Account> = {}): Account => {
+    const id = ++accountCounter;
+    const now = new Date();
 
-		return {
-			id: overrides.id ?? id,
-			userId: overrides.userId ?? `user-${id}`,
-			provider: overrides.provider ?? ("CREDENTIAL" as AccountProvider),
-			providerAccountId: overrides.providerAccountId ?? `provider-${id}`,
-			password: overrides.password ?? null,
-			accessToken: overrides.accessToken ?? null,
-			accessTokenExpiresAt: overrides.accessTokenExpiresAt ?? null,
-			refreshToken: overrides.refreshToken ?? null,
-			scope: overrides.scope ?? null,
-			createdAt: overrides.createdAt ?? now,
-			updatedAt: overrides.updatedAt ?? now,
-		};
-	},
+    return {
+      id: overrides.id ?? id,
+      userId: overrides.userId ?? `user-${id}`,
+      provider: overrides.provider ?? "CREDENTIAL",
+      providerAccountId: overrides.providerAccountId ?? `provider-${id}`,
+      password: overrides.password ?? null,
+      accessToken: overrides.accessToken ?? null,
+      accessTokenExpiresAt: overrides.accessTokenExpiresAt ?? null,
+      refreshToken: overrides.refreshToken ?? null,
+      scope: overrides.scope ?? null,
+      createdAt: overrides.createdAt ?? now,
+      updatedAt: overrides.updatedAt ?? now,
+    };
+  },
 
-	/**
-	 * OAuth Account 생성
-	 */
-	createOAuth: (provider: AccountProvider, overrides: Partial<Account> = {}): Account => {
-		return AccountFixture.create({
-			provider,
-			accessToken: `${provider.toLowerCase()}-access-token`,
-			...overrides,
-		});
-	},
+  /**
+   * OAuth Account 생성
+   */
+  createOAuth: (provider: AccountProvider, overrides: Partial<Account> = {}): Account => {
+    return AccountFixture.create({
+      provider,
+      accessToken: `${provider.toLowerCase()}-access-token`,
+      ...overrides,
+    });
+  },
 
-	/**
-	 * 카운터 리셋
-	 */
-	reset: (): void => {
-		accountCounter = 0;
-	},
+  /**
+   * 카운터 리셋
+   */
+  reset: (): void => {
+    accountCounter = 0;
+  },
 };

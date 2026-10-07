@@ -1,4 +1,4 @@
-import { type ChangePasswordInput, changePasswordSchema } from '@aido/validators';
+import { type ChangePasswordInput, changePasswordSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
 import { PasswordStrengthIndicator } from '@src/features/auth/presentations/components/PasswordStrengthIndicator';

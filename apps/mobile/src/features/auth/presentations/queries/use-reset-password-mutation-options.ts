@@ -1,5 +1,5 @@
-import { ErrorCode } from '@aido/errors';
-import type { ResetPasswordInput } from '@aido/validators';
+import type { ResetPasswordInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';

@@ -1,36 +1,44 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { DELETED_COMMENT_AUTHOR } from "#api/shared/domain/system-user";
 
-const FINALIZE_MIGRATION_PATH = join(
-	import.meta.dirname,
-	"../../prisma/migrations/20260826100000_finalize_todo_conversation/migration.sql",
-);
+import baselineOperations from "../../prisma/migrations8/app/20261006T1211_prisma8_baseline/ops.json" with { type: "json" };
+import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 
-function withoutSqlComments(sql: string): string {
-	return sql
-		.split("\n")
-		.filter((line) => !line.trimStart().startsWith("--"))
-		.join("\n")
-		.trim();
-}
-
-describe("댓글 작성자 FK 마이그레이션", () => {
-	it("CASCADE와 RESTRICT 교체 전체를 한 트랜잭션으로 공개한다", () => {
-		const migration = withoutSqlComments(readFileSync(FINALIZE_MIGRATION_PATH, "utf8"));
-
-		expect(migration.startsWith("BEGIN;")).toBe(true);
-		expect(migration.endsWith("COMMIT;")).toBe(true);
-	});
-
-	it("공개 입력으로 만들 수 없는 시스템 식별자와 불변식 검증을 포함한다", () => {
-		const migration = readFileSync(FINALIZE_MIGRATION_PATH, "utf8");
-
-		expect(migration).toContain(`'${DELETED_COMMENT_AUTHOR.email}'`);
-		expect(migration).toContain(`'${DELETED_COMMENT_AUTHOR.userTag}'`);
-		expect(migration).toContain(
-			"RAISE EXCEPTION '댓글 삭제 시스템 사용자 불변식을 확인해 주세요.'",
-		);
-	});
+describe("댓글 작성자 native migration 불변식", () => {
+  it("작성자와 좋아요 FK는 cleanup 누락 시 RESTRICT로 데이터 유실을 차단한다", () => {
+    const tables = contractJson.storage.namespaces.public.entries.table;
+    expect(tables.TodoComment.foreignKeys).toContainEqual(
+      expect.objectContaining({
+        name: "TodoComment_authorId_fkey",
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    );
+    expect(tables.TodoCommentLike.foreignKeys).toContainEqual(
+      expect.objectContaining({
+        name: "TodoCommentLike_userId_fkey",
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    );
+  });
+  it("fresh baseline은 잠긴 시스템 작성자를 만들고 로그인 계정 없는 불변식을 검증한다", () => {
+    const seed = baselineOperations.find(
+      (operation) => operation.id === "seed.deletedCommentAuthor",
+    );
+    expect(seed).toBeDefined();
+    expect(seed).toMatchObject({
+      execute: [
+        expect.objectContaining({
+          params: [
+            DELETED_COMMENT_AUTHOR.id,
+            DELETED_COMMENT_AUTHOR.email,
+            DELETED_COMMENT_AUTHOR.userTag,
+          ],
+          sql: expect.stringContaining('ON CONFLICT ("id") DO NOTHING'),
+        }),
+      ],
+      postcheck: [expect.objectContaining({ sql: expect.stringContaining("u.status = 'LOCKED'") })],
+    });
+    expect(seed?.postcheck?.[0]?.sql).toContain('"Account"');
+  });
 });

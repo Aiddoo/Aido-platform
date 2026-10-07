@@ -1,4 +1,4 @@
-import { userTagParamSchema } from '@aido/validators';
+import { userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';

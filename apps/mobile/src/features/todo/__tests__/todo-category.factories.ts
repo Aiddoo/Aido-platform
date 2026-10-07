@@ -1,8 +1,4 @@
-import type {
-  TodoCategory,
-  TodoCategoryListResponse,
-  TodoCategoryWithCount,
-} from '@aido/validators';
+import type { TodoCategory, TodoCategoryListResponse, TodoCategoryWithCount } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 const generateTodoCategoryDto = (): TodoCategory => ({

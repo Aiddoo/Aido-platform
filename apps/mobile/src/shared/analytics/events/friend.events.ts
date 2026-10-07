@@ -1,4 +1,4 @@
-import type { ReplyToNudgeInput } from '@aido/validators';
+import type { ReplyToNudgeInput } from '@aido/api';
 
 export interface FriendEventMap {
   friend_request_sent: undefined;

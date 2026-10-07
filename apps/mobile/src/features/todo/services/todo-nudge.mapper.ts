@@ -3,7 +3,7 @@ import type {
   CreateRemindNudgeResponse,
   NudgeCooldownInfo as NudgeCooldownInfoDTO,
   NudgeLimitInfo as NudgeLimitInfoDTO,
-} from '@aido/validators';
+} from '@aido/api';
 
 import type {
   NudgeCooldownInfo,

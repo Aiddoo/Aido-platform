@@ -10,7 +10,7 @@ interface ValidationMessageKeys {
 }
 
 /**
- * `@aido/validators` 공유 스키마(서버 소유, 한국어 message)를 쓰는 폼의
+ * `@aido/api` 공유 스키마(서버 소유, 한국어 message)를 쓰는 폼의
  * 에러 표시를 로케일 키로 매핑한다. 스키마의 message 문자열은 신뢰하지 않고
  * 필드 에러의 존재/타입만 사용한다.
  *

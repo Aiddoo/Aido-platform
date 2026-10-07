@@ -1,4 +1,4 @@
-import type { CreateNudgeResponse, NudgeCooldownInfo, NudgeLimitInfo } from '@aido/validators';
+import type { CreateNudgeResponse, NudgeCooldownInfo, NudgeLimitInfo } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 const generateNudgeLimitInfoDto = (): NudgeLimitInfo => ({

@@ -1,4 +1,4 @@
-import { PASSWORD_RULES } from '@aido/validators';
+import { PASSWORD_RULES } from '@aido/api';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({

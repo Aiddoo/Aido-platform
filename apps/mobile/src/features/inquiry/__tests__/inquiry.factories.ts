@@ -1,4 +1,4 @@
-import type { CreateInquiryResponse } from '@aido/validators';
+import type { CreateInquiryResponse } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 const generateCreateInquiryResponseDto = (): CreateInquiryResponse => ({

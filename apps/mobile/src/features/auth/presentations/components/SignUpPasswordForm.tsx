@@ -1,4 +1,4 @@
-import { passwordSchema } from '@aido/validators';
+import { passwordSchema } from '@aido/api';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';

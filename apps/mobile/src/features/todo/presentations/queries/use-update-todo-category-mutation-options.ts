@@ -1,4 +1,4 @@
-import type { UpdateTodoCategoryInput } from '@aido/validators';
+import type { UpdateTodoCategoryInput } from '@aido/api';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { isTodoCategoryError } from '@src/features/todo/models/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/models/todo-category.model';

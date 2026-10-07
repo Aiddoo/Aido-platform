@@ -1,4 +1,4 @@
-import type { FeatureDiscoveryResponse } from '@aido/validators';
+import type { FeatureDiscoveryResponse } from '@aido/api';
 
 import { toFeatureDiscoveryConfig } from './feature-discovery.mapper';
 

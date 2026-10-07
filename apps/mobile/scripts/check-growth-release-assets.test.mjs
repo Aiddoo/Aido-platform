@@ -160,11 +160,7 @@ function createFixture({ mutateRelease, mutateCopy, packageVersion = RELEASE_VER
     publicCopy.discoveryEn,
   );
   write(root, 'apps/api/src/follow/presentation/follow.controller.ts', publicCopy.followController);
-  write(
-    root,
-    'packages/validators/src/domains/follow/follow.request.ts',
-    publicCopy.followValidator,
-  );
+  write(root, 'packages/api/src/domains/follow/follow.request.ts', publicCopy.followValidator);
   write(
     root,
     `apps/mobile/docs/releases/${RELEASE_VERSION}.md`,

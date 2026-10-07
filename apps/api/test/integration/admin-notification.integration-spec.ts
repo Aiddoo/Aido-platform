@@ -15,190 +15,190 @@ import { Test, type TestingModule } from "@nestjs/testing";
  *
  * 실행 명령:
  * ```bash
- * pnpm --filter @aido/api test admin-notification.integration-spec
+ * pnpm --filter @aido/server test admin-notification.integration-spec
  * ```
  */
 import type { Job } from "bullmq";
 import { vi } from "vitest";
 
-import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/admin-notification/application/ports/admin-notification-queue.port";
-import { SIGNUP_STATS_READER } from "#api/admin-notification/application/ports/signup-stats.reader.port";
-import { DispatchDailySignupSummaryUseCase } from "#api/admin-notification/application/use-cases/dispatch-daily-signup-summary/dispatch-daily-signup-summary.use-case";
-import { SendAdminNotificationUseCase } from "#api/admin-notification/application/use-cases/send-admin-notification/send-admin-notification.use-case";
-import { ADMIN_NOTIFIER, PAYMENT_NOTIFIER } from "#api/admin-notification/index";
-import { AdminNotificationProcessor } from "#api/admin-notification/infrastructure/queue/admin-notification-queue.processor";
+import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
+import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
+import { SIGNUP_STATS_READER } from "#api/modules/operations/application/ports/notifications/signup-stats.reader.port";
+import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
+import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
+import {
+  dispatchDailySignupSummaryProvider,
+  sendAdminNotificationProvider,
+} from "../../src/modules/operations/operations-notifications-application.providers.js";
+
 function createMockJob(name: string, data: Record<string, unknown>): Job {
-	return { name, data, id: `job-${name}` } as unknown as Job;
+  return { name, data, id: `job-${name}` } as unknown as Job;
 }
 
 describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
-	let module: TestingModule;
-	let processor: AdminNotificationProcessor;
+  let module: TestingModule;
+  let processor: AdminNotificationProcessor;
 
-	// Mock Notifiers
-	const mockAdminNotifier = {
-		name: "admin-discord",
-		send: vi.fn().mockResolvedValue({ success: true }),
-		isConfigured: vi.fn().mockReturnValue(true),
-	};
+  // Mock Notifiers
+  const mockAdminNotifier = {
+    name: "admin-discord",
+    send: vi.fn().mockResolvedValue({ success: true }),
+  };
 
-	const mockPaymentNotifier = {
-		name: "payment-discord",
-		send: vi.fn().mockResolvedValue({ success: true }),
-		isConfigured: vi.fn().mockReturnValue(true),
-	};
+  const mockPaymentNotifier = {
+    name: "payment-discord",
+    send: vi.fn().mockResolvedValue({ success: true }),
+  };
 
-	// Mock ports (dispatch summary)
-	const mockSignupStatsReader = {
-		getSignupStats: vi.fn().mockResolvedValue({
-			signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
-			totalUsers: 100,
-		}),
-	};
+  // Mock ports (dispatch summary)
+  const mockSignupStatsReader = {
+    getSignupStats: vi.fn().mockResolvedValue({
+      signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
+      totalUsers: 100,
+    }),
+  };
 
-	const mockQueuePort = {
-		enqueueSend: vi.fn().mockResolvedValue(undefined),
-	};
+  const mockQueuePort = {
+    enqueueSend: vi.fn().mockResolvedValue(undefined),
+  };
 
-	beforeAll(async () => {
-		suppressLogger();
+  beforeAll(async () => {
+    suppressLogger();
 
-		module = await Test.createTestingModule({
-			providers: [
-				AdminNotificationProcessor,
-				SendAdminNotificationUseCase,
-				DispatchDailySignupSummaryUseCase,
-				{
-					provide: ADMIN_NOTIFIER,
-					useValue: mockAdminNotifier,
-				},
-				{
-					provide: PAYMENT_NOTIFIER,
-					useValue: mockPaymentNotifier,
-				},
-				{
-					provide: SIGNUP_STATS_READER,
-					useValue: mockSignupStatsReader,
-				},
-				{
-					provide: ADMIN_NOTIFICATION_QUEUE_PORT,
-					useValue: mockQueuePort,
-				},
-			],
-		}).compile();
+    module = await Test.createTestingModule({
+      providers: [
+        AdminNotificationProcessor,
+        sendAdminNotificationProvider,
+        dispatchDailySignupSummaryProvider,
+        {
+          provide: ADMIN_NOTIFIER,
+          useValue: mockAdminNotifier,
+        },
+        {
+          provide: PAYMENT_NOTIFIER,
+          useValue: mockPaymentNotifier,
+        },
+        {
+          provide: SIGNUP_STATS_READER,
+          useValue: mockSignupStatsReader,
+        },
+        {
+          provide: ADMIN_NOTIFICATION_QUEUE_PORT,
+          useValue: mockQueuePort,
+        },
+      ],
+    }).compile();
 
-		processor = module.get<AdminNotificationProcessor>(AdminNotificationProcessor);
-	});
+    processor = module.get<AdminNotificationProcessor>(AdminNotificationProcessor);
+  });
 
-	afterAll(async () => {
-		await module.close();
-		vi.restoreAllMocks();
-	});
+  afterAll(async () => {
+    await module.close();
+    vi.restoreAllMocks();
+  });
 
-	beforeEach(() => {
-		vi.resetAllMocks();
-		mockAdminNotifier.send.mockResolvedValue({ success: true });
-		mockAdminNotifier.isConfigured.mockReturnValue(true);
-		mockPaymentNotifier.send.mockResolvedValue({ success: true });
-		mockPaymentNotifier.isConfigured.mockReturnValue(true);
-		mockSignupStatsReader.getSignupStats.mockResolvedValue({
-			signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
-			totalUsers: 100,
-		});
-		mockQueuePort.enqueueSend.mockResolvedValue(undefined);
-	});
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockAdminNotifier.send.mockResolvedValue({ success: true });
+    mockPaymentNotifier.send.mockResolvedValue({ success: true });
+    mockSignupStatsReader.getSignupStats.mockResolvedValue({
+      signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
+      totalUsers: 100,
+    });
+    mockQueuePort.enqueueSend.mockResolvedValue(undefined);
+  });
 
-	describe("SEND 잡 처리 통합 테스트", () => {
-		it("SEND 잡 admin 채널 — adminNotifier.send()가 호출된다", async () => {
-			// Given - admin 채널로 알림 발송 잡
-			const notification = {
-				title: "신규 가입자 알림",
-				body: "새로운 사용자가 가입했습니다.",
-			};
-			const job = createMockJob("send-notification", {
-				channel: "admin",
-				notification,
-			});
+  describe("SEND 잡 처리 통합 테스트", () => {
+    it("SEND 잡 admin 채널 — adminNotifier.send()가 호출된다", async () => {
+      // Given - admin 채널로 알림 발송 잡
+      const notification = {
+        title: "신규 가입자 알림",
+        body: "새로운 사용자가 가입했습니다.",
+      };
+      const job = createMockJob("send-notification", {
+        channel: "admin",
+        notification,
+      });
 
-			// When - 잡 처리
-			await processor.process(job);
+      // When - 잡 처리
+      await processor.process(job);
 
-			// Then - adminNotifier.send()가 호출되어야 함
-			expect(mockAdminNotifier.send).toHaveBeenCalledWith(notification);
-			expect(mockPaymentNotifier.send).not.toHaveBeenCalled();
-		});
+      // Then - adminNotifier.send()가 호출되어야 함
+      expect(mockAdminNotifier.send).toHaveBeenCalledWith(notification);
+      expect(mockPaymentNotifier.send).not.toHaveBeenCalled();
+    });
 
-		it("SEND 잡 payment 채널 — paymentNotifier.send()가 호출된다", async () => {
-			// Given - payment 채널로 알림 발송 잡
-			const notification = {
-				title: "결제 완료",
-				body: "구독 결제가 완료되었습니다.",
-			};
-			const job = createMockJob("send-notification", {
-				channel: "payment",
-				notification,
-			});
+    it("SEND 잡 payment 채널 — paymentNotifier.send()가 호출된다", async () => {
+      // Given - payment 채널로 알림 발송 잡
+      const notification = {
+        title: "결제 완료",
+        body: "구독 결제가 완료되었습니다.",
+      };
+      const job = createMockJob("send-notification", {
+        channel: "payment",
+        notification,
+      });
 
-			// When - 잡 처리
-			await processor.process(job);
+      // When - 잡 처리
+      await processor.process(job);
 
-			// Then - paymentNotifier.send()가 호출되어야 함
-			expect(mockPaymentNotifier.send).toHaveBeenCalledWith(notification);
-			expect(mockAdminNotifier.send).not.toHaveBeenCalled();
-		});
+      // Then - paymentNotifier.send()가 호출되어야 함
+      expect(mockPaymentNotifier.send).toHaveBeenCalledWith(notification);
+      expect(mockAdminNotifier.send).not.toHaveBeenCalled();
+    });
 
-		it("send 실패 — 에러가 throw된다", async () => {
-			// Given - send가 실패를 반환하는 경우
-			mockAdminNotifier.send.mockResolvedValue({
-				success: false,
-				error: "Webhook rate limited",
-			});
+    it("send 실패 — 에러가 throw된다", async () => {
+      // Given - send가 실패를 반환하는 경우
+      mockAdminNotifier.send.mockResolvedValue({
+        success: false,
+        error: "Webhook rate limited",
+      });
 
-			const job = createMockJob("send-notification", {
-				channel: "admin",
-				notification: {
-					title: "테스트",
-					body: "실패 테스트",
-				},
-			});
+      const job = createMockJob("send-notification", {
+        channel: "admin",
+        notification: {
+          title: "테스트",
+          body: "실패 테스트",
+        },
+      });
 
-			// When & Then - 에러가 throw되어야 함
-			await expect(processor.process(job)).rejects.toThrow("Discord webhook failed");
-		});
-	});
+      // When & Then - 에러가 throw되어야 함
+      await expect(processor.process(job)).rejects.toThrow("Discord webhook failed");
+    });
+  });
 
-	describe("DISPATCH_SUMMARY 잡 처리 통합 테스트", () => {
-		it("DISPATCH_SUMMARY 잡 — 집계 후 SEND 잡을 큐에 등록한다", async () => {
-			// Given
-			const job = createMockJob("dispatch-signup-summary", {});
+  describe("DISPATCH_SUMMARY 잡 처리 통합 테스트", () => {
+    it("DISPATCH_SUMMARY 잡 — 집계 후 SEND 잡을 큐에 등록한다", async () => {
+      // Given
+      const job = createMockJob("dispatch-signup-summary", {});
 
-			// When - 잡 처리
-			await processor.process(job);
+      // When - 잡 처리
+      await processor.process(job);
 
-			// Then - 가입 통계 집계 후 admin 채널로 큐 등록
-			expect(mockSignupStatsReader.getSignupStats).toHaveBeenCalled();
-			expect(mockQueuePort.enqueueSend).toHaveBeenCalledWith(
-				"admin",
-				expect.objectContaining({
-					title: expect.stringContaining("일일 가입 리포트"),
-				}),
-				expect.objectContaining({
-					jobId: expect.stringContaining("signup-summary_"),
-				}),
-			);
-		});
+      // Then - 가입 통계 집계 후 admin 채널로 큐 등록
+      expect(mockSignupStatsReader.getSignupStats).toHaveBeenCalled();
+      expect(mockQueuePort.enqueueSend).toHaveBeenCalledWith(
+        "admin",
+        expect.objectContaining({
+          title: expect.stringContaining("일일 가입 리포트"),
+        }),
+        expect.objectContaining({
+          jobId: expect.stringContaining("signup-summary_"),
+        }),
+      );
+    });
 
-		it("DISPATCH_SUMMARY 잡 — 집계 실패 시에도 예외를 전파하지 않는다", async () => {
-			// Given - 리더가 실패
-			mockSignupStatsReader.getSignupStats.mockRejectedValueOnce(new Error("DB connection error"));
+    it("DISPATCH_SUMMARY 잡 — 집계 실패 시에도 예외를 전파하지 않는다", async () => {
+      // Given - 리더가 실패
+      mockSignupStatsReader.getSignupStats.mockRejectedValueOnce(new Error("DB connection error"));
 
-			const job = createMockJob("dispatch-signup-summary", {});
+      const job = createMockJob("dispatch-signup-summary", {});
 
-			// When & Then - 예외 전파 없음, 큐 등록도 없음
-			await expect(processor.process(job)).resolves.not.toThrow();
-			expect(mockQueuePort.enqueueSend).not.toHaveBeenCalled();
-		});
-	});
+      // When & Then - 예외 전파 없음, 큐 등록도 없음
+      await expect(processor.process(job)).resolves.not.toThrow();
+      expect(mockQueuePort.enqueueSend).not.toHaveBeenCalled();
+    });
+  });
 });

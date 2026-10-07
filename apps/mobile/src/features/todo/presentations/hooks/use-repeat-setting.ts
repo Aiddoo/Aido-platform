@@ -1,4 +1,4 @@
-import type { DayOfWeek } from '@aido/validators';
+import type { DayOfWeek } from '@aido/api';
 import { without } from 'es-toolkit';
 import { useReducer } from 'react';
 import { match } from 'ts-pattern';

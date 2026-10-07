@@ -1,4 +1,4 @@
-import { emailSchema } from '@aido/validators';
+import { emailSchema } from '@aido/api';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/useStepper';
 import { useTranslation } from '@src/shared/i18n';

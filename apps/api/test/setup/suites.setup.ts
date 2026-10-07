@@ -32,5 +32,5 @@ export { TestBed } from "@suites/unit";
  * Suites 사용 가이드
  *
  * 1. 단순 서비스 테스트: Suites TestBed 사용 (자동 mock)
- * 2. Repository 테스트: 자체 헬퍼(createMockPrisma 등) + Prismock 사용
+ * 2. Repository 테스트: 자체 헬퍼(createMockDatabaseContext 등) + Prismock 사용
  */

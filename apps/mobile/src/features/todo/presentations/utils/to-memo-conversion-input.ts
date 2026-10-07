@@ -1,4 +1,4 @@
-import { convertMemoToTodosSchema, type ConvertMemoToTodosInput } from '@aido/validators';
+import { convertMemoToTodosSchema, type ConvertMemoToTodosInput } from '@aido/api';
 import { formatDate } from '@src/shared/utils/date';
 
 import type { AddTodoFormInput } from '../schemas/add-todo-form.schema';

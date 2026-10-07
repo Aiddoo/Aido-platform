@@ -7,7 +7,7 @@ import { ValueObject } from "../value-object.js";
  * Aido는 cuid(string)와 autoincrement(number) ID가 혼재하므로 둘 다 지원합니다.
  */
 export abstract class EntityId<TValue extends string | number> extends ValueObject<TValue> {
-	override toString(): string {
-		return String(this.value);
-	}
+  override toString(): string {
+    return String(this.value);
+  }
 }

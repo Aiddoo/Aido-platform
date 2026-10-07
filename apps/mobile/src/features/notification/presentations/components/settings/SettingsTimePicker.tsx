@@ -1,4 +1,4 @@
-import type { UpdatePreferenceInput } from '@aido/validators';
+import type { UpdatePreferenceInput } from '@aido/api';
 import DateTimePicker, {
   type AndroidNativeProps,
   type IOSNativeProps,

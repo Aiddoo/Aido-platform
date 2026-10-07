@@ -1,15 +1,15 @@
 name: Setup
-description: pnpm + Node.js + dependencies + Prisma Client
+description: pnpm + Node.js + dependencies + native ORM contracts
 
 inputs:
-  affected-base:
-    description: Branch used for the cumulative Turbo change scope
+  install-scope:
+    description: Install API dependency closure or the complete workspace
     required: false
-    default: ''
-  affected-base-sha:
-    description: Immutable commit used for the cumulative Turbo change scope
+    default: all
+  generate-prisma:
+    description: Generate API ORM contracts only when API is affected
     required: false
-    default: ''
+    default: 'true'
 
 runs:
   using: composite
@@ -23,25 +23,17 @@ runs:
         cache: pnpm
 
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-      shell: bash
-
-    # 최종 스택 PR은 develop부터 누적 변경을 검사한다.
-    - name: Set turbo affected base (PR 전용)
-      if: github.event_name == 'pull_request'
-      shell: bash
       env:
-        BASE_REF: ${{ inputs.affected-base || github.base_ref }}
-        BASE_SHA: ${{ inputs.affected-base-sha }}
+        INSTALL_SCOPE: ${{ inputs.install-scope }}
       run: |
-        git fetch origin "$BASE_REF"
-        if [ -n "$BASE_SHA" ]; then
-          git cat-file -e "$BASE_SHA^{commit}" || git fetch origin "$BASE_SHA"
-          echo "TURBO_SCM_BASE=$BASE_SHA" >> "$GITHUB_ENV"
+        if [[ "$INSTALL_SCOPE" == "api" ]]; then
+          pnpm install --frozen-lockfile --filter=@aido/server... --filter=@aido/monorepo
         else
-          echo "TURBO_SCM_BASE=origin/$BASE_REF" >> "$GITHUB_ENV"
+          pnpm install --frozen-lockfile
         fi
+      shell: bash
 
-    - name: Generate Prisma Client
-      run: pnpm db:generate
+    - name: Emit ORM contracts
+      if: inputs.generate-prisma == 'true'
+      run: pnpm turbo run contract:emit --filter=@aido/server
       shell: bash

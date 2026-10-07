@@ -1,4 +1,4 @@
-import { featureDiscoveryMinAppVersionSchema } from '@aido/validators';
+import { featureDiscoveryMinAppVersionSchema } from '@aido/api';
 import { userSchema } from '@src/features/user/models/user.model';
 import { z } from 'zod';
 

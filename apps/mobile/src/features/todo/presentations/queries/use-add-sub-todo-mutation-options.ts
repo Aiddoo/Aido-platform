@@ -1,4 +1,4 @@
-import { ErrorCode } from '@aido/errors';
+import { ErrorCode } from '@aido/api/errors';
 import { useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors/api-error';

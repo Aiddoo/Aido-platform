@@ -6,7 +6,7 @@ import type {
   SearchUsersResponse,
   SendFriendRequestResponse,
   SentRequestsResponse,
-} from '@aido/validators';
+} from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
 const generateSendFriendRequestDto = (): SendFriendRequestResponse => ({

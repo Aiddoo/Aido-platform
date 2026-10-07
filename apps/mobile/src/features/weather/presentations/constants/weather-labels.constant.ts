@@ -1,4 +1,4 @@
-import type { PrecipitationType, SkyCondition } from '@aido/validators';
+import type { PrecipitationType, SkyCondition } from '@aido/api';
 import { t } from '@src/shared/i18n';
 
 const SKY_CONDITION_LABEL_KEYS = {

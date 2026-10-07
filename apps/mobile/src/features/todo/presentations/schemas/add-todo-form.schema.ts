@@ -1,4 +1,4 @@
-import { type DayOfWeek, dayOfWeekSchema } from '@aido/validators';
+import { type DayOfWeek, dayOfWeekSchema } from '@aido/api';
 import { t } from '@src/shared/i18n';
 import { z } from 'zod';
 

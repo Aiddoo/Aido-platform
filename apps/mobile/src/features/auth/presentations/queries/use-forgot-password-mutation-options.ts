@@ -1,4 +1,4 @@
-import type { ForgotPasswordInput } from '@aido/validators';
+import type { ForgotPasswordInput } from '@aido/api';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/useAppToast';

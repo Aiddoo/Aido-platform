@@ -22,6 +22,10 @@ concurrency:
   cancel-in-progress: >-
     ${{ github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip' }}
 
+defaults:
+  run:
+    shell: bash # GitHub가 -eo pipefail을 적용하므로 tee 뒤에서도 테스트 실패가 보존된다.
+
 permissions:
   contents: read
   pull-requests: read
@@ -35,40 +39,209 @@ jobs:
   gate:
     name: CI Scope
     if: >-
-      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (!contains(join(github.event.pull_request.labels.*.name, ','), 'stack:') || contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
+      ${{ (github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip') && (github.event_name != 'pull_request' || (!github.event.pull_request.draft && (!contains(format(',{0}', join(github.event.pull_request.labels.*.name, ',')), ',stack:') || contains(github.event.pull_request.labels.*.name, 'ci:stack-tip')))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
     outputs:
-      run: ${{ steps.policy.outputs.run }}
-      base: ${{ steps.policy.outputs.base }}
-      base-sha: ${{ steps.policy.outputs.base-sha }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-      - run: node --test scripts/ci/stack-policy.test.mjs
-      - name: Resolve cumulative CI scope
-        id: policy
-        run: node scripts/ci/stack-gate.mjs
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-  lint:
-    name: Lint & Type Check
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+      run: ${{ steps.policy.outputs.run == 'true' && steps.validation.outputs.validation_reused != 'true' }}
+      validation_reused: ${{ steps.validation.outputs.validation_reused }}
+      proof_run_url: ${{ steps.validation.outputs.proof_run_url }}
+      api: ${{ steps.policy.outputs.api }}
+      mobile: ${{ steps.policy.outputs.mobile }}
+      shared: ${{ steps.policy.outputs.shared }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      # GitHub 공식 Octokit 클라이언트가 인증·pagination을 맡는다.
+      # 저장소 고유의 스택/의존성 정책만 별도 모듈로 유지한다.
+      - name: Resolve cumulative CI scope
+        id: policy
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0 (Node 24)
+        with:
+          script: |
+            const { execFileSync } = require('node:child_process');
+            const { readdirSync, mkdirSync, writeFileSync } = require('node:fs');
+            const { join } = require('node:path');
+            const tests = readdirSync('scripts/ci').filter((file) => file.endsWith('.test.mjs'));
+            execFileSync(process.execPath, ['--test', ...tests.map((file) => `scripts/ci/${file}`)], { stdio: 'inherit' });
+            const { planPullRequestCI, validationProofName } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
+            const { dependencyScope } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
+            const { owner, repo } = context.repo;
+            const event = context.payload;
+            let plan = { run: true, base: 'develop', reason: 'push-or-dispatch', ancestors: [] };
+            let baseSha = '';
+            let headSha = context.sha;
+            let currentPull;
+            if (event.pull_request !== undefined) {
+              const { data: current } = await github.rest.pulls.get({ owner, repo, pull_number: event.pull_request.number });
+              currentPull = current;
+              headSha = current.head.sha;
+              if (headSha !== event.pull_request.head.sha) throw new Error('The workflow head is stale; rerun for the current commit.');
+              const openPulls = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
+              plan = planPullRequestCI(current, openPulls, `${owner}/${repo}`);
+              const verifyAncestor = async (base) => {
+                const { data } = await github.rest.repos.compareCommits({ owner, repo, base, head: headSha });
+                if (!['ahead', 'identical'].includes(data.status)) throw new Error('Rebase the CI tip to include the current base and all stack ancestors.');
+              };
+              if (plan.run) {
+                const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: plan.base });
+                baseSha = branch.commit.sha;
+                if (plan.reason === 'cumulative-stack-tip') await verifyAncestor(baseSha);
+              }
+              for (const ancestor of plan.ancestors) await verifyAncestor(ancestor);
+            }
+            let paths = null;
+            if (plan.run && context.eventName !== 'workflow_dispatch') {
+              try {
+                const baseline = baseSha || event.before;
+                if (baseline === undefined || baseline === '' || /^0+$/.test(baseline)) throw new Error('No complete diff baseline');
+                const range = event.pull_request !== undefined ? `${baseline}...${headSha}` : `${baseline}..${headSha}`;
+                paths = execFileSync('git', ['diff', '--name-only', '-z', range], { encoding: 'utf8' }).split('\0').filter((path) => path !== '');
+              } catch (error) {
+                core.warning(`Unable to scope changed files; running all checks: ${error.message}`);
+              }
+            }
+            const scope = dependencyScope(paths);
+            core.setOutput('run', plan.run);
+            core.setOutput('api', scope.api);
+            core.setOutput('mobile', scope.mobile);
+            core.setOutput('shared', scope.shared);
+            await core.summary.addRaw(`CI policy: **${plan.reason}**. API=${scope.api}, mobile=${scope.mobile}, shared=${scope.shared}. Heavy checks: **${plan.run ? 'run' : 'deferred'}**. Base: ${plan.base} (${baseSha}). Head: ${headSha}. Ancestors: ${plan.ancestors.join(', ') || 'none'}.`).write();
+            const testedCommit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+            const tree = execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim();
+            if (testedCommit !== context.sha) throw new Error('Unexpected checkout commit.');
+            core.setOutput('tree', tree);
+            core.setOutput('tested_commit', testedCommit);
+            core.setOutput('scope', JSON.stringify(scope));
+            const attempt = Number(process.env.GITHUB_RUN_ATTEMPT);
+            const proofDirectory = join(process.env.RUNNER_TEMP, 'ci-tree-proof');
+            if (context.eventName === 'pull_request' && plan.reason === 'cumulative-stack-tip' && Object.values(scope).some(Boolean)) {
+              const headTree = execFileSync('git', ['rev-parse', `${headSha}^{tree}`], { encoding: 'utf8' }).trim();
+              if (headTree === tree) {
+                mkdirSync(proofDirectory, { recursive: true });
+                writeFileSync(join(proofDirectory, 'proof.json'), JSON.stringify({
+                  version: 1, repository: `${owner}/${repo}`, runId: context.runId, attempt,
+                  pullNumber: currentPull.number, reason: plan.reason,
+                  stackLabel: currentPull.labels.find((label) => label.name.startsWith('stack:')).name,
+                  headSha, testedCommit, tree, baseSha, ancestors: plan.ancestors, scopes: scope,
+                }));
+                core.setOutput('proof_created', 'true');
+                core.setOutput('proof_name', validationProofName(context.runId, attempt));
+              }
+            }
+            if (context.eventName !== 'push' || !['refs/heads/main', 'refs/heads/develop'].includes(context.ref)) return;
+            try {
+              const { data: activeRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: context.runId });
+              const { data: candidates } = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id: activeRun.workflow_id, event: 'pull_request', status: 'success', per_page: 100,
+              });
+              for (const run of candidates.workflow_runs.slice(0, 20)) {
+                if (run.path !== '.github/workflows/ci.yml' || run.repository.full_name !== `${owner}/${repo}` || run.head_repository?.full_name !== `${owner}/${repo}`) continue;
+                const { data: head } = await github.rest.repos.getCommit({ owner, repo, ref: run.head_sha });
+                if (head.commit.tree.sha !== tree) continue;
+                const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, { owner, repo, run_id: run.id, per_page: 100 });
+                const matches = artifacts.filter((artifact) => artifact.name === validationProofName(run.id, run.run_attempt) && !artifact.expired);
+                if (matches.length !== 1) continue;
+                core.setOutput('candidate_run', run.id);
+                core.setOutput('candidate_artifact', matches[0].id);
+                core.setOutput('workflow_id', activeRun.workflow_id);
+                break;
+              }
+            } catch {
+              core.warning('No usable CI proof candidate; current scope will be validated.');
+            }
+
+      - name: Upload candidate checkout proof
+        if: steps.policy.outputs.proof_created == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.policy.outputs.proof_name }}
+          path: ${{ runner.temp }}/ci-tree-proof/proof.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Download candidate proof from its run
+        id: download-proof
+        if: steps.policy.outputs.candidate_run != ''
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2 (Node 24)
+        with:
+          artifact-ids: ${{ steps.policy.outputs.candidate_artifact }}
+          run-id: ${{ steps.policy.outputs.candidate_run }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          path: ${{ runner.temp }}/ci-proof-reuse
+          digest-mismatch: error
+
+      - name: Verify source run and required jobs
+        id: validation
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0 (Node 24)
+        env:
+          CANDIDATE_RUN: ${{ steps.policy.outputs.candidate_run }}
+          CANDIDATE_ARTIFACT: ${{ steps.policy.outputs.candidate_artifact }}
+          WORKFLOW_ID: ${{ steps.policy.outputs.workflow_id }}
+          CHECKOUT_TREE: ${{ steps.policy.outputs.tree }}
+          CHECKOUT_COMMIT: ${{ steps.policy.outputs.tested_commit }}
+          REQUIRED_SCOPE: ${{ steps.policy.outputs.scope }}
+          DOWNLOAD_OUTCOME: ${{ steps.download-proof.outcome }}
+        with:
+          script: |
+            const { readFileSync, statSync } = require('node:fs');
+            const { join } = require('node:path');
+            const { validateTreeProof } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
+            const { owner, repo } = context.repo;
+            core.setOutput('validation_reused', 'false');
+            if (context.eventName !== 'push' || process.env.CANDIDATE_RUN === '' || process.env.DOWNLOAD_OUTCOME !== 'success') return;
+            try {
+              const file = join(process.env.RUNNER_TEMP, 'ci-proof-reuse', 'proof.json');
+              if (statSync(file).size > 65536) throw new Error('Oversized proof.');
+              const proof = JSON.parse(readFileSync(file, 'utf8'));
+              const runId = Number(process.env.CANDIDATE_RUN);
+              const { data: candidateRun } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+              if (!Number.isSafeInteger(proof?.pullNumber) || !/^[0-9a-f]{40}$/.test(proof?.testedCommit) || !/^[0-9a-f]{40}$/.test(proof?.headSha)) throw new Error('Invalid proof identifiers.');
+              const { data: artifact } = await github.rest.actions.getArtifact({ owner, repo, artifact_id: Number(process.env.CANDIDATE_ARTIFACT) });
+              const { data: pull } = await github.rest.pulls.get({ owner, repo, pull_number: proof.pullNumber });
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, { owner, repo, run_id: runId, attempt_number: candidateRun.run_attempt, per_page: 100 });
+              const { data: testedCommit } = await github.rest.repos.getCommit({ owner, repo, ref: proof.testedCommit });
+              const { data: headCommit } = await github.rest.repos.getCommit({ owner, repo, ref: proof.headSha });
+              const { data: ancestry } = await github.rest.repos.compareCommits({ owner, repo, base: proof.headSha, head: process.env.CHECKOUT_COMMIT });
+              const { data: run } = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: runId });
+              const decision = validateTreeProof({
+                proof, run, artifact, pull, jobs, jobsAttempt: candidateRun.run_attempt, repository: `${owner}/${repo}`,
+                workflowId: Number(process.env.WORKFLOW_ID), currentTree: process.env.CHECKOUT_TREE,
+                requiredScope: JSON.parse(process.env.REQUIRED_SCOPE),
+                testedCommitTree: testedCommit.commit.tree.sha, headCommitTree: headCommit.commit.tree.sha,
+                headIncluded: ['ahead', 'identical'].includes(ancestry.status),
+              });
+              if (!decision.reusable) {
+                await core.summary.addRaw(`CI proof not reused: **${decision.reason}**. Validate the current scope.`).write();
+                return;
+              }
+              core.setOutput('validation_reused', 'true');
+              core.setOutput('proof_run_url', run.html_url);
+              await core.summary.addRaw(`Validation reused from [run ${run.id}, attempt ${run.run_attempt}](${run.html_url}). Head H=${proof.headSha}; tested checkout P=${proof.testedCommit}; tree=${proof.tree}. Current commit=${process.env.CHECKOUT_COMMIT}. Required jobs succeeded; current heavy jobs are deferred.`).write();
+            } catch {
+              core.warning('CI proof unavailable or invalid; current scope will be validated.');
+            }
+
+  lint:
+    name: Lint & Type Check
+    needs: gate
+    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
+          generate-prisma: ${{ needs.gate.outputs.api }}
+          install-scope: ${{ needs.gate.outputs.mobile == 'true' && 'all' || 'api' }}
 
       # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
       - name: Oxlint
@@ -78,142 +251,93 @@ jobs:
         run: pnpm format:check
 
       - name: Type Check
-        run: pnpm turbo run typecheck ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
+        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Mobile conventions
+        if: needs.gate.outputs.mobile == 'true'
         run: pnpm --filter @aido/mobile check:conventions
 
   test-unit:
-    name: Test - Unit & Coverage
+    name: Test - Mobile & Contracts
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.mobile == 'true' || needs.gate.outputs.shared == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
-
-      - name: Verify test log failure propagation
-        run: bash scripts/ci/run-with-tee.spec.sh
-
-      # 각 테스트 출력을 파일로 남기고 실패 시 아티팩트 업로드 — 플레이크 재현용
-      #
-      # api는 아래 커버리지 스텝이 같은 유닛 스위트를 돌리므로 여기서 제외한다.
-      # (예전에는 양쪽에서 돌아 2600여 건이 매 CI마다 두 번 실행됐다.)
-      - name: Run unit tests
-        run: scripts/ci/run-with-tee.sh /tmp/test-unit.log pnpm turbo run test --filter='!@aido/api' ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-
-      # turbo를 거쳐야 캐시와 --affected 스코핑이 함께 걸린다.
-      - name: Run API unit tests with coverage
-        run: scripts/ci/run-with-tee.sh /tmp/test-coverage.log pnpm turbo run test:cov --filter=@aido/api ${{ github.event_name == 'pull_request' && '--affected' || '' }}
-
-      - name: Upload unit test logs (failure only)
+          generate-prisma: 'false'
+          install-scope: all
+      - name: Run mobile and contract unit tests
+        run: pnpm turbo run test --filter='!@aido/server' 2>&1 | tee /tmp/test-unit.log
+      - name: Upload unit test logs
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-unit-logs-${{ github.run_id }}
-          path: /tmp/test-*.log
+          path: /tmp/test-unit.log
           retention-days: 14
 
-  test-integration:
-    name: Test - Integration
+  verify-api:
+    name: Verify API
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-        with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
-
-      # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
-      # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
-      - name: Run integration tests
-        run: scripts/ci/run-with-tee.sh /tmp/test-integration.log pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
-
-      - name: Upload integration test logs (failure only)
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: test-integration-logs-${{ github.run_id }}
-          path: /tmp/test-integration.log
-          retention-days: 14
-
-  test-e2e:
-    name: Test - E2E
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-        with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
-
-      - name: Run E2E tests
+    timeout-minutes: 30
+    # GitHub starts, health-checks and stops the service; no container wrapper script.
+    services:
+      postgres:
+        image: postgres:16-alpine
         env:
-          JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
-          JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
-          JWT_EXPIRES_IN: 15m
-          JWT_REFRESH_EXPIRES_IN: 7d
-          EMAIL_FROM: noreply@test.aido.app
-          EMAIL_FROM_NAME: Aido Test
-          TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
-          NODE_ENV: test
-        run: scripts/ci/run-with-tee.sh /tmp/test-e2e.log pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
-
-      - name: Upload E2E test logs (failure only)
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      AIDO_TEST_POSTGRES_URL: postgresql://test_user:test_password@127.0.0.1:5432/postgres
+      JWT_SECRET: test-jwt-secret-for-ci-minimum-32-characters-long
+      JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-min-32-chars
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      EMAIL_FROM: noreply@test.aido.app
+      EMAIL_FROM_NAME: Aido Test
+      TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+        with:
+          install-scope: api
+      - name: Unit tests and coverage
+        run: pnpm turbo run test:cov --filter=@aido/server 2>&1 | tee /tmp/test-api-unit.log
+      - name: PostgreSQL integration tests
+        run: pnpm turbo run test:integration --filter=@aido/server 2>&1 | tee /tmp/test-api-integration.log
+      - name: HTTP and released-client E2E
+        run: pnpm turbo run test:e2e --filter=@aido/server 2>&1 | tee /tmp/test-api-e2e.log
+      - name: Build API and dependency closure
+        run: pnpm turbo run build --filter='!@aido/mobile'
+      - name: Upload API test logs
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: test-e2e-logs-${{ github.run_id }}
-          path: /tmp/test-e2e.log
+          name: test-api-logs-${{ github.run_id }}
+          path: /tmp/test-api-*.log
           retention-days: 14
-
-  build:
-    name: Build
-    needs: gate
-    if: needs.gate.outputs.run == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/setup
-        with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
-
-      - name: Build
-        run: pnpm turbo run build --filter='!@aido/mobile'
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
-  # 테스트 job들과 병렬로 돌고, workflow_run(Deploy)은 CI 전체 성공 시에만 발화하므로
-  # 배포 시작 시점에 이미지 존재가 보장된다. 서버는 pull만 한다 (scripts/deploy.sh).
+  # 직접 검증 또는 같은 tree의 신뢰된 tip 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
   docker:
     name: Build & Push Image
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [gate, lint, test-unit, verify-api]
+    if: >-
+      ${{ !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.api == 'true' && ((needs.gate.outputs.validation_reused == 'true' && needs.lint.result == 'skipped' && needs.verify-api.result == 'skipped' && needs.test-unit.result == 'skipped') || (needs.gate.outputs.validation_reused != 'true' && needs.lint.result == 'success' && needs.verify-api.result == 'success' && (needs.test-unit.result == 'success' || needs.test-unit.result == 'skipped'))) && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:
@@ -241,8 +365,8 @@ jobs:
           pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
 
       - name: Build & push migrate image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -255,8 +379,8 @@ jobs:
           pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,scope=migrate,mode=max
 
       # sha 태그 누적 방지 — 각 패키지 최신 10개만 유지
       - name: Prune old api image versions

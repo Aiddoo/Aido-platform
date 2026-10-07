@@ -32,17 +32,11 @@ junit.xml
 
 # Environment & Secrets
 .env
-.env.local
-.env.*.local
-.env.development
-.env.staging
-.env.preview
-.env.production
+.env.*
+!.env.example
+!.env.*.example
+!/apps/api/.env.test
 .secrets/
-
-# Docker environment (실제 값이 들어간 파일 - example은 트래킹)
-.env.docker.dev
-.env.docker.prod
 
 # IDE & Editor
 .idea/

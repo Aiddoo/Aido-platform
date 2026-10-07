@@ -1,4 +1,4 @@
-import { updateMemoSchema } from '@aido/validators';
+import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
 import { AiParseConfirmDialog } from '@src/features/memo/presentations/components/AiParseConfirmDialog';

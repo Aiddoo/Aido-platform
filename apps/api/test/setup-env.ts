@@ -9,10 +9,10 @@ process.env.DATABASE_URL = database.connectionUri;
 process.env.AIDO_TEST_DB_MANAGED = "1";
 
 declare module "vitest" {
-	interface ProvidedContext {
-		testDatabase: {
-			connectionUri: string;
-			databaseName: string;
-		};
-	}
+  interface ProvidedContext {
+    testDatabase: {
+      connectionUri: string;
+      databaseName: string;
+    };
+  }
 }

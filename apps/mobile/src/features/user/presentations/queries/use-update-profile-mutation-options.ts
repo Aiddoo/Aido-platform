@@ -1,4 +1,4 @@
-import type { UpdateProfileInput } from '@aido/validators';
+import type { UpdateProfileInput } from '@aido/api';
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { User } from '@src/features/user/models/user.model';
 import { useTrack } from '@src/shared/analytics';

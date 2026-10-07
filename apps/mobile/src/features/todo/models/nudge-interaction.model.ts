@@ -1,4 +1,4 @@
-import { getNudgeInteractionsQuerySchema, nudgeReplyKindSchema } from '@aido/validators';
+import { getNudgeInteractionsQuerySchema, nudgeReplyKindSchema } from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 

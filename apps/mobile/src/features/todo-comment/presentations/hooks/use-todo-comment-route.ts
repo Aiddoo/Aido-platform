@@ -1,4 +1,4 @@
-import type { TodoCommentSort } from '@aido/validators';
+import type { TodoCommentSort } from '@aido/api';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 

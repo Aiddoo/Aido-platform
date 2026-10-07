@@ -1,0 +1,56 @@
+{
+  "name": "@aido/api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared REST contracts, error codes and pure vocabulary for Aido",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "import": "./dist/errors/index.js",
+      "default": "./dist/errors/index.js"
+    },
+    "./vocabulary": {
+      "types": "./dist/vocabulary/index.d.ts",
+      "import": "./dist/vocabulary/index.js",
+      "default": "./dist/vocabulary/index.js"
+    },
+    "./contracts/*": {
+      "types": "./dist/contracts/*/index.d.ts",
+      "import": "./dist/contracts/*/index.js",
+      "default": "./dist/contracts/*/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build tsconfig.build.json",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint . --fix",
+    "test": "vitest run",
+    "test:coverage": "pnpm test:cov",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "test:cov": "vitest run --coverage"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@aido/vitest-config": "workspace:*",
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

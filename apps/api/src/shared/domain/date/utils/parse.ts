@@ -9,5 +9,5 @@ import dayjs from "dayjs";
  * @example parseDateOnly("2026-02-06") // 2026-02-06T00:00:00.000Z
  */
 export function parseDateOnly(dateString: string): Date {
-	return dayjs.utc(dateString).startOf("day").toDate();
+  return dayjs.utc(dateString).startOf("day").toDate();
 }

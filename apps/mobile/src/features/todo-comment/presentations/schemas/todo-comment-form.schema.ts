@@ -1,4 +1,4 @@
-import { TODO_COMMENT_LIMITS, todoCommentContentSchema } from '@aido/validators';
+import { TODO_COMMENT_LIMITS, todoCommentContentSchema } from '@aido/api';
 import { z } from 'zod';
 
 export const todoCommentFormSchema = z.object({

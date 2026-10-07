@@ -1,0 +1,18 @@
+import type { PushReceiptResult } from "./push-provider.port.js";
+
+export const PUSH_RECEIPT_REPOSITORY = Symbol("PUSH_RECEIPT_REPOSITORY");
+
+export interface PendingPushReceipt {
+  readonly ticketId: string;
+}
+
+export interface InvalidPushToken {
+  readonly token: string;
+  readonly userId: string;
+}
+
+/** Expo ticket의 최종 receipt 상태를 조회·반영하는 포트. */
+export interface PushReceiptRepositoryPort {
+  findPendingPushReceipts(limit: number): Promise<PendingPushReceipt[]>;
+  recordPushReceipts(results: PushReceiptResult[]): Promise<InvalidPushToken[]>;
+}

@@ -5,7 +5,7 @@
  * 각 이벤트 클래스가 인스턴스 필드로 선언합니다 (예: `"todo.created"`).
  */
 export interface DomainEvent {
-	readonly eventName: string;
+  readonly eventName: string;
 }
 
 /**
@@ -20,23 +20,23 @@ export interface DomainEvent {
  * "발생 사실 기록"을 뜻하는 `raise`를 사용합니다.
  */
 export abstract class AggregateRoot<TProps, TEvent extends DomainEvent = DomainEvent> {
-	#domainEvents: TEvent[] = [];
+  #domainEvents: TEvent[] = [];
 
-	protected constructor(protected readonly props: TProps) {}
+  protected constructor(protected readonly props: TProps) {}
 
-	/** 도메인 이벤트를 적립합니다 (발행은 커밋 후 핸들러 책임). */
-	protected raise(event: TEvent): void {
-		this.#domainEvents.push(event);
-	}
+  /** 도메인 이벤트를 적립합니다 (발행은 커밋 후 핸들러 책임). */
+  protected raise(event: TEvent): void {
+    this.#domainEvents.push(event);
+  }
 
-	/**
-	 * 적립된 이벤트를 적립 순서대로 반환하고 내부 버퍼를 비웁니다.
-	 *
-	 * 재호출 시 빈 배열을 반환하므로 중복 발행이 원천 차단됩니다.
-	 */
-	pullDomainEvents(): TEvent[] {
-		const events = this.#domainEvents;
-		this.#domainEvents = [];
-		return events;
-	}
+  /**
+   * 적립된 이벤트를 적립 순서대로 반환하고 내부 버퍼를 비웁니다.
+   *
+   * 재호출 시 빈 배열을 반환하므로 중복 발행이 원천 차단됩니다.
+   */
+  pullDomainEvents(): TEvent[] {
+    const events = this.#domainEvents;
+    this.#domainEvents = [];
+    return events;
+  }
 }
