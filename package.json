@@ -9,13 +9,11 @@
     "commit": "cz",
     "db:generate": "pnpm --filter @aido/api db:generate",
     "db:migrate": "pnpm --filter @aido/api db:migrate",
-    "db:push": "pnpm --filter @aido/api db:push",
     "dev": "turbo run dev",
     "docker:dev:build": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml build",
     "docker:dev:down": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml down",
     "docker:dev:logs": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml logs -f api",
     "docker:dev:migrate": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml run --rm migrate",
-    "docker:dev:studio": "DATABASE_URL=postgresql://postgres:postgres@localhost:${DB_PORT:-5433}/aido pnpm --filter @aido/api db:studio",
     "docker:dev:up": "docker compose --env-file ${AIDO_DEV_ENV_FILE:-.env.docker.dev} -f docker-compose.dev.yml up -d",
     "docker:down": "docker compose down",
     "docker:prod:build": "docker compose --env-file .env.docker.prod -f docker-compose.prod.yml build",
@@ -36,7 +34,9 @@
     "test:coverage": "pnpm --filter @aido/api test:coverage && pnpm --filter @aido/mobile test:coverage",
     "test:e2e": "turbo run test:e2e --filter=@aido/api",
     "typecheck": "turbo run typecheck",
-    "test:integration": "turbo run test:integration --filter=@aido/api"
+    "test:integration": "turbo run test:integration --filter=@aido/api",
+    "db:plan": "pnpm --filter @aido/api db:plan",
+    "db:verify": "pnpm --filter @aido/api db:verify"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.3",

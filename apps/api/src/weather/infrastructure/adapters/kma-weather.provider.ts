@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import { BusinessExceptions } from "#api/shared/application/exceptions/business-exception.service";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
@@ -19,7 +20,10 @@ export class KmaWeatherProvider implements WeatherProvider {
 	readonly name = "kma";
 	readonly #logger = new Logger(KmaWeatherProvider.name);
 
-	constructor(private readonly configService: TypedConfigService) {}
+	constructor(
+		private readonly configService: TypedConfigService,
+		@InjectHttpClient("weather") private readonly http: HttpClient,
+	) {}
 
 	async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
 		const { nx, ny } = convertToGrid(lat, lon);
@@ -35,7 +39,10 @@ export class KmaWeatherProvider implements WeatherProvider {
 		url.searchParams.set("nx", String(nx));
 		url.searchParams.set("ny", String(ny));
 
-		const response = await fetch(url.toString(), {
+		const { data: response } = await this.http.request(url.toString(), {
+			responseType: "response",
+			retry: false,
+			throwOnHttpError: false,
 			signal: AbortSignal.timeout(10_000),
 		});
 

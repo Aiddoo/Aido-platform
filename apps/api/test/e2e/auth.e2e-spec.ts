@@ -1,3 +1,4 @@
+import { all } from "@prisma/orm-postgres/orm-client";
 import request from "supertest";
 /**
  * Auth E2E 테스트
@@ -13,7 +14,14 @@ import {
 	CACHE_SERVICE,
 	type ICacheService,
 } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -958,14 +966,14 @@ describe("인증 E2E", () => {
 	});
 
 	describe("OAuth LoginAttempt 기록 (E2E)", () => {
-		const prisma = () => ctx.testDatabase.getPrisma();
+		const prisma = () => ctx.testDatabase.getClient();
 
 		beforeEach(async () => {
 			// 각 테스트 전 OAuth 모킹 상태 초기화
 			ctx.fakeOAuthTokenVerifierService.clear();
 
 			// LoginAttempt 테이블만 정리 (다른 테스트와 간섭 방지)
-			await prisma().loginAttempt.deleteMany();
+			await prisma().orm.public.LoginAttempt.where(all()).deleteAndCount();
 		});
 
 		it("POST /auth/kakao/callback - 성공 시 LoginAttempt 기록 (success: true)", async () => {
@@ -982,9 +990,12 @@ describe("인증 E2E", () => {
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1009,9 +1020,12 @@ describe("인증 E2E", () => {
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1036,9 +1050,12 @@ describe("인증 E2E", () => {
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1063,9 +1080,12 @@ describe("인증 E2E", () => {
 			expect(response.body.success).toBe(true);
 			expect(response.body.data).toHaveProperty("accessToken");
 
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1090,10 +1110,13 @@ describe("인증 E2E", () => {
 			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(false);
 
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				where: { success: false },
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.where((row) => row.success.eq(false))
+					.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1118,10 +1141,13 @@ describe("인증 E2E", () => {
 			// Then - 응답 및 DB 검증
 			expect(response.body.success).toBe(false);
 
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				where: { success: false },
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.where((row) => row.success.eq(false))
+					.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1147,9 +1173,12 @@ describe("인증 E2E", () => {
 				.expect(200);
 
 			// Then - DB 검증
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				orderBy: { createdAt: "desc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.orderBy((row) => row.createdAt.desc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -1177,9 +1206,12 @@ describe("인증 E2E", () => {
 				.expect(200);
 
 			// Then - DB 검증
-			const loginAttempts = await prisma().loginAttempt.findMany({
-				orderBy: { createdAt: "asc" },
-			});
+			const loginAttempts = decodeRecord(
+				"LoginAttempt",
+				await prisma()
+					.orm.public.LoginAttempt.orderBy((row) => row.createdAt.asc())
+					.all(),
+			);
 
 			expect(loginAttempts.length).toBeGreaterThanOrEqual(2);
 
@@ -1259,11 +1291,15 @@ describe("인증 E2E", () => {
 			expect(finalResponse.body.data.nightPushEnabled).toBe(true);
 
 			// When - 프리미엄 유저로 전환하여 리마인더 시간 변경 테스트
-			const prisma = ctx.module.get(DatabaseService);
-			const updatedUser = await prisma.user.update({
-				where: { id: userId },
-				data: { subscriptionStatus: "ACTIVE" },
-			});
+			const prisma = ctx.module.get(DatabaseService).db;
+			const updatedUser = decodeRecord(
+				"User",
+				requireRecord(
+					await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
+						encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+					),
+				),
+			);
 			await cacheService.invalidateSubscription(updatedUser.id);
 
 			const morningResponse = await request(ctx.app.getHttpServer())
@@ -1858,7 +1894,7 @@ describe("인증 E2E", () => {
 	});
 
 	describe("POST /auth/link-with-code - 교환 코드로 연동", () => {
-		const prismaFn = () => ctx.testDatabase.getPrisma();
+		const prismaFn = () => ctx.testDatabase.getClient();
 		const linkPassword = "Test1234!";
 
 		async function createLinkingExchangeCode(
@@ -1869,17 +1905,20 @@ describe("인증 E2E", () => {
 			const exchangeCode = randomBytes(32).toString("base64url");
 			const state = randomBytes(16).toString("hex");
 
-			await prismaFn().oAuthState.create({
-				data: {
-					state,
-					provider,
-					redirectUri: "aido://auth/callback",
-					mode: "link",
-					exchangeCode,
-					userId: providerAccountId,
-					expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-				},
-			});
+			decodeRecord(
+				"OAuthState",
+				await prismaFn().orm.public.OAuthState.create(
+					encodeCreate("OAuthState", {
+						state,
+						provider,
+						redirectUri: "aido://auth/callback",
+						mode: "link",
+						exchangeCode,
+						userId: providerAccountId,
+						expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+					}),
+				),
+			);
 
 			return exchangeCode;
 		}
@@ -2124,13 +2163,14 @@ describe("인증 E2E", () => {
 				.send({ password: deletePassword })
 				.expect(200);
 
-			const prisma = ctx.module.get(DatabaseService);
-			await prisma.user.updateMany({
-				where: { email: deleteEmail },
-				data: {
+			const prisma = ctx.module.get(DatabaseService).db;
+			await prisma.orm.public.User.where((row) =>
+				row.email.eq(varchar(deleteEmail, 255)),
+			).updateAndCount(
+				encodePatch("User", {
 					deletedAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000),
-				},
-			});
+				}),
+			);
 
 			// When - 유예 기간 초과 후 로그인 시도
 			const expiredResponse = await request(ctx.app.getHttpServer())

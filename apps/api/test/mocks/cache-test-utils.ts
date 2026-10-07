@@ -1,12 +1,6 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import {
-	AccountProvider,
-	SubscriptionStatus,
-	UserRole,
-	UserStatus,
-} from "#api/generated/prisma/enums";
 import type { CachedUserProfile } from "#api/shared/infrastructure/cache/cache.service";
 import {
 	type CacheStats,
@@ -182,15 +176,15 @@ export function createMockUserProfile(
 		id: "user-123",
 		email: "test@example.com",
 		userTag: "ABC123",
-		role: UserRole.USER,
-		status: UserStatus.ACTIVE,
+		role: "USER",
+		status: "ACTIVE",
 		emailVerifiedAt: new Date().toISOString(),
-		subscriptionStatus: SubscriptionStatus.FREE,
+		subscriptionStatus: "FREE",
 		subscriptionExpiresAt: null,
 		name: "Test User",
 		profileImage: null,
 		createdAt: new Date().toISOString(),
-		providers: [AccountProvider.CREDENTIAL],
+		providers: ["CREDENTIAL"],
 		...overrides,
 	};
 }

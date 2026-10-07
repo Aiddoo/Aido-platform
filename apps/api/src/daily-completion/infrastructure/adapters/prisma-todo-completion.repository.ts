@@ -1,9 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { all, and } from "@prisma/orm-postgres/orm-client";
+import { groupBy, sumBy } from "es-toolkit";
 
-import { toDateString } from "#api/shared/domain/date/utils/format";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord } from "#api/shared/infrastructure/database/database-records";
+import { applicationDate, databaseDate } from "#api/shared/infrastructure/database/database-values";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	AggregateByDateRangeParams,
@@ -11,92 +13,57 @@ import type {
 } from "../../application/ports/todo-completion.repository.port.js";
 import type { TodoAggregateByDate } from "../../domain/daily-completion.js";
 
-/**
- * TodoCompletionRepositoryPort의 Prisma 어댑터.
- *
- * Prisma groupBy로 DB 레벨에서 날짜별 집계를 수행한다(대량 데이터 최적화).
- * 트랜잭션은 CLS로 전파된다 — TransactionHost.tx가 활성 트랜잭션(없으면 베이스)을 반환.
- */
+/** Aggregate counts and distinct categories in PostgreSQL, then load each category once. */
 @Injectable()
 export class PrismaTodoCompletionRepository implements TodoCompletionRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
-	private get client() {
-		return this.txHost.tx;
+	aggregateByDateRange(params: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]> {
+		return this.#aggregate(params, false);
 	}
 
-	async aggregateByDateRange(params: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]> {
-		const { userId, startDate, endDate } = params;
-
-		return this.#aggregate({
-			userId,
-			startDate: { gte: startDate, lt: endDate },
-		});
+	aggregatePublicByDateRange(params: AggregateByDateRangeParams): Promise<TodoAggregateByDate[]> {
+		return this.#aggregate(params, true);
 	}
 
-	async aggregatePublicByDateRange(
+	async #aggregate(
 		params: AggregateByDateRangeParams,
+		publicOnly: boolean,
 	): Promise<TodoAggregateByDate[]> {
-		const { userId, startDate, endDate } = params;
+		const client = this.txHost.tx;
+		const groups = await client.orm.public.Todo.where((todo) =>
+			and(
+				todo.userId.eq(params.userId),
+				todo.startDate.gte(databaseDate(params.startDate)),
+				todo.startDate.lt(databaseDate(params.endDate)),
+				publicOnly ? todo.visibility.eq("PUBLIC") : all(),
+			),
+		)
+			.groupBy("startDate", "categoryId", "completed")
+			.aggregate((aggregate) => ({ count: aggregate.count() }));
+		if (groups.length === 0) return [];
 
-		return this.#aggregate({
-			userId,
-			visibility: "PUBLIC",
-			startDate: { gte: startDate, lt: endDate },
-		});
-	}
-
-	async #aggregate(whereClause: {
-		userId: string;
-		visibility?: "PUBLIC";
-		startDate: { gte: Date; lt: Date };
-	}): Promise<TodoAggregateByDate[]> {
-		// 전체·완료·카테고리 색상 집계를 병렬 실행 (waterfall 제거)
-		const [aggregations, completedAggregations, categoryColorResults] = await Promise.all([
-			this.client.todo.groupBy({
-				by: ["startDate"],
-				where: whereClause,
-				_count: { id: true },
-			}),
-			this.client.todo.groupBy({
-				by: ["startDate"],
-				where: { ...whereClause, completed: true },
-				_count: { id: true },
-			}),
-			this.client.todo.findMany({
-				where: whereClause,
-				select: {
-					startDate: true,
-					category: { select: { color: true } },
-				},
-				distinct: ["startDate", "categoryId"],
-			}),
-		]);
-
-		// 완료 수를 Map으로 (O(1) 조회)
-		const completedMap = new Map(
-			completedAggregations.map((item) => [toDateString(item.startDate), item._count.id]),
+		const categories = decodeRecord(
+			"TodoCategory",
+			await client.orm.public.TodoCategory.where((category) =>
+				category.id.in([...new Set(groups.map((group) => group.categoryId))]),
+			)
+				.select("id", "color")
+				.all(),
 		);
-
-		// 카테고리 색상을 날짜별 Set으로 그룹화 (중복 색상 제거)
-		const colorMap = new Map<string, Set<string>>();
-		for (const item of categoryColorResults) {
-			const key = toDateString(item.startDate);
-			const colors = colorMap.get(key) ?? new Set<string>();
-			colors.add(item.category.color);
-			colorMap.set(key, colors);
-		}
-
-		return aggregations.map((item) => {
-			const dateKey = toDateString(item.startDate);
-			return {
-				date: item.startDate,
-				total: item._count.id,
-				completed: completedMap.get(dateKey) ?? 0,
-				categoryColors: [...(colorMap.get(dateKey) ?? [])],
-			};
-		});
+		const colors = new Map(categories.map((category) => [category.id, category.color]));
+		return Object.entries(groupBy(groups, (group) => group.startDate)).map(([date, rows]) => ({
+			date: applicationDate(date),
+			total: sumBy(rows, (row) => row.count),
+			completed: sumBy(rows, (row) => (row.completed ? row.count : 0)),
+			categoryColors: [
+				...new Set(
+					rows.flatMap((row) => {
+						const color = colors.get(row.categoryId);
+						return color === undefined ? [] : [color];
+					}),
+				),
+			],
+		}));
 	}
 }

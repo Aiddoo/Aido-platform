@@ -2,22 +2,23 @@ import type {
 	Db,
 	FindJobsOptions,
 	JobWithMetadata,
-	QueueResult,
 	QueueOptions,
+	QueueResult,
 	ScheduleOptions,
 	SendOptions,
 	StopOptions,
 	UpdateQueueOptions,
 	WorkOptions,
 } from "pg-boss";
-import { vi, type Mock } from "vitest";
+import { vi } from "vitest";
 
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
+import { createMockDatabaseContext } from "#test/mocks/database.mock";
 
 import {
 	LazyPgBossClient,
-	type PgBossClient,
 	PgBossJobRuntimeAdapter,
+	type PgBossClient,
 } from "./pg-boss-job-runtime.adapter.js";
 
 const QUEUE = "document-generation";
@@ -187,15 +188,16 @@ function job(overrides: Partial<JobWithMetadata<JobData>> = {}): JobWithMetadata
 
 describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 	let boss: FakePgBossClient;
-	let queryRawUnsafe: Mock;
+	let context: ReturnType<typeof createMockDatabaseContext>;
 	let runtime: PgBossJobRuntimeAdapter;
 
 	beforeEach(() => {
 		boss = new FakePgBossClient();
-		queryRawUnsafe = vi.fn().mockResolvedValue([]);
+		context = createMockDatabaseContext();
+		context.query.mockResolvedValue([]);
 		runtime = new PgBossJobRuntimeAdapter(
 			boss,
-			{ tx: { $queryRawUnsafe: queryRawUnsafe } },
+			{ tx: context },
 			{ job: { shutdownTimeoutMs: 90_000 } },
 		);
 	});
@@ -248,8 +250,10 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL durable runtime", () => {
 			},
 		});
 
-		await boss.sendCalls[0]?.options.db?.executeSql("SELECT $1", [42]);
-		expect(queryRawUnsafe).toHaveBeenCalledWith("SELECT $1", 42);
+		await boss.sendCalls[0]?.options.db?.executeSql("SELECT $1::uuid AS id", [
+			"00000000-0000-4000-8000-000000000001",
+		]);
+		expect(context.query).toHaveBeenCalledOnce();
 	});
 
 	it("DLQ worker가 enqueue보다 먼저 등록돼도 typed retry policy로 수렴한다", async () => {

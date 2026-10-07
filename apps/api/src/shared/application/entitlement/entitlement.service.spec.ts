@@ -17,8 +17,8 @@ import {
 	TODO_CATEGORY_LIMITS,
 } from "@aido/validators";
 import { TestBed } from "@suites/unit";
-import { vi, type Mock } from "vitest";
 import type { Mocked } from "vitest";
+import { type Mock } from "vitest";
 
 import {
 	ENTITLEMENT_CACHE,
@@ -29,8 +29,8 @@ import {
 import {
 	EntitlementService,
 	Feature,
-	type FeatureEntitlement,
 	Resource,
+	type FeatureEntitlement,
 	type ResourceEntitlement,
 } from "./entitlement.service.js";
 
@@ -143,7 +143,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				await service.getFeatureLimit(userId, Feature.CHEER);
 
 				// Then - DB 조회 미호출
-				expect(database.user.findUnique).not.toHaveBeenCalled();
+				expect(database.findUserState).not.toHaveBeenCalled();
 			});
 
 			it("캐시 미스 시 DB 조회 후 캐싱한다", async () => {
@@ -151,7 +151,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				(cacheService.wrapSubscription as Mock).mockImplementation(
 					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
-				(database.user.findUnique as Mock).mockResolvedValue({
+				(database.findUserState as Mock).mockResolvedValue({
 					role: "USER",
 					subscriptionStatus: "FREE",
 				});
@@ -160,10 +160,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				const result = await service.getFeatureLimit(userId, Feature.CHEER);
 
 				// Then - DB 조회 확인
-				expect(database.user.findUnique).toHaveBeenCalledWith({
-					where: { id: userId },
-					select: { role: true, subscriptionStatus: true },
-				});
+				expect(database.findUserState).toHaveBeenCalledWith(userId);
 
 				// Then - wrapSubscription 호출 확인 (내부적으로 캐싱 처리)
 				expect(cacheService.wrapSubscription).toHaveBeenCalledWith(userId, expect.any(Function));
@@ -181,7 +178,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				(cacheService.wrapSubscription as Mock).mockImplementation(
 					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
-				(database.user.findUnique as Mock).mockResolvedValue(null);
+				(database.findUserState as Mock).mockResolvedValue(null);
 
 				// When - CHEER 기능 제한 조회
 				const result = await service.getFeatureLimit(userId, Feature.CHEER);
@@ -199,7 +196,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				(cacheService.wrapSubscription as Mock).mockImplementation(
 					(_id: string, factory: () => Promise<unknown>) => factory(),
 				);
-				(database.user.findUnique as Mock).mockResolvedValue({
+				(database.findUserState as Mock).mockResolvedValue({
 					role: "ADMIN",
 					subscriptionStatus: "FREE",
 				});
@@ -218,29 +215,15 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 	});
 
 	describe("getFeatureLimitInTx", () => {
-		let txMock: {
-			user: {
-				findUnique: Mock;
-			};
-		};
-
-		beforeEach(() => {
-			txMock = {
-				user: {
-					findUnique: vi.fn(),
-				},
-			};
-		});
-
 		it("ADMIN 사용자 + NUDGE 기능은 무제한이다", async () => {
 			// Given - 트랜잭션 내 ADMIN 사용자
-			txMock.user.findUnique.mockResolvedValue({
+			database.findUserState.mockResolvedValue({
 				role: "ADMIN",
 				subscriptionStatus: "FREE",
 			});
 
 			// When - 트랜잭션 내 NUDGE 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.NUDGE);
+			const result = await service.getFeatureLimitInTx(userId, Feature.NUDGE);
 
 			// Then - ADMIN은 무제한
 			expect(result).toEqual<FeatureEntitlement>({
@@ -252,13 +235,13 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("ADMIN 사용자 + AI_PARSE 기능은 무제한이다", async () => {
 			// Given - 트랜잭션 내 ADMIN 사용자
-			txMock.user.findUnique.mockResolvedValue({
+			database.findUserState.mockResolvedValue({
 				role: "ADMIN",
 				subscriptionStatus: "FREE",
 			});
 
 			// When - 트랜잭션 내 AI_PARSE 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.AI_PARSE);
+			const result = await service.getFeatureLimitInTx(userId, Feature.AI_PARSE);
 
 			// Then - ADMIN은 무제한
 			expect(result).toEqual<FeatureEntitlement>({
@@ -270,13 +253,13 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("USER + FREE 구독 + CHEER 기능은 일일 제한이 적용된다", async () => {
 			// Given - 트랜잭션 내 FREE 구독 일반 사용자
-			txMock.user.findUnique.mockResolvedValue({
+			database.findUserState.mockResolvedValue({
 				role: "USER",
 				subscriptionStatus: "FREE",
 			});
 
 			// When - 트랜잭션 내 CHEER 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.CHEER);
+			const result = await service.getFeatureLimitInTx(userId, Feature.CHEER);
 
 			// Then - FREE는 일일 제한 적용
 			expect(result).toEqual<FeatureEntitlement>({
@@ -286,21 +269,18 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			});
 
 			// Then - 올바른 쿼리 호출 확인
-			expect(txMock.user.findUnique).toHaveBeenCalledWith({
-				where: { id: userId },
-				select: { role: true, subscriptionStatus: true },
-			});
+			expect(database.findUserState).toHaveBeenCalledWith(userId);
 		});
 
 		it("USER + FREE 구독 + AI_PARSE 기능은 일일 제한이 적용된다", async () => {
 			// Given - 트랜잭션 내 FREE 구독 일반 사용자
-			txMock.user.findUnique.mockResolvedValue({
+			database.findUserState.mockResolvedValue({
 				role: "USER",
 				subscriptionStatus: "FREE",
 			});
 
 			// When - 트랜잭션 내 AI_PARSE 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.AI_PARSE);
+			const result = await service.getFeatureLimitInTx(userId, Feature.AI_PARSE);
 
 			// Then - FREE는 일일 제한 적용
 			expect(result).toEqual<FeatureEntitlement>({
@@ -310,18 +290,15 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 			});
 
 			// Then - 올바른 쿼리 호출 확인
-			expect(txMock.user.findUnique).toHaveBeenCalledWith({
-				where: { id: userId },
-				select: { role: true, subscriptionStatus: true },
-			});
+			expect(database.findUserState).toHaveBeenCalledWith(userId);
 		});
 
 		it("사용자가 null인 경우 기본값(USER/FREE)을 사용한다", async () => {
 			// Given - 트랜잭션 내 사용자 없음
-			txMock.user.findUnique.mockResolvedValue(null);
+			database.findUserState.mockResolvedValue(null);
 
 			// When - 트랜잭션 내 CHEER 기능 제한 조회
-			const result = await service.getFeatureLimitInTx(txMock as never, userId, Feature.CHEER);
+			const result = await service.getFeatureLimitInTx(userId, Feature.CHEER);
 
 			// Then - 기본값(USER/FREE) 적용으로 일일 제한
 			expect(result).toEqual<FeatureEntitlement>({
@@ -333,13 +310,13 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 
 		it("캐시를 사용하지 않고 트랜잭션으로 직접 조회한다", async () => {
 			// Given - 트랜잭션 내 사용자 존재
-			txMock.user.findUnique.mockResolvedValue({
+			database.findUserState.mockResolvedValue({
 				role: "USER",
 				subscriptionStatus: "ACTIVE",
 			});
 
 			// When - 트랜잭션 내 조회
-			await service.getFeatureLimitInTx(txMock as never, userId, Feature.CHEER);
+			await service.getFeatureLimitInTx(userId, Feature.CHEER);
 
 			// Then - 캐시 서비스 미호출 (TOCTOU 방지)
 			expect(cacheService.wrapSubscription).not.toHaveBeenCalled();
@@ -439,24 +416,13 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 	describe("getResourceLimitInTx", () => {
 		it("CATEGORY 한도는 활성 tx만 조회하고 base DB와 cache를 우회한다", async () => {
 			// Given - tx/base/cache가 서로 다른 클라이언트
-			const txFindUnique = vi.fn().mockResolvedValue({
-				role: "USER",
-				subscriptionStatus: "FREE",
-			});
-			const tx = {
-				user: {
-					findUnique: txFindUnique,
-				},
-			};
-			(database.user.findUnique as Mock).mockRejectedValue(
-				new Error("base database path must not be used"),
-			);
+			database.findUserState.mockResolvedValue({ role: "USER", subscriptionStatus: "FREE" });
 			(cacheService.wrapSubscription as Mock).mockRejectedValue(
 				new Error("cache path must not be used"),
 			);
 
 			// When
-			const result = await service.getResourceLimitInTx(tx as never, userId, Resource.CATEGORY);
+			const result = await service.getResourceLimitInTx(userId, Resource.CATEGORY);
 
 			// Then - tx 결과로 FREE category limit을 계산
 			expect(result).toEqual<ResourceEntitlement>({
@@ -464,11 +430,7 @@ describe("EntitlementService — 권한 관리 서비스", () => {
 				isAdmin: false,
 				subscriptionStatus: "FREE",
 			});
-			expect(txFindUnique).toHaveBeenCalledWith({
-				where: { id: userId },
-				select: { role: true, subscriptionStatus: true },
-			});
-			expect(database.user.findUnique).not.toHaveBeenCalled();
+			expect(database.findUserState).toHaveBeenCalledWith(userId);
 			expect(cacheService.wrapSubscription).not.toHaveBeenCalled();
 		});
 	});

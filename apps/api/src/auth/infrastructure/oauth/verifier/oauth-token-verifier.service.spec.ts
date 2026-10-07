@@ -16,10 +16,11 @@ import { createServer, type Server } from "node:http";
 import { ErrorCode } from "@aido/errors";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
-import { exportJWK, generateKeyPair, type JWK, SignJWT } from "jose";
-import { vi, type Mock } from "vitest";
+import { SignJWT, exportJWK, generateKeyPair, type JWK } from "jose";
 import type { Mocked } from "vitest";
+import { vi, type Mock } from "vitest";
 
 import { OAuthTokenVerifierService } from "#api/auth/infrastructure/oauth/verifier/oauth-token-verifier.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -31,6 +32,16 @@ vi.mock("google-auth-library", () => ({
 		verifyIdToken: vi.fn(),
 	})),
 }));
+
+async function responseFromFixture(fixture: {
+	ok: boolean;
+	status?: number;
+	json?: () => Promise<unknown>;
+}): Promise<Response> {
+	return new Response(fixture.json ? JSON.stringify(await fixture.json()) : null, {
+		status: fixture.status ?? (fixture.ok ? 200 : 500),
+	});
+}
 
 describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 	let service: OAuthTokenVerifierService;
@@ -46,7 +57,10 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			return { verifyIdToken: mockGoogleVerifyIdToken };
 		});
 
-		const { unit, unitRef } = await TestBed.solitary(OAuthTokenVerifierService).compile();
+		const { unit, unitRef } = await TestBed.solitary(OAuthTokenVerifierService)
+			.mock(getHttpClientToken("oauth"))
+			.final(new HttpClient({ retry: false, throwOnHttpError: false }))
+			.compile();
 
 		service = unit;
 		configService = unitRef.get(ConfigService);
@@ -206,10 +220,12 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("유효한 Kakao access token을 검증하면 프로필을 반환한다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve(mockKakaoResponse),
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () => Promise.resolve(mockKakaoResponse),
+				}),
+			);
 
 			// When
 			const result = await service.verifyKakaoToken("valid-kakao-token");
@@ -224,30 +240,32 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 			});
 
 			expect(global.fetch).toHaveBeenCalledWith(
-				"https://kapi.kakao.com/v2/user/me?secure_resource=true",
+				new URL("https://kapi.kakao.com/v2/user/me?secure_resource=true"),
 				expect.objectContaining({
-					headers: {
+					headers: new Headers({
 						Authorization: "Bearer valid-kakao-token",
 						"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
-					},
+					}),
 				}),
 			);
 		});
 
 		it("이메일이 없는 Kakao 계정도 처리한다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () =>
-					Promise.resolve({
-						id: 87654321,
-						kakao_account: {
-							profile: {
-								nickname: "닉네임만",
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							id: 87654321,
+							kakao_account: {
+								profile: {
+									nickname: "닉네임만",
+								},
 							},
-						},
-					}),
-			});
+						}),
+				}),
+			);
 
 			// When
 			const result = await service.verifyKakaoToken("valid-token");
@@ -259,10 +277,12 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: false,
-				status: 401,
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: false,
+					status: 401,
+				}),
+			);
 
 			// When & Then
 			await expect(service.verifyKakaoToken("expired-token")).rejects.toThrow(ApplicationException);
@@ -270,10 +290,12 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("기타 에러 응답은 socialTokenInvalid 에러를 발생시킨다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: false,
-				status: 400,
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: false,
+					status: 400,
+				}),
+			);
 
 			// When & Then
 			await expect(service.verifyKakaoToken("invalid-token")).rejects.toThrow(ApplicationException);
@@ -299,10 +321,12 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("유효한 Naver access token을 검증하면 프로필을 반환한다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () => Promise.resolve(mockNaverResponse),
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () => Promise.resolve(mockNaverResponse),
+				}),
+			);
 
 			// When
 			const result = await service.verifyNaverToken("valid-naver-token");
@@ -316,29 +340,29 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 				picture: "https://phinf.pstatic.net/profile.jpg",
 			});
 			expect(global.fetch).toHaveBeenCalledWith(
-				"https://openapi.naver.com/v1/nid/me",
+				new URL("https://openapi.naver.com/v1/nid/me"),
 				expect.objectContaining({
-					headers: {
-						Authorization: "Bearer valid-naver-token",
-					},
+					headers: new Headers({ Authorization: "Bearer valid-naver-token" }),
 				}),
 			);
 		});
 
 		it("이름이 없으면 닉네임을 사용한다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () =>
-					Promise.resolve({
-						resultcode: "00",
-						message: "success",
-						response: {
-							id: "naver-user-456",
-							nickname: "닉네임만",
-						},
-					}),
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resultcode: "00",
+							message: "success",
+							response: {
+								id: "naver-user-456",
+								nickname: "닉네임만",
+							},
+						}),
+				}),
+			);
 
 			// When
 			const result = await service.verifyNaverToken("valid-token");
@@ -349,18 +373,20 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("이메일이 없으면 emailVerified는 false이다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () =>
-					Promise.resolve({
-						resultcode: "00",
-						message: "success",
-						response: {
-							id: "naver-user-789",
-							name: "이름만",
-						},
-					}),
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resultcode: "00",
+							message: "success",
+							response: {
+								id: "naver-user-789",
+								name: "이름만",
+							},
+						}),
+				}),
+			);
 
 			// When
 			const result = await service.verifyNaverToken("valid-token");
@@ -372,10 +398,12 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("401 응답은 socialTokenExpired 에러를 발생시킨다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: false,
-				status: 401,
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: false,
+					status: 401,
+				}),
+			);
 
 			// When & Then
 			await expect(service.verifyNaverToken("expired-token")).rejects.toThrow(ApplicationException);
@@ -383,14 +411,16 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("resultcode가 00이 아니면 에러를 발생시킨다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () =>
-					Promise.resolve({
-						resultcode: "01",
-						message: "error",
-					}),
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resultcode: "01",
+							message: "error",
+						}),
+				}),
+			);
 
 			// When & Then
 			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(ApplicationException);
@@ -398,14 +428,16 @@ describe("OAuthTokenVerifierService — OAuth 토큰 검증 서비스", () => {
 
 		it("response가 없으면 에러를 발생시킨다", async () => {
 			// Given
-			asMock(global.fetch).mockResolvedValue({
-				ok: true,
-				json: () =>
-					Promise.resolve({
-						resultcode: "00",
-						message: "success",
-					}),
-			});
+			asMock(global.fetch).mockResolvedValue(
+				await responseFromFixture({
+					ok: true,
+					json: () =>
+						Promise.resolve({
+							resultcode: "00",
+							message: "success",
+						}),
+				}),
+			);
 
 			// When & Then
 			await expect(service.verifyNaverToken("invalid-token")).rejects.toThrow(ApplicationException);

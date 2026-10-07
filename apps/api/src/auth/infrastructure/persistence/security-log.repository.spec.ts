@@ -1,5 +1,10 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
+import { and } from "@prisma/orm-postgres/orm-client";
+
+import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
+import type {
+	SecurityEvent,
+	SecurityLog,
+} from "#api/shared/infrastructure/database/database.types";
 /**
  * SecurityLogRepository 단위 테스트
  *
@@ -12,14 +17,15 @@ import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapt
  * pnpm --filter @aido/api test security-log.repository.spec.ts
  * ```
  */
-import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
-
-import type { SecurityEvent } from "#api/generated/prisma/client";
-import type { SecurityLog } from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import { SecurityLogBuilder } from "#test/builders/index";
-import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+import {
+	assertNativeWhere,
+	createMockTransactionHost,
+	databaseFixture,
+	databaseWriteExpectation,
+	nativeRows,
+} from "#test/mocks/database.mock";
+import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { SecurityLogRepository } from "./security-log.repository.js";
 
@@ -35,7 +41,7 @@ interface SecurityLogGroupByResult {
 
 describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 	let repository: SecurityLogRepository;
-	let db: MockPrismaClient;
+	let db: MockDatabaseContext;
 
 	const mockSecurityLog = SecurityLogBuilder.create("user-123", "LOGIN_SUCCESS")
 		.withId(1)
@@ -47,14 +53,9 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		db = createMockPrisma();
+		db = createMockDatabaseContext();
 
-		const { unit } = await TestBed.solitary(SecurityLogRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
-			.impl(() => ({ tx: db }))
-			.compile();
-
-		repository = unit;
+		repository = new SecurityLogRepository(createMockTransactionHost(db));
 	});
 
 	describe("create", () => {
@@ -68,22 +69,26 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 		it("보안 로그를 생성한다", async () => {
 			// Given
-			db.securityLog.create.mockResolvedValue(mockSecurityLog);
+			db.orm.public.SecurityLog.create.mockResolvedValue(
+				databaseFixture("SecurityLog", mockSecurityLog),
+			);
 
 			// When
 			const result = await repository.create(createData);
 
 			// Then
 			expect(result).toEqual(mockSecurityLog);
-			expect(db.securityLog.create).toHaveBeenCalledWith({
-				data: {
-					userId: createData.userId,
-					event: createData.event,
-					ipAddress: createData.ipAddress,
-					userAgent: createData.userAgent,
-					metadata: createData.metadata,
-				},
-			});
+			expect(db.orm.public.SecurityLog.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("SecurityLog", {
+						userId: createData.userId,
+						event: createData.event,
+						ipAddress: createData.ipAddress,
+						userAgent: createData.userAgent,
+						metadata: createData.metadata,
+					}),
+				),
+			);
 		});
 
 		it("userId 없이 보안 로그를 생성한다", async () => {
@@ -99,34 +104,40 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 				event: "LOGIN_FAILURE",
 				metadata: null,
 			};
-			db.securityLog.create.mockResolvedValue(anonymousLog);
+			db.orm.public.SecurityLog.create.mockResolvedValue(
+				databaseFixture("SecurityLog", anonymousLog),
+			);
 
 			// When
 			const result = await repository.create(anonymousLogData);
 
 			// Then
 			expect(result).toEqual(anonymousLog);
-			expect(db.securityLog.create).toHaveBeenCalledWith({
-				data: {
-					userId: undefined,
-					event: anonymousLogData.event,
-					ipAddress: anonymousLogData.ipAddress,
-					userAgent: anonymousLogData.userAgent,
-					metadata: undefined,
-				},
-			});
+			expect(db.orm.public.SecurityLog.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("SecurityLog", {
+						userId: undefined,
+						event: anonymousLogData.event,
+						ipAddress: anonymousLogData.ipAddress,
+						userAgent: anonymousLogData.userAgent,
+						metadata: undefined,
+					}),
+				),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 생성한다", async () => {
 			// Given
-			db.securityLog.create.mockResolvedValue(mockSecurityLog);
+			db.orm.public.SecurityLog.create.mockResolvedValue(
+				databaseFixture("SecurityLog", mockSecurityLog),
+			);
 
 			// When
 			const result = await repository.create(createData);
 
 			// Then
 			expect(result).toEqual(mockSecurityLog);
-			expect(db.securityLog.create).toHaveBeenCalled();
+			expect(db.orm.public.SecurityLog.create).toHaveBeenCalled();
 		});
 	});
 
@@ -143,39 +154,45 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 		it("사용자의 보안 로그를 최신순으로 조회한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue(securityLogs);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", securityLogs)),
+			);
 
 			// When
 			const result = await repository.findByUserId("user-123");
 
 			// Then
 			expect(result).toEqual(securityLogs);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				orderBy: { createdAt: "desc" },
-				take: 50,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => row.userId.eq("user-123"),
+			);
 		});
 
 		it("limit 옵션을 적용하여 조회한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", [mockSecurityLog])),
+			);
 
 			// When
 			const result = await repository.findByUserId("user-123", { limit: 10 });
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				orderBy: { createdAt: "desc" },
-				take: 10,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => row.userId.eq("user-123"),
+			);
 		});
 
 		it("특정 이벤트 타입만 필터링하여 조회한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", [mockSecurityLog])),
+			);
 
 			// When
 			const result = await repository.findByUserId("user-123", {
@@ -184,14 +201,11 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: {
-					userId: "user-123",
-					event: { in: ["LOGIN_SUCCESS", "LOGIN_FAILURE"] },
-				},
-				orderBy: { createdAt: "desc" },
-				take: 50,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => and(row.userId.eq("user-123"), row.event.in(["LOGIN_SUCCESS", "LOGIN_FAILURE"])),
+			);
 		});
 	});
 
@@ -200,26 +214,27 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 		it("특정 이벤트 타입의 최근 로그를 조회한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", [mockSecurityLog])),
+			);
 
 			// When
 			const result = await repository.findRecentByEvent("LOGIN_SUCCESS", since);
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: {
-					event: "LOGIN_SUCCESS",
-					createdAt: { gte: since },
-				},
-				orderBy: { createdAt: "desc" },
-				take: 100,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => and(row.event.eq("LOGIN_SUCCESS"), row.createdAt.gte(databaseTimestamp(since))),
+			);
 		});
 
 		it("userId 옵션으로 필터링한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", [mockSecurityLog])),
+			);
 
 			// When
 			const result = await repository.findRecentByEvent("LOGIN_SUCCESS", since, {
@@ -228,20 +243,23 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: {
-					event: "LOGIN_SUCCESS",
-					createdAt: { gte: since },
-					userId: "user-123",
-				},
-				orderBy: { createdAt: "desc" },
-				take: 100,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.event.eq("LOGIN_SUCCESS"),
+						row.createdAt.gte(databaseTimestamp(since)),
+						row.userId.eq("user-123"),
+					),
+			);
 		});
 
 		it("ipAddress 옵션으로 필터링한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([mockSecurityLog]);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", [mockSecurityLog])),
+			);
 
 			// When
 			const result = await repository.findRecentByEvent("LOGIN_FAILURE", since, {
@@ -250,33 +268,31 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 			// Then
 			expect(result).toHaveLength(1);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: {
-					event: "LOGIN_FAILURE",
-					createdAt: { gte: since },
-					ipAddress: "192.168.1.1",
-				},
-				orderBy: { createdAt: "desc" },
-				take: 100,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.event.eq("LOGIN_FAILURE"),
+						row.createdAt.gte(databaseTimestamp(since)),
+						row.ipAddress.eq(varchar("192.168.1.1", 45)),
+					),
+			);
 		});
 
 		it("limit 옵션을 적용한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([]);
+			db.orm.public.SecurityLog.all.mockReturnValue(nativeRows(databaseFixture("SecurityLog", [])));
 
 			// When
 			await repository.findRecentByEvent("LOGIN_SUCCESS", since, { limit: 10 });
 
 			// Then
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: {
-					event: "LOGIN_SUCCESS",
-					createdAt: { gte: since },
-				},
-				orderBy: { createdAt: "desc" },
-				take: 10,
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => and(row.event.eq("LOGIN_SUCCESS"), row.createdAt.gte(databaseTimestamp(since))),
+			);
 		});
 	});
 
@@ -289,28 +305,35 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 		it("IP 주소의 의심스러운 활동을 조회한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue(suspiciousLogs);
+			db.orm.public.SecurityLog.all.mockReturnValue(
+				nativeRows(databaseFixture("SecurityLog", suspiciousLogs)),
+			);
 
 			// When
 			const result = await repository.findSuspiciousActivityByIp("192.168.1.1", since);
 
 			// Then
 			expect(result).toEqual(suspiciousLogs);
-			expect(db.securityLog.findMany).toHaveBeenCalledWith({
-				where: {
-					ipAddress: "192.168.1.1",
-					createdAt: { gte: since },
-					event: {
-						in: ["LOGIN_FAILURE", "SUSPICIOUS_ACTIVITY", "TOKEN_REVOKED", "SESSION_REVOKED_ALL"],
-					},
-				},
-				orderBy: { createdAt: "desc" },
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.ipAddress.eq(varchar("192.168.1.1", 45)),
+						row.createdAt.gte(databaseTimestamp(since)),
+						row.event.in([
+							"LOGIN_FAILURE",
+							"SUSPICIOUS_ACTIVITY",
+							"TOKEN_REVOKED",
+							"SESSION_REVOKED_ALL",
+						]),
+					),
+			);
 		});
 
 		it("의심스러운 활동이 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			db.securityLog.findMany.mockResolvedValue([]);
+			db.orm.public.SecurityLog.all.mockReturnValue(nativeRows(databaseFixture("SecurityLog", [])));
 
 			// When
 			const result = await repository.findSuspiciousActivityByIp("10.0.0.1", since);
@@ -323,39 +346,39 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 	describe("deleteOld", () => {
 		it("기본 90일 이전 로그를 삭제한다", async () => {
 			// Given
-			db.securityLog.deleteMany.mockResolvedValue({ count: 100 });
+			db.orm.public.SecurityLog.deleteAndCount.mockResolvedValue(100);
 
 			// When
 			const result = await repository.deleteOld();
 
 			// Then
 			expect(result).toBe(100);
-			expect(db.securityLog.deleteMany).toHaveBeenCalledWith({
-				where: {
-					createdAt: { lt: expect.any(Date) },
-				},
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => row.createdAt.lt(expect.any(String)),
+			);
 		});
 
 		it("지정된 보관 기간으로 삭제한다", async () => {
 			// Given
-			db.securityLog.deleteMany.mockResolvedValue({ count: 50 });
+			db.orm.public.SecurityLog.deleteAndCount.mockResolvedValue(50);
 
 			// When
 			const result = await repository.deleteOld(30);
 
 			// Then
 			expect(result).toBe(50);
-			expect(db.securityLog.deleteMany).toHaveBeenCalledWith({
-				where: {
-					createdAt: { lt: expect.any(Date) },
-				},
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => row.createdAt.lt(expect.any(String)),
+			);
 		});
 
 		it("삭제할 로그가 없으면 0을 반환한다", async () => {
 			// Given
-			db.securityLog.deleteMany.mockResolvedValue({ count: 0 });
+			db.orm.public.SecurityLog.deleteAndCount.mockResolvedValue(0);
 
 			// When
 			const result = await repository.deleteOld();
@@ -376,15 +399,8 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 				{ event: "LOGIN_FAILURE", _count: { event: 20 } },
 				{ event: "PASSWORD_CHANGED", _count: { event: 5 } },
 			];
-			asMock(db.securityLog.groupBy).mockResolvedValue(
-				groupByResult.map((value) => ({
-					...SecurityLogBuilder.create("user-1", value.event).build(),
-					...value,
-					_avg: undefined,
-					_sum: undefined,
-					_min: undefined,
-					_max: undefined,
-				})),
+			asMock(db.orm.public.SecurityLog.groupBy("event").aggregate).mockResolvedValue(
+				groupByResult.map((value) => ({ event: value.event, count: value._count.event })),
 			);
 
 			// When
@@ -396,16 +412,15 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 				{ event: "LOGIN_FAILURE", count: 20 },
 				{ event: "PASSWORD_CHANGED", count: 5 },
 			]);
-			expect(db.securityLog.groupBy).toHaveBeenCalledWith({
-				by: ["event"],
-				where: {
-					createdAt: {
-						gte: since,
-						lte: until,
-					},
-				},
-				_count: { event: true },
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.createdAt.gte(databaseTimestamp(since)),
+						row.createdAt.lte(databaseTimestamp(until)),
+					),
+			);
 		});
 
 		it("until 없이 since부터 현재까지 카운트한다", async () => {
@@ -413,15 +428,8 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 			const groupByResult: SecurityLogGroupByResult[] = [
 				{ event: "LOGIN_SUCCESS", _count: { event: 50 } },
 			];
-			asMock(db.securityLog.groupBy).mockResolvedValue(
-				groupByResult.map((value) => ({
-					...SecurityLogBuilder.create("user-1", value.event).build(),
-					...value,
-					_avg: undefined,
-					_sum: undefined,
-					_min: undefined,
-					_max: undefined,
-				})),
+			asMock(db.orm.public.SecurityLog.groupBy("event").aggregate).mockResolvedValue(
+				groupByResult.map((value) => ({ event: value.event, count: value._count.event })),
 			);
 
 			// When
@@ -429,20 +437,16 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual([{ event: "LOGIN_SUCCESS", count: 50 }]);
-			expect(db.securityLog.groupBy).toHaveBeenCalledWith({
-				by: ["event"],
-				where: {
-					createdAt: {
-						gte: since,
-					},
-				},
-				_count: { event: true },
-			});
+			assertNativeWhere(
+				"SecurityLog",
+				db.orm.public.SecurityLog.where.mock.calls.at(-1)?.[0],
+				(row) => row.createdAt.gte(databaseTimestamp(since)),
+			);
 		});
 
 		it("이벤트가 없으면 빈 배열을 반환한다", async () => {
 			// Given
-			vi.mocked(db.securityLog.groupBy).mockResolvedValue([]);
+			asMock(db.orm.public.SecurityLog.groupBy("event").aggregate).mockResolvedValue([]);
 
 			// When
 			const result = await repository.countByEvent(since);

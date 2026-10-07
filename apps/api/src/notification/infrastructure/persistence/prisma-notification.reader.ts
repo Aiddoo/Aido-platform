@@ -1,16 +1,20 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { all, and } from "@prisma/orm-postgres/orm-client";
 
-import type { Prisma } from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord } from "#api/shared/infrastructure/database/database-records";
+import {
+	databaseDate,
+	databaseTimestamp,
+} from "#api/shared/infrastructure/database/database-values";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type { FindNotificationsParams } from "../../application/ports/notification-data.js";
 import type {
+	ExistsRecentNotificationQuery,
 	FindAlreadyNotifiedUserIdsQuery,
 	NotificationHistoryReaderPort,
 } from "../../application/ports/notification-history.reader.port.js";
-import type { ExistsRecentNotificationQuery } from "../../application/ports/notification-history.reader.port.js";
 import type { NotificationInboxReaderPort } from "../../application/ports/notification-inbox.reader.port.js";
 import type { NotificationRecord } from "../../domain/records/notification.record.js";
 import type { NotificationMilestone } from "../../domain/types/notification-milestone.js";
@@ -20,65 +24,76 @@ import type { NotificationType } from "../../domain/types/notification-type.js";
 export class PrismaNotificationReader
 	implements NotificationInboxReaderPort, NotificationHistoryReaderPort
 {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
 	}
 
 	async findNotificationById(id: number): Promise<NotificationRecord | null> {
-		return this.client.notification.findUnique({ where: { id } });
+		return this.client.orm.public.Notification.where((row) => row.id.eq(id))
+			.first()
+			.then((row) => decodeRecord("Notification", row));
 	}
 
 	async findNotificationsByUser(params: FindNotificationsParams): Promise<NotificationRecord[]> {
 		const { userId, cursor, size, unreadOnly, types } = params;
-
-		return this.client.notification.findMany({
-			where: {
-				userId,
-				...(unreadOnly && { isRead: false }),
-				...(types && { type: { in: types } }),
-			},
-			take: size + 1,
-			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		let notifications = this.client.orm.public.Notification.where((row) =>
+			and(
+				row.userId.eq(userId),
+				unreadOnly === true ? row.isRead.eq(false) : all(),
+				types !== undefined ? row._type.in([...types]) : all(),
+			),
+		)
+			.orderBy((row) => row.createdAt.desc())
+			.orderBy((row) => row.id.desc())
+			.limit(size + 1);
+		if (cursor !== undefined && cursor !== null) {
+			const anchor = await this.client.orm.public.Notification.where({ id: cursor })
+				.select("id", "createdAt")
+				.first();
+			if (anchor === null) return [];
+			notifications = notifications.cursor(anchor);
+		}
+		return decodeRecord("Notification", await notifications.all());
 	}
 
 	async countUnread(userId: string, types?: readonly NotificationType[]): Promise<number> {
-		return this.client.notification.count({
-			where: { userId, isRead: false, ...(types && { type: { in: [...types] } }) },
-		});
+		return this.client.orm.public.Notification.where((row) =>
+			and(row.userId.eq(userId), row.isRead.eq(false), types ? row._type.in([...types]) : all()),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async existsRecentNotification(query: ExistsRecentNotificationQuery): Promise<boolean> {
-		const where: Prisma.NotificationWhereInput = {
-			userId: query.userId,
-			type: query.type,
-			createdAt: { gte: query.since },
-		};
-		if (query.friendId !== undefined) where.friendId = query.friendId;
-		if (query.todoId !== undefined) where.todoId = query.todoId;
-		if (query.nudgeId !== undefined) where.nudgeId = query.nudgeId;
-		if (query.cheerId !== undefined) where.cheerId = query.cheerId;
-
-		const count = await this.client.notification.count({ where });
-		return count > 0;
+		const row = await this.client.orm.public.Notification.where((row) =>
+			and(
+				row.userId.eq(query.userId),
+				row._type.eq(query.type),
+				row.createdAt.gte(databaseTimestamp(query.since)),
+				query.friendId !== undefined ? row.friendId.eq(query.friendId) : all(),
+				query.todoId !== undefined ? row.todoId.eq(query.todoId) : all(),
+				query.nudgeId !== undefined ? row.nudgeId.eq(query.nudgeId) : all(),
+				query.cheerId !== undefined ? row.cheerId.eq(query.cheerId) : all(),
+			),
+		)
+			.select("id")
+			.first();
+		return row !== null;
 	}
 
 	async findAlreadyNotifiedUserIds(query: FindAlreadyNotifiedUserIdsQuery): Promise<Set<string>> {
-		const rows = await this.client.notification.findMany({
-			where: {
-				userId: { in: query.userIds },
-				type: query.type,
-				...(query.friendId && { friendId: query.friendId }),
-				notificationDate: query.notificationDate,
-			},
-			select: { userId: true },
-			distinct: ["userId"],
-		});
+		const rows = await this.client.orm.public.Notification.where((row) =>
+			and(
+				row.userId.in(query.userIds),
+				row._type.eq(query.type),
+				row.notificationDate.eq(databaseDate(query.notificationDate)),
+				query.friendId !== undefined ? row.friendId.eq(query.friendId) : all(),
+			),
+		)
+			.groupBy("userId")
+			.aggregate((aggregate) => ({ count: aggregate.count() }));
 		return new Set(rows.map((row) => row.userId));
 	}
 
@@ -86,12 +101,14 @@ export class PrismaNotificationReader
 		userId: string,
 		milestone: NotificationMilestone,
 	): Promise<boolean> {
-		const count = await this.client.notification.count({
-			where: {
-				userId,
-				metadata: { path: ["milestone"], equals: milestone },
-			},
-		});
-		return count > 0;
+		const row = await this.client.orm.public.Notification.where({ userId })
+			.where((notification) =>
+				this.client.raw.sql`${notification.metadata} ->> 'milestone' = ${milestone}`
+					.returns("pg/bool@1")
+					.buildAst(),
+			)
+			.select("id")
+			.first();
+		return row !== null;
 	}
 }

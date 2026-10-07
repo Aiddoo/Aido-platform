@@ -49,7 +49,7 @@
 
 pg-boss 12 계열을 고정 버전으로 사용한다. 운영 시작 시 자동 DDL을 허용하지 않고 migration 컨테이너가 다음 순서로 실행한다.
 
-1. `prisma migrate deploy`
+1. Prisma 8 native graph 적용 및 `prisma db verify`
 2. pg-boss schema migration
 3. pg-boss `doctor`
 

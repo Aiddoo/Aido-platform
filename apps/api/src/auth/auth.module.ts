@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
@@ -105,6 +106,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
  */
 @Module({
 	imports: [
+		HttpClientModule.register({ name: "oauth", retry: false, throwOnHttpError: false }),
 		PassportModule.register({ defaultStrategy: "jwt" }),
 		JwtModule.registerAsync({
 			inject: [TypedConfigService],
@@ -217,9 +219,12 @@ import { LastActiveInterceptor } from "./presentation/interceptors/last-active.i
 		// OAuth 신원 제공자 레지스트리 (provider → 벤더 어댑터 Map)
 		{
 			provide: OAUTH_IDENTITY_PROVIDER_REGISTRY,
-			inject: [TypedConfigService, OAuthTokenVerifierService],
-			useFactory: (configService: TypedConfigService, tokenVerifier: OAuthTokenVerifierService) =>
-				createOAuthProviderRegistry(configService, tokenVerifier),
+			inject: [TypedConfigService, OAuthTokenVerifierService, getHttpClientToken("oauth")],
+			useFactory: (
+				configService: TypedConfigService,
+				tokenVerifier: OAuthTokenVerifierService,
+				http: HttpClient,
+			) => createOAuthProviderRegistry(configService, tokenVerifier, http),
 		},
 		// Strategies
 		JwtStrategy,

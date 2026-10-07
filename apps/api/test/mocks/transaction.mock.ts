@@ -1,17 +1,21 @@
-import { type DeepMockProxy, mockDeep, mockReset } from "vitest-mock-extended";
+import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
-import type { Prisma } from "#api/generated/prisma/client";
+import {
+	createMockDatabaseContext,
+	resetMockDatabaseContext,
+	type MockDatabaseContext,
+} from "./database.mock.js";
 
-export type MockTransactionClient = DeepMockProxy<Prisma.TransactionClient>;
+export type MockTransactionClient = MockDatabaseContext;
 
 export function createMockTxClient(): MockTransactionClient {
-	return mockDeep<Prisma.TransactionClient>();
+	return createMockDatabaseContext();
 }
 
-export function asTxClient(mock: MockTransactionClient): Prisma.TransactionClient {
+export function asTxClient(mock: MockTransactionClient): Prisma8Transaction {
 	return mock;
 }
 
 export function resetTxClientMocks(client: MockTransactionClient): void {
-	mockReset(client);
+	resetMockDatabaseContext(client);
 }

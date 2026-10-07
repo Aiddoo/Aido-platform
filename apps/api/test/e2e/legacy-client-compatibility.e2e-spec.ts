@@ -4,6 +4,8 @@ import { ErrorCode } from "@aido/errors";
 import request from "supertest";
 import { z } from "zod";
 
+import { encodeCreate } from "#api/shared/infrastructure/database/database-records";
+
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 // 현재 validator를 가져오면 새 계약으로 구 클라이언트를 검증하게 되므로 소비 필드를 고정한다.
@@ -125,14 +127,19 @@ describe("배포된 구 클라이언트 HTTP 호환성", () => {
 			expect(page.items.map((item) => item.id)).toContain(todo.id);
 			expect(page.pagination.size).toBe(1);
 
-			await ctx.testDatabase.getPrisma().notification.createMany({
-				data: ["첫 알림", "다음 알림"].map((title) => ({
-					userId: user.userId,
-					type: "SYSTEM_NOTICE",
-					title,
-					body: title,
-				})),
-			});
+			await ctx.testDatabase.getClient().orm.public.Notification.createAndCount(
+				["첫 알림", "다음 알림"]
+					.map(
+						(title) =>
+							({
+								userId: user.userId,
+								type: "SYSTEM_NOTICE",
+								title,
+								body: title,
+							}) satisfies Parameters<typeof encodeCreate<"Notification">>[1],
+					)
+					.map((value) => encodeCreate("Notification", value)),
+			);
 			const notifications = await request(ctx.app.getHttpServer())
 				.get("/v1/notifications")
 				.set("Authorization", authorization)

@@ -1,7 +1,9 @@
 import { ErrorCode } from "@aido/errors";
 import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 import { OAuth2Client } from "google-auth-library";
+import { match } from "ts-pattern";
 
 import type { VerifiedProfile } from "#api/auth/application/ports/oauth-identity-provider.port";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -47,7 +49,10 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// Naver API URL
 	private static readonly NAVER_USER_INFO_URL = "https://openapi.naver.com/v1/nid/me";
 
-	constructor(private readonly configService: ConfigService) {
+	constructor(
+		private readonly configService: ConfigService,
+		@InjectHttpClient("oauth") private readonly http: HttpClient,
+	) {
 		// Google OAuth2 클라이언트 초기화
 		this.#googleClient = new OAuth2Client(this.configService.get("GOOGLE_CLIENT_ID"));
 	}
@@ -74,16 +79,12 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 		token: string,
 		nonce?: string,
 	): Promise<VerifiedProfile> {
-		switch (provider) {
-			case "APPLE":
-				return this.verifyAppleToken(token, nonce);
-			case "GOOGLE":
-				return this.verifyGoogleToken(token);
-			case "KAKAO":
-				return this.verifyKakaoToken(token);
-			case "NAVER":
-				return this.verifyNaverToken(token);
-		}
+		return match(provider)
+			.with("APPLE", () => this.verifyAppleToken(token, nonce))
+			.with("GOOGLE", () => this.verifyGoogleToken(token))
+			.with("KAKAO", () => this.verifyKakaoToken(token))
+			.with("NAVER", () => this.verifyNaverToken(token))
+			.exhaustive();
 	}
 
 	// @see https://developer.apple.com/documentation/sign_in_with_apple/sign_in_with_apple_rest_api/verifying_a_user
@@ -210,12 +211,18 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// @see https://developers.kakao.com/docs/latest/ko/kakaologin/rest-api#req-user-info
 	async verifyKakaoToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
-			const response = await fetch(OAuthTokenVerifierService.KAKAO_USER_INFO_URL, {
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+			const { data: response } = await this.http.request(
+				OAuthTokenVerifierService.KAKAO_USER_INFO_URL,
+				{
+					responseType: "response",
+					retry: false,
+					throwOnHttpError: false,
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+						"Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
+					},
 				},
-			});
+			);
 
 			if (!response.ok) {
 				if (response.status === 401) {
@@ -269,11 +276,17 @@ export class OAuthTokenVerifierService implements OnModuleInit {
 	// @see https://developers.naver.com/docs/login/profile/profile.md
 	async verifyNaverToken(accessToken: string): Promise<VerifiedProfile> {
 		try {
-			const response = await fetch(OAuthTokenVerifierService.NAVER_USER_INFO_URL, {
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
+			const { data: response } = await this.http.request(
+				OAuthTokenVerifierService.NAVER_USER_INFO_URL,
+				{
+					responseType: "response",
+					retry: false,
+					throwOnHttpError: false,
+					headers: {
+						Authorization: `Bearer ${accessToken}`,
+					},
 				},
-			});
+			);
 
 			if (!response.ok) {
 				if (response.status === 401) {

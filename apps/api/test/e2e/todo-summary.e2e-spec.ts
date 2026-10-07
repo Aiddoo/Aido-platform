@@ -1,3 +1,4 @@
+import request from "supertest";
 /**
  * 오늘의 할 일 요약 E2E 테스트 (홈 위젯용 GET /todos/summary)
  *
@@ -7,10 +8,9 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import request from "supertest";
-
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
+import { encodeCreate } from "#api/shared/infrastructure/database/database-records";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -47,9 +47,9 @@ describe("오늘의 할 일 요약 E2E", () => {
 			const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 
 			const { startDate, endDate } = activeDateRange();
-			const prisma = ctx.testDatabase.getPrisma();
-			await prisma.todo.createMany({
-				data: [
+			const prisma = ctx.testDatabase.getClient();
+			await prisma.orm.public.Todo.createAndCount(
+				[
 					{
 						userId: user.userId,
 						title: "완료한 할 일",
@@ -78,8 +78,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 						sortOrder: 2,
 						completed: false,
 					},
-				],
-			});
+				].map((value) => encodeCreate("Todo", value)),
+			);
 
 			// When
 			const response = await request(ctx.app.getHttpServer())
@@ -143,9 +143,9 @@ describe("오늘의 할 일 요약 E2E", () => {
 			const user = await ctx.helpers.createVerifiedUser("todo-summary-limit@test.com", password);
 			const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
 			const { startDate, endDate } = activeDateRange();
-			const prisma = ctx.testDatabase.getPrisma();
-			await prisma.todo.createMany({
-				data: Array.from({ length: 12 }, (_, i) => ({
+			const prisma = ctx.testDatabase.getClient();
+			await prisma.orm.public.Todo.createAndCount(
+				Array.from({ length: 12 }, (_, i) => ({
 					userId: user.userId,
 					title: `할 일 ${i + 1}`,
 					categoryId,
@@ -154,8 +154,8 @@ describe("오늘의 할 일 요약 E2E", () => {
 					sortOrder: i,
 					completed: i < 6,
 					...(i < 6 && { completedAt: new Date() }),
-				})),
-			});
+				})).map((value) => encodeCreate("Todo", value)),
+			);
 
 			// When
 			const response = await request(ctx.app.getHttpServer())

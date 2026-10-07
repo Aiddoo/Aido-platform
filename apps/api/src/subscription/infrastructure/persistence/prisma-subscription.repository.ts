@@ -1,12 +1,19 @@
 import { ErrorCode } from "@aido/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { or } from "@prisma/orm-postgres/orm-client";
 
-import type * as PrismaModels from "#api/generated/prisma/client";
-import { Prisma } from "#api/generated/prisma/client";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
+import type * as PrismaModels from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { isRecordNotFoundError } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	CreateSubscriptionData,
@@ -18,18 +25,6 @@ import type {
 import { Subscription } from "../../domain/entities/subscription.aggregate.js";
 
 /**
- * 사용자 조회 시 필요한 필드만 select
- */
-const USER_SELECT = {
-	id: true,
-	email: true,
-	subscriptionStatus: true,
-	subscriptionExpiresAt: true,
-	revenueCatUserId: true,
-	profile: { select: { name: true } },
-} as const;
-
-/**
  * 구독 저장소 Prisma 어댑터.
  *
  * RevenueCat 웹훅으로부터 수신한 구독 이벤트를 DB에 반영한다.
@@ -39,9 +34,7 @@ const USER_SELECT = {
  */
 @Injectable()
 export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
@@ -52,9 +45,12 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
 	 * RevenueCat 거래 ID로 구독 조회
 	 */
 	async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
-		const row = await this.client.subscription.findUnique({
-			where: { revenueCatId },
-		});
+		const row = decodeRecord(
+			"Subscription",
+			await this.client.orm.public.Subscription.where((row) =>
+				row.revenueCatId.eq(varchar(revenueCatId, 255)),
+			).first(),
+		);
 		return row ? PrismaSubscriptionRepository.toDomain(row) : null;
 	}
 
@@ -65,31 +61,35 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
 	 * appUserId로 사용하고, 이후 alias가 설정되면 revenueCatUserId가 다를 수 있다.
 	 */
 	async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
-		return this.client.user.findFirst({
-			where: {
-				OR: [{ revenueCatUserId: appUserId }, { id: appUserId }],
-			},
-			select: USER_SELECT,
-		});
+		return this.client.orm.public.User.where((row) =>
+			or(row.revenueCatUserId.eq(varchar(appUserId, 255)), row.id.eq(appUserId)),
+		)
+			.select("id", "email", "subscriptionStatus", "subscriptionExpiresAt", "revenueCatUserId")
+			.include("profile", (related) => related.select("name"))
+			.first()
+			.then((row) => decodeRecord("User", row));
 	}
 
 	/**
 	 * 구독 생성 (INITIAL_PURCHASE용)
 	 */
 	async create(data: CreateSubscriptionData): Promise<void> {
-		await this.client.subscription.create({
-			data: {
-				user: { connect: { id: data.userId } },
-				revenueCatId: data.revenueCatId,
-				productId: data.productId,
-				status: data.status,
-				startedAt: data.startedAt,
-				expiresAt: data.expiresAt,
-				...(data.lastProcessedEventId && {
-					lastProcessedEventId: data.lastProcessedEventId,
+		decodeRecord(
+			"Subscription",
+			await this.client.orm.public.Subscription.create(
+				encodeCreate("Subscription", {
+					userId: data.userId,
+					revenueCatId: data.revenueCatId,
+					productId: data.productId,
+					status: data.status,
+					startedAt: data.startedAt,
+					expiresAt: data.expiresAt,
+					...(data.lastProcessedEventId && {
+						lastProcessedEventId: data.lastProcessedEventId,
+					}),
 				}),
-			},
-		});
+			),
+		);
 	}
 
 	/**
@@ -97,12 +97,16 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
 	 */
 	async updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void> {
 		try {
-			await this.client.subscription.update({
-				where: { revenueCatId },
-				data,
-			});
+			decodeRecord(
+				"Subscription",
+				requireRecord(
+					await this.client.orm.public.Subscription.where((row) =>
+						row.revenueCatId.eq(varchar(revenueCatId, 255)),
+					).update(encodePatch("Subscription", data)),
+				),
+			);
 		} catch (error) {
-			if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+			if (isRecordNotFoundError(error)) {
 				throw new ApplicationException(ErrorCode.SUBSCRIPTION_1604, {
 					reason: `Subscription not found: ${revenueCatId}`,
 				});
@@ -118,18 +122,22 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
 		userId: string,
 		data: UpdateUserSubscriptionStatusData,
 	): Promise<void> {
-		await this.client.user.update({
-			where: { id: userId },
-			data: {
-				subscriptionStatus: data.subscriptionStatus,
-				...(data.subscriptionExpiresAt !== undefined && {
-					subscriptionExpiresAt: data.subscriptionExpiresAt,
-				}),
-				...(data.revenueCatUserId !== undefined && {
-					revenueCatUserId: data.revenueCatUserId,
-				}),
-			},
-		});
+		decodeRecord(
+			"User",
+			requireRecord(
+				await this.client.orm.public.User.where((row) => row.id.eq(userId)).update(
+					encodePatch("User", {
+						subscriptionStatus: data.subscriptionStatus,
+						...(data.subscriptionExpiresAt !== undefined && {
+							subscriptionExpiresAt: data.subscriptionExpiresAt,
+						}),
+						...(data.revenueCatUserId !== undefined && {
+							revenueCatUserId: data.revenueCatUserId,
+						}),
+					}),
+				),
+			),
+		);
 	}
 
 	/** Prisma 행 → Subscription 애그리게잇 */

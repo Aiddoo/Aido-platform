@@ -2,18 +2,18 @@ import { ErrorCode } from "@aido/errors";
 /**
  * GlobalExceptionFilter 테스트
  *
- * Prisma P2002 매핑, BusinessException, HttpException, 알 수 없는 에러 처리 검증
+ * Prisma SQLSTATE 23505 매핑, BusinessException, HttpException, 알 수 없는 에러 처리 검증
  */
 import { HttpException, HttpStatus } from "@nestjs/common";
 import * as Sentry from "@sentry/nestjs";
 import { PinoLogger } from "nestjs-pino";
 import { vi, type Mock, type Mocked } from "vitest";
 
-import { Prisma } from "#api/generated/prisma/client";
 import { BusinessExceptions } from "#api/shared/application/exceptions/business-exception.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import type { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { sqlQueryError } from "#test/mocks/database.mock";
 
 import { GlobalExceptionFilter } from "./global-exception.filter.js";
 
@@ -70,14 +70,10 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 		filter = createFilter(true);
 	});
 
-	describe("P2002 Prisma 에러 처리", () => {
+	describe("PostgreSQL unique violation 에러 처리", () => {
 		it("알려진 constraint(email)를 BusinessException으로 매핑해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-				code: "P2002",
-				meta: { target: ["email"] },
-				clientVersion: "7.0.0",
-			});
+			const error = sqlQueryError("23505", "User_email_key");
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -90,11 +86,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("알려진 constraint(userId_name)를 BusinessException으로 매핑해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-				code: "P2002",
-				meta: { target: ["userId", "name"] },
-				clientVersion: "7.0.0",
-			});
+			const error = sqlQueryError("23505", "TodoCategory_userId_name_key");
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -107,11 +99,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("알려진 constraint(followerId_followingId)를 BusinessException으로 매핑해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-				code: "P2002",
-				meta: { target: ["followerId", "followingId"] },
-				clientVersion: "7.0.0",
-			});
+			const error = sqlQueryError("23505", "Follow_followerId_followingId_key");
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -124,11 +112,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("알 수 없는 constraint를 SYS_0004 (409)로 폴백해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError("Unique constraint", {
-				code: "P2002",
-				meta: { target: ["unknownField"] },
-				clientVersion: "7.0.0",
-			});
+			const error = sqlQueryError("23505");
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -138,17 +122,13 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 			const jsonArg = mockResponse.json.mock.calls[0]?.[0];
 			expect(jsonArg?.error.code).toBe(ErrorCode.SYS_0004);
 			expect(mockLogger.warn).toHaveBeenCalledWith(
-				expect.stringContaining("Unknown P2002 constraint"),
+				expect.stringContaining("Unknown database unique constraint"),
 			);
 		});
 
-		it("P2003 FK constraint violation은 400 SYS_0002로 처리해야 한다", () => {
+		it("SQLSTATE 23503 FK constraint violation은 400 SYS_0002로 처리해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError("Foreign key constraint", {
-				code: "P2003",
-				meta: {},
-				clientVersion: "7.0.0",
-			});
+			const error = sqlQueryError("23503");
 
 			// When
 			filter.catch(error, mockHost as never);
@@ -161,11 +141,7 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
 
 		it("처리되지 않은 Prisma 에러는 500 SYS_0001로 처리해야 한다", () => {
 			// Given
-			const error = new Prisma.PrismaClientKnownRequestError("Unknown Prisma error", {
-				code: "P2024",
-				meta: {},
-				clientVersion: "7.0.0",
-			});
+			const error = sqlQueryError("XX000");
 
 			// When
 			filter.catch(error, mockHost as never);

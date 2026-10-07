@@ -1,11 +1,22 @@
-import { vi } from "vitest";
+import { mockDeep } from "vitest-mock-extended";
 
-export function createMockDatabaseService<T extends Record<string, object>>(models: T) {
-	const service = {
-		...models,
-		$transaction: vi.fn<(callback: (tx: T) => Promise<unknown>) => Promise<unknown>>(),
-	};
+import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
-	service.$transaction.mockImplementation((callback) => callback(service));
+import { createMockDatabaseContext, type MockDatabaseContext } from "./database.mock.js";
+
+export function createMockDatabaseService(
+	context: MockDatabaseContext = createMockDatabaseContext(),
+) {
+	const service = mockDeep<DatabaseService>();
+	const runtime = mockDeep<ReturnType<DatabaseService["db"]["runtime"]>>();
+	Object.assign(runtime, { query: context.query, execute: context.execute });
+	Object.assign(service.db, {
+		orm: context.orm,
+		sql: context.sql,
+		raw: context.raw,
+		enums: context.enums,
+		nativeEnums: context.nativeEnums,
+	});
+	service.db.runtime.mockReturnValue(runtime);
 	return service;
 }

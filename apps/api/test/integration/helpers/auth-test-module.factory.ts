@@ -1,3 +1,4 @@
+import { TransactionHost } from "@nestjs-cls/transactional";
 /**
  * Auth 통합 테스트 모듈 팩토리
  *
@@ -7,8 +8,6 @@
  *
  * 실제 DB (Testcontainers)를 사용하는 통합 테스트용입니다.
  */
-
-import { TransactionHost } from "@nestjs-cls/transactional";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
@@ -54,6 +53,7 @@ import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 
 import type { FakeEmailService } from "../../mocks/fake-email.service.js";
 import { provisioningSeederTestProvider } from "./provisioning-seeder.provider.js";
@@ -63,6 +63,7 @@ export async function createAuthTestModule(
 	databaseService: DatabaseService,
 	fakeEmailService: FakeEmailService,
 ): Promise<TestingModule> {
+	const transaction = createDatabaseTransactionFixture(databaseService.db);
 	return Test.createTestingModule({
 		imports: [
 			JwtModule.register({
@@ -129,16 +130,12 @@ export async function createAuthTestModule(
 				useValue: databaseService,
 			},
 			{
-				// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
 				provide: TransactionHost,
-				useValue: { tx: databaseService },
+				useValue: transaction.txHost,
 			},
 			{
-				// uow.run passthrough — 리포지토리가 TransactionHost.tx(실제 DB)로 참여
 				provide: UNIT_OF_WORK,
-				useValue: {
-					run: (fn: () => Promise<unknown>) => fn(),
-				},
+				useValue: transaction.uow,
 			},
 			{
 				provide: TransactionalEmailSender,

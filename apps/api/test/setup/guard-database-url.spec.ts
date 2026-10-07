@@ -11,7 +11,7 @@ describe("DATABASE_URL 문지기", () => {
 			["루프백 IP", "postgresql://postgres:postgres@127.0.0.1:5432/aido"],
 			["docker compose 서비스명", "postgresql://postgres:postgres@db:5432/aido"],
 			["도커에서 본 호스트", "postgresql://postgres:postgres@host.docker.internal:5432/aido"],
-			// prisma generate는 연결하지 않는다. 이미지 빌드 중에도 통과해야 한다.
+			// prisma contract emit는 연결하지 않는다. 이미지 빌드 중에도 통과해야 한다.
 			["placeholder", "postgresql://placeholder:placeholder@localhost:5432/placeholder"],
 		])("%s 는 통과한다", (_label, url) => {
 			expect(() => assertDatabaseUrlIsSafe(url, {})).not.toThrow();

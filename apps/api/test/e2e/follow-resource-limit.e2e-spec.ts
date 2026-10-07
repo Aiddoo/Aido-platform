@@ -1,3 +1,5 @@
+import { FOLLOW_LIMITS } from "@aido/validators";
+import request from "supertest";
 /**
  * Follow 리소스 제한 E2E 테스트
  *
@@ -6,8 +8,8 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { FOLLOW_LIMITS } from "@aido/validators";
-import request from "supertest";
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -83,11 +85,15 @@ describe("팔로우 리소스 제한 E2E", () => {
 				password,
 			);
 
-			const prisma = ctx.testDatabase.getPrisma();
-			await prisma.user.update({
-				where: { id: premiumUser.userId },
-				data: { subscriptionStatus: "ACTIVE" },
-			});
+			const prisma = ctx.testDatabase.getClient();
+			decodeRecord(
+				"User",
+				requireRecord(
+					await prisma.orm.public.User.where((row) => row.id.eq(premiumUser.userId)).update(
+						encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+					),
+				),
+			);
 
 			// FREE_LIMIT + 1명의 친구 후보 생성
 			const friends: VerifiedUser[] = [];

@@ -1,299 +1,67 @@
-# Prisma 7 가이드
+# Prisma 가이드
 
-**Version**: 1.1.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Platform Team
+**Version**: 2.0.0 · **Last Updated**: 2026-10-06 · **Owner**: Aido Platform Team
 
-> Prisma 7.10 사용법 및 쿼리 패턴 가이드
+Prisma 8 PostgreSQL ORM과 contract migration graph를 사용한다. ORM은 `@prisma/orm-postgres@8.0.0-rc.14`, CLI는 `prisma@8.0.0-rc.20`으로 고정한다. 두 패키지의 릴리스 번호는 독립적이며 현재 RC 버전이다.
 
-## 관련 문서
+## 계약과 생성
 
-| 문서                                         | 설명                               |
-| -------------------------------------------- | ---------------------------------- |
-| [architecture.md](./architecture.md)         | 전체 아키텍처 개요                 |
-| [api-conventions.md](./api-conventions.md)   | Controller/Service/Repository 규칙 |
-| [integration-test.md](./integration-test.md) | Testcontainers 통합 테스트         |
+- 정본: `src/prisma/contract.prisma`
+- 설정: `prisma.config.ts`
+- 생성 타입과 JSON: `src/generated/prisma8/contract.d.ts`, `contract.json`
+- 마이그레이션: `prisma/migrations8/app/`, 공유 snapshot: `prisma/migrations8/snapshots/`
 
----
+`pnpm db:generate`는 `prisma contract emit`을 Turbo로 캐시한다. 계약·설정·패키지·DB URL guard 변경은 캐시를 무효화한다. 생성에는 DB 연결이나 DDL이 필요하지 않다. Nest build는 runtime 계약 JSON을 asset으로 복사한다.
 
-## 개요
+## 명령
 
-| 항목            | 값                                |
-| --------------- | --------------------------------- |
-| 버전            | Prisma 7.10.0                     |
-| 스키마 위치     | `prisma/schema.prisma`            |
-| 생성 클라이언트 | `src/generated/prisma/`           |
-| 어댑터          | `@prisma/adapter-pg` (PostgreSQL) |
+| 명령                                                   | 용도                                     |
+| ------------------------------------------------------ | ---------------------------------------- |
+| `pnpm db:generate`                                     | 계약 JSON과 타입 생성                    |
+| `pnpm db:plan -- --name <name> --from <hash>`          | 명시한 이전 계약에서 migration 계획 생성 |
+| `pnpm db:migrate`                                      | 로컬 DB에 검토된 graph 적용              |
+| `pnpm db:verify`                                       | 현재 계약과 실제 스키마 비교             |
+| `pnpm --filter @aido/api db:deploy`                    | URL 검증·pg-boss·기존 DB 등록·graph 적용 |
+| `pnpm --filter @aido/api exec prisma migration status` | 적용 상태와 경로 확인                    |
 
-생성 클라이언트는 ESM이고 PostgreSQL 연결은 `@prisma/adapter-pg`가 소유한다. 버전 갱신만으로 성능 개선을 주장하지 않고 동일한 시나리오로 측정한다.
+계약 변경 후 먼저 emit하고 plan한다. 변경한 `migration.ts`는 `node prisma/migrations8/app/<dir>/migration.ts --config prisma.config.ts`로 self-emit한다. `ops.json`과 `migration.json`을 손으로 수정하지 않는다. 물리 스키마가 같은 codec 전환도 `migration new --from <hash>`로 0-operation graph edge를 남긴다. 적용된 migration과 snapshot은 변경하지 않는다. 신규 변경은 새 migration으로 연결한다.
 
-`prisma` CLI는 클라이언트 생성과 migration에 쓰는 직접 개발 의존성이다. API 실행에는 생성 클라이언트, `@prisma/client` runtime, PostgreSQL adapter와 CLS transaction adapter를 사용한다. Migration workspace는 CLI를 직접 의존하며 API production 이미지와 분리한다. CLI/client 버전은 catalog에서 함께 유지한다.
+## ORM과 계층 경계
 
----
+`DatabaseService`는 단일 native client를 소유하고 `PostgresPool`은 한 개의 외부 `pg.Pool`을 소유한다. module destroy에서 client를 종료하고 application shutdown에서 pool을 종료한다.
 
-## Prisma 7 핵심 변경사항
+Repository는 `TransactionHost<Prisma8TransactionalAdapter>.tx`를 읽는다. 활성 트랜잭션 안팎에서 동일한 native API를 사용한다. application/domain에는 ORM 타입과 계약을 전달하지 않는다.
 
-### Generator 설정 (필수)
-
-```prisma
-generator client {
-  provider     = "prisma-client"            // ❌ prisma-client-js 아님
-  output       = "../src/generated/prisma"  // ✅ 필수
-  moduleFormat = "esm"                      // NodeNext ESM
-}
+```ts
+const user = await this.txHost.tx.orm.public.User.where({ id: userId })
+  .select('id', 'email')
+  .first();
 ```
 
-### Driver Adapter (필수)
+필요한 필드와 관계만 `select`/`include`로 조회한다. 그룹 집계는 ORM `groupBy().aggregate()`를 사용한다. raw SQL은 재귀 관계, 원자적 claim/counter, advisory lock처럼 단일 SQL의 원자성이 필요한 경우에 한정한다. 값은 항상 바인딩하고 반환 column codec을 명시한다.
 
-모든 DB 연결에 드라이버 어댑터가 필요합니다.
+`database-records.ts`의 `encodeCreate`/`encodePatch`/`decodeRecord`는 기존 port의 `Date`, 문자열, `type` 표현을 native 계약 codec과 변환한다. nullable 필드의 `null`은 지우기, `undefined`는 변경 생략이다. JSON 내부의 문자열은 날짜로 변환하지 않는다. 신규 문자열 ID는 기존 공개 CUID 검증 규칙을 만족한다. DateString/TimestampString/TimestamptzString codec으로 대량 날짜 조회의 Temporal 객체 생성을 피한다.
 
-```typescript
-// src/shared/infrastructure/database/database.service.ts
-import { PrismaPg } from '@prisma/adapter-pg';
+## 트랜잭션과 오류
 
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
-```
+application은 `UNIT_OF_WORK.run(async () => ...)`에서 경계를 선언한다. `Prisma8TransactionalAdapter`가 native `db.transaction`을 CLS에 연결한다. 중첩 Required 전파는 동일한 transaction을 재사용하고 rollback 시 after-commit 작업을 실행하지 않는다. cache/event/queue의 기존 commit 뒤 의미를 유지한다.
 
-### ESM 지원
+transaction과 fallback runtime은 원본 인스턴스를 보존해 prepared query가 사용하는 공식 runtime bridge를 유지한다. pg-boss는 `nativeJobDatabase`의 공식 `Db.executeSql` 연결로 활성 native transaction에 enqueue/cancel을 참여시킨다. UUID 배열과 scalar 값을 codec으로 바인딩하며 별도 connection으로 우회하지 않는다.
 
-API package의 `"type": "module"`, TypeScript의 NodeNext 설정, generator의 `moduleFormat = "esm"`을 함께 유지한다.
+native SQL 오류의 `kind`/`sqlState`를 읽는다. `23505`는 unique, `23503`은 foreign key, `40001`/`40P01`은 필요한 원자적 작업에서만 재시도한다. native 단건 조회·수정의 `null`은 port의 기존 not-found 의미에 맞춰 처리한다. 공개 오류 코드와 status는 변경하지 않는다.
 
----
+## 기존 DB와 새 DB 배포
 
-## 주요 명령어
+`scripts/migrate.sh`는 API DB와 pg-boss DB URL을 DDL 전에 검증한다. 원격 배포는 명시적인 `AIDO_ALLOW_REMOTE_DB=1`을 사용한다.
 
-| 명령어                                  | 설명                      |
-| --------------------------------------- | ------------------------- |
-| `pnpm db:generate`                      | 클라이언트 생성           |
-| `pnpm db:migrate`                       | 마이그레이션 실행         |
-| `pnpm db:push`                          | 스키마 즉시 반영 (개발용) |
-| `pnpm --filter @aido/api prisma:studio` | Prisma Studio 실행        |
+새 DB는 empty → baseline(댓글 익명화용 잠긴 시스템 작성자 포함) → native unique constraint·시간 codec graph를 적용한다. 계약 marker가 없는 기존 DB는 `User` 테이블 존재 여부를 확인하고 **시스템 작성자 데이터 불변식과 baseline schema 검증에 성공한 경우에만** `db sign --contract <baseline hash> --no-advance-ref`로 등록한다. marker가 있는 DB는 재등록하지 않는다. 이미 target marker인 DB는 migration 전에 `db verify`를 실행하고, graph 적용 뒤에도 실제 스키마와 marker를 검증한다. `db migrate`의 no-op 성공만으로 drift가 없다고 판단하지 않는다. 검증 실패 시 API 배포를 중단한다.
 
----
+unique 전환은 기존 index를 `ADD CONSTRAINT ... UNIQUE USING INDEX`로 재사용한다. 데이터·물리 이름·index identity를 보존한다. 메타데이터 변경에는 짧은 exclusive lock이 필요하다. 배포는 `PGOPTIONS`로 DDL lock 대기를 5초로 제한하며 실패 시 native migration transaction 전체가 rollback된다. lock을 확보할 수 있는 시점에 재실행한다. 기존 설치의 unmanaged 이력 테이블은 데이터 보존을 위해 건드리지 않으며 새 DB에 생성하지 않는다. 운영 DB의 이력을 삭제하거나 검증을 우회하지 않는다.
 
-## Repository 패턴
+API production 이미지에는 ORM runtime만 포함한다. CLI·계약 source·graph와 pg-boss migration 도구는 별도 `migrate` 이미지에 포함한다.
 
-### 기본 구조
+## 검증과 성능
 
-리포지토리는 `TransactionHost`의 `tx`를 읽는다. 활성 CLS 트랜잭션이 있으면 참여하고, 없으면 기본 클라이언트를 사용한다. application/domain 계층에는 Prisma client나 `tx` 파라미터를 전달하지 않는다.
+native PostgreSQL integration, 전체 API E2E, OpenAPI snapshot, 배포 클라이언트 fingerprint를 함께 검증한다. 쿼리 파라미터 객체만 mock해 SQL과 transaction 의미를 검증했다고 판단하지 않는다. 수동 `test:performance`는 동일 데이터와 pool에서 기존 8쿼리 집계 방식과 준비된 ORM 5쿼리를 교차 측정하며 CI에 포함하지 않는다.
 
-```typescript
-import { TransactionHost } from '@nestjs-cls/transactional';
-import type { TransactionalAdapterPrisma } from '@nestjs-cls/transactional-adapter-prisma';
-import { Injectable } from '@nestjs/common';
-
-import type { DatabaseService } from '#api/shared/infrastructure/database/database.service';
-
-@Injectable()
-export class TodoRowRepository {
-  constructor(
-    private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-  ) {}
-
-  private get client() {
-    return this.txHost.tx;
-  }
-
-  async findByIdAndUserId(id: number, userId: string) {
-    return this.client.todo.findFirst({ where: { id, userId } });
-  }
-}
-```
-
-### 관계 조회 (Include)
-
-```typescript
-// ✅ 필요한 관계만 명시
-const user = await this.client.user.findUnique({
-  where: { id },
-  include: {
-    profile: true,
-    todos: { take: 10, orderBy: { createdAt: 'desc' } },
-  },
-});
-```
-
-### 필드 선택 (Select)
-
-```typescript
-// ✅ 필요한 필드만 조회 (성능 최적화)
-const users = await this.client.user.findMany({
-  select: {
-    id: true,
-    email: true,
-    profile: { select: { name: true } },
-  },
-});
-```
-
----
-
-## 트랜잭션
-
-### UnitOfWorkPort와 CLS
-
-쓰기 use-case는 `UNIT_OF_WORK`로 주입한 `UnitOfWorkPort`의 `run`에서 트랜잭션 경계를 선언한다. 콜백은 `tx`를 받지 않으며 모든 리포지토리는 동일한 CLS context에 참여한다. 중첩 `run`은 Required propagation으로 기존 트랜잭션을 재사용한다.
-
-```typescript
-const created = await this.uow.run(async () => {
-  const maxSortOrder = await this.todoRepository.getMaxSortOrder(userId);
-  return this.todoRepository.create({ ...draft, sortOrder: maxSortOrder + 1 });
-});
-```
-
-상세 구현은 `src/todo/application/use-cases/create-todo/create-todo.use-case.ts`와 `src/shared/application/ports/unit-of-work.port.ts`를 기준으로 한다. use-case에서 직접 `$transaction`을 호출하거나 Prisma의 `TransactionClient`를 계층 간에 전달하지 않는다. 캐시 무효화와 도메인 이벤트 발행은 commit 뒤에 수행한다.
-
----
-
-## 성능 최적화
-
-### 인덱스 설계
-
-```prisma
-model Todo {
-  // 복합 인덱스: 자주 함께 조회되는 필드
-  @@index([userId, startDate, endDate])
-  @@index([userId, completed, startDate])
-}
-```
-
-### 페이지네이션
-
-```typescript
-// 오프셋 기반 (간단하지만 대량 데이터에 느림)
-const todos = await this.client.todo.findMany({
-  skip: (page - 1) * size,
-  take: size,
-});
-
-// 커서 기반 (권장 - 대량 데이터에 효율적)
-const todos = await this.client.todo.findMany({
-  take: size,
-  cursor: cursor ? { id: cursor } : undefined,
-  skip: cursor ? 1 : 0,
-});
-```
-
-### 배치 처리
-
-```typescript
-// 대량 생성
-await this.client.todo.createMany({
-  data: todosData,
-  skipDuplicates: true,
-});
-
-// 대량 업데이트
-await this.client.todo.updateMany({
-  where: { userId, completed: false },
-  data: { completed: true },
-});
-```
-
----
-
-## 주의사항
-
-### N+1 문제 방지
-
-```typescript
-// ❌ 루프 내 쿼리
-for (const user of users) {
-  const todos = await this.client.todo.findMany({ where: { userId: user.id } });
-}
-
-// ✅ Include 사용
-const users = await this.client.user.findMany({
-  include: { todos: true },
-});
-
-// ✅ 또는 별도 쿼리로 일괄 조회
-const userIds = users.map((u) => u.id);
-const todos = await this.client.todo.findMany({
-  where: { userId: { in: userIds } },
-});
-```
-
-### Soft Delete 처리
-
-```typescript
-// 삭제 시
-await this.client.user.update({
-  where: { id },
-  data: { deletedAt: new Date() },
-});
-
-// 조회 시 항상 필터
-const users = await this.client.user.findMany({
-  where: { deletedAt: null },
-});
-```
-
-### 환경변수 로드
-
-Prisma 7은 `.env` 자동 로드가 제거되었습니다.
-
-```typescript
-// ✅ ConfigService 사용
-constructor(configService: ConfigService) {
-  const connectionString = configService.get('DATABASE_URL');
-}
-```
-
----
-
-## 마이그레이션 워크플로우
-
-### 개발 환경
-
-```bash
-# 스키마 수정 후 마이그레이션 생성 + 적용
-pnpm db:migrate
-
-# 빠른 반영 (마이그레이션 파일 없이)
-pnpm db:push
-```
-
-### 프로덕션 환경
-
-```bash
-# 마이그레이션만 적용 (생성 안 함)
-prisma migrate deploy
-```
-
----
-
-## 테스트 환경
-
-Testcontainers로 격리된 PostgreSQL 컨테이너를 사용합니다.
-
-```typescript
-// test/setup/test-database.ts
-export class TestDatabase {
-  async start() {
-    // global setup이 준비한 관리형 DB에 연결
-  }
-
-  getPrisma() {
-    // 테스트용 PrismaClient 반환
-  }
-
-  async cleanup() {
-    // 테스트 데이터 정리
-  }
-}
-```
-
-자세한 내용은 [integration-test.md](./integration-test.md) 참고.
-
----
-
-## 참고 자료
-
-- [Prisma 7 릴리즈 공지](https://www.prisma.io/blog/announcing-prisma-orm-7-0-0)
-- [Prisma 7 업그레이드 가이드](https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7)
-- [Prisma 7.10.0 변경사항](https://www.prisma.io/docs/orm/overview/releases)
-
----
-
-**문서 버전**: 3.1.0
-**최종 수정일**: 2026-10-01
+공식 근거: [runtime](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/runtime.md), [PostgreSQL queries](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/queries-postgres.md), [migrations](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/migrations.md).

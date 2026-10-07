@@ -1,121 +1,114 @@
+import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	databaseDate,
+	databaseTimestamp,
+	varchar,
+} from "#api/shared/infrastructure/database/database-values";
 import { TEST_CUID } from "#test/fixtures/index";
-import { asDep, mockOf } from "#test/mocks/index";
+import { asMock } from "#test/mocks/bull-job.mock";
+import {
+	assertNativeWhere,
+	createMockDatabaseContext,
+	nativeRows,
+	type MockDatabaseContext,
+} from "#test/mocks/database.mock";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { PrismaSchedulerReader } from "./prisma-scheduler.reader.js";
 
 describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
-	const findMany = vi.fn();
-	const preferenceFindMany = vi.fn();
-	const database = mockOf<DatabaseService>({
-		user: mockOf<DatabaseService["user"]>({ findMany }),
-		userPreference: mockOf<DatabaseService["userPreference"]>({
-			findMany: preferenceFindMany,
-		}),
+	let context: MockDatabaseContext;
+	beforeEach(() => {
+		context = createMockDatabaseContext();
+		context.orm.public.User.all.mockReturnValue(nativeRows([]));
+		vi.useFakeTimers({ now: new Date("2026-07-16T00:00:00.000Z") });
 	});
-	const cache = mockOf<CacheService>({
-		wrapActiveTimezones: vi.fn((loader: () => Promise<string[]>) => loader()),
-	});
+	afterEach(() => vi.useRealTimers());
 
 	function reader(enabled: boolean): PrismaSchedulerReader {
-		const config = mockOf<TypedConfigService>({
-			retentionOnboardingV2: { enabled, treatmentPercent: 50 },
+		const cache = mock<CacheService>();
+		cache.wrapActiveTimezones.mockImplementation((loader) => loader());
+		const config = mock<TypedConfigService>();
+		Object.defineProperty(config, "retentionOnboardingV2", {
+			value: { enabled, treatmentPercent: 50 },
 		});
-		return new PrismaSchedulerReader(
-			asDep<DatabaseService>(database),
-			asDep<CacheService>(cache),
-			asDep<TypedConfigService>(config),
-		);
+		return new PrismaSchedulerReader(createMockDatabaseService(context), cache, config);
 	}
 
 	it("kill switch가 꺼지면 legacy 후보 쿼리에 조건을 전혀 추가하지 않는다", async () => {
-		findMany.mockResolvedValue([]);
-
-		await reader(false).findOnboardingCandidates({
-			tz: "Asia/Seoul",
-			createdSince: new Date("2026-07-01T00:00:00Z"),
-		});
-
-		expect(findMany).toHaveBeenCalledWith({
-			where: {
-				createdAt: { gte: new Date("2026-07-01T00:00:00Z") },
-				preference: { timezone: "Asia/Seoul" },
-			},
-			select: { id: true, createdAt: true },
-		});
+		const createdSince = new Date("2026-07-01T00:00:00Z");
+		await reader(false).findOnboardingCandidates({ tz: "Asia/Seoul", createdSince });
+		assertNativeWhere("User", context.orm.public.User.where.mock.calls[0]?.[0], (row) =>
+			and(
+				row.createdAt.gte(databaseTimestamp(createdSince)),
+				row.preference.some((preference) => preference.timezone.eq(varchar("Asia/Seoul", 50))),
+			),
+		);
+		expect(context.orm.public.User.select).toHaveBeenCalledWith("id", "createdAt");
 	});
 
 	it("활성화 시에도 최근 TREATMENT relation만 제외해 기존 사용자는 매칭된다", async () => {
-		findMany.mockResolvedValue([]);
-
-		await reader(true).findOnboardingCandidates({
-			tz: "Asia/Seoul",
-			createdSince: new Date("2026-07-01T00:00:00Z"),
-		});
-
-		expect(findMany).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: expect.objectContaining({
-					retentionAssignments: {
-						none: expect.objectContaining({
-							experimentKey: "onboarding_v2_d7",
-							variant: "TREATMENT",
-						}),
-					},
-				}),
-			}),
+		const createdSince = new Date("2026-07-01T00:00:00Z");
+		await reader(true).findOnboardingCandidates({ tz: "Asia/Seoul", createdSince });
+		assertNativeWhere("User", context.orm.public.User.where.mock.calls[0]?.[0], (row) =>
+			and(
+				row.retentionAssignments.none((assignment) =>
+					and(
+						assignment.experimentKey.eq(varchar("onboarding_v2_d7", 100)),
+						assignment.variant.eq("TREATMENT"),
+						assignment.startedAt.gte(databaseTimestamp(new Date("2026-07-08T00:00:00.000Z"))),
+					),
+				),
+				row.createdAt.gte(databaseTimestamp(createdSince)),
+				row.preference.some((preference) => preference.timezone.eq(varchar("Asia/Seoul", 50))),
+			),
 		);
 	});
 
 	it("소셜 다이제스트는 직전 저녁 알림 수신 CUID만 후보로 조회한다", async () => {
-		findMany.mockResolvedValue([]);
 		const today = new Date("2026-07-16T00:00:00.000Z");
 		const tomorrow = new Date("2026-07-17T00:00:00.000Z");
-
+		const recipientUserIds = [TEST_CUID.USER_1, TEST_CUID.USER_2];
 		await reader(false).findSocialDigestCandidates({
 			tz: "Asia/Seoul",
 			today,
 			tomorrow,
-			recipientUserIds: [TEST_CUID.USER_1, TEST_CUID.USER_2],
+			recipientUserIds,
 		});
-
-		expect(findMany).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: expect.objectContaining({
-					id: { in: [TEST_CUID.USER_1, TEST_CUID.USER_2] },
-					preference: { timezone: "Asia/Seoul" },
-				}),
-			}),
+		assertNativeWhere("User", context.orm.public.User.where.mock.calls[0]?.[0], (row) =>
+			and(
+				row.id.in(recipientUserIds),
+				row.preference.some((preference) => preference.timezone.eq(varchar("Asia/Seoul", 50))),
+				row.todos.some((todo) =>
+					and(
+						todo.startDate.gte(databaseDate(today)),
+						todo.startDate.lt(databaseDate(tomorrow)),
+						todo.completed.eq(false),
+					),
+				),
+			),
 		);
 	});
 
 	it("잘못 저장된 타임존은 스케줄러 활성 타임존에서 제외한다", async () => {
-		preferenceFindMany.mockResolvedValue([
-			{ timezone: "Asia/Seoul" },
-			{ timezone: "Invalid/Timezone" },
-			{ timezone: "UTC" },
+		asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue([
+			{ timezone: varchar("Asia/Seoul", 50), count: 1 },
+			{ timezone: varchar("Invalid/Timezone", 50), count: 1 },
+			{ timezone: varchar("UTC", 50), count: 1 },
 		]);
-
 		await expect(reader(false).findActiveTimezones()).resolves.toEqual(["Asia/Seoul", "UTC"]);
 	});
 
 	it("유효한 레거시 타임존 별칭은 저장값 그대로 반환해 기존 사용자를 누락하지 않는다", async () => {
-		preferenceFindMany.mockResolvedValue([
-			{ timezone: "UTC" },
-			{ timezone: "Etc/UTC" },
-			{ timezone: "Asia/Kolkata" },
-			{ timezone: "Asia/Calcutta" },
-		]);
-
-		await expect(reader(false).findActiveTimezones()).resolves.toEqual([
-			"UTC",
-			"Etc/UTC",
-			"Asia/Kolkata",
-			"Asia/Calcutta",
-		]);
+		const timezones = ["UTC", "Etc/UTC", "Asia/Kolkata", "Asia/Calcutta"];
+		asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue(
+			timezones.map((timezone) => ({ timezone: varchar(timezone, 50), count: 1 })),
+		);
+		await expect(reader(false).findActiveTimezones()).resolves.toEqual(timezones);
 	});
 });

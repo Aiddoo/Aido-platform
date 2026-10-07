@@ -1,3 +1,4 @@
+import { UserPreferenceBuilder } from "#test/builders/index";
 /**
  * UserPreferenceRepository 리포지토리 단위 테스트
  *
@@ -9,13 +10,13 @@
  * pnpm --filter @aido/api test user-preference.repository
  * ```
  */
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { TestBed } from "@suites/unit";
-
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { UserPreferenceBuilder } from "#test/builders/index";
-import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+import {
+	assertNativeWhere,
+	createMockTransactionHost,
+	databaseFixture,
+	databaseWriteExpectation,
+} from "#test/mocks/database.mock";
+import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import {
 	type UpdatePreferenceData,
@@ -24,7 +25,7 @@ import {
 
 describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", () => {
 	let repository: UserPreferenceRepository;
-	let db: MockPrismaClient;
+	let db: MockDatabaseContext;
 
 	// Builder로 기본 테스트 설정 생성
 	const mockUserPreference = UserPreferenceBuilder.create("user-123")
@@ -35,14 +36,9 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 
 	beforeEach(async () => {
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		db = createMockPrisma();
+		db = createMockDatabaseContext();
 
-		const { unit } = await TestBed.solitary(UserPreferenceRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
-			.impl(() => ({ tx: db }))
-			.compile();
-
-		repository = unit;
+		repository = new UserPreferenceRepository(createMockTransactionHost(db));
 
 		// ID 카운터 리셋
 		UserPreferenceBuilder.resetIdCounter();
@@ -51,21 +47,25 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 	describe("findByUserId", () => {
 		it("사용자 ID로 푸시 설정을 조회한다", async () => {
 			// Given
-			db.userPreference.findUnique.mockResolvedValue(mockUserPreference);
+			db.orm.public.UserPreference.first.mockResolvedValue(
+				databaseFixture("UserPreference", mockUserPreference),
+			);
 
 			// When
 			const result = await repository.findByUserId("user-123");
 
 			// Then
 			expect(result).toEqual(mockUserPreference);
-			expect(db.userPreference.findUnique).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-			});
+			assertNativeWhere(
+				"UserPreference",
+				db.orm.public.UserPreference.where.mock.calls[0]?.[0],
+				(row) => row.userId.eq("user-123"),
+			);
 		});
 
 		it("설정이 없으면 null을 반환한다", async () => {
 			// Given
-			db.userPreference.findUnique.mockResolvedValue(null);
+			db.orm.public.UserPreference.first.mockResolvedValue(databaseFixture("UserPreference", null));
 
 			// When
 			const result = await repository.findByUserId("nonexistent-user");
@@ -76,16 +76,20 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 
 		it("활성 트랜잭션 클라이언트로 조회한다", async () => {
 			// Given
-			db.userPreference.findUnique.mockResolvedValue(mockUserPreference);
+			db.orm.public.UserPreference.first.mockResolvedValue(
+				databaseFixture("UserPreference", mockUserPreference),
+			);
 
 			// When
 			const result = await repository.findByUserId("user-123");
 
 			// Then
 			expect(result).toEqual(mockUserPreference);
-			expect(db.userPreference.findUnique).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-			});
+			assertNativeWhere(
+				"UserPreference",
+				db.orm.public.UserPreference.where.mock.calls[0]?.[0],
+				(row) => row.userId.eq("user-123"),
+			);
 		});
 	});
 
@@ -97,20 +101,24 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.create.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.create.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.create("user-123");
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.create).toHaveBeenCalledWith({
-				data: {
-					userId: "user-123",
-					pushEnabled: true,
-					nightPushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						userId: "user-123",
+						pushEnabled: true,
+						nightPushEnabled: true,
+					}),
+				),
+			);
 		});
 
 		it("지정된 값으로 푸시 설정을 생성한다", async () => {
@@ -124,20 +132,24 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.create.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.create.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.create("user-123", createData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.create).toHaveBeenCalledWith({
-				data: {
-					userId: "user-123",
-					pushEnabled: true,
-					nightPushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						userId: "user-123",
+						pushEnabled: true,
+						nightPushEnabled: true,
+					}),
+				),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 생성한다", async () => {
@@ -147,20 +159,24 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.create.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.create.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.create("user-123", undefined);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.create).toHaveBeenCalledWith({
-				data: {
-					userId: "user-123",
-					pushEnabled: true,
-					nightPushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						userId: "user-123",
+						pushEnabled: true,
+						nightPushEnabled: true,
+					}),
+				),
+			);
 		});
 	});
 
@@ -175,24 +191,32 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.upsert.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.upsert.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.upsert("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.upsert).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				create: {
-					userId: "user-123",
-					pushEnabled: true,
-					nightPushEnabled: true,
-				},
-				update: {
-					pushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					conflictOn: databaseWriteExpectation("UserPreference", { userId: "user-123" }),
+					create: expect.objectContaining(
+						databaseWriteExpectation("UserPreference", {
+							userId: "user-123",
+							pushEnabled: true,
+							nightPushEnabled: true,
+						}),
+					),
+					update: expect.objectContaining(
+						databaseWriteExpectation("UserPreference", {
+							pushEnabled: true,
+						}),
+					),
+				}),
+			);
 		});
 
 		it("설정이 있으면 업데이트한다", async () => {
@@ -205,24 +229,32 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.upsert.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.upsert.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.upsert("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.upsert).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				create: {
-					userId: "user-123",
-					pushEnabled: true,
-					nightPushEnabled: true,
-				},
-				update: {
-					nightPushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					conflictOn: databaseWriteExpectation("UserPreference", { userId: "user-123" }),
+					create: expect.objectContaining(
+						databaseWriteExpectation("UserPreference", {
+							userId: "user-123",
+							pushEnabled: true,
+							nightPushEnabled: true,
+						}),
+					),
+					update: expect.objectContaining(
+						databaseWriteExpectation("UserPreference", {
+							nightPushEnabled: true,
+						}),
+					),
+				}),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 upsert한다", async () => {
@@ -236,14 +268,16 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.upsert.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.upsert.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.upsert("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.upsert).toHaveBeenCalled();
+			expect(db.orm.public.UserPreference.upsert).toHaveBeenCalled();
 		});
 	});
 
@@ -258,19 +292,22 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushDisabled()
 				.withNightPushEnabled(false)
 				.build();
-			db.userPreference.update.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.update.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.update).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				data: {
-					pushEnabled: false,
-				},
-			});
+			expect(db.orm.public.UserPreference.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						pushEnabled: false,
+					}),
+				),
+			);
 		});
 
 		it("nightPushEnabled만 업데이트한다", async () => {
@@ -283,19 +320,22 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.update.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.update.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.update).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				data: {
-					nightPushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						nightPushEnabled: true,
+					}),
+				),
+			);
 		});
 
 		it("모든 설정을 업데이트한다", async () => {
@@ -309,20 +349,23 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(true)
 				.build();
-			db.userPreference.update.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.update.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.update).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				data: {
-					pushEnabled: true,
-					nightPushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						pushEnabled: true,
+						nightPushEnabled: true,
+					}),
+				),
+			);
 		});
 
 		it("리마인더 분(minute) 필드를 업데이트한다", async () => {
@@ -340,22 +383,25 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withEveningReminderHour(20)
 				.withEveningReminderMinute(30)
 				.build();
-			db.userPreference.update.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.update.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.update).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				data: {
-					morningReminderHour: 9,
-					morningReminderMinute: 30,
-					eveningReminderHour: 20,
-					eveningReminderMinute: 30,
-				},
-			});
+			expect(db.orm.public.UserPreference.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						morningReminderHour: 9,
+						morningReminderMinute: 30,
+						eveningReminderHour: 20,
+						eveningReminderMinute: 30,
+					}),
+				),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 업데이트한다", async () => {
@@ -368,19 +414,22 @@ describe("UserPreferenceRepository — 사용자 환경설정 리포지토리", 
 				.withPushEnabled(true)
 				.withNightPushEnabled(false)
 				.build();
-			db.userPreference.update.mockResolvedValue(expectedPreference);
+			db.orm.public.UserPreference.update.mockResolvedValue(
+				databaseFixture("UserPreference", expectedPreference),
+			);
 
 			// When
 			const result = await repository.update("user-123", updateData);
 
 			// Then
 			expect(result).toEqual(expectedPreference);
-			expect(db.userPreference.update).toHaveBeenCalledWith({
-				where: { userId: "user-123" },
-				data: {
-					pushEnabled: true,
-				},
-			});
+			expect(db.orm.public.UserPreference.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserPreference", {
+						pushEnabled: true,
+					}),
+				),
+			);
 		});
 	});
 });

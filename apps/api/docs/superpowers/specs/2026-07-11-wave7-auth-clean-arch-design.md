@@ -97,7 +97,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 
 - **OAuth 어댑터**(`infrastructure/oauth/adapters/{google,kakao,naver,apple}.oauth-adapter.ts`): raw `fetch()` → 여기로. 벤더 JSON 캐스트는 `shared/infrastructure/http/readJson<T>`(weather 선례)로 격리. 설정은 `TypedConfigService` 주입. DI 등록 + 레지스트리 팩토리(`{provide: REGISTRY, useFactory: (g,k,n,a)=>new Map(...)}`).
 - **토큰 검증 어댑터**(`infrastructure/oauth/verifier/`): jose JWKS(Apple)·google-auth-library(Google)·kakao/naver fetch. `VerifiedProfile` 반환. jose ESM 동적 import 유지.
-- **저장소 어댑터**(`infrastructure/persistence/prisma-*.repository.ts`): 7종. **레거시 `tx?` + DatabaseService → CLS `TransactionHost.tx`로 전환**(다른 모듈 표준). `database.$transaction(tx=>...)` 호출부는 use-case에서 `UNIT_OF_WORK.run(...)`으로.
+- **저장소 어댑터**(`infrastructure/persistence/prisma-*.repository.ts`): 7종. **레거시 `tx?` + DatabaseService → CLS `TransactionHost.tx`로 전환**(다른 모듈 표준). `UNIT_OF_WORK.run(...)` 호출부는 use-case에서 `UNIT_OF_WORK.run(...)`으로.
 - **계정 purge**: `AccountPurgeJob`(cron `0 3 * * *` KST) + `AccountPurgeProcessor`(setter 순환 → 생성자 주입으로 제거, admin-notification/notification 선례). `ACCOUNT_PURGE_QUEUE` 상수 → infrastructure/queue로, 배럴 export(e2e·health 재배선).
 - **가드/전략/인터셉터**: `JwtAuthGuard`·`JwtRefreshGuard`·`AdminGuard`, passport `JwtStrategy`·`JwtRefreshStrategy`, `LastActiveInterceptor` → presentation/infrastructure 적절 배치. 동작 불변.
 
@@ -105,7 +105,7 @@ ProvisionUserUseCase(identity)  → 유저(status) + 프로필 + 동의 + 프리
 
 ## 6. 시더 트랜잭션 특이점 (⚠️ 계약 보존 핵심)
 
-`register`·`#createSocialUser`가 유저 생성 시 **명시적 `database.$transaction(tx)`에 기본 카테고리 createMany + 동의 + 프리퍼런스를 함께 참여**시킴(CLS 아님, 원자성 필수). Wave 4a에서 이를 위해 레거시 `TodoCategoryRepository`(createMany 전용)를 배럴에 남겨둠. 이관 시:
+`register`·`#createSocialUser`가 유저 생성 시 **CLS native transaction에 기본 카테고리 createMany + 동의 + 프리퍼런스를 함께 참여**시킴(CLS 아님, 원자성 필수). Wave 4a에서 이를 위해 레거시 `TodoCategoryRepository`(createMany 전용)를 배럴에 남겨둠. 이관 시:
 
 - `ProvisionUserUseCase`가 `UNIT_OF_WORK.run`으로 CLS 트랜잭션 열고, 그 안에서 user-settings/todo-category **파사드의 CLS 경로**로 시딩 통합.
 - 레거시 concrete `TodoCategoryRepository`(createMany)·`UserPreferenceRepository`·`UserConsentRepository` 배럴 잔재 삭제 — **이관의 마감 항목(7e)**.

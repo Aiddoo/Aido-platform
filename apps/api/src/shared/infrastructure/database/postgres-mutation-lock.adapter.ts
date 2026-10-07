@@ -1,11 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import sql, { join } from "sql-template-tag";
 
-import { Prisma } from "#api/generated/prisma/client";
 import type { MutationLockPort } from "#api/shared/application/ports/index";
 
-import type { DatabaseService } from "./database.service.js";
+import { sqlStatement } from "./database-sql.js";
+import type { Prisma8TransactionalAdapter } from "./prisma8-transactional.adapter.js";
 
 /**
  * PostgreSQL transaction advisory lock 어댑터.
@@ -16,9 +16,7 @@ import type { DatabaseService } from "./database.service.js";
  */
 @Injectable()
 export class PostgresMutationLockAdapter implements MutationLockPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	async acquire(keys: readonly string[]): Promise<void> {
 		if (!this.txHost.isTransactionActive()) {
@@ -32,15 +30,21 @@ export class PostgresMutationLockAdapter implements MutationLockPort {
 
 		// key 수와 무관하게 한 번 왕복합니다. 내부 정렬 subquery가 모든 호출자에게 같은
 		// 잠금 순서를 주므로 여러 댓글을 정리해도 교착 회피 규칙은 유지됩니다.
-		await this.txHost.tx.$queryRaw(Prisma.sql`
+		const plan = sqlStatement(
+			this.txHost.tx,
+			sql`
 			WITH ordered AS MATERIALIZED (
 				SELECT requested."key"
-				FROM unnest(ARRAY[${Prisma.join(orderedKeys)}]::TEXT[]) AS requested("key")
+				FROM unnest(ARRAY[${join(orderedKeys)}]::TEXT[]) AS requested("key")
 				ORDER BY requested."key"
 			)
-			SELECT pg_advisory_xact_lock(hashtextextended(ordered."key", 0))::TEXT
+			SELECT pg_advisory_xact_lock(hashtextextended(ordered."key", 0))::TEXT AS "locked"
 			FROM ordered
 			ORDER BY ordered."key"
-		`);
+  `,
+		)
+			.returnsRow({ locked: "pg/text@1" })
+			.build();
+		await this.txHost.tx.query(plan);
 	}
 }

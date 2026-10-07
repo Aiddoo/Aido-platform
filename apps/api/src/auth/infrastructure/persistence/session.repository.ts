@@ -1,20 +1,25 @@
 import { randomUUID } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 
 import type { CreateSessionData } from "#api/auth/application/types/index";
 import { AUTH_DEFAULTS } from "#api/auth/domain/constants/auth.constants";
-import type { Session } from "#api/generated/prisma/client";
 import { now } from "#api/shared/domain/date/utils/core";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
+import type { Session } from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 @Injectable()
 export class SessionRepository {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
@@ -26,8 +31,8 @@ export class SessionRepository {
 		// refreshTokenHash가 없으면 임시 placeholder 생성 (unique 제약 조건 충족)
 		const refreshTokenHash = data.refreshTokenHash ?? `pending_${randomUUID().replace(/-/g, "")}`;
 
-		return this.client.session.create({
-			data: {
+		return this.client.orm.public.Session.create(
+			encodeCreate("Session", {
 				userId: data.userId,
 				refreshTokenHash,
 				tokenFamily: data.tokenFamily,
@@ -39,47 +44,47 @@ export class SessionRepository {
 				userAgent: data.userAgent,
 				ipAddress: data.ipAddress,
 				expiresAt: data.expiresAt,
-			},
-		});
+			}),
+		).then((row) => decodeRecord("Session", row));
 	}
 
 	async updateRefreshTokenHash(id: string, refreshTokenHash: string): Promise<Session> {
-		return this.client.session.update({
-			where: { id },
-			data: { refreshTokenHash },
-		});
+		return this.client.orm.public.Session.where((row) => row.id.eq(id))
+			.update(encodePatch("Session", { refreshTokenHash }))
+			.then((row) => decodeRecord("Session", requireRecord(row)));
 	}
 
 	async findById(id: string): Promise<Session | null> {
-		return this.client.session.findUnique({
-			where: { id },
-		});
+		return this.client.orm.public.Session.where((row) => row.id.eq(id))
+			.first()
+			.then((row) => decodeRecord("Session", row));
 	}
 
 	async findByRefreshTokenHash(hash: string): Promise<Session | null> {
-		return this.client.session.findUnique({
-			where: { refreshTokenHash: hash },
-		});
+		return this.client.orm.public.Session.where((row) => row.refreshTokenHash.eq(varchar(hash, 64)))
+			.first()
+			.then((row) => decodeRecord("Session", row));
 	}
 
 	async findByTokenFamily(tokenFamily: string): Promise<Session | null> {
-		return this.client.session.findFirst({
-			where: {
-				tokenFamily,
-				revokedAt: null,
-			},
-		});
+		return this.client.orm.public.Session.where((row) =>
+			and(row.tokenFamily.eq(varchar(tokenFamily, 36)), row.revokedAt.isNull()),
+		)
+			.first()
+			.then((row) => decodeRecord("Session", row));
 	}
 
 	async findActiveByUserId(userId: string): Promise<Session[]> {
-		return this.client.session.findMany({
-			where: {
-				userId,
-				revokedAt: null,
-				expiresAt: { gt: now() },
-			},
-			orderBy: { lastUsedAt: "desc" },
-		});
+		return this.client.orm.public.Session.where((row) =>
+			and(
+				row.userId.eq(userId),
+				row.revokedAt.isNull(),
+				row.expiresAt.gt(databaseTimestamp(now())),
+			),
+		)
+			.orderBy((row) => row.lastUsedAt.desc())
+			.all()
+			.then((row) => decodeRecord("Session", row));
 	}
 
 	/**
@@ -100,59 +105,54 @@ export class SessionRepository {
 			expiresAt: Date;
 		},
 	): Promise<Session | null> {
-		// 조건부 업데이트 - 버전 불일치 또는 폐기된 세션이면 count = 0
-		const result = await this.client.session.updateMany({
-			where: {
-				id,
-				tokenVersion: data.expectedTokenVersion,
-				revokedAt: null,
-			},
-			data: {
+		const row = await this.client.orm.public.Session.where((row) =>
+			and(row.id.eq(id), row.tokenVersion.eq(data.expectedTokenVersion), row.revokedAt.isNull()),
+		).update(
+			encodePatch("Session", {
 				refreshTokenHash: data.refreshTokenHash,
 				tokenVersion: data.tokenVersion,
 				previousTokenHash: data.previousTokenHash,
 				expiresAt: data.expiresAt,
 				lastUsedAt: now(),
-			},
-		});
-
-		if (result.count === 0) {
-			return null;
-		}
-
-		// 업데이트 성공 시 해당 세션 반환
-		return this.client.session.findUnique({ where: { id } });
+			}),
+		);
+		return decodeRecord("Session", row);
 	}
 
 	async updateLastUsedAt(id: string): Promise<void> {
-		await this.client.session.update({
-			where: { id },
-			data: { lastUsedAt: now() },
-		});
+		decodeRecord(
+			"Session",
+			requireRecord(
+				await this.client.orm.public.Session.where((row) => row.id.eq(id)).update(
+					encodePatch("Session", { lastUsedAt: now() }),
+				),
+			),
+		);
 	}
 
 	async revoke(id: string, reason: string): Promise<Session> {
-		return this.client.session.update({
-			where: { id },
-			data: {
-				revokedAt: now(),
-				revokedReason: reason,
-			},
-		});
+		return this.client.orm.public.Session.where((row) => row.id.eq(id))
+			.update(
+				encodePatch("Session", {
+					revokedAt: now(),
+					revokedReason: reason,
+				}),
+			)
+			.then((row) => decodeRecord("Session", requireRecord(row)));
 	}
 
 	// 토큰 재사용 감지 시 전체 폐기
 	async revokeByTokenFamily(tokenFamily: string, reason: string): Promise<number> {
-		const result = await this.client.session.updateMany({
-			where: {
-				tokenFamily,
-				revokedAt: null,
-			},
-			data: {
-				revokedAt: now(),
-				revokedReason: reason,
-			},
-		});
+		const result = {
+			count: await this.client.orm.public.Session.where((row) =>
+				and(row.tokenFamily.eq(varchar(tokenFamily, 36)), row.revokedAt.isNull()),
+			).updateAndCount(
+				encodePatch("Session", {
+					revokedAt: now(),
+					revokedReason: reason,
+				}),
+			),
+		};
 		return result.count;
 	}
 
@@ -161,26 +161,29 @@ export class SessionRepository {
 		reason: string,
 		excludeSessionId?: string,
 	): Promise<number> {
-		const result = await this.client.session.updateMany({
-			where: {
-				userId,
-				revokedAt: null,
-				...(excludeSessionId && { id: { not: excludeSessionId } }),
-			},
-			data: {
-				revokedAt: now(),
-				revokedReason: reason,
-			},
-		});
+		const result = {
+			count: await this.client.orm.public.Session.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.revokedAt.isNull(),
+					excludeSessionId ? row.id.neq(excludeSessionId) : all(),
+				),
+			).updateAndCount(
+				encodePatch("Session", {
+					revokedAt: now(),
+					revokedReason: reason,
+				}),
+			),
+		};
 		return result.count;
 	}
 
 	async deleteExpired(): Promise<number> {
-		const result = await this.client.session.deleteMany({
-			where: {
-				OR: [{ expiresAt: { lt: now() } }, { revokedAt: { not: null } }],
-			},
-		});
+		const result = {
+			count: await this.client.orm.public.Session.where((row) =>
+				or(row.expiresAt.lt(databaseTimestamp(now())), row.revokedAt.isNotNull()),
+			).deleteAndCount(),
+		};
 		return result.count;
 	}
 }

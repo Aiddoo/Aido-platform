@@ -1,13 +1,23 @@
 import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/validators";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 import dayjs from "dayjs";
 
-import type * as PrismaModels from "#api/generated/prisma/client";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import {
+	databaseDate,
+	databaseTimestamp,
+} from "#api/shared/infrastructure/database/database-values";
+import type * as PrismaModels from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	AiSuggestionRepositoryPort,
@@ -31,9 +41,7 @@ import type {
  */
 @Injectable()
 export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
@@ -59,63 +67,79 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 	}
 
 	async findPendingByUserId(userId: string): Promise<Suggestion[]> {
-		const rows = await this.client.recurringSuggestion.findMany({
-			where: {
-				userId,
-				status: "PENDING",
-				expiresAt: { gt: now() },
-			},
-			orderBy: { createdAt: "desc" },
-		});
+		const rows = decodeRecord(
+			"RecurringSuggestion",
+			await this.client.orm.public.RecurringSuggestion.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.status.eq("PENDING"),
+					row.expiresAt.gt(databaseTimestamp(now())),
+				),
+			)
+				.orderBy((row) => row.createdAt.desc())
+				.all(),
+		);
 		return rows.map((row) => PrismaAiSuggestionRepository.toEntity(row));
 	}
 
 	async findByIdAndUserId(id: number, userId: string): Promise<Suggestion | null> {
-		const row = await this.client.recurringSuggestion.findFirst({
-			where: { id, userId },
-		});
+		const row = decodeRecord(
+			"RecurringSuggestion",
+			await this.client.orm.public.RecurringSuggestion.where((row) =>
+				and(row.id.eq(id), row.userId.eq(userId)),
+			).first(),
+		);
 		return row ? PrismaAiSuggestionRepository.toEntity(row) : null;
 	}
 
 	async updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion> {
-		const row = await this.client.recurringSuggestion.update({
-			where: { id },
-			data: { status },
-		});
+		const row = decodeRecord(
+			"RecurringSuggestion",
+			requireRecord(
+				await this.client.orm.public.RecurringSuggestion.where((row) => row.id.eq(id)).update(
+					encodePatch("RecurringSuggestion", { status }),
+				),
+			),
+		);
 		return PrismaAiSuggestionRepository.toEntity(row);
 	}
 
 	async createMany(data: CreateSuggestionInput[]): Promise<{ count: number }> {
-		const result = await this.client.recurringSuggestion.createMany({
-			data: data.map((input) => ({
-				userId: input.userId,
-				title: input.title,
-				daysOfWeek: input.daysOfWeek,
-				scheduledTime: input.scheduledTime,
-				confidence: input.confidence,
-				reason: input.reason,
-				matchedTodos: input.matchedTodos,
-				expiresAt: input.expiresAt,
-				suggestedCategoryId: input.suggestedCategoryId,
-			})),
-		});
+		const result = {
+			count: await this.client.orm.public.RecurringSuggestion.createAndCount(
+				data
+					.map((input) => ({
+						userId: input.userId,
+						title: input.title,
+						daysOfWeek: input.daysOfWeek,
+						scheduledTime: input.scheduledTime,
+						confidence: input.confidence,
+						reason: input.reason,
+						matchedTodos: input.matchedTodos,
+						expiresAt: input.expiresAt,
+						suggestedCategoryId: input.suggestedCategoryId,
+					}))
+					.map((value) => encodeCreate("RecurringSuggestion", value)),
+			),
+		};
 		return { count: result.count };
 	}
 
 	async deletePending(userId: string): Promise<{ count: number }> {
-		const result = await this.client.recurringSuggestion.deleteMany({
-			where: { userId, status: "PENDING" },
-		});
+		const result = {
+			count: await this.client.orm.public.RecurringSuggestion.where((row) =>
+				and(row.userId.eq(userId), row.status.eq("PENDING")),
+			).deleteAndCount(),
+		};
 		return { count: result.count };
 	}
 
 	async deleteExpired(userId: string): Promise<{ count: number }> {
-		const result = await this.client.recurringSuggestion.deleteMany({
-			where: {
-				userId,
-				expiresAt: { lt: now() },
-			},
-		});
+		const result = {
+			count: await this.client.orm.public.RecurringSuggestion.where((row) =>
+				and(row.userId.eq(userId), row.expiresAt.lt(databaseTimestamp(now()))),
+			).deleteAndCount(),
+		};
 		return { count: result.count };
 	}
 
@@ -125,13 +149,18 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 		to: Date,
 		timezone: string,
 	): Promise<DayCompletionRate[]> {
-		const completions = await this.client.dailyCompletion.findMany({
-			where: {
-				userId,
-				date: { gte: from, lte: to },
-			},
-			select: { date: true, totalTodos: true, completedTodos: true },
-		});
+		const completions = decodeRecord(
+			"DailyCompletion",
+			await this.client.orm.public.DailyCompletion.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.date.gte(databaseDate(from)),
+					row.date.lte(databaseDate(to)),
+				),
+			)
+				.select("date", "totalTodos", "completedTodos")
+				.all(),
+		);
 
 		const dayMap = new Map<string, { total: number; completed: number }>();
 		for (const d of DAY_OF_WEEK_ORDER) {
@@ -162,15 +191,20 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 		to: Date,
 		timezone: string,
 	): Promise<TimeCompletionRate> {
-		const todos = await this.client.todo.findMany({
-			where: {
-				userId,
-				completed: true,
-				completedAt: { not: null },
-				startDate: { gte: from, lte: to },
-			},
-			select: { completedAt: true },
-		});
+		const todos = decodeRecord(
+			"Todo",
+			await this.client.orm.public.Todo.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.completed.eq(true),
+					row.completedAt.isNotNull(),
+					row.startDate.gte(databaseDate(from)),
+					row.startDate.lte(databaseDate(to)),
+				),
+			)
+				.select("completedAt")
+				.all(),
+		);
 
 		let morning = 0;
 		let afternoon = 0;
@@ -203,21 +237,24 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 		from: Date,
 		to: Date,
 	): Promise<CategoryCompletionRate[]> {
-		const todos = await this.client.todo.findMany({
-			where: {
-				userId,
-				startDate: { gte: from, lte: to },
-			},
-			select: {
-				completed: true,
-				category: { select: { name: true } },
-			},
-		});
+		const todos = decodeRecord(
+			"Todo",
+			await this.client.orm.public.Todo.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.startDate.gte(databaseDate(from)),
+					row.startDate.lte(databaseDate(to)),
+				),
+			)
+				.select("completed")
+				.include("category", (related) => related.select("name"))
+				.all(),
+		);
 
 		const categoryMap = new Map<string, { total: number; completed: number }>();
 
 		for (const t of todos) {
-			const name = t.category.name;
+			const name = requireRecord(t.category).name;
 			const entry = categoryMap.get(name) ?? { total: 0, completed: 0 };
 			entry.total++;
 			if (t.completed) entry.completed++;
@@ -235,10 +272,12 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 	}
 
 	async findUserStreakInfo(userId: string): Promise<UserStreakInfo | null> {
-		const pref = await this.client.userPreference.findUnique({
-			where: { userId },
-			select: { currentStreak: true, longestStreak: true },
-		});
+		const pref = decodeRecord(
+			"UserPreference",
+			await this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId))
+				.select("currentStreak", "longestStreak")
+				.first(),
+		);
 
 		if (!pref) return null;
 
@@ -254,25 +293,21 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 		to: Date,
 		timezone: string,
 	): Promise<TodoSummaryForAnalysis[]> {
-		const todos = await this.client.todo.findMany({
-			where: {
-				userId,
-				recurrenceGroupId: null,
-				startDate: {
-					gte: from,
-					lte: to,
-				},
-			},
-			select: {
-				title: true,
-				startDate: true,
-				scheduledTime: true,
-				categoryId: true,
-				completed: true,
-				category: { select: { name: true } },
-			},
-			orderBy: { startDate: "asc" },
-		});
+		const todos = decodeRecord(
+			"Todo",
+			await this.client.orm.public.Todo.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.recurrenceGroupId.isNull(),
+					row.startDate.gte(databaseDate(from)),
+					row.startDate.lte(databaseDate(to)),
+				),
+			)
+				.select("title", "startDate", "scheduledTime", "categoryId", "completed")
+				.include("category", (related) => related.select("name"))
+				.orderBy((row) => row.startDate.asc())
+				.all(),
+		);
 
 		return todos.map((t) => ({
 			title: t.title,
@@ -280,19 +315,23 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
 			scheduledTime: t.scheduledTime ? dayjs(t.scheduledTime).tz(timezone).format("HH:mm") : null,
 			categoryId: t.categoryId,
 			completed: t.completed,
-			categoryName: t.category.name,
+			categoryName: requireRecord(t.category).name,
 		}));
 	}
 
 	async findRecentResponded(userId: string, since: Date): Promise<SuggestionHistoryItem[]> {
-		const rows = await this.client.recurringSuggestion.findMany({
-			where: {
-				userId,
-				status: { in: ["ACCEPTED", "DISMISSED"] },
-				updatedAt: { gte: since },
-			},
-			select: { title: true, status: true },
-		});
+		const rows = decodeRecord(
+			"RecurringSuggestion",
+			await this.client.orm.public.RecurringSuggestion.where((row) =>
+				and(
+					row.userId.eq(userId),
+					row.status.in(["ACCEPTED", "DISMISSED"]),
+					row.updatedAt.gte(databaseTimestamp(since)),
+				),
+			)
+				.select("title", "status")
+				.all(),
+		);
 
 		return rows.map((row) => ({
 			title: row.title,

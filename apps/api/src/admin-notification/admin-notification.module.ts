@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-client";
 
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { DatabaseModule } from "#api/shared/infrastructure/database/index";
@@ -22,7 +23,10 @@ function isTestRuntime(config: TypedConfigService): boolean {
 }
 
 @Module({
-	imports: [DatabaseModule],
+	imports: [
+		DatabaseModule,
+		HttpClientModule.register({ name: "discord", retry: false, throwOnHttpError: false }),
+	],
 	providers: [
 		AdminEventNotifier,
 		EnqueueUserRegisteredUseCase,
@@ -41,19 +45,21 @@ function isTestRuntime(config: TypedConfigService): boolean {
 		},
 		{
 			provide: ADMIN_NOTIFIER,
-			useFactory: (config: TypedConfigService) =>
+			useFactory: (config: TypedConfigService, http: HttpClient) =>
 				new DiscordWebhookProvider(
 					isTestRuntime(config) ? undefined : config.discordSignupWebhookUrl,
+					http,
 				),
-			inject: [TypedConfigService],
+			inject: [TypedConfigService, getHttpClientToken("discord")],
 		},
 		{
 			provide: PAYMENT_NOTIFIER,
-			useFactory: (config: TypedConfigService) =>
+			useFactory: (config: TypedConfigService, http: HttpClient) =>
 				new DiscordWebhookProvider(
 					isTestRuntime(config) ? undefined : config.discordPaymentWebhookUrl,
+					http,
 				),
-			inject: [TypedConfigService],
+			inject: [TypedConfigService, getHttpClientToken("discord")],
 		},
 	],
 	exports: [AdminEventNotifier, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],

@@ -1,29 +1,17 @@
 import { Injectable } from "@nestjs/common";
+import sql from "sql-template-tag";
 
+import {
+	decodeSqlRows,
+	sqlRowSpec,
+	sqlStatement,
+} from "#api/shared/infrastructure/database/database-sql";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	AdminGrowthMetricsPort,
 	AdminGrowthSummaryCounts,
 } from "../../application/ports/admin-growth-metrics.port.js";
-
-interface GrowthSummaryRow {
-	readonly measurementStartedAt: Date | null;
-	readonly totalActiveUsers: bigint;
-	readonly signups: bigint;
-	readonly dau: bigint;
-	readonly wau: bigint;
-	readonly mau: bigint;
-	readonly activationEligible: bigint;
-	readonly activationAchieved: bigint;
-	readonly d1Eligible: bigint;
-	readonly d1Achieved: bigint;
-	readonly d7Eligible: bigint;
-	readonly d7Achieved: bigint;
-	readonly d30Eligible: bigint;
-	readonly d30Achieved: bigint;
-	readonly d7RetainedActivatedUsers: bigint;
-}
 
 /**
  * 관리자 성장 지표용 PostgreSQL read-model 어댑터.
@@ -40,7 +28,30 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 		readonly cohortTo: string;
 		readonly asOf: Date;
 	}): Promise<AdminGrowthSummaryCounts> {
-		const rows = await this.database.$queryRaw<GrowthSummaryRow[]>`
+		const sqlRows1 = sqlRowSpec({
+			measurementStartedAt: { codecId: "pg/timestamp-string@1", nullable: true },
+			totalActiveUsers: "pg/int8@1",
+			signups: "pg/int8@1",
+			dau: "pg/int8@1",
+			wau: "pg/int8@1",
+			mau: "pg/int8@1",
+			activationEligible: "pg/int8@1",
+			activationAchieved: "pg/int8@1",
+			d1Eligible: "pg/int8@1",
+			d1Achieved: "pg/int8@1",
+			d7Eligible: "pg/int8@1",
+			d7Achieved: "pg/int8@1",
+			d30Eligible: "pg/int8@1",
+			d30Achieved: "pg/int8@1",
+			d7RetainedActivatedUsers: "pg/int8@1",
+		});
+
+		const rows = decodeSqlRows(
+			sqlRows1,
+			await this.database.db.runtime().query(
+				sqlStatement(
+					this.database.db,
+					sql`
 			WITH measurement AS (
 				SELECT (
 					SELECT activity."firstSeenAt"
@@ -249,7 +260,12 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 			FROM measurement
 			CROSS JOIN active_counts
 			CROSS JOIN cohort_counts
-		`;
+		`,
+				)
+					.returnsRow(sqlRows1)
+					.build(),
+			),
+		);
 		const row = rows[0];
 		if (!row) {
 			throw new Error("growth summary aggregate returned no row");

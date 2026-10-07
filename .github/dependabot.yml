@@ -39,6 +39,11 @@ updates:
         patterns:
           - '*'
     ignore:
+      # Migration owner/client 7 and separate 8 CLI/runtime must be reviewed together.
+      - dependency-name: '@prisma/*'
+      - dependency-name: 'prisma'
+      # 12.27 uses pg-boss schema 37; later minor versions break old-image rollback.
+      - dependency-name: 'pg-boss'
       # ── Expo SDK 58 관리(bundledNativeModules 핀) — `npx expo install --fix`가 소유.
       #    수동/dependabot bump 시 expo-doctor·install --check 정합이 깨진다. SDK 업그레이드 때 일괄 갱신.
       - dependency-name: 'expo'

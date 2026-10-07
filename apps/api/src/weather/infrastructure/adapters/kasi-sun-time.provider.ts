@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import { toCompactDateString } from "#api/shared/domain/date/utils/format";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
@@ -26,7 +27,10 @@ interface SunTimeResponse {
 export class KasiSunTimeProvider implements SunTimeProvider {
 	readonly #logger = new Logger(KasiSunTimeProvider.name);
 
-	constructor(private readonly configService: TypedConfigService) {}
+	constructor(
+		private readonly configService: TypedConfigService,
+		@InjectHttpClient("weather") private readonly http: HttpClient,
+	) {}
 
 	async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
 		try {
@@ -48,7 +52,10 @@ export class KasiSunTimeProvider implements SunTimeProvider {
 			url.searchParams.set("dnYn", "Y");
 			url.searchParams.set("_type", "json");
 
-			const response = await fetch(url.toString(), {
+			const { data: response } = await this.http.request(url.toString(), {
+				responseType: "response",
+				retry: false,
+				throwOnHttpError: false,
 				signal: AbortSignal.timeout(10_000),
 			});
 

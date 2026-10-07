@@ -29,7 +29,7 @@ interface UnitOfWorkTransactionHost {
  * 폴백합니다(기존 `tx ?? this.database`와 등가).
  *
  * 주의: withTransaction에 옵션 객체를 전달하지 않습니다 — 기존
- * `database.$transaction(fn)` 시맨틱(기본 격리수준)을 그대로 보존합니다.
+ * native `db.transaction`의 기본 격리수준을 그대로 보존합니다.
  */
 @Injectable()
 export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPort {

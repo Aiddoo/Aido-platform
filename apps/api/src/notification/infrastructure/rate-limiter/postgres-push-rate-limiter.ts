@@ -1,7 +1,15 @@
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
-import { Prisma, type PushRateLimitPhase } from "#api/generated/prisma/client";
+import { encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import {
+	applicationDate,
+	applicationTimestamp,
+	databaseDate,
+	databaseTimestamp,
+} from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { PushRateLimitPhase } from "#api/shared/infrastructure/database/database.types";
 import { isTransactionWriteConflict } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import type {
@@ -55,83 +63,95 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
 	async #reserve(requests: readonly ReservationRequest[]): Promise<readonly boolean[]> {
 		if (requests.length === 0) return [];
 		this.#assertRequests(requests);
-
 		for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt += 1) {
 			try {
-				return await this.database.$transaction(
-					async (transaction) => {
-						const dispatchIds = requests.map(({ dispatchId }) => dispatchId);
-						const userIds = requests.map(({ userId }) => userId);
-						const generalWindowStart = new Date(Date.now() - GENERAL.WINDOW_MS);
-						const engagementDates = requests.flatMap(({ engagementLocalDate }) =>
-							engagementLocalDate ? [this.#toDate(engagementLocalDate)] : [],
+				const db = this.database.db;
+				return await db.transaction(async (transaction) => {
+					await transaction.execute(
+						db.raw.sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`.affectedCount().build(),
+					);
+					const dispatchIds = requests.map((request) => request.dispatchId);
+					const userIds = requests.map((request) => request.userId);
+					const generalWindowStart = databaseTimestamp(new Date(Date.now() - GENERAL.WINDOW_MS));
+					const engagementDates = requests.flatMap((request) =>
+						request.engagementLocalDate !== undefined
+							? [databaseDate(this.#toDate(request.engagementLocalDate))]
+							: [],
+					);
+					const dispatches = await transaction.orm.public.PushDispatch.where((row) =>
+						row.id.in(dispatchIds),
+					)
+						.select("id", "userId")
+						.all();
+					const reservations = transaction.orm.public.PushRateLimitReservation;
+					const existing = await reservations
+						.where((row) => row.dispatchId.in(dispatchIds))
+						.select("dispatchId", "phase")
+						.all();
+					const generalStats = await reservations
+						.where((row) =>
+							and(
+								row.phase.eq("GENERAL"),
+								row.userId.in(userIds),
+								row.reservedAt.gt(generalWindowStart),
+							),
+						)
+						.groupBy("userId")
+						.aggregate((aggregate) => ({ count: aggregate.count() }));
+					const engagementRows = await reservations
+						.where((row) =>
+							and(
+								row.phase.eq("ENGAGEMENT"),
+								row.userId.in(userIds),
+								row.localDate.in(engagementDates),
+							),
+						)
+						.groupBy("userId", "localDate")
+						.aggregate((aggregate) => ({
+							count: aggregate.count(),
+							lastReservedAt: aggregate.max("reservedAt"),
+						}));
+					const engagementStats = engagementRows.map((row) => ({
+						userId: row.userId,
+						count: row.count,
+						localDate: row.localDate === null ? null : applicationDate(row.localDate),
+						lastReservedAt:
+							row.lastReservedAt === null ? null : applicationTimestamp(row.lastReservedAt),
+					}));
+					this.#assertDispatchOwnership(requests, dispatches);
+					const decisions = this.#decide(requests, existing, generalStats, engagementStats);
+					if (decisions.reservations.length > 0) {
+						await reservations.createAndCount(
+							decisions.reservations.map((row) => encodeCreate("PushRateLimitReservation", row)),
 						);
-
-						const dispatches = await transaction.pushDispatch.findMany({
-							where: { id: { in: dispatchIds } },
-							select: { id: true, userId: true },
-						});
-						const existing = await transaction.pushRateLimitReservation.findMany({
-							where: { dispatchId: { in: dispatchIds } },
-							select: { dispatchId: true, phase: true },
-						});
-						const generalStats = await transaction.pushRateLimitReservation.groupBy({
-							by: ["userId"],
-							where: {
-								phase: "GENERAL",
-								userId: { in: userIds },
-								reservedAt: { gt: generalWindowStart },
-							},
-							_count: { _all: true },
-						});
-						const engagementStats = await transaction.pushRateLimitReservation.groupBy({
-							by: ["userId", "localDate"],
-							where: {
-								phase: "ENGAGEMENT",
-								userId: { in: userIds },
-								localDate: { in: engagementDates },
-							},
-							_count: { _all: true },
-							_max: { reservedAt: true },
-						});
-
-						this.#assertDispatchOwnership(requests, dispatches);
-						const decisions = this.#decide(requests, existing, generalStats, engagementStats);
-						if (decisions.reservations.length > 0) {
-							await transaction.pushRateLimitReservation.createMany({
-								data: [...decisions.reservations],
-							});
-						}
-						return decisions.limited;
-					},
-					{ isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-				);
+					}
+					return decisions.limited;
+				});
 			} catch (error) {
 				if (isTransactionWriteConflict(error) && attempt < MAX_TRANSACTION_RETRIES) continue;
 				throw error;
 			}
 		}
-
 		throw new Error("Push rate limit transaction retry budget exhausted");
 	}
 
 	#decide(
 		requests: readonly ReservationRequest[],
 		existing: readonly { dispatchId: number; phase: PushRateLimitPhase }[],
-		generalStats: readonly { userId: string; _count: { _all: number } }[],
+		generalStats: readonly { userId: string; count: number }[],
 		engagementStats: readonly {
 			userId: string;
 			localDate: Date | null;
-			_count: { _all: number };
-			_max: { reservedAt: Date | null };
+			count: number;
+			lastReservedAt: Date | null;
 		}[],
 	): { readonly limited: readonly boolean[]; readonly reservations: readonly ReservationRecord[] } {
 		const existingKeys = new Set(existing.map(({ dispatchId, phase }) => `${dispatchId}:${phase}`));
-		const generalByUser = new Map(generalStats.map((row) => [row.userId, row._count._all]));
+		const generalByUser = new Map(generalStats.map((row) => [row.userId, row.count]));
 		const engagementByUserDate = new Map(
 			engagementStats.map((row) => [
 				this.#engagementKey(row.userId, row.localDate),
-				{ count: row._count._all, lastReservedAt: row._max.reservedAt },
+				{ count: row.count, lastReservedAt: row.lastReservedAt },
 			]),
 		);
 		const reservations: ReservationRecord[] = [];

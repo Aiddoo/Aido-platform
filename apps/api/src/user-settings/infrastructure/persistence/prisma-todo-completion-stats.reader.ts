@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { sumBy } from "es-toolkit";
 
-import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import { databaseDate } from "#api/shared/infrastructure/database/database-values";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type {
 	TodoCompletionStats,
@@ -18,16 +21,18 @@ export class PrismaTodoCompletionStatsReader implements TodoCompletionStatsReade
 	constructor(private readonly database: DatabaseService) {}
 
 	async countForDay(userId: string, dayStart: Date, dayEnd: Date): Promise<TodoCompletionStats> {
-		const where = {
-			userId,
-			startDate: { gte: dayStart, lt: dayEnd },
+		const groups = await this.database.db.orm.public.Todo.where((todo) =>
+			and(
+				todo.userId.eq(userId),
+				todo.startDate.gte(databaseDate(dayStart)),
+				todo.startDate.lt(databaseDate(dayEnd)),
+			),
+		)
+			.groupBy("completed")
+			.aggregate((aggregate) => ({ count: aggregate.count() }));
+		return {
+			total: sumBy(groups, (group) => group.count),
+			completed: groups.find((group) => group.completed)?.count ?? 0,
 		};
-
-		const [total, completed] = await Promise.all([
-			this.database.todo.count({ where }),
-			this.database.todo.count({ where: { ...where, completed: true } }),
-		]);
-
-		return { total, completed };
 	}
 }

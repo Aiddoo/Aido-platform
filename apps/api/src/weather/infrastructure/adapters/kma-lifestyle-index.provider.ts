@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import { toCompactDateHourString } from "#api/shared/domain/date/utils/format";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
@@ -29,7 +30,10 @@ interface UvIndexResponse {
 export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 	readonly #logger = new Logger(KmaLifestyleIndexProvider.name);
 
-	constructor(private readonly configService: TypedConfigService) {}
+	constructor(
+		private readonly configService: TypedConfigService,
+		@InjectHttpClient("weather") private readonly http: HttpClient,
+	) {}
 
 	async getIndex(
 		lat: number,
@@ -72,7 +76,10 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 		url.searchParams.set("areaNo", getRegionCode(lat, lon));
 		url.searchParams.set("time", time);
 
-		const response = await fetch(url.toString(), {
+		const { data: response } = await this.http.request(url.toString(), {
+			responseType: "response",
+			retry: false,
+			throwOnHttpError: false,
 			signal: AbortSignal.timeout(10_000),
 		});
 

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { HttpClientModule } from "@nestjs/http-client";
 
 import { WeatherForecastAccess } from "./application/access/weather-forecast.access.js";
 import { AIR_QUALITY_PROVIDER } from "./application/ports/air-quality-provider.port.js";
@@ -27,6 +28,7 @@ import { WeatherController } from "./presentation/weather.controller.js";
  * WeatherFacade로 배치 조회한다.
  */
 @Module({
+	imports: [HttpClientModule.register({ name: "weather", retry: false, throwOnHttpError: false })],
 	controllers: [WeatherController],
 	providers: [
 		{

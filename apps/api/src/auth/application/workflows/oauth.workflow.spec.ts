@@ -10,9 +10,10 @@ import { ErrorCode } from "@aido/errors";
  * @see https://docs.nestjs.com/recipes/suites
  */
 import { Logger } from "@nestjs/common";
+import { HttpClient } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
 import type { Mocked } from "vitest";
+import { vi } from "vitest";
 
 import {
 	OAUTH_IDENTITY_PROVIDER_REGISTRY,
@@ -173,9 +174,33 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 		const verifier = asDep<OAuthTokenVerifierService>(tokenVerifier);
 		const realProviders = new Map<AccountProvider, OAuthIdentityProvider>([
 			["APPLE", new AppleOAuthProvider(verifier)],
-			["GOOGLE", new GoogleOAuthProvider(() => configService.googleOAuth, verifier, logger)],
-			["KAKAO", new KakaoOAuthProvider(() => configService.kakaoOAuth, verifier, logger)],
-			["NAVER", new NaverOAuthProvider(() => configService.naverOAuth, verifier, logger)],
+			[
+				"GOOGLE",
+				new GoogleOAuthProvider(
+					() => configService.googleOAuth,
+					verifier,
+					logger,
+					new HttpClient({ retry: false, throwOnHttpError: false }),
+				),
+			],
+			[
+				"KAKAO",
+				new KakaoOAuthProvider(
+					() => configService.kakaoOAuth,
+					verifier,
+					logger,
+					new HttpClient({ retry: false, throwOnHttpError: false }),
+				),
+			],
+			[
+				"NAVER",
+				new NaverOAuthProvider(
+					() => configService.naverOAuth,
+					verifier,
+					logger,
+					new HttpClient({ retry: false, throwOnHttpError: false }),
+				),
+			],
 		]);
 		const registry = unitRef.get<OAuthIdentityProviderRegistry>(OAUTH_IDENTITY_PROVIDER_REGISTRY);
 		registry.get.mockImplementation((provider) => realProviders.get(provider));
@@ -597,8 +622,8 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 			expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
 		});
 
-		it("P2002 unique constraint 시 provider별 alreadyLinked를 던져야 한다", async () => {
-			// Given - 계정 없음 + 트랜잭션 내에서 P2002 발생
+		it("SQLSTATE 23505 unique constraint 시 provider별 alreadyLinked를 던져야 한다", async () => {
+			// Given - 계정 없음 + 트랜잭션 내에서 SQLSTATE 23505 발생
 			accountRepo.findByProviderAccountId.mockResolvedValue(null);
 			accountRepo.createOAuthAccount.mockRejectedValue(
 				new AuthPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED"),
@@ -837,7 +862,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 
 	describe("linkSocialAccountWithToken", () => {
 		beforeEach(() => {
-			// linkAccount 내부에서 사용하는 $transaction mock
+			// linkAccount 내부에서 사용하는 UNIT_OF_WORK mock
 			uow.run.mockImplementation((work) => work());
 			asMock(accountRepo.createOAuthAccount).mockResolvedValue({
 				...AccountBuilder.create("user-123").build(),
@@ -1298,16 +1323,14 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "kakao-access-token",
-							token_type: "bearer",
-							refresh_token: "kakao-refresh-token",
-							expires_in: 21599,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "kakao-access-token",
+						token_type: "bearer",
+						refresh_token: "kakao-refresh-token",
+						expires_in: 21599,
+					}),
+				);
 
 				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
@@ -1324,7 +1347,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				expect(result.userId).toBe("user-123");
 
 				expect(global.fetch).toHaveBeenCalledWith(
-					"https://kauth.kakao.com/oauth/token",
+					new URL("https://kauth.kakao.com/oauth/token"),
 					expect.objectContaining({
 						method: "POST",
 						body: expect.stringContaining("code=test-code"),
@@ -2107,16 +2130,14 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "kakao-access-token",
-							token_type: "bearer",
-							refresh_token: "kakao-refresh-token",
-							expires_in: 21599,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "kakao-access-token",
+						token_type: "bearer",
+						refresh_token: "kakao-refresh-token",
+						expires_in: 21599,
+					}),
+				);
 
 				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
@@ -2217,16 +2238,14 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "google-access-token",
-							id_token: "google-id-token",
-							token_type: "bearer",
-							expires_in: 3600,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "google-access-token",
+						id_token: "google-id-token",
+						token_type: "bearer",
+						expires_in: 3600,
+					}),
+				);
 
 				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
@@ -2243,7 +2262,7 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				expect(result.userId).toBe("user-123");
 
 				expect(global.fetch).toHaveBeenCalledWith(
-					"https://oauth2.googleapis.com/token",
+					new URL("https://oauth2.googleapis.com/token"),
 					expect.objectContaining({
 						method: "POST",
 						body: expect.stringContaining("code=test-code"),
@@ -2335,15 +2354,13 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "naver-access-token",
-							token_type: "bearer",
-							expires_in: 3600,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "naver-access-token",
+						token_type: "bearer",
+						expires_in: 3600,
+					}),
+				);
 
 				oauthStateRepo.generateExchangeCode.mockReturnValue("test-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
@@ -2405,16 +2422,14 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
 
 				// Kakao token exchange mock
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "test-kakao-access-token",
-							token_type: "bearer",
-							refresh_token: "test-kakao-refresh-token",
-							expires_in: 21599,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "test-kakao-access-token",
+						token_type: "bearer",
+						refresh_token: "test-kakao-refresh-token",
+						expires_in: 21599,
+					}),
+				);
 
 				// Kakao 토큰 검증 mock
 				asMock(tokenVerifier.verifyKakaoToken).mockResolvedValue({
@@ -2487,16 +2502,14 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				accountRepo.findByProviderAccountId.mockResolvedValue(existingAccount);
 				userRepo.findById.mockResolvedValue(mockUser);
 
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "kakao-access-token",
-							token_type: "bearer",
-							refresh_token: "kakao-refresh-token",
-							expires_in: 21599,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "kakao-access-token",
+						token_type: "bearer",
+						refresh_token: "kakao-refresh-token",
+						expires_in: 21599,
+					}),
+				);
 
 				oauthStateRepo.generateExchangeCode.mockReturnValue("login-exchange-code");
 				asMock(oauthStateRepo.saveExchangeData).mockResolvedValue({});
@@ -2529,16 +2542,14 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
 
 				// Google token exchange mock (idToken 반환)
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "google-access-token",
-							id_token: "google-id-token",
-							token_type: "bearer",
-							expires_in: 3600,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "google-access-token",
+						id_token: "google-id-token",
+						token_type: "bearer",
+						expires_in: 3600,
+					}),
+				);
 
 				// Google 토큰 검증 mock
 				asMock(tokenVerifier.verifyGoogleToken).mockResolvedValue({
@@ -2586,15 +2597,13 @@ describe("OAuthWorkflow — OAuth workflow", () => {
 				oauthStateRepo.findByState.mockResolvedValue(mockOAuthState);
 
 				// Naver token exchange mock (accessToken 반환)
-				global.fetch = vi.fn().mockResolvedValue({
-					ok: true,
-					json: () =>
-						Promise.resolve({
-							access_token: "naver-access-token",
-							token_type: "bearer",
-							expires_in: 3600,
-						}),
-				});
+				global.fetch = vi.fn().mockResolvedValue(
+					Response.json({
+						access_token: "naver-access-token",
+						token_type: "bearer",
+						expires_in: 3600,
+					}),
+				);
 
 				// Naver 토큰 검증 mock
 				asMock(tokenVerifier.verifyNaverToken).mockResolvedValue({

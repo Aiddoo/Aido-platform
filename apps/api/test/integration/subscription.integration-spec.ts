@@ -28,6 +28,7 @@ import { NotificationQueueService } from "#api/notification/queue";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { LOCK_PROVIDER } from "#api/shared/infrastructure/lock/index";
 import { SUBSCRIPTION_CACHE } from "#api/subscription/application/ports/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "#api/subscription/application/ports/subscription-event-notifier.port";
@@ -39,7 +40,13 @@ import { SubscriptionEventNotifierAdapter } from "#api/subscription/infrastructu
 import { SubscriptionWebhookLockAdapter } from "#api/subscription/infrastructure/adapters/subscription-webhook-lock.adapter";
 import { PrismaSubscriptionRepository } from "#api/subscription/infrastructure/persistence/prisma-subscription.repository";
 import { SubscriptionEventBuilder } from "#test/builders/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asMock } from "#test/mocks/bull-job.mock";
+import {
+	assertNativeWhere,
+	createMockDatabaseContext,
+	databaseFixture,
+	databaseWriteExpectation,
+} from "#test/mocks/database.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -48,22 +55,10 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 	let useCase: HandleWebhookEventUseCase;
 
 	// Mock 데이터베이스 모델
-	const mockSubscriptionDb = {
-		create: vi.fn(),
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		update: vi.fn(),
-	};
+	const nativeContext = createMockDatabaseContext();
+	const mockSubscriptionDb = nativeContext.orm.public.Subscription;
 
-	const mockUserDb = {
-		findFirst: vi.fn(),
-		update: vi.fn(),
-	};
-
-	const mockDatabaseService = createMockDatabaseService({
-		subscription: mockSubscriptionDb,
-		user: mockUserDb,
-	});
+	const mockUserDb = nativeContext.orm.public.User;
 
 	// Mock CacheService
 	const mockCacheService = {
@@ -131,9 +126,9 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 					useValue: createUnitOfWorkMock(),
 				},
 				{
-					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 $transaction passthrough와 등가)
+					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (DI 흐름 검증용)
 					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
+					useValue: { tx: nativeContext },
 				},
 				{
 					provide: CacheService,
@@ -180,38 +175,42 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			.withOriginalTransactionId(mockTransactionId)
 			.build();
 
-		mockUserDb.findFirst.mockResolvedValue(mockUser);
-		mockSubscriptionDb.findUnique.mockResolvedValue(null);
-		mockSubscriptionDb.create.mockResolvedValue({
-			id: 1,
-			userId: mockUser.id,
-			revenueCatId: mockTransactionId,
-			productId: "premium_monthly",
-			status: "ACTIVE",
-		});
-		mockUserDb.update.mockResolvedValue({
-			...mockUser,
-			subscriptionStatus: "ACTIVE",
-		});
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockUser));
+		asMock(mockSubscriptionDb.first).mockResolvedValue(databaseFixture("Subscription", null));
+		asMock(mockSubscriptionDb.create).mockResolvedValue(
+			databaseFixture("Subscription", {
+				id: 1,
+				userId: mockUser.id,
+				revenueCatId: mockTransactionId,
+				productId: "premium_monthly",
+				status: "ACTIVE",
+			}),
+		);
+		asMock(mockUserDb.update).mockResolvedValue(
+			databaseFixture("User", {
+				...mockUser,
+				subscriptionStatus: "ACTIVE",
+			}),
+		);
 
 		// When - INITIAL_PURCHASE 웹훅 이벤트 처리
 		await useCase.execute(payload);
 
 		// Then - Subscription 생성, User ACTIVE 전환, 캐시 무효화, 큐 등록
 		expect(mockSubscriptionDb.create).toHaveBeenCalledWith(
-			expect.objectContaining({
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("Subscription", {
 					revenueCatId: mockTransactionId,
 					status: "ACTIVE",
 				}),
-			}),
+			),
 		);
 		expect(mockUserDb.update).toHaveBeenCalledWith(
-			expect.objectContaining({
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("User", {
 					subscriptionStatus: "ACTIVE",
 				}),
-			}),
+			),
 		);
 		expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(mockUser.id);
 		expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(mockUser.id);
@@ -241,36 +240,44 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			expiresAt: new Date(now + 30 * 24 * 60 * 60 * 1000),
 		};
 
-		mockUserDb.findFirst.mockResolvedValue(mockUser);
-		mockSubscriptionDb.findUnique.mockResolvedValue(existingSubscription);
-		mockSubscriptionDb.update.mockResolvedValue({
-			...existingSubscription,
-			expiresAt: new Date(newExpiresAt),
-		});
-		mockUserDb.update.mockResolvedValue({
-			...mockUser,
-			subscriptionStatus: "ACTIVE",
-		});
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockUser));
+		asMock(mockSubscriptionDb.first).mockResolvedValue(
+			databaseFixture("Subscription", existingSubscription),
+		);
+		asMock(mockSubscriptionDb.update).mockResolvedValue(
+			databaseFixture("Subscription", {
+				...existingSubscription,
+				expiresAt: new Date(newExpiresAt),
+			}),
+		);
+		asMock(mockUserDb.update).mockResolvedValue(
+			databaseFixture("User", {
+				...mockUser,
+				subscriptionStatus: "ACTIVE",
+			}),
+		);
 
 		// When - RENEWAL 웹훅 이벤트 처리
 		await useCase.execute(payload);
 
 		// Then - Subscription expiresAt 업데이트, User ACTIVE 유지
+		assertNativeWhere("Subscription", mockSubscriptionDb.where.mock.calls.at(-1)?.[0], (row) =>
+			row.revenueCatId.eq(varchar(mockTransactionId, 255)),
+		);
 		expect(mockSubscriptionDb.update).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: { revenueCatId: mockTransactionId },
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("Subscription", {
 					status: "ACTIVE",
 					expiresAt: new Date(newExpiresAt),
 				}),
-			}),
+			),
 		);
 		expect(mockUserDb.update).toHaveBeenCalledWith(
-			expect.objectContaining({
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("User", {
 					subscriptionStatus: "ACTIVE",
 				}),
-			}),
+			),
 		);
 	});
 
@@ -283,29 +290,35 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			.withExpirationAtMs(futureExpiresAt)
 			.build();
 
-		mockUserDb.findFirst.mockResolvedValue(mockUser);
-		mockSubscriptionDb.update.mockResolvedValue({
-			id: 1,
-			revenueCatId: mockTransactionId,
-			status: "CANCELLED",
-		});
-		mockUserDb.update.mockResolvedValue({
-			...mockUser,
-			subscriptionStatus: "ACTIVE",
-		});
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockUser));
+		asMock(mockSubscriptionDb.update).mockResolvedValue(
+			databaseFixture("Subscription", {
+				id: 1,
+				revenueCatId: mockTransactionId,
+				status: "CANCELLED",
+			}),
+		);
+		asMock(mockUserDb.update).mockResolvedValue(
+			databaseFixture("User", {
+				...mockUser,
+				subscriptionStatus: "ACTIVE",
+			}),
+		);
 
 		// When - CANCELLATION 웹훅 이벤트 처리
 		await useCase.execute(payload);
 
 		// Then - Subscription CANCELLED 상태, cancelledAt 설정
+		assertNativeWhere("Subscription", mockSubscriptionDb.where.mock.calls.at(-1)?.[0], (row) =>
+			row.revenueCatId.eq(varchar(mockTransactionId, 255)),
+		);
 		expect(mockSubscriptionDb.update).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: { revenueCatId: mockTransactionId },
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("Subscription", {
 					status: "CANCELLED",
-					cancelledAt: expect.any(Date),
+					cancelledAt: expect.any(String),
 				}),
-			}),
+			),
 		);
 	});
 
@@ -316,36 +329,42 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			.withOriginalTransactionId(mockTransactionId)
 			.build();
 
-		mockUserDb.findFirst.mockResolvedValue(mockUser);
-		mockSubscriptionDb.update.mockResolvedValue({
-			id: 1,
-			revenueCatId: mockTransactionId,
-			status: "EXPIRED",
-		});
-		mockUserDb.update.mockResolvedValue({
-			...mockUser,
-			subscriptionStatus: "FREE",
-		});
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockUser));
+		asMock(mockSubscriptionDb.update).mockResolvedValue(
+			databaseFixture("Subscription", {
+				id: 1,
+				revenueCatId: mockTransactionId,
+				status: "EXPIRED",
+			}),
+		);
+		asMock(mockUserDb.update).mockResolvedValue(
+			databaseFixture("User", {
+				...mockUser,
+				subscriptionStatus: "FREE",
+			}),
+		);
 
 		// When - EXPIRATION 웹훅 이벤트 처리
 		await useCase.execute(payload);
 
 		// Then - Subscription EXPIRED, User FREE 전환
+		assertNativeWhere("Subscription", mockSubscriptionDb.where.mock.calls.at(-1)?.[0], (row) =>
+			row.revenueCatId.eq(varchar(mockTransactionId, 255)),
+		);
 		expect(mockSubscriptionDb.update).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: { revenueCatId: mockTransactionId },
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("Subscription", {
 					status: "EXPIRED",
 				}),
-			}),
+			),
 		);
 		expect(mockUserDb.update).toHaveBeenCalledWith(
-			expect.objectContaining({
-				data: expect.objectContaining({
+			expect.objectContaining(
+				databaseWriteExpectation("User", {
 					subscriptionStatus: "FREE",
 					subscriptionExpiresAt: null,
 				}),
-			}),
+			),
 		);
 	});
 
@@ -356,7 +375,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			.withOriginalTransactionId(mockTransactionId)
 			.build();
 
-		mockUserDb.findFirst.mockResolvedValue(mockUser);
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockUser));
 
 		// When - BILLING_ISSUE 웹훅 이벤트 처리
 		await useCase.execute(payload);
@@ -384,13 +403,15 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 			.withEventId(eventId)
 			.build();
 
-		mockUserDb.findFirst.mockResolvedValue(mockUser);
-		mockSubscriptionDb.findUnique.mockResolvedValue({
-			id: 1,
-			revenueCatId: mockTransactionId,
-			status: "ACTIVE",
-			lastProcessedEventId: eventId,
-		});
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockUser));
+		asMock(mockSubscriptionDb.first).mockResolvedValue(
+			databaseFixture("Subscription", {
+				id: 1,
+				revenueCatId: mockTransactionId,
+				status: "ACTIVE",
+				lastProcessedEventId: eventId,
+			}),
+		);
 
 		// When - 동일 eventId로 웹훅 이벤트 재처리
 		await useCase.execute(payload);
@@ -413,12 +434,12 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		await expect(useCase.execute(payload)).rejects.toThrow(ApplicationException);
 
 		// Lock 실패 시 DB 조회도 하지 않음
-		expect(mockUserDb.findFirst).not.toHaveBeenCalled();
+		expect(mockUserDb.first).not.toHaveBeenCalled();
 	});
 
 	it("존재하지 않는 사용자 — appUserId 매칭 실패 시 에러", async () => {
 		// Given - 사용자 조회 결과 null
-		mockUserDb.findFirst.mockResolvedValue(null);
+		asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
 
 		const payload = SubscriptionEventBuilder.initialPurchase()
 			.withAppUserId("rc-unknown-user")
@@ -430,7 +451,7 @@ describe("HandleWebhookEventUseCase 통합 테스트 (Mock DB)", () => {
 		expect(mockPaymentNotifier.send).toHaveBeenCalledTimes(1);
 
 		// 사용자 조회는 시도했으나 이후 처리는 하지 않음
-		expect(mockUserDb.findFirst).toHaveBeenCalled();
+		expect(mockUserDb.first).toHaveBeenCalled();
 		expect(mockSubscriptionDb.create).not.toHaveBeenCalled();
 		expect(mockSubscriptionDb.update).not.toHaveBeenCalled();
 	});

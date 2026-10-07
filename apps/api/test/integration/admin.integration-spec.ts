@@ -25,6 +25,13 @@ import { PrismaAdminUserDirectoryAdapter } from "#api/admin/infrastructure/adapt
 import { NotificationPublisher } from "#api/notification/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { UserBuilder } from "#test/builders/index";
+import {
+	assertNativeWhereContains,
+	createMockDatabaseContext,
+	databaseFixture,
+	nativeRows,
+} from "#test/mocks/database.mock";
 import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -33,14 +40,10 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 	let broadcastNotificationUseCase: BroadcastNotificationUseCase;
 	let sendTargetedNotificationUseCase: SendTargetedNotificationUseCase;
 
-	const mockUserDb = {
-		findMany: vi.fn(),
-		count: vi.fn(),
-	};
+	const nativeContext = createMockDatabaseContext();
+	const mockUserDb = nativeContext.orm.public.User;
 
-	const mockDatabaseService = createMockDatabaseService({
-		user: mockUserDb,
-	});
+	const mockDatabaseService = createMockDatabaseService(nativeContext);
 
 	const mockNotificationPublisher = {
 		publishBatch: vi.fn().mockResolvedValue({ count: 0 }),
@@ -87,7 +90,15 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 	describe("브로드캐스트", () => {
 		it("ALL — 모든 사용자에게 알림이 발송된다", async () => {
 			// Given - 3명의 활성 사용자 (배치 크기 미만이라 1회 조회로 종료)
-			mockUserDb.findMany.mockResolvedValue([{ id: "user-1" }, { id: "user-2" }, { id: "user-3" }]);
+			mockUserDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("User", [
+						UserBuilder.create().withId("user-1").build(),
+						UserBuilder.create().withId("user-2").build(),
+						UserBuilder.create().withId("user-3").build(),
+					]),
+				),
+			);
 			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 3,
 			});
@@ -109,7 +120,14 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
 		it("WITH_PUSH_TOKEN — 푸시 토큰 조건이 where 절에 반영된다", async () => {
 			// Given - 푸시 토큰이 있는 사용자 2명
-			mockUserDb.findMany.mockResolvedValue([{ id: "user-push-1" }, { id: "user-push-2" }]);
+			mockUserDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("User", [
+						UserBuilder.create().withId("user-push-1").build(),
+						UserBuilder.create().withId("user-push-2").build(),
+					]),
+				),
+			);
 			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 2,
 			});
@@ -126,16 +144,14 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 			// Then - 조건이 반영되고 대상에게만 발송되어야 함
 			expect(result.totalTargets).toBe(2);
 			expect(result.successCount).toBe(2);
-			expect(mockUserDb.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({ pushTokens: { some: {} } }),
-				}),
+			assertNativeWhereContains("User", mockUserDb.where.mock.calls[0]?.[0], (row) =>
+				row.pushTokens.some(),
 			);
 		});
 
 		it("대상 없음 — BusinessException을 던진다", async () => {
 			// Given - 대상 사용자가 없음 (빈 페이지로 즉시 종료)
-			mockUserDb.findMany.mockResolvedValueOnce([]);
+			mockUserDb.all.mockReturnValueOnce(nativeRows(databaseFixture("User", [])));
 
 			// When & Then - 대상 없음은 ADMIN_1402(ApplicationException)로 실패
 			await expect(
@@ -153,7 +169,14 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 	describe("타겟 발송", () => {
 		it("지정된 userId 목록에 ADMIN_TARGETED 알림이 발송된다", async () => {
 			// Given - 존재하는 사용자 2명
-			mockUserDb.findMany.mockResolvedValue([{ id: "target-user-1" }, { id: "target-user-2" }]);
+			mockUserDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("User", [
+						UserBuilder.create().withId("target-user-1").build(),
+						UserBuilder.create().withId("target-user-2").build(),
+					]),
+				),
+			);
 			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 2,
 			});
@@ -188,7 +211,14 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
 		it("존재하지 않는 userId는 필터링된다", async () => {
 			// Given - 3개 userId 중 2개만 존재
-			mockUserDb.findMany.mockResolvedValue([{ id: "existing-1" }, { id: "existing-2" }]);
+			mockUserDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("User", [
+						UserBuilder.create().withId("existing-1").build(),
+						UserBuilder.create().withId("existing-2").build(),
+					]),
+				),
+			);
 			mockNotificationPublisher.publishBatch.mockResolvedValue({
 				count: 2,
 			});

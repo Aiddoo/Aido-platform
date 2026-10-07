@@ -10,6 +10,7 @@ import {
 	type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
 import { toSupportedLocale } from "#api/shared/domain/locale";
+import { decodeRecord } from "#api/shared/infrastructure/database/database-records";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import { fromLegacyJob, type NamedJob } from "#api/shared/infrastructure/jobs/named-job";
 
@@ -107,10 +108,12 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 		this.#logger.debug(`Processing suggestion analysis: userId=${userId}`);
 
 		// 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
-		const preference = await this.database.userPreference.findUnique({
-			where: { userId },
-			select: { locale: true },
-		});
+		const preference = decodeRecord(
+			"UserPreference",
+			await this.database.db.orm.public.UserPreference.where((row) => row.userId.eq(userId))
+				.select("locale")
+				.first(),
+		);
 		const locale = toSupportedLocale(preference?.locale);
 
 		const createdCount = await this.analyzeAndCreateSuggestionsUseCase.execute(

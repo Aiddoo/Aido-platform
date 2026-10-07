@@ -1,17 +1,24 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 import { AuthPersistenceConflict } from "#api/auth/application/ports/auth-persistence.port";
-import type { Account, AccountProvider } from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
+import type { Account, AccountProvider } from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 import { isUniqueConstraintViolation } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 
 @Injectable()
 export class AccountRepository {
 	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
+		private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
 		private readonly encryptionService: EncryptionService,
 	) {}
 
@@ -24,42 +31,41 @@ export class AccountRepository {
 		userId: string,
 		provider: AccountProvider,
 	): Promise<Account | null> {
-		return this.client.account.findUnique({
-			where: {
-				userId_provider: { userId, provider },
-			},
-		});
+		return this.client.orm.public.Account.where((row) =>
+			and(row.userId.eq(userId), row.provider.eq(provider)),
+		)
+			.first()
+			.then((row) => decodeRecord("Account", row));
 	}
 
 	async findByProviderAccountId(
 		provider: AccountProvider,
 		providerAccountId: string,
 	): Promise<Account | null> {
-		return this.client.account.findUnique({
-			where: {
-				provider_providerAccountId: { provider, providerAccountId },
-			},
-		});
+		return this.client.orm.public.Account.where((row) =>
+			and(row.provider.eq(provider), row.providerAccountId.eq(varchar(providerAccountId, 255))),
+		)
+			.first()
+			.then((row) => decodeRecord("Account", row));
 	}
 
 	async createCredentialAccount(userId: string, hashedPassword: string): Promise<Account> {
-		return this.client.account.create({
-			data: {
+		return this.client.orm.public.Account.create(
+			encodeCreate("Account", {
 				userId,
 				provider: "CREDENTIAL",
 				providerAccountId: userId, // userId를 사용하여 unique constraint 보장
 				password: hashedPassword,
-			},
-		});
+			}),
+		).then((row) => decodeRecord("Account", row));
 	}
 
 	async updatePassword(userId: string, hashedPassword: string): Promise<Account> {
-		return this.client.account.update({
-			where: {
-				userId_provider: { userId, provider: "CREDENTIAL" },
-			},
-			data: { password: hashedPassword },
-		});
+		return this.client.orm.public.Account.where((row) =>
+			and(row.userId.eq(userId), row.provider.eq("CREDENTIAL")),
+		)
+			.update(encodePatch("Account", { password: hashedPassword }))
+			.then((row) => decodeRecord("Account", requireRecord(row)));
 	}
 
 	async createOAuthAccount(data: {
@@ -72,21 +78,24 @@ export class AccountRepository {
 		scope?: string;
 	}): Promise<Account> {
 		try {
-			return await this.client.account.create({
-				data: {
-					userId: data.userId,
-					provider: data.provider,
-					providerAccountId: data.providerAccountId,
-					accessToken: data.accessToken
-						? this.encryptionService.encrypt(data.accessToken)
-						: undefined,
-					refreshToken: data.refreshToken
-						? this.encryptionService.encrypt(data.refreshToken)
-						: undefined,
-					accessTokenExpiresAt: data.accessTokenExpiresAt,
-					scope: data.scope,
-				},
-			});
+			return decodeRecord(
+				"Account",
+				await this.client.orm.public.Account.create(
+					encodeCreate("Account", {
+						userId: data.userId,
+						provider: data.provider,
+						providerAccountId: data.providerAccountId,
+						accessToken: data.accessToken
+							? this.encryptionService.encrypt(data.accessToken)
+							: undefined,
+						refreshToken: data.refreshToken
+							? this.encryptionService.encrypt(data.refreshToken)
+							: undefined,
+						accessTokenExpiresAt: data.accessTokenExpiresAt,
+						scope: data.scope,
+					}),
+				),
+			);
 		} catch (error) {
 			if (isUniqueConstraintViolation(error)) {
 				throw new AuthPersistenceConflict("OAUTH_ACCOUNT_ALREADY_LINKED");
@@ -104,33 +113,34 @@ export class AccountRepository {
 			accessTokenExpiresAt?: Date;
 		},
 	): Promise<Account> {
-		return this.client.account.update({
-			where: {
-				userId_provider: { userId, provider },
-			},
-			data: {
-				accessToken: this.encryptionService.encrypt(tokens.accessToken),
-				...(tokens.refreshToken && {
-					refreshToken: this.encryptionService.encrypt(tokens.refreshToken),
+		return this.client.orm.public.Account.where((row) =>
+			and(row.userId.eq(userId), row.provider.eq(provider)),
+		)
+			.update(
+				encodePatch("Account", {
+					accessToken: this.encryptionService.encrypt(tokens.accessToken),
+					...(tokens.refreshToken && {
+						refreshToken: this.encryptionService.encrypt(tokens.refreshToken),
+					}),
+					...(tokens.accessTokenExpiresAt && {
+						accessTokenExpiresAt: tokens.accessTokenExpiresAt,
+					}),
 				}),
-				...(tokens.accessTokenExpiresAt && {
-					accessTokenExpiresAt: tokens.accessTokenExpiresAt,
-				}),
-			},
-		});
+			)
+			.then((row) => decodeRecord("Account", requireRecord(row)));
 	}
 
 	async deleteAccount(userId: string, provider: AccountProvider): Promise<Account> {
-		return this.client.account.delete({
-			where: {
-				userId_provider: { userId, provider },
-			},
-		});
+		return this.client.orm.public.Account.where((row) =>
+			and(row.userId.eq(userId), row.provider.eq(provider)),
+		)
+			.delete()
+			.then((row) => decodeRecord("Account", requireRecord(row)));
 	}
 
 	async findAllByUserId(userId: string): Promise<Account[]> {
-		return this.client.account.findMany({
-			where: { userId },
-		});
+		return this.client.orm.public.Account.where((row) => row.userId.eq(userId))
+			.all()
+			.then((row) => decodeRecord("Account", row));
 	}
 }

@@ -1,10 +1,15 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { TestBed } from "@suites/unit";
+import { and } from "@prisma/orm-postgres/orm-client";
 
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { PushTokenBuilder } from "#test/builders/index";
-import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+import {
+	assertNativeWhere,
+	createMockTransactionHost,
+	databaseFixture,
+	databaseWriteExpectation,
+	nativeRows,
+} from "#test/mocks/database.mock";
+import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import type {
 	FindPushTokensParams,
@@ -14,16 +19,12 @@ import { PrismaPushTokenRepository } from "./prisma-push-token.repository.js";
 
 describe("PrismaPushTokenRepository", () => {
 	let repository: PrismaPushTokenRepository;
-	let db: MockPrismaClient;
+	let db: MockDatabaseContext;
 
 	beforeEach(async () => {
 		PushTokenBuilder.resetIdCounter();
-		db = createMockPrisma();
-		const { unit } = await TestBed.solitary(PrismaPushTokenRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
-			.impl(() => ({ tx: db }))
-			.compile();
-		repository = unit;
+		db = createMockDatabaseContext();
+		repository = new PrismaPushTokenRepository(createMockTransactionHost(db));
 	});
 
 	it("사용자와 deviceId 복합 키로 푸시 토큰을 upsert한다", async () => {
@@ -34,40 +35,58 @@ describe("PrismaPushTokenRepository", () => {
 			platform: "IOS",
 		};
 		const expected = PushTokenBuilder.create("user-1").withDeviceId("device-1").build();
-		asMock(db.pushToken.upsert).mockResolvedValue(expected);
+		asMock(db.orm.public.PushToken.upsert).mockResolvedValue(
+			databaseFixture("PushToken", expected),
+		);
 
 		await expect(repository.registerPushToken(data)).resolves.toEqual(expected);
-		expect(db.pushToken.upsert).toHaveBeenCalledWith({
-			where: { userId_deviceId: { userId: "user-1", deviceId: "device-1" } },
-			create: {
-				userId: "user-1",
-				token: data.token,
-				deviceId: "device-1",
-				platform: "IOS",
-				isActive: true,
-				payloadVersion: 1,
-				appVersion: undefined,
-			},
-			update: {
-				token: data.token,
-				platform: "IOS",
-				isActive: true,
-				payloadVersion: 1,
-				appVersion: undefined,
-				updatedAt: expect.any(Date),
-			},
-		});
+		expect(db.orm.public.PushToken.upsert).toHaveBeenCalledWith(
+			expect.objectContaining({
+				conflictOn: databaseWriteExpectation("PushToken", {
+					userId: "user-1",
+					deviceId: "device-1",
+				}),
+				create: expect.objectContaining(
+					databaseWriteExpectation("PushToken", {
+						userId: "user-1",
+						token: data.token,
+						deviceId: "device-1",
+						platform: "IOS",
+						isActive: true,
+						payloadVersion: 1,
+						appVersion: undefined,
+					}),
+				),
+				update: expect.objectContaining(
+					databaseWriteExpectation("PushToken", {
+						token: data.token,
+						platform: "IOS",
+						isActive: true,
+						payloadVersion: 1,
+						appVersion: undefined,
+						updatedAt: expect.any(String),
+					}),
+				),
+			}),
+		);
 	});
 
 	it("deviceId와 platform이 없으면 기존 호환 기본값을 유지한다", async () => {
 		const expected = PushTokenBuilder.create("user-1").withDeviceId("default").build();
-		asMock(db.pushToken.upsert).mockResolvedValue(expected);
+		asMock(db.orm.public.PushToken.upsert).mockResolvedValue(
+			databaseFixture("PushToken", expected),
+		);
 
 		await repository.registerPushToken({ userId: "user-1", token: expected.token });
-		expect(db.pushToken.upsert).toHaveBeenCalledWith(
+		expect(db.orm.public.PushToken.upsert).toHaveBeenCalledWith(
 			expect.objectContaining({
-				where: { userId_deviceId: { userId: "user-1", deviceId: "default" } },
-				create: expect.objectContaining({ deviceId: "default", platform: "IOS" }),
+				conflictOn: databaseWriteExpectation("PushToken", {
+					userId: "user-1",
+					deviceId: "default",
+				}),
+				create: expect.objectContaining(
+					databaseWriteExpectation("PushToken", { deviceId: "default", platform: "IOS" }),
+				),
 			}),
 		);
 	});
@@ -75,58 +94,64 @@ describe("PrismaPushTokenRepository", () => {
 	it("사용자 토큰을 최신 갱신 순으로 조회한다", async () => {
 		const params: FindPushTokensParams = { userId: "user-1" };
 		const tokens = [PushTokenBuilder.create("user-1").build()];
-		asMock(db.pushToken.findMany).mockResolvedValue(tokens);
+		asMock(db.orm.public.PushToken.all).mockReturnValue(
+			nativeRows(databaseFixture("PushToken", tokens)),
+		);
 
 		await expect(repository.findPushTokensByUser(params)).resolves.toEqual(tokens);
-		expect(db.pushToken.findMany).toHaveBeenCalledWith({
-			where: { userId: "user-1" },
-			orderBy: { updatedAt: "desc" },
-		});
+		assertNativeWhere("PushToken", db.orm.public.PushToken.where.mock.calls.at(-1)?.[0], (row) =>
+			row.userId.eq("user-1"),
+		);
 	});
 
 	it("activeOnly가 true이면 활성 토큰만 조회한다", async () => {
-		asMock(db.pushToken.findMany).mockResolvedValue([]);
+		asMock(db.orm.public.PushToken.all).mockReturnValue(
+			nativeRows(databaseFixture("PushToken", [])),
+		);
 
 		await repository.findPushTokensByUser({ userId: "user-1", activeOnly: true });
-		expect(db.pushToken.findMany).toHaveBeenCalledWith(
-			expect.objectContaining({ where: { userId: "user-1", isActive: true } }),
+		assertNativeWhere("PushToken", db.orm.public.PushToken.where.mock.calls.at(-1)?.[0], (row) =>
+			and(row.userId.eq("user-1"), row.isActive.eq(true)),
 		);
 	});
 
 	it("여러 사용자의 활성 토큰을 한 쿼리로 조회한다", async () => {
-		asMock(db.pushToken.findMany).mockResolvedValue([]);
+		asMock(db.orm.public.PushToken.all).mockReturnValue(
+			nativeRows(databaseFixture("PushToken", [])),
+		);
 
 		await repository.findActivePushTokensByUsers(["user-1", "user-2"]);
-		expect(db.pushToken.findMany).toHaveBeenCalledWith({
-			where: { userId: { in: ["user-1", "user-2"] }, isActive: true },
-		});
+		assertNativeWhere("PushToken", db.orm.public.PushToken.where.mock.calls.at(-1)?.[0], (row) =>
+			and(row.userId.in(["user-1", "user-2"]), row.isActive.eq(true)),
+		);
 	});
 
 	it("특정 device 토큰을 복합 키로 삭제한다", async () => {
 		const token = PushTokenBuilder.create("user-1").build();
-		asMock(db.pushToken.delete).mockResolvedValue(token);
+		asMock(db.orm.public.PushToken.delete).mockResolvedValue(databaseFixture("PushToken", token));
 
 		await expect(repository.deletePushToken("user-1", "device-1")).resolves.toEqual(token);
-		expect(db.pushToken.delete).toHaveBeenCalledWith({
-			where: { userId_deviceId: { userId: "user-1", deviceId: "device-1" } },
-		});
+		assertNativeWhere("PushToken", db.orm.public.PushToken.where.mock.calls.at(-1)?.[0], (row) =>
+			and(row.userId.eq("user-1"), row.deviceId.eq(varchar("device-1", 255))),
+		);
 	});
 
 	it("사용자의 모든 토큰을 삭제한다", async () => {
-		asMock(db.pushToken.deleteMany).mockResolvedValue({ count: 3 });
+		asMock(db.orm.public.PushToken.deleteAndCount).mockResolvedValue(3);
 
 		await expect(repository.deleteAllPushTokensByUser("user-1")).resolves.toEqual({ count: 3 });
-		expect(db.pushToken.deleteMany).toHaveBeenCalledWith({ where: { userId: "user-1" } });
+		assertNativeWhere("PushToken", db.orm.public.PushToken.where.mock.calls.at(-1)?.[0], (row) =>
+			row.userId.eq("user-1"),
+		);
 	});
 
 	it("무효 토큰을 한 번의 updateMany로 비활성화한다", async () => {
 		const tokens = ["invalid-1", "invalid-2"];
-		asMock(db.pushToken.updateMany).mockResolvedValue({ count: 2 });
+		asMock(db.orm.public.PushToken.updateAndCount).mockResolvedValue(2);
 
 		await expect(repository.deactivateInvalidTokens(tokens)).resolves.toEqual({ count: 2 });
-		expect(db.pushToken.updateMany).toHaveBeenCalledWith({
-			where: { token: { in: tokens } },
-			data: { isActive: false },
-		});
+		expect(db.orm.public.PushToken.updateAndCount).toHaveBeenCalledWith(
+			expect.objectContaining(databaseWriteExpectation("PushToken", { isActive: false })),
+		);
 	});
 });

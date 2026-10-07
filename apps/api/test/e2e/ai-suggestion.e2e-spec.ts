@@ -1,3 +1,6 @@
+import request from "supertest";
+
+import { AI_PROVIDER } from "#api/ai/index";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -10,12 +13,14 @@
  * - PATCH /ai/suggestions/:id: 제안 수락/거절
  * - 인증 에러 (401)
  */
-
-import request from "supertest";
-
-import { AI_PROVIDER } from "#api/ai/index";
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -44,11 +49,15 @@ describe("AI 제안 E2E", () => {
 	/** 프리미엄 사용자를 생성하고 토큰을 반환하는 헬퍼 */
 	async function createPremiumUser(email: string, password: string) {
 		const user = await ctx.helpers.createVerifiedUser(email, password);
-		const prisma = ctx.module.get(DatabaseService);
-		await prisma.user.update({
-			where: { id: user.userId },
-			data: { subscriptionStatus: "ACTIVE" },
-		});
+		const prisma = ctx.module.get(DatabaseService).db;
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(user.userId)).update(
+					encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+				),
+			),
+		);
 		const cacheService = ctx.module.get(CacheService);
 		await cacheService.invalidateSubscription(user.userId);
 		return user;
@@ -63,21 +72,24 @@ describe("AI 제안 E2E", () => {
 			scheduledTime?: string | null;
 		},
 	): Promise<number> {
-		const prisma = ctx.testDatabase.getPrisma();
-		const suggestion = await prisma.recurringSuggestion.create({
-			data: {
-				userId,
-				title: "팀 미팅",
-				daysOfWeek: overrides?.daysOfWeek ?? ["MON", "WED", "FRI"],
-				scheduledTime: overrides?.scheduledTime === undefined ? "10:00" : overrides.scheduledTime,
-				confidence: 0.85,
-				reason: "최근 2주간 반복 패턴 감지",
-				matchedTodos: [],
-				suggestedCategoryId: null,
-				status: overrides?.status ?? "PENDING",
-				expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-			},
-		});
+		const prisma = ctx.testDatabase.getClient();
+		const suggestion = decodeRecord(
+			"RecurringSuggestion",
+			await prisma.orm.public.RecurringSuggestion.create(
+				encodeCreate("RecurringSuggestion", {
+					userId,
+					title: "팀 미팅",
+					daysOfWeek: overrides?.daysOfWeek ?? ["MON", "WED", "FRI"],
+					scheduledTime: overrides?.scheduledTime === undefined ? "10:00" : overrides.scheduledTime,
+					confidence: 0.85,
+					reason: "최근 2주간 반복 패턴 감지",
+					matchedTodos: [],
+					suggestedCategoryId: null,
+					status: overrides?.status ?? "PENDING",
+					expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+				}),
+			),
+		);
 		return suggestion.id;
 	}
 

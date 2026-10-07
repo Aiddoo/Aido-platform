@@ -1,36 +1,38 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import sql, { join } from "sql-template-tag";
 
-import { Prisma } from "#api/generated/prisma/client";
 import { DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeSqlRows,
+	sqlRowSpec,
+	sqlStatement,
+} from "#api/shared/infrastructure/database/database-sql";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	TodoCommentAccountCleanupPlan,
 	TodoCommentAccountCleanupStorePort,
 } from "../../application/ports/todo-comment-account-cleanup.store.port.js";
 
-interface TodoIdRow {
-	todoId: number;
-}
-
-interface CommentIdRow {
-	id: string;
-}
-
 @Injectable()
 export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountCleanupStorePort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
 	}
 
 	async plan(userId: string): Promise<TodoCommentAccountCleanupPlan> {
-		const affectedTodoRows = await this.client.$queryRaw<TodoIdRow[]>`
+		const sqlRows1 = sqlRowSpec({ todoId: "pg/int4@1" });
+		const sqlRows2 = sqlRowSpec({ id: "pg/text@1" });
+
+		const affectedTodoRows = decodeSqlRows(
+			sqlRows1,
+			await this.client.query(
+				sqlStatement(
+					this.client,
+					sql`
 			SELECT DISTINCT affected."todoId"
 			FROM (
 				SELECT comment."todoId"
@@ -46,20 +48,35 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 				WHERE comment_like."userId" = ${userId}
 			) AS affected
 			ORDER BY affected."todoId"
-		`;
+		`,
+				)
+					.returnsRow(sqlRows1)
+					.build(),
+			),
+		);
 		const affectedTodoIds = affectedTodoRows.map((row) => row.todoId);
 
 		if (affectedTodoIds.length === 0) {
 			return { affectedTodoIds: [], commentIdsToLock: [] };
 		}
 
-		const todoIds = Prisma.join(affectedTodoIds);
-		const commentRows = await this.client.$queryRaw<CommentIdRow[]>(Prisma.sql`
+		const todoIds = join(affectedTodoIds);
+		const commentRows = decodeSqlRows(
+			sqlRows2,
+			await this.client.query(
+				sqlStatement(
+					this.client,
+					sql`
 			SELECT comment."id"
 			FROM "TodoComment" AS comment
 			WHERE comment."todoId" IN (${todoIds})
 			ORDER BY comment."id"
-		`);
+		`,
+				)
+					.returnsRow(sqlRows2)
+					.build(),
+			),
+		);
 
 		return {
 			affectedTodoIds,
@@ -72,32 +89,63 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 			return;
 		}
 
-		const todoIds = Prisma.join(plan.affectedTodoIds);
+		const todoIds = join(plan.affectedTodoIds);
 
 		// 최상위 댓글 작성은 Todo.commentCount 행 잠금에서 합류합니다. 먼저 Todo를 잠그면
 		// 절대값 재계산과 concurrent increment가 서로 덮어쓰지 않습니다.
-		await this.client.$queryRaw(Prisma.sql`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			SELECT todo."id"
 			FROM "Todo" AS todo
 			WHERE todo."id" IN (${todoIds})
 			ORDER BY todo."id"
 			FOR UPDATE
-		`);
-		await this.client.$queryRaw(Prisma.sql`
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			SELECT comment."id"
 			FROM "TodoComment" AS comment
 			WHERE comment."todoId" IN (${todoIds})
 			ORDER BY comment."id"
 			FOR UPDATE
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
 		// purged user의 inactive like도 FK를 잡고 있으므로 모두 제거합니다. active likeCount는
 		// 아래의 set-based reconciliation이 실제 남은 행을 기준으로 다시 확정합니다.
-		await this.client.$executeRaw`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			DELETE FROM "TodoCommentLike"
 			WHERE "userId" = ${userId}
-		`;
-		await this.client.$executeRaw`
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "TodoCommentLike" AS comment_like
 			SET "isActive" = FALSE,
 				"updatedAt" = CURRENT_TIMESTAMP
@@ -105,19 +153,37 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 			WHERE comment."id" = comment_like."commentId"
 				AND comment."authorId" = ${userId}
 				AND comment_like."isActive" = TRUE
-		`;
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
 		// 물리 삭제 대신 묘비를 남겨 다른 작성자의 자손과 대화 rail을 보존합니다.
-		await this.client.$executeRaw`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "TodoComment"
 			SET "content" = NULL,
 				"deletedAt" = COALESCE("deletedAt", CURRENT_TIMESTAMP),
 				"likeCount" = 0,
 				"updatedAt" = CURRENT_TIMESTAMP
 			WHERE "authorId" = ${userId}
-		`;
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
-		await this.client.$executeRaw(Prisma.sql`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			WITH desired AS (
 				SELECT comment."id",
 					COUNT(comment_like."commentId") FILTER (
@@ -135,11 +201,20 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 			FROM desired
 			WHERE comment."id" = desired."id"
 				AND comment."likeCount" IS DISTINCT FROM desired."likeCount"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
 		// 삭제된 중간 댓글도 active descendant의 path에 있으면 보입니다. 그 집합을 먼저 만든 뒤
 		// 각 부모가 실제로 보여 주는 직계 자식 수를 다시 계산합니다.
-		await this.client.$executeRaw(Prisma.sql`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			WITH active_comments AS (
 				SELECT comment."id", comment."path"
 				FROM "TodoComment" AS comment
@@ -173,9 +248,18 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 			FROM desired
 			WHERE comment."id" = desired."id"
 				AND comment."replyCount" IS DISTINCT FROM desired."replyCount"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
-		await this.client.$executeRaw(Prisma.sql`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			WITH desired AS (
 				SELECT todo."id",
 					COUNT(comment."id") FILTER (
@@ -193,18 +277,32 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 			FROM desired
 			WHERE todo."id" = desired."id"
 				AND todo."commentCount" IS DISTINCT FROM desired."commentCount"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
 		// 마지막에 개인정보가 없는 시스템 작성자로 옮깁니다. nullable author를 모르는 직전 API로
 		// 롤백해도 relation 역참조가 깨지지 않고, 새 API는 deletedAt으로 묘비를 판정합니다.
 		// 이 단계까지 가지 못하면 RESTRICT가 hard delete를 막아 반쪽 정리를 허용하지 않습니다.
-		await this.client.$executeRaw`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "TodoComment"
 			SET "authorId" = ${DELETED_COMMENT_AUTHOR_ID},
 				"clientRequestId" = gen_random_uuid(),
 				"requestFingerprint" = NULL,
 				"updatedAt" = CURRENT_TIMESTAMP
 			WHERE "authorId" = ${userId}
-		`;
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 	}
 }

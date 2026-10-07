@@ -16,7 +16,7 @@ import {
 	type TodoScheduleProps,
 } from "../../domain/value-objects/todo-schedule.vo.js";
 import { TodoRowRepository } from "../persistence/todo-row.repository.js";
-import type { TodoWithCategory } from "../persistence/todo-row.types.js";
+import type { TodoAggregateRow } from "../persistence/todo-row.types.js";
 
 /**
  * Prisma Todo 쓰기 어댑터
@@ -29,8 +29,8 @@ import type { TodoWithCategory } from "../persistence/todo-row.types.js";
 export class PrismaTodoRepository implements TodoRepositoryPort {
 	constructor(private readonly todoRepository: TodoRowRepository) {}
 
-	/** DB 행 → 도메인 애그리게잇 (카테고리 read model은 버리고 순수 도메인 상태만 복원) */
-	private static toDomain(row: TodoWithCategory): Todo {
+	/** DB 행 → 도메인 애그리게잇 (순수 도메인 상태와 하위 항목만 복원) */
+	private static toDomain(row: TodoAggregateRow): Todo {
 		return Todo.reconstitute({
 			id: TodoId.create(row.id),
 			userId: row.userId,
@@ -65,13 +65,13 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 
 	async findByIdAndUserId(id: number, userId: string): Promise<Todo | null> {
 		const row = await this.todoRepository.findByIdAndUserId(id, userId);
-		return row ? PrismaTodoRepository.toDomain(row) : null;
+		return row === null ? null : PrismaTodoRepository.toDomain(row);
 	}
 
 	async create(data: TodoCreationPlan): Promise<Todo> {
 		const row = await this.todoRepository.create({
-			user: { connect: { id: data.userId } },
-			category: { connect: { id: data.categoryId } },
+			userId: data.userId,
+			categoryId: data.categoryId,
 			title: data.title,
 			sortOrder: data.sortOrder,
 			startDate: data.startDate,
@@ -92,8 +92,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 	}
 
 	async updateDetails(id: number, patch: TodoUpdatePatch): Promise<void> {
-		// 스칼라 categoryId 포함 패치 — Prisma 런타임은 unchecked 스칼라 update를 허용하며
-		// 레거시 서비스도 동일 방식으로 전달했습니다(동작 보존).
+		// 인프라 경계에서 날짜와 문자열 codec을 변환한다.
 		await this.todoRepository.update(id, patch);
 	}
 
@@ -116,7 +115,7 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
 
 	async updateCategory(id: number, categoryId: number): Promise<void> {
 		await this.todoRepository.update(id, {
-			category: { connect: { id: categoryId } },
+			categoryId,
 		});
 	}
 

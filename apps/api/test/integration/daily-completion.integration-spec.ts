@@ -30,12 +30,20 @@ import { FRIEND_PORT } from "#api/daily-completion/application/ports/friend.port
 import { TODO_COMPLETION_REPOSITORY } from "#api/daily-completion/application/ports/todo-completion.repository.port";
 import { GetDailyCompletionsUseCase } from "#api/daily-completion/application/queries/get-daily-completions/get-daily-completions.use-case";
 import { PrismaTodoCompletionRepository } from "#api/daily-completion/infrastructure/adapters/prisma-todo-completion.repository";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { createEntityId } from "#api/shared/infrastructure/database/database-values";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import {
 	createDailyCompletionCacheMock,
 	createDailyCompletionFriendMock,
 } from "#test/mocks/ports/index";
+import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import { TestDatabase } from "../setup/test-database.js";
 
@@ -54,7 +62,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 
 		// TestContainer 시작 및 Database 연결
 		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
+		databaseService = createTestDatabaseService(await testDb.start());
 
 		// 클린아키 수직 배선: Facade → use-case → Prisma 어댑터(실제 DB)
 		module = await Test.createTestingModule({
@@ -67,7 +75,7 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 				{
 					// 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (실제 Prisma 전달)
 					provide: TransactionHost,
-					useValue: { tx: databaseService },
+					useValue: { tx: createDatabaseContext(databaseService.db) },
 				},
 				{
 					provide: DAILY_COMPLETION_CACHE,
@@ -114,28 +122,27 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 	): Promise<{ id: string; defaultCategoryId: number }> {
 		// userTag는 8자리 제한 (VarChar(8))
 		const userTag = Date.now().toString(36).toUpperCase().slice(-8);
-		const user = await databaseService.user.create({
-			data: {
-				email,
-				status: "ACTIVE",
-				userTag,
-				profile: {
-					create: {
-						name: "Test User",
-					},
-				},
-			},
-		});
+		const user = decodeRecord(
+			"User",
+			await createUserDatabaseFixture(
+				databaseService.db,
+				encodeCreate("User", { email, status: "ACTIVE", userTag }),
+				{ profile: encodePatch("UserProfile", { id: createEntityId(), name: "Test User" }) },
+			),
+		);
 
 		// 기본 카테고리 생성
-		const category = await databaseService.todoCategory.create({
-			data: {
-				userId: user.id,
-				name: "할 일",
-				color: "#FF6B43",
-				sortOrder: 0,
-			},
-		});
+		const category = decodeRecord(
+			"TodoCategory",
+			await databaseService.db.orm.public.TodoCategory.create(
+				encodeCreate("TodoCategory", {
+					userId: user.id,
+					name: "할 일",
+					color: "#FF6B43",
+					sortOrder: 0,
+				}),
+			),
+		);
 
 		return { id: user.id, defaultCategoryId: category.id };
 	}
@@ -157,15 +164,15 @@ describe("DailyCompletion 통합 테스트 (실제 DB)", () => {
 		const dateValue =
 			typeof startDate === "string" ? dayjs.utc(startDate).startOf("day").toDate() : startDate;
 
-		return databaseService.todo.create({
-			data: {
+		return databaseService.db.orm.public.Todo.create(
+			encodeCreate("Todo", {
 				userId,
 				categoryId,
 				title: `Test Todo ${Date.now()}`,
 				startDate: dateValue,
 				completed,
-			},
-		});
+			}),
+		).then((row) => decodeRecord("Todo", row));
 	}
 
 	/**

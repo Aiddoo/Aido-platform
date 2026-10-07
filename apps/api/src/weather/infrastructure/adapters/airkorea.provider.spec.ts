@@ -1,3 +1,4 @@
+import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import type { MockInstance } from "vitest";
 /**
@@ -12,8 +13,8 @@ import type { MockInstance } from "vitest";
  * pnpm --filter @aido/api test airkorea.provider.spec
  * ```
  */
-import { vi } from "vitest";
 import type { Mocked } from "vitest";
+import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
@@ -25,7 +26,10 @@ describe("AirkoreaProvider — 에어코리아 대기질 프로바이더", () =>
 	let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(AirkoreaProvider).compile();
+		const { unit, unitRef } = await TestBed.solitary(AirkoreaProvider)
+			.mock(getHttpClientToken("weather"))
+			.final(new HttpClient({ retry: false, throwOnHttpError: false }))
+			.compile();
 
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);

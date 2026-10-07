@@ -22,8 +22,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  */
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { HttpClient } from "@nestjs/http-client";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
 import { AdminEventNotifier } from "#api/admin-notification/index";
@@ -62,7 +64,6 @@ import { OAuthStateRepository } from "#api/auth/infrastructure/persistence/oauth
 import { SecurityLogRepository } from "#api/auth/infrastructure/persistence/security-log.repository";
 import { SessionRepository } from "#api/auth/infrastructure/persistence/session.repository";
 import { UserRepository } from "#api/auth/infrastructure/persistence/user.repository";
-import type { AccountProvider } from "#api/generated/prisma/client";
 import { NotificationQueueService } from "#api/notification/queue";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -70,11 +71,19 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { AccountProvider } from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import {
+	createDatabaseTransactionFixture,
+	createTestDatabaseService,
+} from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { FakeOAuthTokenVerifierService } from "../mocks/fake-oauth-token-verifier.service.js";
@@ -98,12 +107,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 
 		// TestContainer 시작 및 Database 연결
 		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
+		databaseService = createTestDatabaseService(await testDb.start());
 
 		// Fake OAuth Token Verifier 생성
 		fakeTokenVerifier = new FakeOAuthTokenVerifierService();
 
 		// NestJS 테스트 모듈 생성
+		const transaction = createDatabaseTransactionFixture(databaseService.db);
 		module = await Test.createTestingModule({
 			imports: [
 				JwtModule.register({
@@ -125,9 +135,33 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 						const logger = new Logger("OAuthIdentityProvider");
 						return new Map<AccountProvider, OAuthIdentityProvider>([
 							["APPLE", new AppleOAuthProvider(verifier)],
-							["GOOGLE", new GoogleOAuthProvider(() => config.googleOAuth, verifier, logger)],
-							["KAKAO", new KakaoOAuthProvider(() => config.kakaoOAuth, verifier, logger)],
-							["NAVER", new NaverOAuthProvider(() => config.naverOAuth, verifier, logger)],
+							[
+								"GOOGLE",
+								new GoogleOAuthProvider(
+									() => config.googleOAuth,
+									verifier,
+									logger,
+									new HttpClient({ retry: false, throwOnHttpError: false }),
+								),
+							],
+							[
+								"KAKAO",
+								new KakaoOAuthProvider(
+									() => config.kakaoOAuth,
+									verifier,
+									logger,
+									new HttpClient({ retry: false, throwOnHttpError: false }),
+								),
+							],
+							[
+								"NAVER",
+								new NaverOAuthProvider(
+									() => config.naverOAuth,
+									verifier,
+									logger,
+									new HttpClient({ retry: false, throwOnHttpError: false }),
+								),
+							],
 						]);
 					},
 				},
@@ -171,14 +205,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 					useValue: databaseService,
 				},
 				{
-					// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
 					provide: TransactionHost,
-					useValue: { tx: databaseService },
+					useValue: transaction.txHost,
 				},
 				{
-					// uow.run passthrough — 리포지토리가 TransactionHost.tx(실제 DB)로 참여
 					provide: UNIT_OF_WORK,
-					useValue: { run: (fn: () => Promise<unknown>) => fn() },
+					useValue: transaction.uow,
 				},
 				{
 					provide: CacheService,
@@ -340,10 +372,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result.profileImage).toBe("https://example.com/avatar.jpg");
 
 			// DB에 사용자가 생성되었는지 확인
-			const user = await databaseService.user.findUnique({
-				where: { id: result.userId },
-				include: { accounts: true, profile: true },
-			});
+			const user = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId))
+					.include("accounts")
+					.include("profile")
+					.first(),
+			);
 			expect(user).not.toBeNull();
 			expect(user?.email).toBe("google-user@example.com");
 			expect(user?.status).toBe("ACTIVE"); // emailVerified가 true이므로 ACTIVE
@@ -373,9 +408,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(secondLogin.tokens.accessToken).toBeDefined();
 
 			// 사용자가 중복 생성되지 않았는지 확인
-			const users = await databaseService.user.findMany({
-				where: { email: "returning@example.com" },
-			});
+			const users = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) =>
+					row.email.eq(varchar("returning@example.com", 255)),
+				).all(),
+			);
 			expect(users).toHaveLength(1);
 		});
 
@@ -392,9 +430,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			).rejects.toThrow();
 
 			// LoginAttempt 기록 확인
-			const attempts = await databaseService.loginAttempt.findMany({
-				where: { email: "google_unknown@social.aido.kr" },
-			});
+			const attempts = decodeRecord(
+				"LoginAttempt",
+				await databaseService.db.orm.public.LoginAttempt.where((row) =>
+					row.email.eq(varchar("google_unknown@social.aido.kr", 255)),
+				).all(),
+			);
 			expect(attempts).toHaveLength(1);
 			expect(attempts[0]?.success).toBe(false);
 			expect(attempts[0]?.ipAddress).toBe("192.168.1.1");
@@ -429,10 +470,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result.name).toBe("Naver User");
 
 			// DB에 사용자가 생성되었는지 확인
-			const user = await databaseService.user.findUnique({
-				where: { id: result.userId },
-				include: { accounts: true },
-			});
+			const user = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId))
+					.include("accounts")
+					.first(),
+			);
 			expect(user).not.toBeNull();
 			expect(user?.accounts[0]?.provider).toBe("NAVER");
 			expect(user?.accounts[0]?.providerAccountId).toBe("naver-user-456");
@@ -469,9 +512,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			).rejects.toThrow();
 
 			// LoginAttempt 확인
-			const attempts = await databaseService.loginAttempt.findMany({
-				where: { email: "naver_unknown@social.aido.kr" },
-			});
+			const attempts = decodeRecord(
+				"LoginAttempt",
+				await databaseService.db.orm.public.LoginAttempt.where((row) =>
+					row.email.eq(varchar("naver_unknown@social.aido.kr", 255)),
+				).all(),
+			);
 			expect(attempts).toHaveLength(1);
 			expect(attempts[0]?.success).toBe(false);
 		});
@@ -498,9 +544,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result.name).toBe("Kakao User");
 
 			// 소셜 로그인 유저는 항상 ACTIVE로 생성됨
-			const user = await databaseService.user.findUnique({
-				where: { id: result.userId },
-			});
+			const user = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId)).first(),
+			);
 			expect(user?.status).toBe("ACTIVE");
 		});
 
@@ -517,9 +564,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const result = await oauthService.handleKakaoMobileLogin(testKakaoToken);
 
 			// Then: 플레이스홀더 이메일로 생성
-			const user = await databaseService.user.findUnique({
-				where: { id: result.userId },
-			});
+			const user = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId)).first(),
+			);
 			expect(user?.email).toMatch(/^kakao_kakao-no-email@social\.aido\.kr$/);
 		});
 	});
@@ -546,10 +594,13 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result).toBeDefined();
 			expect(result.userId).toBeDefined();
 
-			const user = await databaseService.user.findUnique({
-				where: { id: result.userId },
-				include: { accounts: true, profile: true },
-			});
+			const user = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId))
+					.include("accounts")
+					.include("profile")
+					.first(),
+			);
 			expect(user?.accounts[0]?.provider).toBe("APPLE");
 			expect(user?.profile?.name).toBe("Apple User");
 		});
@@ -580,9 +631,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result.message).toBe("계정이 연결되었습니다.");
 
 			// DB 확인
-			const accounts = await databaseService.account.findMany({
-				where: { userId: testUserId },
-			});
+			const accounts = decodeRecord(
+				"Account",
+				await databaseService.db.orm.public.Account.where((row) => row.userId.eq(testUserId)).all(),
+			);
 			expect(accounts).toHaveLength(2);
 			expect(accounts.map((a) => a.provider)).toContain("GOOGLE");
 			expect(accounts.map((a) => a.provider)).toContain("NAVER");
@@ -609,9 +661,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// Then
 			expect(result.message).toBe("계정 연결이 해제되었습니다.");
 
-			const accounts = await databaseService.account.findMany({
-				where: { userId: testUserId },
-			});
+			const accounts = decodeRecord(
+				"Account",
+				await databaseService.db.orm.public.Account.where((row) => row.userId.eq(testUserId)).all(),
+			);
 			expect(accounts).toHaveLength(1);
 			expect(accounts[0]?.provider).toBe("GOOGLE");
 		});
@@ -706,12 +759,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			});
 
 			// Then: SecurityLog 확인
-			const logs = await databaseService.securityLog.findMany({
-				where: {
-					userId: testUserId,
-					event: "OAUTH_LINKED",
-				},
-			});
+			const logs = decodeRecord(
+				"SecurityLog",
+				await databaseService.db.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(testUserId), row.event.eq("OAUTH_LINKED")),
+				).all(),
+			);
 			expect(logs).toHaveLength(1);
 			expect(logs[0]?.ipAddress).toBe("10.0.0.1");
 			expect(logs[0]?.userAgent).toBe("SecurityLogTest/1.0");
@@ -732,12 +785,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			});
 
 			// Then: SecurityLog 확인
-			const logs = await databaseService.securityLog.findMany({
-				where: {
-					userId: testUserId,
-					event: "OAUTH_UNLINKED",
-				},
-			});
+			const logs = decodeRecord(
+				"SecurityLog",
+				await databaseService.db.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(testUserId), row.event.eq("OAUTH_UNLINKED")),
+				).all(),
+			);
 			expect(logs).toHaveLength(1);
 			expect(logs[0]?.ipAddress).toBe("192.168.1.100");
 			expect(logs[0]?.userAgent).toBe("UnlinkTest/2.0");
@@ -919,9 +972,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			});
 
 			// Then: 보안 로그 확인
-			const logs = await databaseService.securityLog.findMany({
-				where: { userId: result.userId },
-			});
+			const logs = decodeRecord(
+				"SecurityLog",
+				await databaseService.db.orm.public.SecurityLog.where((row) =>
+					row.userId.eq(result.userId),
+				).all(),
+			);
 
 			// 회원가입 로그 + 로그인 성공 로그
 			expect(logs.length).toBeGreaterThanOrEqual(1);
@@ -944,9 +1000,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const result = await oauthService.handleGoogleMobileLogin(token);
 
 			// Then: 세션 확인
-			const session = await databaseService.session.findUnique({
-				where: { id: result.sessionId },
-			});
+			const session = decodeRecord(
+				"Session",
+				await databaseService.db.orm.public.Session.where((row) =>
+					row.id.eq(result.sessionId),
+				).first(),
+			);
 
 			expect(session).not.toBeNull();
 			expect(session?.userId).toBe(result.userId);
@@ -990,9 +1049,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// Then
 			expect(result.message).toBe("계정이 연결되었습니다.");
 
-			const accounts = await databaseService.account.findMany({
-				where: { userId: testUserId },
-			});
+			const accounts = decodeRecord(
+				"Account",
+				await databaseService.db.orm.public.Account.where((row) => row.userId.eq(testUserId)).all(),
+			);
 			expect(accounts).toHaveLength(2);
 			expect(accounts.map((a) => a.provider)).toContain("KAKAO");
 		});
@@ -1051,19 +1111,22 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				expect(googleResult.userId).toBe(existingUserId);
 
 				// 계정이 2개 연결되어 있어야 함
-				const accounts = await databaseService.account.findMany({
-					where: { userId: existingUserId },
-				});
+				const accounts = decodeRecord(
+					"Account",
+					await databaseService.db.orm.public.Account.where((row) =>
+						row.userId.eq(existingUserId),
+					).all(),
+				);
 				expect(accounts).toHaveLength(2);
 				expect(accounts.map((a) => a.provider).sort()).toEqual(["APPLE", "GOOGLE"]);
 
 				// SecurityLog에 OAUTH_AUTO_LINKED 기록 확인
-				const logs = await databaseService.securityLog.findMany({
-					where: {
-						userId: existingUserId,
-						event: "OAUTH_AUTO_LINKED",
-					},
-				});
+				const logs = decodeRecord(
+					"SecurityLog",
+					await databaseService.db.orm.public.SecurityLog.where((row) =>
+						and(row.userId.eq(existingUserId), row.event.eq("OAUTH_AUTO_LINKED")),
+					).all(),
+				);
 				expect(logs).toHaveLength(1);
 				expect(logs[0]?.metadata).toMatchObject({
 					provider: "GOOGLE",
@@ -1104,9 +1167,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				expect(appleResult.sessionId).toBeDefined();
 
 				// 세션도 정상 생성됨
-				const session = await databaseService.session.findUnique({
-					where: { id: appleResult.sessionId },
-				});
+				const session = decodeRecord(
+					"Session",
+					await databaseService.db.orm.public.Session.where((row) =>
+						row.id.eq(appleResult.sessionId),
+					).first(),
+				);
 				expect(session).not.toBeNull();
 				expect(session?.userId).toBe(firstResult.userId);
 			});
@@ -1144,12 +1210,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				expect(appleResult.userId).toBe(existingUserId);
 
 				// SecurityLog 확인
-				const logs = await databaseService.securityLog.findMany({
-					where: {
-						userId: existingUserId,
-						event: "OAUTH_AUTO_LINKED",
-					},
-				});
+				const logs = decodeRecord(
+					"SecurityLog",
+					await databaseService.db.orm.public.SecurityLog.where((row) =>
+						and(row.userId.eq(existingUserId), row.event.eq("OAUTH_AUTO_LINKED")),
+					).all(),
+				);
 				expect(logs).toHaveLength(1);
 				expect(logs[0]?.metadata).toMatchObject({
 					provider: "APPLE",
@@ -1190,12 +1256,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
-				const logs = await databaseService.securityLog.findMany({
-					where: {
-						userId: existingUserId,
-						event: "OAUTH_LINK_REQUIRED",
-					},
-				});
+				const logs = decodeRecord(
+					"SecurityLog",
+					await databaseService.db.orm.public.SecurityLog.where((row) =>
+						and(row.userId.eq(existingUserId), row.event.eq("OAUTH_LINK_REQUIRED")),
+					).all(),
+				);
 				expect(logs).toHaveLength(1);
 				expect(logs[0]?.metadata).toMatchObject({
 					provider: "KAKAO",
@@ -1203,9 +1269,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				});
 
 				// 계정은 연결되지 않아야 함
-				const accounts = await databaseService.account.findMany({
-					where: { userId: existingUserId },
-				});
+				const accounts = decodeRecord(
+					"Account",
+					await databaseService.db.orm.public.Account.where((row) =>
+						row.userId.eq(existingUserId),
+					).all(),
+				);
 				expect(accounts).toHaveLength(1);
 				expect(accounts[0]?.provider).toBe("GOOGLE");
 			});
@@ -1243,12 +1312,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				).rejects.toThrow(ApplicationException);
 
 				// SecurityLog에 OAUTH_LINK_REQUIRED 기록 확인
-				const logs = await databaseService.securityLog.findMany({
-					where: {
-						userId: existingUserId,
-						event: "OAUTH_LINK_REQUIRED",
-					},
-				});
+				const logs = decodeRecord(
+					"SecurityLog",
+					await databaseService.db.orm.public.SecurityLog.where((row) =>
+						and(row.userId.eq(existingUserId), row.event.eq("OAUTH_LINK_REQUIRED")),
+					).all(),
+				);
 				expect(logs).toHaveLength(1);
 				expect(logs[0]?.metadata).toMatchObject({
 					provider: "NAVER",
@@ -1271,10 +1340,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				const result = await oauthService.handleGoogleMobileLogin(googleToken);
 
 				// 사용자 상태를 LOCKED로 변경
-				await databaseService.user.update({
-					where: { id: result.userId },
-					data: { status: "LOCKED" },
-				});
+				decodeRecord(
+					"User",
+					requireRecord(
+						await databaseService.db.orm.public.User.where((row) =>
+							row.id.eq(result.userId),
+						).update(encodePatch("User", { status: "LOCKED" })),
+					),
+				);
 
 				// When: 같은 이메일로 Apple 로그인 시도
 				const appleToken = "apple-to-locked-user-token";
@@ -1304,10 +1377,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				const result = await oauthService.handleAppleMobileLogin(appleToken);
 
 				// 사용자 상태를 SUSPENDED로 변경
-				await databaseService.user.update({
-					where: { id: result.userId },
-					data: { status: "SUSPENDED" },
-				});
+				decodeRecord(
+					"User",
+					requireRecord(
+						await databaseService.db.orm.public.User.where((row) =>
+							row.id.eq(result.userId),
+						).update(encodePatch("User", { status: "SUSPENDED" })),
+					),
+				);
 
 				// When: 같은 이메일로 Google 로그인 시도
 				const googleToken = "google-to-suspended-user-token";
@@ -1341,10 +1418,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const result = await oauthService.handleGoogleMobileLogin(token);
 
 			// 사용자 상태를 LOCKED로 변경
-			await databaseService.user.update({
-				where: { id: result.userId },
-				data: { status: "LOCKED" },
-			});
+			decodeRecord(
+				"User",
+				requireRecord(
+					await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId)).update(
+						encodePatch("User", { status: "LOCKED" }),
+					),
+				),
+			);
 
 			// When & Then: 다시 로그인 시도 시 실패 (도메인 상태 정책)
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(DomainException);
@@ -1363,10 +1444,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const result = await oauthService.handleGoogleMobileLogin(token);
 
 			// 사용자 상태를 SUSPENDED로 변경
-			await databaseService.user.update({
-				where: { id: result.userId },
-				data: { status: "SUSPENDED" },
-			});
+			decodeRecord(
+				"User",
+				requireRecord(
+					await databaseService.db.orm.public.User.where((row) => row.id.eq(result.userId)).update(
+						encodePatch("User", { status: "SUSPENDED" }),
+					),
+				),
+			);
 
 			// When & Then (도메인 상태 정책)
 			await expect(oauthService.handleGoogleMobileLogin(token)).rejects.toThrow(DomainException);
@@ -1387,9 +1472,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(firstResult.userId).toBeDefined();
 
 			// 상태 확인
-			const user = await databaseService.user.findUnique({
-				where: { id: firstResult.userId },
-			});
+			const user = decodeRecord(
+				"User",
+				await databaseService.db.orm.public.User.where((row) =>
+					row.id.eq(firstResult.userId),
+				).first(),
+			);
 			expect(user?.status).toBe("ACTIVE");
 
 			// 두 번째 로그인도 허용되어야 함
@@ -1459,10 +1547,14 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 				const result = await login(oauthService, token);
 
 				// Then: DB에서 카테고리 2개 확인
-				const categories = await databaseService.todoCategory.findMany({
-					where: { userId: result.userId },
-					orderBy: { sortOrder: "asc" },
-				});
+				const categories = decodeRecord(
+					"TodoCategory",
+					await databaseService.db.orm.public.TodoCategory.where((row) =>
+						row.userId.eq(result.userId),
+					)
+						.orderBy((row) => row.sortOrder.asc())
+						.all(),
+				);
 
 				expect(categories).toHaveLength(2);
 				expect(categories[0]).toMatchObject({
@@ -1491,9 +1583,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const firstResult = await oauthService.handleGoogleMobileLogin(token);
 
 			// 첫 로그인 후 카테고리 개수 확인
-			const categoriesAfterFirst = await databaseService.todoCategory.findMany({
-				where: { userId: firstResult.userId },
-			});
+			const categoriesAfterFirst = decodeRecord(
+				"TodoCategory",
+				await databaseService.db.orm.public.TodoCategory.where((row) =>
+					row.userId.eq(firstResult.userId),
+				).all(),
+			);
 			expect(categoriesAfterFirst).toHaveLength(2);
 
 			// When: 같은 사용자로 재로그인
@@ -1502,9 +1597,12 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// Then: 같은 사용자이고 카테고리 개수가 여전히 2개
 			expect(secondResult.userId).toBe(firstResult.userId);
 
-			const categoriesAfterSecond = await databaseService.todoCategory.findMany({
-				where: { userId: secondResult.userId },
-			});
+			const categoriesAfterSecond = decodeRecord(
+				"TodoCategory",
+				await databaseService.db.orm.public.TodoCategory.where((row) =>
+					row.userId.eq(secondResult.userId),
+				).all(),
+			);
 			expect(categoriesAfterSecond).toHaveLength(2);
 		});
 	});
@@ -1537,19 +1635,24 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			expect(result.userId).toBe(userId);
 			expect(result.sessionId).toBeDefined();
 
-			const accounts = await databaseService.account.findMany({
-				where: { userId },
-			});
+			const accounts = decodeRecord(
+				"Account",
+				await databaseService.db.orm.public.Account.where((row) => row.userId.eq(userId)).all(),
+			);
 			expect(accounts.map((a) => a.provider).sort()).toEqual(["APPLE", "GOOGLE"]);
 
-			const sessions = await databaseService.session.findMany({
-				where: { userId },
-			});
+			const sessions = decodeRecord(
+				"Session",
+				await databaseService.db.orm.public.Session.where((row) => row.userId.eq(userId)).all(),
+			);
 			expect(sessions.length).toBeGreaterThanOrEqual(1);
 
-			const autoLinkedLogs = await databaseService.securityLog.findMany({
-				where: { userId, event: "OAUTH_AUTO_LINKED" },
-			});
+			const autoLinkedLogs = decodeRecord(
+				"SecurityLog",
+				await databaseService.db.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(userId), row.event.eq("OAUTH_AUTO_LINKED")),
+				).all(),
+			);
 			expect(autoLinkedLogs).toHaveLength(1);
 			expect(autoLinkedLogs[0]?.metadata).toMatchObject({
 				provider: "APPLE",
@@ -1568,9 +1671,11 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			const seeded = await oauthService.handleAppleMobileLogin(seedToken);
 			const userId = seeded.userId;
 
-			const sessionsBefore = await databaseService.session.count({
-				where: { userId },
-			});
+			const sessionsBefore = (
+				await databaseService.db.orm.public.Session.where((row) => row.userId.eq(userId)).aggregate(
+					(aggregate) => ({ count: aggregate.count() }),
+				)
+			).count;
 
 			// When: 같은 사용자에 "다른 providerAccountId"의 APPLE 로그인 시도.
 			//  자동 연동에서 createOAuthAccount가 @@unique([userId, provider]) 위반으로 실패한다.
@@ -1584,14 +1689,22 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
 			// Then: 에러가 발생하고 부분 커밋이 남지 않는다
 			await expect(oauthService.handleAppleMobileLogin(conflictToken)).rejects.toThrow();
 
-			const conflictAccount = await databaseService.account.findFirst({
-				where: { userId, providerAccountId: "atomic-conflict-apple-id" },
-			});
+			const conflictAccount = decodeRecord(
+				"Account",
+				await databaseService.db.orm.public.Account.where((row) =>
+					and(
+						row.userId.eq(userId),
+						row.providerAccountId.eq(varchar("atomic-conflict-apple-id", 255)),
+					),
+				).first(),
+			);
 			expect(conflictAccount).toBeNull();
 
-			const sessionsAfter = await databaseService.session.count({
-				where: { userId },
-			});
+			const sessionsAfter = (
+				await databaseService.db.orm.public.Session.where((row) => row.userId.eq(userId)).aggregate(
+					(aggregate) => ({ count: aggregate.count() }),
+				)
+			).count;
 			expect(sessionsAfter).toBe(sessionsBefore);
 		});
 	});

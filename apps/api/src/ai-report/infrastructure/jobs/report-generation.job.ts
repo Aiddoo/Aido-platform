@@ -1,12 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import dayjs from "dayjs";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toIsoMonthId, toIsoWeekId } from "#api/shared/domain/date/utils/format";
 import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord } from "#api/shared/infrastructure/database/database-records";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 import { forEachBatch } from "#api/shared/infrastructure/database/utils/batch-cursor.util";
 
 import { ReportGenerationProcessor } from "../processors/report-generation.processor.js";
@@ -36,7 +37,7 @@ export class ReportGenerationJob implements OnModuleInit {
 	readonly #logger = new Logger(ReportGenerationJob.name);
 
 	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
+		private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
 		@Inject(JOB_RUNTIME) private readonly runtime: JobRuntimePort,
 		private readonly processor: ReportGenerationProcessor,
 	) {}
@@ -95,20 +96,18 @@ export class ReportGenerationJob implements OnModuleInit {
 		await forEachBatch({
 			batchSize: ENQUEUE_BATCH_SIZE,
 			fetchPage: (cursor, take) =>
-				this.database.user.findMany({
-					where: {
-						...(cursor && { id: { gt: cursor } }),
-						OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-					},
-					select: {
-						id: true,
-						preference: {
-							select: { timezone: true, locale: true },
-						},
-					},
-					orderBy: { id: "asc" },
-					take,
-				}),
+				this.database.orm.public.User.where((row) =>
+					and(
+						cursor ? row.id.gt(cursor) : all(),
+						or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
+					),
+				)
+					.select("id")
+					.include("preference", (related) => related.select("timezone", "locale"))
+					.orderBy((row) => row.id.asc())
+					.limit(take)
+					.all()
+					.then((row) => decodeRecord("User", row)),
 			onBatch: async (batch) => {
 				await Promise.all(
 					batch.map((user) =>

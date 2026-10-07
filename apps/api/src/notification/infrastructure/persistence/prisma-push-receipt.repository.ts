@@ -1,10 +1,14 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
+import sql, { join } from "sql-template-tag";
 
-import { Prisma } from "#api/generated/prisma/client";
 import { now } from "#api/shared/domain/date/utils/core";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord } from "#api/shared/infrastructure/database/database-records";
+import { sqlStatement } from "#api/shared/infrastructure/database/database-sql";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type { PushReceiptResult } from "../../application/ports/push-provider.port.js";
 import type {
@@ -14,23 +18,28 @@ import type {
 
 @Injectable()
 export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
 	}
 
 	async findPendingPushReceipts(limit: number): Promise<PendingPushReceipt[]> {
-		const rows = await this.client.pushDeliveryAttempt.findMany({
-			where: { status: "TICKET_ACCEPTED", expoTicketId: { not: null } },
-			take: limit,
-			orderBy: { createdAt: "asc" },
-			select: { expoTicketId: true, pushToken: { select: { token: true } } },
-		});
+		const rows = decodeRecord(
+			"PushDeliveryAttempt",
+			await this.client.orm.public.PushDeliveryAttempt.where((row) =>
+				and(row.status.eq("TICKET_ACCEPTED"), row.expoTicketId.isNotNull()),
+			)
+				.select("expoTicketId")
+				.include("pushToken", (related) => related.select("token"))
+				.orderBy((row) => row.createdAt.asc())
+				.limit(limit)
+				.all(),
+		);
 		return rows.flatMap((row) =>
-			row.expoTicketId ? [{ ticketId: row.expoTicketId, token: row.pushToken.token }] : [],
+			row.expoTicketId
+				? [{ ticketId: row.expoTicketId, token: requireRecord(row.pushToken).token }]
+				: [],
 		);
 	}
 
@@ -40,14 +49,18 @@ export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
 		const receiptCheckedAt = now();
 		const values = results.map(
 			(result) =>
-				Prisma.sql`(
+				sql`(
 					${result.ticketId}::VARCHAR(100),
 					${result.delivered ? "DELIVERED" : "FAILED"}::"PushDeliveryStatus",
 					${result.errorCode ?? null}::VARCHAR(100),
 					${result.error?.slice(0, 500) ?? null}::VARCHAR(500)
 				)`,
 		);
-		await this.client.$executeRaw(Prisma.sql`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "PushDeliveryAttempt" AS attempt
 			SET
 				"status" = receipt."status",
@@ -56,19 +69,28 @@ export class PrismaPushReceiptRepository implements PushReceiptRepositoryPort {
 				"receiptCheckedAt" = ${receiptCheckedAt},
 				"updatedAt" = ${receiptCheckedAt}
 			FROM (
-				VALUES ${Prisma.join(values)}
+				VALUES ${join(values)}
 			) AS receipt("ticketId", "status", "errorCode", "errorMessage")
 			WHERE attempt."expoTicketId" = receipt."ticketId"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 
 		const invalidTicketIds = results.flatMap((result) =>
 			result.errorCode === "DeviceNotRegistered" ? [result.ticketId] : [],
 		);
 		if (invalidTicketIds.length === 0) return [];
-		const attempts = await this.client.pushDeliveryAttempt.findMany({
-			where: { expoTicketId: { in: invalidTicketIds } },
-			select: { pushToken: { select: { token: true } } },
-		});
-		return attempts.map((attempt) => attempt.pushToken.token);
+		const attempts = decodeRecord(
+			"PushDeliveryAttempt",
+			await this.client.orm.public.PushDeliveryAttempt.where((row) =>
+				row.expoTicketId.in(invalidTicketIds.map((value) => varchar(value, 100))),
+			)
+				.include("pushToken", (related) => related.select("token"))
+				.all(),
+		);
+		return attempts.map((attempt) => requireRecord(attempt.pushToken).token);
 	}
 }

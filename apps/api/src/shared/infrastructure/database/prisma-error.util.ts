@@ -1,52 +1,68 @@
-import { Prisma } from "#api/generated/prisma/client";
+import contractJson from "../../../generated/prisma8/contract.json" with { type: "json" };
 
-/**
- * Prisma 알려진 요청 오류 판별 경계 헬퍼.
- *
- * 애플리케이션 레이어가 `@/generated`(Prisma) 결합 없이 유니크 위반·레코드 부재
- * 같은 벤더 오류를 분기할 수 있도록, Prisma 오류 코드 검사를 이 한 곳으로 격리한다.
- */
-
-/** 유니크 제약 위반(P2002) 여부 */
-export function isUniqueConstraintViolation(error: unknown): boolean {
-	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+/** Prisma 8 drivers normalize PostgreSQL failures with kind/sqlState. */
+export function databaseSqlState(error: unknown): string | undefined {
+	if (!(error instanceof Error)) return undefined;
+	if (
+		"kind" in error &&
+		error.kind === "sql_query" &&
+		"sqlState" in error &&
+		typeof error.sqlState === "string"
+	) {
+		return error.sqlState;
+	}
+	return undefined;
 }
 
-/** 대상 레코드 부재(P2025) 여부 */
+export function databaseConstraint(error: unknown): string | undefined {
+	if (databaseSqlState(error) === undefined || !(error instanceof Error)) return undefined;
+	return "constraint" in error && typeof error.constraint === "string"
+		? error.constraint
+		: undefined;
+}
+
+/** Prisma 8 singleton mutations return null; repository contracts still reject missing records. */
+export class DatabaseRecordNotFoundError extends Error {
+	constructor() {
+		super("Database record not found");
+		this.name = "DatabaseRecordNotFoundError";
+	}
+}
+
+export function requireRecord<Row>(row: Row | null | undefined): Row {
+	if (row === null || row === undefined) throw new DatabaseRecordNotFoundError();
+	return row;
+}
+
+/** 인프라 adapter가 native 오류를 공개 port의 충돌·부재 의미로 변환한다. */
+
+/** 유니크 제약 위반(SQLSTATE 23505) 여부 */
+export function isUniqueConstraintViolation(error: unknown): boolean {
+	return databaseSqlState(error) === "23505";
+}
+
+/** 대상 레코드 부재 여부 */
 export function isRecordNotFoundError(error: unknown): boolean {
-	return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
+	return error instanceof DatabaseRecordNotFoundError;
 }
 
 /** Serializable 트랜잭션 write conflict/deadlock 재시도 가능 여부 */
 export function isTransactionWriteConflict(error: unknown): boolean {
-	if (error instanceof Prisma.PrismaClientKnownRequestError) {
-		return error.code === "P2034";
-	}
-
-	if (!(error instanceof Error) || error.name !== "DriverAdapterError") {
-		return false;
-	}
-
-	const cause = error.cause;
-	return (
-		typeof cause === "object" &&
-		cause !== null &&
-		"kind" in cause &&
-		cause.kind === "TransactionWriteConflict"
-	);
+	const sqlState = databaseSqlState(error);
+	return sqlState === "40001" || sqlState === "40P01";
 }
 
-/**
- * 유니크 위반(P2002)의 대상 필드 목록.
- *
- * `error.meta.target`은 Prisma가 `string[]`로 채우지만 타입은 넓으므로,
- * 이 벤더 경계에서만 배열 여부를 좁혀 반환한다(어댑터/애플리케이션은 no-cast 유지).
- * 대상 정보가 없으면 `undefined`.
- */
+/** PostgreSQL constraint 이름을 계약의 필드 목록으로 변환한다. */
 export function uniqueConstraintTargets(error: unknown): string[] | undefined {
-	if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
+	const name = databaseConstraint(error);
+	if (databaseSqlState(error) === "23505" && name !== undefined) {
+		for (const table of Object.values(contractJson.storage.namespaces.public.entries.table)) {
+			if (!("uniques" in table)) continue;
+			for (const constraint of table.uniques) {
+				if (constraint.name === name) return constraint.columns.map((field) => field);
+			}
+		}
 		return undefined;
 	}
-	const target = error.meta?.target;
-	return Array.isArray(target) ? (target as string[]) : undefined;
+	return undefined;
 }

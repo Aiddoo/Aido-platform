@@ -1,4 +1,5 @@
 import { Logger } from "@nestjs/common";
+import type { HttpClient } from "@nestjs/http-client";
 
 import type {
 	OAuthIdentityProvider,
@@ -16,12 +17,16 @@ import { NaverOAuthProvider } from "./naver.oauth-provider.js";
 export function createOAuthProviderRegistry(
 	configService: TypedConfigService,
 	tokenVerifier: OAuthTokenVerifier,
+	http: HttpClient,
 ): OAuthIdentityProviderRegistry {
 	const logger = new Logger("OAuthIdentityProvider");
 	return new Map<AccountProvider, OAuthIdentityProvider>([
 		["APPLE", new AppleOAuthProvider(tokenVerifier)],
-		["GOOGLE", new GoogleOAuthProvider(() => configService.googleOAuth, tokenVerifier, logger)],
-		["KAKAO", new KakaoOAuthProvider(() => configService.kakaoOAuth, tokenVerifier, logger)],
-		["NAVER", new NaverOAuthProvider(() => configService.naverOAuth, tokenVerifier, logger)],
+		[
+			"GOOGLE",
+			new GoogleOAuthProvider(() => configService.googleOAuth, tokenVerifier, logger, http),
+		],
+		["KAKAO", new KakaoOAuthProvider(() => configService.kakaoOAuth, tokenVerifier, logger, http)],
+		["NAVER", new NaverOAuthProvider(() => configService.naverOAuth, tokenVerifier, logger, http)],
 	]);
 }

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { readJson } from "#api/shared/infrastructure/http/read-json";
@@ -34,7 +35,10 @@ interface AirQualityResponse {
 export class AirkoreaProvider implements AirQualityProvider {
 	readonly #logger = new Logger(AirkoreaProvider.name);
 
-	constructor(private readonly configService: TypedConfigService) {}
+	constructor(
+		private readonly configService: TypedConfigService,
+		@InjectHttpClient("weather") private readonly http: HttpClient,
+	) {}
 
 	async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
 		try {
@@ -68,7 +72,10 @@ export class AirkoreaProvider implements AirQualityProvider {
 		url.searchParams.set("tmY", String(tmY));
 		url.searchParams.set("ver", "1.1");
 
-		const response = await fetch(url.toString(), {
+		const { data: response } = await this.http.request(url.toString(), {
+			responseType: "response",
+			retry: false,
+			throwOnHttpError: false,
 			signal: AbortSignal.timeout(10_000),
 		});
 
@@ -109,7 +116,10 @@ export class AirkoreaProvider implements AirQualityProvider {
 		url.searchParams.set("dataTerm", "DAILY");
 		url.searchParams.set("ver", "1.5");
 
-		const response = await fetch(url.toString(), {
+		const { data: response } = await this.http.request(url.toString(), {
+			responseType: "response",
+			retry: false,
+			throwOnHttpError: false,
 			signal: AbortSignal.timeout(10_000),
 		});
 

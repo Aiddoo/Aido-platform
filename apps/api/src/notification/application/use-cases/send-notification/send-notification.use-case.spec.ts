@@ -5,7 +5,7 @@ import { vi } from "vitest";
  *
  * - 알림과 durable push dispatch를 하나의 UOW에서 준비
  * - push 발행과 캐시 무효화는 커밋 후에만 시작
- * - unique 위반(P2002)은 graceful skip, 그 외 오류는 재전파
+ * - unique 위반(SQLSTATE 23505)은 graceful skip, 그 외 오류는 재전파
  */
 import type { Mocked } from "vitest";
 

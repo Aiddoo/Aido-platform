@@ -1,9 +1,16 @@
+import type { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
-import type { AccountProvider, LoginAttempt } from "#api/generated/prisma/client";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import { DatabaseService } from "#api/shared/infrastructure/database/index";
-import type { TransactionClient } from "#api/shared/infrastructure/database/prisma.types";
+import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type {
+	AccountProvider,
+	LoginAttempt,
+} from "#api/shared/infrastructure/database/database.types";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 @Injectable()
 export class LoginAttemptRepository {
@@ -33,59 +40,61 @@ export class LoginAttemptRepository {
 			success: boolean;
 			failureReason?: string;
 		},
-		tx?: TransactionClient,
+		tx?: TransactionHost<Prisma8TransactionalAdapter>["tx"],
 	): Promise<LoginAttempt> {
-		const client = tx ?? this.database;
-		return client.loginAttempt.create({
-			data: {
+		const client = tx ?? this.database.db;
+		return client.orm.public.LoginAttempt.create(
+			encodeCreate("LoginAttempt", {
 				email: data.email,
 				provider: data.provider,
 				ipAddress: data.ipAddress,
 				userAgent: data.userAgent,
 				success: data.success,
 				failureReason: data.failureReason,
-			},
-		});
+			}),
+		).then((row) => decodeRecord("LoginAttempt", row));
 	}
 
 	async countRecentFailuresByEmail(email: string, since: Date): Promise<number> {
-		return this.database.loginAttempt.count({
-			where: {
-				email,
-				success: false,
-				createdAt: { gte: since },
-			},
-		});
+		return this.database.db.orm.public.LoginAttempt.where((row) =>
+			and(
+				row.email.eq(varchar(email, 255)),
+				row.success.eq(false),
+				row.createdAt.gte(databaseTimestamp(since)),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countRecentFailuresByIp(ipAddress: string, since: Date): Promise<number> {
-		return this.database.loginAttempt.count({
-			where: {
-				ipAddress,
-				success: false,
-				createdAt: { gte: since },
-			},
-		});
+		return this.database.db.orm.public.LoginAttempt.where((row) =>
+			and(
+				row.ipAddress.eq(varchar(ipAddress, 45)),
+				row.success.eq(false),
+				row.createdAt.gte(databaseTimestamp(since)),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async findLastSuccessByEmail(email: string): Promise<LoginAttempt | null> {
-		return this.database.loginAttempt.findFirst({
-			where: {
-				email,
-				success: true,
-			},
-			orderBy: { createdAt: "desc" },
-		});
+		return this.database.db.orm.public.LoginAttempt.where((row) =>
+			and(row.email.eq(varchar(email, 255)), row.success.eq(true)),
+		)
+			.orderBy((row) => row.createdAt.desc())
+			.first()
+			.then((row) => decodeRecord("LoginAttempt", row));
 	}
 
 	async findLastFailureByEmail(email: string): Promise<LoginAttempt | null> {
-		return this.database.loginAttempt.findFirst({
-			where: {
-				email,
-				success: false,
-			},
-			orderBy: { createdAt: "desc" },
-		});
+		return this.database.db.orm.public.LoginAttempt.where((row) =>
+			and(row.email.eq(varchar(email, 255)), row.success.eq(false)),
+		)
+			.orderBy((row) => row.createdAt.desc())
+			.first()
+			.then((row) => decodeRecord("LoginAttempt", row));
 	}
 
 	// 감사 로그 목적으로 삭제하지 않음
@@ -98,11 +107,11 @@ export class LoginAttemptRepository {
 	async deleteOld(retentionDays = 30): Promise<number> {
 		const cutoff = subtractDays(retentionDays);
 
-		const result = await this.database.loginAttempt.deleteMany({
-			where: {
-				createdAt: { lt: cutoff },
-			},
-		});
+		const result = {
+			count: await this.database.db.orm.public.LoginAttempt.where((row) =>
+				row.createdAt.lt(databaseTimestamp(cutoff)),
+			).deleteAndCount(),
+		};
 		return result.count;
 	}
 }

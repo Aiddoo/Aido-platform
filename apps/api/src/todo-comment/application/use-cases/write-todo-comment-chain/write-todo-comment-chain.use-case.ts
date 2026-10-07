@@ -205,7 +205,7 @@ export class WriteTodoCommentChainUseCase {
 		});
 	}
 
-	/** P2002가 난 트랜잭션은 폐기하고 새 UoW에서 승자의 행을 읽는다. */
+	/** unique 제약 위반으로 실패한 트랜잭션은 폐기하고 새 UoW에서 승자의 행을 읽는다. */
 	private replayAfterRace(command: TodoCommentChainCommand): Promise<WriteOutcome> {
 		return this.unitOfWork.run(async () => {
 			const replayIds = await this.repository.findCommentChainReplay(command);

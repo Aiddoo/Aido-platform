@@ -29,7 +29,7 @@ export class FakeLogger {
 	}
 
 	error(_message: string, ..._args: unknown[]): void {
-		// 테스트에서는 로그 출력 생략
+		if (process.env.AIDO_TEST_LOG_ERRORS === "1") console.error(_message, ..._args);
 	}
 
 	fatal(_message: string, ..._args: unknown[]): void {

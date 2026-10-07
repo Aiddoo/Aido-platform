@@ -11,6 +11,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  * 실행: pnpm --filter @aido/api test follow.integration-spec
  */
 import { Test, type TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
 import { FOLLOW_CACHE } from "#api/follow/application/ports/follow-cache.port";
@@ -36,7 +37,13 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { FollowBuilder, UserBuilder } from "#test/builders/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asMock } from "#test/mocks/bull-job.mock";
+import {
+	assertNativeWhere,
+	createMockDatabaseContext,
+	databaseFixture,
+	nativeRows,
+} from "#test/mocks/database.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -49,22 +56,9 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	let rejectUseCase: RejectFriendRequestUseCase;
 	let removeUseCase: RemoveFriendUseCase;
 
-	const mockFollowDb = {
-		create: vi.fn(),
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		findMany: vi.fn(),
-		update: vi.fn(),
-		delete: vi.fn(),
-		count: vi.fn(),
-		updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-		aggregate: vi.fn().mockResolvedValue({ _max: { sortOrder: 0 } }),
-	};
-	const mockUserDb = { findUnique: vi.fn(), findFirst: vi.fn() };
-	const mockDatabaseService = createMockDatabaseService({
-		follow: mockFollowDb,
-		user: mockUserDb,
-	});
+	const nativeContext = createMockDatabaseContext();
+	const mockFollowDb = nativeContext.orm.public.Follow;
+	const mockUserDb = nativeContext.orm.public.User;
 
 	const mockNotificationQueueService = {
 		enqueueFollowNew: vi.fn(),
@@ -114,7 +108,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				{ provide: UNIT_OF_WORK, useValue: createUnitOfWorkMock() },
 				{
 					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
+					useValue: { tx: nativeContext },
 				},
 				{
 					provide: TypedConfigService,
@@ -157,6 +151,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockCacheService.getMutualFriend.mockResolvedValue(undefined);
+		asMock(mockFollowDb.aggregate).mockResolvedValue({ max_sortOrder: null, count: 0 });
 	});
 
 	describe("DI 통합", () => {
@@ -172,13 +167,16 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("친구 요청 (use-case)", () => {
 		it("친구 요청이 Repository를 통해 생성된다", async () => {
-			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
-			mockFollowDb.findUnique.mockResolvedValueOnce(null);
-			mockFollowDb.findUnique.mockResolvedValueOnce(null);
-			mockFollowDb.create.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+			asMock(mockFollowDb.create).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
+				),
 			);
-			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
 
 			const result = await sendUseCase.execute({
 				userId: mockUserId,
@@ -198,7 +196,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("존재하지 않는 사용자에게 요청 시 ApplicationException", async () => {
-			mockUserDb.findFirst.mockResolvedValue(null);
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
 			await expect(
 				sendUseCase.execute({
 					userId: mockUserId,
@@ -208,9 +206,15 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("이미 친구인 경우 ApplicationException", async () => {
-			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
-			mockFollowDb.findUnique.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+			asMock(mockFollowDb.first).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId)
+						.withId(mockFollowId)
+						.accepted()
+						.build(),
+				),
 			);
 			await expect(
 				sendUseCase.execute({
@@ -221,24 +225,35 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("상대방이 먼저 요청한 경우 자동 수락", async () => {
-			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
-			mockFollowDb.findUnique.mockResolvedValueOnce(null);
-			mockFollowDb.findUnique.mockResolvedValueOnce(
-				FollowBuilder.create(mockTargetUserId, mockUserId)
-					.withId("reverse-follow-id")
-					.pending()
-					.build(),
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockTargetUserId, mockUserId)
+						.withId("reverse-follow-id")
+						.pending()
+						.build(),
+				),
 			);
-			mockFollowDb.update.mockResolvedValue(
-				FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
+			asMock(mockFollowDb.update).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
+				),
 			);
-			mockFollowDb.create.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
+			asMock(mockFollowDb.create).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId)
+						.withId(mockFollowId)
+						.accepted()
+						.build(),
+				),
 			);
-			mockUserDb.findUnique.mockResolvedValue({
-				userTag: "USR12345",
-				profile: { name: "User" },
-			});
+			asMock(mockUserDb.first).mockResolvedValue(
+				databaseFixture("User", { ...mockUser, userTag: "USR12345", profile: { name: "User" } }),
+			);
 
 			const result = await sendUseCase.execute({
 				userId: mockUserId,
@@ -252,13 +267,16 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("친구 요청 by tag (facade)", () => {
 		it("userTag로 요청하면 Follow가 생성된다", async () => {
-			mockUserDb.findFirst.mockResolvedValue({ id: mockTargetUserId });
-			mockFollowDb.findUnique.mockResolvedValueOnce(null);
-			mockFollowDb.findUnique.mockResolvedValueOnce(null);
-			mockFollowDb.create.mockResolvedValue(
-				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+			asMock(mockFollowDb.create).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).pending().build(),
+				),
 			);
-			mockUserDb.findUnique.mockResolvedValue({ id: mockTargetUserId });
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", mockTargetUser));
 
 			const result = await sendByTagUseCase.execute({
 				userId: mockUserId,
@@ -270,7 +288,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("존재하지 않는 userTag → ApplicationException", async () => {
-			mockUserDb.findFirst.mockResolvedValue(null);
+			asMock(mockUserDb.first).mockResolvedValue(databaseFixture("User", null));
 			await expect(
 				sendByTagUseCase.execute({
 					userId: mockUserId,
@@ -291,28 +309,33 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 				.accepted()
 				.build();
 
-			mockFollowDb.findUnique.mockResolvedValueOnce(pendingRequest);
-			mockFollowDb.update.mockResolvedValue({
-				...pendingRequest,
-				status: "ACCEPTED",
-			});
-			mockFollowDb.findUnique.mockResolvedValueOnce(null);
-			mockFollowDb.create.mockResolvedValue(myFollow);
-			mockFollowDb.findUnique.mockResolvedValueOnce(
-				FollowBuilder.create(mockUserId, mockTargetUserId)
-					.withId("my-follow-id")
-					.accepted()
-					.withFollowerUser({
-						id: mockUserId,
-						userTag: "MYTAG123",
-						profile: { name: "My User", profileImage: null },
-					})
-					.withFollowingUser({
-						id: mockTargetUserId,
-						userTag: mockTargetUserTag,
-						profile: { name: "Target User", profileImage: null },
-					})
-					.buildWithUser(),
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", pendingRequest));
+			asMock(mockFollowDb.update).mockResolvedValue(
+				databaseFixture("Follow", {
+					...pendingRequest,
+					status: "ACCEPTED",
+				}),
+			);
+			asMock(mockFollowDb.first).mockResolvedValueOnce(databaseFixture("Follow", null));
+			asMock(mockFollowDb.create).mockResolvedValue(databaseFixture("Follow", myFollow));
+			asMock(mockFollowDb.first).mockResolvedValueOnce(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId)
+						.withId("my-follow-id")
+						.accepted()
+						.withFollowerUser({
+							id: mockUserId,
+							userTag: "MYTAG123",
+							profile: { name: "My User", profileImage: null },
+						})
+						.withFollowingUser({
+							id: mockTargetUserId,
+							userTag: mockTargetUserTag,
+							profile: { name: "Target User", profileImage: null },
+						})
+						.buildWithUser(),
+				),
 			);
 
 			const result = await acceptUseCase.execute({
@@ -325,7 +348,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("존재하지 않는 요청 수락 → ApplicationException", async () => {
-			mockFollowDb.findUnique.mockResolvedValue(null);
+			asMock(mockFollowDb.first).mockResolvedValue(databaseFixture("Follow", null));
 			await expect(
 				acceptUseCase.execute({
 					userId: mockUserId,
@@ -337,10 +360,18 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("친구 요청 거절 / 삭제 (facade)", () => {
 		it("거절 시 요청이 삭제된다", async () => {
-			mockFollowDb.findUnique.mockResolvedValue(
-				FollowBuilder.create(mockTargetUserId, mockUserId).withId(mockFollowId).pending().build(),
+			asMock(mockFollowDb.first).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockTargetUserId, mockUserId).withId(mockFollowId).pending().build(),
+				),
 			);
-			mockFollowDb.delete.mockResolvedValue(undefined);
+			asMock(mockFollowDb.delete).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).build(),
+				),
+			);
 
 			await rejectUseCase.execute({
 				userId: mockUserId,
@@ -350,15 +381,29 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("친구 삭제는 양방향으로 수행된다", async () => {
-			mockFollowDb.findUnique.mockResolvedValueOnce(
-				FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).accepted().build(),
+			asMock(mockFollowDb.first).mockResolvedValueOnce(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId)
+						.withId(mockFollowId)
+						.accepted()
+						.build(),
+				),
 			);
-			mockFollowDb.delete.mockResolvedValue(undefined);
-			mockFollowDb.findUnique.mockResolvedValueOnce(
-				FollowBuilder.create(mockTargetUserId, mockUserId)
-					.withId("their-follow-id")
-					.accepted()
-					.build(),
+			asMock(mockFollowDb.delete).mockResolvedValue(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockUserId, mockTargetUserId).withId(mockFollowId).build(),
+				),
+			);
+			asMock(mockFollowDb.first).mockResolvedValueOnce(
+				databaseFixture(
+					"Follow",
+					FollowBuilder.create(mockTargetUserId, mockUserId)
+						.withId("their-follow-id")
+						.accepted()
+						.build(),
+				),
 			);
 
 			await removeUseCase.execute({
@@ -371,10 +416,20 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("친구 목록 조회 (facade)", () => {
 		it("친구 목록이 페이지네이션과 함께 조회된다", async () => {
-			mockFollowDb.findMany.mockResolvedValue([
-				FollowBuilder.create(mockUserId, "friend-1").withId("follow-1").accepted().buildWithUser(),
-				FollowBuilder.create(mockUserId, "friend-2").withId("follow-2").accepted().buildWithUser(),
-			]);
+			mockFollowDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("Follow", [
+						FollowBuilder.create(mockUserId, "friend-1")
+							.withId("follow-1")
+							.accepted()
+							.buildWithUser(),
+						FollowBuilder.create(mockUserId, "friend-2")
+							.withId("follow-2")
+							.accepted()
+							.buildWithUser(),
+					]),
+				),
+			);
 
 			const result = await followReader.getFriends({ userId: mockUserId });
 			expect(result.items).toHaveLength(2);
@@ -382,28 +437,45 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("userTag 검색 조건이 쿼리에 포함된다", async () => {
-			mockFollowDb.findMany.mockResolvedValue([]);
+			mockFollowDb.all.mockReturnValue(nativeRows(databaseFixture("Follow", [])));
 			await followReader.getFriends({ userId: mockUserId, search: "TGT" });
-			expect(mockFollowDb.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						following: expect.objectContaining({
-							userTag: { contains: "TGT", mode: "insensitive" },
-						}),
-					}),
-				}),
+			assertNativeWhere("Follow", mockFollowDb.where.mock.calls[0]?.[0], (row) =>
+				and(
+					row.followerId.eq(mockUserId),
+					row.status.eq("ACCEPTED"),
+					row.following.some((user) =>
+						and(
+							nativeContext.raw.sql`${user.userTag} ILIKE ${"%TGT%"}`
+								.returns("pg/bool@1")
+								.buildAst(),
+							user.following.some((back) =>
+								and(
+									back.followerId.neq(mockUserId),
+									back.followingId.eq(mockUserId),
+									back.status.eq("ACCEPTED"),
+								),
+							),
+						),
+					),
+				),
 			);
 		});
 	});
 
 	describe("맞팔 여부 / 집계 (facade)", () => {
 		it("양방향 수락이면 맞팔이다", async () => {
-			mockFollowDb.findFirst
+			asMock(mockFollowDb.first)
 				.mockResolvedValueOnce(
-					FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
+					databaseFixture(
+						"Follow",
+						FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
+					),
 				)
 				.mockResolvedValueOnce(
-					FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
+					databaseFixture(
+						"Follow",
+						FollowBuilder.create(mockTargetUserId, mockUserId).accepted().build(),
+					),
 				);
 
 			const result = await followReader.isMutualFriend(mockUserId, mockTargetUserId);
@@ -411,9 +483,12 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("일방적 팔로우는 맞팔이 아니다", async () => {
-			mockFollowDb.findFirst
+			asMock(mockFollowDb.first)
 				.mockResolvedValueOnce(
-					FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
+					databaseFixture(
+						"Follow",
+						FollowBuilder.create(mockUserId, mockTargetUserId).accepted().build(),
+					),
 				)
 				.mockResolvedValueOnce(null);
 
@@ -422,7 +497,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("친구 수가 집계된다", async () => {
-			mockFollowDb.count.mockResolvedValue(5);
+			asMock(mockFollowDb.aggregate).mockResolvedValue({ count: 5 });
 			expect(await followReader.countFriends(mockUserId)).toBe(5);
 		});
 	});

@@ -13,7 +13,7 @@
  *   .build();
  * ```
  */
-import type { TodoCategory } from "#api/generated/prisma/client";
+import type { TodoCategory } from "#api/shared/infrastructure/database/database.types";
 
 export interface TodoCategoryWithCount extends TodoCategory {
 	_count: {

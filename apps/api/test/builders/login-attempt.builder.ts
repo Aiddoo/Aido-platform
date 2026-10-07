@@ -8,7 +8,10 @@
  * ```
  */
 
-import type { AccountProvider, LoginAttempt } from "#api/generated/prisma/client";
+import type {
+	AccountProvider,
+	LoginAttempt,
+} from "#api/shared/infrastructure/database/database.types";
 
 let idCounter = 1;
 

@@ -11,8 +11,8 @@
 import { ErrorCode } from "@aido/errors";
 import { LOGIN_ATTEMPT } from "@aido/validators";
 import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
 import type { Mocked } from "vitest";
+import { vi } from "vitest";
 
 import { REVOKE_REASON, SECURITY_EVENT } from "#api/auth/domain/constants/auth.constants";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -269,8 +269,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			);
 		});
 
-		it("P2002 unique constraint(이메일 중복) 시 emailAlreadyRegistered를 던져야 한다", async () => {
-			// Given - 트랜잭션에서 P2002 발생 (동시 가입 race condition)
+		it("SQLSTATE 23505 unique constraint(이메일 중복) 시 emailAlreadyRegistered를 던져야 한다", async () => {
+			// Given - 트랜잭션에서 SQLSTATE 23505 발생 (동시 가입 race condition)
 			uow.run.mockRejectedValue(new AuthPersistenceConflict("EMAIL_ALREADY_EXISTS"));
 
 			// When & Then
@@ -281,8 +281,8 @@ describe("CredentialAuthWorkflow — 인증 workflow", () => {
 			);
 		});
 
-		it("P2002 unique constraint(이메일 외) 시 원본 에러를 re-throw해야 한다", async () => {
-			// Given - userTag 충돌 등 email이 아닌 P2002
+		it("SQLSTATE 23505 unique constraint(이메일 외) 시 원본 에러를 re-throw해야 한다", async () => {
+			// Given - userTag 충돌 등 email이 아닌 SQLSTATE 23505
 			const prismaError = new Error("unrelated persistence failure");
 			uow.run.mockRejectedValue(prismaError);
 

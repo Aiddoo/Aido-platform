@@ -5,13 +5,14 @@ import {
 	timePatternItemSchema,
 } from "@aido/validators";
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { all, and } from "@prisma/orm-postgres/orm-client";
 import { z } from "zod";
 
-import type * as PrismaModels from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import type * as PrismaModels from "#api/shared/infrastructure/database/database.types";
 import { toInputJson } from "#api/shared/infrastructure/database/json.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 import { toSupportedLocale } from "#api/shared/presentation/decorators/index";
 
 import type {
@@ -38,9 +39,7 @@ const DEFAULT_STATS = {
  */
 @Injectable()
 export class PrismaAiReportRepository implements AiReportRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
@@ -48,57 +47,70 @@ export class PrismaAiReportRepository implements AiReportRepositoryPort {
 	}
 
 	async create(input: CreateAiReportInput): Promise<AiReport> {
-		const row = await this.client.aiReport.create({
-			data: {
-				user: { connect: { id: input.userId } },
-				type: input.type,
-				year: input.year,
-				period: input.period,
-				stats: toInputJson(input.stats),
-				categoryBreakdown: toInputJson(input.categoryBreakdown),
-				dayPatterns: toInputJson(input.dayPatterns),
-				timePatterns: toInputJson(input.timePatterns),
-				aiSummary: input.aiSummary,
-				aiTips: toInputJson(input.aiTips),
-				locale: input.locale,
-				hasActivity: input.hasActivity,
-				generatedAt: input.generatedAt,
-			},
-		});
+		const row = decodeRecord(
+			"AiReport",
+			await this.client.orm.public.AiReport.create(
+				encodeCreate("AiReport", {
+					userId: input.userId,
+					type: input.type,
+					year: input.year,
+					period: input.period,
+					stats: toInputJson(input.stats),
+					categoryBreakdown: toInputJson(input.categoryBreakdown),
+					dayPatterns: toInputJson(input.dayPatterns),
+					timePatterns: toInputJson(input.timePatterns),
+					aiSummary: input.aiSummary,
+					aiTips: toInputJson(input.aiTips),
+					locale: input.locale,
+					hasActivity: input.hasActivity,
+					generatedAt: input.generatedAt,
+				}),
+			),
+		);
 		return PrismaAiReportRepository.toDomain(row);
 	}
 
 	async findByIdAndUserId(id: number, userId: string): Promise<AiReport | null> {
-		const row = await this.client.aiReport.findFirst({
-			where: { id, userId },
-		});
+		const row = decodeRecord(
+			"AiReport",
+			await this.client.orm.public.AiReport.where((row) =>
+				and(row.id.eq(id), row.userId.eq(userId)),
+			).first(),
+		);
 		return row ? PrismaAiReportRepository.toDomain(row) : null;
 	}
 
 	async findLatest(userId: string, type: ReportType): Promise<AiReport | null> {
-		const row = await this.client.aiReport.findFirst({
-			where: { userId, type },
-			orderBy: { generatedAt: "desc" },
-		});
+		const row = decodeRecord(
+			"AiReport",
+			await this.client.orm.public.AiReport.where((row) =>
+				and(row.userId.eq(userId), row._type.eq(type)),
+			)
+				.orderBy((row) => row.generatedAt.desc())
+				.first(),
+		);
 		return row ? PrismaAiReportRepository.toDomain(row) : null;
 	}
 
 	async findMany(params: FindReportsParams): Promise<AiReport[]> {
-		const rows = await this.client.aiReport.findMany({
-			where: {
-				userId: params.userId,
-				...(params.type && { type: params.type }),
-			},
-			orderBy: { generatedAt: "desc" },
-			take: params.limit,
-		});
+		const rows = decodeRecord(
+			"AiReport",
+			await this.client.orm.public.AiReport.where((row) =>
+				and(row.userId.eq(params.userId), params.type ? row._type.eq(params.type) : all()),
+			)
+				.orderBy((row) => row.generatedAt.desc())
+				.limit(params.limit)
+				.all(),
+		);
 		return rows.map((row) => PrismaAiReportRepository.toDomain(row));
 	}
 
 	async exists(userId: string, type: ReportType, year: number, period: number): Promise<boolean> {
-		const count = await this.client.aiReport.count({
-			where: { userId, type, year, period },
-		});
+		const count = (
+			await this.client.orm.public.AiReport.where((row) =>
+				and(row.userId.eq(userId), row._type.eq(type), row.year.eq(year), row.period.eq(period)),
+			).aggregate((aggregate) => ({ count: aggregate.count() }))
+		).count;
 		return count > 0;
 	}
 

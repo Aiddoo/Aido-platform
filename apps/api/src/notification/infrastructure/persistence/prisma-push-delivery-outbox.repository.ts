@@ -1,9 +1,13 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import sql, { empty, join, type Sql } from "sql-template-tag";
 
-import { Prisma } from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeSqlRows,
+	sqlRowSpec,
+	sqlStatement,
+} from "#api/shared/infrastructure/database/database-sql";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	ClaimPushDeliveryOutboxInput,
@@ -14,9 +18,7 @@ import type { PushDeliveryPublication } from "../../application/types/push-deliv
 
 @Injectable()
 export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
@@ -30,7 +32,7 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 		return this.#claim({
 			limit: dispatchIds.length,
 			lockedAt,
-			dispatchFilter: Prisma.sql`AND candidate."dispatchId" IN (${Prisma.join(dispatchIds)})`,
+			dispatchFilter: sql`AND candidate."dispatchId" IN (${join(dispatchIds)})`,
 		});
 	}
 
@@ -39,7 +41,7 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 		return this.#claim({
 			limit: input.limit,
 			lockedAt: input.lockedAt,
-			dispatchFilter: Prisma.empty,
+			dispatchFilter: empty,
 		});
 	}
 
@@ -51,9 +53,13 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 		await this.#lockOutboxGenerations(publications);
 		const values = publications.map(
 			(publication) =>
-				Prisma.sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
+				sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
 		);
-		return this.client.$executeRaw(Prisma.sql`
+		return this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "PushDispatchOutbox" AS outbox
 			SET
 				"status" = 'PUBLISHED'::"PushDispatchOutboxStatus",
@@ -61,11 +67,16 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 				"publishedAt" = ${publishedAt},
 				"lastError" = NULL,
 				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${Prisma.join(values)}) AS claimed("dispatchId", "publishAttempt")
+			FROM (VALUES ${join(values)}) AS claimed("dispatchId", "publishAttempt")
 			WHERE outbox."dispatchId" = claimed."dispatchId"
 				AND outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
 				AND outbox."publishAttempts" = claimed."publishAttempt"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 	}
 
 	async defer(input: DeferPushDeliveryPublicationsInput): Promise<number> {
@@ -73,9 +84,13 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 		await this.#lockOutboxGenerations(input.publications);
 		const values = input.publications.map(
 			(publication) =>
-				Prisma.sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
+				sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
 		);
-		return this.client.$executeRaw(Prisma.sql`
+		return this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "PushDispatchOutbox" AS outbox
 			SET
 				"status" = 'PENDING'::"PushDispatchOutboxStatus",
@@ -84,15 +99,24 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 				"publishedAt" = NULL,
 				"lastError" = ${input.error.slice(0, 500)},
 				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${Prisma.join(values)}) AS claimed("dispatchId", "publishAttempt")
+			FROM (VALUES ${join(values)}) AS claimed("dispatchId", "publishAttempt")
 			WHERE outbox."dispatchId" = claimed."dispatchId"
 				AND outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
 				AND outbox."publishAttempts" = claimed."publishAttempt"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 	}
 
 	async recoverStaleProcessing(lockedBefore: Date): Promise<number> {
-		return this.client.$executeRaw(Prisma.sql`
+		return this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			WITH locked_outboxes AS MATERIALIZED (
 				SELECT
 					outbox."dispatchId",
@@ -131,15 +155,26 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 			FROM locked_outboxes
 			WHERE outbox."dispatchId" = locked_outboxes."dispatchId"
 				AND outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 	}
 
-	#claim(input: {
+	async #claim(input: {
 		readonly limit: number;
 		readonly lockedAt: Date;
-		readonly dispatchFilter: Prisma.Sql;
+		readonly dispatchFilter: Sql;
 	}): Promise<readonly PushDeliveryPublication[]> {
-		return this.client.$queryRaw<PushDeliveryPublication[]>(Prisma.sql`
+		const sqlRows1 = sqlRowSpec({ dispatchId: "pg/int4@1", publishAttempt: "pg/int4@1" });
+
+		return await this.client
+			.query(
+				sqlStatement(
+					this.client,
+					sql`
 			UPDATE "PushDispatchOutbox" AS outbox
 			SET
 				"status" = 'PROCESSING'::"PushDispatchOutboxStatus",
@@ -159,23 +194,37 @@ export class PrismaPushDeliveryOutboxRepository implements PushDeliveryOutboxRep
 				FOR UPDATE SKIP LOCKED
 			)
 			RETURNING outbox."dispatchId", outbox."publishAttempts" AS "publishAttempt"
-		`);
+		`,
+				)
+					.returnsRow(sqlRows1)
+					.build(),
+			)
+			.then((rows) => decodeSqlRows(sqlRows1, rows));
 	}
 
 	async #lockOutboxGenerations(publications: readonly PushDeliveryPublication[]): Promise<void> {
 		const values = publications.map(
 			(publication) =>
-				Prisma.sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
+				sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
 		);
-		await this.client.$queryRaw(Prisma.sql`
+		await this.client
+			.execute(
+				sqlStatement(
+					this.client,
+					sql`
 			SELECT outbox."dispatchId"
-			FROM (VALUES ${Prisma.join(values)}) AS requested("dispatchId", "publishAttempt")
+			FROM (VALUES ${join(values)}) AS requested("dispatchId", "publishAttempt")
 			INNER JOIN "PushDispatchOutbox" AS outbox
 				ON outbox."dispatchId" = requested."dispatchId"
 				AND outbox."publishAttempts" = requested."publishAttempt"
 				AND outbox."status" = 'PROCESSING'::"PushDispatchOutboxStatus"
 			ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
 			FOR UPDATE OF outbox
-		`);
+		`,
+				)
+					.affectedCount()
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 	}
 }

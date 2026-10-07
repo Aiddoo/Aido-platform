@@ -1,16 +1,15 @@
-/**
- * TestDatabase - 통합 테스트용 DB 헬퍼
- *
- * @description
- * Vitest globalSetup이 준비한 관리형 PostgreSQL에 Prisma 연결을 제공합니다.
- * 컨테이너와 migration 수명주기는 이 클래스가 소유하지 않습니다.
- * - Prisma 7+ Driver Adapter 패턴 사용
- */
+/** Managed PostgreSQL test client. Global setup owns containers and native migration graphs. */
+import postgres from "@prisma/orm-postgres/runtime";
+import { raw } from "sql-template-tag";
 
-import { PrismaPg } from "@prisma/adapter-pg";
-
-import { PrismaClient } from "../../src/generated/prisma/client.js";
+import type { Contract } from "../../src/generated/prisma8/contract.d.js";
+import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
+import { sqlStatement } from "../../src/shared/infrastructure/database/database-sql.js";
+import type { DatabaseService } from "../../src/shared/infrastructure/database/database.service.js";
+import { databaseSqlState } from "../../src/shared/infrastructure/database/prisma-error.util.js";
 import { assertManagedTestDatabaseEnvironment } from "./managed-test-database.js";
+
+export type TestDatabaseClient = DatabaseService["db"];
 
 /** 교착으로 튕긴 TRUNCATE를 다시 시도하는 횟수. */
 const TRUNCATE_MAX_ATTEMPTS = 3;
@@ -22,12 +21,7 @@ const TRUNCATE_RETRY_BASE_MS = 250;
 const DEADLOCK_DETECTED = "40P01";
 
 function isDeadlock(error: unknown): boolean {
-	return (
-		typeof error === "object" &&
-		error !== null &&
-		"code" in error &&
-		error.code === DEADLOCK_DETECTED
-	);
+	return databaseSqlState(error) === DEADLOCK_DETECTED;
 }
 
 function delay(ms: number): Promise<void> {
@@ -38,50 +32,49 @@ function delay(ms: number): Promise<void> {
 
 interface TestDatabaseOptions {
 	env?: NodeJS.ProcessEnv;
-	createPrismaClient?: (connectionUri: string) => PrismaClient;
+	createClient?: (connectionUri: string) => TestDatabaseClient;
 }
 
 export class TestDatabase {
-	private prisma: PrismaClient | null = null;
+	private client: TestDatabaseClient | null = null;
 	private connectionUri: string | null = null;
 	private readonly env: NodeJS.ProcessEnv;
-	private readonly createPrismaClient: (connectionUri: string) => PrismaClient;
+	private readonly createClient: (connectionUri: string) => TestDatabaseClient;
 
 	constructor(options: TestDatabaseOptions = {}) {
 		this.env = options.env ?? process.env;
-		this.createPrismaClient =
-			options.createPrismaClient ??
-			((connectionUri) => {
-				const adapter = new PrismaPg({ connectionString: connectionUri });
-				return new PrismaClient({ adapter });
-			});
+		this.createClient =
+			options.createClient ??
+			((connectionUri) => postgres<Contract>({ contractJson, url: connectionUri }));
 	}
 
 	/**
 	 * globalSetup이 준비한 PostgreSQL에 Prisma 클라이언트 연결
 	 *
-	 * @returns PrismaClient 인스턴스
+	 * @returns TestDatabaseClient 인스턴스
 	 */
-	async start(): Promise<PrismaClient> {
-		if (this.prisma) return this.prisma;
+	async start(): Promise<TestDatabaseClient> {
+		if (this.client) return this.client;
 
 		const { connectionUri } = assertManagedTestDatabaseEnvironment(this.env);
 		this.connectionUri = connectionUri;
-		this.prisma = this.createPrismaClient(connectionUri);
+		this.client = this.createClient(connectionUri);
 
-		await this.prisma.$connect();
+		await this.client
+			.runtime()
+			.query(this.client.raw.sql`SELECT 1 AS value`.returnsRow({ value: "pg/int4@1" }).build());
 
-		return this.prisma;
+		return this.client;
 	}
 
 	/**
 	 * Prisma 클라이언트 반환
 	 */
-	getPrisma(): PrismaClient {
-		if (!this.prisma) {
+	getClient(): TestDatabaseClient {
+		if (!this.client) {
 			throw new Error("TestDatabase not started. Call start() first.");
 		}
-		return this.prisma;
+		return this.client;
 	}
 
 	/**
@@ -98,19 +91,22 @@ export class TestDatabase {
 	 * 테스트 데이터 초기화 (모든 테이블 데이터 삭제)
 	 */
 	async cleanup(): Promise<void> {
-		if (!this.prisma) {
+		if (!this.client) {
 			return;
 		}
 
 		assertManagedTestDatabaseEnvironment(this.env);
-		const tables = await this.prisma.$queryRaw<Array<{ table_name: string }>>`
+		const tables = await this.client.runtime().query(
+			this.client.raw.sql`
 			SELECT table_name
 			FROM information_schema.tables
 			WHERE table_schema = 'public'
 				AND table_type = 'BASE TABLE'
-				AND table_name <> '_prisma_migrations'
 			ORDER BY table_name
-		`;
+  `
+				.returnsRow({ table_name: "pg/text@1" })
+				.build(),
+		);
 
 		if (tables.length === 0) return;
 
@@ -129,11 +125,13 @@ export class TestDatabase {
 	 * 실패가 "무엇이 잘못됐는지" 대신 "느렸다"만 말하게 된다.
 	 */
 	async #truncate(statement: string): Promise<void> {
-		const client = this.getPrisma();
+		const client = this.getClient();
 
 		for (let attempt = 1; attempt <= TRUNCATE_MAX_ATTEMPTS; attempt += 1) {
 			try {
-				await client.$executeRawUnsafe(statement);
+				await client
+					.runtime()
+					.execute(sqlStatement(client, raw(statement)).affectedCount().build());
 				return;
 			} catch (error) {
 				const isLastAttempt = attempt === TRUNCATE_MAX_ATTEMPTS;
@@ -149,9 +147,9 @@ export class TestDatabase {
 	 * Prisma 클라이언트 연결 해제
 	 */
 	async stop(): Promise<void> {
-		if (this.prisma) {
-			await this.prisma.$disconnect();
-			this.prisma = null;
+		if (this.client) {
+			await this.client.close();
+			this.client = null;
 		}
 		this.connectionUri = null;
 	}

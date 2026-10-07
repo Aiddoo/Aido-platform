@@ -1,3 +1,7 @@
+import type { Mocked } from "vitest";
+import { mock } from "vitest-mock-extended";
+
+import { NotificationPublisher } from "#api/notification/index";
 /**
  * SuggestionAnalysisProcessor 단위 테스트
  *
@@ -5,12 +9,9 @@
  * - 서비스 위임 검증
  * - 패턴 감지 여부에 따른 알림 발송 검증
  */
-
-import { TestBed } from "@suites/unit";
-import type { Mocked } from "vitest";
-
-import { NotificationPublisher } from "#api/notification/index";
+import { createMockDatabaseContext } from "#test/mocks/database.mock";
 import { createMockJob } from "#test/mocks/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { AnalyzeAndCreateSuggestionsUseCase } from "../../application/use-cases/analyze-and-create-suggestions/analyze-and-create-suggestions.use-case.js";
 import { type AiSuggestionJobData, AiSuggestionJobName } from "../queue/ai-suggestion-queue.js";
@@ -22,11 +23,15 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
 	let mockNotificationService: Mocked<NotificationPublisher>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(SuggestionAnalysisProcessor).compile();
-
-		processor = unit;
-		analyzeAndCreateSuggestionsUseCase = unitRef.get(AnalyzeAndCreateSuggestionsUseCase);
-		mockNotificationService = unitRef.get(NotificationPublisher);
+		const context = createMockDatabaseContext();
+		context.orm.public.UserPreference.first.mockResolvedValue(null);
+		analyzeAndCreateSuggestionsUseCase = mock<AnalyzeAndCreateSuggestionsUseCase>();
+		mockNotificationService = mock<NotificationPublisher>();
+		processor = new SuggestionAnalysisProcessor(
+			analyzeAndCreateSuggestionsUseCase,
+			mockNotificationService,
+			createMockDatabaseService(context),
+		);
 	});
 
 	describe("onStalled", () => {

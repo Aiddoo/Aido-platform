@@ -29,7 +29,8 @@ import { GetWeeklyAchievementUseCase } from "#api/weekly-achievement/application
 import { GetWeeklyAchievementsUseCase } from "#api/weekly-achievement/application/queries/get-weekly-achievements/get-weekly-achievements.use-case";
 import { WEEKLY_ACHIEVEMENT_PROVIDERS } from "#api/weekly-achievement/application/weekly-achievement.providers";
 import { PrismaWeeklyAchievementRepository } from "#api/weekly-achievement/infrastructure/adapters/prisma-weekly-achievement.repository";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asMock } from "#test/mocks/bull-job.mock";
+import { createMockDatabaseContext, databaseFixture, nativeRows } from "#test/mocks/database.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -39,16 +40,8 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 	let getWeeklyAchievementsUseCase: GetWeeklyAchievementsUseCase;
 
 	// Mock 데이터베이스 서비스
-	const mockWeeklyAchievementDb = {
-		findMany: vi.fn(),
-		findFirst: vi.fn(),
-		findUnique: vi.fn(),
-		upsert: vi.fn(),
-	};
-
-	const mockDatabaseService = createMockDatabaseService({
-		weeklyAchievement: mockWeeklyAchievementDb,
-	});
+	const nativeContext = createMockDatabaseContext();
+	const mockWeeklyAchievementDb = nativeContext.orm.public.WeeklyAchievement;
 
 	// 테스트 데이터
 	const mockUserId = "user-weekly-123";
@@ -60,7 +53,7 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 		totalTodos: number;
 		completedTodos: number;
 	}) {
-		return {
+		return databaseFixture("WeeklyAchievement", {
 			id: overrides.id ?? overrides.week,
 			userId: mockUserId,
 			year: mockYear,
@@ -70,7 +63,7 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 			achievedAt: new Date("2026-03-15T00:00:00.000Z"),
 			createdAt: new Date(),
 			updatedAt: new Date(),
-		};
+		});
 	}
 
 	beforeAll(async () => {
@@ -88,7 +81,7 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				{
 					// 어댑터는 TransactionHost.tx에서 클라이언트를 읽습니다 (mock DB 전달)
 					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
+					useValue: { tx: nativeContext },
 				},
 				{
 					provide: UNIT_OF_WORK,
@@ -149,8 +142,8 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				}),
 			];
 
-			mockWeeklyAchievementDb.findMany
-				.mockResolvedValueOnce(items)
+			mockWeeklyAchievementDb.all
+				.mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", items)))
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - 목록 조회
@@ -191,8 +184,8 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				}),
 			];
 
-			mockWeeklyAchievementDb.findMany
-				.mockResolvedValueOnce(yearRecords)
+			mockWeeklyAchievementDb.all
+				.mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", yearRecords)))
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - 목록 조회
@@ -237,8 +230,8 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 			];
 			const yearRecords = items;
 
-			mockWeeklyAchievementDb.findMany
-				.mockResolvedValueOnce(items)
+			mockWeeklyAchievementDb.all
+				.mockReturnValueOnce(nativeRows(databaseFixture("WeeklyAchievement", items)))
 				.mockResolvedValueOnce(yearRecords);
 
 			// When - size=2로 조회 (3개 반환 → hasNext = true)
@@ -266,7 +259,9 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 				totalTodos: 8,
 				completedTodos: 6,
 			});
-			mockWeeklyAchievementDb.findUnique.mockResolvedValue(mockAchievement);
+			asMock(mockWeeklyAchievementDb.first).mockResolvedValue(
+				databaseFixture("WeeklyAchievement", mockAchievement),
+			);
 
 			// When - 상세 조회
 			const result = await getWeeklyAchievementUseCase.execute({
@@ -286,7 +281,9 @@ describe("WeeklyAchievement 통합 테스트 (Mock DB)", () => {
 
 		it("상세 조회 — 존재하지 않는 주차는 에러를 반환한다", async () => {
 			// Given - 존재하지 않는 주차
-			mockWeeklyAchievementDb.findUnique.mockResolvedValue(null);
+			asMock(mockWeeklyAchievementDb.first).mockResolvedValue(
+				databaseFixture("WeeklyAchievement", null),
+			);
 
 			// When & Then - 에러 발생 검증
 			await expect(

@@ -6,7 +6,7 @@
 
 **Architecture:** Wave 0와 동일한 순수 기계적 재배치 방법론. 파일 이동 + 임포트 경로 치환만 수행하며 어떤 함수 본문도 바꾸지 않는다. 안전성은 OpenAPI 스냅샷 diff 0 + 전체 유닛/통합/e2e 스위트로 증명한다. auth는 아직 `CLEAN_MODULES`에 등록하지 않으므로 `no-cast`/`boundaries` 게이트는 이 커밋에서 비활성(레거시 `BusinessExceptions`·`tx?`·`as` 캐스트는 그대로 유지된다).
 
-**Tech Stack:** NestJS 11 · Prisma 7 · TypeScript 5.9 · Biome 2.4 · Jest · Testcontainers
+**Tech Stack:** NestJS 11 · Prisma 8 native ORM · TypeScript 5.9 · Biome 2.4 · Jest · Testcontainers
 
 ## Global Constraints
 

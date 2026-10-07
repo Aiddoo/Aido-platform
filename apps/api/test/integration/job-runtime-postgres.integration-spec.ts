@@ -1,9 +1,10 @@
-import type { PrismaTransactionLike } from "pg-boss";
 import { PgBoss } from "pg-boss";
 import { vi } from "vitest";
 
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 import { PgBossJobRuntimeAdapter } from "#api/shared/infrastructure/jobs/pg-boss-job-runtime.adapter";
+import { createDatabaseContext, withDatabaseTransaction } from "#test/setup/database-context";
 
 import { TestDatabase } from "../setup/test-database.js";
 
@@ -40,7 +41,7 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 	let testDatabase: TestDatabase;
 	let boss: PgBoss;
 	let runtime: PgBossJobRuntimeAdapter;
-	let transactionSource: { tx: PrismaTransactionLike };
+	let transactionSource: { tx: Prisma8Transaction };
 
 	beforeAll(async () => {
 		testDatabase = new TestDatabase();
@@ -63,18 +64,22 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 			createSchema: false,
 			max: 3,
 		});
-		transactionSource = { tx: prisma };
+		transactionSource = { tx: createDatabaseContext(prisma) };
 		runtime = new PgBossJobRuntimeAdapter(boss, transactionSource, {
 			job: { shutdownTimeoutMs: 10_000 },
 		});
 		await runtime.start();
 
-		await prisma.$executeRawUnsafe(`
+		await prisma.runtime().execute(
+			prisma.raw.sql`
 			CREATE TABLE IF NOT EXISTS public.job_runtime_probe (
 				id TEXT PRIMARY KEY,
 				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 			)
-		`);
+		`
+				.affectedCount()
+				.build(),
+		);
 	});
 
 	afterAll(async () => {
@@ -240,30 +245,34 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
 	});
 
 	it("업무 트랜잭션 rollback 시 업무 row와 queue row가 함께 사라진다", async () => {
-		const prisma = testDatabase.getPrisma();
+		const prisma = testDatabase.getClient();
 		const queue = "integration-transaction";
 		const probeId = "rollback-probe";
 
 		await expect(
-			prisma.$transaction(async (tx) => {
+			withDatabaseTransaction(prisma, async (tx) => {
 				transactionSource.tx = tx;
 				try {
-					await tx.$executeRawUnsafe(
-						"INSERT INTO public.job_runtime_probe (id) VALUES ($1)",
-						probeId,
+					await tx.execute(
+						tx.raw.sql`INSERT INTO public.job_runtime_probe (id) VALUES (${probeId})`
+							.affectedCount()
+							.build(),
 					);
 					await runtime.enqueue(queue, { probeId }, options({ idempotencyKey: probeId }));
 					throw new Error("force rollback");
 				} finally {
-					transactionSource.tx = prisma;
+					transactionSource.tx = createDatabaseContext(prisma);
 				}
 			}),
 		).rejects.toThrow("force rollback");
 
-		const rows = await prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-			"SELECT COUNT(*) AS count FROM public.job_runtime_probe WHERE id = $1",
-			probeId,
-		);
+		const rows = await prisma
+			.runtime()
+			.query(
+				prisma.raw.sql`SELECT COUNT(*) AS count FROM public.job_runtime_probe WHERE id = ${probeId}`
+					.returnsRow({ count: "pg/int8@1" })
+					.build(),
+			);
 		const jobs = await boss.findJobs(queue, { key: probeId });
 		expect(rows[0]?.count).toBe(0n);
 		expect(jobs).toHaveLength(0);

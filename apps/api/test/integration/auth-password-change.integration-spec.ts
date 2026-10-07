@@ -1,4 +1,5 @@
 import type { TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 /**
  * 비밀번호 변경 통합 테스트 (Testcontainers)
  *
@@ -25,7 +26,9 @@ import { vi } from "vitest";
 import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
@@ -44,7 +47,7 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 		suppressLogger();
 
 		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
+		databaseService = createTestDatabaseService(await testDb.start());
 		fakeEmailService = new FakeEmailService();
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
@@ -113,23 +116,29 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 		email: string,
 		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
 	): Promise<string> {
-		const prisma = testDb.getPrisma();
-		const user = await prisma.user.create({
-			data: {
-				email,
-				userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-				status: "ACTIVE",
-				emailVerifiedAt: new Date(),
-			},
-		});
+		const prisma = testDb.getClient();
+		const user = decodeRecord(
+			"User",
+			await prisma.orm.public.User.create(
+				encodeCreate("User", {
+					email,
+					userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
+					status: "ACTIVE",
+					emailVerifiedAt: new Date(),
+				}),
+			),
+		);
 
-		await prisma.account.create({
-			data: {
-				userId: user.id,
-				provider,
-				providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-			},
-		});
+		decodeRecord(
+			"Account",
+			await prisma.orm.public.Account.create(
+				encodeCreate("Account", {
+					userId: user.id,
+					provider,
+					providerAccountId: `${provider.toLowerCase()}-${user.id}`,
+				}),
+			),
+		);
 
 		return user.id;
 	}
@@ -157,10 +166,13 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			expect(result.message).toContain("비밀번호가 변경되었습니다");
 
 			// DB 검증: 비밀번호 해시가 변경됨
-			const prisma = testDb.getPrisma();
-			const account = await prisma.account.findFirst({
-				where: { userId, provider: "CREDENTIAL" },
-			});
+			const prisma = testDb.getClient();
+			const account = decodeRecord(
+				"Account",
+				await prisma.orm.public.Account.where((row) =>
+					and(row.userId.eq(userId), row.provider.eq("CREDENTIAL")),
+				).first(),
+			);
 			expect(account?.password).toBeTruthy();
 		});
 
@@ -234,16 +246,18 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			);
 
 			// Then
-			const prisma = testDb.getPrisma();
+			const prisma = testDb.getClient();
 
-			const currentSession = await prisma.session.findUnique({
-				where: { id: currentSessionId },
-			});
+			const currentSession = decodeRecord(
+				"Session",
+				await prisma.orm.public.Session.where((row) => row.id.eq(currentSessionId)).first(),
+			);
 			expect(currentSession?.revokedAt).toBeNull();
 
-			const otherSession = await prisma.session.findUnique({
-				where: { id: otherSessionId },
-			});
+			const otherSession = decodeRecord(
+				"Session",
+				await prisma.orm.public.Session.where((row) => row.id.eq(otherSessionId)).first(),
+			);
 			expect(otherSession?.revokedAt).not.toBeNull();
 			expect(otherSession?.revokedReason).toBe("PASSWORD_CHANGED");
 		});
@@ -289,10 +303,13 @@ describe("비밀번호 변경 통합 테스트 (실제 DB)", () => {
 			);
 
 			// Then
-			const prisma = testDb.getPrisma();
-			const logs = await prisma.securityLog.findMany({
-				where: { userId, event: "PASSWORD_CHANGED" },
-			});
+			const prisma = testDb.getClient();
+			const logs = decodeRecord(
+				"SecurityLog",
+				await prisma.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(userId), row.event.eq("PASSWORD_CHANGED")),
+				).all(),
+			);
 
 			// PASSWORD_CHANGED는 changePassword에서 기록됨
 			const changeLog = logs.find((log) => log.ipAddress === "10.0.0.1");

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import type { HttpClient } from "@nestjs/http-client";
 
 import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
@@ -23,7 +24,10 @@ export class DiscordWebhookProvider implements AdminNotifier {
 	readonly #logger = new Logger(DiscordWebhookProvider.name);
 	readonly #webhookUrl: string | undefined;
 
-	constructor(webhookUrl: string | undefined) {
+	constructor(
+		webhookUrl: string | undefined,
+		private readonly http: HttpClient,
+	) {
 		this.#webhookUrl = webhookUrl;
 	}
 
@@ -39,8 +43,11 @@ export class DiscordWebhookProvider implements AdminNotifier {
 		}
 
 		try {
-			const response = await fetch(webhookUrl, {
+			const { data: response } = await this.http.request(webhookUrl, {
 				method: "POST",
+				responseType: "response",
+				retry: false,
+				throwOnHttpError: false,
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					embeds: [

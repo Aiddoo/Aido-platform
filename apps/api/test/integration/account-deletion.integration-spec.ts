@@ -24,6 +24,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
 import { AdminEventNotifier } from "#api/admin-notification/index";
@@ -67,12 +68,22 @@ import { DomainException } from "#api/shared/domain/exceptions/domain.exception"
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
 import { CACHE_SERVICE } from "#api/shared/infrastructure/cache/interfaces/cache.interface";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 import { DefaultTodoCategorySeeder } from "#api/todo-category/infrastructure/seeders/default-todo-category.seeder";
 import { TodoCommentAccountCleanup } from "#api/todo-comment/index";
 import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import {
+	createDatabaseTransactionFixture,
+	createTestDatabaseService,
+} from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
@@ -97,8 +108,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 		suppressLogger();
 
 		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
+		databaseService = createTestDatabaseService(await testDb.start());
 
+		const transaction = createDatabaseTransactionFixture(databaseService.db);
 		module = await Test.createTestingModule({
 			imports: [
 				JwtModule.register({
@@ -187,14 +199,12 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 					useValue: databaseService,
 				},
 				{
-					// CLS 트랜잭션 스텁 — 활성 트랜잭션이 없을 때 tx가 실제 DB 클라이언트를 반환
 					provide: TransactionHost,
-					useValue: { tx: databaseService },
+					useValue: transaction.txHost,
 				},
 				{
-					// uow.run passthrough — 리포지토리가 TransactionHost.tx(실제 DB)로 참여
 					provide: UNIT_OF_WORK,
-					useValue: { run: (fn: () => Promise<unknown>) => fn() },
+					useValue: transaction.uow,
 				},
 				{
 					provide: TransactionalEmailSender,
@@ -316,14 +326,18 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 		});
 
 		// 2. DB에서 직접 인증 완료 처리
-		const prisma = testDb.getPrisma();
-		await prisma.user.update({
-			where: { id: registerResult.userId },
-			data: {
-				status: "ACTIVE",
-				emailVerifiedAt: new Date(),
-			},
-		});
+		const prisma = testDb.getClient();
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(registerResult.userId)).update(
+					encodePatch("User", {
+						status: "ACTIVE",
+						emailVerifiedAt: new Date(),
+					}),
+				),
+			),
+		);
 
 		return registerResult.userId;
 	}
@@ -348,53 +362,67 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			expect(result.deletedAt).toBeDefined();
 
 			// DB 검증: user.deletedAt 설정됨
-			const prisma = testDb.getPrisma();
-			const user = await prisma.user.findUnique({ where: { id: userId } });
+			const prisma = testDb.getClient();
+			const user = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.id.eq(userId)).first(),
+			);
 			expect(user?.deletedAt).not.toBeNull();
 			expect(user?.status).toBe("SUSPENDED");
 
 			// DB 검증: 세션이 폐기됨
-			const sessions = await prisma.session.findMany({
-				where: { userId },
-			});
+			const sessions = decodeRecord(
+				"Session",
+				await prisma.orm.public.Session.where((row) => row.userId.eq(userId)).all(),
+			);
 			for (const session of sessions) {
 				expect(session.revokedAt).not.toBeNull();
 			}
 
 			// DB 검증: 보안 로그 기록됨
-			const logs = await prisma.securityLog.findMany({
-				where: { userId, event: "ACCOUNT_DELETION_REQUESTED" },
-			});
+			const logs = decodeRecord(
+				"SecurityLog",
+				await prisma.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(userId), row.event.eq("ACCOUNT_DELETION_REQUESTED")),
+				).all(),
+			);
 			expect(logs.length).toBeGreaterThanOrEqual(1);
 		});
 
 		it("소셜 전용 계정: 비밀번호 없이 탈퇴 처리", async () => {
 			// Given - DB에 직접 소셜 사용자 생성
-			const prisma = testDb.getPrisma();
-			const user = await prisma.user.create({
-				data: {
-					email: "social-delete@example.com",
-					userTag: "SODEL001",
-					status: "ACTIVE",
-					emailVerifiedAt: new Date(),
-				},
-			});
-			await prisma.account.create({
-				data: {
-					userId: user.id,
-					provider: "GOOGLE",
-					providerAccountId: "google-123",
-				},
-			});
+			const prisma = testDb.getClient();
+			const user = decodeRecord(
+				"User",
+				await prisma.orm.public.User.create(
+					encodeCreate("User", {
+						email: "social-delete@example.com",
+						userTag: "SODEL001",
+						status: "ACTIVE",
+						emailVerifiedAt: new Date(),
+					}),
+				),
+			);
+			decodeRecord(
+				"Account",
+				await prisma.orm.public.Account.create(
+					encodeCreate("Account", {
+						userId: user.id,
+						provider: "GOOGLE",
+						providerAccountId: "google-123",
+					}),
+				),
+			);
 
 			// When
 			const result = await authService.deleteAccount(user.id, "test-session", {});
 
 			// Then
 			expect(result.gracePeriodDays).toBe(ACCOUNT_DELETION.GRACE_PERIOD_DAYS);
-			const deletedUser = await prisma.user.findUnique({
-				where: { id: user.id },
-			});
+			const deletedUser = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.id.eq(user.id)).first(),
+			);
 			expect(deletedUser?.deletedAt).not.toBeNull();
 		});
 
@@ -414,23 +442,27 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			expect(loginResult.accountRestored).toBe(true);
 
 			// DB 검증: 복구됨
-			const prisma = testDb.getPrisma();
-			const restoredUser = await prisma.user.findUnique({
-				where: { id: userId },
-			});
+			const prisma = testDb.getClient();
+			const restoredUser = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.id.eq(userId)).first(),
+			);
 			expect(restoredUser?.deletedAt).toBeNull();
 			expect(restoredUser?.status).toBe("ACTIVE");
 
 			// 보안 로그: ACCOUNT_RESTORED 기록됨
-			const logs = await prisma.securityLog.findMany({
-				where: { userId, event: "ACCOUNT_RESTORED" },
-			});
+			const logs = decodeRecord(
+				"SecurityLog",
+				await prisma.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(userId), row.event.eq("ACCOUNT_RESTORED")),
+				).all(),
+			);
 			expect(logs.length).toBeGreaterThanOrEqual(1);
 		});
 
 		it("유예 기간 초과 시 로그인 차단 (USER_0606)", async () => {
 			// Given - 31일 전 탈퇴된 사용자 (DB 직접 생성)
-			const prisma = testDb.getPrisma();
+			const prisma = testDb.getClient();
 			const pastDate = new Date();
 			pastDate.setDate(pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1));
 
@@ -439,10 +471,14 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			const userId = await createVerifiedCredentialUser(email, password);
 
 			// DB에서 직접 탈퇴 처리 (유예 기간 초과)
-			await prisma.user.update({
-				where: { id: userId },
-				data: { deletedAt: pastDate, status: "SUSPENDED" },
-			});
+			decodeRecord(
+				"User",
+				requireRecord(
+					await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
+						encodePatch("User", { deletedAt: pastDate, status: "SUSPENDED" }),
+					),
+				),
+			);
 
 			// When & Then (탈퇴 복구 유예 초과 — 도메인 정책 USER_0606)
 			await expect(authService.login({ email, password })).rejects.toThrow(DomainException);
@@ -452,51 +488,59 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 	describe("AccountPurgeJob — 계정 삭제 잡", () => {
 		it("유예 기간 경과 후 hard delete 실행", async () => {
 			// Given - deletedAt이 31일 전인 사용자 DB에 직접 생성
-			const prisma = testDb.getPrisma();
+			const prisma = testDb.getClient();
 			const pastDate = new Date();
 			pastDate.setDate(pastDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS + 1));
 
-			const user = await prisma.user.create({
-				data: {
-					email: "purge-test@example.com",
-					userTag: "PURGE001",
-					status: "SUSPENDED",
-					deletedAt: pastDate,
-				},
-			});
+			const user = decodeRecord(
+				"User",
+				await prisma.orm.public.User.create(
+					encodeCreate("User", {
+						email: "purge-test@example.com",
+						userTag: "PURGE001",
+						status: "SUSPENDED",
+						deletedAt: pastDate,
+					}),
+				),
+			);
 
 			// When
 			await purgeJob.purgeDeletedAccounts();
 
 			// Then - user가 DB에서 완전 삭제됨
-			const deletedUser = await prisma.user.findUnique({
-				where: { id: user.id },
-			});
+			const deletedUser = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.id.eq(user.id)).first(),
+			);
 			expect(deletedUser).toBeNull();
 		});
 
 		it("유예 기간 내 사용자는 삭제하지 않음", async () => {
 			// Given - deletedAt이 29일 전인 사용자
-			const prisma = testDb.getPrisma();
+			const prisma = testDb.getClient();
 			const recentDate = new Date();
 			recentDate.setDate(recentDate.getDate() - (ACCOUNT_DELETION.GRACE_PERIOD_DAYS - 1));
 
-			const user = await prisma.user.create({
-				data: {
-					email: "keep-test@example.com",
-					userTag: "KEEP0001",
-					status: "SUSPENDED",
-					deletedAt: recentDate,
-				},
-			});
+			const user = decodeRecord(
+				"User",
+				await prisma.orm.public.User.create(
+					encodeCreate("User", {
+						email: "keep-test@example.com",
+						userTag: "KEEP0001",
+						status: "SUSPENDED",
+						deletedAt: recentDate,
+					}),
+				),
+			);
 
 			// When
 			await purgeJob.purgeDeletedAccounts();
 
 			// Then - user가 여전히 DB에 존재
-			const existingUser = await prisma.user.findUnique({
-				where: { id: user.id },
-			});
+			const existingUser = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.id.eq(user.id)).first(),
+			);
 			expect(existingUser).not.toBeNull();
 		});
 	});
@@ -516,10 +560,13 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
 			expect(result.message).toBeDefined();
 
 			// verification 레코드 미생성 확인
-			const prisma = testDb.getPrisma();
-			const verifications = await prisma.verification.findMany({
-				where: { userId, type: "PASSWORD_RESET" },
-			});
+			const prisma = testDb.getClient();
+			const verifications = decodeRecord(
+				"Verification",
+				await prisma.orm.public.Verification.where((row) =>
+					and(row.userId.eq(userId), row._type.eq("PASSWORD_RESET")),
+				).all(),
+			);
 			expect(verifications.length).toBe(0);
 		});
 	});

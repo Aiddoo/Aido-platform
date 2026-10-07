@@ -1,9 +1,18 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { OrderByItem } from "@prisma/orm-postgres/relational-core/ast";
 
-import type { Memo as MemoRow } from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { now } from "#api/shared/domain/date/utils/core";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp } from "#api/shared/infrastructure/database/database-values";
+import type { Memo as MemoRow } from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	FindMemosParams,
@@ -19,9 +28,7 @@ import { Memo } from "../../domain/entities/memo.aggregate.js";
  */
 @Injectable()
 export class PrismaMemoRepository implements MemoRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
@@ -40,65 +47,97 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
 	}
 
 	async create(userId: string, content: string, sortOrder: number): Promise<Memo> {
-		const row = await this.client.memo.create({
-			data: { user: { connect: { id: userId } }, content, sortOrder },
-		});
+		const row = decodeRecord(
+			"Memo",
+			await this.client.orm.public.Memo.create(
+				encodeCreate("Memo", { userId: userId, content, sortOrder }),
+			),
+		);
 		return PrismaMemoRepository.toDomain(row);
 	}
 
 	async findByIdAndUserId(memoId: number, userId: string): Promise<Memo | null> {
-		const row = await this.client.memo.findFirst({
-			where: { id: memoId, userId },
-		});
+		const row = decodeRecord(
+			"Memo",
+			await this.client.orm.public.Memo.where((row) =>
+				and(row.id.eq(memoId), row.userId.eq(userId)),
+			).first(),
+		);
 		return row ? PrismaMemoRepository.toDomain(row) : null;
 	}
 
 	async findManyByUserId(params: FindMemosParams): Promise<Memo[]> {
 		const { userId, cursor, size } = params;
 
-		const rows = await this.client.memo.findMany({
-			where: { userId },
-			take: size + 1,
-			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
-			orderBy: [{ isPinned: "desc" }, { sortOrder: "desc" }, { id: "desc" }],
-		});
+		const collection = this.client.orm.public.Memo.where({ userId })
+			.orderBy((row) => OrderByItem.desc(row.isPinned.buildAst()))
+			.orderBy((row) => row.sortOrder.desc())
+			.orderBy((row) => row.id.desc());
+		if (cursor === null || cursor === undefined) {
+			const rows = decodeRecord("Memo", await collection.limit(size + 1).all());
+			return rows.map((row) => PrismaMemoRepository.toDomain(row));
+		}
+		const anchor = await this.client.orm.public.Memo.where({ id: cursor })
+			.select("id", "isPinned", "sortOrder")
+			.first();
+		if (anchor === null) return [];
+		const rows = decodeRecord(
+			"Memo",
+			await collection
+				.cursor(anchor)
+				.limit(size + 1)
+				.all(),
+		);
 		return rows.map((row) => PrismaMemoRepository.toDomain(row));
 	}
 
 	async countByUserId(userId: string): Promise<number> {
-		return this.client.memo.count({ where: { userId } });
+		return this.client.orm.public.Memo.where((row) => row.userId.eq(userId))
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async updateContent(memoId: number, content: string): Promise<Memo> {
-		const row = await this.client.memo.update({
-			where: { id: memoId },
-			data: { content },
-		});
+		const row = decodeRecord(
+			"Memo",
+			requireRecord(
+				await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).update(
+					encodePatch("Memo", { content }),
+				),
+			),
+		);
 		return PrismaMemoRepository.toDomain(row);
 	}
 
 	async updatePinned(memoId: number, isPinned: boolean): Promise<Memo> {
-		const row = await this.client.memo.update({
-			where: { id: memoId },
-			data: { isPinned },
-		});
+		const row = decodeRecord(
+			"Memo",
+			requireRecord(
+				await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).update(
+					encodePatch("Memo", { isPinned }),
+				),
+			),
+		);
 		return PrismaMemoRepository.toDomain(row);
 	}
 
 	async updateSortOrder(memoId: number, sortOrder: number): Promise<Memo> {
-		const row = await this.client.memo.update({
-			where: { id: memoId },
-			data: { sortOrder },
-		});
+		const row = decodeRecord(
+			"Memo",
+			requireRecord(
+				await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).update(
+					encodePatch("Memo", { sortOrder }),
+				),
+			),
+		);
 		return PrismaMemoRepository.toDomain(row);
 	}
 
 	async getMaxSortOrder(userId: string): Promise<number> {
-		const result = await this.client.memo.aggregate({
-			where: { userId },
-			_max: { sortOrder: true },
-		});
-		return result._max.sortOrder ?? -1;
+		const { maximum } = await this.client.orm.public.Memo.where({ userId }).aggregate(
+			(aggregate) => ({ maximum: aggregate.max("sortOrder") }),
+		);
+		return maximum ?? -1;
 	}
 
 	async shiftSortOrders(
@@ -107,19 +146,27 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
 		toSortOrder: number | null,
 		delta: number,
 	): Promise<void> {
-		await this.client.memo.updateMany({
-			where: {
-				userId,
-				sortOrder: {
-					gte: fromSortOrder,
-					...(toSortOrder !== null && { lte: toSortOrder }),
-				},
-			},
-			data: { sortOrder: { increment: delta } },
-		});
+		const plan = this.client.sql.public.Memo.update((fields) => ({
+			sortOrder: this.client.raw.sql`${fields.sortOrder} + ${delta}`.returns("pg/int4@1"),
+			updatedAt: this.client.raw.sql`${databaseTimestamp(now())}`.returns("pg/timestamp-string@1"),
+		}))
+			.where((fields, functions) =>
+				functions.and(
+					functions.eq(fields.userId, userId),
+					functions.gte(fields.sortOrder, fromSortOrder),
+					toSortOrder === null
+						? this.client.raw.sql`TRUE`.returns("pg/bool@1")
+						: functions.lte(fields.sortOrder, toSortOrder),
+				),
+			)
+			.build();
+		await this.client.execute(plan);
 	}
 
 	async delete(memoId: number): Promise<void> {
-		await this.client.memo.delete({ where: { id: memoId } });
+		decodeRecord(
+			"Memo",
+			requireRecord(await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).delete()),
+		);
 	}
 }

@@ -37,15 +37,15 @@
 
 ## 2. 유형 선택 기준
 
-| 검증하려는 것                       | 유형                  | 이유                                  |
-| ----------------------------------- | --------------------- | ------------------------------------- |
-| 단일 메서드의 입력 검증 / 예외 분기 | Unit                  | `TestBed.solitary`가 의존성 자동 Mock |
-| Repository 쿼리 파라미터            | Unit                  | `toHaveBeenCalledWith`로 충분         |
-| NestJS DI 연결 정합성               | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요            |
-| `$transaction` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증               |
-| 실제 DB 쿼리 + 마이그레이션 정합성  | Integration (실제 DB) | Testcontainers PostgreSQL             |
-| HTTP 요청 → 응답 전체 흐름          | E2E                   | supertest + 인증 + DB                 |
-| Guard / Interceptor 동작            | E2E                   | 실제 HTTP 파이프라인 필요             |
+| 검증하려는 것                           | 유형                  | 이유                                  |
+| --------------------------------------- | --------------------- | ------------------------------------- |
+| 단일 메서드의 입력 검증 / 예외 분기     | Unit                  | `TestBed.solitary`가 의존성 자동 Mock |
+| Repository 쿼리 파라미터                | Unit                  | `toHaveBeenCalledWith`로 충분         |
+| NestJS DI 연결 정합성                   | Integration (Mock DB) | 실제 DI 컨테이너 구동 필요            |
+| `UNIT_OF_WORK.run` 다중 Repository 조합 | Integration (Mock DB) | 트랜잭션 콜백 통합 검증               |
+| 실제 DB 쿼리 + 마이그레이션 정합성      | Integration (실제 DB) | Testcontainers PostgreSQL             |
+| HTTP 요청 → 응답 전체 흐름              | E2E                   | supertest + 인증 + DB                 |
+| Guard / Interceptor 동작                | E2E                   | 실제 HTTP 파이프라인 필요             |
 
 ---
 
@@ -107,15 +107,15 @@ eventPublisher = unitRef.get<DomainEventPublisherPort>(DOMAIN_EVENT_PUBLISHER);
 
 ### 4.1 핵심 인프라
 
-| 파일                                                   | 용도                                                               | 사용처                      |
-| ------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------- |
-| `test/setup/suppress-logger.ts`                        | `suppressLogger()` — Logger 출력 억제                              | Integration                 |
-| `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — DB Mock + `$transaction` 자동 설정 | Integration (Mock DB)       |
-| `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                               | E2E                         |
-| `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                           | E2E                         |
-| `test/setup/managed-test-database.ts`                  | Vitest 실행당 Testcontainers PostgreSQL + migration 수명주기       | Integration (실제 DB) + E2E |
-| `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate                   | Integration (실제 DB) + E2E |
-| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                           | Integration (실제 DB, Auth) |
+| 파일                                                   | 용도                                                         | 사용처                      |
+| ------------------------------------------------------ | ------------------------------------------------------------ | --------------------------- |
+| `test/setup/suppress-logger.ts`                        | `suppressLogger()` — Logger 출력 억제                        | Integration                 |
+| `test/mocks/mock-database.factory.ts`                  | `createMockDatabaseService()` — native ORM context 연결      | Integration (Mock DB)       |
+| `test/e2e/helpers/e2e-app-factory.ts`                  | `createE2eApp()` / `destroyE2eApp()`                         | E2E                         |
+| `test/e2e/helpers/e2e-helpers.ts`                      | `E2eHelpers` — `createVerifiedUser()` 등                     | E2E                         |
+| `test/setup/managed-test-database.ts`                  | Vitest 실행당 Testcontainers PostgreSQL + migration 수명주기 | Integration (실제 DB) + E2E |
+| `test/setup/test-database.ts`                          | 관리형 테스트 DB의 Prisma 연결 + 안전한 truncate             | Integration (실제 DB) + E2E |
+| `test/integration/helpers/auth-test-module.factory.ts` | `createAuthTestModule()`                                     | Integration (실제 DB, Auth) |
 
 ### 4.2 FakeService 목록
 
@@ -207,7 +207,7 @@ pnpm --filter @aido/api test:e2e -- -t "패턴"    # 특정 테스트
 - Unit, integration, E2E는 Vitest project로 나눈다. DB project는 파일을 직렬 실행하고 순서를 섞어 공유 상태 의존을 확인한다.
 - DB global setup은 project마다 PostgreSQL 컨테이너 하나를 생성하고 migration을 적용한다. `provide`/`inject`로 연결 정보를 worker에 전달하며, 컨테이너 종료는 global setup의 반환 teardown이 소유한다.
 - SDK mock은 `vi.hoisted`와 `vi.mock`을 사용한다. 실제 오류 클래스, 토큰 검증, 순수 SDK 함수는 `importOriginal`로 유지한다. Constructor mock의 구현은 일반 함수나 class를 사용한다.
-- Prisma query의 select 결과는 필요한 반환 필드를 명시한다. `asMock`의 partial mock 지원은 Prisma generic query가 선택한 필드만 돌려주는 테스트에서 사용한다.
+- Prisma query의 select 결과는 필요한 반환 필드를 명시한다. `asMock`의 partial mock 지원은 native ORM projection이 선택한 필드만 돌려주는 테스트에서 사용한다.
 - 동시성 테스트는 transaction barrier와 PostgreSQL lock 상태를 관찰한다. 한 번의 event loop tick이나 임의 sleep으로 순서를 가정하지 않는다.
 - E2E throttle은 해당 TestingModule의 provider override로만 격리한다. 전역 prototype이나 다른 suite의 guard를 변경하지 않는다.
 - E2E reset이 실패하면 같은 환경의 후속 테스트도 차단한다. timeout은 작업을 취소하지 못하므로 오염된 환경을 재사용하지 않는다. 종료는 앱/Redis/cache를 먼저 정리한 뒤 Prisma 연결을 닫는다.

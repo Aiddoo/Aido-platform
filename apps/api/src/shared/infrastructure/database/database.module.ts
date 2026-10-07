@@ -9,10 +9,12 @@ import {
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseService } from "./database.service.js";
 import { PostgresMutationLockAdapter } from "./postgres-mutation-lock.adapter.js";
+import { PostgresPool } from "./postgres-pool.js";
 
 @Global()
 @Module({
 	providers: [
+		PostgresPool,
 		DatabaseService,
 		ClsUnitOfWork,
 		{ provide: UNIT_OF_WORK, useExisting: ClsUnitOfWork },

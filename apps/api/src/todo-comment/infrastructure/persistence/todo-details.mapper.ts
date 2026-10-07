@@ -1,20 +1,19 @@
 import type { Todo } from "@aido/validators";
 
-import type { Prisma } from "#api/generated/prisma/client";
 import {
 	toDateString,
 	toDateStringOrNull,
 	toISOString,
 	toISOStringOrNull,
 } from "#api/shared/domain/date/utils/format";
+import type { DatabaseRecord } from "#api/shared/infrastructure/database/database-records";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
-export const TODO_DETAILS_INCLUDE = {
-	category: true,
-	items: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
-	user: { include: { profile: true } },
-} satisfies Prisma.TodoInclude;
-
-export type TodoDetailsRow = Prisma.TodoGetPayload<{ include: typeof TODO_DETAILS_INCLUDE }>;
+export type TodoDetailsRow = DatabaseRecord<"Todo"> & {
+	category: DatabaseRecord<"TodoCategory"> | null;
+	items: DatabaseRecord<"TodoItem">[];
+	user: (DatabaseRecord<"User"> & { profile: DatabaseRecord<"UserProfile"> | null }) | null;
+};
 
 export function toTodoResponse(row: TodoDetailsRow): Todo {
 	const items = row.items.map((item) => ({
@@ -41,10 +40,10 @@ export function toTodoResponse(row: TodoDetailsRow): Todo {
 		visibility: row.visibility,
 		recurrenceGroupId: row.recurrenceGroupId,
 		category: {
-			id: row.category.id,
-			name: row.category.name,
-			color: row.category.color,
-			sortOrder: row.category.sortOrder,
+			id: requireRecord(row.category).id,
+			name: requireRecord(row.category).name,
+			color: requireRecord(row.category).color,
+			sortOrder: requireRecord(row.category).sortOrder,
 		},
 		items,
 		itemStats: {

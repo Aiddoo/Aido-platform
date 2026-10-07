@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import type { Logger } from "@nestjs/common";
+import type { HttpClient } from "@nestjs/http-client";
 
 import type {
 	ExchangedToken,
@@ -34,7 +35,12 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
 	readonly #verifier: OAuthTokenVerifier;
 	readonly #logger: Logger;
 
-	constructor(getConfig: () => OAuthConfig, verifier: OAuthTokenVerifier, logger: Logger) {
+	constructor(
+		getConfig: () => OAuthConfig,
+		verifier: OAuthTokenVerifier,
+		logger: Logger,
+		private readonly http: HttpClient,
+	) {
 		this.#getConfig = getConfig;
 		this.#verifier = verifier;
 		this.#logger = logger;
@@ -70,8 +76,11 @@ export class KakaoOAuthProvider implements OAuthIdentityProvider {
 			throw new ApplicationException(ErrorCode.USER_0602);
 		}
 
-		const tokenResponse = await fetch("https://kauth.kakao.com/oauth/token", {
+		const { data: tokenResponse } = await this.http.request("https://kauth.kakao.com/oauth/token", {
 			method: "POST",
+			responseType: "response",
+			retry: false,
+			throwOnHttpError: false,
 			headers: { "Content-Type": "application/x-www-form-urlencoded" },
 			body: new URLSearchParams({
 				grant_type: "authorization_code",

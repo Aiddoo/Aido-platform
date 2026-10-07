@@ -22,6 +22,10 @@ concurrency:
   cancel-in-progress: >-
     ${{ github.event_name != 'pull_request' || (github.event.action != 'edited' && github.event.action != 'labeled' && github.event.action != 'unlabeled') || github.event.changes.base != null || startsWith(github.event.label.name, 'stack:') || github.event.label.name == 'ci:stack-tip' }}
 
+defaults:
+  run:
+    shell: bash # GitHub가 -eo pipefail을 적용하므로 tee 뒤에서도 테스트 실패가 보존된다.
+
 permissions:
   contents: read
   pull-requests: read
@@ -40,19 +44,63 @@ jobs:
     timeout-minutes: 5
     outputs:
       run: ${{ steps.policy.outputs.run }}
-      base: ${{ steps.policy.outputs.base }}
-      base-sha: ${{ steps.policy.outputs.base-sha }}
+      api: ${{ steps.policy.outputs.api }}
+      mobile: ${{ steps.policy.outputs.mobile }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: .nvmrc
-      - run: node --test scripts/ci/stack-policy.test.mjs
+          fetch-depth: 0
+      # GitHub 공식 Octokit 클라이언트가 인증·pagination을 맡는다.
+      # 저장소 고유의 스택/의존성 정책만 별도 모듈로 유지한다.
       - name: Resolve cumulative CI scope
         id: policy
-        run: node scripts/ci/stack-gate.mjs
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0 (Node 24)
+        with:
+          script: |
+            const { execFileSync } = require('node:child_process');
+            const { readdirSync } = require('node:fs');
+            const tests = readdirSync('scripts/ci').filter((file) => file.endsWith('.test.mjs'));
+            execFileSync(process.execPath, ['--test', ...tests.map((file) => `scripts/ci/${file}`)], { stdio: 'inherit' });
+            const { planPullRequestCI } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/stack-policy.mjs`);
+            const { dependencyScope } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/ci/dependency-scope.mjs`);
+            const { owner, repo } = context.repo;
+            const event = context.payload;
+            let plan = { run: true, base: 'develop', reason: 'push-or-dispatch', ancestors: [] };
+            let baseSha = '';
+            let headSha = context.sha;
+            if (event.pull_request !== undefined) {
+              const { data: current } = await github.rest.pulls.get({ owner, repo, pull_number: event.pull_request.number });
+              headSha = current.head.sha;
+              if (headSha !== event.pull_request.head.sha) throw new Error('The workflow head is stale; rerun for the current commit.');
+              const openPulls = await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 });
+              plan = planPullRequestCI(current, openPulls, `${owner}/${repo}`);
+              const verifyAncestor = async (base) => {
+                const { data } = await github.rest.repos.compareCommits({ owner, repo, base, head: headSha });
+                if (!['ahead', 'identical'].includes(data.status)) throw new Error('Rebase the CI tip to include the current base and all stack ancestors.');
+              };
+              if (plan.run) {
+                const { data: branch } = await github.rest.repos.getBranch({ owner, repo, branch: plan.base });
+                baseSha = branch.commit.sha;
+                if (plan.reason === 'cumulative-stack-tip') await verifyAncestor(baseSha);
+              }
+              for (const ancestor of plan.ancestors) await verifyAncestor(ancestor);
+            }
+            let paths = null;
+            if (plan.run && context.eventName !== 'workflow_dispatch') {
+              try {
+                const baseline = baseSha || event.before;
+                if (baseline === undefined || baseline === '' || /^0+$/.test(baseline)) throw new Error('No complete diff baseline');
+                const range = event.pull_request !== undefined ? `${baseline}...${headSha}` : `${baseline}..${headSha}`;
+                paths = execFileSync('git', ['diff', '--name-only', '-z', range], { encoding: 'utf8' }).split('\0').filter((path) => path !== '');
+              } catch (error) {
+                core.warning(`Unable to scope changed files; running all checks: ${error.message}`);
+              }
+            }
+            const scope = dependencyScope(paths);
+            core.setOutput('run', plan.run);
+            core.setOutput('api', scope.api);
+            core.setOutput('mobile', scope.mobile);
+            await core.summary.addRaw(`CI policy: **${plan.reason}**. API=${scope.api}, mobile=${scope.mobile}, shared=${scope.shared}. Heavy checks: **${plan.run ? 'run' : 'deferred'}**. Base: ${plan.base} (${baseSha}). Head: ${headSha}. Ancestors: ${plan.ancestors.join(', ') || 'none'}.`).write();
 
   lint:
     name: Lint & Type Check
@@ -62,13 +110,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
+          generate-prisma: ${{ needs.gate.outputs.api }}
+          install-scope: ${{ needs.gate.outputs.mobile == 'true' && 'all' || 'api' }}
 
       # Oxc는 전체 저장소를 한 번 스캔한다. 패키지별 프로세스를 반복하지 않아 로컬·CI 결과가 같다.
       - name: Oxlint
@@ -78,41 +124,40 @@ jobs:
         run: pnpm format:check
 
       - name: Type Check
-        run: pnpm turbo run typecheck ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
+        run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/api' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
       - name: Mobile conventions
+        if: needs.gate.outputs.mobile == 'true'
         run: pnpm --filter @aido/mobile check:conventions
 
   test-unit:
     name: Test - Unit & Coverage
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && (needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
-
-      - name: Verify test log failure propagation
-        run: bash scripts/ci/run-with-tee.spec.sh
+          generate-prisma: ${{ needs.gate.outputs.api }}
+          install-scope: ${{ needs.gate.outputs.mobile == 'true' && 'all' || 'api' }}
 
       # 각 테스트 출력을 파일로 남기고 실패 시 아티팩트 업로드 — 플레이크 재현용
       #
       # api는 아래 커버리지 스텝이 같은 유닛 스위트를 돌리므로 여기서 제외한다.
       # (예전에는 양쪽에서 돌아 2600여 건이 매 CI마다 두 번 실행됐다.)
       - name: Run unit tests
-        run: scripts/ci/run-with-tee.sh /tmp/test-unit.log pnpm turbo run test --filter='!@aido/api' ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        if: needs.gate.outputs.mobile == 'true'
+        run: pnpm turbo run test --filter='!@aido/api' 2>&1 | tee /tmp/test-unit.log
 
-      # turbo를 거쳐야 캐시와 --affected 스코핑이 함께 걸린다.
+      # gate에서 누적 의존성 범위를 결정하고 Turbo는 입력 해시로 검증 결과를 재사용한다.
       - name: Run API unit tests with coverage
-        run: scripts/ci/run-with-tee.sh /tmp/test-coverage.log pnpm turbo run test:cov --filter=@aido/api ${{ github.event_name == 'pull_request' && '--affected' || '' }}
+        if: needs.gate.outputs.api == 'true'
+        run: pnpm turbo run test:cov --filter=@aido/api 2>&1 | tee /tmp/test-coverage.log
 
       - name: Upload unit test logs (failure only)
         if: failure()
@@ -125,24 +170,21 @@ jobs:
   test-integration:
     name: Test - Integration
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
+          generate-prisma: ${{ needs.gate.outputs.api }}
+          install-scope: api
 
-      # 통합/E2E 태스크는 @aido/api에만 존재 → PR에서 --affected만으로 자연 스코프됨
-      # (모바일/문서-only PR은 Testcontainers 스킵, api 영향 변경은 실행)
+      # gate에서 API 영향이 없는 변경은 러너 자체를 건너뛴다.
       - name: Run integration tests
-        run: scripts/ci/run-with-tee.sh /tmp/test-integration.log pnpm turbo run test:integration ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
+        run: pnpm turbo run test:integration --filter=@aido/api 2>&1 | tee /tmp/test-integration.log
 
       - name: Upload integration test logs (failure only)
         if: failure()
@@ -155,19 +197,17 @@ jobs:
   test-e2e:
     name: Test - E2E
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
+          generate-prisma: ${{ needs.gate.outputs.api }}
+          install-scope: api
 
       - name: Run E2E tests
         env:
@@ -179,7 +219,7 @@ jobs:
           EMAIL_FROM_NAME: Aido Test
           TOKEN_ENCRYPTION_KEY: test-token-encryption-key-for-ci-minimum-32-chars
           NODE_ENV: test
-        run: scripts/ci/run-with-tee.sh /tmp/test-e2e.log pnpm turbo run test:e2e ${{ github.event_name == 'pull_request' && '--affected' || '--filter=@aido/api' }}
+        run: pnpm turbo run test:e2e --filter=@aido/api 2>&1 | tee /tmp/test-e2e.log
 
       - name: Upload E2E test logs (failure only)
         if: failure()
@@ -192,28 +232,26 @@ jobs:
   build:
     name: Build
     needs: gate
-    if: needs.gate.outputs.run == 'true'
+    if: needs.gate.outputs.run == 'true' && needs.gate.outputs.api == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
 
       - uses: ./.github/actions/setup
         with:
-          affected-base: ${{ needs.gate.outputs.base }}
-          affected-base-sha: ${{ needs.gate.outputs.base-sha }}
+          generate-prisma: ${{ needs.gate.outputs.api }}
+          install-scope: api
 
       - name: Build
         run: pnpm turbo run build --filter='!@aido/mobile'
 
   # main 전용: 프로덕션 이미지를 arm64 러너에서 빌드해 GHCR로 push.
-  # 테스트 job들과 병렬로 돌고, workflow_run(Deploy)은 CI 전체 성공 시에만 발화하므로
-  # 배포 시작 시점에 이미지 존재가 보장된다. 서버는 pull만 한다 (scripts/deploy.sh).
+  # 필수 검증 성공 뒤에만 이미지를 발행한다. API 영향이 없는 main 변경은 건너뛴다. 서버는 pull만 한다 (scripts/deploy.sh).
   docker:
     name: Build & Push Image
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [gate, lint, test-unit, test-integration, test-e2e, build]
+    if: needs.gate.outputs.api == 'true' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-24.04-arm # arm64 표준 러너 (private 레포 지원, 플랜 무료 분수 사용)
     timeout-minutes: 25
     permissions:
@@ -241,8 +279,8 @@ jobs:
           pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false # 단일 아키 이미지는 plain manifest 유지 (서버 pull 단순화)
           tags: ghcr.io/aiddoo/aido-platform-api:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
 
       - name: Build & push migrate image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
@@ -255,8 +293,8 @@ jobs:
           pull: true # node:24.21.0-alpine3.24의 최신 base 보안 digest 수급
           provenance: false
           tags: ghcr.io/aiddoo/aido-platform-migrate:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=migrate
+          cache-to: type=gha,scope=migrate,mode=max
 
       # sha 태그 누적 방지 — 각 패키지 최신 10개만 유지
       - name: Prune old api image versions

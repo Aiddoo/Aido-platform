@@ -1,3 +1,4 @@
+import type { Todo } from "@aido/validators";
 /**
  * Todo 매퍼
  *
@@ -7,14 +8,13 @@
  * @module todo.mapper
  */
 
-import type { Todo } from "@aido/validators";
-
 import {
 	toDateString,
 	toDateStringOrNull,
 	toISOString,
 	toISOStringOrNull,
 } from "#api/shared/domain/date/utils/format";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import type { TodoWithCategory } from "./todo-row.types.js";
 
@@ -38,7 +38,8 @@ export abstract class TodoMapper {
 	 * ```
 	 */
 	static toResponse(entity: TodoWithCategory): Todo {
-		const items = (entity.items ?? []).map((item) => ({
+		const category = requireRecord(entity.category);
+		const items = entity.items.map((item) => ({
 			id: item.id,
 			title: item.title,
 			completed: item.completed,
@@ -62,10 +63,10 @@ export abstract class TodoMapper {
 			visibility: entity.visibility,
 			recurrenceGroupId: entity.recurrenceGroupId,
 			category: {
-				id: entity.category.id,
-				name: entity.category.name,
-				color: entity.category.color,
-				sortOrder: entity.category.sortOrder,
+				id: category.id,
+				name: category.name,
+				color: category.color,
+				sortOrder: category.sortOrder,
 			},
 			items,
 			itemStats: {

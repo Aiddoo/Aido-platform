@@ -17,7 +17,6 @@ import {
 	ENTITLEMENT_DATABASE,
 	type EntitlementCachePort,
 	type EntitlementDatabasePort,
-	type EntitlementTransaction,
 } from "./entitlement-state.port.js";
 
 export const Feature = {
@@ -138,15 +137,8 @@ export class EntitlementService {
 	 *
 	 * sendCheer/sendNudge 등 TOCTOU 방지가 필요한 곳에서 사용
 	 */
-	async getFeatureLimitInTx(
-		tx: EntitlementTransaction,
-		userId: string,
-		feature: Feature,
-	): Promise<FeatureEntitlement> {
-		const user = await tx.user.findUnique({
-			where: { id: userId },
-			select: { role: true, subscriptionStatus: true },
-		});
+	async getFeatureLimitInTx(userId: string, feature: Feature): Promise<FeatureEntitlement> {
+		const user = await this.database.findUserState(userId);
 		const role = user?.role ?? "USER";
 		const subscriptionStatus = user?.subscriptionStatus ?? "FREE";
 		const dailyLimit = resolveFeatureLimit(role, subscriptionStatus, feature);
@@ -178,15 +170,8 @@ export class EntitlementService {
 	 * 카테고리 생성처럼 entitlement와 현재 보유량을 같은 업무 트랜잭션에서
 	 * 판단해야 하는 쓰기 경로에서 사용합니다.
 	 */
-	async getResourceLimitInTx(
-		tx: EntitlementTransaction,
-		userId: string,
-		resource: Resource,
-	): Promise<ResourceEntitlement> {
-		const user = await tx.user.findUnique({
-			where: { id: userId },
-			select: { role: true, subscriptionStatus: true },
-		});
+	async getResourceLimitInTx(userId: string, resource: Resource): Promise<ResourceEntitlement> {
+		const user = await this.database.findUserState(userId);
 		const role = user?.role ?? "USER";
 		const subscriptionStatus = user?.subscriptionStatus ?? "FREE";
 		const maxCount = resolveResourceLimit(role, subscriptionStatus, resource);
@@ -223,10 +208,7 @@ export class EntitlementService {
 
 	async #resolveUserInfo(userId: string): Promise<{ role: string; subscriptionStatus: string }> {
 		const cached = await this.cacheService.wrapSubscription(userId, async () => {
-			const user = await this.database.user.findUnique({
-				where: { id: userId },
-				select: { role: true, subscriptionStatus: true },
-			});
+			const user = await this.database.findUserState(userId);
 			return {
 				status: user?.subscriptionStatus ?? null,
 				isAdmin: (user?.role ?? "USER") === "ADMIN",

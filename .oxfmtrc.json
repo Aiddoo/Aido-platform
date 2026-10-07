@@ -30,6 +30,9 @@
     "apps/mobile/.claude/skills/**",
     "**/dist/**",
     "**/build/**",
-    "**/coverage/**"
+    "**/coverage/**",
+    "apps/api/prisma/migrations8/snapshots/**",
+    "apps/api/prisma/migrations8/**/ops.json",
+    "apps/api/prisma/migrations8/**/migration.json"
   ]
 }

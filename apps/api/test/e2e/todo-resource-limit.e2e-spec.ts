@@ -1,3 +1,5 @@
+import { TODO_LIMITS } from "@aido/validators";
+import request from "supertest";
 /**
  * Todo 리소스 제한 E2E 테스트
  *
@@ -7,8 +9,12 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { TODO_LIMITS } from "@aido/validators";
-import request from "supertest";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -39,7 +45,7 @@ describe("할 일 리소스 제한 E2E", () => {
 			const userId = user.userId;
 			const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-			const prisma = ctx.testDatabase.getPrisma();
+			const prisma = ctx.testDatabase.getClient();
 			const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
 				userId,
 				title: `활성 할 일 ${i + 1}`,
@@ -47,7 +53,9 @@ describe("할 일 리소스 제한 E2E", () => {
 				startDate: new Date("2024-01-15"),
 				completed: false,
 			}));
-			await prisma.todo.createMany({ data: todos });
+			await prisma.orm.public.Todo.createAndCount(
+				todos.map((value) => encodeCreate("Todo", value)),
+			);
 
 			// When - 추가 Todo 생성 시도
 			const response = await request(ctx.app.getHttpServer())
@@ -94,7 +102,7 @@ describe("할 일 리소스 제한 E2E", () => {
 			const userId = user.userId;
 			const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
-			const prisma = ctx.testDatabase.getPrisma();
+			const prisma = ctx.testDatabase.getClient();
 			const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
 				userId,
 				title: `활성 할 일 ${i + 1}`,
@@ -102,13 +110,17 @@ describe("할 일 리소스 제한 E2E", () => {
 				startDate: new Date("2024-01-15"),
 				completed: false,
 			}));
-			await prisma.todo.createMany({ data: todos });
+			await prisma.orm.public.Todo.createAndCount(
+				todos.map((value) => encodeCreate("Todo", value)),
+			);
 
 			// 첫 번째 Todo ID 조회
-			const firstTodo = await prisma.todo.findFirst({
-				where: { userId },
-				orderBy: { id: "asc" },
-			});
+			const firstTodo = decodeRecord(
+				"Todo",
+				await prisma.orm.public.Todo.where((row) => row.userId.eq(userId))
+					.orderBy((row) => row.id.asc())
+					.first(),
+			);
 			expect(firstTodo).toBeDefined();
 			const firstTodoId = firstTodo?.id as number;
 
@@ -151,7 +163,7 @@ describe("할 일 리소스 제한 E2E", () => {
 			const emptyCategoryId = catResponse.body.data.category.id;
 
 			// 첫 번째 카테고리에 CATEGORY_LIMIT개 삽입
-			const prisma = ctx.testDatabase.getPrisma();
+			const prisma = ctx.testDatabase.getClient();
 			const todos = Array.from({ length: CATEGORY_LIMIT }, (_, i) => ({
 				userId,
 				title: `카테고리1 할 일 ${i + 1}`,
@@ -159,7 +171,9 @@ describe("할 일 리소스 제한 E2E", () => {
 				startDate: new Date("2024-01-15"),
 				completed: false,
 			}));
-			await prisma.todo.createMany({ data: todos });
+			await prisma.orm.public.Todo.createAndCount(
+				todos.map((value) => encodeCreate("Todo", value)),
+			);
 
 			// When - 꽉 찬 카테고리에 생성 시도
 			await request(ctx.app.getHttpServer())
@@ -196,11 +210,15 @@ describe("할 일 리소스 제한 E2E", () => {
 			const userId = user.userId;
 
 			// 구독 상태를 ACTIVE로 변경
-			const prisma = ctx.testDatabase.getPrisma();
-			await prisma.user.update({
-				where: { id: userId },
-				data: { subscriptionStatus: "ACTIVE" },
-			});
+			const prisma = ctx.testDatabase.getClient();
+			decodeRecord(
+				"User",
+				requireRecord(
+					await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
+						encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+					),
+				),
+			);
 
 			const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
 
@@ -212,7 +230,9 @@ describe("할 일 리소스 제한 E2E", () => {
 				startDate: new Date("2024-01-15"),
 				completed: false,
 			}));
-			await prisma.todo.createMany({ data: todos });
+			await prisma.orm.public.Todo.createAndCount(
+				todos.map((value) => encodeCreate("Todo", value)),
+			);
 
 			// When - 추가 Todo 생성 시도
 			const response = await request(ctx.app.getHttpServer())

@@ -1,3 +1,5 @@
+import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/validators";
+import request from "supertest";
 /**
  * TodoCategory 리소스 제한 E2E 테스트
  *
@@ -7,8 +9,8 @@
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { SUBSCRIPTION_TODO_CATEGORY_LIMITS, TODO_CATEGORY_LIMITS } from "@aido/validators";
-import request from "supertest";
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -77,11 +79,15 @@ describe("할 일 카테고리 리소스 제한 E2E", () => {
 			const accessToken = user.accessToken;
 
 			// 구독 상태를 ACTIVE로 변경
-			const prisma = ctx.testDatabase.getPrisma();
-			await prisma.user.update({
-				where: { id: user.userId },
-				data: { subscriptionStatus: "ACTIVE" },
-			});
+			const prisma = ctx.testDatabase.getClient();
+			decodeRecord(
+				"User",
+				requireRecord(
+					await prisma.orm.public.User.where((row) => row.id.eq(user.userId)).update(
+						encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+					),
+				),
+			);
 
 			// When - 3개 추가 생성 (기본 2 + 추가 3 = 5개, Free 한도 초과)
 			for (let i = 1; i <= 3; i++) {

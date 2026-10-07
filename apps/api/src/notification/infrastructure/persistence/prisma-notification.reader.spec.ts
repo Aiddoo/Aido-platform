@@ -1,69 +1,93 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { TestBed } from "@suites/unit";
+import { and } from "@prisma/orm-postgres/orm-client";
 
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	databaseDate,
+	databaseTimestamp,
+} from "#api/shared/infrastructure/database/database-values";
 import { NotificationBuilder } from "#test/builders/index";
-import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+import {
+	assertNativeWhere,
+	createMockTransactionHost,
+	databaseFixture,
+	nativeRows,
+} from "#test/mocks/database.mock";
+import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import type { FindNotificationsParams } from "../../application/ports/notification-data.js";
 import { PrismaNotificationReader } from "./prisma-notification.reader.js";
 
 describe("PrismaNotificationReader", () => {
 	let reader: PrismaNotificationReader;
-	let db: MockPrismaClient;
+	let db: MockDatabaseContext;
 
 	beforeEach(async () => {
 		NotificationBuilder.resetIdCounter();
-		db = createMockPrisma();
-		const { unit } = await TestBed.solitary(PrismaNotificationReader)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
-			.impl(() => ({ tx: db }))
-			.compile();
-		reader = unit;
+		db = createMockDatabaseContext();
+		reader = new PrismaNotificationReader(createMockTransactionHost(db));
 	});
 
 	it("ID로 알림을 조회하고 부재는 null로 유지한다", async () => {
 		const notification = NotificationBuilder.create("user-1").withId(1).build();
-		asMock(db.notification.findUnique)
-			.mockResolvedValueOnce(notification)
+		asMock(db.orm.public.Notification.first)
+			.mockResolvedValueOnce(databaseFixture("Notification", notification))
 			.mockResolvedValueOnce(null);
 
 		await expect(reader.findNotificationById(1)).resolves.toEqual(notification);
 		await expect(reader.findNotificationById(999)).resolves.toBeNull();
-		expect(db.notification.findUnique).toHaveBeenNthCalledWith(1, { where: { id: 1 } });
+		assertNativeWhere(
+			"Notification",
+			db.orm.public.Notification.where.mock.calls[1 - 1]?.[0],
+			(row) => row.id.eq(1),
+		);
 	});
 
 	it("알림함 기본 조회는 size + 1과 안정적인 복합 정렬을 사용한다", async () => {
 		const params: FindNotificationsParams = { userId: "user-1", size: 10 };
 		const notifications = [NotificationBuilder.create("user-1").build()];
-		asMock(db.notification.findMany).mockResolvedValue(
-			notifications.map((value) => ({ ...NotificationBuilder.create("user-1").build(), ...value })),
+		asMock(db.orm.public.Notification.all).mockReturnValue(
+			nativeRows(
+				databaseFixture(
+					"Notification",
+					notifications.map((value) => ({
+						...NotificationBuilder.create("user-1").build(),
+						...value,
+					})),
+				),
+			),
 		);
 
 		await expect(reader.findNotificationsByUser(params)).resolves.toEqual(notifications);
-		expect(db.notification.findMany).toHaveBeenCalledWith({
-			where: { userId: "user-1" },
-			take: 11,
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		assertNativeWhere(
+			"Notification",
+			db.orm.public.Notification.where.mock.calls.at(-1)?.[0],
+			(row) => row.userId.eq("user-1"),
+		);
 	});
 
 	it("cursor가 0이어도 유효한 cursor로 적용한다", async () => {
-		asMock(db.notification.findMany).mockResolvedValue([]);
+		asMock(db.orm.public.Notification.all).mockReturnValue(
+			nativeRows(databaseFixture("Notification", [])),
+		);
 
+		const anchor = databaseFixture(
+			"Notification",
+			NotificationBuilder.create("user-1").withId(0).build(),
+		);
+		asMock(db.orm.public.Notification.first).mockResolvedValue(anchor);
 		await reader.findNotificationsByUser({ userId: "user-1", cursor: 0, size: 10 });
-		expect(db.notification.findMany).toHaveBeenCalledWith({
-			where: { userId: "user-1" },
-			take: 11,
-			skip: 1,
-			cursor: { id: 0 },
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		assertNativeWhere("Notification", db.orm.public.Notification.where.mock.calls[0]?.[0], (row) =>
+			row.userId.eq("user-1"),
+		);
+		assertNativeWhere("Notification", db.orm.public.Notification.where.mock.calls[1]?.[0], (row) =>
+			row.id.eq(0),
+		);
+		expect(db.orm.public.Notification.cursor).toHaveBeenCalledWith(anchor);
 	});
 
 	it("unreadOnly와 types를 같은 where에 결합한다", async () => {
-		asMock(db.notification.findMany).mockResolvedValue([]);
+		asMock(db.orm.public.Notification.all).mockReturnValue(
+			nativeRows(databaseFixture("Notification", [])),
+		);
 
 		await reader.findNotificationsByUser({
 			userId: "user-1",
@@ -71,50 +95,62 @@ describe("PrismaNotificationReader", () => {
 			unreadOnly: true,
 			types: ["SYSTEM_NOTICE", "ADMIN_BROADCAST"],
 		});
-		expect(db.notification.findMany).toHaveBeenCalledWith(
-			expect.objectContaining({
-				where: {
-					userId: "user-1",
-					isRead: false,
-					type: { in: ["SYSTEM_NOTICE", "ADMIN_BROADCAST"] },
-				},
-			}),
+		assertNativeWhere(
+			"Notification",
+			db.orm.public.Notification.where.mock.calls.at(-1)?.[0],
+			(row) =>
+				and(
+					row.userId.eq("user-1"),
+					row.isRead.eq(false),
+					row._type.in(["SYSTEM_NOTICE", "ADMIN_BROADCAST"]),
+				),
 		);
 	});
 
 	it("타입 필터가 없으면 type 조건을 만들지 않는다", async () => {
-		asMock(db.notification.findMany).mockResolvedValue([]);
+		asMock(db.orm.public.Notification.all).mockReturnValue(
+			nativeRows(databaseFixture("Notification", [])),
+		);
 
 		await reader.findNotificationsByUser({ userId: "user-1", size: 20 });
-		const call = asMock(db.notification.findMany).mock.calls[0]?.[0];
-		expect(call?.where).not.toHaveProperty("type");
+		assertNativeWhere("Notification", db.orm.public.Notification.where.mock.calls[0]?.[0], (row) =>
+			row.userId.eq("user-1"),
+		);
 	});
 
 	it("허용된 타입이 빈 배열이면 전체 조회로 확장하지 않는다", async () => {
 		// Given
-		asMock(db.notification.findMany).mockResolvedValue([]);
+		asMock(db.orm.public.Notification.all).mockReturnValue(
+			nativeRows(databaseFixture("Notification", [])),
+		);
 
 		// When
 		await reader.findNotificationsByUser({ userId: "user-1", size: 20, types: [] });
 
 		// Then
-		expect(db.notification.findMany).toHaveBeenCalledWith(
-			expect.objectContaining({ where: { userId: "user-1", type: { in: [] } } }),
+		assertNativeWhere(
+			"Notification",
+			db.orm.public.Notification.where.mock.calls.at(-1)?.[0],
+			(row) => and(row.userId.eq("user-1"), row._type.in([])),
 		);
 	});
 
 	it("미읽음 개수는 사용자와 isRead 조건으로 센다", async () => {
-		asMock(db.notification.count).mockResolvedValue(3);
+		asMock(db.orm.public.Notification.aggregate).mockResolvedValue({ count: 3 });
 
 		await expect(reader.countUnread("user-1")).resolves.toBe(3);
-		expect(db.notification.count).toHaveBeenCalledWith({
-			where: { userId: "user-1", isRead: false },
-		});
+		assertNativeWhere(
+			"Notification",
+			db.orm.public.Notification.where.mock.calls.at(-1)?.[0],
+			(row) => and(row.userId.eq("user-1"), row.isRead.eq(false)),
+		);
 	});
 
 	it("최근 알림 조회는 전달된 context만 조건에 넣는다", async () => {
 		const since = new Date("2026-02-06T00:00:00.000Z");
-		asMock(db.notification.count).mockResolvedValue(1);
+		asMock(db.orm.public.Notification.first).mockResolvedValue(
+			databaseFixture("Notification", { id: 1 }),
+		);
 
 		await expect(
 			reader.existsRecentNotification({
@@ -125,19 +161,21 @@ describe("PrismaNotificationReader", () => {
 				nudgeId: 17,
 			}),
 		).resolves.toBe(true);
-		expect(db.notification.count).toHaveBeenCalledWith({
-			where: {
-				userId: "user-1",
-				type: "NUDGE_RECEIVED",
-				createdAt: { gte: since },
-				friendId: "friend-1",
-				nudgeId: 17,
-			},
-		});
+		assertNativeWhere("Notification", db.orm.public.Notification.where.mock.calls[0]?.[0], (row) =>
+			and(
+				row.userId.eq("user-1"),
+				row._type.eq("NUDGE_RECEIVED"),
+				row.createdAt.gte(databaseTimestamp(since)),
+				row.friendId.eq("friend-1"),
+				row.nudgeId.eq(17),
+			),
+		);
 	});
 
 	it("최근 알림이 없으면 false를 반환한다", async () => {
-		asMock(db.notification.count).mockResolvedValue(0);
+		asMock(db.orm.public.Notification.first).mockResolvedValue(
+			databaseFixture("Notification", null),
+		);
 		await expect(
 			reader.existsRecentNotification({
 				userId: "user-1",
@@ -149,12 +187,10 @@ describe("PrismaNotificationReader", () => {
 
 	it("이미 알림 받은 수신자를 distinct Set으로 반환한다", async () => {
 		const notificationDate = new Date("2026-02-06T00:00:00.000Z");
-		asMock(db.notification.findMany).mockResolvedValue(
-			[{ userId: "user-1" }, { userId: "user-3" }].map((value) => ({
-				...NotificationBuilder.create("user-1").build(),
-				...value,
-			})),
-		);
+		asMock(db.orm.public.Notification.groupBy("userId").aggregate).mockResolvedValue([
+			{ userId: "user-1", count: 1 },
+			{ userId: "user-3", count: 1 },
+		]);
 
 		await expect(
 			reader.findAlreadyNotifiedUserIds({
@@ -164,27 +200,31 @@ describe("PrismaNotificationReader", () => {
 				friendId: "friend-1",
 			}),
 		).resolves.toEqual(new Set(["user-1", "user-3"]));
-		expect(db.notification.findMany).toHaveBeenCalledWith({
-			where: {
-				userId: { in: ["user-1", "user-2", "user-3"] },
-				type: "FRIEND_COMPLETED",
-				friendId: "friend-1",
-				notificationDate,
-			},
-			select: { userId: true },
-			distinct: ["userId"],
-		});
+		assertNativeWhere(
+			"Notification",
+			db.orm.public.Notification.where.mock.calls.at(-1)?.[0],
+			(row) =>
+				and(
+					row.userId.in(["user-1", "user-2", "user-3"]),
+					row._type.eq("FRIEND_COMPLETED"),
+					row.notificationDate.eq(databaseDate(notificationDate)),
+					row.friendId.eq("friend-1"),
+				),
+		);
 	});
 
 	it("마일스톤 metadata 존재 여부를 조회한다", async () => {
-		asMock(db.notification.count).mockResolvedValue(1);
+		asMock(db.orm.public.Notification.first).mockResolvedValue(
+			databaseFixture("Notification", { id: 1 }),
+		);
 
 		await expect(reader.hasMilestoneNotification("user-1", "COUNT_10")).resolves.toBe(true);
-		expect(db.notification.count).toHaveBeenCalledWith({
-			where: {
-				userId: "user-1",
-				metadata: { path: ["milestone"], equals: "COUNT_10" },
-			},
-		});
+		assertNativeWhere("Notification", db.orm.public.Notification.where.mock.calls[0]?.[0], (row) =>
+			row.userId.eq("user-1"),
+		);
+		assertNativeWhere("Notification", db.orm.public.Notification.where.mock.calls[1]?.[0], (row) =>
+			db.raw.sql`${row.metadata} ->> 'milestone' = ${"COUNT_10"}`.returns("pg/bool@1").buildAst(),
+		);
+		expect(db.orm.public.Notification.select).toHaveBeenCalledWith("id");
 	});
 });

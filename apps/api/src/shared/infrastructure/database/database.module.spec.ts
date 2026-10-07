@@ -13,6 +13,7 @@ import {
 import { ClsUnitOfWork } from "./cls-unit-of-work.js";
 import { DatabaseModule } from "./database.module.js";
 import { DatabaseService } from "./database.service.js";
+import { PostgresPool } from "./postgres-pool.js";
 
 const transactionHost = {
 	isTransactionActive: () => false,
@@ -32,6 +33,8 @@ describe("DatabaseModule", () => {
 			imports: [ClsModule.forRoot({ global: true }), TestTransactionHostModule, DatabaseModule],
 		})
 			.overrideProvider(DatabaseService)
+			.useValue({})
+			.overrideProvider(PostgresPool)
 			.useValue({})
 			.compile();
 

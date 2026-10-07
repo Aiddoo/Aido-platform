@@ -3,7 +3,7 @@
  *
  * 타입 안전한 Follow, Nudge, Cheer 엔티티 테스트 데이터 생성
  */
-import type { Cheer, Follow, Nudge } from "#api/generated/prisma/client";
+import type { Cheer, Follow, Nudge } from "#api/shared/infrastructure/database/database.types";
 
 let followCounter = 0;
 let nudgeCounter = 0;

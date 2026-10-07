@@ -6,7 +6,7 @@
 
 **Architecture:** 기존 `notification` 템플릿 카탈로그와 `NotificationMessageBuilder`를 유지하고 명시적 variant ID와 결정적 선택 컨텍스트만 더한다. 스케줄 정책은 `scheduler` 도메인 상수와 오케스트레이터에 모으고, Redis 빈도 제한은 배치 포트로 바꿔 네트워크 왕복을 줄인다. Retention V2는 별도 bounded context를 유지하되 같은 카피 규칙과 타임존 안전 유틸을 사용한다.
 
-**Tech Stack:** NestJS 11, TypeScript 5.9, Prisma 7, PostgreSQL 16, BullMQ, Redis, Jest, Zod 4.3, Biome 2.4
+**Tech Stack:** NestJS 11, TypeScript 5.9, Prisma 8 native ORM, PostgreSQL 16, BullMQ, Redis, Jest, Zod 4.3, Biome 2.4
 
 ## Global Constraints
 

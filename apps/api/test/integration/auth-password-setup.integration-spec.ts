@@ -1,4 +1,5 @@
 import type { TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 /**
  * 비밀번호 설정 통합 테스트 (Testcontainers)
  *
@@ -25,7 +26,9 @@ import { vi } from "vitest";
 import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
@@ -44,7 +47,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 		suppressLogger();
 
 		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
+		databaseService = createTestDatabaseService(await testDb.start());
 		fakeEmailService = new FakeEmailService();
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
@@ -84,23 +87,29 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 		email: string,
 		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
 	): Promise<string> {
-		const prisma = testDb.getPrisma();
-		const user = await prisma.user.create({
-			data: {
-				email,
-				userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-				status: "ACTIVE",
-				emailVerifiedAt: new Date(),
-			},
-		});
+		const prisma = testDb.getClient();
+		const user = decodeRecord(
+			"User",
+			await prisma.orm.public.User.create(
+				encodeCreate("User", {
+					email,
+					userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
+					status: "ACTIVE",
+					emailVerifiedAt: new Date(),
+				}),
+			),
+		);
 
-		await prisma.account.create({
-			data: {
-				userId: user.id,
-				provider,
-				providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-			},
-		});
+		decodeRecord(
+			"Account",
+			await prisma.orm.public.Account.create(
+				encodeCreate("Account", {
+					userId: user.id,
+					provider,
+					providerAccountId: `${provider.toLowerCase()}-${user.id}`,
+				}),
+			),
+		);
 
 		return user.id;
 	}
@@ -154,10 +163,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			expect(result.message).toBeDefined();
 
 			// DB 검증: CREDENTIAL 계정 생성됨
-			const prisma = testDb.getPrisma();
-			const accounts = await prisma.account.findMany({
-				where: { userId },
-			});
+			const prisma = testDb.getClient();
+			const accounts = decodeRecord(
+				"Account",
+				await prisma.orm.public.Account.where((row) => row.userId.eq(userId)).all(),
+			);
 
 			const credentialAccount = accounts.find((a) => a.provider === "CREDENTIAL");
 			expect(credentialAccount).toBeDefined();
@@ -179,10 +189,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			});
 
 			// Then
-			const prisma = testDb.getPrisma();
-			const logs = await prisma.securityLog.findMany({
-				where: { userId, event: "PASSWORD_SETUP" },
-			});
+			const prisma = testDb.getClient();
+			const logs = decodeRecord(
+				"SecurityLog",
+				await prisma.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(userId), row.event.eq("PASSWORD_SETUP")),
+				).all(),
+			);
 			expect(logs).toHaveLength(1);
 			expect(logs[0]?.ipAddress).toBe("192.168.1.1");
 			expect(logs[0]?.userAgent).toBe("IntegrationTest/1.0");
@@ -248,11 +261,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
 			await passwordManagementService.setPassword(userId, code, "NewPassword1");
 
 			// Then - KAKAO 계정과 CREDENTIAL 계정 모두 존재
-			const prisma = testDb.getPrisma();
-			const accounts = await prisma.account.findMany({
-				where: { userId },
-				orderBy: { provider: "asc" },
-			});
+			const prisma = testDb.getClient();
+			const accounts = decodeRecord(
+				"Account",
+				await prisma.orm.public.Account.where((row) => row.userId.eq(userId))
+					.orderBy((row) => row.provider.asc())
+					.all(),
+			);
 
 			expect(accounts).toHaveLength(2);
 			const providers = accounts.map((a) => a.provider);

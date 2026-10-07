@@ -43,7 +43,7 @@ import { WEATHER_PROVIDERS } from "#api/weather/application/weather.providers";
 import { WeatherCacheAdapter } from "#api/weather/infrastructure/adapters/weather-cache.adapter";
 import { PrismaWeatherLocationRepository } from "#api/weather/infrastructure/persistence/prisma-weather-location.repository";
 import { UserLocationBuilder } from "#test/builders/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { createMockDatabaseContext, databaseFixture } from "#test/mocks/database.mock";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 describe("Weather 통합 테스트 (Mock DB)", () => {
@@ -53,15 +53,8 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 	let getWeatherConditionsUseCase: GetWeatherConditionsUseCase;
 
 	// Mock 데이터베이스 서비스
-	const mockUserLocationDb = {
-		findUnique: vi.fn(),
-		upsert: vi.fn(),
-		deleteMany: vi.fn(),
-	};
-
-	const mockDatabaseService = createMockDatabaseService({
-		userLocation: mockUserLocationDb,
-	});
+	const nativeContext = createMockDatabaseContext();
+	const mockUserLocationDb = nativeContext.orm.public.UserLocation;
 
 	// Mock Weather Provider
 	const mockWeatherProvider: WeatherProvider = {
@@ -126,7 +119,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 				{
 					// 어댑터가 CLS에서 tx를 읽음 — 활성 tx 없음 = 베이스 클라이언트 폴백
 					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
+					useValue: { tx: nativeContext },
 				},
 				{ provide: WEATHER_PROVIDER, useValue: mockWeatherProvider },
 				{ provide: AIR_QUALITY_PROVIDER, useValue: mockAirQualityProvider },
@@ -168,8 +161,8 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 		it("위치를 등록하고 결과를 반환해야 한다", async () => {
 			// Given
 			const location = UserLocationBuilder.create("user-1").build();
-			mockUserLocationDb.findUnique.mockResolvedValue(null);
-			mockUserLocationDb.upsert.mockResolvedValue(location);
+			mockUserLocationDb.first.mockResolvedValue(databaseFixture("UserLocation", null));
+			mockUserLocationDb.upsert.mockResolvedValue(databaseFixture("UserLocation", location));
 
 			// When
 			const result = await upsertLocationUseCase.execute({
@@ -188,7 +181,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 		it("위치가 등록된 사용자의 예보를 조회해야 한다", async () => {
 			// Given
 			const location = UserLocationBuilder.create("user-1").build();
-			mockUserLocationDb.findUnique.mockResolvedValue(location);
+			mockUserLocationDb.first.mockResolvedValue(databaseFixture("UserLocation", location));
 
 			// When
 			const result = await getWeatherForecastUseCase.execute({
@@ -204,7 +197,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 
 		it("위치가 미등록이면 ApplicationException을 던져야 한다", async () => {
 			// Given
-			mockUserLocationDb.findUnique.mockResolvedValue(null);
+			mockUserLocationDb.first.mockResolvedValue(databaseFixture("UserLocation", null));
 
 			// When & Then
 			await expect(
@@ -220,7 +213,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 		it("위치가 등록된 사용자의 부가 정보를 조회해야 한다", async () => {
 			// Given
 			const location = UserLocationBuilder.create("user-1").build();
-			mockUserLocationDb.findUnique.mockResolvedValue(location);
+			mockUserLocationDb.first.mockResolvedValue(databaseFixture("UserLocation", location));
 
 			// When
 			const result = await getWeatherConditionsUseCase.execute({
@@ -239,7 +232,7 @@ describe("Weather 통합 테스트 (Mock DB)", () => {
 
 		it("위치가 미등록이면 ApplicationException을 던져야 한다", async () => {
 			// Given
-			mockUserLocationDb.findUnique.mockResolvedValue(null);
+			mockUserLocationDb.first.mockResolvedValue(databaseFixture("UserLocation", null));
 
 			// When & Then
 			await expect(

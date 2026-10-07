@@ -1,13 +1,19 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
-import type { Cheer as CheerRow } from "#api/generated/prisma/client";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
 import { startOfDay } from "#api/shared/domain/date/utils/range";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { USER_BRIEF_SELECT } from "#api/shared/infrastructure/database/selects";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp } from "#api/shared/infrastructure/database/database-values";
+import type { Cheer as CheerRow } from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	CheerRepositoryPort,
@@ -23,14 +29,9 @@ type UserBriefRow = {
 	profile: { name: string | null; profileImage: string | null } | null;
 };
 type CheerRowWithRelations = CheerRow & {
-	sender: UserBriefRow;
-	receiver: UserBriefRow;
+	sender: UserBriefRow | null;
+	receiver: UserBriefRow | null;
 };
-
-const CHEER_INCLUDE = {
-	sender: { select: USER_BRIEF_SELECT },
-	receiver: { select: USER_BRIEF_SELECT },
-} as const;
 
 /**
  * CheerRepositoryPort의 Prisma 어댑터.
@@ -39,9 +40,7 @@ const CHEER_INCLUDE = {
  */
 @Injectable()
 export class PrismaCheerRepository implements CheerRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
@@ -67,111 +66,180 @@ export class PrismaCheerRepository implements CheerRepositoryPort {
 			readAt: row.readAt,
 			createdAt: row.createdAt,
 			sender: {
-				id: row.sender.id,
-				userTag: row.sender.userTag,
-				profile: row.sender.profile,
+				id: requireRecord(row.sender).id,
+				userTag: requireRecord(row.sender).userTag,
+				profile: requireRecord(row.sender).profile,
 			},
 			receiver: {
-				id: row.receiver.id,
-				userTag: row.receiver.userTag,
-				profile: row.receiver.profile,
+				id: requireRecord(row.receiver).id,
+				userTag: requireRecord(row.receiver).userTag,
+				profile: requireRecord(row.receiver).profile,
 			},
 		};
 	}
 
 	async findById(id: number): Promise<Cheer | null> {
-		const row = await this.client.cheer.findUnique({ where: { id } });
+		const row = decodeRecord(
+			"Cheer",
+			await this.client.orm.public.Cheer.where((row) => row.id.eq(id)).first(),
+		);
 		return row ? PrismaCheerRepository.toCheer(row) : null;
 	}
 
 	async findLastCheerToUser(senderId: string, receiverId: string): Promise<Cheer | null> {
-		const row = await this.client.cheer.findFirst({
-			where: { senderId, receiverId },
-			orderBy: { createdAt: "desc" },
-		});
+		const row = decodeRecord(
+			"Cheer",
+			await this.client.orm.public.Cheer.where((row) =>
+				and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
+			)
+				.orderBy((row) => row.createdAt.desc())
+				.first(),
+		);
 		return row ? PrismaCheerRepository.toCheer(row) : null;
 	}
 
 	async markAsRead(id: number): Promise<void> {
-		await this.client.cheer.update({
-			where: { id },
-			data: { readAt: now() },
-		});
+		decodeRecord(
+			"Cheer",
+			requireRecord(
+				await this.client.orm.public.Cheer.where((row) => row.id.eq(id)).update(
+					encodePatch("Cheer", { readAt: now() }),
+				),
+			),
+		);
 	}
 
 	async markManyAsRead(ids: number[], receiverId: string): Promise<number> {
-		const result = await this.client.cheer.updateMany({
-			where: { id: { in: ids }, receiverId, readAt: null },
-			data: { readAt: now() },
-		});
+		const result = {
+			count: await this.client.orm.public.Cheer.where((row) =>
+				and(row.id.in(ids), row.receiverId.eq(receiverId), row.readAt.isNull()),
+			).updateAndCount(encodePatch("Cheer", { readAt: now() })),
+		};
 		return result.count;
 	}
 
 	async findReceivedCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
 		const { userId, cursor, size } = params;
-		const rows = await this.client.cheer.findMany({
-			where: { receiverId: userId },
-			include: CHEER_INCLUDE,
-			take: size + 1,
-			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		let cheers = this.client.orm.public.Cheer.where({ receiverId: userId })
+			.include("sender", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			)
+			.include("receiver", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			)
+			.orderBy((row) => row.createdAt.desc())
+			.orderBy((row) => row.id.desc())
+			.limit(size + 1);
+		if (cursor !== undefined && cursor !== null) {
+			const anchor = await this.client.orm.public.Cheer.where({ id: cursor })
+				.select("id", "createdAt")
+				.first();
+			if (anchor === null) return [];
+			cheers = cheers.cursor(anchor);
+		}
+		const rows = decodeRecord("Cheer", await cheers.all());
 		return rows.map((row) => PrismaCheerRepository.toWithRelations(row));
 	}
 
 	async findSentCheers(params: FindCheersParams): Promise<CheerWithRelations[]> {
 		const { userId, cursor, size } = params;
-		const rows = await this.client.cheer.findMany({
-			where: { senderId: userId },
-			include: CHEER_INCLUDE,
-			take: size + 1,
-			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		let cheers = this.client.orm.public.Cheer.where({ senderId: userId })
+			.include("sender", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			)
+			.include("receiver", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			)
+			.orderBy((row) => row.createdAt.desc())
+			.orderBy((row) => row.id.desc())
+			.limit(size + 1);
+		if (cursor !== undefined && cursor !== null) {
+			const anchor = await this.client.orm.public.Cheer.where({ id: cursor })
+				.select("id", "createdAt")
+				.first();
+			if (anchor === null) return [];
+			cheers = cheers.cursor(anchor);
+		}
+		const rows = decodeRecord("Cheer", await cheers.all());
 		return rows.map((row) => PrismaCheerRepository.toWithRelations(row));
 	}
 
 	async countTodayCheers(senderId: string, date: Date): Promise<number> {
 		const dayStart = startOfDay(date);
 		const dayEnd = addDays(1, dayStart);
-		return this.client.cheer.count({
-			where: { senderId, createdAt: { gte: dayStart, lt: dayEnd } },
-		});
+		return this.client.orm.public.Cheer.where((row) =>
+			and(
+				row.senderId.eq(senderId),
+				row.createdAt.gte(databaseTimestamp(dayStart)),
+				row.createdAt.lt(databaseTimestamp(dayEnd)),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {
-		return this.client.cheer.count({
-			where: {
-				senderId,
-				createdAt: { gte: since, lt: untilExclusive },
-			},
-		});
+		return this.client.orm.public.Cheer.where((row) =>
+			and(
+				row.senderId.eq(senderId),
+				row.createdAt.gte(databaseTimestamp(since)),
+				row.createdAt.lt(databaseTimestamp(untilExclusive)),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countReceived(userId: string): Promise<number> {
-		return this.client.cheer.count({ where: { receiverId: userId } });
+		return this.client.orm.public.Cheer.where((row) => row.receiverId.eq(userId))
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countSent(userId: string): Promise<number> {
-		return this.client.cheer.count({ where: { senderId: userId } });
+		return this.client.orm.public.Cheer.where((row) => row.senderId.eq(userId))
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countUnreadReceived(userId: string): Promise<number> {
-		return this.client.cheer.count({
-			where: { receiverId: userId, readAt: null },
-		});
+		return this.client.orm.public.Cheer.where((row) =>
+			and(row.receiverId.eq(userId), row.readAt.isNull()),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async createWithRelations(input: CreateCheerInput): Promise<CheerWithRelations> {
-		const row = await this.client.cheer.create({
-			data: {
-				sender: { connect: { id: input.senderId } },
-				receiver: { connect: { id: input.receiverId } },
-				message: input.message,
-				createdAt: input.createdAt,
-			},
-			include: CHEER_INCLUDE,
-		});
+		const row = decodeRecord(
+			"Cheer",
+			await this.client.orm.public.Cheer.include("sender", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			)
+				.include("receiver", (user) =>
+					user
+						.select("id", "userTag")
+						.include("profile", (profile) => profile.select("name", "profileImage")),
+				)
+				.create(
+					encodeCreate("Cheer", {
+						senderId: input.senderId,
+						receiverId: input.receiverId,
+						message: input.message,
+						createdAt: input.createdAt,
+					}),
+				),
+		);
 		return PrismaCheerRepository.toWithRelations(row);
 	}
 }

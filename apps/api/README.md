@@ -2,7 +2,7 @@
 
 > **Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
 
-NestJS 12 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
+NestJS 12 기반 RESTful API 서버. Prisma 8 RC + PostgreSQL.
 
 ## 목차
 
@@ -18,15 +18,15 @@ NestJS 12 기반 RESTful API 서버. Prisma 7 + PostgreSQL.
 
 ## 기술 스택
 
-| 분류          | 기술                               |
-| ------------- | ---------------------------------- |
-| Framework     | NestJS 12                          |
-| ORM           | Prisma 7 + @prisma/adapter-pg      |
-| Database      | PostgreSQL 16                      |
-| Validation    | Zod + StandardSchemaValidationPipe |
-| Documentation | Swagger/OpenAPI                    |
-| Logging       | Pino                               |
-| Testing       | Vitest, Testcontainers             |
+| 분류          | 기술                                |
+| ------------- | ----------------------------------- |
+| Framework     | NestJS 12                           |
+| ORM           | Prisma 8 native PostgreSQL ORM (RC) |
+| Database      | PostgreSQL 16                       |
+| Validation    | Zod + StandardSchemaValidationPipe  |
+| Documentation | Swagger/OpenAPI                     |
+| Logging       | Pino                                |
+| Testing       | Vitest, Testcontainers              |
 
 ## 구조
 
@@ -79,7 +79,7 @@ pnpm docker:dev:down
 - `docker-compose.dev.yml`
 - `NODE_ENV=development`
 - 로컬 Postgres(`aido_dev`) 포함
-- 앱 시작 전 `prisma migrate deploy` 자동 실행
+- 앱 시작 전 별도 migration 이미지에서 `db:deploy`를 실행하고 Prisma 8 graph·schema를 검증
 
 ## Docker 실행 (운영)
 
@@ -123,7 +123,6 @@ pnpm docker:prod:down
 | `pnpm test:e2e`         | E2E 테스트        |
 | `pnpm test:integration` | 통합 테스트       |
 | `pnpm db:migrate`       | 마이그레이션      |
-| `pnpm db:studio`        | Prisma Studio     |
 
 ## API 문서
 

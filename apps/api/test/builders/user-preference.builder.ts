@@ -13,8 +13,10 @@
  * const nightPush = UserPreferenceBuilder.create('user-123').withNightPushEnabled().build();
  * ```
  */
-import type { UserPreference } from "#api/generated/prisma/client";
-import type { TimeFormat } from "#api/generated/prisma/enums";
+import type {
+	TimeFormat,
+	UserPreference,
+} from "#api/shared/infrastructure/database/database.types";
 
 export class UserPreferenceBuilder {
 	private data: UserPreference;

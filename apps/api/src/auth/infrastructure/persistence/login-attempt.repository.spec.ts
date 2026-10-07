@@ -1,4 +1,4 @@
-import { TestBed } from "@suites/unit";
+import { and } from "@prisma/orm-postgres/orm-client";
 /**
  * LoginAttemptRepository 단위 테스트
  *
@@ -12,17 +12,22 @@ import { TestBed } from "@suites/unit";
  * ```
  */
 import { vi } from "vitest";
-import type { Mocked } from "vitest";
 
-import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
 import { LoginAttemptBuilder } from "#test/builders/index";
+import {
+	assertNativeWhere,
+	databaseFixture,
+	databaseWriteExpectation,
+} from "#test/mocks/database.mock";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { asTxClient, createMockTxClient } from "#test/mocks/transaction.mock";
 
 import { LoginAttemptRepository } from "./login-attempt.repository.js";
 
 describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	let repository: LoginAttemptRepository;
-	let db: Mocked<DatabaseService>;
+	let db: ReturnType<typeof createMockDatabaseService>;
 
 	const mockSuccessfulAttempt = LoginAttemptBuilder.create("user@example.com")
 		.withId(1)
@@ -40,11 +45,8 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 		.build();
 
 	beforeEach(async () => {
-		// Given - Suites가 모든 의존성을 자동으로 mock
-		const { unit, unitRef } = await TestBed.solitary(LoginAttemptRepository).compile();
-
-		repository = unit;
-		db = unitRef.get(DatabaseService);
+		db = createMockDatabaseService();
+		repository = new LoginAttemptRepository(db);
 	});
 
 	describe("create", () => {
@@ -57,23 +59,27 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 				userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
 				success: true,
 			};
-			vi.mocked(db.loginAttempt.create).mockResolvedValue(mockSuccessfulAttempt);
+			vi.mocked(db.db.orm.public.LoginAttempt.create).mockResolvedValue(
+				databaseFixture("LoginAttempt", mockSuccessfulAttempt),
+			);
 
 			// When
 			const result = await repository.create(createData);
 
 			// Then
 			expect(result).toEqual(mockSuccessfulAttempt);
-			expect(db.loginAttempt.create).toHaveBeenCalledWith({
-				data: {
-					email: createData.email,
-					provider: createData.provider,
-					ipAddress: createData.ipAddress,
-					userAgent: createData.userAgent,
-					success: createData.success,
-					failureReason: undefined,
-				},
-			});
+			expect(db.db.orm.public.LoginAttempt.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("LoginAttempt", {
+						email: createData.email,
+						provider: createData.provider,
+						ipAddress: createData.ipAddress,
+						userAgent: createData.userAgent,
+						success: createData.success,
+						failureReason: undefined,
+					}),
+				),
+			);
 		});
 
 		it("실패한 로그인 시도를 기록한다", async () => {
@@ -86,29 +92,35 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 				success: false,
 				failureReason: "INVALID_PASSWORD",
 			};
-			vi.mocked(db.loginAttempt.create).mockResolvedValue(mockFailedAttempt);
+			vi.mocked(db.db.orm.public.LoginAttempt.create).mockResolvedValue(
+				databaseFixture("LoginAttempt", mockFailedAttempt),
+			);
 
 			// When
 			const result = await repository.create(createData);
 
 			// Then
 			expect(result).toEqual(mockFailedAttempt);
-			expect(db.loginAttempt.create).toHaveBeenCalledWith({
-				data: {
-					email: createData.email,
-					provider: createData.provider,
-					ipAddress: createData.ipAddress,
-					userAgent: createData.userAgent,
-					success: createData.success,
-					failureReason: createData.failureReason,
-				},
-			});
+			expect(db.db.orm.public.LoginAttempt.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("LoginAttempt", {
+						email: createData.email,
+						provider: createData.provider,
+						ipAddress: createData.ipAddress,
+						userAgent: createData.userAgent,
+						success: createData.success,
+						failureReason: createData.failureReason,
+					}),
+				),
+			);
 		});
 
 		it("트랜잭션 클라이언트를 사용하여 기록한다", async () => {
 			// Given
 			const mockTx = createMockTxClient();
-			mockTx.loginAttempt.create.mockResolvedValue(mockSuccessfulAttempt);
+			mockTx.orm.public.LoginAttempt.create.mockResolvedValue(
+				databaseFixture("LoginAttempt", mockSuccessfulAttempt),
+			);
 			const createData = {
 				email: "user@example.com",
 				provider: "CREDENTIAL" as const,
@@ -122,8 +134,8 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(mockSuccessfulAttempt);
-			expect(mockTx.loginAttempt.create).toHaveBeenCalled();
-			expect(db.loginAttempt.create).not.toHaveBeenCalled();
+			expect(mockTx.orm.public.LoginAttempt.create).toHaveBeenCalled();
+			expect(db.db.orm.public.LoginAttempt.create).not.toHaveBeenCalled();
 		});
 	});
 
@@ -132,25 +144,28 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("이메일 기준 최근 실패 횟수를 카운트한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.count).mockResolvedValue(3);
+			vi.mocked(db.db.orm.public.LoginAttempt.aggregate).mockResolvedValue({ count: 3 });
 
 			// When
 			const result = await repository.countRecentFailuresByEmail("user@example.com", since);
 
 			// Then
 			expect(result).toBe(3);
-			expect(db.loginAttempt.count).toHaveBeenCalledWith({
-				where: {
-					email: "user@example.com",
-					success: false,
-					createdAt: { gte: since },
-				},
-			});
+			assertNativeWhere(
+				"LoginAttempt",
+				db.db.orm.public.LoginAttempt.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.email.eq(varchar("user@example.com", 255)),
+						row.success.eq(false),
+						row.createdAt.gte(databaseTimestamp(since)),
+					),
+			);
 		});
 
 		it("실패 기록이 없으면 0을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
+			vi.mocked(db.db.orm.public.LoginAttempt.aggregate).mockResolvedValue({ count: 0 });
 
 			// When
 			const result = await repository.countRecentFailuresByEmail("clean@example.com", since);
@@ -165,25 +180,28 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 		it("IP 기준 최근 실패 횟수를 카운트한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.count).mockResolvedValue(5);
+			vi.mocked(db.db.orm.public.LoginAttempt.aggregate).mockResolvedValue({ count: 5 });
 
 			// When
 			const result = await repository.countRecentFailuresByIp("192.168.1.1", since);
 
 			// Then
 			expect(result).toBe(5);
-			expect(db.loginAttempt.count).toHaveBeenCalledWith({
-				where: {
-					ipAddress: "192.168.1.1",
-					success: false,
-					createdAt: { gte: since },
-				},
-			});
+			assertNativeWhere(
+				"LoginAttempt",
+				db.db.orm.public.LoginAttempt.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.ipAddress.eq(varchar("192.168.1.1", 45)),
+						row.success.eq(false),
+						row.createdAt.gte(databaseTimestamp(since)),
+					),
+			);
 		});
 
 		it("실패 기록이 없으면 0을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.count).mockResolvedValue(0);
+			vi.mocked(db.db.orm.public.LoginAttempt.aggregate).mockResolvedValue({ count: 0 });
 
 			// When
 			const result = await repository.countRecentFailuresByIp("10.0.0.1", since);
@@ -196,25 +214,27 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	describe("findLastSuccessByEmail", () => {
 		it("이메일의 마지막 성공 기록을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(mockSuccessfulAttempt);
+			vi.mocked(db.db.orm.public.LoginAttempt.first).mockResolvedValue(
+				databaseFixture("LoginAttempt", mockSuccessfulAttempt),
+			);
 
 			// When
 			const result = await repository.findLastSuccessByEmail("user@example.com");
 
 			// Then
 			expect(result).toEqual(mockSuccessfulAttempt);
-			expect(db.loginAttempt.findFirst).toHaveBeenCalledWith({
-				where: {
-					email: "user@example.com",
-					success: true,
-				},
-				orderBy: { createdAt: "desc" },
-			});
+			assertNativeWhere(
+				"LoginAttempt",
+				db.db.orm.public.LoginAttempt.where.mock.calls[0]?.[0],
+				(row) => and(row.email.eq(varchar("user@example.com", 255)), row.success.eq(true)),
+			);
 		});
 
 		it("성공 기록이 없으면 null을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(null);
+			vi.mocked(db.db.orm.public.LoginAttempt.first).mockResolvedValue(
+				databaseFixture("LoginAttempt", null),
+			);
 
 			// When
 			const result = await repository.findLastSuccessByEmail("new@example.com");
@@ -227,25 +247,27 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 	describe("findLastFailureByEmail", () => {
 		it("이메일의 마지막 실패 기록을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(mockFailedAttempt);
+			vi.mocked(db.db.orm.public.LoginAttempt.first).mockResolvedValue(
+				databaseFixture("LoginAttempt", mockFailedAttempt),
+			);
 
 			// When
 			const result = await repository.findLastFailureByEmail("user@example.com");
 
 			// Then
 			expect(result).toEqual(mockFailedAttempt);
-			expect(db.loginAttempt.findFirst).toHaveBeenCalledWith({
-				where: {
-					email: "user@example.com",
-					success: false,
-				},
-				orderBy: { createdAt: "desc" },
-			});
+			assertNativeWhere(
+				"LoginAttempt",
+				db.db.orm.public.LoginAttempt.where.mock.calls[0]?.[0],
+				(row) => and(row.email.eq(varchar("user@example.com", 255)), row.success.eq(false)),
+			);
 		});
 
 		it("실패 기록이 없으면 null을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.findFirst).mockResolvedValue(null);
+			vi.mocked(db.db.orm.public.LoginAttempt.first).mockResolvedValue(
+				databaseFixture("LoginAttempt", null),
+			);
 
 			// When
 			const result = await repository.findLastFailureByEmail("clean@example.com");
@@ -265,46 +287,46 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
 			// Then
 			// 메서드가 no-op이므로 DB 호출이 없어야 함
-			expect(db.loginAttempt.deleteMany).not.toHaveBeenCalled();
+			expect(db.db.orm.public.LoginAttempt.deleteAndCount).not.toHaveBeenCalled();
 		});
 	});
 
 	describe("deleteOld", () => {
 		it("기본 30일 이전 기록을 삭제한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.deleteMany).mockResolvedValue({ count: 100 });
+			vi.mocked(db.db.orm.public.LoginAttempt.deleteAndCount).mockResolvedValue(100);
 
 			// When
 			const result = await repository.deleteOld();
 
 			// Then
 			expect(result).toBe(100);
-			expect(db.loginAttempt.deleteMany).toHaveBeenCalledWith({
-				where: {
-					createdAt: { lt: expect.any(Date) },
-				},
-			});
+			assertNativeWhere(
+				"LoginAttempt",
+				db.db.orm.public.LoginAttempt.where.mock.calls.at(-1)?.[0],
+				(row) => row.createdAt.lt(expect.any(String)),
+			);
 		});
 
 		it("지정된 보관 기간으로 삭제한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.deleteMany).mockResolvedValue({ count: 50 });
+			vi.mocked(db.db.orm.public.LoginAttempt.deleteAndCount).mockResolvedValue(50);
 
 			// When
 			const result = await repository.deleteOld(7);
 
 			// Then
 			expect(result).toBe(50);
-			expect(db.loginAttempt.deleteMany).toHaveBeenCalledWith({
-				where: {
-					createdAt: { lt: expect.any(Date) },
-				},
-			});
+			assertNativeWhere(
+				"LoginAttempt",
+				db.db.orm.public.LoginAttempt.where.mock.calls.at(-1)?.[0],
+				(row) => row.createdAt.lt(expect.any(String)),
+			);
 		});
 
 		it("삭제할 기록이 없으면 0을 반환한다", async () => {
 			// Given
-			vi.mocked(db.loginAttempt.deleteMany).mockResolvedValue({ count: 0 });
+			vi.mocked(db.db.orm.public.LoginAttempt.deleteAndCount).mockResolvedValue(0);
 
 			// When
 			const result = await repository.deleteOld();

@@ -104,7 +104,7 @@ push(main) ─→ CI (lint / test / build / docker*)   * arm64 러너에서 이�
 
 - 배포 대상은 **CI가 검증한 SHA로 고정**된다 (`workflow_run.head_sha`) — 배포 시점의 `origin/main` HEAD가 아니다.
 - `workflow_run` 트리거 특성상 `deploy.yml`은 **기본 브랜치(develop)의 파일**이 실행된다. 배포 로직 본체는 배포 대상 SHA의 `scripts/deploy.sh`.
-- 수동 배포/롤백: GitHub Actions → **Deploy to EC2 → Run workflow**. `sha` 비우면 main의 최신 CI 성공 커밋, 이전 커밋으로 되돌릴 땐 `sha` 입력 + `force` 체크.
+- 수동 배포/롤백: GitHub Actions → **Deploy to EC2 → Run workflow**. `sha` 비우면 이미지가 발행된 main의 최신 CI 성공 커밋, 이전 커밋으로 되돌릴 땐 `sha` 입력 + `force` 체크.
 
 ### 3.2 배포 단계 (`scripts/deploy.sh`)
 
@@ -349,7 +349,7 @@ Production 이미지는 `node:24.21.0-alpine3.24` + production deps만 포함하
 
 ## 1.10 ESM 런타임
 
-NestJS 12, Prisma 7.10, NodeNext ESM을 사용한다. API package의 `#api/*` imports는 개발 중 source를, 배포 중 `dist/src`를 가리킨다. 상대 import에는 `.js`를 명시한다.
+NestJS 12, Prisma 8 RC, NodeNext ESM을 사용한다. API package의 `#api/*` imports는 개발 중 source를, 배포 중 `dist/src`를 가리킨다. 상대 import에는 `.js`를 명시한다.
 
 `bootstrap.ts`가 instrumentation을 먼저 초기화하고 `main.ts`를 동적으로 불러온다. 개발 Nest CLI와 production start는 같은 진입 순서를 따른다. ESM dependency가 먼저 평가되어 Sentry가 늦게 시작되는 순서를 만들지 않는다.
 
@@ -357,9 +357,17 @@ SIGTERM/SIGINT는 단일 handler가 한 번만 처리한다. Nest 모듈 종료�
 
 DB migration 이미지는 애플리케이션 runtime과 분리한다. Prisma와 pg-boss의 두 DB URL을 먼저 검증하고 migration을 실행한다. 원격 DB는 명시적인 `AIDO_ALLOW_REMOTE_DB=1`이 필요하며 URL 오류에 자격증명을 출력하지 않는다.
 
-Prisma CLI는 build의 client generation과 별도 migration 이미지에서 사용한다. API production dependency에는 client runtime과 PostgreSQL/CLS adapter만 필요하다. CLI 전용 의존성이 API 이미지에 들어오지 않도록 선택된 client/transaction adapter 버전의 CLI peer 연결만 제거하며, 각 workspace의 직접 CLI 의존성과 strict peer 검사는 유지한다.
+Prisma 8 CLI는 contract 생성과 별도 migration 이미지에서 사용한다. API production dependency에는 단일 ORM runtime과 PostgreSQL pool만 포함하고 CLI는 dev dependency로 유지한다. Migration workspace는 CLI와 ORM을 직접 의존하며 contract source·JSON·native graph를 포함한다. 기존 DB는 baseline 스키마 검증 후에만 계약 marker를 등록하고, marker가 있는 DB는 재등록하지 않는다. 자세한 절차는 [.claude/prisma.md](.claude/prisma.md)를 따른다.
 
 공개 route, HTTP status, 오류 envelope, 기존 스토어 클라이언트 계약은 유지한다. Zod는 기존 공개 검증 규칙을 유지하는 4.3 patch 계열을 사용하며, CUID/date-time 규칙을 바꾸는 업데이트는 별도 계약 변경으로 다룬다.
+
+### CI 실행 범위와 스크립트
+
+공식 `actions/github-script`의 Octokit으로 PR·스택·배포 run을 조회한다. 스택 tip은 base부터 tip까지 누적 diff를 검증하고, diff를 확정하지 못하면 전체 검증을 실행한다. 프로젝트 고유 규칙은 `scripts/ci/stack-policy.mjs`, `dependency-scope.mjs`와 해당 Node 테스트에 둔다. 별도의 GitHub API wrapper는 없다.
+
+문서 변경은 lint/format만 실행한다. API 영향이 없으면 integration/E2E/API build/Docker job을 시작하지 않는다. API 전용 job은 API 의존성만 설치한다. Turbo의 generation·검증 캐시를 사용하고 Docker API/migration 캐시 scope를 분리한다. Docker 발행은 모든 서버 검증 성공 후에만 수행한다. 이미지 job이 생략된 CI run은 자동 배포도 생략한다. 수동 SHA도 API/migration 두 이미지 manifest를 확인한 후 SSH에 연결한다.
+
+로그는 workflow의 `shell: bash`가 제공하는 `-eo pipefail`과 `tee`로 기록하고, 실패 시 공식 `actions/upload-artifact`로 업로드한다. `run-with-tee.sh` 및 전용 shell 테스트는 제거했다. 서버 배포의 락·health check·실패 롤백은 `scripts/deploy.sh`, DB URL 안전장치와 두 DB의 migration은 기존 전용 스크립트로 유지한다. 공식 Actions가 이 프로젝트의 DB/배포 의미를 대체하지는 않는다.
 
 ## 구 클라이언트 릴리스 gate
 

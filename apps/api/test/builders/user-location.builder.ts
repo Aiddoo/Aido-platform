@@ -17,7 +17,7 @@
  *   .build();
  * ```
  */
-import type { UserLocation } from "#api/generated/prisma/client";
+import type { UserLocation } from "#api/shared/infrastructure/database/database.types";
 
 export class UserLocationBuilder {
 	private data: UserLocation;

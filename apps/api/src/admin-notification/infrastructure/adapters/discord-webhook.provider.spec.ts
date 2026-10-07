@@ -1,3 +1,5 @@
+import { HttpClient } from "@nestjs/http-client";
+
 /**
  * DiscordWebhookProvider 프로바이더 단위 테스트
  *
@@ -14,7 +16,10 @@ import { DiscordWebhookProvider } from "./discord-webhook.provider.js";
 describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
 	it("name이 discord이다", () => {
 		// Given
-		const provider = new DiscordWebhookProvider(undefined);
+		const provider = new DiscordWebhookProvider(
+			undefined,
+			new HttpClient({ retry: false, throwOnHttpError: false }),
+		);
 
 		// When
 		const name = provider.name;
@@ -25,7 +30,10 @@ describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
 
 	it("webhookUrl이 없으면 isConfigured가 false이다", () => {
 		// Given
-		const provider = new DiscordWebhookProvider(undefined);
+		const provider = new DiscordWebhookProvider(
+			undefined,
+			new HttpClient({ retry: false, throwOnHttpError: false }),
+		);
 
 		// When
 		const configured = provider.isConfigured();
@@ -38,6 +46,7 @@ describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
 		// Given
 		const provider = new DiscordWebhookProvider(
 			"https://discord.com/api/webhooks/test-id/test-token",
+			new HttpClient({ retry: false, throwOnHttpError: false }),
 		);
 
 		// When
@@ -49,7 +58,10 @@ describe("DiscordWebhookProvider — Discord 웹훅 프로바이더", () => {
 
 	it("webhookUrl이 없으면 send에서 전송을 건너뛴다", async () => {
 		// Given
-		const provider = new DiscordWebhookProvider(undefined);
+		const provider = new DiscordWebhookProvider(
+			undefined,
+			new HttpClient({ retry: false, throwOnHttpError: false }),
+		);
 
 		// When
 		const result = await provider.send({

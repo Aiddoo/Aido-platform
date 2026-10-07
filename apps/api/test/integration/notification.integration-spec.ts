@@ -1,5 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
 import { ACTIVE_PUSH_TOKEN_READER } from "#api/notification/application/ports/active-push-token.reader.port";
@@ -66,7 +67,17 @@ import { DEDUP_PROVIDER } from "#api/shared/infrastructure/dedup/interfaces/dedu
 import { LOCK_PROVIDER } from "#api/shared/infrastructure/lock/interfaces/lock.interface";
 import { UserConsentRepository } from "#api/user-settings/infrastructure/persistence/user-consent.repository";
 import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
+import { UserPreferenceBuilder } from "#test/builders/index";
 import { NotificationBuilder, PushTokenBuilder } from "#test/builders/index";
+import { asMock } from "#test/mocks/bull-job.mock";
+import {
+	assertNativeWhere,
+	assertNativeWhereContains,
+	createMockDatabaseContext,
+	databaseFixture,
+	databaseWriteExpectation,
+	nativeRows,
+} from "#test/mocks/database.mock";
 import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -104,70 +115,21 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	let repository: PrismaNotificationRepository;
 
 	// Mock 데이터베이스 서비스
-	const mockNotificationDb = {
-		create: vi.fn(),
-		createMany: vi.fn(),
-		createManyAndReturn: vi.fn(),
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		findMany: vi.fn(),
-		update: vi.fn(),
-		updateMany: vi.fn(),
-		delete: vi.fn(),
-		deleteMany: vi.fn(),
-		count: vi.fn(),
-	};
+	const nativeContext = createMockDatabaseContext();
+	const mockNotificationDb = nativeContext.orm.public.Notification;
 
-	const mockPushDispatchDb = {
-		upsert: vi.fn(),
-		update: vi.fn(),
-		updateMany: vi.fn(),
-	};
+	const mockPushDispatchDb = nativeContext.orm.public.PushDispatch;
 
-	const mockPushDeliveryAttemptDb = {
-		createMany: vi.fn(),
-		findMany: vi.fn(),
-		updateMany: vi.fn(),
-	};
+	const mockPushDeliveryAttemptDb = nativeContext.orm.public.PushDeliveryAttempt;
 
-	const mockPushTokenDb = {
-		create: vi.fn(),
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		findMany: vi.fn(),
-		upsert: vi.fn(),
-		delete: vi.fn(),
-		deleteMany: vi.fn(),
-	};
+	const mockPushTokenDb = nativeContext.orm.public.PushToken;
 
-	const mockUserPreferenceDb = {
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		findMany: vi.fn(),
-		create: vi.fn(),
-		update: vi.fn(),
-		upsert: vi.fn(),
-	};
+	const mockUserPreferenceDb = nativeContext.orm.public.UserPreference;
 
-	const mockUserConsentDb = {
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		findMany: vi.fn(),
-		create: vi.fn(),
-		update: vi.fn(),
-		upsert: vi.fn(),
-	};
+	const mockUserConsentDb = nativeContext.orm.public.UserConsent;
 
 	const mockDatabaseService = {
-		...createMockDatabaseService({
-			notification: mockNotificationDb,
-			pushToken: mockPushTokenDb,
-			pushDispatch: mockPushDispatchDb,
-			pushDeliveryAttempt: mockPushDeliveryAttemptDb,
-			userPreference: mockUserPreferenceDb,
-			userConsent: mockUserConsentDb,
-		}),
-		$queryRaw: vi.fn(),
+		...createMockDatabaseService(nativeContext),
 	};
 
 	// Mock Push Provider
@@ -200,32 +162,33 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	const mockUserId = "user-notification-123";
 	const mockNotificationId = 1;
 	const mockPushToken = "ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]";
-	const releasedNotificationTypes = [
-		"FOLLOW_NEW",
-		"FOLLOW_ACCEPTED",
-		"NUDGE_RECEIVED",
-		"CHEER_RECEIVED",
-		"DAILY_COMPLETE",
-		"FRIEND_COMPLETED",
-		"TODO_REMINDER",
-		"TODO_SHARED",
-		"MORNING_REMINDER",
-		"EVENING_REMINDER",
-		"WEEKLY_ACHIEVEMENT",
-		"WEEKLY_REPORT",
-		"MONTHLY_REPORT",
-		"AI_SUGGESTION",
-		"SYSTEM_NOTICE",
-		"ADMIN_BROADCAST",
-		"ADMIN_TARGETED",
-		"WINBACK",
-		"SOCIAL_DIGEST",
-		"NUDGE_SUGGEST",
-		"LUNCH_NUDGE",
-		"STREAK_AT_RISK",
-		"WEATHER_MORNING",
-		"WEATHER_EVENING",
-	];
+	const releasedNotificationTypes: import("#api/notification/domain/types/notification-type").NotificationType[] =
+		[
+			"FOLLOW_NEW",
+			"FOLLOW_ACCEPTED",
+			"NUDGE_RECEIVED",
+			"CHEER_RECEIVED",
+			"DAILY_COMPLETE",
+			"FRIEND_COMPLETED",
+			"TODO_REMINDER",
+			"TODO_SHARED",
+			"MORNING_REMINDER",
+			"EVENING_REMINDER",
+			"WEEKLY_ACHIEVEMENT",
+			"WEEKLY_REPORT",
+			"MONTHLY_REPORT",
+			"AI_SUGGESTION",
+			"SYSTEM_NOTICE",
+			"ADMIN_BROADCAST",
+			"ADMIN_TARGETED",
+			"WINBACK",
+			"SOCIAL_DIGEST",
+			"NUDGE_SUGGEST",
+			"LUNCH_NUDGE",
+			"STREAK_AT_RISK",
+			"WEATHER_MORNING",
+			"WEATHER_EVENING",
+		];
 
 	beforeAll(async () => {
 		suppressLogger();
@@ -344,7 +307,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				{
 					// CLS 트랜잭션 스텁 — tx가 항상 mock DB를 반환 (기존 tx ?? database와 등가)
 					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
+					useValue: { tx: nativeContext },
 				},
 				{
 					provide: TypedConfigService,
@@ -420,27 +383,27 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 		vi.clearAllMocks();
 		NotificationBuilder.resetIdCounter();
 		PushTokenBuilder.resetIdCounter();
-		mockPushDispatchDb.upsert.mockResolvedValue({ id: 1 });
-		mockPushDispatchDb.update.mockResolvedValue({});
-		mockPushDispatchDb.updateMany.mockResolvedValue({ count: 1 });
-		mockPushDeliveryAttemptDb.createMany.mockResolvedValue({ count: 0 });
-		mockDatabaseService.$queryRaw.mockResolvedValue(
+		asMock(mockPushDispatchDb.upsert).mockResolvedValue(databaseFixture("PushDispatch", { id: 1 }));
+		asMock(mockPushDispatchDb.update).mockResolvedValue(databaseFixture("PushDispatch", {}));
+		asMock(mockPushDispatchDb.updateAndCount).mockResolvedValue(1);
+		asMock(mockPushDeliveryAttemptDb.createAndCount).mockResolvedValue(0);
+		nativeContext.query.mockResolvedValue(
 			Array.from({ length: 20 }, (_, index) => ({
 				id: index + 1,
 				notificationId: index + 1,
 			})),
 		);
-		mockNotificationDb.createManyAndReturn.mockImplementation(
-			async ({ data }: { data: Array<Record<string, unknown>> }) =>
-				data.map((item, index) => ({
-					id: index + 1,
-					isRead: false,
-					readAt: null,
-					openedAt: null,
-					createdAt: new Date(),
-					updatedAt: new Date(),
-					...item,
-				})),
+		asMock(mockNotificationDb.createAll).mockImplementation((data) =>
+			nativeRows(
+				data.map((item, index) =>
+					databaseFixture("Notification", {
+						...NotificationBuilder.create(item.userId)
+							.withId(index + 1)
+							.build(),
+						...item,
+					}),
+				),
+			),
 		);
 	});
 
@@ -474,7 +437,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				.withToken(mockPushToken)
 				.asIos()
 				.build();
-			mockPushTokenDb.upsert.mockResolvedValue(mockToken);
+			asMock(mockPushTokenDb.upsert).mockResolvedValue(databaseFixture("PushToken", mockToken));
 			mockPushProvider.validateToken.mockReturnValue(true);
 
 			// When - 푸시 토큰 등록 (파사드는 void 반환 — 등록 자체가 목적)
@@ -512,8 +475,10 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				NotificationBuilder.create(mockUserId).withId(1).asNudgeReceived("friend-1", 1).build(),
 				NotificationBuilder.create(mockUserId).withId(2).asCheerReceived("friend-2", 1).build(),
 			];
-			mockNotificationDb.findMany.mockResolvedValue(mockNotifications);
-			mockNotificationDb.count.mockResolvedValue(2);
+			mockNotificationDb.all.mockReturnValue(
+				nativeRows(databaseFixture("Notification", mockNotifications)),
+			);
+			asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 2 });
 
 			// When - 알림 목록 조회
 			const result = await facade.getNotifications({ userId: mockUserId });
@@ -521,7 +486,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			// Then - 목록 및 페이지네이션 검증
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
-			expect(mockNotificationDb.findMany).toHaveBeenCalled();
+			expect(mockNotificationDb.all).toHaveBeenCalled();
 		});
 
 		it("읽지 않은 알림만 필터링해야 함", async () => {
@@ -529,26 +494,25 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			const mockNotifications = [
 				NotificationBuilder.create(mockUserId).withId(1).asUnread().build(),
 			];
-			mockNotificationDb.findMany.mockResolvedValue(mockNotifications);
-			mockNotificationDb.count.mockResolvedValue(1);
+			mockNotificationDb.all.mockReturnValue(
+				nativeRows(databaseFixture("Notification", mockNotifications)),
+			);
+			asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 1 });
 
 			// When - 읽지 않은 알림만 조회
 			await facade.getNotifications({ userId: mockUserId, unreadOnly: true });
 
 			// Then - 필터 조건 검증
-			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						userId: mockUserId,
-						isRead: false,
-					}),
-				}),
+			assertNativeWhereContains(
+				"Notification",
+				mockNotificationDb.where.mock.calls.at(-1)?.[0],
+				(row) => and(row.userId.eq(mockUserId), row.isRead.eq(false)),
 			);
 		});
 
 		it("category='SOCIAL'이면 소셜 타입 배열로 Repository를 호출해야 한다", async () => {
 			// Given
-			mockNotificationDb.findMany.mockResolvedValue([]);
+			mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
 
 			// When
 			await facade.getNotifications({
@@ -557,23 +521,22 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then
-			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						userId: "user-1",
-						type: {
-							in: expect.arrayContaining([
-								"FOLLOW_NEW",
-								"FOLLOW_ACCEPTED",
-								"NUDGE_RECEIVED",
-								"CHEER_RECEIVED",
-								"FRIEND_COMPLETED",
-								"SOCIAL_DIGEST",
-								"NUDGE_SUGGEST",
-							]),
-						},
-					}),
-				}),
+			assertNativeWhereContains(
+				"Notification",
+				mockNotificationDb.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.userId.eq("user-1"),
+						row._type.in([
+							"FOLLOW_NEW",
+							"FOLLOW_ACCEPTED",
+							"NUDGE_RECEIVED",
+							"CHEER_RECEIVED",
+							"FRIEND_COMPLETED",
+							"SOCIAL_DIGEST",
+							"NUDGE_SUGGEST",
+						]),
+					),
 			);
 		});
 
@@ -581,7 +544,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			"앱 버전 %s의 전체 목록은 구버전이 지원하는 알림만 페이지네이션한다",
 			async (appVersion) => {
 				// Given
-				mockNotificationDb.findMany.mockResolvedValue([]);
+				mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
 
 				// When
 				await facade.getNotifications({
@@ -591,17 +554,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				});
 
 				// Then
-				expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
-					expect.objectContaining({
-						where: { userId: mockUserId, type: { in: releasedNotificationTypes } },
-					}),
+				assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+					and(row.userId.eq(mockUserId), row._type.in(releasedNotificationTypes)),
 				);
 			},
 		);
 
 		it("1.11.0의 전체 목록은 신규 답장·고마움 알림도 조회한다", async () => {
 			// Given
-			mockNotificationDb.findMany.mockResolvedValue([]);
+			mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
 
 			// When
 			await facade.getNotifications({
@@ -611,13 +572,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then
-			const callArgs = mockNotificationDb.findMany.mock.calls[0]?.[0];
-			expect(callArgs?.where).not.toHaveProperty("type");
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls[0]?.[0], (row) =>
+				row.userId.eq("user-1"),
+			);
 		});
 
 		it("category와 unreadOnly를 함께 사용하면 두 조건 모두 전달해야 한다", async () => {
 			// Given
-			mockNotificationDb.findMany.mockResolvedValue([]);
+			mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
 
 			// When
 			await facade.getNotifications({
@@ -627,16 +589,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then
-			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						userId: "user-1",
-						isRead: false,
-						type: {
-							in: expect.arrayContaining(["SYSTEM_NOTICE", "ADMIN_BROADCAST", "ADMIN_TARGETED"]),
-						},
-					}),
-				}),
+			assertNativeWhereContains(
+				"Notification",
+				mockNotificationDb.where.mock.calls.at(-1)?.[0],
+				(row) =>
+					and(
+						row.userId.eq("user-1"),
+						row.isRead.eq(false),
+						row._type.in(["SYSTEM_NOTICE", "ADMIN_BROADCAST", "ADMIN_TARGETED"]),
+					),
 			);
 		});
 
@@ -646,8 +607,10 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				NotificationBuilder.create(mockUserId).withId(1).asUnread().build(),
 				NotificationBuilder.create(mockUserId).withId(2).asRead().build(),
 			];
-			mockNotificationDb.findMany.mockResolvedValue(notifications);
-			mockNotificationDb.count.mockResolvedValue(1);
+			mockNotificationDb.all.mockReturnValue(
+				nativeRows(databaseFixture("Notification", notifications)),
+			);
+			asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 1 });
 
 			// When - Promise.all로 병렬 호출 (컨트롤러에서 하는 것과 동일)
 			const [result, unreadCount] = await Promise.all([
@@ -659,15 +622,18 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			expect(result.items).toBeDefined();
 			expect(result.pagination).toBeDefined();
 			expect(unreadCount).toBe(1);
-			expect(mockNotificationDb.findMany).toHaveBeenCalled();
-			expect(mockNotificationDb.count).toHaveBeenCalled();
+			expect(mockNotificationDb.all).toHaveBeenCalled();
+			expect(mockNotificationDb.aggregate).toHaveBeenCalled();
 		});
 
 		it("category + cursor 조합이 DB 쿼리에 함께 적용되어야 한다", async () => {
 			// Given
-			mockNotificationDb.findMany.mockResolvedValue([]);
+			mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
 
 			// When
+			asMock(mockNotificationDb.first).mockResolvedValue(
+				databaseFixture("Notification", NotificationBuilder.create(mockUserId).withId(10).build()),
+			);
 			await facade.getNotifications({
 				userId: mockUserId,
 				category: "SOCIAL",
@@ -676,25 +642,22 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			});
 
 			// Then
-			expect(mockNotificationDb.findMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: expect.objectContaining({
-						userId: mockUserId,
-						type: {
-							in: expect.arrayContaining([
-								"FOLLOW_NEW",
-								"FOLLOW_ACCEPTED",
-								"NUDGE_RECEIVED",
-								"CHEER_RECEIVED",
-								"FRIEND_COMPLETED",
-								"SOCIAL_DIGEST",
-								"NUDGE_SUGGEST",
-							]),
-						},
-					}),
-					skip: 1,
-					cursor: { id: 10 },
-				}),
+			assertNativeWhereContains(
+				"Notification",
+				mockNotificationDb.where.mock.calls[0]?.[0],
+				(row) =>
+					and(
+						row.userId.eq(mockUserId),
+						row._type.in([
+							"FOLLOW_NEW",
+							"FOLLOW_ACCEPTED",
+							"NUDGE_RECEIVED",
+							"CHEER_RECEIVED",
+							"FRIEND_COMPLETED",
+							"SOCIAL_DIGEST",
+							"NUDGE_SUGGEST",
+						]),
+					),
 			);
 		});
 	});
@@ -702,25 +665,27 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 	describe("읽지 않은 알림 수 조회 통합 테스트", () => {
 		it("구버전이 지원하는 읽지 않은 알림 수만 반환한다", async () => {
 			// Given - 읽지 않은 알림 수 설정
-			mockNotificationDb.count.mockResolvedValue(5);
+			asMock(mockNotificationDb.aggregate).mockResolvedValue({ count: 5 });
 
 			// When - 읽지 않은 알림 수 조회
 			const result = await facade.getUnreadCount(mockUserId);
 
 			// Then - 알림 수 검증
 			expect(result).toBe(5);
-			expect(mockNotificationDb.count).toHaveBeenCalledWith({
-				where: {
-					userId: mockUserId,
-					isRead: false,
-					type: { in: releasedNotificationTypes },
-				},
-			});
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(
+					row.userId.eq(mockUserId),
+					row.isRead.eq(false),
+					row._type.in(releasedNotificationTypes),
+				),
+			);
 		});
 
 		it("1.11.0과 구버전의 읽지 않은 알림 수를 서로 다른 캐시 키로 조회한다", async () => {
 			// Given
-			mockNotificationDb.count.mockResolvedValueOnce(3).mockResolvedValueOnce(5);
+			asMock(mockNotificationDb.aggregate)
+				.mockResolvedValueOnce({ count: 3 })
+				.mockResolvedValueOnce({ count: 5 });
 			const cacheService = module.get(CacheService);
 
 			// When
@@ -730,9 +695,9 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			// Then
 			expect(releasedUnreadCount).toBe(3);
 			expect(currentUnreadCount).toBe(5);
-			expect(mockNotificationDb.count).toHaveBeenLastCalledWith({
-				where: { userId: mockUserId, isRead: false },
-			});
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(row.userId.eq(mockUserId), row.isRead.eq(false)),
+			);
 			expect(cacheService.wrap).toHaveBeenNthCalledWith(
 				1,
 				`aido:v1:notification:unread-count:${mockUserId}:legacy`,
@@ -755,56 +720,59 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				.withId(mockNotificationId)
 				.asUnread()
 				.build();
-			mockNotificationDb.findUnique.mockResolvedValue(mockNotification);
-			mockNotificationDb.updateMany.mockResolvedValue({ count: 1 });
+			asMock(mockNotificationDb.first).mockResolvedValue(
+				databaseFixture("Notification", mockNotification),
+			);
+			asMock(mockNotificationDb.updateAndCount).mockResolvedValue(1);
 
 			// When - 알림 읽음 처리
 			await expect(facade.markAsRead(mockUserId, mockNotificationId)).resolves.toBeUndefined();
 
 			// Then - 읽음 처리 검증
-			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockNotificationId, userId: mockUserId, isRead: false },
-					data: expect.objectContaining({
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(row.id.eq(mockNotificationId), row.userId.eq(mockUserId), row.isRead.eq(false)),
+			);
+			expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("Notification", {
 						isRead: true,
 					}),
-				}),
+				),
 			);
 		});
 
 		it("푸시 탭을 멱등 기록하고 읽음 상태로 맞춰야 함", async () => {
-			mockNotificationDb.updateMany.mockResolvedValue({ count: 1 });
+			asMock(mockNotificationDb.updateAndCount).mockResolvedValue(1);
 
 			await expect(facade.markOpened(mockUserId, mockNotificationId)).resolves.toBe(true);
 
-			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { id: mockNotificationId, userId: mockUserId, openedAt: null },
-					data: expect.objectContaining({
-						isRead: true,
-						openedAt: expect.any(Date),
-					}),
-				}),
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(row.id.eq(mockNotificationId), row.userId.eq(mockUserId), row.openedAt.isNull()),
 			);
-			expect(mockPushDispatchDb.updateMany).toHaveBeenCalled();
+			expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("Notification", {
+						isRead: true,
+						openedAt: expect.any(String),
+					}),
+				),
+			);
+			expect(mockPushDispatchDb.updateAndCount).toHaveBeenCalled();
 		});
 
 		it("서명 토큰으로 광고성 푸시 동의를 철회해야 함", async () => {
-			mockUserConsentDb.upsert.mockResolvedValue({});
+			asMock(mockUserConsentDb.upsert).mockResolvedValue(databaseFixture("UserConsent", {}));
 
 			await expect(facade.optOutMarketingPush(`opt-out:${mockUserId}`)).resolves.toBe(true);
 
-			expect(mockUserConsentDb.upsert).toHaveBeenCalledWith(
-				expect.objectContaining({
-					where: { userId: mockUserId },
-					update: { marketingPushAgreedAt: null },
-				}),
+			assertNativeWhere("UserConsent", mockUserConsentDb.where.mock.calls.at(-1)?.[0], (row) =>
+				row.userId.eq(mockUserId),
 			);
 		});
 
 		it("존재하지 않는 알림이면 예외를 발생시켜야 함", async () => {
 			// Given - 존재하지 않는 알림
-			mockNotificationDb.findUnique.mockResolvedValue(null);
+			asMock(mockNotificationDb.first).mockResolvedValue(databaseFixture("Notification", null));
 
 			// When & Then - 예외 발생 검증
 			await expect(facade.markAsRead(mockUserId, 999)).rejects.toMatchObject({
@@ -817,7 +785,9 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			const mockNotification = NotificationBuilder.create("other-user")
 				.withId(mockNotificationId)
 				.build();
-			mockNotificationDb.findUnique.mockResolvedValue(mockNotification);
+			asMock(mockNotificationDb.first).mockResolvedValue(
+				databaseFixture("Notification", mockNotification),
+			);
 
 			// When & Then - 예외 발생 검증
 			await expect(facade.markAsRead(mockUserId, mockNotificationId)).rejects.toMatchObject({
@@ -827,29 +797,33 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 		it("구버전에서 전체 읽음 처리해도 신규 답장·고마움 알림은 읽지 않는다", async () => {
 			// Given - 전체 읽음 처리 준비
-			mockNotificationDb.updateMany.mockResolvedValue({ count: 5 });
+			asMock(mockNotificationDb.updateAndCount).mockResolvedValue(5);
 
 			// When - 전체 알림 읽음 처리
 			const result = await facade.markAllAsRead(mockUserId);
 
 			// Then - 전체 읽음 처리 검증
 			expect(result.count).toBe(5);
-			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith({
-				where: {
-					userId: mockUserId,
-					isRead: false,
-					type: { in: releasedNotificationTypes },
-				},
-				data: {
-					isRead: true,
-					readAt: expect.any(Date),
-				},
-			});
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(
+					row.userId.eq(mockUserId),
+					row.isRead.eq(false),
+					row._type.in(releasedNotificationTypes),
+				),
+			);
+			expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("Notification", {
+						isRead: true,
+						readAt: expect.any(String),
+					}),
+				),
+			);
 		});
 
 		it("1.11.0은 신규 알림까지 전체 읽음 처리하고 두 버전의 캐시를 무효화한다", async () => {
 			// Given
-			mockNotificationDb.updateMany.mockResolvedValue({ count: 7 });
+			asMock(mockNotificationDb.updateAndCount).mockResolvedValue(7);
 			const cacheService = module.get(CacheService);
 
 			// When
@@ -857,10 +831,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
 			// Then
 			expect(result.count).toBe(7);
-			expect(mockNotificationDb.updateMany).toHaveBeenCalledWith({
-				where: { userId: mockUserId, isRead: false },
-				data: { isRead: true, readAt: expect.any(Date) },
-			});
+			assertNativeWhere("Notification", mockNotificationDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(row.userId.eq(mockUserId), row.isRead.eq(false)),
+			);
+			expect(mockNotificationDb.updateAndCount).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("Notification", { isRead: true, readAt: expect.any(String) }),
+				),
+			);
 			expect(cacheService.del).toHaveBeenCalledTimes(2);
 			expect(cacheService.del).toHaveBeenCalledWith(
 				`aido:v1:notification:unread-count:${mockUserId}`,
@@ -881,13 +859,17 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			const mockToken = PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build();
 
 			// UserPreference mock - pushEnabled가 true여야 푸시 발송
-			mockUserPreferenceDb.findUnique.mockResolvedValue({
-				userId: mockUserId,
-				pushEnabled: true,
-				nightPushEnabled: true,
-			});
-			mockNotificationDb.create.mockResolvedValue(mockNotification);
-			mockPushTokenDb.findMany.mockResolvedValue([mockToken]);
+			asMock(mockUserPreferenceDb.first).mockResolvedValue(
+				databaseFixture("UserPreference", {
+					userId: mockUserId,
+					pushEnabled: true,
+					nightPushEnabled: true,
+				}),
+			);
+			asMock(mockNotificationDb.create).mockResolvedValue(
+				databaseFixture("Notification", mockNotification),
+			);
+			mockPushTokenDb.all.mockReturnValue(nativeRows(databaseFixture("PushToken", [mockToken])));
 			mockPushProvider.sendBatch.mockResolvedValue({
 				successful: [{ token: mockPushToken }],
 				failed: [],
@@ -923,8 +905,10 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				.asNudgeReceived("friend-1", 1)
 				.build();
 
-			mockNotificationDb.create.mockResolvedValue(mockNotification);
-			mockPushTokenDb.findMany.mockResolvedValue([]);
+			asMock(mockNotificationDb.create).mockResolvedValue(
+				databaseFixture("Notification", mockNotification),
+			);
+			mockPushTokenDb.all.mockReturnValue(nativeRows(databaseFixture("PushToken", [])));
 
 			// When - 알림 생성 (푸시 토큰 없음)
 			const result = await facade.publish({
@@ -953,13 +937,25 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				},
 			];
 
-			mockUserPreferenceDb.findMany.mockResolvedValue([
-				{ userId: mockUserId, pushEnabled: true, nightPushEnabled: true },
-			]);
-			mockUserConsentDb.findMany.mockResolvedValue([]);
-			mockPushTokenDb.findMany.mockResolvedValue([
-				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-			]);
+			mockUserPreferenceDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture(
+						"UserPreference",
+						[{ userId: mockUserId, pushEnabled: true, nightPushEnabled: true }].map((value) => ({
+							...UserPreferenceBuilder.create(value.userId).build(),
+							...value,
+						})),
+					),
+				),
+			);
+			mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
+			mockPushTokenDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("PushToken", [
+						PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+					]),
+				),
+			);
 			mockPushProvider.sendBatch.mockResolvedValue({
 				total: 1,
 				successCount: 1,
@@ -976,10 +972,10 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			expect(message.title).toContain("3");
 			expect(message.title).not.toContain("{count}");
 
-			const createManyCall = mockNotificationDb.createManyAndReturn.mock.calls[0]?.[0];
-			expect(createManyCall.data[0].title).toBe(message.title);
-			expect(createManyCall.data[0].title).not.toContain("{count}");
-			expect(createManyCall.data[0].type).toBe("MORNING_REMINDER");
+			const createManyCall = mockNotificationDb.createAll.mock.calls[0]?.[0];
+			expect(createManyCall?.[0]?.title).toBe(message.title);
+			expect(createManyCall?.[0]?.title).not.toContain("{count}");
+			expect(createManyCall?.[0]?._type).toBe("MORNING_REMINDER");
 		});
 
 		it("할일 없는 사용자에게 MORNING_NO_TODO 메시지로 알림이 정상 생성되어야 함", async () => {
@@ -991,15 +987,23 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				.withContent(message.title, message.body)
 				.build();
 
-			mockNotificationDb.create.mockResolvedValue(mockNotification);
-			mockUserPreferenceDb.findUnique.mockResolvedValue({
-				userId: mockUserId,
-				pushEnabled: true,
-				nightPushEnabled: true,
-			});
-			mockPushTokenDb.findMany.mockResolvedValue([
-				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-			]);
+			asMock(mockNotificationDb.create).mockResolvedValue(
+				databaseFixture("Notification", mockNotification),
+			);
+			asMock(mockUserPreferenceDb.first).mockResolvedValue(
+				databaseFixture("UserPreference", {
+					userId: mockUserId,
+					pushEnabled: true,
+					nightPushEnabled: true,
+				}),
+			);
+			mockPushTokenDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("PushToken", [
+						PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+					]),
+				),
+			);
 			mockPushProvider.sendBatch.mockResolvedValue({
 				total: 1,
 				successCount: 1,
@@ -1021,14 +1025,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			expect(result?.body).toBe(message.body);
 			expect(result?.type).toBe("MORNING_REMINDER");
 			expect(mockNotificationDb.create).toHaveBeenCalledWith(
-				expect.objectContaining({
-					data: expect.objectContaining({
+				expect.objectContaining(
+					databaseWriteExpectation("Notification", {
 						userId: mockUserId,
 						type: "MORNING_REMINDER",
 						title: message.title,
 						body: message.body,
 					}),
-				}),
+				),
 			);
 		});
 
@@ -1055,15 +1059,26 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				},
 			];
 
-			mockUserPreferenceDb.findMany.mockResolvedValue([
-				{ userId: userWithTodos, pushEnabled: true, nightPushEnabled: true },
-				{ userId: userWithoutTodos, pushEnabled: true, nightPushEnabled: true },
-			]);
-			mockUserConsentDb.findMany.mockResolvedValue([]);
-			mockPushTokenDb.findMany.mockResolvedValue([
-				PushTokenBuilder.create(userWithTodos).withToken("token-1").build(),
-				PushTokenBuilder.create(userWithoutTodos).withToken("token-2").build(),
-			]);
+			mockUserPreferenceDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture(
+						"UserPreference",
+						[
+							{ userId: userWithTodos, pushEnabled: true, nightPushEnabled: true },
+							{ userId: userWithoutTodos, pushEnabled: true, nightPushEnabled: true },
+						].map((value) => ({ ...UserPreferenceBuilder.create(value.userId).build(), ...value })),
+					),
+				),
+			);
+			mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
+			mockPushTokenDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("PushToken", [
+						PushTokenBuilder.create(userWithTodos).withToken("token-1").build(),
+						PushTokenBuilder.create(userWithoutTodos).withToken("token-2").build(),
+					]),
+				),
+			);
 			mockPushProvider.sendBatch.mockResolvedValue({
 				total: 2,
 				successCount: 2,
@@ -1081,13 +1096,13 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 			// Then - 두 사용자 모두 알림이 생성되어야 함
 			expect(result.count).toBe(2);
 
-			const createManyCall = mockNotificationDb.createManyAndReturn.mock.calls[0]?.[0];
+			const createManyCall = mockNotificationDb.createAll.mock.calls[0]?.[0];
 			// 할일 있는 사용자: 치환된 title
-			expect(createManyCall.data[0].title).toBe(messageWithTodos.title);
-			expect(createManyCall.data[0].title).not.toContain("{count}");
+			expect(createManyCall?.[0]?.title).toBe(messageWithTodos.title);
+			expect(createManyCall?.[0]?.title).not.toContain("{count}");
 			// 할일 없는 사용자: morningNoTodo 메시지
-			expect(createManyCall.data[1].title).toBe(messageNoTodos.title);
-			expect(createManyCall.data[1].body).toBe(messageNoTodos.body);
+			expect(createManyCall?.[1]?.title).toBe(messageNoTodos.title);
+			expect(createManyCall?.[1]?.body).toBe(messageNoTodos.body);
 		});
 
 		it("force 항목은 BATCH delivery outbox에 손실 없이 저장되어야 함", async () => {
@@ -1106,13 +1121,25 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				},
 			];
 
-			mockUserPreferenceDb.findMany.mockResolvedValue([
-				{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false },
-			]);
-			mockUserConsentDb.findMany.mockResolvedValue([]);
-			mockPushTokenDb.findMany.mockResolvedValue([
-				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-			]);
+			mockUserPreferenceDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture(
+						"UserPreference",
+						[{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false }].map((value) => ({
+							...UserPreferenceBuilder.create(value.userId).build(),
+							...value,
+						})),
+					),
+				),
+			);
+			mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
+			mockPushTokenDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("PushToken", [
+						PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+					]),
+				),
+			);
 			mockPushProvider.sendBatch.mockResolvedValue({
 				total: 1,
 				successCount: 1,
@@ -1153,13 +1180,25 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 				},
 			];
 
-			mockUserPreferenceDb.findMany.mockResolvedValue([
-				{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false },
-			]);
-			mockUserConsentDb.findMany.mockResolvedValue([]);
-			mockPushTokenDb.findMany.mockResolvedValue([
-				PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
-			]);
+			mockUserPreferenceDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture(
+						"UserPreference",
+						[{ userId: mockUserId, pushEnabled: false, nightPushEnabled: false }].map((value) => ({
+							...UserPreferenceBuilder.create(value.userId).build(),
+							...value,
+						})),
+					),
+				),
+			);
+			mockUserConsentDb.all.mockReturnValue(nativeRows(databaseFixture("UserConsent", [])));
+			mockPushTokenDb.all.mockReturnValue(
+				nativeRows(
+					databaseFixture("PushToken", [
+						PushTokenBuilder.create(mockUserId).withToken(mockPushToken).build(),
+					]),
+				),
+			);
 			mockPushProvider.sendBatch.mockResolvedValue({
 				total: 1,
 				successCount: 1,

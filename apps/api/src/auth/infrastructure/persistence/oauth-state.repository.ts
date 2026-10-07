@@ -1,13 +1,24 @@
 import { randomBytes } from "node:crypto";
 
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 import type { AuthOAuthStateRecord } from "#api/auth/application/ports/auth-persistence.port";
 import type { OAuthMode } from "#api/auth/application/ports/oauth-identity-provider.port";
-import type { AccountProvider, OAuthState } from "#api/generated/prisma/client";
 import { addMinutes } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { DatabaseService } from "#api/shared/infrastructure/database/index";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type {
+	AccountProvider,
+	OAuthState,
+} from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 import { EncryptionService } from "#api/shared/infrastructure/encryption/index";
 
 export type { OAuthMode };
@@ -52,8 +63,8 @@ export class OAuthStateRepository {
 	): Promise<OAuthState> {
 		const expiresAt = addMinutes(options?.expiresInMinutes ?? 10);
 
-		return this.database.oAuthState.create({
-			data: {
+		return this.database.db.orm.public.OAuthState.create(
+			encodeCreate("OAuthState", {
 				state,
 				provider,
 				redirectUri,
@@ -63,28 +74,30 @@ export class OAuthStateRepository {
 				userAgent: options?.userAgent,
 				initiatingUserId: options?.initiatingUserId,
 				expiresAt,
-			},
-		});
+			}),
+		).then((row) => decodeRecord("OAuthState", row));
 	}
 
 	async findByState(state: string): Promise<OAuthState | null> {
-		return this.database.oAuthState.findFirst({
-			where: {
-				state,
-				expiresAt: { gt: now() },
-			},
-		});
+		return this.database.db.orm.public.OAuthState.where((row) =>
+			and(row.state.eq(varchar(state, 64)), row.expiresAt.gt(databaseTimestamp(now()))),
+		)
+			.first()
+			.then((row) => decodeRecord("OAuthState", row));
 	}
 
 	// 아직 교환되지 않은 (exchangedAt이 null인) 레코드만 반환
 	async findByExchangeCode(exchangeCode: string): Promise<AuthOAuthStateRecord | null> {
-		const state = await this.database.oAuthState.findFirst({
-			where: {
-				exchangeCode,
-				exchangedAt: null, // 아직 교환되지 않은 것만
-				expiresAt: { gt: now() },
-			},
-		});
+		const state = decodeRecord(
+			"OAuthState",
+			await this.database.db.orm.public.OAuthState.where((row) =>
+				and(
+					row.exchangeCode.eq(varchar(exchangeCode, 64)),
+					row.exchangedAt.isNull(),
+					row.expiresAt.gt(databaseTimestamp(now())),
+				),
+			).first(),
+		);
 		if (!state) {
 			return null;
 		}
@@ -119,18 +132,19 @@ export class OAuthStateRepository {
 			accountRestored?: boolean;
 		},
 	): Promise<OAuthState> {
-		return this.database.oAuthState.update({
-			where: { id },
-			data: {
-				exchangeCode: data.exchangeCode,
-				accessToken: this.encryptionService.encrypt(data.accessToken),
-				refreshToken: this.encryptionService.encrypt(data.refreshToken),
-				userId: data.userId,
-				userName: data.userName,
-				profileImage: data.profileImage,
-				accountRestored: data.accountRestored,
-			},
-		});
+		return this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id))
+			.update(
+				encodePatch("OAuthState", {
+					exchangeCode: data.exchangeCode,
+					accessToken: this.encryptionService.encrypt(data.accessToken),
+					refreshToken: this.encryptionService.encrypt(data.refreshToken),
+					userId: data.userId,
+					userName: data.userName,
+					profileImage: data.profileImage,
+					accountRestored: data.accountRestored,
+				}),
+			)
+			.then((row) => decodeRecord("OAuthState", requireRecord(row)));
 	}
 
 	/**
@@ -147,41 +161,46 @@ export class OAuthStateRepository {
 			providerAccountId: string;
 		},
 	): Promise<OAuthState> {
-		return this.database.oAuthState.update({
-			where: { id },
-			data: {
-				exchangeCode: data.exchangeCode,
-				provider: data.provider,
-				userId: data.providerAccountId, // providerAccountId를 userId 필드에 임시 저장
-			},
-		});
+		return this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id))
+			.update(
+				encodePatch("OAuthState", {
+					exchangeCode: data.exchangeCode,
+					provider: data.provider,
+					userId: data.providerAccountId, // providerAccountId를 userId 필드에 임시 저장
+				}),
+			)
+			.then((row) => decodeRecord("OAuthState", requireRecord(row)));
 	}
 
 	// 교환 완료 후 보안을 위해 토큰 삭제
 	async markAsExchanged(id: number): Promise<OAuthState> {
-		return this.database.oAuthState.update({
-			where: { id },
-			data: {
-				exchangedAt: now(),
-				// 교환 완료 후 토큰 삭제 (보안)
-				accessToken: null,
-				refreshToken: null,
-			},
-		});
+		return this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id))
+			.update(
+				encodePatch("OAuthState", {
+					exchangedAt: now(),
+					// 교환 완료 후 토큰 삭제 (보안)
+					accessToken: null,
+					refreshToken: null,
+				}),
+			)
+			.then((row) => decodeRecord("OAuthState", requireRecord(row)));
 	}
 
 	async delete(id: number): Promise<void> {
-		await this.database.oAuthState.delete({
-			where: { id },
-		});
+		decodeRecord(
+			"OAuthState",
+			requireRecord(
+				await this.database.db.orm.public.OAuthState.where((row) => row.id.eq(id)).delete(),
+			),
+		);
 	}
 
 	async deleteExpired(): Promise<number> {
-		const result = await this.database.oAuthState.deleteMany({
-			where: {
-				expiresAt: { lt: now() },
-			},
-		});
+		const result = {
+			count: await this.database.db.orm.public.OAuthState.where((row) =>
+				row.expiresAt.lt(databaseTimestamp(now())),
+			).deleteAndCount(),
+		};
 		return result.count;
 	}
 

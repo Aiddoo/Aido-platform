@@ -1,16 +1,14 @@
 import { createHash } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
-import { type FactoryProvider, Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, type FactoryProvider } from "@nestjs/common";
 import {
-	fromPrisma,
 	PgBoss,
 	type Db,
 	type FindJobsOptions,
 	type JobWithMetadata,
-	type PrismaTransactionLike,
-	type QueueResult,
 	type QueueOptions,
+	type QueueResult,
 	type ScheduleOptions,
 	type SendOptions,
 	type StopOptions,
@@ -22,9 +20,9 @@ import type {
 	EnqueueJobOptions,
 	JobCancellationResult,
 	JobData,
+	JobRetryPolicy,
 	JobRuntimeHealth,
 	JobRuntimePort,
-	JobRetryPolicy,
 	WorkJobOptions,
 } from "#api/shared/application/ports/job-runtime.port";
 import {
@@ -33,6 +31,9 @@ import {
 	resolveJobIdempotencyKey,
 } from "#api/shared/application/ports/job-runtime.port";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import type { Prisma8Transaction } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
+
+import { nativeJobDatabase } from "./prisma8-pg-boss.database.js";
 
 export const PG_BOSS_CLIENT = Symbol("PG_BOSS_CLIENT");
 
@@ -168,7 +169,7 @@ export class LazyPgBossClient implements PgBossClient {
 }
 
 interface JobTransactionSource {
-	readonly tx: PrismaTransactionLike;
+	readonly tx: Prisma8Transaction;
 }
 
 interface JobRuntimeConfigSource {
@@ -238,7 +239,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		}
 		await this.ensureQueue(queue);
 		const idempotencyKey = resolveJobIdempotencyKey(options);
-		const pgBossOptions = this.toPgBossOptions(options, this.transactionDatabase());
+		const pgBossOptions = this.toPgBossOptions(options, nativeJobDatabase(this.txHost.tx, "id"));
 		return this.boss.send(queue, data, {
 			...pgBossOptions,
 			...(idempotencyKey && {
@@ -264,7 +265,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 			db: _transactionDb,
 			singletonKey: _idempotencyKey,
 			...persistedOptions
-		} = this.toPgBossOptions(options, this.transactionDatabase());
+		} = this.toPgBossOptions(options, nativeJobDatabase(this.txHost.tx, "id"));
 		await this.boss.schedule(queue, cron, data, {
 			...persistedOptions,
 			key: scheduleKey,
@@ -277,7 +278,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 	}
 
 	async cancel(queue: string, idempotencyKey: string): Promise<JobCancellationResult> {
-		const db = this.transactionDatabase();
+		const db = nativeJobDatabase(this.txHost.tx, "id");
 		const jobs = await this.boss.findJobs(queue, {
 			key: idempotencyKey,
 			queued: true,
@@ -290,7 +291,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 		const result = await this.boss.cancel(
 			queue,
 			jobs.map(({ id }) => id),
-			{ db },
+			{ db: nativeJobDatabase(this.txHost.tx, "count") },
 		);
 		if (!hasAffectedCount(result)) {
 			throw new Error("Invalid pg-boss cancellation response");
@@ -374,10 +375,6 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
 				),
 			};
 		}
-	}
-
-	private transactionDatabase(): Db {
-		return fromPrisma(this.txHost.tx);
 	}
 
 	private toPgBossOptions(options: EnqueueJobOptions, db: Db): SendOptions {

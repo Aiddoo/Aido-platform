@@ -1,9 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
 import { now } from "#api/shared/domain/date/utils/core";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp } from "#api/shared/infrastructure/database/database-values";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	AiUsageRepositoryPort,
@@ -20,15 +22,15 @@ import type {
  */
 @Injectable()
 export class PrismaAiUsageRepository implements AiUsageRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	async findUsage(userId: string): Promise<AiUsageSnapshot | null> {
-		const row = await this.txHost.tx.user.findUnique({
-			where: { id: userId },
-			select: { aiUsageCount: true, aiUsageResetAt: true },
-		});
+		const row = decodeRecord(
+			"User",
+			await this.txHost.tx.orm.public.User.where((row) => row.id.eq(userId))
+				.select("aiUsageCount", "aiUsageResetAt")
+				.first(),
+		);
 		if (!row) {
 			return null;
 		}
@@ -36,25 +38,55 @@ export class PrismaAiUsageRepository implements AiUsageRepositoryPort {
 	}
 
 	async increment(userId: string): Promise<void> {
-		await this.txHost.tx.user.update({
-			where: { id: userId },
-			data: { aiUsageCount: { increment: 1 } },
-		});
+		decodeRecord(
+			"User",
+			requireRecord(
+				await this.txHost.tx
+					.query(
+						this.txHost.tx.sql.public.User.update((fields) => ({
+							aiUsageCount: this.txHost.tx.raw.sql`${fields.aiUsageCount} + ${1}`.returns(
+								"pg/int4@1",
+							),
+							updatedAt: this.txHost.tx.raw.sql`${databaseTimestamp(new Date())}`.returns(
+								"pg/timestamp-string@1",
+							),
+						}))
+							.where((fields, functions) => functions.eq(fields.id, userId))
+							.returning("id")
+							.build(),
+					)
+					.then((rows) => rows[0] ?? null),
+			),
+		);
 	}
 
 	async resetAndIncrement(userId: string): Promise<void> {
-		await this.txHost.tx.user.update({
-			where: { id: userId },
-			data: { aiUsageCount: 1, aiUsageResetAt: now() },
-		});
+		decodeRecord(
+			"User",
+			requireRecord(
+				await this.txHost.tx.orm.public.User.where((row) => row.id.eq(userId)).update(
+					encodePatch("User", { aiUsageCount: 1, aiUsageResetAt: now() }),
+				),
+			),
+		);
 	}
 
 	async decrement(userId: string): Promise<void> {
 		// 보상 감소는 활성 트랜잭션 밖에서 호출된다(CLS tx 없으면 베이스 클라이언트).
 		// aiUsageCount > 0 조건으로 음수 방지, 중복 호출 시 matched row 0 no-op.
-		await this.txHost.tx.user.updateMany({
-			where: { id: userId, aiUsageCount: { gt: 0 } },
-			data: { aiUsageCount: { decrement: 1 } },
-		});
+		await this.txHost.tx
+			.execute(
+				this.txHost.tx.sql.public.User.update((fields) => ({
+					aiUsageCount: this.txHost.tx.raw.sql`${fields.aiUsageCount} - ${1}`.returns("pg/int4@1"),
+					updatedAt: this.txHost.tx.raw.sql`${databaseTimestamp(new Date())}`.returns(
+						"pg/timestamp-string@1",
+					),
+				}))
+					.where((fields, functions) =>
+						functions.and(functions.eq(fields.id, userId), functions.gt(fields.aiUsageCount, 0)),
+					)
+					.build(),
+			)
+			.then((result) => result.affectedRows);
 	}
 }

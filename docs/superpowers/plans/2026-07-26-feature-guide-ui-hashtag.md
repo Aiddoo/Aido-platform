@@ -151,7 +151,7 @@ git commit -m "feat(mobile): 실제 화면형 기능 가이드 미리보기 개�
 - Verify: `apps/mobile/app.config.ts`
 - Verify: `apps/mobile/package.json`
 - Verify: `packages/validators/src/domains/follow/follow.request.ts`
-- Verify: `apps/api/prisma/schema.prisma`
+- Verify: `apps/api/src/prisma/contract.prisma`
 
 **Interfaces:**
 

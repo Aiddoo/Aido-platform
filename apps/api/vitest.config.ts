@@ -49,6 +49,15 @@ export default defineConfig({
 			{
 				extends: true,
 				test: {
+					...databaseProject,
+					name: "performance",
+					include: ["test/performance/**/*.performance-spec.ts"],
+					testTimeout: 180_000,
+				},
+			},
+			{
+				extends: true,
+				test: {
 					name: "unit",
 					include: ["src/**/*.spec.ts", "test/setup/**/*.spec.ts"],
 					setupFiles,

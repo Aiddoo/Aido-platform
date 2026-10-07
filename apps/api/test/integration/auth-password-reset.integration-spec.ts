@@ -1,4 +1,5 @@
 import type { TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 /**
  * 비밀번호 재설정 통합 테스트 (Testcontainers)
  *
@@ -25,7 +26,11 @@ import { vi } from "vitest";
 import { CredentialAuthWorkflow } from "#api/auth/application/workflows/credential-auth.workflow";
 import { PasswordWorkflow } from "#api/auth/application/workflows/password.workflow";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
@@ -44,7 +49,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 		suppressLogger();
 
 		testDb = new TestDatabase();
-		databaseService = (await testDb.start()) as DatabaseService;
+		databaseService = createTestDatabaseService(await testDb.start());
 		fakeEmailService = new FakeEmailService();
 
 		module = await createAuthTestModule(databaseService, fakeEmailService);
@@ -83,23 +88,29 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 		email: string,
 		provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
 	): Promise<string> {
-		const prisma = testDb.getPrisma();
-		const user = await prisma.user.create({
-			data: {
-				email,
-				userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-				status: "ACTIVE",
-				emailVerifiedAt: new Date(),
-			},
-		});
+		const prisma = testDb.getClient();
+		const user = decodeRecord(
+			"User",
+			await prisma.orm.public.User.create(
+				encodeCreate("User", {
+					email,
+					userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
+					status: "ACTIVE",
+					emailVerifiedAt: new Date(),
+				}),
+			),
+		);
 
-		await prisma.account.create({
-			data: {
-				userId: user.id,
-				provider,
-				providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-			},
-		});
+		decodeRecord(
+			"Account",
+			await prisma.orm.public.Account.create(
+				encodeCreate("Account", {
+					userId: user.id,
+					provider,
+					providerAccountId: `${provider.toLowerCase()}-${user.id}`,
+				}),
+			),
+		);
 
 		return user.id;
 	}
@@ -174,13 +185,16 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			expect(result.message).toContain("비밀번호가 재설정되었습니다");
 
 			// DB 검증: 비밀번호 해시가 변경됨
-			const prisma = testDb.getPrisma();
-			const account = await prisma.account.findFirst({
-				where: {
-					user: { email },
-					provider: "CREDENTIAL",
-				},
-			});
+			const prisma = testDb.getClient();
+			const account = decodeRecord(
+				"Account",
+				await prisma.orm.public.Account.where((row) =>
+					and(
+						row.user.some((related) => related.email.eq(varchar(email, 255))),
+						row.provider.eq("CREDENTIAL"),
+					),
+				).first(),
+			);
 			expect(account?.password).toBeTruthy();
 		});
 
@@ -240,11 +254,15 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			await passwordManagementService.resetPassword(email, code, "NewPassword456!");
 
 			// Then - 모든 세션의 revokedAt이 설정됨
-			const prisma = testDb.getPrisma();
-			const user = await prisma.user.findUnique({ where: { email } });
-			const sessions = await prisma.session.findMany({
-				where: { userId: user?.id },
-			});
+			const prisma = testDb.getClient();
+			const user = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.email.eq(varchar(email, 255))).first(),
+			);
+			const sessions = decodeRecord(
+				"Session",
+				await prisma.orm.public.Session.where((row) => row.userId.eq(requireRecord(user).id)).all(),
+			);
 
 			for (const session of sessions) {
 				expect(session.revokedAt).not.toBeNull();
@@ -264,11 +282,17 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 			await passwordManagementService.resetPassword(email, code, "NewPassword456!");
 
 			// Then
-			const prisma = testDb.getPrisma();
-			const user = await prisma.user.findUnique({ where: { email } });
-			const logs = await prisma.securityLog.findMany({
-				where: { userId: user?.id, event: "PASSWORD_CHANGED" },
-			});
+			const prisma = testDb.getClient();
+			const user = decodeRecord(
+				"User",
+				await prisma.orm.public.User.where((row) => row.email.eq(varchar(email, 255))).first(),
+			);
+			const logs = decodeRecord(
+				"SecurityLog",
+				await prisma.orm.public.SecurityLog.where((row) =>
+					and(row.userId.eq(requireRecord(user).id), row.event.eq("PASSWORD_CHANGED")),
+				).all(),
+			);
 			expect(logs.length).toBeGreaterThanOrEqual(1);
 
 			const resetLog = logs.find(

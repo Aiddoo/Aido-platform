@@ -21,7 +21,12 @@
  * const verifiedUser = UserBuilder.create().verified().build();
  * ```
  */
-import type { SubscriptionStatus, User, UserRole, UserStatus } from "#api/generated/prisma/client";
+import type {
+	SubscriptionStatus,
+	User,
+	UserRole,
+	UserStatus,
+} from "#api/shared/infrastructure/database/database.types";
 
 export class UserBuilder {
 	private data: User;

@@ -25,9 +25,17 @@ import {
 	todoDetailsResponseSchema,
 	z,
 } from "@aido/validators";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 
-import { PrismaClient } from "#api/generated/prisma/client";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import { createTestClient, withDatabaseTransaction } from "#test/setup/database-context";
+import type { TestDatabaseClient } from "#test/setup/test-database";
 
 import { assertTodoCommentDevelopmentFixtureTarget } from "../setup/todo-comment-development-fixture-target.guard.js";
 
@@ -227,70 +235,86 @@ async function getFixtureAccessToken(input: {
 }
 
 async function provisionFixtureActor(input: {
-	prisma: PrismaClient;
+	prisma: TestDatabaseClient;
 	person: FixturePerson;
 	ownerId: string;
 	jwtSecret: string;
 }): Promise<FixtureActor> {
 	const now = new Date();
 	const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
-	const provisioned = await input.prisma.$transaction(async (transaction) => {
-		const user = await transaction.user.upsert({
-			where: { email: input.person.email },
-			create: {
-				email: input.person.email,
-				userTag: input.person.userTag,
-				status: "ACTIVE",
-				emailVerifiedAt: now,
-			},
-			update: {
-				userTag: input.person.userTag,
-				status: "ACTIVE",
-				emailVerifiedAt: now,
-				deletedAt: null,
-			},
-		});
+	const provisioned = await withDatabaseTransaction(input.prisma, async (transaction) => {
+		const user = decodeRecord(
+			"User",
+			await transaction.orm.public.User.where((row) =>
+				row.email.eq(varchar(input.person.email, 255)),
+			).upsert({
+				conflictOn: encodePatch("User", { email: input.person.email }),
+				create: encodeCreate("User", {
+					email: input.person.email,
+					userTag: input.person.userTag,
+					status: "ACTIVE",
+					emailVerifiedAt: now,
+				}),
+				update: encodePatch("User", {
+					userTag: input.person.userTag,
+					status: "ACTIVE",
+					emailVerifiedAt: now,
+					deletedAt: null,
+				}),
+			}),
+		);
 
-		await transaction.userProfile.upsert({
-			where: { userId: user.id },
-			create: {
-				userId: user.id,
-				name: input.person.name,
-				profileImage: input.person.profileImage,
-			},
-			update: {
-				name: input.person.name,
-				profileImage: input.person.profileImage,
-			},
-		});
+		decodeRecord(
+			"UserProfile",
+			await transaction.orm.public.UserProfile.where((row) => row.userId.eq(user.id)).upsert({
+				conflictOn: encodePatch("UserProfile", { userId: user.id }),
+				create: encodeCreate("UserProfile", {
+					userId: user.id,
+					name: input.person.name,
+					profileImage: input.person.profileImage,
+				}),
+				update: encodePatch("UserProfile", {
+					name: input.person.name,
+					profileImage: input.person.profileImage,
+				}),
+			}),
+		);
 
 		const friendshipDirections: Array<{ followerId: string; followingId: string }> = [
 			{ followerId: user.id, followingId: input.ownerId },
 			{ followerId: input.ownerId, followingId: user.id },
 		];
 		for (const { followerId, followingId } of friendshipDirections) {
-			await transaction.follow.upsert({
-				where: { followerId_followingId: { followerId, followingId } },
-				create: { followerId, followingId, status: "ACCEPTED" },
-				update: { status: "ACCEPTED" },
-			});
+			decodeRecord(
+				"Follow",
+				await transaction.orm.public.Follow.where((row) =>
+					and(row.followerId.eq(followerId), row.followingId.eq(followingId)),
+				).upsert({
+					conflictOn: encodePatch("Follow", { followerId, followingId }),
+					create: encodeCreate("Follow", { followerId, followingId, status: "ACCEPTED" }),
+					update: encodePatch("Follow", { status: "ACCEPTED" }),
+				}),
+			);
 		}
 
-		await transaction.session.deleteMany({
-			where: { userId: user.id, userAgent: FIXTURE_SESSION_USER_AGENT },
-		});
-		const session = await transaction.session.create({
-			data: {
-				userId: user.id,
-				refreshTokenHash: getSha256(`refresh:${FIXTURE_VERSION}:${input.person.key}`),
-				tokenFamily: getSha256(`family:${FIXTURE_VERSION}:${input.person.key}`).slice(0, 32),
-				tokenVersion: 1,
-				deviceFingerprint: getSha256(`device:${FIXTURE_VERSION}:${input.person.key}`),
-				userAgent: FIXTURE_SESSION_USER_AGENT,
-				ipAddress: "127.0.0.1",
-				expiresAt,
-			},
-		});
+		await transaction.orm.public.Session.where((row) =>
+			and(row.userId.eq(user.id), row.userAgent.eq(varchar(FIXTURE_SESSION_USER_AGENT, 500))),
+		).deleteAndCount();
+		const session = decodeRecord(
+			"Session",
+			await transaction.orm.public.Session.create(
+				encodeCreate("Session", {
+					userId: user.id,
+					refreshTokenHash: getSha256(`refresh:${FIXTURE_VERSION}:${input.person.key}`),
+					tokenFamily: getSha256(`family:${FIXTURE_VERSION}:${input.person.key}`).slice(0, 32),
+					tokenVersion: 1,
+					deviceFingerprint: getSha256(`device:${FIXTURE_VERSION}:${input.person.key}`),
+					userAgent: FIXTURE_SESSION_USER_AGENT,
+					ipAddress: "127.0.0.1",
+					expiresAt,
+				}),
+			),
+		);
 
 		return { userId: user.id, sessionId: session.id };
 	});
@@ -310,7 +334,7 @@ async function provisionFixtureActor(input: {
 }
 
 async function provisionTodoOwnerActor(input: {
-	prisma: PrismaClient;
+	prisma: TestDatabaseClient;
 	owner: {
 		id: string;
 		email: string;
@@ -321,17 +345,17 @@ async function provisionTodoOwnerActor(input: {
 	const now = new Date();
 	const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
 	const ownerName = z.string().min(1).parse(input.owner.profile?.name);
-	const session = await input.prisma.$transaction(async (transaction) => {
+	const session = await withDatabaseTransaction(input.prisma, async (transaction) => {
 		// 실제 앱 세션은 건드리지 않고 이 fixture가 만든 owner 세션만 교체합니다.
-		await transaction.session.deleteMany({
-			where: {
-				userId: input.owner.id,
-				userAgent: FIXTURE_OWNER_SESSION_USER_AGENT,
-			},
-		});
+		await transaction.orm.public.Session.where((row) =>
+			and(
+				row.userId.eq(input.owner.id),
+				row.userAgent.eq(varchar(FIXTURE_OWNER_SESSION_USER_AGENT, 500)),
+			),
+		).deleteAndCount();
 
-		return transaction.session.create({
-			data: {
+		return transaction.orm.public.Session.create(
+			encodeCreate("Session", {
 				userId: input.owner.id,
 				refreshTokenHash: getSha256(`refresh:${FIXTURE_VERSION}:todo-owner`),
 				tokenFamily: getSha256(`family:${FIXTURE_VERSION}:todo-owner`).slice(0, 32),
@@ -340,8 +364,8 @@ async function provisionTodoOwnerActor(input: {
 				userAgent: FIXTURE_OWNER_SESSION_USER_AGENT,
 				ipAddress: "127.0.0.1",
 				expiresAt,
-			},
-		});
+			}),
+		).then((row) => decodeRecord("Session", row));
 	});
 	const accessToken = await getFixtureAccessToken({
 		userId: input.owner.id,
@@ -460,7 +484,11 @@ function assertEqual<T>(actual: T, expected: T, label: string): void {
 	}
 }
 
-function assertStringArray(actual: string[], expected: string[], label: string): void {
+function assertStringArray(
+	actual: readonly string[],
+	expected: readonly string[],
+	label: string,
+): void {
 	if (
 		actual.length !== expected.length ||
 		actual.some((value, index) => value !== expected[index])
@@ -470,7 +498,7 @@ function assertStringArray(actual: string[], expected: string[], label: string):
 }
 
 async function verifyStoredCalculations(input: {
-	prisma: PrismaClient;
+	prisma: TestDatabaseClient;
 	todoId: number;
 	ownerId: string;
 	actors: FixtureActor[];
@@ -484,13 +512,14 @@ async function verifyStoredCalculations(input: {
 	acceptedFollowCount: number;
 }> {
 	const actorIds = input.actors.map((actor) => actor.userId);
-	const fixtureRows = await input.prisma.todoComment.findMany({
-		where: {
-			todoId: input.todoId,
-			clientRequestId: { in: Object.values(FIXTURE_COMMENTS) },
-		},
-		include: { likes: { where: { isActive: true } } },
-	});
+	const fixtureRows = decodeRecord(
+		"TodoComment",
+		await input.prisma.orm.public.TodoComment.where((row) =>
+			and(row.todoId.eq(input.todoId), row.clientRequestId.in(Object.values(FIXTURE_COMMENTS))),
+		)
+			.include("likes", (related) => related.where((row) => row.isActive.eq(true)))
+			.all(),
+	);
 	assertEqual(fixtureRows.length, EXPECTED_FIXTURE_COMMENT_ROW_COUNT, "fixture 댓글 DB 행 수");
 	const fixtureLiveCommentCount = fixtureRows.filter((row) => row.deletedAt === null).length;
 	const fixtureTombstoneCount = fixtureRows.length - fixtureLiveCommentCount;
@@ -583,39 +612,52 @@ async function verifyStoredCalculations(input: {
 
 	for (const row of fixtureRows) {
 		assertEqual(row.likeCount, row.likes.length, `${row.id} active likes`);
-		const visibleDirectReplyCount = await input.prisma.todoComment.count({
-			where: {
-				todoId: input.todoId,
-				parentId: row.id,
-				OR: [{ deletedAt: null }, { replyCount: { gt: 0 } }],
-			},
-		});
+		const visibleDirectReplyCount = (
+			await input.prisma.orm.public.TodoComment.where((row) =>
+				and(
+					row.todoId.eq(input.todoId),
+					row.parentId.eq(row.id),
+					or(row.deletedAt.isNull(), row.replyCount.gt(0)),
+				),
+			).aggregate((aggregate) => ({ count: aggregate.count() }))
+		).count;
 		assertEqual(row.replyCount, visibleDirectReplyCount, `${row.id} visible direct replies`);
 	}
 
-	const todo = await input.prisma.todo.findUniqueOrThrow({ where: { id: input.todoId } });
-	const liveCommentCount = await input.prisma.todoComment.count({
-		where: { todoId: input.todoId, deletedAt: null },
-	});
+	const todo = decodeRecord(
+		"Todo",
+		requireRecord(
+			await input.prisma.orm.public.Todo.where((row) => row.id.eq(input.todoId)).first(),
+		),
+	);
+	const liveCommentCount = (
+		await input.prisma.orm.public.TodoComment.where((row) =>
+			and(row.todoId.eq(input.todoId), row.deletedAt.isNull()),
+		).aggregate((aggregate) => ({ count: aggregate.count() }))
+	).count;
 	assertEqual(todo.commentCount, liveCommentCount, "Todo commentCount");
-	const todoCommentRowCount = await input.prisma.todoComment.count({
-		where: { todoId: input.todoId },
-	});
+	const todoCommentRowCount = (
+		await input.prisma.orm.public.TodoComment.where((row) => row.todoId.eq(input.todoId)).aggregate(
+			(aggregate) => ({ count: aggregate.count() }),
+		)
+	).count;
 	assertEqual(
 		todoCommentRowCount - liveCommentCount >= EXPECTED_FIXTURE_TOMBSTONE_COUNT,
 		true,
 		"Todo DB 행에 fixture 삭제 묘비 포함",
 	);
 
-	const acceptedFollowCount = await input.prisma.follow.count({
-		where: {
-			status: "ACCEPTED",
-			OR: [
-				{ followerId: input.ownerId, followingId: { in: actorIds } },
-				{ followerId: { in: actorIds }, followingId: input.ownerId },
-			],
-		},
-	});
+	const acceptedFollowCount = (
+		await input.prisma.orm.public.Follow.where((row) =>
+			and(
+				row.status.eq("ACCEPTED"),
+				or(
+					and(row.followerId.eq(input.ownerId), row.followingId.in(actorIds)),
+					and(row.followerId.in(actorIds), row.followingId.eq(input.ownerId)),
+				),
+			),
+		).aggregate((aggregate) => ({ count: aggregate.count() }))
+	).count;
 	assertEqual(acceptedFollowCount, input.actors.length * 2, "양방향 ACCEPTED Follow");
 
 	return {
@@ -930,7 +972,7 @@ async function applyLikes(input: {
 }
 
 async function applyTombstoneConversation(input: {
-	prisma: PrismaClient;
+	prisma: TestDatabaseClient;
 	apiBaseUrl: string;
 	todoId: number;
 	author: FixtureActor;
@@ -941,10 +983,14 @@ async function applyTombstoneConversation(input: {
 	if (deletedParent === undefined) {
 		throw new Error("[todo-comment-fixture] 삭제 묘비 대상을 찾지 못했습니다.");
 	}
-	const storedParent = await input.prisma.todoComment.findUniqueOrThrow({
-		where: { id: deletedParent.id },
-		select: { deletedAt: true },
-	});
+	const storedParent = decodeRecord(
+		"TodoComment",
+		requireRecord(
+			await input.prisma.orm.public.TodoComment.where((row) => row.id.eq(deletedParent.id))
+				.select("deletedAt")
+				.first(),
+		),
+	);
 
 	if (storedParent.deletedAt === null) {
 		await likeFixtureComment({
@@ -978,9 +1024,7 @@ async function main(): Promise<void> {
 		databaseUrl: process.env.DATABASE_URL,
 	});
 	const jwtSecret = z.string().min(16).parse(process.env.JWT_SECRET);
-	const prisma = new PrismaClient({
-		adapter: new PrismaPg({ connectionString: target.databaseUrl }),
-	});
+	const prisma = createTestClient(target.databaseUrl);
 
 	try {
 		await requestApi({
@@ -988,14 +1032,19 @@ async function main(): Promise<void> {
 			path: "/health",
 			schema: HealthSchema,
 		});
-		const owner = await prisma.user.findUnique({
-			where: { id: options.ownerId },
-			include: { profile: true },
-		});
+		const owner = decodeRecord(
+			"User",
+			await prisma.orm.public.User.where((row) => row.id.eq(options.ownerId))
+				.include("profile")
+				.first(),
+		);
 		if (owner === null) {
 			throw new Error("[todo-comment-fixture] 지정한 local owner 계정을 찾지 못했습니다.");
 		}
-		const todo = await prisma.todo.findUnique({ where: { id: options.todoId } });
+		const todo = decodeRecord(
+			"Todo",
+			await prisma.orm.public.Todo.where((row) => row.id.eq(options.todoId)).first(),
+		);
 		if (todo === null || todo.userId !== owner.id) {
 			throw new Error("[todo-comment-fixture] Todo가 지정한 owner에게 속하지 않습니다.");
 		}
@@ -1004,14 +1053,16 @@ async function main(): Promise<void> {
 		}
 
 		const beforeCommentIds = new Set(
-			(
-				await prisma.todoComment.findMany({
-					where: {
-						todoId: options.todoId,
-						clientRequestId: { in: Object.values(FIXTURE_COMMENTS) },
-					},
-					select: { id: true },
-				})
+			decodeRecord(
+				"TodoComment",
+				await prisma.orm.public.TodoComment.where((row) =>
+					and(
+						row.todoId.eq(options.todoId),
+						row.clientRequestId.in(Object.values(FIXTURE_COMMENTS)),
+					),
+				)
+					.select("id")
+					.all(),
 			).map((comment) => comment.id),
 		);
 
@@ -1138,7 +1189,7 @@ async function main(): Promise<void> {
 			},
 		});
 	} finally {
-		await prisma.$disconnect();
+		await prisma.close();
 	}
 }
 

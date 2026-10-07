@@ -1,11 +1,16 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { all, and } from "@prisma/orm-postgres/orm-client";
 
-import type { SecurityEvent, SecurityLog } from "#api/generated/prisma/client";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { decodeRecord, encodeCreate } from "#api/shared/infrastructure/database/database-records";
+import { databaseTimestamp, varchar } from "#api/shared/infrastructure/database/database-values";
+import type {
+	SecurityEvent,
+	SecurityLog,
+} from "#api/shared/infrastructure/database/database.types";
 import { toInputJson } from "#api/shared/infrastructure/database/json.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 export interface CreateSecurityLogData {
 	userId?: string;
@@ -17,9 +22,7 @@ export interface CreateSecurityLogData {
 
 @Injectable()
 export class SecurityLogRepository {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
@@ -27,15 +30,15 @@ export class SecurityLogRepository {
 	}
 
 	async create(data: CreateSecurityLogData): Promise<SecurityLog> {
-		return this.client.securityLog.create({
-			data: {
+		return this.client.orm.public.SecurityLog.create(
+			encodeCreate("SecurityLog", {
 				userId: data.userId,
 				event: data.event,
 				ipAddress: data.ipAddress,
 				userAgent: data.userAgent,
 				metadata: data.metadata === undefined ? undefined : toInputJson(data.metadata),
-			},
-		});
+			}),
+		).then((row) => decodeRecord("SecurityLog", row));
 	}
 
 	async findByUserId(
@@ -45,14 +48,13 @@ export class SecurityLogRepository {
 			events?: SecurityEvent[];
 		},
 	): Promise<SecurityLog[]> {
-		return this.client.securityLog.findMany({
-			where: {
-				userId,
-				...(options?.events && { event: { in: options.events } }),
-			},
-			orderBy: { createdAt: "desc" },
-			take: options?.limit ?? 50,
-		});
+		return this.client.orm.public.SecurityLog.where((row) =>
+			and(row.userId.eq(userId), options?.events ? row.event.in(options.events) : all()),
+		)
+			.orderBy((row) => row.createdAt.desc())
+			.limit(options?.limit ?? 50)
+			.all()
+			.then((row) => decodeRecord("SecurityLog", row));
 	}
 
 	async findRecentByEvent(
@@ -64,40 +66,47 @@ export class SecurityLogRepository {
 			limit?: number;
 		},
 	): Promise<SecurityLog[]> {
-		return this.client.securityLog.findMany({
-			where: {
-				event,
-				createdAt: { gte: since },
-				...(options?.userId && { userId: options.userId }),
-				...(options?.ipAddress && { ipAddress: options.ipAddress }),
-			},
-			orderBy: { createdAt: "desc" },
-			take: options?.limit ?? 100,
-		});
+		return this.client.orm.public.SecurityLog.where((row) =>
+			and(
+				row.event.eq(event),
+				row.createdAt.gte(databaseTimestamp(since)),
+				options?.userId ? row.userId.eq(options.userId) : all(),
+				options?.ipAddress ? row.ipAddress.eq(varchar(options.ipAddress, 45)) : all(),
+			),
+		)
+			.orderBy((row) => row.createdAt.desc())
+			.limit(options?.limit ?? 100)
+			.all()
+			.then((row) => decodeRecord("SecurityLog", row));
 	}
 
 	async findSuspiciousActivityByIp(ipAddress: string, since: Date): Promise<SecurityLog[]> {
-		return this.client.securityLog.findMany({
-			where: {
-				ipAddress,
-				createdAt: { gte: since },
-				event: {
-					in: ["LOGIN_FAILURE", "SUSPICIOUS_ACTIVITY", "TOKEN_REVOKED", "SESSION_REVOKED_ALL"],
-				},
-			},
-			orderBy: { createdAt: "desc" },
-		});
+		return this.client.orm.public.SecurityLog.where((row) =>
+			and(
+				row.ipAddress.eq(varchar(ipAddress, 45)),
+				row.createdAt.gte(databaseTimestamp(since)),
+				row.event.in([
+					"LOGIN_FAILURE",
+					"SUSPICIOUS_ACTIVITY",
+					"TOKEN_REVOKED",
+					"SESSION_REVOKED_ALL",
+				]),
+			),
+		)
+			.orderBy((row) => row.createdAt.desc())
+			.all()
+			.then((row) => decodeRecord("SecurityLog", row));
 	}
 
 	// 배치 작업용, 90일 보관
 	async deleteOld(retentionDays = 90): Promise<number> {
 		const cutoff = subtractDays(retentionDays);
 
-		const result = await this.client.securityLog.deleteMany({
-			where: {
-				createdAt: { lt: cutoff },
-			},
-		});
+		const result = {
+			count: await this.client.orm.public.SecurityLog.where((row) =>
+				row.createdAt.lt(databaseTimestamp(cutoff)),
+			).deleteAndCount(),
+		};
 		return result.count;
 	}
 
@@ -105,20 +114,13 @@ export class SecurityLogRepository {
 		since: Date,
 		until?: Date,
 	): Promise<{ event: SecurityEvent; count: number }[]> {
-		const result = await this.client.securityLog.groupBy({
-			by: ["event"],
-			where: {
-				createdAt: {
-					gte: since,
-					...(until && { lte: until }),
-				},
-			},
-			_count: { event: true },
-		});
-
-		return result.map((r) => ({
-			event: r.event,
-			count: r._count.event,
-		}));
+		return this.client.orm.public.SecurityLog.where((row) =>
+			and(
+				row.createdAt.gte(databaseTimestamp(since)),
+				until === undefined ? all() : row.createdAt.lte(databaseTimestamp(until)),
+			),
+		)
+			.groupBy("event")
+			.aggregate((aggregate) => ({ count: aggregate.count() }));
 	}
 }

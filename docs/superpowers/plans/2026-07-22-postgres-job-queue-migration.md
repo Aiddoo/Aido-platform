@@ -6,7 +6,7 @@
 
 **Architecture:** bounded context의 기존 업무 포트는 유지하고, 공용 `JobRuntimePort`를 PostgreSQL(pg-boss)과 Redis(BullMQ) 어댑터가 구현한다. 첫 운영 릴리스는 `JOB_BACKEND=redis`를 유지하며, 계약·인증·재시작 검증을 통과한 뒤에만 별도 cutover에서 `postgres`를 선택한다.
 
-**Tech Stack:** NestJS 11, TypeScript 5.9, pg-boss 12.26.2, BullMQ 5, Prisma 7, PostgreSQL 16, Jest, Testcontainers, Docker Compose
+**Tech Stack:** NestJS 11, TypeScript 5.9, pg-boss 12.26.2, BullMQ 5, Prisma 8 native ORM, PostgreSQL 16, Jest, Testcontainers, Docker Compose
 
 ## Global Constraints
 
@@ -267,7 +267,7 @@ Mock pg-boss and `TransactionHost.tx`. Assert enqueue maps `jobKey→singletonKe
 
 - [ ] **Step 3: Implement the minimal adapter**
 
-Construct `PgBoss` with runtime migrations disabled. Call `boss.start()` only after schema migration. For enqueue inside a CLS transaction, pass `fromPrisma(this.txHost.tx)` through pg-boss's per-call `db` option so business writes and job insert share one transaction. Register `error` logging without payload data.
+Construct `PgBoss` with runtime migrations disabled. Call `boss.start()` only after schema migration. For enqueue inside a CLS transaction, pass `nativeJobDatabase(this.txHost.tx, "id")` through pg-boss's per-call `db` option so business writes and job insert share one transaction. Register `error` logging without payload data.
 
 - [ ] **Step 4: Write failing Testcontainers behavior tests**
 

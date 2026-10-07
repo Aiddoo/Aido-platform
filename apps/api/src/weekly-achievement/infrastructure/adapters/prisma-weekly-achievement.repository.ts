@@ -1,25 +1,20 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Inject, Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type { WeeklyAchievementRepositoryPort } from "../../application/ports/weekly-achievement.repository.port.js";
 import type {
 	WeeklyAchievementRow,
 	WeeklyAchievementUpsert,
 } from "../../domain/weekly-achievement.js";
-
-/** 응답 뷰가 요구하는 컬럼만 선택 (userId·타임스탬프 제외) */
-const ROW_SELECT = {
-	id: true,
-	year: true,
-	week: true,
-	totalTodos: true,
-	completedTodos: true,
-	achievedAt: true,
-} as const;
 
 /**
  * WeeklyAchievementRepositoryPort의 Prisma 어댑터.
@@ -30,7 +25,7 @@ const ROW_SELECT = {
 @Injectable()
 export class PrismaWeeklyAchievementRepository implements WeeklyAchievementRepositoryPort {
 	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
+		private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
 		@Inject(UNIT_OF_WORK)
 		private readonly uow: UnitOfWorkPort,
 	) {}
@@ -40,41 +35,51 @@ export class PrismaWeeklyAchievementRepository implements WeeklyAchievementRepos
 		return this.txHost.tx;
 	}
 
-	findByYear(
+	async findByYear(
 		userId: string,
 		year: number,
 		cursor: number | undefined,
 		take: number,
 	): Promise<WeeklyAchievementRow[]> {
-		return this.client.weeklyAchievement.findMany({
-			where: { userId, year },
-			orderBy: { week: "desc" },
-			take,
-			select: ROW_SELECT,
-			...(cursor != null && {
-				skip: 1,
-				cursor: { userId_year_week: { userId, year, week: cursor } },
-			}),
-		});
+		let weeks = this.client.orm.public.WeeklyAchievement.where({ userId, year })
+			.select("id", "year", "week", "totalTodos", "completedTodos", "achievedAt")
+			.orderBy((row) => row.week.desc())
+			.limit(take);
+		if (cursor !== undefined) {
+			const anchor = await this.client.orm.public.WeeklyAchievement.where({
+				userId,
+				year,
+				week: cursor,
+			})
+				.select("week")
+				.first();
+			if (anchor === null) return [];
+			weeks = weeks.cursor(anchor);
+		}
+		return decodeRecord("WeeklyAchievement", await weeks.all());
 	}
 
-	findAllByYear(userId: string, year: number): Promise<WeeklyAchievementRow[]> {
-		return this.client.weeklyAchievement.findMany({
-			where: { userId, year },
-			orderBy: [{ week: "asc" }],
-			select: ROW_SELECT,
-		});
+	async findAllByYear(userId: string, year: number): Promise<WeeklyAchievementRow[]> {
+		return await this.client.orm.public.WeeklyAchievement.where((row) =>
+			and(row.userId.eq(userId), row.year.eq(year)),
+		)
+			.select("id", "year", "week", "totalTodos", "completedTodos", "achievedAt")
+			.orderBy((row) => row.week.asc())
+			.all()
+			.then((row) => decodeRecord("WeeklyAchievement", row));
 	}
 
-	findByYearAndWeek(
+	async findByYearAndWeek(
 		userId: string,
 		year: number,
 		week: number,
 	): Promise<WeeklyAchievementRow | null> {
-		return this.client.weeklyAchievement.findUnique({
-			where: { userId_year_week: { userId, year, week } },
-			select: ROW_SELECT,
-		});
+		return await this.client.orm.public.WeeklyAchievement.where((row) =>
+			and(row.userId.eq(userId), row.year.eq(year), row.week.eq(week)),
+		)
+			.select("id", "year", "week", "totalTodos", "completedTodos", "achievedAt")
+			.first()
+			.then((row) => decodeRecord("WeeklyAchievement", row));
 	}
 
 	async upsertMany(snapshots: WeeklyAchievementUpsert[]): Promise<void> {
@@ -84,18 +89,23 @@ export class PrismaWeeklyAchievementRepository implements WeeklyAchievementRepos
 
 		await this.uow.run(async () => {
 			for (const { userId, year, week, totalTodos, completedTodos, achievedAt } of snapshots) {
-				await this.client.weeklyAchievement.upsert({
-					where: { userId_year_week: { userId, year, week } },
-					create: {
-						userId,
-						year,
-						week,
-						totalTodos,
-						completedTodos,
-						achievedAt,
-					},
-					update: { totalTodos, completedTodos, achievedAt },
-				});
+				decodeRecord(
+					"WeeklyAchievement",
+					await this.client.orm.public.WeeklyAchievement.where((row) =>
+						and(row.userId.eq(userId), row.year.eq(year), row.week.eq(week)),
+					).upsert({
+						conflictOn: encodePatch("WeeklyAchievement", { userId, year, week }),
+						create: encodeCreate("WeeklyAchievement", {
+							userId,
+							year,
+							week,
+							totalTodos,
+							completedTodos,
+							achievedAt,
+						}),
+						update: encodePatch("WeeklyAchievement", { totalTodos, completedTodos, achievedAt }),
+					}),
+				);
 			}
 		});
 	}

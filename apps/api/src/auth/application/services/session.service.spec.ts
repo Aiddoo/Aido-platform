@@ -10,8 +10,8 @@ import { TestBed } from "@suites/unit";
  */
 import type { Mocked } from "vitest";
 
-import type { Session } from "#api/generated/prisma/client";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import type { Session } from "#api/shared/infrastructure/database/database.types";
 import { SessionBuilder } from "#test/builders/index";
 
 import {

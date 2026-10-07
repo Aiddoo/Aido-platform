@@ -1,3 +1,4 @@
+import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import type { MockInstance } from "vitest";
 /**
@@ -12,8 +13,8 @@ import type { MockInstance } from "vitest";
  * pnpm --filter @aido/api test kma-lifestyle-index.provider.spec
  * ```
  */
-import { vi } from "vitest";
 import type { Mocked } from "vitest";
+import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 
@@ -25,7 +26,10 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
 	let fetchSpy: MockInstance<typeof globalThis.fetch>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexProvider).compile();
+		const { unit, unitRef } = await TestBed.solitary(KmaLifestyleIndexProvider)
+			.mock(getHttpClientToken("weather"))
+			.final(new HttpClient({ retry: false, throwOnHttpError: false }))
+			.compile();
 
 		provider = unit;
 		configService = unitRef.get(TypedConfigService);

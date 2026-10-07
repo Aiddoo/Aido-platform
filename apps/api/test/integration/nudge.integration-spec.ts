@@ -9,6 +9,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
  * 실행: pnpm --filter @aido/api test nudge.integration-spec
  */
 import { Test, type TestingModule } from "@nestjs/testing";
+import { and } from "@prisma/orm-postgres/orm-client";
 import { vi } from "vitest";
 
 import { FollowReader } from "#api/follow/index";
@@ -32,7 +33,12 @@ import { todayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
 import { NudgeBuilder, TodoBuilder } from "#test/builders/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import {
+	assertNativeWhere,
+	createMockDatabaseContext,
+	databaseFixture,
+	nativeRows,
+} from "#test/mocks/database.mock";
 import { createUnitOfWorkMock } from "#test/mocks/ports/index";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -60,28 +66,10 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 			markNudgeReadUseCase.execute({ userId, nudgeId }),
 	};
 
-	const mockNudgeDb = {
-		create: vi.fn(),
-		findUnique: vi.fn(),
-		findFirst: vi.fn(),
-		findMany: vi.fn(),
-		update: vi.fn(),
-		updateMany: vi.fn(),
-		count: vi.fn(),
-	};
-	const mockReminderNudgeDb = {
-		create: vi.fn(),
-		findFirst: vi.fn(),
-	};
-	const mockTodoDb = {
-		findUnique: vi.fn(),
-		count: vi.fn(),
-	};
-	const mockDatabaseService = createMockDatabaseService({
-		nudge: mockNudgeDb,
-		reminderNudge: mockReminderNudgeDb,
-		todo: mockTodoDb,
-	});
+	const nativeContext = createMockDatabaseContext();
+	const mockNudgeDb = nativeContext.orm.public.Nudge;
+	const mockReminderNudgeDb = nativeContext.orm.public.ReminderNudge;
+	const mockTodoDb = nativeContext.orm.public.Todo;
 
 	const mockFollowReader = { isMutualFriend: vi.fn() };
 	const mockNotificationQueueService = { enqueueNudgeSent: vi.fn() };
@@ -133,7 +121,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 					provide: MUTATION_LOCK,
 					useValue: { acquire: vi.fn().mockResolvedValue(undefined) },
 				},
-				{ provide: TransactionHost, useValue: { tx: mockDatabaseService } },
+				{ provide: TransactionHost, useValue: { tx: nativeContext } },
 				{
 					provide: TypedConfigService,
 					useValue: {
@@ -196,10 +184,10 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	describe("콕 찌르기 전송", () => {
 		it("친구에게 콕 찌르기를 전송하고 알림을 enqueue한다", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.findUnique.mockResolvedValue(publicTodayTodo());
-			mockNudgeDb.count.mockResolvedValue(0);
-			mockNudgeDb.findFirst.mockResolvedValue(null);
-			mockNudgeDb.create.mockResolvedValue(buildRelations(nudgeId));
+			mockTodoDb.first.mockResolvedValue(databaseFixture("Todo", publicTodayTodo()));
+			mockNudgeDb.aggregate.mockResolvedValue({ count: 0 });
+			mockNudgeDb.first.mockResolvedValue(databaseFixture("Nudge", null));
+			mockNudgeDb.create.mockResolvedValue(databaseFixture("Nudge", buildRelations(nudgeId)));
 
 			const result = await nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC");
 
@@ -225,8 +213,8 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("일일 제한 초과면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.findUnique.mockResolvedValue(publicTodayTodo());
-			mockNudgeDb.count.mockResolvedValue(3);
+			mockTodoDb.first.mockResolvedValue(databaseFixture("Todo", publicTodayTodo()));
+			mockNudgeDb.aggregate.mockResolvedValue({ count: 3 });
 			await expect(nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC")).rejects.toThrow(
 				ApplicationException,
 			);
@@ -234,10 +222,13 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("쿨다운 중이면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.findUnique.mockResolvedValue(publicTodayTodo());
-			mockNudgeDb.count.mockResolvedValue(0);
-			mockNudgeDb.findFirst.mockResolvedValue(
-				NudgeBuilder.create(senderId, receiverId, todoId).withCreatedAt(new Date()).build(),
+			mockTodoDb.first.mockResolvedValue(databaseFixture("Todo", publicTodayTodo()));
+			mockNudgeDb.aggregate.mockResolvedValue({ count: 0 });
+			mockNudgeDb.first.mockResolvedValue(
+				databaseFixture(
+					"Nudge",
+					NudgeBuilder.create(senderId, receiverId, todoId).withCreatedAt(new Date()).build(),
+				),
 			);
 			await expect(nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC")).rejects.toThrow(
 				ApplicationException,
@@ -246,8 +237,14 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("오늘의 할 일이 아니면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.findUnique.mockResolvedValue(
-				TodoBuilder.create(receiverId).withId(todoId).withStartDate(subtractDays(1, today)).build(),
+			mockTodoDb.first.mockResolvedValue(
+				databaseFixture(
+					"Todo",
+					TodoBuilder.create(receiverId)
+						.withId(todoId)
+						.withStartDate(subtractDays(1, today))
+						.build(),
+				),
 			);
 			await expect(nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC")).rejects.toThrow(
 				ApplicationException,
@@ -256,8 +253,11 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("비공개 Todo면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.findUnique.mockResolvedValue(
-				TodoBuilder.create(receiverId).withId(todoId).withStartDate(today).asPrivate().build(),
+			mockTodoDb.first.mockResolvedValue(
+				databaseFixture(
+					"Todo",
+					TodoBuilder.create(receiverId).withId(todoId).withStartDate(today).asPrivate().build(),
+				),
 			);
 			await expect(nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC")).rejects.toThrow(
 				ApplicationException,
@@ -266,8 +266,11 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("다른 사용자의 Todo면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.findUnique.mockResolvedValue(
-				TodoBuilder.create("other-user").withId(todoId).withStartDate(today).build(),
+			mockTodoDb.first.mockResolvedValue(
+				databaseFixture(
+					"Todo",
+					TodoBuilder.create("other-user").withId(todoId).withStartDate(today).build(),
+				),
 			);
 			await expect(nudgeApi.sendNudge({ senderId, receiverId, todoId }, "UTC")).rejects.toThrow(
 				ApplicationException,
@@ -278,20 +281,22 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 	describe("리마인드 콕 찌르기 전송", () => {
 		it("친구가 오늘 할 일이 없으면 전송하고 알림을 enqueue한다", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.count.mockResolvedValue(0);
-			mockReminderNudgeDb.findFirst.mockResolvedValue(null);
-			mockReminderNudgeDb.create.mockResolvedValue({
-				id: 10,
-				senderId,
-				receiverId,
-				message: null,
-				createdAt: new Date(),
-				sender: {
-					id: senderId,
-					userTag: "SENDER12",
-					profile: { name: "Sender User", profileImage: null },
-				},
-			});
+			mockTodoDb.aggregate.mockResolvedValue({ count: 0 });
+			mockReminderNudgeDb.first.mockResolvedValue(databaseFixture("ReminderNudge", null));
+			mockReminderNudgeDb.create.mockResolvedValue(
+				databaseFixture("ReminderNudge", {
+					id: 10,
+					senderId,
+					receiverId,
+					message: null,
+					createdAt: new Date(),
+					sender: {
+						id: senderId,
+						userTag: "SENDER12",
+						profile: { name: "Sender User", profileImage: null },
+					},
+				}),
+			);
 
 			const result = await nudgeApi.sendRemindNudge({ senderId, receiverId }, "UTC");
 
@@ -303,7 +308,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("친구가 오늘 할 일이 있으면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.count.mockResolvedValue(2);
+			mockTodoDb.aggregate.mockResolvedValue({ count: 2 });
 			await expect(nudgeApi.sendRemindNudge({ senderId, receiverId }, "UTC")).rejects.toThrow(
 				ApplicationException,
 			);
@@ -311,14 +316,16 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 		it("쿨다운 중이면 ApplicationException", async () => {
 			mockFollowReader.isMutualFriend.mockResolvedValue(true);
-			mockTodoDb.count.mockResolvedValue(0);
-			mockReminderNudgeDb.findFirst.mockResolvedValue({
-				id: 11,
-				senderId,
-				receiverId,
-				message: null,
-				createdAt: new Date(),
-			});
+			mockTodoDb.aggregate.mockResolvedValue({ count: 0 });
+			mockReminderNudgeDb.first.mockResolvedValue(
+				databaseFixture("ReminderNudge", {
+					id: 11,
+					senderId,
+					receiverId,
+					message: null,
+					createdAt: new Date(),
+				}),
+			);
 			await expect(nudgeApi.sendRemindNudge({ senderId, receiverId }, "UTC")).rejects.toThrow(
 				ApplicationException,
 			);
@@ -327,15 +334,17 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("목록 조회", () => {
 		it("받은 콕 찌르기 목록에 sender.userTag가 포함된다", async () => {
-			mockNudgeDb.findMany.mockResolvedValue([buildRelations(1)]);
-			mockNudgeDb.count.mockResolvedValue(1);
+			mockNudgeDb.all.mockReturnValue(nativeRows(databaseFixture("Nudge", [buildRelations(1)])));
+			mockNudgeDb.aggregate.mockResolvedValue({ count: 1 });
 
 			const result = await nudgeApi.getReceivedNudges({ userId: receiverId });
 			expect(result.items[0]?.sender.userTag).toBe("SENDER12");
 		});
 
 		it("보낸 콕 찌르기 목록을 조회한다", async () => {
-			mockNudgeDb.findMany.mockResolvedValue([buildRelations(1), buildRelations(2)]);
+			mockNudgeDb.all.mockReturnValue(
+				nativeRows(databaseFixture("Nudge", [buildRelations(1), buildRelations(2)])),
+			);
 			const result = await nudgeApi.getSentNudges({ userId: senderId });
 			expect(result.items).toHaveLength(2);
 			expect(result.pagination).toBeDefined();
@@ -344,7 +353,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("일일 제한 정보", () => {
 		it("FREE 사용자의 제한 정보", async () => {
-			mockNudgeDb.count.mockResolvedValue(2);
+			mockNudgeDb.aggregate.mockResolvedValue({ count: 2 });
 			const result = await nudgeApi.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBe(3);
 			expect(result.used).toBe(2);
@@ -357,7 +366,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 				isAdmin: false,
 				subscriptionStatus: "ACTIVE",
 			});
-			mockNudgeDb.count.mockResolvedValue(10);
+			mockNudgeDb.aggregate.mockResolvedValue({ count: 10 });
 			const result = await nudgeApi.getLimitInfo(senderId, "UTC");
 			expect(result.dailyLimit).toBeNull();
 			expect(result.remaining).toBeNull();
@@ -366,14 +375,17 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("쿨다운 정보", () => {
 		it("기록이 없으면 비활성", async () => {
-			mockNudgeDb.findFirst.mockResolvedValue(null);
+			mockNudgeDb.first.mockResolvedValue(databaseFixture("Nudge", null));
 			const result = await nudgeApi.getCooldownInfoForUser(senderId, receiverId);
 			expect(result.isActive).toBe(false);
 		});
 
 		it("최근 콕 찌르기가 있으면 활성 + 남은 시간", async () => {
-			mockNudgeDb.findFirst.mockResolvedValue(
-				NudgeBuilder.create(senderId, receiverId, todoId).withCreatedAt(new Date()).build(),
+			mockNudgeDb.first.mockResolvedValue(
+				databaseFixture(
+					"Nudge",
+					NudgeBuilder.create(senderId, receiverId, todoId).withCreatedAt(new Date()).build(),
+				),
 			);
 			const result = await nudgeApi.getCooldownInfoForUser(senderId, receiverId);
 			expect(result.isActive).toBe(true);
@@ -381,7 +393,7 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("리마인드 쿨다운 정보를 조회한다", async () => {
-			mockReminderNudgeDb.findFirst.mockResolvedValue(null);
+			mockReminderNudgeDb.first.mockResolvedValue(databaseFixture("ReminderNudge", null));
 			const result = await nudgeApi.getRemindCooldownInfo(senderId, receiverId);
 			expect(result.isActive).toBe(false);
 		});
@@ -389,25 +401,31 @@ describe("Nudge 모듈 통합 테스트 (Mock DB)", () => {
 
 	describe("읽음 처리", () => {
 		it("콕 찌르기를 읽음 처리한다", async () => {
-			mockNudgeDb.findUnique.mockResolvedValue(
-				NudgeBuilder.create(senderId, receiverId, todoId).withId(nudgeId).asUnread().build(),
+			mockNudgeDb.first.mockResolvedValue(
+				databaseFixture(
+					"Nudge",
+					NudgeBuilder.create(senderId, receiverId, todoId).withId(nudgeId).asUnread().build(),
+				),
 			);
-			mockNudgeDb.updateMany.mockResolvedValue({ count: 1 });
+			mockNudgeDb.updateAndCount.mockResolvedValue(1);
 
 			await nudgeApi.markAsRead(receiverId, nudgeId);
-			expect(mockNudgeDb.updateMany).toHaveBeenCalledWith(
-				expect.objectContaining({ where: { id: nudgeId, readAt: null } }),
+			assertNativeWhere("Nudge", mockNudgeDb.where.mock.calls.at(-1)?.[0], (row) =>
+				and(row.id.eq(nudgeId), row.readAt.isNull()),
 			);
 		});
 
 		it("존재하지 않으면 ApplicationException", async () => {
-			mockNudgeDb.findUnique.mockResolvedValue(null);
+			mockNudgeDb.first.mockResolvedValue(databaseFixture("Nudge", null));
 			await expect(nudgeApi.markAsRead(receiverId, 999)).rejects.toThrow(ApplicationException);
 		});
 
 		it("다른 사용자의 콕 찌르기면 ApplicationException", async () => {
-			mockNudgeDb.findUnique.mockResolvedValue(
-				NudgeBuilder.create(senderId, "other-user", todoId).withId(nudgeId).build(),
+			mockNudgeDb.first.mockResolvedValue(
+				databaseFixture(
+					"Nudge",
+					NudgeBuilder.create(senderId, "other-user", todoId).withId(nudgeId).build(),
+				),
 			);
 			await expect(nudgeApi.markAsRead(receiverId, nudgeId)).rejects.toThrow(ApplicationException);
 		});

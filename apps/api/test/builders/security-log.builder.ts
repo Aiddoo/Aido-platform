@@ -10,7 +10,10 @@
  * ```
  */
 
-import type { SecurityEvent, SecurityLog } from "#api/generated/prisma/client";
+import type {
+	SecurityEvent,
+	SecurityLog,
+} from "#api/shared/infrastructure/database/database.types";
 
 let idCounter = 1;
 

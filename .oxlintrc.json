@@ -17,10 +17,19 @@
     "apps/mobile/.claude/skills/**",
     "**/dist/**",
     "**/build/**",
-    "**/coverage/**"
+    "**/coverage/**",
+    "apps/api/prisma/migrations8/snapshots/**",
+    "apps/api/prisma/migrations8/**/ops.json",
+    "apps/api/prisma/migrations8/**/migration.json"
   ],
   "rules": {
-    "eslint/eqeqeq": ["error", "always", { "null": "ignore" }],
+    "eslint/eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
     "eslint/no-unused-vars": "error",
     "eslint/prefer-const": "error",
     "import/no-cycle": "error",
@@ -65,19 +74,19 @@
             "patterns": [
               {
                 "regex": "^@nestjs/",
-                "message": "domain은 NestJS에 의존할 수 없습니다."
+                "message": "domain\uc740 NestJS\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               },
               {
                 "regex": "(?:^|/)generated(?:/|$)",
-                "message": "domain은 생성된 Prisma 타입에 의존할 수 없습니다."
+                "message": "domain\uc740 \uc0dd\uc131\ub41c Prisma \ud0c0\uc785\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               },
               {
                 "regex": "(?:^|/)presentation(?:/|$)",
-                "message": "domain은 presentation에 의존할 수 없습니다."
+                "message": "domain\uc740 presentation\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               },
               {
                 "regex": "(?:^|/)application/ports(?:/|$)",
-                "message": "domain은 application port에 의존할 수 없습니다."
+                "message": "domain\uc740 application port\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               }
             ]
           }
@@ -94,15 +103,15 @@
             "patterns": [
               {
                 "regex": "^@prisma/|(?:^|/)generated(?:/|$)",
-                "message": "application은 Prisma 타입에 의존할 수 없습니다."
+                "message": "application\uc740 Prisma \ud0c0\uc785\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               },
               {
                 "regex": "(?:^|/)infrastructure(?:/|$)",
-                "message": "application은 infrastructure 구현에 의존할 수 없습니다."
+                "message": "application\uc740 infrastructure \uad6c\ud604\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               },
               {
                 "regex": "(?:^|/)presentation(?:/|$)",
-                "message": "application은 presentation에 의존할 수 없습니다."
+                "message": "application\uc740 presentation\uc5d0 \uc758\uc874\ud560 \uc218 \uc5c6\uc2b5\ub2c8\ub2e4."
               }
             ]
           }

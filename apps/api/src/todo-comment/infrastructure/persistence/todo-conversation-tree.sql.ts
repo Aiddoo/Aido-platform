@@ -1,4 +1,4 @@
-import { Prisma } from "#api/generated/prisma/client";
+import sql, { type Sql } from "sql-template-tag";
 
 import type { ConversationPageMode, TodoConversationScope } from "../../application/types.js";
 
@@ -14,10 +14,10 @@ interface TodoConversationTreeInput {
  * Focus와 thread cursor는 먼저 대상 root를 확정해 재귀 seed를 하나로 제한한다.
  * TODO 범위 페이지에서만 모든 root를 seed한다.
  */
-export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput): Prisma.Sql {
+export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput): Sql {
 	const targetThreadCte =
 		input.mode === "FOCUS"
-			? Prisma.sql`
+			? sql`
 				target_thread AS (
 					SELECT COALESCE(target."rootId", target."id") AS "threadId"
 					FROM "TodoComment" AS target
@@ -26,22 +26,22 @@ export function buildTodoConversationTreeCtes(input: TodoConversationTreeInput):
 				)
 			`
 			: input.scope === "THREAD"
-				? Prisma.sql`
+				? sql`
 					target_thread AS (
 						SELECT ${input.anchorThreadId ?? null}::TEXT AS "threadId"
 					)
 				`
-				: Prisma.sql`
+				: sql`
 					target_thread AS (
 						SELECT NULL::TEXT AS "threadId"
 					)
 				`;
 	const rootThreadCondition =
 		input.mode === "FOCUS" || input.scope === "THREAD"
-			? Prisma.sql`comment."id" = (SELECT "threadId" FROM target_thread)`
-			: Prisma.sql`TRUE`;
+			? sql`comment."id" = (SELECT "threadId" FROM target_thread)`
+			: sql`TRUE`;
 
-	return Prisma.sql`
+	return sql`
 		visible_sibling_order AS (
 			SELECT
 				comment."id",

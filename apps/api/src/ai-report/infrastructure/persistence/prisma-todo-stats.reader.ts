@@ -1,116 +1,54 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type { TodoStatsReaderPort } from "../../application/ports/todo-stats.reader.port.js";
 import type { AggregateParams, AggregationInputs } from "../../domain/types.js";
+import { prepareReportQueries } from "./prisma8-report.queries.js";
+import { toAggregationInputs } from "./report-aggregation.mapper.js";
 
-/**
- * 할 일 통계 읽기 Prisma 어댑터.
- *
- * 리포트 집계에 필요한 할 일/카테고리 원시 그룹 집계를 병렬로 조회한다(N+1 방지).
- * 트랜잭션은 CLS로 전파된다.
- */
+/** 준비된 ORM 집계를 활성 CLS transaction에서 실행한다. */
 @Injectable()
 export class PrismaTodoStatsReader implements TodoStatsReaderPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	private queries: ReturnType<typeof prepareReportQueries> | undefined;
 
-	/** 활성 트랜잭션(없으면 베이스 클라이언트) — CLS로 전파됩니다 */
-	private get database() {
-		return this.txHost.tx;
-	}
+	constructor(
+		private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
+		private readonly prisma8: DatabaseService,
+	) {}
 
 	async fetchAggregationInputs(params: AggregateParams): Promise<AggregationInputs> {
 		const { userId, startDate, endDate, prevStartDate, prevEndDate } = params;
-
-		// 병렬로 모든 DB 쿼리 실행 (N+1 방지)
-		const [
-			dailyTotalGroups,
-			dailyCompletedGroups,
-			prevTotalCount,
-			prevCompletedCount,
-			catTotalGroups,
-			catCompletedGroups,
-			categories,
-			completedTodos,
-		] = await Promise.all([
-			// 현재 기간: 날짜별 전체 할 일 수
-			this.database.todo.groupBy({
-				by: ["startDate"],
-				where: { userId, startDate: { gte: startDate, lt: endDate } },
-				_count: { id: true },
-			}),
-			// 현재 기간: 날짜별 완료 할 일 수
-			this.database.todo.groupBy({
-				by: ["startDate"],
-				where: {
-					userId,
-					startDate: { gte: startDate, lt: endDate },
-					completed: true,
-				},
-				_count: { id: true },
-			}),
-			// 이전 기간: 전체 할 일 수
-			this.database.todo.count({
-				where: {
-					userId,
-					startDate: { gte: prevStartDate, lt: prevEndDate },
-				},
-			}),
-			// 이전 기간: 완료 할 일 수
-			this.database.todo.count({
-				where: {
-					userId,
-					startDate: { gte: prevStartDate, lt: prevEndDate },
-					completed: true,
-				},
-			}),
-			// 카테고리별 전체 할 일 수
-			this.database.todo.groupBy({
-				by: ["categoryId"],
-				where: { userId, startDate: { gte: startDate, lt: endDate } },
-				_count: { id: true },
-			}),
-			// 카테고리별 완료 할 일 수
-			this.database.todo.groupBy({
-				by: ["categoryId"],
-				where: {
-					userId,
-					startDate: { gte: startDate, lt: endDate },
-					completed: true,
-				},
-				_count: { id: true },
-			}),
-			// 카테고리 정보
-			this.database.todoCategory.findMany({
-				where: { userId },
-				select: { id: true, name: true, color: true },
-			}),
-			// 완료된 할 일 (시간대 분석용)
-			this.database.todo.findMany({
-				where: {
-					userId,
-					startDate: { gte: startDate, lt: endDate },
-					completed: true,
-					completedAt: { not: null },
-				},
-				select: { startDate: true, completedAt: true },
-			}),
+		const db = this.prisma8.db;
+		// 초기화 실패는 다음 호출에서 재시도한다. 쿼리 형태만 재사용하며 데이터는 캐시하지 않는다.
+		const queries = await (this.queries ??= prepareReportQueries(db).catch((error: unknown) => {
+			this.queries = undefined;
+			throw error;
+		}));
+		const date = (value: Date) => value.toISOString().slice(0, 10);
+		const current = { userId, start: date(startDate), end: date(endDate) };
+		const previous = { userId, start: date(prevStartDate), end: date(prevEndDate) };
+		const runtime = this.txHost.tx;
+		const [daily, prev, category, categories, completed] = await Promise.all([
+			queries.daily.query(runtime, current),
+			queries.previous.query(runtime, previous),
+			queries.category.query(runtime, current),
+			queries.categories.query(runtime, { userId }),
+			queries.completed.query(runtime, current),
 		]);
 
-		return {
-			dailyTotalGroups,
-			dailyCompletedGroups,
-			prevTotalCount,
-			prevCompletedCount,
-			catTotalGroups,
-			catCompletedGroups,
+		return toAggregationInputs(
+			daily.map((row) => ({ ...row, startDate: new Date(`${row.startDate}T00:00:00.000Z`) })),
+			prev,
+			category,
 			categories,
-			completedTodos,
-		};
+
+			completed.map((row) => ({
+				startDate: new Date(`${row.startDate}T00:00:00.000Z`),
+				completedAt: row.completedAt === null ? null : new Date(`${row.completedAt}Z`),
+			})),
+		);
 	}
 }

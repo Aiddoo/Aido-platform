@@ -10,7 +10,6 @@ import * as Sentry from "@sentry/nestjs";
 import type { Request, Response } from "express";
 import { PinoLogger } from "nestjs-pino";
 
-import { Prisma } from "#api/generated/prisma/client";
 import {
 	BusinessException,
 	BusinessExceptions,
@@ -18,6 +17,11 @@ import {
 import type { ErrorResponse } from "#api/shared/application/exceptions/error.interface";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 import { TypedConfigService } from "#api/shared/infrastructure/config/services/config.service";
+import {
+	databaseConstraint,
+	databaseSqlState,
+	isRecordNotFoundError,
+} from "#api/shared/infrastructure/database/prisma-error.util";
 
 /**
  * 전역 예외 필터
@@ -91,9 +95,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 					timestamp: Date.now(),
 				};
 			}
-		} else if (normalized instanceof Prisma.PrismaClientKnownRequestError) {
-			// Prisma 에러 처리
-			const businessException = this.#mapPrismaErrorToBusinessException(normalized);
+		} else if (databaseSqlState(normalized) !== undefined || isRecordNotFoundError(normalized)) {
+			// Database 에러 처리
+			const businessException = this.#mapDatabaseError(normalized);
 			statusCode = businessException.getStatus();
 			errorResponse = businessException.getResponse() as ErrorResponse;
 		} else {
@@ -154,53 +158,46 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 	}
 
 	/**
-	 * Prisma 에러 → BusinessException 매핑
+	 * Database 에러 → BusinessException 매핑
 	 *
-	 * P2002(unique), P2003(FK), P2025(not found) 등 주요 에러를 비즈니스 에러로 변환
+	 * Unique, foreign key, and missing-record errors 등 주요 에러를 비즈니스 에러로 변환
 	 */
-	#mapPrismaErrorToBusinessException(
-		error: InstanceType<typeof Prisma.PrismaClientKnownRequestError>,
-	): BusinessException {
-		switch (error.code) {
-			case "P2002":
-				return this.#mapP2002ToBusinessException(error);
-			case "P2003":
-				// Foreign key constraint violation
+	#mapDatabaseError(error: unknown): BusinessException {
+		if (isRecordNotFoundError(error)) {
+			return BusinessExceptions.invalidParameter(
+				this.configService.isDevelopment
+					? { reason: "Record to update/delete not found" }
+					: undefined,
+			);
+		}
+		const sqlState = databaseSqlState(error);
+		switch (sqlState) {
+			case "23505":
+				return this.#mapUniqueConstraintError(error);
+			case "23503":
 				this.logger.warn(
-					`Prisma P2003: FK constraint violation (meta: ${JSON.stringify(error.meta)})`,
+					`PostgreSQL foreign key violation: ${databaseConstraint(error) ?? "unknown"}`,
 				);
 				return BusinessExceptions.invalidParameter(
 					this.configService.isDevelopment
 						? { reason: "Referenced record does not exist" }
 						: undefined,
 				);
-			case "P2025":
-				// Record not found
-				return BusinessExceptions.invalidParameter(
-					this.configService.isDevelopment
-						? { reason: "Record to update/delete not found" }
-						: undefined,
-				);
 			default:
-				this.logger.warn(
-					`Unhandled Prisma error: ${error.code} (meta: ${JSON.stringify(error.meta)})`,
-				);
+				this.logger.warn(`Unhandled database error: ${sqlState ?? "unknown"}`);
 				return BusinessExceptions.internalServerError(
-					this.configService.isDevelopment ? { prismaCode: error.code } : undefined,
+					this.configService.isDevelopment ? { sqlState } : undefined,
 				);
 		}
 	}
 
 	/**
-	 * Prisma P2002 (unique constraint violation) → BusinessException 매핑
+	 * PostgreSQL unique constraint violation → BusinessException 매핑
 	 *
 	 * 알려진 constraint는 구체적인 에러 코드로, 미지의 constraint는 SYS_0004로 폴백
 	 */
-	#mapP2002ToBusinessException(
-		error: InstanceType<typeof Prisma.PrismaClientKnownRequestError>,
-	): BusinessException {
-		const target = error.meta?.target;
-		const constraintKey = Array.isArray(target) ? target.join("_") : String(target ?? "unknown");
+	#mapUniqueConstraintError(error: unknown): BusinessException {
+		const constraintKey = databaseConstraint(error) ?? "unknown";
 
 		const constraintMap: Record<string, () => BusinessException> = {
 			User_email_key: () => BusinessExceptions.emailAlreadyRegistered(""),
@@ -228,9 +225,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 		}
 
 		// 알 수 없는 constraint → warn 로그 + SYS_0004 폴백
-		this.logger.warn(
-			`Unknown P2002 constraint: ${constraintKey} (meta: ${JSON.stringify(error.meta)})`,
-		);
+		this.logger.warn(`Unknown database unique constraint: ${constraintKey}`);
 		return BusinessExceptions.concurrentModification();
 	}
 }

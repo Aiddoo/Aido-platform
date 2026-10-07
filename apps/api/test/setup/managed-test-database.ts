@@ -83,7 +83,7 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
 		};
 	},
 	migrate: (connectionUri) => {
-		execFileSync(resolvePnpmCommand(), ["exec", "prisma", "migrate", "deploy"], {
+		execFileSync(resolvePnpmCommand(), ["exec", "prisma", "db", "migrate", "--format", "human"], {
 			cwd: path.resolve(import.meta.dirname, "../.."),
 			env: { ...process.env, DATABASE_URL: connectionUri },
 			stdio: "inherit",

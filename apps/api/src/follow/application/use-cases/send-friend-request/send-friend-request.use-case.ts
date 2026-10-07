@@ -32,7 +32,7 @@ export interface SendFriendRequestResult {
  *
  * 자기 자신 체크 → 리소스 한도 → 대상 존재 → 기존 관계 검증 순으로 진행하며,
  * 상대가 이미 나에게 PENDING 요청을 보낸 경우 트랜잭션으로 자동 수락한다.
- * 유니크 제약 위반(P2002)은 저장소 어댑터가 FOLLOW_0901로 번역한다.
+ * 유니크 제약 위반(SQLSTATE 23505)은 저장소 어댑터가 FOLLOW_0901로 번역한다.
  */
 @Injectable()
 export class SendFriendRequestUseCase {

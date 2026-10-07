@@ -1,25 +1,39 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import { compact } from "es-toolkit";
+import sql from "sql-template-tag";
 
-import type * as PrismaModels from "#api/generated/prisma/client";
-import { Prisma } from "#api/generated/prisma/client";
 import { addDays } from "#api/shared/domain/date/utils/arithmetic";
 import { startOfDay } from "#api/shared/domain/date/utils/range";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
-import { USER_BRIEF_SELECT } from "#api/shared/infrastructure/database/selects";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import {
+	decodeSqlRows,
+	sqlRowSpec,
+	sqlStatement,
+} from "#api/shared/infrastructure/database/database-sql";
+import {
+	databaseDate,
+	databaseTimestamp,
+} from "#api/shared/infrastructure/database/database-values";
+import type * as PrismaModels from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type {
 	CreateNudgeInput,
 	CreateRemindNudgeInput,
 	FindNudgesParams,
 	FindNudgeThanksCandidatesInput,
-	NudgeThanksCandidatePage,
-	NudgeRepositoryPort,
-	NudgeWithRelations,
 	NudgeInteractionRecord,
 	NudgeInteractionTodo,
+	NudgeRepositoryPort,
+	NudgeThanksCandidatePage,
+	NudgeWithRelations,
 	ReminderNudgeWithRelations,
 	TargetTodoRecord,
 } from "../../application/ports/nudge.repository.port.js";
@@ -33,33 +47,16 @@ type UserBriefRow = {
 };
 type TodoBriefRow = { id: number; title: string; completed: boolean };
 type NudgeRowWithRelations = PrismaModels.Nudge & {
-	sender: UserBriefRow;
-	receiver: UserBriefRow;
-	todo: TodoBriefRow;
+	sender: UserBriefRow | null;
+	receiver: UserBriefRow | null;
+	todo: (TodoBriefRow & { userId: string; visibility: string }) | null;
 };
 type NudgeInteractionRow = NudgeRowWithRelations & {
-	todo: TodoBriefRow & { userId: string; visibility: string };
+	todo: (TodoBriefRow & { userId: string; visibility: string }) | null;
 };
 type ReminderNudgeRowWithRelations = PrismaModels.ReminderNudge & {
-	sender: UserBriefRow;
+	sender: UserBriefRow | null;
 };
-
-const TODO_BRIEF_SELECT = { id: true, title: true, completed: true } as const;
-
-const NUDGE_INCLUDE = {
-	sender: { select: USER_BRIEF_SELECT },
-	receiver: { select: USER_BRIEF_SELECT },
-	todo: { select: TODO_BRIEF_SELECT },
-} as const;
-
-const REMIND_NUDGE_INCLUDE = {
-	sender: { select: USER_BRIEF_SELECT },
-} as const;
-
-const NUDGE_INTERACTION_INCLUDE = {
-	...NUDGE_INCLUDE,
-	todo: { select: { ...TODO_BRIEF_SELECT, userId: true, visibility: true } },
-} satisfies PrismaModels.Prisma.NudgeInclude;
 
 /**
  * NudgeRepositoryPort의 Prisma 어댑터.
@@ -68,12 +65,24 @@ const NUDGE_INTERACTION_INCLUDE = {
  */
 @Injectable()
 export class PrismaNudgeRepository implements NudgeRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
+	}
+
+	private get interactions() {
+		return this.client.orm.public.Nudge.include("sender", (user) =>
+			user
+				.select("id", "userTag")
+				.include("profile", (profile) => profile.select("name", "profileImage")),
+		)
+			.include("receiver", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			)
+			.include("todo", (todo) => todo.select("id", "title", "completed", "userId", "visibility"));
 	}
 
 	private static toNudge(row: PrismaModels.Nudge): Nudge {
@@ -112,19 +121,19 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 			readAt: row.readAt,
 			createdAt: row.createdAt,
 			sender: {
-				id: row.sender.id,
-				userTag: row.sender.userTag,
-				profile: row.sender.profile,
+				id: requireRecord(row.sender).id,
+				userTag: requireRecord(row.sender).userTag,
+				profile: requireRecord(row.sender).profile,
 			},
 			receiver: {
-				id: row.receiver.id,
-				userTag: row.receiver.userTag,
-				profile: row.receiver.profile,
+				id: requireRecord(row.receiver).id,
+				userTag: requireRecord(row.receiver).userTag,
+				profile: requireRecord(row.receiver).profile,
 			},
 			todo: {
-				id: row.todo.id,
-				title: row.todo.title,
-				completed: row.todo.completed,
+				id: requireRecord(row.todo).id,
+				title: requireRecord(row.todo).title,
+				completed: requireRecord(row.todo).completed,
 			},
 		};
 	}
@@ -139,52 +148,64 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 			message: row.message,
 			createdAt: row.createdAt,
 			sender: {
-				id: row.sender.id,
-				userTag: row.sender.userTag,
-				profile: row.sender.profile,
+				id: requireRecord(row.sender).id,
+				userTag: requireRecord(row.sender).userTag,
+				profile: requireRecord(row.sender).profile,
 			},
 		};
 	}
 
 	async findById(id: number): Promise<Nudge | null> {
-		const row = await this.client.nudge.findUnique({ where: { id } });
+		const row = decodeRecord(
+			"Nudge",
+			await this.client.orm.public.Nudge.where((row) => row.id.eq(id)).first(),
+		);
 		return row ? PrismaNudgeRepository.toNudge(row) : null;
 	}
 
 	async findLastNudgeForTodo(senderId: string, todoId: number): Promise<Nudge | null> {
-		const row = await this.client.nudge.findFirst({
-			where: { senderId, todoId },
-			orderBy: { createdAt: "desc" },
-		});
+		const row = decodeRecord(
+			"Nudge",
+			await this.client.orm.public.Nudge.where((row) =>
+				and(row.senderId.eq(senderId), row.todoId.eq(todoId)),
+			)
+				.orderBy((row) => row.createdAt.desc())
+				.first(),
+		);
 		return row ? PrismaNudgeRepository.toNudge(row) : null;
 	}
 
 	async findLastNudgeToUser(senderId: string, receiverId: string): Promise<Nudge | null> {
-		const row = await this.client.nudge.findFirst({
-			where: { senderId, receiverId },
-			orderBy: { createdAt: "desc" },
-		});
+		const row = decodeRecord(
+			"Nudge",
+			await this.client.orm.public.Nudge.where((row) =>
+				and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
+			)
+				.orderBy((row) => row.createdAt.desc())
+				.first(),
+		);
 		return row ? PrismaNudgeRepository.toNudge(row) : null;
 	}
 
 	async findLastRemindNudge(senderId: string, receiverId: string): Promise<ReminderNudge | null> {
-		const row = await this.client.reminderNudge.findFirst({
-			where: { senderId, receiverId },
-			orderBy: { createdAt: "desc" },
-		});
+		const row = decodeRecord(
+			"ReminderNudge",
+			await this.client.orm.public.ReminderNudge.where((row) =>
+				and(row.senderId.eq(senderId), row.receiverId.eq(receiverId)),
+			)
+				.orderBy((row) => row.createdAt.desc())
+				.first(),
+		);
 		return row ? PrismaNudgeRepository.toReminderNudge(row) : null;
 	}
 
 	async findTargetTodo(todoId: number): Promise<TargetTodoRecord | null> {
-		const row = await this.client.todo.findUnique({
-			where: { id: todoId },
-			select: {
-				userId: true,
-				visibility: true,
-				startDate: true,
-				endDate: true,
-			},
-		});
+		const row = decodeRecord(
+			"Todo",
+			await this.client.orm.public.Todo.where((row) => row.id.eq(todoId))
+				.select("userId", "visibility", "startDate", "endDate")
+				.first(),
+		);
 		if (!row) {
 			return null;
 		}
@@ -197,31 +218,33 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 	}
 
 	async saveRead(nudge: Nudge): Promise<void> {
-		await this.client.nudge.updateMany({
-			where: { id: nudge.id, readAt: null },
-			data: { readAt: nudge.readAt },
-		});
+		await this.client.orm.public.Nudge.where((row) =>
+			and(row.id.eq(nudge.id), row.readAt.isNull()),
+		).updateAndCount(encodePatch("Nudge", { readAt: nudge.readAt }));
 	}
 
 	async saveReply(nudge: Nudge): Promise<void> {
 		const state = nudge.toPersistence();
-		await this.client.nudge.update({
-			where: { id: nudge.id },
-			data: {
-				replyKind: state.replyKind,
-				repliedAt: state.repliedAt,
-				replyUpdatedAt: state.replyUpdatedAt,
-			},
-		});
+		decodeRecord(
+			"Nudge",
+			requireRecord(
+				await this.client.orm.public.Nudge.where((row) => row.id.eq(nudge.id)).update(
+					encodePatch("Nudge", {
+						replyKind: state.replyKind,
+						repliedAt: state.repliedAt,
+						replyUpdatedAt: state.replyUpdatedAt,
+					}),
+				),
+			),
+		);
 		await this.saveRead(nudge);
 	}
 
 	async saveThanksBatch(nudgeIds: readonly number[], thankedAt: Date): Promise<void> {
 		if (nudgeIds.length === 0) return;
-		await this.client.nudge.updateMany({
-			where: { id: { in: [...nudgeIds] }, thankedAt: null },
-			data: { thankedAt },
-		});
+		await this.client.orm.public.Nudge.where((row) =>
+			and(row.id.in([...nudgeIds]), row.thankedAt.isNull()),
+		).updateAndCount(encodePatch("Nudge", { thankedAt }));
 	}
 
 	private static toInteraction(row: NudgeInteractionRow): NudgeInteractionRecord {
@@ -232,54 +255,84 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 			replyUpdatedAt: row.replyUpdatedAt,
 			thankedAt: row.thankedAt,
 			todo: {
-				id: row.todo.id,
-				title: row.todo.title,
-				completed: row.todo.completed,
-				ownerId: row.todo.userId,
-				visibility: row.todo.visibility,
+				id: requireRecord(row.todo).id,
+				title: requireRecord(row.todo).title,
+				completed: requireRecord(row.todo).completed,
+				ownerId: requireRecord(row.todo).userId,
+				visibility: requireRecord(row.todo).visibility,
 			},
 		};
 	}
 
 	async findInteractionById(id: number, userId: string): Promise<NudgeInteractionRecord | null> {
-		const row = await this.client.nudge.findFirst({
-			where: { id, OR: [{ senderId: userId }, { receiverId: userId }] },
-			include: NUDGE_INTERACTION_INCLUDE,
-		});
-		return row ? PrismaNudgeRepository.toInteraction(row) : null;
+		const row = decodeRecord(
+			"Nudge",
+			await this.interactions
+				.where((nudge) =>
+					and(nudge.id.eq(id), or(nudge.senderId.eq(userId), nudge.receiverId.eq(userId))),
+				)
+				.first(),
+		);
+		return row === null ? null : PrismaNudgeRepository.toInteraction(row);
 	}
 
 	async findInteractions(
 		params: FindNudgesParams & { direction: "received" | "sent" },
 	): Promise<NudgeInteractionRecord[]> {
-		const rows = await this.client.nudge.findMany({
-			where: {
-				...(params.direction === "received"
-					? { receiverId: params.userId }
-					: { senderId: params.userId }),
-				...(params.cursor !== undefined && { id: { lt: params.cursor } }),
-			},
-			include: NUDGE_INTERACTION_INCLUDE,
-			take: params.size + 1,
-			orderBy: { id: "desc" },
-		});
+		const rows = decodeRecord(
+			"Nudge",
+			await this.interactions
+				.where((nudge) =>
+					and(
+						params.direction === "received"
+							? nudge.receiverId.eq(params.userId)
+							: nudge.senderId.eq(params.userId),
+						params.cursor !== undefined ? nudge.id.lt(params.cursor) : all(),
+					),
+				)
+				.orderBy((nudge) => nudge.id.desc())
+				.limit(params.size + 1)
+				.all(),
+		);
 		return rows.map(PrismaNudgeRepository.toInteraction);
 	}
 
 	async lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
+		const sqlRows1 = sqlRowSpec({
+			id: "pg/int4@1",
+			ownerId: "pg/text@1",
+			title: "pg/text@1",
+			completed: "pg/bool@1",
+			visibility: "pg/text@1",
+		});
+
 		// 완료·공개 상태 변경과 답장·감사 저장을 같은 행 잠금으로 직렬화한다.
-		const rows = await this.client.$queryRaw<NudgeInteractionTodo[]>(Prisma.sql`
+		const rows = decodeSqlRows(
+			sqlRows1,
+			await this.client.query(
+				sqlStatement(
+					this.client,
+					sql`
 			SELECT "id", "userId" AS "ownerId", "title", "completed", "visibility"
 			FROM "Todo" WHERE "id" = ${todoId} AND "userId" = ${userId} FOR UPDATE
-		`);
+		`,
+				)
+					.returnsRow(sqlRows1)
+					.build(),
+			),
+		);
 		return rows[0] ?? null;
 	}
 
 	async findInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
-		const row = await this.client.todo.findUnique({
-			where: { id: todoId, userId },
-			select: { id: true, userId: true, title: true, completed: true, visibility: true },
-		});
+		const row = decodeRecord(
+			"Todo",
+			await this.client.orm.public.Todo.where((row) =>
+				and(row.id.eq(todoId), row.userId.eq(userId)),
+			)
+				.select("id", "userId", "title", "completed", "visibility")
+				.first(),
+		);
 		return row
 			? {
 					id: row.id,
@@ -292,11 +345,15 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 	}
 
 	async findLastReceivedNudgeId(todoId: number, userId: string): Promise<number | null> {
-		const row = await this.client.nudge.findFirst({
-			where: { todoId, receiverId: userId },
-			select: { id: true },
-			orderBy: { id: "desc" },
-		});
+		const row = decodeRecord(
+			"Nudge",
+			await this.client.orm.public.Nudge.where((row) =>
+				and(row.todoId.eq(todoId), row.receiverId.eq(userId)),
+			)
+				.select("id")
+				.orderBy((row) => row.id.desc())
+				.first(),
+		);
 		return row?.id ?? null;
 	}
 
@@ -327,125 +384,178 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
 		if (input.friendIds.length === 0) {
 			return [];
 		}
-		const thanked = await this.client.nudge.findMany({
-			where: { todoId: input.todoId, receiverId: input.userId, thankedAt: { not: null } },
-			select: { senderId: true },
-		});
-		const groups = await this.client.nudge.groupBy({
-			by: ["senderId"],
-			where: {
-				todoId: input.todoId,
-				receiverId: input.userId,
-				id: { lte: input.throughNudgeId },
-				senderId: { in: [...input.friendIds], notIn: thanked.map((item) => item.senderId) },
-				thankedAt: null,
-				todo: { visibility: "PUBLIC", userId: input.userId },
-			},
-			_max: { id: true },
-		});
+		const thanked = decodeRecord(
+			"Nudge",
+			await this.client.orm.public.Nudge.where((row) =>
+				and(
+					row.todoId.eq(input.todoId),
+					row.receiverId.eq(input.userId),
+					row.thankedAt.isNotNull(),
+				),
+			)
+				.select("senderId")
+				.all(),
+		);
+		const groups = await this.client.orm.public.Nudge.where((row) =>
+			and(
+				row.todoId.eq(input.todoId),
+				row.receiverId.eq(input.userId),
+				row.id.lte(input.throughNudgeId),
+				row.senderId.in([...input.friendIds]),
+				row.senderId.notIn(thanked.map((item) => item.senderId)),
+				row.thankedAt.isNull(),
+				requireRecord(row.todo).some((related) =>
+					and(related.visibility.eq("PUBLIC"), related.userId.eq(input.userId)),
+				),
+			),
+		)
+			.groupBy("senderId")
+			.aggregate((aggregate) => ({ max_id: aggregate.max("id") }))
+			.then((rows) =>
+				rows.map((row) => ({ ...decodeRecord("Nudge", row), _max: { id: row.max_id } })),
+			);
 		return compact(groups.map((group) => group._max.id)).sort((left, right) => right - left);
 	}
 
 	async #findThanksCandidatesByIds(ids: readonly number[]): Promise<NudgeInteractionRecord[]> {
 		if (ids.length === 0) return [];
-		const rows = await this.client.nudge.findMany({
-			where: { id: { in: [...ids] } },
-			include: NUDGE_INTERACTION_INCLUDE,
-			orderBy: { id: "desc" },
-		});
+		const rows = decodeRecord(
+			"Nudge",
+			await this.interactions
+				.where((row) => row.id.in([...ids]))
+				.orderBy((row) => row.id.desc())
+				.all(),
+		);
 		return rows.map(PrismaNudgeRepository.toInteraction);
 	}
 
 	async findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
 		const { userId, cursor, size } = params;
-		const rows = await this.client.nudge.findMany({
-			where: { receiverId: userId },
-			include: NUDGE_INCLUDE,
-			take: size + 1,
-			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		let nudges = this.interactions
+			.where({ receiverId: userId })
+			.orderBy((row) => row.createdAt.desc())
+			.orderBy((row) => row.id.desc())
+			.limit(size + 1);
+		if (cursor !== undefined && cursor !== null) {
+			const anchor = await this.client.orm.public.Nudge.where({ id: cursor })
+				.select("id", "createdAt")
+				.first();
+			if (anchor === null) return [];
+			nudges = nudges.cursor(anchor);
+		}
+		const rows = decodeRecord("Nudge", await nudges.all());
 		return rows.map((row) => PrismaNudgeRepository.toWithRelations(row));
 	}
 
 	async findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
 		const { userId, cursor, size } = params;
-		const rows = await this.client.nudge.findMany({
-			where: { senderId: userId },
-			include: NUDGE_INCLUDE,
-			take: size + 1,
-			...(cursor != null && { skip: 1, cursor: { id: cursor } }),
-			orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-		});
+		let nudges = this.interactions
+			.where({ senderId: userId })
+			.orderBy((row) => row.createdAt.desc())
+			.orderBy((row) => row.id.desc())
+			.limit(size + 1);
+		if (cursor !== undefined && cursor !== null) {
+			const anchor = await this.client.orm.public.Nudge.where({ id: cursor })
+				.select("id", "createdAt")
+				.first();
+			if (anchor === null) return [];
+			nudges = nudges.cursor(anchor);
+		}
+		const rows = decodeRecord("Nudge", await nudges.all());
 		return rows.map((row) => PrismaNudgeRepository.toWithRelations(row));
 	}
 
 	async countTodayNudges(senderId: string, date: Date): Promise<number> {
 		const dayStart = startOfDay(date);
 		const dayEnd = addDays(1, dayStart);
-		return this.client.nudge.count({
-			where: { senderId, createdAt: { gte: dayStart, lt: dayEnd } },
-		});
+		return this.client.orm.public.Nudge.where((row) =>
+			and(
+				row.senderId.eq(senderId),
+				row.createdAt.gte(databaseTimestamp(dayStart)),
+				row.createdAt.lt(databaseTimestamp(dayEnd)),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countSentSince(senderId: string, since: Date, untilExclusive: Date): Promise<number> {
-		return this.client.nudge.count({
-			where: {
-				senderId,
-				createdAt: { gte: since, lt: untilExclusive },
-			},
-		});
+		return this.client.orm.public.Nudge.where((row) =>
+			and(
+				row.senderId.eq(senderId),
+				row.createdAt.gte(databaseTimestamp(since)),
+				row.createdAt.lt(databaseTimestamp(untilExclusive)),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countTodayTodos(userId: string, today: Date): Promise<number> {
-		return this.client.todo.count({
-			where: {
-				userId,
-				OR: [
-					{ startDate: { lte: today }, endDate: { gte: today } },
-					{ startDate: today, endDate: null },
-				],
-			},
-		});
+		return this.client.orm.public.Todo.where((row) =>
+			and(
+				row.userId.eq(userId),
+				or(
+					and(row.startDate.lte(databaseDate(today)), row.endDate.gte(databaseDate(today))),
+					and(row.startDate.eq(databaseDate(today)), row.endDate.isNull()),
+				),
+			),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countReceived(userId: string): Promise<number> {
-		return this.client.nudge.count({ where: { receiverId: userId } });
+		return this.client.orm.public.Nudge.where((row) => row.receiverId.eq(userId))
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countSent(userId: string): Promise<number> {
-		return this.client.nudge.count({ where: { senderId: userId } });
+		return this.client.orm.public.Nudge.where((row) => row.senderId.eq(userId))
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async countUnreadReceived(userId: string): Promise<number> {
-		return this.client.nudge.count({
-			where: { receiverId: userId, readAt: null },
-		});
+		return this.client.orm.public.Nudge.where((row) =>
+			and(row.receiverId.eq(userId), row.readAt.isNull()),
+		)
+			.aggregate((aggregate) => ({ count: aggregate.count() }))
+			.then(({ count }) => count);
 	}
 
 	async createNudge(input: CreateNudgeInput): Promise<NudgeWithRelations> {
-		const row = await this.client.nudge.create({
-			data: {
-				sender: { connect: { id: input.senderId } },
-				receiver: { connect: { id: input.receiverId } },
-				todo: { connect: { id: input.todoId } },
-				message: input.message,
-				createdAt: input.createdAt,
-			},
-			include: NUDGE_INCLUDE,
-		});
+		const row = decodeRecord(
+			"Nudge",
+			await this.interactions.create(
+				encodeCreate("Nudge", {
+					senderId: input.senderId,
+					receiverId: input.receiverId,
+					todoId: input.todoId,
+					message: input.message,
+					createdAt: input.createdAt,
+				}),
+			),
+		);
 		return PrismaNudgeRepository.toWithRelations(row);
 	}
 
 	async createRemindNudge(input: CreateRemindNudgeInput): Promise<ReminderNudgeWithRelations> {
-		const row = await this.client.reminderNudge.create({
-			data: {
-				sender: { connect: { id: input.senderId } },
-				receiver: { connect: { id: input.receiverId } },
-				message: input.message,
-			},
-			include: REMIND_NUDGE_INCLUDE,
-		});
+		const row = decodeRecord(
+			"ReminderNudge",
+			await this.client.orm.public.ReminderNudge.include("sender", (user) =>
+				user
+					.select("id", "userTag")
+					.include("profile", (profile) => profile.select("name", "profileImage")),
+			).create(
+				encodeCreate("ReminderNudge", {
+					senderId: input.senderId,
+					receiverId: input.receiverId,
+					message: input.message,
+				}),
+			),
+		);
 		return PrismaNudgeRepository.toRemindWithRelations(row);
 	}
 }

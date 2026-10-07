@@ -1,10 +1,19 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
+import { and } from "@prisma/orm-postgres/orm-client";
 
-import type { UserPreference } from "#api/generated/prisma/client";
-import type { TimeFormat } from "#api/generated/prisma/enums";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { varchar } from "#api/shared/infrastructure/database/database-values";
+import type {
+	TimeFormat,
+	UserPreference,
+} from "#api/shared/infrastructure/database/database.types";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type { UserPreferenceRepositoryPort } from "../../application/ports/user-preference.repository.port.js";
 
@@ -27,9 +36,7 @@ export interface UpdatePreferenceData {
 
 @Injectable()
 export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	/** 활성 트랜잭션(없으면 베이스 클라이언트) */
 	private get client() {
@@ -37,14 +44,14 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	}
 
 	async findByUserId(userId: string): Promise<UserPreference | null> {
-		return this.client.userPreference.findUnique({
-			where: { userId },
-		});
+		return this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId))
+			.first()
+			.then((row) => decodeRecord("UserPreference", row));
 	}
 
 	async create(userId: string, data?: Partial<UpdatePreferenceData>): Promise<UserPreference> {
-		return this.client.userPreference.create({
-			data: {
+		return this.client.orm.public.UserPreference.create(
+			encodeCreate("UserPreference", {
 				userId,
 				pushEnabled: data?.pushEnabled ?? true,
 				nightPushEnabled: data?.nightPushEnabled ?? true,
@@ -64,43 +71,44 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 				...(data?.timeFormat !== undefined && {
 					timeFormat: data.timeFormat,
 				}),
-			},
-		});
+			}),
+		).then((row) => decodeRecord("UserPreference", row));
 	}
 
 	async upsert(userId: string, data: UpdatePreferenceData): Promise<UserPreference> {
-		return this.client.userPreference.upsert({
-			where: { userId },
-			create: {
-				userId,
-				pushEnabled: data.pushEnabled ?? true,
-				nightPushEnabled: data.nightPushEnabled ?? true,
-				...(data.timezone !== undefined && { timezone: data.timezone }),
-				...(data.morningReminderHour !== undefined && {
-					morningReminderHour: data.morningReminderHour,
+		return this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId))
+			.upsert({
+				conflictOn: encodePatch("UserPreference", { userId }),
+				create: encodeCreate("UserPreference", {
+					userId,
+					pushEnabled: data.pushEnabled ?? true,
+					nightPushEnabled: data.nightPushEnabled ?? true,
+					...(data.timezone !== undefined && { timezone: data.timezone }),
+					...(data.morningReminderHour !== undefined && {
+						morningReminderHour: data.morningReminderHour,
+					}),
+					...(data.morningReminderMinute !== undefined && {
+						morningReminderMinute: data.morningReminderMinute,
+					}),
+					...(data.eveningReminderHour !== undefined && {
+						eveningReminderHour: data.eveningReminderHour,
+					}),
+					...(data.eveningReminderMinute !== undefined && {
+						eveningReminderMinute: data.eveningReminderMinute,
+					}),
+					...(data.timeFormat !== undefined && {
+						timeFormat: data.timeFormat,
+					}),
 				}),
-				...(data.morningReminderMinute !== undefined && {
-					morningReminderMinute: data.morningReminderMinute,
-				}),
-				...(data.eveningReminderHour !== undefined && {
-					eveningReminderHour: data.eveningReminderHour,
-				}),
-				...(data.eveningReminderMinute !== undefined && {
-					eveningReminderMinute: data.eveningReminderMinute,
-				}),
-				...(data.timeFormat !== undefined && {
-					timeFormat: data.timeFormat,
-				}),
-			},
-			update: this.buildUpdatePayload(data),
-		});
+				update: encodePatch("UserPreference", this.buildUpdatePayload(data)),
+			})
+			.then((row) => decodeRecord("UserPreference", row));
 	}
 
 	async update(userId: string, data: UpdatePreferenceData): Promise<UserPreference> {
-		return this.client.userPreference.update({
-			where: { userId },
-			data: this.buildUpdatePayload(data),
-		});
+		return this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId))
+			.update(encodePatch("UserPreference", this.buildUpdatePayload(data)))
+			.then((row) => decodeRecord("UserPreference", requireRecord(row)));
 	}
 
 	private buildUpdatePayload(data: UpdatePreferenceData) {
@@ -153,9 +161,9 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	 */
 	async findByUserIds(userIds: string[]): Promise<UserPreference[]> {
 		if (userIds.length === 0) return [];
-		return this.client.userPreference.findMany({
-			where: { userId: { in: userIds } },
-		});
+		return this.client.orm.public.UserPreference.where((row) => row.userId.in(userIds))
+			.all()
+			.then((row) => decodeRecord("UserPreference", row));
 	}
 
 	/**
@@ -169,25 +177,32 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 			lastCompletedDate: Date | null;
 		},
 	): Promise<void> {
-		await this.client.userPreference.update({
-			where: { userId },
-			data: {
-				currentStreak: data.currentStreak,
-				longestStreak: data.longestStreak,
-				lastCompletedDate: data.lastCompletedDate,
-			},
-		});
+		decodeRecord(
+			"UserPreference",
+			requireRecord(
+				await this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId)).update(
+					encodePatch("UserPreference", {
+						currentStreak: data.currentStreak,
+						longestStreak: data.longestStreak,
+						lastCompletedDate: data.lastCompletedDate,
+					}),
+				),
+			),
+		);
 	}
 
 	/**
 	 * 사용자 타임존 upsert (없으면 생성, 있으면 갱신)
 	 */
 	async upsertTimezone(userId: string, timezone: string): Promise<void> {
-		await this.client.userPreference.upsert({
-			where: { userId },
-			create: { userId, timezone },
-			update: { timezone },
-		});
+		decodeRecord(
+			"UserPreference",
+			await this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId)).upsert({
+				conflictOn: encodePatch("UserPreference", { userId }),
+				create: encodeCreate("UserPreference", { userId, timezone }),
+				update: encodePatch("UserPreference", { timezone }),
+			}),
+		);
 	}
 
 	/**
@@ -197,10 +212,11 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	 * 갱신된 행 수를 반환해 호출자가 캐시 무효화 여부를 결정한다.
 	 */
 	async refreshTimezoneIfChanged(userId: string, timezone: string): Promise<number> {
-		const result = await this.client.userPreference.updateMany({
-			where: { userId, timezone: { not: timezone } },
-			data: { timezone },
-		});
+		const result = {
+			count: await this.client.orm.public.UserPreference.where((row) =>
+				and(row.userId.eq(userId), row.timezone.neq(varchar(timezone, 50))),
+			).updateAndCount(encodePatch("UserPreference", { timezone })),
+		};
 		return result.count;
 	}
 
@@ -208,10 +224,13 @@ export class UserPreferenceRepository implements UserPreferenceRepositoryPort {
 	 * 사용자 푸시 언어 upsert (없으면 생성, 있으면 갱신) — 토큰 등록 시 Accept-Language 동기화
 	 */
 	async upsertLocale(userId: string, locale: string): Promise<void> {
-		await this.client.userPreference.upsert({
-			where: { userId },
-			create: { userId, locale },
-			update: { locale },
-		});
+		decodeRecord(
+			"UserPreference",
+			await this.client.orm.public.UserPreference.where((row) => row.userId.eq(userId)).upsert({
+				conflictOn: encodePatch("UserPreference", { userId }),
+				create: encodeCreate("UserPreference", { userId, locale }),
+				update: encodePatch("UserPreference", { locale }),
+			}),
+		);
 	}
 }

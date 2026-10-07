@@ -5,7 +5,7 @@
  * 페이지 단위 반복 처리합니다.
  */
 export async function forEachBatch<T extends { id: string }>(opts: {
-	fetchPage: (cursor: string | undefined, take: number) => Promise<T[]>;
+	fetchPage: (cursor: string | undefined, take: number) => PromiseLike<T[]>;
 	batchSize: number;
 	onBatch: (batch: T[]) => Promise<void>;
 }): Promise<void> {

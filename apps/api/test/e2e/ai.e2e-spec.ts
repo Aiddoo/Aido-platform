@@ -1,3 +1,6 @@
+import request from "supertest";
+
+import { AI_PROVIDER } from "#api/ai/index";
 /**
  * AI 모듈 E2E 테스트
  *
@@ -11,10 +14,8 @@
  * - 월간 사용량 제한 (5회/월, KST 매월 1일 00:00 리셋)
  * - 에러 처리 (400, 401, 422, 429, 503)
  */
-
-import request from "supertest";
-
-import { AI_PROVIDER } from "#api/ai/index";
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -34,42 +35,54 @@ describe("AI E2E", () => {
 	 * 사용량 리셋 헬퍼
 	 */
 	async function resetUsage(userId: string): Promise<void> {
-		const prisma = ctx.testDatabase.getPrisma();
-		await prisma.user.update({
-			where: { id: userId },
-			data: {
-				aiUsageCount: 0,
-				aiUsageResetAt: new Date(),
-			},
-		});
+		const prisma = ctx.testDatabase.getClient();
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
+					encodePatch("User", {
+						aiUsageCount: 0,
+						aiUsageResetAt: new Date(),
+					}),
+				),
+			),
+		);
 	}
 
 	/**
 	 * 사용량 설정 헬퍼
 	 */
 	async function setUsage(userId: string, count: number): Promise<void> {
-		const prisma = ctx.testDatabase.getPrisma();
-		await prisma.user.update({
-			where: { id: userId },
-			data: {
-				aiUsageCount: count,
-				aiUsageResetAt: new Date(),
-			},
-		});
+		const prisma = ctx.testDatabase.getClient();
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
+					encodePatch("User", {
+						aiUsageCount: count,
+						aiUsageResetAt: new Date(),
+					}),
+				),
+			),
+		);
 	}
 
 	/**
 	 * 사용량 + 리셋 시각 명시 설정 헬퍼 (월 경계 테스트용)
 	 */
 	async function setUsageWithResetAt(userId: string, count: number, resetAt: Date): Promise<void> {
-		const prisma = ctx.testDatabase.getPrisma();
-		await prisma.user.update({
-			where: { id: userId },
-			data: {
-				aiUsageCount: count,
-				aiUsageResetAt: resetAt,
-			},
-		});
+		const prisma = ctx.testDatabase.getClient();
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(userId)).update(
+					encodePatch("User", {
+						aiUsageCount: count,
+						aiUsageResetAt: resetAt,
+					}),
+				),
+			),
+		);
 	}
 
 	beforeAll(async () => {

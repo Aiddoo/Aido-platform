@@ -1,9 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import dayjs from "dayjs";
 
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { runInBackground } from "#api/shared/infrastructure/bullmq/non-blocking-init";
+import { decodeRecord } from "#api/shared/infrastructure/database/database-records";
+import { databaseDate } from "#api/shared/infrastructure/database/database-values";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import { forEachBatch } from "#api/shared/infrastructure/database/utils/batch-cursor.util";
 
@@ -83,32 +86,27 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 		await forEachBatch({
 			batchSize: ENQUEUE_BATCH_SIZE,
 			fetchPage: (cursor, take) =>
-				this.database.user.findMany({
-					where: {
-						...(cursor && { id: { gt: cursor } }),
-						OR: [{ subscriptionStatus: "ACTIVE" }, { role: "ADMIN" }],
-						todos: {
-							some: {
-								startDate: { gte: twoWeeksAgo },
-								recurrenceGroupId: null,
-							},
-						},
-					},
-					select: {
-						id: true,
-						preference: { select: { timezone: true } },
-						location: {
-							select: {
-								gridX: true,
-								gridY: true,
-								latitude: true,
-								longitude: true,
-							},
-						},
-					},
-					orderBy: { id: "asc" },
-					take,
-				}),
+				this.database.db.orm.public.User.where((row) =>
+					and(
+						cursor ? row.id.gt(cursor) : all(),
+						or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
+						row.todos.some((related) =>
+							and(
+								related.startDate.gte(databaseDate(twoWeeksAgo)),
+								related.recurrenceGroupId.isNull(),
+							),
+						),
+					),
+				)
+					.select("id")
+					.include("preference", (related) => related.select("timezone"))
+					.include("location", (related) =>
+						related.select("gridX", "gridY", "latitude", "longitude"),
+					)
+					.orderBy((row) => row.id.asc())
+					.limit(take)
+					.all()
+					.then((row) => decodeRecord("User", row)),
 			onBatch: async (batch) => {
 				await Promise.all(
 					batch.map((user) =>

@@ -1,12 +1,9 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
 import {
 	EntitlementService,
 	Feature,
 } from "#api/shared/application/entitlement/entitlement.service";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 
 import type { CheerLimitReaderPort } from "../../application/ports/cheer-limit-reader.port.js";
 
@@ -18,17 +15,10 @@ import type { CheerLimitReaderPort } from "../../application/ports/cheer-limit-r
  */
 @Injectable()
 export class CheerLimitReaderAdapter implements CheerLimitReaderPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-		private readonly entitlementService: EntitlementService,
-	) {}
+	constructor(private readonly entitlementService: EntitlementService) {}
 
 	async getDailyLimitInTx(userId: string): Promise<number | null> {
-		const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(
-			this.txHost.tx,
-			userId,
-			Feature.CHEER,
-		);
+		const { dailyLimit } = await this.entitlementService.getFeatureLimitInTx(userId, Feature.CHEER);
 		return dailyLimit;
 	}
 }

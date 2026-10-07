@@ -1,14 +1,11 @@
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
 import type { Mocked } from "vitest";
+import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
 import type { JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { JOB_RUNTIME } from "#api/shared/application/ports/job-runtime.port";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
 import { UserBuilder } from "#test/builders/index";
-import { asMock, createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+import { createMockTransactionHost, databaseFixture, nativeRows } from "#test/mocks/database.mock";
+import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { ReportGenerationProcessor } from "../processors/report-generation.processor.js";
 import { AI_REPORT_QUEUE } from "../queue/ai-report-queue.js";
@@ -16,24 +13,17 @@ import { ReportGenerationJob } from "./report-generation.job.js";
 
 describe("ReportGenerationJob — durable dispatcher", () => {
 	let job: ReportGenerationJob;
-	let database: MockPrismaClient;
+	let database: MockDatabaseContext;
 	let runtime: Mocked<JobRuntimePort>;
 	let processor: Mocked<ReportGenerationProcessor>;
 
 	beforeEach(async () => {
-		database = createMockPrisma();
-		const { unit, unitRef } = await TestBed.solitary(ReportGenerationJob)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
-			.impl(() => ({ tx: database }))
-			.mock(JOB_RUNTIME)
-			.impl(() => ({
-				schedule: vi.fn().mockResolvedValue(undefined),
-				enqueue: vi.fn().mockResolvedValue("job-1"),
-			}))
-			.compile();
-		job = unit;
-		runtime = unitRef.get(JOB_RUNTIME);
-		processor = unitRef.get(ReportGenerationProcessor);
+		database = createMockDatabaseContext();
+		runtime = mock<JobRuntimePort>();
+		runtime.schedule.mockResolvedValue(undefined);
+		runtime.enqueue.mockResolvedValue("job-1");
+		processor = mock<ReportGenerationProcessor>();
+		job = new ReportGenerationJob(createMockTransactionHost(database), runtime, processor);
 	});
 
 	afterEach(() => vi.useRealTimers());
@@ -69,14 +59,19 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	});
 
 	it("대상 사용자마다 생성 작업과 재시도 정책을 등록한다", async () => {
-		asMock(database.user.findMany).mockResolvedValue(
-			[
-				{ id: "user-1", preference: { timezone: "Asia/Seoul", locale: "ko" } },
-				{
-					id: "user-2",
-					preference: { timezone: "America/New_York", locale: "en" },
-				},
-			].map((value) => ({ ...UserBuilder.create().build(), ...value })),
+		asMock(database.orm.public.User.all).mockReturnValue(
+			nativeRows(
+				databaseFixture(
+					"User",
+					[
+						{ id: "user-1", preference: { timezone: "Asia/Seoul", locale: "ko" } },
+						{
+							id: "user-2",
+							preference: { timezone: "America/New_York", locale: "en" },
+						},
+					].map((value) => ({ ...UserBuilder.create().build(), ...value })),
+				),
+			),
 		);
 
 		await job.dispatchReports("WEEKLY");
@@ -96,11 +91,16 @@ describe("ReportGenerationJob — durable dispatcher", () => {
 	});
 
 	it("preference가 없으면 기존 기본값을 유지한다", async () => {
-		asMock(database.user.findMany).mockResolvedValue(
-			[{ id: "user-1", preference: null }].map((value) => ({
-				...UserBuilder.create().build(),
-				...value,
-			})),
+		asMock(database.orm.public.User.all).mockReturnValue(
+			nativeRows(
+				databaseFixture(
+					"User",
+					[{ id: "user-1", preference: null }].map((value) => ({
+						...UserBuilder.create().build(),
+						...value,
+					})),
+				),
+			),
 		);
 		await job.dispatchReports("MONTHLY");
 

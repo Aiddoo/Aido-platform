@@ -1,5 +1,4 @@
 import { ClsPluginTransactional } from "@nestjs-cls/transactional";
-import { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
@@ -29,6 +28,7 @@ import { CacheModule } from "#api/shared/infrastructure/cache/index";
 import type { EnvConfig } from "#api/shared/infrastructure/config/index";
 import { AppConfigModule } from "#api/shared/infrastructure/config/index";
 import { DatabaseModule, DatabaseService } from "#api/shared/infrastructure/database/index";
+import { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 import { DedupModule } from "#api/shared/infrastructure/dedup/index";
 import { EncryptionModule } from "#api/shared/infrastructure/encryption/index";
 import { EntitlementModule } from "#api/shared/infrastructure/entitlement/entitlement.module";
@@ -63,15 +63,13 @@ import { AppService } from "./app.service.js";
 		// CLS 트랜잭션 플러그인 — UNIT_OF_WORK(ClsUnitOfWork)가 사용하는
 		// TransactionHost를 전역 제공. withTransaction이 자체 CLS 스코프를 열므로
 		// 미들웨어/가드 마운트는 불필요. 어댑터에 옵션을 지정하지 않아
-		// 기존 database.$transaction(fn) 시맨틱을 그대로 보존한다.
+		// native transaction의 commit·rollback과 CLS 전파를 연결한다.
 		ClsModule.forRoot({
 			global: true,
 			plugins: [
 				new ClsPluginTransactional({
 					imports: [DatabaseModule],
-					adapter: new TransactionalAdapterPrisma({
-						prismaInjectionToken: DatabaseService,
-					}),
+					adapter: new Prisma8TransactionalAdapter(DatabaseService),
 				}),
 			],
 		}),

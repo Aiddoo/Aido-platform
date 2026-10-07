@@ -1,3 +1,6 @@
+import request from "supertest";
+
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
 /**
  * Admin E2E 테스트
  *
@@ -11,10 +14,8 @@
  * 3. 비관리자가 호출하면 403을 반환한다
  * 4. 인증 없이 호출하면 401을 반환한다
  */
-
-import request from "supertest";
-
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -36,11 +37,15 @@ describe("관리자 E2E", () => {
 	/** 관리자 사용자를 생성하고 ADMIN role 토큰을 반환하는 헬퍼 */
 	async function createAdminUser(email: string, password: string) {
 		const user = await ctx.helpers.createVerifiedUser(email, password);
-		const database = ctx.module.get(DatabaseService);
-		await database.user.update({
-			where: { id: user.userId },
-			data: { role: "ADMIN" },
-		});
+		const database = ctx.module.get(DatabaseService).db;
+		decodeRecord(
+			"User",
+			requireRecord(
+				await database.orm.public.User.where((row) => row.id.eq(user.userId)).update(
+					encodePatch("User", { role: "ADMIN" }),
+				),
+			),
+		);
 		// role 변경 후 재로그인하여 ADMIN role이 포함된 토큰 발급
 		const loginResult = await ctx.helpers.loginUser(email, password);
 		return { ...user, accessToken: loginResult.accessToken };

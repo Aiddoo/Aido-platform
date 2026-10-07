@@ -1,3 +1,5 @@
+import { z } from "@aido/validators";
+
 /**
  * Notification 모델 테스트 데이터 빌더
  *
@@ -15,7 +17,10 @@
  *   .build();
  * ```
  */
-import type { Notification, NotificationType } from "#api/generated/prisma/client";
+import type {
+	Notification,
+	NotificationType,
+} from "#api/shared/infrastructure/database/database.types";
 
 export class NotificationBuilder {
 	private data: Notification;
@@ -110,7 +115,7 @@ export class NotificationBuilder {
 	}
 
 	withMetadata(metadata: object): NotificationBuilder {
-		this.data.metadata = metadata;
+		this.data.metadata = z.json().parse(metadata);
 		return this;
 	}
 

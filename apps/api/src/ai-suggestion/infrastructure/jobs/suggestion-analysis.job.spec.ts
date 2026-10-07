@@ -1,11 +1,12 @@
-import { TestBed } from "@suites/unit";
-import { vi } from "vitest";
 import type { Mocked } from "vitest";
+import { vi } from "vitest";
+import { mock } from "vitest-mock-extended";
 
-import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
-import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { UserBuilder } from "#test/builders/index";
+import { databaseFixture, nativeRows } from "#test/mocks/database.mock";
 import { asMock } from "#test/mocks/index";
+import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { SuggestionAnalysisProcessor } from "../processors/suggestion-analysis.processor.js";
 import { AiSuggestionQueueMaintenanceService } from "../queue/ai-suggestion-queue-maintenance.service.js";
@@ -14,24 +15,19 @@ import { SuggestionAnalysisJob } from "./suggestion-analysis.job.js";
 
 describe("SuggestionAnalysisJob — durable dispatcher", () => {
 	let job: SuggestionAnalysisJob;
-	let database: Mocked<DatabaseService>;
+	let database: ReturnType<typeof createMockDatabaseService>;
 	let runtime: Mocked<JobRuntimePort>;
 	let processor: Mocked<SuggestionAnalysisProcessor>;
 
 	beforeEach(async () => {
-		const { unit, unitRef } = await TestBed.solitary(SuggestionAnalysisJob)
-			.mock(JOB_RUNTIME)
-			.impl(() => ({
-				schedule: vi.fn().mockResolvedValue(undefined),
-				enqueue: vi.fn().mockResolvedValue("job-1"),
-			}))
-			.mock(AiSuggestionQueueMaintenanceService)
-			.impl(() => ({ cleanExpiredFailures: vi.fn().mockResolvedValue(0) }))
-			.compile();
-		job = unit;
-		database = unitRef.get(DatabaseService);
-		runtime = unitRef.get(JOB_RUNTIME);
-		processor = unitRef.get(SuggestionAnalysisProcessor);
+		database = createMockDatabaseService();
+		runtime = mock<JobRuntimePort>();
+		runtime.schedule.mockResolvedValue(undefined);
+		runtime.enqueue.mockResolvedValue("job-1");
+		processor = mock<SuggestionAnalysisProcessor>();
+		const maintenance = mock<AiSuggestionQueueMaintenanceService>();
+		maintenance.cleanExpiredFailures.mockResolvedValue(0);
+		job = new SuggestionAnalysisJob(database, runtime, processor, maintenance);
 	});
 
 	afterEach(() => vi.useRealTimers());
@@ -64,15 +60,20 @@ describe("SuggestionAnalysisJob — durable dispatcher", () => {
 	});
 
 	it("최근 활동 사용자마다 분석 작업을 등록한다", async () => {
-		asMock(database.user.findMany).mockResolvedValue(
-			[
-				{ id: "user-1", preference: { timezone: "Asia/Seoul" }, location: null },
-				{
-					id: "user-2",
-					preference: { timezone: "America/New_York" },
-					location: null,
-				},
-			].map((value) => ({ ...UserBuilder.create().build(), ...value })),
+		asMock(database.db.orm.public.User.all).mockReturnValue(
+			nativeRows(
+				databaseFixture(
+					"User",
+					[
+						{ id: "user-1", preference: { timezone: "Asia/Seoul" }, location: null },
+						{
+							id: "user-2",
+							preference: { timezone: "America/New_York" },
+							location: null,
+						},
+					].map((value) => ({ ...UserBuilder.create().build(), ...value })),
+				),
+			),
 		);
 
 		await job.dispatchAnalysis();
@@ -92,7 +93,9 @@ describe("SuggestionAnalysisJob — durable dispatcher", () => {
 	});
 
 	it("사용자가 없으면 분석 작업을 만들지 않는다", async () => {
-		asMock(database.user.findMany).mockResolvedValue([]);
+		asMock(database.db.orm.public.User.all).mockReturnValue(
+			nativeRows(databaseFixture("User", [])),
+		);
 		await job.dispatchAnalysis();
 
 		expect(runtime.enqueue).not.toHaveBeenCalled();

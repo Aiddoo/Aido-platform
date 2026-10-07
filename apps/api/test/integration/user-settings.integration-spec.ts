@@ -31,6 +31,7 @@ import { UserConsentRepository } from "#api/user-settings/infrastructure/persist
 import { UserPreferenceRepository } from "#api/user-settings/infrastructure/persistence/user-preference.repository";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { TEST_CUID } from "#test/fixtures/index";
+import { createMockDatabaseContext, databaseFixture } from "#test/mocks/database.mock";
 import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
@@ -40,20 +41,12 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 	let updatePreference: UpdatePreferenceUseCase;
 	let updateMarketingConsent: UpdateMarketingConsentUseCase;
 
-	const mockUserPreferenceDb = {
-		findUnique: vi.fn(),
-		upsert: vi.fn(),
-	};
+	const nativeContext = createMockDatabaseContext();
+	const mockUserPreferenceDb = nativeContext.orm.public.UserPreference;
 
-	const mockUserConsentDb = {
-		findUnique: vi.fn(),
-		upsert: vi.fn(),
-	};
+	const mockUserConsentDb = nativeContext.orm.public.UserConsent;
 
-	const mockDatabaseService = createMockDatabaseService({
-		userPreference: mockUserPreferenceDb,
-		userConsent: mockUserConsentDb,
-	});
+	const mockDatabaseService = createMockDatabaseService(nativeContext);
 
 	const mockEntitlementService = {
 		hasPremiumAccess: vi.fn(),
@@ -95,7 +88,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 				{
 					// CLS 트랜잭션 스텁 — tx가 mock DB 클라이언트를 반환
 					provide: TransactionHost,
-					useValue: { tx: mockDatabaseService },
+					useValue: { tx: nativeContext },
 				},
 				{ provide: EntitlementService, useValue: mockEntitlementService },
 				{ provide: CacheService, useValue: mockCacheService },
@@ -128,7 +121,9 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 				.withMorningReminderMinute(30)
 				.build();
 
-			mockUserPreferenceDb.findUnique.mockResolvedValue(mockPreference);
+			mockUserPreferenceDb.first.mockResolvedValue(
+				databaseFixture("UserPreference", mockPreference),
+			);
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
 
 			const result = await getPreference.execute(mockUserId);
@@ -139,7 +134,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 		});
 
 		it("설정 조회 — 설정이 없으면 기본값을 반환한다", async () => {
-			mockUserPreferenceDb.findUnique.mockResolvedValue(null);
+			mockUserPreferenceDb.first.mockResolvedValue(databaseFixture("UserPreference", null));
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(true);
 
 			const result = await getPreference.execute(mockUserId);
@@ -161,7 +156,9 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 				.withEveningReminderMinute(30)
 				.build();
 
-			mockUserPreferenceDb.findUnique.mockResolvedValue(mockPreference);
+			mockUserPreferenceDb.first.mockResolvedValue(
+				databaseFixture("UserPreference", mockPreference),
+			);
 			mockEntitlementService.hasPremiumAccess.mockResolvedValue(false);
 
 			const result = await getPreference.execute(mockUserId);
@@ -182,7 +179,9 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 				.withMorningReminderMinute(30)
 				.withTimezone("Asia/Seoul")
 				.build();
-			mockUserPreferenceDb.upsert.mockResolvedValue(updatedPreference);
+			mockUserPreferenceDb.upsert.mockResolvedValue(
+				databaseFixture("UserPreference", updatedPreference),
+			);
 
 			const result = await updatePreference.execute(mockUserId, {
 				morningReminderHour: 7,
@@ -235,13 +234,15 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 			const consentWithMarketing = UserConsentBuilder.create(mockUserId)
 				.withMarketingConsent()
 				.build();
-			mockUserConsentDb.upsert.mockResolvedValue(consentWithMarketing);
+			mockUserConsentDb.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", consentWithMarketing),
+			);
 
 			const agreedResult = await updateMarketingConsent.execute(mockUserId, true);
 			expect(agreedResult.marketingAgreedAt).not.toBeNull();
 
 			const consentWithout = UserConsentBuilder.create(mockUserId).build();
-			mockUserConsentDb.upsert.mockResolvedValue(consentWithout);
+			mockUserConsentDb.upsert.mockResolvedValue(databaseFixture("UserConsent", consentWithout));
 
 			const revokedResult = await updateMarketingConsent.execute(mockUserId, false);
 			expect(revokedResult.marketingAgreedAt).toBeNull();

@@ -80,6 +80,7 @@ export class TodoBuilder {
 
 	withCategoryId(categoryId: number): TodoBuilder {
 		this.data.categoryId = categoryId;
+		if (this.data.category === null) throw new Error("Todo fixture category is missing");
 		this.data.category.id = categoryId;
 		return this;
 	}
@@ -192,7 +193,7 @@ export class TodoBuilder {
 	build(): TodoWithCategory {
 		return {
 			...this.data,
-			category: { ...this.data.category },
+			category: this.data.category === null ? null : { ...this.data.category },
 			items: [...this.data.items],
 		};
 	}

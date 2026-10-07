@@ -153,7 +153,7 @@ describe("WriteTodoCommentChainUseCase", () => {
 		await expect(execute()).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 	});
 
-	it("P2002 경합은 실패한 UoW 밖에서 승자 행을 replay한다", async () => {
+	it("SQLSTATE 23505 경합은 실패한 UoW 밖에서 승자 행을 replay한다", async () => {
 		const { execute, repository, unitOfWork } = setup();
 		vi.mocked(repository.findCommentChainReplay)
 			.mockResolvedValueOnce(null)
@@ -166,7 +166,7 @@ describe("WriteTodoCommentChainUseCase", () => {
 		expect(repository.increaseTodoCommentCount).not.toHaveBeenCalled();
 	});
 
-	it("P2002 뒤 승자 명령이 다르면 잘못된 파라미터 오류로 변환한다", async () => {
+	it("SQLSTATE 23505 뒤 승자 명령이 다르면 잘못된 파라미터 오류로 변환한다", async () => {
 		const { execute, repository } = setup();
 		vi.mocked(repository.findCommentChainReplay)
 			.mockResolvedValueOnce(null)

@@ -1,4 +1,5 @@
-import type { PrismaClient } from "#api/generated/prisma/client";
+import { and } from "@prisma/orm-postgres/orm-client";
+
 import {
 	NOTIFICATION_QUEUE,
 	NotificationJobName,
@@ -8,6 +9,15 @@ import {
 	RetentionJobName,
 } from "#api/retention/infrastructure/queue/retention-queue.constants";
 import type { EnqueueJobOptions } from "#api/shared/application/ports/job-runtime.port";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { createEntityId } from "#api/shared/infrastructure/database/database-values";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
+import type { TestDatabaseClient } from "#test/setup/test-database";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import {
 	type CriticalQueueProcessorHarness,
@@ -81,28 +91,28 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 		expect(jobId).not.toBeNull();
 		await harness.eventually(async () => {
 			const [notifications, dispatches, attempts, jobs] = await Promise.all([
-				harness.prisma.notification.findMany({
-					where: { type: "FRIEND_COMPLETED", friendId: friend.id },
-					orderBy: { userId: "asc" },
-				}),
-				harness.prisma.pushDispatch.findMany({
-					where: {
-						notification: {
-							type: "FRIEND_COMPLETED",
-							friendId: friend.id,
-						},
-					},
-				}),
-				harness.prisma.pushDeliveryAttempt.findMany({
-					where: {
-						dispatch: {
-							notification: {
-								type: "FRIEND_COMPLETED",
-								friendId: friend.id,
-							},
-						},
-					},
-				}),
+				harness.prisma.orm.public.Notification.where((row) =>
+					and(row._type.eq("FRIEND_COMPLETED"), row.friendId.eq(friend.id)),
+				)
+					.orderBy((row) => row.userId.asc())
+					.all()
+					.then((row) => decodeRecord("Notification", row)),
+				harness.prisma.orm.public.PushDispatch.where((row) =>
+					row.notification.some((related) =>
+						and(related._type.eq("FRIEND_COMPLETED"), related.friendId.eq(friend.id)),
+					),
+				)
+					.all()
+					.then((row) => decodeRecord("PushDispatch", row)),
+				harness.prisma.orm.public.PushDeliveryAttempt.where((row) =>
+					row.dispatch.some((related) =>
+						related.notification.some((related) =>
+							and(related._type.eq("FRIEND_COMPLETED"), related.friendId.eq(friend.id)),
+						),
+					),
+				)
+					.all()
+					.then((row) => decodeRecord("PushDeliveryAttempt", row)),
 				harness.boss.findJobs(NOTIFICATION_QUEUE, {
 					id: jobId ?? undefined,
 				}),
@@ -142,12 +152,17 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			variant: "TREATMENT",
 			startedAt: new Date("2026-07-01T00:00:00.000Z"),
 		});
-		const stage = await harness.prisma.retentionExperimentStage.findFirstOrThrow({
-			where: {
-				assignment: { userId: recipient.id },
-				stage: "D1",
-			},
-		});
+		const stage = decodeRecord(
+			"RetentionExperimentStage",
+			requireRecord(
+				await harness.prisma.orm.public.RetentionExperimentStage.where((row) =>
+					and(
+						row.assignment.some((related) => related.userId.eq(recipient.id)),
+						row.stage.eq("D1"),
+					),
+				).first(),
+			),
+		);
 		await harness.retentionRepository.createDelivery({
 			stageId: stage.id,
 			userId: recipient.id,
@@ -157,9 +172,14 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			route: "/feed",
 			variantId: "d1_return",
 		});
-		const outbox = await harness.prisma.retentionPushOutbox.findUniqueOrThrow({
-			where: { stageId: stage.id },
-		});
+		const outbox = decodeRecord(
+			"RetentionPushOutbox",
+			requireRecord(
+				await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+					row.stageId.eq(stage.id),
+				).first(),
+			),
+		);
 		const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
 		expect(publication).toEqual({ id: outbox.id, attempts: 1 });
 
@@ -178,12 +198,14 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 		expect(jobId).not.toBeNull();
 		await harness.eventually(async () => {
 			const [dispatch, attempts, jobs] = await Promise.all([
-				harness.prisma.pushDispatch.findUniqueOrThrow({
-					where: { id: outbox.dispatchId },
-				}),
-				harness.prisma.pushDeliveryAttempt.findMany({
-					where: { dispatchId: outbox.dispatchId },
-				}),
+				harness.prisma.orm.public.PushDispatch.where((row) => row.id.eq(outbox.dispatchId))
+					.first()
+					.then((row) => decodeRecord("PushDispatch", requireRecord(row))),
+				harness.prisma.orm.public.PushDeliveryAttempt.where((row) =>
+					row.dispatchId.eq(outbox.dispatchId),
+				)
+					.all()
+					.then((row) => decodeRecord("PushDeliveryAttempt", row)),
 				harness.boss.findJobs(RETENTION_QUEUE, {
 					id: jobId ?? undefined,
 				}),
@@ -250,13 +272,21 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			harness.retentionRepository.recoverStaleDispatches(new Date("2026-08-01T00:15:01.000Z")),
 		).resolves.toBe(1);
 		await expect(
-			harness.prisma.pushDispatch.findUniqueOrThrow({ where: { id: outbox.dispatchId } }),
+			harness.prisma.orm.public.PushDispatch.where((row) => row.id.eq(outbox.dispatchId))
+				.first()
+				.then((row) => decodeRecord("PushDispatch", requireRecord(row))),
 		).resolves.toMatchObject({ status: "PENDING", processingJobId: null });
 		await expect(
-			harness.prisma.retentionPushOutbox.findUniqueOrThrow({ where: { id: outbox.id } }),
+			harness.prisma.orm.public.RetentionPushOutbox.where((row) => row.id.eq(outbox.id))
+				.first()
+				.then((row) => decodeRecord("RetentionPushOutbox", requireRecord(row))),
 		).resolves.toMatchObject({ status: "PENDING", publishedAt: null });
 		await expect(
-			harness.prisma.pushDispatchOutbox.count({ where: { dispatchId: outbox.dispatchId } }),
+			harness.prisma.orm.public.PushDispatchOutbox.where((row) =>
+				row.dispatchId.eq(outbox.dispatchId),
+			)
+				.aggregate((aggregate) => ({ count: aggregate.count() }))
+				.then(({ count }) => count),
 		).resolves.toBe(0);
 	});
 
@@ -270,20 +300,28 @@ describe("핵심 큐 프로세서 컴포넌트 테스트 (실제 PostgreSQL + pg
 			processingJobAttempt: 1,
 			startedAt,
 		});
-		await harness.prisma.retentionPushOutbox.update({
-			where: { id: outbox.id },
-			data: {
-				status: "PROCESSING",
-				publishedAt: null,
-				lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
-			},
-		});
+		decodeRecord(
+			"RetentionPushOutbox",
+			requireRecord(
+				await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+					row.id.eq(outbox.id),
+				).update(
+					encodePatch("RetentionPushOutbox", {
+						status: "PROCESSING",
+						publishedAt: null,
+						lockedAt: new Date(startedAt.getTime() - 20 * 60_000),
+					}),
+				),
+			),
+		);
 
 		await expect(
 			harness.retentionRepository.recoverStaleOutboxes(new Date(startedAt.getTime() - 15 * 60_000)),
 		).resolves.toBe(0);
 		await expect(
-			harness.prisma.retentionPushOutbox.findUniqueOrThrow({ where: { id: outbox.id } }),
+			harness.prisma.orm.public.RetentionPushOutbox.where((row) => row.id.eq(outbox.id))
+				.first()
+				.then((row) => decodeRecord("RetentionPushOutbox", requireRecord(row))),
 		).resolves.toMatchObject({ status: "PROCESSING" });
 	});
 
@@ -343,9 +381,17 @@ async function createRetentionPublication(harness: CriticalQueueProcessorHarness
 		variant: "TREATMENT",
 		startedAt: new Date("2026-07-01T00:00:00.000Z"),
 	});
-	const stage = await harness.prisma.retentionExperimentStage.findFirstOrThrow({
-		where: { assignment: { userId: user.id }, stage: "D1" },
-	});
+	const stage = decodeRecord(
+		"RetentionExperimentStage",
+		requireRecord(
+			await harness.prisma.orm.public.RetentionExperimentStage.where((row) =>
+				and(
+					row.assignment.some((related) => related.userId.eq(user.id)),
+					row.stage.eq("D1"),
+				),
+			).first(),
+		),
+	);
 	await harness.retentionRepository.createDelivery({
 		stageId: stage.id,
 		userId: user.id,
@@ -355,9 +401,14 @@ async function createRetentionPublication(harness: CriticalQueueProcessorHarness
 		route: "/feed",
 		variantId: "d1_return",
 	});
-	const outbox = await harness.prisma.retentionPushOutbox.findUniqueOrThrow({
-		where: { stageId: stage.id },
-	});
+	const outbox = decodeRecord(
+		"RetentionPushOutbox",
+		requireRecord(
+			await harness.prisma.orm.public.RetentionPushOutbox.where((row) =>
+				row.stageId.eq(stage.id),
+			).first(),
+		),
+	);
 	const [publication] = await harness.retentionRepository.claimOutboxes(1, new Date());
 	if (!publication) throw new Error("Retention publication was not claimed");
 	await harness.retentionRepository.markOutboxPublished(publication);
@@ -365,7 +416,7 @@ async function createRetentionPublication(harness: CriticalQueueProcessorHarness
 }
 
 async function createPushReadyUser(
-	prisma: PrismaClient,
+	prisma: TestDatabaseClient,
 	input: {
 		email: string;
 		userTag: string;
@@ -375,34 +426,31 @@ async function createPushReadyUser(
 		timezone?: string;
 	},
 ): Promise<{ id: string }> {
-	return prisma.user.create({
-		data: {
-			email: input.email,
-			userTag: input.userTag,
-			status: "ACTIVE",
-			profile: { create: { name: input.name } },
-			preference: {
-				create: {
-					pushEnabled: true,
-					nightPushEnabled: true,
-					timezone: input.timezone ?? "Asia/Seoul",
-					locale: input.locale,
-				},
-			},
-			consent: {
-				create: {
-					marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
-				},
-			},
-			pushTokens: {
-				create: {
-					token: input.token,
-					deviceId: `${input.userTag}-device`,
-					platform: "IOS",
-					appVersion: "1.8.0",
-				},
-			},
+	return createUserDatabaseFixture(
+		prisma,
+		encodeCreate("User", { email: input.email, userTag: input.userTag, status: "ACTIVE" }),
+		{
+			profile: encodePatch("UserProfile", { id: createEntityId(), name: input.name }),
+			preference: encodePatch("UserPreference", {
+				id: createEntityId(),
+				pushEnabled: true,
+				nightPushEnabled: true,
+				timezone: input.timezone ?? "Asia/Seoul",
+				locale: input.locale,
+			}),
+			consent: encodePatch("UserConsent", {
+				id: createEntityId(),
+				marketingPushAgreedAt: new Date("2026-07-01T00:00:00.000Z"),
+			}),
+			pushTokens: encodePatch<
+				"PushToken",
+				{ token: string; deviceId: string; platform: "IOS"; appVersion: string }
+			>("PushToken", {
+				token: input.token,
+				deviceId: `${input.userTag}-device`,
+				platform: "IOS",
+				appVersion: "1.8.0",
+			}),
 		},
-		select: { id: true },
-	});
+	).then((row) => decodeRecord("User", row));
 }

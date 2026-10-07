@@ -9,21 +9,23 @@
  * pnpm --filter @aido/api test user-consent.repository
  * ```
  */
-import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
-import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
 
-import type { UserConsent } from "#api/generated/prisma/client";
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import type { UserConsent } from "#api/shared/infrastructure/database/database.types";
 import { UserConsentBuilder } from "#test/builders/index";
-import { createMockPrisma, type MockPrismaClient } from "#test/mocks/index";
+import {
+	assertNativeWhere,
+	createMockTransactionHost,
+	databaseFixture,
+	databaseWriteExpectation,
+} from "#test/mocks/database.mock";
+import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { UserConsentRepository } from "./user-consent.repository.js";
 
 describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 	let repository: UserConsentRepository;
-	let db: MockPrismaClient;
+	let db: MockDatabaseContext;
 
 	const userId = "user-123";
 	const now = new Date("2024-01-15T10:00:00Z");
@@ -43,14 +45,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 		vi.setSystemTime(now);
 
 		// Given - Suites가 모든 의존성을 자동으로 mock
-		db = createMockPrisma();
+		db = createMockDatabaseContext();
 
-		const { unit } = await TestBed.solitary(UserConsentRepository)
-			.mock<TransactionHost<TransactionalAdapterPrisma<DatabaseService>>>(TransactionHost)
-			.impl(() => ({ tx: db }))
-			.compile();
-
-		repository = unit;
+		repository = new UserConsentRepository(createMockTransactionHost(db));
 	});
 
 	afterEach(() => {
@@ -60,21 +57,23 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 	describe("findByUserId", () => {
 		it("사용자 ID로 약관 동의 상태를 조회한다", async () => {
 			// Given
-			db.userConsent.findUnique.mockResolvedValue(mockConsent);
+			db.orm.public.UserConsent.first.mockResolvedValue(
+				databaseFixture("UserConsent", mockConsent),
+			);
 
 			// When
 			const result = await repository.findByUserId(userId);
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(db.userConsent.findUnique).toHaveBeenCalledWith({
-				where: { userId },
-			});
+			assertNativeWhere("UserConsent", db.orm.public.UserConsent.where.mock.calls[0]?.[0], (row) =>
+				row.userId.eq(userId),
+			);
 		});
 
 		it("동의 레코드가 없으면 null을 반환한다", async () => {
 			// Given
-			db.userConsent.findUnique.mockResolvedValue(null);
+			db.orm.public.UserConsent.first.mockResolvedValue(databaseFixture("UserConsent", null));
 
 			// When
 			const result = await repository.findByUserId(userId);
@@ -85,16 +84,18 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 		it("활성 트랜잭션 클라이언트로 조회한다", async () => {
 			// Given
-			db.userConsent.findUnique.mockResolvedValue(mockConsent);
+			db.orm.public.UserConsent.first.mockResolvedValue(
+				databaseFixture("UserConsent", mockConsent),
+			);
 
 			// When
 			const result = await repository.findByUserId(userId);
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(db.userConsent.findUnique).toHaveBeenCalledWith({
-				where: { userId },
-			});
+			assertNativeWhere("UserConsent", db.orm.public.UserConsent.where.mock.calls[0]?.[0], (row) =>
+				row.userId.eq(userId),
+			);
 		});
 	});
 
@@ -110,23 +111,27 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				marketingAgreedAt: null,
 				marketingPushAgreedAt: null,
 			};
-			db.userConsent.create.mockResolvedValue(createdConsent);
+			db.orm.public.UserConsent.create.mockResolvedValue(
+				databaseFixture("UserConsent", createdConsent),
+			);
 
 			// When
 			const result = await repository.create(userId);
 
 			// Then
 			expect(result).toEqual(createdConsent);
-			expect(db.userConsent.create).toHaveBeenCalledWith({
-				data: {
-					userId,
-					termsAgreedAt: null,
-					privacyAgreedAt: null,
-					agreedTermsVersion: null,
-					marketingAgreedAt: null,
-					marketingPushAgreedAt: null,
-				},
-			});
+			expect(db.orm.public.UserConsent.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserConsent", {
+						userId,
+						termsAgreedAt: null,
+						privacyAgreedAt: null,
+						agreedTermsVersion: null,
+						marketingAgreedAt: null,
+						marketingPushAgreedAt: null,
+					}),
+				),
+			);
 		});
 
 		it("지정된 값으로 동의 레코드를 생성한다", async () => {
@@ -135,7 +140,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 			const privacyDate = new Date("2024-01-01T00:00:00Z");
 			const marketingDate = new Date("2024-01-01T00:00:00Z");
 
-			db.userConsent.create.mockResolvedValue(mockConsent);
+			db.orm.public.UserConsent.create.mockResolvedValue(
+				databaseFixture("UserConsent", mockConsent),
+			);
 
 			// When
 			const result = await repository.create(userId, {
@@ -147,16 +154,18 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(db.userConsent.create).toHaveBeenCalledWith({
-				data: {
-					userId,
-					termsAgreedAt: termsDate,
-					privacyAgreedAt: privacyDate,
-					agreedTermsVersion: "1.0.0",
-					marketingAgreedAt: marketingDate,
-					marketingPushAgreedAt: null,
-				},
-			});
+			expect(db.orm.public.UserConsent.create).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserConsent", {
+						userId,
+						termsAgreedAt: termsDate,
+						privacyAgreedAt: privacyDate,
+						agreedTermsVersion: "1.0.0",
+						marketingAgreedAt: marketingDate,
+						marketingPushAgreedAt: null,
+					}),
+				),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 생성한다", async () => {
@@ -170,14 +179,16 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				marketingAgreedAt: null,
 				marketingPushAgreedAt: null,
 			};
-			db.userConsent.create.mockResolvedValue(createdConsent);
+			db.orm.public.UserConsent.create.mockResolvedValue(
+				databaseFixture("UserConsent", createdConsent),
+			);
 
 			// When
 			const result = await repository.create(userId, undefined);
 
 			// Then
 			expect(result).toEqual(createdConsent);
-			expect(db.userConsent.create).toHaveBeenCalled();
+			expect(db.orm.public.UserConsent.create).toHaveBeenCalled();
 		});
 	});
 
@@ -196,7 +207,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				marketingAgreedAt: null,
 				marketingPushAgreedAt: null,
 			};
-			db.userConsent.upsert.mockResolvedValue(createdConsent);
+			db.orm.public.UserConsent.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", createdConsent),
+			);
 
 			// When
 			const result = await repository.upsert(userId, {
@@ -207,22 +220,28 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(createdConsent);
-			expect(db.userConsent.upsert).toHaveBeenCalledWith({
-				where: { userId },
-				create: {
-					userId,
-					termsAgreedAt: termsDate,
-					privacyAgreedAt: privacyDate,
-					agreedTermsVersion: "1.0.0",
-					marketingAgreedAt: null,
-					marketingPushAgreedAt: null,
-				},
-				update: {
-					termsAgreedAt: termsDate,
-					privacyAgreedAt: privacyDate,
-					agreedTermsVersion: "1.0.0",
-				},
-			});
+			expect(db.orm.public.UserConsent.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					conflictOn: databaseWriteExpectation("UserConsent", { userId }),
+					create: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							userId,
+							termsAgreedAt: termsDate,
+							privacyAgreedAt: privacyDate,
+							agreedTermsVersion: "1.0.0",
+							marketingAgreedAt: null,
+							marketingPushAgreedAt: null,
+						}),
+					),
+					update: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							termsAgreedAt: termsDate,
+							privacyAgreedAt: privacyDate,
+							agreedTermsVersion: "1.0.0",
+						}),
+					),
+				}),
+			);
 		});
 
 		it("동의 레코드가 있으면 업데이트한다", async () => {
@@ -232,7 +251,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				...mockConsent,
 				agreedTermsVersion: newVersion,
 			};
-			db.userConsent.upsert.mockResolvedValue(updatedConsent);
+			db.orm.public.UserConsent.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", updatedConsent),
+			);
 
 			// When
 			const result = await repository.upsert(userId, {
@@ -241,25 +262,33 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(updatedConsent);
-			expect(db.userConsent.upsert).toHaveBeenCalledWith({
-				where: { userId },
-				create: {
-					userId,
-					termsAgreedAt: null,
-					privacyAgreedAt: null,
-					agreedTermsVersion: newVersion,
-					marketingAgreedAt: null,
-					marketingPushAgreedAt: null,
-				},
-				update: {
-					agreedTermsVersion: newVersion,
-				},
-			});
+			expect(db.orm.public.UserConsent.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					conflictOn: databaseWriteExpectation("UserConsent", { userId }),
+					create: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							userId,
+							termsAgreedAt: null,
+							privacyAgreedAt: null,
+							agreedTermsVersion: newVersion,
+							marketingAgreedAt: null,
+							marketingPushAgreedAt: null,
+						}),
+					),
+					update: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							agreedTermsVersion: newVersion,
+						}),
+					),
+				}),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 upsert한다", async () => {
 			// Given
-			db.userConsent.upsert.mockResolvedValue(mockConsent);
+			db.orm.public.UserConsent.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", mockConsent),
+			);
 
 			// When
 			const result = await repository.upsert(userId, {
@@ -268,7 +297,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(db.userConsent.upsert).toHaveBeenCalled();
+			expect(db.orm.public.UserConsent.upsert).toHaveBeenCalled();
 		});
 	});
 
@@ -280,7 +309,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				marketingAgreedAt: now,
 				marketingPushAgreedAt: null,
 			};
-			db.userConsent.update.mockResolvedValue(updatedConsent);
+			db.orm.public.UserConsent.update.mockResolvedValue(
+				databaseFixture("UserConsent", updatedConsent),
+			);
 
 			// When
 			const result = await repository.updateMarketingConsent(userId, {
@@ -289,12 +320,13 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(updatedConsent);
-			expect(db.userConsent.update).toHaveBeenCalledWith({
-				where: { userId },
-				data: {
-					marketingAgreedAt: now,
-				},
-			});
+			expect(db.orm.public.UserConsent.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserConsent", {
+						marketingAgreedAt: now,
+					}),
+				),
+			);
 		});
 
 		it("마케팅 동의를 철회한다 (null로 설정)", async () => {
@@ -303,7 +335,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				...mockConsent,
 				marketingAgreedAt: null,
 			};
-			db.userConsent.update.mockResolvedValue(updatedConsent);
+			db.orm.public.UserConsent.update.mockResolvedValue(
+				databaseFixture("UserConsent", updatedConsent),
+			);
 
 			// When
 			const result = await repository.updateMarketingConsent(userId, {
@@ -312,17 +346,20 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(updatedConsent);
-			expect(db.userConsent.update).toHaveBeenCalledWith({
-				where: { userId },
-				data: {
-					marketingAgreedAt: null,
-				},
-			});
+			expect(db.orm.public.UserConsent.update).toHaveBeenCalledWith(
+				expect.objectContaining(
+					databaseWriteExpectation("UserConsent", {
+						marketingAgreedAt: null,
+					}),
+				),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 업데이트한다", async () => {
 			// Given
-			db.userConsent.update.mockResolvedValue(mockConsent);
+			db.orm.public.UserConsent.update.mockResolvedValue(
+				databaseFixture("UserConsent", mockConsent),
+			);
 
 			// When
 			const result = await repository.updateMarketingConsent(userId, {
@@ -331,7 +368,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(db.userConsent.update).toHaveBeenCalled();
+			expect(db.orm.public.UserConsent.update).toHaveBeenCalled();
 		});
 	});
 
@@ -347,7 +384,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				marketingAgreedAt: now,
 				marketingPushAgreedAt: null,
 			};
-			db.userConsent.upsert.mockResolvedValue(createdConsent);
+			db.orm.public.UserConsent.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", createdConsent),
+			);
 
 			// When
 			const result = await repository.upsertMarketingConsent(userId, {
@@ -356,16 +395,22 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(createdConsent);
-			expect(db.userConsent.upsert).toHaveBeenCalledWith({
-				where: { userId },
-				create: {
-					userId,
-					marketingAgreedAt: now,
-				},
-				update: {
-					marketingAgreedAt: now,
-				},
-			});
+			expect(db.orm.public.UserConsent.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					conflictOn: databaseWriteExpectation("UserConsent", { userId }),
+					create: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							userId,
+							marketingAgreedAt: now,
+						}),
+					),
+					update: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							marketingAgreedAt: now,
+						}),
+					),
+				}),
+			);
 		});
 
 		it("마케팅 동의 거부 시 null로 설정한다", async () => {
@@ -374,7 +419,9 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 				...mockConsent,
 				marketingAgreedAt: null,
 			};
-			db.userConsent.upsert.mockResolvedValue(updatedConsent);
+			db.orm.public.UserConsent.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", updatedConsent),
+			);
 
 			// When
 			const result = await repository.upsertMarketingConsent(userId, {
@@ -383,21 +430,29 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(updatedConsent);
-			expect(db.userConsent.upsert).toHaveBeenCalledWith({
-				where: { userId },
-				create: {
-					userId,
-					marketingAgreedAt: null,
-				},
-				update: {
-					marketingAgreedAt: null,
-				},
-			});
+			expect(db.orm.public.UserConsent.upsert).toHaveBeenCalledWith(
+				expect.objectContaining({
+					conflictOn: databaseWriteExpectation("UserConsent", { userId }),
+					create: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							userId,
+							marketingAgreedAt: null,
+						}),
+					),
+					update: expect.objectContaining(
+						databaseWriteExpectation("UserConsent", {
+							marketingAgreedAt: null,
+						}),
+					),
+				}),
+			);
 		});
 
 		it("활성 트랜잭션 클라이언트로 upsert한다", async () => {
 			// Given
-			db.userConsent.upsert.mockResolvedValue(mockConsent);
+			db.orm.public.UserConsent.upsert.mockResolvedValue(
+				databaseFixture("UserConsent", mockConsent),
+			);
 
 			// When
 			const result = await repository.upsertMarketingConsent(userId, {
@@ -406,7 +461,7 @@ describe("UserConsentRepository — 사용자 동의 리포지토리", () => {
 
 			// Then
 			expect(result).toEqual(mockConsent);
-			expect(db.userConsent.upsert).toHaveBeenCalled();
+			expect(db.orm.public.UserConsent.upsert).toHaveBeenCalled();
 		});
 	});
 });

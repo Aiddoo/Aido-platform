@@ -22,7 +22,7 @@
  *   .buildWithRelations();
  * ```
  */
-import type { Cheer } from "#api/generated/prisma/client";
+import type { Cheer } from "#api/shared/infrastructure/database/database.types";
 
 /**
  * 사용자 프로필 정보

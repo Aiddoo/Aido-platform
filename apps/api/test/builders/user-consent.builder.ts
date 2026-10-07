@@ -10,7 +10,7 @@
 
 import * as crypto from "node:crypto";
 
-import type { UserConsent } from "#api/generated/prisma/client";
+import type { UserConsent } from "#api/shared/infrastructure/database/database.types";
 
 export class UserConsentBuilder {
 	private data: UserConsent;

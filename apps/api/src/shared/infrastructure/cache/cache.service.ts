@@ -6,7 +6,7 @@ import {
 	type TimeFormat,
 	UserRole,
 	UserStatus,
-} from "#api/generated/prisma/enums";
+} from "#api/shared/infrastructure/database/database.types";
 
 import { CacheKeys } from "./constants/cache-keys.js";
 import {

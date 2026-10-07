@@ -1,0 +1,979 @@
+// use prisma-8
+// 기존 migration을 적용한 격리 DB에서 추출했다. 물리 이름과 제약을 그대로 관리한다.
+
+namespace public {
+  model User {
+    id                             String                          @id(map: "User_pkey")
+    email                          VarChar(255)
+    userTag                        VarChar(8)
+    role                           pg.enum(UserRole)               @default("USER")
+    status                         pg.enum(UserStatus)             @default("PENDING_VERIFY")
+    emailVerifiedAt                TimestampString(3)?
+    twoFactorEnabled               Boolean                         @default(false)
+    twoFactorSecret                VarChar(255)?
+    subscriptionStatus             pg.enum(SubscriptionStatus)     @default("FREE")
+    subscriptionExpiresAt          TimestampString(3)?
+    revenueCatUserId               VarChar(255)?
+    aiUsageCount                   Int                             @default(0)
+    aiUsageResetAt                 TimestampString(3)                    @default(now())
+    createdAt                      TimestampString(3)                    @default(now())
+    updatedAt                      temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    lastLoginAt                    TimestampString(3)?
+    deletedAt                      TimestampString(3)?
+    lastActiveAt                   TimestampString(3)?
+    accounts                       Account[]
+    aiReports                      AiReport[]
+    dailyCompletions               DailyCompletion[]
+    memos                          Memo[]
+    notifications                  Notification[]
+    pushDailyBudgets               PushDailyBudget[]
+    pushDispatches                 PushDispatch[]
+    pushTokens                     PushToken[]
+    recurringSuggestions           RecurringSuggestion[]
+    retentionAssignments RetentionExperimentAssignment[]
+    securityLogs                   SecurityLog[]
+    sessions                       Session[]
+    subscriptions                  Subscription[]
+    todos                          Todo[]
+    todoCategories                 TodoCategory[]
+    authoredTodoComments                   TodoComment[]
+    todoCommentLikes               TodoCommentLike[]
+    todoViews                      TodoView[]
+    activityDays               UserActivityDay[]
+    consent                    UserConsent?
+    location                   UserLocation?
+    preference                 UserPreference?
+    profile                    UserProfile?
+    verifications                  Verification[]
+    weeklyAchievements             WeeklyAchievement[]
+    receivedCheers                         Cheer[]                         @relation(name: "Cheer_receiverId_fkey")
+    sentCheers                    Cheer[]                         @relation(name: "Cheer_senderId_fkey")
+    following                        Follow[]                        @relation(name: "Follow_followerId_fkey")
+    followers                  Follow[]                        @relation(name: "Follow_followingId_fkey")
+    receivedNudges                         Nudge[]                         @relation(name: "Nudge_receiverId_fkey")
+    sentNudges                    Nudge[]                         @relation(name: "Nudge_senderId_fkey")
+    receivedRemindNudges                 ReminderNudge[]                 @relation(name: "ReminderNudge_receiverId_fkey")
+    sentRemindNudges    ReminderNudge[]                 @relation(name: "ReminderNudge_senderId_fkey")
+
+    @@index([deletedAt, createdAt], map: "User_deletedAt_createdAt_idx")
+    @@index([deletedAt], map: "User_deletedAt_idx")
+    @@index([deletedAt, lastActiveAt], map: "User_deletedAt_lastActiveAt_idx")
+    @@unique([email], map: "User_email_key")
+    @@unique([revenueCatUserId], map: "User_revenueCatUserId_key")
+    @@index([status, deletedAt, lastLoginAt], map: "User_status_deletedAt_lastLoginAt_idx")
+    @@index([status], map: "User_status_idx")
+    @@index([subscriptionStatus], map: "User_subscriptionStatus_idx")
+    @@unique([userTag], map: "User_userTag_key")
+  }
+
+  model Account {
+    id                   Int                      @id(map: "Account_pkey") @default(autoincrement())
+    userId               String
+    provider             pg.enum(AccountProvider)
+    providerAccountId    VarChar(255)
+    password             VarChar(128)?
+    accessToken          String?
+    refreshToken         String?
+    accessTokenExpiresAt TimestampString(3)?
+    scope                VarChar(500)?
+    createdAt            TimestampString(3)             @default(now())
+    updatedAt            temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    user                 User                     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Account_userId_fkey", index: false)
+
+    @@unique([provider, providerAccountId], map: "Account_provider_providerAccountId_key")
+    @@unique([userId, provider], map: "Account_userId_provider_key")
+  }
+
+  model AiReport {
+    id                Int                 @id(map: "AiReport_pkey") @default(autoincrement())
+    userId            String
+    _type             pg.enum(ReportType) @map("type")
+    year              Int
+    period            Int
+    stats             Jsonb
+    categoryBreakdown Jsonb
+    dayPatterns       Jsonb
+    timePatterns      Jsonb
+    aiSummary         String
+    aiTips            Jsonb
+    hasActivity       Boolean
+    generatedAt       TimestampString(3)
+    createdAt         TimestampString(3)        @default(now())
+    locale            VarChar(10)         @default("ko")
+    user              User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "AiReport_userId_fkey", index: false)
+
+    @@index([userId, _type, generatedAt], map: "AiReport_userId_type_generatedAt_idx")
+    @@index([userId, _type], map: "AiReport_userId_type_idx")
+    @@unique([userId, _type, year, period], map: "AiReport_userId_type_year_period_key")
+  }
+
+  model Cheer {
+    id         Int           @id(map: "Cheer_pkey") @default(autoincrement())
+    senderId   String
+    receiverId String
+    message    VarChar(200)?
+    createdAt  TimestampString(3)  @default(now())
+    readAt     TimestampString(3)?
+    receiver   User          @relation(name: "Cheer_receiverId_fkey", fields: [receiverId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Cheer_receiverId_fkey", index: false)
+    sender     User          @relation(name: "Cheer_senderId_fkey", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Cheer_senderId_fkey", index: false)
+
+    @@index([receiverId, createdAt], map: "Cheer_receiverId_createdAt_idx")
+    @@index([senderId, createdAt], map: "Cheer_senderId_createdAt_idx")
+    @@index([senderId, receiverId, createdAt], map: "Cheer_senderId_receiverId_createdAt_idx")
+  }
+
+  model DailyCompletion {
+    id             String       @id(map: "DailyCompletion_pkey")
+    userId         String
+    date           DateString
+    totalTodos     Int
+    completedTodos Int
+    achievedAt     TimestampString(3)
+    createdAt      TimestampString(3) @default(now())
+    updatedAt      temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "DailyCompletion_userId_fkey", index: false)
+
+    @@unique([userId, date], map: "DailyCompletion_userId_date_key")
+  }
+
+  model Follow {
+    id          String                @id(map: "Follow_pkey")
+    followerId  String
+    followingId String
+    status      pg.enum(FollowStatus) @default("PENDING")
+    createdAt   TimestampString(3)          @default(now())
+    updatedAt   temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    sortOrder   Int                   @default(0)
+    follower    User                  @relation(name: "Follow_followerId_fkey", fields: [followerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Follow_followerId_fkey", index: false)
+    following   User                  @relation(name: "Follow_followingId_fkey", fields: [followingId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Follow_followingId_fkey", index: false)
+
+    @@unique([followerId, followingId], map: "Follow_followerId_followingId_key")
+    @@index([followerId, sortOrder], map: "Follow_followerId_sortOrder_idx")
+    @@index([followerId, status], map: "Follow_followerId_status_idx")
+    @@index([followingId, status], map: "Follow_followingId_status_idx")
+  }
+
+  model LoginAttempt {
+    id            Int                       @id(map: "LoginAttempt_pkey") @default(autoincrement())
+    email         VarChar(255)
+    provider      pg.enum(AccountProvider)?
+    ipAddress     VarChar(45)
+    userAgent     VarChar(500)
+    success       Boolean
+    failureReason VarChar(100)?
+    createdAt     TimestampString(3)              @default(now())
+
+    @@index([createdAt], map: "LoginAttempt_createdAt_idx")
+    @@index([email, createdAt], map: "LoginAttempt_email_createdAt_idx")
+    @@index([ipAddress, createdAt], map: "LoginAttempt_ipAddress_createdAt_idx")
+    @@index([provider, createdAt], map: "LoginAttempt_provider_createdAt_idx")
+  }
+
+  model Memo {
+    id        Int           @id(map: "Memo_pkey") @default(autoincrement())
+    userId    String
+    content   VarChar(5000)
+    isPinned  Boolean       @default(false)
+    sortOrder Int           @default(0)
+    createdAt TimestampString(3)  @default(now())
+    updatedAt temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    user      User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Memo_userId_fkey", index: false)
+
+    @@index([userId, isPinned, sortOrder], map: "Memo_userId_isPinned_sortOrder_idx")
+    @@index([userId, sortOrder], map: "Memo_userId_sortOrder_idx")
+  }
+
+  model Notification {
+    id               Int                             @id(map: "Notification_pkey") @default(autoincrement())
+    userId           String
+    _type            pg.enum(NotificationType)       @map("type")
+    title            VarChar(200)
+    body             VarChar(500)
+    isRead           Boolean                         @default(false)
+    todoId           Int?
+    friendId         String?
+    nudgeId          Int?
+    cheerId          Int?
+    notificationDate DateString?
+    metadata         Jsonb?
+    createdAt        TimestampString(3)                    @default(now())
+    readAt           TimestampString(3)?
+    actionType       pg.enum(NotificationActionType) @default("DEEP_LINK")
+    actionUrl        VarChar(1000)?
+    campaignKey      VarChar(100)?
+    variantId        VarChar(100)?
+    purpose          pg.enum(NotificationPurpose)    @default("TRANSACTIONAL")
+    openedAt         TimestampString(3)?
+    pushDispatch     PushDispatch?
+    user             User                            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Notification_userId_fkey", index: false)
+
+    @@index(expression: "(metadata ->> 'senderId'::text)", map: "Notification_comment_actor_cleanup_idx", where: "((metadata ->> 'senderId'::text) IS NOT NULL)")
+    @@index([createdAt], map: "Notification_createdAt_idx")
+    @@index([friendId], map: "Notification_friend_actor_cleanup_idx", where: "(\"friendId\" IS NOT NULL)")
+    @@index([todoId, _type, createdAt], map: "Notification_todoId_type_createdAt_idx")
+    @@index(expression: "\"todoId\", type, (metadata ->> 'stage'::text)", map: "Notification_todo_reminder_dedup", where: "((type = 'TODO_REMINDER'::\"NotificationType\") AND (\"todoId\" IS NOT NULL))", unique: true)
+    @@index([userId, createdAt, id], map: "Notification_userId_createdAt_id_idx")
+    @@index([userId, isRead, createdAt], map: "Notification_userId_isRead_createdAt_idx")
+    @@index([userId, _type], map: "Notification_userId_type_idx")
+    @@index([userId, _type, notificationDate], map: "Notification_userId_type_notificationDate_idx")
+    @@check(expression: "((type <> 'TODO_SHARED'::\"NotificationType\") OR (\"actionType\" <> 'DEEP_LINK'::\"NotificationActionType\") OR ((metadata ->> 'commentId'::text) IS NULL) OR (\"actionUrl\" IS NULL))", map: "Notification_todo_comment_action_url_check")
+    @@check(expression: "(((metadata ->> 'commentId'::text) IS NULL) OR COALESCE(((jsonb_typeof((metadata -> 'senderId'::text)) = 'string'::text) AND (length((metadata ->> 'senderId'::text)) > 0)), false))", map: "Notification_todo_comment_sender_check")
+  }
+
+  model TodoCategory {
+    id        Int          @id(map: "TodoCategory_pkey") @default(autoincrement())
+    userId    String
+    name      VarChar(50)
+    color     VarChar(7)
+    sortOrder Int          @default(0)
+    createdAt TimestampString(3) @default(now())
+    updatedAt temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    todos     Todo[]
+    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoCategory_userId_fkey", index: false)
+
+    @@unique([userId, name], map: "TodoCategory_userId_name_key")
+    @@index([userId, sortOrder], map: "TodoCategory_userId_sortOrder_idx")
+  }
+
+  model Todo {
+    id                Int                     @id(map: "Todo_pkey") @default(autoincrement())
+    userId            String
+    title             VarChar(200)
+    categoryId        Int
+    sortOrder         Int                     @default(0)
+    completed         Boolean                 @default(false)
+    completedAt       TimestampString(3)?
+    startDate         DateString
+    endDate           DateString?
+    scheduledTime     TimestamptzString(3)?
+    isAllDay          Boolean                 @default(true)
+    visibility        pg.enum(TodoVisibility) @default("PUBLIC")
+    createdAt         TimestampString(3)            @default(now())
+    updatedAt         temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    recurrenceGroupId VarChar(36)?
+    viewCount         Int                     @default(0)
+    commentCount      Int                     @default(0)
+    nudges            Nudge[]
+    comments      TodoComment[]
+    items         TodoItem[]
+    views         TodoView[]
+    category          TodoCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Todo_categoryId_fkey", index: false)
+    user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Todo_userId_fkey", index: false)
+
+    @@index([completed, scheduledTime], map: "Todo_completed_scheduledTime_idx")
+    @@index([recurrenceGroupId], map: "Todo_recurrenceGroupId_idx")
+    @@index([userId, categoryId], map: "Todo_userId_categoryId_idx")
+    @@index([userId, completed, startDate], map: "Todo_userId_completed_startDate_idx")
+    @@index([userId, sortOrder], map: "Todo_userId_sortOrder_idx")
+    @@index([userId, startDate, endDate], map: "Todo_userId_startDate_endDate_idx")
+  }
+
+  model Nudge {
+    id             Int                      @id(map: "Nudge_pkey") @default(autoincrement())
+    senderId       String
+    receiverId     String
+    todoId         Int
+    message        VarChar(200)?
+    createdAt      TimestampString(3)             @default(now())
+    readAt         TimestampString(3)?
+    replyKind      pg.enum(NudgeReplyKind)?
+    repliedAt      TimestampString(3)?
+    replyUpdatedAt TimestampString(3)?
+    thankedAt      TimestampString(3)?
+    receiver       User                     @relation(name: "Nudge_receiverId_fkey", fields: [receiverId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Nudge_receiverId_fkey", index: false)
+    sender         User                     @relation(name: "Nudge_senderId_fkey", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Nudge_senderId_fkey", index: false)
+    todo           Todo                     @relation(fields: [todoId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Nudge_todoId_fkey")
+
+    @@index([receiverId, createdAt], map: "Nudge_receiverId_createdAt_idx")
+    @@index([receiverId, id], map: "Nudge_receiverId_id_idx")
+    @@index([senderId, createdAt], map: "Nudge_senderId_createdAt_idx")
+    @@index([senderId, id], map: "Nudge_senderId_id_idx")
+    @@index([senderId, todoId, createdAt], map: "Nudge_senderId_todoId_createdAt_idx")
+    @@index([todoId, senderId], map: "Nudge_thanked_sender_per_todo", where: "(\"thankedAt\" IS NOT NULL)", unique: true)
+    @@index([todoId], map: "Nudge_todoId_idx")
+    @@index([todoId, receiverId, thankedAt, id], map: "Nudge_todoId_receiverId_thankedAt_id_idx")
+  }
+
+  model OAuthState {
+    id               Int                      @id(map: "OAuthState_pkey") @default(autoincrement())
+    state            VarChar(64)
+    codeVerifier     VarChar(128)?
+    provider         pg.enum(AccountProvider)
+    redirectUri      VarChar(500)
+    mode             VarChar(10)?
+    initiatingUserId VarChar(36)?
+    exchangeCode     VarChar(64)?
+    accessToken      VarChar(1000)?
+    refreshToken     VarChar(1000)?
+    userId           VarChar(255)?
+    userName         VarChar(20)?
+    profileImage     VarChar(500)?
+    accountRestored  Boolean?
+    ipAddress        VarChar(45)?
+    userAgent        VarChar(500)?
+    expiresAt        TimestampString(3)
+    exchangedAt      TimestampString(3)?
+    createdAt        TimestampString(3)             @default(now())
+
+    @@unique([exchangeCode], map: "OAuthState_exchangeCode_key")
+    @@index([expiresAt], map: "OAuthState_expiresAt_idx")
+    @@unique([state], map: "OAuthState_state_key")
+  }
+
+  model PushDailyBudget {
+    id             Int           @id(map: "PushDailyBudget_pkey") @default(autoincrement())
+    userId         String
+    localDate      DateString
+    automatedCount Int           @default(0)
+    lastSentAt     TimestampString(3)?
+    createdAt      TimestampString(3)  @default(now())
+    updatedAt      temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    user           User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushDailyBudget_userId_fkey", index: false)
+
+    @@unique([userId, localDate], map: "PushDailyBudget_userId_localDate_key")
+  }
+
+  model PushDispatch {
+    id                        Int                          @id(map: "PushDispatch_pkey") @default(autoincrement())
+    notificationId            Int
+    userId                    String
+    purpose                   pg.enum(NotificationPurpose)
+    campaignKey               VarChar(100)?
+    variantId                 VarChar(100)?
+    timezone                  VarChar(50)                  @default("UTC")
+    localDate                 DateString?
+    status                    pg.enum(PushDispatchStatus)  @default("PENDING")
+    skipReason                VarChar(100)?
+    scheduledAt               TimestampString(3)                 @default(now())
+    sentAt                    TimestampString(3)?
+    openedAt                  TimestampString(3)?
+    createdAt                 TimestampString(3)                 @default(now())
+    updatedAt                 temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    processingJobId           VarChar(255)?
+    processingJobAttempt      Int?
+    processingStartedAt       TimestampString(3)?
+    deliveryAttemptCount      Int                          @default(0)
+    rateLimitReservedAt       TimestampString(3)?
+    lastError                 VarChar(500)?
+    attempts      PushDeliveryAttempt[]
+    outbox        PushDispatchOutbox?
+    rateLimitReservations PushRateLimitReservation[]
+    notification              Notification                 @relation(fields: [notificationId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushDispatch_notificationId_fkey")
+    user                      User                         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushDispatch_userId_fkey", index: false)
+
+    @@index([campaignKey, status, createdAt], map: "PushDispatch_campaignKey_status_createdAt_idx")
+    @@unique([notificationId], map: "PushDispatch_notificationId_key")
+    @@index([processingStartedAt], map: "PushDispatch_processing_lease_idx", where: "(status = 'PROCESSING'::\"PushDispatchStatus\")")
+    @@index([status, scheduledAt], map: "PushDispatch_status_scheduledAt_idx")
+    @@index([userId, localDate, purpose], map: "PushDispatch_userId_localDate_purpose_idx")
+  }
+
+  model PushToken {
+    id                   Int                   @id(map: "PushToken_pkey") @default(autoincrement())
+    userId               String
+    token                VarChar(255)
+    deviceId             VarChar(255)
+    platform             pg.enum(Platform)
+    isActive             Boolean               @default(true)
+    createdAt            TimestampString(3)          @default(now())
+    updatedAt            temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    lastUsedAt           TimestampString(3)          @default(now())
+    payloadVersion       Int                   @default(1)
+    appVersion           VarChar(30)?
+    deliveryAttempts PushDeliveryAttempt[]
+    user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushToken_userId_fkey", index: false)
+
+    @@unique([token], map: "PushToken_token_key")
+    @@unique([userId, deviceId], map: "PushToken_userId_deviceId_key")
+    @@index([userId, isActive], map: "PushToken_userId_isActive_idx")
+  }
+
+  model PushDeliveryAttempt {
+    id               Int                         @id(map: "PushDeliveryAttempt_pkey") @default(autoincrement())
+    dispatchId       Int
+    pushTokenId      Int
+    status           pg.enum(PushDeliveryStatus) @default("PENDING")
+    expoTicketId     VarChar(100)?
+    errorCode        VarChar(100)?
+    errorMessage     VarChar(500)?
+    receiptCheckedAt TimestampString(3)?
+    createdAt        TimestampString(3)                @default(now())
+    updatedAt        temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    dispatch         PushDispatch                @relation(fields: [dispatchId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushDeliveryAttempt_dispatchId_fkey", index: false)
+    pushToken        PushToken                   @relation(fields: [pushTokenId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushDeliveryAttempt_pushTokenId_fkey", index: false)
+
+    @@unique([dispatchId, pushTokenId], map: "PushDeliveryAttempt_dispatchId_pushTokenId_key")
+    @@unique([expoTicketId], map: "PushDeliveryAttempt_expoTicketId_key")
+    @@index([status, createdAt], map: "PushDeliveryAttempt_status_createdAt_idx")
+  }
+
+  model PushDispatchOutbox {
+    dispatchId      Int                               @id(map: "PushDispatchOutbox_pkey")
+    deliveryMode    pg.enum(PushDeliveryMode)
+    force           Boolean                           @default(false)
+    status          pg.enum(PushDispatchOutboxStatus) @default("PENDING")
+    publishAttempts Int                               @default(0)
+    availableAt     TimestampString(3)                      @default(now())
+    lockedAt        TimestampString(3)?
+    publishedAt     TimestampString(3)?
+    lastError       VarChar(500)?
+    createdAt       TimestampString(3)                      @default(now())
+    updatedAt       temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    dispatch        PushDispatch                      @relation(fields: [dispatchId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushDispatchOutbox_dispatchId_fkey")
+
+    @@index([status, availableAt, dispatchId], map: "PushDispatchOutbox_status_availableAt_dispatchId_idx")
+    @@index([status, lockedAt], map: "PushDispatchOutbox_status_lockedAt_idx")
+  }
+
+  model PushRateLimitReservation {
+    dispatchId Int
+    phase      pg.enum(PushRateLimitPhase)
+    userId     String
+    localDate  DateString?
+    reservedAt TimestampString(3)                @default(now())
+    dispatch   PushDispatch                @relation(fields: [dispatchId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "PushRateLimitReservation_dispatchId_fkey", index: false)
+
+    @@id([dispatchId, phase], map: "PushRateLimitReservation_pkey")
+    @@index([phase, userId, localDate, reservedAt], map: "PushRateLimitReservation_phase_userId_localDate_reservedAt_idx")
+    @@index([phase, userId, reservedAt], map: "PushRateLimitReservation_phase_userId_reservedAt_idx")
+  }
+
+  model RecurringSuggestion {
+    id                  Int                       @id(map: "RecurringSuggestion_pkey") @default(autoincrement())
+    userId              String
+    title               String
+    daysOfWeek          Jsonb
+    scheduledTime       String?
+    confidence          Float
+    reason              String
+    matchedTodos        Jsonb
+    status              pg.enum(SuggestionStatus) @default("PENDING")
+    expiresAt           TimestampString(3)
+    createdAt           TimestampString(3)              @default(now())
+    updatedAt           temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    suggestedCategoryId Int?
+    user                User                      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RecurringSuggestion_userId_fkey", index: false)
+
+    @@index([userId, expiresAt], map: "RecurringSuggestion_userId_expiresAt_idx")
+    @@index([userId, status], map: "RecurringSuggestion_userId_status_idx")
+    @@index([userId, updatedAt], map: "RecurringSuggestion_userId_updatedAt_idx")
+  }
+
+  model ReminderNudge {
+    id         Int           @id(map: "ReminderNudge_pkey") @default(autoincrement())
+    senderId   String
+    receiverId String
+    message    VarChar(200)?
+    createdAt  TimestampString(3)  @default(now())
+    receiver   User          @relation(name: "ReminderNudge_receiverId_fkey", fields: [receiverId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ReminderNudge_receiverId_fkey", index: false)
+    sender     User          @relation(name: "ReminderNudge_senderId_fkey", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "ReminderNudge_senderId_fkey", index: false)
+
+    @@index([receiverId, createdAt], map: "ReminderNudge_receiverId_createdAt_idx")
+    @@index([senderId, receiverId, createdAt], map: "ReminderNudge_senderId_receiverId_createdAt_idx")
+  }
+
+  model RetentionExperimentAssignment {
+    id                        String                              @id(map: "RetentionExperimentAssignment_pkey")
+    userId                    String
+    experimentKey             VarChar(100)
+    variant                   pg.enum(RetentionExperimentVariant)
+    assignedAt                TimestampString(3)                        @default(now())
+    startedAt                 TimestampString(3)?
+    result RetentionExperimentResult?
+    stages RetentionExperimentStage[]
+    user                      User                                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RetentionExperimentAssignment_userId_fkey", index: false)
+
+    @@index([experimentKey, variant, startedAt], map: "RetentionExperimentAssignment_experimentKey_variant_startedAt_i")
+    @@unique([userId, experimentKey], map: "RetentionExperimentAssignment_userId_experimentKey_key")
+  }
+
+  model RetentionExperimentResult {
+    id                 String                        @id(map: "RetentionExperimentResult_pkey")
+    assignmentId       String
+    returnedWithinD7   Boolean
+    todoActionWithinD7 Boolean
+    measuredAt         TimestampString(3)                  @default(now())
+    assignment         RetentionExperimentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RetentionExperimentResult_assignmentId_fkey")
+
+    @@unique([assignmentId], map: "RetentionExperimentResult_assignmentId_key")
+    @@index([measuredAt], map: "RetentionExperimentResult_measuredAt_idx")
+  }
+
+  model RetentionExperimentStage {
+    id                  String                                  @id(map: "RetentionExperimentStage_pkey")
+    assignmentId        String
+    stage               pg.enum(RetentionExperimentStageName)
+    status              pg.enum(RetentionExperimentStageStatus) @default("SCHEDULED")
+    skipReason          VarChar(100)?
+    notificationId      Int?
+    processedAt         TimestampString(3)?
+    createdAt           TimestampString(3)                            @default(now())
+    updatedAt           temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    outbox RetentionPushOutbox?
+    assignment          RetentionExperimentAssignment           @relation(fields: [assignmentId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RetentionExperimentStage_assignmentId_fkey", index: false)
+
+    @@unique([assignmentId, stage], map: "RetentionExperimentStage_assignmentId_stage_key")
+    @@unique([notificationId], map: "RetentionExperimentStage_notificationId_key")
+    @@index([status, stage, createdAt], map: "RetentionExperimentStage_status_stage_createdAt_idx")
+  }
+
+  model RetentionPushOutbox {
+    id             String                         @id(map: "RetentionPushOutbox_pkey")
+    stageId        String
+    notificationId Int
+    dispatchId     Int
+    status         pg.enum(RetentionOutboxStatus) @default("PENDING")
+    attempts       Int                            @default(0)
+    availableAt    TimestampString(3)                   @default(now())
+    lockedAt       TimestampString(3)?
+    publishedAt    TimestampString(3)?
+    lastError      VarChar(500)?
+    createdAt      TimestampString(3)                   @default(now())
+    updatedAt      temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    stage          RetentionExperimentStage       @relation(fields: [stageId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "RetentionPushOutbox_stageId_fkey")
+
+    @@unique([dispatchId], map: "RetentionPushOutbox_dispatchId_key")
+    @@unique([notificationId], map: "RetentionPushOutbox_notificationId_key")
+    @@unique([stageId], map: "RetentionPushOutbox_stageId_key")
+    @@index([status, availableAt, id], map: "RetentionPushOutbox_status_availableAt_id_idx")
+    @@index([status, lockedAt], map: "RetentionPushOutbox_status_lockedAt_idx")
+  }
+
+  model SecurityLog {
+    id        Int                    @id(map: "SecurityLog_pkey") @default(autoincrement())
+    userId    String?
+    event     pg.enum(SecurityEvent)
+    ipAddress VarChar(45)
+    userAgent VarChar(500)
+    metadata  Jsonb?
+    createdAt TimestampString(3)           @default(now())
+    user      User?                  @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "SecurityLog_userId_fkey", index: false)
+
+    @@index([event, createdAt], map: "SecurityLog_event_createdAt_idx")
+    @@index([ipAddress, createdAt], map: "SecurityLog_ipAddress_createdAt_idx")
+    @@index([userId, createdAt], map: "SecurityLog_userId_createdAt_idx")
+  }
+
+  model Session {
+    id                String        @id(map: "Session_pkey")
+    userId            String
+    refreshTokenHash  VarChar(64)
+    tokenFamily       VarChar(36)
+    tokenVersion      Int           @default(1)
+    previousTokenHash VarChar(64)?
+    deviceFingerprint VarChar(64)
+    userAgent         VarChar(500)
+    ipAddress         VarChar(45)
+    expiresAt         TimestampString(3)
+    revokedAt         TimestampString(3)?
+    revokedReason     VarChar(200)?
+    createdAt         TimestampString(3)  @default(now())
+    updatedAt         temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    lastUsedAt        TimestampString(3)  @default(now())
+    user              User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Session_userId_fkey")
+
+    @@index([expiresAt], map: "Session_expiresAt_idx")
+    @@unique([refreshTokenHash], map: "Session_refreshTokenHash_key")
+    @@index([tokenFamily], map: "Session_tokenFamily_idx")
+    @@index([userId], map: "Session_userId_idx")
+  }
+
+  model Subscription {
+    id                   Int                         @id(map: "Subscription_pkey") @default(autoincrement())
+    userId               String
+    revenueCatId         VarChar(255)
+    productId            VarChar(100)
+    status               pg.enum(SubscriptionStatus)
+    startedAt            TimestampString(3)
+    expiresAt            TimestampString(3)
+    cancelledAt          TimestampString(3)?
+    dataRetentionUntil   TimestampString(3)?
+    deletedAt            TimestampString(3)?
+    createdAt            TimestampString(3)                @default(now())
+    updatedAt            temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    lastProcessedEventId VarChar(255)?
+    user                 User                        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Subscription_userId_fkey")
+
+    @@index([deletedAt], map: "Subscription_deletedAt_idx")
+    @@unique([revenueCatId], map: "Subscription_revenueCatId_key")
+    @@index([status, expiresAt], map: "Subscription_status_expiresAt_idx")
+    @@index([userId], map: "Subscription_userId_idx")
+  }
+
+  model TodoComment {
+    id                 String            @id(map: "TodoComment_pkey")
+    todoId             Int
+    authorId           String
+    clientRequestId    Uuid
+    content            VarChar(500)?
+    likeCount          Int               @default(0)
+    replyCount         Int               @default(0)
+    deletedAt          TimestampString(3)?
+    editedAt           TimestampString(3)?
+    createdAt          TimestampString(3)      @default(now())
+    updatedAt          temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    parentId           String?
+    rootId             String?
+    path               String[]          @default([]) @noCheck(elementNotNull)
+    depth              Int               @default(0)
+    requestFingerprint Char(64)?
+    likes   TodoCommentLike[]
+    author             User              @relation(fields: [authorId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "TodoComment_authorId_fkey", index: false)
+    parent             TodoComment?      @relation(name: "TodoComment_parentId_fkey", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoComment_parentId_fkey", index: false)
+    children       TodoComment[]     @relation(name: "TodoComment_parentId_fkey")
+    todo               Todo              @relation(fields: [todoId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoComment_todoId_fkey", index: false)
+
+    @@unique([authorId, clientRequestId], map: "TodoComment_authorId_clientRequestId_key")
+    @@index([todoId, parentId, createdAt, id], map: "TodoComment_todoId_parentId_createdAt_id_idx")
+    @@index([todoId, parentId, likeCount, replyCount, createdAt, id], map: "TodoComment_todoId_parentId_likeCount_replyCount_createdAt__idx")
+    @@index([todoId, rootId], map: "TodoComment_todoId_rootId_idx")
+  }
+
+  model TodoCommentLike {
+    commentId  String
+    userId     String
+    isActive   Boolean       @default(true)
+    notifiedAt TimestampString(3)?
+    createdAt  TimestampString(3)  @default(now())
+    updatedAt  temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    comment    TodoComment   @relation(fields: [commentId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoCommentLike_commentId_fkey", index: false)
+    user       User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "TodoCommentLike_userId_fkey", index: false)
+
+    @@id([commentId, userId], map: "TodoCommentLike_pkey")
+    @@index([userId, isActive], map: "TodoCommentLike_userId_isActive_idx")
+  }
+
+  model TodoItem {
+    id        Int          @id(map: "TodoItem_pkey") @default(autoincrement())
+    todoId    Int
+    title     VarChar(200)
+    completed Boolean      @default(false)
+    sortOrder Int          @default(0)
+    createdAt TimestampString(3) @default(now())
+    updatedAt temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    todo      Todo         @relation(fields: [todoId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoItem_todoId_fkey", index: false)
+
+    @@index([todoId, sortOrder], map: "TodoItem_todoId_sortOrder_idx")
+  }
+
+  model TodoView {
+    todoId    Int
+    viewerId  String
+    createdAt TimestampString(3) @default(now())
+    todo      Todo         @relation(fields: [todoId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoView_todoId_fkey", index: false)
+    viewer    User         @relation(fields: [viewerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "TodoView_viewerId_fkey", index: false)
+
+    @@id([todoId, viewerId], map: "TodoView_pkey")
+    @@index([viewerId, createdAt], map: "TodoView_viewerId_createdAt_idx")
+  }
+
+  model UserActivityDay {
+    id          Int          @id(map: "UserActivityDay_pkey") @default(autoincrement())
+    userId      String
+    localDate   DateString
+    timezone    VarChar(50)
+    firstSeenAt TimestampString(3) @default(now())
+    lastSeenAt  TimestampString(3) @default(now())
+    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserActivityDay_userId_fkey", index: false)
+
+    @@index([firstSeenAt], map: "UserActivityDay_firstSeenAt_idx")
+    @@index([localDate], map: "UserActivityDay_localDate_idx")
+    @@unique([userId, localDate], map: "UserActivityDay_userId_localDate_key")
+  }
+
+  model UserConsent {
+    id                    String        @id(map: "UserConsent_pkey")
+    userId                String
+    termsAgreedAt         TimestampString(3)?
+    privacyAgreedAt       TimestampString(3)?
+    agreedTermsVersion    VarChar(20)?
+    marketingAgreedAt     TimestampString(3)?
+    marketingPushAgreedAt TimestampString(3)?
+    user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserConsent_userId_fkey")
+
+    @@unique([userId], map: "UserConsent_userId_key")
+  }
+
+  model UserLocation {
+    id        String       @id(map: "UserLocation_pkey")
+    userId    String
+    latitude  Float
+    longitude Float
+    gridX     Int
+    gridY     Int
+    updatedAt temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserLocation_userId_fkey")
+
+    @@unique([userId], map: "UserLocation_userId_key")
+  }
+
+  model UserPreference {
+    id                    String              @id(map: "UserPreference_pkey")
+    userId                String
+    pushEnabled           Boolean             @default(false)
+    nightPushEnabled      Boolean             @default(false)
+    timezone              VarChar(50)         @default("UTC")
+    morningReminderHour   Int                 @default(8)
+    eveningReminderHour   Int                 @default(19)
+    eveningReminderMinute Int                 @default(0)
+    morningReminderMinute Int                 @default(0)
+    currentStreak         Int                 @default(0)
+    longestStreak         Int                 @default(0)
+    lastCompletedDate     DateString?
+    timeFormat            pg.enum(TimeFormat) @default("TWELVE_HOUR")
+    weatherEveningEnabled Boolean             @default(true)
+    weatherEveningHour    Int                 @default(17)
+    weatherEveningMinute  Int                 @default(30)
+    weatherMorningEnabled Boolean             @default(true)
+    weatherMorningHour    Int                 @default(7)
+    weatherMorningMinute  Int                 @default(0)
+    locale                VarChar(10)         @default("ko")
+    user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserPreference_userId_fkey")
+
+    @@index([pushEnabled, timezone, eveningReminderHour, eveningReminderMinute], map: "UserPreference_pushEnabled_timezone_eveningReminderHour_eve_idx")
+    @@index([pushEnabled, timezone], map: "UserPreference_pushEnabled_timezone_idx")
+    @@index([pushEnabled, timezone, morningReminderHour, morningReminderMinute], map: "UserPreference_pushEnabled_timezone_morningReminderHour_mor_idx")
+    @@index([pushEnabled, weatherEveningEnabled, timezone, weatherEveningHour, weatherEveningMinute], map: "UserPreference_pushEnabled_weatherEveningEnabled_timezone_w_idx")
+    @@index([pushEnabled, weatherMorningEnabled, timezone, weatherMorningHour, weatherMorningMinute], map: "UserPreference_pushEnabled_weatherMorningEnabled_timezone_w_idx")
+    @@unique([userId], map: "UserPreference_userId_key")
+  }
+
+  model UserProfile {
+    id           String        @id(map: "UserProfile_pkey")
+    userId       String
+    name         VarChar(20)?
+    profileImage VarChar(500)?
+    user         User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserProfile_userId_fkey")
+
+    @@unique([userId], map: "UserProfile_userId_key")
+  }
+
+  model Verification {
+    id        Int                       @id(map: "Verification_pkey") @default(autoincrement())
+    userId    String
+    _type     pg.enum(VerificationType) @map("type")
+    token     VarChar(64)
+    expiresAt TimestampString(3)
+    usedAt    TimestampString(3)?
+    attempts  Int                       @default(0)
+    createdAt TimestampString(3)              @default(now())
+    user      User                      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Verification_userId_fkey", index: false)
+
+    @@unique([token], map: "Verification_token_key")
+    @@index([userId, _type], map: "Verification_userId_type_idx")
+  }
+
+  model WeeklyAchievement {
+    id             Int          @id(map: "WeeklyAchievement_pkey") @default(autoincrement())
+    userId         String
+    year           Int
+    week           Int
+    totalTodos     Int
+    completedTodos Int
+    achievedAt     TimestampString(3)
+    createdAt      TimestampString(3) @default(now())
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "WeeklyAchievement_userId_fkey", index: false)
+
+    @@index([userId, year], map: "WeeklyAchievement_userId_year_idx")
+    @@unique([userId, year, week], map: "WeeklyAchievement_userId_year_week_key")
+    @@index([year, week], map: "WeeklyAchievement_year_week_idx")
+  }
+
+  native_enum AccountProvider {
+    CREDENTIAL = "CREDENTIAL"
+    KAKAO = "KAKAO"
+    APPLE = "APPLE"
+    GOOGLE = "GOOGLE"
+    NAVER = "NAVER"
+  }
+
+  native_enum FollowStatus {
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+  }
+
+  native_enum NotificationActionType {
+    DEEP_LINK = "DEEP_LINK"
+    BROWSER = "BROWSER"
+    WEBVIEW = "WEBVIEW"
+    NONE = "NONE"
+  }
+
+  native_enum NotificationPurpose {
+    TRANSACTIONAL = "TRANSACTIONAL"
+    SCHEDULED_SERVICE = "SCHEDULED_SERVICE"
+    ENGAGEMENT = "ENGAGEMENT"
+  }
+
+  native_enum NotificationType {
+    FOLLOW_NEW = "FOLLOW_NEW"
+    FOLLOW_ACCEPTED = "FOLLOW_ACCEPTED"
+    NUDGE_RECEIVED = "NUDGE_RECEIVED"
+    CHEER_RECEIVED = "CHEER_RECEIVED"
+    DAILY_COMPLETE = "DAILY_COMPLETE"
+    FRIEND_COMPLETED = "FRIEND_COMPLETED"
+    TODO_REMINDER = "TODO_REMINDER"
+    TODO_SHARED = "TODO_SHARED"
+    MORNING_REMINDER = "MORNING_REMINDER"
+    EVENING_REMINDER = "EVENING_REMINDER"
+    WEEKLY_ACHIEVEMENT = "WEEKLY_ACHIEVEMENT"
+    SYSTEM_NOTICE = "SYSTEM_NOTICE"
+    ADMIN_BROADCAST = "ADMIN_BROADCAST"
+    ADMIN_TARGETED = "ADMIN_TARGETED"
+    MONTHLY_REPORT = "MONTHLY_REPORT"
+    AI_SUGGESTION = "AI_SUGGESTION"
+    WEEKLY_REPORT = "WEEKLY_REPORT"
+    WINBACK = "WINBACK"
+    SOCIAL_DIGEST = "SOCIAL_DIGEST"
+    NUDGE_SUGGEST = "NUDGE_SUGGEST"
+    LUNCH_NUDGE = "LUNCH_NUDGE"
+    STREAK_AT_RISK = "STREAK_AT_RISK"
+    WEATHER_MORNING = "WEATHER_MORNING"
+    WEATHER_EVENING = "WEATHER_EVENING"
+    NUDGE_REPLIED = "NUDGE_REPLIED"
+    NUDGE_THANKED = "NUDGE_THANKED"
+  }
+
+  native_enum NudgeReplyKind {
+    STARTING = "STARTING"
+    THANKFUL = "THANKFUL"
+    LATER = "LATER"
+  }
+
+  native_enum Platform {
+    IOS = "IOS"
+    ANDROID = "ANDROID"
+  }
+
+  native_enum PushDeliveryMode {
+    SINGLE = "SINGLE"
+    BATCH = "BATCH"
+  }
+
+  native_enum PushDeliveryStatus {
+    PENDING = "PENDING"
+    TICKET_ACCEPTED = "TICKET_ACCEPTED"
+    DELIVERED = "DELIVERED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+  }
+
+  native_enum PushDispatchOutboxStatus {
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    PUBLISHED = "PUBLISHED"
+  }
+
+  native_enum PushDispatchStatus {
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    SENT = "SENT"
+    SKIPPED = "SKIPPED"
+    FAILED = "FAILED"
+    HOLDOUT = "HOLDOUT"
+  }
+
+  native_enum PushRateLimitPhase {
+    GENERAL = "GENERAL"
+    ENGAGEMENT = "ENGAGEMENT"
+  }
+
+  native_enum ReportType {
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+  }
+
+  native_enum RetentionExperimentStageName {
+    D0 = "D0"
+    D1 = "D1"
+    D3 = "D3"
+    D7 = "D7"
+  }
+
+  native_enum RetentionExperimentStageStatus {
+    SCHEDULED = "SCHEDULED"
+    SKIPPED = "SKIPPED"
+    OUTBOXED = "OUTBOXED"
+    EVALUATED = "EVALUATED"
+  }
+
+  native_enum RetentionExperimentVariant {
+    CONTROL = "CONTROL"
+    TREATMENT = "TREATMENT"
+  }
+
+  native_enum RetentionOutboxStatus {
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    PUBLISHED = "PUBLISHED"
+    FAILED = "FAILED"
+  }
+
+  native_enum SecurityEvent {
+    REGISTRATION = "REGISTRATION"
+    LOGIN_SUCCESS = "LOGIN_SUCCESS"
+    LOGIN_FAILURE = "LOGIN_FAILURE"
+    LOGOUT = "LOGOUT"
+    TOKEN_REFRESH = "TOKEN_REFRESH"
+    TOKEN_REVOKED = "TOKEN_REVOKED"
+    PASSWORD_CHANGED = "PASSWORD_CHANGED"
+    PASSWORD_RESET_REQUESTED = "PASSWORD_RESET_REQUESTED"
+    EMAIL_VERIFIED = "EMAIL_VERIFIED"
+    TWO_FACTOR_ENABLED = "TWO_FACTOR_ENABLED"
+    TWO_FACTOR_DISABLED = "TWO_FACTOR_DISABLED"
+    SUSPICIOUS_ACTIVITY = "SUSPICIOUS_ACTIVITY"
+    ACCOUNT_LOCKED = "ACCOUNT_LOCKED"
+    ACCOUNT_UNLOCKED = "ACCOUNT_UNLOCKED"
+    SESSION_REVOKED = "SESSION_REVOKED"
+    SESSION_REVOKED_ALL = "SESSION_REVOKED_ALL"
+    OAUTH_LINKED = "OAUTH_LINKED"
+    OAUTH_UNLINKED = "OAUTH_UNLINKED"
+    OAUTH_AUTO_LINKED = "OAUTH_AUTO_LINKED"
+    OAUTH_LINK_REQUIRED = "OAUTH_LINK_REQUIRED"
+    ACCOUNT_DELETION_REQUESTED = "ACCOUNT_DELETION_REQUESTED"
+    ACCOUNT_HARD_DELETED = "ACCOUNT_HARD_DELETED"
+    ACCOUNT_RESTORED = "ACCOUNT_RESTORED"
+    PASSWORD_SETUP = "PASSWORD_SETUP"
+  }
+
+  native_enum SubscriptionStatus {
+    FREE = "FREE"
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+  }
+
+  native_enum SuggestionStatus {
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    DISMISSED = "DISMISSED"
+  }
+
+  native_enum TimeFormat {
+    TWELVE_HOUR = "TWELVE_HOUR"
+    TWENTY_FOUR_HOUR = "TWENTY_FOUR_HOUR"
+  }
+
+  native_enum TodoVisibility {
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
+  }
+
+  native_enum UserRole {
+    USER = "USER"
+    ADMIN = "ADMIN"
+  }
+
+  native_enum UserStatus {
+    ACTIVE = "ACTIVE"
+    LOCKED = "LOCKED"
+    SUSPENDED = "SUSPENDED"
+    PENDING_VERIFY = "PENDING_VERIFY"
+  }
+
+  native_enum VerificationType {
+    EMAIL_VERIFY = "EMAIL_VERIFY"
+    PASSWORD_RESET = "PASSWORD_RESET"
+    PASSWORD_SETUP = "PASSWORD_SETUP"
+  }
+}

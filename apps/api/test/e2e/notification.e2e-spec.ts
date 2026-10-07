@@ -1,3 +1,9 @@
+import request from "supertest";
+
+import {
+	MARKETING_PUSH_OPT_OUT_TOKEN,
+	type MarketingPushOptOutTokenPort,
+} from "#api/notification/application/ports/marketing-push-opt-out-token.port";
 /**
  * Notification E2E 테스트
  *
@@ -11,13 +17,12 @@
  * 3. 읽지 않은 알림 수 조회
  * 4. 알림 읽음 처리
  */
-
-import request from "supertest";
-
 import {
-	MARKETING_PUSH_OPT_OUT_TOKEN,
-	type MarketingPushOptOutTokenPort,
-} from "#api/notification/application/ports/marketing-push-opt-out-token.port";
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -40,7 +45,7 @@ describe("알림 E2E", () => {
 
 	/** 시드 알림 데이터 삽입 헬퍼 */
 	async function seedNotifications(userId: string): Promise<void> {
-		const prisma = ctx.testDatabase.getPrisma();
+		const prisma = ctx.testDatabase.getClient();
 		const notifications = [];
 
 		// SOCIAL 타입 알림 5개
@@ -94,7 +99,9 @@ describe("알림 E2E", () => {
 			isRead: false,
 		});
 
-		await prisma.notification.createMany({ data: notifications });
+		await prisma.orm.public.Notification.createAndCount(
+			notifications.map((value) => encodeCreate("Notification", value)),
+		);
 	}
 
 	describe("푸시 토큰 관리", () => {
@@ -163,10 +170,11 @@ describe("알림 E2E", () => {
 					.expect(201);
 
 				// Then - UserPreference.locale이 en으로 upsert된다
-				const prisma = ctx.testDatabase.getPrisma();
-				const preference = await prisma.userPreference.findUnique({
-					where: { userId: user.userId },
-				});
+				const prisma = ctx.testDatabase.getClient();
+				const preference = decodeRecord(
+					"UserPreference",
+					await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
+				);
 				expect(preference?.locale).toBe("en");
 			});
 
@@ -194,10 +202,11 @@ describe("알림 E2E", () => {
 					.expect(201);
 
 				// Then - en이 ko로 롤백되지 않고 유지된다
-				const prisma = ctx.testDatabase.getPrisma();
-				const preference = await prisma.userPreference.findUnique({
-					where: { userId: user.userId },
-				});
+				const prisma = ctx.testDatabase.getClient();
+				const preference = decodeRecord(
+					"UserPreference",
+					await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
+				);
 				expect(preference?.locale).toBe("en");
 			});
 
@@ -217,10 +226,11 @@ describe("알림 E2E", () => {
 					.expect(201);
 
 				// Then - 화이트리스트 밖 언어는 ko
-				const prisma = ctx.testDatabase.getPrisma();
-				const preference = await prisma.userPreference.findUnique({
-					where: { userId: user.userId },
-				});
+				const prisma = ctx.testDatabase.getClient();
+				const preference = decodeRecord(
+					"UserPreference",
+					await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
+				);
 				expect(preference?.locale).toBe("ko");
 			});
 
@@ -249,10 +259,11 @@ describe("알림 E2E", () => {
 					.expect(201);
 
 				// Then - locale이 ko로 갱신된다
-				const prisma = ctx.testDatabase.getPrisma();
-				const preference = await prisma.userPreference.findUnique({
-					where: { userId: user.userId },
-				});
+				const prisma = ctx.testDatabase.getClient();
+				const preference = decodeRecord(
+					"UserPreference",
+					await prisma.orm.public.UserPreference.where((row) => row.userId.eq(user.userId)).first(),
+				);
 				expect(preference?.locale).toBe("ko");
 			});
 
@@ -785,15 +796,18 @@ describe("알림 E2E", () => {
 		describe("POST /notifications/:id/opened - 푸시 탭 기록", () => {
 			it("탭을 멱등 기록하고 알림을 즉시 읽음 처리한다", async () => {
 				const user = await ctx.helpers.createVerifiedUser("notif-opened@test.com", password);
-				const prisma = ctx.testDatabase.getPrisma();
-				const notification = await prisma.notification.create({
-					data: {
-						userId: user.userId,
-						type: "TODO_REMINDER",
-						title: "열림 기록 테스트",
-						body: "본문",
-					},
-				});
+				const prisma = ctx.testDatabase.getClient();
+				const notification = decodeRecord(
+					"Notification",
+					await prisma.orm.public.Notification.create(
+						encodeCreate("Notification", {
+							userId: user.userId,
+							type: "TODO_REMINDER",
+							title: "열림 기록 테스트",
+							body: "본문",
+						}),
+					),
+				);
 
 				const first = await request(ctx.app.getHttpServer())
 					.post(`/v1/notifications/${notification.id}/opened`)
@@ -806,9 +820,12 @@ describe("알림 E2E", () => {
 
 				expect(first.body.data.opened).toBe(true);
 				expect(second.body.data.opened).toBe(false);
-				const persisted = await prisma.notification.findUniqueOrThrow({
-					where: { id: notification.id },
-				});
+				const persisted = decodeRecord(
+					"Notification",
+					requireRecord(
+						await prisma.orm.public.Notification.where((row) => row.id.eq(notification.id)).first(),
+					),
+				);
 				expect(persisted.openedAt).toBeInstanceOf(Date);
 				expect(persisted.isRead).toBe(true);
 			});
@@ -862,12 +879,18 @@ describe("알림 E2E", () => {
 	describe("광고성 푸시 수신 철회", () => {
 		it("서명 토큰으로 로그인 없이 동의를 철회한다", async () => {
 			const user = await ctx.helpers.createVerifiedUser("notif-opt-out@test.com", password);
-			const prisma = ctx.testDatabase.getPrisma();
-			await prisma.userConsent.upsert({
-				where: { userId: user.userId },
-				create: { userId: user.userId, marketingPushAgreedAt: new Date() },
-				update: { marketingPushAgreedAt: new Date() },
-			});
+			const prisma = ctx.testDatabase.getClient();
+			decodeRecord(
+				"UserConsent",
+				await prisma.orm.public.UserConsent.where((row) => row.userId.eq(user.userId)).upsert({
+					conflictOn: encodePatch("UserConsent", { userId: user.userId }),
+					create: encodeCreate("UserConsent", {
+						userId: user.userId,
+						marketingPushAgreedAt: new Date(),
+					}),
+					update: encodePatch("UserConsent", { marketingPushAgreedAt: new Date() }),
+				}),
+			);
 			const tokenPort = ctx.app.get<MarketingPushOptOutTokenPort>(MARKETING_PUSH_OPT_OUT_TOKEN);
 
 			const response = await request(ctx.app.getHttpServer())
@@ -876,9 +899,12 @@ describe("알림 E2E", () => {
 				.expect(200);
 
 			expect(response.body.data.optedOut).toBe(true);
-			const consent = await prisma.userConsent.findUniqueOrThrow({
-				where: { userId: user.userId },
-			});
+			const consent = decodeRecord(
+				"UserConsent",
+				requireRecord(
+					await prisma.orm.public.UserConsent.where((row) => row.userId.eq(user.userId)).first(),
+				),
+			);
 			expect(consent.marketingPushAgreedAt).toBeNull();
 		});
 

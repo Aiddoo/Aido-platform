@@ -10,6 +10,7 @@ import type { INestApplication } from "@nestjs/common";
  * - PinoLogger 억제
  */
 import { EventEmitter2 } from "@nestjs/event-emitter";
+import { HttpClient } from "@nestjs/http-client";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { ThrottlerGuard } from "@nestjs/throttler";
 import RedisMock from "ioredis-mock";
@@ -205,7 +206,7 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 		.overrideProvider(CACHE_SERVICE)
 		.useValue(cacheAdapter)
 		.overrideProvider(DatabaseService)
-		.useValue(testDatabase.getPrisma())
+		.useValue({ db: testDatabase.getClient() })
 		.overrideProvider(TransactionalEmailSender)
 		.useValue(fakeEmailService)
 		.overrideProvider(OAuthTokenVerifierService)
@@ -214,7 +215,11 @@ export async function createE2eApp(options?: E2eAppOptions): Promise<E2eTestCont
 		.useFactory({
 			inject: [TypedConfigService],
 			factory: (configService: TypedConfigService) => {
-				const delegates = createOAuthProviderRegistry(configService, fakeOAuthTokenVerifierService);
+				const delegates = createOAuthProviderRegistry(
+					configService,
+					fakeOAuthTokenVerifierService,
+					new HttpClient({ retry: false, throwOnHttpError: false }),
+				);
 				fakeOAuthProviderRegistry = new FakeOAuthProviderRegistry(delegates);
 				return fakeOAuthProviderRegistry.registry;
 			},

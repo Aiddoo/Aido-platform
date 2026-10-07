@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/errors";
 import type { Logger } from "@nestjs/common";
+import type { HttpClient } from "@nestjs/http-client";
 
 import type {
 	ExchangedToken,
@@ -34,7 +35,12 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 	readonly #verifier: OAuthTokenVerifier;
 	readonly #logger: Logger;
 
-	constructor(getConfig: () => OAuthConfig, verifier: OAuthTokenVerifier, logger: Logger) {
+	constructor(
+		getConfig: () => OAuthConfig,
+		verifier: OAuthTokenVerifier,
+		logger: Logger,
+		private readonly http: HttpClient,
+	) {
 		this.#getConfig = getConfig;
 		this.#verifier = verifier;
 		this.#logger = logger;
@@ -81,11 +87,17 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
 			tokenRequestBody.set("state", state);
 		}
 
-		const tokenResponse = await fetch("https://nid.naver.com/oauth2.0/token", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: tokenRequestBody.toString(),
-		});
+		const { data: tokenResponse } = await this.http.request(
+			"https://nid.naver.com/oauth2.0/token",
+			{
+				method: "POST",
+				responseType: "response",
+				retry: false,
+				throwOnHttpError: false,
+				headers: { "Content-Type": "application/x-www-form-urlencoded" },
+				body: tokenRequestBody.toString(),
+			},
+		);
 
 		if (!tokenResponse.ok) {
 			const errorData = await tokenResponse.text();

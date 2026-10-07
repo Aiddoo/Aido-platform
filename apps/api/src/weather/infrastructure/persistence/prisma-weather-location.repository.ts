@@ -1,8 +1,12 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { TransactionalAdapterPrisma } from "@nestjs-cls/transactional-adapter-prisma";
 import { Injectable } from "@nestjs/common";
 
-import type { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import {
+	decodeRecord,
+	encodeCreate,
+	encodePatch,
+} from "#api/shared/infrastructure/database/database-records";
+import type { Prisma8TransactionalAdapter } from "#api/shared/infrastructure/database/prisma8-transactional.adapter";
 
 import type { WeatherLocationRepositoryPort } from "../../application/ports/weather-location.repository.port.js";
 import { UserLocation } from "../../domain/entities/user-location.entity.js";
@@ -15,18 +19,17 @@ import { UserLocation } from "../../domain/entities/user-location.entity.js";
  */
 @Injectable()
 export class PrismaWeatherLocationRepository implements WeatherLocationRepositoryPort {
-	constructor(
-		private readonly txHost: TransactionHost<TransactionalAdapterPrisma<DatabaseService>>,
-	) {}
+	constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
 	private get client() {
 		return this.txHost.tx;
 	}
 
 	async findByUserId(userId: string): Promise<UserLocation | null> {
-		const row = await this.client.userLocation.findUnique({
-			where: { userId },
-		});
+		const row = decodeRecord(
+			"UserLocation",
+			await this.client.orm.public.UserLocation.where((row) => row.userId.eq(userId)).first(),
+		);
 		return row ? UserLocation.reconstitute(row) : null;
 	}
 
@@ -37,11 +40,16 @@ export class PrismaWeatherLocationRepository implements WeatherLocationRepositor
 			gridX: location.gridX,
 			gridY: location.gridY,
 		};
-		const row = await this.client.userLocation.upsert({
-			where: { userId: location.userId },
-			create: { userId: location.userId, ...data },
-			update: data,
-		});
+		const row = decodeRecord(
+			"UserLocation",
+			await this.client.orm.public.UserLocation.where((row) =>
+				row.userId.eq(location.userId),
+			).upsert({
+				conflictOn: encodePatch("UserLocation", { userId: location.userId }),
+				create: encodeCreate("UserLocation", { userId: location.userId, ...data }),
+				update: encodePatch("UserLocation", data),
+			}),
+		);
 		return UserLocation.reconstitute(row);
 	}
 }

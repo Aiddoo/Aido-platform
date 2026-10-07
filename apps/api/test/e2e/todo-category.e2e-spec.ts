@@ -1,3 +1,6 @@
+import request from "supertest";
+
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
 /**
  * TodoCategory E2E 테스트
  *
@@ -5,8 +8,7 @@
  * TodoCategory CRUD 전체 플로우 테스트
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
-
-import request from "supertest";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -30,11 +32,15 @@ describe("할 일 카테고리 E2E", () => {
 	 */
 	async function createPremiumUser(email: string, password: string) {
 		const user = await ctx.helpers.createVerifiedUser(email, password);
-		const prisma = ctx.testDatabase.getPrisma();
-		await prisma.user.update({
-			where: { id: user.userId },
-			data: { subscriptionStatus: "ACTIVE" },
-		});
+		const prisma = ctx.testDatabase.getClient();
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(user.userId)).update(
+					encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+				),
+			),
+		);
 		return user;
 	}
 

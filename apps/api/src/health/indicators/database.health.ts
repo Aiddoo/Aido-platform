@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { HealthIndicatorResult, HealthIndicatorService } from "@nestjs/terminus";
+import sql from "sql-template-tag";
 
+import { sqlStatement } from "#api/shared/infrastructure/database/database-sql";
 import { DatabaseService } from "#api/shared/infrastructure/database/index";
 
 /**
@@ -20,7 +22,14 @@ export class DatabaseHealthIndicator {
 		const indicator = this.healthIndicatorService.check(key);
 
 		try {
-			await this.database.$queryRaw`SELECT 1`;
+			await this.database.db
+				.runtime()
+				.execute(
+					sqlStatement(this.database.db, sql`SELECT 1`)
+						.affectedCount()
+						.build(),
+				)
+				.then((result) => result.affectedRows);
 			return indicator.up();
 		} catch (error) {
 			return indicator.down({ error: (error as Error).message });

@@ -113,7 +113,7 @@ beforeEach(async () => {
 
 ## Builder 패턴
 
-[Prisma 공식 권장](https://www.prisma.io/docs/orm/prisma-client/testing/unit-testing) Builder 패턴으로 테스트 데이터를 생성합니다.
+Builder 패턴으로 테스트 데이터를 생성합니다.
 
 ### 사용법
 
@@ -177,7 +177,7 @@ beforeEach(() => {
 **구조 규칙**:
 
 ```typescript
-import type { {Model} } from "#api/generated/prisma/client";
+import type { {Model} } from "#api/shared/infrastructure/database/database.types";
 
 export class {Model}Builder {
   private data: {Model};
@@ -330,3 +330,7 @@ pnpm --filter @aido/api test:cov                 # 커버리지
 
 **문서 버전**: 4.0.0
 **최종 수정일**: 2026-10-01
+
+## Native ORM repository mock
+
+Repository는 `createMockDatabaseContext()`와 `createMockTransactionHost(context)`로 직접 생성한다. native contract의 재귀 generic 타입을 Suites의 DeepPartial로 다시 확장하지 않는다. 일반 application port와 service의 DI mock은 기존 Suites 패턴을 유지한다. `.all()`은 `nativeRows(databaseFixture(model, rows))`, 단건은 `databaseFixture(model, row)`를 반환한다. 조건과 정렬은 실제 accessor 기반 `assertNativeWhere`/`assertNativeOrder`로 검증한다. 실제 rollback과 동시성은 통합 테스트에서 검증한다.

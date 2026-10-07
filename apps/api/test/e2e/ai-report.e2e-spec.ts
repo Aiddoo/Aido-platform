@@ -1,3 +1,6 @@
+import request from "supertest";
+
+import { AI_PROVIDER } from "#api/ai/index";
 /**
  * AI 리포트 모듈 E2E 테스트
  *
@@ -11,12 +14,10 @@
  * - GET /ai/reports/:id: 리포트 상세 조회
  * - 인증 에러 (401)
  */
-
-import request from "supertest";
-
-import { AI_PROVIDER } from "#api/ai/index";
 import { CacheService } from "#api/shared/infrastructure/cache/cache.service";
+import { decodeRecord, encodePatch } from "#api/shared/infrastructure/database/database-records";
 import { DatabaseService } from "#api/shared/infrastructure/database/database.service";
+import { requireRecord } from "#api/shared/infrastructure/database/prisma-error.util";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -45,11 +46,15 @@ describe("AI 리포트 E2E", () => {
 	/** 프리미엄 사용자를 생성하고 토큰을 반환하는 헬퍼 */
 	async function createPremiumUser(email: string, password: string) {
 		const user = await ctx.helpers.createVerifiedUser(email, password);
-		const prisma = ctx.module.get(DatabaseService);
-		await prisma.user.update({
-			where: { id: user.userId },
-			data: { subscriptionStatus: "ACTIVE" },
-		});
+		const prisma = ctx.module.get(DatabaseService).db;
+		decodeRecord(
+			"User",
+			requireRecord(
+				await prisma.orm.public.User.where((row) => row.id.eq(user.userId)).update(
+					encodePatch("User", { subscriptionStatus: "ACTIVE" }),
+				),
+			),
+		);
 		const cacheService = ctx.module.get(CacheService);
 		await cacheService.invalidateSubscription(user.userId);
 		return user;
