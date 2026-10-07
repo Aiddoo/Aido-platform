@@ -25,7 +25,7 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 10 Engagement: 댓글·반응·대화·정리([Issue #915](https://github.com/Aiddoo/Aido-platform/issues/915), [PR #918](https://github.com/Aiddoo/Aido-platform/pull/918))
 - [x] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917), [PR #919](https://github.com/Aiddoo/Aido-platform/pull/919))
 - [x] 12 Weather: 공급자 경계·KST 시각·날짜별 캐시 정합성 검증([Issue #921](https://github.com/Aiddoo/Aido-platform/issues/921)); 현재 한국 REST 유지, 해외 활성화는 별도 확장
-- [ ] 13 AI Assistance: 기존 모델 유지·유료 추천·기록 기반 습관 제안·한/영 prompt·언어 확장·파싱/보고서/추천 품질 검증
+- [x] 13 AI Assistance: 권한·수락 원자성·현지 DATE·한/영 prompt·기록 기반 추천 검증([Issue #923](https://github.com/Aiddoo/Aido-platform/issues/923)); 자연어 평가 한계는 아래 기록
 - [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
 - [ ] 15 Support·Operations·App Config
 - [ ] 16 ORM·N+1·성능·컨테이너 검증
@@ -966,22 +966,100 @@ seeded Weekly8+새 cache/date4(seed111004·LA22.60초)가 통과했다. 환경 �
 Before/After 코드와 문제·개선 이유를 보여주며, 설계 개선과 성능 실측을 구분한다.
 현재 스택 본문도 같은 기준으로 정리했고 실제 측정·미검증·배포 여부를 보존했다.
 
-## AI 후속 요구와 검증 범위
+## 13 AI Assistance: 실행 정합성과 실제 품질 검증
 
-현재 모델과 AI SDK·Zod를 유지하고 공식 공급자의 prompt/structured output 지침을 기준으로
-파싱·메모·보고서·추천을 검증한다. provider/데이터 수집/순수 정책/언어별 prompt/HTTP 표시의
-소유권을 분리한다. 새 locale을 추가할 때 endpoint UseCase에 언어 분기를 반복하지 않는다.
+[Issue #923](https://github.com/Aiddoo/Aido-platform/issues/923)의 작업이다. 모델은
+`gemini-3.1-flash-lite`를 유지한다. AI SDK 7의 `generateText`·`Output.object`와 기존 Zod schema를
+사용하고, token budget·30초 timeout·SDK retry·quota·REST·큐 key는 유지한다. 언어별 prompt와
+출력 schema는 Application의 typed catalog에서 함께 선택한다. 단일 모델 router는 제거했다.
 
-유료 추천은 생성·조회·수락의 권한을 일관되게 확인한다. 기존 Todo 기록에서 반복 행동과 실행
-부담을 판단하고 제안 이유·요일·시간·작은 시작 단계를 제공한다. 기록이 적을 때 확신을 낮추고,
-기록이 없을 때 개인 습관·관심사·생활 조건을 발명하지 않는다. 기존 사용자 수락 흐름을 유지하며
-제안만으로 Todo를 자동 생성하지 않는다. 새로운 cold-start 표시/API가 필요하면 기존 앱의
-응답 계약·구독 정책을 기준으로 범위를 먼저 정한다.
+유료 생성은 시작 시 최신 DB 권한을 읽고, 외부 AI 응답 뒤에는 기존 User mutation lock과 같은
+UoW 안에서 권한을 다시 확인한 후 저장한다. 추천 수락은 소유권·상태 전이·실제 반복 일정 생성이
+하나의 UoW에 들어간다. 생성 실패를 별도 보상 UPDATE로 흉내 내지 않고 DB rollback을 사용한다.
+기존 parsing 무료 한도와 유료 Report/Suggestion 오류·조회 계약은 유지한다.
 
-fixture/Stub의 결정적 검증과 실제 모델의 품질 평가를 구분한다. ko/en, 빈·적은·많은 기록,
-반복/미완료/중복/잘못된 category·날짜, 공급자 실패·잘못된 structured output을 검증한다.
-모델 응답은 schema 적합성 외에 사실 근거·언어·행동의 구체성·중복·수락 가능성을 평가한다.
+추천은 분석당 최대 5개이며 근거가 부족하면 개수를 채우지 않는다. 기록 1–2개는 최대 2개의
+낮은 확신 시작 제안이고, 기록 0개는 AI 호출과 pending 삭제를 하지 않는다. 무분량 러닝에 임의 30분을 붙이지 않고,
+단일·시작·다중 근거의 활동 제목을 실제 원본에 맞춘다. 사용자에게 없는 분량을 숫자 parser로
+추측하지 않는다. 제안을 수락하기
+전에는 Todo를 생성하지 않는다. 원본 제목별 등록·완료 횟수와 실제 DATE 요일을 서버에서 계산하고,
+단일 활동 반복의 제목·요일·예약 시각·이유를 실제 근거로 정규화한다. 미래의 작은 행동과 과거
+활동 사실을 구별하며 최근 30일에 수락·거절한 원본 활동의 재추천과 증량 재포장을 차단한다. 언어별 표시 문장은 Application,
+순수 날짜·근거·상태 정책은 Domain, ORM/SDK/queue는 Infrastructure가 소유한다.
+
+### 실제로 확인한 Before / After
+
+| 문제                | Before 관찰                                                                         | 적용 후 확인 범위                                                                  |
+| ------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| stale 유료 생성     | 실제 Application fixture에서 FREE/EXPIRED/soft deletion·AI 대기 중 FREE도 호출/저장 | 실제 PG·worker에서 실행 전 skip, 응답 중 변경·User lock 대기 후 변경은 저장/알림 0 |
+| 동시에 추천 수락    | actual PG suggestion lock에 2요청 대기 → 성공 2·Todo 2                              | 같은 harness에서 성공 1·1306 1·Todo 1; 실패 rollback 후 재수락                     |
+| DST 기간 경계       | NY 3월 월말·이전 주 경계가 각 1시간 오차                                            | 달력 경계마다 timezone을 다시 적용하는 Application 회귀                            |
+| Report DATE         | KST 주간 완료 1/5·20%, LA 월요일 누락                                               | actual PG 완료 2/5·40%, 월요일·마지막 일요일 포함                                  |
+| 완료율 DATE 요일    | LA의 실제 월요일 완료 2/2를 일요일로 이동                                           | actual PG 월요일 2/2, 일요일 0/0                                                   |
+| 추천 조회 현지 날짜 | KST 00:30에 오늘 제외, LA 저녁에 내일 포함                                          | actual PG 2 timezone 범위 회귀 + 전체 대상 17 tests 통과                           |
+| Fake 검증           | parsing raw `{}`를 기본값 합성으로 성공 처리                                        | production schema로 raw output 자체 검증, clear 상태 초기화                        |
+| 실제 반복 추천      | supplied Monday 기록을 모델이 Sunday로 설명, 서버 4건 통과                          | 같은 synthetic 입력에서 MON으로 회복; 실제 PG의 MON2·THU1도 MON 추천 1개 저장      |
+| 수락 활동 재추천    | 실제 Application fixture에서 ACCEPTED 원본 활동을 다시 저장 1건                     | 같은 fixture에서 저장 0건; 최근 응답 이력의 원본 활동 제외                         |
+| 실제 메모 파싱      | 지시가 섞인 bill09:00을 run06:00으로 변경                                           | 같은 EN 입력 2회·KO 1회와 정상 대조 3회에서 원래 행동/시각 유지                    |
+
+쓰기·경쟁·DATE의 fixture/PG 재현과 실제 모델 자연어 평가는 별개다. 단순한 기존 controller
+전달 테스트 8개는 실제 HTTP·Application·mapper 검증으로 대체했다. 운영 API·기존 앱/OpenAPI
+snapshot이나 DB schema를 바꾸지 않았다. 현재 schema migration·package·실행 script·Action job
+추가는 없다. `/tmp` 평가 harness와 키는 저장소에 넣지 않는다.
+
+### 실제 AI 평가와 남은 품질 문제
+
+실제 local curl은 최초 12건 중 정상 입력 11건에서 의미를 보존했고, 지시 혼합 1건은 의미 실패였다.
+12건 모두 HTTP 200·schema 통과·quota 1이었다. 지연 중앙값 1,211ms(1,048–1,528ms), SDK 토큰
+입력 23,772 / 출력 1,182였다. parsing prompt 수정 후 6건은 모두 의미를 보존했다.
+동일 영어 입력 2회에서 category 선택 1/2 변동은 남았고 분류 정답 평가는 보류했다.
+후속 지연 중앙값 1,246.5ms(1,064–1,395ms), 입력 16,814 / 출력 492다. 이는 합성 소표본의
+측정이며 일반 공격 내성·통화 비용·운영 latency 향상률을 보장하지 않는다. 추가 실제 parsing 2건에서
+"매일 러닝"은 "러닝", "매일 러닝 30분"은 "러닝 30분"으로 반환했고 매일 반복·시간 null·quota1을
+유지했다. 현재 실제 parsing은 총 20건이며 마지막 2건은 1,508/1,504ms, 입력 4,958 / 출력 270이다.
+
+별도 direct SDK 실험은 Report4·Suggestion8의 synthetic context를 사용했다. 최초 추천 반복
+5건에서 MON→SUN 오류가 나타났다. 수정 후 같은 입력 5건은 MON을 반환하고, 거절 이력의
+재추천은 서버가 제거했다. Report는 첫 수정 후에도 KO balanced에서 독립된 시간·카테고리 집계를
+"오전 9시 독서 기록"으로 연결했다. prompt 입력을 실제 단일 분석축으로 좁힌 후 4건에서는
+그 교차 오류가 사라졌다. 다만 이전 카테고리 자료 없이 "remained steady"라고 한 표현과
+분량 자료 없이 "페이지를 절반으로" 줄이라는 제안을 추가 수정하여 2건 재검증했다.
+후속 KO에서는 기준량 없는 절반 조정이 사라졌지만, EN의 "steady progress"·능력·momentum 같은
+평가 문구는 남아 있다. 사실 근거 전체의 자동 검증이나 완벽한 코칭을 보장하지 않는다.
+표본의 근거 일치·작은 다음 행동 개선과 유료 사용자 수용·구매 가치 검증은 구분한다.
+
+최신 분량 정책의 direct Suggestion 4건(한·영 시작 무분량, KO 반복 무분량/명시30분)은 production
+repeat 인수2·2주 이력 안의 날짜를 사용했다. raw/post 모두 러닝/Running/명시30분을 보존했고
+예약 시간은 null이었다. raw 반복 MON+THU는 실제 MON2·THU1 근거의 MON으로 정규화했다.
+영어 시작 원문의 consistency 과장은 Application이 "1개라 패턴 확정은 이르며 같은 활동 재시도"로
+대체했다. 이 post 결과는 DB write가 아니라 production 순수 정책을 통과한 후보다. 관련 없는
+보완 유형의 의미 전체나 새로운 양의 정확성을 모두 검증하는 semantic engine은 만들지 않았다.
+
+같은 4개 Report synthetic 입력의 SDK 보고 input token은 최초 5,579→단일축3,791로 줄었고,
+8개 Suggestion은 최초7,623→근거 보강9,764로 늘었다. 알려진 메모 공격 입력의 token은
+2,264→2,791로 늘었다. token·응답시간 표본만으로 통화 청구액이나 전체 비용 개선을 주장하지 않는다.
+
+최초/첫 수정의 direct 12건 실험의 repeat 인수는 3이며 production의 2와 다르고, 3주 Monday synthetic 기록 중
+1건은 production의 2주 조회 범위를 벗어난다. 따라서 전체 UseCase 조회·저장 검증으로 설명하지
+않는다. 별도 실제 PG 실행은 올바른 production 인수·2주 이력으로 ko/en Analyze를 각각 1회
+호출하여 추천 1개씩 저장했고, 기존 Todo 3개는 그대로였다. Report 실제 PG ko/en 실행은
+별도 각 1회로 저장 1개씩 확인했다. 최초 임시 harness의 Analyze 인자 오류로 skip된 실행은
+성공 증거에서 제외한다. 실제 push 발송·사용자 수락률·재방문률·구매 의향은 측정하지 않았다.
+
+### 최종 검증
+
+전체 실행은 `TZ=Asia/Seoul`, shuffle seed `113070`으로 고정했다.
+
+- 서버 Unit: 494 files / 3,069 tests, 22.84초.
+- 실제 PostgreSQL Integration: 55 files / 480 tests, 231.87초.
+- HTTP E2E: 41 files / 542 tests, 306.90초. OpenAPI·배포 앱 fixture 변경 없음.
+- 공유 API: 2 files / 17 tests, 283ms. 미사용 retry 상수 2개만 제거했다.
+- workspace lint·format·typecheck·build 통과. Build 4 tasks 성공(2 cached), 33.489초.
+- AI13 로그의 소유 테스트 DB 28개를 실제 조회했고 남은 DB는 0개다.
+
+단위/통합/HTTP 회귀 통과와 운영 배포는 구분한다. 실제 모델 평가의 소표본과 미확인 사항은
+위에 남겼다. 추가 CI job·패키지·저장소 script 없이 로컬에서 검증했고, 이 단계에서 운영
+쿼리 latency·CPU·RSS·사용자 수용률·재방문률·Actions 청구 시간은 측정하지 않았다.
 
 공식 근거: [Gemini prompt 지침](https://ai.google.dev/gemini-api/docs/prompting-strategies),
 [structured output](https://ai.google.dev/gemini-api/docs/structured-output).
-신규 라이브러리는 기존 도구로 충족되지 않는 필요와 Stable·ESM·모델 호환성을 확인한 뒤 도입한다.

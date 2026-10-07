@@ -7,6 +7,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
+import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 
 /** 리포트 생성 기준 타임존 (KST 고정) */
 const KST = "Asia/Seoul";
@@ -20,7 +21,7 @@ const REPORT_HOUR = 8;
  * 리포트 생성은 KST 08:00 고정이므로 KST 기준으로 계산한다.
  */
 interface GetReportStatusDependencies {
-  readonly aiReportRepository: AiReportRepositoryPort;
+  readonly aiReportRepository: Pick<AiReportRepositoryPort, "findLatest">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
 }
 
@@ -62,8 +63,8 @@ export class GetReportStatus {
       nextMonthlyAt: nextMonthlyKst.utc().toISOString(),
       daysUntilWeekly,
       daysUntilMonthly,
-      latestWeekly: latestWeekly ? latestWeekly.toView() : null,
-      latestMonthly: latestMonthly ? latestMonthly.toView() : null,
+      latestWeekly: latestWeekly === null ? null : toAiReportView(latestWeekly),
+      latestMonthly: latestMonthly === null ? null : toAiReportView(latestMonthly),
     };
   }
 }

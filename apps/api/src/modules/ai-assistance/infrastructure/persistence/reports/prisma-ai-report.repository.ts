@@ -13,7 +13,7 @@ import { decodeRecord, encodeCreate } from "#api/platform/database/database-reco
 import type * as PrismaModels from "#api/platform/database/database.types";
 import { toInputJson } from "#api/platform/database/json.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
-import { toSupportedLocale } from "#api/platform/http/decorators/index";
+import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import type {
   AiReportRepositoryPort,

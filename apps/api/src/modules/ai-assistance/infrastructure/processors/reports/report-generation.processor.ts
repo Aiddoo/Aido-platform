@@ -1,12 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { toSupportedLocale } from "#api/platform/http/decorators/index";
 import { fromLegacyJob, type NamedJob } from "#api/platform/jobs/named-job";
 import {
   JOB_RUNTIME,
   type JobData,
   type JobRuntimePort,
 } from "#api/shared/application/ports/job-runtime.port";
+import { toSupportedLocale } from "#api/shared/domain/locale";
 
 import { GenerateReport } from "../../../application/use-cases/reports/generate-report.use-case.js";
 import type { ReportDispatcher } from "../../jobs/reports/ai-report-queue.js";
@@ -18,17 +18,8 @@ import {
   AiReportJobName,
   AiReportRuntimeJobSchema,
 } from "../../jobs/reports/ai-report-queue.js";
+import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 
-/**
- * AI 리포트 생성 BullMQ 프로세서
- *
- * - dispatch-reports: 스케줄러 트리거 → per-user 잡 등록 (ReportGenerationJob.dispatchReports)
- * - generate-report: 단일 사용자 리포트 생성
- * - BullMQ 자동 재시도 (3회, exponential backoff)
- * - concurrency=5로 Gemini API rate limit 대응
- *
- * 알림 발송은 Scheduler Strategy (WeeklyReportStrategy / MonthlyReportStrategy)에서 담당합니다.
- */
 type AiReportJob = NamedJob<AiReportJobMap>;
 type AiReportJobLike = { readonly name: string; readonly data: JobData };
 
@@ -42,12 +33,12 @@ export class ReportGenerationProcessor implements OnModuleInit {
   }
 
   constructor(
-    private readonly generateReportUseCase: GenerateReport,
+    @Inject(GenerateReport) private readonly generateReport: Pick<GenerateReport, "execute">,
     @Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (this.runtime === undefined) return;
     await this.runtime.work<AiReportJob>(
       AI_REPORT_QUEUE,
       async (jobs) => {
@@ -65,24 +56,30 @@ export class ReportGenerationProcessor implements OnModuleInit {
   }
 
   onStalled(jobId: string): void {
-    this.#logger.warn(`Job stalled: jobId=${jobId}`);
+    this.#logger.warn({ event: AiJobLogEvent.STALLED, queueName: AI_REPORT_QUEUE, jobId });
   }
 
-  onError(error: Error): void {
-    this.#logger.error(`Worker error: ${error.message}`, error.stack);
+  onError(_error: Error): void {
+    this.#logger.error({
+      event: AiJobLogEvent.WORKER_FAILED,
+      queueName: AI_REPORT_QUEUE,
+      errorType: "Error",
+    });
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
-    this.#logger.error(
-      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
-      error.stack,
-    );
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
+    this.#logger.error({
+      event: AiJobLogEvent.FAILED,
+      queueName: AI_REPORT_QUEUE,
+      jobId: job?.id,
+      errorType: "Error",
+    });
   }
 
   async process(untrustedJob: AiReportJobLike): Promise<void> {
     const parsedJob = AiReportRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
-      this.#logger.warn(`Invalid AI report job: name=${untrustedJob.name}`);
+      this.#logger.warn({ event: AiJobLogEvent.INVALID, queueName: AI_REPORT_QUEUE });
       return;
     }
     const job = parsedJob.data;
@@ -94,22 +91,35 @@ export class ReportGenerationProcessor implements OnModuleInit {
     const { userId, timezone, locale, reportType } = job.data;
     const reportLocale = toSupportedLocale(locale);
 
-    this.#logger.debug(`Processing ${reportType} report: userId=${userId}`);
+    this.#logger.debug({
+      event: AiJobLogEvent.STARTED,
+      queueName: AI_REPORT_QUEUE,
+      userId,
+      reportType,
+    });
 
-    const report = await this.generateReportUseCase.execute({
+    const report = await this.generateReport.execute({
       userId,
       timezone,
       type: reportType,
       locale: reportLocale,
     });
 
-    if (!report) {
-      this.#logger.debug(
-        `Report skipped (insufficient data): userId=${userId}, type=${reportType}`,
-      );
+    if (report === null) {
+      this.#logger.debug({
+        event: AiJobLogEvent.SKIPPED,
+        queueName: AI_REPORT_QUEUE,
+        userId,
+        reportType,
+      });
       return;
     }
 
-    this.#logger.log(`${reportType} report generated: userId=${userId}`);
+    this.#logger.log({
+      event: AiJobLogEvent.COMPLETED,
+      queueName: AI_REPORT_QUEUE,
+      userId,
+      reportType,
+    });
   }
 }

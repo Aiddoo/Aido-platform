@@ -1,5 +1,19 @@
+import { z } from "zod";
+
+import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
+
 export const AI_SUGGESTION_QUEUE = "ai-suggestion-analysis.v1";
 export const AI_SUGGESTION_LEGACY_QUEUE = "ai-suggestion-analysis";
+
+export const AiSuggestionSchedulerName = {
+  DAILY: "daily-suggestion-scheduler",
+  LEGACY_WEEKLY: "weekly-suggestion-scheduler",
+} as const;
+
+export const AiSuggestionJobKey = {
+  dispatch: (date: string) => `dispatch_suggestion_${date}`,
+  analyze: (userId: string, date: string) => `suggestion_${userId}_${date}`,
+} as const;
 
 /** 잡 이름 상수 */
 export const AiSuggestionJobName = {
@@ -55,10 +69,6 @@ export interface AiSuggestionJobMap {
 
 export type AiSuggestionJobData = AiSuggestionJobMap[keyof AiSuggestionJobMap];
 export type AiSuggestionRuntimeJob = z.infer<typeof AiSuggestionRuntimeJobSchema>;
-
-import { z } from "zod";
-
-import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export interface SuggestionDispatcher {
   dispatchAnalysis(): Promise<void>;

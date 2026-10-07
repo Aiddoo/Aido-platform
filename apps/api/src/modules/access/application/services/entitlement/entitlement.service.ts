@@ -50,6 +50,11 @@ export class EntitlementService implements EntitlementReaderPort {
     return hasPremiumEntitlement(user.role, user.subscriptionStatus);
   }
 
+  async hasPremiumAccessInTx(userId: string): Promise<boolean> {
+    const user = await this.#freshUserState(userId);
+    return hasPremiumEntitlement(user.role, user.subscriptionStatus);
+  }
+
   calculateRemaining(dailyLimit: number | null, used: number): number | null {
     return calculateRemainingLimit(dailyLimit, used);
   }

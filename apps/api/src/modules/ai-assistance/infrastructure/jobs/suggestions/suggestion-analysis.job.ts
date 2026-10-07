@@ -10,6 +10,7 @@ import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
+import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
 import { AiSuggestionQueueMaintenanceService } from "./ai-suggestion-queue-maintenance.service.js";
 import {
@@ -17,18 +18,13 @@ import {
   AI_SUGGESTION_QUEUE,
   type AiSuggestionAnalyzeData,
   AiSuggestionJobName,
+  AiSuggestionSchedulerName,
+  AiSuggestionJobKey,
 } from "./ai-suggestion-queue.js";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
 
-/**
- * AI 반복 제안 분석 스케줄러 (Dispatcher)
- *
- * 매일 KST 07:30에 실행됩니다.
- * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
- * 서버 재시작 시에도 스케줄이 유지되며, 놓친 잡은 자동으로 실행됩니다.
- */
 @Injectable()
 export class SuggestionAnalysisJob implements OnModuleInit {
   readonly #logger = new Logger(SuggestionAnalysisJob.name);
@@ -53,16 +49,19 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       "Suggestion analysis scheduler registration",
       async () => {
         // 구 weekly 스케줄러 제거 (마이그레이션)
-        await this.runtime.unschedule("weekly-suggestion-scheduler", AI_SUGGESTION_LEGACY_QUEUE);
+        await this.runtime.unschedule(
+          AiSuggestionSchedulerName.LEGACY_WEEKLY,
+          AI_SUGGESTION_LEGACY_QUEUE,
+        );
         await this.runtime.schedule(
-          "daily-suggestion-scheduler",
+          AiSuggestionSchedulerName.DAILY,
           "30 7 * * *",
           AI_SUGGESTION_QUEUE,
           { name: AiSuggestionJobName.DISPATCH, data: {} },
           this.#jobOptions(),
         );
 
-        this.#logger.log("Suggestion analysis scheduler registered");
+        this.#logger.log({ event: AiJobLogEvent.SCHEDULED, queueName: AI_SUGGESTION_QUEUE });
 
         await this.#catchUpIfNeeded();
       },
@@ -75,7 +74,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
   async dispatchAnalysis(dispatchJob?: {
     updateProgress(progress: object): Promise<unknown>;
   }): Promise<void> {
-    this.#logger.log("Starting suggestion analysis dispatch...");
+    this.#logger.log({ event: AiJobLogEvent.DISPATCH_STARTED, queueName: AI_SUGGESTION_QUEUE });
     await this.queueMaintenance.cleanExpiredFailures();
 
     const twoWeeksAgo = subtractDays(14);
@@ -88,8 +87,10 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       fetchPage: (cursor, take) =>
         this.database.db.orm.public.User.where((row) =>
           and(
-            cursor ? row.id.gt(cursor) : all(),
+            cursor !== undefined ? row.id.gt(cursor) : all(),
             or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
+            row.status.eq("ACTIVE"),
+            row.deletedAt.isNull(),
             row.todos.some((related) =>
               and(
                 related.startDate.gte(databaseDate(twoWeeksAgo)),
@@ -129,7 +130,7 @@ export class SuggestionAnalysisJob implements OnModuleInit {
               },
               {
                 ...this.#jobOptions(),
-                idempotencyKey: `suggestion_${user.id}_${periodId}`,
+                idempotencyKey: AiSuggestionJobKey.analyze(user.id, periodId),
               },
             ),
           ),
@@ -139,7 +140,11 @@ export class SuggestionAnalysisJob implements OnModuleInit {
       },
     });
 
-    this.#logger.log(`Suggestion analysis jobs enqueued: total=${totalEnqueued}`);
+    this.#logger.log({
+      event: AiJobLogEvent.DISPATCH_COMPLETED,
+      queueName: AI_SUGGESTION_QUEUE,
+      enqueuedCount: totalEnqueued,
+    });
   }
 
   /**
@@ -151,13 +156,13 @@ export class SuggestionAnalysisJob implements OnModuleInit {
 
     // 매일 07:30 이후
     if (hour > 7 || (hour === 7 && kstNow.minute() >= 30)) {
-      this.#logger.log("Catch-up: suggestion analysis dispatch");
+      this.#logger.log({ event: AiJobLogEvent.CATCH_UP, queueName: AI_SUGGESTION_QUEUE });
       await this.runtime.enqueue(
         AI_SUGGESTION_QUEUE,
         { name: AiSuggestionJobName.DISPATCH, data: {} },
         {
           ...this.#jobOptions(),
-          idempotencyKey: `dispatch_suggestion_${kstNow.format("YYYY-MM-DD")}`,
+          idempotencyKey: AiSuggestionJobKey.dispatch(kstNow.format("YYYY-MM-DD")),
         },
       );
     }

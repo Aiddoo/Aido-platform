@@ -4,7 +4,6 @@ import { mockDeep } from "vitest-mock-extended";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { AiReport } from "../../../domain/entities/reports/ai-report.entity.js";
-import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { GetReports } from "./get-reports.use-case.js";
 
 const makeReport = (id: number): AiReport =>
@@ -33,7 +32,7 @@ const makeReport = (id: number): AiReport =>
 
 describe("GetReports", () => {
   let useCase: GetReports;
-  let mockRepository: Mocked<AiReportRepositoryPort>;
+  let mockRepository: Mocked<ConstructorParameters<typeof GetReports>[0]["aiReportRepository"]>;
   let mockEntitlement: Mocked<ConstructorParameters<typeof GetReports>[0]["entitlementReader"]>;
 
   beforeEach(async () => {

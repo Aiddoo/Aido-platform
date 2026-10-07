@@ -4,7 +4,6 @@ import { mockDeep } from "vitest-mock-extended";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
-import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
 import { GetPendingSuggestions } from "./get-pending-suggestions.use-case.js";
 
 const mockUserId = "user-123";
@@ -29,7 +28,7 @@ function createSuggestion(): Suggestion {
 
 describe("GetPendingSuggestions", () => {
   let useCase: GetPendingSuggestions;
-  let repo: Mocked<AiSuggestionRepositoryPort>;
+  let repo: Mocked<ConstructorParameters<typeof GetPendingSuggestions>[0]["repository"]>;
   let entitlement: Mocked<
     ConstructorParameters<typeof GetPendingSuggestions>[0]["entitlementReader"]
   >;

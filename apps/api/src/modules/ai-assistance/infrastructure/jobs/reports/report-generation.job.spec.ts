@@ -29,7 +29,7 @@ describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
   afterEach(() => vi.useRealTimers());
 
   it("KST 주간·월간 스케줄을 등록하고 processor를 연결한다", async () => {
-    vi.useFakeTimers({ now: new Date("2026-03-10T10:00:00+09:00") });
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-03-10T10:00:00+09:00") });
     job.onModuleInit();
     await job.schedulerRegistration;
 
@@ -45,7 +45,7 @@ describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
   });
 
   it("월요일 01시 이후 재시작하면 주간 dispatch를 멱등 키로 보정한다", async () => {
-    vi.useFakeTimers({ now: new Date("2026-03-09T03:00:00+09:00") });
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-03-09T03:00:00+09:00") });
     job.onModuleInit();
     await job.schedulerRegistration;
 

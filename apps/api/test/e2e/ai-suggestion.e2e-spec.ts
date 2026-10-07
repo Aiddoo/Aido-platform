@@ -2,6 +2,10 @@ import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import {
+  RECURRING_TODO_CREATOR,
+  type RecurringTodoCreatorPort,
+} from "#api/modules/ai-assistance/application/ports/suggestions/recurring-todo-creator.port";
 /**
  * AI 반복 제안 모듈 E2E 테스트
  *
@@ -220,5 +224,82 @@ describe("AI 제안 E2E", () => {
       // Then - 401 Unauthorized 반환
       expect(response.status).toBe(401);
     });
+  });
+
+  it("비프리미엄 제안 조회·행동은 없는 ID보다 AI_1309를 우선한다", async () => {
+    // Given - FREE 사용자와 없는 제안
+    const user = await ctx.helpers.createVerifiedUser(
+      "ai-suggestion-free@example.com",
+      "Test1234!",
+    );
+    // When - 실제 권한 gate와 endpoint
+    const list = await request(ctx.app.getHttpServer())
+      .get("/v1/ai/suggestions")
+      .set("Authorization", `Bearer ${user.accessToken}`);
+    const action = await request(ctx.app.getHttpServer())
+      .patch("/v1/ai/suggestions/999999")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ action: "dismiss" });
+    // Then - 소유권보다 entitlement 우선
+    for (const response of [list, action]) {
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe("AI_1309");
+    }
+  });
+
+  it("다른 프리미엄 사용자의 실제 제안 ID는 AI_1305를 반환한다", async () => {
+    // Given - 소유자가 다른 실제 pending 행
+    const owner = await createPremiumUser("ai-suggestion-owner@example.com", "Test1234!");
+    const user = await createPremiumUser("ai-suggestion-other@example.com", "Test1234!");
+    const id = await seedPendingSuggestion(owner.userId);
+    // When - 다른 사용자로 행동
+    const response = await request(ctx.app.getHttpServer())
+      .patch(`/v1/ai/suggestions/${id}`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ action: "dismiss" });
+    // Then - 정보 노출 없이 동일 not-found, 원래 pending 유지
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("AI_1305");
+    const row = decodeRecord(
+      "RecurringSuggestion",
+      await ctx.testDatabase.getClient().orm.public.RecurringSuggestion.where({ id }).first(),
+    );
+    expect(row?.status).toBe("PENDING");
+  });
+
+  it("반복 할 일 생성 실패는 실제 HTTP 뒤에도 pending 행과 Todo 개수를 보존한다", async () => {
+    // Given - 정상 pending과 Port 한 곳의 실패 주입
+    const user = await createPremiumUser("ai-suggestion-failure@example.com", "Test1234!");
+    const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+    const id = await seedPendingSuggestion(user.userId);
+    const creator = ctx.module.get<RecurringTodoCreatorPort>(RECURRING_TODO_CREATOR);
+    const before = await ctx.testDatabase
+      .getClient()
+      .orm.public.Todo.where({ userId: user.userId })
+      .all();
+    const failure = vi
+      .spyOn(creator, "createRecurring")
+      .mockRejectedValueOnce(new Error("테스트 생성 실패"));
+    try {
+      // When - 실제 Controller·UseCase·UOW를 통한 수락
+      const response = await request(ctx.app.getHttpServer())
+        .patch(`/v1/ai/suggestions/${id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ action: "accept", categoryId });
+      // Then - 실패 응답과 실제 DB rollback 결과
+      expect(response.status).toBe(500);
+      const row = decodeRecord(
+        "RecurringSuggestion",
+        await ctx.testDatabase.getClient().orm.public.RecurringSuggestion.where({ id }).first(),
+      );
+      expect(row?.status).toBe("PENDING");
+      const after = await ctx.testDatabase
+        .getClient()
+        .orm.public.Todo.where({ userId: user.userId })
+        .all();
+      expect(after).toHaveLength(before.length);
+    } finally {
+      failure.mockRestore();
+    }
   });
 });

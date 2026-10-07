@@ -4,44 +4,48 @@ import dayjs from "dayjs";
 import { z } from "zod";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
+import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
+import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
 import { type RecurringTodoCreatorPort } from "../../ports/suggestions/recurring-todo-creator.port.js";
 
 export interface HandleSuggestionActionInput {
-  userId: string;
-  suggestionId: number;
-  action: "accept" | "dismiss";
-  categoryId?: number;
-  startDate?: string;
-  endDate?: string;
-  timezone: string;
+  readonly userId: string;
+  readonly suggestionId: number;
+  readonly action: "accept" | "dismiss";
+  readonly categoryId?: number;
+  readonly startDate?: string;
+  readonly endDate?: string;
+  readonly timezone: string;
 }
 
 /** 제안 수락/거절 결과 read model */
 export interface SuggestionActionResult {
-  message: string;
-  suggestion: Suggestion;
-  createdTodosCount?: number;
+  readonly message: string;
+  readonly suggestion: Suggestion;
+  readonly createdTodosCount?: number;
 }
 
 /**
  * 제안 수락/거절 처리 use-case.
  *
- * 프리미엄 강제 → 제안 조회 → 상태 전이 불변식(대기·미만료) 검증 후, 거절은 상태만
- * 갱신하고, 수락은 ACCEPTED 선반영 후 반복 할 일을 생성한다. 생성 실패 시 PENDING으로
- * best-effort 롤백한다(롤백 실패는 로그만 남기고 원본 에러를 전파).
+ * 사용자 잠금과 최신 권한 확인 뒤 도메인 상태를 전이한다.
+ * 상태 저장과 반복 할 일 생성은 한 transaction에서 성공하거나 함께 rollback된다.
  */
 interface HandleSuggestionActionDependencies {
-  readonly repository: AiSuggestionRepositoryPort;
-  readonly recurringTodoCreator: RecurringTodoCreatorPort;
-  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
-  readonly logger: ApplicationLogger;
+  readonly repository: Pick<AiSuggestionRepositoryPort, "findByIdAndUserId" | "updateStatus">;
+  readonly recurringTodoCreator: Pick<RecurringTodoCreatorPort, "createRecurring">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
+  readonly logger: Pick<ApplicationLogger, "log" | "warn">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
 }
 
 export class HandleSuggestionAction {
@@ -52,103 +56,87 @@ export class HandleSuggestionAction {
   }
 
   async execute(input: HandleSuggestionActionInput): Promise<SuggestionActionResult> {
-    await this.#enforcePremium(input.userId);
+    const result = await this.#dependencies.unitOfWork.run(async () => {
+      if (!(await this.#dependencies.userMutationLock.lockById(input.userId))) {
+        throw new ApplicationException(ErrorCode.AI_1309);
+      }
+      await this.#enforcePremium(input.userId);
+      const suggestion = await this.#dependencies.repository.findByIdAndUserId(
+        input.suggestionId,
+        input.userId,
+      );
+      if (suggestion === null) {
+        throw new ApplicationException(ErrorCode.AI_1305, { suggestionId: input.suggestionId });
+      }
+      const at = now();
+      if (input.action === "dismiss") {
+        suggestion.dismiss(at);
+        const updated = await this.#dependencies.repository.updateStatus(
+          input.suggestionId,
+          suggestion.status,
+        );
+        return { message: "제안이 거절되었습니다.", suggestion: updated };
+      }
 
-    // 1. 제안 조회
-    const suggestion = await this.#dependencies.repository.findByIdAndUserId(
-      input.suggestionId,
-      input.userId,
-    );
-    if (!suggestion) {
-      throw new ApplicationException(ErrorCode.AI_1305, {
-        suggestionId: input.suggestionId,
-      });
-    }
-
-    // 2. 상태·만료 불변식 검증 (AI_1306 / AI_1307)
-    suggestion.ensureActionable(now());
-
-    // 3. 거절 처리
-    if (input.action === "dismiss") {
+      // 상태·만료 오류가 요청의 수락 데이터 오류보다 먼저 반환되는 계약을 유지한다.
+      suggestion.accept(at);
+      if (input.categoryId === undefined || input.categoryId === 0) {
+        throw new ApplicationException(ErrorCode.SYS_0002, {
+          field: "categoryId",
+          reason: "수락 시 categoryId는 필수입니다",
+        });
+      }
+      const days = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
+      if (!days.success) {
+        throw new ApplicationException(ErrorCode.SYS_0002, {
+          field: "daysOfWeek",
+          reason: "제안의 요일 데이터가 유효하지 않습니다",
+        });
+      }
+      const currentDate = dayjs.utc(at);
+      const startDate = input.startDate ?? toDateString(currentDate.toDate());
+      const endDate =
+        input.endDate ??
+        toDateString(
+          currentDate.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate(),
+        );
       const updated = await this.#dependencies.repository.updateStatus(
         input.suggestionId,
-        "DISMISSED",
+        suggestion.status,
       );
-      return {
-        message: "제안이 거절되었습니다.",
-        suggestion: updated,
-      };
-    }
-
-    // 4. 수락 처리: categoryId 필수 검증
-    if (!input.categoryId) {
-      throw new ApplicationException(ErrorCode.SYS_0002, {
-        field: "categoryId",
-        reason: "수락 시 categoryId는 필수입니다",
-      });
-    }
-
-    const daysOfWeekResult = z.array(dayOfWeekSchema).safeParse(suggestion.daysOfWeek);
-    if (!daysOfWeekResult.success) {
-      throw new ApplicationException(ErrorCode.SYS_0002, {
-        field: "daysOfWeek",
-        reason: "제안의 요일 데이터가 유효하지 않습니다",
-      });
-    }
-    const daysOfWeek = daysOfWeekResult.data;
-    const currentDate = dayjs.utc(now());
-    const startDate = input.startDate ?? toDateString(currentDate.toDate());
-    const endDate =
-      input.endDate ??
-      toDateString(currentDate.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate());
-
-    // 상태를 먼저 ACCEPTED로 변경 (재수락 방지)
-    const updated = await this.#dependencies.repository.updateStatus(
-      input.suggestionId,
-      "ACCEPTED",
-    );
-
-    try {
-      const result = await this.#dependencies.recurringTodoCreator.createRecurring(
+      // 반복 생성은 같은 Required UoW에 참여하며 실패 시 상태 갱신도 함께 rollback된다.
+      const created = await this.#dependencies.recurringTodoCreator.createRecurring(
         {
           userId: input.userId,
           title: suggestion.title,
           categoryId: input.categoryId,
           startDate,
           endDate,
-          daysOfWeek,
+          daysOfWeek: days.data,
           scheduledTime: suggestion.scheduledTime,
         },
         input.timezone,
       );
-
-      this.#dependencies.logger.log(
-        `제안 수락: id=${input.suggestionId}, userId=${input.userId}, createdTodos=${result.count}`,
-      );
-
       return {
         message: "제안이 수락되어 반복 할 일이 생성되었습니다.",
         suggestion: updated,
-        createdTodosCount: result.count,
+        createdTodosCount: created.count,
       };
-    } catch (error) {
-      // 투두 생성 실패 시 상태를 PENDING으로 롤백
-      try {
-        await this.#dependencies.repository.updateStatus(input.suggestionId, "PENDING");
-      } catch (rollbackError) {
-        this.#dependencies.logger.error(
-          `제안 롤백 실패: id=${input.suggestionId}, rollbackError=${rollbackError}`,
-          rollbackError instanceof Error ? rollbackError.stack : undefined,
-        );
-      }
-      throw error;
+    });
+    if (result.createdTodosCount !== undefined) {
+      this.#dependencies.logger.log({
+        event: AiSuggestionLogEvent.ACCEPTED,
+        suggestionId: input.suggestionId,
+        userId: input.userId,
+        createdTodosCount: result.createdTodosCount,
+      });
     }
+    return result;
   }
 
   async #enforcePremium(userId: string): Promise<void> {
-    const hasPremium = await this.#dependencies.entitlementReader.hasPremiumAccess(userId);
-    if (!hasPremium) {
-      this.#dependencies.logger.warn(`프리미엄 미구독 접근 차단: userId=${userId}`);
+    if (!(await this.#dependencies.entitlementReader.hasPremiumAccessInTx(userId))) {
+      this.#dependencies.logger.warn({ event: AiSuggestionLogEvent.PREMIUM_DENIED, userId });
       throw new ApplicationException(ErrorCode.AI_1309);
     }
   }

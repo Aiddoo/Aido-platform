@@ -1,18 +1,16 @@
 import type { AiReport as AiReportDto } from "@aido/api";
 import dayjs from "dayjs";
 
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { type AiProvider } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
+import { parseLocalDateTime } from "#api/shared/domain/date/utils/timezone";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildFallbackContent } from "../../../domain/services/reports/prompts/report-fallback.js";
-import {
-  buildReportPrompt,
-  getReportAiResponseSchema,
-} from "../../../domain/services/reports/prompts/report.prompt.js";
 import { assembleAggregatedData } from "../../../domain/services/reports/report-aggregation.js";
-import { computePeriodLabel } from "../../../domain/services/reports/report-period.js";
 import type {
   AggregatedReportData,
   AggregateParams,
@@ -20,8 +18,13 @@ import type {
   GenerateReportParams,
   ReportType,
 } from "../../../domain/types/reports/ai-report.types.js";
+import { AiReportLogEvent } from "../../observability/reports/ai-report-log.events.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../../ports/reports/todo-stats.reader.port.js";
+import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
+import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
+import { computePeriodLabel } from "../../read-models/reports/report-period-label.js";
+import { buildFallbackContent } from "../../services/reports/report-fallback.js";
 
 /** AI 리포트 생성 기본 설정 */
 const REPORT_AI_MAX_TOKENS = 800;
@@ -43,10 +46,13 @@ interface ReportWindow {
  * 같은 기간 리포트가 이미 존재하면 생성하지 않고 null을 반환한다.
  */
 interface GenerateReportDependencies {
-  readonly aiReportRepository: AiReportRepositoryPort;
-  readonly todoStatsReader: TodoStatsReaderPort;
-  readonly aiProvider: AiProvider;
-  readonly logger: ApplicationLogger;
+  readonly aiReportRepository: Pick<AiReportRepositoryPort, "exists" | "findLatest" | "create">;
+  readonly todoStatsReader: Pick<TodoStatsReaderPort, "fetchAggregationInputs">;
+  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly logger: Pick<ApplicationLogger, "log" | "debug" | "warn" | "error">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
 }
 
 export class GenerateReport {
@@ -63,9 +69,21 @@ export class GenerateReport {
     locale?: SupportedLocale;
   }): Promise<AiReportDto | null> {
     const { userId, timezone, type, locale = "ko" } = input;
+    if (!(await this.#dependencies.entitlementReader.hasPremiumAccessInTx(userId))) {
+      this.#dependencies.logger.debug({
+        event: AiReportLogEvent.SKIPPED,
+        userId,
+        type,
+        reason: "not-premium",
+      });
+      return null;
+    }
     const localNow = dayjs(now()).tz(timezone);
 
-    const window = type === "WEEKLY" ? this.#weeklyWindow(localNow) : this.#monthlyWindow(localNow);
+    const window =
+      type === "WEEKLY"
+        ? this.#weeklyWindow(localNow, timezone)
+        : this.#monthlyWindow(localNow, timezone);
 
     const exists = await this.#dependencies.aiReportRepository.exists(
       userId,
@@ -74,9 +92,12 @@ export class GenerateReport {
       window.period,
     );
     if (exists) {
-      this.#dependencies.logger.debug(
-        `${type === "WEEKLY" ? "주간" : "월간"} 리포트 이미 존재: userId=${userId}, ${window.year}년 ${window.period}${type === "WEEKLY" ? "주차" : "월"}`,
-      );
+      this.#dependencies.logger.debug({
+        event: AiReportLogEvent.SKIPPED,
+        userId,
+        type,
+        reason: "already-exists",
+      });
       return null;
     }
 
@@ -96,37 +117,39 @@ export class GenerateReport {
   }
 
   /** 지난 주(월~일) 윈도우 */
-  #weeklyWindow(localNow: dayjs.Dayjs): ReportWindow {
-    const lastWeekStart = localNow.subtract(1, "week").startOf("isoWeek");
+  #weeklyWindow(localNow: dayjs.Dayjs, timezone: string): ReportWindow {
+    // 달력 label을 먼저 계산하고 각 경계를 다시 타임존에 적용해 DST offset을 갱신한다.
+    const lastWeekStart = dayjs
+      .utc(localNow.format("YYYY-MM-DD"))
+      .subtract(1, "week")
+      .startOf("isoWeek");
     const lastWeekEnd = lastWeekStart.add(1, "week");
     const prevWeekStart = lastWeekStart.subtract(1, "week");
     const prevWeekEnd = lastWeekStart;
     return {
       year: lastWeekStart.isoWeekYear(),
       period: lastWeekStart.isoWeek(),
-      startDate: lastWeekStart.utc().toDate(),
-      endDate: lastWeekEnd.utc().toDate(),
-      prevStartDate: prevWeekStart.utc().toDate(),
-      prevEndDate: prevWeekEnd.utc().toDate(),
+      startDate: parseLocalDateTime(lastWeekStart.format("YYYY-MM-DD"), "00:00", timezone),
+      endDate: parseLocalDateTime(lastWeekEnd.format("YYYY-MM-DD"), "00:00", timezone),
+      prevStartDate: parseLocalDateTime(prevWeekStart.format("YYYY-MM-DD"), "00:00", timezone),
+      prevEndDate: parseLocalDateTime(prevWeekEnd.format("YYYY-MM-DD"), "00:00", timezone),
     };
   }
 
   /** 지난 달 윈도우 */
-  #monthlyWindow(localNow: dayjs.Dayjs): ReportWindow {
-    const lastMonth = localNow.subtract(1, "month");
+  #monthlyWindow(localNow: dayjs.Dayjs, timezone: string): ReportWindow {
+    const lastMonth = dayjs.utc(localNow.format("YYYY-MM-DD")).subtract(1, "month");
     const lastMonthStart = lastMonth.startOf("month");
-    // 지난 달 시작에 1달을 더하면 이번 달 시작(00:00) = 지난 달 배타적 종료.
-    // (endOf/add/startOf 다단계 계산과 동일하나 타임존·DST 경계 오류를 예방)
     const lastMonthEnd = lastMonthStart.add(1, "month");
     const prevMonthStart = lastMonthStart.subtract(1, "month");
     const prevMonthEnd = lastMonthStart;
     return {
       year: lastMonthStart.year(),
       period: lastMonthStart.month() + 1,
-      startDate: lastMonthStart.utc().toDate(),
-      endDate: lastMonthEnd.utc().toDate(),
-      prevStartDate: prevMonthStart.utc().toDate(),
-      prevEndDate: prevMonthEnd.utc().toDate(),
+      startDate: parseLocalDateTime(lastMonthStart.format("YYYY-MM-DD"), "00:00", timezone),
+      endDate: parseLocalDateTime(lastMonthEnd.format("YYYY-MM-DD"), "00:00", timezone),
+      prevStartDate: parseLocalDateTime(prevMonthStart.format("YYYY-MM-DD"), "00:00", timezone),
+      prevEndDate: parseLocalDateTime(prevMonthEnd.format("YYYY-MM-DD"), "00:00", timezone),
     };
   }
 
@@ -145,7 +168,7 @@ export class GenerateReport {
     prevStartDate: Date;
     prevEndDate: Date;
     periodLabel: string;
-  }): Promise<AiReportDto> {
+  }): Promise<AiReportDto | null> {
     const {
       userId,
       timezone,
@@ -160,11 +183,6 @@ export class GenerateReport {
       locale,
     } = params;
 
-    this.#dependencies.logger.log(
-      `리포트 생성 시작: userId=${userId}, type=${type}, ${periodLabel}`,
-    );
-
-    // 1. 데이터 집계 + 이전 보고서 조회 (병렬)
     const [aggregatedData, prevReport] = await Promise.all([
       this.#aggregate({
         userId,
@@ -177,9 +195,8 @@ export class GenerateReport {
       this.#dependencies.aiReportRepository.findLatest(userId, type),
     ]);
 
-    const prevTips = prevReport ? prevReport.aiTips : null;
+    const prevTips = prevReport === null ? null : [...prevReport.aiTips];
 
-    // 2. AI 콘텐츠 생성
     const aiContent = await this.#generateAiContent({
       aggregatedData,
       type,
@@ -188,34 +205,55 @@ export class GenerateReport {
       locale,
     });
 
-    // 3. DB 저장
-    const report = await this.#dependencies.aiReportRepository.create({
+    // 외부 공급자 호출 뒤에만 transaction을 시작한다.
+    const report = await this.#dependencies.unitOfWork.run(async () => {
+      const { userMutationLock, entitlementReader, aiReportRepository } = this.#dependencies;
+      if (
+        !(await userMutationLock.lockById(userId)) ||
+        !(await entitlementReader.hasPremiumAccessInTx(userId))
+      ) {
+        return null;
+      }
+      if (await aiReportRepository.exists(userId, type, year, period)) return null;
+      return aiReportRepository.create({
+        userId,
+        type,
+        year,
+        period,
+        stats: {
+          totalTodos: aggregatedData.totalTodos,
+          completedTodos: aggregatedData.completedTodos,
+          completionRate: aggregatedData.completionRate,
+          prevCompletionRate: aggregatedData.prevCompletionRate,
+          streakDays: aggregatedData.streakDays,
+        },
+        categoryBreakdown: aggregatedData.categoryBreakdown,
+        dayPatterns: aggregatedData.dayPatterns,
+        timePatterns: aggregatedData.timePatterns,
+        aiSummary: aiContent.aiSummary,
+        aiTips: aiContent.aiTips,
+        locale,
+        hasActivity: aggregatedData.hasActivity,
+        generatedAt: now(),
+      });
+    });
+    if (report === null) {
+      this.#dependencies.logger.debug({
+        event: AiReportLogEvent.SKIPPED,
+        userId,
+        type,
+        reason: "save-ineligible-or-duplicate",
+      });
+      return null;
+    }
+    this.#dependencies.logger.log({
+      event: AiReportLogEvent.SAVED,
+      reportId: report.id,
       userId,
       type,
-      year,
-      period,
-      stats: {
-        totalTodos: aggregatedData.totalTodos,
-        completedTodos: aggregatedData.completedTodos,
-        completionRate: aggregatedData.completionRate,
-        prevCompletionRate: aggregatedData.prevCompletionRate,
-        streakDays: aggregatedData.streakDays,
-      },
-      categoryBreakdown: aggregatedData.categoryBreakdown,
-      dayPatterns: aggregatedData.dayPatterns,
-      timePatterns: aggregatedData.timePatterns,
-      aiSummary: aiContent.aiSummary,
-      aiTips: aiContent.aiTips,
-      locale,
-      hasActivity: aggregatedData.hasActivity,
-      generatedAt: now(),
     });
 
-    this.#dependencies.logger.log(
-      `리포트 생성 완료: id=${report.id}, userId=${userId}, type=${type}, ${periodLabel}`,
-    );
-
-    return report.toView();
+    return toAiReportView(report);
   }
 
   /**
@@ -234,39 +272,38 @@ export class GenerateReport {
     const { aggregatedData, periodLabel, type, locale = "ko" } = params;
 
     if (!this.#dependencies.aiProvider.isAvailable()) {
-      this.#dependencies.logger.warn("AI Provider 불가용 — 폴백 콘텐츠 사용");
+      this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
       return buildFallbackContent(aggregatedData.hasActivity, locale);
     }
 
     try {
-      const { system, prompt } = buildReportPrompt(
-        aggregatedData,
-        periodLabel,
-        type,
-        { prevTips: params.prevTips },
-        locale,
-      );
+      const { build, schema } = aiPromptCatalog[locale].report;
+      const { system, prompt } = build(aggregatedData, periodLabel, type, {
+        prevTips: params.prevTips,
+      });
 
       const result = await this.#dependencies.aiProvider.generateStructured({
         system,
         prompt,
-        schema: getReportAiResponseSchema(locale),
+        schema,
         maxOutputTokens: REPORT_AI_MAX_TOKENS,
       });
 
-      this.#dependencies.logger.debug(
-        `AI 리포트 생성 완료: model=${result.model}, tokens=${result.usage.input}+${result.usage.output}`,
-      );
+      this.#dependencies.logger.debug({
+        event: AiReportLogEvent.GENERATION_COMPLETED,
+        model: result.model,
+        tokenUsage: result.usage,
+      });
 
       return {
         aiSummary: result.output.summary,
         aiTips: result.output.tips,
       };
-    } catch (error) {
-      this.#dependencies.logger.error(
-        `AI 리포트 생성 실패 — 폴백 사용: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+    } catch {
+      this.#dependencies.logger.error({
+        event: AiReportLogEvent.PROVIDER_FAILED,
+        errorType: "AiProviderError",
+      });
       return buildFallbackContent(aggregatedData.hasActivity, locale);
     }
   }

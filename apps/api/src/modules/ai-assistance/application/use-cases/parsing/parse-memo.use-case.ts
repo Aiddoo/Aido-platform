@@ -1,5 +1,5 @@
 import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/api";
-import { llmParsedMemoResultSchema, parsedMemoDataSchema } from "@aido/api";
+import { parsedMemoDataSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { sumBy } from "es-toolkit";
 
@@ -8,12 +8,11 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildParseMemoPromptEn } from "../../../domain/services/parsing/prompts/parse-memo.prompt.en.js";
-import { buildParseMemoPrompt } from "../../../domain/services/parsing/prompts/parse-memo.prompt.js";
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
 import { type AiProvider, AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
+import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
 import type { ParseTodoMeta } from "./parse-todo.use-case.js";
 
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
@@ -41,10 +40,10 @@ export interface ParseMemoInput {
  * 미지 카테고리는 요청 기본 categoryId로 대체한다.
  */
 interface ParseMemoDependencies {
-  readonly aiProvider: AiProvider;
-  readonly categoryReader: UserCategoryReaderPort;
+  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
-  readonly logger: ApplicationLogger;
+  readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
 export class ParseMemo {
@@ -78,8 +77,8 @@ export class ParseMemo {
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
     const categoryIds = new Set(userCategories.map((category) => category.id));
 
-    const buildMemoPrompt = locale === "en" ? buildParseMemoPromptEn : buildParseMemoPrompt;
-    const { system, prompt } = buildMemoPrompt(
+    const { build, schema } = aiPromptCatalog[locale].parseMemo;
+    const { system, prompt } = build(
       content,
       timezone,
       now(),
@@ -90,7 +89,7 @@ export class ParseMemo {
       const result = await this.#dependencies.aiProvider.generateStructured<LlmParsedMemoResult>({
         system,
         prompt,
-        schema: llmParsedMemoResultSchema,
+        schema,
         maxOutputTokens: 800,
       });
 
@@ -136,7 +135,7 @@ export class ParseMemo {
       this.#dependencies.logger.error({
         event: AiParsingLogEvent.OUTPUT_INVALID,
         userId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorCode: ErrorCode.AI_1302,
       });
       throw new ApplicationException(ErrorCode.AI_1302, {
         details: error instanceof Error ? error.message : "Unknown error",

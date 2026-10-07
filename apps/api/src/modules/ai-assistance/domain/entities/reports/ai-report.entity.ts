@@ -1,75 +1,67 @@
-import type * as Validators from "@aido/api";
-
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { computeDateRange, computePeriodLabel } from "../../services/reports/report-period.js";
-import type { ReportType } from "../../types/reports/ai-report.types.js";
+import type {
+  CategoryBreakdownItem,
+  DayPatternItem,
+  ReportStats,
+  ReportType,
+  TimePatternItem,
+} from "../../types/reports/ai-report.types.js";
 
 export interface AiReportProps {
-  id: number;
-  userId: string;
-  type: ReportType;
-  year: number;
-  period: number;
-  stats: Validators.ReportStats;
-  categoryBreakdown: Validators.CategoryBreakdownItem[];
-  dayPatterns: Validators.DayPatternItem[];
-  timePatterns: Validators.TimePatternItem[];
-  aiSummary: string;
-  aiTips: string[];
-  locale: SupportedLocale;
-  hasActivity: boolean;
-  generatedAt: Date;
+  readonly id: number;
+  readonly userId: string;
+  readonly type: ReportType;
+  readonly year: number;
+  readonly period: number;
+  readonly stats: ReportStats;
+  readonly categoryBreakdown: readonly CategoryBreakdownItem[];
+  readonly dayPatterns: readonly DayPatternItem[];
+  readonly timePatterns: readonly TimePatternItem[];
+  readonly aiSummary: string;
+  readonly aiTips: readonly string[];
+  readonly locale: SupportedLocale;
+  readonly hasActivity: boolean;
+  readonly generatedAt: Date;
 }
 
-/**
- * AI 리포트 애그리게잇.
- *
- * 주간/월간 분석 리포트를 표현하며, 응답 뷰 직렬화(기간 라벨·날짜 범위 파생 포함)를
- * 자기 자신이 소유한다. Json 파싱(무결성 복원)은 저장소 어댑터가 담당하고, 이 애그리게잇은
- * 이미 파싱된 타입 안전 필드를 보유한다.
- */
+/** 저장된 분석 결과. 상태 전이나 HTTP 직렬화를 소유하지 않는다. */
 export class AiReport {
-  private constructor(private readonly props: AiReportProps) {}
+  readonly #props: AiReportProps;
+
+  private constructor(props: AiReportProps) {
+    this.#props = AiReport.#copy(props);
+  }
 
   static reconstitute(props: AiReportProps): AiReport {
     return new AiReport(props);
   }
 
   get id(): number {
-    return this.props.id;
+    return this.#props.id;
   }
-
   get type(): ReportType {
-    return this.props.type;
+    return this.#props.type;
+  }
+  get stats(): ReportStats {
+    return { ...this.#props.stats };
+  }
+  get aiTips(): readonly string[] {
+    return [...this.#props.aiTips];
+  }
+  get snapshot(): AiReportProps {
+    return AiReport.#copy(this.#props);
   }
 
-  get stats(): Validators.ReportStats {
-    return this.props.stats;
-  }
-
-  get aiTips(): string[] {
-    return this.props.aiTips;
-  }
-
-  /** 응답 DTO로 직렬화 (기간 라벨·날짜 범위는 파생 계산) */
-  toView(): Validators.AiReport {
-    const { type, year, period, locale } = this.props;
+  static #copy(props: AiReportProps): AiReportProps {
     return {
-      id: this.props.id,
-      type,
-      year,
-      period,
-      periodLabel: computePeriodLabel(type, year, period, locale),
-      dateRange: computeDateRange(type, year, period),
-      stats: this.props.stats,
-      categoryBreakdown: this.props.categoryBreakdown,
-      dayPatterns: this.props.dayPatterns,
-      timePatterns: this.props.timePatterns,
-      aiSummary: this.props.aiSummary,
-      aiTips: this.props.aiTips,
-      hasActivity: this.props.hasActivity,
-      generatedAt: this.props.generatedAt.toISOString(),
+      ...props,
+      stats: { ...props.stats },
+      categoryBreakdown: props.categoryBreakdown.map((item) => ({ ...item })),
+      dayPatterns: props.dayPatterns.map((item) => ({ ...item })),
+      timePatterns: props.timePatterns.map((item) => ({ ...item })),
+      aiTips: [...props.aiTips],
+      generatedAt: new Date(props.generatedAt),
     };
   }
 }

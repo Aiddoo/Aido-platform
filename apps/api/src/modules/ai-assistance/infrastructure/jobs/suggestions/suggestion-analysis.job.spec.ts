@@ -33,7 +33,7 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
   afterEach(() => vi.useRealTimers());
 
   it("KST 일일 스케줄을 등록하고 processor를 연결한다", async () => {
-    vi.useFakeTimers({ now: new Date("2026-03-09T07:00:00+09:00") });
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-03-09T07:00:00+09:00") });
     job.onModuleInit();
     await job.schedulerRegistration;
 
@@ -48,7 +48,7 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
   });
 
   it("07:30 이후 재시작하면 당일 dispatch를 멱등 키로 보정한다", async () => {
-    vi.useFakeTimers({ now: new Date("2026-03-09T08:00:00+09:00") });
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-03-09T08:00:00+09:00") });
     job.onModuleInit();
     await job.schedulerRegistration;
 

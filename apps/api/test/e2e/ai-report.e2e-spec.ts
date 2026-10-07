@@ -2,6 +2,7 @@ import request from "supertest";
 
 import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases/reports/generate-report.use-case";
 /**
  * AI 리포트 모듈 E2E 테스트
  *
@@ -19,6 +20,7 @@ import { CacheService } from "#api/platform/cache/cache.service";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
+import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -173,5 +175,55 @@ describe("AI 리포트 E2E", () => {
       // Then - 400 Bad Request 반환
       expect(response.status).toBe(400);
     });
+  });
+
+  it.each(["ko", "en"] as const)(
+    "%s 리포트는 실제 생성·저장 후 소유자 HTTP에 같은 문구로 전달된다",
+    async (locale) => {
+      // Given - 프리미엄 사용자와 완전 operation 응답
+      const user = await createPremiumUser(`ai-report-${locale}@example.com`, "Test1234!");
+      const raw = createReportAiResponse(locale);
+      fakeAiProvider.setRawResponse(raw);
+      // When - 실제 생성 UseCase·PG 후 조회 endpoint
+      const report = await ctx.module
+        .get(GenerateReport)
+        .execute({ userId: user.userId, timezone: "Asia/Seoul", type: "WEEKLY", locale });
+      expect(report).not.toBeNull();
+      const response = await request(ctx.app.getHttpServer())
+        .get(`/v1/ai/reports/${report!.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`);
+      // Then - schema 콘텐츠와 기간 read model을 보존
+      expect(response.status).toBe(200);
+      expect(response.body.data.report.aiSummary).toBe(raw.summary);
+      expect(response.body.data.report.aiTips).toEqual(raw.tips);
+      expect(response.body.data.report.periodLabel).toBe(report!.periodLabel);
+      expect(fakeAiProvider.getCallCount()).toBe(1);
+      const stored = decodeRecord(
+        "AiReport",
+        await ctx.testDatabase.getClient().orm.public.AiReport.where({ id: report!.id }).first(),
+      );
+      expect(stored?.locale).toBe(locale);
+      const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
+      const denied = await request(ctx.app.getHttpServer())
+        .get(`/v1/ai/reports/${report!.id}`)
+        .set("Authorization", `Bearer ${other.accessToken}`);
+      expect(denied.status).toBe(404);
+      expect(denied.body.error.code).toBe("AI_1304");
+    },
+  );
+
+  it("비프리미엄 리포트 조회는 없는 ID보다 AI_1308을 우선한다", async () => {
+    // Given - FREE 사용자와 없는 리포트
+    const user = await ctx.helpers.createVerifiedUser("ai-report-free@example.com", "Test1234!");
+    // When - 상태·목록·상세 endpoints
+    for (const route of ["/v1/ai/reports/status", "/v1/ai/reports", "/v1/ai/reports/999999"]) {
+      const response = await request(ctx.app.getHttpServer())
+        .get(route)
+        .set("Authorization", `Bearer ${user.accessToken}`);
+      // Then - 권한 우선, AI 호출 없음
+      expect(response.status).toBe(403);
+      expect(response.body.error.code).toBe("AI_1308");
+    }
+    expect(fakeAiProvider.getCallCount()).toBe(0);
   });
 });

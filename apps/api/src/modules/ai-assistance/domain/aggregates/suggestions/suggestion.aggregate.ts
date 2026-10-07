@@ -7,19 +7,19 @@ import { AggregateRoot } from "#api/shared/domain/index";
 export type SuggestionStatus = "PENDING" | "ACCEPTED" | "DISMISSED";
 
 export interface SuggestionProps {
-  id: number;
-  userId: string;
-  title: string;
-  /** 반복 요일 원본(Json) — 파싱/검증은 표현 계층 매퍼가 담당한다 */
-  daysOfWeek: unknown;
-  scheduledTime: string | null;
-  confidence: number;
-  reason: string;
-  matchedTodos: unknown;
-  suggestedCategoryId: number | null;
+  readonly id: number;
+  readonly userId: string;
+  readonly title: string;
+  /** 반복 요일 원본(Json) — 수락 입력 검증과 응답 매핑은 Application/Presentation이 담당한다 */
+  readonly daysOfWeek: unknown;
+  readonly scheduledTime: string | null;
+  readonly confidence: number;
+  readonly reason: string;
+  readonly matchedTodos: unknown;
+  readonly suggestedCategoryId: number | null;
   status: SuggestionStatus;
-  expiresAt: Date;
-  createdAt: Date;
+  readonly expiresAt: Date;
+  readonly createdAt: Date;
   updatedAt: Date;
 }
 
@@ -29,7 +29,7 @@ export interface SuggestionProps {
  * 제안의 상태 전이 불변식(대기 상태·만료 여부)을 소유한다. 수락/거절 액션은
  * PENDING이면서 만료되지 않은 제안에만 허용되며, 위반 시 DomainException을 던진다.
  * daysOfWeek/matchedTodos는 저장소가 Json으로 보관하므로 원본(unknown)으로 노출하고,
- * 요일 파싱은 표현 계층 매퍼가 담당한다.
+ * 수락 시 요일 검증과 응답 매핑은 Application/Presentation이 담당한다.
  */
 export class Suggestion extends AggregateRoot<SuggestionProps> {
   static reconstitute(props: SuggestionProps): Suggestion {
@@ -83,6 +83,18 @@ export class Suggestion extends AggregateRoot<SuggestionProps> {
 
   get createdAt(): Date {
     return new Date(this.props.createdAt);
+  }
+
+  accept(at: Date): void {
+    this.ensureActionable(at);
+    this.props.status = "ACCEPTED";
+    this.props.updatedAt = new Date(at);
+  }
+
+  dismiss(at: Date): void {
+    this.ensureActionable(at);
+    this.props.status = "DISMISSED";
+    this.props.updatedAt = new Date(at);
   }
 
   isPending(): boolean {

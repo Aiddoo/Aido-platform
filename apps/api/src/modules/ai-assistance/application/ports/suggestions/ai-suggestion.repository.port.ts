@@ -59,6 +59,7 @@ export interface AiSuggestionRepositoryPort {
     userId: string,
     from: Date,
     to: Date,
+    timezone?: string,
   ): Promise<CategoryCompletionRate[]>;
   findUserStreakInfo(userId: string): Promise<UserStreakInfo | null>;
   findRecentTodos(

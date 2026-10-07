@@ -27,35 +27,7 @@ import {
   ReportStatusResponseDto,
 } from "../../schemas/reports/index.js";
 
-/**
- * AI 리포트 API 컨트롤러
- *
- * 주간/월간 AI 분석 리포트를 조회하는 API입니다.
- * 리포트는 서버에서 자동 생성되며, 프리미엄 유저만 조회 가능합니다.
- *
- * ### 주요 기능
- * - 리포트 상태 조회 (다음 리포트 예정일, 최신 리포트)
- * - 리포트 목록 조회 (타입별 필터링)
- * - 리포트 상세 조회
- *
- * ### AI 분석 방식
- * - **모델**: 모든 경로에서 **Gemini 2.5 Flash-Lite** 사용
- * - **행동과학 프레임워크**: 습관 루프(신호→루틴→보상), 최소 유효 용량, 구현 의도, 자기효능감 적용
- * - **동적 프롬프트**: 달성률/변화율에 따라 4가지 템플릿 자동 분기 (고달성/저달성/큰변화/안정)
- * - **이전 보고서 연계**: 지난 보고서의 팁이 이번 주 데이터에서 효과가 있었는지 추적
- * - **한국 시즌 반영**: 벚꽃/장마/추석/연말 등 11개 시즌 이벤트 자동 반영
- * - **아이도냥 페르소나**: 물고기 비유, 달성률별 톤 분기, 캐치프레이즈 등 감정 교류 코칭
- *
- * ### 자동 생성 스케줄 (KST 기준)
- * | 타입 | 생성 시점 | 알림 발송 | 분석 대상 |
- * |------|----------|----------|----------|
- * | 주간 | 매주 **월요일 01:00 KST** | **월요일 08:00 KST** | 직전 주 월~일 |
- * | 월간 | 매월 **1일 01:00 KST** | **1일 08:00 KST** | 전월 전체 |
- *
- * ### 안전성
- * - BullMQ jobId (7일 보관) + DB 중복 체크 — 중복 생성/알림 없음
- * - 서버 재시작 시 미처리 잡은 Redis에서 자동 이어서 처리
- */
+/** 유료 사용자의 리포트 조회 HTTP 진입점. */
 @ApiTags(SWAGGER_TAGS.AI)
 @ApiBearerAuth()
 @Controller("ai/reports")
@@ -186,7 +158,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
     @Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
   ): Promise<AiReportListResponseDto> {
     const reports = await this.getReportsUseCase.execute(user.userId, {
-      type: query.type as "WEEKLY" | "MONTHLY" | undefined,
+      type: query.type,
       limit: query.limit,
     });
 

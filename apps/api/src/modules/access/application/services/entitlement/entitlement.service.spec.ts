@@ -215,4 +215,20 @@ describe("EntitlementService", () => {
     // Then
     expect(remaining).toBe(expected);
   });
+  it.each(["FREE", "EXPIRED", "CANCELLED"])(
+    "fresh premium은 warm ACTIVE cache와 달라진 %s 상태를 읽는다",
+    async (status) => {
+      const fixture = createEntitlementFixture({ subscriptionStatus: "ACTIVE" });
+      expect(await fixture.service.hasPremiumAccess(fixture.userId)).toBe(true);
+      fixture.database.users.set(fixture.userId, { role: "USER", subscriptionStatus: status });
+      expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(false);
+      expect(await fixture.service.hasPremiumAccess(fixture.userId)).toBe(true);
+    },
+  );
+  it("fresh premium은 존재하지 않는 사용자와 ADMIN 삭제를 허용하지 않는다", async () => {
+    const fixture = createEntitlementFixture({ role: "ADMIN" });
+    expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(true);
+    fixture.database.users.delete(fixture.userId);
+    expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(false);
+  });
 });

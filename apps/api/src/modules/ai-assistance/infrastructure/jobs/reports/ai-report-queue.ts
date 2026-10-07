@@ -1,14 +1,21 @@
-/**
- * AI 리포트 생성 BullMQ 큐 상수 및 잡 데이터 타입.
- *
- * 큐 이름·잡 이름을 프로세서에서 분리하여 배럴·health 등 소비처가 프로세서 내부를
- * 딥임포트하지 않고 큐 상수만 참조하도록 한다.
- */
+import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
 export const AI_REPORT_QUEUE = "ai-report-generation.v1";
 export const AI_REPORT_LEGACY_QUEUE = "ai-report-generation";
+
+export const AiReportSchedulerName = {
+  WEEKLY: "weekly-report-scheduler",
+  MONTHLY: "monthly-report-scheduler",
+} as const;
+
+export const AiReportJobKey = {
+  dispatch: (type: AiReportDispatchData["reportType"], periodId: string) =>
+    `dispatch_${type}_${periodId}`,
+  generate: (type: AiReportDispatchData["reportType"], userId: string, periodId: string) =>
+    `report_${type}_${userId}_${periodId}`,
+} as const;
 
 /** 잡 이름 상수 */
 export const AiReportJobName = {
@@ -59,8 +66,6 @@ export interface AiReportJobMap {
 
 export type AiReportJobData = AiReportJobMap[keyof AiReportJobMap];
 export type AiReportRuntimeJob = z.infer<typeof AiReportRuntimeJobSchema>;
-
-import { z } from "zod";
 
 export interface ReportDispatcher {
   dispatchReports(reportType: AiReportDispatchData["reportType"]): Promise<void>;

@@ -1,5 +1,4 @@
 import type { ParsedTodoData } from "@aido/api";
-import { parsedTodoDataSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -7,8 +6,6 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildParseTodoPromptEn } from "../../../domain/services/parsing/prompts/parse-todo.prompt.en.js";
-import { buildParseTodoPrompt } from "../../../domain/services/parsing/prompts/parse-todo.prompt.js";
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
 import {
   type AiProvider,
@@ -17,6 +14,7 @@ import {
 } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
+import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
 
 /** 파싱 메타데이터 (모델·처리시간·토큰). */
 export interface ParseTodoMeta {
@@ -51,10 +49,10 @@ export interface ParseTodoInput {
  * 구분해 던진다.
  */
 interface ParseTodoDependencies {
-  readonly aiProvider: AiProvider;
-  readonly categoryReader: UserCategoryReaderPort;
+  readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
-  readonly logger: ApplicationLogger;
+  readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
 export class ParseTodo {
@@ -88,8 +86,8 @@ export class ParseTodo {
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
     const categoryIds = new Set(userCategories.map((category) => category.id));
 
-    const buildTodoPrompt = locale === "en" ? buildParseTodoPromptEn : buildParseTodoPrompt;
-    const { system, prompt } = buildTodoPrompt(
+    const { build, schema } = aiPromptCatalog[locale].parseTodo;
+    const { system, prompt } = build(
       text,
       timezone,
       now(),
@@ -100,7 +98,7 @@ export class ParseTodo {
       const result = await this.#dependencies.aiProvider.generateStructured({
         system,
         prompt,
-        schema: parsedTodoDataSchema,
+        schema,
         maxOutputTokens: 200,
       });
 
@@ -142,7 +140,7 @@ export class ParseTodo {
       this.#dependencies.logger.error({
         event: AiParsingLogEvent.OUTPUT_INVALID,
         userId,
-        errorType: error instanceof Error ? error.name : "UnknownError",
+        errorCode: ErrorCode.AI_1302,
       });
       throw new ApplicationException(ErrorCode.AI_1302, {
         details: error instanceof Error ? error.message : "Unknown error",

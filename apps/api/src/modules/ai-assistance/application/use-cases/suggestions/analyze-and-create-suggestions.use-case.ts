@@ -1,7 +1,9 @@
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 import dayjs from "dayjs";
 
+import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { type AiProvider } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { GridInput } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -13,13 +15,12 @@ import {
   applyTypeCap,
   dedupeByTitlePrefixAndDays,
   filterWeakPatterns,
+  groundPatternCandidates,
   normalizeStarterSuggestions,
 } from "../../../domain/services/suggestions/pattern-filter.js";
-import {
-  buildSuggestionPrompt,
-  getDetectedPatternsSchema,
-} from "../../../domain/services/suggestions/prompts/detect-patterns.prompt.js";
+import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
+import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
 import type { SuggestionContextBuilder } from "../../services/suggestions/suggestion-context.builder.js";
 
 /**
@@ -27,14 +28,19 @@ import type { SuggestionContextBuilder } from "../../services/suggestions/sugges
  *
  * 컨텍스트 수집 → 빈 기록 게이트 → AI 제안 1회 생성 →
  * 약패턴 필터·유형 캡·중복 제거 → 트랜잭션 내 기존 PENDING 교체·만료 정리·신규 저장.
- * 프리미엄 게이트가 없다(크론/프로세서 경로에서 호출).
+ * 실행과 저장 직전에 최신 유료 자격을 확인한다.
  */
 interface AnalyzeAndCreateSuggestionsDependencies {
-  readonly repository: AiSuggestionRepositoryPort;
-  readonly aiProvider: AiProvider;
-  readonly unitOfWork: UnitOfWorkPort;
-  readonly contextBuilder: SuggestionContextBuilder;
-  readonly logger: ApplicationLogger;
+  readonly repository: Pick<
+    AiSuggestionRepositoryPort,
+    "deletePending" | "deleteExpired" | "createMany"
+  >;
+  readonly aiProvider: Pick<AiProvider, "generateStructured">;
+  readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly contextBuilder: Pick<SuggestionContextBuilder, "build">;
+  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
+  readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
+  readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
 }
 
 export class AnalyzeAndCreateSuggestions {
@@ -50,37 +56,61 @@ export class AnalyzeAndCreateSuggestions {
     weatherGrid?: GridInput | null,
     locale: SupportedLocale = "ko",
   ): Promise<number> {
-    // 1. 컨텍스트 수집 (통계 분석 + 투두 조회 + 날씨)
+    if (!(await this.#dependencies.entitlementReader.hasPremiumAccessInTx(userId))) {
+      this.#dependencies.logger.debug({
+        event: AiSuggestionLogEvent.SKIPPED,
+        userId,
+        reason: "not-premium",
+      });
+      return 0;
+    }
     const context = await this.#dependencies.contextBuilder.build(
       userId,
       timezone,
       weatherGrid ?? null,
+      locale,
     );
 
     if (context.todos.length === 0) {
-      this.#dependencies.logger.debug(`제안 분석 스킵: userId=${userId}, todoCount=0`);
+      this.#dependencies.logger.debug({
+        event: AiSuggestionLogEvent.SKIPPED,
+        userId,
+        reason: "no-records",
+      });
       return 0;
     }
 
     // 2. AI 제안 생성 — 비용과 채우기용 제안을 줄이기 위해 항상 1회만 호출
-    const { system, prompt } = buildSuggestionPrompt(
-      context,
-      AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES,
-      locale,
-    );
-    const patternsSchema = getDetectedPatternsSchema(locale);
+    const { build, schema, starterReason, repeatReason } = aiPromptCatalog[locale].suggestion;
+    const { system, prompt } = build(context, AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES);
 
     const result = await this.#dependencies.aiProvider.generateStructured({
       system,
       prompt,
-      schema: patternsSchema,
+      schema,
       maxOutputTokens: 1500,
     });
 
     const isStarter = context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
+    const excludedTitles = context.suggestionHistory.map((history) => history.title);
     let patterns = isStarter
-      ? normalizeStarterSuggestions(result.output.patterns, context, locale)
-      : filterWeakPatterns(result.output.patterns, context);
+      ? normalizeStarterSuggestions(result.output.patterns, context)
+          .map(({ pattern, recordedActivity }) => ({
+            ...pattern,
+            reason: starterReason(context.todos.length, recordedActivity, pattern.daysOfWeek),
+          }))
+          .filter((pattern) => !excludedTitles.includes(pattern.title))
+      : groundPatternCandidates(
+          filterWeakPatterns(result.output.patterns, context),
+          context,
+          excludedTitles,
+        ).map(({ pattern, recordedActivity }) => ({
+          ...pattern,
+          reason:
+            recordedActivity === null
+              ? pattern.reason
+              : repeatReason(recordedActivity, pattern.daysOfWeek),
+        }));
 
     if (!isStarter) {
       patterns = applyTypeCap(patterns);
@@ -88,20 +118,29 @@ export class AnalyzeAndCreateSuggestions {
     patterns = dedupeByTitlePrefixAndDays(patterns);
 
     if (patterns.length === 0) {
-      this.#dependencies.logger.debug(`패턴 미감지: userId=${userId}`);
+      this.#dependencies.logger.debug({
+        event: AiSuggestionLogEvent.SKIPPED,
+        userId,
+        reason: "no-patterns",
+      });
       return 0;
     }
 
-    // 3. 기존 PENDING 교체 + 만료 정리 + 새 제안 저장 (트랜잭션)
     const currentDate = dayjs.utc(now());
     const expiresAt = currentDate.add(AI_SUGGESTION_LIMITS.SUGGESTION_EXPIRY_DAYS, "day").toDate();
 
-    // 신뢰도 내림차순 정렬 후 상한 적용 (Gemini review 반영)
     const limitedPatterns = [...patterns]
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, AI_SUGGESTION_LIMITS.MAX_SUGGESTIONS_PER_USER);
 
     const createdCount = await this.#dependencies.unitOfWork.run(async () => {
+      const { userMutationLock, entitlementReader } = this.#dependencies;
+      if (
+        !(await userMutationLock.lockById(userId)) ||
+        !(await entitlementReader.hasPremiumAccessInTx(userId))
+      ) {
+        return 0;
+      }
       await this.#dependencies.repository.deletePending(userId);
       await this.#dependencies.repository.deleteExpired(userId);
 
@@ -125,9 +164,14 @@ export class AnalyzeAndCreateSuggestions {
       return count;
     });
 
-    this.#dependencies.logger.log(
-      `제안 생성 완료: userId=${userId}, patterns=${patterns.length}, created=${createdCount}`,
-    );
+    if (createdCount > 0) {
+      this.#dependencies.logger.log({
+        event: AiSuggestionLogEvent.SAVED,
+        userId,
+        patternCount: patterns.length,
+        createdCount,
+      });
+    }
 
     return createdCount;
   }

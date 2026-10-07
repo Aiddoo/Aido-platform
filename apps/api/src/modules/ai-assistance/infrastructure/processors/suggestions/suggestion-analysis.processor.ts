@@ -24,15 +24,8 @@ import {
   AiSuggestionJobName,
   AiSuggestionRuntimeJobSchema,
 } from "../../jobs/suggestions/ai-suggestion-queue.js";
+import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 
-/**
- * AI 반복 제안 분석 BullMQ 프로세서
- *
- * - dispatch-analysis: 스케줄러 트리거 → per-user 잡 등록
- * - analyze-suggestion: 단일 사용자 패턴 분석 + 알림 발송
- * - BullMQ 자동 재시도 (3회, exponential backoff)
- * - concurrency=5로 Gemini API rate limit 대응
- */
 type AiSuggestionJob = NamedJob<AiSuggestionJobMap>;
 type AiSuggestionJobLike = {
   readonly name: string;
@@ -52,14 +45,20 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   }
 
   constructor(
-    private readonly analyzeAndCreateSuggestionsUseCase: AnalyzeAndCreateSuggestions,
-    private readonly notificationService: NotificationPublisher,
+    @Inject(AnalyzeAndCreateSuggestions) private readonly analyzeSuggestions: Pick<
+      AnalyzeAndCreateSuggestions,
+      "execute"
+    >,
+    @Inject(NotificationPublisher) private readonly notificationPublisher: Pick<
+      NotificationPublisher,
+      "publish"
+    >,
     private readonly database: DatabaseService,
     @Optional() @Inject(JOB_RUNTIME) private readonly runtime?: JobRuntimePort,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    if (!this.runtime) return;
+    if (this.runtime === undefined) return;
     await this.runtime.work<AiSuggestionJob>(
       AI_SUGGESTION_QUEUE,
       async (jobs) => {
@@ -77,24 +76,30 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
   }
 
   onStalled(jobId: string): void {
-    this.#logger.warn(`Job stalled: jobId=${jobId}`);
+    this.#logger.warn({ event: AiJobLogEvent.STALLED, queueName: AI_SUGGESTION_QUEUE, jobId });
   }
 
-  onError(error: Error): void {
-    this.#logger.error(`Worker error: ${error.message}`, error.stack);
+  onError(_error: Error): void {
+    this.#logger.error({
+      event: AiJobLogEvent.WORKER_FAILED,
+      queueName: AI_SUGGESTION_QUEUE,
+      errorType: "Error",
+    });
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
-    this.#logger.error(
-      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
-      error.stack,
-    );
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
+    this.#logger.error({
+      event: AiJobLogEvent.FAILED,
+      queueName: AI_SUGGESTION_QUEUE,
+      jobId: job?.id,
+      errorType: "Error",
+    });
   }
 
   async process(untrustedJob: AiSuggestionJobLike): Promise<void> {
     const parsedJob = AiSuggestionRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
-      this.#logger.warn(`Invalid AI suggestion job: name=${untrustedJob.name}`);
+      this.#logger.warn({ event: AiJobLogEvent.INVALID, queueName: AI_SUGGESTION_QUEUE });
       return;
     }
     const job = parsedJob.data;
@@ -105,7 +110,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
 
     const { userId, timezone, weatherGrid } = job.data;
 
-    this.#logger.debug(`Processing suggestion analysis: userId=${userId}`);
+    this.#logger.debug({ event: AiJobLogEvent.STARTED, queueName: AI_SUGGESTION_QUEUE, userId });
 
     // 제안 문구(AI 생성)와 푸시 알림이 같은 언어를 쓰도록 분석 전에 locale을 조회한다
     const preference = decodeRecord(
@@ -116,7 +121,7 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     );
     const locale = toSupportedLocale(preference?.locale);
 
-    const createdCount = await this.analyzeAndCreateSuggestionsUseCase.execute(
+    const createdCount = await this.analyzeSuggestions.execute(
       userId,
       timezone,
       weatherGrid,
@@ -124,12 +129,12 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
     );
 
     if (createdCount === 0) {
-      this.#logger.debug(`Suggestion analysis skipped (no patterns): userId=${userId}`);
+      this.#logger.debug({ event: AiJobLogEvent.SKIPPED, queueName: AI_SUGGESTION_QUEUE, userId });
       return;
     }
 
     const message = createAiSuggestionNotificationMessage({ locale });
-    await this.notificationService.publish({
+    await this.notificationPublisher.publish({
       userId,
       type: "AI_SUGGESTION",
       purpose: "ENGAGEMENT",
@@ -139,6 +144,11 @@ export class SuggestionAnalysisProcessor implements OnModuleInit {
       body: message.body,
     });
 
-    this.#logger.log(`Suggestion analysis complete: userId=${userId}, created=${createdCount}`);
+    this.#logger.log({
+      event: AiJobLogEvent.COMPLETED,
+      queueName: AI_SUGGESTION_QUEUE,
+      userId,
+      createdCount,
+    });
   }
 }

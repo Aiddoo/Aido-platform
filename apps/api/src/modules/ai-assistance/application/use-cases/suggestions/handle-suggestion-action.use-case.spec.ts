@@ -3,13 +3,12 @@ import { mockDeep } from "vitest-mock-extended";
 
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
 import {
   Suggestion,
   type SuggestionProps,
 } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
-import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
-import { type RecurringTodoCreatorPort } from "../../ports/suggestions/recurring-todo-creator.port.js";
 import { HandleSuggestionAction } from "./handle-suggestion-action.use-case.js";
 
 const mockUserId = "user-123";
@@ -35,8 +34,10 @@ function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
 
 describe("HandleSuggestionAction", () => {
   let useCase: HandleSuggestionAction;
-  let repo: Mocked<AiSuggestionRepositoryPort>;
-  let creator: Mocked<RecurringTodoCreatorPort>;
+  let repo: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"]>;
+  let creator: Mocked<
+    ConstructorParameters<typeof HandleSuggestionAction>[0]["recurringTodoCreator"]
+  >;
   let entitlement: Mocked<
     ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"]
   >;
@@ -44,7 +45,7 @@ describe("HandleSuggestionAction", () => {
   beforeEach(async () => {
     const handleSuggestionActionDependencies = mockDeep<
       ConstructorParameters<typeof HandleSuggestionAction>[0]
-    >({});
+    >({ unitOfWork: createUnitOfWorkMock() });
     const unit = new HandleSuggestionAction(handleSuggestionActionDependencies);
 
     useCase = unit;
@@ -52,11 +53,12 @@ describe("HandleSuggestionAction", () => {
     creator = handleSuggestionActionDependencies.recurringTodoCreator;
     entitlement = handleSuggestionActionDependencies.entitlementReader;
 
-    entitlement.hasPremiumAccess.mockResolvedValue(true);
+    entitlement.hasPremiumAccessInTx.mockResolvedValue(true);
+    handleSuggestionActionDependencies.userMutationLock.lockById.mockResolvedValue(true);
   });
 
   it("비프리미엄 사용자면 AI_1309 예외를 던지고 조회하지 않아야 한다", async () => {
-    entitlement.hasPremiumAccess.mockResolvedValue(false);
+    entitlement.hasPremiumAccessInTx.mockResolvedValue(false);
 
     await expect(
       useCase.execute({
@@ -177,43 +179,23 @@ describe("HandleSuggestionAction", () => {
     expect(result.createdTodosCount).toBe(12);
   });
 
-  it("수락 시 투두 생성 실패하면 상태가 PENDING으로 롤백되어야 한다", async () => {
+  it("수락 시 생성 실패는 원본 오류를 전파하고 보상 UPDATE를 실행하지 않는다", async () => {
+    // Given - 정상 pending과 반복 할 일 생성 오류
     repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
     repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
-    creator.createRecurring.mockRejectedValue(new Error("투두 생성 실패"));
-
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 1,
-        action: "accept",
-        categoryId: 5,
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toThrow("투두 생성 실패");
-
-    expect(repo.updateStatus).toHaveBeenCalledTimes(2);
-    expect(repo.updateStatus).toHaveBeenNthCalledWith(1, 1, "ACCEPTED");
-    expect(repo.updateStatus).toHaveBeenNthCalledWith(2, 1, "PENDING");
-  });
-
-  it("수락 시 투두 생성 실패 후 롤백도 실패하면 원본 에러가 전파되어야 한다", async () => {
-    repo.findByIdAndUserId.mockResolvedValue(createSuggestion());
-    repo.updateStatus
-      .mockResolvedValueOnce(createSuggestion({ status: "ACCEPTED" }))
-      .mockRejectedValueOnce(new Error("DB 연결 끊김"));
-    creator.createRecurring.mockRejectedValue(new Error("투두 생성 실패"));
-
-    await expect(
-      useCase.execute({
-        userId: mockUserId,
-        suggestionId: 1,
-        action: "accept",
-        categoryId: 5,
-        timezone: "Asia/Seoul",
-      }),
-    ).rejects.toThrow("투두 생성 실패");
-
-    expect(repo.updateStatus).toHaveBeenNthCalledWith(2, 1, "PENDING");
+    const failure = new Error("투두 생성 실패");
+    creator.createRecurring.mockRejectedValue(failure);
+    // When - 실제 action use-case 실행
+    const execution = useCase.execute({
+      userId: mockUserId,
+      suggestionId: 1,
+      action: "accept",
+      categoryId: 5,
+      timezone: "Asia/Seoul",
+    });
+    // Then - DB rollback 자체는 실제 PG에서 검증하며 여기서는 에러와 단일 write 경계 확인
+    await expect(execution).rejects.toBe(failure);
+    expect(repo.updateStatus).toHaveBeenCalledTimes(1);
+    expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
   });
 });

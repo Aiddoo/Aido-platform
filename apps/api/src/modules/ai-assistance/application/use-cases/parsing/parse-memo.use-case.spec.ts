@@ -37,8 +37,11 @@ describe("ParseMemo", () => {
     vi.setSystemTime(AI_QUOTA_TIME);
   });
   afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
+    try {
+      vi.restoreAllMocks();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("성공한 요청은 사용량 한 회를 유지하고 데이터와 모델 정보를 반환한다", async () => {

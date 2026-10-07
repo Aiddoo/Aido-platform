@@ -10,8 +10,15 @@ import { forEachBatch } from "#api/platform/database/utils/batch-cursor.util";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 import { toIsoMonthId, toIsoWeekId } from "#api/shared/domain/date/utils/format";
 
+import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { ReportGenerationProcessor } from "../../processors/reports/report-generation.processor.js";
-import { AI_REPORT_QUEUE, type AiReportGenerateData, AiReportJobName } from "./ai-report-queue.js";
+import {
+  AI_REPORT_QUEUE,
+  type AiReportGenerateData,
+  AiReportJobName,
+  AiReportSchedulerName,
+  AiReportJobKey,
+} from "./ai-report-queue.js";
 
 /** 잡 enqueue용 배치 크기 (API 호출 없이 큐 적재만 하므로 크게 설정) */
 const ENQUEUE_BATCH_SIZE = 50;
@@ -19,15 +26,6 @@ const ENQUEUE_BATCH_SIZE = 50;
 /** 크론 스케줄 + jobId 계산에 사용하는 기준 타임존 */
 const CRON_TZ = "Asia/Seoul";
 
-/**
- * AI 리포트 생성 스케줄러 (Dispatcher)
- *
- * - 주간 리포트: 매주 월요일 KST 01:00
- * - 월간 리포트: 매월 1일 KST 01:00
- *
- * BullMQ Job Scheduler를 사용하여 Redis에 스케줄을 저장합니다.
- * 서버 재시작 시에도 스케줄이 유지됩니다.
- */
 @Injectable()
 export class ReportGenerationJob implements OnModuleInit {
   readonly #logger = new Logger(ReportGenerationJob.name);
@@ -56,21 +54,21 @@ export class ReportGenerationJob implements OnModuleInit {
       "Report generation scheduler registration",
       async () => {
         await this.runtime.schedule(
-          "weekly-report-scheduler",
+          AiReportSchedulerName.WEEKLY,
           "0 1 * * 1",
           AI_REPORT_QUEUE,
           { name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
           this.#jobOptions(),
         );
         await this.runtime.schedule(
-          "monthly-report-scheduler",
+          AiReportSchedulerName.MONTHLY,
           "0 2 1 * *",
           AI_REPORT_QUEUE,
           { name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
           this.#jobOptions(),
         );
 
-        this.#logger.log("Report generation schedulers registered");
+        this.#logger.log({ event: AiJobLogEvent.SCHEDULED, queueName: AI_REPORT_QUEUE });
 
         await this.#catchUpIfNeeded();
       },
@@ -84,7 +82,11 @@ export class ReportGenerationJob implements OnModuleInit {
     type: "WEEKLY" | "MONTHLY",
     dispatchJob?: { updateProgress(progress: object): Promise<unknown> },
   ): Promise<void> {
-    this.#logger.log(`Starting ${type} report dispatch...`);
+    this.#logger.log({
+      event: AiJobLogEvent.DISPATCH_STARTED,
+      queueName: AI_REPORT_QUEUE,
+      reportType: type,
+    });
 
     const periodId = this.#getJobDeduplicationId(type);
     let totalEnqueued = 0;
@@ -94,8 +96,10 @@ export class ReportGenerationJob implements OnModuleInit {
       fetchPage: (cursor, take) =>
         this.database.orm.public.User.where((row) =>
           and(
-            cursor ? row.id.gt(cursor) : all(),
+            cursor !== undefined ? row.id.gt(cursor) : all(),
             or(row.subscriptionStatus.eq("ACTIVE"), row.role.eq("ADMIN")),
+            row.status.eq("ACTIVE"),
+            row.deletedAt.isNull(),
           ),
         )
           .select("id")
@@ -120,7 +124,7 @@ export class ReportGenerationJob implements OnModuleInit {
               },
               {
                 ...this.#jobOptions(),
-                idempotencyKey: `report_${type}_${user.id}_${periodId}`,
+                idempotencyKey: AiReportJobKey.generate(type, user.id, periodId),
               },
             ),
           ),
@@ -130,14 +134,19 @@ export class ReportGenerationJob implements OnModuleInit {
       },
     });
 
-    this.#logger.log(`${type} report jobs enqueued: total=${totalEnqueued}`);
+    this.#logger.log({
+      event: AiJobLogEvent.DISPATCH_COMPLETED,
+      queueName: AI_REPORT_QUEUE,
+      reportType: type,
+      enqueuedCount: totalEnqueued,
+    });
   }
 
   /**
    * 서버 재시작 시 놓친 크론 스케줄을 보정합니다.
    *
    * 현재 KST 시각이 크론 트리거 윈도우 내에 있으면 dispatch 잡을 큐에 추가합니다.
-   * 멱등성이 보장되므로 (BullMQ jobId + DB exists) 중복 실행 위험 없음.
+   * 동일 기간의 enqueue 중복은 runtime key로 줄이고 저장 중복은 Application에서 확인한다.
    */
   async #catchUpIfNeeded(): Promise<void> {
     const kstNow = dayjs().tz(CRON_TZ);
@@ -149,22 +158,30 @@ export class ReportGenerationJob implements OnModuleInit {
     // 주간: 월요일 01:00 이후
     if (dayOfWeek === 1 && hour >= 1) {
       const weekId = toIsoWeekId(now, CRON_TZ);
-      this.#logger.log("Catch-up: WEEKLY report dispatch");
+      this.#logger.log({
+        event: AiJobLogEvent.CATCH_UP,
+        queueName: AI_REPORT_QUEUE,
+        reportType: "WEEKLY",
+      });
       await this.runtime.enqueue(
         AI_REPORT_QUEUE,
         { name: AiReportJobName.DISPATCH, data: { reportType: "WEEKLY" } },
-        { ...this.#jobOptions(), idempotencyKey: `dispatch_WEEKLY_${weekId}` },
+        { ...this.#jobOptions(), idempotencyKey: AiReportJobKey.dispatch("WEEKLY", weekId) },
       );
     }
 
     // 월간: 1일 01:00 이후
     if (dayOfMonth === 1 && hour >= 1) {
       const monthId = toIsoMonthId(now, CRON_TZ);
-      this.#logger.log("Catch-up: MONTHLY report dispatch");
+      this.#logger.log({
+        event: AiJobLogEvent.CATCH_UP,
+        queueName: AI_REPORT_QUEUE,
+        reportType: "MONTHLY",
+      });
       await this.runtime.enqueue(
         AI_REPORT_QUEUE,
         { name: AiReportJobName.DISPATCH, data: { reportType: "MONTHLY" } },
-        { ...this.#jobOptions(), idempotencyKey: `dispatch_MONTHLY_${monthId}` },
+        { ...this.#jobOptions(), idempotencyKey: AiReportJobKey.dispatch("MONTHLY", monthId) },
       );
     }
   }

@@ -16,6 +16,11 @@ import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.pu
  */
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
+import {
+  createParsedMemoResponse,
+  createParsedTodoResponse,
+  parsingIntentCases,
+} from "#test/fixtures/ai-response.fixture";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -944,4 +949,189 @@ describe("AI E2E", () => {
       });
     });
   });
+
+  it.each(["ko", "en"] as const)(
+    "%s parsing은 locale prompt를 선택하고 요청당 quota 한 회만 쓴다",
+    async (locale) => {
+      // Given - 완전한 operation 응답, locale별 원문
+      const title = locale === "ko" ? "책 읽기" : "Read a book";
+      fakeAiProvider.setRawResponse(createParsedTodoResponse({ title }));
+      // When - 실제 HTTP와 locale decorator를 통과
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/ai/parse-todo")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Accept-Language", locale)
+        .send({ text: title });
+      // Then - 해당 문구와 실제 저장 quota 1
+      expect(response.status).toBe(200);
+      expect(response.body.data.data.title).toBe(title);
+      expect(fakeAiProvider.getLastSystem()).toContain(locale === "en" ? "You are" : "당신은");
+      const usage = await request(ctx.app.getHttpServer())
+        .get("/v1/ai/usage")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(usage.body.data.data.used).toBe(1);
+    },
+  );
+
+  it.each(["ko", "en"] as const)(
+    "%s Memo의 다중 결과도 실제 quota는 한 회만 증가한다",
+    async (locale) => {
+      // Given - 명시적인 완전 Memo 응답에 Todo 두 개
+      const raw = createParsedMemoResponse(1);
+      raw.todos.push({
+        ...raw.todos[0]!,
+        title: locale === "en" ? "Prepare notes" : "자료 준비",
+        items: [],
+      });
+      fakeAiProvider.setRawResponse(raw);
+      // When - locale HTTP parsing
+      const response = await request(ctx.app.getHttpServer())
+        .post("/v1/ai/parse-memo")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .set("Accept-Language", locale)
+        .send({ content: "일정 두 개", categoryId: 1 });
+      // Then - 결과 두 개, 외부 provider 호출과 quota 한 회
+      expect(response.status).toBe(200);
+      expect(response.body.data.data.todos).toHaveLength(2);
+      expect(fakeAiProvider.getCallCount()).toBe(1);
+      const usage = await request(ctx.app.getHttpServer())
+        .get("/v1/ai/usage")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(usage.body.data.data.used).toBe(1);
+    },
+  );
+
+  it.each([
+    { locale: "ko", route: "parse-todo" },
+    { locale: "en", route: "parse-todo" },
+    { locale: "ko", route: "parse-memo" },
+    { locale: "en", route: "parse-memo" },
+  ] as const)(
+    "$locale $route는 혼합 지시 원문을 보존하고 납부 정답 fixture를 HTTP로 반환한다",
+    async ({ locale, route }) => {
+      // Given - 실제 평가에서 실패한 원문, 명시적인 납부 정답을 주는 외부 대역
+      const item = parsingIntentCases.find((candidate) => candidate.id === "mixed-command");
+      if (!item) throw new Error("혼합 지시 회귀 fixture가 필요합니다");
+      const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+      const todo = createParsedTodoResponse({
+        title: item.title[locale],
+        startDate: "2026-03-08",
+        scheduledTime: "09:00",
+        isAllDay: false,
+      });
+      fakeAiProvider.setRawResponse(
+        route === "parse-todo" ? todo : { todos: [{ ...todo, categoryId: 999999, items: [] }] },
+      );
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
+      try {
+        // When - 실제 locale/시간대/HTTP 경계를 거친다. LLM 의미 판단은 이 대역이 검증하지 않는다
+        const response = await request(ctx.app.getHttpServer())
+          .post(`/v1/ai/${route}`)
+          .set("Authorization", `Bearer ${accessToken}`)
+          .set("Accept-Language", locale)
+          .set("X-Timezone", "Asia/Seoul")
+          .send(
+            route === "parse-todo"
+              ? { text: item.input[locale], categoryId }
+              : { content: item.input[locale], categoryId },
+          );
+        // Then - 정답 action/time, 소유 카테고리 보정, 원문 및 개선한 system 전달, 실제 quota 한 회
+        expect(response.status).toBe(200);
+        const data = response.body.data.data;
+        const parsed = route === "parse-todo" ? data : data.todos[0];
+        expect(parsed).toMatchObject({ ...todo, categoryId });
+        if (route === "parse-memo") {
+          expect(data.todos).toHaveLength(1);
+          expect(parsed.items).toEqual([]);
+        }
+        expect(fakeAiProvider.getLastPrompt()).toContain(JSON.stringify(item.input[locale]));
+        expect(fakeAiProvider.getLastSystem()).toContain(JSON.stringify(item.title[locale]));
+        expect(fakeAiProvider.getLastSystem()).toContain('"scheduledTime":"09:00"');
+        const usage = await request(ctx.app.getHttpServer())
+          .get("/v1/ai/usage")
+          .set("Authorization", `Bearer ${accessToken}`);
+        expect(usage.body.data.data.used).toBe(1);
+        expect(fakeAiProvider.getCallCount()).toBe(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it.each([
+    { input: "매일 러닝", title: "러닝" },
+    { input: "매일 러닝 30분", title: "러닝 30분" },
+  ])(
+    "$input의 원문과 반환 분량을 보존하고 매일 반복·시간 null·quota 한 회를 유지한다",
+    async ({ input, title }) => {
+      // Given - 분량 없는 입력과 명시된 30분 대조 쌍. 실제 LLM 판단은 별도 실호출 평가가 소유한다
+      const categoryId = await ctx.helpers.getDefaultCategoryId(accessToken);
+      const dailyDays = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+      fakeAiProvider.setRawResponse(
+        createParsedTodoResponse({
+          title,
+          startDate: "2026-03-07",
+          scheduledTime: null,
+          isAllDay: true,
+          isRecurring: true,
+          recurrence: {
+            daysOfWeek: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
+            endDate: "2026-04-04",
+          },
+        }),
+      );
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-03-07T14:30:00Z"));
+      try {
+        // When - 실제 인증·locale·시간대·schema/mapper 경계
+        const response = await request(ctx.app.getHttpServer())
+          .post("/v1/ai/parse-todo")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .set("Accept-Language", "ko")
+          .set("X-Timezone", "Asia/Seoul")
+          .send({ text: input, categoryId })
+          .expect(200);
+        // Then - 서버가 30분을 보충/제거하지 않고 외부 결과와 요청 원문을 보존한다
+        expect(response.body.data.data).toMatchObject({
+          title,
+          scheduledTime: null,
+          isAllDay: true,
+          isRecurring: true,
+          recurrence: { daysOfWeek: dailyDays },
+          categoryId,
+        });
+        expect(fakeAiProvider.getLastPrompt()).toContain(JSON.stringify(input));
+        const usage = await request(ctx.app.getHttpServer())
+          .get("/v1/ai/usage")
+          .set("Authorization", `Bearer ${accessToken}`)
+          .expect(200);
+        expect(usage.body.data.data.used).toBe(1);
+        expect(fakeAiProvider.getCallCount()).toBe(1);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it.each(["parse-todo", "parse-memo"])(
+    "%s의 필수 필드 누락 raw 출력은 실제 AI_1302와 quota 보상을 반환한다",
+    async (route) => {
+      // Given - 기본 Todo 값을 보충하면 안 되는 원본 빈 객체
+      fakeAiProvider.setRawResponse({});
+      // When - 실제 production schema로 parsing
+      const response = await request(ctx.app.getHttpServer())
+        .post(`/v1/ai/${route}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send(route === "parse-todo" ? { text: "회의" } : { content: "회의", categoryId: 1 });
+      // Then - schema 실패와 저장된 사용량 원복
+      expect(response.status).toBe(422);
+      expect(response.body.error.code).toBe("AI_1302");
+      expect(fakeAiProvider.getCallCount()).toBe(1);
+      const usage = await request(ctx.app.getHttpServer())
+        .get("/v1/ai/usage")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(usage.body.data.data.used).toBe(0);
+    },
+  );
 });

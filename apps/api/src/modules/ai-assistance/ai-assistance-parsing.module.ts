@@ -7,10 +7,6 @@ import { AI_PROVIDERS } from "./ai-assistance-parsing.providers.js";
 import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
 import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
-import {
-  AI_PROVIDER_GEMINI,
-  AiRouterAdapter,
-} from "./infrastructure/adapters/parsing/ai-router.adapter.js";
 import { GeminiAiAdapter } from "./infrastructure/adapters/parsing/gemini-ai.adapter.js";
 import { TodoCategoryReaderAdapter } from "./infrastructure/adapters/parsing/todo-category-reader.adapter.js";
 import { AiUsageGuard } from "./infrastructure/guards/parsing/ai-usage.guard.js";
@@ -21,8 +17,7 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
   controllers: [AiController],
   providers: [
     AiUsageGuard,
-    { provide: AI_PROVIDER_GEMINI, useClass: GeminiAiAdapter },
-    { provide: AI_PROVIDER, useClass: AiRouterAdapter },
+    { provide: AI_PROVIDER, useClass: GeminiAiAdapter },
     { provide: AI_QUOTA, useExisting: ACCESS_AI_QUOTA },
     { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
     ...AI_PROVIDERS,

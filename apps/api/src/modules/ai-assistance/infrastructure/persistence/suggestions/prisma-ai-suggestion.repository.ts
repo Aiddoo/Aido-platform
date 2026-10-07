@@ -5,12 +5,13 @@ import { and } from "@prisma/orm-postgres/orm-client";
 import dayjs from "dayjs";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { databaseDate, databaseTimestamp } from "#api/platform/database/database-values";
+import { databaseTimestamp } from "#api/platform/database/database-values";
 import type * as PrismaModels from "#api/platform/database/database.types";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   AiSuggestionRepositoryPort,
@@ -85,7 +86,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
         and(row.id.eq(id), row.userId.eq(userId)),
       ).first(),
     );
-    return row ? PrismaAiSuggestionRepository.toEntity(row) : null;
+    return row === null ? null : PrismaAiSuggestionRepository.toEntity(row);
   }
 
   async updateStatus(id: number, status: SuggestionStatus): Promise<Suggestion> {
@@ -101,42 +102,27 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
   }
 
   async createMany(data: CreateSuggestionInput[]): Promise<{ count: number }> {
-    const result = {
+    return {
       count: await this.client.orm.public.RecurringSuggestion.createAndCount(
-        data
-          .map((input) => ({
-            userId: input.userId,
-            title: input.title,
-            daysOfWeek: input.daysOfWeek,
-            scheduledTime: input.scheduledTime,
-            confidence: input.confidence,
-            reason: input.reason,
-            matchedTodos: input.matchedTodos,
-            expiresAt: input.expiresAt,
-            suggestedCategoryId: input.suggestedCategoryId,
-          }))
-          .map((value) => encodeCreate("RecurringSuggestion", value)),
+        data.map((input) => encodeCreate("RecurringSuggestion", input)),
       ),
     };
-    return { count: result.count };
   }
 
   async deletePending(userId: string): Promise<{ count: number }> {
-    const result = {
+    return {
       count: await this.client.orm.public.RecurringSuggestion.where((row) =>
         and(row.userId.eq(userId), row.status.eq("PENDING")),
       ).deleteAndCount(),
     };
-    return { count: result.count };
   }
 
   async deleteExpired(userId: string): Promise<{ count: number }> {
-    const result = {
+    return {
       count: await this.client.orm.public.RecurringSuggestion.where((row) =>
         and(row.userId.eq(userId), row.expiresAt.lt(databaseTimestamp(now()))),
       ).deleteAndCount(),
     };
-    return { count: result.count };
   }
 
   async findDayCompletionRates(
@@ -150,8 +136,8 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
       await this.client.orm.public.DailyCompletion.where((row) =>
         and(
           row.userId.eq(userId),
-          row.date.gte(databaseDate(from)),
-          row.date.lte(databaseDate(to)),
+          row.date.gte(toDateString(startOfDayInTimezone(from, timezone))),
+          row.date.lte(toDateString(startOfDayInTimezone(to, timezone))),
         ),
       )
         .select("date", "totalTodos", "completedTodos")
@@ -164,9 +150,9 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
     }
 
     for (const c of completions) {
-      const dayName = dayIndexToDayOfWeek(dayjs(c.date).tz(timezone).day());
+      const dayName = dayIndexToDayOfWeek(dayjs.utc(c.date).day());
       const entry = dayMap.get(dayName);
-      if (!entry) continue;
+      if (entry === undefined) continue;
       entry.total += c.totalTodos;
       entry.completed += c.completedTodos;
     }
@@ -194,8 +180,8 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
           row.userId.eq(userId),
           row.completed.eq(true),
           row.completedAt.isNotNull(),
-          row.startDate.gte(databaseDate(from)),
-          row.startDate.lte(databaseDate(to)),
+          row.startDate.gte(toDateString(startOfDayInTimezone(from, timezone))),
+          row.startDate.lte(toDateString(startOfDayInTimezone(to, timezone))),
         ),
       )
         .select("completedAt")
@@ -206,7 +192,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
     let afternoon = 0;
 
     for (const t of todos) {
-      if (!t.completedAt) continue;
+      if (t.completedAt === null) continue;
       const hour = dayjs(t.completedAt).tz(timezone).hour();
       if (hour < 12) {
         morning++;
@@ -232,14 +218,15 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
     userId: string,
     from: Date,
     to: Date,
+    timezone = "UTC",
   ): Promise<CategoryCompletionRate[]> {
     const todos = decodeRecord(
       "Todo",
       await this.client.orm.public.Todo.where((row) =>
         and(
           row.userId.eq(userId),
-          row.startDate.gte(databaseDate(from)),
-          row.startDate.lte(databaseDate(to)),
+          row.startDate.gte(toDateString(startOfDayInTimezone(from, timezone))),
+          row.startDate.lte(toDateString(startOfDayInTimezone(to, timezone))),
         ),
       )
         .select("completed")
@@ -275,7 +262,7 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
         .first(),
     );
 
-    if (!pref) return null;
+    if (pref === null) return null;
 
     return {
       currentStreak: pref.currentStreak,
@@ -295,8 +282,8 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
         and(
           row.userId.eq(userId),
           row.recurrenceGroupId.isNull(),
-          row.startDate.gte(databaseDate(from)),
-          row.startDate.lte(databaseDate(to)),
+          row.startDate.gte(toDateString(startOfDayInTimezone(from, timezone))),
+          row.startDate.lte(toDateString(startOfDayInTimezone(to, timezone))),
         ),
       )
         .select("title", "startDate", "scheduledTime", "categoryId", "completed")
@@ -308,7 +295,8 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
     return todos.map((t) => ({
       title: t.title,
       startDate: toDateString(t.startDate),
-      scheduledTime: t.scheduledTime ? dayjs(t.scheduledTime).tz(timezone).format("HH:mm") : null,
+      scheduledTime:
+        t.scheduledTime === null ? null : dayjs(t.scheduledTime).tz(timezone).format("HH:mm"),
       categoryId: t.categoryId,
       completed: t.completed,
       categoryName: requireRecord(t.category).name,

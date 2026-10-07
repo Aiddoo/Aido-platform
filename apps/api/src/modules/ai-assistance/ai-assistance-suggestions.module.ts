@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
 
 import { NotificationModule } from "../notification/notification-delivery.module.js";
 import { PlanningTodosModule } from "../planning/planning-todos.module.js";
@@ -28,7 +29,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
  * AI 반복 제안 모듈 (DDD 클린아키텍처 · use-case 기반).
  *
  * 사용자의 할 일 패턴을 AI가 분석하여 반복 할 일을 제안합니다.
- * 컨트롤러·프로세서는 AiSuggestionFacade만 주입합니다.
+ * 컨트롤러·프로세서는 필요한 UseCase를 직접 주입한다.
  *
  * ### 주요 기능
  * - 대기 중인 제안 목록 조회 / 제안 수락(반복 할 일 자동 생성)·거절
@@ -44,6 +45,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
 @Module({
   imports: [
     AccessModule,
+    IdentityUserAccessModule,
     AiModule,
     AiReportModule,
     NotificationModule,

@@ -23,5 +23,6 @@ export interface EntitlementReaderPort {
   getResourceLimit(userId: string, resource: Resource): Promise<ResourceEntitlement>;
   getResourceLimitInTx(userId: string, resource: Resource): Promise<ResourceEntitlement>;
   hasPremiumAccess(userId: string): Promise<boolean>;
+  hasPremiumAccessInTx(userId: string): Promise<boolean>;
   calculateRemaining(dailyLimit: number | null, used: number): number | null;
 }

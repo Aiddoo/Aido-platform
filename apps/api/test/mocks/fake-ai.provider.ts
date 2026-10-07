@@ -6,6 +6,7 @@ import type {
   GenerateStructuredResult,
   TokenUsage,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import { createParsedTodoResponse } from "#test/fixtures/ai-response.fixture";
 
 export interface FakeAiProviderOptions {
   defaultResponse?: Partial<ParsedTodoData>;
@@ -22,15 +23,10 @@ export interface CallRecord {
 
 export class FakeAiProvider implements AiProvider {
   private _responses: Record<string, unknown>[] = [];
-  private _defaultResponse: ParsedTodoData = {
-    title: "테스트 할 일",
-    startDate: "2025-01-25",
-    endDate: null,
-    scheduledTime: null,
-    isAllDay: true,
-    isRecurring: false,
-    recurrence: null,
-  };
+  private _defaultResponse: ParsedTodoData = createParsedTodoResponse();
+  private readonly _initialResponse: ParsedTodoData;
+  private readonly _initialAvailable: boolean;
+  private readonly _initialDelayMs: number;
   private _callHistory: CallRecord[] = [];
   private _isAvailable = true;
   private _shouldFail = false;
@@ -51,6 +47,9 @@ export class FakeAiProvider implements AiProvider {
     if (options?.defaultDelayMs !== undefined) {
       this._delayMs = options.defaultDelayMs;
     }
+    this._initialResponse = structuredClone(this._defaultResponse);
+    this._initialAvailable = this._isAvailable;
+    this._initialDelayMs = this._delayMs;
   }
 
   async generateStructured<T>(
@@ -68,14 +67,10 @@ export class FakeAiProvider implements AiProvider {
     if (this._shouldFail) {
       throw this._failureError ?? new Error("AI parsing failed");
     }
-    const response = this._responses.shift() ?? this._defaultResponse;
-    const fullResponse: ParsedTodoData = {
-      ...this._defaultResponse,
-      ...response,
-    };
+    const response = this._responses.shift() ?? structuredClone(this._defaultResponse);
 
     return {
-      output: options.schema.parse(fullResponse),
+      output: options.schema.parse(response),
       model: "fake:test-model",
       usage: { ...this._tokenUsage },
     };
@@ -86,12 +81,12 @@ export class FakeAiProvider implements AiProvider {
   }
 
   setResponse(response: Partial<ParsedTodoData>): this {
-    this._responses.push(response);
+    this._responses.push(createParsedTodoResponse({ ...this._defaultResponse, ...response }));
     return this;
   }
 
   setResponses(responses: Partial<ParsedTodoData>[]): this {
-    this._responses.push(...responses);
+    for (const response of responses) this.setResponse(response);
     return this;
   }
 
@@ -146,17 +141,18 @@ export class FakeAiProvider implements AiProvider {
   }
 
   setRawResponse(response: Record<string, unknown>): this {
-    this._responses.push(response);
+    this._responses.push(structuredClone(response));
     return this;
   }
 
   clear(): this {
     this._responses = [];
     this._callHistory = [];
-    this._isAvailable = true;
+    this._defaultResponse = structuredClone(this._initialResponse);
+    this._isAvailable = this._initialAvailable;
     this._shouldFail = false;
     this._failureError = null;
-    this._delayMs = 0;
+    this._delayMs = this._initialDelayMs;
     this._tokenUsage = { input: 150, output: 50 };
     return this;
   }

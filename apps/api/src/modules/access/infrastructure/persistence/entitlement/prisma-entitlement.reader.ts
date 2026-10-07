@@ -13,7 +13,11 @@ export class PrismaEntitlementReader implements EntitlementDatabasePort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
 
   async findUserState(userId: string): Promise<EntitlementUserState | null> {
-    return await this.txHost.tx.orm.public.User.where({ id: userId })
+    return await this.txHost.tx.orm.public.User.where({
+      id: userId,
+      status: "ACTIVE",
+      deletedAt: null,
+    })
       .select("role", "subscriptionStatus")
       .first();
   }

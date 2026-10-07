@@ -22,13 +22,45 @@ function createFixture() {
 }
 
 describe("ParseTodo", () => {
+  it("필수 필드가 없는 실제 raw 응답은 AI_1302로 거절하고 quota를 보상한다", async () => {
+    // Given - 정상 fixture 기본 응답과 별개인 원본 빈 객체
+    const fixture = createFixture();
+    fixture.aiProvider.setRawResponse({});
+    // When - 실제 parsing schema 검증
+    const execution = fixture.useCase.execute(fixture.input);
+    // Then - 누락 필드를 채우지 않으며 사용량 원복
+    await expect(execution).rejects.toMatchObject({ errorCode: "AI_1302" });
+    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect(fixture.aiProvider.getCallCount()).toBe(1);
+  });
+
+  it("Fake clear는 이전 테스트의 default와 raw queue·실패·usage 설정을 모두 초기화한다", async () => {
+    // Given - 모든 mutable 응답 설정이 이전 실행에서 바뀜
+    const fixture = createFixture();
+    fixture.aiProvider
+      .setRawResponse({})
+      .setAvailable(false)
+      .setInvalidResponse()
+      .setTokenUsage({ input: 1 })
+      .setDelay(1);
+    // When - fixture reuse 전 clear
+    fixture.aiProvider.clear();
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then - constructor의 완전 정상 응답과 기본 usage 복원
+    expect(result.data.title).toBe("테스트 할 일");
+    expect(result.meta.tokenUsage).toEqual({ input: 150, output: 50 });
+    expect(fixture.aiProvider.getCallCount()).toBe(1);
+  });
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AI_QUOTA_TIME);
   });
   afterEach(() => {
-    vi.useRealTimers();
-    vi.restoreAllMocks();
+    try {
+      vi.restoreAllMocks();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("성공한 요청은 사용량 한 회를 유지하고 데이터와 모델 정보를 반환한다", async () => {

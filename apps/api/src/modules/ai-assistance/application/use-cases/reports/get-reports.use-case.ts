@@ -6,9 +6,10 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import type { ReportType } from "../../../domain/types/reports/ai-report.types.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
+import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 
 interface GetReportsDependencies {
-  readonly aiReportRepository: AiReportRepositoryPort;
+  readonly aiReportRepository: Pick<AiReportRepositoryPort, "findMany">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
 }
 
@@ -34,6 +35,6 @@ export class GetReports {
       limit: params.limit,
     });
 
-    return reports.map((report) => report.toView());
+    return reports.map((report) => toAiReportView(report));
   }
 }

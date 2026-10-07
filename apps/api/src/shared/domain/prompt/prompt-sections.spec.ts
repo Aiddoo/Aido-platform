@@ -5,12 +5,12 @@
  * 프롬프트 본문은 각 빌더 자신의 spec에서 검증하고, 여기서는 "보안/출력 규칙 주입 여부"만 봅니다.
  */
 
-import { buildParseMemoPrompt } from "#api/modules/ai-assistance/domain/services/parsing/prompts/parse-memo.prompt";
-import { buildParseTodoPrompt } from "#api/modules/ai-assistance/domain/services/parsing/prompts/parse-todo.prompt";
-import { buildReportPrompt } from "#api/modules/ai-assistance/domain/services/reports/prompts/report.prompt";
-import { buildSuggestionPrompt } from "#api/modules/ai-assistance/domain/services/suggestions/prompts/detect-patterns.prompt";
+import { buildParseMemoPrompt } from "#api/modules/ai-assistance/application/prompts/parsing/parse-memo.prompt";
+import { buildParseTodoPrompt } from "#api/modules/ai-assistance/application/prompts/parsing/parse-todo.prompt";
+import { buildReportPrompt } from "#api/modules/ai-assistance/application/prompts/reports/report.prompt";
+import { buildSuggestionPrompt } from "#api/modules/ai-assistance/application/prompts/suggestions/detect-patterns.prompt";
+import type { SuggestionContext } from "#api/modules/ai-assistance/application/types/suggestions/suggestion-context";
 import type { AggregatedReportData } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
-import type { SuggestionContext } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 
 import { PROMPT_OUTPUT_DISCIPLINE, PROMPT_SECURITY_GUARD } from "./prompt-sections.js";
 
@@ -55,10 +55,10 @@ describe("PROMPT_SECTIONS 계약", () => {
       totalTodos: 20,
       completedTodos: 17,
       streakDays: 5,
-      categoryBreakdown: [{ category: "업무", total: 10, completed: 8, rate: 80 }],
+      categoryBreakdown: [{ name: "업무", color: "#000000", total: 10, completed: 8, rate: 80 }],
       dayPatterns: [{ day: "MON", total: 3, completed: 3, rate: 100 }],
       timePatterns: [],
-    } as unknown as AggregatedReportData;
+    };
 
     const { system } = buildReportPrompt(data, "4월 2주차", "WEEKLY", {
       prevTips: null,

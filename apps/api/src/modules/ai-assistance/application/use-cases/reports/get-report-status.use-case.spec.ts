@@ -6,7 +6,6 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 
 import { AiReport } from "../../../domain/entities/reports/ai-report.entity.js";
 import type { ReportType } from "../../../domain/types/reports/ai-report.types.js";
-import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { GetReportStatus } from "./get-report-status.use-case.js";
 
 const makeReport = (type: ReportType): AiReport =>
@@ -35,7 +34,9 @@ const makeReport = (type: ReportType): AiReport =>
 
 describe("GetReportStatus", () => {
   let useCase: GetReportStatus;
-  let mockRepository: Mocked<AiReportRepositoryPort>;
+  let mockRepository: Mocked<
+    ConstructorParameters<typeof GetReportStatus>[0]["aiReportRepository"]
+  >;
   let mockEntitlement: Mocked<
     ConstructorParameters<typeof GetReportStatus>[0]["entitlementReader"]
   >;

@@ -5,9 +5,10 @@ import type { EntitlementReaderPort } from "#api/modules/access/access-entitleme
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
+import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 
 interface GetReportByIdDependencies {
-  readonly aiReportRepository: AiReportRepositoryPort;
+  readonly aiReportRepository: Pick<AiReportRepositoryPort, "findByIdAndUserId">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccess">;
 }
 
@@ -26,10 +27,10 @@ export class GetReportById {
 
     const report = await this.#dependencies.aiReportRepository.findByIdAndUserId(id, userId);
 
-    if (!report) {
+    if (report === null) {
       throw new ApplicationException(ErrorCode.AI_1304, { reportId: id });
     }
 
-    return report.toView();
+    return toAiReportView(report);
   }
 }

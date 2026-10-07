@@ -6,30 +6,55 @@
  */
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
 
-import type { SuggestionContext } from "../../types/suggestions/ai-suggestion.types.js";
-import type { DetectedPatternsResponse } from "./prompts/detect-patterns.prompt.js";
+import type {
+  DetectedPattern,
+  PatternEvidenceContext,
+  RecordedActivityEvidence,
+} from "../../types/suggestions/ai-suggestion.types.js";
+import { collectRecordedActivities, selectRecordedDays } from "./recorded-activity-evidence.js";
 
-type Pattern = DetectedPatternsResponse["patterns"][number];
+type Pattern = DetectedPattern;
 
-const WEATHER_KEYWORDS = [
-  "날씨",
-  "비",
-  "눈",
-  "소나기",
-  "우천",
-  "실내",
-  "악천후",
-  "weather",
-  "rain",
-  "snow",
-  "indoor",
-] as const;
+const WEATHER_CLAIM =
+  /날씨|우천|강수|폭우|폭설|강설|소나기|악천후|(?:^|[\s(])비(?:가|는|를|로|와)?(?:\s|[,.)!?]|$)|비가\s*(?:오|내리)|비\s*오는|눈이\s*(?:오|내리)|눈\s*오는|\b(?:weather|rain(?:y|ing)?|snow(?:y|ing)?|showers?|storms?)\b/iu;
+const TITLE_FUNCTION_WORDS = new Set([
+  "a",
+  "an",
+  "the",
+  "to",
+  "of",
+  "for",
+  "and",
+  "in",
+  "on",
+  "at",
+  "with",
+  "분",
+  "시간",
+  "초",
+  "minute",
+  "minutes",
+  "hour",
+  "hours",
+]);
+
+function hasRecordedActivityTitle(title: string, recordedTitle: string): boolean {
+  const candidateWords: readonly string[] = title.toLowerCase().match(/\p{L}+/gu) ?? [];
+  const recordedWords: readonly string[] = recordedTitle.toLowerCase().match(/\p{L}+/gu) ?? [];
+  return recordedWords
+    .filter((word) => !TITLE_FUNCTION_WORDS.has(word))
+    .some((word) =>
+      /[가-힣]/u.test(word) && word.length > 1
+        ? title.includes(word)
+        : candidateWords.includes(word),
+    );
+}
 
 /**
  * reason 텍스트에서 날씨 관련 키워드 포함 여부 감지.
  */
 export function isWeatherRelated(reason: string): boolean {
-  return WEATHER_KEYWORDS.some((keyword) => reason.includes(keyword));
+  return WEATHER_CLAIM.test(reason);
 }
 
 /**
@@ -40,57 +65,88 @@ export function isWeatherRelated(reason: string): boolean {
  * - 단순 반복(같은 제목): 2회+면 인정하되 신뢰도 게이트 적용
  * - 순차/발전(서로 다른 제목): 2개 이상이면 허용
  */
-export function filterWeakPatterns(patterns: Pattern[], context: SuggestionContext): Pattern[] {
-  return patterns.filter((p) => {
-    if (p.matchedTitles.length === 0) {
-      return true;
-    }
+export function filterWeakPatterns(
+  patterns: Pattern[],
+  context: PatternEvidenceContext,
+): Pattern[] {
+  const titleCounts = new Map<string, number>();
+  for (const todo of context.todos)
+    titleCounts.set(todo.title, (titleCounts.get(todo.title) ?? 0) + 1);
 
-    if (!context.weather && isWeatherRelated(p.reason)) {
+  return patterns.filter((pattern) => {
+    if (context.weather === null && isWeatherRelated(pattern.reason)) return false;
+    if (pattern.matchedTitles.length === 0) return true;
+
+    // 모델이 제시한 근거는 실제 기록의 제목과 개수를 넘을 수 없다.
+    const claimedCounts = new Map<string, number>();
+    for (const title of pattern.matchedTitles)
+      claimedCounts.set(title, (claimedCounts.get(title) ?? 0) + 1);
+    for (const [title, count] of claimedCounts) {
+      if (count > (titleCounts.get(title) ?? 0)) return false;
+    }
+    if (claimedCounts.size > 1) return pattern.matchedTitles.length >= 2;
+    const repeatedTitle = pattern.matchedTitles[0];
+    // 반복형은 기록의 활동을 알아볼 수 있어야 한다. 의미 전체를 검증하는 규칙은 아니다.
+    if (repeatedTitle === undefined || !hasRecordedActivityTitle(pattern.title, repeatedTitle))
       return false;
-    }
 
-    const uniqueTitles = new Set(p.matchedTitles);
-    const isRepetition = uniqueTitles.size === 1;
-
-    if (isRepetition) {
-      const count = p.matchedTitles.length;
-      if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) {
-        return false;
-      }
-      const gate =
-        count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
-          ? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
-          : AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_MULTI_OCC;
-      return p.confidence >= gate;
-    }
-
-    return p.matchedTitles.length >= 2;
+    const count = titleCounts.get(repeatedTitle) ?? 0;
+    if (count < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES) return false;
+    const gate =
+      count === AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
+        ? AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_LOW_OCC
+        : AI_SUGGESTION_LIMITS.CONFIDENCE_GATE_MULTI_OCC;
+    return pattern.confidence >= gate;
   });
 }
 
-/**
- * 기록 1~2개의 시작 제안을 과장 없는 형태로 정규화합니다.
- * 모델이 반복 근거나 높은 confidence를 만들더라도 서버가 실제 기록 수를 기준으로 고정합니다.
- */
+function findRecordedActivity(
+  title: string,
+  activities: readonly RecordedActivityEvidence[],
+): RecordedActivityEvidence | undefined {
+  const exact = activities.find((activity) => activity.title === title);
+  if (exact !== undefined) return exact;
+  return activities
+    .filter((activity) => hasRecordedActivityTitle(title, activity.title))
+    .sort(
+      (left, right) =>
+        right.completedOccurrences - left.completedOccurrences ||
+        right.occurrences - left.occurrences,
+    )[0];
+}
+
+export interface StarterPatternCandidate {
+  readonly pattern: DetectedPattern;
+  readonly recordedActivity: RecordedActivityEvidence;
+}
+
+/** 시작 제안도 기록된 활동·분량·요일을 그대로 사용하며 새 시각을 만들지 않는다. */
 export function normalizeStarterSuggestions(
   patterns: Pattern[],
-  context: SuggestionContext,
-  locale: "ko" | "en",
-): Pattern[] {
-  return patterns
-    .filter((pattern) => pattern.daysOfWeek.length > 0)
-    .filter((pattern) => context.weather || !isWeatherRelated(pattern.reason.toLowerCase()))
-    .slice(0, 2)
-    .map((pattern) => ({
-      ...pattern,
-      confidence: Math.min(pattern.confidence, 0.6),
-      matchedTitles: [],
-      reason:
-        locale === "en"
-          ? `You have ${context.todos.length} recent ${context.todos.length === 1 ? "record" : "records"}, so it is too early to call this a pattern. Try this small step to build useful history.`
-          : `최근 기록이 ${context.todos.length}개라 아직 패턴을 단정하긴 일러요. 이 작은 행동부터 시작해 유용한 기록을 쌓아봐요!`,
-    }));
+  context: PatternEvidenceContext,
+): StarterPatternCandidate[] {
+  const activities = collectRecordedActivities(context.todos);
+  return patterns.flatMap((pattern) => {
+    if (context.weather === null && isWeatherRelated(pattern.reason)) return [];
+    const activity = findRecordedActivity(pattern.title, activities);
+    if (activity === undefined) return [];
+    return [
+      {
+        pattern: {
+          ...pattern,
+          title: activity.title,
+          daysOfWeek: selectRecordedDays(activity),
+          confidence: Math.min(pattern.confidence, 0.6),
+          scheduledTime:
+            pattern.scheduledTime !== null && activity.recordedTimes.includes(pattern.scheduledTime)
+              ? pattern.scheduledTime
+              : null,
+          matchedTitles: [],
+        },
+        recordedActivity: activity,
+      },
+    ];
+  });
 }
 
 /**
@@ -128,26 +184,67 @@ export function dedupeByTitlePrefixAndDays(patterns: Pattern[]): Pattern[] {
     const daysKey = [...p.daysOfWeek].sort().join(",");
     const key = `${firstTwoWords}|${daysKey}`;
     const existing = seen.get(key);
-    if (!existing || p.confidence > existing.confidence) {
+    if (existing === undefined || p.confidence > existing.confidence) {
       seen.set(key, p);
     }
   }
   return [...seen.values()];
 }
 
-/**
- * 두 패턴 리스트를 제목 기준으로 중복 제거하여 병합.
- * 1차 결과가 임계치 미만이라 재시도했을 때 사용.
- */
-export function mergeUniquePatterns(primary: Pattern[], secondary: Pattern[]): Pattern[] {
-  const seen = new Set(primary.map((p) => p.title));
-  const merged = [...primary];
-  for (const p of secondary) {
-    if (seen.has(p.title)) {
-      continue;
+export interface GroundedPatternCandidate {
+  readonly pattern: DetectedPattern;
+  readonly recordedActivity: RecordedActivityEvidence | null;
+}
+
+/** 근거가 있는 활동의 요일·시각·제목은 모델 추정 대신 실제 기록으로 결정한다. */
+export function groundPatternCandidates(
+  patterns: readonly DetectedPattern[],
+  context: PatternEvidenceContext,
+  excludedTitles: readonly string[],
+): GroundedPatternCandidate[] {
+  const evidenceByTitle = new Map(
+    collectRecordedActivities(context.todos).map((evidence) => [evidence.title, evidence]),
+  );
+  const excluded = new Set(excludedTitles);
+  return patterns.flatMap((pattern) => {
+    const matchedTitles = [...new Set(pattern.matchedTitles)];
+    const matchedActivities = matchedTitles.flatMap((title) => {
+      const activity = evidenceByTitle.get(title);
+      return activity === undefined ? [] : [activity];
+    });
+    const evidence = findRecordedActivity(pattern.title, matchedActivities);
+    if (matchedTitles.length > 0 && evidence === undefined) return [];
+    const relatedActivity =
+      matchedTitles.length === 0
+        ? findRecordedActivity(pattern.title, [...evidenceByTitle.values()])
+        : undefined;
+    if (relatedActivity !== undefined && pattern.title !== relatedActivity.title) return [];
+    if (excluded.has(pattern.title) || (evidence !== undefined && excluded.has(evidence.title))) {
+      return [];
     }
-    merged.push(p);
-    seen.add(p.title);
-  }
-  return merged;
+    const timeEvidence = evidence ?? relatedActivity;
+    const scheduledTime =
+      pattern.scheduledTime !== null &&
+      (timeEvidence !== undefined
+        ? timeEvidence.recordedTimes.includes(pattern.scheduledTime)
+        : context.todos.some((todo) => todo.scheduledTime === pattern.scheduledTime))
+        ? pattern.scheduledTime
+        : null;
+    return [
+      {
+        pattern: {
+          ...pattern,
+          ...(evidence !== undefined
+            ? {
+                title: evidence.title,
+                daysOfWeek: selectRecordedDays(evidence),
+                matchedTitles: Array.from({ length: evidence.occurrences }, () => evidence.title),
+              }
+            : {}),
+          scheduledTime,
+        },
+        recordedActivity: evidence ?? null,
+      },
+    ];
+  });
 }

@@ -3,6 +3,8 @@ import { Injectable } from "@nestjs/common";
 
 import { DatabaseService } from "#api/platform/database/database.service";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type { TodoStatsReaderPort } from "../../../application/ports/reports/todo-stats.reader.port.js";
 import type {
@@ -30,7 +32,7 @@ export class PrismaTodoStatsReader implements TodoStatsReaderPort {
       this.queries = undefined;
       throw error;
     }));
-    const date = (value: Date) => value.toISOString().slice(0, 10);
+    const date = (value: Date) => toDateString(startOfDayInTimezone(value, params.timezone));
     const current = { userId, start: date(startDate), end: date(endDate) };
     const previous = { userId, start: date(prevStartDate), end: date(prevEndDate) };
     const runtime = this.txHost.tx;

@@ -27,10 +27,6 @@ export const AI_SUGGESTION_LIMITS = {
   CONFIDENCE_GATE_LOW_OCC: 0.75,
   /** 3회 이상 반복 패턴에 요구되는 최소 신뢰도 */
   CONFIDENCE_GATE_MULTI_OCC: 0.6,
-  /** 1차 결과가 이 미만이면 다양성 재시도 */
-  RETRY_THRESHOLD: 3,
-  /** 재시도 호출 시 temperature */
-  RETRY_TEMPERATURE: 0.5,
   ANALYSIS_WEEKS: 2,
   CONTEXT_WEEKS: 4,
   MAX_SUGGESTIONS_PER_USER: 5,

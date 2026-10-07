@@ -1,10 +1,3 @@
-/**
- * AiReport 애그리게잇 단위 테스트
- *
- * - toView(): Prisma 파싱 후 애그리게잇의 응답 DTO 직렬화 검증
- *   (periodLabel·dateRange 파생 포함)
- */
-
 import type { AiReportProps } from "./ai-report.entity.js";
 import { AiReport } from "./ai-report.entity.js";
 
@@ -34,50 +27,38 @@ function makeProps(overrides?: Partial<AiReportProps>): AiReportProps {
   };
 }
 
-describe("AiReport.toView", () => {
-  it("애그리게잇을 올바른 DTO 형식으로 직렬화해야 한다", () => {
+describe("AiReport immutable snapshot", () => {
+  it("복원 입력 날짜가 바뀌어도 저장된 분석 시각을 유지한다", () => {
+    const input = makeProps();
+    const report = AiReport.reconstitute(input);
+    input.generatedAt.setUTCFullYear(2030);
+    expect(report.snapshot.generatedAt.toISOString()).toBe("2026-03-09T07:00:00.000Z");
+  });
+  it("반환 snapshot의 날짜가 바뀌어도 다음 조회의 분석 시각을 유지한다", () => {
     const report = AiReport.reconstitute(makeProps());
-
-    const result = report.toView();
-
-    expect(result.id).toBe(42);
-    expect(result.type).toBe("WEEKLY");
-    expect(result.year).toBe(2026);
-    expect(result.period).toBe(10);
-    expect(result.periodLabel).toBe("2026년 10주차");
-    expect(result.dateRange.startDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.dateRange.endDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result.stats).toEqual({
+    report.snapshot.generatedAt.setUTCFullYear(2030);
+    expect(report.snapshot.generatedAt.toISOString()).toBe("2026-03-09T07:00:00.000Z");
+  });
+  it("입력 stats/배열을 복사해 외부 상태 변경으로 결과가 바뀌지 않는다", () => {
+    const stats = {
       totalTodos: 10,
       completedTodos: 8,
       completionRate: 80,
       prevCompletionRate: 70,
       streakDays: 3,
-    });
-    expect(result.categoryBreakdown).toHaveLength(1);
-    expect(result.dayPatterns).toHaveLength(1);
-    expect(result.timePatterns).toHaveLength(1);
-    expect(result.aiSummary).toBe("좋은 한 주였어!");
-    expect(result.aiTips).toEqual(["계속 이렇게 해봐!"]);
-    expect(result.hasActivity).toBe(true);
-    expect(result.generatedAt).toBe("2026-03-09T07:00:00.000Z");
-  });
-
-  it("MONTHLY 타입의 periodLabel을 올바르게 생성해야 한다", () => {
-    const report = AiReport.reconstitute(makeProps({ type: "MONTHLY", year: 2026, period: 3 }));
-
-    const result = report.toView();
-
-    expect(result.periodLabel).toBe("2026년 3월");
-  });
-
-  it("en 로케일이면 영어 periodLabel을 생성해야 한다", () => {
+    };
+    const category = { name: "업무", color: "#FF0000", total: 5, completed: 4, rate: 80 };
+    const tips = ["기존 팁"];
     const report = AiReport.reconstitute(
-      makeProps({ type: "MONTHLY", year: 2026, period: 3, locale: "en" }),
+      makeProps({ stats, categoryBreakdown: [category], aiTips: tips }),
     );
-
-    const result = report.toView();
-
-    expect(result.periodLabel).toBe("March 2026");
+    stats.totalTodos = 999;
+    category.name = "외부 변경";
+    tips.push("외부 팁");
+    expect(report.stats.totalTodos).toBe(10);
+    expect(report.snapshot.categoryBreakdown[0]?.name).toBe("업무");
+    expect(report.aiTips).toEqual(["기존 팁"]);
+    expect(report.snapshot.stats).not.toBe(report.snapshot.stats);
+    expect(report.snapshot.categoryBreakdown[0]).not.toBe(report.snapshot.categoryBreakdown[0]);
   });
 });
