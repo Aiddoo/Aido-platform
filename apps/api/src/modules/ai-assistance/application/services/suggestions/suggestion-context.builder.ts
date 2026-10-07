@@ -7,7 +7,7 @@ import {
 } from "@aido/api";
 import dayjs from "dayjs";
 
-import type { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 import { type GridInput } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
@@ -35,7 +35,7 @@ const PRECIPITATION_KO: Record<string, string> = {
  */
 interface SuggestionContextBuilderDependencies {
   readonly repository: AiSuggestionRepositoryPort;
-  readonly weatherForecastAccess: WeatherForecastAccess;
+  readonly weatherForecastReader: WeatherForecastReaderPort;
   readonly reportReader: WeeklyReportReaderPort;
   readonly logger: ApplicationLogger;
 }
@@ -169,7 +169,7 @@ export class SuggestionContextBuilder {
     if (!grid) return null;
 
     try {
-      const forecasts = await this.#dependencies.weatherForecastAccess.getForecastsByGridBatch(
+      const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
         [grid],
         date,
       );

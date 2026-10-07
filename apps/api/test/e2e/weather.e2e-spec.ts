@@ -14,15 +14,48 @@
  * pnpm --filter @aido/server test:e2e -- weather.e2e-spec
  */
 
+import { weatherConditionsSchema, weatherForecastSchema } from "@aido/api";
 import request from "supertest";
+
+import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
+import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
+import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";
+import { WEATHER_PROVIDER } from "#api/modules/weather/application/ports/forecast/weather-provider.port";
+import {
+  StubAirQualityProvider,
+  StubLifestyleIndexProvider,
+  StubSunTimeProvider,
+  StubWeatherProvider,
+} from "#test/mocks/ports/weather.stub";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
 describe("날씨 E2E", () => {
   let ctx: E2eTestContext;
+  const weatherProvider = new StubWeatherProvider();
+  const airQualityProvider = new StubAirQualityProvider();
+  const lifestyleIndexProvider = new StubLifestyleIndexProvider();
+  const sunTimeProvider = new StubSunTimeProvider();
 
   beforeAll(async () => {
-    ctx = await createE2eApp();
+    ctx = await createE2eApp({
+      customizeBuilder: (builder) =>
+        builder
+          .overrideProvider(WEATHER_PROVIDER)
+          .useValue(weatherProvider)
+          .overrideProvider(AIR_QUALITY_PROVIDER)
+          .useValue(airQualityProvider)
+          .overrideProvider(LIFESTYLE_INDEX_PROVIDER)
+          .useValue(lifestyleIndexProvider)
+          .overrideProvider(SUN_TIME_PROVIDER)
+          .useValue(sunTimeProvider),
+      additionalResetters: [
+        () => weatherProvider.clear(),
+        () => airQualityProvider.clear(),
+        () => lifestyleIndexProvider.clear(),
+        () => sunTimeProvider.clear(),
+      ],
+    });
   }, 60000);
 
   afterAll(async () => {
@@ -288,6 +321,197 @@ describe("날씨 E2E", () => {
 
         // Then - 401 Unauthorized 응답 확인 (expect에서 검증)
       });
+    });
+  });
+
+  describe("기존 한국 계약과 날짜 cache 회귀", () => {
+    it("같은 격자라도 query 날짜별 일출입을 반환하고 재조회는 해당 날짜 cache를 쓴다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser(
+        "weather-date-cache@example.com",
+        "Test1234!",
+      );
+      await request(ctx.app.getHttpServer())
+        .put("/v1/weather/location")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ latitude: 37.5665, longitude: 126.978 })
+        .expect(200);
+      sunTimeProvider.dates.set("2026-07-23", { sunrise: "05:23", sunset: "19:00" });
+      sunTimeProvider.dates.set("2026-07-24", { sunrise: "05:24", sunset: "19:01" });
+      // When
+      const first = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/conditions")
+        .query({ date: "2026-07-23" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      const next = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/conditions")
+        .query({ date: "2026-07-24" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      const again = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/conditions")
+        .query({ date: "2026-07-23" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      // Then
+      expect(weatherConditionsSchema.safeParse(first.body.data).success).toBe(true);
+      expect(first.body.data.sunrise).toBe("05:23");
+      expect(next.body.data.sunrise).toBe("05:24");
+      expect(next.body.data.sunset).toBe("19:01");
+      expect(again.body.data).toEqual(first.body.data);
+      expect(sunTimeProvider.calls).toHaveLength(2);
+    });
+
+    it("일부 공급자 장애는 해당 필드만 null이며 유효한 0을 JSON에 보존한다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("weather-partial@example.com", "Test1234!");
+      await request(ctx.app.getHttpServer())
+        .put("/v1/weather/location")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ latitude: 37.5665, longitude: 126.978 })
+        .expect(200);
+      airQualityProvider.failure = new Error("air unavailable");
+      lifestyleIndexProvider.result = { feelsLikeTemperature: 0, uvIndex: 0 };
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/conditions")
+        .query({ date: "2026-07-23" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      // Then
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toEqual({
+        feelsLikeTemperature: 0,
+        uvIndex: 0,
+        sunrise: "05:23",
+        sunset: "19:00",
+        pm10: null,
+        pm25: null,
+      });
+      expect(weatherConditionsSchema.safeParse(response.body.data).success).toBe(true);
+    });
+
+    it("예보 공급자 장애와 latest 없음은 기존 WEATHER_1901과 503이다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser(
+        "weather-unavailable@example.com",
+        "Test1234!",
+      );
+      await request(ctx.app.getHttpServer())
+        .put("/v1/weather/location")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ latitude: 37.5665, longitude: 126.978 })
+        .expect(200);
+      weatherProvider.failure = new Error("forecast unavailable");
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/forecast")
+        .query({ date: "2026-07-23" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(503);
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toMatchObject({
+        code: "WEATHER_1901",
+        message: "날씨 정보를 가져올 수 없습니다.",
+      });
+    });
+
+    it("이전 발표 예보가 있으면 공급자 장애에도 latest의 기존 응답 계약을 유지한다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("weather-latest@example.com", "Test1234!");
+      await request(ctx.app.getHttpServer())
+        .put("/v1/weather/location")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ latitude: 37.5665, longitude: 126.978 })
+        .expect(200);
+      const first = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/forecast")
+        .query({ date: "2026-07-23" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      weatherProvider.failure = new Error("forecast unavailable");
+      // When
+      const fallback = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/forecast")
+        .query({ date: "2026-07-24" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      // Then
+      expect(fallback.body.data).toEqual(first.body.data);
+      expect(weatherForecastSchema.safeParse(fallback.body.data).success).toBe(true);
+      expect(weatherProvider.calls).toHaveLength(2);
+    });
+
+    it("격자 이동은 이전 격자의 여러 날짜 cache를 지워 남은 사용자도 다시 조회한다", async () => {
+      // Given - 두 사용자가 같은 서울 grid를 공유한다.
+      const mover = await ctx.helpers.createVerifiedUser("weather-move@example.com", "Test1234!");
+      const remaining = await ctx.helpers.createVerifiedUser(
+        "weather-remain@example.com",
+        "Test1234!",
+      );
+      for (const user of [mover, remaining])
+        await request(ctx.app.getHttpServer())
+          .put("/v1/weather/location")
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .send({ latitude: 37.5665, longitude: 126.978 })
+          .expect(200);
+      for (const date of ["2026-07-23", "2026-07-24"])
+        await request(ctx.app.getHttpServer())
+          .get("/v1/weather/conditions")
+          .query({ date })
+          .set("Authorization", `Bearer ${mover.accessToken}`)
+          .expect(200);
+      sunTimeProvider.dates.set("2026-07-23", { sunrise: "06:23", sunset: "19:00" });
+      sunTimeProvider.dates.set("2026-07-24", { sunrise: "06:24", sunset: "19:01" });
+      // When
+      const moved = await request(ctx.app.getHttpServer())
+        .put("/v1/weather/location")
+        .set("Authorization", `Bearer ${mover.accessToken}`)
+        .send({ latitude: 35.1796, longitude: 129.0756 })
+        .expect(200);
+      const first = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/conditions")
+        .query({ date: "2026-07-23" })
+        .set("Authorization", `Bearer ${remaining.accessToken}`)
+        .expect(200);
+      const next = await request(ctx.app.getHttpServer())
+        .get("/v1/weather/conditions")
+        .query({ date: "2026-07-24" })
+        .set("Authorization", `Bearer ${remaining.accessToken}`)
+        .expect(200);
+      // Then
+      expect(moved.body.data).toEqual({
+        latitude: 35.1796,
+        longitude: 129.0756,
+        gridX: 98,
+        gridY: 76,
+      });
+      expect(first.body.data.sunrise).toBe("06:23");
+      expect(next.body.data.sunrise).toBe("06:24");
+      expect(sunTimeProvider.calls).toHaveLength(4);
+      expect(
+        sunTimeProvider.calls.every((call) => call.lat === 37.5665 && call.lon === 126.978),
+      ).toBe(true);
+    });
+
+    it("해외 좌표는 기존 한국 bbox validation으로 거절하고 날씨 공급자를 호출하지 않는다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser(
+        "weather-overseas@example.com",
+        "Test1234!",
+      );
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .put("/v1/weather/location")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .send({ latitude: 40.7128, longitude: -74.006 })
+        .expect(400);
+      // Then
+      expect(response.body.success).toBe(false);
+      expect(weatherProvider.calls).toEqual([]);
+      expect(sunTimeProvider.calls).toEqual([]);
     });
   });
 });

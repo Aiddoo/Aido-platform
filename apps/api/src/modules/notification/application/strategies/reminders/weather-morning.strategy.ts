@@ -6,7 +6,7 @@ import {
   createWeatherMorningFallbackNotificationMessage,
   createWeatherMorningNotificationMessage,
 } from "#api/modules/notification/notification-delivery.public";
-import type { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { toSupportedLocale } from "#api/shared/domain/locale";
@@ -33,7 +33,7 @@ interface WeatherMorningStrategyDependencies {
   readonly reader: WeatherReminderReaderPort;
   readonly notificationPublisher: NotificationPublisher;
   readonly notificationHistoryReader: NotificationHistoryReader;
-  readonly weatherForecastAccess: WeatherForecastAccess;
+  readonly weatherForecastReader: WeatherForecastReaderPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -103,7 +103,7 @@ export class WeatherMorningStrategy implements ITimezoneStrategy {
         },
       ];
     });
-    const forecasts = await this.#dependencies.weatherForecastAccess.getForecastsByGridBatch(
+    const forecasts = await this.#dependencies.weatherForecastReader.getForecastsByGridBatch(
       gridInputs,
       today,
     );

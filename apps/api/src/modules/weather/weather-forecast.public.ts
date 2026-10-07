@@ -1,10 +1,8 @@
-/**
- * Weather 모듈 공개 API
- *
- * Facade는 크로스 모듈(스케줄러·ai-suggestion) 소비용, 예보/격자 타입은 계약.
- */
-
-export * from "./application/access/forecast/weather-forecast.access.js";
-export * from "./application/ports/forecast/weather-provider.port.js";
-export type { GridInput } from "./application/services/forecast/weather-forecast.reader.js";
-export * from "./weather-forecast.module.js";
+/** 다른 Context에는 예보 read model과 최소 배치 조회 capability만 공개한다. */
+export { WEATHER_FORECAST_READER } from "./application/ports/forecast/weather-forecast.reader.port.js";
+export type {
+  GridInput,
+  WeatherForecastReaderPort,
+} from "./application/ports/forecast/weather-forecast.reader.port.js";
+export type { WeatherForecast } from "./application/ports/forecast/weather-provider.port.js";
+export { WeatherForecastModule } from "./weather-forecast.module.js";

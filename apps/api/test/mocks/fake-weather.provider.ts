@@ -10,6 +10,7 @@ import type {
  */
 export class FakeWeatherProvider implements WeatherProvider {
   readonly name = "fake";
+  readonly timeZone = "Asia/Seoul";
   private _calls: Array<{ lat: number; lon: number; date: Date }> = [];
 
   async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {

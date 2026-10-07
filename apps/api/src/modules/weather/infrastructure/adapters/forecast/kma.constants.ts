@@ -1,3 +1,5 @@
+export const KMA_TIMEZONE = "Asia/Seoul";
+
 /** 기상청 단기예보 API Base URL */
 export const KMA_BASE_URL = "https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0";
 

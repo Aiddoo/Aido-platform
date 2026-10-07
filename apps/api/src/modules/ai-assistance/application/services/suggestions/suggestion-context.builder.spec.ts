@@ -5,7 +5,7 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 
 import type {
   DayCompletionRate,
@@ -25,7 +25,7 @@ const FIXED_NOW = new Date("2026-03-31T06:00:00.000Z");
 describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
   let builder: SuggestionContextBuilder;
   let mockRepository: Mocked<AiSuggestionRepositoryPort>;
-  let mockWeatherService: Mocked<WeatherForecastAccess>;
+  let mockWeatherService: Mocked<WeatherForecastReaderPort>;
   let mockReportReader: Mocked<WeeklyReportReaderPort>;
 
   const mockUserId = "user-123";
@@ -41,7 +41,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
 
     builder = unit;
     mockRepository = suggestionContextBuilderDependencies.repository;
-    mockWeatherService = suggestionContextBuilderDependencies.weatherForecastAccess;
+    mockWeatherService = suggestionContextBuilderDependencies.weatherForecastReader;
     mockReportReader = suggestionContextBuilderDependencies.reportReader;
   });
 
@@ -135,7 +135,7 @@ describe("SuggestionContextBuilder — AI 제안 컨텍스트 빌더", () => {
       expect(Array.isArray(result.missingRoutines)).toBe(true);
     });
 
-    it("WeatherForecastAccess 실패 시 weather=null로 graceful degradation", async () => {
+    it("WeatherForecastReaderPort 실패 시 weather=null로 graceful degradation", async () => {
       // Given - weather 서비스가 에러를 던지도록 설정
       setupDefaultMocks();
       mockWeatherService.getForecastsByGridBatch.mockRejectedValue(new Error("Redis 연결 실패"));

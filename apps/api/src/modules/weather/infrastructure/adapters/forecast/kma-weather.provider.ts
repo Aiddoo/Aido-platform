@@ -9,15 +9,17 @@ import type {
   WeatherForecast,
   WeatherProvider,
 } from "../../../application/ports/forecast/weather-provider.port.js";
-import { getKmaBaseDateTime } from "../../../domain/services/forecast/kma-base-datetime.js";
-import { convertToGrid } from "../../../domain/services/forecast/lambert-projection.js";
+import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
+import { getKmaBaseDateTime } from "./kma-base-datetime.js";
 import type { KmaApiResponse } from "./kma-response-parser.js";
 import { parseKmaResponse } from "./kma-response-parser.js";
-import { KMA_BASE_URL, KMA_ENDPOINTS } from "./kma.constants.js";
+import { KMA_BASE_URL, KMA_ENDPOINTS, KMA_TIMEZONE } from "./kma.constants.js";
+import { convertToGrid } from "./lambert-projection.js";
 
 @Injectable()
 export class KmaWeatherProvider implements WeatherProvider {
   readonly name = "kma";
+  readonly timeZone = KMA_TIMEZONE;
   readonly #logger = new Logger(KmaWeatherProvider.name);
 
   constructor(
@@ -39,15 +41,30 @@ export class KmaWeatherProvider implements WeatherProvider {
     url.searchParams.set("nx", String(nx));
     url.searchParams.set("ny", String(ny));
 
-    const { data: response } = await this.http.request(url.toString(), {
-      responseType: "response",
-      retry: false,
-      throwOnHttpError: false,
-      signal: AbortSignal.timeout(10_000),
-    });
+    const { data: response } = await this.http
+      .request(url.toString(), {
+        responseType: "response",
+        retry: false,
+        throwOnHttpError: false,
+        signal: AbortSignal.timeout(10_000),
+      })
+      .catch((error: unknown) => {
+        this.#logger.error({
+          event: WeatherProviderLogEvent.REQUEST_FAILED,
+          provider: this.name,
+          operation: "forecast",
+          errorType: error instanceof Error ? "error" : "non_error",
+        });
+        throw error;
+      });
 
     if (!response.ok) {
-      this.#logger.error(`KMA API error: status=${response.status}, url=${url.pathname}`);
+      this.#logger.error({
+        event: WeatherProviderLogEvent.HTTP_FAILED,
+        provider: this.name,
+        operation: "forecast",
+        statusCode: response.status,
+      });
       throw ApplicationExceptions.weatherServiceUnavailable({
         status: response.status,
       });
@@ -56,16 +73,24 @@ export class KmaWeatherProvider implements WeatherProvider {
     const data = await readJson<KmaApiResponse>(response);
 
     if (!data?.response?.header?.resultCode) {
-      this.#logger.error("KMA API: unexpected response structure");
+      this.#logger.error({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: this.name,
+        operation: "forecast",
+        errorType: "invalid_structure",
+      });
       throw ApplicationExceptions.weatherServiceUnavailable({
         reason: "unexpected response structure",
       });
     }
 
     if (data.response.header.resultCode !== "00") {
-      this.#logger.error(
-        `KMA API error: code=${data.response.header.resultCode}, msg=${data.response.header.resultMsg}`,
-      );
+      this.#logger.error({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: this.name,
+        operation: "forecast",
+        errorType: "provider_result",
+      });
       throw ApplicationExceptions.weatherServiceUnavailable({
         code: data.response.header.resultCode,
         message: data.response.header.resultMsg,
@@ -76,6 +101,6 @@ export class KmaWeatherProvider implements WeatherProvider {
   }
 
   isConfigured(): boolean {
-    return !!this.configService.dataGoKrApiKey;
+    return Boolean(this.configService.dataGoKrApiKey);
   }
 }

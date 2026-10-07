@@ -8,7 +8,7 @@ import {
   NotificationPublisher,
 } from "#api/modules/notification/notification-delivery.public";
 import type { WeatherForecast } from "#api/modules/weather/weather-forecast.public";
-import { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { type WeatherReminderReaderPort } from "../../ports/reminders/weather-reminder-reader.port.js";
@@ -45,7 +45,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
   let reader: Mocked<WeatherReminderReaderPort>;
   let notificationPublisher: Mocked<NotificationPublisher>;
   let notificationHistoryReader: Mocked<NotificationHistoryReader>;
-  let weatherForecastAccess: Mocked<WeatherForecastAccess>;
+  let weatherForecastReader: Mocked<WeatherForecastReaderPort>;
 
   beforeEach(async () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
@@ -59,7 +59,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
     reader = weatherEveningStrategyDependencies.reader;
     notificationPublisher = weatherEveningStrategyDependencies.notificationPublisher;
     notificationHistoryReader = weatherEveningStrategyDependencies.notificationHistoryReader;
-    weatherForecastAccess = weatherEveningStrategyDependencies.weatherForecastAccess;
+    weatherForecastReader = weatherEveningStrategyDependencies.weatherForecastReader;
 
     reader.findWeatherEveningUsersWithLocation.mockResolvedValue([]);
     reader.findWeatherEveningFallbackUsers.mockResolvedValue([]);
@@ -91,7 +91,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
 
     const forecastMap = new Map<string, WeatherForecast>();
     forecastMap.set("60:127", makeForecast());
-    weatherForecastAccess.getForecastsByGridBatch.mockResolvedValue(forecastMap);
+    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(forecastMap);
 
     // When
     const result = await strategy.execute(makeCtx());
@@ -99,7 +99,7 @@ describe("WeatherEveningStrategy — 저녁 날씨 알림 전략", () => {
     // Then
     expect(result).toEqual({ sent: 1 });
     // tomorrow 날짜로 날씨 조회
-    expect(weatherForecastAccess.getForecastsByGridBatch).toHaveBeenCalledWith(
+    expect(weatherForecastReader.getForecastsByGridBatch).toHaveBeenCalledWith(
       expect.any(Array),
       makeCtx().tomorrow,
     );

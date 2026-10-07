@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights-weekly-achievements.public";
 import { DatabaseModule } from "#api/platform/database/database.module";
 
-import { WeatherModule } from "../weather/weather-forecast.module.js";
+import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
 import { RE_ENGAGEMENT_READER } from "./application/ports/reminders/re-engagement-reader.port.js";
 import { REMINDER_SCHEDULER } from "./application/ports/reminders/reminder-scheduler.port.js";
 import { SCHEDULED_REMINDER_READER } from "./application/ports/reminders/scheduled-reminder-reader.port.js";
@@ -56,7 +56,7 @@ import {
     TimezoneReminderQueueModule,
     DatabaseModule,
     NotificationModule,
-    WeatherModule,
+    WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
   ],
   providers: [

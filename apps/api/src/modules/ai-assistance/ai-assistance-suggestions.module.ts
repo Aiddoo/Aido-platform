@@ -4,7 +4,7 @@ import { AccessModule } from "#api/modules/access/access-entitlement.public";
 
 import { NotificationModule } from "../notification/notification-delivery.module.js";
 import { PlanningTodosModule } from "../planning/planning-todos.module.js";
-import { WeatherModule } from "../weather/weather-forecast.module.js";
+import { WeatherForecastModule } from "../weather/weather-forecast.public.js";
 import { AiModule } from "./ai-assistance-parsing.module.js";
 import { AiReportModule } from "./ai-assistance-reports.module.js";
 import {
@@ -38,7 +38,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
  * - AiModule: AI_PROVIDER(Gemini)로 제안 생성
  * - PlanningTodosModule: 수락 시 RECURRING_TODO_CREATOR가 반복 생성 UseCase에 위임
  * - AiReportModule: WEEKLY_REPORT_READER가 최신 주간 보고서 인사이트 주입
- * - WeatherModule: 날씨 기반 제안을 위한 격자 예보 조회
+ * - WeatherForecastModule: 날씨 기반 제안을 위한 격자 예보 조회
  * - NotificationModule: 새 제안 생성 시 알림 발송(프로세서)
  */
 @Module({
@@ -48,7 +48,7 @@ import { AiSuggestionController } from "./presentation/controllers/suggestions/a
     AiReportModule,
     NotificationModule,
     PlanningTodosModule,
-    WeatherModule,
+    WeatherForecastModule,
   ],
   controllers: [AiSuggestionController],
   providers: [

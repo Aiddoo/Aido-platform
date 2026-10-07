@@ -3,12 +3,14 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { readJson } from "#api/platform/http/read-json";
-import { toCompactDateString } from "#api/shared/domain/date/utils/format";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   SunTime,
   SunTimeProvider,
 } from "../../../application/ports/forecast/sun-time-provider.port.js";
+import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
+import { KMA_TIMEZONE } from "./kma.constants.js";
 
 interface SunTimeResponse {
   response?: {
@@ -38,12 +40,16 @@ export class KasiSunTimeProvider implements SunTimeProvider {
   async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
     try {
       const apiKey = this.configService.dataGoKrApiKey;
-      if (!apiKey) {
-        this.#logger.warn("KMA_API_KEY is not configured");
+      if (apiKey === undefined || apiKey === null || apiKey === "") {
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.NOT_CONFIGURED,
+          provider: "kasi",
+          operation: "sun_time",
+        });
         return null;
       }
 
-      const locdate = toCompactDateString(date);
+      const locdate = dayWindowInTimezone(date, KMA_TIMEZONE).localDate.replaceAll("-", "");
 
       const url = new URL(
         "https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCRiseSetInfo",
@@ -63,7 +69,12 @@ export class KasiSunTimeProvider implements SunTimeProvider {
       });
 
       if (!response.ok) {
-        this.#logger.warn(`Sun time API error: status=${response.status}`);
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.HTTP_FAILED,
+          provider: "kasi",
+          operation: "sun_time",
+          statusCode: response.status,
+        });
         return null;
       }
 
@@ -71,13 +82,23 @@ export class KasiSunTimeProvider implements SunTimeProvider {
 
       const resultCode = data?.response?.header?.resultCode;
       if (resultCode !== "00") {
-        this.#logger.warn(`Sun time API error: resultCode=${resultCode}`);
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+          provider: "kasi",
+          operation: "sun_time",
+          errorType: "provider_result",
+        });
         return null;
       }
 
       const item = data?.response?.body?.items?.item;
-      if (!item) {
-        this.#logger.warn("Sun time API: no item in response");
+      if (item === undefined || item === null) {
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+          provider: "kasi",
+          operation: "sun_time",
+          errorType: "missing_item",
+        });
         return null;
       }
 
@@ -85,7 +106,12 @@ export class KasiSunTimeProvider implements SunTimeProvider {
       const sunsetRaw = item.sunset;
 
       if (!sunriseRaw || !sunsetRaw) {
-        this.#logger.warn("Sun time API: sunrise or sunset value is empty");
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+          provider: "kasi",
+          operation: "sun_time",
+          errorType: "missing_time",
+        });
         return null;
       }
 
@@ -93,15 +119,23 @@ export class KasiSunTimeProvider implements SunTimeProvider {
       const sunset = this.#formatTime(sunsetRaw);
 
       if (!sunrise || !sunset) {
-        this.#logger.warn("Sun time API: failed to parse time values");
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+          provider: "kasi",
+          operation: "sun_time",
+          errorType: "invalid_time",
+        });
         return null;
       }
 
       return { sunrise, sunset };
     } catch (error) {
-      this.#logger.warn(
-        `Failed to get sun time: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.REQUEST_FAILED,
+        provider: "kasi",
+        operation: "sun_time",
+        errorType: error instanceof Error ? "error" : "non_error",
+      });
       return null;
     }
   }

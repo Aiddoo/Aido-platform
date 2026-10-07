@@ -36,7 +36,7 @@ import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { InquiryModule } from "#api/modules/support/support-inquiries.public";
-import { WeatherModule } from "#api/modules/weather/weather-forecast.module";
+import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
 import type { EnvConfig } from "#api/platform/config/index";
 import { AppConfigModule } from "#api/platform/config/index";
@@ -131,7 +131,7 @@ import { AppService } from "./app.service.js";
     EngagementCommentsModule,
     PlanningCategoriesModule,
     UserSettingsModule,
-    WeatherModule,
+    WeatherForecastModule,
     InsightsWeeklyAchievementsModule,
   ],
   // Controllers

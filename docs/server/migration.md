@@ -23,8 +23,8 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 08 Social: 친구·응원·넛지 상태·경쟁·ORM·공개 capability 검증([PR #913](https://github.com/Aiddoo/Aido-platform/pull/913))
 - [x] 09 Notes: 메모와 전환·부분 성공·동시 변경 검증([PR #916](https://github.com/Aiddoo/Aido-platform/pull/916))
 - [x] 10 Engagement: 댓글·반응·대화·정리([Issue #915](https://github.com/Aiddoo/Aido-platform/issues/915), [PR #918](https://github.com/Aiddoo/Aido-platform/pull/918))
-- [x] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917))
-- [ ] 12 Weather: 위치·좌표·격자·공급자 Port·지역별 선택 정책·도메인 응답 정규화; 한국 API 유지, 해외 공급자는 동일 인터페이스로 추가
+- [x] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917), [PR #919](https://github.com/Aiddoo/Aido-platform/pull/919))
+- [x] 12 Weather: 공급자 경계·KST 시각·날짜별 캐시 정합성 검증([Issue #921](https://github.com/Aiddoo/Aido-platform/issues/921)); 현재 한국 REST 유지, 해외 활성화는 별도 확장
 - [ ] 13 AI Assistance: 기존 모델 유지·유료 추천·기록 기반 습관 제안·한/영 prompt·언어 확장·파싱/보고서/추천 품질 검증
 - [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
 - [ ] 15 Support·Operations·App Config
@@ -364,29 +364,76 @@ HTTP 비동기 timezone 검증은 DB 저장만 기다리는 대신 다음 GET의
 메서드를 호출하도록 수정했다. workspace lint·format·typecheck 통과. 추가 script·package·
 schema·migration·Action job은 없다. 상위 5/18 완료, Billing부터 13단계가 남는다.
 
-## 12 Weather 공급자 확장 계획
+## 12 Weather 공급자 경계와 날짜 정합성
 
-현재 한국 API와 공개 REST 응답을 유지한다. Application은 공급자 Port의 정규화된 날씨 결과만
-사용하고, Infrastructure Adapter가 HTTP 요청·공급자 응답 검증·단위/시간대 변환을 맡는다.
-언어·timezone·IP를 국가로 추정하지 않고 검증된 위치 정보로 지원 여부와 공급자를 결정한다.
-한국 격자 변환은 한국 Adapter가
-소유한다. 해외 공급자를 등록할 때 기존 유즈케이스와 알림 정책을 복제하지 않는다.
+기존 WeatherProvider가 정규화한 예보를 반환하는 인터페이스를
+재사용하며, WGS84 값 검증·현재 한국 상품 지원 정책과 KMA projection·발표 시각을 분리한다.
+Application은 최소 grid resolver와 날짜 입력 cache Port를 소비한다. 한국 공급자의 격자와
+KST cache bucket 계산은 Infrastructure가 소유한다. 전달-only Access와 UseCase 대신
+공개 Reader token을 기존 Reader에 직접 연결한다.
 
-기존 날씨 타입·좌표 Value Object·HTTP client·fixture를 먼저 재사용한다. 공급자 공통 cache key에는
-공급자 구분과 위치·예보 기준 시각을 포함하되, 기존 키 변경은 호환 전환 검증 후 결정한다.
-미지원 지역·timeout·부분 예보·잘못된 단위/시각·중복 요청·공급자별 응답을 fixture HTTP와
-동일한 계약 테스트로 검증한다. 해외 API는 실제 선택·설정 전까지 구현하거나 지원한다고 표시하지 않는다.
+현재 REST 좌표 범위와 모바일의 한국 위치 정책, UserLocation의 필수 grid 필드는 유지한다.
+해외 API는 구현하거나 활성화하지 않는다. 실제 해외 지원에는 공개 좌표 정책·클라이언트·
+저장 grid metadata·공급자 cache address의 별도 확장이 필요하다. 공급자 하나만 사용하는
+현 단계에 registry나 다른 4개 공급자를 한 번 더 전달하는 wrapper를 추가하지 않는다.
 
-현재 공용 좌표/REST와 UserLocation의 필수 grid 필드는 한국 범위에 묶여 있다. 해외 Adapter
-추가만으로 전체 경계가 확장되는 상태가 아니므로, 지역별 위치 검증·저장 모델·Notification/AI
-소비자·cache address도 함께 확인한다. 한국 serialization/TTL을 먼저 유지하고 공급자별
-opaque location key와 target local date·forecast revision을 cache address에 분리한다.
-한국 정리와 실제 해외 API 활성화/데이터 전환은 별도 검증 단계로 다룬다.
+### 확인한 Before
 
-날짜 간 hourly 병합·0°C 결측 판정·프로세스 TZ 의존·latest fallback 날짜 혼합은 현재 정적
-검토 후보다. 실제 fixture로 재현 후 개선하며, 후보만으로 확인된 버그나 측정된 성능 개선이라고
-기록하지 않는다. 설치 HTTP client의 인스턴스별 fetch 주입과 기존 codec·테스트 도구를 재사용해
-한국/해외 공급자가 같은 normalized domain 결과를 반환하는 계약을 검증한다.
+| 실제 코드의 문제                            | 재현 조건과 관찰                                                     |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| KMA 발표 bucket이 process timezone에 의존   | 같은 2026-07-23T00Z: UTC 전날2300, Seoul 당일0800                    |
+| 조건 캐시에 요청 날짜 없음                  | 같은 grid의 23일→24일 요청이 앞 날짜 sunrise05:23 재사용·Sun Port1회 |
+| 현재 기온 선택이 process-local hour에 의존  | 같은 KST09 fixture25°C: UTC1°C·LA15°C·Seoul25°C                      |
+| KASI 요청 날짜가 process-local              | 같은 2026-07-23T16Z: UTC/LA23일·KST24일                              |
+| 생활지수 요청 시각이 process-local          | 같은 instant: UTC23일16시·LA23일09시·KST24일01시                     |
+| KMA parser의 오늘/내일 분류가 process-local | 같은 fixture 최저기온 UTC/LA[13,24]·KST[24,25]                       |
+
+발표/조건 Before는 실제 UseCase·CacheAdapter·CacheService·InMemoryAdapter로 확인했다.
+UTC 2실패(257ms, seed112001), Seoul 1실패·1통과(216ms)다. 현재 기온 Before는 실제
+Reader까지 연결했고 UTC1실패281ms·Seoul1통과278ms·LA1실패271ms(seed112011)다.
+Provider3개는 실제 Nest HTTP client의 인스턴스 fetch에 고정 Response를 주입했다.
+UTC3실패367ms(seed112003)·Seoul3통과349ms(seed112004)·LA3실패368ms(seed112005)다.
+외부 API 요청이나 운영 latency 측정은 아니다. 반환 Forecast.date의 원 instant는 유지한다.
+
+날짜별 conditions key로 전환하면 기존 grid-only 값을 읽지 않아 cold miss가 발생한다.
+이전 key와 날짜별 prefix를 함께 무효화하며 기존 forecast/latest TTL·batch·최근 예보
+fallback과 부분 실패의 null/0 의미를 유지한다. key 미설정 여부로 지역을 거절하지 않아
+공급자 API key 없는 cache fallback도 유지한다. 나머지 날짜 병합·0°C 결측·latest 날짜
+혼합은 아직 조사 후보이며 확인된 버그나 해결된 문제로 기록하지 않는다.
+
+### 실제 검증과 한계
+
+수정된 시각 계산은 UTC·Asia/Seoul·America/Los_Angeles에서 같은 fixture를 재생했다.
+공급자 3 tests는 각각 354ms/371ms/372ms(seed112111–112113), Application·caller 37 tests는
+UTC 2.07초(seed112105), Seoul 2.04초(seed112102), LA 2.06초(seed112103)로 통과했다.
+KMA HTTP 1901의 기존 details.message와 KASI null fallback을 유지하면서 비밀이 담긴
+응답·오류 원문을 로그에서 제외하는 실제 HTTP client fixture 2개도 통과했다.
+
+UserLocation 저장 검증은 Mock DB Integration 6개를 실제 PostgreSQL 9개로 대체했다.
+동일 사용자의 미커밋 INSERT와 실제 upsert lock 대기자 2개를 관찰한 뒤 최종 row 1개,
+FK 실패·rollback·cascade·사용자 격리·기존 ID 보존을 확인했다(6.09초, seed112107).
+불필요한 전달-only Controller·batch wrapper 검사는 제거하고 Reader/cache와 HTTP로 검증한다.
+기존 Weather HTTP 13 tests 본문은 parent 6162e55c와 동일하다. 한국 좌표 오류와 0/null,
+과거 forecast.date·캐시 fallback을 포함한 Weather HTTP 19 tests도 통과했다.
+
+전체 검사(seed112030, Asia/Seoul):
+
+- Integration: 54 files / 463 tests, 291.28초.
+- E2E: 41 files / 524 tests, 367.53초. OpenAPI snapshot과 배포 클라이언트 계약 포함.
+- 마지막 공급자 로그 변경 후 Unit: 492 files / 2,982 tests, 26.73초(seed112120).
+- lint·format·typecheck 통과. typecheck 5/5 tasks, 4 cached, 10.679초.
+
+마지막 로그 변경은 Infrastructure 4 공급자의 관측 필드와 privacy fixture만 바꿨고 응답·DB
+동작은 유지했다. 전체 PG/HTTP 검증 뒤 실제 공급자 Unit 61개와 전체 Unit을 다시 실행했다.
+모든 실행이 소유한 test DB는 teardown 뒤 잔존 0개였다. ORM projection은 필요한 5필드만
+선택하지만 SQL 호출 수·운영 latency 개선은 측정하지 않았다. 날짜별 cache의 cold miss를
+포함한 운영 hit ratio와 실제 외부 날씨 API 응답도 측정하지 않았다.
+
+새 schema·migration·패키지·실행 script·Action job은 없다. 상위 13/18 구현·검증 완료,
+AI부터 5단계가 남았다. commit과 Draft PR은 운영 배포·merge를 의미하지 않는다.
+
+공식 근거: [KMA 단기예보 서비스](https://www.data.go.kr/data/15084084/openapi.do),
+[Nest HTTP client](https://docs.nestjs.com/application/http-module).
 
 ## 05 Billing 구독 상태 전이와 성공 처리 원장
 
@@ -908,7 +955,16 @@ seeded Weekly8+새 cache/date4(seed111004·LA22.60초)가 통과했다. 환경 �
 
 테스트 시간은 공유 CPU/DB 실행 기록이며 운영 latency 개선률이 아니다. 상위12/18 구현·검증
 완료, Weather부터6단계가 남았다. 새 migration·패키지·실행 script·Action job은 없다.
-한국어 커밋·Draft PR로 보존하며 merge·운영 배포는 하지 않았다.
+한국어 커밋 `bfe1a2a6`과 [Draft PR #919](https://github.com/Aiddoo/Aido-platform/pull/919)로
+보존했다. hook typecheck5/5·build4/4 통과이며 merge·운영 배포는 하지 않았다.
+
+## 이슈·PR 작성 기준
+
+[PR #920](https://github.com/Aiddoo/Aido-platform/pull/920)에서 기본 양식을 짧게 통일했다.
+이슈는 배경·목표·완료 조건, PR은 요약·주요 변경·실제 검증을 작성한다. 재현·위험·배포·
+성능·화면 자료는 해당할 때만 추가한다. 코드 품질 개선은 실제 base/head의 짧은
+Before/After 코드와 문제·개선 이유를 보여주며, 설계 개선과 성능 실측을 구분한다.
+현재 스택 본문도 같은 기준으로 정리했고 실제 측정·미검증·배포 여부를 보존했다.
 
 ## AI 후속 요구와 검증 범위
 

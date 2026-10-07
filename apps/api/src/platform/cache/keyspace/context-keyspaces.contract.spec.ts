@@ -41,7 +41,7 @@ import {
 } from "#api/modules/weather/infrastructure/cache/forecast/weather-cache.keyspace";
 
 describe("Bounded Context별 cache keyspace 계약", () => {
-  it("기존 Redis 키 문자열을 그대로 유지한다", () => {
+  it("기존 키와 전환한 날짜별 Weather 키를 명시한다", () => {
     expect(UserSettingsCacheKey.preference("user-1")).toBe(
       "aido:v1:user-settings:preference:user-1",
     );
@@ -59,7 +59,10 @@ describe("Bounded Context별 cache keyspace 계약", () => {
       "aido:v1:weather:forecast:60:127:20260401:0800",
     );
     expect(WeatherCacheKey.latestForecast(60, 127)).toBe("aido:v1:weather:forecast-latest:60:127");
-    expect(WeatherCacheKey.conditions(60, 127)).toBe("aido:v1:weather:conditions:60:127");
+    expect(WeatherCacheKey.legacyConditions(60, 127)).toBe("aido:v1:weather:conditions:60:127");
+    expect(WeatherCacheKey.conditions(60, 127, "2026-04-01")).toBe(
+      "aido:v1:weather:conditions:60:127:2026-04-01",
+    );
     expect(TodoCacheKey.friendTodosFirstPage("user-1", "-", "-", 20)).toBe(
       "aido:v1:todo:friend-view-v1:user-1:-:-:20",
     );

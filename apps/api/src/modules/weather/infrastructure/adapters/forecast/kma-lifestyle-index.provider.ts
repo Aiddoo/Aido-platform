@@ -3,12 +3,14 @@ import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { readJson } from "#api/platform/http/read-json";
-import { toCompactDateHourString } from "#api/shared/domain/date/utils/format";
+import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   LifestyleIndex,
   LifestyleIndexProvider,
 } from "../../../application/ports/forecast/lifestyle-index-provider.port.js";
+import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
+import { KMA_TIMEZONE } from "./kma.constants.js";
 import { getRegionCode } from "./region-code.js";
 
 interface UvIndexResponse {
@@ -45,8 +47,12 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(currentTemp, windSpeed);
 
     const apiKey = this.configService.dataGoKrApiKey;
-    if (!apiKey) {
-      this.#logger.warn("KMA_API_KEY is not configured");
+    if (apiKey === undefined || apiKey === null || apiKey === "") {
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.NOT_CONFIGURED,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+      });
       return { feelsLikeTemperature, uvIndex: null };
     }
 
@@ -54,9 +60,12 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
       const uvIndex = await this.#fetchUvIndex(apiKey, lat, lon, date);
       return { feelsLikeTemperature, uvIndex };
     } catch (error) {
-      this.#logger.warn(
-        `Failed to get UV index: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.REQUEST_FAILED,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        errorType: error instanceof Error ? "error" : "non_error",
+      });
       return { feelsLikeTemperature, uvIndex: null };
     }
   }
@@ -67,7 +76,9 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     lon: number,
     date: Date,
   ): Promise<number | null> {
-    const time = toCompactDateHourString(date);
+    const localDate = dayWindowInTimezone(date, KMA_TIMEZONE).localDate.replaceAll("-", "");
+    const hour = toLocalTimeString(date, KMA_TIMEZONE).slice(0, 2);
+    const time = `${localDate}${hour}`;
 
     const url = new URL("https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4");
     url.searchParams.set("serviceKey", apiKey);
@@ -84,7 +95,12 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     });
 
     if (!response.ok) {
-      this.#logger.warn(`UV Index API error: status=${response.status}`);
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.HTTP_FAILED,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        statusCode: response.status,
+      });
       return null;
     }
 
@@ -92,13 +108,23 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 
     const resultCode = data?.response?.header?.resultCode;
     if (resultCode !== "00") {
-      this.#logger.warn(`UV Index API error: resultCode=${resultCode}`);
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        errorType: "provider_result",
+      });
       return null;
     }
 
     const items = data?.response?.body?.items?.item;
     if (!items || items.length === 0) {
-      this.#logger.warn("UV Index API: no items in response");
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        errorType: "missing_item",
+      });
       return null;
     }
 
@@ -109,13 +135,23 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
 
     const h0Value = firstItem.h0;
     if (h0Value === undefined || h0Value === null || h0Value === "") {
-      this.#logger.warn("UV Index API: h0 value is empty");
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        errorType: "missing_value",
+      });
       return null;
     }
 
     const parsed = Number(h0Value);
     if (Number.isNaN(parsed)) {
-      this.#logger.warn(`UV Index API: h0 value is not a number: ${h0Value}`);
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        errorType: "invalid_value",
+      });
       return null;
     }
 

@@ -13,5 +13,3 @@ export * from "./retention-repository.mock.js";
 export * from "./todo-read-repository.mock.js";
 export * from "./unit-of-work.mock.js";
 export * from "./user-settings-cache.mock.js";
-export * from "./weather.mock.js";
-export * from "./weather-cache.mock.js";

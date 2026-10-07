@@ -1,8 +1,8 @@
 export const LIFESTYLE_INDEX_PROVIDER = Symbol("LIFESTYLE_INDEX_PROVIDER");
 
 export interface LifestyleIndex {
-  feelsLikeTemperature: number;
-  uvIndex: number | null;
+  readonly feelsLikeTemperature: number;
+  readonly uvIndex: number | null;
 }
 
 export interface LifestyleIndexProvider {

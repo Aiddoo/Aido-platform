@@ -1,54 +1,40 @@
-/**
- * Coordinate 값 객체 단위 테스트
- *
- * 한국 좌표 범위 불변식과 격자 변환을 검증한다.
- */
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
-
 import { Coordinate } from "./coordinate.vo.js";
-import { GridCoordinate } from "./grid-coordinate.vo.js";
 
-describe("Coordinate — WGS84 위경도 값 객체", () => {
-  describe("of", () => {
-    it("한국 범위 내 좌표를 생성한다", () => {
-      const coord = Coordinate.of(37.5665, 126.978);
-
-      expect(coord.latitude).toBe(37.5665);
-      expect(coord.longitude).toBe(126.978);
+describe("Coordinate — 지역 지원과 독립된 WGS84 좌표", () => {
+  it.each([
+    [37.5665, 126.978],
+    [40.7128, -74.006],
+    [-90, -180],
+    [90, 180],
+  ])("유효한 전세계 좌표를 보존한다: %p, %p", (latitude, longitude) => {
+    const coordinate = Coordinate.of(latitude, longitude);
+    expect({ latitude: coordinate.latitude, longitude: coordinate.longitude }).toEqual({
+      latitude,
+      longitude,
     });
+  });
 
-    it.each([32.9, 39.1])("위도가 범위(33~39)를 벗어나면 DomainException을 던진다: %p", (lat) => {
-      expect(() => Coordinate.of(lat, 126.978)).toThrow(DomainException);
-    });
-
-    it.each([123.9, 132.1])(
-      "경도가 범위(124~132)를 벗어나면 DomainException을 던진다: %p",
-      (lon) => {
-        expect(() => Coordinate.of(37.5665, lon)).toThrow(DomainException);
-      },
-    );
-
-    it("범위를 벗어나면 SYS_0002 에러코드를 실는다", () => {
-      expect(() => Coordinate.of(10, 126.978)).toThrow(
-        expect.objectContaining({ errorCode: "SYS_0002" }),
+  it.each([-90.001, 90.001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "유효하지 않은 위도는 latitude 필드의 SYS_0002로 거부한다: %p",
+    (latitude) => {
+      expect(() => Coordinate.of(latitude, 126.978)).toThrow(
+        expect.objectContaining({
+          errorCode: "SYS_0002",
+          details: { field: "latitude", value: latitude },
+        }),
       );
-    });
-  });
+    },
+  );
 
-  describe("toGrid", () => {
-    it("기상청 격자 좌표로 변환한다", () => {
-      const grid = Coordinate.of(37.5665, 126.978).toGrid();
-
-      expect(grid).toBeInstanceOf(GridCoordinate);
-      expect(Number.isInteger(grid.gridX)).toBe(true);
-      expect(Number.isInteger(grid.gridY)).toBe(true);
-    });
-
-    it("동일 좌표는 결정적으로 동일 격자를 낸다", () => {
-      const a = Coordinate.of(37.5665, 126.978).toGrid();
-      const b = Coordinate.of(37.5665, 126.978).toGrid();
-
-      expect(a.equals(b)).toBe(true);
-    });
-  });
+  it.each([-180.001, 180.001, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])(
+    "유효하지 않은 경도는 longitude 필드의 SYS_0002로 거부한다: %p",
+    (longitude) => {
+      expect(() => Coordinate.of(37.5665, longitude)).toThrow(
+        expect.objectContaining({
+          errorCode: "SYS_0002",
+          details: { field: "longitude", value: longitude },
+        }),
+      );
+    },
+  );
 });

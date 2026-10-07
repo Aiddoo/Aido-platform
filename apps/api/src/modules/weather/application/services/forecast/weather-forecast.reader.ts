@@ -4,34 +4,38 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { UserLocation } from "../../../domain/entities/forecast/user-location.entity.js";
-import { getKmaBaseDateTime } from "../../../domain/services/forecast/kma-base-datetime.js";
+import { WeatherLogEvent } from "../../observability/forecast/weather-log.events.js";
 import { type WeatherCachePort } from "../../ports/forecast/weather-cache.port.js";
+import type {
+  GridInput,
+  WeatherForecastReaderPort,
+} from "../../ports/forecast/weather-forecast.reader.port.js";
 import {
   type WeatherForecast,
   type WeatherProvider,
 } from "../../ports/forecast/weather-provider.port.js";
 
-/** 격자 배치 조회 입력 (스케줄러·ai-suggestion 등 크로스 모듈에서 사용) */
-export interface GridInput {
-  gridX: number;
-  gridY: number;
-  lat: number;
-  lon: number;
-}
-
 /**
  * 예보 읽기 모델 — 캐시-스루 프로바이더 조회를 캡슐화하는 애플리케이션 서비스.
  *
  * 예보 단건/배치 조회에서 공통으로 쓰이는 캐시(3h 정규 + 24h latest fallback)·
- * KMA 프로바이더 호출·장애 폴백 오케스트레이션을 한 곳에 둔다(SRP/DRY).
+ * 공급자 호출·장애 폴백 오케스트레이션을 한 곳에 둔다(SRP/DRY).
  */
 interface WeatherForecastReaderDependencies {
-  readonly weatherProvider: WeatherProvider;
-  readonly cache: WeatherCachePort;
-  readonly logger: ApplicationLogger;
+  readonly weatherProvider: Pick<WeatherProvider, "getForecast" | "name">;
+  readonly weatherCache: Pick<
+    WeatherCachePort,
+    | "getForecast"
+    | "saveForecast"
+    | "getLatestForecast"
+    | "getForecastBatch"
+    | "saveForecastBatch"
+    | "getLatestForecastBatch"
+  >;
+  readonly logger: Pick<ApplicationLogger, "warn" | "debug">;
 }
 
-export class WeatherForecastReader {
+export class WeatherForecastReader implements WeatherForecastReaderPort {
   readonly #dependencies: WeatherForecastReaderDependencies;
 
   constructor(dependencies: WeatherForecastReaderDependencies) {
@@ -40,15 +44,12 @@ export class WeatherForecastReader {
 
   /** 단일 위치의 예보를 조회한다 (캐시 → 프로바이더 → latest 폴백 → WEATHER_1901). */
   async fetchForLocation(location: UserLocation, date: Date): Promise<WeatherForecast> {
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
-
-    const cached = await this.#dependencies.cache.getForecast(
+    const cached = await this.#dependencies.weatherCache.getForecast(
       location.gridX,
       location.gridY,
-      baseDate,
-      baseTime,
+      date,
     );
-    if (cached) {
+    if (cached !== undefined) {
       return cached;
     }
 
@@ -60,26 +61,28 @@ export class WeatherForecastReader {
       );
 
       // 성공 시 정규 캐시 (3h) + latest 캐시 (24h) 모두 저장
-      await this.#dependencies.cache.saveForecast(
+      await this.#dependencies.weatherCache.saveForecast(
         location.gridX,
         location.gridY,
-        baseDate,
-        baseTime,
+        date,
         forecast,
       );
 
       return forecast;
     } catch (error) {
-      this.#dependencies.logger.warn(
-        `KMA forecast failed, trying latest fallback: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.#dependencies.logger.warn({
+        event: WeatherLogEvent.FORECAST_PROVIDER_FAILED,
+        provider: this.#dependencies.weatherProvider.name,
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
     }
 
-    const latest = await this.#dependencies.cache.getLatestForecast(location.gridX, location.gridY);
-    if (latest) {
-      this.#dependencies.logger.warn(
-        `Using latest fallback for grid ${location.gridX}:${location.gridY}`,
-      );
+    const latest = await this.#dependencies.weatherCache.getLatestForecast(
+      location.gridX,
+      location.gridY,
+    );
+    if (latest !== undefined) {
+      this.#dependencies.logger.warn({ event: WeatherLogEvent.FORECAST_FALLBACK_USED });
       return latest;
     }
 
@@ -87,26 +90,26 @@ export class WeatherForecastReader {
   }
 
   /**
-   * 여러 격자의 예보를 배치 조회한다 (N+1 방지: 1회 mget → 미스만 병렬 호출 → mset).
+   * 여러 격자의 예보를 기존 배치 경로로 조회한다 (캐시 배치 읽기 → 미스 조회 → 배치 저장).
    * 실패 격자는 latest 캐시로 폴백한다.
    */
-  async fetchBatch(grids: GridInput[], date: Date): Promise<Map<string, WeatherForecast>> {
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
+  async getForecastsByGridBatch(
+    grids: readonly GridInput[],
+    date: Date,
+  ): Promise<Map<string, WeatherForecast>> {
     const result = new Map<string, WeatherForecast>();
 
     if (grids.length === 0) {
       return result;
     }
 
-    // 1. Redis mget - 1회 RTT
-    const cached = await this.#dependencies.cache.getForecastBatch(grids, baseDate, baseTime);
+    const cached = await this.#dependencies.weatherCache.getForecastBatch(grids, date);
 
-    // 2. 히트/미스 분류
     const misses: GridInput[] = [];
     for (const [i, grid] of grids.entries()) {
       const key = `${grid.gridX}:${grid.gridY}`;
       const cachedItem = cached[i];
-      if (cachedItem) {
+      if (cachedItem !== undefined) {
         result.set(key, cachedItem);
       } else {
         misses.push(grid);
@@ -117,12 +120,10 @@ export class WeatherForecastReader {
       return result;
     }
 
-    // 3. 미스만 API 호출
     const settled = await Promise.allSettled(
       misses.map((g) => this.#dependencies.weatherProvider.getForecast(g.lat, g.lon, date)),
     );
 
-    // 4. 성공/실패 분류 및 캐시 저장
     const cacheEntries: Array<{
       gridX: number;
       gridY: number;
@@ -136,7 +137,7 @@ export class WeatherForecastReader {
         continue;
       }
 
-      if (settledResult.status === "fulfilled" && settledResult.value) {
+      if (settledResult.status === "fulfilled") {
         const forecast = settledResult.value;
         // 정규 캐시 (3h) + latest 캐시 (24h) — 어댑터가 이중 저장
         cacheEntries.push({
@@ -150,30 +151,35 @@ export class WeatherForecastReader {
       }
     }
 
-    // 성공 항목 캐시 저장
     if (cacheEntries.length > 0) {
-      await this.#dependencies.cache.saveForecastBatch(cacheEntries, baseDate, baseTime);
+      await this.#dependencies.weatherCache.saveForecastBatch(cacheEntries, date);
     }
 
-    // 실패 항목 latest fallback 조회
     if (latestFallbackTargets.length > 0) {
       const fallbackCached =
-        await this.#dependencies.cache.getLatestForecastBatch(latestFallbackTargets);
+        await this.#dependencies.weatherCache.getLatestForecastBatch(latestFallbackTargets);
 
+      let fallbackCount = 0;
       for (const [j, miss] of latestFallbackTargets.entries()) {
         const fallback = fallbackCached[j];
-        if (fallback) {
+        if (fallback !== undefined) {
           result.set(`${miss.gridX}:${miss.gridY}`, fallback);
-          this.#dependencies.logger.warn(
-            `Weather batch: using latest fallback for grid ${miss.gridX}:${miss.gridY}`,
-          );
+          fallbackCount += 1;
         }
+      }
+      if (fallbackCount > 0) {
+        this.#dependencies.logger.warn({
+          event: WeatherLogEvent.FORECAST_FALLBACK_USED,
+          fallbackCount,
+        });
       }
     }
 
-    this.#dependencies.logger.log(
-      `Weather batch: ${grids.length} grids, ${misses.length} cache misses`,
-    );
+    this.#dependencies.logger.debug({
+      event: WeatherLogEvent.FORECAST_BATCH_READ,
+      gridCount: grids.length,
+      cacheMissCount: misses.length,
+    });
 
     return result;
   }

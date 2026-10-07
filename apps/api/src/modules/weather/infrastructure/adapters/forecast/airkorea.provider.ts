@@ -8,6 +8,7 @@ import type {
   AirQuality,
   AirQualityProvider,
 } from "../../../application/ports/forecast/air-quality-provider.port.js";
+import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { convertToTm } from "./wgs84-to-utmk.js";
 
 interface NearbyStationResponse {
@@ -43,8 +44,12 @@ export class AirkoreaProvider implements AirQualityProvider {
   async getAirQuality(lat: number, lon: number): Promise<AirQuality | null> {
     try {
       const apiKey = this.configService.dataGoKrApiKey;
-      if (!apiKey) {
-        this.#logger.warn("KMA_API_KEY is not configured");
+      if (apiKey === undefined || apiKey === null || apiKey === "") {
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.NOT_CONFIGURED,
+          provider: "airkorea",
+          operation: "air_quality",
+        });
         return null;
       }
 
@@ -55,9 +60,12 @@ export class AirkoreaProvider implements AirQualityProvider {
 
       return await this.#fetchAirQuality(apiKey, stationName);
     } catch (error) {
-      this.#logger.warn(
-        `Failed to get air quality: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.REQUEST_FAILED,
+        provider: "airkorea",
+        operation: "air_quality",
+        errorType: error instanceof Error ? "error" : "non_error",
+      });
       return null;
     }
   }
@@ -80,7 +88,12 @@ export class AirkoreaProvider implements AirQualityProvider {
     });
 
     if (!response.ok) {
-      this.#logger.warn(`Nearby station API error: status=${response.status}`);
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.HTTP_FAILED,
+        provider: "airkorea",
+        operation: "nearby_station",
+        statusCode: response.status,
+      });
       return null;
     }
 
@@ -88,7 +101,12 @@ export class AirkoreaProvider implements AirQualityProvider {
 
     const items = data?.response?.body?.items;
     if (!items || items.length === 0) {
-      this.#logger.warn("Nearby station API: no items in response");
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "airkorea",
+        operation: "nearby_station",
+        errorType: "missing_item",
+      });
       return null;
     }
 
@@ -99,7 +117,12 @@ export class AirkoreaProvider implements AirQualityProvider {
 
     const stationName = firstItem.stationName;
     if (!stationName) {
-      this.#logger.warn("Nearby station API: stationName is empty");
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "airkorea",
+        operation: "nearby_station",
+        errorType: "missing_station",
+      });
       return null;
     }
 
@@ -124,7 +147,12 @@ export class AirkoreaProvider implements AirQualityProvider {
     });
 
     if (!response.ok) {
-      this.#logger.warn(`Air quality API error: status=${response.status}`);
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.HTTP_FAILED,
+        provider: "airkorea",
+        operation: "air_quality",
+        statusCode: response.status,
+      });
       return null;
     }
 
@@ -132,7 +160,12 @@ export class AirkoreaProvider implements AirQualityProvider {
 
     const items = data?.response?.body?.items;
     if (!items || items.length === 0) {
-      this.#logger.warn("Air quality API: no items in response");
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "airkorea",
+        operation: "air_quality",
+        errorType: "missing_item",
+      });
       return null;
     }
 

@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { HttpClient, getHttpClientToken } from "@nestjs/http-client";
 import { TestBed } from "@suites/unit";
 import type { MockInstance } from "vitest";
@@ -18,6 +19,7 @@ import { vi } from "vitest";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
+import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { KasiSunTimeProvider } from "./kasi-sun-time.provider.js";
 
 describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
@@ -135,5 +137,55 @@ describe("KasiSunTimeProvider — KASI 일출일몰 프로바이더", () => {
       // Then - null 반환
       expect(result).toBeNull();
     });
+  });
+  it("한국 날짜 locdate는 서버 TZ와 무관하게 KST 자정 뒤 날짜를 보낸다", async () => {
+    // Given
+    Object.defineProperty(configService, "dataGoKrApiKey", { get: () => "test-api-key" });
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          response: {
+            header: { resultCode: "00" },
+            body: { items: { item: { sunrise: "0524", sunset: "1900" } } },
+          },
+        }),
+      ),
+    );
+    // When
+    const result = await provider.getSunTime(37.5665, 126.978, new Date("2026-07-23T16:00:00Z"));
+    // Then
+    expect(result).toEqual({ sunrise: "05:24", sunset: "19:00" });
+    const request = fetchSpy.mock.calls[0]?.[0];
+    expect(new URL(String(request)).searchParams.get("locdate")).toBe("20260724");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("요청 오류의 원문·이름·query를 로그에 노출하지 않고 null fallback을 유지한다", async () => {
+    // Given
+    const secret = "https://private.test/?serviceKey=SECRET&latitude=37.5665 BODY_SECRET";
+    Object.defineProperty(configService, "dataGoKrApiKey", { get: () => "SECRET" });
+    const error = new Error(secret, { cause: { headers: { authorization: "HEADER_SECRET" } } });
+    error.name = "NAME_SECRET";
+    fetchSpy.mockRejectedValue(error);
+    const warnLog = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+
+    // When
+    const result = await provider.getSunTime(37.5665, 126.978, new Date("2026-07-23T00:00:00Z"));
+
+    // Then
+    expect(result).toBeNull();
+    expect(warnLog.mock.calls).toEqual([
+      [
+        {
+          event: WeatherProviderLogEvent.REQUEST_FAILED,
+          provider: "kasi",
+          operation: "sun_time",
+          errorType: "error",
+        },
+      ],
+    ]);
+    const logged = JSON.stringify(warnLog.mock.calls);
+    expect(logged).not.toMatch(/SECRET|37\.5665|126\.978|https:/);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

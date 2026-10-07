@@ -1,32 +1,27 @@
 import { Coordinate } from "../../value-objects/forecast/coordinate.vo.js";
 import { GridCoordinate } from "../../value-objects/forecast/grid-coordinate.vo.js";
 
-/**
- * 사용자 위치 애그리게잇.
- *
- * 사용자당 하나의 WGS84 좌표 + 파생된 기상청 격자를 소유한다. 좌표를 정하면
- * 격자는 결정적으로 파생되므로, 생성 시 좌표로부터 격자를 계산한다(reconstitute는
- * 저장된 격자를 그대로 복원).
- */
 export class UserLocation {
-  private constructor(
-    private readonly _userId: string,
-    private readonly _coordinate: Coordinate,
-    private readonly _grid: GridCoordinate,
-  ) {}
+  readonly #userId: string;
+  readonly #coordinate: Coordinate;
+  readonly #grid: GridCoordinate;
 
-  /** 좌표로부터 새 위치를 생성한다 (격자 파생). */
-  static create(userId: string, coordinate: Coordinate): UserLocation {
-    return new UserLocation(userId, coordinate, coordinate.toGrid());
+  private constructor(userId: string, coordinate: Coordinate, grid: GridCoordinate) {
+    this.#userId = userId;
+    this.#coordinate = coordinate;
+    this.#grid = grid;
   }
 
-  /** 저장된 값에서 복원한다. */
+  static create(userId: string, coordinate: Coordinate, grid: GridCoordinate): UserLocation {
+    return new UserLocation(userId, coordinate, grid);
+  }
+
   static reconstitute(props: {
-    userId: string;
-    latitude: number;
-    longitude: number;
-    gridX: number;
-    gridY: number;
+    readonly userId: string;
+    readonly latitude: number;
+    readonly longitude: number;
+    readonly gridX: number;
+    readonly gridY: number;
   }): UserLocation {
     return new UserLocation(
       props.userId,
@@ -36,30 +31,30 @@ export class UserLocation {
   }
 
   get userId(): string {
-    return this._userId;
+    return this.#userId;
   }
 
   get coordinate(): Coordinate {
-    return this._coordinate;
+    return this.#coordinate;
   }
 
   get grid(): GridCoordinate {
-    return this._grid;
+    return this.#grid;
   }
 
   get latitude(): number {
-    return this._coordinate.latitude;
+    return this.#coordinate.latitude;
   }
 
   get longitude(): number {
-    return this._coordinate.longitude;
+    return this.#coordinate.longitude;
   }
 
   get gridX(): number {
-    return this._grid.gridX;
+    return this.#grid.gridX;
   }
 
   get gridY(): number {
-    return this._grid.gridY;
+    return this.#grid.gridY;
   }
 }

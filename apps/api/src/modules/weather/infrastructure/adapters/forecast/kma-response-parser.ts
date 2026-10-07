@@ -1,11 +1,13 @@
-import { toCompactDateString } from "#api/shared/domain/date/utils/format";
+import { addDays } from "#api/shared/domain/date/utils/arithmetic";
+import { toDateString } from "#api/shared/domain/date/utils/format";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   DailyForecast,
   HourlyForecast,
   WeatherForecast,
 } from "../../../application/ports/forecast/weather-provider.port.js";
-import { KMA_CATEGORY, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
+import { KMA_CATEGORY, KMA_TIMEZONE, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
 
 export interface KmaResponseItem {
   category: string;
@@ -130,10 +132,9 @@ function buildDailyForecast(dateStr: string, dateItems: KmaResponseItem[]): Dail
  */
 export function parseKmaResponse(data: KmaApiResponse, targetDate: Date): WeatherForecast {
   const allItems = data.response.body?.items?.item ?? [];
-  const targetDateStr = toCompactDateString(targetDate);
-  const nextDay = new Date(targetDate);
-  nextDay.setDate(nextDay.getDate() + 1);
-  const nextDateStr = toCompactDateString(nextDay);
+  const { date, localDate } = dayWindowInTimezone(targetDate, KMA_TIMEZONE);
+  const targetDateStr = localDate.replaceAll("-", "");
+  const nextDateStr = toDateString(addDays(1, date)).replaceAll("-", "");
 
   // 시간별 데이터 수집 (대상 날짜 + 다음 날)
   const hourlyMap = new Map<

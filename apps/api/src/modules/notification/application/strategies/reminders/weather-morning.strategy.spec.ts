@@ -8,7 +8,7 @@ import {
   NotificationPublisher,
 } from "#api/modules/notification/notification-delivery.public";
 import type { WeatherForecast } from "#api/modules/weather/weather-forecast.public";
-import { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import type { WeatherForecastReaderPort } from "#api/modules/weather/weather-forecast.public";
 
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { type WeatherReminderReaderPort } from "../../ports/reminders/weather-reminder-reader.port.js";
@@ -44,7 +44,7 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
   let reader: Mocked<WeatherReminderReaderPort>;
   let notificationPublisher: Mocked<NotificationPublisher>;
   let notificationHistoryReader: Mocked<NotificationHistoryReader>;
-  let weatherForecastAccess: Mocked<WeatherForecastAccess>;
+  let weatherForecastReader: Mocked<WeatherForecastReaderPort>;
 
   beforeEach(async () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
@@ -58,7 +58,7 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
     reader = weatherMorningStrategyDependencies.reader;
     notificationPublisher = weatherMorningStrategyDependencies.notificationPublisher;
     notificationHistoryReader = weatherMorningStrategyDependencies.notificationHistoryReader;
-    weatherForecastAccess = weatherMorningStrategyDependencies.weatherForecastAccess;
+    weatherForecastReader = weatherMorningStrategyDependencies.weatherForecastReader;
 
     reader.findWeatherMorningUsersWithLocation.mockResolvedValue([]);
     reader.findWeatherMorningFallbackUsers.mockResolvedValue([]);
@@ -76,7 +76,7 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(weatherForecastAccess.getForecastsByGridBatch).not.toHaveBeenCalled();
+    expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
   });
 
   it("이미 알림 받은 유저는 제외해야 한다", async () => {
@@ -95,7 +95,7 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
 
     // Then
     expect(result).toEqual({ sent: 0 });
-    expect(weatherForecastAccess.getForecastsByGridBatch).not.toHaveBeenCalled();
+    expect(weatherForecastReader.getForecastsByGridBatch).not.toHaveBeenCalled();
   });
 
   it("대상 유저에게 날씨 알림을 발송해야 한다", async () => {
@@ -110,7 +110,7 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
 
     const forecastMap = new Map<string, WeatherForecast>();
     forecastMap.set("60:127", makeForecast());
-    weatherForecastAccess.getForecastsByGridBatch.mockResolvedValue(forecastMap);
+    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(forecastMap);
 
     // When
     const result = await strategy.execute(makeCtx());
@@ -154,7 +154,7 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
 
     const forecastMap = new Map<string, WeatherForecast>();
     forecastMap.set("60:127", makeForecast());
-    weatherForecastAccess.getForecastsByGridBatch.mockResolvedValue(forecastMap);
+    weatherForecastReader.getForecastsByGridBatch.mockResolvedValue(forecastMap);
 
     // When
     const result = await strategy.execute(makeCtx());
@@ -162,11 +162,11 @@ describe("WeatherMorningStrategy — 오전 날씨 알림 전략", () => {
     // Then
     expect(result).toEqual({ sent: 2 });
     // getForecastsByGridBatch에 격자 1개만 전달
-    expect(weatherForecastAccess.getForecastsByGridBatch).toHaveBeenCalledWith(
+    expect(weatherForecastReader.getForecastsByGridBatch).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ gridX: 60, gridY: 127 })]),
       expect.any(Date),
     );
-    const gridsArg = weatherForecastAccess.getForecastsByGridBatch.mock.calls[0]?.[0];
+    const gridsArg = weatherForecastReader.getForecastsByGridBatch.mock.calls[0]?.[0];
     expect(gridsArg).toHaveLength(1);
   });
 

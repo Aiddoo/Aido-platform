@@ -7,12 +7,6 @@ import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8
 import type { WeatherLocationRepositoryPort } from "../../../application/ports/forecast/weather-location.repository.port.js";
 import { UserLocation } from "../../../domain/entities/forecast/user-location.entity.js";
 
-/**
- * WeatherLocationRepositoryPort의 Prisma 어댑터.
- *
- * UserLocation 애그리게잇을 Prisma UserLocation 행으로 매핑한다. 트랜잭션은 CLS로
- * 전파된다 — TransactionHost.tx가 활성 트랜잭션(없으면 베이스)을 반환.
- */
 @Injectable()
 export class PrismaWeatherLocationRepository implements WeatherLocationRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
@@ -24,9 +18,11 @@ export class PrismaWeatherLocationRepository implements WeatherLocationRepositor
   async findByUserId(userId: string): Promise<UserLocation | null> {
     const row = decodeRecord(
       "UserLocation",
-      await this.client.orm.public.UserLocation.where((row) => row.userId.eq(userId)).first(),
+      await this.client.orm.public.UserLocation.where({ userId })
+        .select("userId", "latitude", "longitude", "gridX", "gridY")
+        .first(),
     );
-    return row ? UserLocation.reconstitute(row) : null;
+    return row === null ? null : UserLocation.reconstitute(row);
   }
 
   async upsert(location: UserLocation): Promise<UserLocation> {
@@ -38,8 +34,12 @@ export class PrismaWeatherLocationRepository implements WeatherLocationRepositor
     };
     const row = decodeRecord(
       "UserLocation",
-      await this.client.orm.public.UserLocation.where((row) =>
-        row.userId.eq(location.userId),
+      await this.client.orm.public.UserLocation.select(
+        "userId",
+        "latitude",
+        "longitude",
+        "gridX",
+        "gridY",
       ).upsert({
         conflictOn: encodePatch("UserLocation", { userId: location.userId }),
         create: encodeCreate("UserLocation", { userId: location.userId, ...data }),

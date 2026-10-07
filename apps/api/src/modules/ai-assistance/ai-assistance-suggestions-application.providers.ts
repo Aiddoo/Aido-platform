@@ -2,7 +2,7 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
-import { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
 import { AI_SUGGESTION_REPOSITORY } from "./application/ports/suggestions/ai-suggestion.repository.port.js";
@@ -15,17 +15,17 @@ import { HandleSuggestionAction } from "./application/use-cases/suggestions/hand
 
 export const suggestionContextBuilderProvider: FactoryProvider<SuggestionContextBuilder> = {
   provide: SuggestionContextBuilder,
-  inject: [AI_SUGGESTION_REPOSITORY, WeatherForecastAccess, WEEKLY_REPORT_READER],
+  inject: [AI_SUGGESTION_REPOSITORY, WEATHER_FORECAST_READER, WEEKLY_REPORT_READER],
   useFactory: (
     repository: ConstructorParameters<typeof SuggestionContextBuilder>[0]["repository"],
-    weatherForecastAccess: ConstructorParameters<
+    weatherForecastReader: ConstructorParameters<
       typeof SuggestionContextBuilder
-    >[0]["weatherForecastAccess"],
+    >[0]["weatherForecastReader"],
     reportReader: ConstructorParameters<typeof SuggestionContextBuilder>[0]["reportReader"],
   ) =>
     new SuggestionContextBuilder({
       repository,
-      weatherForecastAccess,
+      weatherForecastReader,
       reportReader,
       logger: new Logger(SuggestionContextBuilder.name),
     }),

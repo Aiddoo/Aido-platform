@@ -157,4 +157,31 @@ describe("KmaLifestyleIndexProvider — KMA 생활기상지수 프로바이더",
       expect(result.uvIndex).toBe(3);
     });
   });
+  it("UV time은 서버 TZ와 무관하게 KST 날짜와 시각을 보낸다", async () => {
+    // Given
+    Object.defineProperty(configService, "dataGoKrApiKey", { get: () => "test-api-key" });
+    fetchSpy.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          response: {
+            header: { resultCode: "00" },
+            body: { items: { item: [{ h0: "7" }] } },
+          },
+        }),
+      ),
+    );
+    // When
+    const result = await provider.getIndex(
+      37.5665,
+      126.978,
+      new Date("2026-07-23T16:00:00Z"),
+      25,
+      3,
+    );
+    // Then
+    expect(result).toEqual({ feelsLikeTemperature: 25, uvIndex: 7 });
+    const request = fetchSpy.mock.calls[0]?.[0];
+    expect(new URL(String(request)).searchParams.get("time")).toBe("2026072401");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
 });

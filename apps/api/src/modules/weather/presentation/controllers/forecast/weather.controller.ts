@@ -25,9 +25,9 @@ import {
 @Controller("weather")
 export class WeatherController {
   constructor(
-    private readonly upsertLocationUseCase: UpsertLocation,
-    private readonly getWeatherForecastUseCase: GetWeatherForecast,
-    private readonly getWeatherConditionsUseCase: GetWeatherConditions,
+    private readonly upsertLocation: UpsertLocation,
+    private readonly getWeatherForecast: GetWeatherForecast,
+    private readonly getWeatherConditions: GetWeatherConditions,
   ) {}
 
   @Put("location")
@@ -56,7 +56,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: UpdateLocationDto }) dto: UpdateLocationDto,
   ) {
-    const location = await this.upsertLocationUseCase.execute({
+    const location = await this.upsertLocation.execute({
       userId: user.userId,
       latitude: dto.latitude,
       longitude: dto.longitude,
@@ -139,7 +139,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
     const date = query.date ? parseDateOnly(query.date) : now();
-    const { forecast, location } = await this.getWeatherForecastUseCase.execute({
+    const { forecast, location } = await this.getWeatherForecast.execute({
       userId: user.userId,
       date,
     });
@@ -204,7 +204,7 @@ GPS 좌표를 서버에 저장합니다. 기상청 격자 좌표(Lambert 투영)
     @Query({ schema: GetForecastQueryDto }) query: GetForecastQueryDto,
   ) {
     const date = query.date ? parseDateOnly(query.date) : now();
-    return this.getWeatherConditionsUseCase.execute({
+    return this.getWeatherConditions.execute({
       userId: user.userId,
       date,
     });

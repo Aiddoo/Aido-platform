@@ -1,8 +1,8 @@
 export const SUN_TIME_PROVIDER = Symbol("SUN_TIME_PROVIDER");
 
 export interface SunTime {
-  sunrise: string; // "HH:mm"
-  sunset: string; // "HH:mm"
+  readonly sunrise: string; // "HH:mm"
+  readonly sunset: string; // "HH:mm"
 }
 
 export interface SunTimeProvider {

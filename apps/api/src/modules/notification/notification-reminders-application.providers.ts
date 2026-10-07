@@ -5,7 +5,7 @@ import {
   NotificationPublisher,
   NotificationHistoryReader,
 } from "#api/modules/notification/notification-delivery.public";
-import { WeatherForecastAccess } from "#api/modules/weather/weather-forecast.public";
+import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 
 import { RE_ENGAGEMENT_READER } from "./application/ports/reminders/re-engagement-reader.port.js";
 import { SCHEDULED_REMINDER_READER } from "./application/ports/reminders/scheduled-reminder-reader.port.js";
@@ -312,7 +312,7 @@ export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrat
     WEATHER_REMINDER_READER,
     NotificationPublisher,
     NotificationHistoryReader,
-    WeatherForecastAccess,
+    WEATHER_FORECAST_READER,
   ],
   useFactory: (
     reader: ConstructorParameters<typeof WeatherEveningStrategy>[0]["reader"],
@@ -322,15 +322,15 @@ export const weatherEveningStrategyProvider: FactoryProvider<WeatherEveningStrat
     notificationHistoryReader: ConstructorParameters<
       typeof WeatherEveningStrategy
     >[0]["notificationHistoryReader"],
-    weatherForecastAccess: ConstructorParameters<
+    weatherForecastReader: ConstructorParameters<
       typeof WeatherEveningStrategy
-    >[0]["weatherForecastAccess"],
+    >[0]["weatherForecastReader"],
   ) =>
     new WeatherEveningStrategy({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      weatherForecastAccess,
+      weatherForecastReader,
       logger: new Logger(WeatherEveningStrategy.name),
     }),
 };
@@ -341,7 +341,7 @@ export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrat
     WEATHER_REMINDER_READER,
     NotificationPublisher,
     NotificationHistoryReader,
-    WeatherForecastAccess,
+    WEATHER_FORECAST_READER,
   ],
   useFactory: (
     reader: ConstructorParameters<typeof WeatherMorningStrategy>[0]["reader"],
@@ -351,15 +351,15 @@ export const weatherMorningStrategyProvider: FactoryProvider<WeatherMorningStrat
     notificationHistoryReader: ConstructorParameters<
       typeof WeatherMorningStrategy
     >[0]["notificationHistoryReader"],
-    weatherForecastAccess: ConstructorParameters<
+    weatherForecastReader: ConstructorParameters<
       typeof WeatherMorningStrategy
-    >[0]["weatherForecastAccess"],
+    >[0]["weatherForecastReader"],
   ) =>
     new WeatherMorningStrategy({
       reader,
       notificationPublisher,
       notificationHistoryReader,
-      weatherForecastAccess,
+      weatherForecastReader,
       logger: new Logger(WeatherMorningStrategy.name),
     }),
 };

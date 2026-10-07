@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { CacheService } from "#api/platform/cache/cache.service";
+import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
   WeatherCachePort,
@@ -15,17 +16,15 @@ import {
   WEATHER_CACHE_TTL_MS,
   WeatherCacheKey,
 } from "../../cache/forecast/weather-cache.keyspace.js";
+import { getKmaBaseDateTime } from "./kma-base-datetime.js";
+import { KMA_TIMEZONE } from "./kma.constants.js";
 
 @Injectable()
 export class WeatherCacheAdapter implements WeatherCachePort {
   constructor(private readonly cacheService: CacheService) {}
 
-  getForecast(
-    gridX: number,
-    gridY: number,
-    baseDate: string,
-    baseTime: string,
-  ): Promise<WeatherForecast | undefined> {
+  getForecast(gridX: number, gridY: number, date: Date): Promise<WeatherForecast | undefined> {
+    const { baseDate, baseTime } = getKmaBaseDateTime(date);
     return this.cacheService.get<WeatherForecast>(
       WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime),
     );
@@ -34,10 +33,10 @@ export class WeatherCacheAdapter implements WeatherCachePort {
   async saveForecast(
     gridX: number,
     gridY: number,
-    baseDate: string,
-    baseTime: string,
+    date: Date,
     forecast: WeatherForecast,
   ): Promise<void> {
+    const { baseDate, baseTime } = getKmaBaseDateTime(date);
     await Promise.all([
       this.cacheService.set(
         WeatherCacheKey.forecast(gridX, gridY, baseDate, baseTime),
@@ -57,20 +56,17 @@ export class WeatherCacheAdapter implements WeatherCachePort {
   }
 
   getForecastBatch(
-    grids: WeatherGridRef[],
-    baseDate: string,
-    baseTime: string,
+    grids: readonly WeatherGridRef[],
+    date: Date,
   ): Promise<(WeatherForecast | undefined)[]> {
+    const { baseDate, baseTime } = getKmaBaseDateTime(date);
     return this.cacheService.mget<WeatherForecast>(
-      grids.map((g) => WeatherCacheKey.forecast(g.gridX, g.gridY, baseDate, baseTime)),
+      grids.map((grid) => WeatherCacheKey.forecast(grid.gridX, grid.gridY, baseDate, baseTime)),
     );
   }
 
-  async saveForecastBatch(
-    entries: WeatherForecastEntry[],
-    baseDate: string,
-    baseTime: string,
-  ): Promise<void> {
+  async saveForecastBatch(entries: readonly WeatherForecastEntry[], date: Date): Promise<void> {
+    const { baseDate, baseTime } = getKmaBaseDateTime(date);
     const cacheEntries = entries.flatMap((entry) => [
       {
         key: WeatherCacheKey.forecast(entry.gridX, entry.gridY, baseDate, baseTime),
@@ -86,19 +82,30 @@ export class WeatherCacheAdapter implements WeatherCachePort {
     await this.cacheService.mset(cacheEntries);
   }
 
-  getLatestForecastBatch(grids: WeatherGridRef[]): Promise<(WeatherForecast | undefined)[]> {
+  getLatestForecastBatch(
+    grids: readonly WeatherGridRef[],
+  ): Promise<(WeatherForecast | undefined)[]> {
     return this.cacheService.mget<WeatherForecast>(
-      grids.map((g) => WeatherCacheKey.latestForecast(g.gridX, g.gridY)),
+      grids.map((grid) => WeatherCacheKey.latestForecast(grid.gridX, grid.gridY)),
     );
   }
 
-  getConditions(gridX: number, gridY: number): Promise<WeatherConditions | undefined> {
-    return this.cacheService.get<WeatherConditions>(WeatherCacheKey.conditions(gridX, gridY));
+  getConditions(gridX: number, gridY: number, date: Date): Promise<WeatherConditions | undefined> {
+    const { localDate } = dayWindowInTimezone(date, KMA_TIMEZONE);
+    return this.cacheService.get<WeatherConditions>(
+      WeatherCacheKey.conditions(gridX, gridY, localDate),
+    );
   }
 
-  async setConditions(gridX: number, gridY: number, conditions: WeatherConditions): Promise<void> {
+  async setConditions(
+    gridX: number,
+    gridY: number,
+    date: Date,
+    conditions: WeatherConditions,
+  ): Promise<void> {
+    const { localDate } = dayWindowInTimezone(date, KMA_TIMEZONE);
     await this.cacheService.set(
-      WeatherCacheKey.conditions(gridX, gridY),
+      WeatherCacheKey.conditions(gridX, gridY, localDate),
       conditions,
       WEATHER_CACHE_TTL_MS.CONDITIONS,
     );
@@ -108,7 +115,8 @@ export class WeatherCacheAdapter implements WeatherCachePort {
     await Promise.all([
       this.cacheService.delByPattern(WeatherCacheKey.forecastPattern(gridX, gridY)),
       this.cacheService.del(WeatherCacheKey.latestForecast(gridX, gridY)),
-      this.cacheService.del(WeatherCacheKey.conditions(gridX, gridY)),
+      this.cacheService.delByPattern(WeatherCacheKey.conditionsPattern(gridX, gridY)),
+      this.cacheService.del(WeatherCacheKey.legacyConditions(gridX, gridY)),
     ]);
   }
 }

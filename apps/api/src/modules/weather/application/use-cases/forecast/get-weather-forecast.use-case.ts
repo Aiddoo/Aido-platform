@@ -9,21 +9,21 @@ import type { WeatherForecastReader } from "../../services/forecast/weather-fore
 
 /** 예보 + 위치 (컨트롤러가 좌표를 응답에 병합하기 위해 위치도 반환) */
 export interface WeatherForecastWithLocation {
-  forecast: WeatherForecast;
-  location: UserLocation;
+  readonly forecast: WeatherForecast;
+  readonly location: UserLocation;
 }
 
 /**
  * 사용자 위치 기반 날씨 예보 조회 입력.
  */
 export interface GetWeatherForecastInput {
-  userId: string;
-  date: Date;
+  readonly userId: string;
+  readonly date: Date;
 }
 
 interface GetWeatherForecastDependencies {
-  readonly repository: WeatherLocationRepositoryPort;
-  readonly forecastReader: WeatherForecastReader;
+  readonly weatherLocationRepository: Pick<WeatherLocationRepositoryPort, "findByUserId">;
+  readonly forecastReader: Pick<WeatherForecastReader, "fetchForLocation">;
 }
 
 export class GetWeatherForecast {
@@ -34,8 +34,8 @@ export class GetWeatherForecast {
   }
 
   async execute(input: GetWeatherForecastInput): Promise<WeatherForecastWithLocation> {
-    const location = await this.#dependencies.repository.findByUserId(input.userId);
-    if (!location) {
+    const location = await this.#dependencies.weatherLocationRepository.findByUserId(input.userId);
+    if (location === null) {
       throw new ApplicationException(ErrorCode.WEATHER_1902);
     }
 
