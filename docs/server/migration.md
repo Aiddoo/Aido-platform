@@ -1209,3 +1209,19 @@ Before의 실제 Nest Module·native PostgreSQL 회귀 1개(seed116001, Asia/Seo
 Production Compose에는 `stop_grace_period: 120s`를 지정했다. 기본 JobRuntime 대기 90초와 HTTP·자원 종료 여유를 고려한 값이며, 비밀값을 해석하지 않은 실제 Compose 출력에서 120s와 migration 성공 의존성을 확인했다. 운영 컨테이너의 실제 적용은 배포 후 확인한다.
 
 테스트는 실제 DB와 제어 가능한 JobRuntimePort를 사용한다. 실제 pg-boss/BullMQ backend drain, timeout보다 오래 걸리는 작업, 모든 비동기 작업·HTTP 요청의 완료까지 증명하지 않는다. 제한 시간·force close 동작은 변경하지 않았다.
+
+## 16c 보고서 집계 측정
+
+[Issue #935](https://github.com/Aiddoo/Aido-platform/issues/935)의 구현이다. 수동 performance harness에 같은 UTC/KST 날짜 해석·native DB fixture·pool 수명주기와 공식 SqlMiddleware driver statement 관찰을 적용했다. 기존 8회 ORM 조회와 현재 5회 prepared ORM 집계를 비교한다. 5쿼리 생산 최적화는 앞선 foundation에서 적용한 것이며 이번 단계의 새 생산 성능 변경이나 서로 다른 Prisma 버전의 측정으로 표현하지 않는다.
+
+최종 소스의 실제 로컬 PostgreSQL 단일 실행은 seed161002·Asia/Seoul, 1 file / 1 test, 25.36초에 통과했다. 각 크기에서 출력 동등성과 driver statement 8/5를 확인했다. 동일 pool 8connections, 각 방식 warmup 5회·6round 교차·방식당 60samples다.
+
+| Todo 수 | SQL Before / After | p50 ms Before / After | p95 ms Before / After | process CPU ms Before / After | 공유 sampled RSS MiB |
+| ------- | ------------------ | --------------------- | --------------------- | ----------------------------- | -------------------- |
+| 1,000   | 8 / 5              | 2.804 / 1.483         | 3.852 / 1.987         | 209.423 / 115.109             | 340.109              |
+| 10,000  | 8 / 5              | 10.311 / 8.895        | 14.788 / 11.728       | 589.730 / 406.172             | 732.969              |
+| 100,000 | 8 / 5              | 77.887 / 71.125       | 86.744 / 78.146       | 4889.933 / 4065.347           | 1598.484             |
+
+SQL 수는 37.5% 감소했다. 시간은 한 번의 로컬 합성 데이터·warm pool 측정이며 운영 latency·부하·수익/재방문 효과를 증명하지 않는다. CPU는 PostgreSQL 서버 CPU가 아니라 샘플 실행 중 Node process CPU 합계다. RSS는 fixture seeding과 두 방식이 공유한 process의 표본 최대값이며 방식별 메모리 개선 근거가 아니다. 소유 fixture DB 잔여는 0개다.
+
+첫 측정 이후 observer의 반환 타입이 공식 Promise<void>와 맞지 않아 typecheck가 실패했다. async로 수정하고 다시 측정한 위 결과만 최종 소스의 수치로 사용했다. 최초 측정 수치를 수정 후 결과라고 표시하지 않는다. production 코드·DDL·모델·SDK 버전·일반 CI performance job은 추가하지 않았다.
