@@ -2,7 +2,12 @@ import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 
-import { type CachedUserPreference, CacheService } from "#api/platform/cache/cache.service";
+import type { PreferenceSnapshot } from "#api/modules/identity/domain/services/settings/preference-view";
+import {
+  UserSettingsCacheKey,
+  USER_SETTINGS_CACHE_TTL_MS,
+} from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
+import { CacheService } from "#api/platform/cache/cache.service";
 import { createUserNotificationSettingsMock } from "#test/mocks/ports/notification.mock";
 
 import {
@@ -61,10 +66,11 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 설정 cache-
       longestStreak: 42,
       lastCompletedDate: new Date("2026-08-28T00:00:00.000Z"),
     };
-    let cachedSnapshot: CachedUserPreference | undefined;
-    cacheService.wrapUserPreference.mockImplementation(async (_cachedUserId, loader) => {
-      cachedSnapshot = await loader();
-      return cachedSnapshot;
+    let cachedSnapshot: unknown;
+    cacheService.wrap.mockImplementation(async (_cachedUserId, loader) => {
+      const snapshot = await loader();
+      cachedSnapshot = snapshot;
+      return snapshot;
     });
     userSettings.getPreferenceRecord.mockResolvedValue(persistedPreference);
 
@@ -72,7 +78,11 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 설정 cache-
     const result = await reader.getPreference(userId);
 
     // Then - 공개 결과와 캐시 payload 모두 notification 소유 최소 계약만 포함
-    expect(cacheService.wrapUserPreference).toHaveBeenCalledWith(userId, expect.any(Function));
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      UserSettingsCacheKey.preference(userId),
+      expect.any(Function),
+      USER_SETTINGS_CACHE_TTL_MS,
+    );
     expect(userSettings.getPreferenceRecord).toHaveBeenCalledWith(userId);
     expect(result).toEqual(preference);
     expect(cachedSnapshot).toEqual(preference);
@@ -81,9 +91,9 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 설정 cache-
     expect(cachedSnapshot).not.toHaveProperty("lastCompletedDate");
   });
 
-  it("설정 행이 없으면 validators의 하위 호환 기본값과 기본 로케일을 반환한다", async () => {
+  it("설정 행이 없으면 공유 REST 계약의 하위 호환 기본값과 기본 로케일을 반환한다", async () => {
     // Given - 캐시와 영속 설정 모두 미존재
-    cacheService.wrapUserPreference.mockImplementation((_cachedUserId, loader) => loader());
+    cacheService.wrap.mockImplementation((_cachedUserId, loader) => loader());
     userSettings.getPreferenceRecord.mockResolvedValue(null);
 
     // When - 신규 또는 구버전 사용자의 설정 조회
@@ -111,9 +121,9 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 설정 cache-
 
   it("locale 필드가 없는 구버전 캐시 엔트리는 기본 로케일 ko로 보정한다", async () => {
     // Given - locale 도입 전 저장된 캐시 스냅샷
-    const legacyPreference: CachedUserPreference = { ...createPreference() };
+    const legacyPreference: PreferenceSnapshot = { ...createPreference() };
     delete legacyPreference.locale;
-    cacheService.wrapUserPreference.mockResolvedValue(legacyPreference);
+    cacheService.wrap.mockResolvedValue(legacyPreference);
 
     // When - 구버전 캐시에서 설정과 로케일 조회
     const preference = await reader.getPreference("legacy-user");
@@ -131,7 +141,7 @@ describe("CachedNotificationRecipientPreferenceAdapter - 수신자 설정 cache-
     ["fr", "ko"],
   ])("저장 locale %s를 지원 locale %s로 안전하게 좁힌다", async (storedLocale, expected) => {
     // Given - 캐시에 저장된 임의 locale 값
-    cacheService.wrapUserPreference.mockResolvedValue(createPreference({ locale: storedLocale }));
+    cacheService.wrap.mockResolvedValue(createPreference({ locale: storedLocale }));
 
     // When - 알림 카피용 locale 조회
     const result = await reader.getLocale("locale-user");

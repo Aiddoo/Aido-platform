@@ -46,7 +46,6 @@ import { WEATHER_PROVIDERS } from "./weather-forecast.providers.js";
     { provide: AIR_QUALITY_PROVIDER, useClass: AirkoreaProvider },
     { provide: LIFESTYLE_INDEX_PROVIDER, useClass: KmaLifestyleIndexProvider },
     { provide: SUN_TIME_PROVIDER, useClass: KasiSunTimeProvider },
-    // 조회 캐시 포트 (application → CacheService/CacheKeys 직접 의존 역전)
     { provide: WEATHER_CACHE, useClass: WeatherCacheAdapter },
     ...WEATHER_PROVIDERS,
   ],

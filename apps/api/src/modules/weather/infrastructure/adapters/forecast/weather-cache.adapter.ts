@@ -16,11 +16,6 @@ import {
   WeatherCacheKey,
 } from "../../cache/forecast/weather-cache.keyspace.js";
 
-/**
- * WeatherCachePort의 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임한다.
- * 키 구성·TTL·직렬화는 CacheKeys/CacheService가 소유하고, 이 어댑터는 예보 캐시
- * 시맨틱만 노출한다. 정규(3h)·latest(24h) 이중 쓰기와 mget 순서보존은 여기서 캡슐화한다.
- */
 @Injectable()
 export class WeatherCacheAdapter implements WeatherCachePort {
   constructor(private readonly cacheService: CacheService) {}

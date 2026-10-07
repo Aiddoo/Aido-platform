@@ -2,6 +2,10 @@ import { Injectable } from "@nestjs/common";
 import type { ModelAccessor } from "@prisma/orm-postgres/orm-client";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";
 
+import {
+  ReminderCacheKey,
+  REMINDER_CACHE_TTL_MS,
+} from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { decodeRecord } from "#api/platform/database/database-records";
@@ -693,14 +697,18 @@ export class PrismaSchedulerReader
   // ─────────────────────────────────────────────────────────────
 
   async findActiveTimezones(): Promise<string[]> {
-    return this.cacheService.wrapActiveTimezones(async () => {
-      const rows = await this.database.db.orm.public.UserPreference.groupBy("timezone").aggregate(
-        (aggregate) => ({ count: aggregate.count() }),
-      );
-      return rows.flatMap((row) =>
-        normalizeIanaTimezone(row.timezone) !== null ? [row.timezone] : [],
-      );
-    });
+    return this.cacheService.wrap(
+      ReminderCacheKey.activeTimezones(),
+      async () => {
+        const rows = await this.database.db.orm.public.UserPreference.groupBy("timezone").aggregate(
+          (aggregate) => ({ count: aggregate.count() }),
+        );
+        return rows.flatMap((row) =>
+          normalizeIanaTimezone(row.timezone) !== null ? [row.timezone] : [],
+        );
+      },
+      REMINDER_CACHE_TTL_MS,
+    );
   }
 
   async findUserLocales(userIds: string[]): Promise<UserLocaleMap> {

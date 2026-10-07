@@ -25,12 +25,14 @@ import { GetPreference } from "#api/modules/identity/application/use-cases/setti
 import { UpdateMarketingConsent } from "#api/modules/identity/application/use-cases/settings/update-marketing-consent.use-case";
 import { UpdatePreference } from "#api/modules/identity/application/use-cases/settings/update-preference.use-case";
 import { UserSettingsCacheAdapter } from "#api/modules/identity/infrastructure/adapters/settings/user-settings-cache.adapter";
+import { UserSettingsCacheKey } from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
 import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
 import { UserPreferenceRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-preference.repository";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { UserConsentBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { TEST_CUID } from "#test/fixtures/index";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createMockDatabaseContext, databaseFixture } from "#test/mocks/database.mock";
 import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { suppressLogger } from "#test/setup/suppress-logger";
@@ -56,13 +58,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
     hasPremiumAccess: vi.fn(),
   };
 
-  const mockCacheService = {
-    wrapUserPreference: vi
-      .fn()
-      .mockImplementation((_id: string, factory: () => Promise<unknown>) => factory()),
-    invalidateUserPreference: vi.fn(),
-    invalidateActiveTimezones: vi.fn(),
-  };
+  const mockCacheService = createMockCacheService();
 
   const mockReminderEnqueuer = {
     enqueueReminderHourChanged: vi.fn(),
@@ -114,6 +110,7 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCacheService.wrap.mockImplementation((_key, factory) => factory());
     UserPreferenceBuilder.resetIdCounter();
   });
 
@@ -194,7 +191,9 @@ describe("user-settings 유스케이스 통합 테스트 (Mock DB)", () => {
 
       expect(result.morningReminderHour).toBe(7);
       expect(result.morningReminderMinute).toBe(30);
-      expect(mockCacheService.invalidateUserPreference).toHaveBeenCalledWith(mockUserId);
+      expect(mockCacheService.del).toHaveBeenCalledWith(
+        UserSettingsCacheKey.preference(mockUserId),
+      );
       expect(mockReminderEnqueuer.enqueueReminderHourChanged).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: mockUserId,

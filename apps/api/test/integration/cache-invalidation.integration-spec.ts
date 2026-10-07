@@ -10,9 +10,21 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
+import {
+  EntitlementCacheKey,
+  ENTITLEMENT_CACHE_TTL_MS,
+} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+import {
+  IdentityCacheKey,
+  IDENTITY_CACHE_TTL_MS,
+} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+import {
+  FollowCacheKey,
+  FOLLOW_CACHE_TTL_MS,
+} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
-import { CacheKeys } from "#api/platform/cache/constants/cache-keys";
+import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 
 import { createMockUserProfile } from "../mocks/cache-test-utils.js";
 
@@ -62,17 +74,21 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       };
 
       // When - 세션 저장 (로그인)
-      await cacheService.setSession(sessionId, session);
+      await cacheService.set(
+        IdentityCacheKey.session(sessionId),
+        session,
+        IDENTITY_CACHE_TTL_MS.SESSION,
+      );
 
       // Then - 세션 조회 가능
-      const cachedSession = await cacheService.getSession(sessionId);
+      const cachedSession = await cacheService.get(IdentityCacheKey.session(sessionId));
       expect(cachedSession).toEqual(session);
 
       // When - 세션 무효화 (로그아웃)
-      await cacheService.invalidateSession(sessionId);
+      await cacheService.del(IdentityCacheKey.session(sessionId));
 
       // Then - 세션 조회 불가
-      const afterLogout = await cacheService.getSession(sessionId);
+      const afterLogout = await cacheService.get(IdentityCacheKey.session(sessionId));
       expect(afterLogout).toBeUndefined();
     });
 
@@ -109,14 +125,14 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         };
 
         // When - 세션 저장 (setSession은 고정 TTL 30초를 쓰므로 짧은 TTL을 직접 지정)
-        await shortTtlCache.set(CacheKeys.session(sessionId), session, 50);
-        expect(await shortTtlCache.getSession(sessionId)).toEqual(session);
+        await shortTtlCache.set(IdentityCacheKey.session(sessionId), session, 50);
+        expect(await shortTtlCache.get(IdentityCacheKey.session(sessionId))).toEqual(session);
 
         // When - 실제 대기 없이 TTL 이후로 시간 이동
         now.mockReturnValue(baseTime + 100);
 
         // Then - 세션 자동 삭제
-        const afterExpiry = await shortTtlCache.getSession(sessionId);
+        const afterExpiry = await shortTtlCache.get(IdentityCacheKey.session(sessionId));
         expect(afterExpiry).toBeUndefined();
       } finally {
         now.mockRestore();
@@ -135,17 +151,21 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         name: "Original Name",
         userTag: "original#1234",
       });
-      await cacheService.setUserProfile(userId, originalProfile);
+      await cacheService.set(
+        IdentityCacheKey.userProfile(userId),
+        originalProfile,
+        IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+      );
 
       // When - 프로필 조회 (캐시 히트)
-      const cachedProfile = await cacheService.getUserProfile(userId);
+      const cachedProfile = await cacheService.get(IdentityCacheKey.userProfile(userId));
       expect(cachedProfile).toEqual(originalProfile);
 
       // When - 프로필 업데이트 시뮬레이션 (캐시 무효화)
-      await cacheService.invalidateUserProfile(userId);
+      await cacheService.del(IdentityCacheKey.userProfile(userId));
 
       // Then - 캐시 미스
-      const afterUpdate = await cacheService.getUserProfile(userId);
+      const afterUpdate = await cacheService.get(IdentityCacheKey.userProfile(userId));
       expect(afterUpdate).toBeUndefined();
 
       // When - 새 프로필 데이터로 캐시 업데이트
@@ -153,10 +173,14 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
         ...originalProfile,
         name: "Updated Name",
       });
-      await cacheService.setUserProfile(userId, updatedProfile);
+      await cacheService.set(
+        IdentityCacheKey.userProfile(userId),
+        updatedProfile,
+        IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+      );
 
       // Then - 새 데이터로 캐시 히트
-      const newCachedProfile = await cacheService.getUserProfile(userId);
+      const newCachedProfile = await cacheService.get(IdentityCacheKey.userProfile(userId));
       expect(newCachedProfile).toEqual(updatedProfile);
     });
 
@@ -184,16 +208,20 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       ];
 
       for (const user of users) {
-        await cacheService.setUserProfile(user.id, user);
+        await cacheService.set(
+          IdentityCacheKey.userProfile(user.id),
+          user,
+          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        );
       }
 
       // When - user_2 프로필만 무효화
-      await cacheService.invalidateUserProfile("user_2");
+      await cacheService.del(IdentityCacheKey.userProfile("user_2"));
 
       // Then - user_1, user_3는 캐시 유지, user_2는 삭제
-      expect(await cacheService.getUserProfile("user_1")).toEqual(users[0]);
-      expect(await cacheService.getUserProfile("user_2")).toBeUndefined();
-      expect(await cacheService.getUserProfile("user_3")).toEqual(users[2]);
+      expect(await cacheService.get(IdentityCacheKey.userProfile("user_1"))).toEqual(users[0]);
+      expect(await cacheService.get(IdentityCacheKey.userProfile("user_2"))).toBeUndefined();
+      expect(await cacheService.get(IdentityCacheKey.userProfile("user_3"))).toEqual(users[2]);
     });
   });
 
@@ -201,36 +229,58 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
     it("친구 추가/삭제 시 관련 캐시가 패턴으로 무효화된다", async () => {
       // Given - 친구 관계 캐시
       const userId = "user_friend_integration";
-      await cacheService.setMutualFriend(userId, "friend_1", true);
-      await cacheService.setMutualFriend(userId, "friend_2", true);
-      await cacheService.setMutualFriend(userId, "friend_3", false);
+      await cacheService.set(
+        FollowCacheKey.mutual(userId, "friend_1"),
+        true,
+        FOLLOW_CACHE_TTL_MS.MUTUAL,
+      );
+      await cacheService.set(
+        FollowCacheKey.mutual(userId, "friend_2"),
+        true,
+        FOLLOW_CACHE_TTL_MS.MUTUAL,
+      );
+      await cacheService.set(
+        FollowCacheKey.mutual(userId, "friend_3"),
+        false,
+        FOLLOW_CACHE_TTL_MS.MUTUAL,
+      );
 
       // Then - 친구 관계 조회 가능
-      expect(await cacheService.getMutualFriend(userId, "friend_1")).toBe(true);
-      expect(await cacheService.getMutualFriend(userId, "friend_2")).toBe(true);
-      expect(await cacheService.getMutualFriend(userId, "friend_3")).toBe(false);
+      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_1"))).toBe(true);
+      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_2"))).toBe(true);
+      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_3"))).toBe(false);
 
       // When - 친구 관계 변경으로 인한 일괄 무효화
-      const deletedCount = await cacheService.invalidateFriendRelations(userId);
+      const deletedCount = await cacheService.delByPattern(
+        cachePattern("follow", "mutual", userId),
+      );
 
       // Then - 모든 친구 관계 캐시 삭제
       expect(deletedCount).toBe(3);
-      expect(await cacheService.getMutualFriend(userId, "friend_1")).toBeUndefined();
-      expect(await cacheService.getMutualFriend(userId, "friend_2")).toBeUndefined();
-      expect(await cacheService.getMutualFriend(userId, "friend_3")).toBeUndefined();
+      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_1"))).toBeUndefined();
+      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_2"))).toBeUndefined();
+      expect(await cacheService.get(FollowCacheKey.mutual(userId, "friend_3"))).toBeUndefined();
     });
 
     it("양방향 친구 관계가 독립적으로 캐시된다", async () => {
       // Given - 양방향 친구 관계 캐시
-      await cacheService.setMutualFriend("user_a", "user_b", true);
-      await cacheService.setMutualFriend("user_b", "user_a", true);
+      await cacheService.set(
+        FollowCacheKey.mutual("user_a", "user_b"),
+        true,
+        FOLLOW_CACHE_TTL_MS.MUTUAL,
+      );
+      await cacheService.set(
+        FollowCacheKey.mutual("user_b", "user_a"),
+        true,
+        FOLLOW_CACHE_TTL_MS.MUTUAL,
+      );
 
       // When - user_a의 친구 관계만 무효화
-      await cacheService.invalidateFriendRelations("user_a");
+      await cacheService.delByPattern(cachePattern("follow", "mutual", "user_a"));
 
       // Then - user_a→user_b는 삭제, user_b→user_a는 유지
-      expect(await cacheService.getMutualFriend("user_a", "user_b")).toBeUndefined();
-      expect(await cacheService.getMutualFriend("user_b", "user_a")).toBe(true);
+      expect(await cacheService.get(FollowCacheKey.mutual("user_a", "user_b"))).toBeUndefined();
+      expect(await cacheService.get(FollowCacheKey.mutual("user_b", "user_a"))).toBe(true);
     });
   });
 
@@ -295,22 +345,30 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const subscription = { status: "ACTIVE" as const };
 
       // When - 각 도메인에 저장
-      await cacheService.setSession(id, session);
-      await cacheService.setUserProfile(id, profile);
-      await cacheService.setSubscription(id, subscription);
+      await cacheService.set(IdentityCacheKey.session(id), session, IDENTITY_CACHE_TTL_MS.SESSION);
+      await cacheService.set(
+        IdentityCacheKey.userProfile(id),
+        profile,
+        IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+      );
+      await cacheService.set(
+        EntitlementCacheKey.subscription(id),
+        subscription,
+        ENTITLEMENT_CACHE_TTL_MS,
+      );
 
       // Then - 각 도메인에서 올바른 데이터 조회
-      expect(await cacheService.getSession(id)).toEqual(session);
-      expect(await cacheService.getUserProfile(id)).toEqual(profile);
-      expect(await cacheService.getSubscription(id)).toEqual(subscription);
+      expect(await cacheService.get(IdentityCacheKey.session(id))).toEqual(session);
+      expect(await cacheService.get(IdentityCacheKey.userProfile(id))).toEqual(profile);
+      expect(await cacheService.get(EntitlementCacheKey.subscription(id))).toEqual(subscription);
 
       // When - 프로필만 무효화
-      await cacheService.invalidateUserProfile(id);
+      await cacheService.del(IdentityCacheKey.userProfile(id));
 
       // Then - 프로필만 삭제, 다른 도메인은 유지
-      expect(await cacheService.getSession(id)).toEqual(session);
-      expect(await cacheService.getUserProfile(id)).toBeUndefined();
-      expect(await cacheService.getSubscription(id)).toEqual(subscription);
+      expect(await cacheService.get(IdentityCacheKey.session(id))).toEqual(session);
+      expect(await cacheService.get(IdentityCacheKey.userProfile(id))).toBeUndefined();
+      expect(await cacheService.get(EntitlementCacheKey.subscription(id))).toEqual(subscription);
     });
 
     it("캐시 키가 설계대로 생성된다", async () => {
@@ -319,10 +377,12 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       const targetId = "target_key_test";
 
       // Then - 캐시 키 형식 검증
-      expect(CacheKeys.session("sess_123")).toBe("aido:v1:auth:session:sess_123");
-      expect(CacheKeys.userProfile(userId)).toBe(`aido:v1:auth:user-profile:${userId}`);
-      expect(CacheKeys.subscription(userId)).toBe(`aido:v1:subscription:status:${userId}`);
-      expect(CacheKeys.mutualFriend(userId, targetId)).toBe(
+      expect(IdentityCacheKey.session("sess_123")).toBe("aido:v1:auth:session:sess_123");
+      expect(IdentityCacheKey.userProfile(userId)).toBe(`aido:v1:auth:user-profile:${userId}`);
+      expect(EntitlementCacheKey.subscription(userId)).toBe(
+        `aido:v1:subscription:status:${userId}`,
+      );
+      expect(FollowCacheKey.mutual(userId, targetId)).toBe(
         `aido:v1:follow:mutual:${userId}:${targetId}`,
       );
     });

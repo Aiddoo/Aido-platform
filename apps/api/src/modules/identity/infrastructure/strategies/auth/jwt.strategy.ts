@@ -1,6 +1,6 @@
 import type { CurrentUserPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 
@@ -8,11 +8,16 @@ import { SessionService } from "#api/modules/identity/application/services/auth/
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { type CachedSession, CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { toErrorMessage } from "#api/shared/application/utils/error-message.util";
 import { toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+
+import {
+  AUTH_CACHE,
+  type AuthCachePort,
+  type AuthCachedSession,
+} from "../../../application/ports/auth/auth-collaboration.port.js";
 
 /**
  * @aido/api에서 re-export (하위 호환성 유지)
@@ -33,7 +38,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     readonly configService: TypedConfigService,
     private readonly sessionRepository: SessionRepository,
     private readonly sessionService: SessionService,
-    private readonly cacheService: CacheService,
+    @Inject(AUTH_CACHE) private readonly cacheService: AuthCachePort,
     private readonly userRepository: UserRepository,
   ) {
     super({
@@ -129,7 +134,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
    * 레벨에서도 한 번 더 격리한다. try 안에는 캐시 I/O만 둔다 —
    * assertSessionValid/#assertUserStatus의 의도적 401은 절대 삼키지 않는다.
    */
-  async #getCachedSessionSafe(sessionId: string): Promise<CachedSession | undefined> {
+  async #getCachedSessionSafe(sessionId: string): Promise<AuthCachedSession | undefined> {
     try {
       return await this.cacheService.getSession(sessionId);
     } catch (error) {
@@ -141,7 +146,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
   /**
    * 세션 캐시 쓰기 — 실패 시 무시 (다음 요청이 다시 DB를 탈 뿐)
    */
-  async #setCachedSessionSafe(sessionId: string, session: CachedSession): Promise<void> {
+  async #setCachedSessionSafe(sessionId: string, session: AuthCachedSession): Promise<void> {
     try {
       await this.cacheService.setSession(sessionId, session);
     } catch (error) {

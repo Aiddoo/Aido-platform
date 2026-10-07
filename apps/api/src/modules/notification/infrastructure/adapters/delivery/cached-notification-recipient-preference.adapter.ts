@@ -1,7 +1,12 @@
 import { USER_PREFERENCE_DEFAULTS } from "@aido/api/vocabulary";
 import { Inject, Injectable } from "@nestjs/common";
 
-import { type CachedUserPreference, CacheService } from "#api/platform/cache/cache.service";
+import type { PreferenceSnapshot } from "#api/modules/identity/domain/services/settings/preference-view";
+import {
+  UserSettingsCacheKey,
+  USER_SETTINGS_CACHE_TTL_MS,
+} from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
+import { CacheService } from "#api/platform/cache/cache.service";
 import { DEFAULT_LOCALE, type SupportedLocale, toSupportedLocale } from "#api/shared/domain/locale";
 
 import { type NotificationRecipientLocaleReaderPort } from "../../../application/ports/delivery/notification-recipient-locale.reader.port.js";
@@ -23,8 +28,10 @@ export class CachedNotificationRecipientPreferenceAdapter
   ) {}
 
   async getPreference(userId: string): Promise<NotificationDeliveryPreference> {
-    const preference = await this.cacheService.wrapUserPreference(userId, () =>
-      this.#loadPreference(userId),
+    const preference = await this.cacheService.wrap(
+      UserSettingsCacheKey.preference(userId),
+      () => this.#loadPreference(userId),
+      USER_SETTINGS_CACHE_TTL_MS,
     );
     return {
       ...preference,
@@ -47,7 +54,7 @@ export class CachedNotificationRecipientPreferenceAdapter
     return new Map(uniqueUserIds.map((userId) => [userId, locales.get(userId) ?? DEFAULT_LOCALE]));
   }
 
-  async #loadPreference(userId: string): Promise<CachedUserPreference> {
+  async #loadPreference(userId: string): Promise<PreferenceSnapshot> {
     const preference = await this.userSettings.getPreferenceRecord(userId);
     if (preference) {
       return {

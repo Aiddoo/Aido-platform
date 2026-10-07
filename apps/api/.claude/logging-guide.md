@@ -1,238 +1,41 @@
-# API 로깅 가이드라인
+# 서버 로깅
 
-**Version**: 1.0.0 · **Last Updated**: 2026-04-23 · **Owner**: Aido Platform Team
+Nest/Pino 연결은 `platform/logging`이 소유한다. `bootstrap`이 등록한 공식 `nestjs-pino` Logger와 기존 Nest Logger를 사용한다. 별도 Logger wrapper나 이메일 마스킹 구현을 추가하지 않는다.
 
-> Pino 기반 구조화 로깅 패턴과 민감 데이터 마스킹 규칙.
+## 레이어와 소유권
 
-## 관련 문서
+- Domain은 로그를 기록하지 않는다. 상태와 불변식에 집중한다.
+- Application은 순수 `ApplicationLogger` port를 생성자 의존성으로 받는다. Composition Root가 기존 Nest Logger를 연결한다.
+- Infrastructure는 공급자 실패·재시도·작업 결과를 기록한다. HTTP 요청 로그는 Pino middleware, 오류 로그는 GlobalExceptionFilter가 소유한다.
+- Controller와 Repository에서 같은 호출의 시작·종료 로그를 반복하지 않는다.
+- 변경하는 업무 이벤트의 식별자는 Context의 `application/observability/<slice>/*.events.ts`, 공급자 이벤트는 `infrastructure/observability/<slice>`에 둔다. HTTP 이벤트는 `platform/logging/http-log.ts`에 둔다.
 
-| 문서                                       | 내용                                                       |
-| ------------------------------------------ | ---------------------------------------------------------- |
-| [AGENTS.md](../AGENTS.md)                  | API 앱 진입점 (기술 스택, 핵심 규칙, 문서 네비게이션)      |
-| [architecture.md](./architecture.md)       | 전체 아키텍처, 에러 처리 (GlobalExceptionFilter 로깅 전략) |
-| [api-conventions.md](./api-conventions.md) | Controller/Service/Repository 계층 규칙                    |
+## 형식
 
-## 개요
-
-이 문서는 Aido API 서버의 로깅 일관성을 유지하기 위한 가이드라인입니다.
-
-## 로깅 레벨 규칙
-
-| 레벨      | 사용 시점                       | 예시                        |
-| --------- | ------------------------------- | --------------------------- |
-| `error`   | 예외 발생, 시스템 오류          | DB 연결 실패, 외부 API 오류 |
-| `warn`    | 비정상적이지만 처리 가능한 상황 | 인증 실패, 잘못된 입력      |
-| `log`     | 중요한 비즈니스 이벤트          | 사용자 생성, 결제 완료      |
-| `debug`   | 개발 중 디버깅용                | 함수 호출 추적, 변수 값     |
-| `verbose` | 상세 추적 정보                  | 요청/응답 전체 내용         |
-
-## 레이어별 로깅 패턴
-
-### Service 레이어
-
-Service는 비즈니스 로직의 핵심이므로 **주요 로깅 지점**입니다.
+`event`는 검색과 집계를 위한 안정적인 영어 식별자다. 필드는 `userId`, `sessionId`, `jobId`, `messageId`, `errorCode`, `errorType`, `retryCount`처럼 명확한 camelCase로 사용한다. 식별자가 없는 값은 `undefined`로 생략한다. 업무 상태와 HTTP 응답은 로그 문구에 의존하지 않는다.
 
 ```typescript
-import { Injectable, Logger } from '@nestjs/common';
-
-@Injectable()
-export class UserService {
-  readonly #logger = new Logger(UserService.name);
-
-  async createUser(data: CreateUserDto) {
-    this.#logger.log(`사용자 생성 시작: ${this.#maskEmail(data.email)}`);
-
-    try {
-      const user = await this.userRepository.create(data);
-      this.#logger.log(`사용자 생성 완료: ${user.id}`);
-      return user;
-    } catch (error) {
-      this.#logger.error(`사용자 생성 실패: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  #maskEmail(email: string): string {
-    const [local, domain] = email.split('@');
-    return `${local[0]}***@${domain}`;
-  }
-}
+this.#dependencies.logger.error({
+  event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+  verificationType: 'PASSWORD_SETUP',
+  userId,
+});
 ```
 
-### Repository 레이어
+`log`: 주요 성공 이벤트, `warn`: 처리 가능한 거부·재시도, `error`: 최종 공급자 실패·5xx, `debug`: 필요한 진단. 루프의 개별 항목이나 큰 객체의 JSON 문자열을 기록하지 않는다.
 
-Repository는 데이터 접근 계층이므로 **일반적으로 로깅 불필요**합니다.
+## 개인정보와 인증 값
 
-- Service에서 이미 비즈니스 이벤트를 로깅
-- 복잡한 쿼리나 성능 모니터링 시에만 `debug` 레벨 사용
+이메일 주소·토큰·인증 코드·OAuth state·교환 코드의 일부·할 일 제목·AI 입력·이메일 본문은 로그에 남기지 않는다. 외부 공급자의 오류 원문도 이를 포함할 수 있다. 알려진 오류 분류와 내부 식별자를 남기고 발송 결과의 오류 계약은 유지한다. API key가 없는 이메일 모의 발송에서도 본문과 인증 코드를 출력하지 않는다.
 
-```typescript
-// 필요한 경우에만
-async findByEmail(email: string): Promise<User | null> {
-  this.#logger.debug(`이메일로 사용자 조회: ${email}`);
-  return this.prisma.user.findUnique({ where: { email } });
-}
-```
+HTTP 로그는 query를 제거한 `path`, `method`, `statusCode`, `event`, `reqId`, `responseTime`을 사용한다. `req`/`res` 원문을 직렬화하지 않으며 Pino의 `quietReqLogger`·`quietResLogger`로 요청 ID를 유지한다. 헤더/본문 redaction 설정을 함께 유지한다. `customLogLevel`의 `silent`가 4xx/5xx 자동 로그를 생략해 예외 필터와 중복 기록하지 않는다.
 
-### Controller 레이어
+GlobalExceptionFilter는 기존 REST 오류 응답을 유지한다. 로그에는 오류 코드·타입·stack frame만 기록하고 query와 예외 메시지 원문을 합치지 않는다. 5xx Sentry 캡처는 유지하며, Sentry 전체 데이터 정제 검증까지 완료했다고 주장하지 않는다.
 
-Controller는 **로깅 불필요**합니다.
+## 설정과 검증
 
-- 요청/응답 로깅은 Interceptor에서 처리
-- 인증/인가 로깅은 Guard에서 처리
+환경 기본값은 test `silent`, production `info`, development `debug`다. 명시적인 module 옵션, `LOG_LEVEL`, 환경 기본값 순서로 결정한다. 개발 환경에서만 기본 pretty print를 사용한다.
 
-### Guard 레이어
+실제 Nest HTTP 요청을 공식 Pino stream으로 받아 인증 query/header 비노출, 구조화 이벤트와 요청 ID, 4xx 자동 로그 생략을 검증한다. 인증 workflow와 Email Adapter 테스트는 실제 입력·발송 결과를 유지하면서 로그 비노출을 검증한다. 기존 문자열 로그의 일괄 변환은 기능별 후속 Stack에서 필요성과 소유권을 확인하며 진행한다.
 
-보안 관련 이벤트는 **warn 레벨로 로깅**합니다.
-
-```typescript
-this.#logger.warn(`인증 실패: 유효하지 않은 토큰 - IP: ${ip}`);
-this.#logger.warn(`권한 부족: userId=${userId}, resource=${resource}`);
-```
-
-## 민감 정보 처리
-
-### 절대 로깅 금지
-
-- 비밀번호 (평문/해시 모두)
-- 액세스 토큰, 리프레시 토큰
-- API 키, 시크릿 키
-- 개인 식별 번호 (주민번호, 전화번호 등)
-
-### 마스킹 필수
-
-| 데이터   | 마스킹 방법                | 예시               |
-| -------- | -------------------------- | ------------------ |
-| 이메일   | 첫 글자 + *** + 도메인     | `t***@example.com` |
-| 전화번호 | 앞 3자리 + **** + 뒤 4자리 | `010-****-1234`    |
-| IP 주소  | 전체 출력 가능             | `192.168.1.100`    |
-
-### 마스킹 유틸리티
-
-```typescript
-// common/utils/mask.util.ts
-export function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!domain) return '***';
-  return `${local[0]}***@${domain}`;
-}
-
-export function maskPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length < 8) return '***';
-  return `${digits.slice(0, 3)}-****-${digits.slice(-4)}`;
-}
-```
-
-## 로깅 포맷
-
-### 표준 메시지 형식
-
-```
-[동작] [대상]: [상세 정보]
-```
-
-### 예시
-
-```typescript
-// 좋은 예
-this.#logger.log(`사용자 생성 완료: userId=${user.id}`);
-this.#logger.warn(`인증 실패: 잘못된 비밀번호 - email=${maskEmail(email)}`);
-this.#logger.error(`외부 API 호출 실패: provider=kakao, status=${status}`);
-
-// 나쁜 예
-this.#logger.log(`user created`); // 한국어 사용, 상세 정보 부족
-this.#logger.log(`사용자가 생성되었습니다.`); // ID 정보 누락
-this.#logger.error(error); // 메시지 없이 에러 객체만
-```
-
-## 에러 로깅 패턴
-
-### 예외 처리 시
-
-```typescript
-try {
-  await this.externalApi.call(params);
-} catch (error) {
-  // 컨텍스트 포함하여 로깅
-  this.#logger.error(
-    `외부 API 호출 실패: provider=${provider}, params=${JSON.stringify(safeParams)}`,
-    error.stack,
-  );
-  throw new ApplicationException(ErrorCode.EXTERNAL_API_ERROR);
-}
-```
-
-### ApplicationException/DomainException 발생 시
-
-예상된 비즈니스 오류이므로 **warn 레벨** 사용:
-
-```typescript
-if (!user) {
-  this.#logger.warn(`사용자 조회 실패: userId=${userId} 존재하지 않음`);
-  throw new ApplicationException(ErrorCode.USER_NOT_FOUND);
-}
-```
-
-## 환경별 로깅 설정
-
-### 개발 환경 (development)
-
-- 모든 레벨 출력 (debug, verbose 포함)
-- 콘솔 출력
-
-### 스테이징 환경 (staging)
-
-- log, warn, error 출력
-- 파일 또는 로그 수집 서비스로 전송
-
-### 운영 환경 (production)
-
-- log, warn, error 출력
-- 구조화된 JSON 포맷
-- 로그 수집 서비스 (CloudWatch, DataDog 등) 연동
-
-## 성능 고려사항
-
-### 비용이 높은 로깅 피하기
-
-```typescript
-// 나쁜 예: 매번 JSON.stringify 실행
-this.#logger.debug(`요청 데이터: ${JSON.stringify(largeObject)}`);
-
-// 좋은 예: debug 레벨인 경우만 실행
-if (this.#logger.isLevelEnabled('debug')) {
-  this.#logger.debug(`요청 데이터: ${JSON.stringify(largeObject)}`);
-}
-```
-
-### 반복문 내 로깅 주의
-
-```typescript
-// 나쁜 예: 1000번 로깅
-for (const item of items) {
-  this.#logger.log(`처리 중: ${item.id}`);
-  await this.process(item);
-}
-
-// 좋은 예: 시작/종료만 로깅
-this.#logger.log(`일괄 처리 시작: count=${items.length}`);
-for (const item of items) {
-  await this.process(item);
-}
-this.#logger.log(`일괄 처리 완료: count=${items.length}`);
-```
-
-## 체크리스트
-
-- [ ] Service에서 주요 비즈니스 이벤트 로깅
-- [ ] 에러 발생 시 컨텍스트 포함하여 로깅
-- [ ] 민감 정보 마스킹 적용
-- [ ] 한국어 메시지 사용
-- [ ] 적절한 로깅 레벨 선택
-- [ ] Repository/Controller에서 불필요한 로깅 제거
-
----
-
-**문서 버전**: 3.0.0
-**최종 수정일**: 2026-03-22
+공식 문서: [NestJS Pino](https://github.com/iamolegga/nestjs-pino), [Pino HTTP 옵션](https://github.com/pinojs/pino-http#api).

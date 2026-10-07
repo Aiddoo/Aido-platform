@@ -9,6 +9,7 @@ import type {
 } from "../../../application/ports/email/email-sender.port.js";
 import type { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import { EMAIL_CONSTANTS, RETRYABLE_ERROR_TYPES } from "../../constants/email/email.constants.js";
+import { EmailLogEvent } from "../../observability/email/email-log.events.js";
 
 /**
  * EmailSenderPort의 Resend 어댑터.
@@ -50,11 +51,7 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
 
     // API 키 미설정(dev/test)이면 로그만 출력
     if (!this.#resend) {
-      this.#logger.debug(`[EMAIL MOCK] To: ${tagged.to}`);
-      this.#logger.debug(`[EMAIL MOCK] Subject: ${tagged.subject}`);
-      this.#logger.debug(`[EMAIL MOCK] IdempotencyKey: ${tagged.idempotencyKey || "none"}`);
-      this.#logger.debug(`[EMAIL MOCK] Tags: ${JSON.stringify(tagged.tags)}`);
-      this.#logger.debug(`[EMAIL MOCK] Text:\n${tagged.text}`);
+      this.#logger.debug({ event: EmailLogEvent.DELIVERY_SIMULATED });
 
       return {
         success: true,
@@ -103,7 +100,11 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
           return this.#sendWithRetry(message, attempt + 1);
         }
 
-        this.#logger.error(`Failed to send email to ${message.to}: ${result.error.message}`);
+        this.#logger.error({
+          event: EmailLogEvent.DELIVERY_FAILED,
+          errorType: result.error.name,
+          retryCount: attempt,
+        });
         return {
           success: false,
           error: result.error.message,
@@ -111,7 +112,11 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
         };
       }
 
-      this.#logger.log(`Email sent successfully to ${message.to} (ID: ${result.data?.id})`);
+      this.#logger.log({
+        event: EmailLogEvent.DELIVERY_COMPLETED,
+        messageId: result.data?.id,
+        retryCount: attempt,
+      });
       return {
         success: true,
         messageId: result.data?.id,
@@ -129,7 +134,7 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
       }
 
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      this.#logger.error(`Failed to send email to ${message.to}: ${errorMessage}`);
+      this.#logger.error({ event: EmailLogEvent.DELIVERY_FAILED, retryCount: attempt });
 
       return {
         success: false,

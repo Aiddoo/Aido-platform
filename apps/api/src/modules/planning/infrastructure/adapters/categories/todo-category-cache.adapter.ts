@@ -1,5 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
+import {
+  TodoCategoryCacheKey,
+  TODO_CATEGORY_CACHE_TTL_MS,
+} from "#api/modules/planning/infrastructure/cache/categories/todo-category-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { TodoCategoryCachePort } from "../../../application/ports/categories/todo-category-cache.port.js";
@@ -16,10 +20,14 @@ export class TodoCategoryCacheAdapter implements TodoCategoryCachePort {
     userId: string,
     factory: () => Promise<TodoCategoryWithCountView[]>,
   ): Promise<TodoCategoryWithCountView[]> {
-    return this.cacheService.wrapTodoCategories(userId, factory);
+    return this.cacheService.wrap(
+      TodoCategoryCacheKey.list(userId),
+      factory,
+      TODO_CATEGORY_CACHE_TTL_MS,
+    );
   }
 
   invalidate(userId: string): Promise<void> {
-    return this.cacheService.invalidateTodoCategories(userId);
+    return this.cacheService.del(TodoCategoryCacheKey.list(userId));
   }
 }

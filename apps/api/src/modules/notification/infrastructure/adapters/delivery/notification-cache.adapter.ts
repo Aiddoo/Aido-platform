@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { UserSettingsCacheKey } from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { NotificationCachePort } from "../../../application/ports/delivery/notification-cache.port.js";
@@ -34,10 +35,10 @@ export class NotificationCacheAdapter implements NotificationCachePort {
   }
 
   invalidatePushTokens(userId: string): Promise<void> {
-    return this.cacheService.invalidatePushTokens(userId);
+    return this.cacheService.del(NotificationCacheKey.pushTokens(userId));
   }
 
   invalidateUserPreference(userId: string): Promise<void> {
-    return this.cacheService.invalidateUserPreference(userId);
+    return this.cacheService.del(UserSettingsCacheKey.preference(userId));
   }
 }

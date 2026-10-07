@@ -8,8 +8,6 @@
 // Module & Service
 export * from "./cache.module.js";
 export * from "./cache.service.js";
-// Constants
-export * from "./constants/cache-keys.js";
 // Interfaces
 export * from "./interfaces/cache.interface.js";
 export * from "./keyspace/cache-key.js";

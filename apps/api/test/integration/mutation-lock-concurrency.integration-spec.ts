@@ -15,6 +15,7 @@ import {
   ENTITLEMENT_DATABASE,
 } from "#api/modules/access/application/services/entitlement/entitlement-state.port";
 import { EntitlementService } from "#api/modules/access/application/services/entitlement/entitlement.service";
+import { EntitlementCacheAdapter } from "#api/modules/access/infrastructure/adapters/entitlement/entitlement-cache.adapter";
 import { PrismaEntitlementReader } from "#api/modules/access/infrastructure/persistence/entitlement/prisma-entitlement.reader";
 import type { TodoCategoryCachePort } from "#api/modules/planning/application/ports/categories/todo-category-cache.port";
 import { CreateTodoCategory } from "#api/modules/planning/application/use-cases/categories/create-todo-category.use-case";
@@ -742,13 +743,14 @@ describe("mutation lock 동시성 (실제 PostgreSQL)", () => {
         PrismaTodoCategoryRepository,
         PostgresMutationLockAdapter,
         entitlementServiceProvider,
-        { provide: ENTITLEMENT_CACHE, useExisting: CacheService },
+        EntitlementCacheAdapter,
+        { provide: ENTITLEMENT_CACHE, useExisting: EntitlementCacheAdapter },
         { provide: ENTITLEMENT_DATABASE, useClass: PrismaEntitlementReader },
         TodoCategoryLimitReaderAdapter,
         {
           provide: CacheService,
           useValue: {
-            wrapSubscription: () => {
+            wrap: () => {
               throw new Error("category mutation integration test used cached entitlement");
             },
           },

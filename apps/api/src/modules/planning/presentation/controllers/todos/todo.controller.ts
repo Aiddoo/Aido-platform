@@ -7,7 +7,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Logger,
   Param,
   Patch,
   Post,
@@ -90,8 +89,6 @@ import {
 @ApiBearerAuth()
 @Controller("todos")
 export class TodoController {
-  readonly #logger = new Logger(TodoController.name);
-
   constructor(
     private readonly getTodoResourceLimitUseCase: GetTodoResourceLimit,
     private readonly getTodoSummaryUseCase: GetTodoSummary,
@@ -232,8 +229,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: CreateTodoDto }) dto: CreateTodoDto,
     @Timezone() tz: string,
   ): Promise<CreateTodoResponseDto> {
-    this.#logger.debug(`Todo 생성: user=${user.userId}, title=${dto.title}`);
-
     const todo = await this.createTodoUseCase.execute({
       userId: user.userId,
       title: dto.title,
@@ -247,8 +242,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       visibility: dto.visibility,
       items: dto.items,
     });
-
-    this.#logger.log(`Todo 생성 완료: id=${todo.id}, user=${user.userId}`);
 
     return {
       message: "할 일이 생성되었습니다.",
@@ -292,10 +285,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: CreateRecurringTodoDto }) dto: CreateRecurringTodoDto,
     @Timezone() tz: string,
   ): Promise<CreateRecurringTodoResponseDto> {
-    this.#logger.debug(
-      `반복 Todo 생성: user=${user.userId}, title=${dto.title}, range=${dto.startDate}~${dto.endDate}, days=${dto.daysOfWeek.join(",")}`,
-    );
-
     const result = await this.createRecurringTodosUseCase.execute({
       data: {
         userId: user.userId,
@@ -310,8 +299,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
       },
       timezone: tz,
     });
-
-    this.#logger.log(`반복 Todo 생성 완료: ${result.count}개, user=${user.userId}`);
 
     return {
       message: `반복 할 일이 ${result.count}개 생성되었습니다.`,
@@ -452,10 +439,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetTodosQueryDto }) query: GetTodosQueryDto,
   ): Promise<TodoListResponseDto> {
-    this.#logger.debug(
-      `Todo 목록 조회: user=${user.userId}, size=${query.size}, completed=${query.completed}`,
-    );
-
     const result = await this.getTodosUseCase.execute({
       userId: user.userId,
       cursor: query.cursor,
@@ -488,8 +471,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
   ): Promise<TodoResponseDto> {
-    this.#logger.debug(`Todo 상세 조회: id=${params.id}, user=${user.userId}`);
-
     return this.getTodoByIdUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -541,8 +522,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
     @Query({ schema: GetFriendTodosQueryDto }) query: GetFriendTodosQueryDto,
   ): Promise<TodoListResponseDto> {
-    this.#logger.debug(`친구 Todo 목록 조회: friendUserId=${params.userId}, user=${user.userId}`);
-
     const result = await this.getFriendTodosUseCase.execute({
       userId: user.userId,
       friendUserId: params.userId,
@@ -585,8 +564,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: UpdateTodoDto }) dto: UpdateTodoDto,
     @Timezone() tz: string,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(`Todo 수정: id=${params.id}, user=${user.userId}`);
-
     const todo = await this.updateTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -606,8 +583,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         completed: dto.completed,
       },
     });
-
-    this.#logger.log(`Todo 수정 완료: id=${params.id}, user=${user.userId}`);
 
     return {
       message: "할 일이 수정되었습니다.",
@@ -646,10 +621,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: ToggleTodoCompleteDto }) dto: ToggleTodoCompleteDto,
     @Timezone() tz: string,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 완료 상태 변경: id=${params.id}, completed=${dto.completed}, user=${user.userId}`,
-    );
-
     const todo = await this.toggleTodoCompleteUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -681,10 +652,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoVisibilityDto }) dto: UpdateTodoVisibilityDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 공개 범위 변경: id=${params.id}, visibility=${dto.visibility}, user=${user.userId}`,
-    );
-
     const todo = await this.updateTodoVisibilityUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -716,10 +683,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: ChangeTodoCategoryDto }) dto: ChangeTodoCategoryDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 카테고리 변경: id=${params.id}, categoryId=${dto.categoryId}, user=${user.userId}`,
-    );
-
     const todo = await this.changeTodoCategoryUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -761,10 +724,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Body({ schema: UpdateTodoScheduleDto }) dto: UpdateTodoScheduleDto,
     @Timezone() tz: string,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 일정 변경: id=${params.id}, startDate=${dto.startDate}, user=${user.userId}`,
-    );
-
     const todo = await this.updateTodoScheduleUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -803,8 +762,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: UpdateTodoTitleDto }) dto: UpdateTodoTitleDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(`Todo 제목 수정: id=${params.id}, user=${user.userId}`);
-
     const todo = await this.updateTodoTitleUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -837,10 +794,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: ReorderTodoDto }) dto: ReorderTodoDto,
   ): Promise<ReorderTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 순서 변경: id=${params.id}, target=${dto.targetTodoId}, position=${dto.position}, user=${user.userId}`,
-    );
-
     const todo = await this.reorderTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
@@ -870,14 +823,10 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
   ): Promise<DeleteTodoResponseDto> {
-    this.#logger.debug(`Todo 삭제: id=${params.id}, user=${user.userId}`);
-
     await this.deleteTodoUseCase.execute({
       id: params.id,
       userId: user.userId,
     });
-
-    this.#logger.log(`Todo 삭제 완료: id=${params.id}, user=${user.userId}`);
 
     return {
       message: "할 일이 삭제되었습니다.",
@@ -927,8 +876,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: CreateTodoItemDto }) dto: CreateTodoItemDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(`Todo 하위 항목 추가: todoId=${params.id}, user=${user.userId}`);
-
     const todo = await this.addTodoItemUseCase.execute({
       todoId: params.id,
       userId: user.userId,
@@ -976,8 +923,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
     @Body({ schema: ReorderTodoItemsDto }) dto: ReorderTodoItemsDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(`Todo 하위 항목 순서 변경: todoId=${params.id}, user=${user.userId}`);
-
     const todo = await this.reorderTodoItemsUseCase.execute({
       todoId: params.id,
       userId: user.userId,
@@ -1032,10 +977,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
     @Body({ schema: UpdateTodoItemDto }) dto: UpdateTodoItemDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 하위 항목 수정: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
-    );
-
     const todo = await this.updateTodoItemUseCase.execute({
       todoId: params.id,
       itemId: params.itemId,
@@ -1083,10 +1024,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,
   ): Promise<UpdateTodoResponseDto> {
-    this.#logger.debug(
-      `Todo 하위 항목 삭제: todoId=${params.id}, itemId=${params.itemId}, user=${user.userId}`,
-    );
-
     const todo = await this.deleteTodoItemUseCase.execute({
       todoId: params.id,
       itemId: params.itemId,

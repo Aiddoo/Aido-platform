@@ -23,6 +23,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
+import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { SUBSCRIPTION_CACHE } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
 import { SUBSCRIPTION_WEBHOOK_LOCK } from "#api/modules/billing/application/ports/subscriptions/subscription-webhook-lock.port";
@@ -32,6 +33,7 @@ import { SubscriptionCacheAdapter } from "#api/modules/billing/infrastructure/ad
 import { SubscriptionEventNotifierAdapter } from "#api/modules/billing/infrastructure/adapters/subscriptions/subscription-event-notifier.adapter";
 import { SubscriptionWebhookLockAdapter } from "#api/modules/billing/infrastructure/adapters/subscriptions/subscription-webhook-lock.adapter";
 import { PrismaSubscriptionRepository } from "#api/modules/billing/infrastructure/persistence/subscriptions/prisma-subscription.repository";
+import { IdentityCacheKey } from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
 import { NotificationQueueService } from "#api/modules/notification/notification-delivery-jobs.public";
 import {
   AdminEventNotifier,
@@ -44,6 +46,7 @@ import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   assertNativeWhere,
   createMockDatabaseContext,
@@ -66,10 +69,7 @@ describe("HandleWebhookEvent 통합 테스트 (Mock DB)", () => {
   const mockUserDb = nativeContext.orm.public.User;
 
   // Mock CacheService
-  const mockCacheService = {
-    invalidateSubscription: vi.fn().mockResolvedValue(undefined),
-    invalidateUserProfile: vi.fn().mockResolvedValue(undefined),
-  };
+  const mockCacheService = createMockCacheService();
 
   // Mock AdminEventNotifier
   const mockAdminEventNotifier = {
@@ -217,8 +217,10 @@ describe("HandleWebhookEvent 통합 테스트 (Mock DB)", () => {
         }),
       ),
     );
-    expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(mockUser.id);
-    expect(mockCacheService.invalidateUserProfile).toHaveBeenCalledWith(mockUser.id);
+    expect(mockCacheService.del).toHaveBeenCalledWith(
+      EntitlementCacheKey.subscription(mockUser.id),
+    );
+    expect(mockCacheService.del).toHaveBeenCalledWith(IdentityCacheKey.userProfile(mockUser.id));
     expect(mockAdminEventNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: mockUser.id,
@@ -388,7 +390,9 @@ describe("HandleWebhookEvent 통합 테스트 (Mock DB)", () => {
     // Then - Subscription update 호출 없음, 캐시 무효화 + 큐 등록만 수행
     expect(mockSubscriptionDb.update).not.toHaveBeenCalled();
     expect(mockSubscriptionDb.create).not.toHaveBeenCalled();
-    expect(mockCacheService.invalidateSubscription).toHaveBeenCalledWith(mockUser.id);
+    expect(mockCacheService.del).toHaveBeenCalledWith(
+      EntitlementCacheKey.subscription(mockUser.id),
+    );
     expect(mockAdminEventNotifier.notifySubscriptionEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         eventType: "BILLING_ISSUE",
@@ -424,8 +428,7 @@ describe("HandleWebhookEvent 통합 테스트 (Mock DB)", () => {
     // Then - DB 변경 없음, 캐시 무효화 없음, 큐 등록 없음
     expect(mockSubscriptionDb.update).not.toHaveBeenCalled();
     expect(mockSubscriptionDb.create).not.toHaveBeenCalled();
-    expect(mockCacheService.invalidateSubscription).not.toHaveBeenCalled();
-    expect(mockCacheService.invalidateUserProfile).not.toHaveBeenCalled();
+    expect(mockCacheService.del).not.toHaveBeenCalled();
     expect(mockAdminEventNotifier.notifySubscriptionEvent).not.toHaveBeenCalled();
   });
 

@@ -354,4 +354,32 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.details).toBeUndefined();
     });
   });
+  it("오류 로그에는 인증 query와 외부 오류 원문을 남기지 않고 기존 응답을 유지한다", () => {
+    // Given
+    mockRequest.url = "/oauth/callback?code=secret-code&state=secret-state";
+    const exception = new Error("Provider rejected secret-token");
+
+    // When
+    filter.catch(exception, mockHost as never);
+
+    // Then
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error: expect.objectContaining({ code: ErrorCode.SYS_0001, details: exception.message }),
+      }),
+    );
+    expect(mockLogger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "http.request.failed",
+        path: "/oauth/callback",
+        statusCode: 500,
+        errorType: "Error",
+      }),
+      "HTTP 요청 실패",
+    );
+    const recorded = JSON.stringify(mockLogger.error.mock.calls);
+    for (const secret of ["secret-code", "secret-state", "secret-token"])
+      expect(recorded).not.toContain(secret);
+  });
 });

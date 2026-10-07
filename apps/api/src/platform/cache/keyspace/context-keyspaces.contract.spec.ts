@@ -1,4 +1,8 @@
 import {
+  UserSettingsCacheKey,
+  USER_SETTINGS_CACHE_TTL_MS,
+} from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
+import {
   DAILY_COMPLETION_CACHE_TTL_MS,
   DailyCompletionCacheKey,
 } from "#api/modules/insights/infrastructure/cache/daily-completions/daily-completion-cache.keyspace";
@@ -12,13 +16,25 @@ import {
   notificationDedupKey,
 } from "#api/modules/notification/infrastructure/cache/delivery/notification-dedup.keyspace";
 import {
+  ReminderCacheKey,
+  REMINDER_CACHE_TTL_MS,
+} from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
+import {
   SCHEDULER_DEDUP_TTL_MS,
   SchedulerDedupKey,
 } from "#api/modules/notification/infrastructure/cache/reminders/scheduler-dedup.keyspace";
 import {
+  TodoCategoryCacheKey,
+  TODO_CATEGORY_CACHE_TTL_MS,
+} from "#api/modules/planning/infrastructure/cache/categories/todo-category-cache.keyspace";
+import {
   TODO_CACHE_TTL_MS,
   TodoCacheKey,
 } from "#api/modules/planning/infrastructure/cache/todos/todo-cache.keyspace";
+import {
+  FollowCacheKey,
+  FOLLOW_CACHE_TTL_MS,
+} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
 import {
   WEATHER_CACHE_TTL_MS,
   WeatherCacheKey,
@@ -26,6 +42,19 @@ import {
 
 describe("Bounded Context별 cache keyspace 계약", () => {
   it("기존 Redis 키 문자열을 그대로 유지한다", () => {
+    expect(UserSettingsCacheKey.preference("user-1")).toBe(
+      "aido:v1:user-settings:preference:user-1",
+    );
+    expect(TodoCategoryCacheKey.list("user-1")).toBe("aido:v1:todo-category:list:user-1");
+    expect(FollowCacheKey.ids("user-1")).toBe("aido:v1:follow:ids:user-1");
+    expect(FollowCacheKey.count("user-1")).toBe("aido:v1:follow:count:user-1");
+    expect(ReminderCacheKey.activeTimezones()).toBe("aido:v1:scheduler:active-timezones");
+    expect(NotificationCacheKey.unreadCount("user-1")).toBe(
+      "aido:v1:notification:unread-count:user-1",
+    );
+    expect(NotificationCacheKey.unreadCount("user-1", "legacy")).toBe(
+      "aido:v1:notification:unread-count:user-1:legacy",
+    );
     expect(WeatherCacheKey.forecast(60, 127, "20260401", "0800")).toBe(
       "aido:v1:weather:forecast:60:127:20260401:0800",
     );
@@ -49,6 +78,11 @@ describe("Bounded Context별 cache keyspace 계약", () => {
   });
 
   it("기존 TTL과 sentinel 값을 그대로 유지한다", () => {
+    expect(USER_SETTINGS_CACHE_TTL_MS).toBe(600_000);
+    expect(TODO_CATEGORY_CACHE_TTL_MS).toBe(300_000);
+    expect(REMINDER_CACHE_TTL_MS).toBe(300_000);
+    expect(FOLLOW_CACHE_TTL_MS).toEqual({ MUTUAL: 60_000, IDS: 300_000, COUNT: 300_000 });
+    expect(NOTIFICATION_CACHE_TTL_MS.UNREAD_COUNT).toBe(120_000);
     expect(WEATHER_CACHE_TTL_MS).toEqual({
       FORECAST: 10_800_000,
       LATEST_FORECAST: 86_400_000,

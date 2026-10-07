@@ -13,16 +13,6 @@ export interface WeatherForecastEntry extends WeatherGridRef {
   forecast: WeatherForecast;
 }
 
-/**
- * Weather 관련 캐시 포트 (cache 인프라 경계)
- *
- * application 계층은 공유 CacheService/CacheKeys 대신 이 포트에만 의존한다.
- * 키 구성·TTL·직렬화는 어댑터가 소유하고, 여기서는 예보 캐시 시맨틱만 노출한다.
- *
- * 예보 저장은 정규(3h)·latest(24h fallback) 두 키를 함께 쓴다. 배치 조회는
- * 입력 순서를 보존해 반환한다(mget 시맨틱). 격자 무효화는 정규 패턴·latest·
- * conditions 키를 함께 지운다.
- */
 export interface WeatherCachePort {
   /** 정규 예보 단건 조회. */
   getForecast(

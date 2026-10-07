@@ -1,24 +1,23 @@
-/**
- * CacheKeys 유틸 테스트
- *
- * @description
- * CacheKeys 유틸리티를 테스트합니다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test cache-keys
- * ```
- */
-import { CacheKeys } from "./cache-keys.js";
-
-describe("CacheKeys — 캐시 키", () => {
+import {
+  ENTITLEMENT_CACHE_TTL_MS,
+  EntitlementCacheKey,
+} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+import {
+  IDENTITY_CACHE_TTL_MS,
+  IdentityCacheKey,
+} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+import {
+  FOLLOW_CACHE_TTL_MS,
+  FollowCacheKey,
+} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
+describe("Context별 캐시 키 — 기존 키와 TTL 호환", () => {
   describe("TTL 상수", () => {
     it("세션 TTL은 30초이다", () => {
       // Given
       const expectedTtl = 30_000;
 
       // When
-      const actualTtl = CacheKeys.TTL.SESSION;
+      const actualTtl = IDENTITY_CACHE_TTL_MS.SESSION;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
@@ -29,7 +28,7 @@ describe("CacheKeys — 캐시 키", () => {
       const expectedTtl = 5 * 60_000;
 
       // When
-      const actualTtl = CacheKeys.TTL.USER_PROFILE;
+      const actualTtl = IDENTITY_CACHE_TTL_MS.USER_PROFILE;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
@@ -40,7 +39,7 @@ describe("CacheKeys — 캐시 키", () => {
       const expectedTtl = 10 * 60_000;
 
       // When
-      const actualTtl = CacheKeys.TTL.SUBSCRIPTION;
+      const actualTtl = ENTITLEMENT_CACHE_TTL_MS;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
@@ -51,21 +50,10 @@ describe("CacheKeys — 캐시 키", () => {
       const expectedTtl = 60_000;
 
       // When
-      const actualTtl = CacheKeys.TTL.MUTUAL_FRIEND;
+      const actualTtl = FOLLOW_CACHE_TTL_MS.MUTUAL;
 
       // Then
       expect(actualTtl).toBe(expectedTtl);
-    });
-
-    it("모든 TTL 값은 양수이다", () => {
-      // Given
-      const ttlEntries = Object.entries(CacheKeys.TTL);
-
-      // When & Then
-      for (const [_key, value] of ttlEntries) {
-        expect(typeof value).toBe("number");
-        expect(value).toBeGreaterThan(0);
-      }
     });
   });
 
@@ -76,7 +64,7 @@ describe("CacheKeys — 캐시 키", () => {
         const sessionId = "sess_123";
 
         // When
-        const key = CacheKeys.session(sessionId);
+        const key = IdentityCacheKey.session(sessionId);
 
         // Then
         expect(key).toBe("aido:v1:auth:session:sess_123");
@@ -98,7 +86,7 @@ describe("CacheKeys — 캐시 키", () => {
 
         // When & Then
         for (const { input, expected } of testCases) {
-          expect(CacheKeys.session(input)).toBe(expected);
+          expect(IdentityCacheKey.session(input)).toBe(expected);
         }
       });
     });
@@ -109,7 +97,7 @@ describe("CacheKeys — 캐시 키", () => {
         const userId = "user_1";
 
         // When
-        const key = CacheKeys.userProfile(userId);
+        const key = IdentityCacheKey.userProfile(userId);
 
         // Then
         expect(key).toBe("aido:v1:auth:user-profile:user_1");
@@ -120,7 +108,7 @@ describe("CacheKeys — 캐시 키", () => {
         const uuid = "550e8400-e29b-41d4-a716-446655440000";
 
         // When
-        const key = CacheKeys.userProfile(uuid);
+        const key = IdentityCacheKey.userProfile(uuid);
 
         // Then
         expect(key).toBe(`aido:v1:auth:user-profile:${uuid}`);
@@ -133,7 +121,7 @@ describe("CacheKeys — 캐시 키", () => {
         const userId = "user_1";
 
         // When
-        const key = CacheKeys.subscription(userId);
+        const key = EntitlementCacheKey.subscription(userId);
 
         // Then
         expect(key).toBe("aido:v1:subscription:status:user_1");
@@ -147,7 +135,7 @@ describe("CacheKeys — 캐시 키", () => {
         const targetUserId = "user_2";
 
         // When
-        const key = CacheKeys.mutualFriend(userId, targetUserId);
+        const key = FollowCacheKey.mutual(userId, targetUserId);
 
         // Then
         expect(key).toBe("aido:v1:follow:mutual:user_1:user_2");
@@ -159,39 +147,13 @@ describe("CacheKeys — 캐시 키", () => {
         const userB = "user_b";
 
         // When
-        const key1 = CacheKeys.mutualFriend(userA, userB);
-        const key2 = CacheKeys.mutualFriend(userB, userA);
+        const key1 = FollowCacheKey.mutual(userA, userB);
+        const key2 = FollowCacheKey.mutual(userB, userA);
 
         // Then
         expect(key1).toBe("aido:v1:follow:mutual:user_a:user_b");
         expect(key2).toBe("aido:v1:follow:mutual:user_b:user_a");
         expect(key1).not.toBe(key2);
-      });
-    });
-  });
-
-  describe("패턴 빌더", () => {
-    describe("mutualFriendPattern", () => {
-      it("상호 친구 패턴을 생성한다", () => {
-        // Given
-        const userId = "user_1";
-
-        // When
-        const pattern = CacheKeys.mutualFriendPattern(userId);
-
-        // Then
-        expect(pattern).toBe("aido:v1:follow:mutual:user_1:*");
-      });
-
-      it("특정 사용자의 모든 친구 키와 매칭된다", () => {
-        // Given
-        const pattern = CacheKeys.mutualFriendPattern("user_1");
-        const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
-
-        // When & Then
-        expect(regex.test("aido:v1:follow:mutual:user_1:user_2")).toBe(true);
-        expect(regex.test("aido:v1:follow:mutual:user_1:user_3")).toBe(true);
-        expect(regex.test("aido:v1:follow:mutual:user_2:user_1")).toBe(false);
       });
     });
   });
@@ -202,9 +164,9 @@ describe("CacheKeys — 캐시 키", () => {
       const id = "123";
 
       // When
-      const sessionKey = CacheKeys.session(id);
-      const profileKey = CacheKeys.userProfile(id);
-      const subscriptionKey = CacheKeys.subscription(id);
+      const sessionKey = IdentityCacheKey.session(id);
+      const profileKey = IdentityCacheKey.userProfile(id);
+      const subscriptionKey = EntitlementCacheKey.subscription(id);
 
       // Then
       expect(sessionKey).not.toBe(profileKey);
@@ -218,26 +180,11 @@ describe("CacheKeys — 캐시 키", () => {
       const userId2 = "user_2";
 
       // When
-      const key1 = CacheKeys.userProfile(userId1);
-      const key2 = CacheKeys.userProfile(userId2);
+      const key1 = IdentityCacheKey.userProfile(userId1);
+      const key2 = IdentityCacheKey.userProfile(userId2);
 
       // Then
       expect(key1).not.toBe(key2);
-    });
-  });
-
-  describe("타입 안전성", () => {
-    it("CacheKeys 구조가 올바르다", () => {
-      // Given
-      // - CacheKeys 상수 객체
-
-      // When & Then
-      expect(typeof CacheKeys.TTL).toBe("object");
-      expect(typeof CacheKeys.session).toBe("function");
-      expect(typeof CacheKeys.userProfile).toBe("function");
-      expect(typeof CacheKeys.subscription).toBe("function");
-      expect(typeof CacheKeys.mutualFriend).toBe("function");
-      expect(typeof CacheKeys.mutualFriendPattern).toBe("function");
     });
   });
 });

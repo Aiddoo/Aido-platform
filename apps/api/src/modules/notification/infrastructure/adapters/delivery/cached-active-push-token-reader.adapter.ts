@@ -21,13 +21,17 @@ export class CachedActivePushTokenReaderAdapter implements ActivePushTokenReader
   ) {}
 
   findByUserId(userId: string): Promise<readonly string[]> {
-    return this.cacheService.wrapPushTokens(userId, async () => {
-      const records = await this.pushTokenRepository.findPushTokensByUser({
-        userId,
-        activeOnly: true,
-      });
-      return records.map((record) => record.token);
-    });
+    return this.cacheService.wrap(
+      NotificationCacheKey.pushTokens(userId),
+      async () => {
+        const records = await this.pushTokenRepository.findPushTokensByUser({
+          userId,
+          activeOnly: true,
+        });
+        return records.map((record) => record.token);
+      },
+      NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
+    );
   }
 
   async findByUserIds(userIds: readonly string[]): Promise<ReadonlyMap<string, readonly string[]>> {

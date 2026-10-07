@@ -29,6 +29,7 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { TodoCategoryBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   assertNativeOrder,
   assertNativeWhere,
@@ -115,9 +116,10 @@ describe("TodoCategory 모듈 통합 테스트 (Mock DB)", () => {
         },
         {
           provide: CacheService,
-          useValue: {
-            invalidateTodoCategories: vi.fn().mockResolvedValue(undefined),
-            wrapTodoCategories: vi.fn().mockImplementation((_userId, factory) => factory()),
+          useFactory: () => {
+            const cache = createMockCacheService();
+            cache.wrap.mockImplementation((_key, factory) => factory());
+            return cache;
           },
         },
       ],

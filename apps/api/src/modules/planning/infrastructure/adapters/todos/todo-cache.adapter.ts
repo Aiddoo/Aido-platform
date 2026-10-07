@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Todo as TodoResponse } from "@aido/api";
 import { Injectable } from "@nestjs/common";
 
+import { TodoCategoryCacheKey } from "#api/modules/planning/infrastructure/cache/categories/todo-category-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import type { CursorPaginatedResponse } from "#api/shared/application/pagination/index";
 
@@ -24,7 +25,7 @@ export class TodoCacheAdapter implements TodoCachePort {
   constructor(private readonly cacheService: CacheService) {}
 
   async invalidateTodoCategories(userId: string): Promise<void> {
-    await this.cacheService.invalidateTodoCategories(userId);
+    await this.cacheService.del(TodoCategoryCacheKey.list(userId));
   }
 
   async readFriendTodosFirstPage(

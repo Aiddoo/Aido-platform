@@ -64,6 +64,7 @@ import {
 } from "#api/shared/application/ports/index";
 import { NotificationBuilder, PushTokenBuilder, UserPreferenceBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   assertNativeWhere,
   assertNativeWhereContains,
@@ -333,24 +334,11 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
         },
         {
           provide: CacheService,
-          useValue: {
-            get: vi.fn().mockResolvedValue(null),
-            set: vi.fn().mockResolvedValue(undefined),
-            del: vi.fn().mockResolvedValue(undefined),
-            // CacheService.mget 계약: miss는 undefined (null 아님)
-            mget: vi.fn().mockImplementation(async (keys: string[]) => keys.map(() => undefined)),
-            mset: vi.fn().mockResolvedValue(undefined),
-            invalidatePushTokens: vi.fn().mockResolvedValue(undefined),
-            invalidateUserPreference: vi.fn().mockResolvedValue(undefined),
-            wrap: vi
-              .fn()
-              .mockImplementation((_key: string, factory: () => Promise<unknown>) => factory()),
-            wrapUserPreference: vi
-              .fn()
-              .mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
-            wrapPushTokens: vi
-              .fn()
-              .mockImplementation((_userId: string, fn: () => Promise<unknown>) => fn()),
+          useFactory: () => {
+            const cache = createMockCacheService();
+            cache.mget.mockImplementation(async (keys) => keys.map(() => undefined));
+            cache.wrap.mockImplementation((_key, factory) => factory());
+            return cache;
           },
         },
         {

@@ -19,12 +19,14 @@ import {
 } from "#api/modules/identity/infrastructure/oauth/auth/adapters/index";
 import { OAuthTokenVerifierService } from "#api/modules/identity/infrastructure/oauth/auth/verifier/oauth-token-verifier.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 import { AccountBuilder, UserBuilder } from "#test/builders/index";
 import { asDep, asMock, mockOf } from "#test/mocks/index";
 
+import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import {
   type AuthCachePort,
   type AuthRegistrationNotifierPort,
@@ -62,6 +64,7 @@ interface OAuthProfile {
 
 describe("OAuthWorkflow — OAuth 인증 흐름", () => {
   let service: OAuthWorkflow;
+  let applicationLogger: Mocked<ApplicationLogger>;
   let uow: Mocked<UnitOfWorkPort>;
   let userRepo: Mocked<AuthUserRepositoryPort>;
   let accountRepo: Mocked<AuthAccountRepositoryPort>;
@@ -87,7 +90,6 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
   };
 
   beforeEach(async () => {
-    // Suites가 모든 의존성을 자동으로 mock
     const configServiceMock = mock<TypedConfigService>();
     const oauthWorkflowDependencies = mockDeep<ConstructorParameters<typeof OAuthWorkflow>[0]>({
       configService: configServiceMock,
@@ -95,6 +97,7 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
     const unit = new OAuthWorkflow(oauthWorkflowDependencies);
 
     service = unit;
+    applicationLogger = oauthWorkflowDependencies.logger;
     uow = oauthWorkflowDependencies.unitOfWork;
     userRepo = oauthWorkflowDependencies.userRepository;
     accountRepo = oauthWorkflowDependencies.accountRepository;
@@ -2873,5 +2876,29 @@ describe("OAuthWorkflow — OAuth 인증 흐름", () => {
       // Then
       expect(result).toEqual({ message: "계정이 연결되었습니다." });
     });
+  });
+  it("거부된 OAuth state와 교환 코드의 일부도 로그에 노출하지 않는다", async () => {
+    // Given
+    oauthStateRepo.findByState.mockResolvedValue(null);
+    oauthStateRepo.findByExchangeCode.mockResolvedValue(null);
+
+    // When
+    await expect(
+      service.handleKakaoWebCallbackWithExchangeCode("provider-code", "secret-state"),
+    ).rejects.toThrow(ApplicationException);
+    await expect(service.exchangeCodeForTokens("secret-login-code")).rejects.toThrow(
+      ApplicationException,
+    );
+    await expect(service.linkAccountWithExchangeCode("user-1", "secret-link-code")).rejects.toThrow(
+      ApplicationException,
+    );
+
+    // Then
+    expect(applicationLogger.warn.mock.calls).toEqual([
+      [{ event: IdentityLogEvent.OAUTH_STATE_REJECTED }],
+      [{ event: IdentityLogEvent.OAUTH_EXCHANGE_REJECTED, mode: "login" }],
+      [{ event: IdentityLogEvent.OAUTH_EXCHANGE_REJECTED, mode: "link" }],
+    ]);
+    expect(JSON.stringify(applicationLogger.warn.mock.calls)).not.toContain("secret-");
   });
 });

@@ -1,6 +1,8 @@
+export type ApplicationLogMessage = string | Readonly<{ event: string; [field: string]: unknown }>;
+
 export interface ApplicationLogger {
-  log(message: string, ...details: readonly unknown[]): void;
-  debug(message: string, ...details: readonly unknown[]): void;
-  warn(message: string, ...details: readonly unknown[]): void;
-  error(message: string, ...details: readonly unknown[]): void;
+  log(message: ApplicationLogMessage, ...details: readonly unknown[]): void;
+  debug(message: ApplicationLogMessage, ...details: readonly unknown[]): void;
+  warn(message: ApplicationLogMessage, ...details: readonly unknown[]): void;
+  error(message: ApplicationLogMessage, ...details: readonly unknown[]): void;
 }

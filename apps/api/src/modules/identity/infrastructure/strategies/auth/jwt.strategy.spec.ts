@@ -19,18 +19,21 @@ import { SessionService } from "#api/modules/identity/application/services/auth/
 import type { JwtPayload } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import { SessionRepository } from "#api/modules/identity/infrastructure/persistence/auth/session.repository";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { asDep, asMock } from "#test/mocks/index";
 
+import {
+  AUTH_CACHE,
+  type AuthCachePort,
+} from "../../../application/ports/auth/auth-collaboration.port.js";
 import { JwtStrategy } from "./jwt.strategy.js";
 
 describe("JwtStrategy — JWT 전략", () => {
   let strategy: JwtStrategy;
   let sessionRepo: Mocked<SessionRepository>;
   let sessionService: Mocked<SessionService>;
-  let cacheService: Mocked<CacheService>;
+  let cacheService: Mocked<AuthCachePort>;
   let userRepo: Mocked<UserRepository>;
 
   const validPayload: JwtPayload = {
@@ -53,7 +56,7 @@ describe("JwtStrategy — JWT 전략", () => {
     strategy = unit;
     sessionRepo = unitRef.get(SessionRepository);
     sessionService = unitRef.get(SessionService);
-    cacheService = unitRef.get(CacheService);
+    cacheService = unitRef.get(AUTH_CACHE);
     userRepo = unitRef.get(UserRepository);
 
     asMock(userRepo.findById).mockResolvedValue({

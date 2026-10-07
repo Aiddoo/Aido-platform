@@ -1,5 +1,6 @@
 import request from "supertest";
 
+import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 /**
  * AI 리포트 모듈 E2E 테스트
@@ -56,7 +57,7 @@ describe("AI 리포트 E2E", () => {
       ),
     );
     const cacheService = ctx.module.get(CacheService);
-    await cacheService.invalidateSubscription(user.userId);
+    await cacheService.del(EntitlementCacheKey.subscription(user.userId));
     return user;
   }
 

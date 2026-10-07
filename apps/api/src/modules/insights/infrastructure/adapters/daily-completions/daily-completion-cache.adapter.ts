@@ -9,10 +9,6 @@ import {
   DailyCompletionCacheKey,
 } from "../../cache/daily-completions/daily-completion-cache.keyspace.js";
 
-/**
- * DailyCompletionCachePort 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임.
- * 키 스킴(daily-completion:range:v1:*)과 TTL(DAILY_COMPLETIONS)은 CacheKeys가 소유한다.
- */
 @Injectable()
 export class DailyCompletionCacheAdapter implements DailyCompletionCachePort {
   constructor(private readonly cacheService: CacheService) {}

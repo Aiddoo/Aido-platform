@@ -34,6 +34,7 @@ import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { FollowBuilder, UserBuilder } from "#test/builders/index";
 import { asMock } from "#test/mocks/bull-job.mock";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   assertNativeWhere,
   createMockDatabaseContext,
@@ -75,15 +76,7 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
     enqueueMilestoneReached: vi.fn(),
   };
 
-  const mockCacheService = {
-    getMutualFriend: vi.fn(),
-    setMutualFriend: vi.fn(),
-    invalidateMutualFriend: vi.fn().mockResolvedValue(undefined),
-    invalidateMutualFriendIds: vi.fn().mockResolvedValue(undefined),
-    invalidateFriendCount: vi.fn().mockResolvedValue(undefined),
-    wrapFriendCount: vi.fn().mockImplementation((_userId, factory) => factory()),
-    wrapMutualFriendIds: vi.fn().mockImplementation((_userId, factory) => factory()),
-  };
+  const mockCacheService = createMockCacheService();
 
   const mockUser = UserBuilder.create().withId("user-integration-123").verified().build();
   const mockTargetUser = UserBuilder.create()
@@ -159,7 +152,8 @@ describe("Follow 모듈 통합 테스트 (Mock DB)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCacheService.getMutualFriend.mockResolvedValue(undefined);
+    mockCacheService.get.mockResolvedValue(undefined);
+    mockCacheService.wrap.mockImplementation((_key, factory) => factory());
     asMock(mockFollowDb.aggregate).mockResolvedValue({ max_sortOrder: null, count: 0 });
   });
 

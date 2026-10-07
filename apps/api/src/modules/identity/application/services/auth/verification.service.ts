@@ -7,6 +7,7 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import { addMinutes, subtractSeconds } from "#api/shared/domain/date/utils/arithmetic";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import { type AuthEmailSenderPort } from "../../ports/auth/auth-collaboration.port.js";
 import { type AuthVerificationRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
 import { type VerificationCodeSecurityPort } from "../../ports/auth/verification-code-security.port.js";
@@ -57,9 +58,10 @@ export class VerificationService {
     });
 
     if (!emailResult.success) {
-      this.#dependencies.logger.error(
-        `Failed to send verification email to ${email}: ${emailResult.error}`,
-      );
+      this.#dependencies.logger.error({
+        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        verificationType: "EMAIL_VERIFY",
+      });
       // 이메일 발송 실패해도 예외를 던지지 않음 (사용자는 재발송 가능)
     }
   }
@@ -84,9 +86,11 @@ export class VerificationService {
     });
 
     if (!emailResult.success) {
-      this.#dependencies.logger.error(
-        `Failed to send password reset email to ${email}: ${emailResult.error}`,
-      );
+      this.#dependencies.logger.error({
+        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        verificationType: "PASSWORD_RESET",
+        userId,
+      });
     }
 
     this.#dependencies.logger.log(`Password reset code created for user ${userId}`);
@@ -113,9 +117,11 @@ export class VerificationService {
     });
 
     if (!emailResult.success) {
-      this.#dependencies.logger.error(
-        `Failed to send password setup email to ${email}: ${emailResult.error}`,
-      );
+      this.#dependencies.logger.error({
+        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        verificationType: "PASSWORD_SETUP",
+        userId,
+      });
     }
 
     this.#dependencies.logger.log(`Password setup code created for user ${userId}`);

@@ -3,8 +3,10 @@ import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
 import type { VerificationType } from "#api/modules/identity/domain/types/auth/auth.types";
+import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import { type AuthEmailSenderPort } from "../../ports/auth/auth-collaboration.port.js";
 import { type AuthVerificationRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
 import { type VerificationCodeSecurityPort } from "../../ports/auth/verification-code-security.port.js";
@@ -12,18 +14,20 @@ import { VerificationService } from "./verification.service.js";
 
 describe("VerificationService — 인증 코드 서비스", () => {
   let service: VerificationService;
+  let logger: Mocked<ApplicationLogger>;
   let verificationRepo: Mocked<AuthVerificationRepositoryPort>;
   let emailSender: Mocked<AuthEmailSenderPort>;
   let verificationCodeSecurity: Mocked<VerificationCodeSecurityPort>;
 
   beforeEach(async () => {
-    // Given - Suites가 모든 의존성을 자동으로 mock
+    // Given
     const verificationServiceDependencies = mockDeep<
       ConstructorParameters<typeof VerificationService>[0]
     >({});
     const unit = new VerificationService(verificationServiceDependencies);
 
     service = unit;
+    logger = verificationServiceDependencies.logger;
     verificationRepo = verificationServiceDependencies.verificationRepository;
     emailSender = verificationServiceDependencies.emailSender;
     verificationCodeSecurity = verificationServiceDependencies.verificationCodeSecurity;
@@ -236,7 +240,7 @@ describe("VerificationService — 인증 코드 서비스", () => {
       // Given
       emailSender.sendPasswordSetupCode.mockResolvedValue({
         success: false,
-        error: "SMTP error",
+        error: `Rejected ${email} with code 123456`,
       });
 
       // When
@@ -245,6 +249,14 @@ describe("VerificationService — 인증 코드 서비스", () => {
       // Then
       expect(result.code).toBeDefined();
       expect(result.expiresAt).toBeDefined();
+      expect(logger.error).toHaveBeenCalledWith({
+        event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
+        verificationType: "PASSWORD_SETUP",
+        userId,
+      });
+      const logs = JSON.stringify(logger.error.mock.calls);
+      expect(logs).not.toContain(email);
+      expect(logs).not.toContain("123456");
     });
   });
 

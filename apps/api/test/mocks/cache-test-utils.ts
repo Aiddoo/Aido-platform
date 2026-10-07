@@ -1,7 +1,7 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { CachedUserProfile } from "#api/platform/cache/cache.service";
+import type { AuthCachedUserProfile } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import {
   type CacheStats,
   type ICacheService,
@@ -167,11 +167,11 @@ export function calculateHitRate(stats: CacheStats): number {
 }
 
 /**
- * 캐시 테스트 헬퍼: 완전한 CachedUserProfile mock 데이터 생성
+ * 캐시 테스트 헬퍼: 완전한 AuthCachedUserProfile mock 데이터 생성
  */
 export function createMockUserProfile(
-  overrides: Partial<CachedUserProfile> = {},
-): CachedUserProfile {
+  overrides: Partial<AuthCachedUserProfile> = {},
+): AuthCachedUserProfile {
   return {
     id: "user-123",
     email: "test@example.com",

@@ -23,7 +23,17 @@ export interface AuthCachedUserProfile {
   providers: AccountProvider[];
 }
 
+export interface AuthCachedSession {
+  readonly userId: string;
+  readonly expiresAt: Date | string;
+  readonly revokedAt: Date | string | null;
+  readonly userStatus?: string;
+  readonly userDeletedAt?: string | null;
+}
+
 export interface AuthCachePort {
+  getSession(sessionId: string): Promise<AuthCachedSession | undefined>;
+  setSession(sessionId: string, session: AuthCachedSession): Promise<void>;
   invalidateSession(sessionId: string): Promise<void>;
   invalidateUserProfile(userId: string): Promise<void>;
   wrapUserProfile(

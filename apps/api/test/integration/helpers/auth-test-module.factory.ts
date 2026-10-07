@@ -26,6 +26,7 @@ import {
   AUTH_VERIFICATION_REPOSITORY,
 } from "#api/modules/identity/application/ports/auth/index";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
+import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
 import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
 import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
@@ -47,6 +48,7 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { DatabaseService } from "#api/platform/database/database.service";
 import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 
 import {
@@ -117,7 +119,8 @@ export async function createAuthTestModule(
       { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
       { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
       { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
-      { provide: AUTH_CACHE, useExisting: CacheService },
+      AuthCacheAdapter,
+      { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
       {
         provide: AUTH_REGISTRATION_NOTIFIER,
         useExisting: AdminEventNotifier,
@@ -145,10 +148,10 @@ export async function createAuthTestModule(
       },
       {
         provide: CacheService,
-        useValue: {
-          invalidateSession: async () => {},
-          invalidateUserProfile: async () => {},
-          wrapUserProfile: async (_userId: string, fn: () => Promise<unknown>) => fn(),
+        useFactory: () => {
+          const cache = createMockCacheService();
+          cache.wrap.mockImplementation((_key, factory) => factory());
+          return cache;
         },
       },
       {

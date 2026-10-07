@@ -1,15 +1,15 @@
 import { Injectable } from "@nestjs/common";
 
+import {
+  UserSettingsCacheKey,
+  USER_SETTINGS_CACHE_TTL_MS,
+} from "#api/modules/identity/infrastructure/cache/settings/user-settings-cache.keyspace";
+import { ReminderCacheKey } from "#api/modules/notification/infrastructure/cache/reminders/reminder-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 
 import type { UserSettingsCachePort } from "../../../application/ports/settings/user-settings-cache.port.js";
 import type { PreferenceSnapshot } from "../../../domain/services/settings/preference-view.js";
 
-/**
- * UserSettingsCachePort의 어댑터 — 공유 CacheService(중앙 관리 CacheKeys)에 위임한다.
- * 키 관리·TTL·직렬화는 CacheService/CacheKeys가 소유하고, 이 어댑터는 설정 캐시
- * 시맨틱만 노출한다.
- */
 @Injectable()
 export class UserSettingsCacheAdapter implements UserSettingsCachePort {
   constructor(private readonly cacheService: CacheService) {}
@@ -18,14 +18,18 @@ export class UserSettingsCacheAdapter implements UserSettingsCachePort {
     userId: string,
     factory: () => Promise<PreferenceSnapshot>,
   ): Promise<PreferenceSnapshot> {
-    return this.cacheService.wrapUserPreference(userId, factory);
+    return this.cacheService.wrap(
+      UserSettingsCacheKey.preference(userId),
+      factory,
+      USER_SETTINGS_CACHE_TTL_MS,
+    );
   }
 
   invalidateUserPreference(userId: string): Promise<void> {
-    return this.cacheService.invalidateUserPreference(userId);
+    return this.cacheService.del(UserSettingsCacheKey.preference(userId));
   }
 
   invalidateActiveTimezones(): Promise<void> {
-    return this.cacheService.invalidateActiveTimezones();
+    return this.cacheService.del(ReminderCacheKey.activeTimezones());
   }
 }

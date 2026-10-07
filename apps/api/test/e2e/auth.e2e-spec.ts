@@ -9,6 +9,7 @@ import request from "supertest";
  */
 import { vi } from "vitest";
 
+import { EntitlementCacheKey } from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, type ICacheService } from "#api/platform/cache/interfaces/cache.interface";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -1293,7 +1294,7 @@ describe("인증 E2E", () => {
           ),
         ),
       );
-      await cacheService.invalidateSubscription(updatedUser.id);
+      await cacheService.del(EntitlementCacheKey.subscription(updatedUser.id));
 
       const morningResponse = await request(ctx.app.getHttpServer())
         .patch("/v1/auth/preference")

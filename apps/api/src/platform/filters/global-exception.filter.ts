@@ -17,6 +17,7 @@ import {
   databaseSqlState,
   isRecordNotFoundError,
 } from "#api/platform/database/prisma-error.util";
+import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
@@ -98,6 +99,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const userId =
       (request as Request & { user?: { userId?: string } }).user?.userId ?? "anonymous";
 
+    const requestPath = httpRequestPath(request.url);
+
     // 서버 에러(5xx)만 Sentry에 캡처 (4xx 클라이언트 에러는 노이즈 방지)
     if (statusCode >= 500) {
       Sentry.withScope((scope) => {
@@ -107,7 +110,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         });
         scope.setTags({
           "http.method": request.method,
-          "http.url": request.url,
+          "http.url": requestPath,
           "http.status_code": String(statusCode),
           "error.code": errorResponse.error.code,
         });
@@ -116,18 +119,28 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       });
     }
 
-    // 에러 로깅 (pinoHttp가 요청/응답은 자동 로깅하므로 에러 정보만 간결하게)
+    const logFields = {
+      event: HttpLogEvent.REQUEST_FAILED,
+      method: request.method,
+      path: requestPath,
+      statusCode,
+      errorCode: errorResponse.error.code,
+      userId,
+    };
     if (statusCode >= 500) {
-      // 서버 에러: 스택 트레이스 포함
-      const stack = exception instanceof Error ? exception.stack : undefined;
       this.logger.error(
-        `${request.method} ${request.url} ${statusCode} [${errorResponse.error.code}] ${errorResponse.error.message} [user:${userId}]\n${stack ?? ""}`,
+        {
+          ...logFields,
+          errorType: exception instanceof Error ? exception.name : "UnknownError",
+          stack:
+            exception instanceof Error
+              ? exception.stack?.match(/^\s+at .+$/gm)?.join("\n")
+              : undefined,
+        },
+        "HTTP 요청 실패",
       );
     } else {
-      // 클라이언트 에러: 간결하게
-      this.logger.warn(
-        `${request.method} ${request.url} ${statusCode} [${errorResponse.error.code}] ${errorResponse.error.message} [user:${userId}]`,
-      );
+      this.logger.warn(logFields, "HTTP 요청 거부");
     }
 
     response.status(statusCode).json(errorResponse);

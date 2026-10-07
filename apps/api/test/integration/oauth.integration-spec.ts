@@ -46,6 +46,7 @@ import {
   type OAuthIdentityProviderRegistry,
 } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { OAuthWorkflow } from "#api/modules/identity/application/workflows/auth/oauth.workflow";
+import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
 import { TokenService } from "#api/modules/identity/infrastructure/adapters/auth/token.service";
 import {
   AppleOAuthProvider,
@@ -77,6 +78,7 @@ import { EncryptionService } from "#api/platform/encryption/index";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
+import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import {
   createDatabaseTransactionFixture,
   createTestDatabaseService,
@@ -192,7 +194,8 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
           useExisting: OAuthStateRepository,
         },
         { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-        { provide: AUTH_CACHE, useExisting: CacheService },
+        AuthCacheAdapter,
+        { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
         { provide: AUTH_RUNTIME_CONFIG, useExisting: TypedConfigService },
         {
           provide: AUTH_REGISTRATION_NOTIFIER,
@@ -217,10 +220,10 @@ describe("OAuth 통합 테스트 (실제 DB)", () => {
         },
         {
           provide: CacheService,
-          useValue: {
-            invalidateSession: async () => {},
-            invalidateUserProfile: async () => {},
-            wrapUserProfile: async (_userId: string, fn: () => Promise<unknown>) => fn(),
+          useFactory: () => {
+            const cache = createMockCacheService();
+            cache.wrap.mockImplementation((_key, factory) => factory());
+            return cache;
           },
         },
         {

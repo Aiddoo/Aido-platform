@@ -40,14 +40,18 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
       PushTokenBuilder.create(userId).withToken("ExponentPushToken[first]").build(),
       PushTokenBuilder.create(userId).withToken("ExponentPushToken[second]").build(),
     ];
-    cacheService.wrapPushTokens.mockImplementation((_cachedUserId, loader) => loader());
+    cacheService.wrap.mockImplementation((_cachedUserId, loader) => loader());
     pushTokenRepository.findPushTokensByUser.mockResolvedValue(records);
 
     // When - 단건 활성 토큰 조회
     const result = await reader.findByUserId(userId);
 
     // Then - 기존 단건 cache-aside 쿼리와 토큰 순서를 보존
-    expect(cacheService.wrapPushTokens).toHaveBeenCalledWith(userId, expect.any(Function));
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      NotificationCacheKey.pushTokens(userId),
+      expect.any(Function),
+      NOTIFICATION_CACHE_TTL_MS.PUSH_TOKENS,
+    );
     expect(pushTokenRepository.findPushTokensByUser).toHaveBeenCalledWith({
       userId,
       activeOnly: true,
@@ -57,7 +61,7 @@ describe("CachedActivePushTokenReaderAdapter - 활성 푸시 토큰 cache-aside"
 
   it("단건 캐시 히트는 저장소를 조회하지 않는다", async () => {
     // Given - 이미 캐시된 활성 토큰
-    cacheService.wrapPushTokens.mockResolvedValue(["ExponentPushToken[cached]"]);
+    cacheService.wrap.mockResolvedValue(["ExponentPushToken[cached]"]);
 
     // When - 단건 활성 토큰 조회
     const result = await reader.findByUserId("user-cached");

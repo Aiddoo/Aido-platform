@@ -25,6 +25,7 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import {
   type AuthCachePort,
   type AuthRegistrationNotifierPort,
@@ -129,9 +130,7 @@ export class OAuthWorkflow {
     const isValid = this.#allowedRedirectPatterns.some((pattern) => pattern.test(redirectUri));
 
     if (!isValid) {
-      this.#dependencies.logger.warn(
-        `Invalid redirect_uri rejected: ${redirectUri}. Using default.`,
-      );
+      this.#dependencies.logger.warn({ event: IdentityLogEvent.OAUTH_REDIRECT_REJECTED });
       return this.#DEFAULT_REDIRECT_URI;
     }
 
@@ -141,7 +140,7 @@ export class OAuthWorkflow {
   async #validateAndGetOAuthState(state: string) {
     const existingState = await this.#dependencies.oauthStateRepository.findByState(state);
     if (!existingState) {
-      this.#dependencies.logger.warn(`Invalid OAuth state: ${state}`);
+      this.#dependencies.logger.warn({ event: IdentityLogEvent.OAUTH_STATE_REJECTED });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
     return existingState;
@@ -1011,9 +1010,10 @@ export class OAuthWorkflow {
     const oauthState = await this.#dependencies.oauthStateRepository.findByExchangeCode(code);
 
     if (oauthState?.mode !== "link") {
-      this.#dependencies.logger.warn(
-        `Invalid or non-linking exchange code attempted: ${code.substring(0, 8)}...`,
-      );
+      this.#dependencies.logger.warn({
+        event: IdentityLogEvent.OAUTH_EXCHANGE_REJECTED,
+        mode: "link",
+      });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 
@@ -1085,9 +1085,10 @@ export class OAuthWorkflow {
     const oauthState = await this.#dependencies.oauthStateRepository.findByExchangeCode(code);
 
     if (!oauthState) {
-      this.#dependencies.logger.warn(
-        `Invalid or expired exchange code attempted: ${code.substring(0, 8)}...`,
-      );
+      this.#dependencies.logger.warn({
+        event: IdentityLogEvent.OAUTH_EXCHANGE_REJECTED,
+        mode: "login",
+      });
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 

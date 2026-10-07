@@ -5,7 +5,12 @@
 # Build outputs
 **/dist/
 **/.turbo/
-.next/
+**/build/
+**/out/
+**/.nest/
+**/web-build/
+**/.cache/
+**/.next/
 **/.expo/
 
 # Mobile app (API 빌드에 불필요)
@@ -19,7 +24,7 @@ docker-compose*.yaml
 backups/
 
 # Environment
-.env*
+**/.env*
 
 # IDE
 .idea/
@@ -57,3 +62,16 @@ docs/
 **/prisma/generated/
 **/AGENTS.md
 **/CLAUDE.md
+
+# Local artifacts and tools
+.worktrees/
+.serena/
+.continue/
+.secrets/
+my-docs/
+**/.DS_Store
+**/Thumbs.db
+**/*.log
+**/test-results/
+**/playwright-report/
+**/junit.xml

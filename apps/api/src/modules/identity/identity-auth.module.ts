@@ -16,7 +16,6 @@ import {
   AdminNotificationModule,
 } from "#api/modules/operations/operations-notifications.public";
 import { TodoCategoryModule } from "#api/modules/planning/planning-categories.public";
-import { CacheService } from "#api/platform/cache/cache.service";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
 import {
@@ -74,6 +73,7 @@ import {
   verificationServiceProvider,
   verifyEmailProvider,
 } from "./identity-auth-application.providers.js";
+import { AuthCacheAdapter } from "./infrastructure/adapters/auth/auth-cache.adapter.js";
 import { NodeVerificationCodeSecurityAdapter } from "./infrastructure/adapters/auth/node-verification-code-security.adapter.js";
 import { PasswordService } from "./infrastructure/adapters/auth/password.service.js";
 import { RetentionEnrollerAdapter } from "./infrastructure/adapters/auth/retention-enroller.adapter.js";
@@ -174,7 +174,8 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     TokenService,
     { provide: AUTH_PASSWORD_HASHER, useExisting: PasswordService },
     { provide: AUTH_TOKEN_ISSUER, useExisting: TokenService },
-    { provide: AUTH_CACHE, useExisting: CacheService },
+    AuthCacheAdapter,
+    { provide: AUTH_CACHE, useExisting: AuthCacheAdapter },
     { provide: AUTH_EMAIL_SENDER, useExisting: TransactionalEmailSender },
     {
       provide: AUTH_REGISTRATION_NOTIFIER,

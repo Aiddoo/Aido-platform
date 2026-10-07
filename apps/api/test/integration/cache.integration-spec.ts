@@ -13,9 +13,22 @@ import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
 
+import {
+  EntitlementCacheKey,
+  ENTITLEMENT_CACHE_TTL_MS,
+} from "#api/modules/access/infrastructure/cache/entitlement/entitlement-cache.keyspace";
+import {
+  IdentityCacheKey,
+  IDENTITY_CACHE_TTL_MS,
+} from "#api/modules/identity/infrastructure/cache/auth/identity-cache.keyspace";
+import {
+  FollowCacheKey,
+  FOLLOW_CACHE_TTL_MS,
+} from "#api/modules/social/infrastructure/cache/friends/follow-cache.keyspace";
 import { CacheModule } from "#api/platform/cache/cache.module";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { CACHE_SERVICE, ICacheService } from "#api/platform/cache/interfaces/cache.interface";
+import { cachePattern } from "#api/platform/cache/keyspace/cache-key";
 
 import { createMockUserProfile, MockCacheAdapter } from "../mocks/cache-test-utils.js";
 
@@ -89,17 +102,21 @@ describe("CacheModule 통합 테스트", () => {
         };
 
         // When - 저장
-        await cacheService.setSession(sessionId, session);
+        await cacheService.set(
+          IdentityCacheKey.session(sessionId),
+          session,
+          IDENTITY_CACHE_TTL_MS.SESSION,
+        );
 
         // Then - 조회
-        const cached = await cacheService.getSession(sessionId);
+        const cached = await cacheService.get(IdentityCacheKey.session(sessionId));
         expect(cached).toEqual(session);
 
         // When - 무효화
-        await cacheService.invalidateSession(sessionId);
+        await cacheService.del(IdentityCacheKey.session(sessionId));
 
         // Then - 무효화 확인
-        const afterInvalidate = await cacheService.getSession(sessionId);
+        const afterInvalidate = await cacheService.get(IdentityCacheKey.session(sessionId));
         expect(afterInvalidate).toBeUndefined();
       });
 
@@ -156,8 +173,12 @@ describe("CacheModule 통합 테스트", () => {
         });
 
         // When
-        await cacheService.setUserProfile(userId, profile);
-        const cached = await cacheService.getUserProfile(userId);
+        await cacheService.set(
+          IdentityCacheKey.userProfile(userId),
+          profile,
+          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        );
+        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId));
 
         // Then
         expect(cached).toEqual(profile);
@@ -172,13 +193,17 @@ describe("CacheModule 통합 테스트", () => {
           name: "Test User 2",
           userTag: "testuser2#5678",
         });
-        await cacheService.setUserProfile(userId, profile);
+        await cacheService.set(
+          IdentityCacheKey.userProfile(userId),
+          profile,
+          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        );
 
         // When
-        await cacheService.invalidateUserProfile(userId);
+        await cacheService.del(IdentityCacheKey.userProfile(userId));
 
         // Then
-        const cached = await cacheService.getUserProfile(userId);
+        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId));
         expect(cached).toBeUndefined();
       });
     });
@@ -192,8 +217,12 @@ describe("CacheModule 통합 테스트", () => {
         };
 
         // When
-        await cacheService.setSubscription(userId, subscription);
-        const cached = await cacheService.getSubscription(userId);
+        await cacheService.set(
+          EntitlementCacheKey.subscription(userId),
+          subscription,
+          ENTITLEMENT_CACHE_TTL_MS,
+        );
+        const cached = await cacheService.get(EntitlementCacheKey.subscription(userId));
 
         // Then
         expect(cached).toEqual(subscription);
@@ -206,29 +235,49 @@ describe("CacheModule 통합 테스트", () => {
         const userId = "user_1";
 
         // When
-        await cacheService.setMutualFriend(userId, "user_2", true);
-        await cacheService.setMutualFriend(userId, "user_3", false);
+        await cacheService.set(
+          FollowCacheKey.mutual(userId, "user_2"),
+          true,
+          FOLLOW_CACHE_TTL_MS.MUTUAL,
+        );
+        await cacheService.set(
+          FollowCacheKey.mutual(userId, "user_3"),
+          false,
+          FOLLOW_CACHE_TTL_MS.MUTUAL,
+        );
 
         // Then
-        expect(await cacheService.getMutualFriend(userId, "user_2")).toBe(true);
-        expect(await cacheService.getMutualFriend(userId, "user_3")).toBe(false);
-        expect(await cacheService.getMutualFriend(userId, "user_4")).toBeUndefined();
+        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_2"))).toBe(true);
+        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_3"))).toBe(false);
+        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_4"))).toBeUndefined();
       });
 
       it("패턴으로 친구 관계를 일괄 무효화할 수 있다", async () => {
         // Given
-        await cacheService.setMutualFriend("user_1", "user_2", true);
-        await cacheService.setMutualFriend("user_1", "user_3", true);
-        await cacheService.setMutualFriend("user_2", "user_3", true);
+        await cacheService.set(
+          FollowCacheKey.mutual("user_1", "user_2"),
+          true,
+          FOLLOW_CACHE_TTL_MS.MUTUAL,
+        );
+        await cacheService.set(
+          FollowCacheKey.mutual("user_1", "user_3"),
+          true,
+          FOLLOW_CACHE_TTL_MS.MUTUAL,
+        );
+        await cacheService.set(
+          FollowCacheKey.mutual("user_2", "user_3"),
+          true,
+          FOLLOW_CACHE_TTL_MS.MUTUAL,
+        );
 
         // When
-        const count = await cacheService.invalidateFriendRelations("user_1");
+        const count = await cacheService.delByPattern(cachePattern("follow", "mutual", "user_1"));
 
         // Then
         expect(count).toBe(2);
-        expect(await cacheService.getMutualFriend("user_1", "user_2")).toBeUndefined();
-        expect(await cacheService.getMutualFriend("user_1", "user_3")).toBeUndefined();
-        expect(await cacheService.getMutualFriend("user_2", "user_3")).toBe(true);
+        expect(await cacheService.get(FollowCacheKey.mutual("user_1", "user_2"))).toBeUndefined();
+        expect(await cacheService.get(FollowCacheKey.mutual("user_1", "user_3"))).toBeUndefined();
+        expect(await cacheService.get(FollowCacheKey.mutual("user_2", "user_3"))).toBe(true);
       });
     });
 
@@ -382,14 +431,18 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue(session);
 
         // When
-        const result = await cacheService.wrapSession(sessionId, factory);
+        const result = await cacheService.wrap(
+          IdentityCacheKey.session(sessionId),
+          factory,
+          IDENTITY_CACHE_TTL_MS.SESSION,
+        );
 
         // Then
         expect(result).toEqual(session);
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.getSession(sessionId);
+        const cached = await cacheService.get(IdentityCacheKey.session(sessionId));
         expect(cached).toEqual(session);
       });
 
@@ -405,14 +458,18 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue(profile);
 
         // When
-        const result = await cacheService.wrapUserProfile(userId, factory);
+        const result = await cacheService.wrap(
+          IdentityCacheKey.userProfile(userId),
+          factory,
+          IDENTITY_CACHE_TTL_MS.USER_PROFILE,
+        );
 
         // Then
         expect(result).toEqual(profile);
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.getUserProfile(userId);
+        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId));
         expect(cached).toEqual(profile);
       });
 
@@ -423,14 +480,18 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue(true);
 
         // When
-        const result = await cacheService.wrapMutualFriend(userId, targetUserId, factory);
+        const result = await cacheService.wrap(
+          FollowCacheKey.mutual(userId, targetUserId),
+          factory,
+          FOLLOW_CACHE_TTL_MS.MUTUAL,
+        );
 
         // Then
         expect(result).toBe(true);
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.getMutualFriend(userId, targetUserId);
+        const cached = await cacheService.get(FollowCacheKey.mutual(userId, targetUserId));
         expect(cached).toBe(true);
       });
     });
