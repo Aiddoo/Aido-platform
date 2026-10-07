@@ -56,7 +56,7 @@ function commentCommandFingerprint(input: TodoCommentChainCommand): string {
   return createHash("sha256").update(command).digest("hex");
 }
 
-function toAggregate(row: CommentRow): TodoComment | null {
+function toAggregate(row: CommentRow): TodoComment {
   return TodoComment.reconstitute({
     id: row.id,
     todoId: row.todoId,
@@ -79,7 +79,7 @@ function orderReplayRows(
   const rowsByRequestId = new Map(rows.map((row) => [row.clientRequestId, row]));
   const ordered = command.items.flatMap((item) => {
     const row = rowsByRequestId.get(item.clientRequestId);
-    return row ? [row] : [];
+    return row === undefined ? [] : [row];
   });
 
   if (
@@ -141,7 +141,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       ).first(),
     );
 
-    return row ? toAggregate(row) : null;
+    return row === null ? null : toAggregate(row);
   }
 
   async findCommentChainReplay(input: TodoCommentChainCommand): Promise<string[] | null> {
@@ -414,7 +414,7 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       ).first(),
     );
 
-    if (existingLike?.isActive) {
+    if (existingLike !== null && existingLike.isActive) {
       return {
         commentId,
         commentAuthorId: comment.authorId,
@@ -425,72 +425,87 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       };
     }
 
-    const changed = existingLike
-      ? {
-          count: await this.client.orm.public.TodoCommentLike.where((row) =>
-            and(row.commentId.eq(commentId), row.userId.eq(userId), row.isActive.eq(false)),
-          ).updateAndCount(encodePatch("TodoCommentLike", { isActive: true })),
-        }
-      : {
-          count: await this.client.orm.public.TodoCommentLike.createAndCount(
-            [{ commentId, userId, isActive: true }].map((value) =>
-              encodeCreate("TodoCommentLike", value),
+    const changed =
+      existingLike !== null
+        ? {
+            count: await this.client.orm.public.TodoCommentLike.where((row) =>
+              and(row.commentId.eq(commentId), row.userId.eq(userId), row.isActive.eq(false)),
+            ).updateAndCount(encodePatch("TodoCommentLike", { isActive: true })),
+          }
+        : {
+            count: await this.client.orm.public.TodoCommentLike.createAndCount(
+              [{ commentId, userId, isActive: true }].map((value) =>
+                encodeCreate("TodoCommentLike", value),
+              ),
+              { onConflict: "skip" },
             ),
-            { onConflict: "skip" },
-          ),
-        };
+          };
 
     if (changed.count !== 1) {
       throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
     }
 
-    const updated = {
-      count: await this.client
-        .execute(
-          this.client.sql.public.TodoComment.update((fields) => ({
-            likeCount: this.client.raw.sql`${fields.likeCount} + ${1}`.returns("pg/int4@1"),
-            updatedAt: this.client.raw.sql`${databaseTimestamp(new Date())}`.returns(
-              "pg/timestamp-string@1",
-            ),
-          }))
-            .where((fields, functions) =>
-              functions.and(
-                functions.eq(fields.id, commentId),
-                functions.eq(fields.todoId, todoId),
-                this.client.raw.sql`${fields.deletedAt} IS NULL`.returns("pg/bool@1"),
-              ),
-            )
-            .build(),
+    const [counter] = await this.client.query(
+      this.client.sql.public.TodoComment.update((fields) => ({
+        likeCount: this.client.raw.sql`${fields.likeCount} + ${1}`.returns("pg/int4@1"),
+        updatedAt: this.client.raw.sql`${databaseTimestamp(new Date())}`.returns(
+          "pg/timestamp-string@1",
+        ),
+      }))
+        .where((fields, functions) =>
+          functions.and(
+            functions.eq(fields.id, commentId),
+            functions.eq(fields.todoId, todoId),
+            this.client.raw.sql`${fields.deletedAt} IS NULL`.returns("pg/bool@1"),
+          ),
         )
-        .then((result) => result.affectedRows),
-    };
-    if (updated.count !== 1) {
-      throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
-    }
-
-    const current = decodeRecord(
-      "TodoComment",
-      requireRecord(
-        await this.client.orm.public.TodoComment.where((row) => row.id.eq(commentId))
-          .select("likeCount")
-          .first(),
-      ),
+        .returning("likeCount")
+        .build(),
     );
+    if (counter === undefined) throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
 
     return {
       commentId,
       commentAuthorId: comment.authorId,
       changed: true,
       isLiked: true,
-      likeCount: current.likeCount,
-      wasEverNotified: existingLike?.notifiedAt !== null && existingLike !== null,
+      likeCount: counter.likeCount,
+      wasEverNotified: existingLike !== null && existingLike.notifiedAt !== null,
     };
   }
 
+  async findPendingLikeNotification(
+    todoId: number,
+    commentId: string,
+    userId: string,
+  ): Promise<{ readonly recipientId: string; readonly threadRootId: string } | null> {
+    const row = await this.client.orm.public.TodoComment.where((comment) =>
+      and(
+        comment.id.eq(commentId),
+        comment.todoId.eq(todoId),
+        comment.deletedAt.isNull(),
+        comment.likes.some((like) =>
+          and(like.userId.eq(userId), like.isActive.eq(true), like.notifiedAt.isNull()),
+        ),
+      ),
+    )
+      .select("id", "authorId", "rootId")
+      .first();
+    return row === null ? null : { recipientId: row.authorId, threadRootId: row.rootId ?? row.id };
+  }
+
   async markLikeNotified(commentId: string, userId: string): Promise<void> {
-    await this.client.orm.public.TodoCommentLike.where((row) =>
-      and(row.commentId.eq(commentId), row.userId.eq(userId), row.notifiedAt.isNull()),
+    const affected = await this.client.orm.public.TodoCommentLike.where((row) =>
+      and(
+        row.commentId.eq(commentId),
+        row.userId.eq(userId),
+        row.isActive.eq(true),
+        row.notifiedAt.isNull(),
+      ),
     ).updateAndCount(encodePatch("TodoCommentLike", { notifiedAt: new Date() }));
+    if (affected !== 1) {
+      throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
+    }
   }
 
   async removeLike(
@@ -515,14 +530,14 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       ).first(),
     );
 
-    if (!existingLike?.isActive) {
+    if (existingLike === null || !existingLike.isActive) {
       return {
         commentId,
         commentAuthorId: comment.authorId,
         changed: false,
         isLiked: false,
         likeCount: comment.likeCount,
-        wasEverNotified: existingLike?.notifiedAt !== null && existingLike !== null,
+        wasEverNotified: existingLike !== null && existingLike.notifiedAt !== null,
       };
     }
 
@@ -535,39 +550,26 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
     }
 
-    const updated = {
-      count: await this.client
-        .execute(
-          this.client.sql.public.TodoComment.update((fields) => ({
-            likeCount: this.client.raw.sql`${fields.likeCount} - ${1}`.returns("pg/int4@1"),
-            updatedAt: this.client.raw.sql`${databaseTimestamp(new Date())}`.returns(
-              "pg/timestamp-string@1",
-            ),
-          }))
-            .where((fields, functions) =>
-              functions.and(
-                functions.eq(fields.id, commentId),
-                functions.eq(fields.todoId, todoId),
-                this.client.raw.sql`${fields.deletedAt} IS NULL`.returns("pg/bool@1"),
-                functions.gt(fields.likeCount, 0),
-              ),
-            )
-            .build(),
+    const [counter] = await this.client.query(
+      this.client.sql.public.TodoComment.update((fields) => ({
+        likeCount: this.client.raw.sql`${fields.likeCount} - ${1}`.returns("pg/int4@1"),
+        updatedAt: this.client.raw.sql`${databaseTimestamp(new Date())}`.returns(
+          "pg/timestamp-string@1",
+        ),
+      }))
+        .where((fields, functions) =>
+          functions.and(
+            functions.eq(fields.id, commentId),
+            functions.eq(fields.todoId, todoId),
+            this.client.raw.sql`${fields.deletedAt} IS NULL`.returns("pg/bool@1"),
+            functions.gt(fields.likeCount, 0),
+          ),
         )
-        .then((result) => result.affectedRows),
-    };
-    if (updated.count !== 1) {
-      throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
-    }
-
-    const current = decodeRecord(
-      "TodoComment",
-      requireRecord(
-        await this.client.orm.public.TodoComment.where((row) => row.id.eq(commentId))
-          .select("likeCount")
-          .first(),
-      ),
+        .returning("likeCount")
+        .build(),
     );
+    if (counter === undefined) throw new ApplicationException(ErrorCode.SYS_0003, { commentId });
+
     const like = decodeRecord(
       "TodoCommentLike",
       await this.client.orm.public.TodoCommentLike.where((row) =>
@@ -582,8 +584,8 @@ export class PrismaTodoCommentRepository implements TodoCommentRepositoryPort {
       commentAuthorId: comment.authorId,
       changed: true,
       isLiked: false,
-      likeCount: current.likeCount,
-      wasEverNotified: like?.notifiedAt !== null && like !== null,
+      likeCount: counter.likeCount,
+      wasEverNotified: like !== null && like.notifiedAt !== null,
     };
   }
 

@@ -1,180 +1,222 @@
-import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import {
-  createMutationLockMock,
-  createTodoCommentNotificationMock,
-  createTodoCommentReaderMock,
-  createTodoCommentRepositoryMock,
-  createTodoViewCacheMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createEngagementCommentFixture,
+  ENGAGEMENT_TIME,
+  ENGAGEMENT_OWNER_ID,
+  ENGAGEMENT_VIEWER_ID,
+} from "#test/fixtures/engagement-comment.fixture";
 
-import type { TodoCommentRecord } from "../../models/comments/todo-comment.types.js";
+import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
 import {
   TodoCommentIdempotencyConflict,
   TodoCommentIdempotencyRace,
 } from "../../ports/comments/todo-comment.repository.port.js";
-import { WriteTodoCommentChain } from "./write-todo-comment-chain.use-case.js";
+import {
+  WriteTodoCommentChain,
+  type WriteTodoCommentChainInput,
+} from "./write-todo-comment-chain.use-case.js";
 
-const TODO_ID = 1;
-const AUTHOR_ID = "cm1author0000000000000001";
-const OWNER_ID = "cm1owner00000000000000001";
-const COMMENT_ID = "cm1todoacomment00000000001";
-
-function createRecord(): TodoCommentRecord {
-  return {
-    id: COMMENT_ID,
-    todoId: TODO_ID,
-    parentId: null,
-    rootId: null,
-    path: [],
-    depth: 0,
-    parentAuthorName: null,
-    authorId: AUTHOR_ID,
-    authorName: "쓴 사람",
-    authorProfileImage: null,
-    todoOwnerId: OWNER_ID,
-    content: "함께 해요",
-    likeCount: 0,
-    replyCount: 0,
-    deletedAt: null,
-    editedAt: null,
-    createdAt: "2026-08-16T00:00:00.000Z",
-  };
-}
-
-function setup() {
-  const reader = createTodoCommentReaderMock();
-  const repository = createTodoCommentRepositoryMock();
-  const notification = createTodoCommentNotificationMock();
-  const todoViewCache = createTodoViewCacheMock();
-  const mutationLock = createMutationLockMock();
-  const unitOfWork = createUnitOfWorkMock();
-
-  vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-  vi.mocked(reader.findCommentRecords).mockResolvedValue([createRecord()]);
-  vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
-  vi.mocked(repository.findCommentChainReplay).mockResolvedValue(null);
-  vi.mocked(repository.createCommentChain).mockResolvedValue({
-    commentIds: [COMMENT_ID],
-    createdCount: 1,
+describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
+  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ENGAGEMENT_TIME);
+    fixture = createEngagementCommentFixture();
   });
-  vi.mocked(repository.increaseTodoCommentCount).mockResolvedValue(undefined);
-  vi.mocked(repository.incrementReplyCount).mockResolvedValue(true);
+  afterEach(() => vi.useRealTimers());
 
-  const useCase = new WriteTodoCommentChain({
-    reader: reader,
-    repository: repository,
-    notification: notification,
-    todoViewCache: todoViewCache,
-    mutationLock: mutationLock,
-    unitOfWork: unitOfWork,
-    logger: mock<ConstructorParameters<typeof WriteTodoCommentChain>[0]["logger"]>(),
-  });
-  const execute = () =>
-    useCase.execute({
-      todoId: TODO_ID,
-      authorId: AUTHOR_ID,
+  function input(): WriteTodoCommentChainInput {
+    return {
+      todoId: 1,
+      authorId: ENGAGEMENT_VIEWER_ID,
       parentId: null,
       items: [
-        {
-          clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11",
-          content: "함께 해요",
-        },
+        { clientRequestId: "b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11", content: "  함께 해요  " },
       ],
-    });
+    };
+  }
 
-  return { execute, reader, repository, notification, todoViewCache, mutationLock, unitOfWork };
-}
-
-describe("WriteTodoCommentChain", () => {
-  it("알림이 실패해도 커밋된 댓글을 성공으로 돌려준다", async () => {
-    const { execute, notification } = setup();
-    vi.mocked(notification.notifyCommentsWritten).mockRejectedValue(new Error("push down"));
-
-    await expect(execute()).resolves.toMatchObject({ comments: [{ id: COMMENT_ID }] });
-  });
-
-  it("한 커밋 후 작업이 실패해도 나머지 작업은 실행한다", async () => {
-    const { execute, notification, todoViewCache } = setup();
-    vi.mocked(todoViewCache.invalidateForTodo).mockRejectedValue(new Error("cache down"));
-
-    await execute();
-
-    expect(notification.notifyCommentsWritten).toHaveBeenCalledTimes(1);
-  });
-
-  it("알림 경계에는 댓글 원문을 넘기지 않는다", async () => {
-    const { execute, notification } = setup();
-
-    await execute();
-
-    expect(notification.notifyCommentsWritten).toHaveBeenCalledWith({
-      recipientId: OWNER_ID,
-      senderId: AUTHOR_ID,
-      senderName: "쓴 사람",
-      todoId: TODO_ID,
-      commentId: COMMENT_ID,
-      threadRootId: COMMENT_ID,
-      isReply: false,
-      commentCount: 1,
-    });
-  });
-
-  it("작성 멱등 키 잠금을 업무 트랜잭션 안에서 획득한다", async () => {
-    const { execute, mutationLock } = setup();
-
-    await execute();
-
-    expect(mutationLock.acquire).toHaveBeenCalledWith([
-      "mutation:v1:todo-comment-request:cm1author0000000000000001:b7b0f6d4-6f1e-4d6a-9e0a-2d6a1c1f3a11",
+  it("원문을 정규화해 저장하고 알림 경계에는 원문 없이 작성 정보만 전달한다", async () => {
+    // Given
+    const useCase = new WriteTodoCommentChain(fixture);
+    // When
+    const result = await useCase.execute(input());
+    // Then
+    const comment = result.comments[0];
+    if (comment === undefined) throw new Error("댓글 응답 fixture가 비어 있습니다.");
+    expect(comment.content).toBe("함께 해요");
+    expect(fixture.repository.comments.get(comment.id)?.content).toBe("함께 해요");
+    expect(fixture.repository.commentCounts.get(1)).toBe(1);
+    expect(fixture.notification.written).toEqual([
+      {
+        recipientId: ENGAGEMENT_OWNER_ID,
+        senderId: ENGAGEMENT_VIEWER_ID,
+        senderName: "방문자",
+        todoId: 1,
+        commentId: comment.id,
+        threadRootId: comment.id,
+        isReply: false,
+        commentCount: 1,
+      },
     ]);
+    expect(fixture.invalidatedTodoIds).toEqual([1]);
   });
 
-  it("정확한 replay는 생성과 counter 변경을 건너뛰고 viewer 좋아요를 보존한다", async () => {
-    const { execute, reader, repository } = setup();
-    vi.mocked(repository.findCommentChainReplay).mockResolvedValue([COMMENT_ID]);
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([COMMENT_ID]));
-
-    await expect(execute()).resolves.toMatchObject({
-      comments: [{ id: COMMENT_ID, viewer: { isLiked: true } }],
-    });
-
-    expect(repository.createCommentChain).not.toHaveBeenCalled();
-    expect(repository.increaseTodoCommentCount).not.toHaveBeenCalled();
-  });
-
-  it("같은 멱등 키의 다른 명령을 잘못된 파라미터 오류로 변환한다", async () => {
-    const { execute, repository } = setup();
-    vi.mocked(repository.findCommentChainReplay).mockRejectedValue(
-      new TodoCommentIdempotencyConflict(),
+  it("알림이 실패해도 저장된 댓글과 성공 응답을 유지한다", async () => {
+    // Given
+    vi.spyOn(fixture.notification, "notifyCommentsWritten").mockRejectedValueOnce(
+      new Error("push down"),
     );
-
-    await expect(execute()).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+    // When
+    const result = await new WriteTodoCommentChain(fixture).execute(input());
+    // Then
+    expect(result.comments).toHaveLength(1);
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(fixture.repository.commentCounts.get(1)).toBe(1);
+    expect(fixture.invalidatedTodoIds).toEqual([1]);
   });
 
-  it("SQLSTATE 23505 경합은 실패한 UoW 밖에서 승자 행을 replay한다", async () => {
-    const { execute, repository, unitOfWork } = setup();
-    vi.mocked(repository.findCommentChainReplay)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce([COMMENT_ID]);
-    vi.mocked(repository.createCommentChain).mockRejectedValue(new TodoCommentIdempotencyRace());
-
-    await expect(execute()).resolves.toMatchObject({ comments: [{ id: COMMENT_ID }] });
-
-    expect(unitOfWork.run).toHaveBeenCalledTimes(2);
-    expect(repository.increaseTodoCommentCount).not.toHaveBeenCalled();
+  it("캐시 정리가 동기로 실패해도 둘째 알림 작업과 성공 응답을 유지하며 원문 오류를 기록하지 않는다", async () => {
+    // Given
+    vi.spyOn(fixture.todoViewCache, "invalidateForTodo").mockImplementation(() => {
+      throw new Error("private cache error content");
+    });
+    const warning = vi.spyOn(fixture.logger, "warn");
+    // When
+    const result = await new WriteTodoCommentChain(fixture).execute(input());
+    // Then
+    expect(result.comments).toHaveLength(1);
+    expect(fixture.notification.written).toHaveLength(1);
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(warning).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(warning.mock.calls)).not.toContain("private cache error content");
+    expect(warning.mock.calls[0]?.[0]).toEqual({
+      event: EngagementCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
+      todoId: 1,
+      userId: ENGAGEMENT_VIEWER_ID,
+      errorType: "Error",
+    });
   });
 
-  it("SQLSTATE 23505 뒤 승자 명령이 다르면 잘못된 파라미터 오류로 변환한다", async () => {
-    const { execute, repository } = setup();
-    vi.mocked(repository.findCommentChainReplay)
+  it("작성 멱등 잠금은 UoW 안에서 획득하고 완료 뒤에만 알림을 처리한다", async () => {
+    // Given
+    let insideUnitOfWork = false;
+    const prepared = Promise.withResolvers<void>();
+    const finish = Promise.withResolvers<void>();
+    const lock = vi.spyOn(fixture.mutationLock, "acquire").mockImplementation(async () => {
+      expect(insideUnitOfWork).toBe(true);
+    });
+    fixture.unitOfWork.run = async (work) => {
+      insideUnitOfWork = true;
+      const result = await work();
+      insideUnitOfWork = false;
+      prepared.resolve();
+      await finish.promise;
+      return result;
+    };
+    // When
+    const outcome = new WriteTodoCommentChain(fixture).execute(input());
+    await Promise.race([
+      prepared.promise,
+      outcome.then(() => {
+        throw new Error("UoW 대기 전에 작성이 끝났습니다.");
+      }),
+    ]);
+    // Then
+    try {
+      expect(fixture.notification.written).toEqual([]);
+      expect(fixture.invalidatedTodoIds).toEqual([]);
+      expect(lock).toHaveBeenCalledTimes(1);
+    } finally {
+      finish.resolve();
+    }
+    await outcome;
+    expect(fixture.notification.written).toHaveLength(1);
+  });
+
+  it("정확한 replay는 원래 댓글과 viewer 좋아요를 반환하고 count·알림을 다시 변경하지 않는다", async () => {
+    // Given
+    const useCase = new WriteTodoCommentChain(fixture);
+    const original = await useCase.execute(input());
+    const commentId = original.comments[0]?.id;
+    if (commentId === undefined) throw new Error("댓글 fixture가 비어 있습니다.");
+    await fixture.repository.setLike(1, commentId, ENGAGEMENT_VIEWER_ID);
+    // When
+    const result = await useCase.execute(input());
+    // Then
+    expect(result.comments[0]?.id).toBe(commentId);
+    expect(result.comments[0]?.viewer.isLiked).toBe(true);
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(fixture.repository.commentCounts.get(1)).toBe(1);
+    expect(fixture.notification.written).toHaveLength(1);
+    expect(fixture.invalidatedTodoIds).toEqual([1]);
+  });
+
+  it("같은 멱등 키의 다른 명령은 SYS_0002로 거부하고 원래 댓글을 유지한다", async () => {
+    // Given
+    const useCase = new WriteTodoCommentChain(fixture);
+    await useCase.execute(input());
+    // When / Then
+    await expect(
+      useCase.execute({
+        ...input(),
+        items: [{ clientRequestId: input().items[0]?.clientRequestId ?? "", content: "다른 내용" }],
+      }),
+    ).rejects.toMatchObject({ errorCode: "SYS_0002" });
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(fixture.repository.commentCounts.get(1)).toBe(1);
+  });
+
+  it("멱등 경합 신호를 받으면 새 UoW에서 승자 결과를 replay하고 counter·알림을 중복 처리하지 않는다", async () => {
+    // Given
+    const create = fixture.repository.createCommentChain.bind(fixture.repository);
+    vi.spyOn(fixture.repository, "createCommentChain").mockImplementationOnce(async (command) => {
+      await create(command);
+      throw new TodoCommentIdempotencyRace();
+    });
+    const run = vi.spyOn(fixture.unitOfWork, "run");
+    // When
+    const result = await new WriteTodoCommentChain(fixture).execute(input());
+    // Then
+    expect(result.comments).toHaveLength(1);
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(fixture.repository.commentCounts.get(1)).toBeUndefined();
+    expect(fixture.notification.written).toEqual([]);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("경합 뒤 승자 명령이 다르면 SYS_0002로 거부한다", async () => {
+    // Given
+    const replay = vi
+      .spyOn(fixture.repository, "findCommentChainReplay")
       .mockResolvedValueOnce(null)
       .mockRejectedValueOnce(new TodoCommentIdempotencyConflict());
-    vi.mocked(repository.createCommentChain).mockRejectedValue(new TodoCommentIdempotencyRace());
+    vi.spyOn(fixture.repository, "createCommentChain").mockRejectedValueOnce(
+      new TodoCommentIdempotencyRace(),
+    );
+    // When / Then
+    await expect(new WriteTodoCommentChain(fixture).execute(input())).rejects.toMatchObject({
+      errorCode: "SYS_0002",
+    });
+    expect(replay).toHaveBeenCalledTimes(2);
+    expect(fixture.notification.written).toEqual([]);
+  });
 
-    await expect(execute()).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
+  it("경합 뒤 접근권한을 잃으면 승자 댓글이 있어도 새 UoW에서 TODO_0801로 거부한다", async () => {
+    // Given
+    const create = fixture.repository.createCommentChain.bind(fixture.repository);
+    vi.spyOn(fixture.repository, "createCommentChain").mockImplementationOnce(async (command) => {
+      await create(command);
+      fixture.reader.accessiblePairs.delete(`1:${ENGAGEMENT_VIEWER_ID}`);
+      throw new TodoCommentIdempotencyRace();
+    });
+    // When / Then
+    await expect(new WriteTodoCommentChain(fixture).execute(input())).rejects.toMatchObject({
+      errorCode: "TODO_0801",
+    });
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(fixture.notification.written).toEqual([]);
+    expect(fixture.invalidatedTodoIds).toEqual([]);
   });
 });

@@ -22,28 +22,28 @@ import {
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface GetTodoConversationInput {
-  todoId: number;
-  viewerId: string;
-  sort: TodoCommentSort;
-  focusCommentId?: string;
-  before?: string;
-  after?: string;
-  size: number;
+  readonly todoId: number;
+  readonly viewerId: string;
+  readonly sort: TodoCommentSort;
+  readonly focusCommentId?: string;
+  readonly before?: string;
+  readonly after?: string;
+  readonly size: number;
 }
 
 interface ConversationAnchor {
-  mode: ConversationPageMode;
-  scope: TodoConversationScope;
-  commentId?: string;
-  threadId?: string;
-  position?: TodoConversationPosition;
+  readonly mode: ConversationPageMode;
+  readonly scope: TodoConversationScope;
+  readonly commentId?: string;
+  readonly threadId?: string;
+  readonly position?: TodoConversationPosition;
 }
 
 function decodeCursor(
   cursor: string,
   sort: TodoCommentSort,
   todoId: number,
-  cursorCodec: TodoCommentCursorCodecPort,
+  cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
 ): TodoConversationCursor {
   const decoded = cursorCodec.decodeConversation(cursor, sort);
 
@@ -56,7 +56,7 @@ function decodeCursor(
 
 function getAnchor(
   input: GetTodoConversationInput,
-  cursorCodec: TodoCommentCursorCodecPort,
+  cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeConversation">,
 ): ConversationAnchor {
   if (input.focusCommentId !== undefined) {
     return { mode: "FOCUS", scope: "THREAD", commentId: input.focusCommentId };
@@ -88,13 +88,19 @@ function getAnchor(
 }
 
 interface FocusAncestorContext {
-  records: TodoCommentRecord[];
-  omittedCount: number;
+  readonly records: readonly TodoCommentRecord[];
+  readonly omittedCount: number;
 }
 
 interface GetTodoConversationDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly cursorCodec: TodoCommentCursorCodecPort;
+  readonly reader: Pick<
+    TodoCommentReaderPort,
+    "canAccessTodo" | "listConversation" | "findAncestors" | "findLikedCommentIds"
+  >;
+  readonly cursorCodec: Pick<
+    TodoCommentCursorCodecPort,
+    "decodeConversation" | "encodeConversation"
+  >;
 }
 
 export class GetTodoConversation {
@@ -163,7 +169,7 @@ export class GetTodoConversation {
         hasPrevious: window.hasPrevious,
         hasNext: window.hasNext,
         previousCursor:
-          window.hasPrevious && firstRecord
+          window.hasPrevious && firstRecord !== undefined
             ? this.#dependencies.cursorCodec.encodeConversation(
                 firstRecord,
                 input.sort,
@@ -171,7 +177,7 @@ export class GetTodoConversation {
               )
             : null,
         nextCursor:
-          window.hasNext && lastRecord
+          window.hasNext && lastRecord !== undefined
             ? this.#dependencies.cursorCodec.encodeConversation(
                 lastRecord,
                 input.sort,

@@ -3,7 +3,7 @@ import { HttpClient, HttpClientModule, getHttpClientToken } from "@nestjs/http-c
 import { JwtModule, type JwtSignOptions } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
-import { TodoCommentModule } from "#api/modules/engagement/engagement-comments.public";
+import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import { UserSettingsModule } from "#api/modules/identity/identity-settings.public";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
 import {
@@ -131,7 +131,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
     UserSettingsModule,
     PlanningCategoriesModule,
     RetentionModule,
-    TodoCommentModule,
+    EngagementCommentsModule,
   ],
   controllers: [AuthController, OAuthController, SessionController, AccountController],
   providers: [

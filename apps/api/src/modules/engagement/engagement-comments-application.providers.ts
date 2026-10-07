@@ -8,7 +8,7 @@ import { TODO_COMMENT_NOTIFICATION } from "./application/ports/comments/todo-com
 import { TODO_COMMENT_READER } from "./application/ports/comments/todo-comment.reader.port.js";
 import { TODO_COMMENT_REPOSITORY } from "./application/ports/comments/todo-comment.repository.port.js";
 import { TODO_VIEW_CACHE } from "./application/ports/comments/todo-view-cache.port.js";
-import { TodoCommentAccountCleanup } from "./application/services/comments/todo-comment-account-cleanup.js";
+import { TodoCommentAccountCleanup } from "./application/services/comments/todo-comment-account-cleanup.service.js";
 import { DeleteTodoComment } from "./application/use-cases/comments/delete-todo-comment.use-case.js";
 import { GetTodoCommentOverview } from "./application/use-cases/comments/get-todo-comment-overview.use-case.js";
 import { GetTodoConversation } from "./application/use-cases/comments/get-todo-conversation.use-case.js";

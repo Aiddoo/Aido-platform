@@ -1,5 +1,6 @@
 export {
-  TodoCommentAccountCleanup,
+  TODO_COMMENT_ACCOUNT_CLEANUP,
+  type TodoCommentAccountCleanupPort,
   type TodoCommentAccountCleanupResult,
-} from "./application/services/comments/todo-comment-account-cleanup.js";
-export { TodoCommentModule } from "./engagement-comments.module.js";
+} from "./application/ports/comments/todo-comment-account-cleanup.port.js";
+export { EngagementCommentsModule } from "./engagement-comments.module.js";

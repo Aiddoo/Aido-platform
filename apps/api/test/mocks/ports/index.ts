@@ -11,7 +11,6 @@ export * from "./daily-completion.mock.js";
 export * from "./notification.mock.js";
 export * from "./notification-cache.mock.js";
 export * from "./retention-repository.mock.js";
-export * from "./todo-comment.mock.js";
 export * from "./todo-read-repository.mock.js";
 export * from "./unit-of-work.mock.js";
 export * from "./user-settings-cache.mock.js";

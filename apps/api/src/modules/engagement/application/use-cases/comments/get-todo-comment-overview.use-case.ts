@@ -17,25 +17,25 @@ import {
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface GetTodoCommentOverviewInput {
-  todoId: number;
-  viewerId: string;
-  sort: TodoCommentSort;
-  before?: string;
-  after?: string;
-  size: number;
+  readonly todoId: number;
+  readonly viewerId: string;
+  readonly sort: TodoCommentSort;
+  readonly before?: string;
+  readonly after?: string;
+  readonly size: number;
 }
 
 interface OverviewAnchor {
-  mode: OverviewPageMode;
-  rootId?: string;
-  position?: TodoCommentRootPosition;
+  readonly mode: OverviewPageMode;
+  readonly rootId?: string;
+  readonly position?: TodoCommentRootPosition;
 }
 
 function decodeCursor(
   cursor: string,
   sort: TodoCommentSort,
   todoId: number,
-  cursorCodec: TodoCommentCursorCodecPort,
+  cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview">,
 ): TodoCommentOverviewCursor {
   const decoded = cursorCodec.decodeOverview(cursor, sort);
 
@@ -48,7 +48,7 @@ function decodeCursor(
 
 function getAnchor(
   input: GetTodoCommentOverviewInput,
-  cursorCodec: TodoCommentCursorCodecPort,
+  cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview">,
 ): OverviewAnchor {
   if (input.before !== undefined) {
     const cursor = decodeCursor(input.before, input.sort, input.todoId, cursorCodec);
@@ -64,8 +64,11 @@ function getAnchor(
 }
 
 interface GetTodoCommentOverviewDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly cursorCodec: TodoCommentCursorCodecPort;
+  readonly reader: Pick<
+    TodoCommentReaderPort,
+    "canAccessTodo" | "listOverview" | "findLikedCommentIds"
+  >;
+  readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview" | "encodeOverview">;
 }
 
 export class GetTodoCommentOverview {
@@ -111,11 +114,11 @@ export class GetTodoCommentOverview {
         hasPrevious: window.hasPrevious,
         hasNext: window.hasNext,
         previousCursor:
-          window.hasPrevious && firstRecord
+          window.hasPrevious && firstRecord !== undefined
             ? this.#dependencies.cursorCodec.encodeOverview(firstRecord, input.sort)
             : null,
         nextCursor:
-          window.hasNext && lastRecord
+          window.hasNext && lastRecord !== undefined
             ? this.#dependencies.cursorCodec.encodeOverview(lastRecord, input.sort)
             : null,
       }),

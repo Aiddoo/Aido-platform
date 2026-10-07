@@ -9,6 +9,7 @@ import {
 } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
+import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
 import { type TodoCommentNotificationPort } from "../../ports/comments/todo-comment-notification.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-comment.repository.port.js";
@@ -16,15 +17,18 @@ import { assertTodoCommentAccess } from "../../services/comments/assert-todo-com
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
 
 export interface LikeTodoCommentInput {
-  todoId: number;
-  commentId: string;
-  userId: string;
+  readonly todoId: number;
+  readonly commentId: string;
+  readonly userId: string;
 }
 
 interface LikeTodoCommentDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly repository: TodoCommentRepositoryPort;
-  readonly notification: TodoCommentNotificationPort;
+  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo" | "findUserDisplayName">;
+  readonly repository: Pick<
+    TodoCommentRepositoryPort,
+    "findComment" | "setLike" | "findPendingLikeNotification" | "markLikeNotified"
+  >;
+  readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentLiked">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
@@ -59,23 +63,15 @@ export class LikeTodoComment {
         input.commentId,
         input.userId,
       );
-      return { transition, senderName, threadRootId: comment.threadRootId.getValue() };
+      return { transition, senderName };
     });
 
-    const recipientId = likeOutcome.transition.commentAuthorId;
-    if (
-      likeOutcome.transition.changed &&
-      !likeOutcome.transition.wasEverNotified &&
-      recipientId !== null
-    ) {
+    if (!likeOutcome.transition.wasEverNotified) {
       await settleAfterCommit(this.#dependencies.logger, [
         {
-          label: "댓글 좋아요 알림",
-          run: () =>
-            this.#notifyLiked(input, recipientId, {
-              senderName: likeOutcome.senderName,
-              threadRootId: likeOutcome.threadRootId,
-            }),
+          failureEvent: EngagementCommentLogEvent.LIKE_NOTIFICATION_FAILED,
+          context: { todoId: input.todoId, commentId: input.commentId, userId: input.userId },
+          run: () => this.#notifyLiked(input, likeOutcome.senderName),
         },
       ]);
     }
@@ -87,20 +83,29 @@ export class LikeTodoComment {
     };
   }
 
-  /** 알림 성공 뒤에만 표시해 일시 실패를 영구 유실로 만들지 않는다. */
-  async #notifyLiked(
-    input: LikeTodoCommentInput,
-    recipientId: string,
-    context: { senderName: string | null; threadRootId: string },
-  ): Promise<void> {
-    await this.#dependencies.notification.notifyCommentLiked({
-      recipientId,
-      senderId: input.userId,
-      senderName: context.senderName,
-      todoId: input.todoId,
-      commentId: input.commentId,
-      threadRootId: context.threadRootId,
+  async #notifyLiked(input: LikeTodoCommentInput, senderName: string | null): Promise<void> {
+    await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.todoComment(input.commentId),
+      ]);
+      const pending = await this.#dependencies.repository.findPendingLikeNotification(
+        input.todoId,
+        input.commentId,
+        input.userId,
+      );
+      if (pending === null) {
+        return;
+      }
+
+      await this.#dependencies.notification.notifyCommentLiked({
+        recipientId: pending.recipientId,
+        senderId: input.userId,
+        senderName,
+        todoId: input.todoId,
+        commentId: input.commentId,
+        threadRootId: pending.threadRootId,
+      });
+      await this.#dependencies.repository.markLikeNotified(input.commentId, input.userId);
     });
-    await this.#dependencies.repository.markLikeNotified(input.commentId, input.userId);
   }
 }

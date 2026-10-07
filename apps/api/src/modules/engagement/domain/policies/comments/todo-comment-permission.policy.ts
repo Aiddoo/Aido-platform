@@ -1,15 +1,15 @@
 export interface TodoCommentViewerPermissions {
-  isLiked: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  canReply: boolean;
+  readonly isLiked: boolean;
+  readonly canEdit: boolean;
+  readonly canDelete: boolean;
+  readonly canReply: boolean;
 }
 
 export function getTodoCommentViewerPermissions(input: {
-  isDeleted: boolean;
-  isLiked: boolean;
-  authorId: string;
-  viewerId: string;
+  readonly isDeleted: boolean;
+  readonly isLiked: boolean;
+  readonly authorId: string;
+  readonly viewerId: string;
 }): TodoCommentViewerPermissions {
   const isAuthor = input.authorId === input.viewerId;
   const canManage = !input.isDeleted && isAuthor;
@@ -23,9 +23,9 @@ export function getTodoCommentViewerPermissions(input: {
 }
 
 export interface TodoDetailsPermissions {
-  canEdit: boolean;
-  canComment: boolean;
-  canNudge: boolean;
+  readonly canEdit: boolean;
+  readonly canComment: boolean;
+  readonly canNudge: boolean;
 }
 
 export function getTodoDetailsPermissions(isOwner: boolean): TodoDetailsPermissions {

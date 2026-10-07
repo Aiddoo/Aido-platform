@@ -1,13 +1,14 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { MutationLockKeys, type MutationLockPort } from "#api/shared/application/ports/index";
 
+import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
+import type {
+  TodoCommentAccountCleanupPort,
+  TodoCommentAccountCleanupResult,
+} from "../../ports/comments/todo-comment-account-cleanup.port.js";
 import { type TodoCommentAccountCleanupStorePort } from "../../ports/comments/todo-comment-account-cleanup.store.port.js";
 import { type TodoViewCachePort } from "../../ports/comments/todo-view-cache.port.js";
 import { settleAfterCommit } from "./settle-after-commit.js";
-
-export interface TodoCommentAccountCleanupResult {
-  readonly affectedTodoIds: readonly number[];
-}
 
 /**
  * auth 계정 purge가 소비하는 댓글 모듈의 공개 capability.
@@ -22,7 +23,7 @@ interface TodoCommentAccountCleanupDependencies {
   readonly logger: ApplicationLogger;
 }
 
-export class TodoCommentAccountCleanup {
+export class TodoCommentAccountCleanup implements TodoCommentAccountCleanupPort {
   readonly #dependencies: TodoCommentAccountCleanupDependencies;
 
   constructor(dependencies: TodoCommentAccountCleanupDependencies) {
@@ -47,7 +48,8 @@ export class TodoCommentAccountCleanup {
     await settleAfterCommit(
       this.#dependencies.logger,
       result.affectedTodoIds.map((todoId) => ({
-        label: `계정 정리 후 할 일 화면 캐시 무효화: todoId=${todoId}`,
+        failureEvent: EngagementCommentLogEvent.ACCOUNT_CLEANUP_CACHE_INVALIDATION_FAILED,
+        context: { todoId },
         run: () => this.#dependencies.todoViewCache.invalidateForTodo(todoId),
       })),
     );

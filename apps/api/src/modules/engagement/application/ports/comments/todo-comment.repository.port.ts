@@ -44,6 +44,14 @@ export interface TodoCommentRepositoryPort {
    */
   dropDeletedFromAncestors(commentId: string, path: readonly string[]): Promise<void>;
   setLike(todoId: number, commentId: string, userId: string): Promise<TodoCommentLikeTransition>;
+  findPendingLikeNotification(
+    todoId: number,
+    commentId: string,
+    userId: string,
+  ): Promise<{
+    readonly recipientId: string;
+    readonly threadRootId: string;
+  } | null>;
   /** 좋아요 알림을 보낸 사실을 남긴다 — 껐다 켜도 다시 알리지 않기 위한 도장이다. */
   markLikeNotified(commentId: string, userId: string): Promise<void>;
   removeLike(todoId: number, commentId: string, userId: string): Promise<TodoCommentLikeTransition>;

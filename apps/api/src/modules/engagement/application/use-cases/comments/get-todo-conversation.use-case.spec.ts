@@ -3,9 +3,10 @@ import { TODO_COMMENT_SORT } from "@aido/api/vocabulary";
 import { vi } from "vitest";
 
 import {
-  createTodoCommentCursorCodecMock,
-  createTodoCommentReaderMock,
-} from "#test/mocks/ports/index";
+  createConversationRecordFixture,
+  createEngagementCommentReader,
+  StubEngagementCursorCodec,
+} from "#test/fixtures/engagement-comment.fixture";
 
 import type { TodoConversationRecord } from "../../models/comments/todo-comment.types.js";
 import { GetTodoConversation } from "./get-todo-conversation.use-case.js";
@@ -16,37 +17,20 @@ const ROOT_ID = "cm1rootcomment000000000001";
 const CHILD_ID = "cm1childcomment00000000001";
 
 function createRecord(overrides: Partial<TodoConversationRecord> = {}): TodoConversationRecord {
-  return {
+  return createConversationRecordFixture({
     id: ROOT_ID,
     todoId: TODO_ID,
-    parentId: null,
-    rootId: null,
-    path: [],
-    depth: 0,
-    parentAuthorName: null,
     authorId: "cm1author0000000000000001",
-    authorName: "작성자",
-    authorProfileImage: null,
     todoOwnerId: "cm1owner00000000000000001",
-    content: "댓글",
-    likeCount: 0,
-    replyCount: 0,
-    deletedAt: null,
-    editedAt: null,
-    createdAt: "2026-08-26T00:00:00.000Z",
-    conversationPosition: {
-      rootLikeCount: 0,
-      rootReplyCount: 0,
-    },
-    continuingAncestorDepths: [],
     ...overrides,
-  };
+  });
 }
 
 describe("GetTodoConversation", () => {
   it("페이지 경계 밖 자식으로 내려가는 lane과 양방향 cursor를 서버가 확정한다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
+    // Given
+    const reader = createEngagementCommentReader();
+    const cursorCodec = new StubEngagementCursorCodec();
     const first = createRecord();
     const child = createRecord({
       id: CHILD_ID,
@@ -55,8 +39,8 @@ describe("GetTodoConversation", () => {
       path: [ROOT_ID],
       depth: 1,
     });
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(reader.listConversation).mockResolvedValue({
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
+    reader.conversationWindow = {
       items: [first, child],
       anchorIndex: null,
       previousRecord: createRecord({ id: "cm1previous000000000000001" }),
@@ -67,13 +51,12 @@ describe("GetTodoConversation", () => {
       }),
       hasPrevious: true,
       hasNext: true,
-    });
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set([CHILD_ID]));
-    vi.mocked(cursorCodec.encodeConversation)
-      .mockReturnValueOnce("previous")
-      .mockReturnValueOnce("next");
+    };
+    reader.likedCommentIds = new Set([CHILD_ID]);
+    cursorCodec.encodedConversations = ["previous", "next"];
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
+    // When
     const response = await useCase.execute({
       todoId: TODO_ID,
       viewerId: VIEWER_ID,
@@ -81,6 +64,7 @@ describe("GetTodoConversation", () => {
       size: 2,
     });
 
+    // Then
     expect(response.items[1]?.comment.viewer.isLiked).toBe(true);
     expect(response.items).toMatchObject([
       {
@@ -113,8 +97,9 @@ describe("GetTodoConversation", () => {
   });
 
   it("인접 형제를 직접 잇지 않고 부모 lane에 각각 branch로 연결한다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
+    // Given
+    const reader = createEngagementCommentReader();
+    const cursorCodec = new StubEngagementCursorCodec();
     const firstChild = createRecord({
       id: CHILD_ID,
       parentId: ROOT_ID,
@@ -130,18 +115,19 @@ describe("GetTodoConversation", () => {
       path: [ROOT_ID],
       depth: 1,
     });
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(reader.listConversation).mockResolvedValue({
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
+    reader.conversationWindow = {
       items: [firstChild, sibling],
       anchorIndex: null,
       previousRecord: null,
       nextRecord: null,
       hasPrevious: false,
       hasNext: false,
-    });
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+    };
+    reader.likedCommentIds = new Set();
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
+    // When
     const response = await useCase.execute({
       todoId: TODO_ID,
       viewerId: VIEWER_ID,
@@ -149,6 +135,7 @@ describe("GetTodoConversation", () => {
       size: 2,
     });
 
+    // Then
     expect(response.items).toMatchObject([
       {
         connection: {
@@ -170,8 +157,12 @@ describe("GetTodoConversation", () => {
   });
 
   it("focus는 현재 window index와 잘린 조상 문맥을 한 번만 싣는다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
+    // Given
+    const reader = createEngagementCommentReader();
+    vi.spyOn(reader, "listConversation");
+    vi.spyOn(reader, "findAncestors");
+
+    const cursorCodec = new StubEngagementCursorCodec();
     const ancestors = Array.from({ length: 20 }, (_, index) => {
       const id = `cm1ancestor${String(index).padStart(15, "0")}`;
       return createRecord({
@@ -196,19 +187,20 @@ describe("GetTodoConversation", () => {
       path: allAncestorIds,
       depth: allAncestorIds.length,
     });
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(reader.listConversation).mockResolvedValue({
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
+    reader.conversationWindow = {
       items: [createRecord(), focused],
       anchorIndex: 1,
       previousRecord: null,
       nextRecord: null,
       hasPrevious: false,
       hasNext: false,
-    });
-    vi.mocked(reader.findAncestors).mockResolvedValue(ancestors);
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+    };
+    reader.ancestors = ancestors;
+    reader.likedCommentIds = new Set();
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
+    // When
     const response = await useCase.execute({
       todoId: TODO_ID,
       viewerId: VIEWER_ID,
@@ -217,6 +209,7 @@ describe("GetTodoConversation", () => {
       size: 30,
     });
 
+    // Then
     expect(response.focus).toMatchObject({
       commentId: CHILD_ID,
       itemIndex: 1,
@@ -243,13 +236,16 @@ describe("GetTodoConversation", () => {
   });
 
   it("다른 todo의 cursor는 reader를 호출하기 전에 거부한다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
+    // Given
+    const reader = createEngagementCommentReader();
+    vi.spyOn(reader, "listConversation");
+
+    const cursorCodec = new StubEngagementCursorCodec();
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
     const cursor = "other-todo-cursor";
     const anchor = createRecord({ todoId: 2 });
-    vi.mocked(cursorCodec.decodeConversation).mockReturnValue({
+    cursorCodec.decodedConversation = {
       v: 1,
       kind: "conversation",
       sort: TODO_COMMENT_SORT.LATEST,
@@ -258,8 +254,9 @@ describe("GetTodoConversation", () => {
       threadId: anchor.id,
       scope: "TODO",
       position: anchor.conversationPosition,
-    });
+    };
 
+    // When
     await expect(
       useCase.execute({
         todoId: TODO_ID,
@@ -270,17 +267,21 @@ describe("GetTodoConversation", () => {
       }),
     ).rejects.toMatchObject({ errorCode: ErrorCode.SYS_0002 });
 
+    // Then
     expect(reader.listConversation).not.toHaveBeenCalled();
   });
 
   it("cursor의 root rank snapshot을 reader boundary에 그대로 전달한다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
+    // Given
+    const reader = createEngagementCommentReader();
+    vi.spyOn(reader, "listConversation");
+
+    const cursorCodec = new StubEngagementCursorCodec();
     const anchor = createRecord({
       conversationPosition: { rootLikeCount: 7, rootReplyCount: 4 },
     });
     const cursor = "signed-cursor";
-    vi.mocked(cursorCodec.decodeConversation).mockReturnValue({
+    cursorCodec.decodedConversation = {
       v: 1,
       kind: "conversation",
       sort: TODO_COMMENT_SORT.POPULAR,
@@ -289,17 +290,17 @@ describe("GetTodoConversation", () => {
       threadId: anchor.id,
       scope: "TODO",
       position: anchor.conversationPosition,
-    });
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(reader.listConversation).mockResolvedValue({
+    };
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
+    reader.conversationWindow = {
       items: [anchor],
       anchorIndex: null,
       previousRecord: anchor,
       nextRecord: null,
       hasPrevious: true,
       hasNext: false,
-    });
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+    };
+    reader.likedCommentIds = new Set();
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
     await useCase.execute({
@@ -310,6 +311,7 @@ describe("GetTodoConversation", () => {
       size: 30,
     });
 
+    // Then
     expect(reader.listConversation).toHaveBeenCalledWith(
       expect.objectContaining({
         mode: "AFTER",
@@ -322,12 +324,17 @@ describe("GetTodoConversation", () => {
   });
 
   it("없거나 tree에서 사라진 focus는 다른 root 대신 빈 대화로 복구한다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(reader.listConversation).mockResolvedValue(null);
+    // Given
+    const reader = createEngagementCommentReader();
+    vi.spyOn(reader, "listConversation");
+    vi.spyOn(reader, "findLikedCommentIds");
+
+    const cursorCodec = new StubEngagementCursorCodec();
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
+    reader.conversationWindow = null;
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
+    // When
     await expect(
       useCase.execute({
         todoId: TODO_ID,
@@ -348,13 +355,18 @@ describe("GetTodoConversation", () => {
       },
     });
 
+    // Then
     expect(reader.listConversation).toHaveBeenCalledTimes(1);
     expect(reader.findLikedCommentIds).not.toHaveBeenCalled();
   });
 
   it("후손 때문에 보존된 삭제 댓글은 같은 thread만 돌려주고 focus 표시는 하지 않는다", async () => {
-    const reader = createTodoCommentReaderMock();
-    const cursorCodec = createTodoCommentCursorCodecMock();
+    // Given
+    const reader = createEngagementCommentReader();
+    vi.spyOn(reader, "listConversation");
+    vi.spyOn(reader, "findAncestors");
+
+    const cursorCodec = new StubEngagementCursorCodec();
     const deletedFocus = createRecord({
       id: CHILD_ID,
       parentId: ROOT_ID,
@@ -367,18 +379,19 @@ describe("GetTodoConversation", () => {
       authorName: null,
       replyCount: 1,
     });
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(reader.listConversation).mockResolvedValue({
+    reader.accessiblePairs.add(`${TODO_ID}:${VIEWER_ID}`);
+    reader.conversationWindow = {
       items: [createRecord(), deletedFocus],
       anchorIndex: 1,
       previousRecord: null,
       nextRecord: null,
       hasPrevious: false,
       hasNext: false,
-    });
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
+    };
+    reader.likedCommentIds = new Set();
     const useCase = new GetTodoConversation({ reader: reader, cursorCodec: cursorCodec });
 
+    // When
     await expect(
       useCase.execute({
         todoId: TODO_ID,
@@ -395,6 +408,7 @@ describe("GetTodoConversation", () => {
       focus: null,
     });
 
+    // Then
     expect(reader.findAncestors).not.toHaveBeenCalled();
     expect(reader.listConversation).toHaveBeenCalledTimes(1);
   });

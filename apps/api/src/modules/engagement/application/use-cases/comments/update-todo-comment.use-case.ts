@@ -15,15 +15,18 @@ import { toTodoCommentResponse } from "../../presenters/comments/index.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface UpdateTodoCommentInput {
-  todoId: number;
-  commentId: string;
-  userId: string;
-  content: string;
+  readonly todoId: number;
+  readonly commentId: string;
+  readonly userId: string;
+  readonly content: string;
 }
 
 interface UpdateTodoCommentDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly repository: TodoCommentRepositoryPort;
+  readonly reader: Pick<
+    TodoCommentReaderPort,
+    "canAccessTodo" | "findCommentRecord" | "findLikedCommentIds"
+  >;
+  readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "updateComment">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
 }

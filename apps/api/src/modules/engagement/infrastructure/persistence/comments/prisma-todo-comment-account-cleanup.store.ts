@@ -124,19 +124,7 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 
     // purged user의 inactive like도 FK를 잡고 있으므로 모두 제거합니다. active likeCount는
     // 아래의 set-based reconciliation이 실제 남은 행을 기준으로 다시 확정합니다.
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			DELETE FROM "TodoCommentLike"
-			WHERE "userId" = ${userId}
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
+    await this.client.orm.public.TodoCommentLike.where({ userId }).deleteAndCount();
     await this.client
       .execute(
         sqlStatement(

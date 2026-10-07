@@ -19,5 +19,6 @@ export interface TodoCommentWrittenInput extends TodoCommentActivityNotification
 
 export interface TodoCommentNotificationPort {
   notifyCommentsWritten(input: TodoCommentWrittenInput): Promise<void>;
+  /** 호출자 UOW에서 알림과 push outbox만 저장하며, 외부 push 발행은 실제 커밋 뒤 시작한다. */
   notifyCommentLiked(input: TodoCommentActivityNotificationInput): Promise<void>;
 }

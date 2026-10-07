@@ -1,138 +1,147 @@
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
 import {
-  createMutationLockMock,
-  createTodoCommentNotificationMock,
-  createTodoCommentReaderMock,
-  createTodoCommentRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createEngagementCommentFixture,
+  ENGAGEMENT_TIME,
+  ENGAGEMENT_OWNER_ID,
+  ENGAGEMENT_VIEWER_ID,
+} from "#test/fixtures/engagement-comment.fixture";
 
-import { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
-import type { TodoCommentLikeTransition } from "../../models/comments/todo-comment.types.js";
 import { LikeTodoComment } from "./like-todo-comment.use-case.js";
+import { UnlikeTodoComment } from "./unlike-todo-comment.use-case.js";
 
-const TODO_ID = 1;
-const COMMENT_ID = "cm1todoacomment00000000001";
-const LIKER_ID = "cm1liker00000000000000001";
-const AUTHOR_ID = "cm1author0000000000000001";
-
-function createTransition(
-  overrides: Partial<TodoCommentLikeTransition> = {},
-): TodoCommentLikeTransition {
-  return {
-    commentId: COMMENT_ID,
-    commentAuthorId: AUTHOR_ID,
-    changed: true,
-    isLiked: true,
-    likeCount: 1,
-    wasEverNotified: false,
-    ...overrides,
-  };
-}
-
-function setup(transition = createTransition()) {
-  const repository = createTodoCommentRepositoryMock();
-  const reader = createTodoCommentReaderMock();
-  const notification = createTodoCommentNotificationMock();
-  const mutationLock = createMutationLockMock();
-
-  const createdAt = new Date("2026-08-16T00:00:00.000Z");
-  vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-  vi.mocked(repository.findComment).mockResolvedValue(
-    TodoComment.reconstitute({
-      id: COMMENT_ID,
-      todoId: TODO_ID,
-      authorId: AUTHOR_ID,
-      parentId: null,
-      rootId: null,
-      path: [],
-      content: "함께 해요",
-      deletedAt: null,
-      editedAt: null,
-      createdAt,
-      updatedAt: createdAt,
-    }),
-  );
-  vi.mocked(reader.findUserDisplayName).mockResolvedValue("좋아요 누른 사람");
-  vi.mocked(repository.setLike).mockResolvedValue(transition);
-
-  const useCase = new LikeTodoComment({
-    reader: reader,
-    repository: repository,
-    notification: notification,
-    mutationLock: mutationLock,
-    unitOfWork: createUnitOfWorkMock(),
-    logger: mock<ConstructorParameters<typeof LikeTodoComment>[0]["logger"]>(),
+describe("LikeTodoComment — 댓글 사용자 상태", () => {
+  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ENGAGEMENT_TIME);
+    fixture = createEngagementCommentFixture();
   });
+  afterEach(() => vi.useRealTimers());
 
-  return { useCase, repository, notification };
-}
-
-describe("LikeTodoComment", () => {
-  it("알림을 보낸 뒤에 보냈다고 표시한다", async () => {
-    const { useCase, repository, notification } = setup();
-
-    await useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID });
-
-    expect(notification.notifyCommentLiked).toHaveBeenCalledTimes(1);
-    expect(repository.markLikeNotified).toHaveBeenCalledWith(COMMENT_ID, LIKER_ID);
-    expect(vi.mocked(notification.notifyCommentLiked).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(repository.markLikeNotified).mock.invocationCallOrder[0] ?? 0,
-    );
-  });
-
-  it("좋아요 알림 경계에는 댓글 원문을 넘기지 않는다", async () => {
-    const { useCase, notification } = setup();
-
-    await useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID });
-
-    expect(notification.notifyCommentLiked).toHaveBeenCalledWith({
-      recipientId: AUTHOR_ID,
-      senderId: LIKER_ID,
-      senderName: "좋아요 누른 사람",
-      todoId: TODO_ID,
-      commentId: COMMENT_ID,
-      threadRootId: COMMENT_ID,
+  it("좋아요를 저장하고 알림 성공 뒤 이력을 표시하며 원문은 알림 경계에 전달하지 않는다", async () => {
+    // Given
+    const comment = fixture.addComment({ content: "알림에 포함하면 안 되는 원문" });
+    // When
+    const result = await new LikeTodoComment(fixture).execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_VIEWER_ID,
     });
-  });
-
-  /**
-   * 표시가 남으면 껐다 켜도 다시 시도되지 않아 그 좋아요는 영영 알려지지 않는다.
-   * 이 use-case가 지켜야 할 가장 중요한 불변식이다.
-   */
-  it("알림 발송이 실패하면 보냈다고 표시하지 않는다", async () => {
-    const { useCase, repository, notification } = setup();
-    vi.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
-
-    const result = await useCase.execute({
-      todoId: TODO_ID,
-      commentId: COMMENT_ID,
-      userId: LIKER_ID,
+    // Then
+    expect(result).toEqual({ commentId: comment.id, isLiked: true, likeCount: 1 });
+    expect(fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)).toEqual({
+      isLiked: true,
+      wasEverNotified: true,
     });
-
-    expect(repository.markLikeNotified).not.toHaveBeenCalled();
-    expect(result.isLiked).toBe(true);
+    expect(fixture.notification.liked).toEqual([
+      {
+        recipientId: ENGAGEMENT_OWNER_ID,
+        senderId: ENGAGEMENT_VIEWER_ID,
+        senderName: "방문자",
+        todoId: 1,
+        commentId: comment.id,
+        threadRootId: comment.id,
+      },
+    ]);
   });
-
-  it("알림이 실패해도 좋아요 자체는 성공으로 돌려준다", async () => {
-    const { useCase, notification } = setup();
-    vi.mocked(notification.notifyCommentLiked).mockRejectedValue(new Error("push down"));
-
-    await expect(
-      useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID }),
-    ).resolves.toMatchObject({ commentId: COMMENT_ID, likeCount: 1 });
+  it("알림이 대기하는 동안 완료 이력은 없고 성공 후 표시한다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    const started = Promise.withResolvers<void>();
+    const finish = Promise.withResolvers<void>();
+    const notify = fixture.notification.notifyCommentLiked.bind(fixture.notification);
+    vi.spyOn(fixture.notification, "notifyCommentLiked").mockImplementation(async (input) => {
+      started.resolve();
+      await finish.promise;
+      return notify(input);
+    });
+    // When
+    const outcome = new LikeTodoComment(fixture).execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_VIEWER_ID,
+    });
+    await started.promise;
+    // Then
+    try {
+      expect(
+        fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)?.wasEverNotified,
+      ).toBe(false);
+    } finally {
+      finish.resolve();
+    }
+    await outcome;
+    expect(
+      fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)?.wasEverNotified,
+    ).toBe(true);
   });
-
-  it("이미 알린 좋아요는 껐다 켜도 다시 알리지 않는다", async () => {
-    const { useCase, repository, notification } = setup(
-      createTransition({ wasEverNotified: true }),
-    );
-
-    await useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: LIKER_ID });
-
-    expect(notification.notifyCommentLiked).not.toHaveBeenCalled();
-    expect(repository.markLikeNotified).not.toHaveBeenCalled();
+  it("알림 실패에도 좋아요는 유지하고 같은 요청을 재전송하면 미완료 알림만 다시 처리한다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    const notify = vi
+      .spyOn(fixture.notification, "notifyCommentLiked")
+      .mockRejectedValueOnce(new Error("private provider message"));
+    const warning = vi.spyOn(fixture.logger, "warn");
+    const useCase = new LikeTodoComment(fixture);
+    // When
+    const first = await useCase.execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_VIEWER_ID,
+    });
+    // Then
+    expect(first).toEqual({ commentId: comment.id, isLiked: true, likeCount: 1 });
+    expect(fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)).toEqual({
+      isLiked: true,
+      wasEverNotified: false,
+    });
+    expect(JSON.stringify(warning.mock.calls)).not.toContain("private provider message");
+    await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_VIEWER_ID });
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(fixture.notification.liked).toHaveLength(1);
+    expect(fixture.repository.likeCounts.get(comment.id)).toBe(1);
+    expect(
+      fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)?.wasEverNotified,
+    ).toBe(true);
+  });
+  it("이미 알린 좋아요는 취소 후 재설정해도 다시 알리지 않는다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    const useCase = new LikeTodoComment(fixture);
+    await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_VIEWER_ID });
+    // When
+    await new UnlikeTodoComment(fixture).execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_VIEWER_ID,
+    });
+    await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_VIEWER_ID });
+    // Then
+    expect(fixture.notification.liked).toHaveLength(1);
+    expect(fixture.repository.likeCounts.get(comment.id)).toBe(1);
+  });
+  it("후속 처리 직전에 좋아요가 취소되면 fresh pending 상태를 확인해 알림을 보내지 않는다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    let unitOfWorkCalls = 0;
+    fixture.unitOfWork.run = async (work) => {
+      unitOfWorkCalls++;
+      if (unitOfWorkCalls === 2)
+        await fixture.repository.removeLike(1, comment.id, ENGAGEMENT_VIEWER_ID);
+      return work();
+    };
+    // When
+    await new LikeTodoComment(fixture).execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_VIEWER_ID,
+    });
+    // Then
+    expect(fixture.notification.liked).toEqual([]);
+    expect(fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)).toEqual({
+      isLiked: false,
+      wasEverNotified: false,
+    });
   });
 });

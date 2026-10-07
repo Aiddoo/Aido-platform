@@ -15,6 +15,7 @@ import type {
   TodoCommentChainCommand,
   TodoCommentRecord,
 } from "../../models/comments/todo-comment.types.js";
+import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
 import { type TodoCommentNotificationPort } from "../../ports/comments/todo-comment-notification.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
@@ -28,18 +29,18 @@ import { assertTodoCommentAccess } from "../../services/comments/assert-todo-com
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
 
 export interface WriteTodoCommentChainInput {
-  todoId: number;
-  authorId: string;
-  parentId: string | null;
-  items: { clientRequestId: string; content: string }[];
+  readonly todoId: number;
+  readonly authorId: string;
+  readonly parentId: string | null;
+  readonly items: readonly { readonly clientRequestId: string; readonly content: string }[];
 }
 
 interface WriteOutcome {
-  written: TodoCommentRecord[];
-  likedCommentIds: ReadonlySet<string>;
-  addedCount: number;
-  recipientId: string;
-  threadRootId: string;
+  readonly written: readonly TodoCommentRecord[];
+  readonly likedCommentIds: ReadonlySet<string>;
+  readonly addedCount: number;
+  readonly recipientId: string;
+  readonly threadRootId: string;
 }
 
 function normalizeCommand(input: WriteTodoCommentChainInput): TodoCommentChainCommand {
@@ -76,9 +77,19 @@ function throwMappedWriteError(error: unknown): never {
 }
 
 interface WriteTodoCommentChainDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly repository: TodoCommentRepositoryPort;
-  readonly notification: TodoCommentNotificationPort;
+  readonly reader: Pick<
+    TodoCommentReaderPort,
+    "canAccessTodo" | "findCommentRecords" | "findLikedCommentIds"
+  >;
+  readonly repository: Pick<
+    TodoCommentRepositoryPort,
+    | "findCommentChainReplay"
+    | "findComment"
+    | "createCommentChain"
+    | "increaseTodoCommentCount"
+    | "incrementReplyCount"
+  >;
+  readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -100,11 +111,13 @@ export class WriteTodoCommentChain {
       const first = requireFirst(outcome.written);
       await settleAfterCommit(this.#dependencies.logger, [
         {
-          label: "할 일 화면 캐시 무효화",
+          failureEvent: EngagementCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
+          context: { todoId: input.todoId, userId: input.authorId },
           run: () => this.#dependencies.todoViewCache.invalidateForTodo(input.todoId),
         },
         {
-          label: "댓글 작성 알림",
+          failureEvent: EngagementCommentLogEvent.WRITE_NOTIFICATION_FAILED,
+          context: { todoId: input.todoId, userId: input.authorId },
           run: () =>
             this.#dependencies.notification.notifyCommentsWritten({
               recipientId: outcome.recipientId,
@@ -209,6 +222,7 @@ export class WriteTodoCommentChain {
   /** unique 제약 위반으로 실패한 트랜잭션은 폐기하고 새 UoW에서 승자의 행을 읽는다. */
   private replayAfterRace(command: TodoCommentChainCommand): Promise<WriteOutcome> {
     return this.#dependencies.unitOfWork.run(async () => {
+      await assertTodoCommentAccess(this.#dependencies.reader, command.todoId, command.authorId);
       const replayIds = await this.#dependencies.repository.findCommentChainReplay(command);
       if (replayIds === null) {
         throw new ApplicationException(ErrorCode.SYS_0003);

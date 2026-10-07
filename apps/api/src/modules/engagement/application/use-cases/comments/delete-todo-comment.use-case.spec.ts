@@ -1,69 +1,73 @@
 import { vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 
+import { MutationLockKeys } from "#api/shared/application/ports/index";
 import {
-  createMutationLockMock,
-  createTodoCommentReaderMock,
-  createTodoCommentRepositoryMock,
-  createTodoViewCacheMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createEngagementCommentFixture,
+  ENGAGEMENT_TIME,
+  ENGAGEMENT_OWNER_ID,
+  ENGAGEMENT_VIEWER_ID,
+} from "#test/fixtures/engagement-comment.fixture";
 
-import { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
 import { DeleteTodoComment } from "./delete-todo-comment.use-case.js";
 
-const TODO_ID = 1;
-const ROOT_ID = "cm1rootcomment000000000001";
-const PARENT_ID = "cm1parentcomment0000000001";
-const COMMENT_ID = "cm1childcomment00000000001";
-const AUTHOR_ID = "cm1author0000000000000001";
-
-function createComment(): TodoComment {
-  const createdAt = new Date("2026-08-16T00:00:00.000Z");
-  return TodoComment.reconstitute({
-    id: COMMENT_ID,
-    todoId: TODO_ID,
-    authorId: AUTHOR_ID,
-    parentId: PARENT_ID,
-    rootId: ROOT_ID,
-    path: [ROOT_ID, PARENT_ID],
-    content: "삭제할 댓글",
-    deletedAt: null,
-    editedAt: null,
-    createdAt,
-    updatedAt: createdAt,
+describe("DeleteTodoComment — 댓글 사용자 상태", () => {
+  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ENGAGEMENT_TIME);
+    fixture = createEngagementCommentFixture();
   });
-}
+  afterEach(() => vi.useRealTimers());
 
-describe("DeleteTodoComment", () => {
-  it("댓글과 정산 대상 조상을 함께 잠그고 조건부 삭제한다", async () => {
-    const repository = createTodoCommentRepositoryMock();
-    const reader = createTodoCommentReaderMock();
-    const todoViewCache = createTodoViewCacheMock();
-    const mutationLock = createMutationLockMock();
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(repository.findComment).mockResolvedValue(createComment());
-    vi.mocked(repository.decrementTodoCommentCount).mockResolvedValue(true);
-    vi.mocked(repository.deleteComment).mockResolvedValue(true);
-    const useCase = new DeleteTodoComment({
-      reader: reader,
-      repository: repository,
-      todoViewCache: todoViewCache,
-      mutationLock: mutationLock,
-      unitOfWork: createUnitOfWorkMock(),
-      logger: mock<ConstructorParameters<typeof DeleteTodoComment>[0]["logger"]>(),
+  it("댓글과 조상을 잠근 뒤 원문을 지우고 반복 삭제는 counter·캐시를 다시 변경하지 않는다", async () => {
+    // Given
+    const root = fixture.addComment();
+    const parent = fixture.addComment({ parentId: root.id, rootId: root.id, path: [root.id] });
+    const comment = fixture.addComment({
+      parentId: parent.id,
+      rootId: root.id,
+      path: [root.id, parent.id],
     });
-
-    await expect(
-      useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: AUTHOR_ID }),
-    ).resolves.toEqual({ commentId: COMMENT_ID, isDeleted: true });
-
-    expect(mutationLock.acquire).toHaveBeenCalledWith([
-      `mutation:v1:todo-comment:${COMMENT_ID}`,
-      `mutation:v1:todo-comment:${ROOT_ID}`,
-      `mutation:v1:todo-comment:${PARENT_ID}`,
+    const lock = vi.spyOn(fixture.mutationLock, "acquire");
+    const useCase = new DeleteTodoComment(fixture);
+    // When
+    const result = await useCase.execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_OWNER_ID,
+    });
+    vi.setSystemTime(new Date(ENGAGEMENT_TIME.getTime() + 1000));
+    await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_OWNER_ID });
+    // Then
+    expect(result).toEqual({ commentId: comment.id, isDeleted: true });
+    expect(fixture.repository.comments.get(comment.id)).toMatchObject({
+      content: null,
+      deletedAt: ENGAGEMENT_TIME,
+    });
+    expect(fixture.repository.commentCounts.get(1)).toBe(2);
+    expect(fixture.repository.ancestorSettlements).toEqual([
+      { commentId: comment.id, path: [root.id, parent.id] },
     ]);
-    expect(repository.findComment).toHaveBeenCalledTimes(2);
-    expect(todoViewCache.invalidateForTodo).toHaveBeenCalledWith(TODO_ID);
+    expect(fixture.invalidatedTodoIds).toEqual([1]);
+    expect(lock).toHaveBeenCalledWith([
+      MutationLockKeys.todoComment(comment.id),
+      MutationLockKeys.todoComment(root.id),
+      MutationLockKeys.todoComment(parent.id),
+    ]);
+  });
+  it("다른 작성자의 삭제는 TODO_0832로 거부하고 count와 원문을 유지한다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    // When / Then
+    await expect(
+      new DeleteTodoComment(fixture).execute({
+        todoId: 1,
+        commentId: comment.id,
+        userId: ENGAGEMENT_VIEWER_ID,
+      }),
+    ).rejects.toMatchObject({ errorCode: "TODO_0832" });
+    expect(fixture.repository.comments.get(comment.id)).toEqual(comment);
+    expect(fixture.repository.commentCounts.get(1)).toBe(1);
+    expect(fixture.invalidatedTodoIds).toEqual([]);
   });
 });

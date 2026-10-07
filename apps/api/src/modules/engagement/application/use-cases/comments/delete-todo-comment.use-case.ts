@@ -10,6 +10,7 @@ import {
 import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/index";
 
+import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-comment.repository.port.js";
 import { type TodoViewCachePort } from "../../ports/comments/todo-view-cache.port.js";
@@ -17,14 +18,17 @@ import { assertTodoCommentAccess } from "../../services/comments/assert-todo-com
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
 
 export interface DeleteTodoCommentInput {
-  todoId: number;
-  commentId: string;
-  userId: string;
+  readonly todoId: number;
+  readonly commentId: string;
+  readonly userId: string;
 }
 
 interface DeleteTodoCommentDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly repository: TodoCommentRepositoryPort;
+  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo">;
+  readonly repository: Pick<
+    TodoCommentRepositoryPort,
+    "findComment" | "decrementTodoCommentCount" | "deleteComment" | "dropDeletedFromAncestors"
+  >;
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -88,7 +92,8 @@ export class DeleteTodoComment {
     if (outcome) {
       await settleAfterCommit(this.#dependencies.logger, [
         {
-          label: "할 일 화면 캐시 무효화",
+          failureEvent: EngagementCommentLogEvent.VIEW_CACHE_INVALIDATION_FAILED,
+          context: { todoId: input.todoId, commentId: input.commentId, userId: input.userId },
           run: () => this.#dependencies.todoViewCache.invalidateForTodo(input.todoId),
         },
       ]);

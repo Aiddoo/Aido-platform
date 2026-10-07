@@ -1,60 +1,57 @@
 import { vi } from "vitest";
 
 import {
-  createMutationLockMock,
-  createTodoCommentReaderMock,
-  createTodoCommentRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createEngagementCommentFixture,
+  ENGAGEMENT_TIME,
+  ENGAGEMENT_VIEWER_ID,
+} from "#test/fixtures/engagement-comment.fixture";
 
-import { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
 import { UnlikeTodoComment } from "./unlike-todo-comment.use-case.js";
 
-const TODO_ID = 1;
-const COMMENT_ID = "cm1todoacomment00000000001";
-const USER_ID = "cm1author0000000000000001";
+describe("UnlikeTodoComment — 댓글 사용자 상태", () => {
+  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ENGAGEMENT_TIME);
+    fixture = createEngagementCommentFixture();
+  });
+  afterEach(() => vi.useRealTimers());
 
-describe("UnlikeTodoComment", () => {
-  it("댓글 잠금 안에서 좋아요를 취소한다", async () => {
-    const repository = createTodoCommentRepositoryMock();
-    const reader = createTodoCommentReaderMock();
-    const mutationLock = createMutationLockMock();
-    const createdAt = new Date("2026-08-16T00:00:00.000Z");
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(repository.findComment).mockResolvedValue(
-      TodoComment.reconstitute({
-        id: COMMENT_ID,
-        todoId: TODO_ID,
-        authorId: USER_ID,
-        parentId: null,
-        rootId: null,
-        path: [],
-        content: "댓글",
-        deletedAt: null,
-        editedAt: null,
-        createdAt,
-        updatedAt: createdAt,
-      }),
-    );
-    vi.mocked(repository.removeLike).mockResolvedValue({
-      commentId: COMMENT_ID,
-      commentAuthorId: USER_ID,
-      changed: true,
-      isLiked: false,
-      likeCount: 0,
+  it("좋아요를 취소하고 반복 취소도 count 0과 알림 이력을 보존한다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    fixture.repository.likes.set(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`, {
+      isLiked: true,
       wasEverNotified: true,
     });
-    const useCase = new UnlikeTodoComment({
-      reader: reader,
-      repository: repository,
-      mutationLock: mutationLock,
-      unitOfWork: createUnitOfWorkMock(),
+    fixture.repository.likeCounts.set(comment.id, 1);
+    const useCase = new UnlikeTodoComment(fixture);
+    // When
+    await useCase.execute({ todoId: 1, commentId: comment.id, userId: ENGAGEMENT_VIEWER_ID });
+    const result = await useCase.execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_VIEWER_ID,
     });
-
+    // Then
+    expect(result).toEqual({ commentId: comment.id, isLiked: false, likeCount: 0 });
+    expect(fixture.repository.likes.get(`${comment.id}:${ENGAGEMENT_VIEWER_ID}`)).toEqual({
+      isLiked: false,
+      wasEverNotified: true,
+    });
+    expect(fixture.repository.likeCounts.get(comment.id)).toBe(0);
+  });
+  it("삭제된 댓글은 TODO_0833으로 거부하고 좋아요를 변경하지 않는다", async () => {
+    // Given
+    const comment = fixture.addComment({ deletedAt: ENGAGEMENT_TIME, content: null });
+    // When / Then
     await expect(
-      useCase.execute({ todoId: TODO_ID, commentId: COMMENT_ID, userId: USER_ID }),
-    ).resolves.toEqual({ commentId: COMMENT_ID, isLiked: false, likeCount: 0 });
-
-    expect(mutationLock.acquire).toHaveBeenCalledWith([`mutation:v1:todo-comment:${COMMENT_ID}`]);
+      new UnlikeTodoComment(fixture).execute({
+        todoId: 1,
+        commentId: comment.id,
+        userId: ENGAGEMENT_VIEWER_ID,
+      }),
+    ).rejects.toMatchObject({ errorCode: "TODO_0833" });
+    expect(fixture.repository.likes.size).toBe(0);
   });
 });

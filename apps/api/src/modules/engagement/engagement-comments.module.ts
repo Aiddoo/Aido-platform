@@ -3,13 +3,14 @@ import { Module } from "@nestjs/common";
 import { NotificationModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
 
+import { TODO_COMMENT_ACCOUNT_CLEANUP } from "./application/ports/comments/todo-comment-account-cleanup.port.js";
 import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "./application/ports/comments/todo-comment-account-cleanup.store.port.js";
 import { TODO_COMMENT_CURSOR_CODEC } from "./application/ports/comments/todo-comment-cursor-codec.port.js";
 import { TODO_COMMENT_NOTIFICATION } from "./application/ports/comments/todo-comment-notification.port.js";
 import { TODO_COMMENT_READER } from "./application/ports/comments/todo-comment.reader.port.js";
 import { TODO_COMMENT_REPOSITORY } from "./application/ports/comments/todo-comment.repository.port.js";
 import { TODO_VIEW_CACHE } from "./application/ports/comments/todo-view-cache.port.js";
-import { TodoCommentAccountCleanup } from "./application/services/comments/todo-comment-account-cleanup.js";
+import { TodoCommentAccountCleanup } from "./application/services/comments/todo-comment-account-cleanup.service.js";
 import {
   deleteTodoCommentProvider,
   getTodoCommentOverviewProvider,
@@ -50,12 +51,13 @@ import { TodoCommentController } from "./presentation/controllers/comments/todo-
     getTodoCommentOverviewProvider,
     getTodoConversationProvider,
     todoCommentAccountCleanupProvider,
+    { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },
     writeTodoCommentChainProvider,
     updateTodoCommentProvider,
     deleteTodoCommentProvider,
     likeTodoCommentProvider,
     unlikeTodoCommentProvider,
   ],
-  exports: [TodoCommentAccountCleanup],
+  exports: [TODO_COMMENT_ACCOUNT_CLEANUP],
 })
-export class TodoCommentModule {}
+export class EngagementCommentsModule {}

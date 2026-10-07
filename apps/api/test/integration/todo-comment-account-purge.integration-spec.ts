@@ -10,6 +10,8 @@ import {
   TODO_VIEW_CACHE,
   type TodoViewCachePort,
 } from "#api/modules/engagement/application/ports/comments/todo-view-cache.port";
+import { TodoCommentAccountCleanup } from "#api/modules/engagement/application/services/comments/todo-comment-account-cleanup.service";
+import { TODO_COMMENT_ACCOUNT_CLEANUP } from "#api/modules/engagement/engagement-comments.public";
 import { PrismaTodoCommentAccountCleanupStore } from "#api/modules/engagement/infrastructure/persistence/comments/prisma-todo-comment-account-cleanup.store";
 import {
   AUTH_USER_REPOSITORY,
@@ -245,6 +247,7 @@ describe("댓글 계정 purge (실제 PostgreSQL)", () => {
           useExisting: PrismaTodoCommentAccountCleanupStore,
         },
         todoCommentAccountCleanupProvider,
+        { provide: TODO_COMMENT_ACCOUNT_CLEANUP, useExisting: TodoCommentAccountCleanup },
         PrismaNotificationRepository,
         { provide: NOTIFICATION_REPOSITORY, useExisting: PrismaNotificationRepository },
         notificationAccountCleanupProvider,

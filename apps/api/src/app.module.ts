@@ -13,7 +13,7 @@ import { AiReportModule } from "#api/modules/ai-assistance/ai-assistance-reports
 import { AiSuggestionModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
 import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "#api/modules/app-config/app-config-discovery.public";
 import { SubscriptionModule } from "#api/modules/billing/billing-subscriptions.public";
-import { TodoCommentModule } from "#api/modules/engagement/engagement-comments.public";
+import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import {
   AuthModule,
   JwtAuthGuard,
@@ -128,7 +128,7 @@ import { AppService } from "./app.service.js";
     SchedulerModule,
     SubscriptionModule,
     PlanningTodosModule,
-    TodoCommentModule,
+    EngagementCommentsModule,
     PlanningCategoriesModule,
     UserSettingsModule,
     WeatherModule,

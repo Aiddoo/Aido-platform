@@ -1,89 +1,71 @@
-import { ErrorCode } from "@aido/api/errors";
 import { vi } from "vitest";
 
-import { TodoMapper } from "#api/modules/planning/infrastructure/persistence/todos/todo-response.mapper";
-import { TodoBuilder } from "#test/builders/index";
+import { TodoBuilder } from "#test/builders/todo.builder";
 import {
-  createTodoCommentReaderMock,
-  createTodoCommentRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createEngagementCommentFixture,
+  ENGAGEMENT_TIME,
+  ENGAGEMENT_OWNER_ID,
+  ENGAGEMENT_VIEWER_ID,
+} from "#test/fixtures/engagement-comment.fixture";
+import { createTodoResponseFixture } from "#test/fixtures/todo-response.fixture";
 
-import type { TodoDetailsRecord } from "../../models/comments/todo-comment.types.js";
 import { GetTodoDetails } from "./get-todo-details.use-case.js";
 
-const TODO_ID = 42;
-const OWNER_ID = "cmowner000000000000000001";
-const VIEWER_ID = "cmviewer00000000000000001";
-
-function createTodoDetails(isOwner: boolean): TodoDetailsRecord {
-  return {
-    todo: TodoMapper.toResponse(TodoBuilder.create(OWNER_ID).withId(TODO_ID).build()),
-    owner: { id: OWNER_ID, name: "할 일 주인", profileImage: null },
-    viewCount: 7,
-    commentCount: 3,
-    isOwner,
-  };
-}
-
-describe("GetTodoDetails", () => {
-  it("소유자는 조회수를 추가하지 않고 편집 권한을 받는다", async () => {
-    // Given
-    const reader = createTodoCommentReaderMock();
-    const repository = createTodoCommentRepositoryMock();
-    vi.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(createTodoDetails(true));
-    const useCase = new GetTodoDetails({
-      todoCommentReader: reader,
-      todoCommentRepository: repository,
-      unitOfWork: createUnitOfWorkMock(),
+describe("GetTodoDetails — 할 일 상세 조회와 방문 기록", () => {
+  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  let useCase: GetTodoDetails;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ENGAGEMENT_TIME);
+    fixture = createEngagementCommentFixture();
+    fixture.reader.details.set(1, {
+      todo: createTodoResponseFixture(
+        TodoBuilder.create(ENGAGEMENT_OWNER_ID).withId(1).withStartDate(ENGAGEMENT_TIME).build(),
+      ),
+      owner: { id: ENGAGEMENT_OWNER_ID, name: "작성자", profileImage: null },
+      viewCount: 7,
+      commentCount: 3,
+      isOwner: false,
     });
+    fixture.repository.viewCounts.set(1, 7);
+    useCase = new GetTodoDetails({
+      todoCommentReader: fixture.reader,
+      todoCommentRepository: fixture.repository,
+      unitOfWork: fixture.unitOfWork,
+    });
+  });
+  afterEach(() => vi.useRealTimers());
 
-    // When
-    const result = await useCase.execute({ todoId: TODO_ID, viewerId: OWNER_ID });
-
+  it("소유자는 조회수를 추가하지 않고 편집 권한을 받는다", async () => {
+    // Given / When
+    const result = await useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_OWNER_ID });
     // Then
     expect(result.permissions).toEqual({ canEdit: true, canComment: true, canNudge: false });
     expect(result.metrics).toEqual({ viewCount: 7, commentCount: 3 });
-    expect(repository.recordView).not.toHaveBeenCalled();
+    expect(fixture.repository.views.size).toBe(0);
+    expect(fixture.repository.viewCounts.get(1)).toBe(7);
   });
 
-  it("방문자는 중복 제거된 조회수와 방문자 권한을 받는다", async () => {
-    // Given
-    const reader = createTodoCommentReaderMock();
-    const repository = createTodoCommentRepositoryMock();
-    vi.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(createTodoDetails(false));
-    vi.mocked(repository.recordView).mockResolvedValue({ recorded: true, viewCount: 8 });
-    const useCase = new GetTodoDetails({
-      todoCommentReader: reader,
-      todoCommentRepository: repository,
-      unitOfWork: createUnitOfWorkMock(),
-    });
-
-    // When
-    const result = await useCase.execute({ todoId: TODO_ID, viewerId: VIEWER_ID });
-
+  it("같은 방문자의 반복 조회는 조회수를 한 번만 늘리고 방문자 권한을 유지한다", async () => {
+    // Given / When
+    const first = await useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_VIEWER_ID });
+    const second = await useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_VIEWER_ID });
     // Then
-    expect(repository.recordView).toHaveBeenCalledWith(TODO_ID, VIEWER_ID);
-    expect(result.permissions).toEqual({ canEdit: false, canComment: true, canNudge: true });
-    expect(result.metrics.viewCount).toBe(8);
+    expect(first.permissions).toEqual({ canEdit: false, canComment: true, canNudge: true });
+    expect(first.metrics.viewCount).toBe(8);
+    expect(second.metrics.viewCount).toBe(8);
+    expect(fixture.repository.views.size).toBe(1);
+    expect(fixture.repository.viewCounts.get(1)).toBe(8);
   });
 
-  it("접근할 수 없는 할 일은 조회수를 기록하지 않는다", async () => {
+  it("접근할 수 없는 할 일은 TODO_0801로 거부하고 조회수를 기록하지 않는다", async () => {
     // Given
-    const reader = createTodoCommentReaderMock();
-    const repository = createTodoCommentRepositoryMock();
-    vi.mocked(reader.findAccessibleTodoDetails).mockResolvedValue(null);
-    const useCase = new GetTodoDetails({
-      todoCommentReader: reader,
-      todoCommentRepository: repository,
-      unitOfWork: createUnitOfWorkMock(),
-    });
-
-    // When
-    const result = useCase.execute({ todoId: TODO_ID, viewerId: VIEWER_ID });
-
-    // Then
-    await expect(result).rejects.toMatchObject({ errorCode: ErrorCode.TODO_0801 });
-    expect(repository.recordView).not.toHaveBeenCalled();
+    fixture.reader.accessiblePairs.delete(`1:${ENGAGEMENT_VIEWER_ID}`);
+    // When / Then
+    await expect(
+      useCase.execute({ todoId: 1, viewerId: ENGAGEMENT_VIEWER_ID }),
+    ).rejects.toMatchObject({ errorCode: "TODO_0801" });
+    expect(fixture.repository.views.size).toBe(0);
+    expect(fixture.repository.viewCounts.get(1)).toBe(7);
   });
 });

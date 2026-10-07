@@ -5,7 +5,7 @@ import { ApplicationException } from "#api/shared/domain/index";
 import type { TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 
 export async function assertTodoCommentAccess(
-  reader: TodoCommentReaderPort,
+  reader: Pick<TodoCommentReaderPort, "canAccessTodo">,
   todoId: number,
   viewerId: string,
 ): Promise<void> {

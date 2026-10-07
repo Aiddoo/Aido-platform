@@ -363,7 +363,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    return row ? toRecord(row) : null;
+    return row === null ? null : toRecord(row);
   }
 
   async findCommentRecords(
@@ -390,7 +390,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 
     return commentIds.flatMap((commentId) => {
       const row = rowsById.get(commentId);
-      return row ? [toRecord(row)] : [];
+      return row === undefined ? [] : [toRecord(row)];
     });
   }
 
@@ -1277,7 +1277,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     let afterCount = Math.min(size - beforeCount - 1, after.length);
     beforeCount = Math.min(before.length, beforeCount + (size - beforeCount - afterCount - 1));
     afterCount = Math.min(after.length, size - beforeCount - 1);
-    const selectedBefore = before.slice(-beforeCount);
+    const selectedBefore = beforeCount === 0 ? [] : before.slice(-beforeCount);
     const selectedAfter = after.slice(0, afterCount);
 
     return {

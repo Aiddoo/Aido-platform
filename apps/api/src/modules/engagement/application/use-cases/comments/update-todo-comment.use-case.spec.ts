@@ -1,86 +1,72 @@
 import { vi } from "vitest";
 
 import {
-  createMutationLockMock,
-  createTodoCommentReaderMock,
-  createTodoCommentRepositoryMock,
-  createUnitOfWorkMock,
-} from "#test/mocks/ports/index";
+  createEngagementCommentFixture,
+  ENGAGEMENT_TIME,
+  ENGAGEMENT_OWNER_ID,
+  ENGAGEMENT_VIEWER_ID,
+} from "#test/fixtures/engagement-comment.fixture";
 
-import { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
-import type { TodoCommentRecord } from "../../models/comments/todo-comment.types.js";
 import { UpdateTodoComment } from "./update-todo-comment.use-case.js";
 
-const TODO_ID = 1;
-const COMMENT_ID = "cm1todoacomment00000000001";
-const AUTHOR_ID = "cm1author0000000000000001";
-
-function createComment(): TodoComment {
-  const createdAt = new Date("2026-08-16T00:00:00.000Z");
-  return TodoComment.reconstitute({
-    id: COMMENT_ID,
-    todoId: TODO_ID,
-    authorId: AUTHOR_ID,
-    parentId: null,
-    rootId: null,
-    path: [],
-    content: "수정 전",
-    deletedAt: null,
-    editedAt: null,
-    createdAt,
-    updatedAt: createdAt,
+describe("UpdateTodoComment — 댓글 사용자 상태", () => {
+  let fixture: ReturnType<typeof createEngagementCommentFixture>;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(ENGAGEMENT_TIME);
+    fixture = createEngagementCommentFixture();
   });
-}
+  afterEach(() => vi.useRealTimers());
 
-function createRecord(): TodoCommentRecord {
-  return {
-    id: COMMENT_ID,
-    todoId: TODO_ID,
-    parentId: null,
-    rootId: null,
-    path: [],
-    depth: 0,
-    parentAuthorName: null,
-    authorId: AUTHOR_ID,
-    authorName: "작성자",
-    authorProfileImage: null,
-    todoOwnerId: AUTHOR_ID,
-    content: "수정 후",
-    likeCount: 0,
-    replyCount: 0,
-    deletedAt: null,
-    editedAt: "2026-08-16T00:01:00.000Z",
-    createdAt: "2026-08-16T00:00:00.000Z",
-  };
-}
-
-describe("UpdateTodoComment", () => {
-  it("댓글 잠금 안에서 수정하고 reader projection을 반환한다", async () => {
-    const repository = createTodoCommentRepositoryMock();
-    const reader = createTodoCommentReaderMock();
-    const mutationLock = createMutationLockMock();
-    vi.mocked(reader.canAccessTodo).mockResolvedValue(true);
-    vi.mocked(repository.findComment).mockResolvedValue(createComment());
-    vi.mocked(repository.updateComment).mockResolvedValue(true);
-    vi.mocked(reader.findCommentRecord).mockResolvedValue(createRecord());
-    vi.mocked(reader.findLikedCommentIds).mockResolvedValue(new Set());
-    const useCase = new UpdateTodoComment({
-      reader: reader,
-      repository: repository,
-      mutationLock: mutationLock,
-      unitOfWork: createUnitOfWorkMock(),
+  it("작성자는 댓글을 수정하고 viewer 좋아요·작성 시각을 보존한다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    fixture.repository.likes.set(`${comment.id}:${ENGAGEMENT_OWNER_ID}`, {
+      isLiked: true,
+      wasEverNotified: true,
     });
-
+    vi.setSystemTime(new Date(ENGAGEMENT_TIME.getTime() + 1000));
+    // When
+    const result = await new UpdateTodoComment(fixture).execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_OWNER_ID,
+      content: "  수정 내용  ",
+    });
+    // Then
+    expect(fixture.repository.comments.get(comment.id)).toMatchObject({
+      content: "수정 내용",
+      createdAt: ENGAGEMENT_TIME,
+      editedAt: new Date(ENGAGEMENT_TIME.getTime() + 1000),
+    });
+    expect(result.comment).toMatchObject({ content: "수정 내용", viewer: { isLiked: true } });
+  });
+  it("다른 작성자의 수정은 TODO_0832로 거부하고 원문을 유지한다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    // When / Then
     await expect(
-      useCase.execute({
-        todoId: TODO_ID,
-        commentId: COMMENT_ID,
-        userId: AUTHOR_ID,
-        content: "수정 후",
+      new UpdateTodoComment(fixture).execute({
+        todoId: 1,
+        commentId: comment.id,
+        userId: ENGAGEMENT_VIEWER_ID,
+        content: "수정",
       }),
-    ).resolves.toMatchObject({ comment: { id: COMMENT_ID, content: "수정 후" } });
-
-    expect(mutationLock.acquire).toHaveBeenCalledWith([`mutation:v1:todo-comment:${COMMENT_ID}`]);
-    expect(reader.findCommentRecord).toHaveBeenCalledWith(TODO_ID, COMMENT_ID);
+    ).rejects.toMatchObject({ errorCode: "TODO_0832" });
+    expect(fixture.repository.comments.get(comment.id)).toEqual(comment);
+  });
+  it("접근을 잃은 사용자는 댓글 부재보다 TODO_0801을 우선한다", async () => {
+    // Given
+    fixture.reader.accessiblePairs.delete(`1:${ENGAGEMENT_VIEWER_ID}`);
+    // When / Then
+    await expect(
+      new UpdateTodoComment(fixture).execute({
+        todoId: 1,
+        commentId: "missing",
+        userId: ENGAGEMENT_VIEWER_ID,
+        content: "수정",
+      }),
+    ).rejects.toMatchObject({ errorCode: "TODO_0801" });
+    expect(fixture.repository.comments.size).toBe(0);
   });
 });

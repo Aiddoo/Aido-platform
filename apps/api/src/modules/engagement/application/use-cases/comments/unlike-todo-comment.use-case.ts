@@ -13,14 +13,14 @@ import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-commen
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 
 export interface UnlikeTodoCommentInput {
-  todoId: number;
-  commentId: string;
-  userId: string;
+  readonly todoId: number;
+  readonly commentId: string;
+  readonly userId: string;
 }
 
 interface UnlikeTodoCommentDependencies {
-  readonly reader: TodoCommentReaderPort;
-  readonly repository: TodoCommentRepositoryPort;
+  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo">;
+  readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "removeLike">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
 }

@@ -29,18 +29,14 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  DeleteTodoComment,
-  LikeTodoComment,
-  UnlikeTodoComment,
-  UpdateTodoComment,
-  WriteTodoCommentChain,
-} from "../../../application/use-cases/comments/index.js";
-import {
-  GetTodoCommentOverview,
-  GetTodoConversation,
-  GetTodoDetails,
-} from "../../../application/use-cases/comments/queries.public.js";
+import { DeleteTodoComment } from "../../../application/use-cases/comments/delete-todo-comment.use-case.js";
+import { GetTodoCommentOverview } from "../../../application/use-cases/comments/get-todo-comment-overview.use-case.js";
+import { GetTodoConversation } from "../../../application/use-cases/comments/get-todo-conversation.use-case.js";
+import { GetTodoDetails } from "../../../application/use-cases/comments/get-todo-details.use-case.js";
+import { LikeTodoComment } from "../../../application/use-cases/comments/like-todo-comment.use-case.js";
+import { UnlikeTodoComment } from "../../../application/use-cases/comments/unlike-todo-comment.use-case.js";
+import { UpdateTodoComment } from "../../../application/use-cases/comments/update-todo-comment.use-case.js";
+import { WriteTodoCommentChain } from "../../../application/use-cases/comments/write-todo-comment-chain.use-case.js";
 import { TodoCommentMapper } from "../../mappers/comments/todo-comment.mapper.js";
 import {
   DeleteTodoCommentResponseDto,
@@ -63,14 +59,14 @@ import {
 @Controller("todos/:todoId")
 export class TodoCommentController {
   constructor(
-    private readonly getTodoDetailsUseCase: GetTodoDetails,
-    private readonly getTodoCommentOverviewUseCase: GetTodoCommentOverview,
-    private readonly getTodoConversationUseCase: GetTodoConversation,
-    private readonly writeTodoCommentChainUseCase: WriteTodoCommentChain,
-    private readonly updateTodoCommentUseCase: UpdateTodoComment,
-    private readonly deleteTodoCommentUseCase: DeleteTodoComment,
-    private readonly likeTodoCommentUseCase: LikeTodoComment,
-    private readonly unlikeTodoCommentUseCase: UnlikeTodoComment,
+    private readonly getTodoDetails: GetTodoDetails,
+    private readonly getTodoCommentOverview: GetTodoCommentOverview,
+    private readonly getTodoConversation: GetTodoConversation,
+    private readonly writeTodoCommentChain: WriteTodoCommentChain,
+    private readonly updateTodoComment: UpdateTodoComment,
+    private readonly deleteTodoComment: DeleteTodoComment,
+    private readonly likeTodoComment: LikeTodoComment,
+    private readonly unlikeTodoComment: UnlikeTodoComment,
   ) {}
 
   @Header("Vary", "Origin, X-App-Version")
@@ -90,7 +86,7 @@ export class TodoCommentController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<TodoDetailsResponseDto> {
-    const result = await this.getTodoDetailsUseCase.execute({
+    const result = await this.getTodoDetails.execute({
       todoId: params.todoId,
       viewerId: user.userId,
     });
@@ -116,7 +112,7 @@ export class TodoCommentController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<TodoCommentOverviewResponseDto> {
-    const result = await this.getTodoCommentOverviewUseCase.execute({
+    const result = await this.getTodoCommentOverview.execute({
       todoId: params.todoId,
       viewerId: user.userId,
       sort: query.sort,
@@ -146,7 +142,7 @@ export class TodoCommentController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<TodoConversationResponseDto> {
-    const result = await this.getTodoConversationUseCase.execute({
+    const result = await this.getTodoConversation.execute({
       todoId: params.todoId,
       viewerId: user.userId,
       sort: query.sort,
@@ -176,7 +172,7 @@ export class TodoCommentController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<TodoCommentChainResponseDto> {
-    const result = await this.writeTodoCommentChainUseCase.execute({
+    const result = await this.writeTodoCommentChain.execute({
       todoId: params.todoId,
       authorId: user.userId,
       parentId: body.parentId,
@@ -203,7 +199,7 @@ export class TodoCommentController {
 
     @Headers("x-app-version") appVersion?: string,
   ): Promise<TodoCommentMutationResponseDto> {
-    const result = await this.updateTodoCommentUseCase.execute({
+    const result = await this.updateTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,
@@ -221,7 +217,7 @@ export class TodoCommentController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
   ): Promise<DeleteTodoCommentResponseDto> {
-    return this.deleteTodoCommentUseCase.execute({
+    return this.deleteTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,
@@ -236,7 +232,7 @@ export class TodoCommentController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
   ): Promise<TodoCommentLikeResponseDto> {
-    return this.likeTodoCommentUseCase.execute({
+    return this.likeTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,
@@ -251,7 +247,7 @@ export class TodoCommentController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCommentIdParamDto }) params: TodoCommentIdParamDto,
   ): Promise<TodoCommentLikeResponseDto> {
-    return this.unlikeTodoCommentUseCase.execute({
+    return this.unlikeTodoComment.execute({
       todoId: params.todoId,
       commentId: params.commentId,
       userId: user.userId,

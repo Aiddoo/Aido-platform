@@ -1,4 +1,7 @@
-import { TodoCommentAccountCleanup } from "#api/modules/engagement/engagement-comments.public";
+import {
+  TODO_COMMENT_ACCOUNT_CLEANUP,
+  type TodoCommentAccountCleanupPort,
+} from "#api/modules/engagement/engagement-comments.public";
 import { NotificationAccountCleanup } from "#api/modules/notification/notification-delivery.public";
 
 import {
@@ -16,6 +19,6 @@ export const accountNotificationCleanupProvider = {
 
 export const accountTodoCommentCleanupProvider = {
   provide: ACCOUNT_TODO_COMMENT_CLEANUP,
-  inject: [TodoCommentAccountCleanup],
-  useFactory: (cleanup: TodoCommentAccountCleanup): AccountTodoCommentCleanupPort => cleanup,
+  inject: [TODO_COMMENT_ACCOUNT_CLEANUP],
+  useFactory: (cleanup: TodoCommentAccountCleanupPort): AccountTodoCommentCleanupPort => cleanup,
 };

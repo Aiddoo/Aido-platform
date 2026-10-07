@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { z } from "@aido/api";
-import { TransactionHost } from "@nestjs-cls/transactional";
-import { Test } from "@nestjs/testing";
+import { Test, type TestingModule } from "@nestjs/testing";
 import sql from "sql-template-tag";
 import { vi } from "vitest";
 
@@ -23,9 +22,8 @@ import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/
 import { sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/database-values";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
-import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { DELETED_COMMENT_AUTHOR, DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
-import { createDatabaseContext } from "#test/setup/database-context";
+import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
@@ -77,17 +75,16 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   let reader: PrismaTodoCommentReader;
   let repository: PrismaTodoCommentRepository;
   let cursorCodec: TodoCommentCursorCodecPort;
+  let cursorModule: TestingModule;
   let todoId: number;
 
   beforeAll(async () => {
     testDatabase = new TestDatabase();
     prisma = await testDatabase.start();
-    const txHost = {
-      tx: createDatabaseContext(prisma),
-    } as unknown as TransactionHost<Prisma8TransactionalAdapter>;
+    const { txHost } = createDatabaseTransactionFixture(prisma);
     reader = new PrismaTodoCommentReader(txHost);
     repository = new PrismaTodoCommentRepository(txHost);
-    const cursorModule = await Test.createTestingModule({
+    cursorModule = await Test.createTestingModule({
       providers: [
         HmacTodoCommentCursorCodec,
         {
@@ -236,6 +233,7 @@ describe("Todo comment conversation reader (실제 PostgreSQL)", () => {
   });
 
   afterAll(async () => {
+    await cursorModule?.close();
     await testDatabase.stop();
   });
 

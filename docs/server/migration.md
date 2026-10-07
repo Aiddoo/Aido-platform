@@ -21,9 +21,9 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 06 Access: Entitlement 정책·AI Quota 예약·보상·공개 capability 검증([Issue #908](https://github.com/Aiddoo/Aido-platform/issues/908))
 - [x] 07 Planning: 할 일·항목·카테고리·반복 일정 정합성 검증([PR #912](https://github.com/Aiddoo/Aido-platform/pull/912))
 - [x] 08 Social: 친구·응원·넛지 상태·경쟁·ORM·공개 capability 검증([PR #913](https://github.com/Aiddoo/Aido-platform/pull/913))
-- [x] 09 Notes: 메모와 전환·부분 성공·동시 변경 검증([Issue #914](https://github.com/Aiddoo/Aido-platform/issues/914))
-- [ ] 10 Engagement: 댓글·반응·대화·정리
-- [ ] 11 Insights: 완료 집계·주간 달성·연속 기록
+- [x] 09 Notes: 메모와 전환·부분 성공·동시 변경 검증([PR #916](https://github.com/Aiddoo/Aido-platform/pull/916))
+- [x] 10 Engagement: 댓글·반응·대화·정리([Issue #915](https://github.com/Aiddoo/Aido-platform/issues/915))
+- [ ] 11 Insights: 완료 집계·주간 달성·연속 기록([Issue #917](https://github.com/Aiddoo/Aido-platform/issues/917), 구현 예정)
 - [ ] 12 Weather: 위치·좌표·격자·공급자 Port·지역별 선택 정책·도메인 응답 정규화; 한국 API 유지, 해외 공급자는 동일 인터페이스로 추가
 - [ ] 13 AI Assistance: 기존 모델 유지·유료 추천·기록 기반 습관 제안·한/영 prompt·언어 확장·파싱/보고서/추천 품질 검증
 - [ ] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker
@@ -754,8 +754,78 @@ trigger·constraint는 사용하지 않았다. Domain3files18tests(222ms), Appli
 
 전체 실행 시간은 다른 프로세스와 DB/CPU를 공유한 테스트 시간이며 이전 단계와 비교해
 서비스 latency 개선/회귀를 추정하지 않는다. 상위10/18 구현·검증 완료, Engagement부터
-8단계가 남았다. 새 schema·migration·패키지·실행 script·Action job은 없다.
+8단계가 남았다. 한국어 커밋85c429f3과 Draft PR #916으로 보존했다. commit hook typecheck5/5 cached(67ms), workspace build4/4(9.514초,3cached) 통과. Root 검증DB4개 잔여0을 확인했다. 새 schema·migration·패키지·실행 script·Action job은 없다.
 배포·merge·전체 유저 영향0·운영 성능 개선률은 보장하지 않는다.
+
+## 10 Engagement 구현과 실제 After
+
+[Issue #915](https://github.com/Aiddoo/Aido-platform/issues/915)의 구현이다. 댓글 Aggregate의
+복원·상태 전이와 Content/ThreadPlacement VO를 유지하고 영속 Record·권한 Policy·응답 mapper의
+소유권을 분리했다. 8 endpoint는 순수 UseCase와 필요한 최소 Port를 직접 연결한다.
+EngagementCommentsModule은 계정 삭제에 필요한 공개 cleanup token만 내보낸다. concrete
+service 공개·미사용 barrel·Repository mock을 제거했다. REST route/status/Swagger와 기존
+cursor 서명·페이지 정렬·익명 프로필 표시는 유지한다.
+
+| 실제 Before                                                       | After                                                            |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 좋아요 알림 실패 뒤 같은 요청 재시도에도 알림 시도1회·marker null | pending 상태를 fresh 조회하여 재시도, 좋아요 count1 유지         |
+| 알림 대기 중 unlike/re-like 경쟁→알림 시도2회                     | 같은 댓글 잠금 아래 pending 재검사→알림1회                       |
+| legacy writer와 unique 충돌 뒤 관계가 삭제돼도 댓글 저장 성공     | fallback UoW에서 fresh 권한 확인→TODO_0801·비공개 댓글 추가 없음 |
+| grandchild focus size1→items3/index2/ancestors0                   | items1/index0/ancestors2                                         |
+| 첫 후속 작업의 동기 throw→다음 작업 미실행·응답 실패              | 모든 작업을 Promise 경계에서 실행·각 실패 격리·구조화 로그       |
+
+좋아요 자체를 먼저 커밋하고 후속 UoW에서 같은 댓글 잠금과 native ORM relation 조건으로
+active/unnotified 상태를 확인한다. Notification·PushDispatch·outbox·marker는 이 UoW에
+참여하고 외부 발행은 기존 after-commit registry를 사용한다. 실제 marker 시점에 FK23503을
+발생시킨 검증은 staging 각1행→rollback 각0행·발행0·unread 무효화0을 확인했다. 원 좋아요는
+active/count1/notified null로 보존되며 같은 요청 재시도 후 각1행·marker·발행1회였다.
+marker updateAndCount가1행이 아니면 실패하여 알림만 커밋되는 상황을 방지한다.
+외부 push exactly-once나 durable 요청 idempotency를 보장한다고 표현하지 않는다.
+
+legacy unique replay 검증은 잠금을 사용하지 않는 writer와 현재 writer의 혼합 조건이다.
+일반 현재 writer 두 요청의 경쟁과 구분한다. followup UoW에서 recipient/threadRoot를 fresh
+조회하고 삭제·unlike 상태는 건너뛴다. 별도 ledger·두 번째 활성 연결·중복 queue framework는
+추가하지 않았다. 후속 작업 로그는 정해진 event와 todoId/commentId/userId/errorType만 담는다.
+
+### SQL과 검증
+
+실제 driver hook에서 fixture·검증·TX 제어를 제외한 Repository/Reader 호출을 측정했다.
+
+| 경로                   | Before SQL        | After SQL            |
+| ---------------------- | ----------------- | -------------------- |
+| Repository setLike     | 5                 | 4                    |
+| Repository removeLike  | 6                 | 5                    |
+| Overview size1 / size3 | 4 / 4             | 4 / 4                |
+| Conversation 9개       | 3                 | 3                    |
+| grandchild focus size1 | 3 (잘못된 items3) | 4 (items1·ancestor2) |
+| owner TodoDetails      | 1                 | 1                    |
+
+atomic counter의 기존 native SQL builder에 RETURNING을 추가하여 count 재조회를 제거했다.
+새 pending relation 조회는1SQL이다. 전체 Like endpoint는 후속 UoW·잠금·staging 비용을 포함하므로
+Repository의1SQL 절감을 endpoint 전체 감소로 쓰지 않는다. focus는 올바른 ancestor hydrate를
+위한1SQL 증가다. 기존 일괄 작성자/좋아요 조회는 이미 N+1이 없었으며 제거했다고 쓰지 않는다.
+recursive tree·window/keyset·원자 산술에 필요한 parameterized SQL builder는 유지한다.
+
+실제 Before mutation3개는 모두 기대 실패했고 After3개는3.70초(seed101003)에 통과했다.
+reader Before5개 중 focus1개가 실패했다(12.89초, seed101002·서울). helper 동기 throw는
+별도의 순수 함수 Before이며 운영 cache가 실제로 동기 throw했다고 확대하지 않는다.
+
+대상 검증은 Domain4files/24tests(178ms), Application9files/39tests(413ms), 실제 PG 신규9+
+기존 conversation22+계정 purge4(21.79초, seed101015·LA), 기존 HTTP15개 무수정+신규2개
+(20.06초, seed51003)에 통과했다. 테스트는 기존 Builder·독립 응답 fixture·상태 Port Stub을
+사용하며 Stub이 DB rollback/tree/SQL/queue를 재구현하지 않는다. 초기 PG harness의 count
+scalar 사용·token provider 누락과 HTTP enum 필드명 오류는 assertion을 유지하며 교정했다.
+최종 전체 검증은 shuffle seed101020으로 통과했다.
+
+- Unit: 489 files / 2,940 tests, 20.92초.
+- Integration: 54 files / 460 tests, 205.07초.
+- E2E: 40 files / 512 tests, 279.86초.
+- Workspace lint·format·typecheck 통과. 고정 구 앱·OpenAPI 계약 fixture 변경 없음.
+- Root 소유 전체 검사 DB2개 잔여0 확인.
+
+실행 시간은 공유 CPU/DB의 테스트 기록이며 운영 latency 개선률이 아니다. 새 schema·migration·
+패키지·실행 script·Action job은 없다. 상위11/18 구현·검증 완료, Insights부터7단계가 남았다.
+커밋·Draft PR은 검증 결과와 함께 보존한다. merge·운영 배포는 하지 않았다.
 
 ## AI 후속 요구와 검증 범위
 

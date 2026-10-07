@@ -4,18 +4,18 @@ import { ErrorCode } from "@aido/api/errors";
 import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/index";
 
-import { getTodoDetailsPermissions } from "../../../domain/services/comments/todo-comment-permission.js";
+import { getTodoDetailsPermissions } from "../../../domain/policies/comments/todo-comment-permission.policy.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import { type TodoCommentRepositoryPort } from "../../ports/comments/todo-comment.repository.port.js";
 
 export interface GetTodoDetailsInput {
-  todoId: number;
-  viewerId: string;
+  readonly todoId: number;
+  readonly viewerId: string;
 }
 
 interface GetTodoDetailsDependencies {
-  readonly todoCommentReader: TodoCommentReaderPort;
-  readonly todoCommentRepository: TodoCommentRepositoryPort;
+  readonly todoCommentReader: Pick<TodoCommentReaderPort, "findAccessibleTodoDetails">;
+  readonly todoCommentRepository: Pick<TodoCommentRepositoryPort, "recordView">;
   readonly unitOfWork: UnitOfWorkPort;
 }
 
