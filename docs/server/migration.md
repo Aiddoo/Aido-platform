@@ -28,7 +28,7 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 12 Weather: 공급자 경계·KST 시각·날짜별 캐시 정합성 검증([Issue #921](https://github.com/Aiddoo/Aido-platform/issues/921)); 현재 한국 REST 유지, 해외 활성화는 별도 확장
 - [x] 13 AI Assistance: 권한·수락 원자성·현지 DATE·한/영 prompt·기록 기반 추천 검증([Issue #923](https://github.com/Aiddoo/Aido-platform/issues/923)); 자연어 평가 한계는 아래 기록
 - [x] 14 Notification: 알림함·Push·Email·Reminder·Retention·Worker·한/영 문구([Issue #925](https://github.com/Aiddoo/Aido-platform/issues/925))
-- [ ] 15 Support·Operations·App Config
+- [x] 15 Support·Operations·App Config: 발송 입력·표현 책임·로그·HTTP 계약 검증([Issue #929](https://github.com/Aiddoo/Aido-platform/issues/929))
 - [ ] 16 ORM·N+1·성능·컨테이너 검증
 - [ ] 17 미사용 의존성·내부 레거시·빈 폴더 정리와 최종 검증
 
@@ -1149,3 +1149,32 @@ Expo ticket/receipt는 사용자의 수신·열람 보장이 아니다. schema-c
 - Root Notification14 로그의 소유 테스트 DB12개와 C HTTP 실행의 소유 DB3개를 실제 조회했고 남은 DB는0개다.
 
 기존 앱 계약 회귀와 additive migration 호환성을 검증했으며 운영 배포·실제 사용자 무영향을 아직 확인하지 않았다. 상위15/18 구현·검증 완료이며 Operations/Support/AppConfig·성능/ORM/Container·최종 정리가 남는다. 새 패키지·검사 script·Action job은 추가하지 않았다. 테스트 실행 시간은 공유 환경의 검증 기록이며 운영 성능·Actions 청구 비용·재방문 효과의 개선율이 아니다.
+
+## 15 Operations·Support·App Config
+
+[Issue #929](https://github.com/Aiddoo/Aido-platform/issues/929)의 구현이다. 상태 없는 방송 Campaign 모델을 제목·본문을 검증하는 `BroadcastContent` VO와 Application 메시지 조립으로 나눴다. 실제 상태 전이가 없는 문의·설정 조회에는 새 Aggregate나 DB를 만들지 않았다. Discord 표시·분류명·KST 제출 문구는 Application이 소유하고, 성장 지표의 `Date | null`은 Presentation에서 기존 ISO 응답으로 바꾼다. 공유 REST schema·오류 코드·DB graph·큐 이름과 payload는 바꾸지 않았다.
+
+| Before                                                       | After                                                  | 확인 범위                                                                      |
+| ------------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| 대상 조회 중 호출자가 `action.url`을 바꾸면 발송 내용도 변경 | 실행 시작과 각 발송 메시지에서 값 복사                 | 동일 임시 harness 2개: 변경 전 회귀 1개 실패·대조군 1개 통과, 변경 후 2개 통과 |
+| 알림 제목·공급자 오류·stack을 Application/worker 로그에 기록 | Context별 고정 event·필요한 식별자·분류로 기록         | 실제 Nest HttpClient와 fixture 응답, Application·worker 검사                   |
+| 문의 실패 details에 공급자 원문 포함                         | 기존 `INQUIRY_1501`·사용자 식별자는 유지하고 원문 제외 | 기존 운영 HTTP는 details를 숨겼다. 운영 원문 유출 사례로 주장하지 않는다       |
+| Domain이 Discord 렌더링·문의 제출 표현을 소유                | Application 메시지·read model이 표현 책임을 소유       | 기존 renderer 사례·문의 원문·KST·메일 전달 값 보호                             |
+| Controller 전달 여부만 검사하는 3개 spec·5개 사례            | 실제 Module·interceptor·HTTP로 공개 동작 확인          | 대응 사례를 확인한 뒤 중복 spec 제거                                           |
+
+Operations/Support/AppConfig Module 클래스 이름을 파일명에 맞췄다. 실제 Billing 결제 알림 capability는 유지하고 쓰지 않는 `isConfigured`·provider 전달 파일·과잉 public export를 제거했다. Identity HTTP decorator는 Module을 재export하지 않는 공개 진입점으로 소비해 불필요한 runtime 결합을 줄였다. 이미 JobRuntime을 쓰던 큐 Adapter의 BullMQ 전용 이름도 구현 역할에 맞췄으며 기존 backend·retry·force·날짜 창·대상 조건은 유지한다.
+
+검증은 폐기 가능한 로컬 PostgreSQL과 fixture에서 실행했다.
+
+- Domain: 2 files / 6 tests, seed115011, 198ms. 발송 입력 임시 회귀: 동일 2개 사례 After seed115012, 205ms.
+- Infrastructure: 최종 6 files / 20 tests, seed151105, 692ms. 실제 설치 Nest HttpClient를 사용하는 wire 7개를 포함하며 SDK 전체 mocking·외부 발송은 없다. 이전 실행은 7 files / 21 tests였고 실제 PG 사례로 대체한 query predicate 복사 검사를 제거했다.
+- Application·renderer·Support·AppConfig 대상 Unit: 11 files / 38 tests, seed51503, 488ms. 이 실행 뒤 HTTP에서 보호한 전달 전용 spec 3개·5개 사례를 제거했다. 최종 전체 Unit 수는 17단계에서 다시 기록한다.
+- 실제 PG 운영 조회 3개 + 기존 운영 조립 5개: 2 files / 8 tests, seed151101, Asia/Seoul, 5.58초. 가입 날짜 시작 포함·끝 제외, 인증 계정 없는 내부 사용자 제외, 501명 커서의 누락·중복과 기존 대상 필터를 확인했다.
+- 기존 실제 PG 성장 지표: 1 file / 6 tests, seed151103, 5.86초.
+- AppConfig 실제 Module·HTTP 5개 + 운영 알림 조립 5개: 2 files / 10 tests, seed51504, 3.34초. raw 응답·no-store·enabled/disabled·같은 설정 Stub의 변경 반영을 확인했다.
+- 문의 실제 HTTP: 1 file / 8 tests, seed51505, 8.55초. 기존 인증·성공·분류와 원문 전달, 공급자 실패의 기존 오류 계약을 확인했다.
+- 운영 API·OpenAPI: 2 files / 8 tests, seed151104, 11.52초. 구 앱/OpenAPI fixture·공유 schema·migration graph의 diff는 0이다.
+
+최종 workspace lint·format(3,201 files / 858ms)·fresh server typecheck(3 tasks / 2 cached / 2.973초)·diff 검사가 통과했다.
+
+위 결과는 처리 지연·Actions 청구 비용·운영 무영향의 측정이 아니다. 이번 단계에는 새 패키지·실행 script·Actions job·DDL이 없다. 다음 단계는 실제 검증 기록을 재사용하는 CI 정책, 종료 중 작업의 DB 사용 순서·컨테이너 유예, 일관성·미사용 코드 정리와 최종 누적 검증이다. 운영 배포와 SSH 확인은 아직 하지 않았다.

@@ -1,8 +1,8 @@
 import type {
-  AdminNotification,
   AdminNotifier,
   AdminNotifyResult,
-} from "#api/modules/operations/operations-notifications.public";
+} from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
+import type { AdminNotification } from "#api/modules/operations/application/read-models/notifications/admin-notification.read-model";
 
 /**
  * 테스트용 FakeAdminNotifier
@@ -12,10 +12,6 @@ import type {
 export class FakeAdminNotifier implements AdminNotifier {
   readonly name = "fake";
   private _sentNotifications: AdminNotification[] = [];
-
-  isConfigured(): boolean {
-    return false;
-  }
 
   async send(notification: AdminNotification): Promise<AdminNotifyResult> {
     this._sentNotifications.push(notification);

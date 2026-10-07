@@ -2,22 +2,23 @@ import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type AdminNotificationQueuePort } from "../../ports/notifications/admin-notification-queue.port.js";
-import { type SignupStatsReaderPort } from "../../ports/notifications/signup-stats.reader.port.js";
 import { DispatchDailySignupSummary } from "./dispatch-daily-signup-summary.use-case.js";
 
 describe("DispatchDailySignupSummary", () => {
   let useCase: DispatchDailySignupSummary;
-  let reader: Mocked<SignupStatsReaderPort>;
-  let queue: Mocked<AdminNotificationQueuePort>;
+  let reader: Mocked<ConstructorParameters<typeof DispatchDailySignupSummary>[0]["reader"]>;
+  let queue: Mocked<ConstructorParameters<typeof DispatchDailySignupSummary>[0]["queue"]>;
+
+  let logger: Mocked<ConstructorParameters<typeof DispatchDailySignupSummary>[0]["logger"]>;
 
   beforeEach(async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
 
     const dispatchDailySignupSummaryDependencies = mockDeep<
       ConstructorParameters<typeof DispatchDailySignupSummary>[0]
     >({});
     const unit = new DispatchDailySignupSummary(dispatchDailySignupSummaryDependencies);
+    logger = dispatchDailySignupSummaryDependencies.logger;
     useCase = unit;
     reader = dispatchDailySignupSummaryDependencies.reader;
     queue = dispatchDailySignupSummaryDependencies.queue;
@@ -91,11 +92,18 @@ describe("DispatchDailySignupSummary", () => {
 
   it("집계 DB 에러가 발생해도 예외가 전파되지 않는다", async () => {
     // Given
-    reader.getSignupStats.mockRejectedValue(new Error("DB connection error"));
+    reader.getSignupStats.mockRejectedValue(new Error("synthetic-private-db-connection"));
 
     // When & Then
     await expect(useCase.execute()).resolves.not.toThrow();
     expect(queue.enqueueSend).not.toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalledWith({
+      event: expect.any(String),
+      errorType: "summary-dispatch",
+    });
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain(
+      "synthetic-private-db-connection",
+    );
   });
 
   it("큐 등록 실패해도 예외가 전파되지 않는다", async () => {

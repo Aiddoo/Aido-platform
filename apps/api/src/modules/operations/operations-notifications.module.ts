@@ -11,7 +11,7 @@ import {
   PAYMENT_NOTIFIER,
 } from "./application/ports/notifications/admin-notifier.port.js";
 import { SIGNUP_STATS_READER } from "./application/ports/notifications/signup-stats.reader.port.js";
-import { BullmqAdminNotificationQueueAdapter } from "./infrastructure/adapters/notifications/bullmq-admin-notification-queue.adapter.js";
+import { AdminNotificationQueueAdapter } from "./infrastructure/adapters/notifications/admin-notification-queue.adapter.js";
 import { DiscordWebhookProvider } from "./infrastructure/adapters/notifications/discord-webhook.provider.js";
 import { PrismaSignupStatsReader } from "./infrastructure/adapters/notifications/prisma-signup-stats.reader.js";
 import { AdminNotificationProcessor } from "./infrastructure/jobs/notifications/admin-notification-queue.processor.js";
@@ -23,10 +23,6 @@ import {
   enqueueUserRegisteredProvider,
   sendAdminNotificationProvider,
 } from "./operations-notifications-application.providers.js";
-
-function isTestRuntime(config: TypedConfigService): boolean {
-  return config.isTest || typeof process.env.JEST_WORKER_ID !== "undefined";
-}
 
 @Module({
   imports: [
@@ -43,7 +39,7 @@ function isTestRuntime(config: TypedConfigService): boolean {
     DailySignupSummaryScheduler,
     {
       provide: ADMIN_NOTIFICATION_QUEUE_PORT,
-      useClass: BullmqAdminNotificationQueueAdapter,
+      useClass: AdminNotificationQueueAdapter,
     },
     {
       provide: SIGNUP_STATS_READER,
@@ -53,7 +49,7 @@ function isTestRuntime(config: TypedConfigService): boolean {
       provide: ADMIN_NOTIFIER,
       useFactory: (config: TypedConfigService, http: HttpClient) =>
         new DiscordWebhookProvider(
-          isTestRuntime(config) ? undefined : config.discordSignupWebhookUrl,
+          config.isTest ? undefined : config.discordSignupWebhookUrl,
           http,
         ),
       inject: [TypedConfigService, getHttpClientToken("discord")],
@@ -62,12 +58,12 @@ function isTestRuntime(config: TypedConfigService): boolean {
       provide: PAYMENT_NOTIFIER,
       useFactory: (config: TypedConfigService, http: HttpClient) =>
         new DiscordWebhookProvider(
-          isTestRuntime(config) ? undefined : config.discordPaymentWebhookUrl,
+          config.isTest ? undefined : config.discordPaymentWebhookUrl,
           http,
         ),
       inject: [TypedConfigService, getHttpClientToken("discord")],
     },
   ],
-  exports: [AdminEventNotifier, ADMIN_NOTIFIER, PAYMENT_NOTIFIER],
+  exports: [AdminEventNotifier, PAYMENT_NOTIFIER],
 })
-export class AdminNotificationModule {}
+export class OperationsNotificationsModule {}

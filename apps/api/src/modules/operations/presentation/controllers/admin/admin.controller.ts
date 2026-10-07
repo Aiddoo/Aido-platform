@@ -3,6 +3,11 @@ import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
+  Admin,
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
+import {
   ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
@@ -11,11 +16,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  Admin,
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { BroadcastNotification } from "../../../application/use-cases/admin/broadcast-notification.use-case.js";
 import { SendTargetedNotification } from "../../../application/use-cases/admin/send-targeted-notification.use-case.js";
 import {
@@ -24,23 +24,20 @@ import {
   TargetedNotificationDto,
 } from "../../schemas/admin/index.js";
 
-/**
- * Admin API 컨트롤러
- *
- * 관리자 전용 알림 발송 API입니다. @Admin() 가드 필수.
- *
- * ### 알림 발송
- * - POST /admin/notifications/broadcast - 전체/조건별 알림 발송
- * - POST /admin/notifications/targeted - 특정 사용자 알림 발송
- */
 @ApiTags(SWAGGER_TAGS.ADMIN_NOTIFICATIONS)
 @ApiBearerAuth()
 @Controller("admin/notifications")
 export class AdminController {
+  readonly #broadcastNotification: Pick<BroadcastNotification, "execute">;
+  readonly #sendTargetedNotification: Pick<SendTargetedNotification, "execute">;
+
   constructor(
-    private readonly broadcastNotificationUseCase: BroadcastNotification,
-    private readonly sendTargetedNotificationUseCase: SendTargetedNotification,
-  ) {}
+    broadcastNotification: BroadcastNotification,
+    sendTargetedNotification: SendTargetedNotification,
+  ) {
+    this.#broadcastNotification = broadcastNotification;
+    this.#sendTargetedNotification = sendTargetedNotification;
+  }
 
   @Post("broadcast")
   @Admin()
@@ -65,7 +62,7 @@ export class AdminController {
     @CurrentUser() _user: CurrentUserPayload,
     @Body({ schema: BroadcastNotificationDto }) dto: BroadcastNotificationDto,
   ): Promise<BroadcastResultDto> {
-    return this.broadcastNotificationUseCase.execute({
+    return this.#broadcastNotification.execute({
       title: dto.title,
       body: dto.body,
       targetFilter: dto.targetFilter,
@@ -91,7 +88,7 @@ export class AdminController {
     @CurrentUser() _user: CurrentUserPayload,
     @Body({ schema: TargetedNotificationDto }) dto: TargetedNotificationDto,
   ): Promise<BroadcastResultDto> {
-    return this.sendTargetedNotificationUseCase.execute({
+    return this.#sendTargetedNotification.execute({
       title: dto.title,
       body: dto.body,
       userIds: dto.userIds,

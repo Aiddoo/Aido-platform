@@ -1,14 +1,8 @@
-export const FEATURE_DISCOVERY_CONFIG = Symbol("FEATURE_DISCOVERY_CONFIG");
+import type { FeatureDiscoveryConfig } from "../../read-models/discovery/feature-discovery.read-model.js";
 
-export type FeatureDiscoveryConfig =
-  | { enabled: false }
-  | {
-      enabled: true;
-      campaignId: string;
-      minAppVersion: string;
-      launchedAt: string;
-      autoOpen: boolean;
-    };
+export type { FeatureDiscoveryConfig } from "../../read-models/discovery/feature-discovery.read-model.js";
+
+export const FEATURE_DISCOVERY_CONFIG = Symbol("FEATURE_DISCOVERY_CONFIG");
 
 export interface FeatureDiscoveryConfigPort {
   getFeatureDiscovery(): FeatureDiscoveryConfig;

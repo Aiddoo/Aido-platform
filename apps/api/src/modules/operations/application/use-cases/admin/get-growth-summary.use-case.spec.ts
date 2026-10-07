@@ -6,7 +6,7 @@ import { GetGrowthSummary } from "./get-growth-summary.use-case.js";
 describe("GetGrowthSummary — 관리자 성장 지표", () => {
   it("범위가 없으면 마지막 30개 완료 UTC 날짜를 사용하고 측정 전 리텐션을 null로 반환한다", async () => {
     // Given - 2026-07-26 현재, 아직 활동 측정 행이 없는 저장소
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(new Date("2026-07-26T12:34:56.000Z"));
     const metrics: AdminGrowthMetricsPort = {
       getSummary: vi.fn().mockResolvedValue({
@@ -131,7 +131,7 @@ describe("GetGrowthSummary — 관리자 성장 지표", () => {
 
     // Then - 자격 cohort만 0-100 백분율로 반올림해 노출한다
     expect(result).toMatchObject({
-      measurementStartedAt: "2026-04-01T03:04:05.000Z",
+      measurementStartedAt,
       activation24h: { eligible: 6, achieved: 4, rate: 66.67 },
       d1: { eligible: 6, achieved: 2, rate: 33.33 },
       d7: { eligible: 3, achieved: 2, rate: 66.67 },

@@ -1,4 +1,4 @@
-import type { AdminBroadcastMessage } from "../../../domain/policies/admin/broadcast-message.js";
+import type { AdminBroadcastMessage } from "../../read-models/admin/broadcast-message.read-model.js";
 
 /** AdminBroadcastNotifierPort DI 토큰 */
 export const ADMIN_BROADCAST_NOTIFIER = Symbol("ADMIN_BROADCAST_NOTIFIER");

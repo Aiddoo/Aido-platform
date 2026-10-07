@@ -1,22 +1,31 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { AdminNotification } from "../../../domain/value-objects/notifications/admin-notification-message.vo.js";
-import { type AdminNotifier } from "../../ports/notifications/admin-notifier.port.js";
+import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
 import { SendAdminNotification } from "./send-admin-notification.use-case.js";
 
 describe("SendAdminNotification", () => {
   let useCase: SendAdminNotification;
-  let adminNotifier: Mocked<AdminNotifier>;
-  let paymentNotifier: Mocked<AdminNotifier>;
+  let adminNotifier: Mocked<
+    ConstructorParameters<typeof SendAdminNotification>[0]["adminNotifier"]
+  >;
+  let paymentNotifier: Mocked<
+    ConstructorParameters<typeof SendAdminNotification>[0]["paymentNotifier"]
+  >;
 
-  const notification: AdminNotification = { title: "테스트", body: "내용" };
+  let logger: Mocked<ConstructorParameters<typeof SendAdminNotification>[0]["logger"]>;
+
+  const notification: AdminNotification = {
+    title: "synthetic-private-admin-title",
+    body: "synthetic-private-admin-body",
+  };
 
   beforeEach(async () => {
     const sendAdminNotificationDependencies = mockDeep<
       ConstructorParameters<typeof SendAdminNotification>[0]
     >({});
     const unit = new SendAdminNotification(sendAdminNotificationDependencies);
+    logger = sendAdminNotificationDependencies.logger;
     useCase = unit;
     adminNotifier = sendAdminNotificationDependencies.adminNotifier;
     paymentNotifier = sendAdminNotificationDependencies.paymentNotifier;
@@ -29,6 +38,11 @@ describe("SendAdminNotification", () => {
 
     expect(adminNotifier.send).toHaveBeenCalledWith(notification);
     expect(paymentNotifier.send).not.toHaveBeenCalled();
+    expect(logger.debug).toHaveBeenCalledTimes(1);
+    expect(logger.log).toHaveBeenCalledTimes(1);
+    const logged = JSON.stringify([logger.debug.mock.calls, logger.log.mock.calls]);
+    expect(logged).not.toContain(notification.title);
+    expect(logged).not.toContain(notification.body);
   });
 
   it("payment 채널 → PAYMENT_NOTIFIER로 발송해야 한다", async () => {

@@ -1,4 +1,4 @@
-import { BROADCAST_TARGET_FILTER } from "@aido/api/vocabulary";
+import { BROADCAST_TARGET_FILTER, type BroadcastTargetFilter } from "@aido/api/vocabulary";
 import { Injectable } from "@nestjs/common";
 import type { ModelAccessor } from "@prisma/orm-postgres/orm-client";
 import { all, and } from "@prisma/orm-postgres/orm-client";
@@ -11,7 +11,6 @@ import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
 import type { Contract } from "../../../../../generated/prisma8/contract.d.js";
 import type { AdminUserDirectoryPort } from "../../../application/ports/admin/admin-user-directory.port.js";
-import type { BroadcastTargetFilter } from "../../../domain/policies/admin/broadcast-message.js";
 
 const BROADCAST_BATCH_SIZE = 500;
 

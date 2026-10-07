@@ -22,7 +22,11 @@ import { BroadcastNotification } from "#api/modules/operations/application/use-c
 import { SendTargetedNotification } from "#api/modules/operations/application/use-cases/admin/send-targeted-notification.use-case";
 import { NotificationAdminBroadcastNotifierAdapter } from "#api/modules/operations/infrastructure/adapters/admin/notification-admin-broadcast-notifier.adapter";
 import { PrismaAdminUserDirectoryAdapter } from "#api/modules/operations/infrastructure/adapters/admin/prisma-admin-user-directory.adapter";
-import { ADMIN_PROVIDERS } from "#api/modules/operations/operations-admin.providers";
+import {
+  broadcastNotificationProvider,
+  getGrowthSummaryProvider,
+  sendTargetedNotificationProvider,
+} from "#api/modules/operations/operations-admin-application.providers";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import { UserBuilder } from "#test/builders/index";
@@ -54,7 +58,9 @@ describe("Admin 수직 통합 테스트 (Mock DB/Notification)", () => {
 
     module = await Test.createTestingModule({
       providers: [
-        ...ADMIN_PROVIDERS,
+        broadcastNotificationProvider,
+        getGrowthSummaryProvider,
+        sendTargetedNotificationProvider,
         {
           provide: ADMIN_GROWTH_METRICS,
           useValue: { getSummary: vi.fn() },

@@ -3,12 +3,11 @@ import { mockDeep } from "vitest-mock-extended";
 
 import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 
-import { type AdminNotificationQueuePort } from "../../ports/notifications/admin-notification-queue.port.js";
 import { EnqueueSubscriptionEvent } from "./enqueue-subscription-event.use-case.js";
 
 describe("EnqueueSubscriptionEvent", () => {
   let useCase: EnqueueSubscriptionEvent;
-  let queue: Mocked<AdminNotificationQueuePort>;
+  let queue: Mocked<ConstructorParameters<typeof EnqueueSubscriptionEvent>[0]["queue"]>;
 
   beforeEach(async () => {
     const enqueueSubscriptionEventDependencies = mockDeep<

@@ -11,7 +11,7 @@ import { AccessModule } from "#api/modules/access/access.module";
 import { AiModule } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { AiReportModule } from "#api/modules/ai-assistance/ai-assistance-reports.public";
 import { AiSuggestionModule } from "#api/modules/ai-assistance/ai-assistance-suggestions.public";
-import { AppConfigModule as FeatureDiscoveryAppConfigModule } from "#api/modules/app-config/app-config-discovery.public";
+import { AppConfigDiscoveryModule } from "#api/modules/app-config/app-config-discovery.public";
 import { SubscriptionModule } from "#api/modules/billing/billing-subscriptions.public";
 import { EngagementCommentsModule } from "#api/modules/engagement/engagement-comments.public";
 import {
@@ -28,14 +28,14 @@ import { InsightsWeeklyAchievementsModule } from "#api/modules/insights/insights
 import { NotesMemosModule } from "#api/modules/notes/notes-memos.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { NotificationRemindersModule } from "#api/modules/notification/notification-reminders.public";
-import { AdminModule } from "#api/modules/operations/operations-admin.public";
-import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.public";
+import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
+import { OperationsNotificationsModule } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
-import { InquiryModule } from "#api/modules/support/support-inquiries.public";
+import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
 import type { EnvConfig } from "#api/platform/config/index";
@@ -110,9 +110,9 @@ import { AppService } from "./app.service.js";
     }),
 
     // 5. Features
-    AdminModule,
-    AdminNotificationModule,
-    FeatureDiscoveryAppConfigModule,
+    OperationsAdminModule,
+    OperationsNotificationsModule,
+    AppConfigDiscoveryModule,
     AiModule,
     AiReportModule,
     AiSuggestionModule,
@@ -121,7 +121,7 @@ import { AppService } from "./app.service.js";
     InsightsDailyCompletionsModule,
     SocialFriendsModule,
     HealthModule,
-    InquiryModule,
+    SupportInquiriesModule,
     NotesMemosModule,
     NotificationDeliveryModule,
     SocialNudgesModule,

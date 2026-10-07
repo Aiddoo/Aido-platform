@@ -9,6 +9,7 @@ import {
 
 import { DispatchDailySignupSummary } from "../../../application/use-cases/notifications/dispatch-daily-signup-summary.use-case.js";
 import { SendAdminNotification } from "../../../application/use-cases/notifications/send-admin-notification.use-case.js";
+import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 import {
   ADMIN_NOTIFICATION_LEGACY_QUEUE,
   ADMIN_NOTIFICATION_QUEUE,
@@ -20,12 +21,11 @@ import {
 } from "./admin-notification-queue.constants.js";
 
 /**
- * 관리자 알림 BullMQ Processor (진입 어댑터).
+ * 관리자 알림 JobRuntime Processor (진입 어댑터).
  *
  * - dispatch-signup-summary: 스케줄러 트리거 → DispatchDailySignupSummary
  * - send-notification: Discord 웹훅 발송 → SendAdminNotification
  *
- * concurrency=3: Discord rate limit (30 req/min/webhook) 대응
  */
 type AdminNotificationJob = NamedJob<AdminNotificationJobMap>;
 interface AdminNotificationJobLike {
@@ -46,18 +46,33 @@ export class AdminNotificationProcessor implements OnModuleInit {
   ) {}
 
   onStalled(jobId: string) {
-    this.#logger.warn(`Job stalled: jobId=${jobId}`);
+    this.#logger.warn({
+      event: AdminNotificationInfraEvent.JOB_STALLED,
+      queueName: ADMIN_NOTIFICATION_QUEUE,
+      jobId,
+    });
   }
 
-  onError(error: Error) {
-    this.#logger.error(`Worker error: ${error.message}`, error.stack);
+  onError(_error: Error) {
+    this.#logger.error({
+      event: AdminNotificationInfraEvent.WORKER_FAILED,
+      queueName: ADMIN_NOTIFICATION_QUEUE,
+      errorType: "worker",
+    });
   }
 
-  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, error: Error) {
-    this.#logger.error(
-      `Job failed: jobId=${job?.id}, name=${job?.name}, error=${error.message}`,
-      error.stack,
-    );
+  onFailed(job: { readonly id?: string; readonly name?: string } | undefined, _error: Error) {
+    this.#logger.error({
+      event: AdminNotificationInfraEvent.JOB_FAILED,
+      queueName: ADMIN_NOTIFICATION_QUEUE,
+      jobId: job?.id,
+      jobName:
+        job?.name === AdminNotificationJobName.SEND ||
+        job?.name === AdminNotificationJobName.DISPATCH_SUMMARY
+          ? job.name
+          : undefined,
+      errorType: "job",
+    });
   }
 
   async onModuleInit(): Promise<void> {
@@ -83,7 +98,10 @@ export class AdminNotificationProcessor implements OnModuleInit {
   async process(untrustedJob: AdminNotificationJobLike): Promise<void> {
     const parsedJob = AdminNotificationRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
-      this.#logger.warn(`Unknown job name: ${untrustedJob.name}`);
+      this.#logger.warn({
+        event: AdminNotificationInfraEvent.JOB_INVALID,
+        queueName: ADMIN_NOTIFICATION_QUEUE,
+      });
       return;
     }
     const job = parsedJob.data;

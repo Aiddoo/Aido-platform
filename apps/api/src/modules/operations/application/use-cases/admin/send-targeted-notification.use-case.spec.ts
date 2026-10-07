@@ -1,14 +1,14 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type AdminBroadcastNotifierPort } from "../../ports/admin/admin-broadcast-notifier.port.js";
-import { type AdminUserDirectoryPort } from "../../ports/admin/admin-user-directory.port.js";
 import { SendTargetedNotification } from "./send-targeted-notification.use-case.js";
 
 describe("SendTargetedNotification — 타겟 발송", () => {
   let useCase: SendTargetedNotification;
-  let userDirectory: Mocked<AdminUserDirectoryPort>;
-  let notifier: Mocked<AdminBroadcastNotifierPort>;
+  let userDirectory: Mocked<
+    ConstructorParameters<typeof SendTargetedNotification>[0]["userDirectory"]
+  >;
+  let notifier: Mocked<ConstructorParameters<typeof SendTargetedNotification>[0]["notifier"]>;
 
   beforeEach(async () => {
     const sendTargetedNotificationDependencies = mockDeep<

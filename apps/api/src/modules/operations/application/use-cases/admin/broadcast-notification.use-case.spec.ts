@@ -1,8 +1,6 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type AdminBroadcastNotifierPort } from "../../ports/admin/admin-broadcast-notifier.port.js";
-import { type AdminUserDirectoryPort } from "../../ports/admin/admin-user-directory.port.js";
 import { BroadcastNotification } from "./broadcast-notification.use-case.js";
 
 /** 주어진 배치들을 순서대로 흘려보내는 async 이터러블 스텁 */
@@ -14,8 +12,10 @@ async function* streamOf(batches: string[][]): AsyncIterable<string[]> {
 
 describe("BroadcastNotification — 브로드캐스트", () => {
   let useCase: BroadcastNotification;
-  let userDirectory: Mocked<AdminUserDirectoryPort>;
-  let notifier: Mocked<AdminBroadcastNotifierPort>;
+  let userDirectory: Mocked<
+    ConstructorParameters<typeof BroadcastNotification>[0]["userDirectory"]
+  >;
+  let notifier: Mocked<ConstructorParameters<typeof BroadcastNotification>[0]["notifier"]>;
 
   beforeEach(async () => {
     const broadcastNotificationDependencies = mockDeep<
@@ -115,5 +115,44 @@ describe("BroadcastNotification — 브로드캐스트", () => {
       }),
     ).rejects.toMatchObject({ errorCode: "ADMIN_1402" });
     expect(notifier.sendBatch).not.toHaveBeenCalled();
+  });
+  it("대상 스트림을 기다리는 동안 호출자가 action을 바꿔도 접수한 URL을 발송한다", async () => {
+    // Given - 실제 UseCase가 대상 조회를 기다리며 변경 가능한 호출자 입력을 보관한다
+    const entered = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    const action: { type: "BROWSER"; url: string } = {
+      type: "BROWSER",
+      url: "https://example.test/original",
+    };
+    userDirectory.streamTargetUserIds.mockReturnValue(
+      (async function* () {
+        entered.resolve();
+        await release.promise;
+        yield ["synthetic-user"];
+      })(),
+    );
+    notifier.sendBatch.mockResolvedValue({ count: 1 });
+    const running = useCase.execute({
+      title: "안내",
+      body: "변경 전 안내",
+      targetFilter: "ALL",
+      action,
+      force: false,
+    });
+    try {
+      // When - 대상 조회가 진행 중일 때 외부 입력이 변경된다
+      await entered.promise;
+      action.url = "https://example.test/changed";
+      release.resolve();
+      await expect(running).resolves.toEqual({ successCount: 1, failCount: 0, totalTargets: 1 });
+      // Then - action과 metadata 모두 접수 시점의 URL을 사용한다
+      expect(notifier.sendBatch.mock.calls[0]?.[0]?.[0]).toMatchObject({
+        action: { type: "BROWSER", url: "https://example.test/original" },
+        metadata: { externalUrl: "https://example.test/original" },
+      });
+    } finally {
+      release.resolve();
+      await running;
+    }
   });
 });

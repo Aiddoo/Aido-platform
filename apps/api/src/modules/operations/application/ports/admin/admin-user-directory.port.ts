@@ -1,4 +1,4 @@
-import type { BroadcastTargetFilter } from "../../../domain/policies/admin/broadcast-message.js";
+import type { BroadcastTargetFilter } from "@aido/api/vocabulary";
 
 /** AdminUserDirectoryPort DI 토큰 */
 export const ADMIN_USER_DIRECTORY = Symbol("ADMIN_USER_DIRECTORY");

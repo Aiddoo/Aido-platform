@@ -1,13 +1,12 @@
 import type { Mocked } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
-import type { UserRegisteredEventPayload } from "../../../domain/types/notifications/user-registered.payload.js";
-import { type AdminNotificationQueuePort } from "../../ports/notifications/admin-notification-queue.port.js";
+import type { UserRegisteredEventPayload } from "../../types/notifications/user-registered.payload.js";
 import { EnqueueUserRegistered } from "./enqueue-user-registered.use-case.js";
 
 describe("EnqueueUserRegistered", () => {
   let useCase: EnqueueUserRegistered;
-  let queue: Mocked<AdminNotificationQueuePort>;
+  let queue: Mocked<ConstructorParameters<typeof EnqueueUserRegistered>[0]["queue"]>;
 
   const payload: UserRegisteredEventPayload = {
     userId: "user-1",

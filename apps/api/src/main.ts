@@ -5,7 +5,7 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as Sentry from "@sentry/nestjs";
 import { Logger } from "nestjs-pino";
 
-import { AdminModule } from "#api/modules/operations/operations-admin.module";
+import { OperationsAdminModule } from "#api/modules/operations/operations-admin.public";
 import type { EnvConfig } from "#api/platform/config/index";
 import { configureApplication } from "#api/platform/http/configure-application";
 import { SWAGGER_TAG_DESCRIPTIONS, SWAGGER_TAGS } from "#api/platform/http/swagger/index";
@@ -170,7 +170,7 @@ async function bootstrap() {
       .build();
 
     const adminDocument = SwaggerModule.createDocument(app, adminConfig, {
-      include: [AdminModule],
+      include: [OperationsAdminModule],
       standardSchemaConverter: convertStandardSchema,
     });
     SwaggerModule.setup("api/admin/docs", app, adminDocument, {

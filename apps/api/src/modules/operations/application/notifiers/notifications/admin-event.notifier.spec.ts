@@ -4,15 +4,19 @@ import { mockDeep } from "vitest-mock-extended";
 import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 import { flushPromises } from "#test/mocks/index";
 
-import type { UserRegisteredEventPayload } from "../../../domain/types/notifications/user-registered.payload.js";
-import { EnqueueSubscriptionEvent } from "../../use-cases/notifications/enqueue-subscription-event.use-case.js";
-import { EnqueueUserRegistered } from "../../use-cases/notifications/enqueue-user-registered.use-case.js";
+import type { UserRegisteredEventPayload } from "../../types/notifications/user-registered.payload.js";
 import { AdminEventNotifier } from "./admin-event.notifier.js";
 
 describe("AdminEventNotifier", () => {
   let adminEventNotifier: AdminEventNotifier;
-  let enqueueUserRegistered: Mocked<EnqueueUserRegistered>;
-  let enqueueSubscriptionEvent: Mocked<EnqueueSubscriptionEvent>;
+  let enqueueUserRegistered: Mocked<
+    ConstructorParameters<typeof AdminEventNotifier>[0]["enqueueUserRegistered"]
+  >;
+  let enqueueSubscriptionEvent: Mocked<
+    ConstructorParameters<typeof AdminEventNotifier>[0]["enqueueSubscriptionEvent"]
+  >;
+
+  let logger: Mocked<ConstructorParameters<typeof AdminEventNotifier>[0]["logger"]>;
 
   const userPayload: UserRegisteredEventPayload = {
     userId: "user-1",
@@ -33,6 +37,7 @@ describe("AdminEventNotifier", () => {
       ConstructorParameters<typeof AdminEventNotifier>[0]
     >({});
     const unit = new AdminEventNotifier(adminEventNotifierDependencies);
+    logger = adminEventNotifierDependencies.logger;
     adminEventNotifier = unit;
     enqueueUserRegistered = adminEventNotifierDependencies.enqueueUserRegistered;
     enqueueSubscriptionEvent = adminEventNotifierDependencies.enqueueSubscriptionEvent;
@@ -47,9 +52,15 @@ describe("AdminEventNotifier", () => {
   });
 
   it("회원가입 enqueue 실패를 호출자에게 전파하지 않는다", async () => {
-    enqueueUserRegistered.execute.mockRejectedValue(new Error("Redis down"));
+    enqueueUserRegistered.execute.mockRejectedValue(new Error("synthetic-private-queue-error"));
     adminEventNotifier.notifyUserRegistered(userPayload);
     await expect(flushPromises()).resolves.not.toThrow();
+    expect(logger.error).toHaveBeenCalledWith({
+      event: expect.any(String),
+      userId: "user-1",
+      errorType: "queue-enqueue",
+    });
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("synthetic-private-queue-error");
   });
 
   it("구독 이벤트를 비동기로 enqueue한다", async () => {
@@ -59,8 +70,14 @@ describe("AdminEventNotifier", () => {
   });
 
   it("구독 enqueue 실패를 호출자에게 전파하지 않는다", async () => {
-    enqueueSubscriptionEvent.execute.mockRejectedValue(new Error("Redis down"));
+    enqueueSubscriptionEvent.execute.mockRejectedValue(new Error("synthetic-private-queue-error"));
     adminEventNotifier.notifySubscriptionEvent(subscriptionPayload);
     await expect(flushPromises()).resolves.not.toThrow();
+    expect(logger.error).toHaveBeenCalledWith({
+      event: expect.any(String),
+      userId: "user-1",
+      errorType: "queue-enqueue",
+    });
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain("synthetic-private-queue-error");
   });
 });

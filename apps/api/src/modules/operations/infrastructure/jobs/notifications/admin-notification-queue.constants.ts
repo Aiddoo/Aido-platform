@@ -6,7 +6,7 @@ import { z } from "zod";
 
 import { JOB_POLLING_SECONDS } from "#api/shared/application/ports/index";
 
-import type { AdminNotification } from "../../../domain/value-objects/notifications/admin-notification-message.vo.js";
+import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
 
 // =============================================================================
 // Queue Name

@@ -1,10 +1,12 @@
-import type { GrowthSummaryQuery, GrowthSummaryResponse } from "@aido/api";
-
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import { now } from "#api/shared/domain/date/utils/core";
-import { toDateString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
+import { toDateString } from "#api/shared/domain/date/utils/format";
 
 import { type AdminGrowthMetricsPort } from "../../ports/admin/admin-growth-metrics.port.js";
+import type {
+  AdminGrowthSummary,
+  GrowthSummaryInput,
+} from "../../read-models/admin/admin-growth.read-model.js";
 
 const DEFAULT_COHORT_DAYS = 30;
 
@@ -27,7 +29,7 @@ export class GetGrowthSummary {
     this.#dependencies = dependencies;
   }
 
-  async execute(input: GrowthSummaryQuery): Promise<GrowthSummaryResponse> {
+  async execute(input: GrowthSummaryInput): Promise<AdminGrowthSummary> {
     const asOf = now();
     const defaultTo = subtractDays(1, asOf);
     const cohortTo = input.cohortTo ?? toDateString(defaultTo);
@@ -43,7 +45,8 @@ export class GetGrowthSummary {
     return {
       cohortFrom,
       cohortTo,
-      measurementStartedAt: toISOStringOrNull(summary.measurementStartedAt),
+      measurementStartedAt:
+        summary.measurementStartedAt === null ? null : new Date(summary.measurementStartedAt),
       totalActiveUsers: summary.totalActiveUsers,
       signups: summary.signups,
       dau: summary.dau,

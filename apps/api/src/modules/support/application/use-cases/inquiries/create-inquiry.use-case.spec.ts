@@ -1,56 +1,93 @@
-import type { Mocked } from "vitest";
+import { ErrorCode, Errors } from "@aido/api/errors";
 import { mockDeep } from "vitest-mock-extended";
 
-import { type InquiryMailerPort } from "../../ports/inquiries/inquiry-mailer.port.js";
+import type {
+  InquiryDeliveryResult,
+  InquiryMailerPort,
+} from "../../ports/inquiries/inquiry-mailer.port.js";
+import type { InquirySubmission } from "../../read-models/inquiries/inquiry-submission.read-model.js";
 import { type CreateInquiryInput, CreateInquiry } from "./create-inquiry.use-case.js";
+
+class StubInquiryMailer implements InquiryMailerPort {
+  readonly attempts: InquirySubmission[] = [];
+  result: InquiryDeliveryResult = { success: true };
+
+  async deliver(submission: InquirySubmission): Promise<InquiryDeliveryResult> {
+    this.attempts.push({ ...submission });
+    return this.result;
+  }
+}
 
 function makeInput(overrides: Partial<CreateInquiryInput> = {}): CreateInquiryInput {
   return {
-    userId: overrides.userId ?? "user-123",
-    userEmail: overrides.userEmail ?? "user@example.com",
-    category: overrides.category ?? "BUG_REPORT",
-    content: overrides.content ?? "앱이 갑자기 종료됩니다.",
+    userId: "user-123",
+    userEmail: "user@example.test",
+    category: "BUG_REPORT",
+    content: "  합성 문의 <b>원문</b>입니다.\n공백도 보존해 주세요.  ",
+    ...overrides,
   };
 }
 
+function setup() {
+  const mailer = new StubInquiryMailer();
+  const logger = mockDeep<ConstructorParameters<typeof CreateInquiry>[0]["logger"]>();
+  return { useCase: new CreateInquiry({ mailer, logger }), mailer, logger };
+}
+
 describe("CreateInquiry — 문의 접수", () => {
-  let useCase: CreateInquiry;
-  let mailer: Mocked<InquiryMailerPort>;
-
-  beforeEach(async () => {
-    const createInquiryDependencies = mockDeep<ConstructorParameters<typeof CreateInquiry>[0]>({});
-    const unit = new CreateInquiry(createInquiryDependencies);
-
-    useCase = unit;
-    mailer = createInquiryDependencies.mailer;
+  it("라벨·KST 제출 시각을 조립하고 사용자 원문을 그대로 전달한다", async () => {
+    // Given
+    const { useCase, mailer, logger } = setup();
+    const cases: readonly [CreateInquiryInput["category"], string][] = [
+      ["BUG_REPORT", "버그 신고"],
+      ["FEATURE_REQUEST", "기능 요청"],
+      ["OTHER", "기타"],
+    ];
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-07T15:00:00Z"));
+    try {
+      for (const [category, categoryLabel] of cases) {
+        const input = makeInput({ category });
+        // When
+        await useCase.execute(input);
+        // Then
+        expect(mailer.attempts.at(-1)).toEqual({
+          userEmail: input.userEmail,
+          category,
+          categoryLabel,
+          content: input.content,
+          submittedAt: "2026-10-08 00:00 (KST)",
+        });
+      }
+      expect(mailer.attempts).toHaveLength(3);
+      expect(logger.log).toHaveBeenCalledTimes(3);
+      expect(logger.log).toHaveBeenCalledWith({
+        event: "support.inquiry.submitted",
+        userId: "user-123",
+        category: "OTHER",
+      });
+      expect(JSON.stringify(logger.log.mock.calls)).not.toContain(makeInput().userEmail);
+      expect(JSON.stringify(logger.log.mock.calls)).not.toContain(makeInput().content);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
-  it("전달이 성공하면 벤더 중립 제출 값으로 메일러를 호출한다", async () => {
-    // Given - 메일러가 성공을 반환하도록 스텁되었을 때
-    mailer.deliver.mockResolvedValue({ success: true });
-
-    // When - 문의 접수를 실행하면
-    await useCase.execute(makeInput({ category: "BUG_REPORT" }));
-
-    // Then - 라벨/타임스탬프가 조립된 제출 값으로 메일러가 호출된다
-    expect(mailer.deliver).toHaveBeenCalledTimes(1);
-    const submission = mailer.deliver.mock.calls[0]?.[0];
-    expect(submission).toMatchObject({
-      userEmail: "user@example.com",
-      category: "BUG_REPORT",
-      categoryLabel: "버그 신고",
-      content: "앱이 갑자기 종료됩니다.",
+  it("INQUIRY_1501을 유지하고 공급자 원문을 실패 details에 복사하지 않는다", async () => {
+    // Given
+    const { useCase, mailer, logger } = setup();
+    const privateError = "synthetic-inquiry-content-sensitive";
+    mailer.result = { success: false, error: privateError };
+    // When
+    const error = await useCase.execute(makeInput()).catch((failure: unknown) => failure);
+    // Then - production HTTP details는 원래 숨겨졌으며 Application 예외 경계를 검증한다.
+    expect(error).toMatchObject({
+      errorCode: ErrorCode.INQUIRY_1501,
+      message: Errors[ErrorCode.INQUIRY_1501].message,
+      details: { userId: "user-123" },
     });
-    expect(submission?.submittedAt).toMatch(/\(KST\)$/);
-  });
-
-  it("전달이 실패하면 INQUIRY_1501을 던진다", async () => {
-    // Given - 메일러가 실패를 반환하도록 스텁되었을 때
-    mailer.deliver.mockResolvedValue({ success: false, error: "smtp down" });
-
-    // When/Then - 문의 접수가 비즈니스 예외로 실패해야 한다
-    await expect(useCase.execute(makeInput())).rejects.toMatchObject({
-      errorCode: "INQUIRY_1501",
-    });
+    expect(JSON.stringify(error)).not.toContain(privateError);
+    expect(mailer.attempts).toHaveLength(1);
+    expect(logger.log).not.toHaveBeenCalled();
   });
 });

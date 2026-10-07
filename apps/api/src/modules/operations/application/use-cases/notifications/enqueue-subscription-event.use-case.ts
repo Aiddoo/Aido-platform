@@ -1,6 +1,6 @@
 import type { SubscriptionEventPayload } from "#api/modules/billing/billing-subscriptions.public";
 
-import { buildSubscriptionEventMessage } from "../../../domain/services/notifications/admin-message.factory.js";
+import { buildSubscriptionEventMessage } from "../../messages/notifications/admin-message.factory.js";
 import { type AdminNotificationQueuePort } from "../../ports/notifications/admin-notification-queue.port.js";
 
 /**
@@ -9,7 +9,7 @@ import { type AdminNotificationQueuePort } from "../../ports/notifications/admin
  * RevenueCat 구독 이벤트를 결제 채널 Discord 알림 SEND 잡으로 큐에 등록한다.
  */
 interface EnqueueSubscriptionEventDependencies {
-  readonly queue: AdminNotificationQueuePort;
+  readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;
 }
 
 export class EnqueueSubscriptionEvent {
@@ -21,6 +21,6 @@ export class EnqueueSubscriptionEvent {
 
   async execute(payload: SubscriptionEventPayload): Promise<void> {
     const message = buildSubscriptionEventMessage(payload);
-    await this.#dependencies.queue.enqueueSend("payment", message.toPayload());
+    await this.#dependencies.queue.enqueueSend("payment", message);
   }
 }

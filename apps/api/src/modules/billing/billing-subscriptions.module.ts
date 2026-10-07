@@ -6,7 +6,7 @@ import {
   USER_MUTATION_LOCK,
 } from "#api/modules/identity/identity-user-access.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
-import { AdminNotificationModule } from "#api/modules/operations/operations-notifications.module";
+import { OperationsNotificationsModule } from "#api/modules/operations/operations-notifications.public";
 
 import { SUBSCRIPTION_CACHE } from "./application/ports/subscriptions/subscription-cache.port.js";
 import { SUBSCRIPTION_EVENT_NOTIFIER } from "./application/ports/subscriptions/subscription-event-notifier.port.js";
@@ -27,7 +27,7 @@ import { SubscriptionController } from "./presentation/controllers/subscriptions
   imports: [
     IdentityUserAccessModule,
     AccessModule,
-    AdminNotificationModule,
+    OperationsNotificationsModule,
     NotificationDeliveryModule,
   ],
   controllers: [SubscriptionController],

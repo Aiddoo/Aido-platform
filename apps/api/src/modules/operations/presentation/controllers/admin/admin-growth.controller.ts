@@ -6,7 +6,7 @@ import {
   Admin,
   CurrentUser,
   type CurrentUserPayload,
-} from "#api/modules/identity/presentation/decorators/auth/index";
+} from "#api/modules/identity/identity-auth-http.public";
 import {
   ApiBadRequestError,
   ApiDoc,
@@ -16,13 +16,18 @@ import {
 } from "#api/platform/http/swagger/index";
 
 import { GetGrowthSummary } from "../../../application/use-cases/admin/get-growth-summary.use-case.js";
+import { toAdminGrowthResponse } from "../../mappers/admin/admin-growth.mapper.js";
 import { GrowthSummaryQueryDto, GrowthSummaryResponseDto } from "../../schemas/admin/index.js";
 
 @ApiTags(SWAGGER_TAGS.ADMIN_GROWTH)
 @ApiBearerAuth()
 @Controller("admin/growth")
 export class AdminGrowthController {
-  constructor(private readonly getGrowthSummaryQuery: GetGrowthSummary) {}
+  readonly #getGrowthSummary: Pick<GetGrowthSummary, "execute">;
+
+  constructor(getGrowthSummary: GetGrowthSummary) {
+    this.#getGrowthSummary = getGrowthSummary;
+  }
 
   @Get("summary")
   @Admin()
@@ -39,6 +44,6 @@ export class AdminGrowthController {
     @CurrentUser() _user: CurrentUserPayload,
     @Query({ schema: GrowthSummaryQueryDto }) query: GrowthSummaryQueryDto,
   ): Promise<GrowthSummaryResponseDto> {
-    return this.getGrowthSummaryQuery.execute(query);
+    return toAdminGrowthResponse(await this.#getGrowthSummary.execute(query));
   }
 }

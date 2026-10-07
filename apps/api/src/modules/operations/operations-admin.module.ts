@@ -8,16 +8,14 @@ import { ADMIN_USER_DIRECTORY } from "./application/ports/admin/admin-user-direc
 import { NotificationAdminBroadcastNotifierAdapter } from "./infrastructure/adapters/admin/notification-admin-broadcast-notifier.adapter.js";
 import { PrismaAdminGrowthMetricsAdapter } from "./infrastructure/adapters/admin/prisma-admin-growth-metrics.adapter.js";
 import { PrismaAdminUserDirectoryAdapter } from "./infrastructure/adapters/admin/prisma-admin-user-directory.adapter.js";
-import { ADMIN_PROVIDERS } from "./operations-admin.providers.js";
+import {
+  broadcastNotificationProvider,
+  getGrowthSummaryProvider,
+  sendTargetedNotificationProvider,
+} from "./operations-admin-application.providers.js";
 import { AdminGrowthController } from "./presentation/controllers/admin/admin-growth.controller.js";
 import { AdminController } from "./presentation/controllers/admin/admin.controller.js";
 
-/**
- * 관리자 모듈 (클린아키텍처)
- *
- * 관리자 전용 알림 발송(브로드캐스트/타겟). 대상 조회와 발송을 각각 포트로
- * 추상화하며, 현재 어댑터는 Prisma·NotificationService다.
- */
 @Module({
   imports: [NotificationDeliveryModule],
   controllers: [AdminController, AdminGrowthController],
@@ -34,7 +32,9 @@ import { AdminController } from "./presentation/controllers/admin/admin.controll
       provide: ADMIN_GROWTH_METRICS,
       useClass: PrismaAdminGrowthMetricsAdapter,
     },
-    ...ADMIN_PROVIDERS,
+    broadcastNotificationProvider,
+    getGrowthSummaryProvider,
+    sendTargetedNotificationProvider,
   ],
 })
-export class AdminModule {}
+export class OperationsAdminModule {}

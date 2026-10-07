@@ -23,4 +23,4 @@ import { AppConfigController } from "./presentation/controllers/discovery/app-co
     },
   ],
 })
-export class AppConfigModule {}
+export class AppConfigDiscoveryModule {}

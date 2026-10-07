@@ -22,12 +22,10 @@ import type { Job } from "bullmq";
 import { vi } from "vitest";
 
 import { ADMIN_NOTIFICATION_QUEUE_PORT } from "#api/modules/operations/application/ports/notifications/admin-notification-queue.port";
+import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { SIGNUP_STATS_READER } from "#api/modules/operations/application/ports/notifications/signup-stats.reader.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
-import {
-  ADMIN_NOTIFIER,
-  PAYMENT_NOTIFIER,
-} from "#api/modules/operations/operations-notifications.public";
+import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import {
@@ -47,13 +45,11 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
   const mockAdminNotifier = {
     name: "admin-discord",
     send: vi.fn().mockResolvedValue({ success: true }),
-    isConfigured: vi.fn().mockReturnValue(true),
   };
 
   const mockPaymentNotifier = {
     name: "payment-discord",
     send: vi.fn().mockResolvedValue({ success: true }),
-    isConfigured: vi.fn().mockReturnValue(true),
   };
 
   // Mock ports (dispatch summary)
@@ -106,9 +102,7 @@ describe("AdminNotificationProcessor 통합 테스트 (Mock DB)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockAdminNotifier.send.mockResolvedValue({ success: true });
-    mockAdminNotifier.isConfigured.mockReturnValue(true);
     mockPaymentNotifier.send.mockResolvedValue({ success: true });
-    mockPaymentNotifier.isConfigured.mockReturnValue(true);
     mockSignupStatsReader.getSignupStats.mockResolvedValue({
       signupsByProvider: [{ provider: "CREDENTIAL", count: 3 }],
       totalUsers: 100,

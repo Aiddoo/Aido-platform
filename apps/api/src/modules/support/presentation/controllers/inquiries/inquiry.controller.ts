@@ -3,6 +3,10 @@ import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
+  CurrentUser,
+  type CurrentUserPayload,
+} from "#api/modules/identity/identity-auth-http.public";
+import {
   ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
@@ -11,10 +15,6 @@ import {
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
 
-import {
-  CurrentUser,
-  type CurrentUserPayload,
-} from "../../../../identity/presentation/decorators/auth/index.js";
 import { CreateInquiry } from "../../../application/use-cases/inquiries/create-inquiry.use-case.js";
 import { CreateInquiryDto, CreateInquiryResponseDto } from "../../schemas/inquiries/index.js";
 

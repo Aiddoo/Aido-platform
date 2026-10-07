@@ -5,10 +5,11 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { toISOString } from "#api/shared/domain/date/utils/format";
 
 import type {
-  AdminNotification,
   AdminNotifier,
   AdminNotifyResult,
 } from "../../../application/ports/notifications/admin-notifier.port.js";
+import type { AdminNotification } from "../../../application/read-models/notifications/admin-notification.read-model.js";
+import { AdminNotificationInfraEvent } from "../../observability/notifications/admin-notification-infra.events.js";
 
 /**
  * Discord Webhook Provider
@@ -31,14 +32,13 @@ export class DiscordWebhookProvider implements AdminNotifier {
     this.#webhookUrl = webhookUrl;
   }
 
-  isConfigured(): boolean {
-    return !!this.#webhookUrl;
-  }
-
   async send(notification: AdminNotification): Promise<AdminNotifyResult> {
     const webhookUrl = this.#webhookUrl;
-    if (!webhookUrl) {
-      this.#logger.debug("Discord webhook not configured, skipping notification");
+    if (webhookUrl === undefined || webhookUrl === "") {
+      this.#logger.debug({
+        event: AdminNotificationInfraEvent.PROVIDER_NOT_CONFIGURED,
+        provider: this.name,
+      });
       return { success: false, error: "Webhook URL not configured" };
     }
 
@@ -64,7 +64,12 @@ export class DiscordWebhookProvider implements AdminNotifier {
 
       if (!response.ok) {
         const errorText = await response.text();
-        this.#logger.error(`Discord webhook failed: ${response.status} ${errorText}`);
+        this.#logger.error({
+          event: AdminNotificationInfraEvent.HTTP_FAILED,
+          provider: this.name,
+          statusCode: response.status,
+          errorType: "http",
+        });
         return {
           success: false,
           error: `HTTP ${response.status}: ${errorText}`,
@@ -73,7 +78,11 @@ export class DiscordWebhookProvider implements AdminNotifier {
 
       return { success: true };
     } catch (error) {
-      this.#logger.error(`Discord webhook error: ${error}`);
+      this.#logger.error({
+        event: AdminNotificationInfraEvent.REQUEST_FAILED,
+        provider: this.name,
+        errorType: "transport",
+      });
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

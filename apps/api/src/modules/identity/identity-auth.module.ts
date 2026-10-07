@@ -13,7 +13,7 @@ import {
 import { NotificationRetentionModule } from "#api/modules/notification/notification-retention.public";
 import {
   AdminEventNotifier,
-  AdminNotificationModule,
+  OperationsNotificationsModule,
 } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -124,7 +124,7 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
         } as JwtSignOptions,
       }),
     }),
-    AdminNotificationModule,
+    OperationsNotificationsModule,
     NotificationDeliveryModule,
     NotificationEmailModule,
     // 회원가입 기본값 시딩(설정·동의·기본 카테고리)을 파사드에 위임하기 위한 의존.

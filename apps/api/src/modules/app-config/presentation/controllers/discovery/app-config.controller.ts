@@ -2,7 +2,7 @@ import type { AppVersionResponse, FeatureDiscoveryResponse } from "@aido/api";
 import { Controller, Get, Header } from "@nestjs/common";
 import { ApiExtraModels, ApiResponse, ApiTags } from "@nestjs/swagger";
 
-import { Public } from "#api/modules/identity/presentation/decorators/auth/index";
+import { Public } from "#api/modules/identity/identity-auth-http.public";
 import { RawResponse } from "#api/platform/http/decorators/index";
 import { ApiDoc } from "#api/platform/http/swagger/index";
 

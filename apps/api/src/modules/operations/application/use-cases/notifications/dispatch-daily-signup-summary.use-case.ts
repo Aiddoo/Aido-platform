@@ -1,10 +1,11 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { now } from "#api/shared/domain/date/utils/core";
 
-import { buildDailySummaryMessage } from "../../../domain/services/notifications/admin-message.factory.js";
-import { computePreviousKstDayRange } from "../../../domain/services/notifications/signup-report-period.js";
+import { buildDailySummaryMessage } from "../../messages/notifications/admin-message.factory.js";
+import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
 import { type AdminNotificationQueuePort } from "../../ports/notifications/admin-notification-queue.port.js";
 import { type SignupStatsReaderPort } from "../../ports/notifications/signup-stats.reader.port.js";
+import { computePreviousKstDayRange } from "../../services/notifications/signup-report-period.js";
 
 /**
  * 일일 가입 요약 발송 유스케이스.
@@ -13,9 +14,9 @@ import { type SignupStatsReaderPort } from "../../ports/notifications/signup-sta
  * 스케줄러 트리거(DISPATCH_SUMMARY)로 호출되며, 실패해도 예외를 전파하지 않는다.
  */
 interface DispatchDailySignupSummaryDependencies {
-  readonly reader: SignupStatsReaderPort;
-  readonly queue: AdminNotificationQueuePort;
-  readonly logger: ApplicationLogger;
+  readonly reader: Pick<SignupStatsReaderPort, "getSignupStats">;
+  readonly queue: Pick<AdminNotificationQueuePort, "enqueueSend">;
+  readonly logger: Pick<ApplicationLogger, "log" | "error">;
 }
 
 export class DispatchDailySignupSummary {
@@ -26,7 +27,7 @@ export class DispatchDailySignupSummary {
   }
 
   async execute(): Promise<void> {
-    this.#dependencies.logger.log("Starting daily signup summary job...");
+    this.#dependencies.logger.log({ event: OperationsNotificationsLogEvent.SUMMARY_STARTED });
 
     try {
       const { startUtc, endUtc, reportDateStr } = computePreviousKstDayRange(now());
@@ -42,19 +43,21 @@ export class DispatchDailySignupSummary {
         reportDateStr,
       });
 
-      await this.#dependencies.queue.enqueueSend("admin", message.toPayload(), {
+      await this.#dependencies.queue.enqueueSend("admin", message, {
         jobId: `signup-summary_${reportDateStr}`,
       });
 
       const previousDayTotal = signupsByProvider.reduce((sum, group) => sum + group.count, 0);
-      this.#dependencies.logger.log(
-        `Daily signup summary job enqueued: ${previousDayTotal} new, ${totalUsers} total`,
-      );
-    } catch (error) {
-      this.#dependencies.logger.error(
-        `Daily signup summary job failed: ${error}`,
-        error instanceof Error ? error.stack : undefined,
-      );
+      this.#dependencies.logger.log({
+        event: OperationsNotificationsLogEvent.SUMMARY_ENQUEUED,
+        previousDayTotal,
+        totalUsers,
+      });
+    } catch {
+      this.#dependencies.logger.error({
+        event: OperationsNotificationsLogEvent.SUMMARY_FAILED,
+        errorType: "summary-dispatch",
+      });
     }
   }
 }

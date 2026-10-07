@@ -36,12 +36,10 @@ import { RetentionQueueProcessor } from "#api/modules/notification/infrastructur
 import { RetentionQueueService } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.service";
 import { TodoReminderProcessor } from "#api/modules/notification/infrastructure/processors/reminders/todo-reminder.processor";
 import { TransactionalEmailSender } from "#api/modules/notification/notification-email.public";
+import { ADMIN_NOTIFIER } from "#api/modules/operations/application/ports/notifications/admin-notifier.port";
 import { AdminNotificationProcessor } from "#api/modules/operations/infrastructure/jobs/notifications/admin-notification-queue.processor";
 import { DailySignupSummaryScheduler } from "#api/modules/operations/infrastructure/jobs/notifications/daily-signup-summary.scheduler";
-import {
-  ADMIN_NOTIFIER,
-  PAYMENT_NOTIFIER,
-} from "#api/modules/operations/operations-notifications.public";
+import { PAYMENT_NOTIFIER } from "#api/modules/operations/operations-notifications.public";
 import { AIR_QUALITY_PROVIDER } from "#api/modules/weather/application/ports/forecast/air-quality-provider.port";
 import { LIFESTYLE_INDEX_PROVIDER } from "#api/modules/weather/application/ports/forecast/lifestyle-index-provider.port";
 import { SUN_TIME_PROVIDER } from "#api/modules/weather/application/ports/forecast/sun-time-provider.port";

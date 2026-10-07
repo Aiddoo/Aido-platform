@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { NotificationEmailModule } from "#api/modules/notification/notification-email.module";
+import { NotificationEmailModule } from "#api/modules/notification/notification-email.public";
 
 import { INQUIRY_MAILER } from "./application/ports/inquiries/inquiry-mailer.port.js";
 import { EmailInquiryMailerAdapter } from "./infrastructure/adapters/inquiries/email-inquiry-mailer.adapter.js";
@@ -21,4 +21,4 @@ import { INQUIRY_PROVIDERS } from "./support-inquiries.providers.js";
     ...INQUIRY_PROVIDERS,
   ],
 })
-export class InquiryModule {}
+export class SupportInquiriesModule {}

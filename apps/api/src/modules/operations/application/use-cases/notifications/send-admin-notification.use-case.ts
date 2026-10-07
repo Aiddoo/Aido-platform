@@ -1,8 +1,9 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
-import type { AdminNotification } from "../../../domain/value-objects/notifications/admin-notification-message.vo.js";
+import { OperationsNotificationsLogEvent } from "../../observability/notifications/operations-notifications-log.events.js";
 import type { NotificationChannel } from "../../ports/notifications/admin-notification-queue.port.js";
 import { type AdminNotifier } from "../../ports/notifications/admin-notifier.port.js";
+import type { AdminNotification } from "../../read-models/notifications/admin-notification.read-model.js";
 
 /**
  * 관리자 알림 발송 유스케이스.
@@ -11,9 +12,9 @@ import { type AdminNotifier } from "../../ports/notifications/admin-notifier.por
  * 발송 실패 시 예외를 던져 BullMQ 재시도를 트리거한다.
  */
 interface SendAdminNotificationDependencies {
-  readonly adminNotifier: AdminNotifier;
-  readonly paymentNotifier: AdminNotifier;
-  readonly logger: ApplicationLogger;
+  readonly adminNotifier: Pick<AdminNotifier, "send">;
+  readonly paymentNotifier: Pick<AdminNotifier, "send">;
+  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
 }
 
 export class SendAdminNotification {
@@ -27,9 +28,10 @@ export class SendAdminNotification {
     const notifier =
       channel === "payment" ? this.#dependencies.paymentNotifier : this.#dependencies.adminNotifier;
 
-    this.#dependencies.logger.debug(
-      `Processing admin notification: channel=${channel}, title=${notification.title}`,
-    );
+    this.#dependencies.logger.debug({
+      event: OperationsNotificationsLogEvent.SEND_STARTED,
+      channel,
+    });
 
     const result = await notifier.send(notification);
 
@@ -37,8 +39,9 @@ export class SendAdminNotification {
       throw new Error(`Discord webhook failed: ${result.error}`);
     }
 
-    this.#dependencies.logger.log(
-      `Admin notification sent: channel=${channel}, title=${notification.title}`,
-    );
+    this.#dependencies.logger.log({
+      event: OperationsNotificationsLogEvent.SEND_COMPLETED,
+      channel,
+    });
   }
 }

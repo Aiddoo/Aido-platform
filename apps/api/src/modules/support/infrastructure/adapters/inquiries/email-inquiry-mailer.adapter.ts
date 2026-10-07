@@ -7,7 +7,7 @@ import type {
   InquiryDeliveryResult,
   InquiryMailerPort,
 } from "../../../application/ports/inquiries/inquiry-mailer.port.js";
-import type { InquirySubmission } from "../../../domain/services/inquiries/inquiry-submission.js";
+import type { InquirySubmission } from "../../../application/read-models/inquiries/inquiry-submission.read-model.js";
 
 /**
  * InquiryMailerPort의 이메일(Resend) 어댑터.

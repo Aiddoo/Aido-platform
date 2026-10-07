@@ -1,35 +1,32 @@
-import type { NotificationAction } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import type { BroadcastTargetFilter } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
-import { BroadcastCampaign } from "../../../domain/entities/admin/broadcast-campaign.js";
-import type { BroadcastTargetFilter } from "../../../domain/policies/admin/broadcast-message.js";
+import { BroadcastContent } from "../../../domain/value-objects/admin/broadcast-content.vo.js";
+import { buildBroadcastMessages } from "../../messages/admin/broadcast-message.factory.js";
+import { OperationsAdminLogEvent } from "../../observability/admin/operations-admin-log.events.js";
+import type { AdminBroadcastNotifierPort } from "../../ports/admin/admin-broadcast-notifier.port.js";
+import type { AdminUserDirectoryPort } from "../../ports/admin/admin-user-directory.port.js";
+import type { BroadcastAction } from "../../read-models/admin/broadcast-message.read-model.js";
 import {
-  type BroadcastResult,
   buildBroadcastResult,
-} from "../../../domain/policies/admin/broadcast-result.js";
-import { type AdminBroadcastNotifierPort } from "../../ports/admin/admin-broadcast-notifier.port.js";
-import { type AdminUserDirectoryPort } from "../../ports/admin/admin-user-directory.port.js";
+  type BroadcastResult,
+} from "../../read-models/admin/broadcast-result.read-model.js";
 
 export interface BroadcastNotificationInput {
-  title: string;
-  body: string;
-  targetFilter: BroadcastTargetFilter;
-  action: NotificationAction | undefined;
-  force: boolean;
+  readonly title: string;
+  readonly body: string;
+  readonly targetFilter: BroadcastTargetFilter;
+  readonly action: BroadcastAction | undefined;
+  readonly force: boolean;
 }
 
-/**
- * 전체/조건부 알림 브로드캐스트 use-case.
- *
- * 대상 필터에 해당하는 사용자에게 알림을 발송한다. 대상이 없으면 ADMIN_1402.
- */
 interface BroadcastNotificationDependencies {
-  readonly userDirectory: AdminUserDirectoryPort;
-  readonly notifier: AdminBroadcastNotifierPort;
-  readonly logger: ApplicationLogger;
+  readonly userDirectory: Pick<AdminUserDirectoryPort, "streamTargetUserIds">;
+  readonly notifier: Pick<AdminBroadcastNotifierPort, "sendBatch">;
+  readonly logger: Pick<ApplicationLogger, "log">;
 }
 
 export class BroadcastNotification {
@@ -40,40 +37,32 @@ export class BroadcastNotification {
   }
 
   async execute(input: BroadcastNotificationInput): Promise<BroadcastResult> {
-    // 도메인 불변식 검증(제목/본문 비어 있지 않음) 후 캠페인 생성
-    const campaign = BroadcastCampaign.create({
-      title: input.title,
-      body: input.body,
-      targetFilter: input.targetFilter,
-      action: input.action,
-      force: input.force,
-    });
-
+    const content = BroadcastContent.create(input);
+    const action = input.action === undefined ? undefined : { ...input.action };
+    const { targetFilter } = input;
+    const force = input.force ?? false;
     let totalTargets = 0;
     let successCount = 0;
 
-    // 대상 사용자를 배치로 스트리밍하며 배치마다 발송 (메모리 절약)
     for await (const userIds of this.#dependencies.userDirectory.streamTargetUserIds(
-      campaign.targetFilter,
+      targetFilter,
     )) {
       totalTargets += userIds.length;
-
       const { count } = await this.#dependencies.notifier.sendBatch(
-        campaign.toMessages(userIds, "ADMIN_BROADCAST"),
+        buildBroadcastMessages(content, userIds, "ADMIN_BROADCAST", action, force),
       );
       successCount += count;
     }
 
     if (totalTargets === 0) {
-      throw new ApplicationException(ErrorCode.ADMIN_1402, {
-        targetFilter: input.targetFilter,
-      });
+      throw new ApplicationException(ErrorCode.ADMIN_1402, { targetFilter });
     }
-
-    this.#dependencies.logger.log(
-      `Broadcast notification completed: ${successCount}/${totalTargets} sent, filter=${input.targetFilter}`,
-    );
-
+    this.#dependencies.logger.log({
+      event: OperationsAdminLogEvent.BROADCAST_COMPLETED,
+      successCount,
+      totalTargets,
+      targetFilter,
+    });
     return buildBroadcastResult(totalTargets, successCount);
   }
 }
