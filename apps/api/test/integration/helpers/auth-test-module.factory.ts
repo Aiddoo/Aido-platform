@@ -1,13 +1,4 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
-/**
- * Auth 통합 테스트 모듈 팩토리
- *
- * @description
- * auth-password-setup, auth-password-change, auth-password-reset 통합 테스트에서
- * 반복되는 TestingModule 설정을 통합합니다.
- *
- * 실제 DB (Testcontainers)를 사용하는 통합 테스트용입니다.
- */
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { Test, type TestingModule } from "@nestjs/testing";
@@ -52,10 +43,16 @@ import { createMockCacheService } from "#test/mocks/cache-test-utils";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
 
 import {
-  credentialAuthWorkflowProvider,
+  registerProvider,
+  verifyEmailProvider,
+  loginWithPasswordProvider,
+  requestPasswordResetProvider,
+  resetPasswordProvider,
+  changePasswordProvider,
+  requestPasswordSetupCodeProvider,
+  setPasswordProvider,
   restoreAccountProvider,
   issueLoginProvider,
-  passwordWorkflowProvider,
   provisionUserProvider,
   sessionServiceProvider,
   verificationServiceProvider,
@@ -77,12 +74,18 @@ export async function createAuthTestModule(
       }),
     ],
     providers: [
-      credentialAuthWorkflowProvider,
+      registerProvider,
+      verifyEmailProvider,
+      loginWithPasswordProvider,
+      requestPasswordResetProvider,
+      resetPasswordProvider,
+      changePasswordProvider,
+      requestPasswordSetupCodeProvider,
+      setPasswordProvider,
       restoreAccountProvider,
       issueLoginProvider,
       provisionUserProvider,
       PasswordService,
-      passwordWorkflowProvider,
       sessionServiceProvider,
       TokenService,
       verificationServiceProvider,

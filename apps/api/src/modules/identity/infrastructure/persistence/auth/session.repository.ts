@@ -123,8 +123,8 @@ export class SessionRepository implements AuthSessionRepositoryPort {
     userId: string,
     reason: string,
     excludeSessionId?: string,
-  ): Promise<number> {
-    return this.client.orm.public.Session.where((row) =>
+  ): Promise<readonly string[]> {
+    const sessions = await this.client.orm.public.Session.where((row) =>
       and(
         row.userId.eq(userId),
         row.revokedAt.isNull(),
@@ -132,12 +132,15 @@ export class SessionRepository implements AuthSessionRepositoryPort {
           ? row.id.neq(excludeSessionId)
           : all(),
       ),
-    ).updateAndCount(
-      encodePatch("Session", {
-        revokedAt: now(),
-        revokedReason: reason,
-      }),
-    );
+    )
+      .select("id")
+      .updateAll(
+        encodePatch("Session", {
+          revokedAt: now(),
+          revokedReason: reason,
+        }),
+      );
+    return sessions.map((session) => session.id);
   }
 
   async deleteExpired(): Promise<number> {

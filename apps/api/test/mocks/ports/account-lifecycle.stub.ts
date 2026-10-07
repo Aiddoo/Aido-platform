@@ -13,6 +13,7 @@ import type {
   AuthUserRecord,
   AuthUserRepositoryPort,
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import { AccountFixture } from "#test/fixtures/user.fixture";
 
 import { StubAuthSessionCache } from "./auth-session.stub.js";
 
@@ -76,11 +77,71 @@ export class StubAccountLifecycleRepository
   }
 }
 
-export class StubAccountRepository implements Pick<AuthAccountRepositoryPort, "findAllByUserId"> {
-  constructor(readonly accounts: readonly AuthAccountRecord[] = []) {}
+export class StubAccountRepository implements Pick<
+  AuthAccountRepositoryPort,
+  | "findAllByUserId"
+  | "findByUserIdAndProvider"
+  | "createCredentialAccount"
+  | "createOAuthAccount"
+  | "updatePassword"
+  | "updatePasswordIfUnchanged"
+> {
+  readonly accounts: AuthAccountRecord[];
+
+  constructor(accounts: readonly AuthAccountRecord[] = []) {
+    this.accounts = accounts.map((account) => ({ ...account }));
+  }
 
   async findAllByUserId(userId: string): Promise<AuthAccountRecord[]> {
     return this.accounts.filter((account) => account.userId === userId);
+  }
+
+  async findByUserIdAndProvider(
+    userId: string,
+    provider: AuthAccountRecord["provider"],
+  ): Promise<AuthAccountRecord | null> {
+    const account = this.accounts.find(
+      (account) => account.userId === userId && account.provider === provider,
+    );
+    return account === undefined ? null : { ...account };
+  }
+
+  async createCredentialAccount(userId: string, password: string): Promise<void> {
+    this.accounts.push(AccountFixture.create({ userId, provider: "CREDENTIAL", password }));
+  }
+
+  async createOAuthAccount(
+    input: Parameters<AuthAccountRepositoryPort["createOAuthAccount"]>[0],
+  ): Promise<void> {
+    this.accounts.push(
+      AccountFixture.create({
+        userId: input.userId,
+        provider: input.provider,
+        providerAccountId: input.providerAccountId,
+        password: null,
+      }),
+    );
+  }
+
+  async updatePassword(userId: string, password: string): Promise<void> {
+    const account = this.accounts.find(
+      (account) => account.userId === userId && account.provider === "CREDENTIAL",
+    );
+    if (account === undefined) throw new Error(`Credential 계정이 없습니다: ${userId}`);
+    account.password = password;
+  }
+
+  async updatePasswordIfUnchanged(
+    userId: string,
+    expectedPasswordHash: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    const account = this.accounts.find(
+      (account) => account.userId === userId && account.provider === "CREDENTIAL",
+    );
+    if (account === undefined || account.password !== expectedPasswordHash) return false;
+    account.password = passwordHash;
+    return true;
   }
 }
 

@@ -1,107 +1,107 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
-
-import { mockOf } from "#test/mocks/index";
+import { vi } from "vitest";
 
 import {
-  type AuthAccountRepositoryPort,
-  type AuthUserRecord,
-  type AuthUserRepositoryPort,
-} from "../../ports/auth/auth-persistence.port.js";
-import { type RetentionEnrollerPort } from "../../ports/auth/retention-enroller.port.js";
-import { type UserProvisioningSeederPort } from "../../ports/auth/user-provisioning-seeder.port.js";
-import { type ProvisionUserInput, ProvisionUser } from "./provision-user.use-case.js";
+  AUTH_CREDENTIAL_TIME,
+  createAuthCredentialFixture,
+} from "#test/fixtures/auth-credential.fixture";
 
-describe("ProvisionUser — 신규 사용자 프로비저닝 수렴 시퀀스", () => {
-  let useCase: ProvisionUser;
-  let userRepo: Mocked<AuthUserRepositoryPort>;
-  let accountRepo: Mocked<AuthAccountRepositoryPort>;
-  let seeder: Mocked<UserProvisioningSeederPort>;
-  let retentionEnroller: Mocked<RetentionEnrollerPort>;
-
-  const createdUser = mockOf<AuthUserRecord>({
-    id: "user-1",
-    email: "user@example.com",
+describe("ProvisionUser — 신규 계정과 기본 설정 생성", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(AUTH_CREDENTIAL_TIME);
   });
+  afterEach(() => vi.useRealTimers());
 
-  beforeEach(async () => {
-    const provisionUserDependencies = mockDeep<ConstructorParameters<typeof ProvisionUser>[0]>({});
-    const unit = new ProvisionUser(provisionUserDependencies);
-    useCase = unit;
-    userRepo = provisionUserDependencies.userRepository;
-    accountRepo = provisionUserDependencies.accountRepository;
-    seeder = provisionUserDependencies.seeder;
-    retentionEnroller = provisionUserDependencies.retentionEnroller;
+  it("이메일 계정은 미인증 상태로 계정·프로필·동의와 기본 설정을 생성한다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture({ empty: true });
+    const consent = { termsAgreedAt: AUTH_CREDENTIAL_TIME };
 
-    userRepo.create.mockResolvedValue(createdUser);
-  });
-
-  const credentialInput: ProvisionUserInput = {
-    email: "user@example.com",
-    status: "PENDING_VERIFY",
-    account: { kind: "credential", hashedPassword: "hashed-pw" },
-    profile: { name: "홍길동" },
-    consent: { termsAgreedAt: new Date("2026-01-01T00:00:00Z") },
-  };
-
-  it("크레덴셜: 유저→크레덴셜계정→프로필→기본값 시딩 순서로 생성하고 유저를 반환한다", async () => {
-    const result = await useCase.execute(credentialInput);
-
-    expect(userRepo.create).toHaveBeenCalledWith({
-      email: "user@example.com",
+    // When
+    const result = await fixture.provisionUserUseCase.execute({
+      email: "new@example.com",
       status: "PENDING_VERIFY",
-      emailVerifiedAt: undefined,
+      account: { kind: "credential", hashedPassword: "digest:password" },
+      profile: { name: "신규 사용자" },
+      consent,
     });
-    expect(accountRepo.createCredentialAccount).toHaveBeenCalledWith("user-1", "hashed-pw");
-    expect(accountRepo.createOAuthAccount).not.toHaveBeenCalled();
-    expect(userRepo.createProfile).toHaveBeenCalledWith("user-1", {
-      name: "홍길동",
+
+    // Then
+    expect(result.email).toBe("new@example.com");
+    expect(fixture.userRepository.users.get(result.id)).toMatchObject({
+      email: result.email,
+      status: "PENDING_VERIFY",
+      emailVerifiedAt: null,
     });
-    expect(seeder.seedDefaultSettings).toHaveBeenCalledWith("user-1", {
-      termsAgreedAt: new Date("2026-01-01T00:00:00Z"),
+    expect(fixture.accountRepository.accounts).toEqual([
+      expect.objectContaining({
+        userId: result.id,
+        provider: "CREDENTIAL",
+        password: "digest:password",
+      }),
+    ]);
+    expect(fixture.userRepository.profiles.get(result.id)).toEqual({
+      name: "신규 사용자",
+      profileImage: null,
     });
-    expect(seeder.seedDefaultCategories).toHaveBeenCalledWith("user-1");
-    expect(retentionEnroller.enrollNewUser).toHaveBeenCalledWith("user-1", false);
-    expect(result).toBe(createdUser);
+    expect(fixture.seeder.settings).toEqual([{ userId: result.id, consent }]);
+    expect(fixture.seeder.categoryUserIds).toEqual([result.id]);
+    expect(fixture.retentionEnroller.enrollments).toEqual([
+      { userId: result.id, activated: false },
+    ]);
   });
 
-  it("OAuth: OAuth 계정을 연결하고 emailVerifiedAt·profileImage를 전달한다", async () => {
-    const verifiedAt = new Date("2026-02-02T00:00:00Z");
-    const oauthInput: ProvisionUserInput = {
+  it("OAuth 계정은 검증 날짜·프로필·동의를 보존하고 활성 사용자로 실험에 등록한다", async () => {
+    // Given
+    const fixture = createAuthCredentialFixture({ empty: true });
+    const accountWrite = vi.spyOn(fixture.accountRepository, "createOAuthAccount");
+    const consent = {
+      termsAgreedAt: AUTH_CREDENTIAL_TIME,
+      privacyAgreedAt: AUTH_CREDENTIAL_TIME,
+      marketingAgreedAt: AUTH_CREDENTIAL_TIME,
+    };
+
+    // When
+    const result = await fixture.provisionUserUseCase.execute({
       email: "social@example.com",
       status: "ACTIVE",
-      emailVerifiedAt: verifiedAt,
+      emailVerifiedAt: AUTH_CREDENTIAL_TIME,
       account: {
         kind: "oauth",
         provider: "GOOGLE",
-        providerAccountId: "google-123",
-        refreshToken: "refresh-token",
+        providerAccountId: "google-account-123",
+        refreshToken: "social-refresh-token",
       },
-      profile: { name: "랜덤이름", profileImage: "https://img/1.png" },
-      consent: {
-        termsAgreedAt: verifiedAt,
-        privacyAgreedAt: verifiedAt,
-        marketingAgreedAt: verifiedAt,
-      },
-    };
+      profile: { name: "소셜 사용자", profileImage: "https://example.com/avatar.png" },
+      consent,
+    });
 
-    await useCase.execute(oauthInput);
-
-    expect(userRepo.create).toHaveBeenCalledWith({
+    // Then
+    expect(fixture.userRepository.users.get(result.id)).toMatchObject({
       email: "social@example.com",
       status: "ACTIVE",
-      emailVerifiedAt: verifiedAt,
+      emailVerifiedAt: AUTH_CREDENTIAL_TIME,
     });
-    expect(accountRepo.createOAuthAccount).toHaveBeenCalledWith({
-      userId: "user-1",
+    expect(fixture.accountRepository.accounts).toEqual([
+      expect.objectContaining({
+        userId: result.id,
+        provider: "GOOGLE",
+        providerAccountId: "google-account-123",
+        password: null,
+      }),
+    ]);
+    expect(accountWrite).toHaveBeenCalledExactlyOnceWith({
+      userId: result.id,
       provider: "GOOGLE",
-      providerAccountId: "google-123",
-      refreshToken: "refresh-token",
+      providerAccountId: "google-account-123",
+      refreshToken: "social-refresh-token",
     });
-    expect(accountRepo.createCredentialAccount).not.toHaveBeenCalled();
-    expect(userRepo.createProfile).toHaveBeenCalledWith("user-1", {
-      name: "랜덤이름",
-      profileImage: "https://img/1.png",
+    expect(fixture.userRepository.profiles.get(result.id)).toEqual({
+      name: "소셜 사용자",
+      profileImage: "https://example.com/avatar.png",
     });
+    expect(fixture.seeder.settings).toEqual([{ userId: result.id, consent }]);
+    expect(fixture.seeder.categoryUserIds).toEqual([result.id]);
+    expect(fixture.retentionEnroller.enrollments).toEqual([{ userId: result.id, activated: true }]);
   });
 });

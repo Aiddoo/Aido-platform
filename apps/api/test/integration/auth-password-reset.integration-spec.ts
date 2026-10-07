@@ -1,37 +1,21 @@
 import type { TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
-/**
- * 비밀번호 재설정 통합 테스트 (Testcontainers)
- *
- * @description
- * PasswordWorkflow.forgotPassword() 및 PasswordWorkflow.resetPassword()가
- * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
- *
- * 통합 테스트의 목적:
- * - PasswordWorkflow -> Repository -> Prisma -> PostgreSQL 전체 스택 검증
- * - forgotPassword → resetPassword → 새 비밀번호 로그인 전체 플로우
- * - 세션 무효화 및 SecurityLog 기록 확인
- * - 보안: 존재하지 않는 이메일 동일 응답
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test auth-password-reset.integration-spec
- * ```
- */
-import { vi } from "vitest";
+import { omit } from "es-toolkit";
 
-import { CredentialAuthWorkflow } from "#api/modules/identity/application/workflows/auth/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/modules/identity/application/workflows/auth/password.workflow";
+import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
+import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
+import { RequestPasswordReset } from "#api/modules/identity/application/use-cases/auth/request-password-reset.use-case";
+import { ResetPassword } from "#api/modules/identity/application/use-cases/auth/reset-password.use-case";
+import { VerifyEmail } from "#api/modules/identity/application/use-cases/auth/verify-email.use-case";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase } from "../setup/test-database.js";
@@ -39,26 +23,30 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let authService: CredentialAuthWorkflow;
-  let passwordManagementService: PasswordWorkflow;
+  let register: Register;
+  let verifyEmail: VerifyEmail;
+  let requestPasswordReset: RequestPasswordReset;
+  let resetPassword: ResetPassword;
+  let loginWithPassword: LoginWithPassword;
   let fakeEmailService: FakeEmailService;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    suppressLogger();
-
     testDb = new TestDatabase();
     databaseService = createTestDatabaseService(await testDb.start());
     fakeEmailService = new FakeEmailService();
 
     module = await createAuthTestModule(databaseService, fakeEmailService);
-    authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
-    passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
+    register = module.get(Register);
+    verifyEmail = module.get(VerifyEmail);
+    requestPasswordReset = module.get(RequestPasswordReset);
+    resetPassword = module.get(ResetPassword);
+    loginWithPassword = module.get(LoginWithPassword);
   }, 60000);
 
   beforeEach(async () => {
-    vi.clearAllMocks();
+    suppressLogger();
     await testDb.cleanup();
     fakeEmailService.clear();
   });
@@ -71,57 +59,42 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
     }
   });
 
-  /**
-   * FakeEmailService에서 인증 코드를 안전하게 가져오는 헬퍼
-   */
   function getCode(email: string): string {
     const code = fakeEmailService.getLastCode(email);
-    if (!code) throw new Error(`No code found for ${email}`);
+    if (code == null) throw new Error(`No code found for ${email}`);
     return code;
   }
 
-  /**
-   * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
-   * @returns userId
-   */
   async function createSocialOnlyUser(
     email: string,
     provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
   ): Promise<string> {
-    const prisma = testDb.getClient();
-    const user = decodeRecord(
-      "User",
-      await prisma.orm.public.User.create(
-        encodeCreate("User", {
-          email,
-          userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-          status: "ACTIVE",
-          emailVerifiedAt: new Date(),
-        }),
-      ),
+    const userFixture = UserFixture.create({ email });
+    const user = await createUserDatabaseFixture(
+      testDb.getClient(),
+      encodeCreate("User", userFixture),
+      {
+        accounts: [
+          omit(
+            encodeCreate(
+              "Account",
+              AccountFixture.create({
+                userId: userFixture.id,
+                provider,
+                providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
+              }),
+            ),
+            ["id", "userId"],
+          ),
+        ],
+      },
     );
-
-    decodeRecord(
-      "Account",
-      await prisma.orm.public.Account.create(
-        encodeCreate("Account", {
-          userId: user.id,
-          provider,
-          providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-        }),
-      ),
-    );
-
     return user.id;
   }
 
-  /**
-   * 이메일/비밀번호 사용자 생성 헬퍼 (register + verify-email 시뮬레이션)
-   * @returns userId
-   */
   async function createCredentialUser(email: string, password: string): Promise<string> {
     // 회원가입
-    const registerResult = await authService.register({
+    const registerResult = await register.execute({
       email,
       password,
       passwordConfirm: password,
@@ -132,7 +105,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
 
     // 이메일 인증
     const verifyCode = getCode(email);
-    await authService.verifyEmail({ email, code: verifyCode });
+    await verifyEmail.execute({ email, code: verifyCode });
 
     fakeEmailService.clear();
 
@@ -146,7 +119,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await createCredentialUser(email, "Password123!");
 
       // When
-      const result = await passwordManagementService.forgotPassword(email);
+      const result = await requestPasswordReset.execute({ email });
 
       // Then
       expect(result.message).toBeDefined();
@@ -159,7 +132,7 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "nonexistent@example.com";
 
       // When
-      const result = await passwordManagementService.forgotPassword(email);
+      const result = await requestPasswordReset.execute({ email });
 
       // Then
       expect(result.message).toBeDefined();
@@ -175,11 +148,11 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const originalPassword = "Password123!";
       await createCredentialUser(email, originalPassword);
 
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
       const code = getCode(email);
 
       // When
-      const result = await passwordManagementService.resetPassword(email, code, "NewPassword456!");
+      const result = await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
       // Then
       expect(result.message).toContain("비밀번호가 재설정되었습니다");
@@ -205,12 +178,12 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const newPassword = "NewPassword456!";
       await createCredentialUser(email, originalPassword);
 
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
       const code = getCode(email);
-      await passwordManagementService.resetPassword(email, code, newPassword);
+      await resetPassword.execute({ email, code, newPassword });
 
       // When
-      const loginResult = await authService.login({
+      const loginResult = await loginWithPassword.execute({
         email,
         password: newPassword,
       });
@@ -227,14 +200,14 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const newPassword = "NewPassword456!";
       await createCredentialUser(email, originalPassword);
 
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
       const code = getCode(email);
-      await passwordManagementService.resetPassword(email, code, newPassword);
+      await resetPassword.execute({ email, code, newPassword });
 
       // When & Then
-      await expect(authService.login({ email, password: originalPassword })).rejects.toThrow(
-        ApplicationException,
-      );
+      await expect(
+        loginWithPassword.execute({ email, password: originalPassword }),
+      ).rejects.toThrow(ApplicationException);
     });
 
     it("재설정 후 모든 세션이 무효화된다", async () => {
@@ -244,14 +217,14 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await createCredentialUser(email, originalPassword);
 
       // 로그인하여 세션 생성
-      await authService.login({ email, password: originalPassword });
-      await authService.login({ email, password: originalPassword });
+      await loginWithPassword.execute({ email, password: originalPassword });
+      await loginWithPassword.execute({ email, password: originalPassword });
 
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
       const code = getCode(email);
 
       // When
-      await passwordManagementService.resetPassword(email, code, "NewPassword456!");
+      await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
       // Then - 모든 세션의 revokedAt이 설정됨
       const prisma = testDb.getClient();
@@ -275,11 +248,11 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "reset-seclog@example.com";
       await createCredentialUser(email, "Password123!");
 
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
       const code = getCode(email);
 
       // When
-      await passwordManagementService.resetPassword(email, code, "NewPassword456!");
+      await resetPassword.execute({ email, code, newPassword: "NewPassword456!" });
 
       // Then
       const prisma = testDb.getClient();
@@ -310,12 +283,12 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       await createSocialOnlyUser(email);
 
       // forgotPassword는 보안상 동일 응답 (에러 없음)
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
       const code = getCode(email);
 
       // When & Then - resetPassword에서 USER_0613 에러
       await expect(
-        passwordManagementService.resetPassword(email, code, "NewPassword456!"),
+        resetPassword.execute({ email, code, newPassword: "NewPassword456!" }),
       ).rejects.toThrow(ApplicationException);
     });
 
@@ -324,11 +297,11 @@ describe("비밀번호 재설정 통합 테스트 (실제 DB)", () => {
       const email = "reset-wrong-code@example.com";
       await createCredentialUser(email, "Password123!");
 
-      await passwordManagementService.forgotPassword(email);
+      await requestPasswordReset.execute({ email });
 
       // When & Then
       await expect(
-        passwordManagementService.resetPassword(email, "000000", "NewPassword456!"),
+        resetPassword.execute({ email, code: "000000", newPassword: "NewPassword456!" }),
       ).rejects.toThrow(ApplicationException);
     });
   });

@@ -322,10 +322,20 @@ describe("인증 E2E", () => {
     const resetPassword = "Test1234!";
     const newPassword = "NewTest5678!";
 
-    it("비밀번호 재설정 코드 발송 → 재설정 → 새 비밀번호 로그인 → 이전 비밀번호 실패", async () => {
+    it("비밀번호 재설정은 캐시된 모든 기기를 즉시 폐기하고 새 비밀번호만 허용한다", async () => {
       // Given - 인증된 사용자
       const resetEmail = "reset-test@example.com";
       await ctx.helpers.createVerifiedUser(resetEmail, resetPassword);
+      const sessions = [
+        await ctx.helpers.loginUser(resetEmail, resetPassword),
+        await ctx.helpers.loginUser(resetEmail, resetPassword),
+      ];
+      for (const session of sessions) {
+        await request(ctx.app.getHttpServer())
+          .get("/v1/auth/me")
+          .set("Authorization", `Bearer ${session.accessToken}`)
+          .expect(200);
+      }
 
       // When - 비밀번호 재설정 요청 API 호출
       const forgotResponse = await request(ctx.app.getHttpServer())
@@ -351,6 +361,16 @@ describe("인증 E2E", () => {
 
       // Then - 응답 검증
       expect(resetResponse.body.success).toBe(true);
+      for (const session of sessions) {
+        await request(ctx.app.getHttpServer())
+          .get("/v1/auth/me")
+          .set("Authorization", `Bearer ${session.accessToken}`)
+          .expect(401);
+        await request(ctx.app.getHttpServer())
+          .post("/v1/auth/refresh")
+          .set("Authorization", `Bearer ${session.refreshToken}`)
+          .expect(401);
+      }
 
       // When - 새 비밀번호로 로그인 시도
       const loginResponse = await request(ctx.app.getHttpServer())
@@ -2392,7 +2412,7 @@ describe("인증 E2E", () => {
   });
 
   describe("비밀번호 변경 후 세션 폐기", () => {
-    it("비밀번호 변경 후 다른 세션의 토큰은 무효화된다", async () => {
+    it("다른 기기의 JWT 캐시가 있어도 비밀번호 변경 후 즉시 거부하고 현재 기기는 유지한다", async () => {
       // Given - 사용자 생성 후 두 번 로그인 (두 세션)
       const changePwEmail = "change-pw-session@example.com";
       const changePwPassword = "Test1234!";
@@ -2401,6 +2421,11 @@ describe("인증 E2E", () => {
       await ctx.helpers.createVerifiedUser(changePwEmail, changePwPassword);
       const session1 = await ctx.helpers.loginUser(changePwEmail, changePwPassword);
       const session2 = await ctx.helpers.loginUser(changePwEmail, changePwPassword);
+
+      await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${session2.accessToken}`)
+        .expect(200);
 
       // When - session1에서 비밀번호 변경
       await request(ctx.app.getHttpServer())
@@ -2413,10 +2438,14 @@ describe("인증 E2E", () => {
         })
         .expect(200);
 
-      // Then - session2 토큰으로 refresh 시도 시 실패
+      // Then - 이미 캐시된 다른 기기의 JWT와 Bearer Refresh를 즉시 거부한다
+      await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${session2.accessToken}`)
+        .expect(401);
       await request(ctx.app.getHttpServer())
         .post("/v1/auth/refresh")
-        .send({ refreshToken: session2.refreshToken })
+        .set("Authorization", `Bearer ${session2.refreshToken}`)
         .expect(401);
 
       // session1은 여전히 유효
@@ -2524,10 +2553,15 @@ describe("인증 E2E", () => {
       expect(ctx.fakeEmailService.hasSentTo(email)).toBe(true);
     });
 
-    it("POST /auth/password - 비밀번호 설정 성공", async () => {
+    it("소셜 계정에 비밀번호를 설정하면 기존 세션과 프로필은 유지하고 provider 캐시를 갱신한다", async () => {
       // Given - 소셜 전용 사용자 + 인증 코드 발송
       ctx.fakeOAuthTokenVerifierService.clear();
-      const { accessToken, email } = await createSocialUser(`set-${Date.now()}`);
+      const { accessToken, email } = await createSocialUser("set-password-cache");
+      const before = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      expect(before.body.data.providers).toEqual(["GOOGLE"]);
 
       await request(ctx.app.getHttpServer())
         .post("/v1/auth/password/setup-code")
@@ -2551,6 +2585,14 @@ describe("인증 E2E", () => {
       // Then
       expect(response.body.success).toBe(true);
       expect(response.body.data.message).toBeDefined();
+      const after = await request(ctx.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      expect(after.body.data.providers).toEqual(expect.arrayContaining(["GOOGLE", "CREDENTIAL"]));
+      expect(after.body.data.userId).toBe(before.body.data.userId);
+      expect(after.body.data.name).toBe(before.body.data.name);
+      expect(after.body.data.profileImage).toBe(before.body.data.profileImage);
     });
 
     it("비밀번호 설정 후 이메일 로그인 가능", async () => {

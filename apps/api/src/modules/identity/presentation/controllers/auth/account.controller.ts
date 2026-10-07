@@ -95,7 +95,10 @@ export class AccountController {
     @CurrentUser() user: CurrentUserPayload,
     @Headers("x-app-version") appVersion?: string,
   ) {
-    const result = await this.getCurrentUserQuery.execute(user.userId, user.email, user.sessionId);
+    const result = await this.getCurrentUserQuery.execute({
+      userId: user.userId,
+      sessionId: user.sessionId,
+    });
     return AuthMapper.toCurrentUserResponse(result, appVersion);
   }
 
@@ -130,7 +133,7 @@ export class AccountController {
 
     @Headers("x-app-version") appVersion?: string,
   ) {
-    const result = await this.updateProfileUseCase.execute(user.userId, dto);
+    const result = await this.updateProfileUseCase.execute({ ...dto, userId: user.userId });
     return AuthMapper.toUpdateProfileResponse(result, appVersion);
   }
 

@@ -174,17 +174,6 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
       .then((row) => decodeRecord("User", requireRecord(row)));
   }
 
-  async updateLastLoginAt(id: string): Promise<void> {
-    decodeRecord(
-      "User",
-      requireRecord(
-        await this.client.orm.public.User.where((row) => row.id.eq(id)).update(
-          encodePatch("User", { lastLoginAt: now() }),
-        ),
-      ),
-    );
-  }
-
   async updateLastActiveAt(id: string, timezone: string): Promise<void> {
     const seenAt = now();
     const localDate = startOfDayInTimezone(seenAt, timezone);

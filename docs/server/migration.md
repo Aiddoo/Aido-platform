@@ -16,7 +16,7 @@ Prisma 8 기준 커밋은 `823724b5`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 01 CI Stack 정책·컨벤션·Workspace 의존성 검사, Unit 2,902·공식 PG service Integration 10·E2E 11 검증
 - [x] 02 `@aido/server` 패키지명과 공유 REST `@aido/api` 통합, 구 앱·OpenAPI·Profile 계약 11 tests 유지
 - [x] 03 modules/platform/shared·명시적 조립·로그·키 기본 경계: PR #891과 Issue #892
-- [ ] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([Issue #898](https://github.com/Aiddoo/Aido-platform/issues/898)); 자격 증명·OAuth·설정·동의 남음
+- [ ] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 진행([Issue #900](https://github.com/Aiddoo/Aido-platform/issues/900)); 자격 증명·OAuth·설정·동의 남음
 - [ ] 05 Billing: Webhook·구독 상태 전이
 - [ ] 06 Access: ABAC·Entitlement·Quota 예약·서버 capability
 - [ ] 07 Planning: 할 일·항목·카테고리·반복 일정
@@ -217,3 +217,55 @@ credential/OAuth Workflow는 각각 순수 104줄/14줄, AccountPurgeJob은 94�
 신규 코드·테스트를 포함한 전체 변경이 줄었다는 뜻은 아니다. Role/응답/status/error·30일 정책·
 DB schema/migration·queue wire·key/TTL·고정 구 앱/OpenAPI 계약을 유지했다.
 전체 상위 단계는 여전히 4/18 완료이고 04c 자격 증명·비밀번호·프로필이 다음 범위다.
+
+## 04c 자격 증명·비밀번호·프로필
+
+[Issue #900](https://github.com/Aiddoo/Aido-platform/issues/900)는 가입·인증·로그인·재발송 4개,
+프로필 2개, 비밀번호 5개 endpoint를 직접 UseCase로 옮긴다. Credential/Password Workflow의
+전달 계층을 제거하고 최소 Port와 named input으로 조립한다. ProvisionUser와 IssueLogin은
+공통 업무를 유지하면서 실제 소비 메서드만 의존한다.
+
+| 재현한 Before                                                | 구현한 After                                                      | 확인한 결과                                               |
+| ------------------------------------------------------------ | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| 같은 reset OTP 동시 요청 2건 모두 성공, 감사 2건             | 조회 ID·사용자·용도·hash·미사용·만료·attempt를 UPDATE 조건에 포함 | 실제 PG에서 성공 1건·거부 1건·감사 1건·승자 비밀번호 저장 |
+| 비밀번호 Reset/Change 후 warmed JWT가 HTTP 200               | 실제 폐기한 IDs의 commit 후 cache 무효화                          | 기존 HTTP 회귀에서 즉시 401, Change 현재 기기는 200       |
+| Change 완료 후 background rehash가 이전 비밀번호 hash로 덮음 | expected 이전 hash 조건의 ORM CAS                                 | deferred Port Stub Before 재현, 실제 PG 경쟁 저장 검증    |
+| Setup 뒤 /me provider 캐시가 GOOGLE만 반환                   | commit 후 profile cache 갱신                                      | GOOGLE·CREDENTIAL 모두 반환, 기존 세션·이름·이미지 유지   |
+
+인증 소비와 rehash에는 public ORM `updateAndCount`, 세션 집합 폐기에는 반환 projection을
+지정한 `updateAll`을 사용한다. 실패 attempts는 base client의 기존 원자적 SQL builder를
+유지해 caller transaction이 rollback되어도 보안 기록을 남긴다. schema·OTP hash 형식·
+HTTP contract·오류 코드·운영 key/TTL은 변경하지 않는다.
+
+현재 확인한 검증은 cache HTTP 3개 7.20초, Auth E2E 85개 40.64초(seed 50402 shuffle),
+기존 password/lifecycle PG 31개 19.24초(seed 50401 shuffle)다. Before HTTP 3개는
+수정 전 모두 실패했다(6.05초). 이는 회귀의 수정 결과이며 운영 latency 개선 수치가 아니다.
+전체 Unit은 466 files / 2,852 tests(19.87초), Integration은 46 files / 451 tests
+(163.75초), E2E는 34 files / 481 tests(261.93초)로 통과했다. 세 실행 모두 seed 50432
+shuffle이며, workspace lint·format·typecheck도 통과했다. 기존 앱 호환 fixture와
+OpenAPI 계약 검증을 포함하며 공개 schema와 snapshot은 수정하지 않았다.
+이전 04b의 Unit 2,880개에서 28개가 줄어든 것은
+두 Workflow의 중복 검증, 전달만 확인하는 endpoint 검증, 미사용 repository 메서드 검증을
+제거하고 사용자 상태 기반 UseCase 검증으로 대체한 결과다. 테스트 수 감소를 성능 지표로
+사용하지 않는다.
+
+픽스처 전환 첫 PG 실행에서 Account의 자동 증가 ID를 명시해 충돌한 테스트 오류를
+발견했다. `es-toolkit`의 `omit`으로 DB가 소유하는 id/userId를 제외하고 기존 native fixture
+helper를 재사용해 재실행했다. 최초 Setup HTTP assertion도 현재 flat /me 응답에 맞게
+교정한 뒤 Before를 다시 측정했다. 실패를 production 성능 문제나 해결 완료 근거로 쓰지 않는다.
+
+이번 스택 커밋 8개의 설명은 한국어로 수정했다. 단계별 코드 tree 동일성, 원격 SHA,
+기존 Draft PR의 base 연결을 확인했다. 한국어 설명 형식은 AGENTS.md에 남겼다.
+중간 Draft의 CI는 실제 GitHub 상태에서 skipped/cancelled로 확인했고, 청구 시간 절감률은
+측정하지 않았다. 추가 script·package·Action job은 없다. 상위 완료는 여전히 4/18이다.
+
+API는 engines·Docker가 Node 24.21.0으로 고정되어 있다. 해당 런타임에서
+`Promise.withResolvers()`를 직접 실행해 확인했고 API의 `lib`만 ES2024로 맞췄다.
+출력 target·공유 패키지·Mobile의 lib는 유지한다. 신규 동시성 테스트는 별도 deferred
+helper를 만들지 않는다. [TypeScript 공식 lib 설명](https://www.typescriptlang.org/tsconfig/lib.html)은
+런타임 지원에 맞춰 타입 라이브러리를 선택하는 기준이며,
+[ECMAScript Promise.withResolvers 명세](https://tc39.es/ecma262/multipage/control-abstraction-objects.html#sec-promise.withresolvers)는
+표준 Promise capability를 제공한다.
+
+production 사용처가 없는 `updateLastLoginAt` Port·repository 메서드·빈 Stub·그 메서드만
+검증하던 Unit도 제거했다. DB column과 기존 데이터는 변경하지 않았다.

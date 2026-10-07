@@ -13,7 +13,8 @@
       "#test/*": ["./test/*.ts"]
     },
     "types": ["node", "vitest/globals"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "lib": ["ES2024"]
   },
   "include": ["src/**/*", "test/**/*", "vitest.config.ts"],
   "exclude": ["node_modules", "dist"]

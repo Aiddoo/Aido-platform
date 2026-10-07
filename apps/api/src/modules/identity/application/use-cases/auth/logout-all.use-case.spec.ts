@@ -21,16 +21,21 @@ const userId = "user-123";
 
 describe("LogoutAll — 모든 기기의 세션 종료", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(currentTime);
   });
   afterEach(() => vi.useRealTimers());
 
-  it("내 활성 세션을 모두 폐기하고 캐시를 비우며 다른 사용자의 세션을 유지한다", async () => {
+  it("만료된 세션을 포함해 내 미폐기 세션과 캐시를 비우고 다른 사용자는 유지한다", async () => {
     // Given
     const sessionRepository = new StubAuthSessionRepository([
       SessionFixture.create({ userId, id: "session-1" }),
       SessionFixture.create({ userId, id: "session-2" }),
+      SessionFixture.create({
+        userId,
+        id: "expired-session",
+        expiresAt: new Date(currentTime.getTime() - 1),
+      }),
       SessionFixture.create({ userId: "other-user", id: "other-session" }),
     ]);
     const cacheService = new StubAuthSessionCache([...sessionRepository.sessions.keys()]);
@@ -47,11 +52,12 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
     const result = await useCase.execute({ userId, metadata });
 
     // Then
-    expect(result).toEqual({ message: "모든 기기에서 로그아웃되었습니다.", revokedCount: 2 });
+    expect(result).toEqual({ message: "모든 기기에서 로그아웃되었습니다.", revokedCount: 3 });
     expect(sessionRepository.revocationReasons).toEqual(
       new Map([
         ["session-1", REVOKE_REASON.USER_LOGOUT_ALL],
         ["session-2", REVOKE_REASON.USER_LOGOUT_ALL],
+        ["expired-session", REVOKE_REASON.USER_LOGOUT_ALL],
       ]),
     );
     expect(sessionRepository.sessions.get("other-session")?.revokedAt).toBeNull();
@@ -62,7 +68,7 @@ describe("LogoutAll — 모든 기기의 세션 종료", () => {
         event: SECURITY_EVENT.SESSION_REVOKED_ALL,
         ipAddress: metadata.ip,
         userAgent: metadata.userAgent,
-        metadata: { revokedCount: 2 },
+        metadata: { revokedCount: 3 },
       },
     ]);
   });

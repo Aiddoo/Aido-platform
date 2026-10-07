@@ -328,27 +328,6 @@ describe("UserRepository — 사용자 리포지토리", () => {
     });
   });
 
-  describe("updateLastLoginAt", () => {
-    it("마지막 로그인 시간을 업데이트한다", async () => {
-      // Given - 로그인 시간이 업데이트된 사용자 데이터 모킹
-      const userWithLogin = UserBuilder.create()
-        .withId("user-123")
-        .withLastLoginAt(new Date())
-        .build();
-      db.orm.public.User.update.mockResolvedValue(databaseFixture("User", userWithLogin));
-
-      // When - 마지막 로그인 시간 업데이트
-      await repository.updateLastLoginAt("user-123");
-
-      // Then - 올바른 update 쿼리가 실행됨
-      expect(db.orm.public.User.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("User", { lastLoginAt: expect.any(String) }),
-        ),
-      );
-    });
-  });
-
   describe("updateLastActiveAt", () => {
     it("사용자 현지 날짜의 활동 행과 lastActiveAt을 한 트랜잭션에서 기록한다", async () => {
       // Given - UTC 기준 다음 현지 날짜가 되는 서울 요청 시각

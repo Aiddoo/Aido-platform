@@ -45,7 +45,6 @@ export interface AuthUserRepositoryPort {
   }): Promise<AuthUserRecord>;
   createProfile(userId: string, data: { name?: string; profileImage?: string }): Promise<void>;
   markEmailVerified(id: string): Promise<unknown>;
-  updateLastLoginAt(id: string): Promise<void>;
   updateProfile(
     userId: string,
     data: { name?: string | null; profileImage?: string | null },
@@ -86,6 +85,11 @@ export interface AuthAccountRepositoryPort {
   findAllByUserId(userId: string): Promise<AuthAccountRecord[]>;
   createCredentialAccount(userId: string, hashedPassword: string): Promise<unknown>;
   updatePassword(userId: string, hashedPassword: string): Promise<unknown>;
+  updatePasswordIfUnchanged(
+    userId: string,
+    expectedPasswordHash: string,
+    passwordHash: string,
+  ): Promise<boolean>;
   createOAuthAccount(data: {
     userId: string;
     provider: AccountProvider;
@@ -130,18 +134,31 @@ export interface AuthSessionRepositoryPort {
   rotateToken(id: string, data: RotateAuthSessionInput): Promise<AuthSessionRecord | null>;
   revoke(id: string, reason: string): Promise<unknown>;
   revokeByTokenFamily(tokenFamily: string, reason: string): Promise<readonly string[]>;
-  revokeAllByUserId(userId: string, reason: string, excludeSessionId?: string): Promise<number>;
+  revokeAllByUserId(
+    userId: string,
+    reason: string,
+    excludeSessionId?: string,
+  ): Promise<readonly string[]>;
 }
 
 export interface AuthVerificationRecord {
   id: number;
-  userId?: string;
-  type?: VerificationType;
+  userId: string;
+  type: VerificationType;
   token: string;
-  expiresAt?: Date;
+  expiresAt: Date;
   attempts: number;
-  usedAt?: Date | null;
-  createdAt?: Date;
+  usedAt: Date | null;
+  createdAt: Date;
+}
+
+export interface ConsumeAuthVerificationInput {
+  id: number;
+  userId: string;
+  type: VerificationType;
+  tokenHash: string;
+  maxAttempts: number;
+  at: Date;
 }
 
 export interface AuthVerificationRepositoryPort {
@@ -154,8 +171,9 @@ export interface AuthVerificationRepositoryPort {
   findValidByUserIdAndType(
     userId: string,
     type: VerificationType,
+    at?: Date,
   ): Promise<AuthVerificationRecord | null>;
-  markAsUsed(id: number): Promise<unknown>;
+  consume(input: ConsumeAuthVerificationInput): Promise<boolean>;
   incrementAttempts(id: number): Promise<unknown>;
   invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number>;
   countRecentByUserIdAndType(userId: string, type: VerificationType, since: Date): Promise<number>;

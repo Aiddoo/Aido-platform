@@ -7,6 +7,7 @@ import type { VerificationType } from "#api/modules/identity/domain/types/auth/a
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { VerificationFixture } from "#test/fixtures/index";
 import { FakeEmailService } from "#test/mocks/fake-email.service";
+import { StubAuthVerificationRepository } from "#test/mocks/ports/auth-credentials.stub";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
 import type { AuthVerificationRepositoryPort } from "../../ports/auth/auth-persistence.port.js";
@@ -33,7 +34,7 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
   let security: Mocked<VerificationCodeSecurityPort>;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(currentTime);
     logger = mock<ApplicationLogger>();
     repository = mock<AuthVerificationRepositoryPort>();
@@ -133,9 +134,9 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
     beforeEach(() => {
       verification = VerificationFixture.create({ userId, type, token: digest, expiresAt });
       vi.when(repository.findValidByUserIdAndType, { onUnmatched: "throw" })
-        .calledWith(userId, type)
+        .calledWith(userId, type, currentTime)
         .thenResolve(verification);
-      repository.markAsUsed.mockResolvedValue(verification);
+      repository.consume.mockResolvedValue(true);
       repository.incrementAttempts.mockResolvedValue(verification);
     });
 
@@ -147,26 +148,35 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
 
       // Then
       expect(result).toBe(true);
-      expect(repository.markAsUsed).toHaveBeenCalledWith(verification.id);
+      expect(repository.consume).toHaveBeenCalledWith({
+        id: verification.id,
+        userId,
+        type: verification.type,
+        tokenHash: digest,
+        maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
+        at: currentTime,
+      });
       expect(repository.incrementAttempts).not.toHaveBeenCalled();
     });
 
     it("유효한 코드가 없으면 인증을 거부하고 사용 처리하지 않는다", async () => {
       // Given
-      vi.when(repository.findValidByUserIdAndType).calledWith(userId, type).thenResolve(null);
+      vi.when(repository.findValidByUserIdAndType)
+        .calledWith(userId, type, currentTime)
+        .thenResolve(null);
 
       // When
       const pending = service.verifyCode(userId, code, type);
 
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
-      expect(repository.markAsUsed).not.toHaveBeenCalled();
+      expect(repository.consume).not.toHaveBeenCalled();
     });
 
     it("시도 한도를 채웠으면 코드가 일치해도 인증을 거부한다", async () => {
       // Given
       vi.when(repository.findValidByUserIdAndType)
-        .calledWith(userId, type)
+        .calledWith(userId, type, currentTime)
         .thenResolve(
           VerificationFixture.create({ ...verification, attempts: VERIFICATION_CODE.MAX_ATTEMPTS }),
         );
@@ -176,7 +186,7 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
 
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0754 });
-      expect(repository.markAsUsed).not.toHaveBeenCalled();
+      expect(repository.consume).not.toHaveBeenCalled();
       expect(repository.incrementAttempts).not.toHaveBeenCalled();
     });
 
@@ -190,14 +200,14 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
       // Then
       await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
       expect(repository.incrementAttempts).toHaveBeenCalledExactlyOnceWith(verification.id);
-      expect(repository.markAsUsed).not.toHaveBeenCalled();
+      expect(repository.consume).not.toHaveBeenCalled();
     });
 
     it("비밀번호 재설정 코드도 해당 사용자·용도로 조회하여 검증한다", async () => {
       // Given
       const passwordResetType: VerificationType = "PASSWORD_RESET";
       vi.when(repository.findValidByUserIdAndType)
-        .calledWith(userId, passwordResetType)
+        .calledWith(userId, passwordResetType, currentTime)
         .thenResolve(VerificationFixture.create({ ...verification, type: passwordResetType }));
 
       // When
@@ -205,7 +215,75 @@ describe("VerificationService — 인증 코드 발급과 계정 보호", () => 
 
       // Then
       expect(result).toBe(true);
-      expect(repository.markAsUsed).toHaveBeenCalledWith(verification.id);
+      expect(repository.consume).toHaveBeenCalledWith({
+        id: verification.id,
+        userId,
+        type: passwordResetType,
+        tokenHash: digest,
+        maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
+        at: currentTime,
+      });
+    });
+
+    it("읽은 코드의 CAS 소비가 거부되면 인증 실패이며 성공 로그를 남기지 않는다", async () => {
+      // Given
+      repository.consume.mockResolvedValueOnce(false);
+      // When
+      const pending = service.verifyCode(userId, code, type);
+      // Then
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
+      expect(logger.log).not.toHaveBeenCalled();
+      expect(repository.incrementAttempts).not.toHaveBeenCalled();
+    });
+
+    it("같은 코드로 동시에 확인하면 한 요청만 소비하고 나머지는 거부한다", async () => {
+      // Given
+      const state = new StubAuthVerificationRepository([verification]);
+      const verifier = new VerificationService({
+        verificationRepository: state,
+        verificationCodeSecurity: security,
+        emailSender,
+        logger,
+      });
+      // When
+      const results = await Promise.allSettled([
+        verifier.verifyCode(userId, code, type),
+        verifier.verifyCode(userId, code, type),
+      ]);
+      // Then
+      expect(results.filter((result) => result.status === "fulfilled")).toEqual([
+        { status: "fulfilled", value: true },
+      ]);
+      expect(results.filter((result) => result.status === "rejected")).toEqual([
+        {
+          status: "rejected",
+          reason: expect.objectContaining({ errorCode: ErrorCode.VERIFY_0751 }),
+        },
+      ]);
+      expect(state.verifications.get(verification.id)).toMatchObject({
+        usedAt: currentTime,
+        attempts: 0,
+      });
+      expect(logger.log).toHaveBeenCalledTimes(1);
+    });
+
+    it("한 번 소비한 코드는 재확인해도 실패하며 소비한 시각을 유지한다", async () => {
+      // Given
+      const state = new StubAuthVerificationRepository([verification]);
+      const verifier = new VerificationService({
+        verificationRepository: state,
+        verificationCodeSecurity: security,
+        emailSender,
+        logger,
+      });
+      await verifier.verifyCode(userId, code, type);
+      vi.setSystemTime(new Date(currentTime.getTime() + 1));
+      // When
+      const pending = verifier.verifyCode(userId, code, type);
+      // Then
+      await expect(pending).rejects.toMatchObject({ errorCode: ErrorCode.VERIFY_0751 });
+      expect(state.verifications.get(verification.id)?.usedAt).toEqual(currentTime);
+      expect(logger.log).toHaveBeenCalledTimes(1);
     });
   });
 });

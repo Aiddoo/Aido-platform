@@ -2,7 +2,10 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";
 
-import { AuthPersistenceConflict } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
+import {
+  type AuthAccountRepositoryPort,
+  AuthPersistenceConflict,
+} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { varchar } from "#api/platform/database/database-values";
 import type { Account, AccountProvider } from "#api/platform/database/database.types";
@@ -12,7 +15,7 @@ import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8
 import { EncryptionService } from "#api/platform/encryption/index";
 
 @Injectable()
-export class AccountRepository {
+export class AccountRepository implements AuthAccountRepositoryPort {
   constructor(
     private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
     private readonly encryptionService: EncryptionService,
@@ -64,6 +67,21 @@ export class AccountRepository {
       .then((row) => decodeRecord("Account", requireRecord(row)));
   }
 
+  async updatePasswordIfUnchanged(
+    userId: string,
+    expectedPasswordHash: string,
+    passwordHash: string,
+  ): Promise<boolean> {
+    const count = await this.client.orm.public.Account.where((row) =>
+      and(
+        row.userId.eq(userId),
+        row.provider.eq("CREDENTIAL"),
+        row.password.eq(varchar(expectedPasswordHash, 128)),
+      ),
+    ).updateAndCount(encodePatch("Account", { password: passwordHash }));
+    return count === 1;
+  }
+
   async createOAuthAccount(data: {
     userId: string;
     provider: AccountProvider;
@@ -98,32 +116,6 @@ export class AccountRepository {
       }
       throw error;
     }
-  }
-
-  async updateOAuthTokens(
-    userId: string,
-    provider: AccountProvider,
-    tokens: {
-      accessToken: string;
-      refreshToken?: string;
-      accessTokenExpiresAt?: Date;
-    },
-  ): Promise<Account> {
-    return this.client.orm.public.Account.where((row) =>
-      and(row.userId.eq(userId), row.provider.eq(provider)),
-    )
-      .update(
-        encodePatch("Account", {
-          accessToken: this.encryptionService.encrypt(tokens.accessToken),
-          ...(tokens.refreshToken && {
-            refreshToken: this.encryptionService.encrypt(tokens.refreshToken),
-          }),
-          ...(tokens.accessTokenExpiresAt && {
-            accessTokenExpiresAt: tokens.accessTokenExpiresAt,
-          }),
-        }),
-      )
-      .then((row) => decodeRecord("Account", requireRecord(row)));
   }
 
   async deleteAccount(userId: string, provider: AccountProvider): Promise<Account> {

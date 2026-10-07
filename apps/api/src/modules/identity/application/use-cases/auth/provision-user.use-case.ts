@@ -50,10 +50,13 @@ export interface ProvisionedUser {
  * 경로별 처리는 호출측이 담당한다(IssueLoginUseCase와 동일한 범위 규율).
  */
 interface ProvisionUserDependencies {
-  readonly userRepository: AuthUserRepositoryPort;
-  readonly accountRepository: AuthAccountRepositoryPort;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "create" | "createProfile">;
+  readonly accountRepository: Pick<
+    AuthAccountRepositoryPort,
+    "createCredentialAccount" | "createOAuthAccount"
+  >;
   readonly seeder: UserProvisioningSeederPort;
-  readonly retentionEnroller: RetentionEnrollerPort;
+  readonly retentionEnroller: Pick<RetentionEnrollerPort, "enrollNewUser">;
 }
 
 export class ProvisionUser {

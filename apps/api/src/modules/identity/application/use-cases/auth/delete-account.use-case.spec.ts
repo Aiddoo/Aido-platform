@@ -49,6 +49,11 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
     const sessionRepository = new StubAuthSessionRepository([
       SessionFixture.create({ userId, id: "my-session-1" }),
       SessionFixture.create({ userId, id: "my-session-2" }),
+      SessionFixture.create({
+        userId,
+        id: "expired-session",
+        expiresAt: new Date(currentTime.getTime() - 1),
+      }),
       SessionFixture.create({ userId: "other-user", id: "other-session" }),
     ]);
     const cacheService = new StubAccountLifecycleCache(
@@ -109,6 +114,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
         new Map([
           ["my-session-1", REVOKE_REASON.ACCOUNT_DELETION],
           ["my-session-2", REVOKE_REASON.ACCOUNT_DELETION],
+          ["expired-session", REVOKE_REASON.ACCOUNT_DELETION],
         ]),
       );
       expect(fixture.cacheService.sessionIds).toEqual(new Set(["other-session"]));
@@ -189,7 +195,7 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       errorCode: ErrorCode.USER_0602,
     },
   ])(
-    "$description이면 계정·세션·캐시를 변경하지 않는다",
+    "$description: 계정·세션·캐시를 변경하지 않는다",
     async ({ inputPassword, storedPassword, errorCode }) => {
       // Given
       const fixture = givenAccount();
@@ -204,7 +210,9 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
       await expect(pending).rejects.toMatchObject({ errorCode });
       expect(fixture.userRepository.users.get(userId)?.deletedAt).toBeNull();
       expect(fixture.sessionRepository.revocationReasons.size).toBe(0);
-      expect(fixture.cacheService.sessionIds.size).toBe(3);
+      expect(fixture.cacheService.sessionIds).toEqual(
+        new Set(["my-session-1", "my-session-2", "expired-session", "other-session"]),
+      );
       expect(fixture.cacheService.userIds.has(userId)).toBe(true);
       expect(fixture.securityLogRepository.entries).toEqual([]);
     },
@@ -243,7 +251,9 @@ describe("DeleteAccount — 계정 탈퇴와 모든 기기의 접근 종료", ()
 
     // Then
     await expect(pending).rejects.toThrow("Audit write failed");
-    expect(fixture.cacheService.sessionIds.size).toBe(3);
+    expect(fixture.cacheService.sessionIds).toEqual(
+      new Set(["my-session-1", "my-session-2", "expired-session", "other-session"]),
+    );
     expect(fixture.cacheService.userIds.has(userId)).toBe(true);
   });
 });

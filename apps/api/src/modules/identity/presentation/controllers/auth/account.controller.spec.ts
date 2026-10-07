@@ -89,12 +89,11 @@ describe("AccountController — 계정 컨트롤러", () => {
       // When - getMe를 호출하면
       const result = await controller.getMe(mockUser);
 
-      // Then - 서비스에 userId, email, sessionId를 전달하고 매핑된 결과를 반환해야 한다
-      expect(getCurrentUserQuery.execute).toHaveBeenCalledWith(
-        mockUser.userId,
-        mockUser.email,
-        mockUser.sessionId,
-      );
+      // Then - UseCase에 userId와 sessionId를 전달하고 매핑된 결과를 반환해야 한다
+      expect(getCurrentUserQuery.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        sessionId: mockUser.sessionId,
+      });
       expect(result).toEqual(expectedResponse);
     });
   });
@@ -102,9 +101,9 @@ describe("AccountController — 계정 컨트롤러", () => {
   describe("updateProfile", () => {
     it("프로필 수정 요청을 서비스에 위임하고 매핑된 결과를 반환해야 한다", async () => {
       // Given - 프로필 수정 DTO와 서비스 응답이 준비되었을 때
-      const dto = {
+      const dto: UpdateProfileDto = {
         name: "새이름",
-      } as unknown as UpdateProfileDto;
+      };
       const serviceResult = {
         message: "프로필이 수정되었습니다.",
         name: "새이름",
@@ -117,7 +116,10 @@ describe("AccountController — 계정 컨트롤러", () => {
       const result = await controller.updateProfile(mockUser, dto);
 
       // Then - 서비스에 userId와 DTO를 전달하고 매핑된 결과를 반환해야 한다
-      expect(updateProfileUseCase.execute).toHaveBeenCalledWith(mockUser.userId, dto);
+      expect(updateProfileUseCase.execute).toHaveBeenCalledWith({
+        userId: mockUser.userId,
+        ...dto,
+      });
       expect(result).toEqual(expectedResponse);
     });
   });

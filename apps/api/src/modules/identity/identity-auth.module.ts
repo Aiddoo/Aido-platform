@@ -45,7 +45,6 @@ import {
 import {
   changePasswordProvider,
   completeOAuthAuthorizationProvider,
-  credentialAuthWorkflowProvider,
   deleteAccountProvider,
   exchangeOAuthCodeProvider,
   getCurrentUserProvider,
@@ -60,7 +59,6 @@ import {
   logoutAllProvider,
   logoutProvider,
   oauthWorkflowProvider,
-  passwordWorkflowProvider,
   provisionUserProvider,
   purgeDeletedAccountsProvider,
   restoreAccountProvider,
@@ -196,8 +194,6 @@ import { LastActiveInterceptor } from "./presentation/interceptors/auth/last-act
       useClass: NodeVerificationCodeSecurityAdapter,
     },
     OAuthTokenVerifierService,
-    credentialAuthWorkflowProvider,
-    passwordWorkflowProvider,
     oauthWorkflowProvider,
     // Use-cases (이메일·소셜 로그인·프로비저닝 수렴)
     issueLoginProvider,

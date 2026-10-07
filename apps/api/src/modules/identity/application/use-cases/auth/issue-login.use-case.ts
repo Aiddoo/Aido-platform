@@ -40,10 +40,10 @@ export interface IssueLoginOutcome {
  * 플래그 등 provider별 처리는 호출측이 담당한다.
  */
 interface IssueLoginDependencies {
-  readonly sessionService: SessionService;
-  readonly loginAttemptRepository: AuthLoginAttemptRepositoryPort;
-  readonly securityLogRepository: AuthSecurityLogRepositoryPort;
-  readonly userRepository: AuthUserRepositoryPort;
+  readonly sessionService: Pick<SessionService, "createSessionWithTokens">;
+  readonly loginAttemptRepository: Pick<AuthLoginAttemptRepositoryPort, "create">;
+  readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
+  readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
 }
 
 export class IssueLogin {

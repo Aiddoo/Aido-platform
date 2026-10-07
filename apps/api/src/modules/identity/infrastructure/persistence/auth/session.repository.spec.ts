@@ -313,14 +313,16 @@ describe("SessionRepository — 세션 리포지토리", () => {
   describe("revokeAllByUserId", () => {
     it("사용자의 모든 세션을 폐기한다", async () => {
       // Given - 사용자의 모든 세션 폐기 Mock 설정
-      db.orm.public.Session.updateAndCount.mockResolvedValue(5);
+      db.orm.public.Session.updateAll.mockReturnValue(
+        nativeRows([{ id: "session-1" }, { id: "session-2" }]),
+      );
 
       // When - 사용자의 모든 세션 폐기 실행
       const result = await repository.revokeAllByUserId("user-123", "password_changed");
 
-      // Then - 폐기된 세션 수 검증
-      expect(result).toBe(5);
-      expect(db.orm.public.Session.updateAndCount).toHaveBeenCalledWith(
+      // Then - 실제 변경된 세션 ID 검증
+      expect(result).toEqual(["session-1", "session-2"]);
+      expect(db.orm.public.Session.updateAll).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
             revokedAt: currentTime,
@@ -332,7 +334,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
 
     it("특정 세션을 제외하고 폐기한다", async () => {
       // Given - 특정 세션 제외 폐기 Mock 설정
-      db.orm.public.Session.updateAndCount.mockResolvedValue(4);
+      db.orm.public.Session.updateAll.mockReturnValue(nativeRows([{ id: "other-session" }]));
 
       // When - 현재 세션을 제외하고 나머지 폐기 실행
       const result = await repository.revokeAllByUserId(
@@ -342,8 +344,8 @@ describe("SessionRepository — 세션 리포지토리", () => {
       );
 
       // Then - 제외된 세션을 제외한 폐기 검증
-      expect(result).toBe(4);
-      expect(db.orm.public.Session.updateAndCount).toHaveBeenCalledWith(
+      expect(result).toEqual(["other-session"]);
+      expect(db.orm.public.Session.updateAll).toHaveBeenCalledWith(
         expect.objectContaining(
           databaseWriteExpectation("Session", {
             revokedAt: currentTime,

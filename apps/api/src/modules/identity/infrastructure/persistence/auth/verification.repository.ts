@@ -1,7 +1,11 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and, or } from "@prisma/orm-postgres/orm-client";
+import { and } from "@prisma/orm-postgres/orm-client";
 
+import type {
+  AuthVerificationRepositoryPort,
+  ConsumeAuthVerificationInput,
+} from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import { DatabaseService } from "#api/platform/database/database.service";
@@ -11,7 +15,7 @@ import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8
 import { now } from "#api/shared/domain/date/utils/core";
 
 @Injectable()
-export class VerificationRepository {
+export class VerificationRepository implements AuthVerificationRepositoryPort {
   constructor(
     private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>,
     // incrementAttempts는 활성 트랜잭션을 우회해야 하므로 베이스 클라이언트를 별도 주입한다.
@@ -39,51 +43,22 @@ export class VerificationRepository {
     ).then((row) => decodeRecord("Verification", row));
   }
 
-  async findByToken(tokenHash: string): Promise<Verification | null> {
-    return this.client.orm.public.Verification.where((row) => row.token.eq(varchar(tokenHash, 64)))
-      .first()
-      .then((row) => decodeRecord("Verification", row));
-  }
-
-  async findLatestByUserIdAndType(
-    userId: string,
-    type: VerificationType,
-  ): Promise<Verification | null> {
-    return this.client.orm.public.Verification.where((row) =>
-      and(
-        row.userId.eq(userId),
-        row._type.eq(type),
-        row.usedAt.isNull(),
-        row.expiresAt.gt(databaseTimestamp(now())),
-      ),
-    )
-      .orderBy((row) => row.createdAt.desc())
-      .first()
-      .then((row) => decodeRecord("Verification", row));
-  }
-
-  // 시도 횟수 검증은 서비스 레이어에서 수행
   async findValidByUserIdAndType(
     userId: string,
     type: VerificationType,
+    at: Date = now(),
   ): Promise<Verification | null> {
     return this.client.orm.public.Verification.where((row) =>
       and(
         row.userId.eq(userId),
         row._type.eq(type),
         row.usedAt.isNull(),
-        row.expiresAt.gt(databaseTimestamp(now())),
+        row.expiresAt.gt(databaseTimestamp(at)),
       ),
     )
       .orderBy((row) => row.createdAt.desc())
       .first()
       .then((row) => decodeRecord("Verification", row));
-  }
-
-  async markAsUsed(id: number): Promise<Verification> {
-    return this.client.orm.public.Verification.where((row) => row.id.eq(id))
-      .update(encodePatch("Verification", { usedAt: now() }))
-      .then((row) => decodeRecord("Verification", requireRecord(row)));
   }
 
   /**
@@ -104,36 +79,19 @@ export class VerificationRepository {
     return decodeRecord("Verification", requireRecord(row));
   }
 
-  /**
-   * 원자적 인증 사용 처리 (조건부 업데이트)
-   *
-   * 조건:
-   * - 토큰 해시 일치
-   * - 사용자 ID 일치
-   * - 타입 일치
-   * - 미사용 (usedAt === null)
-   * - 만료되지 않음 (expiresAt > now)
-   * - 최대 시도 횟수 미초과
-   *
-   * @returns 조건 충족 시 업데이트된 Verification, 불충족 시 null
-   */
-  async markAsUsedAtomic(
-    tokenHash: string,
-    userId: string,
-    type: VerificationType,
-    maxAttempts: number,
-  ): Promise<Verification | null> {
-    const row = await this.client.orm.public.Verification.where((row) =>
+  async consume(input: ConsumeAuthVerificationInput): Promise<boolean> {
+    const count = await this.client.orm.public.Verification.where((row) =>
       and(
-        row.token.eq(varchar(tokenHash, 64)),
-        row.userId.eq(userId),
-        row._type.eq(type),
+        row.id.eq(input.id),
+        row.token.eq(varchar(input.tokenHash, 64)),
+        row.userId.eq(input.userId),
+        row._type.eq(input.type),
         row.usedAt.isNull(),
-        row.expiresAt.gt(databaseTimestamp(now())),
-        row.attempts.lt(maxAttempts),
+        row.expiresAt.gt(databaseTimestamp(input.at)),
+        row.attempts.lt(input.maxAttempts),
       ),
-    ).update(encodePatch("Verification", { usedAt: now() }));
-    return decodeRecord("Verification", row);
+    ).updateAndCount(encodePatch("Verification", { usedAt: input.at }));
+    return count === 1;
   }
 
   async invalidateAllByUserIdAndType(userId: string, type: VerificationType): Promise<number> {
@@ -161,14 +119,5 @@ export class VerificationRepository {
     )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);
-  }
-
-  async deleteExpired(): Promise<number> {
-    const result = {
-      count: await this.database.db.orm.public.Verification.where((row) =>
-        or(row.expiresAt.lt(databaseTimestamp(now())), row.usedAt.isNotNull()),
-      ).deleteAndCount(),
-    };
-    return result.count;
   }
 }

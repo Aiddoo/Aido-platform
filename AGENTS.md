@@ -76,7 +76,7 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 ## 규칙 & 금칙
 
 - **린트/포맷**: Oxlint + Oxfmt — `pnpm lint`, `pnpm format:check`, `pnpm format`
-- **커밋**: Conventional Commits (`pnpm commit` 권장)
+- **커밋**: Conventional Commits (`pnpm commit` 권장). 설명은 한국어로 작성한다. 서버 리팩터링은 `refactor(server): 설명`, CI 변경은 `ci(server): 설명` 형식을 사용한다.
 - **타입**: `strict: true` 유지
 - **DTO**: `@aido/api`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
 - **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지

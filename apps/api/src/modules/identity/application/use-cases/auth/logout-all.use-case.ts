@@ -19,10 +19,7 @@ export interface LogoutAllInput {
 }
 
 interface LogoutAllDependencies {
-  readonly sessionRepository: Pick<
-    AuthSessionRepositoryPort,
-    "findActiveByUserId" | "revokeAllByUserId"
-  >;
+  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "revokeAllByUserId">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly cacheService: Pick<AuthCachePort, "invalidateSession">;
   readonly logger: ApplicationLogger;
@@ -36,18 +33,16 @@ export class LogoutAll {
   }
 
   async execute(input: LogoutAllInput): Promise<{ message: string; revokedCount: number }> {
-    const activeSessions = await this.#dependencies.sessionRepository.findActiveByUserId(
-      input.userId,
-    );
-    const revokedCount = await this.#dependencies.sessionRepository.revokeAllByUserId(
+    const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
       input.userId,
       REVOKE_REASON.USER_LOGOUT_ALL,
     );
     await Promise.all(
-      activeSessions.map((session) =>
-        this.#dependencies.cacheService.invalidateSession(session.id),
+      revokedSessionIds.map((sessionId) =>
+        this.#dependencies.cacheService.invalidateSession(sessionId),
       ),
     );
+    const revokedCount = revokedSessionIds.length;
     await this.#dependencies.securityLogRepository.create({
       userId: input.userId,
       event: SECURITY_EVENT.SESSION_REVOKED_ALL,

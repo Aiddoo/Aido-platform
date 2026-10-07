@@ -108,13 +108,13 @@ export class StubAuthSessionRepository implements SessionOperations {
     userId: string,
     reason: string,
     excludeSessionId?: string,
-  ): Promise<number> {
+  ): Promise<readonly string[]> {
     const sessions = [...this.sessions.values()].filter(
       (session) =>
         session.userId === userId && session.revokedAt === null && session.id !== excludeSessionId,
     );
     for (const session of sessions) await this.revoke(session.id, reason);
-    return sessions.length;
+    return sessions.map((session) => session.id);
   }
 }
 

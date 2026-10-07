@@ -186,4 +186,38 @@ describe("SessionRepository 통합 테스트 — 세션 회전과 폐기 원자�
     expect((await repository.findById(alreadyRevoked.id))?.revokedReason).toBe("user_logout");
     expect((await repository.findById(otherFamily.id))?.revokedAt).toBeNull();
   });
+
+  it("전체 폐기는 실제 변경한 ID만 반환하고 제외 세션과 다른 사용자·기존 사유를 보존한다", async () => {
+    // Given
+    const current = await givenSession({ refreshTokenHash: "current-device" });
+    const active = await givenSession({ refreshTokenHash: "other-device" });
+    const expired = await givenSession({
+      refreshTokenHash: "expired-device",
+      expiresAt: currentTime,
+    });
+    const revoked = await givenSession({
+      refreshTokenHash: "already-revoked",
+      revokedAt: currentTime,
+      revokedReason: "user_logout",
+    });
+    const otherUser = await client.orm.public.User.create(
+      encodeCreate("User", UserFixture.create({ id: createEntityId(), userTag: "OTHER001" })),
+    );
+    const otherSession = await givenSession({
+      userId: otherUser.id,
+      refreshTokenHash: "other-user-device",
+    });
+
+    // When
+    const ids = await repository.revokeAllByUserId(userId, "password_changed", current.id);
+    const repeated = await repository.revokeAllByUserId(userId, "password_changed", current.id);
+
+    // Then - 만료된 미폐기 세션도 기존 전체 폐기 정책에 포함한다.
+    expect(ids.toSorted()).toEqual([active.id, expired.id].toSorted());
+    expect(repeated).toEqual([]);
+    expect((await repository.findById(current.id))?.revokedAt).toBeNull();
+    expect((await repository.findById(otherSession.id))?.revokedAt).toBeNull();
+    expect((await repository.findById(revoked.id))?.revokedReason).toBe("user_logout");
+    expect((await repository.findById(expired.id))?.revokedReason).toBe("password_changed");
+  });
 });

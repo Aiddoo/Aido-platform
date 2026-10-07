@@ -1,35 +1,17 @@
 import type { TestingModule } from "@nestjs/testing";
 import { and } from "@prisma/orm-postgres/orm-client";
-/**
- * 비밀번호 설정 통합 테스트 (Testcontainers)
- *
- * @description
- * PasswordWorkflow.requestPasswordSetupCode() 및 PasswordWorkflow.setPassword()가
- * 실제 PostgreSQL DB와 함께 올바르게 작동하는지 검증합니다.
- *
- * 통합 테스트의 목적:
- * - PasswordWorkflow -> Repository -> Prisma -> PostgreSQL 전체 스택 검증
- * - 소셜 전용 사용자의 비밀번호 설정 플로우
- * - CREDENTIAL 계정 생성 및 SecurityLog 기록
- * - 비밀번호 설정 후 이메일 로그인 가능 여부
- *
- * 실행 조건:
- * - Docker가 실행 중이어야 함 (Testcontainers 사용)
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test auth-password-setup.integration-spec
- * ```
- */
-import { vi } from "vitest";
+import { omit } from "es-toolkit";
 
-import { CredentialAuthWorkflow } from "#api/modules/identity/application/workflows/auth/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/modules/identity/application/workflows/auth/password.workflow";
+import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
+import { RequestPasswordSetupCode } from "#api/modules/identity/application/use-cases/auth/request-password-setup-code.use-case";
+import { SetPassword } from "#api/modules/identity/application/use-cases/auth/set-password.use-case";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+import { AccountFixture, UserFixture } from "#test/fixtures/user.fixture";
 import { createTestDatabaseService } from "#test/setup/database-context";
 import { suppressLogger } from "#test/setup/suppress-logger";
+import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
 import { FakeEmailService } from "../mocks/fake-email.service.js";
 import { TestDatabase } from "../setup/test-database.js";
@@ -37,26 +19,26 @@ import { createAuthTestModule } from "./helpers/auth-test-module.factory.js";
 
 describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let authService: CredentialAuthWorkflow;
-  let passwordManagementService: PasswordWorkflow;
+  let requestPasswordSetupCode: RequestPasswordSetupCode;
+  let setPassword: SetPassword;
+  let loginWithPassword: LoginWithPassword;
   let fakeEmailService: FakeEmailService;
   let testDb: TestDatabase;
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    suppressLogger();
-
     testDb = new TestDatabase();
     databaseService = createTestDatabaseService(await testDb.start());
     fakeEmailService = new FakeEmailService();
 
     module = await createAuthTestModule(databaseService, fakeEmailService);
-    authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
-    passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
+    requestPasswordSetupCode = module.get(RequestPasswordSetupCode);
+    setPassword = module.get(SetPassword);
+    loginWithPassword = module.get(LoginWithPassword);
   }, 60000);
 
   beforeEach(async () => {
-    vi.clearAllMocks();
+    suppressLogger();
     await testDb.cleanup();
     fakeEmailService.clear();
   });
@@ -69,48 +51,36 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
     }
   });
 
-  /**
-   * FakeEmailService에서 인증 코드를 안전하게 가져오는 헬퍼
-   */
   function getCode(email: string): string {
     const code = fakeEmailService.getLastCode(email);
-    if (!code) throw new Error(`No code found for ${email}`);
+    if (code == null) throw new Error(`No code found for ${email}`);
     return code;
   }
 
-  /**
-   * 소셜 전용 사용자 생성 헬퍼 (DB에 직접 생성)
-   * CREDENTIAL 계정 없이 소셜 계정만 가진 사용자를 생성합니다.
-   * @returns userId
-   */
   async function createSocialOnlyUser(
     email: string,
     provider: "GOOGLE" | "KAKAO" | "NAVER" | "APPLE" = "GOOGLE",
   ): Promise<string> {
-    const prisma = testDb.getClient();
-    const user = decodeRecord(
-      "User",
-      await prisma.orm.public.User.create(
-        encodeCreate("User", {
-          email,
-          userTag: `TAG${Date.now().toString(36).slice(-5).toUpperCase()}`,
-          status: "ACTIVE",
-          emailVerifiedAt: new Date(),
-        }),
-      ),
+    const userFixture = UserFixture.create({ email });
+    const user = await createUserDatabaseFixture(
+      testDb.getClient(),
+      encodeCreate("User", userFixture),
+      {
+        accounts: [
+          omit(
+            encodeCreate(
+              "Account",
+              AccountFixture.create({
+                userId: userFixture.id,
+                provider,
+                providerAccountId: `${provider.toLowerCase()}-${userFixture.id}`,
+              }),
+            ),
+            ["id", "userId"],
+          ),
+        ],
+      },
     );
-
-    decodeRecord(
-      "Account",
-      await prisma.orm.public.Account.create(
-        encodeCreate("Account", {
-          userId: user.id,
-          provider,
-          providerAccountId: `${provider.toLowerCase()}-${user.id}`,
-        }),
-      ),
-    );
-
     return user.id;
   }
 
@@ -121,7 +91,7 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const userId = await createSocialOnlyUser(email);
 
       // When
-      const result = await passwordManagementService.requestPasswordSetupCode(userId);
+      const result = await requestPasswordSetupCode.execute({ userId });
 
       // Then
       expect(result.message).toBeDefined();
@@ -135,13 +105,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const userId = await createSocialOnlyUser(email);
 
       // 비밀번호 설정 코드 요청 및 설정
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
       const code = getCode(email);
 
-      await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // When & Then
-      await expect(passwordManagementService.requestPasswordSetupCode(userId)).rejects.toThrow(
+      await expect(requestPasswordSetupCode.execute({ userId })).rejects.toThrow(
         ApplicationException,
       );
     });
@@ -153,11 +123,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "set-pw-test@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
       const code = getCode(email);
 
       // When
-      const result = await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      const result = await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // Then
       expect(result.message).toBeDefined();
@@ -179,13 +149,18 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "seclog-pw-test@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
       const code = getCode(email);
 
       // When
-      await passwordManagementService.setPassword(userId, code, "NewPassword1", {
-        ip: "192.168.1.1",
-        userAgent: "IntegrationTest/1.0",
+      await setPassword.execute({
+        userId,
+        code,
+        newPassword: "NewPassword1",
+        metadata: {
+          ip: "192.168.1.1",
+          userAgent: "IntegrationTest/1.0",
+        },
       });
 
       // Then
@@ -207,13 +182,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const password = "NewPassword1";
       const userId = await createSocialOnlyUser(email);
 
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
       const code = getCode(email);
 
-      await passwordManagementService.setPassword(userId, code, password);
+      await setPassword.execute({ userId, code, newPassword: password });
 
       // When - 이메일/비밀번호로 로그인
-      const loginResult = await authService.login({ email, password });
+      const loginResult = await loginWithPassword.execute({ email, password });
 
       // Then
       expect(loginResult.tokens.accessToken).toBeDefined();
@@ -225,11 +200,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "wrong-code-test@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
 
       // When & Then
       await expect(
-        passwordManagementService.setPassword(userId, "000000", "NewPassword1"),
+        setPassword.execute({ userId, code: "000000", newPassword: "NewPassword1" }),
       ).rejects.toThrow(ApplicationException);
     });
 
@@ -238,13 +213,13 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "duplicate-setup@example.com";
       const userId = await createSocialOnlyUser(email);
 
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
       const code = getCode(email);
 
-      await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // When & Then - 다시 설정 시도 (코드 요청도 실패해야 함)
-      await expect(passwordManagementService.requestPasswordSetupCode(userId)).rejects.toThrow(
+      await expect(requestPasswordSetupCode.execute({ userId })).rejects.toThrow(
         ApplicationException,
       );
     });
@@ -254,11 +229,11 @@ describe("비밀번호 설정 통합 테스트 (실제 DB)", () => {
       const email = "keep-social@example.com";
       const userId = await createSocialOnlyUser(email, "KAKAO");
 
-      await passwordManagementService.requestPasswordSetupCode(userId);
+      await requestPasswordSetupCode.execute({ userId });
       const code = getCode(email);
 
       // When
-      await passwordManagementService.setPassword(userId, code, "NewPassword1");
+      await setPassword.execute({ userId, code, newPassword: "NewPassword1" });
 
       // Then - KAKAO 계정과 CREDENTIAL 계정 모두 존재
       const prisma = testDb.getClient();

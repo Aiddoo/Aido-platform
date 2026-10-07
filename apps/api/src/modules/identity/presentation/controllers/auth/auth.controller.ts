@@ -109,7 +109,7 @@ export class AuthController {
   @ApiCreatedResponse({ type: MessageResponseDto })
   @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0501 })
   async register(@Body({ schema: RegisterDto }) dto: RegisterDto, @Req() req: Request) {
-    const result = await this.registerUseCase.execute(dto, extractMetadata(req));
+    const result = await this.registerUseCase.execute({ ...dto, metadata: extractMetadata(req) });
     return AuthMapper.toRegisterResponse(result);
   }
 
@@ -159,7 +159,7 @@ export class AuthController {
     @Headers("x-app-version") appVersion?: string,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.verifyEmailUseCase.execute(dto, metadata);
+    const result = await this.verifyEmailUseCase.execute({ ...dto, metadata });
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
 
@@ -190,7 +190,7 @@ export class AuthController {
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
   async resendVerification(@Body({ schema: ResendVerificationDto }) dto: ResendVerificationDto) {
-    const result = await this.resendVerificationUseCase.execute(dto.email);
+    const result = await this.resendVerificationUseCase.execute({ email: dto.email });
     return result;
   }
 
@@ -251,7 +251,7 @@ export class AuthController {
     @Headers("x-app-version") appVersion?: string,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.loginWithPasswordUseCase.execute(dto, metadata);
+    const result = await this.loginWithPasswordUseCase.execute({ ...dto, metadata });
     return AuthMapper.toAuthTokensResponse(result, appVersion);
   }
 
@@ -394,7 +394,10 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
     @Body({ schema: ForgotPasswordDto }) dto: ForgotPasswordDto,
     @Req() req: Request,
   ) {
-    const result = await this.requestPasswordResetUseCase.execute(dto.email, extractMetadata(req));
+    const result = await this.requestPasswordResetUseCase.execute({
+      email: dto.email,
+      metadata: extractMetadata(req),
+    });
     return result;
   }
 
@@ -437,7 +440,11 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
   async resetPassword(@Body({ schema: ResetPasswordDto }) dto: ResetPasswordDto) {
-    const result = await this.resetPasswordUseCase.execute(dto.email, dto.code, dto.newPassword);
+    const result = await this.resetPasswordUseCase.execute({
+      email: dto.email,
+      code: dto.code,
+      newPassword: dto.newPassword,
+    });
     return result;
   }
 
@@ -477,7 +484,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0753 })
   async requestPasswordSetupCode(@CurrentUser() user: CurrentUserPayload) {
-    return this.requestPasswordSetupCodeUseCase.execute(user.userId);
+    return this.requestPasswordSetupCodeUseCase.execute({ userId: user.userId });
   }
 
   @Post("password")
@@ -525,7 +532,12 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    return this.setPasswordUseCase.execute(user.userId, dto.code, dto.newPassword, metadata);
+    return this.setPasswordUseCase.execute({
+      userId: user.userId,
+      code: dto.code,
+      newPassword: dto.newPassword,
+      metadata,
+    });
   }
 
   @Patch("password")
@@ -569,13 +581,13 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    const result = await this.changePasswordUseCase.execute(
-      user.userId,
-      dto.currentPassword,
-      dto.newPassword,
+    const result = await this.changePasswordUseCase.execute({
+      userId: user.userId,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
       metadata,
-      user.sessionId,
-    );
+      currentSessionId: user.sessionId,
+    });
     return result;
   }
 }

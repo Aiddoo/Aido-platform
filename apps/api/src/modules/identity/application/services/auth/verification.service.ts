@@ -1,10 +1,13 @@
 import { ErrorCode } from "@aido/api/errors";
 import { VERIFICATION_CODE } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
+import { AuthVerification } from "#api/modules/identity/domain/aggregates/auth/auth-verification.aggregate";
 import type { VerificationType } from "#api/modules/identity/domain/types/auth/auth.types";
 import { VerificationCode } from "#api/modules/identity/domain/value-objects/auth/verification-code.vo";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { addMinutes, subtractSeconds } from "#api/shared/domain/date/utils/arithmetic";
+import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { IdentityLogEvent } from "../../observability/auth/identity-log.events.js";
@@ -17,7 +20,6 @@ export interface VerificationCodeResult {
   expiresAt: Date;
 }
 
-// 6자리 숫자 인증 코드 생성, 검증, 이메일 발송 (SHA-256 해시 저장, 최대 시도 횟수 제한, 재발송 쿨다운)
 interface VerificationServiceDependencies {
   readonly verificationRepository: AuthVerificationRepositoryPort;
   readonly emailSender: AuthEmailSenderPort;
@@ -34,19 +36,20 @@ export class VerificationService {
 
   // 트랜잭션 내부에서만 사용. 이메일 발송은 트랜잭션 후 sendVerificationEmail()로 별도 처리
   async createEmailVerification(userId: string): Promise<VerificationCodeResult> {
-    // 재발송 쿨다운 확인
     await this.#checkResendCooldown(userId, "EMAIL_VERIFY");
 
-    // 기존 미사용 인증 코드 무효화
     await this.#dependencies.verificationRepository.invalidateAllByUserIdAndType(
       userId,
       "EMAIL_VERIFY",
     );
 
-    // 새 인증 코드 생성
     const result = await this.#createVerificationCode(userId, "EMAIL_VERIFY");
 
-    this.#dependencies.logger.log(`Verification code created for user ${userId}`);
+    this.#dependencies.logger.log({
+      event: IdentityLogEvent.VERIFICATION_CREATED,
+      userId,
+      verificationType: "EMAIL_VERIFY",
+    });
     return result;
   }
 
@@ -62,24 +65,19 @@ export class VerificationService {
         event: IdentityLogEvent.VERIFICATION_EMAIL_FAILED,
         verificationType: "EMAIL_VERIFY",
       });
-      // 이메일 발송 실패해도 예외를 던지지 않음 (사용자는 재발송 가능)
     }
   }
 
   async createAndSendPasswordReset(userId: string, email: string): Promise<VerificationCodeResult> {
-    // 재발송 쿨다운 확인
     await this.#checkResendCooldown(userId, "PASSWORD_RESET");
 
-    // 기존 미사용 인증 코드 무효화
     await this.#dependencies.verificationRepository.invalidateAllByUserIdAndType(
       userId,
       "PASSWORD_RESET",
     );
 
-    // 새 인증 코드 생성
     const result = await this.#createVerificationCode(userId, "PASSWORD_RESET");
 
-    // 이메일 발송
     const emailResult = await this.#dependencies.emailSender.sendPasswordResetCode(email, {
       code: result.code,
       expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
@@ -93,24 +91,24 @@ export class VerificationService {
       });
     }
 
-    this.#dependencies.logger.log(`Password reset code created for user ${userId}`);
+    this.#dependencies.logger.log({
+      event: IdentityLogEvent.VERIFICATION_CREATED,
+      userId,
+      verificationType: "PASSWORD_RESET",
+    });
     return result;
   }
 
   async createAndSendPasswordSetup(userId: string, email: string): Promise<VerificationCodeResult> {
-    // 재발송 쿨다운 확인
     await this.#checkResendCooldown(userId, "PASSWORD_SETUP");
 
-    // 기존 미사용 인증 코드 무효화
     await this.#dependencies.verificationRepository.invalidateAllByUserIdAndType(
       userId,
       "PASSWORD_SETUP",
     );
 
-    // 새 인증 코드 생성
     const result = await this.#createVerificationCode(userId, "PASSWORD_SETUP");
 
-    // 이메일 발송
     const emailResult = await this.#dependencies.emailSender.sendPasswordSetupCode(email, {
       code: result.code,
       expiryMinutes: VERIFICATION_CODE.EXPIRY_MINUTES,
@@ -124,47 +122,70 @@ export class VerificationService {
       });
     }
 
-    this.#dependencies.logger.log(`Password setup code created for user ${userId}`);
+    this.#dependencies.logger.log({
+      event: IdentityLogEvent.VERIFICATION_CREATED,
+      userId,
+      verificationType: "PASSWORD_SETUP",
+    });
     return result;
   }
 
-  // 브루트포스 보호: 최대 시도 횟수 초과 시 검증 거부, 실패 시 시도 횟수 증가
   async verifyCode(userId: string, code: string, type: VerificationType): Promise<boolean> {
-    // 해당 사용자의 유효한 인증 코드 조회 (시도 횟수 포함)
+    const at = now();
     const verification = await this.#dependencies.verificationRepository.findValidByUserIdAndType(
       userId,
       type,
+      at,
     );
 
-    // 유효한 인증 코드가 없음
-    if (!verification) {
+    if (verification === null) {
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
 
-    // 브루트포스 보호: 최대 시도 횟수 초과 확인
-    if (verification.attempts >= VERIFICATION_CODE.MAX_ATTEMPTS) {
-      throw new ApplicationException(ErrorCode.VERIFY_0754);
-    }
+    const challenge = AuthVerification.reconstitute(verification);
+    match(challenge.validityAt(at))
+      .with("valid", () => undefined)
+      .with("exhausted", () => {
+        throw new ApplicationException(ErrorCode.VERIFY_0754);
+      })
+      .with("used", "expired", () => {
+        throw new ApplicationException(ErrorCode.VERIFY_0751);
+      })
+      .exhaustive();
 
     const tokenHash = this.#dependencies.verificationCodeSecurity.hash(code);
 
-    // 코드 일치 확인
     if (verification.token !== tokenHash) {
-      // 실패 시 시도 횟수 증가 (트랜잭션 외부에서 수행하여 롤백 방지)
-      // 브루트포스 보호를 위해 실패 횟수는 항상 영구 저장되어야 함
+      // 호출자 TX가 롤백되어도 실패 횟수가 남도록 base client로 독립 커밋한다.
       await this.#dependencies.verificationRepository.incrementAttempts(verification.id);
 
-      this.#dependencies.logger.warn(
-        `Verification attempt failed for user ${userId}, attempts: ${verification.attempts + 1}`,
-      );
+      this.#dependencies.logger.warn({
+        event: IdentityLogEvent.VERIFICATION_FAILED,
+        userId,
+        verificationType: type,
+      });
 
       throw new ApplicationException(ErrorCode.VERIFY_0751);
     }
 
-    // 사용 처리
-    await this.#dependencies.verificationRepository.markAsUsed(verification.id);
+    const consumed = await this.#dependencies.verificationRepository.consume({
+      id: verification.id,
+      userId,
+      type,
+      tokenHash,
+      maxAttempts: VERIFICATION_CODE.MAX_ATTEMPTS,
+      at,
+    });
+    if (!consumed) {
+      throw new ApplicationException(ErrorCode.VERIFY_0751);
+    }
+    challenge.consume(at);
 
-    this.#dependencies.logger.log(`Verification code verified for user ${userId}`);
+    this.#dependencies.logger.log({
+      event: IdentityLogEvent.VERIFICATION_CONSUMED,
+      userId,
+      verificationType: type,
+    });
     return true;
   }
 
@@ -188,14 +209,11 @@ export class VerificationService {
     userId: string,
     type: VerificationType,
   ): Promise<VerificationCodeResult> {
-    // 6자리 랜덤 숫자 생성 + SHA-256 해시(도메인 값 객체가 소유)
     const generatedCode = this.#dependencies.verificationCodeSecurity.generate();
     const verificationCode = VerificationCode.create(generatedCode.plaintext, generatedCode.digest);
 
-    // 만료 시간 계산
     const expiresAt = addMinutes(VERIFICATION_CODE.EXPIRY_MINUTES);
 
-    // DB에 저장 (해시된 토큰)
     await this.#dependencies.verificationRepository.create({
       userId,
       type,

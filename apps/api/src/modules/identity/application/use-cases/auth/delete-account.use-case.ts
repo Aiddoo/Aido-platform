@@ -35,10 +35,7 @@ export interface DeleteAccountInput {
 interface DeleteAccountDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findById" | "softDelete">;
   readonly accountRepository: Pick<AuthAccountRepositoryPort, "findAllByUserId">;
-  readonly sessionRepository: Pick<
-    AuthSessionRepositoryPort,
-    "findActiveByUserId" | "revokeAllByUserId"
-  >;
+  readonly sessionRepository: Pick<AuthSessionRepositoryPort, "revokeAllByUserId">;
   readonly passwordService: Pick<AuthPasswordHasherPort, "verify">;
   readonly securityLogRepository: Pick<AuthSecurityLogRepositoryPort, "create">;
   readonly unitOfWork: UnitOfWorkPort;
@@ -78,15 +75,12 @@ export class DeleteAccount {
       }
     }
 
-    const activeSessions = await this.#dependencies.sessionRepository.findActiveByUserId(
-      input.userId,
-    );
     const deletedAt = now();
     const identityUser = IdentityUser.reconstitute(user);
     identityUser.requestDeletion(deletedAt);
-    await this.#dependencies.unitOfWork.run(async () => {
+    const revokedSessionIds = await this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.userRepository.softDelete(identityUser.id, deletedAt);
-      await this.#dependencies.sessionRepository.revokeAllByUserId(
+      const revokedSessionIds = await this.#dependencies.sessionRepository.revokeAllByUserId(
         identityUser.id,
         REVOKE_REASON.ACCOUNT_DELETION,
         undefined,
@@ -102,11 +96,12 @@ export class DeleteAccount {
           providers: accounts.map((account) => account.provider),
         },
       });
+      return revokedSessionIds;
     });
 
     await Promise.all(
-      activeSessions.map((session) =>
-        this.#dependencies.cacheService.invalidateSession(session.id),
+      revokedSessionIds.map((sessionId) =>
+        this.#dependencies.cacheService.invalidateSession(sessionId),
       ),
     );
     await this.#dependencies.cacheService.invalidateUserProfile(identityUser.id);

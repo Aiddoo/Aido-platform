@@ -1,16 +1,4 @@
 import { and } from "@prisma/orm-postgres/orm-client";
-/**
- * AccountRepository 단위 테스트
- *
- * @description
- * 계정 저장소의 Credential/OAuth 계정 CRUD 메서드를 검증한다.
- * 트랜잭션 지원, OAuth 토큰 암호화 갱신, 계정 삭제를 확인한다.
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test account.repository.spec.ts
- * ```
- */
 import type { Mocked } from "vitest";
 import { mock } from "vitest-mock-extended";
 
@@ -148,29 +136,6 @@ describe("AccountRepository — 계정 리포지토리", () => {
         ),
       );
     });
-
-    it("활성 트랜잭션 클라이언트를 사용하여 생성한다", async () => {
-      // Given
-      db.orm.public.Account.create.mockResolvedValue(
-        databaseFixture("Account", mockCredentialAccount),
-      );
-
-      // When
-      const result = await repository.createCredentialAccount("user-123", "hashed-password");
-
-      // Then
-      expect(result).toEqual(mockCredentialAccount);
-      expect(db.orm.public.Account.create).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Account", {
-            userId: "user-123",
-            provider: "CREDENTIAL",
-            providerAccountId: "user-123",
-            password: "hashed-password",
-          }),
-        ),
-      );
-    });
   });
 
   describe("updatePassword", () => {
@@ -181,27 +146,6 @@ describe("AccountRepository — 계정 리포지토리", () => {
         .asCredential()
         .withPassword("new-hashed-password")
         .withUpdatedAt(new Date("2025-01-15T00:00:00Z"))
-        .build();
-      db.orm.public.Account.update.mockResolvedValue(databaseFixture("Account", updatedAccount));
-
-      // When
-      const result = await repository.updatePassword("user-123", "new-hashed-password");
-
-      // Then
-      expect(result).toEqual(updatedAccount);
-      expect(db.orm.public.Account.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Account", { password: "new-hashed-password" }),
-        ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트를 사용하여 업데이트한다", async () => {
-      // Given
-      const updatedAccount = AccountBuilder.create("user-123")
-        .withId(1)
-        .asCredential()
-        .withPassword("new-hashed-password")
         .build();
       db.orm.public.Account.update.mockResolvedValue(databaseFixture("Account", updatedAccount));
 
@@ -286,18 +230,6 @@ describe("AccountRepository — 계정 리포지토리", () => {
       );
     });
 
-    it("활성 트랜잭션 클라이언트를 사용하여 생성한다", async () => {
-      // Given
-      db.orm.public.Account.create.mockResolvedValue(databaseFixture("Account", mockOAuthAccount));
-
-      // When
-      const result = await repository.createOAuthAccount(oAuthData);
-
-      // Then
-      expect(result).toEqual(mockOAuthAccount);
-      expect(db.orm.public.Account.create).toHaveBeenCalled();
-    });
-
     it("OAuth 계정 유니크 충돌을 애플리케이션 경계 오류로 변환한다", async () => {
       // Given - 동일 provider 계정 연결이 동시에 완료된 상황
       db.orm.public.Account.create.mockRejectedValue(sqlQueryError("23505"));
@@ -313,107 +245,8 @@ describe("AccountRepository — 계정 리포지토리", () => {
     });
   });
 
-  describe("updateOAuthTokens", () => {
-    it("모든 OAuth 토큰을 갱신한다", async () => {
-      // Given
-      const updatedOAuthAccount = AccountBuilder.create("user-123")
-        .withId(2)
-        .asGoogle("google-user-id")
-        .withOAuthTokens("new-access-token", "new-refresh-token", new Date("2025-03-01T00:00:00Z"))
-        .build();
-      db.orm.public.Account.update.mockResolvedValue(
-        databaseFixture("Account", updatedOAuthAccount),
-      );
-      const tokens = {
-        accessToken: "new-access-token",
-        refreshToken: "new-refresh-token",
-        accessTokenExpiresAt: new Date("2025-03-01T00:00:00Z"),
-      };
-
-      // When
-      const result = await repository.updateOAuthTokens("user-123", "GOOGLE", tokens);
-
-      // Then
-      expect(result).toEqual(updatedOAuthAccount);
-      expect(db.orm.public.Account.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Account", {
-            accessToken: "new-access-token",
-            refreshToken: "new-refresh-token",
-            accessTokenExpiresAt: tokens.accessTokenExpiresAt,
-          }),
-        ),
-      );
-    });
-
-    it("액세스 토큰만 갱신한다", async () => {
-      // Given
-      const partialUpdatedAccount = AccountBuilder.create("user-123")
-        .withId(2)
-        .asGoogle("google-user-id")
-        .withOAuthTokens("new-access-token")
-        .build();
-      db.orm.public.Account.update.mockResolvedValue(
-        databaseFixture("Account", partialUpdatedAccount),
-      );
-      const tokens = {
-        accessToken: "new-access-token",
-      };
-
-      // When
-      const result = await repository.updateOAuthTokens("user-123", "GOOGLE", tokens);
-
-      // Then
-      expect(result).toEqual(partialUpdatedAccount);
-      expect(db.orm.public.Account.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Account", {
-            accessToken: "new-access-token",
-          }),
-        ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트를 사용하여 갱신한다", async () => {
-      // Given
-      const updatedOAuthAccount = AccountBuilder.create("user-123")
-        .withId(2)
-        .asGoogle("google-user-id")
-        .withOAuthTokens("new-access-token", "new-refresh-token")
-        .build();
-      db.orm.public.Account.update.mockResolvedValue(
-        databaseFixture("Account", updatedOAuthAccount),
-      );
-      const tokens = {
-        accessToken: "new-access-token",
-        refreshToken: "new-refresh-token",
-      };
-
-      // When
-      const result = await repository.updateOAuthTokens("user-123", "GOOGLE", tokens);
-
-      // Then
-      expect(result).toEqual(updatedOAuthAccount);
-      expect(db.orm.public.Account.update).toHaveBeenCalled();
-    });
-  });
-
   describe("deleteAccount", () => {
     it("계정을 삭제한다", async () => {
-      // Given
-      db.orm.public.Account.delete.mockResolvedValue(databaseFixture("Account", mockOAuthAccount));
-
-      // When
-      const result = await repository.deleteAccount("user-123", "GOOGLE");
-
-      // Then
-      expect(result).toEqual(mockOAuthAccount);
-      assertNativeWhere("Account", db.orm.public.Account.where.mock.calls.at(-1)?.[0], (row) =>
-        and(row.userId.eq("user-123"), row.provider.eq("GOOGLE")),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트를 사용하여 삭제한다", async () => {
       // Given
       db.orm.public.Account.delete.mockResolvedValue(databaseFixture("Account", mockOAuthAccount));
 

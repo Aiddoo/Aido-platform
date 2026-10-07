@@ -61,15 +61,19 @@ import { StartOAuthAuthorization } from "./application/use-cases/auth/start-oaut
 import { UnlinkOAuthAccount } from "./application/use-cases/auth/unlink-oauth-account.use-case.js";
 import { UpdateProfile } from "./application/use-cases/auth/update-profile.use-case.js";
 import { VerifyEmail } from "./application/use-cases/auth/verify-email.use-case.js";
-import { CredentialAuthWorkflow } from "./application/workflows/auth/credential-auth.workflow.js";
 import { OAuthWorkflow } from "./application/workflows/auth/oauth.workflow.js";
-import { PasswordWorkflow } from "./application/workflows/auth/password.workflow.js";
 
 export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
   provide: GetCurrentUser,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof GetCurrentUser>[0]["workflow"]) =>
-    new GetCurrentUser({ workflow }),
+  inject: [AUTH_USER_REPOSITORY, AUTH_CACHE],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof GetCurrentUser>[0]["userRepository"],
+    cacheService: ConstructorParameters<typeof GetCurrentUser>[0]["cacheService"],
+  ) =>
+    new GetCurrentUser({
+      userRepository,
+      cacheService,
+    }),
 };
 
 export const getOAuthRedirectUriProvider: FactoryProvider<GetOAuthRedirectUri> = {
@@ -124,9 +128,34 @@ export const verificationServiceProvider: FactoryProvider<VerificationService> =
 
 export const changePasswordProvider: FactoryProvider<ChangePassword> = {
   provide: ChangePassword,
-  inject: [PasswordWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof ChangePassword>[0]["workflow"]) =>
-    new ChangePassword({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_PASSWORD_HASHER,
+    AUTH_SESSION_REPOSITORY,
+    AUTH_CACHE,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof ChangePassword>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof ChangePassword>[0]["accountRepository"],
+    passwordService: ConstructorParameters<typeof ChangePassword>[0]["passwordService"],
+    sessionRepository: ConstructorParameters<typeof ChangePassword>[0]["sessionRepository"],
+    cacheService: ConstructorParameters<typeof ChangePassword>[0]["cacheService"],
+    securityLogRepository: ConstructorParameters<typeof ChangePassword>[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof ChangePassword>[0]["unitOfWork"],
+  ) =>
+    new ChangePassword({
+      userRepository,
+      accountRepository,
+      passwordService,
+      sessionRepository,
+      cacheService,
+      securityLogRepository,
+      unitOfWork,
+      logger: new Logger(ChangePassword.name),
+    }),
 };
 
 export const completeOAuthAuthorizationProvider: FactoryProvider<CompleteOAuthAuthorization> = {
@@ -259,9 +288,44 @@ export const loginWithOAuthTokenProvider: FactoryProvider<LoginWithOAuthToken> =
 
 export const loginWithPasswordProvider: FactoryProvider<LoginWithPassword> = {
   provide: LoginWithPassword,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof LoginWithPassword>[0]["workflow"]) =>
-    new LoginWithPassword({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_LOGIN_ATTEMPT_REPOSITORY,
+    AUTH_PASSWORD_HASHER,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    IssueLogin,
+    RestoreAccount,
+    AUTH_CACHE,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof LoginWithPassword>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof LoginWithPassword>[0]["accountRepository"],
+    loginAttemptRepository: ConstructorParameters<
+      typeof LoginWithPassword
+    >[0]["loginAttemptRepository"],
+    passwordService: ConstructorParameters<typeof LoginWithPassword>[0]["passwordService"],
+    securityLogRepository: ConstructorParameters<
+      typeof LoginWithPassword
+    >[0]["securityLogRepository"],
+    issueLoginUseCase: ConstructorParameters<typeof LoginWithPassword>[0]["issueLoginUseCase"],
+    restoreAccount: ConstructorParameters<typeof LoginWithPassword>[0]["restoreAccount"],
+    cacheService: ConstructorParameters<typeof LoginWithPassword>[0]["cacheService"],
+    unitOfWork: ConstructorParameters<typeof LoginWithPassword>[0]["unitOfWork"],
+  ) =>
+    new LoginWithPassword({
+      userRepository,
+      accountRepository,
+      loginAttemptRepository,
+      passwordService,
+      securityLogRepository,
+      issueLoginUseCase,
+      restoreAccount,
+      cacheService,
+      unitOfWork,
+      logger: new Logger(LoginWithPassword.name),
+    }),
 };
 
 export const logoutProvider: FactoryProvider<Logout> = {
@@ -335,37 +399,124 @@ export const refreshTokensProvider: FactoryProvider<RefreshTokens> = {
 };
 export const registerProvider: FactoryProvider<Register> = {
   provide: Register,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof Register>[0]["workflow"]) =>
-    new Register({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_PASSWORD_HASHER,
+    ProvisionUser,
+    VerificationService,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    UNIT_OF_WORK,
+    AUTH_REGISTRATION_NOTIFIER,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof Register>[0]["userRepository"],
+    passwordService: ConstructorParameters<typeof Register>[0]["passwordService"],
+    provisionUserUseCase: ConstructorParameters<typeof Register>[0]["provisionUserUseCase"],
+    verificationService: ConstructorParameters<typeof Register>[0]["verificationService"],
+    securityLogRepository: ConstructorParameters<typeof Register>[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof Register>[0]["unitOfWork"],
+    adminEventNotifier: ConstructorParameters<typeof Register>[0]["adminEventNotifier"],
+  ) =>
+    new Register({
+      userRepository,
+      passwordService,
+      provisionUserUseCase,
+      verificationService,
+      securityLogRepository,
+      unitOfWork,
+      adminEventNotifier,
+      logger: new Logger(Register.name),
+    }),
 };
 
 export const requestPasswordResetProvider: FactoryProvider<RequestPasswordReset> = {
   provide: RequestPasswordReset,
-  inject: [PasswordWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof RequestPasswordReset>[0]["workflow"]) =>
-    new RequestPasswordReset({ workflow }),
+  inject: [AUTH_USER_REPOSITORY, VerificationService, AUTH_SECURITY_LOG_REPOSITORY],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof RequestPasswordReset>[0]["userRepository"],
+    verificationService: ConstructorParameters<
+      typeof RequestPasswordReset
+    >[0]["verificationService"],
+    securityLogRepository: ConstructorParameters<
+      typeof RequestPasswordReset
+    >[0]["securityLogRepository"],
+  ) =>
+    new RequestPasswordReset({
+      userRepository,
+      verificationService,
+      securityLogRepository,
+      logger: new Logger(RequestPasswordReset.name),
+    }),
 };
 
 export const requestPasswordSetupCodeProvider: FactoryProvider<RequestPasswordSetupCode> = {
   provide: RequestPasswordSetupCode,
-  inject: [PasswordWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof RequestPasswordSetupCode>[0]["workflow"]) =>
-    new RequestPasswordSetupCode({ workflow }),
+  inject: [AUTH_USER_REPOSITORY, AUTH_ACCOUNT_REPOSITORY, VerificationService],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof RequestPasswordSetupCode>[0]["userRepository"],
+    accountRepository: ConstructorParameters<
+      typeof RequestPasswordSetupCode
+    >[0]["accountRepository"],
+    verificationService: ConstructorParameters<
+      typeof RequestPasswordSetupCode
+    >[0]["verificationService"],
+  ) =>
+    new RequestPasswordSetupCode({
+      userRepository,
+      accountRepository,
+      verificationService,
+    }),
 };
 
 export const resendVerificationProvider: FactoryProvider<ResendVerification> = {
   provide: ResendVerification,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof ResendVerification>[0]["workflow"]) =>
-    new ResendVerification({ workflow }),
+  inject: [AUTH_USER_REPOSITORY, VerificationService, UNIT_OF_WORK],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof ResendVerification>[0]["userRepository"],
+    verificationService: ConstructorParameters<typeof ResendVerification>[0]["verificationService"],
+    unitOfWork: ConstructorParameters<typeof ResendVerification>[0]["unitOfWork"],
+  ) =>
+    new ResendVerification({
+      userRepository,
+      verificationService,
+      unitOfWork,
+      logger: new Logger(ResendVerification.name),
+    }),
 };
 
 export const resetPasswordProvider: FactoryProvider<ResetPassword> = {
   provide: ResetPassword,
-  inject: [PasswordWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof ResetPassword>[0]["workflow"]) =>
-    new ResetPassword({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_PASSWORD_HASHER,
+    VerificationService,
+    AUTH_SESSION_REPOSITORY,
+    AUTH_CACHE,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof ResetPassword>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof ResetPassword>[0]["accountRepository"],
+    passwordService: ConstructorParameters<typeof ResetPassword>[0]["passwordService"],
+    verificationService: ConstructorParameters<typeof ResetPassword>[0]["verificationService"],
+    sessionRepository: ConstructorParameters<typeof ResetPassword>[0]["sessionRepository"],
+    cacheService: ConstructorParameters<typeof ResetPassword>[0]["cacheService"],
+    securityLogRepository: ConstructorParameters<typeof ResetPassword>[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof ResetPassword>[0]["unitOfWork"],
+  ) =>
+    new ResetPassword({
+      userRepository,
+      accountRepository,
+      passwordService,
+      verificationService,
+      sessionRepository,
+      cacheService,
+      securityLogRepository,
+      unitOfWork,
+      logger: new Logger(ResetPassword.name),
+    }),
 };
 
 export const revokeSessionProvider: FactoryProvider<RevokeSession> = {
@@ -385,9 +536,34 @@ export const revokeSessionProvider: FactoryProvider<RevokeSession> = {
 };
 export const setPasswordProvider: FactoryProvider<SetPassword> = {
   provide: SetPassword,
-  inject: [PasswordWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof SetPassword>[0]["workflow"]) =>
-    new SetPassword({ workflow }),
+  inject: [
+    AUTH_USER_REPOSITORY,
+    AUTH_ACCOUNT_REPOSITORY,
+    AUTH_PASSWORD_HASHER,
+    VerificationService,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    AUTH_CACHE,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof SetPassword>[0]["userRepository"],
+    accountRepository: ConstructorParameters<typeof SetPassword>[0]["accountRepository"],
+    passwordService: ConstructorParameters<typeof SetPassword>[0]["passwordService"],
+    verificationService: ConstructorParameters<typeof SetPassword>[0]["verificationService"],
+    securityLogRepository: ConstructorParameters<typeof SetPassword>[0]["securityLogRepository"],
+    cacheService: ConstructorParameters<typeof SetPassword>[0]["cacheService"],
+    unitOfWork: ConstructorParameters<typeof SetPassword>[0]["unitOfWork"],
+  ) =>
+    new SetPassword({
+      userRepository,
+      accountRepository,
+      passwordService,
+      verificationService,
+      securityLogRepository,
+      cacheService,
+      unitOfWork,
+      logger: new Logger(SetPassword.name),
+    }),
 };
 
 export const startOAuthAuthorizationProvider: FactoryProvider<StartOAuthAuthorization> = {
@@ -406,78 +582,44 @@ export const unlinkOAuthAccountProvider: FactoryProvider<UnlinkOAuthAccount> = {
 
 export const updateProfileProvider: FactoryProvider<UpdateProfile> = {
   provide: UpdateProfile,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof UpdateProfile>[0]["workflow"]) =>
-    new UpdateProfile({ workflow }),
+  inject: [AUTH_USER_REPOSITORY, AUTH_CACHE],
+  useFactory: (
+    userRepository: ConstructorParameters<typeof UpdateProfile>[0]["userRepository"],
+    cacheService: ConstructorParameters<typeof UpdateProfile>[0]["cacheService"],
+  ) =>
+    new UpdateProfile({
+      userRepository,
+      cacheService,
+      logger: new Logger(UpdateProfile.name),
+    }),
 };
 
 export const verifyEmailProvider: FactoryProvider<VerifyEmail> = {
   provide: VerifyEmail,
-  inject: [CredentialAuthWorkflow],
-  useFactory: (workflow: ConstructorParameters<typeof VerifyEmail>[0]["workflow"]) =>
-    new VerifyEmail({ workflow }),
-};
-
-export const credentialAuthWorkflowProvider: FactoryProvider<CredentialAuthWorkflow> = {
-  provide: CredentialAuthWorkflow,
   inject: [
-    UNIT_OF_WORK,
     AUTH_USER_REPOSITORY,
-    AUTH_ACCOUNT_REPOSITORY,
-    AUTH_LOGIN_ATTEMPT_REPOSITORY,
-    AUTH_SECURITY_LOG_REPOSITORY,
-    AUTH_PASSWORD_HASHER,
-    SessionService,
     VerificationService,
-    AUTH_CACHE,
-    AUTH_REGISTRATION_NOTIFIER,
-    IssueLogin,
-    ProvisionUser,
     RETENTION_ENROLLER,
-    RestoreAccount,
+    SessionService,
+    AUTH_SECURITY_LOG_REPOSITORY,
+    UNIT_OF_WORK,
   ],
   useFactory: (
-    unitOfWork: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["unitOfWork"],
-    userRepository: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["accountRepository"],
-    loginAttemptRepository: ConstructorParameters<
-      typeof CredentialAuthWorkflow
-    >[0]["loginAttemptRepository"],
-    securityLogRepository: ConstructorParameters<
-      typeof CredentialAuthWorkflow
-    >[0]["securityLogRepository"],
-    passwordService: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["passwordService"],
-    sessionService: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["sessionService"],
-    verificationService: ConstructorParameters<
-      typeof CredentialAuthWorkflow
-    >[0]["verificationService"],
-    cacheService: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["cacheService"],
-    adminEventNotifier: ConstructorParameters<
-      typeof CredentialAuthWorkflow
-    >[0]["adminEventNotifier"],
-    issueLoginUseCase: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["issueLoginUseCase"],
-    provisionUserUseCase: ConstructorParameters<
-      typeof CredentialAuthWorkflow
-    >[0]["provisionUserUseCase"],
-    retentionEnroller: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["retentionEnroller"],
-    restoreAccount: ConstructorParameters<typeof CredentialAuthWorkflow>[0]["restoreAccount"],
+    userRepository: ConstructorParameters<typeof VerifyEmail>[0]["userRepository"],
+    verificationService: ConstructorParameters<typeof VerifyEmail>[0]["verificationService"],
+    retentionEnroller: ConstructorParameters<typeof VerifyEmail>[0]["retentionEnroller"],
+    sessionService: ConstructorParameters<typeof VerifyEmail>[0]["sessionService"],
+    securityLogRepository: ConstructorParameters<typeof VerifyEmail>[0]["securityLogRepository"],
+    unitOfWork: ConstructorParameters<typeof VerifyEmail>[0]["unitOfWork"],
   ) =>
-    new CredentialAuthWorkflow({
-      unitOfWork,
+    new VerifyEmail({
       userRepository,
-      accountRepository,
-      loginAttemptRepository,
-      securityLogRepository,
-      passwordService,
-      sessionService,
       verificationService,
-      cacheService,
-      adminEventNotifier,
-      issueLoginUseCase,
-      provisionUserUseCase,
       retentionEnroller,
-      restoreAccount,
-      logger: new Logger(CredentialAuthWorkflow.name),
+      sessionService,
+      securityLogRepository,
+      unitOfWork,
+      logger: new Logger(VerifyEmail.name),
     }),
 };
 
@@ -530,39 +672,5 @@ export const oauthWorkflowProvider: FactoryProvider<OAuthWorkflow> = {
       registry,
       restoreAccount,
       logger: new Logger(OAuthWorkflow.name),
-    }),
-};
-
-export const passwordWorkflowProvider: FactoryProvider<PasswordWorkflow> = {
-  provide: PasswordWorkflow,
-  inject: [
-    UNIT_OF_WORK,
-    AUTH_USER_REPOSITORY,
-    AUTH_ACCOUNT_REPOSITORY,
-    AUTH_SESSION_REPOSITORY,
-    AUTH_SECURITY_LOG_REPOSITORY,
-    AUTH_PASSWORD_HASHER,
-    VerificationService,
-  ],
-  useFactory: (
-    unitOfWork: ConstructorParameters<typeof PasswordWorkflow>[0]["unitOfWork"],
-    userRepository: ConstructorParameters<typeof PasswordWorkflow>[0]["userRepository"],
-    accountRepository: ConstructorParameters<typeof PasswordWorkflow>[0]["accountRepository"],
-    sessionRepository: ConstructorParameters<typeof PasswordWorkflow>[0]["sessionRepository"],
-    securityLogRepository: ConstructorParameters<
-      typeof PasswordWorkflow
-    >[0]["securityLogRepository"],
-    passwordService: ConstructorParameters<typeof PasswordWorkflow>[0]["passwordService"],
-    verificationService: ConstructorParameters<typeof PasswordWorkflow>[0]["verificationService"],
-  ) =>
-    new PasswordWorkflow({
-      unitOfWork,
-      userRepository,
-      accountRepository,
-      sessionRepository,
-      securityLogRepository,
-      passwordService,
-      verificationService,
-      logger: new Logger(PasswordWorkflow.name),
     }),
 };

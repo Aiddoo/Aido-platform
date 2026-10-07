@@ -25,9 +25,10 @@ import {
 } from "#api/modules/identity/application/ports/auth/index";
 import { VERIFICATION_CODE_SECURITY } from "#api/modules/identity/application/ports/auth/verification-code-security.port";
 import { DeleteAccount } from "#api/modules/identity/application/use-cases/auth/delete-account.use-case";
+import { LoginWithPassword } from "#api/modules/identity/application/use-cases/auth/login-with-password.use-case";
 import { PurgeDeletedAccounts } from "#api/modules/identity/application/use-cases/auth/purge-deleted-accounts.use-case";
-import { CredentialAuthWorkflow } from "#api/modules/identity/application/workflows/auth/credential-auth.workflow";
-import { PasswordWorkflow } from "#api/modules/identity/application/workflows/auth/password.workflow";
+import { Register } from "#api/modules/identity/application/use-cases/auth/register.use-case";
+import { RequestPasswordReset } from "#api/modules/identity/application/use-cases/auth/request-password-reset.use-case";
 import { AuthCacheAdapter } from "#api/modules/identity/infrastructure/adapters/auth/auth-cache.adapter";
 import { NodeVerificationCodeSecurityAdapter } from "#api/modules/identity/infrastructure/adapters/auth/node-verification-code-security.adapter";
 import { PasswordService } from "#api/modules/identity/infrastructure/adapters/auth/password.service";
@@ -62,12 +63,13 @@ import {
 import { suppressLogger } from "#test/setup/suppress-logger";
 
 import {
-  credentialAuthWorkflowProvider,
+  registerProvider,
+  loginWithPasswordProvider,
   deleteAccountProvider,
   purgeDeletedAccountsProvider,
   restoreAccountProvider,
   issueLoginProvider,
-  passwordWorkflowProvider,
+  requestPasswordResetProvider,
   provisionUserProvider,
   sessionServiceProvider,
   verificationServiceProvider,
@@ -79,8 +81,9 @@ import { retentionEnrollerTestProvider } from "./helpers/retention-enroller.prov
 
 describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
   let module: TestingModule;
-  let authService: CredentialAuthWorkflow;
-  let passwordManagementService: PasswordWorkflow;
+  let register: Register;
+  let loginWithPassword: LoginWithPassword;
+  let requestPasswordReset: RequestPasswordReset;
   let deleteAccount: DeleteAccount;
   let purgeDeletedAccounts: PurgeDeletedAccounts;
   let testDb: TestDatabase;
@@ -99,7 +102,8 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
         }),
       ],
       providers: [
-        credentialAuthWorkflowProvider,
+        registerProvider,
+        loginWithPasswordProvider,
         issueLoginProvider,
         provisionUserProvider,
         deleteAccountProvider,
@@ -120,7 +124,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           },
         },
         PasswordService,
-        passwordWorkflowProvider,
+        requestPasswordResetProvider,
         sessionServiceProvider,
         TokenService,
         verificationServiceProvider,
@@ -264,8 +268,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       ],
     }).compile();
 
-    authService = module.get<CredentialAuthWorkflow>(CredentialAuthWorkflow);
-    passwordManagementService = module.get<PasswordWorkflow>(PasswordWorkflow);
+    register = module.get(Register);
+    loginWithPassword = module.get(LoginWithPassword);
+    requestPasswordReset = module.get(RequestPasswordReset);
     deleteAccount = module.get(DeleteAccount);
     purgeDeletedAccounts = module.get(PurgeDeletedAccounts);
   }, 60000);
@@ -284,13 +289,9 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
     }
   });
 
-  /**
-   * 테스트용 이메일 계정 생성 + 인증 완료 헬퍼
-   * @returns userId
-   */
   async function createVerifiedCredentialUser(email: string, password: string): Promise<string> {
     // 1. 회원가입
-    const registerResult = await authService.register({
+    const registerResult = await register.execute({
       email,
       password,
       passwordConfirm: password,
@@ -324,7 +325,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       const userId = await createVerifiedCredentialUser(email, password);
 
       // 로그인하여 세션 생성
-      await authService.login({ email, password });
+      await loginWithPassword.execute({ email, password });
 
       // When
       const result = await deleteAccount.execute({ userId, password });
@@ -406,7 +407,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       await deleteAccount.execute({ userId, password });
 
       // When - 로그인 (탈퇴 직후 = 유예 기간 내)
-      const loginResult = await authService.login({ email, password });
+      const loginResult = await loginWithPassword.execute({ email, password });
 
       // Then - 성공
       expect(loginResult.userId).toBe(userId);
@@ -452,7 +453,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       );
 
       // When & Then (탈퇴 복구 유예 초과 — 도메인 정책 USER_0606)
-      await expect(authService.login({ email, password })).rejects.toThrow(DomainException);
+      await expect(loginWithPassword.execute({ email, password })).rejects.toThrow(DomainException);
     });
   });
 
@@ -523,7 +524,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
       await deleteAccount.execute({ userId, password });
 
       // When
-      const result = await passwordManagementService.forgotPassword(email);
+      const result = await requestPasswordReset.execute({ email });
 
       // Then - 동일 응답 반환 (보안상)
       expect(result.message).toBeDefined();

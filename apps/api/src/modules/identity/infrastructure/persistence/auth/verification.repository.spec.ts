@@ -1,24 +1,8 @@
-import { and, or } from "@prisma/orm-postgres/orm-client";
+import { and } from "@prisma/orm-postgres/orm-client";
+import { vi } from "vitest";
 
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
-import { type Verification } from "#api/platform/database/database.types";
-import { VerificationBuilder } from "#test/builders/index";
-/**
- * VerificationRepository 단위 테스트
- *
- * @description
- * 인증 토큰 저장소의 CRUD, 원자적 사용 처리, 무효화 메서드를 검증한다.
- * 트랜잭션 지원, 시도 횟수 관리, 만료 삭제를 확인한다.
- *
- * 이 저장소는 두 개의 클라이언트를 사용한다.
- * - `txHost.tx`(활성 트랜잭션): 대부분의 메서드
- * - `database`(베이스 클라이언트): `incrementAttempts`, `deleteExpired`
- *
- * 실행 명령:
- * ```bash
- * pnpm --filter @aido/server test verification.repository.spec.ts
- * ```
- */
+import { VerificationFixture } from "#test/fixtures/index";
 import {
   assertNativeWhere,
   createMockTransactionHost,
@@ -30,458 +14,121 @@ import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { VerificationRepository } from "./verification.repository.js";
 
-describe("VerificationRepository — 인증 코드 리포지토리", () => {
+const at = new Date("2026-12-31T23:59:00.000Z");
+const expiresAt = new Date("2027-01-01T00:09:00.000Z");
+
+describe("VerificationRepository — 인증 저장과 독립 실패 기록", () => {
   let repository: VerificationRepository;
   let db: MockDatabaseContext;
   let baseDb: MockDatabaseContext;
 
-  const mockVerification = VerificationBuilder.create("user-123", "EMAIL_VERIFY")
-    .withId(1)
-    .withToken("hashed-token-123")
-    .withExpiresAt(new Date("2025-12-31T23:59:59Z"))
-    .withCreatedAt(new Date("2025-01-01T00:00:00Z"))
-    .build();
-
-  beforeEach(async () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(at);
     db = createMockDatabaseContext();
     baseDb = createMockDatabaseContext();
-
     repository = new VerificationRepository(
       createMockTransactionHost(db),
       createMockDatabaseService(baseDb),
     );
   });
 
-  describe("create", () => {
-    const createData: Parameters<VerificationRepository["create"]>[0] = {
-      userId: "user-123",
+  afterEach(() => vi.useRealTimers());
+
+  it("저장된 인증의 필수 필드와 nullable 사용 시각을 복원한다", async () => {
+    // Given
+    const fixture = VerificationFixture.create({
+      userId: "user-1",
       type: "EMAIL_VERIFY",
-      token: "hashed-token-123",
-      expiresAt: new Date("2025-12-31T23:59:59Z"),
-    };
+      token: "digest",
+      expiresAt,
+    });
+    db.orm.public.Verification.create.mockResolvedValue(databaseFixture("Verification", fixture));
 
-    it("새 인증 토큰을 생성한다", async () => {
-      // Given
-      db.orm.public.Verification.create.mockResolvedValue(
-        databaseFixture("Verification", mockVerification),
-      );
-
-      // When
-      const result = await repository.create(createData);
-
-      // Then
-      expect(result).toEqual(mockVerification);
-      expect(db.orm.public.Verification.create).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Verification", {
-            userId: createData.userId,
-            type: createData.type,
-            token: createData.token,
-            expiresAt: createData.expiresAt,
-          }),
-        ),
-      );
+    // When
+    const saved = await repository.create({
+      userId: fixture.userId,
+      type: fixture.type,
+      token: fixture.token,
+      expiresAt,
     });
 
-    it("활성 트랜잭션 클라이언트로 생성한다", async () => {
-      // Given
-      db.orm.public.Verification.create.mockResolvedValue(
-        databaseFixture("Verification", mockVerification),
-      );
-
-      // When
-      const result = await repository.create(createData);
-
-      // Then
-      expect(result).toEqual(mockVerification);
-      expect(db.orm.public.Verification.create).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Verification", {
-            userId: createData.userId,
-            type: createData.type,
-            token: createData.token,
-            expiresAt: createData.expiresAt,
-          }),
-        ),
-      );
-    });
+    // Then
+    expect(saved).toEqual(fixture);
+    expect(db.orm.public.Verification.create).toHaveBeenCalledWith(
+      expect.objectContaining(
+        databaseWriteExpectation("Verification", {
+          userId: fixture.userId,
+          type: fixture.type,
+          token: fixture.token,
+          expiresAt,
+        }),
+      ),
+    );
   });
 
-  describe("findByToken", () => {
-    it("토큰 해시로 인증을 찾는다", async () => {
-      // Given
-      db.orm.public.Verification.first.mockResolvedValue(
-        databaseFixture("Verification", mockVerification),
-      );
+  it("선택한 인증 ID와 사용자·용도·해시·상태 조건을 실제 UPDATE에 전달한다", async () => {
+    // Given
+    db.orm.public.Verification.updateAndCount.mockResolvedValue(1);
+    const input = {
+      id: 1,
+      userId: "user-1",
+      type: "EMAIL_VERIFY",
+      tokenHash: "digest",
+      maxAttempts: 5,
+      at,
+    } satisfies Parameters<VerificationRepository["consume"]>[0];
 
-      // When
-      const result = await repository.findByToken("hashed-token-123");
+    // When
+    const consumed = await repository.consume(input);
 
-      // Then
-      expect(result).toEqual(mockVerification);
-      assertNativeWhere(
-        "Verification",
-        db.orm.public.Verification.where.mock.calls[0]?.[0],
-        (row) => row.token.eq(varchar("hashed-token-123", 64)),
-      );
-    });
-
-    it("존재하지 않으면 null을 반환한다", async () => {
-      // Given
-      db.orm.public.Verification.first.mockResolvedValue(databaseFixture("Verification", null));
-
-      // When
-      const result = await repository.findByToken("non-existent-token");
-
-      // Then
-      expect(result).toBeNull();
-    });
+    // Then
+    expect(consumed).toBe(true);
+    assertNativeWhere("Verification", db.orm.public.Verification.where.mock.calls[0]?.[0], (row) =>
+      and(
+        row.id.eq(input.id),
+        row.token.eq(varchar(input.tokenHash, 64)),
+        row.userId.eq(input.userId),
+        row._type.eq(input.type),
+        row.usedAt.isNull(),
+        row.expiresAt.gt(databaseTimestamp(at)),
+        row.attempts.lt(5),
+      ),
+    );
+    expect(db.orm.public.Verification.updateAndCount).toHaveBeenCalledWith(
+      expect.objectContaining(databaseWriteExpectation("Verification", { usedAt: at })),
+    );
   });
 
-  describe("findLatestByUserIdAndType", () => {
-    it("사용자의 최신 유효 인증 토큰을 찾는다", async () => {
-      // Given
-      db.orm.public.Verification.first.mockResolvedValue(
-        databaseFixture("Verification", mockVerification),
-      );
+  it("조건부 UPDATE가 변경한 행이 없으면 소비 실패를 반환한다", async () => {
+    // Given
+    db.orm.public.Verification.updateAndCount.mockResolvedValue(0);
 
-      // When
-      const result = await repository.findLatestByUserIdAndType("user-123", "EMAIL_VERIFY");
-
-      // Then
-      expect(result).toEqual(mockVerification);
-      assertNativeWhere(
-        "Verification",
-        db.orm.public.Verification.where.mock.calls[0]?.[0],
-        (row) =>
-          and(
-            row.userId.eq("user-123"),
-            row._type.eq("EMAIL_VERIFY"),
-            row.usedAt.isNull(),
-            row.expiresAt.gt(expect.any(String)),
-          ),
-      );
+    // When
+    const consumed = await repository.consume({
+      id: 1,
+      userId: "user-1",
+      type: "PASSWORD_RESET",
+      tokenHash: "digest",
+      maxAttempts: 5,
+      at,
     });
 
-    it("유효한 인증이 없으면 null을 반환한다", async () => {
-      // Given
-      db.orm.public.Verification.first.mockResolvedValue(databaseFixture("Verification", null));
-
-      // When
-      const result = await repository.findLatestByUserIdAndType("user-123", "PASSWORD_RESET");
-
-      // Then
-      expect(result).toBeNull();
-    });
+    // Then
+    expect(consumed).toBe(false);
   });
 
-  describe("findValidByUserIdAndType", () => {
-    it("사용자의 유효한 인증을 찾는다", async () => {
-      // Given
-      db.orm.public.Verification.first.mockResolvedValue(
-        databaseFixture("Verification", mockVerification),
-      );
+  it("실패 횟수 증가는 호출자의 트랜잭션 클라이언트를 사용하지 않는다", async () => {
+    // Given
+    const fixture = VerificationFixture.create({ attempts: 1, expiresAt });
+    baseDb.query.mockResolvedValue([databaseFixture("Verification", fixture)]);
 
-      // When
-      const result = await repository.findValidByUserIdAndType("user-123", "EMAIL_VERIFY");
+    // When
+    const saved = await repository.incrementAttempts(fixture.id);
 
-      // Then
-      expect(result).toEqual(mockVerification);
-      assertNativeWhere(
-        "Verification",
-        db.orm.public.Verification.where.mock.calls[0]?.[0],
-        (row) =>
-          and(
-            row.userId.eq("user-123"),
-            row._type.eq("EMAIL_VERIFY"),
-            row.usedAt.isNull(),
-            row.expiresAt.gt(expect.any(String)),
-          ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트로 조회한다", async () => {
-      // Given
-      db.orm.public.Verification.first.mockResolvedValue(
-        databaseFixture("Verification", mockVerification),
-      );
-
-      // When
-      const result = await repository.findValidByUserIdAndType("user-123", "EMAIL_VERIFY");
-
-      // Then
-      expect(result).toEqual(mockVerification);
-      expect(db.orm.public.Verification.first).toHaveBeenCalled();
-    });
-  });
-
-  describe("markAsUsed", () => {
-    const usedVerification: Verification = {
-      ...mockVerification,
-      usedAt: new Date("2025-01-15T10:00:00Z"),
-    };
-
-    it("인증 토큰을 사용됨으로 표시한다", async () => {
-      // Given
-      db.orm.public.Verification.update.mockResolvedValue(
-        databaseFixture("Verification", usedVerification),
-      );
-
-      // When
-      const result = await repository.markAsUsed(1);
-
-      // Then
-      expect(result).toEqual(usedVerification);
-      expect(db.orm.public.Verification.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Verification", { usedAt: expect.any(String) }),
-        ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트로 업데이트한다", async () => {
-      // Given
-      db.orm.public.Verification.update.mockResolvedValue(
-        databaseFixture("Verification", usedVerification),
-      );
-
-      // When
-      const result = await repository.markAsUsed(1);
-
-      // Then
-      expect(result).toEqual(usedVerification);
-      expect(db.orm.public.Verification.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Verification", { usedAt: expect.any(String) }),
-        ),
-      );
-    });
-  });
-
-  describe("incrementAttempts", () => {
-    const incrementedVerification: Verification = {
-      ...mockVerification,
-      attempts: 1,
-    };
-
-    it("시도 횟수를 1 증가시킨다 (베이스 클라이언트 사용)", async () => {
-      // Given
-      baseDb.query.mockResolvedValue([databaseFixture("Verification", incrementedVerification)]);
-
-      // When
-      const result = await repository.incrementAttempts(1);
-
-      // Then
-      expect(result).toEqual(incrementedVerification);
-      expect(baseDb.query).toHaveBeenCalledOnce();
-      expect(db.query).not.toHaveBeenCalled();
-    });
-
-    it("활성 트랜잭션을 우회해 베이스 클라이언트로 증가시킨다", async () => {
-      // Given
-      baseDb.query.mockResolvedValue([databaseFixture("Verification", incrementedVerification)]);
-
-      // When
-      const result = await repository.incrementAttempts(1);
-
-      // Then
-      expect(result).toEqual(incrementedVerification);
-      expect(baseDb.query).toHaveBeenCalledOnce();
-      expect(db.query).not.toHaveBeenCalled();
-      expect(db.orm.public.Verification.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("markAsUsedAtomic", () => {
-    const usedVerification: Verification = {
-      ...mockVerification,
-      usedAt: new Date("2025-01-15T10:00:00Z"),
-    };
-
-    it("조건을 충족하면 원자적으로 사용됨 표시를 한다", async () => {
-      // Given
-      db.orm.public.Verification.update.mockResolvedValue(
-        databaseFixture("Verification", usedVerification),
-      );
-      db.orm.public.Verification.first.mockResolvedValue(
-        databaseFixture("Verification", usedVerification),
-      );
-
-      // When
-      const result = await repository.markAsUsedAtomic(
-        "hashed-token-123",
-        "user-123",
-        "EMAIL_VERIFY",
-        5,
-      );
-
-      // Then
-      expect(result).toEqual(usedVerification);
-      expect(db.orm.public.Verification.update).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Verification", { usedAt: expect.any(String) }),
-        ),
-      );
-      assertNativeWhere(
-        "Verification",
-        db.orm.public.Verification.where.mock.calls[0]?.[0],
-        (row) =>
-          and(
-            row.token.eq(varchar("hashed-token-123", 64)),
-            row.userId.eq("user-123"),
-            row._type.eq("EMAIL_VERIFY"),
-            row.usedAt.isNull(),
-            row.expiresAt.gt(expect.any(String)),
-            row.attempts.lt(5),
-          ),
-      );
-    });
-
-    it("조건을 충족하지 않으면 null을 반환한다", async () => {
-      // Given
-      db.orm.public.Verification.update.mockResolvedValue(null);
-
-      // When
-      const result = await repository.markAsUsedAtomic(
-        "invalid-token",
-        "user-123",
-        "EMAIL_VERIFY",
-        5,
-      );
-
-      // Then
-      expect(result).toBeNull();
-      expect(db.orm.public.Verification.first).not.toHaveBeenCalled();
-    });
-
-    it("활성 트랜잭션 클라이언트로 처리한다", async () => {
-      // Given
-      db.orm.public.Verification.update.mockResolvedValue(
-        databaseFixture("Verification", usedVerification),
-      );
-      db.orm.public.Verification.first.mockResolvedValue(
-        databaseFixture("Verification", usedVerification),
-      );
-
-      // When
-      const result = await repository.markAsUsedAtomic(
-        "hashed-token-123",
-        "user-123",
-        "EMAIL_VERIFY",
-        5,
-      );
-
-      // Then
-      expect(result).toEqual(usedVerification);
-      expect(db.orm.public.Verification.update).toHaveBeenCalled();
-      expect(db.orm.public.Verification.first).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("invalidateAllByUserIdAndType", () => {
-    it("사용자의 특정 타입 미사용 인증을 모두 무효화한다", async () => {
-      // Given
-      db.orm.public.Verification.updateAndCount.mockResolvedValue(3);
-
-      // When
-      const result = await repository.invalidateAllByUserIdAndType("user-123", "EMAIL_VERIFY");
-
-      // Then
-      expect(result).toBe(3);
-      expect(db.orm.public.Verification.updateAndCount).toHaveBeenCalledWith(
-        expect.objectContaining(
-          databaseWriteExpectation("Verification", { expiresAt: expect.any(String) }),
-        ),
-      );
-    });
-
-    it("무효화할 인증이 없으면 0을 반환한다", async () => {
-      // Given
-      db.orm.public.Verification.updateAndCount.mockResolvedValue(0);
-
-      // When
-      const result = await repository.invalidateAllByUserIdAndType("user-123", "PASSWORD_RESET");
-
-      // Then
-      expect(result).toBe(0);
-    });
-
-    it("활성 트랜잭션 클라이언트로 무효화한다", async () => {
-      // Given
-      db.orm.public.Verification.updateAndCount.mockResolvedValue(2);
-
-      // When
-      const result = await repository.invalidateAllByUserIdAndType("user-123", "EMAIL_VERIFY");
-
-      // Then
-      expect(result).toBe(2);
-      expect(db.orm.public.Verification.updateAndCount).toHaveBeenCalled();
-    });
-  });
-
-  describe("countRecentByUserIdAndType", () => {
-    it("특정 기간 내 인증 발송 횟수를 카운트한다", async () => {
-      // Given
-      db.orm.public.Verification.aggregate.mockResolvedValue({ count: 3 });
-      const since = new Date("2025-01-14T00:00:00Z");
-
-      // When
-      const result = await repository.countRecentByUserIdAndType("user-123", "EMAIL_VERIFY", since);
-
-      // Then
-      expect(result).toBe(3);
-      assertNativeWhere(
-        "Verification",
-        db.orm.public.Verification.where.mock.calls.at(-1)?.[0],
-        (row) =>
-          and(
-            row.userId.eq("user-123"),
-            row._type.eq("EMAIL_VERIFY"),
-            row.createdAt.gte(databaseTimestamp(since)),
-          ),
-      );
-    });
-
-    it("활성 트랜잭션 클라이언트로 카운트한다", async () => {
-      // Given
-      db.orm.public.Verification.aggregate.mockResolvedValue({ count: 5 });
-      const since = new Date("2025-01-14T00:00:00Z");
-
-      // When
-      const result = await repository.countRecentByUserIdAndType("user-123", "EMAIL_VERIFY", since);
-
-      // Then
-      expect(result).toBe(5);
-      expect(db.orm.public.Verification.aggregate).toHaveBeenCalled();
-    });
-  });
-
-  describe("deleteExpired", () => {
-    it("만료된 인증과 사용된 인증을 삭제한다 (베이스 클라이언트 사용)", async () => {
-      // Given
-      baseDb.orm.public.Verification.deleteAndCount.mockResolvedValue(10);
-
-      // When
-      const result = await repository.deleteExpired();
-
-      // Then
-      expect(result).toBe(10);
-      assertNativeWhere(
-        "Verification",
-        baseDb.orm.public.Verification.where.mock.calls.at(-1)?.[0],
-        (row) => or(row.expiresAt.lt(expect.any(String)), row.usedAt.isNotNull()),
-      );
-    });
-
-    it("삭제할 인증이 없으면 0을 반환한다", async () => {
-      // Given
-      baseDb.orm.public.Verification.deleteAndCount.mockResolvedValue(0);
-
-      // When
-      const result = await repository.deleteExpired();
-
-      // Then
-      expect(result).toBe(0);
-    });
+    // Then
+    expect(saved.attempts).toBe(1);
+    expect(baseDb.query).toHaveBeenCalledOnce();
+    expect(db.query).not.toHaveBeenCalled();
   });
 });

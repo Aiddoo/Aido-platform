@@ -55,13 +55,15 @@ describe("AuthController — 인증 컨트롤러", () => {
   describe("register", () => {
     it("회원가입 요청을 서비스에 위임하고 매퍼를 통해 응답을 반환해야 한다", async () => {
       // Given - 회원가입 DTO와 서비스 응답이 준비되었을 때
-      const dto = {
+      const dto: RegisterDto = {
         email: "test@example.com",
         password: "Password1!",
-        nickname: "테스터",
+        passwordConfirm: "Password1!",
+        name: "테스터",
         termsAgreed: true,
         privacyAgreed: true,
         marketingAgreed: false,
+        marketingPushAgreed: false,
       };
       const serviceResult = {
         userId: "user-123",
@@ -72,10 +74,13 @@ describe("AuthController — 인증 컨트롤러", () => {
       registerUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - register를 호출하면
-      const result = await controller.register(dto as unknown as RegisterDto, mockReq);
+      const result = await controller.register(dto, mockReq);
 
       // Then - 서비스에 위임하고 AuthMapper.toRegisterResponse 형식의 응답을 반환해야 한다
-      expect(registerUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
+      expect(registerUseCase.execute).toHaveBeenCalledWith({
+        ...dto,
+        metadata: { ip: "127.0.0.1", userAgent: "test-agent" },
+      });
       expect(result).toEqual({
         message: serviceResult.message,
         email: serviceResult.email,
@@ -87,7 +92,7 @@ describe("AuthController — 인증 컨트롤러", () => {
   describe("login", () => {
     it("로그인 요청을 서비스에 위임하고 매퍼를 통해 토큰 응답을 반환해야 한다", async () => {
       // Given - 로그인 DTO와 서비스 응답이 준비되었을 때
-      const dto = {
+      const dto: LoginDto = {
         email: "test@example.com",
         password: "Password1!",
       };
@@ -106,10 +111,13 @@ describe("AuthController — 인증 컨트롤러", () => {
       loginWithPasswordUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - login을 호출하면
-      const result = await controller.login(dto as unknown as LoginDto, mockReq);
+      const result = await controller.login(dto, mockReq);
 
       // Then - 서비스에 위임하고 AuthMapper.toAuthTokensResponse 형식의 응답을 반환해야 한다
-      expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith(dto, expect.any(Object));
+      expect(loginWithPasswordUseCase.execute).toHaveBeenCalledWith({
+        ...dto,
+        metadata: { ip: "127.0.0.1", userAgent: "test-agent" },
+      });
       expect(result).toEqual({
         userId: serviceResult.userId,
         userTag: serviceResult.userTag,
