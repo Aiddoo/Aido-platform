@@ -9,6 +9,8 @@ import {
 } from "#test/fixtures/planning-todo.fixture";
 
 import { TodoCreatedEvent } from "../../../domain/events/todos/todo-created.event.js";
+import { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
+import { TodoCreationWriter } from "../../services/todos/todo-creation-writer.service.js";
 import { CreateTodo } from "./create-todo.use-case.js";
 
 describe("할 일 생성", () => {
@@ -18,7 +20,11 @@ describe("할 일 생성", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new CreateTodo(fixture);
+    useCase = new CreateTodo({
+      ...fixture,
+      writer: new TodoCreationWriter(fixture),
+      effects: new TodoCreationEffects(fixture),
+    });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -120,4 +126,32 @@ describe("할 일 생성", () => {
     }
     expect(responseRead).toHaveBeenCalledOnce();
   });
+  it.each(["cache", "publisher"])(
+    "단독 생성의 %s 실패는 원래 오류를 전달하고 응답 조회를 시작하지 않는다",
+    async (boundary) => {
+      // Given
+      fixture.records.clear();
+      const failure = new Error(`${boundary} failure`);
+      if (boundary === "cache")
+        fixture.todoCache.invalidateTodoCategories = async () => {
+          throw failure;
+        };
+      else
+        fixture.eventPublisher.publishAll = async () => {
+          throw failure;
+        };
+      const responseRead = vi.spyOn(fixture.todoReadRepository, "findByIdAndUserId");
+      // When / Then
+      await expect(
+        useCase.execute({
+          userId: fixture.userId,
+          title: "새 할 일",
+          categoryId: 1,
+          startDate: PLANNING_TIME,
+        }),
+      ).rejects.toBe(failure);
+      expect(fixture.records.size).toBe(1);
+      expect(responseRead).not.toHaveBeenCalled();
+    },
+  );
 });

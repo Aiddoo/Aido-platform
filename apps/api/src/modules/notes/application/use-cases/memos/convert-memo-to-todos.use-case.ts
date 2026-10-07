@@ -2,62 +2,60 @@ import type { DayOfWeek, Todo } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+  type SavepointRunnerPort,
+  type AfterCommitTaskRegistryPort,
+} from "#api/shared/application/ports/index";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
-import { type TodoCreatorPort } from "../../ports/memos/todo-creator.port.js";
+import type { StagedTodoCreatorPort } from "../../ports/memos/staged-todo-creator.port.js";
 
-/** 일괄 변환 단일 항목 입력 (컨트롤러가 날짜/시간을 파싱해 전달). */
 export interface ConvertMemoToSingleTodoData {
-  title: string;
-  categoryId: number;
-  startDate: Date;
-  endDate?: Date | null;
-  scheduledTime?: Date | null;
-  isAllDay?: boolean;
-  visibility?: "PUBLIC" | "PRIVATE";
-  isRecurring?: boolean;
-  recurrence?: {
+  readonly title: string;
+  readonly categoryId: number;
+  readonly startDate: Date;
+  readonly endDate?: Date | null;
+  readonly scheduledTime?: Date | null;
+  readonly isAllDay?: boolean;
+  readonly visibility?: "PUBLIC" | "PRIVATE";
+  readonly isRecurring?: boolean;
+  readonly recurrence?: {
     daysOfWeek: DayOfWeek[];
     endDate: Date;
   };
-  items?: { title: string }[];
+  readonly items?: { title: string }[];
 }
 
-/** 일괄 변환 입력. */
 export interface ConvertMemoToTodosData {
-  todos: ConvertMemoToSingleTodoData[];
+  readonly todos: ConvertMemoToSingleTodoData[];
 }
 
-/** 일괄 변환 결과. */
 export interface ConvertMemoToTodosResult {
-  message: string;
-  todos: Todo[];
+  readonly message: string;
+  readonly todos: Todo[];
 }
 
-/** 메모를 여러 할 일로 일괄 변환하는 입력 (변환 후 메모 삭제). */
 export interface ConvertMemoToTodosInput {
-  userId: string;
-  memoId: number;
-  data: ConvertMemoToTodosData;
-  timezone: string;
+  readonly userId: string;
+  readonly memoId: number;
+  readonly data: ConvertMemoToTodosData;
+  readonly timezone: string;
 }
 
-/**
- * 메모 → 다중 할 일 일괄 변환 use-case.
- *
- * 반복 일정은 TodoCreatorPort.createRecurringTodos, 단건은 createTodo를 호출한다.
- *
- * **트랜잭션 설계 의도:** 각 todo 측 use-case가 자체 TX + 캐시 무효화 + 리마인더
- * 스케줄링(이벤트)을 포함하므로, 외부 TX로 감싸면 nested transaction + 부수효과
- * 복잡도가 크게 증가한다. 대신 메모 삭제를 마지막에 실행하여 중간 실패 시 메모가
- * 유지되어 재시도 가능하다(이미 생성된 Todo는 유지, 최대 5개라 부분 실패 확률 극소).
- */
 interface ConvertMemoToTodosDependencies {
-  readonly repository: MemoRepositoryPort;
-  readonly todoCreator: TodoCreatorPort;
+  readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
+  readonly todoCreator: StagedTodoCreatorPort;
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly mutationLock: MutationLockPort;
+  readonly savepointRunner: SavepointRunnerPort;
+  readonly afterCommit: AfterCommitTaskRegistryPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -70,65 +68,73 @@ export class ConvertMemoToTodos {
 
   async execute(input: ConvertMemoToTodosInput): Promise<ConvertMemoToTodosResult> {
     const { userId, memoId, data, timezone } = input;
-
-    // 1. 소유권 확인 (읽기 전용, TX 외부)
-    const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-    if (!memo) {
-      throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
-    }
-
-    // 2. 모든 Todo 생성 (각 todo 측 use-case가 자체 TX 관리)
-    const todos: Todo[] = [];
-
-    for (const todoData of data.todos) {
-      if (todoData.isRecurring && todoData.recurrence) {
-        const result = await this.#dependencies.todoCreator.createRecurringTodos(
-          {
-            userId,
-            title: todoData.title,
-            categoryId: todoData.categoryId,
-            startDate: toDateString(todoData.startDate),
-            endDate: toDateString(todoData.recurrence.endDate),
-            daysOfWeek: todoData.recurrence.daysOfWeek,
-            scheduledTime: todoData.scheduledTime
-              ? toLocalTimeString(todoData.scheduledTime, timezone)
-              : null,
-            isAllDay: todoData.isAllDay ?? true,
-            visibility: todoData.visibility ?? "PUBLIC",
-            items: todoData.items,
-          },
-          timezone,
-        );
-        todos.push(...result.todos);
-      } else {
-        const todo = await this.#dependencies.todoCreator.createTodo({
-          userId,
-          title: todoData.title,
-          categoryId: todoData.categoryId,
-          startDate: todoData.startDate,
-          endDate: todoData.endDate,
-          scheduledTime: todoData.scheduledTime,
-          isAllDay: todoData.isAllDay ?? true,
-          visibility: todoData.visibility ?? "PUBLIC",
-          items: todoData.items,
-        });
-        todos.push(todo);
+    const outcome = await this.#dependencies.unitOfWork.run<
+      { kind: "success"; todos: Todo[] } | { kind: "failed"; error: unknown }
+    >(async () => {
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.memo(memoId),
+        MutationLockKeys.memoSortOrder(userId),
+        MutationLockKeys.todoCategory(userId),
+        MutationLockKeys.todoSortOrder(userId),
+      ]);
+      const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
+      if (memo === null) throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
+      const todos: Todo[] = [];
+      for (const todoData of data.todos) {
+        try {
+          const staged = await this.#dependencies.savepointRunner.run(() => {
+            if (todoData.isRecurring === true && todoData.recurrence !== undefined) {
+              return this.#dependencies.todoCreator.stageRecurringTodos(
+                {
+                  userId,
+                  title: todoData.title,
+                  categoryId: todoData.categoryId,
+                  startDate: toDateString(todoData.startDate),
+                  endDate: toDateString(todoData.recurrence.endDate),
+                  daysOfWeek: todoData.recurrence.daysOfWeek,
+                  scheduledTime:
+                    todoData.scheduledTime === undefined || todoData.scheduledTime === null
+                      ? null
+                      : toLocalTimeString(todoData.scheduledTime, timezone),
+                  isAllDay: todoData.isAllDay ?? true,
+                  visibility: todoData.visibility ?? "PUBLIC",
+                  items: todoData.items,
+                },
+                timezone,
+              );
+            }
+            return this.#dependencies.todoCreator.stageTodo({
+              userId,
+              title: todoData.title,
+              categoryId: todoData.categoryId,
+              startDate: todoData.startDate,
+              endDate: todoData.endDate,
+              scheduledTime: todoData.scheduledTime,
+              isAllDay: todoData.isAllDay ?? true,
+              visibility: todoData.visibility ?? "PUBLIC",
+              items: todoData.items,
+            });
+          });
+          this.#dependencies.afterCommit.register(staged.afterCommit);
+          todos.push(...staged.todos);
+        } catch (error) {
+          // 성공한 앞 항목은 실제로 커밋하고, 그 효과가 정착한 뒤 원래 오류를 전달한다.
+          return { kind: "failed", error };
+        }
       }
-    }
-
-    // 3. 메모 삭제 (모든 Todo 생성 성공 후)
-    await this.#dependencies.repository.delete(memoId);
-
-    // 참고: 카테고리 캐시 무효화는 TodoCreatorPort(create-todo·create-recurring-todos)가
-    // 각자 쓰기 경로에서 소유한다 — 메모가 타 모듈 캐시를 직접 만지지 않는다.
-
-    this.#dependencies.logger.log(
-      `Memo ${memoId} converted to ${todos.length} todos for user: ${userId}`,
-    );
-
+      await this.#dependencies.repository.delete(memoId);
+      return { kind: "success", todos };
+    });
+    if (outcome.kind === "failed") throw outcome.error;
+    this.#dependencies.logger.log({
+      event: NotesMemoLogEvent.CONVERTED,
+      memoId,
+      userId,
+      todoCount: outcome.todos.length,
+    });
     return {
-      message: `메모가 ${todos.length}개의 할 일로 변환되었습니다.`,
-      todos,
+      message: `메모가 ${outcome.todos.length}개의 할 일로 변환되었습니다.`,
+      todos: outcome.todos,
     };
   }
 }

@@ -8,7 +8,6 @@
  */
 export * from "./cross-module.mock.js";
 export * from "./daily-completion.mock.js";
-export * from "./memo.mock.js";
 export * from "./notification.mock.js";
 export * from "./notification-cache.mock.js";
 export * from "./retention-repository.mock.js";

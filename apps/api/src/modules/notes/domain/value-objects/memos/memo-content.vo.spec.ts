@@ -1,42 +1,50 @@
-/**
- * MemoContent 값 객체 단위 테스트
- */
+import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
-
-import { DomainException } from "#api/shared/domain/exceptions/domain.exception";
 
 import { MemoContent } from "./memo-content.vo.js";
 
-describe("MemoContent — 메모 내용 값 객체", () => {
-  describe("of", () => {
-    it("유효 범위 내 내용을 생성한다", () => {
-      expect(MemoContent.of("할 일").value).toBe("할 일");
-    });
+describe("MemoContent 내용 검증·할 일 제목", () => {
+  it.each([0, MEMO_LIMITS.MAX_CONTENT_LENGTH + 1])(
+    "허용 길이를 벗어난 내용(%i자)은 기존 오류 정보를 반환한다",
+    (length) => {
+      // Given
+      const content = "가".repeat(length);
 
-    it("빈 문자열은 DomainException(SYS_0002)을 던진다", () => {
-      expect(() => MemoContent.of("")).toThrow(DomainException);
-      expect(() => MemoContent.of("")).toThrow(expect.objectContaining({ errorCode: "SYS_0002" }));
-    });
+      // When / Then
+      expect(() => MemoContent.of(content)).toThrow(
+        expect.objectContaining({
+          errorCode: ErrorCode.SYS_0002,
+          details: { field: "content", length },
+        }),
+      );
+    },
+  );
 
-    it("최대 길이를 초과하면 DomainException을 던진다", () => {
-      const tooLong = "a".repeat(MEMO_LIMITS.MAX_CONTENT_LENGTH + 1);
-      expect(() => MemoContent.of(tooLong)).toThrow(DomainException);
-    });
+  it.each([1, MEMO_LIMITS.MAX_CONTENT_LENGTH])(
+    "경계값(%i자)의 내용과 공백을 그대로 보존한다",
+    (length) => {
+      // Given
+      const content = " ".repeat(length);
 
-    it("경계값(최대 길이)은 허용한다", () => {
-      const atLimit = "a".repeat(MEMO_LIMITS.MAX_CONTENT_LENGTH);
-      expect(MemoContent.of(atLimit).value.length).toBe(MEMO_LIMITS.MAX_CONTENT_LENGTH);
-    });
-  });
+      // When
+      const value = MemoContent.of(content);
 
-  describe("toTodoTitle", () => {
-    it("200자 이하는 그대로 반환한다", () => {
-      expect(MemoContent.of("짧은 메모").toTodoTitle()).toBe("짧은 메모");
-    });
+      // Then
+      expect(value.value).toBe(content);
+    },
+  );
 
-    it("200자를 초과하면 앞 200자로 잘린다", () => {
-      const title = MemoContent.of("x".repeat(300)).toTodoTitle();
-      expect(title.length).toBe(200);
-    });
-  });
+  it.each([199, 200, 201, 300])(
+    "할 일 변환은 %i자 메모에서 기존 앞 200자 계약을 유지한다",
+    (length) => {
+      // Given
+      const content = "가".repeat(length);
+
+      // When
+      const title = MemoContent.of(content).toTodoTitle();
+
+      // Then
+      expect(title).toBe(content.substring(0, 200));
+    },
+  );
 });

@@ -1,16 +1,8 @@
-import type { Memo as MemoResponse } from "@aido/api";
-
-import { toISOString } from "#api/shared/domain/date/utils/format";
 import { AggregateRoot } from "#api/shared/domain/index";
 
+import type { MemoRecord } from "../../records/memos/memo.record.js";
 import { MemoContent } from "../../value-objects/memos/memo-content.vo.js";
 
-/**
- * 메모 애그리게잇.
- *
- * 내용(값 객체)·고정 여부·수동 정렬 순서를 소유한다. 조회/변환에 필요한 파생값
- * (응답 뷰, 할 일 제목)을 자기 자신에서 직렬화한다.
- */
 interface MemoProps {
   id: number;
   userId: string;
@@ -22,19 +14,13 @@ interface MemoProps {
 }
 
 export class Memo extends AggregateRoot<MemoProps> {
-  /** 저장된 값에서 복원한다. */
-  static reconstitute(props: {
-    id: number;
-    userId: string;
-    content: string;
-    isPinned: boolean;
-    sortOrder: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }): Memo {
+  static reconstitute(props: MemoRecord): Memo {
     return new Memo({
-      ...props,
+      id: props.id,
+      userId: props.userId,
       content: MemoContent.of(props.content),
+      isPinned: props.isPinned,
+      sortOrder: props.sortOrder,
       createdAt: new Date(props.createdAt),
       updatedAt: new Date(props.updatedAt),
     });
@@ -60,6 +46,18 @@ export class Memo extends AggregateRoot<MemoProps> {
     return this.props.sortOrder;
   }
 
+  get snapshot(): MemoRecord {
+    return {
+      id: this.props.id,
+      userId: this.props.userId,
+      content: this.props.content.value,
+      isPinned: this.props.isPinned,
+      sortOrder: this.props.sortOrder,
+      createdAt: new Date(this.props.createdAt),
+      updatedAt: new Date(this.props.updatedAt),
+    };
+  }
+
   rename(content: string): void {
     this.props.content = MemoContent.of(content);
   }
@@ -68,21 +66,7 @@ export class Memo extends AggregateRoot<MemoProps> {
     this.props.isPinned = isPinned;
   }
 
-  /** 할 일 변환용 제목(앞 200자). */
   toTodoTitle(): string {
     return this.props.content.toTodoTitle();
-  }
-
-  /** 응답 뷰(@aido/api Memo)로 직렬화한다. */
-  toView(): MemoResponse {
-    return {
-      id: this.props.id,
-      userId: this.props.userId,
-      content: this.props.content.value,
-      isPinned: this.props.isPinned,
-      sortOrder: this.props.sortOrder,
-      createdAt: toISOString(this.props.createdAt),
-      updatedAt: toISOString(this.props.updatedAt),
-    };
   }
 }

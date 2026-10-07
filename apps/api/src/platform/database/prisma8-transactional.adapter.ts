@@ -1,6 +1,10 @@
+import { randomUUID } from "node:crypto";
+
 import type { TransactionalAdapter, TransactionalAdapterOptions } from "@nestjs-cls/transactional";
 import type { InjectionToken } from "@nestjs/common";
+import sql, { raw } from "sql-template-tag";
 
+import { sqlStatement } from "./database-sql.js";
 import { DatabaseService } from "./database.service.js";
 
 type NativeTransaction = Parameters<Parameters<DatabaseService["db"]["transaction"]>[0]>[0];
@@ -45,6 +49,35 @@ export class Prisma8TransactionalAdapter implements TransactionalAdapter<
           setTx(bindDatabaseTransaction(tx, connection.db.raw));
           return work();
         }),
+      wrapWithNestedTransaction: async (_options, work, _setTx, tx) => {
+        const savepoint = raw(`"aido_${randomUUID().replaceAll("-", "")}"`);
+        await tx.execute(
+          sqlStatement(tx, sql`SAVEPOINT ${savepoint}`)
+            .returnsRow({})
+            .build(),
+        );
+        try {
+          const result = await work();
+          await tx.execute(
+            sqlStatement(tx, sql`RELEASE SAVEPOINT ${savepoint}`)
+              .returnsRow({})
+              .build(),
+          );
+          return result;
+        } catch (error) {
+          await tx.execute(
+            sqlStatement(tx, sql`ROLLBACK TO SAVEPOINT ${savepoint}`)
+              .returnsRow({})
+              .build(),
+          );
+          await tx.execute(
+            sqlStatement(tx, sql`RELEASE SAVEPOINT ${savepoint}`)
+              .returnsRow({})
+              .build(),
+          );
+          throw error;
+        }
+      },
     };
   }
 }

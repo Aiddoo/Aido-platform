@@ -1,81 +1,53 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
+import { createNotesMemoFixture, NOTES_TIME } from "#test/fixtures/notes-memo.fixture";
 
-import { Memo } from "../../../domain/aggregates/memos/memo.aggregate.js";
-import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
 import { ToggleMemoPin } from "./toggle-memo-pin.use-case.js";
 
-const memoEntity = (isPinned: boolean): Memo =>
-  Memo.reconstitute({
-    id: 1,
-    userId: "user-1",
-    content: "내용",
-    isPinned,
-    sortOrder: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+describe("ToggleMemoPin — 메모 사용자 상태", () => {
+  let fixture: ReturnType<typeof createNotesMemoFixture>;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOTES_TIME);
+    fixture = createNotesMemoFixture();
   });
+  afterEach(() => vi.useRealTimers());
 
-describe("ToggleMemoPin — 메모 고정/해제", () => {
-  let useCase: ToggleMemoPin;
-  let repository: Mocked<MemoRepositoryPort>;
-
-  beforeEach(async () => {
-    const toggleMemoPinDependencies = mockDeep<ConstructorParameters<typeof ToggleMemoPin>[0]>({
-      repository: createMemoRepositoryMock(),
-    });
-    const unit = new ToggleMemoPin(toggleMemoPinDependencies);
-
-    useCase = unit;
-    repository = toggleMemoPinDependencies.repository;
-  });
-
-  it("메모가 없으면 MEMO_2001을 던지고 고정 상태를 바꾸지 않는다", async () => {
+  it.each([
+    { isPinned: true, message: "메모가 고정되었습니다." },
+    { isPinned: false, message: "메모 고정이 해제되었습니다." },
+  ])("고정 상태를 $isPinned로 저장하고 내용을 유지한다", async ({ isPinned, message }) => {
     // Given
-    repository.findByIdAndUserId.mockResolvedValue(null);
+    const memo = fixture.addMemo("내용 유지", 4);
+    fixture.repository.seed({ ...memo, isPinned: !isPinned });
+    // When
+    const result = await new ToggleMemoPin(fixture).execute({
+      userId: fixture.userId,
+      memoId: memo.id,
+      isPinned,
+    });
+    // Then
+    expect(result.message).toBe(message);
+    expect(fixture.repository.records.get(memo.id)).toMatchObject({
+      content: "내용 유지",
+      sortOrder: 4,
+      isPinned,
+    });
+    expect(result.memo.isPinned).toBe(isPinned);
+  });
 
-    // When & Then
+  it("소유하지 않은 메모는 MEMO_2001로 거부하고 고정 상태를 유지한다", async () => {
+    // Given
+    const memo = fixture.addMemo("다른 사용자", 0, "other-user");
+    // When / Then
     await expect(
-      useCase.execute({ userId: "user-1", memoId: 99, isPinned: true }),
+      new ToggleMemoPin(fixture).execute({
+        userId: fixture.userId,
+        memoId: memo.id,
+        isPinned: true,
+      }),
     ).rejects.toMatchObject({ errorCode: "MEMO_2001" });
-    expect(repository.updatePinned).not.toHaveBeenCalled();
-  });
-
-  it("고정 시 updatePinned(true)를 호출하고 고정 메시지·뷰를 반환한다", async () => {
-    // Given
-    repository.findByIdAndUserId.mockResolvedValue(memoEntity(false));
-    repository.updatePinned.mockResolvedValue(memoEntity(true));
-
-    // When
-    const result = await useCase.execute({
-      userId: "user-1",
-      memoId: 1,
-      isPinned: true,
-    });
-
-    // Then
-    expect(repository.updatePinned).toHaveBeenCalledWith(1, true);
-    expect(result.message).toBe("메모가 고정되었습니다.");
-    expect(result.memo.isPinned).toBe(true);
-  });
-
-  it("해제 시 updatePinned(false)를 호출하고 해제 메시지·뷰를 반환한다", async () => {
-    // Given
-    repository.findByIdAndUserId.mockResolvedValue(memoEntity(true));
-    repository.updatePinned.mockResolvedValue(memoEntity(false));
-
-    // When
-    const result = await useCase.execute({
-      userId: "user-1",
-      memoId: 1,
-      isPinned: false,
-    });
-
-    // Then
-    expect(repository.updatePinned).toHaveBeenCalledWith(1, false);
-    expect(result.message).toBe("메모 고정이 해제되었습니다.");
-    expect(result.memo.isPinned).toBe(false);
+    expect(fixture.repository.records.get(memo.id)?.isPinned).toBe(false);
   });
 });

@@ -19,9 +19,20 @@ import { describeCacheAdapterContract } from "./cache-adapter.contract.js";
 import { RedisCacheAdapter } from "./redis-cache.adapter.js";
 
 describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
+  let contractRedis: InstanceType<typeof RedisMock>;
+
   describeCacheAdapterContract({
-    createAdapter: () => new RedisCacheAdapter(new RedisMock(), 60_000),
-    cleanup: (adapter) => adapter.reset(),
+    createAdapter: () => {
+      contractRedis = new RedisMock();
+      return new RedisCacheAdapter(contractRedis, 60_000);
+    },
+    cleanup: async (adapter) => {
+      try {
+        await adapter.reset();
+      } finally {
+        contractRedis.disconnect();
+      }
+    },
   });
 
   describe("fail-open (Redis 장애 시)", () => {
@@ -34,6 +45,10 @@ describe("RedisCacheAdapter — Redis 캐시 어댑터", () => {
       redis = new RedisMock();
       warn = vi.fn();
       cache = new RedisCacheAdapter(redis, 60_000, new RedisErrorLogSampler({ warn }));
+    });
+
+    afterEach(() => {
+      redis.disconnect();
     });
 
     it("get 실패 시 캐시 미스(undefined)로 취급한다", async () => {

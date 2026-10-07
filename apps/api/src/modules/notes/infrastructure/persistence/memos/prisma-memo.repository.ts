@@ -6,7 +6,10 @@ import { OrderByItem } from "@prisma/orm-postgres/relational-core/ast";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp } from "#api/platform/database/database-values";
 import type { Memo as MemoRow } from "#api/platform/database/database.types";
-import { requireRecord } from "#api/platform/database/prisma-error.util";
+import {
+  DatabaseRecordNotFoundError,
+  requireRecord,
+} from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { now } from "#api/shared/domain/date/utils/core";
 
@@ -16,12 +19,6 @@ import type {
 } from "../../../application/ports/memos/memo.repository.port.js";
 import { Memo } from "../../../domain/aggregates/memos/memo.aggregate.js";
 
-/**
- * MemoRepositoryPort의 Prisma 어댑터.
- *
- * Prisma Memo 행을 도메인 애그리게잇으로 매핑한다. 트랜잭션은 CLS로 전파된다 —
- * TransactionHost.tx가 활성 트랜잭션(없으면 베이스)을 반환한다.
- */
 @Injectable()
 export class PrismaMemoRepository implements MemoRepositoryPort {
   constructor(private readonly txHost: TransactionHost<Prisma8TransactionalAdapter>) {}
@@ -46,7 +43,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
     const row = decodeRecord(
       "Memo",
       await this.client.orm.public.Memo.create(
-        encodeCreate("Memo", { userId: userId, content, sortOrder }),
+        encodeCreate("Memo", { userId, content, sortOrder }),
       ),
     );
     return PrismaMemoRepository.toDomain(row);
@@ -59,7 +56,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
         and(row.id.eq(memoId), row.userId.eq(userId)),
       ).first(),
     );
-    return row ? PrismaMemoRepository.toDomain(row) : null;
+    return row === null ? null : PrismaMemoRepository.toDomain(row);
   }
 
   async findManyByUserId(params: FindMemosParams): Promise<Memo[]> {
@@ -73,7 +70,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
       const rows = decodeRecord("Memo", await collection.limit(size + 1).all());
       return rows.map((row) => PrismaMemoRepository.toDomain(row));
     }
-    const anchor = await this.client.orm.public.Memo.where({ id: cursor })
+    const anchor = await this.client.orm.public.Memo.where({ id: cursor, userId })
       .select("id", "isPinned", "sortOrder")
       .first();
     if (anchor === null) return [];
@@ -93,40 +90,26 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
       .then(({ count }) => count);
   }
 
-  async updateContent(memoId: number, content: string): Promise<Memo> {
-    const row = decodeRecord(
-      "Memo",
-      requireRecord(
-        await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).update(
-          encodePatch("Memo", { content }),
-        ),
-      ),
-    );
-    return PrismaMemoRepository.toDomain(row);
+  updateContent(memoId: number, content: string): Promise<Memo> {
+    return this.update(memoId, { content });
   }
 
-  async updatePinned(memoId: number, isPinned: boolean): Promise<Memo> {
-    const row = decodeRecord(
-      "Memo",
-      requireRecord(
-        await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).update(
-          encodePatch("Memo", { isPinned }),
-        ),
-      ),
-    );
-    return PrismaMemoRepository.toDomain(row);
+  updatePinned(memoId: number, isPinned: boolean): Promise<Memo> {
+    return this.update(memoId, { isPinned });
   }
 
-  async updateSortOrder(memoId: number, sortOrder: number): Promise<Memo> {
-    const row = decodeRecord(
-      "Memo",
-      requireRecord(
-        await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).update(
-          encodePatch("Memo", { sortOrder }),
-        ),
-      ),
+  updateSortOrder(memoId: number, sortOrder: number): Promise<Memo> {
+    return this.update(memoId, { sortOrder });
+  }
+
+  private async update(
+    memoId: number,
+    patch: Partial<Pick<MemoRow, "content" | "isPinned" | "sortOrder">>,
+  ): Promise<Memo> {
+    const [row] = await this.client.orm.public.Memo.where({ id: memoId }).updateAll(
+      encodePatch("Memo", patch),
     );
-    return PrismaMemoRepository.toDomain(row);
+    return PrismaMemoRepository.toDomain(decodeRecord("Memo", requireRecord(row)));
   }
 
   async getMaxSortOrder(userId: string): Promise<number> {
@@ -146,23 +129,20 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
       sortOrder: this.client.raw.sql`${fields.sortOrder} + ${delta}`.returns("pg/int4@1"),
       updatedAt: this.client.raw.sql`${databaseTimestamp(now())}`.returns("pg/timestamp-string@1"),
     }))
-      .where((fields, functions) =>
-        functions.and(
+      .where((fields, functions) => {
+        const conditions = [
           functions.eq(fields.userId, userId),
           functions.gte(fields.sortOrder, fromSortOrder),
-          toSortOrder === null
-            ? this.client.raw.sql`TRUE`.returns("pg/bool@1")
-            : functions.lte(fields.sortOrder, toSortOrder),
-        ),
-      )
+        ];
+        if (toSortOrder !== null) conditions.push(functions.lte(fields.sortOrder, toSortOrder));
+        return functions.and(...conditions);
+      })
       .build();
     await this.client.execute(plan);
   }
 
   async delete(memoId: number): Promise<void> {
-    decodeRecord(
-      "Memo",
-      requireRecord(await this.client.orm.public.Memo.where((row) => row.id.eq(memoId)).delete()),
-    );
+    const deleted = await this.client.orm.public.Memo.where({ id: memoId }).deleteAndCount();
+    if (deleted === 0) throw new DatabaseRecordNotFoundError();
   }
 }

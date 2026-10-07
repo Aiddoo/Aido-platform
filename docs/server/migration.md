@@ -19,9 +19,9 @@ Prisma 8 기준 커밋은 `beb952c0`이며 [PR #884](https://github.com/Aiddoo/A
 - [x] 04 Identity: 04a 세션 완료([PR #897](https://github.com/Aiddoo/Aido-platform/pull/897)), 04b 생명주기 완료([PR #899](https://github.com/Aiddoo/Aido-platform/pull/899)), 04c 자격 증명 완료([PR #902](https://github.com/Aiddoo/Aido-platform/pull/902)), 04d OAuth 완료([PR #903](https://github.com/Aiddoo/Aido-platform/pull/903)), 04e 설정·동의 검증 완료([Issue #904](https://github.com/Aiddoo/Aido-platform/issues/904))
 - [x] 05 Billing: Webhook·구독 상태 전이·성공 원장·권한 정합성 검증([Issue #906](https://github.com/Aiddoo/Aido-platform/issues/906))
 - [x] 06 Access: Entitlement 정책·AI Quota 예약·보상·공개 capability 검증([Issue #908](https://github.com/Aiddoo/Aido-platform/issues/908))
-- [x] 07 Planning: 할 일·항목·카테고리·반복 일정 정합성 검증([Issue #910](https://github.com/Aiddoo/Aido-platform/issues/910))
-- [x] 08 Social: 친구·응원·넛지 상태·경쟁·ORM·공개 capability 검증
-- [ ] 09 Notes: 메모와 전환
+- [x] 07 Planning: 할 일·항목·카테고리·반복 일정 정합성 검증([PR #912](https://github.com/Aiddoo/Aido-platform/pull/912))
+- [x] 08 Social: 친구·응원·넛지 상태·경쟁·ORM·공개 capability 검증([PR #913](https://github.com/Aiddoo/Aido-platform/pull/913))
+- [x] 09 Notes: 메모와 전환·부분 성공·동시 변경 검증([Issue #914](https://github.com/Aiddoo/Aido-platform/issues/914))
 - [ ] 10 Engagement: 댓글·반응·대화·정리
 - [ ] 11 Insights: 완료 집계·주간 달성·연속 기록
 - [ ] 12 Weather: 위치·좌표·격자·공급자 Port·지역별 선택 정책·도메인 응답 정규화; 한국 API 유지, 해외 공급자는 동일 인터페이스로 추가
@@ -638,17 +638,17 @@ native `updateAndCount/updateAll/deleteAndCount`로 불필요한 PK 사전 조�
 - Unit: 489 files / 2,928 tests, 18.11초.
 - Integration: 51 files / 437 tests, 183.18초. 기존 Stub spec도 포함하며 새 경쟁 검증은 실제 PG다.
 - E2E: 38 files / 507 tests, 274.94초. 고정 구 앱·OpenAPI 계약 fixture 변경 없음.
-- Workspace lint·format·typecheck 통과. commit hook에서 workspace build를 검증한다.
+- Workspace lint·format·typecheck 통과. commit hook workspace build 4/4 통과(7.938초, 3 tasks cached).
 
-상위 9/18 구현·검증 완료, Notes부터9단계가 남았다. GitHub 쓰기 오류로 Planning/Social
-게시를 재시도하며 로컬 Stack과 커밋·검증 기록을 보존한다.
+상위 9/18 구현·검증 완료, Notes부터 9단계가 남았다. Planning/Social Draft PR #912/#913을
+Stack으로 게시했고 담당자·리뷰 Labels·실제 측정 근거를 기록했다.
 신규 schema·migration·패키지·실행 script·Action job은
 없다. 운영 latency·CPU/RSS·billed Actions 개선률, cache in-flight 경쟁 해결·exactly-once를
 주장하지 않는다. merge·배포는 하지 않았다.
 
 ## 09 Notes 사전 재현
 
-현재 Notes 코드는 변경하지 않았다. 기존 CreateMemo·PrismaMemoRepository·native UoW에서
+구현 전 기존 CreateMemo·PrismaMemoRepository·native UoW에서
 메모19개 뒤 동시 생성2개가 모두 성공해21개·sortOrder19 중복을 실제 PostgreSQL로 재현했다.
 MEMO_MAX20을 기대한 동일 테스트1개가 실패했다(3.74초, seed90901·America/Los_Angeles).
 User 행 잠금에서 실제 INSERT 대기2개를 관찰했고 임의 sleep·외부 network 없이 실행했다.
@@ -664,8 +664,98 @@ User 행 잠금에서 실제 INSERT 대기2개를 관찰했고 임의 sleep·외
 검증했으며 기존 Swagger의 부분 성공 계약이다. 2개 중1실패·1통과(5.71초, seed90902).
 임의로 일괄 실패를 전부 rollback하는 계약으로 바꾸지 않는다. native tx.execute와 PostgreSQL
 SAVEPOINT의 같은 연결 동작은 실제2개 테스트·pool.max1에서 확인했다(3.20초, seed90904).
-저장과 commit 이후 효과를 분리하되 일반 Todo 생성의 await·오류 전파를 유지하는 방안을 검토한다.
-이 조사는 실제 After·전체 Notes 완료를 뜻하지 않으며 모든 임시 테스트 DB를 정리했다.
+이 사전 조사는 After 검증과 구분하며 자신이 만든 임시 테스트 DB를 정리했다.
+
+## 09 Notes 구현과 실제 After
+
+[Issue #914](https://github.com/Aiddoo/Aido-platform/issues/914)의 구현이다. Memo Aggregate는
+복원·내용/고정 상태 전이·Date 방어 복사 snapshot을 소유하고 REST 날짜 직렬화는 Application
+read-model mapper가 소유한다. 기존 입력 Date 복사는 이미 있었으므로 새 alias 버그 수정으로
+표기하지 않는다. 정책 위치/접미사와 NotesMemosModule 명명을 통일하고 10 endpoint를 직접
+UseCase와 최소 Port로 연결한다. 전달 adapter·중복 barrel·미사용 Repository mock·Controller
+전달 Unit을 제거했다. SQL 정렬 산술은 기존 native builder를 유지한다.
+
+| 같은 실제 PostgreSQL/HTTP Before            | After                                                          |
+| ------------------------------------------- | -------------------------------------------------------------- |
+| 메모19개 뒤 동시2생성→21개·sortOrder 중복   | 1성공·1 MEMO2003, 20개·정렬 값 중복 없음                       |
+| 같은 메모 동시 재정렬→sortOrder[2,0,0]      | 두 요청 성공, sortOrder[2,0,1]                                 |
+| 같은 메모 동시 변환→Todo2개·201/400 SYS0002 | Todo1개·201/404 MEMO2001·Memo삭제                              |
+| batch 후속 category 오류→첫Todo1개·Memo유지 | 같은404 TODO_CATEGORY0851·첫Todo1개·Memo유지, 후속 항목 미실행 |
+
+사용자 Memo 정렬 key와 단건 key를 기존 MutationLockPort에서 한 번 정렬 획득하고 같은
+UoW에서 fresh 한도·소유권·상태를 읽는다. 다른 사용자의 cursor anchor는 자기 페이지 기준을
+변경할 수 없게 소유 조건을 추가했다. 종전에도 타인 행을 반환하지는 않았다. 정상 본인 cursor,
+존재하지 않는 cursor의 빈 페이지·고정 우선·동률·size+1 의미는 보존한다.
+
+### 생성과 부분 성공 경계
+
+Planning의 TodoCreationWriter/Effects는 기존 생성 저장·후속 작업을 분리하여 일반 생성과
+Notes의 공개 STAGED_TODO_CREATOR capability가 재사용한다. 일반 생성은 UoW 밖 검증→
+잠금/DB 쓰기→직접 await cache2→event→readback 및 실패 전파를 유지한다. 메모 단건 변환은
+생성/삭제를 하나의 UoW로 묶고 불필요한 savepoint를 사용하지 않는다.
+
+batch 변환은 성공한 앞 항목을 유지해야 한다. 항목별 동일 연결 savepoint로 실패 항목의
+쓰기를 되돌리고 callback에서 failed outcome을 반환한다. 바깥 UoW가 성공 prefix를 커밋하고
+등록된 후속 작업을 입력 순서로 실행한 뒤 원래 오류를 던진다. 마지막 메모 삭제의 DB 실패는
+바깥 UoW로 전파한다. blanket batch rollback이나 두 번째 연결을 사용하는 RequiresNew로
+기존 부분 성공 의미를 바꾸지 않는다.
+
+기존 after-commit registry를 재사용하고 성공한 savepoint의 callback만 그 바깥에서 등록한다.
+실제 Redis Cache와 DomainEventPublisher의 실패 격리 의미는 유지한다. 각 항목의 후속 작업이
+다음 DB 쓰기보다 먼저 실행되던 시점은 전체 prefix commit 뒤로 이동한다. 일반 생성의
+throwing Port 오류는 여전히 전파한다. 실패 batch를 새 요청으로 재시도하면 이미 성공한
+prefix가 다시 만들어질 수 있는 기존 의미는 남으며 durable idempotency/exactly-once를
+주장하지 않는다.
+
+Native CLS adapter의 공식 wrapWithNestedTransaction seam은 tx.execute(plan)으로 SAVEPOINT,
+ROLLBACK TO, RELEASE를 같은 연결에 실행한다. 내부 UUID로만 식별자를 만들고 외부 값을
+SQL에 삽입하지 않는다. SavepointRunner는 활성 UoW와 순차 실행을 요구한다. pool.max1
+실제 PG 3개가 SQL23503/Application 실패 뒤 prefix와 후속 항목 commit·같은 PID·작업 FIFO,
+바깥 실패의 전체 rollback/후속 작업 미실행을 검증했다(3.87초, seed90907). 첫 검증의
+orderBy 객체 사용 오류는 공식 selector로 교정하고 assertion을 유지했다.
+
+공식 근거: [Nest CLS custom transaction adapter](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional),
+[Prisma 8 runtime](https://github.com/prisma/orm/blob/v8.0.0-rc.14/skills/prisma-8/references/runtime.md),
+[PostgreSQL SAVEPOINT](https://www.postgresql.org/docs/current/sql-savepoint.html).
+
+### SQL과 검증
+
+동일 driver hook에서 fixture/검증/TX 제어를 제외하고 신규 mutation lock을 포함해 측정했다.
+
+| 경로               | Before 총 SQL | After 총 SQL | After 구성                          |
+| ------------------ | ------------- | ------------ | ----------------------------------- |
+| 내용 수정          | 3             | 3            | native ORM2 + 잠금1                 |
+| 상대 재정렬        | 5             | 5            | native ORM3 + 산술 builder1 + 잠금1 |
+| 목록 / cursor 목록 | 1 / 2         | 1 / 2        | 기존 페이지 조회 수 유지            |
+
+native updateAll/deleteAndCount는 불필요한 PK 사전 조회를 제거했지만 잠금 비용을 포함한
+총 SQL은 감소하지 않았다. 목록은 이미 N+1이 없었으며 제거했다고 쓰지 않는다. Batch는
+성공 항목마다 SAVEPOINT/RELEASE 2개, 실패 항목에는 ROLLBACK TO가 추가된다. 이는 위 단건
+측정과 구분한다. 실행 시간은 latency benchmark가 아니다.
+
+실제 Notes PG11개는 LA·seed90911에서11.45초, 서울·seed90912에서10.21초에 통과했다.
+NUL item의 SQL22021을 강제하는 fixture에서 Todo parent INSERT 두 statement 뒤 실패한
+반복 group의 부모/항목은0, 성공 prefixTodo1/event1·Memo유지를 확인했다. 운영 DB나 새
+trigger·constraint는 사용하지 않았다. Domain3files18tests(222ms), Application10files33tests,
+기존 MemoHTTP38개 무수정+새 동시/부분/혼합 변환3개(27.81초, seed50904)도 통과했다.
+
+기존 RedisMock 연결 정리 누락은 reset try/finally disconnect와 fail-open suite teardown으로
+수정했다. 같은 기존20tests가 Before218ms/pass+listener warning, After292ms/pass+경고0였다.
+경고는 07/06에도 존재했으며 Social/Notes runtime 버그로 표기하지 않는다. 테스트 시간 차이를
+성능 개선률로 쓰지 않는다. Unit은 상태 Stub·기존 Builder·독립 응답 fixture·실제 pagination을
+사용한다. Unit에서 physical rollback을 증명했다고 표현하지 않는다.
+
+최종 전체 검증은 shuffle seed90920으로 통과했다.
+
+- Unit: 489 files / 2,931 tests, 23.00초.
+- Integration: 53 files / 451 tests, 317.31초. 기존 Stub spec도 포함하며 새 정합성 검증은 실제 PG다.
+- E2E: 39 files / 510 tests, 406.64초. 기존 Memo38·고정 구 앱·OpenAPI 계약 fixture 변경 없음.
+- Workspace lint·format·typecheck 통과. Date만 필요한 범위에서 고정하고 native DB/I/O timer는 실제 실행한다.
+
+전체 실행 시간은 다른 프로세스와 DB/CPU를 공유한 테스트 시간이며 이전 단계와 비교해
+서비스 latency 개선/회귀를 추정하지 않는다. 상위10/18 구현·검증 완료, Engagement부터
+8단계가 남았다. 새 schema·migration·패키지·실행 script·Action job은 없다.
+배포·merge·전체 유저 영향0·운영 성능 개선률은 보장하지 않는다.
 
 ## AI 후속 요구와 검증 범위
 

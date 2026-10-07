@@ -32,20 +32,16 @@ import {
   CurrentUser,
   type CurrentUserPayload,
 } from "../../../../identity/presentation/decorators/auth/index.js";
-import {
-  ConvertMemoToTodos,
-  ConvertMemoToTodo,
-  CreateMemo,
-  DeleteMemo,
-  ReorderMemo,
-  ToggleMemoPin,
-  UpdateMemo,
-} from "../../../application/use-cases/memos/index.js";
-import {
-  GetMemoResourceLimit,
-  GetMemos,
-  GetMemo,
-} from "../../../application/use-cases/memos/queries.public.js";
+import { ConvertMemoToTodo } from "../../../application/use-cases/memos/convert-memo-to-todo.use-case.js";
+import { ConvertMemoToTodos } from "../../../application/use-cases/memos/convert-memo-to-todos.use-case.js";
+import { CreateMemo } from "../../../application/use-cases/memos/create-memo.use-case.js";
+import { DeleteMemo } from "../../../application/use-cases/memos/delete-memo.use-case.js";
+import { GetMemoResourceLimit } from "../../../application/use-cases/memos/get-memo-resource-limit.use-case.js";
+import { GetMemo } from "../../../application/use-cases/memos/get-memo.use-case.js";
+import { GetMemos } from "../../../application/use-cases/memos/get-memos.use-case.js";
+import { ReorderMemo } from "../../../application/use-cases/memos/reorder-memo.use-case.js";
+import { ToggleMemoPin } from "../../../application/use-cases/memos/toggle-memo-pin.use-case.js";
+import { UpdateMemo } from "../../../application/use-cases/memos/update-memo.use-case.js";
 import {
   ConvertMemoToTodoDto,
   ConvertMemoToTodoResponseDto,
@@ -69,16 +65,16 @@ import {
 @Controller("memos")
 export class MemoController {
   constructor(
-    private readonly getMemoResourceLimitUseCase: GetMemoResourceLimit,
-    private readonly createMemoUseCase: CreateMemo,
-    private readonly getMemosUseCase: GetMemos,
-    private readonly getMemoUseCase: GetMemo,
-    private readonly updateMemoUseCase: UpdateMemo,
-    private readonly toggleMemoPinUseCase: ToggleMemoPin,
-    private readonly reorderMemoUseCase: ReorderMemo,
-    private readonly deleteMemoUseCase: DeleteMemo,
-    private readonly convertMemoToTodoUseCase: ConvertMemoToTodo,
-    private readonly convertMemoToTodosUseCase: ConvertMemoToTodos,
+    private readonly getMemoResourceLimit: GetMemoResourceLimit,
+    private readonly createMemo: CreateMemo,
+    private readonly getMemos: GetMemos,
+    private readonly getMemo: GetMemo,
+    private readonly updateMemo: UpdateMemo,
+    private readonly toggleMemoPin: ToggleMemoPin,
+    private readonly reorderMemo: ReorderMemo,
+    private readonly deleteMemo: DeleteMemo,
+    private readonly convertMemoToTodo: ConvertMemoToTodo,
+    private readonly convertMemoToTodos: ConvertMemoToTodos,
   ) {}
 
   @Get("resource-limit")
@@ -96,7 +92,7 @@ export class MemoController {
   async getResourceLimit(
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<MemoResourceLimitResponseDto> {
-    return this.getMemoResourceLimitUseCase.execute({ userId: user.userId });
+    return this.getMemoResourceLimit.execute({ userId: user.userId });
   }
 
   @Post()
@@ -123,7 +119,7 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: CreateMemoDto }) dto: CreateMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.createMemoUseCase.execute({
+    return this.createMemo.execute({
       userId: user.userId,
       content: dto.content,
     });
@@ -145,7 +141,7 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetMemosQueryDto }) query: GetMemosQueryDto,
   ): Promise<MemoListResponseDto> {
-    return this.getMemosUseCase.execute({
+    return this.getMemos.execute({
       userId: user.userId,
       cursor: query.cursor,
       size: query.size,
@@ -165,7 +161,7 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
   ): Promise<MemoDetailResponseDto> {
-    return this.getMemoUseCase.execute({
+    return this.getMemo.execute({
       userId: user.userId,
       memoId: params.id,
     });
@@ -186,7 +182,7 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: UpdateMemoDto }) dto: UpdateMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.updateMemoUseCase.execute({
+    return this.updateMemo.execute({
       userId: user.userId,
       memoId: params.id,
       content: dto.content,
@@ -207,7 +203,7 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ToggleMemoPinDto }) dto: ToggleMemoPinDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.toggleMemoPinUseCase.execute({
+    return this.toggleMemoPin.execute({
       userId: user.userId,
       memoId: params.id,
       isPinned: dto.isPinned,
@@ -233,7 +229,7 @@ export class MemoController {
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
     @Body({ schema: ReorderMemoDto }) dto: ReorderMemoDto,
   ): Promise<MemoMutationResponseDto> {
-    return this.reorderMemoUseCase.execute({
+    return this.reorderMemo.execute({
       memoId: params.id,
       userId: user.userId,
       targetMemoId: dto.targetMemoId,
@@ -255,7 +251,7 @@ export class MemoController {
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
   ): Promise<MemoDeleteResponseDto> {
-    return this.deleteMemoUseCase.execute({
+    return this.deleteMemo.execute({
       userId: user.userId,
       memoId: params.id,
     });
@@ -298,16 +294,20 @@ export class MemoController {
     @Body({ schema: ConvertMemoToTodoDto }) dto: ConvertMemoToTodoDto,
     @Timezone() tz: string,
   ): Promise<ConvertMemoToTodoResponseDto> {
-    return this.convertMemoToTodoUseCase.execute({
+    return this.convertMemoToTodo.execute({
       userId: user.userId,
       memoId: params.id,
       data: {
         categoryId: dto.categoryId,
         startDate: parseDateOnly(dto.startDate),
-        endDate: dto.endDate ? parseDateOnly(dto.endDate) : undefined,
-        scheduledTime: dto.scheduledTime
-          ? parseLocalDateTime(dto.startDate, dto.scheduledTime, tz)
-          : undefined,
+        endDate:
+          dto.endDate === undefined || dto.endDate === null
+            ? undefined
+            : parseDateOnly(dto.endDate),
+        scheduledTime:
+          dto.scheduledTime === undefined || dto.scheduledTime === null
+            ? undefined
+            : parseLocalDateTime(dto.startDate, dto.scheduledTime, tz),
         isAllDay: dto.isAllDay,
         visibility: dto.visibility,
         items: dto.items,
@@ -356,7 +356,7 @@ export class MemoController {
     @Body({ schema: ConvertMemoToTodosDto }) dto: ConvertMemoToTodosDto,
     @Timezone() tz: string,
   ): Promise<ConvertMemoToTodosResponseDto> {
-    return this.convertMemoToTodosUseCase.execute({
+    return this.convertMemoToTodos.execute({
       userId: user.userId,
       memoId: params.id,
       data: {
@@ -364,19 +364,24 @@ export class MemoController {
           title: todo.title,
           categoryId: todo.categoryId,
           startDate: parseDateOnly(todo.startDate),
-          endDate: todo.endDate ? parseDateOnly(todo.endDate) : undefined,
-          scheduledTime: todo.scheduledTime
-            ? parseLocalDateTime(todo.startDate, todo.scheduledTime, tz)
-            : undefined,
+          endDate:
+            todo.endDate === undefined || todo.endDate === null
+              ? undefined
+              : parseDateOnly(todo.endDate),
+          scheduledTime:
+            todo.scheduledTime === undefined || todo.scheduledTime === null
+              ? undefined
+              : parseLocalDateTime(todo.startDate, todo.scheduledTime, tz),
           isAllDay: todo.isAllDay,
           visibility: todo.visibility,
           isRecurring: todo.isRecurring,
-          recurrence: todo.recurrence
-            ? {
-                daysOfWeek: todo.recurrence.daysOfWeek,
-                endDate: parseDateOnly(todo.recurrence.endDate),
-              }
-            : undefined,
+          recurrence:
+            todo.recurrence !== undefined
+              ? {
+                  daysOfWeek: todo.recurrence.daysOfWeek,
+                  endDate: parseDateOnly(todo.recurrence.endDate),
+                }
+              : undefined,
           items: todo.items,
         })),
       },

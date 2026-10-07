@@ -13,6 +13,9 @@ import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE } from "./application/ports/todos/todo-cache.port.js";
 import { TODO_READ_REPOSITORY } from "./application/ports/todos/todo-read.repository.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
+import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
+import { TodoCreationEffects } from "./application/services/todos/todo-creation-effects.service.js";
+import { TodoCreationWriter } from "./application/services/todos/todo-creation-writer.service.js";
 import { AddTodoItem } from "./application/use-cases/todos/add-todo-item.use-case.js";
 import { ChangeTodoCategory } from "./application/use-cases/todos/change-todo-category.use-case.js";
 import { CreateRecurringTodos } from "./application/use-cases/todos/create-recurring-todos.use-case.js";
@@ -140,68 +143,73 @@ export const changeTodoCategoryProvider: FactoryProvider<ChangeTodoCategory> = {
     }),
 };
 
+export const todoCreationWriterProvider: FactoryProvider<TodoCreationWriter> = {
+  provide: TodoCreationWriter,
+  inject: [TODO_REPOSITORY, CATEGORY_OWNERSHIP],
+  useFactory: (
+    todoRepository: ConstructorParameters<typeof TodoCreationWriter>[0]["todoRepository"],
+    categoryOwnership: ConstructorParameters<typeof TodoCreationWriter>[0]["categoryOwnership"],
+  ) => new TodoCreationWriter({ todoRepository, categoryOwnership }),
+};
+
+export const todoCreationEffectsProvider: FactoryProvider<TodoCreationEffects> = {
+  provide: TodoCreationEffects,
+  inject: [TODO_CACHE, DOMAIN_EVENT_PUBLISHER],
+  useFactory: (
+    todoCache: ConstructorParameters<typeof TodoCreationEffects>[0]["todoCache"],
+    eventPublisher: ConstructorParameters<typeof TodoCreationEffects>[0]["eventPublisher"],
+  ) =>
+    new TodoCreationEffects({
+      todoCache,
+      eventPublisher,
+      logger: new Logger(TodoCreationEffects.name),
+    }),
+};
+
+export const stagedTodoCreatorProvider: FactoryProvider<StagedTodoCreator> = {
+  provide: StagedTodoCreator,
+  inject: [TodoCreationWriter, TodoCreationEffects, TODO_READ_REPOSITORY],
+  useFactory: (
+    writer: ConstructorParameters<typeof StagedTodoCreator>[0]["writer"],
+    effects: ConstructorParameters<typeof StagedTodoCreator>[0]["effects"],
+    todoReadRepository: ConstructorParameters<typeof StagedTodoCreator>[0]["todoReadRepository"],
+  ) => new StagedTodoCreator({ writer, effects, todoReadRepository }),
+};
+
 export const createRecurringTodosProvider: FactoryProvider<CreateRecurringTodos> = {
   provide: CreateRecurringTodos,
   inject: [
-    TODO_REPOSITORY,
+    TodoCreationWriter,
+    TodoCreationEffects,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
     MUTATION_LOCK,
-    CATEGORY_OWNERSHIP,
-    TODO_CACHE,
-    DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoRepository"],
+    writer: ConstructorParameters<typeof CreateRecurringTodos>[0]["writer"],
+    effects: ConstructorParameters<typeof CreateRecurringTodos>[0]["effects"],
     todoReadRepository: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof CreateRecurringTodos>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof CreateRecurringTodos>[0]["mutationLock"],
-    categoryOwnership: ConstructorParameters<typeof CreateRecurringTodos>[0]["categoryOwnership"],
-    todoCache: ConstructorParameters<typeof CreateRecurringTodos>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof CreateRecurringTodos>[0]["eventPublisher"],
-  ) =>
-    new CreateRecurringTodos({
-      todoRepository,
-      todoReadRepository,
-      unitOfWork,
-      mutationLock,
-      categoryOwnership,
-      todoCache,
-      eventPublisher,
-      logger: new Logger(CreateRecurringTodos.name),
-    }),
+  ) => new CreateRecurringTodos({ writer, effects, todoReadRepository, unitOfWork, mutationLock }),
 };
 
 export const createTodoProvider: FactoryProvider<CreateTodo> = {
   provide: CreateTodo,
   inject: [
-    TODO_REPOSITORY,
+    TodoCreationWriter,
+    TodoCreationEffects,
     TODO_READ_REPOSITORY,
     UNIT_OF_WORK,
     MUTATION_LOCK,
-    CATEGORY_OWNERSHIP,
-    TODO_CACHE,
-    DOMAIN_EVENT_PUBLISHER,
   ],
   useFactory: (
-    todoRepository: ConstructorParameters<typeof CreateTodo>[0]["todoRepository"],
+    writer: ConstructorParameters<typeof CreateTodo>[0]["writer"],
+    effects: ConstructorParameters<typeof CreateTodo>[0]["effects"],
     todoReadRepository: ConstructorParameters<typeof CreateTodo>[0]["todoReadRepository"],
     unitOfWork: ConstructorParameters<typeof CreateTodo>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof CreateTodo>[0]["mutationLock"],
-    categoryOwnership: ConstructorParameters<typeof CreateTodo>[0]["categoryOwnership"],
-    todoCache: ConstructorParameters<typeof CreateTodo>[0]["todoCache"],
-    eventPublisher: ConstructorParameters<typeof CreateTodo>[0]["eventPublisher"],
-  ) =>
-    new CreateTodo({
-      todoRepository,
-      todoReadRepository,
-      unitOfWork,
-      mutationLock,
-      categoryOwnership,
-      todoCache,
-      eventPublisher,
-      logger: new Logger(CreateTodo.name),
-    }),
+  ) => new CreateTodo({ writer, effects, todoReadRepository, unitOfWork, mutationLock }),
 };
 
 export const deleteTodoProvider: FactoryProvider<DeleteTodo> = {

@@ -1,23 +1,29 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
 
-/** 메모 삭제 입력 (소유권 확인 후 영구 삭제). */
 export interface DeleteMemoInput {
-  userId: string;
-  memoId: number;
+  readonly userId: string;
+  readonly memoId: number;
 }
 
-/** 메모 삭제 결과. */
 export interface DeleteMemoResult {
-  message: string;
+  readonly message: string;
 }
 
 interface DeleteMemoDependencies {
-  readonly repository: MemoRepositoryPort;
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "delete">;
+  readonly mutationLock: MutationLockPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -29,16 +35,29 @@ export class DeleteMemo {
   }
 
   async execute(input: DeleteMemoInput): Promise<DeleteMemoResult> {
-    const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
-    if (!memo) {
-      throw new ApplicationException(ErrorCode.MEMO_2001, {
-        memoId: input.memoId,
-      });
-    }
+    await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([
+        MutationLockKeys.memo(input.memoId),
+        MutationLockKeys.memoSortOrder(input.userId),
+      ]);
+      const memo = await this.#dependencies.repository.findByIdAndUserId(
+        input.memoId,
+        input.userId,
+      );
+      if (memo === null) {
+        throw new ApplicationException(ErrorCode.MEMO_2001, {
+          memoId: input.memoId,
+        });
+      }
 
-    await this.#dependencies.repository.delete(input.memoId);
+      await this.#dependencies.repository.delete(input.memoId);
+    });
 
-    this.#dependencies.logger.log(`Memo deleted: ${input.memoId} for user: ${input.userId}`);
+    this.#dependencies.logger.log({
+      event: NotesMemoLogEvent.DELETED,
+      memoId: input.memoId,
+      userId: input.userId,
+    });
 
     return { message: "메모가 삭제되었습니다." };
   }

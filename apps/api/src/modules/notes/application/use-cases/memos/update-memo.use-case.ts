@@ -1,20 +1,28 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
+import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
+import { toMemoView } from "../../read-models/memos/memo.read-model.js";
 import type { MemoMutationResult } from "./create-memo.use-case.js";
 
-/** 메모 내용 수정 입력. */
 export interface UpdateMemoInput {
-  userId: string;
-  memoId: number;
-  content: string;
+  readonly userId: string;
+  readonly memoId: number;
+  readonly content: string;
 }
 
 interface UpdateMemoDependencies {
-  readonly repository: MemoRepositoryPort;
+  readonly unitOfWork: UnitOfWorkPort;
+  readonly repository: Pick<MemoRepositoryPort, "findByIdAndUserId" | "updateContent">;
+  readonly mutationLock: MutationLockPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -26,21 +34,28 @@ export class UpdateMemo {
   }
 
   async execute(input: UpdateMemoInput): Promise<MemoMutationResult> {
-    const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
-    if (!memo) {
-      throw new ApplicationException(ErrorCode.MEMO_2001, {
-        memoId: input.memoId,
-      });
-    }
+    const updated = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.memo(input.memoId)]);
+      const memo = await this.#dependencies.repository.findByIdAndUserId(
+        input.memoId,
+        input.userId,
+      );
+      if (memo === null) {
+        throw new ApplicationException(ErrorCode.MEMO_2001, {
+          memoId: input.memoId,
+        });
+      }
 
-    memo.rename(input.content);
-    const updated = await this.#dependencies.repository.updateContent(
-      input.memoId,
-      memo.content.value,
-    );
+      memo.rename(input.content);
+      return this.#dependencies.repository.updateContent(input.memoId, memo.content.value);
+    });
 
-    this.#dependencies.logger.log(`Memo updated: ${input.memoId} for user: ${input.userId}`);
+    this.#dependencies.logger.log({
+      event: NotesMemoLogEvent.UPDATED,
+      memoId: input.memoId,
+      userId: input.userId,
+    });
 
-    return { message: "메모가 수정되었습니다.", memo: updated.toView() };
+    return { message: "메모가 수정되었습니다.", memo: toMemoView(updated) };
   }
 }

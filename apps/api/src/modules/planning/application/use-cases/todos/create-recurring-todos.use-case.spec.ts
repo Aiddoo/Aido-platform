@@ -10,6 +10,8 @@ import {
 
 import { TodoCreatedEvent } from "../../../domain/events/todos/todo-created.event.js";
 import type { CreateRecurringTodoData } from "../../models/todos/todo.types.js";
+import { TodoCreationEffects } from "../../services/todos/todo-creation-effects.service.js";
+import { TodoCreationWriter } from "../../services/todos/todo-creation-writer.service.js";
 import { CreateRecurringTodos } from "./create-recurring-todos.use-case.js";
 
 describe("반복 할 일 생성", () => {
@@ -19,7 +21,11 @@ describe("반복 할 일 생성", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(PLANNING_TIME);
     fixture = createPlanningTodoFixture({ todos: [createPlanningTodo()] });
-    useCase = new CreateRecurringTodos(fixture);
+    useCase = new CreateRecurringTodos({
+      ...fixture,
+      writer: new TodoCreationWriter(fixture),
+      effects: new TodoCreationEffects(fixture),
+    });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -189,4 +195,37 @@ describe("반복 할 일 생성", () => {
     }
     expect(responseRead).toHaveBeenCalledOnce();
   });
+  it.each(["cache", "publisher"])(
+    "단독 생성의 %s 실패는 원래 오류를 전달하고 응답 조회를 시작하지 않는다",
+    async (boundary) => {
+      // Given
+      fixture.records.clear();
+      const failure = new Error(`${boundary} failure`);
+      if (boundary === "cache")
+        fixture.todoCache.invalidateTodoCategories = async () => {
+          throw failure;
+        };
+      else
+        fixture.eventPublisher.publishAll = async () => {
+          throw failure;
+        };
+      const responseRead = vi.spyOn(fixture.todoReadRepository, "findManyByRecurrenceGroupId");
+      // When / Then
+      await expect(
+        useCase.execute({
+          data: {
+            userId: fixture.userId,
+            title: "반복",
+            categoryId: 1,
+            startDate: "2026-03-02",
+            endDate: "2026-03-02",
+            daysOfWeek: ["MON"],
+          },
+          timezone: "UTC",
+        }),
+      ).rejects.toBe(failure);
+      expect(fixture.records.size).toBe(1);
+      expect(responseRead).not.toHaveBeenCalled();
+    },
+  );
 });

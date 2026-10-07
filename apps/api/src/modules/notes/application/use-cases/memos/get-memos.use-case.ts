@@ -4,16 +4,16 @@ import type { CursorPaginatedResponse } from "#api/shared/application/pagination
 import type { PaginationService } from "#api/shared/application/pagination/index";
 
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
+import { toMemoView } from "../../read-models/memos/memo.read-model.js";
 
-/** 메모 목록 조회 입력 (커서 기반 페이지네이션). */
 export interface GetMemosInput {
-  userId: string;
-  cursor?: number;
-  size?: number;
+  readonly userId: string;
+  readonly cursor?: number;
+  readonly size?: number;
 }
 
 interface GetMemosDependencies {
-  readonly repository: MemoRepositoryPort;
+  readonly repository: Pick<MemoRepositoryPort, "findManyByUserId">;
   readonly paginationService: PaginationService;
 }
 
@@ -40,7 +40,7 @@ export class GetMemos {
 
     return this.#dependencies.paginationService.createCursorPaginatedResponse<MemoResponse, number>(
       {
-        items: memos.map((memo) => memo.toView()),
+        items: memos.map((memo) => toMemoView(memo)),
         size,
       },
     );

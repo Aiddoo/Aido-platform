@@ -6,6 +6,7 @@ import { SchedulerModule } from "../notification/notification-reminders.module.j
 import { SocialFriendsModule } from "../social/social-friends.public.js";
 import { CATEGORY_OWNERSHIP } from "./application/ports/todos/category-ownership.port.js";
 import { FRIEND_PORT } from "./application/ports/todos/friend.port.js";
+import { STAGED_TODO_CREATOR } from "./application/ports/todos/staged-todo-creator.port.js";
 import { STREAK_PORT } from "./application/ports/todos/streak.port.js";
 import { TODO_CACHE, type TodoCachePort } from "./application/ports/todos/todo-cache.port.js";
 import { TODO_CREATOR, type TodoCreatorPort } from "./application/ports/todos/todo-creator.port.js";
@@ -17,6 +18,7 @@ import {
 import { TODO_REMINDER } from "./application/ports/todos/todo-reminder.port.js";
 import { TODO_VIEW_CACHE_INVALIDATOR } from "./application/ports/todos/todo-view-cache-invalidator.port.js";
 import { TODO_REPOSITORY } from "./application/ports/todos/todo.repository.port.js";
+import { StagedTodoCreator } from "./application/services/todos/staged-todo-creator.service.js";
 import { TodoViewCacheInvalidator } from "./application/services/todos/todo-view-cache.invalidator.js";
 import { CreateRecurringTodos } from "./application/use-cases/todos/create-recurring-todos.use-case.js";
 import { CreateTodo } from "./application/use-cases/todos/create-todo.use-case.js";
@@ -53,6 +55,7 @@ import { TodoController } from "./presentation/controllers/todos/todo.controller
     { provide: TODO_NOTIFICATION, useClass: TodoNotificationAdapter },
     { provide: TODO_REMINDER, useClass: TodoReminderAdapter },
     ...TODO_PROVIDERS,
+    { provide: STAGED_TODO_CREATOR, useExisting: StagedTodoCreator },
     {
       provide: TODO_CREATOR,
       inject: [CreateTodo, CreateRecurringTodos],
@@ -75,6 +78,6 @@ import { TodoController } from "./presentation/controllers/todos/todo.controller
       useExisting: TodoViewCacheInvalidator,
     },
   ],
-  exports: [TODO_CREATOR, TODO_VIEW_CACHE_INVALIDATOR],
+  exports: [TODO_CREATOR, STAGED_TODO_CREATOR, TODO_VIEW_CACHE_INVALIDATOR],
 })
 export class PlanningTodosModule {}

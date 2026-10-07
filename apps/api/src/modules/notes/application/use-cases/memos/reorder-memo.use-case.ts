@@ -1,37 +1,37 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   planReorderRelativeTo,
   planReorderToEdge,
   type ReorderPlan,
-} from "../../../domain/services/memos/memo-reorder.js";
+} from "../../../domain/policies/memos/memo-reorder.policy.js";
+import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
+import { toMemoView } from "../../read-models/memos/memo.read-model.js";
 import type { MemoMutationResult } from "./create-memo.use-case.js";
 
-/**
- * 메모 순서 변경 입력.
- * targetMemoId 생략 시 맨 앞/뒤로 이동한다.
- */
 export interface ReorderMemoInput {
-  userId: string;
-  memoId: number;
-  position: "before" | "after";
-  targetMemoId?: number;
+  readonly userId: string;
+  readonly memoId: number;
+  readonly position: "before" | "after";
+  readonly targetMemoId?: number;
 }
 
-/**
- * 메모 순서 변경 use-case.
- *
- * 새 sortOrder와 사이 구간 시프트 계획은 도메인 서비스가 계산하고, 시프트·갱신을
- * 한 트랜잭션으로 적용한다. 자기 자신을 기준으로 지정하면 변경 없이 반환한다.
- */
 interface ReorderMemoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly repository: MemoRepositoryPort;
+  readonly repository: Pick<
+    MemoRepositoryPort,
+    "findByIdAndUserId" | "getMaxSortOrder" | "shiftSortOrders" | "updateSortOrder"
+  >;
+  readonly mutationLock: MutationLockPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -46,13 +46,14 @@ export class ReorderMemo {
     const { userId, memoId, targetMemoId } = input;
 
     return this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.memoSortOrder(input.userId)]);
       const memo = await this.#dependencies.repository.findByIdAndUserId(memoId, userId);
-      if (!memo) {
+      if (memo === null) {
         throw new ApplicationException(ErrorCode.MEMO_2001, { memoId });
       }
 
       if (targetMemoId === memoId) {
-        return { message: "메모 순서가 변경되었습니다.", memo: memo.toView() };
+        return { message: "메모 순서가 변경되었습니다.", memo: toMemoView(memo) };
       }
 
       const plan = await this.#planReorder(memo.sortOrder, input);
@@ -68,20 +69,22 @@ export class ReorderMemo {
         plan.newSortOrder,
       );
 
-      this.#dependencies.logger.log(
-        `Memo reordered: ${memoId} to sortOrder ${plan.newSortOrder} for user: ${userId}`,
-      );
+      this.#dependencies.logger.log({
+        event: NotesMemoLogEvent.REORDERED,
+        memoId: input.memoId,
+        userId: input.userId,
+      });
 
-      return { message: "메모 순서가 변경되었습니다.", memo: updated.toView() };
+      return { message: "메모 순서가 변경되었습니다.", memo: toMemoView(updated) };
     });
   }
 
   async #planReorder(currentSortOrder: number, input: ReorderMemoInput): Promise<ReorderPlan> {
     const { userId, targetMemoId, position } = input;
 
-    if (targetMemoId) {
+    if (targetMemoId !== undefined) {
       const target = await this.#dependencies.repository.findByIdAndUserId(targetMemoId, userId);
-      if (!target) {
+      if (target === null) {
         throw new ApplicationException(ErrorCode.MEMO_2002, { targetMemoId });
       }
       return planReorderRelativeTo(currentSortOrder, target.sortOrder, position);

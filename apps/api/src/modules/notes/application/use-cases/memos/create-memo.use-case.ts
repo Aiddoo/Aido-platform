@@ -3,33 +3,32 @@ import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import {
+  MutationLockKeys,
+  type MutationLockPort,
+  type UnitOfWorkPort,
+} from "#api/shared/application/ports/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import { MemoContent } from "../../../domain/value-objects/memos/memo-content.vo.js";
+import { NotesMemoLogEvent } from "../../observability/memos/notes-memo-log.events.js";
 import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
+import { toMemoView } from "../../read-models/memos/memo.read-model.js";
 
-/** 메모 변경 계열 유스케이스의 공통 결과(메시지 + 메모 뷰). */
 export interface MemoMutationResult {
-  message: string;
-  memo: MemoResponse;
+  readonly message: string;
+  readonly memo: MemoResponse;
 }
 
-/** 메모 생성 입력. 사용자당 한도 확인 후 정렬 최상단에 생성한다. */
 export interface CreateMemoInput {
-  userId: string;
-  content: string;
+  readonly userId: string;
+  readonly content: string;
 }
 
-/**
- * 메모 생성 use-case.
- *
- * 한도 확인 + sortOrder 결정 + 생성을 한 트랜잭션으로 원자화하여 동시 요청의
- * 레이스를 방지한다. 내용 길이 불변식은 도메인(MemoContent)이 소유한다.
- */
 interface CreateMemoDependencies {
   readonly unitOfWork: UnitOfWorkPort;
-  readonly repository: MemoRepositoryPort;
+  readonly repository: Pick<MemoRepositoryPort, "countByUserId" | "getMaxSortOrder" | "create">;
+  readonly mutationLock: MutationLockPort;
   readonly logger: ApplicationLogger;
 }
 
@@ -42,6 +41,7 @@ export class CreateMemo {
 
   async execute(input: CreateMemoInput): Promise<MemoMutationResult> {
     const memo = await this.#dependencies.unitOfWork.run(async () => {
+      await this.#dependencies.mutationLock.acquire([MutationLockKeys.memoSortOrder(input.userId)]);
       const count = await this.#dependencies.repository.countByUserId(input.userId);
       if (count >= MEMO_LIMITS.MAX_PER_USER) {
         throw new ApplicationException(ErrorCode.MEMO_2003, {
@@ -56,8 +56,12 @@ export class CreateMemo {
       return this.#dependencies.repository.create(input.userId, content.value, maxSortOrder + 1);
     });
 
-    this.#dependencies.logger.log(`Memo created: ${memo.id} for user: ${input.userId}`);
+    this.#dependencies.logger.log({
+      event: NotesMemoLogEvent.CREATED,
+      memoId: memo.id,
+      userId: input.userId,
+    });
 
-    return { message: "메모가 생성되었습니다.", memo: memo.toView() };
+    return { message: "메모가 생성되었습니다.", memo: toMemoView(memo) };
   }
 }

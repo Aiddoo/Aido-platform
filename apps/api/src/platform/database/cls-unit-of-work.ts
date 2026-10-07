@@ -19,18 +19,6 @@ interface UnitOfWorkTransactionHost {
   withTransaction<T>(work: () => Promise<T>): Promise<T>;
 }
 
-/**
- * CLS 기반 Unit of Work 어댑터
- *
- * UNIT_OF_WORK 포트의 nestjs-cls 구현체. TransactionHost.withTransaction이
- * 자체 CLS 스코프를 열므로 HTTP 요청·CQRS 핸들러·BullMQ 프로세서 어디서든
- * 미들웨어 없이 동작합니다. 리포지토리는 TransactionHost.tx로 활성
- * 트랜잭션을 읽고, 활성 트랜잭션이 없으면 베이스 DatabaseService로
- * 폴백합니다(기존 `tx ?? this.database`와 등가).
- *
- * 주의: withTransaction에 옵션 객체를 전달하지 않습니다 — 기존
- * native `db.transaction`의 기본 격리수준을 그대로 보존합니다.
- */
 @Injectable()
 export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPort {
   private readonly logger = new Logger(ClsUnitOfWork.name);
@@ -63,7 +51,7 @@ export class ClsUnitOfWork implements UnitOfWorkPort, AfterCommitTaskRegistryPor
     }
 
     const scope = this.cls.get<AfterCommitTaskScope>(AFTER_COMMIT_TASK_SCOPE);
-    if (!scope) {
+    if (scope === undefined) {
       throw new Error("After-commit task scope is missing for an active transaction");
     }
 

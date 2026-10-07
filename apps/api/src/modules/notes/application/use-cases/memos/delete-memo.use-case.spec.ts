@@ -1,58 +1,42 @@
-import type { Mocked } from "vitest";
-import { mockDeep } from "vitest-mock-extended";
+import { vi } from "vitest";
 
-import { createMemoRepositoryMock } from "#test/mocks/ports/memo.mock";
+import { createNotesMemoFixture, NOTES_TIME } from "#test/fixtures/notes-memo.fixture";
 
-import { Memo } from "../../../domain/aggregates/memos/memo.aggregate.js";
-import { type MemoRepositoryPort } from "../../ports/memos/memo.repository.port.js";
 import { DeleteMemo } from "./delete-memo.use-case.js";
 
-const memoEntity = (): Memo =>
-  Memo.reconstitute({
-    id: 1,
-    userId: "user-1",
-    content: "내용",
-    isPinned: false,
-    sortOrder: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+describe("DeleteMemo — 메모 사용자 상태", () => {
+  let fixture: ReturnType<typeof createNotesMemoFixture>;
+
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOTES_TIME);
+    fixture = createNotesMemoFixture();
   });
+  afterEach(() => vi.useRealTimers());
 
-describe("DeleteMemo — 메모 삭제", () => {
-  let useCase: DeleteMemo;
-  let repository: Mocked<MemoRepositoryPort>;
-
-  beforeEach(async () => {
-    const deleteMemoDependencies = mockDeep<ConstructorParameters<typeof DeleteMemo>[0]>({
-      repository: createMemoRepositoryMock(),
-    });
-    const unit = new DeleteMemo(deleteMemoDependencies);
-
-    useCase = unit;
-    repository = deleteMemoDependencies.repository;
-  });
-
-  it("메모가 없으면 MEMO_2001을 던지고 삭제하지 않는다", async () => {
+  it("소유한 메모만 삭제하고 같은 ID의 재삭제는 MEMO_2001로 거부한다", async () => {
     // Given
-    repository.findByIdAndUserId.mockResolvedValue(null);
-
-    // When & Then
-    await expect(useCase.execute({ userId: "user-1", memoId: 99 })).rejects.toMatchObject({
-      errorCode: "MEMO_2001",
-    });
-    expect(repository.delete).not.toHaveBeenCalled();
-  });
-
-  it("소유한 메모를 삭제하고 성공 메시지를 반환한다", async () => {
-    // Given
-    repository.findByIdAndUserId.mockResolvedValue(memoEntity());
-
+    const memo = fixture.addMemo("삭제할 메모");
+    const otherMemo = fixture.addMemo("다른 사용자", 0, "other-user");
+    const useCase = new DeleteMemo(fixture);
     // When
-    const result = await useCase.execute({ userId: "user-1", memoId: 1 });
-
+    const result = await useCase.execute({ userId: fixture.userId, memoId: memo.id });
     // Then
-    expect(repository.findByIdAndUserId).toHaveBeenCalledWith(1, "user-1");
-    expect(repository.delete).toHaveBeenCalledWith(1);
     expect(result.message).toBe("메모가 삭제되었습니다.");
+    expect(fixture.repository.records.has(memo.id)).toBe(false);
+    expect(fixture.repository.records.get(otherMemo.id)).toEqual(otherMemo);
+    await expect(
+      useCase.execute({ userId: fixture.userId, memoId: memo.id }),
+    ).rejects.toMatchObject({ errorCode: "MEMO_2001" });
+  });
+
+  it("소유하지 않은 메모는 MEMO_2001로 거부하고 삭제하지 않는다", async () => {
+    // Given
+    const memo = fixture.addMemo("다른 사용자", 0, "other-user");
+    // When / Then
+    await expect(
+      new DeleteMemo(fixture).execute({ userId: fixture.userId, memoId: memo.id }),
+    ).rejects.toMatchObject({ errorCode: "MEMO_2001" });
+    expect(fixture.repository.records.get(memo.id)).toEqual(memo);
   });
 });
