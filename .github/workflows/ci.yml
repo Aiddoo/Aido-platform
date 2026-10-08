@@ -61,7 +61,7 @@ jobs:
       # 저장소 고유의 스택/의존성 정책만 별도 모듈로 유지한다.
       - name: Resolve cumulative CI scope
         id: policy
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0 (Node 24)
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0 (Node 24)
         with:
           script: |
             const { execFileSync } = require('node:child_process');
@@ -180,7 +180,7 @@ jobs:
 
       - name: Verify source run and required jobs
         id: validation
-        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9.0.0 (Node 24)
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0 (Node 24)
         env:
           CANDIDATE_RUN: ${{ steps.policy.outputs.candidate_run }}
           CANDIDATE_ARTIFACT: ${{ steps.policy.outputs.candidate_artifact }}
