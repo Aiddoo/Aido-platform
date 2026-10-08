@@ -1,3 +1,4 @@
+import { llmParsedMemoResultSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -134,6 +135,101 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       expect(logWarn).not.toHaveBeenCalled();
     },
   );
+
+  it("메모의 항목 다섯 개는 성공하고 공개 응답의 수량·날짜·시간 제약을 wire에 보낸다", async () => {
+    // Given - 실제 메모 스키마와 허용 경계인 서브 항목 다섯 개
+    const memo = {
+      todos: [
+        {
+          title: "발표 준비",
+          startDate: "2026-10-08",
+          endDate: null,
+          scheduledTime: null,
+          isAllDay: true,
+          isRecurring: false,
+          recurrence: null,
+          categoryId: 1,
+          items: Array.from({ length: 5 }, (_, index) => ({ title: `단계 ${index + 1}` })),
+        },
+      ],
+    };
+    fetchSpy.mockResolvedValue(modelResponse(JSON.stringify(memo)));
+
+    // When - Google factory와 설치된 SDK로 구조화 응답을 생성
+    const result = await createProvider("fixture-key").generateStructured({
+      prompt: "발표 준비의 다섯 단계",
+      schema: llmParsedMemoResultSchema,
+      maxOutputTokens: 800,
+    });
+
+    // Then - 실제 응답을 유지하고 제한을 Google 요청에 전달
+    expect(result.output).toEqual(memo);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const request = fetchSpy.mock.calls[0]?.[1];
+    const body = JSON.parse(String(request?.body));
+    const todos = body.generationConfig.responseJsonSchema.properties.todos;
+    expect(body.generationConfig.maxOutputTokens).toBe(800);
+    expect(todos).toMatchObject({ type: "array", minItems: 1, maxItems: 5 });
+    expect(todos.items.properties.title).toMatchObject({ minLength: 1, maxLength: 200 });
+    expect(todos.items.properties.startDate).toMatchObject({ type: "string", format: "date" });
+    expect(todos.items.properties.endDate.anyOf).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: "string", format: "date" })]),
+    );
+    expect(todos.items.properties.scheduledTime.anyOf).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: "string", pattern: "^([01]\\d|2[0-3]):([0-5]\\d)$" }),
+      ]),
+    );
+    expect(todos.items.properties.items).toMatchObject({
+      maxItems: 5,
+      items: { properties: { title: { minLength: 1, maxLength: 200 } } },
+    });
+    expect(todos.items.properties.recurrence.anyOf).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "object",
+          properties: expect.objectContaining({
+            daysOfWeek: expect.objectContaining({ minItems: 1, maxItems: 7 }),
+            endDate: expect.objectContaining({ type: "string", format: "date" }),
+          }),
+        }),
+      ]),
+    );
+  });
+
+  it("메모의 항목 여섯 개는 설치된 SDK가 거절하며 모델을 다시 호출하지 않는다", async () => {
+    // Given - JSON 형태는 맞지만 공개 응답 한도를 초과한 실제 raw 응답
+    fetchSpy.mockResolvedValue(
+      modelResponse(
+        JSON.stringify({
+          todos: [
+            {
+              title: "발표 준비",
+              startDate: "2026-10-08",
+              endDate: null,
+              scheduledTime: null,
+              isAllDay: true,
+              isRecurring: false,
+              recurrence: null,
+              categoryId: 1,
+              items: Array.from({ length: 6 }, (_, index) => ({ title: `단계 ${index + 1}` })),
+            },
+          ],
+        }),
+      ),
+    );
+
+    // When - 별도 SDK mock 없이 실제 메모 스키마로 검증
+    const execution = createProvider("fixture-key").generateStructured({
+      prompt: "발표 준비",
+      schema: llmParsedMemoResultSchema,
+      maxOutputTokens: 800,
+    });
+
+    // Then - 모델 출력이 서버 한도를 벗어나면 성공으로 반환하지 않는다
+    await expect(execution).rejects.toBeInstanceOf(NoObjectGeneratedError);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
 
   it("non-retryable 429 APICallError는 기존 AI_1310 rate-limit 오류로 변환한다", async () => {
     const error = new APICallError({
