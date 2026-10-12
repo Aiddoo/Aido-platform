@@ -45,11 +45,11 @@
     "commitizen": "4.3.2",
     "cz-conventional-changelog": "3.3.0",
     "lint-staged": "17.6.0",
-    "oxfmt": "0.71.0",
-    "oxlint": "1.86.0",
+    "oxfmt": "0.72.0",
+    "oxlint": "1.87.0",
     "simple-git-hooks": "2.14.0",
     "tsx": "4.23.15",
-    "turbo": "2.11.6",
+    "turbo": "2.11.7",
     "vite": "catalog:"
   },
   "simple-git-hooks": {
