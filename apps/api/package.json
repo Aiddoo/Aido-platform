@@ -44,7 +44,7 @@
     "db:verify": "prisma db verify"
   },
   "dependencies": {
-    "@ai-sdk/google": "4.0.88",
+    "@ai-sdk/google": "4.0.89",
     "@aido/api": "workspace:*",
     "@nestjs-cls/transactional": "catalog:nest12",
     "@nestjs/common": "catalog:nest12",
@@ -60,7 +60,7 @@
     "@nestjs/throttler": "catalog:nest12",
     "@prisma/orm-postgres": "8.0.0-rc.14",
     "@sentry/nestjs": "11.4.0",
-    "ai": "7.0.128",
+    "ai": "7.0.129",
     "argon2": "0.45.1",
     "bullmq": "6.3.11",
     "dayjs": "catalog:",
@@ -80,7 +80,7 @@
     "pino": "10.4.0",
     "pino-pretty": "13.2.0",
     "reflect-metadata": "0.2.2",
-    "resend": "6.32.0",
+    "resend": "6.32.1",
     "rxjs": "7.8.2",
     "sql-template-tag": "5.2.1",
     "temporal-polyfill": "1.0.5",

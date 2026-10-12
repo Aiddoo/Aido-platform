@@ -75,10 +75,10 @@ packageExtensions:
       '@expo/config-plugins': ~58.0.4
 
 catalog:
-  'vite': '8.3.1'
+  'vite': '8.3.3'
   'pg-boss': '12.27.0'
   '@swc/core': '1.16.13'
-  '@types/node': '24.13.3'
+  '@types/node': '24.19.1'
   '@vitest/coverage-v8': '5.0.3'
   'dayjs': '1.11.23'
   'es-toolkit': '1.52.0'
@@ -146,7 +146,7 @@ catalogs:
     'react-native-webview': '14.0.1'
     'react-native-worklets': '0.13.0'
     'react-server-dom-webpack': '19.3.0'
-    'uniwind': '1.12.0'
+    'uniwind': '1.12.2'
   nest12:
     '@nestjs-cls/transactional': '4.0.1'
     '@nestjs/cli': '12.0.8'
