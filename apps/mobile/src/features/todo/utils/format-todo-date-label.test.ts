@@ -6,10 +6,13 @@ afterEach(async () => {
   await i18n.changeLanguage('ko');
 });
 
+const TODAY = new Date('2025-03-20T09:00:00');
+
 const createParams = (overrides?: Partial<Parameters<typeof formatTodoDateLabel>[0]>) => ({
   startDate: new Date('2025-03-15'),
   scheduledTime: undefined,
   isAllDay: true,
+  today: TODAY,
   ...overrides,
 });
 
@@ -17,7 +20,7 @@ describe('formatTodoDateLabel', () => {
   describe('startDate 표시', () => {
     it('startDate가 오늘이면 "오늘"을 반환해야 한다', () => {
       // Given
-      const params = createParams({ startDate: new Date(), isAllDay: true });
+      const params = createParams({ startDate: TODAY, isAllDay: true });
 
       // When
       const result = formatTodoDateLabel(params);
@@ -93,7 +96,7 @@ describe('en 로케일', () => {
   it('startDate가 오늘이면 "Today"를 반환해야 한다', async () => {
     // Given
     await i18n.changeLanguage('en');
-    const params = createParams({ startDate: new Date(), isAllDay: true });
+    const params = createParams({ startDate: TODAY, isAllDay: true });
 
     // When
     const result = formatTodoDateLabel(params);

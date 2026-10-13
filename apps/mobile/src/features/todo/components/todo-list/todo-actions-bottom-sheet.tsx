@@ -2,6 +2,7 @@ import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interact
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -42,11 +43,12 @@ export const TodoActionsBottomSheet = ({
   onNavigate,
 }: TodoActionsBottomSheetProps) => {
   const { t } = useTranslation('todo');
+  const today = useToday();
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
 
   const editValues = toTodoEditFormValues(todo);
-  const isTodoToday = isDateToday(editValues.startDate);
+  const isTodoToday = isDateToday(editValues.startDate, today);
 
   const handleScheduleToggle = () => {
     const { startDate, endDate } = isTodoToday

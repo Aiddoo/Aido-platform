@@ -6,13 +6,19 @@ export type CalendarDayType = 'selected' | 'today' | 'sunday' | 'saturday' | 'de
 interface CalendarDayInput {
   date: Date;
   isSelected: boolean;
+  /** 렌더 중 new Date()를 만들지 않도록 useToday()의 오늘을 받는다. */
+  today: Date;
 }
 
-export const getDatePickerDayStyle = ({ date, isSelected }: CalendarDayInput): CalendarDayType => {
+export const getDatePickerDayStyle = ({
+  date,
+  isSelected,
+  today,
+}: CalendarDayInput): CalendarDayType => {
   if (isSelected) {
     return 'selected';
   }
-  if (isDateToday(date)) {
+  if (isDateToday(date, today)) {
     return 'today';
   }
   if (isSunday(date)) {
@@ -24,7 +30,11 @@ export const getDatePickerDayStyle = ({ date, isSelected }: CalendarDayInput): C
   return 'default';
 };
 
-export const getMonthViewDayStyle = ({ date, isSelected }: CalendarDayInput): CalendarDayType => {
+export const getMonthViewDayStyle = ({
+  date,
+  isSelected,
+  today,
+}: CalendarDayInput): CalendarDayType => {
   if (isSelected) {
     return 'selected';
   }
@@ -34,14 +44,14 @@ export const getMonthViewDayStyle = ({ date, isSelected }: CalendarDayInput): Ca
   if (isSaturday(date)) {
     return 'saturday';
   }
-  if (isDateToday(date)) {
+  if (isDateToday(date, today)) {
     return 'today';
   }
   return 'default';
 };
 
-export const isTodayHighlighted = ({ date, isSelected }: CalendarDayInput) => {
-  return !isSelected && isDateToday(date);
+export const isTodayHighlighted = ({ date, isSelected, today }: CalendarDayInput) => {
+  return !isSelected && isDateToday(date, today);
 };
 
 export const DAY_TYPE_TONE: Record<CalendarDayType, TextTone> = {

@@ -10,6 +10,7 @@ import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
+import { useToday } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   ACTION_CHIP_ICON_SIZE,
@@ -479,7 +480,8 @@ const formatRepeatLabel = (days: DayOfWeek[]): string => {
 
 const DateChip = ({ onPress }: { onPress: () => void }) => {
   const startDate = useWatch<AddTodoFormValues, 'startDate'>({ name: 'startDate' });
-  const label = formatTodoDateLabel({ startDate, scheduledTime: null, isAllDay: true });
+  const today = useToday();
+  const label = formatTodoDateLabel({ startDate, scheduledTime: null, isAllDay: true, today });
 
   return (
     <ActionChip

@@ -1,4 +1,5 @@
 import type { DayOfWeek } from '@aido/api';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -165,9 +166,10 @@ interface DatePickerDateCellProps {
 
 const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProps) => {
   const dayOfMonth = date.getDate();
+  const today = useToday();
   const isSelected = isSameDay(date, startDate);
-  const dayStyle = getDatePickerDayStyle({ date, isSelected });
-  const highlightToday = isTodayHighlighted({ date, isSelected });
+  const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
+  const highlightToday = isTodayHighlighted({ date, isSelected, today });
 
   return (
     <PressableFeedback

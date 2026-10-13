@@ -5,14 +5,18 @@ interface FormatTodoDateLabelParams {
   startDate: Date;
   scheduledTime: string | null | undefined;
   isAllDay: boolean;
+  today: Date;
 }
 
 export const formatTodoDateLabel = ({
   startDate,
   scheduledTime,
   isAllDay,
+  today,
 }: FormatTodoDateLabelParams): string => {
-  let label = isDateToday(startDate) ? t('common:dateSections.today') : formatMonthDay(startDate);
+  let label = isDateToday(startDate, today)
+    ? t('common:dateSections.today')
+    : formatMonthDay(startDate);
 
   if (!isAllDay && scheduledTime) {
     label += ` ${scheduledTime}`;

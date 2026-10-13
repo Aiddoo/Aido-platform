@@ -237,8 +237,8 @@ const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDate
   const isStart = isSameDay(date, startDate);
   const isEnd = endDate !== null && isSameDay(date, endDate);
   const isSelected = isStart || isEnd;
-  const dayStyle = getDatePickerDayStyle({ date, isSelected });
-  const highlightToday = !isDisabled && isTodayHighlighted({ date, isSelected });
+  const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
+  const highlightToday = !isDisabled && isTodayHighlighted({ date, isSelected, today });
 
   const hasDistinctRange = endDate !== null && !isSameDay(startDate, endDate);
   const isInRange = hasDistinctRange && isAfterDay(date, startDate) && isBeforeDay(date, endDate);
