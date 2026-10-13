@@ -1,4 +1,5 @@
 import { useTodoCommentService } from '@src/bootstrap/providers/di-context';
+import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
@@ -25,6 +26,7 @@ interface SetTodoCommentLikeMutationParams {
 export function useSetTodoCommentLikeMutationOptions({ todoId }: { todoId: number }) {
   const service = useTodoCommentService();
   const queryClient = useQueryClient();
+  const { trackEvent } = useTrack();
   const handleMutationError = useTodoCommentMutationErrorHandler({ todoId });
 
   return mutationOptions({
@@ -51,6 +53,7 @@ export function useSetTodoCommentLikeMutationOptions({ todoId }: { todoId: numbe
       handleMutationError(error, 'like');
     },
     onSuccess: (result) => {
+      trackEvent('todo_comment_liked', { todo_id: todoId, is_liked: result.isLiked });
       updateTodoCommentCaches({
         queryClient,
         todoId,

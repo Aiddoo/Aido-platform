@@ -75,6 +75,14 @@ function createTodoCommentCacheSnapshot({
   };
 }
 
+/** 개요·대화 캐시 어디든 이미 불러온 댓글을 찾는다. */
+export function findCachedTodoComment(
+  params: TodoCommentCacheParams & { commentId: string },
+): TodoComment | undefined {
+  const snapshot = createTodoCommentCacheSnapshot(params);
+  return (snapshot.conversations[0] ?? snapshot.overviews[0])?.[1];
+}
+
 export function updateTodoCommentCaches({
   queryClient,
   todoId,

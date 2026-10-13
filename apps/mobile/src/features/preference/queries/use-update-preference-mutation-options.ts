@@ -13,7 +13,8 @@ import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import type { Preference } from '../domains/preference.model';
 
 type UpdatePreferenceArgs = UpdatePreferenceInput & {
-  trackAs?: string;
+  /** 여러 필드를 한 번에 바꾸는 토글을 설정 하나로 집계할 때 쓴다. */
+  trackAs?: 'weatherEnabled';
 };
 
 export const useUpdatePreferenceMutationOptions = () => {
