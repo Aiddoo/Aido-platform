@@ -61,7 +61,7 @@ import {
   type RepeatPickerCloseResult,
   TodoRepeatPickerContent,
 } from './todo-repeat-picker-content';
-import { TodoTimePickerContent } from './todo-time-picker-content';
+import { type TodoTimeValue, TodoTimePickerContent } from './todo-time-picker-content';
 
 interface AddTodoBottomSheetBaseProps {
   isOpen: boolean;
@@ -277,8 +277,8 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         }}
       >
         <TodoDatePickerContent
-          startDate={methods.getValues('startDate')}
-          onConfirm={(date) => {
+          value={methods.getValues('startDate')}
+          onChange={(date) => {
             pickerResult = date;
             close(date);
           }}
@@ -290,36 +290,36 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const openTimePicker = () => {
     Keyboard.dismiss();
-    let pickerResult: { time: string | undefined; isAllDay: boolean } | null = null;
-    overlay.open<{ time: string | undefined; isAllDay: boolean } | null>(
-      ({ isOpen, close, exit }) => (
-        <ModalBottomSheet
-          isOpen={isOpen}
-          onClose={() => close(null)}
-          onExit={() => {
-            exit();
-            if (pickerResult) {
-              methods.setValue('scheduledTime', pickerResult.time);
-              methods.setValue('isAllDay', pickerResult.isAllDay);
-            }
-            focusTodoInput();
-          }}
-        >
-          <Suspense fallback={<ActivityIndicator />}>
-            <TodoTimePickerContent
-              draftDate={methods.getValues('startDate')}
-              scheduledTime={methods.getValues('scheduledTime') ?? undefined}
-              isAllDay={methods.getValues('isAllDay') ?? true}
-              onConfirm={(time, isAllDay) => {
-                pickerResult = { time, isAllDay };
-                close(pickerResult);
-              }}
-              onCancel={() => close(null)}
-            />
-          </Suspense>
-        </ModalBottomSheet>
-      ),
-    );
+    let pickerResult: TodoTimeValue | null = null;
+    overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
+      <ModalBottomSheet
+        isOpen={isOpen}
+        onClose={() => close(null)}
+        onExit={() => {
+          exit();
+          if (pickerResult) {
+            methods.setValue('scheduledTime', pickerResult.scheduledTime);
+            methods.setValue('isAllDay', pickerResult.isAllDay);
+          }
+          focusTodoInput();
+        }}
+      >
+        <Suspense fallback={<ActivityIndicator />}>
+          <TodoTimePickerContent
+            date={methods.getValues('startDate')}
+            value={{
+              scheduledTime: methods.getValues('scheduledTime') ?? undefined,
+              isAllDay: methods.getValues('isAllDay') ?? true,
+            }}
+            onChange={(value) => {
+              pickerResult = value;
+              close(value);
+            }}
+            onCancel={() => close(null)}
+          />
+        </Suspense>
+      </ModalBottomSheet>
+    ));
   };
 
   const openRepeatPicker = () => {

@@ -412,9 +412,9 @@ function ScheduleDateSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps &
     <BottomSheet {...sheetProps}>
       {sheetProps.isOpen && (
         <TodoDatePickerContent
-          startDate={editValues.startDate}
+          value={editValues.startDate}
           onCancel={onClose}
-          onConfirm={(startDate) => {
+          onChange={(startDate) => {
             updateSchedule.mutate({
               todoId: todo.id,
               input: {
@@ -441,11 +441,13 @@ function ScheduleTimeSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps &
       {sheetProps.isOpen && (
         <Suspense fallback={<ActivityIndicator />}>
           <TodoTimePickerContent
-            draftDate={editValues.startDate}
-            scheduledTime={editValues.scheduledTime ?? undefined}
-            isAllDay={todo.isAllDay}
+            date={editValues.startDate}
+            value={{
+              scheduledTime: editValues.scheduledTime ?? undefined,
+              isAllDay: todo.isAllDay,
+            }}
             onCancel={onClose}
-            onConfirm={(scheduledTime, isAllDay) => {
+            onChange={({ scheduledTime, isAllDay }) => {
               updateSchedule.mutate({
                 todoId: todo.id,
                 input: {

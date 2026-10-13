@@ -19,21 +19,27 @@ import { PickerHeader } from './picker-header';
 
 const isIOS = Platform.OS === 'ios';
 
-interface TodoTimePickerContentProps {
-  draftDate: Date;
+export interface TodoTimeValue {
   scheduledTime: string | undefined;
   isAllDay: boolean;
-  onConfirm: (scheduledTime: string | undefined, isAllDay: boolean) => void;
+}
+
+interface TodoTimePickerContentProps {
+  /** 시간 선택 휠이 기준으로 삼는 할 일 날짜 */
+  date: Date;
+  value: TodoTimeValue;
+  onChange: (value: TodoTimeValue) => void;
   onCancel: () => void;
 }
 
-export const TodoTimePickerContent = ({
-  draftDate,
-  scheduledTime,
-  isAllDay,
-  onConfirm,
+export function TodoTimePickerContent({
+  date,
+  value,
+  onChange,
   onCancel,
-}: TodoTimePickerContentProps) => {
+}: TodoTimePickerContentProps) {
+  const draftDate = date;
+  const { scheduledTime, isAllDay } = value;
   const { t } = useTranslation('todo');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { resolvedLanguage } = useLanguage();
@@ -42,7 +48,7 @@ export const TodoTimePickerContent = ({
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
 
   const handleConfirm = () => {
-    onConfirm(localIsAllDay ? undefined : localTime, localIsAllDay);
+    onChange({ scheduledTime: localIsAllDay ? undefined : localTime, isAllDay: localIsAllDay });
   };
 
   return (
@@ -144,4 +150,4 @@ export const TodoTimePickerContent = ({
       </Flex>
     </VStack>
   );
-};
+}

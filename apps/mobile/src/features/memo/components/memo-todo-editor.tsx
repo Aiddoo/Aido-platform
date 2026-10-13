@@ -1,7 +1,10 @@
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
 import { CategorySelectInput } from '@src/features/todo/components/category-select-bottom-sheet';
 import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
-import { TodoTimePickerContent } from '@src/features/todo/components/todo-time-picker-content';
+import {
+  type TodoTimeValue,
+  TodoTimePickerContent,
+} from '@src/features/todo/components/todo-time-picker-content';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -18,7 +21,7 @@ import {
   VStack,
   useOverlay,
 } from '@src/shared/ui';
-import { formatDate, formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
+import { formatDate, formatDaysOfWeek, formatMonthDay, toDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { CloseButton } from 'heroui-native';
 import { Suspense } from 'react';
@@ -52,8 +55,8 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
         <TodoDatePickerContent
-          startDate={new Date(todo.startDate)}
-          onConfirm={(date) => {
+          value={toDate(todo.startDate)}
+          onChange={(date) => {
             onChange({ startDate: formatDate(date) });
             close(date);
           }}
@@ -64,24 +67,21 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
   };
 
   const openTimePicker = () => {
-    overlay.open<{ time: string | undefined; isAllDay: boolean } | null>(
-      ({ isOpen, close, exit }) => (
-        <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
-          <Suspense fallback={<ActivityIndicator />}>
-            <TodoTimePickerContent
-              draftDate={new Date(todo.startDate)}
-              scheduledTime={todo.scheduledTime ?? undefined}
-              isAllDay={todo.isAllDay}
-              onConfirm={(time, isAllDay) => {
-                onChange({ scheduledTime: time ?? null, isAllDay });
-                close({ time, isAllDay });
-              }}
-              onCancel={() => close(null)}
-            />
-          </Suspense>
-        </ModalBottomSheet>
-      ),
-    );
+    overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
+      <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
+        <Suspense fallback={<ActivityIndicator />}>
+          <TodoTimePickerContent
+            date={toDate(todo.startDate)}
+            value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: todo.isAllDay }}
+            onChange={(value) => {
+              onChange({ scheduledTime: value.scheduledTime ?? null, isAllDay: value.isAllDay });
+              close(value);
+            }}
+            onCancel={() => close(null)}
+          />
+        </Suspense>
+      </ModalBottomSheet>
+    ));
   };
 
   const openCategoryPicker = () => {

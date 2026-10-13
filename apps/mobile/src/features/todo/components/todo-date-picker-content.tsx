@@ -22,37 +22,29 @@ import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
 
 interface TodoDatePickerContentProps {
-  startDate: Date;
-  onConfirm: (startDate: Date) => void;
+  value: Date;
+  onChange: (date: Date) => void;
   onCancel: () => void;
 }
 
-export const TodoDatePickerContent = ({
-  startDate,
-  onConfirm,
-  onCancel,
-}: TodoDatePickerContentProps) => {
-  const picker = useDatePicker({ startDate });
+export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePickerContentProps) {
+  const picker = useDatePicker({ startDate: value });
   const { t } = useTranslation('todo');
 
   const handleConfirm = () => {
-    onConfirm(picker.date);
-  };
-
-  const handleQuickSelect = (date: Date) => {
-    onConfirm(date);
+    onChange(picker.date);
   };
 
   return (
     <VStack gap={20}>
       <PickerHeader title={t('picker.dateTitle')} onCancel={onCancel} onConfirm={handleConfirm} />
 
-      <QuickDateOptions picker={picker} onSelect={handleQuickSelect} />
+      <QuickDateOptions picker={picker} onSelect={onChange} />
 
       <DatePickerCalendar picker={picker} onDatePress={picker.selectDate} />
     </VStack>
   );
-};
+}
 
 interface QuickDateOption {
   labelKey: 'picker.today' | 'picker.tomorrow';
