@@ -72,6 +72,14 @@ export function formatClockTime(
   return dayPeriod ? `${dayPeriod} ${hour}:${minute}` : `${hour}:${minute}`;
 }
 
+/** 로케일 기본 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM"). hour12가 false면 "18:30". */
+export function formatLocaleTime(date: Date, hour12: boolean, context: DateFormatContext) {
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
+  return getFormatter(context, { hour: 'numeric', minute: '2-digit', hour12 }).format(date);
+}
+
 export function formatDateKey(date: Date, timeZone: string): string {
   if (!Number.isFinite(date.getTime())) {
     return '';
