@@ -22,6 +22,7 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  DashedDivider,
 } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -126,7 +127,7 @@ function AchievementDetailScreen() {
 
               <Spacing size={20} />
 
-              <View className="border-b border-dashed border-gray-3" />
+              <DashedDivider />
 
               <Spacing size={14} />
 

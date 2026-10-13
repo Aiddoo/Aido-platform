@@ -39,6 +39,7 @@ import {
   Text,
   TextButton,
   VStack,
+  DashedDivider,
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -188,7 +189,7 @@ function SubscriptionScreen() {
                 </Text>
               </VStack>
 
-              <View className="my-6 border-b border-dashed border-gray-3" />
+              <DashedDivider className="my-6" />
 
               <VStack gap={20}>
                 {HIGHLIGHT_BENEFITS.map((benefit) => (
@@ -207,7 +208,7 @@ function SubscriptionScreen() {
               </Text>
             </View>
 
-            <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
+            <DashedDivider className="my-5 mx-5" />
 
             <View className="px-5 pb-5">
               <SubscriptionPlanCard
@@ -314,7 +315,7 @@ function SubscriptionReceipt({ user }: { user: User }) {
         )}
       </View>
 
-      <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
+      <DashedDivider className="my-5 mx-5" />
 
       <View className="px-5">
         <Text size="b3" weight="semibold" shade={9} className="mb-3">
@@ -354,7 +355,7 @@ function SubscriptionReceipt({ user }: { user: User }) {
         </VStack>
       </View>
 
-      <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
+      <DashedDivider className="my-5 mx-5" />
 
       <View className="px-5 pb-5 items-center">
         <ReceiptBarcode />

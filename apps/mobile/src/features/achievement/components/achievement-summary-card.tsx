@@ -2,7 +2,7 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { useTrack } from '@src/shared/analytics';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
-import { H3, H4, HStack, ShareIcon, Spacing, Text, VStack } from '@src/shared/ui';
+import { H3, H4, HStack, ShareIcon, Spacing, Text, VStack, DashedDivider } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
@@ -115,7 +115,7 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
               <Spacing size={20} />
 
               {/* 점선 구분선 */}
-              <View className="border-b border-dashed border-gray-3" />
+              <DashedDivider />
 
               <Spacing size={14} />
 

@@ -22,6 +22,7 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  DashedDivider,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -159,7 +160,7 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
 
             <Spacing size={20} />
 
-            <View className="border-b border-dashed border-gray-3" />
+            <DashedDivider />
 
             <Spacing size={14} />
 

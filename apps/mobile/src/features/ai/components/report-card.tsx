@@ -1,6 +1,6 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack, DashedDivider } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
@@ -82,7 +82,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
         </VStack>
       </View>
 
-      {!isLast && <View className="border-b border-dashed border-gray-3" />}
+      {!isLast && <DashedDivider />}
     </PressableFeedback>
   );
 }
@@ -122,7 +122,7 @@ ReportCard.Loading = function Loading() {
               </View>
             </VStack>
           </SkeletonGroup>
-          {i < 2 && <View className="mt-3 border-b border-dashed border-gray-3" />}
+          {i < 2 && <DashedDivider className="mt-3" />}
         </View>
       ))}
     </VStack>

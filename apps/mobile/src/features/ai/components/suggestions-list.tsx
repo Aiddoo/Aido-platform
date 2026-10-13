@@ -1,7 +1,16 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
-import { Button, H4, HStack, Spacing, Text, useOverlay, VStack } from '@src/shared/ui';
+import {
+  Button,
+  H4,
+  HStack,
+  Spacing,
+  Text,
+  useOverlay,
+  VStack,
+  DashedDivider,
+} from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -197,7 +206,7 @@ SuggestionsList.Item = function Item({
         </HStack>
       </VStack>
 
-      {!isLast && <View className="mt-5 border-b border-dashed border-gray-3" />}
+      {!isLast && <DashedDivider className="mt-5" />}
     </View>
   );
 };

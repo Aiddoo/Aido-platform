@@ -1,6 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { HStack, Spacing, Text, VStack, DashedDivider } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { getDayOfWeekLabel } from '@src/shared/utils/date';
 import { formatPercent } from '@src/shared/utils/format';
@@ -32,7 +32,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
         </VStack>
         {report.categoryBreakdown.length > 0 && (
           <VStack>
-            <View className="border-b border-dashed border-gray-3" />
+            <DashedDivider />
             <View className="py-4">
               <CategoryBreakdown items={report.categoryBreakdown} />
             </View>
@@ -40,7 +40,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
         )}
         {report.dayPatterns.length > 0 && (
           <VStack>
-            <View className="border-b border-dashed border-gray-3" />
+            <DashedDivider />
             <View className="py-4">
               <DayPatternChart items={report.dayPatterns} />
             </View>
@@ -48,7 +48,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
         )}
         {report.timePatterns.length > 0 && (
           <VStack>
-            <View className="border-b border-dashed border-gray-3" />
+            <DashedDivider />
             <View className="py-4">
               <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
             </View>
@@ -56,7 +56,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
         )}
         {report.aiSummary && (
           <VStack>
-            <View className="border-b border-dashed border-gray-3" />
+            <DashedDivider />
             <View className="py-4">
               <AiAnalysis summary={report.aiSummary} />
             </View>
@@ -64,7 +64,7 @@ export function ActivityReport({ report }: ActivityReportProps) {
         )}
         {report.aiTips.length > 0 && (
           <VStack>
-            <View className="border-b border-dashed border-gray-3" />
+            <DashedDivider />
             <View className="py-4">
               <ImprovementTipList tips={report.aiTips} />
             </View>

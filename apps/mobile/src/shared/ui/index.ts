@@ -13,6 +13,7 @@ export {
   KeyboardAdaptiveButton,
 } from './button';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
+export { DashedDivider, type DashedDividerProps } from './dashed-divider';
 export { Flex } from './flex';
 export { Grid, GridItem, useGridColumns } from './grid';
 export { HStack } from './h-stack';
