@@ -1,8 +1,10 @@
-import { getNudgeInteractionsQuerySchema, nudgeReplyKindSchema } from '@aido/api';
+import {
+  getNudgeInteractionsQuerySchema,
+  nudgeReplyKindSchema,
+  type TodoVisibility,
+} from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
-
-import type { Todo } from '../../todo/domains/todo.model';
 
 export const nudgeDirectionSchema = getNudgeInteractionsQuerySchema.shape.direction;
 export type NudgeDirection = z.infer<typeof nudgeDirectionSchema>;
@@ -85,7 +87,7 @@ export const NudgeInteractionPolicy = {
       nudge.thankedAt !== null,
     ),
   isThankableTodo: (
-    todo: Pick<Todo, 'completed' | 'visibility'>,
+    todo: { completed: boolean; visibility: TodoVisibility },
     { isOwner }: { isOwner: boolean },
   ): boolean => isOwner && todo.completed && todo.visibility === 'PUBLIC',
   isReplyable: (

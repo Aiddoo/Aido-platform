@@ -388,6 +388,35 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+function getFeatureName(path) {
+  return /\/src\/features\/([^/]+)\//u.exec(path)?.[1] ?? null;
+}
+
+function checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors) {
+  const owner = getFeatureName(sourceFile.fileName);
+  if (owner === null) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
+      statement.moduleSpecifier === undefined ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      !statement.moduleSpecifier.text.startsWith('.')
+    ) {
+      continue;
+    }
+    const target = getFeatureName(
+      `${resolve(dirname(sourceFile.fileName), statement.moduleSpecifier.text)}/`,
+    );
+    if (target !== null && target !== owner) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} 다른 피처(${target})는 상대경로가 아니라 @src/features/${target} 경로로 import하세요. 피처 경계가 검색과 리뷰에서 드러나야 합니다.`,
+      );
+    }
+  }
+}
+
 export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   const errors = [];
 
@@ -435,6 +464,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
       file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
     checkTodoCheckboxProps(sourceFile, repositoryRoot, errors);
+    checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
   }
 
   return errors;

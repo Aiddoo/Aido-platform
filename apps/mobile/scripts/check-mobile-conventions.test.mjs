@@ -278,3 +278,19 @@ test('utils 폴더로 옮긴 TSX와 React Native UI 테스트도 거부한다', 
     },
   );
 });
+
+test('다른 피처를 상대경로로 import하면 거부하고 절대경로는 통과한다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo/components/todo-detail-card.tsx': `
+        import { TodoNudgeButton } from '../../nudge/components/todo-nudge-button';
+        import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
+        import { TodoRow } from './todo-row';
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /@src\/features\/nudge/u);
+    },
+  );
+});
