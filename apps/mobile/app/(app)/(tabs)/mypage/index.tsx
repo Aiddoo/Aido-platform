@@ -1,10 +1,5 @@
-import {
-  useAppVersionService,
-  useErrorReporter,
-  useFeatureDiscoveryStateService,
-} from '@src/bootstrap/providers/di-context';
-import { AppVersionPolicy } from '@src/features/app-version/domains/app-version.model';
-import { useGetAppVersionQueryOptions } from '@src/features/app-version/queries/get-app-version-query-options';
+import { useFeatureDiscoveryStateService } from '@src/bootstrap/providers/di-context';
+import { AppVersionCheck } from '@src/features/app-version/components/app-version-check';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/queries/use-logout-mutation-options';
 import {
@@ -15,11 +10,9 @@ import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/us
 import { ProfileCard } from '@src/features/user/components/profile-card';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowRightIcon,
   H3,
   HStack,
   QueryErrorBoundary,
@@ -27,12 +20,11 @@ import {
   Spacing,
   StyledSafeAreaView,
   TextButton,
-  Text,
   useConfirmDialog,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Separator, Spinner } from 'heroui-native';
+import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -147,7 +139,7 @@ function MyPageScreen() {
 
         <Spacing size={12} />
 
-        <AppVersionSetting />
+        <AppVersionCheck />
 
         <Spacing size={32} />
 
@@ -160,80 +152,6 @@ function MyPageScreen() {
     </StyledSafeAreaView>
   );
 }
-
-function AppVersionSetting() {
-  const { t } = useTranslation('appVersion');
-  const service = useAppVersionService();
-  const errorReporter = useErrorReporter();
-  const toast = useAppToast();
-  const confirmDialog = useConfirmDialog();
-  const installation = service.getInstallation();
-  const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
-
-  const handlePress = useSingleTap(async () => {
-    const result = await query.refetch();
-    if (result.isError || !result.data || !installation) {
-      if (result.error) {
-        errorReporter.captureException(result.error, { feature: 'app-version' });
-      }
-      toast.error(undefined, { fallback: t('checkFailed') });
-      return;
-    }
-
-    const input = { config: result.data, ...installation };
-    if (!AppVersionPolicy.canDecide(input)) {
-      toast.error(undefined, { fallback: t('checkFailed') });
-      return;
-    }
-
-    if (AppVersionPolicy.shouldOpenStore(input)) {
-      try {
-        await service.openStoreListing();
-      } catch (error) {
-        const reported = error instanceof Error ? error : new Error(String(error));
-        errorReporter.captureException(reported, { feature: 'app-version' });
-        toast.error(undefined, { fallback: t('storeOpenFailed') });
-      }
-      return;
-    }
-
-    if (AppVersionPolicy.shouldShowLatestDialog(input)) {
-      return confirmDialog.open({
-        title: t('latestTitle'),
-        description: t('latestDescription'),
-        confirmLabel: t('confirm'),
-      });
-    }
-  });
-
-  if (!installation) {
-    return null;
-  }
-
-  return (
-    <SettingNavigation label={t('section')}>
-      <SettingNavigation.Item
-        label={t('item')}
-        onPress={handlePress}
-        isDisabled={query.isFetching}
-        right={
-          <HStack align="center" gap={8}>
-            <Text size="b3" shade={6} numberOfLines={1}>
-              {installation.currentVersion}
-            </Text>
-            {query.isFetching ? (
-              <Spinner size="sm" />
-            ) : (
-              <ArrowRightIcon colorClassName="text-gray-6" />
-            )}
-          </HStack>
-        }
-      />
-    </SettingNavigation>
-  );
-}
-
-export default MyPageScreen;
 
 function AccountActionButtons() {
   const push = useSingleTap(router.push);
@@ -286,3 +204,5 @@ function AccountActionButtons() {
     </HStack>
   );
 }
+
+export default MyPageScreen;
