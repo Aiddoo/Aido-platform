@@ -1,6 +1,6 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { AiParseConfirmDialog } from '@src/features/memo/components/ai-parse-confirm-dialog';
 import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
@@ -23,6 +23,7 @@ import {
   HStack,
   PinFilledIcon,
   PinIcon,
+  QueryErrorBoundary,
   RobotIcon,
   TrashIcon,
   useOverlay,
@@ -34,7 +35,7 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tansta
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import {
@@ -119,22 +120,30 @@ export default function MemoDetailScreen() {
   };
 
   const handleAiParse = () => {
-    const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo({ memoId }));
+    const cached = getParsedMemo(queryClient, { memoId });
     if (cached) {
       push(`/memo/${memoId}/ai-review`);
       return;
     }
 
-    overlay.open(({ isOpen, close, exit }) => (
-      <AiParseConfirmDialog
-        isOpen={isOpen}
-        memoId={memoId}
-        onClose={() => {
-          close();
-          exit();
-        }}
-      />
-    ));
+    overlay.open(({ isOpen, close, exit }) => {
+      const closeDialog = () => {
+        close();
+        exit();
+      };
+
+      return (
+        <QueryErrorBoundary
+          fallback={({ reset }) => (
+            <AiParseConfirmDialog.Error isOpen={isOpen} onClose={closeDialog} reset={reset} />
+          )}
+        >
+          <Suspense fallback={null}>
+            <AiParseConfirmDialog isOpen={isOpen} memoId={memoId} onClose={closeDialog} />
+          </Suspense>
+        </QueryErrorBoundary>
+      );
+    });
   };
 
   const handleDelete = () => {

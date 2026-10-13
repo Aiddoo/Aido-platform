@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
-import type { ParsedMemoResult, ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
+import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
+import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { MemoTodoEditor } from '@src/features/memo/components/memo-todo-editor';
 import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
@@ -34,9 +34,7 @@ function AiReviewScreen() {
   const queryClient = useQueryClient();
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
-  const parsedResult = queryClient.getQueryData<ParsedMemoResult>(
-    AI_QUERY_KEYS.parseMemo({ memoId }),
-  );
+  const parsedResult = getParsedMemo(queryClient, { memoId });
 
   const nextId = useRef(0);
   const [todos, setTodos] = useState<TodoWithId[]>(
