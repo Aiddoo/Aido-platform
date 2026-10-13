@@ -34,7 +34,7 @@ import Animated, {
 
 import { useDraggableFriendReorderList } from '../hooks/use-draggable-friend-reorder-list';
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
-import { useGetFriendsQueryOptions } from '../queries/get-friends-query-options';
+import { useGetFriendsInfiniteQueryOptions } from '../queries/get-friends-infinite-query-options';
 import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
 import { useReorderFriendMutationOptions } from '../queries/use-reorder-friend-mutation-options';
 import type { FriendUserViewModel } from '../utils/view-models/friend-user.view-model';
@@ -50,7 +50,7 @@ export function FriendList() {
     isFetchingNextPage,
     refetch,
     dataUpdatedAt,
-  } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
+  } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
 
   const removeMutation = useMutation(useRemoveFriendMutationOptions());
   const reorderMutation = useMutation(useReorderFriendMutationOptions());

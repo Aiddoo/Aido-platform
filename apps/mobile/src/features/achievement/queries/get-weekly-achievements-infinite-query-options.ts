@@ -6,7 +6,7 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 import { toWeeklyAchievementViewModel } from '../utils/view-models/weekly-achievement.view-model';
 
-export function getWeeklyAchievementsQueryOptions(
+export function getWeeklyAchievementsInfiniteQueryOptions(
   achievementService: AchievementService,
   { year }: { year: number },
 ) {
@@ -39,6 +39,6 @@ export function getWeeklyAchievementsQueryOptions(
   });
 }
 
-export function useGetWeeklyAchievementsQueryOptions(year: number) {
-  return getWeeklyAchievementsQueryOptions(useAchievementService(), { year });
+export function useGetWeeklyAchievementsInfiniteQueryOptions(year: number) {
+  return getWeeklyAchievementsInfiniteQueryOptions(useAchievementService(), { year });
 }

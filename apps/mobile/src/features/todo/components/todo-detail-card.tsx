@@ -14,12 +14,12 @@ import { Skeleton } from 'heroui-native';
 
 import type { TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
-import { useTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
+import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 export function TodoDetailCard() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
 
   return (
     <VStack gap={14}>

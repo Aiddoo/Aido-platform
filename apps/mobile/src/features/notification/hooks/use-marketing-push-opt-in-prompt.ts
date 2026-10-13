@@ -9,7 +9,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.policy';
+import { MarketingPushPromptPolicy } from '../domains/marketing-push-prompt.model';
 import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet';
 
 interface MarketingPushOptInPrompt {

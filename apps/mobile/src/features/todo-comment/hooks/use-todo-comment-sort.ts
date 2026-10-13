@@ -13,7 +13,7 @@ import {
   useTodoCommentScreenTransitionActions,
 } from '../components/providers/todo-comment-screen-transition-provider';
 import type { TodoCommentSort } from '../domains/todo-comment.model';
-import { useTodoCommentOverviewQueryOptions } from '../queries/todo-comment-overview-query-options';
+import { useGetTodoCommentOverviewQueryOptions } from '../queries/get-todo-comment-overview-query-options';
 import { useTodoCommentRoute } from './use-todo-comment-route';
 
 interface TodoCommentSortState {
@@ -34,11 +34,11 @@ export function useTodoCommentSort(): TodoCommentSortState {
   const pendingTransition = usePendingTodoCommentTransition();
 
   const overviewOptionsBySort = {
-    [TODO_COMMENT_SORT.POPULAR]: useTodoCommentOverviewQueryOptions({
+    [TODO_COMMENT_SORT.POPULAR]: useGetTodoCommentOverviewQueryOptions({
       todoId,
       sort: TODO_COMMENT_SORT.POPULAR,
     }),
-    [TODO_COMMENT_SORT.LATEST]: useTodoCommentOverviewQueryOptions({
+    [TODO_COMMENT_SORT.LATEST]: useGetTodoCommentOverviewQueryOptions({
       todoId,
       sort: TODO_COMMENT_SORT.LATEST,
     }),

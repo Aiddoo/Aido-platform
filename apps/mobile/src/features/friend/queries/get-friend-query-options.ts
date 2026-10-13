@@ -5,14 +5,14 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { findFriendById } from '../utils/find-friend-by-id';
 import { toFriendUserViewModel } from '../utils/view-models/friend-user.view-model';
-import { getFriendsQueryOptions } from './get-friends-query-options';
+import { getFriendsInfiniteQueryOptions } from './get-friends-infinite-query-options';
 
 export function getFriendQueryOptions(
   service: FriendService,
   { friendId, fallbackName }: { friendId: string; fallbackName: string },
 ) {
   return infiniteQueryOptions({
-    ...getFriendsQueryOptions(service),
+    ...getFriendsInfiniteQueryOptions(service),
     select: (data) => {
       const friend = findFriendById(data.pages, friendId);
       return friend ? toFriendUserViewModel(friend, fallbackName) : null;

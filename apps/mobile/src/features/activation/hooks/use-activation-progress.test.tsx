@@ -8,7 +8,7 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({
 }));
 
 jest.mock('@src/features/feature-discovery/queries/get-feature-discovery-query-options', () => ({
-  useFeatureDiscoveryQueryOptions: () => ({ queryKey: ['feature-discovery'] }),
+  useGetFeatureDiscoveryQueryOptions: () => ({ queryKey: ['feature-discovery'] }),
 }));
 
 jest.mock('@src/features/user/queries/get-me-query-options', () => ({

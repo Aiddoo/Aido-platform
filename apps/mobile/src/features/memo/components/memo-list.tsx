@@ -18,11 +18,11 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
-import { useGetMemosQueryOptions } from '../queries/get-memos-query-options';
+import { useGetMemosInfiniteQueryOptions } from '../queries/get-memos-infinite-query-options';
 
 export function MemoList() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
-    useSuspenseInfiniteQuery(useGetMemosQueryOptions());
+    useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {

@@ -1,9 +1,7 @@
-import {
-  GroupSkeleton,
-  SettingsCard,
-  SettingsTimePicker,
-  SettingsToggle,
-} from '@src/features/notification/components/settings';
+import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
+import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
+import { SettingsTimePicker } from '@src/features/notification/components/settings/settings-time-picker';
+import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import {
   isWeatherEnabled,
   PreferencePolicy,

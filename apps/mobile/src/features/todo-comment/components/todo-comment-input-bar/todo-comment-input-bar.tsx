@@ -1,5 +1,5 @@
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
-import { useTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
+import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type TodoCommentAuthor, TodoCommentPolicy } from '../../domains/todo-comment.model';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
-import { useTodoCommentConversationQueryOptions } from '../../queries/todo-comment-conversation-query-options';
+import { useGetTodoCommentConversationQueryOptions } from '../../queries/get-todo-comment-conversation-query-options';
 import { toTodoCommentAuthor } from '../../utils/view-models/todo-comment-form.view-model';
 import { useCancelTodoCommentScreenTransition } from '../providers/todo-comment-screen-transition-provider';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
@@ -148,7 +148,7 @@ function CommentInputTrigger({ author, placeholder, ...pressableProps }: Comment
 
 function NewCommentButton() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const [, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
@@ -174,14 +174,14 @@ function ReplyToSelectedCommentButton() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
-  const { data: detail } = useSuspenseQuery(useTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const commentId =
     commentRoute.view === 'conversation' && commentRoute.form === null
       ? commentRoute.commentId
       : undefined;
   const conversation = useInfiniteQuery(
-    useTodoCommentConversationQueryOptions({
+    useGetTodoCommentConversationQueryOptions({
       todoId,
       sort: commentRoute.sort,
       focusCommentId: commentId,
@@ -227,7 +227,7 @@ function ReplyToSelectedCommentButton() {
 
 function NewCommentForm() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const [, updateCommentRoute] = useTodoCommentRoute();
   const { t } = useTranslation('todoComment');
@@ -252,7 +252,7 @@ function NewCommentForm() {
 function SelectedCommentForm() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
-  const { data: detail } = useSuspenseQuery(useTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('todoComment');
   const activeForm = commentRoute.view === 'conversation' ? commentRoute.form : null;
@@ -261,7 +261,7 @@ function SelectedCommentForm() {
       ? commentRoute.commentId
       : undefined;
   const conversation = useInfiniteQuery(
-    useTodoCommentConversationQueryOptions({
+    useGetTodoCommentConversationQueryOptions({
       todoId,
       sort: commentRoute.sort,
       focusCommentId: commentId,

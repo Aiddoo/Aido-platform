@@ -14,7 +14,7 @@ import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
 
-import { DEFAULT_TIME } from '../constants/todo';
+import { DEFAULT_TIME } from '../constants/todo-default-time';
 import { PickerHeader } from './picker-header';
 
 const isIOS = Platform.OS === 'ios';

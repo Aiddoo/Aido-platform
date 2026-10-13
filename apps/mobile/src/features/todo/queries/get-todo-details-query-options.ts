@@ -16,6 +16,6 @@ export function getTodoDetailsQueryOptions(
   });
 }
 
-export function useTodoDetailsQueryOptions(todoId: number) {
+export function useGetTodoDetailsQueryOptions(todoId: number) {
   return getTodoDetailsQueryOptions(useTodoService(), { todoId });
 }

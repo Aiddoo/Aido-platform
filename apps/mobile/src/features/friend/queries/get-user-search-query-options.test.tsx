@@ -6,7 +6,7 @@ import type { PropsWithChildren } from 'react';
 
 import { createSearchUsersDto } from '../__tests__/friend.factories';
 import { FriendService } from '../apis/friend.service';
-import { useSearchUsersQueryOptions } from './search-users-query-options';
+import { useGetUserSearchQueryOptions } from './get-user-search-query-options';
 
 const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
   const queryClient = new QueryClient({
@@ -24,14 +24,14 @@ const createWrapper = (httpClient: ReturnType<typeof createMockHttpClient>) => {
   );
 };
 
-describe('useSearchUsersQueryOptions', () => {
+describe('useGetUserSearchQueryOptions', () => {
   test('검색어가 2자 미만이면 쿼리를 실행하지 않는다', async () => {
     // Given
     const httpClient = createMockHttpClient();
     const wrapper = createWrapper(httpClient);
 
     // When
-    await renderHook(() => useInfiniteQuery(useSearchUsersQueryOptions('a')), { wrapper });
+    await renderHook(() => useInfiniteQuery(useGetUserSearchQueryOptions('a')), { wrapper });
 
     // Then
     expect(httpClient.get).not.toHaveBeenCalled();
@@ -45,7 +45,7 @@ describe('useSearchUsersQueryOptions', () => {
 
     // When
     const { result } = await renderHook(
-      () => useInfiniteQuery(useSearchUsersQueryOptions('홍길동')),
+      () => useInfiniteQuery(useGetUserSearchQueryOptions('홍길동')),
       {
         wrapper,
       },

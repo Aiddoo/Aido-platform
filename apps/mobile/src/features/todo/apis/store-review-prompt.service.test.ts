@@ -1,7 +1,7 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
 import { createMockSyncStorage } from '@src/shared/__tests__';
 
-import { StoreReviewPromptTransitions } from '../domains/store-review-prompt.transition';
+import { StoreReviewPromptTransitions } from '../domains/store-review-prompt.model';
 import { createStoreReviewPromptRepository } from './store-review-prompt.repository';
 import { type StoreReviewDecision, StoreReviewPromptService } from './store-review-prompt.service';
 

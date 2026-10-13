@@ -22,7 +22,7 @@ import { FormProvider } from 'react-hook-form';
 import { useFormState } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 
-import { CATEGORY_COLORS } from '../constants/todo-category.constants';
+import { CATEGORY_COLORS } from '../constants/todo-category-colors';
 
 interface CategoryEditBottomSheetProps {
   isOpen: boolean;

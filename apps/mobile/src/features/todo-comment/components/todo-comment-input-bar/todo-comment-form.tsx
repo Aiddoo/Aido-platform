@@ -26,7 +26,7 @@ import {
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
-import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment-input.constants';
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment-input';
 import {
   type TodoCommentFormInput,
   todoCommentFormSchema,

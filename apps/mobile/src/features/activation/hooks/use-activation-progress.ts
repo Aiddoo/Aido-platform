@@ -1,5 +1,5 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
-import { useFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/queries/get-feature-discovery-query-options';
+import { useGetFeatureDiscoveryQueryOptions } from '@src/features/feature-discovery/queries/get-feature-discovery-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useQuery } from '@tanstack/react-query';
 
@@ -15,7 +15,10 @@ const EMPTY_PROGRESS: ActivationProgress = {
 export function useActivationProgress() {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
-  const configQuery = useQuery({ ...useFeatureDiscoveryQueryOptions(), enabled: isAuthenticated });
+  const configQuery = useQuery({
+    ...useGetFeatureDiscoveryQueryOptions(),
+    enabled: isAuthenticated,
+  });
   const userQuery = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const identity = ActivationPolicy.activationIdentity(configQuery.data, userQuery.data);
 

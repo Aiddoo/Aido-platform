@@ -9,7 +9,7 @@ import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreg
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 
-import { useFeatureDiscoveryQueryOptions } from '../queries/get-feature-discovery-query-options';
+import { useGetFeatureDiscoveryQueryOptions } from '../queries/get-feature-discovery-query-options';
 import { claimAndOpenFeatureDiscovery } from '../utils/state/feature-discovery-auto-open';
 import { useFeatureDiscoveryHub } from './use-feature-discovery-hub';
 
@@ -18,7 +18,7 @@ export function useFeatureDiscoveryFeed() {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const { data: config } = useQuery({
-    ...useFeatureDiscoveryQueryOptions(),
+    ...useGetFeatureDiscoveryQueryOptions(),
     enabled: isAuthenticated,
   });
   const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });

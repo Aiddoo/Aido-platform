@@ -1,7 +1,7 @@
 import { NOTIFICATION_CATEGORY, getNotificationsQuerySchema } from '@aido/api';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
-import { CATEGORY_TABS } from '@src/features/notification/constants/notification';
+import { CATEGORY_TABS } from '@src/features/notification/constants/notification-category-tabs';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { router, useLocalSearchParams } from 'expo-router';

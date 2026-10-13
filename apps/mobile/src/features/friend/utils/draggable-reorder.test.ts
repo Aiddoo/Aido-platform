@@ -1,4 +1,4 @@
-import { getFriendReorderInstruction } from '../draggable-reorder';
+import { getFriendReorderInstruction } from './draggable-reorder';
 
 const createItems = (followIds: string[]) => followIds.map((followId) => ({ followId }));
 

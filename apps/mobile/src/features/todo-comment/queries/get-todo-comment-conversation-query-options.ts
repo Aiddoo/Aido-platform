@@ -8,43 +8,45 @@ import {
   TODO_COMMENT_QUERY_KEYS,
   TODO_COMMENT_QUERY_TIMING,
 } from '../constants/todo-comment-query-keys';
-import type { TodoCommentOverviewPage, TodoCommentSort } from '../domains/todo-comment.model';
+import type { TodoCommentSort, TodoConversationPage } from '../domains/todo-comment.model';
 import {
   getNextTodoCommentPageParam,
   getPreviousTodoCommentPageParam,
   INITIAL_TODO_COMMENT_PAGE_PARAM,
   type TodoCommentCursorPageParam,
-  toTodoCommentOverviewQuery,
+  toTodoCommentConversationQuery,
 } from '../utils/todo-comment-cursor-page';
 import {
-  toTodoCommentOverviewViewModel,
-  type TodoCommentOverviewViewModel,
-} from '../utils/view-models/todo-comment-overview.view-model';
+  toTodoCommentConversationViewModel,
+  type TodoCommentConversationViewModel,
+} from '../utils/view-models/todo-comment-conversation.view-model';
 
-function selectTodoCommentOverview(
-  data: InfiniteData<TodoCommentOverviewPage, TodoCommentCursorPageParam>,
-): TodoCommentOverviewViewModel {
-  return toTodoCommentOverviewViewModel(data.pages);
+function selectTodoCommentConversation(
+  data: InfiniteData<TodoConversationPage, TodoCommentCursorPageParam>,
+): TodoCommentConversationViewModel {
+  return toTodoCommentConversationViewModel(data.pages);
 }
 
-export function getTodoCommentOverviewQueryOptions(
+export function getTodoCommentConversationQueryOptions(
   todoCommentService: TodoCommentService,
   {
     todoId,
     sort,
+    focusCommentId,
   }: {
     todoId: number;
     sort: TodoCommentSort;
+    focusCommentId?: string;
   },
 ) {
   return infiniteQueryOptions({
-    queryKey: TODO_COMMENT_QUERY_KEYS.overview({ todoId, sort }),
+    queryKey: TODO_COMMENT_QUERY_KEYS.conversation({ todoId, sort, focusCommentId }),
     initialPageParam: INITIAL_TODO_COMMENT_PAGE_PARAM,
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
-        await todoCommentService.getOverview(
+        await todoCommentService.getConversation(
           todoId,
-          toTodoCommentOverviewQuery(pageParam, sort),
+          toTodoCommentConversationQuery(pageParam, sort, focusCommentId),
           signal,
         ),
       ),
@@ -55,16 +57,22 @@ export function getTodoCommentOverviewQueryOptions(
         ? TODO_COMMENT_QUERY_TIMING.popularStaleTime
         : TODO_COMMENT_QUERY_TIMING.latestStaleTime,
     gcTime: TODO_COMMENT_QUERY_TIMING.gcTime,
-    select: selectTodoCommentOverview,
+    select: selectTodoCommentConversation,
   });
 }
 
-export function useTodoCommentOverviewQueryOptions({
+export function useGetTodoCommentConversationQueryOptions({
   todoId,
   sort,
+  focusCommentId,
 }: {
   todoId: number;
   sort: TodoCommentSort;
+  focusCommentId?: string;
 }) {
-  return getTodoCommentOverviewQueryOptions(useTodoCommentService(), { todoId, sort });
+  return getTodoCommentConversationQueryOptions(useTodoCommentService(), {
+    todoId,
+    sort,
+    focusCommentId,
+  });
 }

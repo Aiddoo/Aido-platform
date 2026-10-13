@@ -13,6 +13,6 @@ export function getFeatureDiscoveryQueryOptions(service: FeatureDiscoveryService
   });
 }
 
-export function useFeatureDiscoveryQueryOptions() {
+export function useGetFeatureDiscoveryQueryOptions() {
   return getFeatureDiscoveryQueryOptions(useFeatureDiscoveryService());
 }

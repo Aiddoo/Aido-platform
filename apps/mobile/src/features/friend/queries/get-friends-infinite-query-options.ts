@@ -7,7 +7,7 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { toFriendUserViewModel } from '../utils/view-models/friend-user.view-model';
 
-export function getFriendsQueryOptions(friendService: FriendService) {
+export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
   return infiniteQueryOptions({
     queryKey: FRIEND_QUERY_KEYS.friends(),
     queryFn: async ({ pageParam, signal }) => {
@@ -24,11 +24,11 @@ export function getFriendsQueryOptions(friendService: FriendService) {
   });
 }
 
-export function useGetFriendsQueryOptions() {
+export function useGetFriendsInfiniteQueryOptions() {
   const { t } = useTranslation('friend');
   const fallbackName = t('fallbackName');
   return infiniteQueryOptions({
-    ...getFriendsQueryOptions(useFriendService()),
+    ...getFriendsInfiniteQueryOptions(useFriendService()),
     select: (data) => ({
       ...data,
       pages: data.pages.map((page) => ({

@@ -2,7 +2,7 @@ import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-pa
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import { useTodoCommentConversationQueryOptions } from '../queries/todo-comment-conversation-query-options';
+import { useGetTodoCommentConversationQueryOptions } from '../queries/get-todo-comment-conversation-query-options';
 import { toInitialConversationWindow } from '../utils/comment-conversation-position';
 import type { ConversationPages } from '../utils/todo-comment-cache-pages';
 import { useTodoCommentRoute } from './use-todo-comment-route';
@@ -11,7 +11,7 @@ export function usePrepareTodoCommentConversation(commentId: string) {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const queryClient = useQueryClient();
-  const queryOptions = useTodoCommentConversationQueryOptions({
+  const queryOptions = useGetTodoCommentConversationQueryOptions({
     todoId,
     sort: commentRoute.sort,
     focusCommentId: commentId,

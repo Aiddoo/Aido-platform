@@ -4,7 +4,7 @@ import {
   useFeatureDiscoveryStateService,
 } from '@src/bootstrap/providers/di-context';
 import { AppVersionPolicy } from '@src/features/app-version/domains/app-version.model';
-import { useAppVersionQueryOptions } from '@src/features/app-version/queries/get-app-version-query-options';
+import { useGetAppVersionQueryOptions } from '@src/features/app-version/queries/get-app-version-query-options';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/queries/use-logout-mutation-options';
 import {
@@ -169,7 +169,7 @@ function AppVersionSetting() {
   const toast = useAppToast();
   const overlay = useOverlay();
   const installation = service.getInstallation();
-  const query = useQuery({ ...useAppVersionQueryOptions(), enabled: false });
+  const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
 
   const handlePress = useSingleTap(async () => {
     const result = await query.refetch();

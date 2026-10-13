@@ -5,7 +5,7 @@ import { TodoCommentKeyboardScrollView } from '@src/features/todo-comment/compon
 import { TodoCommentOverviewList } from '@src/features/todo-comment/components/todo-comment-overview-list/todo-comment-overview-list';
 import { TodoCommentSortBar } from '@src/features/todo-comment/components/todo-comment-sort-bar';
 import { TodoCommentTitleBar } from '@src/features/todo-comment/components/todo-comment-title-bar';
-import { TODO_COMMENT_INPUT_NATIVE_ID } from '@src/features/todo-comment/constants/todo-comment-input.constants';
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '@src/features/todo-comment/constants/todo-comment-input';
 import { useAndroidTodoCommentBackHandler } from '@src/features/todo-comment/hooks/use-android-todo-comment-back-handler';
 import { useIsTodoCommentSubmitting } from '@src/features/todo-comment/hooks/use-is-todo-comment-submitting';
 import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';

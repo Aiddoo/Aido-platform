@@ -11,7 +11,7 @@ import { toSearchedUserViewModel } from '../utils/view-models/searched-user.view
 type SearchUsersPageParam = { cursor?: string };
 const INITIAL_SEARCH_USERS_PAGE_PARAM: SearchUsersPageParam = {};
 
-export function getSearchUsersQueryOptions(
+export function getUserSearchQueryOptions(
   friendService: FriendService,
   { query, fallbackName }: { query: string; fallbackName: string },
 ) {
@@ -44,7 +44,7 @@ export function getSearchUsersQueryOptions(
   });
 }
 
-export function useSearchUsersQueryOptions(query: string) {
+export function useGetUserSearchQueryOptions(query: string) {
   const { t } = useTranslation('friend');
-  return getSearchUsersQueryOptions(useFriendService(), { query, fallbackName: t('fallbackName') });
+  return getUserSearchQueryOptions(useFriendService(), { query, fallbackName: t('fallbackName') });
 }

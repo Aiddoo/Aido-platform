@@ -1,6 +1,6 @@
 import type { ConvertMemoToTodosInput } from '@aido/api';
 import { useActivationService, useMemoService } from '@src/bootstrap/providers/di-context';
-import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-mutations';
+import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import type { User } from '@src/features/user/domains/user.model';

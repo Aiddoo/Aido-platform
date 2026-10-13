@@ -7,7 +7,7 @@ import {
   isNotAgreedToMarketingPush,
   isUnderPromptLimit,
   MarketingPushPromptPolicy,
-} from './marketing-push-prompt.policy';
+} from './marketing-push-prompt.model';
 
 const promptState = (overrides?: Partial<MarketingPushPromptState>): MarketingPushPromptState => ({
   lastPromptedAt: null,

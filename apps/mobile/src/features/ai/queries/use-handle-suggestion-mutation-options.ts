@@ -1,6 +1,6 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useAiService, useLogger } from '@src/bootstrap/providers/di-context';
-import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-mutations';
+import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';

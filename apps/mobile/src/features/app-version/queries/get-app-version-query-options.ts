@@ -11,6 +11,6 @@ export function getAppVersionQueryOptions(service: AppVersionService) {
   });
 }
 
-export function useAppVersionQueryOptions() {
+export function useGetAppVersionQueryOptions() {
   return getAppVersionQueryOptions(useAppVersionService());
 }

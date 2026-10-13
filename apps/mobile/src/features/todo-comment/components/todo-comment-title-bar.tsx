@@ -1,5 +1,5 @@
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
-import { useTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
+import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ScreenTitleBar } from '@src/shared/ui';
@@ -15,7 +15,7 @@ export function TodoCommentTitleBar() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const { result: backResult, handleBack } = useTodoCommentBack();
-  const { data: detail } = useQuery(useTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions(todoId));
   const { t } = useTranslation(['todo', 'todoComment']);
 
   const handleBackPress = useSingleTap(() => {

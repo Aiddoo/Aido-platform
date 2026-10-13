@@ -1,10 +1,10 @@
+import { NavigationRow } from '@src/features/notification/components/settings/navigation-row';
+import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
 import {
-  NavigationRow,
   NavigationSkeleton,
-  SettingsCard,
-  SettingsToggle,
   ToggleSkeleton,
-} from '@src/features/notification/components/settings';
+} from '@src/features/notification/components/settings/settings-skeleton';
+import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import {
   isWeatherEnabled,
   PreferencePolicy,

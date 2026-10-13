@@ -13,7 +13,7 @@ import {
   recordTodoCompletionForActivation,
   recordTodoCreatedForActivation,
   unlockPushRegistrationForActivation,
-} from './activation-mutations';
+} from './activation-cache';
 
 function createService(): ActivationService {
   const values = new Map<string, string>();

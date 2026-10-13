@@ -17,7 +17,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => ({
   useActivationService: () => ({ recordTodoCompletion: jest.fn() }),
 }));
 
-jest.mock('@src/features/activation/queries/activation-mutations', () => ({
+jest.mock('@src/features/activation/queries/activation-cache', () => ({
   recordTodoCompletionForActivation: (...args: unknown[]) =>
     mockRecordTodoCompletionForActivation(...args),
 }));

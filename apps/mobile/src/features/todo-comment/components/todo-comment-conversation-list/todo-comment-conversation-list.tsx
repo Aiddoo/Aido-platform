@@ -47,7 +47,7 @@ import type {
   TodoConversationConnection,
 } from '../../domains/todo-comment.model';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
-import { useTodoCommentConversationQueryOptions } from '../../queries/todo-comment-conversation-query-options';
+import { useGetTodoCommentConversationQueryOptions } from '../../queries/get-todo-comment-conversation-query-options';
 import {
   canFetchPreviousComments,
   getCommentFocusRevealOffset,
@@ -430,7 +430,7 @@ export function TodoCommentConversationList({
   const focusCommentId = commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const queryClient = useQueryClient();
   const query = useSuspenseInfiniteQuery(
-    useTodoCommentConversationQueryOptions({
+    useGetTodoCommentConversationQueryOptions({
       todoId,
       sort: commentRoute.sort,
       focusCommentId,

@@ -1,6 +1,6 @@
 import type { ToggleTodoCompleteInput } from '@aido/api';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
-import { recordTodoCompletionForActivation } from '@src/features/activation/queries/activation-mutations';
+import { recordTodoCompletionForActivation } from '@src/features/activation/queries/activation-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';

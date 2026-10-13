@@ -1,13 +1,11 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
-import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-mutations';
+import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-cache';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
-import {
-  SettingsCard,
-  SettingsToggle,
-  ToggleSkeleton,
-} from '@src/features/notification/components/settings';
+import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
+import { ToggleSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
+import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
 import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';

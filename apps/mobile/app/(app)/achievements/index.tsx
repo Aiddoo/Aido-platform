@@ -3,7 +3,7 @@ import { AchievementSummaryCard } from '@src/features/achievement/components/ach
 import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
 import { CertificateBorder } from '@src/features/achievement/components/certificate-border';
 import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/constants/achievement-query-keys';
-import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/queries/get-weekly-achievements-query-options';
+import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/achievement/queries/get-weekly-achievements-infinite-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -37,7 +37,7 @@ function AchievementsScreen() {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(useGetWeeklyAchievementsQueryOptions(year));
+    useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions(year));
 
   const [refreshing, onRefresh] = useRefresh(() =>
     queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList(year) }),

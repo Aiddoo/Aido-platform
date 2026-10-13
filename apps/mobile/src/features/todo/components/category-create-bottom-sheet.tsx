@@ -25,7 +25,7 @@ import { FormProvider } from 'react-hook-form';
 import { useFormState } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 
-import { CATEGORY_COLORS, DEFAULT_COLOR } from '../constants/todo-category.constants';
+import { CATEGORY_COLORS, DEFAULT_COLOR } from '../constants/todo-category-colors';
 
 interface CategoryCreateBottomSheetProps {
   isOpen: boolean;

@@ -1,7 +1,9 @@
 import type { AppStoreReviewGateway } from '@src/core/ports/app-store';
 
-import { StoreReviewPromptPolicy } from '../domains/store-review-prompt.policy';
-import { StoreReviewPromptTransitions } from '../domains/store-review-prompt.transition';
+import {
+  StoreReviewPromptPolicy,
+  StoreReviewPromptTransitions,
+} from '../domains/store-review-prompt.model';
 import type { StoreReviewPromptRepository } from './store-review-prompt.repository';
 
 export type StoreReviewDecision = 'dismiss' | 'review';

@@ -1,4 +1,4 @@
-import { useGetFriendsQueryOptions } from '@src/features/friend/queries/get-friends-query-options';
+import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
@@ -52,7 +52,7 @@ function AvatarList() {
     hasNextPage,
     isFetching,
     isFetchNextPageError,
-  } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
+  } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
 
   const friends = useMemo(
     () => friendsData.pages.flatMap((page) => page.items),

@@ -5,7 +5,7 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 
-export function getMemosQueryOptions(service: MemoService) {
+export function getMemosInfiniteQueryOptions(service: MemoService) {
   return infiniteQueryOptions({
     queryKey: MEMO_QUERY_KEYS.list(),
     queryFn: async ({ pageParam, signal }) => {
@@ -24,6 +24,6 @@ export function getMemosQueryOptions(service: MemoService) {
   });
 }
 
-export function useGetMemosQueryOptions() {
-  return getMemosQueryOptions(useMemoService());
+export function useGetMemosInfiniteQueryOptions() {
+  return getMemosInfiniteQueryOptions(useMemoService());
 }

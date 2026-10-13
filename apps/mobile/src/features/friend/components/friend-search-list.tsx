@@ -25,7 +25,7 @@ import { match } from 'ts-pattern';
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { FriendPolicy, type SearchedUser } from '../domains/friend.model';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
-import { useSearchUsersQueryOptions } from '../queries/search-users-query-options';
+import { useGetUserSearchQueryOptions } from '../queries/get-user-search-query-options';
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
 import { useSendRequestByTagMutationOptions } from '../queries/use-send-request-by-tag-mutation-options';
 import type { SearchedUserViewModel } from '../utils/view-models/searched-user.view-model';
@@ -37,7 +37,7 @@ export function FriendSearchList({ query }: { query: string }) {
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
-  const options = useSearchUsersQueryOptions(normalizedQuery);
+  const options = useGetUserSearchQueryOptions(normalizedQuery);
   const search = useInfiniteQuery({
     ...options,
     enabled: options.enabled && isSettled,

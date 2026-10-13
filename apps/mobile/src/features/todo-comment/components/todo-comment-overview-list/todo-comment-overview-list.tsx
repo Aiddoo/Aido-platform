@@ -30,7 +30,7 @@ import type {
 } from '../../domains/todo-comment.model';
 import { useTodoCommentNavigation } from '../../hooks/use-todo-comment-navigation';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
-import { useTodoCommentOverviewQueryOptions } from '../../queries/todo-comment-overview-query-options';
+import { useGetTodoCommentOverviewQueryOptions } from '../../queries/get-todo-comment-overview-query-options';
 import {
   TODO_COMMENT_AUTHOR_AVATAR_SIZE,
   TodoCommentAuthorAvatar,
@@ -72,7 +72,7 @@ export function TodoCommentOverviewList({
   const [commentRoute] = useTodoCommentRoute();
   const queryClient = useQueryClient();
   const query = useInfiniteQuery(
-    useTodoCommentOverviewQueryOptions({ todoId, sort: commentRoute.sort }),
+    useGetTodoCommentOverviewQueryOptions({ todoId, sort: commentRoute.sort }),
   );
   const { color: refreshTint } = useResolveClassNames('text-main');
   const { t } = useTranslation('todoComment');

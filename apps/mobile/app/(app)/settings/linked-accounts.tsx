@@ -1,4 +1,4 @@
-import { PROVIDER_CONFIGS } from '@src/features/auth/constants/provider-configs';
+import { PROVIDER_CONFIGS } from '@src/features/auth/constants/oauth-provider-configs';
 import type { OAuthProvider } from '@src/features/auth/domains/oauth.model';
 import { useLinkedAccounts } from '@src/features/auth/hooks/use-linked-accounts';
 import { useTranslation } from '@src/shared/i18n';
