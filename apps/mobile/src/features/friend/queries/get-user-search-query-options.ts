@@ -2,18 +2,38 @@ import { useFriendService } from '@src/bootstrap/providers/di-context';
 import type { FriendService } from '@src/features/friend/apis/friend.service';
 import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { infiniteQueryOptions } from '@tanstack/react-query';
+import type { Page } from '@src/shared/types/page.type';
+import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { FriendPolicy } from '../domains/friend.model';
+import { FriendPolicy, type SearchedUser } from '../domains/friend.model';
 import { toSearchedUserViewModel } from '../utils/view-models/searched-user.view-model';
 
 type SearchUsersPageParam = { cursor?: string };
 const INITIAL_SEARCH_USERS_PAGE_PARAM: SearchUsersPageParam = {};
 
+type UserSearchData = InfiniteData<Page<SearchedUser>, SearchUsersPageParam>;
+
+export function selectSearchedUserViewModels(data: UserSearchData, fallbackName: string) {
+  return {
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.map((user) => toSearchedUserViewModel(user, fallbackName)),
+    })),
+    pageParams: data.pageParams,
+  };
+}
+
 export function getUserSearchQueryOptions(
   friendService: FriendService,
-  { query, fallbackName }: { query: string; fallbackName: string },
+  {
+    query,
+    select,
+  }: {
+    query: string;
+    select: (data: UserSearchData) => ReturnType<typeof selectSearchedUserViewModels>;
+  },
 ) {
   const trimmed = query.trim();
 
@@ -34,17 +54,17 @@ export function getUserSearchQueryOptions(
       }
       return lastPage.nextCursor === null ? undefined : { cursor: lastPage.nextCursor };
     },
-    select: (data) => ({
-      pages: data.pages.map((page) => ({
-        ...page,
-        items: page.items.map((user) => toSearchedUserViewModel(user, fallbackName)),
-      })),
-      pageParams: data.pageParams,
-    }),
+    select,
   });
 }
 
 export function useGetUserSearchQueryOptions(query: string) {
   const { t } = useTranslation('friend');
-  return getUserSearchQueryOptions(useFriendService(), { query, fallbackName: t('fallbackName') });
+  const fallbackName = t('fallbackName');
+  const select = useCallback(
+    (data: UserSearchData) => selectSearchedUserViewModels(data, fallbackName),
+    [fallbackName],
+  );
+
+  return getUserSearchQueryOptions(useFriendService(), { query, select });
 }

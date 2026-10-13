@@ -1,10 +1,23 @@
 import { useAchievementService } from '@src/bootstrap/providers/di-context';
 import type { AchievementService } from '@src/features/achievement/apis/achievement.service';
 import { unwrap } from '@src/shared/errors/result';
-import { infiniteQueryOptions } from '@tanstack/react-query';
+import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
+import type { WeeklyAchievementsResult } from '../domains/achievement.model';
 import { toWeeklyAchievementViewModel } from '../utils/view-models/weekly-achievement.view-model';
+
+function selectWeeklyAchievementViewModels(
+  data: InfiniteData<WeeklyAchievementsResult, number | undefined>,
+) {
+  return {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.map(toWeeklyAchievementViewModel),
+    })),
+  };
+}
 
 export function getWeeklyAchievementsInfiniteQueryOptions(
   achievementService: AchievementService,
@@ -29,13 +42,7 @@ export function getWeeklyAchievementsInfiniteQueryOptions(
       }
       return lastPage.nextCursor ?? undefined;
     },
-    select: (data) => ({
-      ...data,
-      pages: data.pages.map((page) => ({
-        ...page,
-        items: page.items.map(toWeeklyAchievementViewModel),
-      })),
-    }),
+    select: selectWeeklyAchievementViewModels,
   });
 }
 
