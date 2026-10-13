@@ -4,7 +4,6 @@ import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { type Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -67,10 +66,9 @@ import { TodoActionsBottomSheet } from './todo-actions-bottom-sheet';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
-  const [{ data: categoriesData }, { data: user }, { data: todosData }] = useSuspenseQueries({
+  const [{ data: categoriesData }, { data: todosData }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
-      useGetMeQueryOptions(),
       useGetTodosByDateQueryOptions({ date: formatDate(selectedDate) }),
     ],
   });
@@ -82,7 +80,7 @@ export function TodoList() {
 
   return (
     <Box gap={16}>
-      {canReorderTodos && <ReorderCoachmark accountId={user.id} kind="todo" />}
+      {canReorderTodos && <ReorderCoachmark kind="todo" />}
       {categoryGroups.map((group) => (
         <Box key={group.category.id} gap={8}>
           <CategoryHeader

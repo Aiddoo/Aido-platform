@@ -1,7 +1,6 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/queries/use-reorder-todo-category-mutation-options';
-import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -33,7 +32,6 @@ export function CategoryList({ mode }: CategoryListProps) {
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
   const {
     items: draggableCategories,
@@ -101,7 +99,7 @@ export function CategoryList({ mode }: CategoryListProps) {
       ListHeaderComponent={
         mode === 'reorder' && draggableCategories.length >= 2 ? (
           <Box className="pb-2">
-            <ReorderCoachmark accountId={user.id} kind="category" />
+            <ReorderCoachmark kind="category" />
           </Box>
         ) : undefined
       }
