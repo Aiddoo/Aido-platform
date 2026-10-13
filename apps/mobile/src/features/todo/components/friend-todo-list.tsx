@@ -37,7 +37,7 @@ import { useMemo, useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
-import { toFriendCategoryGroups } from '../utils/view-models/friend-todos.view-model';
+import { toFriendCategoryGroups } from '../utils/group-friend-todos-by-category';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };

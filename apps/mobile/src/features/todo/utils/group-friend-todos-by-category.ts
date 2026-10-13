@@ -1,6 +1,6 @@
 import { groupBy } from 'es-toolkit';
 
-import type { TodoListResult } from '../../domains/todo.model';
+import type { TodoListResult } from '../domains/todo.model';
 
 export function toFriendCategoryGroups(data: TodoListResult) {
   const todos = data.todos;

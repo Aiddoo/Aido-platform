@@ -42,7 +42,7 @@ import { useTodoActions } from '../../hooks/use-todo-actions';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
-import { toTodoCategoryGroups } from '../../utils/view-models/todo-category-group.view-model';
+import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
 import { AddSubTodoBottomSheet } from '../add-sub-todo-bottom-sheet';
 import { AddTodoBottomSheet } from '../add-todo-bottom-sheet';
 import { CategorySelectBottomSheet } from '../category-select-bottom-sheet';

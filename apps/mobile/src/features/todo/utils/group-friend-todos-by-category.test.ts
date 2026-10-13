@@ -1,6 +1,6 @@
-import { createTodoDto } from '../../__tests__/todo.factories';
-import { toTodo } from '../../apis/todo.mapper';
-import { toFriendCategoryGroups } from './friend-todos.view-model';
+import { createTodoDto } from '../__tests__/todo.factories';
+import { toTodo } from '../apis/todo.mapper';
+import { toFriendCategoryGroups } from './group-friend-todos-by-category';
 
 describe('친구 할 일 목록 표시', () => {
   test('조회한 원본을 유지하면서 카테고리와 시간 표시를 조합한다', () => {
