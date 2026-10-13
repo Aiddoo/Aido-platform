@@ -3,6 +3,7 @@ import {
   aiReportResponseSchema,
   aiUsageResponseSchema,
   parseMemoResponseSchema,
+  parseTodoResponseSchema,
   reportStatusResponseSchema,
   suggestionActionResponseSchema,
   suggestionListResponseSchema,
@@ -23,6 +24,7 @@ import type {
   ParsedMemoResult,
   ReportStatus,
 } from '../domains/ai.model';
+import type { ParsedTodoResult } from '../domains/parsed-todo.model';
 import { toAiUsage } from './ai-usage.mapper';
 import {
   toAiReport,
@@ -31,6 +33,7 @@ import {
   toParsedMemoResult,
   toReportStatus,
 } from './ai.mapper';
+import { toParsedTodoResult } from './parsed-todo.mapper';
 
 export class AiService {
   readonly #httpClient: HttpClient;
@@ -54,6 +57,27 @@ export class AiService {
     }
 
     return ok(toAiUsage(parsed.data));
+  };
+
+  parseTodo = async (
+    text: string,
+    categoryId?: number,
+  ): Promise<Result<ParsedTodoResult, ApiError>> => {
+    const result = await this.#httpClient.post('v1/ai/parse-todo', {
+      text,
+      ...(categoryId != null && { categoryId }),
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = parseTodoResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AiService] Invalid parseTodo response: ${parsed.error.message}`);
+    }
+
+    return ok(toParsedTodoResult(parsed.data));
   };
 
   getReportStatus = async (signal?: AbortSignal): Promise<Result<ReportStatus, ApiError>> => {

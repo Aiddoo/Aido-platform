@@ -1,7 +1,6 @@
 import { createMockHttpClient } from '@src/shared/__tests__';
 
 import {
-  createParseTodoResponseDto,
   createTodoApiError,
   createTodoDto,
   createTodoListResponseDto,
@@ -201,51 +200,6 @@ describe('TodoService', () => {
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
-    });
-  });
-
-  // ── parseTodo ────────────────────────────────
-
-  describe('parseTodo', () => {
-    test('정상 응답 → ParsedTodoResult 반환', async () => {
-      // Given
-      const dto = createParseTodoResponseDto();
-      httpClient.post.mockResolvedValue({ ok: true, value: dto });
-
-      // When
-      const result = await service.parseTodo('내일 오전 9시 회의');
-
-      // Then
-      expect(httpClient.post).toHaveBeenCalledWith('v1/ai/parse-todo', {
-        text: '내일 오전 9시 회의',
-      });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.data.startDate).toBeInstanceOf(Date);
-      }
-    });
-
-    test('AI 사용량 초과 → AI_1303 에러', async () => {
-      // Given
-      const apiError = createTodoApiError({
-        code: 'AI_1303',
-        message: 'AI 사용량을 초과했어요',
-      });
-      httpClient.post.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.parseTodo('테스트');
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-
-    test('Zod 검증 실패 → ParseError throw', async () => {
-      // Given
-      httpClient.post.mockResolvedValue({ ok: true, value: INVALID_DTO });
-
-      // When & Then
-      await expect(service.parseTodo('테스트')).rejects.toThrow('Invalid parseTodo response');
     });
   });
 

@@ -5,7 +5,6 @@ import {
   dailyCompletionsRangeResponseSchema,
   deleteTodoResponseSchema,
   type GetTodosQuery,
-  parseTodoResponseSchema,
   type ReorderTodoInput,
   reorderTodoResponseSchema,
   type ToggleTodoCompleteInput,
@@ -24,7 +23,6 @@ import { ok, type Result } from '@src/shared/errors/result';
 
 import type {
   DailyCompletionsResult,
-  ParsedTodoResult,
   Todo,
   TodoDetails,
   TodoSummary,
@@ -32,7 +30,6 @@ import type {
 } from '../domains/todo.model';
 import {
   toDailyCompletionsResult,
-  toParsedTodoResult,
   toTodo,
   toTodoDetails,
   toTodos,
@@ -187,27 +184,6 @@ export class TodoService {
     }
 
     return ok(undefined);
-  };
-
-  parseTodo = async (
-    text: string,
-    categoryId?: number,
-  ): Promise<Result<ParsedTodoResult, ApiError>> => {
-    const result = await this.#httpClient.post('v1/ai/parse-todo', {
-      text,
-      ...(categoryId != null && { categoryId }),
-    });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = parseTodoResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid parseTodo response: ${parsed.error.message}`);
-    }
-
-    return ok(toParsedTodoResult(parsed.data));
   };
 
   getDailyCompletions = async (

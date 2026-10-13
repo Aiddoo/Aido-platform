@@ -1,7 +1,6 @@
 import type {
   DailyCompletionSummary as DailyCompletionSummaryDTO,
   DailyCompletionsRangeResponse,
-  ParseTodoResponse,
   Todo as TodoDto,
   TodoDetailsResponse,
   TodoListResponse,
@@ -11,7 +10,6 @@ import type {
 import type {
   DailyCompletionSummary,
   DailyCompletionsResult,
-  ParsedTodoResult,
   Todo,
   TodoDetails,
   TodoSummary,
@@ -36,25 +34,6 @@ export const toTodo = (dto: TodoDto): Todo => ({
 });
 
 export const toTodos = (dtos: TodoDto[]): Todo[] => dtos.map(toTodo);
-
-export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => ({
-  data: {
-    title: dto.data.title,
-    startDate: new Date(dto.data.startDate),
-    endDate: dto.data.endDate ? new Date(dto.data.endDate) : null,
-    scheduledTime: dto.data.scheduledTime,
-    isAllDay: dto.data.isAllDay,
-    isRecurring: dto.data.isRecurring,
-    recurrence: dto.data.recurrence
-      ? {
-          daysOfWeek: dto.data.recurrence.daysOfWeek,
-          endDate: new Date(dto.data.recurrence.endDate),
-        }
-      : null,
-    ...(dto.data.categoryId != null && { categoryId: dto.data.categoryId }),
-  },
-  meta: dto.meta,
-});
 
 export const toDailyCompletionSummary = (
   dto: DailyCompletionSummaryDTO,

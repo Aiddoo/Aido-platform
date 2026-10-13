@@ -2,6 +2,7 @@ import type { DayOfWeek } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
+import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
@@ -50,7 +51,6 @@ import { type AddTodoFormInput, addTodoFormSchema } from '../domains/add-todo-fo
 import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories-query-options';
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
-import { useParseTodoMutationOptions } from '../queries/use-parse-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toMemoConversionInput } from '../utils/to-memo-conversion-input';

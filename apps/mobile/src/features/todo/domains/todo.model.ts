@@ -1,4 +1,4 @@
-import { dateSchema, dayOfWeekSchema, todoVisibilitySchema } from '@aido/api';
+import { dateSchema, todoVisibilitySchema } from '@aido/api';
 import { z } from 'zod';
 
 import { SubTodoPolicy, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
@@ -43,43 +43,6 @@ export const todoListResultSchema = z.object({
   nextCursor: z.number().nullable(),
 });
 export type TodoListResult = z.infer<typeof todoListResultSchema>;
-
-export const todoRecurrenceSchema = z.object({
-  daysOfWeek: z.array(dayOfWeekSchema).min(1).max(7),
-  endDate: z.date(),
-});
-export type TodoRecurrence = z.infer<typeof todoRecurrenceSchema>;
-
-export const parsedTodoDataSchema = z.object({
-  title: z.string(),
-  startDate: z.date(),
-  endDate: z.date().nullable(),
-  scheduledTime: z.string().nullable(),
-  isAllDay: z.boolean(),
-  isRecurring: z.boolean(),
-  recurrence: todoRecurrenceSchema.nullable(),
-  categoryId: z.number().optional(),
-});
-export type ParsedTodoData = z.infer<typeof parsedTodoDataSchema>;
-
-export const tokenUsageSchema = z.object({
-  input: z.number(),
-  output: z.number(),
-});
-export type TokenUsage = z.infer<typeof tokenUsageSchema>;
-
-export const parseTodoMetaSchema = z.object({
-  model: z.string(),
-  processingTimeMs: z.number(),
-  tokenUsage: tokenUsageSchema,
-});
-export type ParseTodoMeta = z.infer<typeof parseTodoMetaSchema>;
-
-export const parsedTodoResultSchema = z.object({
-  data: parsedTodoDataSchema,
-  meta: parseTodoMetaSchema,
-});
-export type ParsedTodoResult = z.infer<typeof parsedTodoResultSchema>;
 
 export const dailyCompletionSummaryClientSchema = z.object({
   date: z.string(),
