@@ -4,11 +4,11 @@ import {
   friendScreenParamsSchema,
   useFriendScreenParams,
 } from '@src/features/friend/hooks/use-friend-screen-params';
+import { PokeBanner } from '@src/features/nudge/components/poke-banner';
 import { invalidateNudges } from '@src/features/nudge/queries/nudge-cache';
 import { Calendar } from '@src/features/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/todo/components/calendar/friend-calendar';
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
-import { PokeBanner } from '@src/features/todo/components/poke-banner';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { invalidateFriendTodos } from '@src/features/todo/queries/todo-cache';

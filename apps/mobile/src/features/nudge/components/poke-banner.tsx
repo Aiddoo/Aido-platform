@@ -1,7 +1,5 @@
 import aidoBannerImage from '@assets/images/aido_banner.webp';
 import aidoNoBannerImage from '@assets/images/aido_no_banner.webp';
-import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
-import { useGetTodoNudgeLimitQueryOptions } from '@src/features/nudge/queries/get-todo-nudge-limit-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,6 +15,9 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 import { Image, Pressable } from 'react-native';
 import { match } from 'ts-pattern';
+
+import { TodoNudgePolicy } from '../domains/todo-nudge.model';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 
 export function PokeBanner() {
   const { t } = useTranslation('todo');
