@@ -22,3 +22,7 @@ export function patchSearchedUser(
       },
   );
 }
+
+export function invalidateFriends(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.all });
+}

@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { Todo, TodoListResult } from '../domains/todo.model';
 
@@ -84,4 +85,28 @@ export function restoreTodo(queryClient: QueryClient, snapshot: TodoSnapshot) {
       };
     },
   );
+}
+
+/** 다른 피처가 할 일을 만들거나 바꾼 뒤 할 일·카테고리 화면을 다시 불러온다. */
+export function invalidateTodos(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all }),
+    queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all }),
+  ]);
+}
+
+export function invalidateTodoDetails(queryClient: QueryClient, { todoId }: { todoId: number }) {
+  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
+}
+
+/** 댓글 수처럼 목록·친구 목록·상세에 함께 보이는 할 일 요약 값을 다시 불러온다. */
+export async function invalidateTodoSummaries(
+  queryClient: QueryClient,
+  { todoId }: { todoId: number },
+): Promise<void> {
+  await Promise.all([
+    invalidateTodoDetails(queryClient, { todoId }),
+    queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
+    queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
+  ]);
 }

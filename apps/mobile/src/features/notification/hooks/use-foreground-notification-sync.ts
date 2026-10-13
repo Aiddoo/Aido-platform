@@ -1,6 +1,6 @@
 import { pushNotificationDataSchema } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
-import { FRIEND_QUERY_KEYS } from '@src/features/friend/constants/friend-query-keys';
+import { invalidateFriends } from '@src/features/friend/queries/friend-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
@@ -51,7 +51,7 @@ export function useForegroundNotificationSync({
           tasks.push(invalidateNudgeInteractions(queryClient));
         }
         if (type === 'FOLLOW_NEW' || type === 'FOLLOW_ACCEPTED') {
-          tasks.push(queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.all }));
+          tasks.push(invalidateFriends(queryClient));
         }
 
         Promise.all(tasks).catch((error) =>

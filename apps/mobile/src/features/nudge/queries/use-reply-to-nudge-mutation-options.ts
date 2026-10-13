@@ -1,6 +1,6 @@
 import type { ReplyToNudgeInput } from '@aido/api';
 import { useErrorReporter, useTodoNudgeService } from '@src/bootstrap/providers/di-context';
-import { NOTIFICATION_QUERY_KEYS } from '@src/features/notification/constants/notification-query-keys';
+import { invalidateNotifications } from '@src/features/notification/queries/notification-cache';
 import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError, unwrap } from '@src/shared/errors';
@@ -20,7 +20,7 @@ export function useReplyToNudgeMutationOptions() {
       queryClient.setQueryData(NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }), data);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() }),
-        queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
+        invalidateNotifications(queryClient),
       ]);
     },
     onError: (error) => {

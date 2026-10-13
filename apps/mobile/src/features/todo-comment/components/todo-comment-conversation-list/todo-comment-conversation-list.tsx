@@ -1,6 +1,6 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { invalidateTodoDetails } from '@src/features/todo/queries/todo-cache';
 import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -446,7 +446,7 @@ export function TodoCommentConversationList({
     useCallback(
       () =>
         Promise.all([
-          queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) }),
+          invalidateTodoDetails(queryClient, { todoId }),
           queryClient.invalidateQueries({
             queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
           }),

@@ -2,8 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useAiService, useLogger } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
+import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -40,8 +39,7 @@ export const useHandleSuggestionMutationOptions = () => {
 
       if (input.action === 'accept') {
         recordTodoCreatedForActivation({ queryClient, service: activationService });
-        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
-        queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+        invalidateTodos(queryClient);
       }
 
       toast.success(

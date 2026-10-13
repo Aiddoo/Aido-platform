@@ -1,4 +1,4 @@
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
+import { invalidateTodoSummaries } from '@src/features/todo/queries/todo-cache';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
@@ -39,11 +39,7 @@ export async function invalidateTodoCommentQueries({
   ];
 
   if (invalidatesTodoCount) {
-    invalidations.push(
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) }),
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
-    );
+    invalidations.push(invalidateTodoSummaries(queryClient, { todoId }));
   }
 
   await Promise.all(invalidations);

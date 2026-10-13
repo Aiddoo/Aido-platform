@@ -98,3 +98,7 @@ export function restoreNotificationCache(
     queryClient.setQueryData(queryKey, data);
   }
 }
+
+export function invalidateNotifications(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
+}
