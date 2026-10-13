@@ -78,21 +78,20 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 ## 파일 구조
 
 ```
-BottomSheet/
-├── BottomSheet.tsx          # gorhom 기반 기본 바텀시트
-├── KeyboardBottomSheet.tsx  # gorhom 기반 키보드 연동 바텀시트
-├── ModalBottomSheet.tsx     # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
-├── StackedBottomSheetModal.tsx # gorhom modal 기반 중첩 시트
-├── useAndroidSheetBackHandler.ts # 열린 시트의 시스템 뒤로가기 구독과 정리
-├── motion.ts                # 모션 감소용 애니메이션 시간 해석
-├── constants.ts             # 공유 스타일, 상수
-├── index.ts                 # barrel export
-└── BottomSheet.md           # 이 문서
+bottom-sheet/
+├── bottom-sheet.tsx                   # gorhom 기반 기본 바텀시트
+├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
+├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
+├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
+├── motion.ts                          # 모션 감소용 애니메이션 시간 해석
+├── constants.ts                       # 공유 스타일, 상수
+├── index.ts                           # barrel export
+└── bottom-sheet.md                    # 이 문서
 ```
 
 ## Android 뒤로가기와 정리 (1.11.0)
 
-열린 `BottomSheet`, `KeyboardBottomSheet`, `StackedBottomSheetModal`, `ModalBottomSheet`는
+열린 `BottomSheet`, `KeyboardBottomSheet`, `ModalBottomSheet`는
 공용 `useAndroidSheetBackHandler`에서 시스템 뒤로가기를 소비한다. 가장 마지막에 열린 시트가
 먼저 닫히며, 닫힘 이후에는 기존 Expo Router 화면 뒤로가기가 이어진다. 절대 위치
 `ModalBottomSheet`는 종료 애니메이션 중에도 이벤트를 소비해 같은 입력이 아래 화면까지
@@ -100,7 +99,6 @@ BottomSheet/
 
 `KeyboardBottomSheet`의 내용 크기·키보드 변경은 하나의 예약 resize frame으로 모은다.
 시트가 닫히거나 unmount되면 frame을 취소하고, forceClose 재시도 timer도 정리한다.
-`useBottomSheetModal.close()`는 아직 실행되지 않은 `present()` frame을 취소한다.
 키보드 시트의 index·최소 높이·상단 여백은 `constants.ts`를 재사용한다.
 
 전역 `OverlayProvider`의 선택적 `resetKey`에는 bootstrap에서 `usePathname()`을 전달한다.

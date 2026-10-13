@@ -1,6 +1,5 @@
 import type { UpdateTodoCategoryInput } from '@aido/api';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
-import { isTodoCategoryError } from '@src/features/todo/domains/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/domains/todo-category.model';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -50,7 +49,6 @@ export const useUpdateTodoCategoryMutationOptions = () => {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       toast.success(t('todo:toast.categoryUpdated'));
@@ -65,7 +63,7 @@ export const useUpdateTodoCategoryMutationOptions = () => {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      if (isTodoCategoryError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }

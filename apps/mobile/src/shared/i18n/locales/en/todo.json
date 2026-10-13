@@ -24,8 +24,6 @@
     "retryLater": "Please try again in a moment"
   },
   "errors": {
-    "categoryValidationFailed": "Please try again",
-    "todoValidationFailed": "The response format is invalid",
     "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
     "nudgeMessageTooLong_other": "Your message can be up to {{count}} characters"
   },

@@ -2,7 +2,6 @@ import type { CreateTodoCategoryInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
-import { isTodoCategoryError } from '@src/features/todo/domains/todo-category.error';
 import type {
   OptimisticTodoCategoryWithCount,
   TodoCategoriesResult,
@@ -73,7 +72,7 @@ export const useCreateTodoCategoryMutationOptions = () => {
         return;
       }
 
-      if (isTodoCategoryError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }

@@ -31,12 +31,6 @@ export type Todo = z.infer<typeof todoSchema>;
 const optimisticTodoSchema = todoSchema.extend({ optimistic: z.literal(true).readonly() });
 export type OptimisticTodo = z.infer<typeof optimisticTodoSchema>;
 
-export const todosByDateSchema = z.object({
-  date: z.string(),
-  todos: z.array(todoSchema),
-});
-export type TodosByDate = z.infer<typeof todosByDateSchema>;
-
 export const todoListResultSchema = z.object({
   todos: z.array(todoSchema),
   hasNext: z.boolean(),

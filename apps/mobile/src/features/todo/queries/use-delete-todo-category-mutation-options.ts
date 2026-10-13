@@ -2,7 +2,6 @@ import type { DeleteTodoCategoryQuery } from '@aido/api';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
-import { isTodoCategoryError } from '@src/features/todo/domains/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/domains/todo-category.model';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -63,7 +62,7 @@ export const useDeleteTodoCategoryMutationOptions = () => {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 
-      if (isTodoCategoryError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }

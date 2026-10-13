@@ -10,7 +10,6 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { isTodoError } from '../domains/todo.error';
 
 interface UpdateTodoScheduleMutationParams {
   todoId: number;
@@ -36,7 +35,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      if (isTodoError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }

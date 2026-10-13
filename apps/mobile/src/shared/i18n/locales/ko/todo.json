@@ -24,8 +24,6 @@
     "retryLater": "잠시 후 다시 시도해 주세요"
   },
   "errors": {
-    "categoryValidationFailed": "다시 시도해 주세요",
-    "todoValidationFailed": "응답 형식이 올바르지 않아요",
     "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
   },
   "form": {

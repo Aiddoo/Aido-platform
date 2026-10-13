@@ -9,7 +9,6 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import { isTodoError } from '../domains/todo.error';
 import type { TodoListResult } from '../domains/todo.model';
 
 interface DeleteTodoMutationParams {
@@ -61,7 +60,7 @@ export const useDeleteTodoMutationOptions = () => {
         );
       }
 
-      if (isTodoError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }
@@ -70,7 +69,6 @@ export const useDeleteTodoMutationOptions = () => {
     onSettled: (_data, _error, { startDate }) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
     },
   });

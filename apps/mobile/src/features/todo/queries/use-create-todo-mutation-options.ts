@@ -16,7 +16,6 @@ import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoCategoriesResult } from '../domains/todo-category.model';
-import { isTodoError } from '../domains/todo.error';
 import type { OptimisticTodo, TodoListResult } from '../domains/todo.model';
 
 export interface CreateTodoParams {
@@ -96,7 +95,6 @@ export const useCreateTodoMutationOptions = () => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success(t('todo:toast.todoAdded'));
       trackEvent('todo_created', {
@@ -131,7 +129,7 @@ export const useCreateTodoMutationOptions = () => {
         return;
       }
 
-      if (isTodoError(error) || isApiError(error)) {
+      if (isApiError(error)) {
         toast.error(error.message);
         return;
       }

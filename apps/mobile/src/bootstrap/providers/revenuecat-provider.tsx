@@ -9,7 +9,7 @@ import { type PropsWithChildren, useCallback, useEffect, useRef } from 'react';
 import Purchases, { type CustomerInfo } from 'react-native-purchases';
 
 import { useAuth } from './auth-provider';
-import { useRevenueCatSdkManager } from './di-provider';
+import { useRevenueCatSdkManager } from './di-context';
 
 export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
   const { status } = useAuth();

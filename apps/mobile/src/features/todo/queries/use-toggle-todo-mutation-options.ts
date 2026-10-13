@@ -90,7 +90,6 @@ export const useToggleTodoMutationOptions = () => {
     onSettled: (_data, _error, { startDate, todoId }) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) });
       invalidateNudgeInteractions(queryClient);
     },

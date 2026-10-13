@@ -107,10 +107,7 @@ export const useDI = (): DIContainer => {
 
 // Infrastructure Hooks
 export const useLocationGateway = () => useDI().locationGateway;
-export const useStorage = () => useDI().storage;
 export const useTokenStore = () => useDI().tokenStore;
-export const useSessionManager = () => useDI().sessionManager;
-export const useTokenRefresher = () => useDI().tokenRefresher;
 export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;

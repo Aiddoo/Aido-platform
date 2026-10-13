@@ -99,26 +99,6 @@ export class TodoNudgeService {
     return ok(toNudgeLimitInfo(parsed.data));
   };
 
-  getCooldownInfoForUser = async (
-    userId: string,
-    signal?: AbortSignal,
-  ): Promise<Result<NudgeCooldownInfo, ApiError>> => {
-    const result = await this.#httpClient.get(`v1/nudges/cooldown/${userId}`, { signal });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = nudgeCooldownInfoSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[TodoNudgeService] Invalid getCooldownInfo response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toNudgeCooldownInfo(parsed.data));
-  };
-
   sendRemindNudge = async (
     input: SendRemindNudgeInput,
   ): Promise<Result<SendTodoNudgeResult, TodoNudgeServiceError>> => {

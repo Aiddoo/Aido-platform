@@ -2,7 +2,6 @@ import { createMockHttpClient } from '@src/shared/__tests__';
 
 import {
   createNudgeApiError,
-  createNudgeCooldownInfoDto,
   createNudgeLimitInfoDto,
   createSendNudgeResponseDto,
   INVALID_DTO,
@@ -144,40 +143,6 @@ describe('TodoNudgeService', () => {
 
       // When
       const result = await service.getLimitInfo();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
-    });
-  });
-
-  // ── getCooldownInfoForUser ───────────────────
-
-  describe('getCooldownInfoForUser', () => {
-    test('정상 응답 → NudgeCooldownInfo 반환', async () => {
-      // Given
-      const dto = createNudgeCooldownInfoDto();
-      httpClient.get.mockResolvedValue({ ok: true, value: dto });
-
-      // When
-      const result = await service.getCooldownInfoForUser('user-1');
-
-      // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/nudges/cooldown/user-1', {
-        signal: undefined,
-      });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.canNudge).toBe(true);
-      }
-    });
-
-    test('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const apiError = createNudgeApiError();
-      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.getCooldownInfoForUser('user-1');
 
       // Then
       expect(result).toEqual({ ok: false, error: apiError });
