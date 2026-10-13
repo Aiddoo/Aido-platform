@@ -1,7 +1,15 @@
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
 import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
-import { SettingsTimePicker } from '@src/features/notification/components/settings/settings-time-picker';
-import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import {
+  type ClockTime,
+  SettingsTimeInput,
+} from '@src/features/notification/components/settings/settings-time-input';
+import {
+  type Preference,
+  PreferencePolicy,
+} from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
@@ -14,7 +22,7 @@ import {
   usePremiumDialog,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
@@ -30,16 +38,16 @@ export default function ReminderSettingsScreen() {
           <Suspense fallback={<GroupSkeleton rows={2} />}>
             <VStack gap={24}>
               <SettingsCard>
-                <ReminderTimePicker
+                <ReminderTimeInput
                   label={t('settings.reminderMorningLabel')}
                   description={t('settings.reminderMorningDescription')}
-                  field="morning"
+                  period="morning"
                 />
                 <Separator className="bg-gray-2" />
-                <ReminderTimePicker
+                <ReminderTimeInput
                   label={t('settings.reminderEveningLabel')}
                   description={t('settings.reminderEveningDescription')}
-                  field="evening"
+                  period="evening"
                 />
               </SettingsCard>
             </VStack>
@@ -50,44 +58,68 @@ export default function ReminderSettingsScreen() {
   );
 }
 
-function ReminderTimePicker({
+const REMINDER_TIME = {
+  morning: {
+    range: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
+    read: (preference: Preference): ClockTime => ({
+      hour: preference.morningReminderHour,
+      minute: preference.morningReminderMinute,
+    }),
+    toInput: ({ hour, minute }: ClockTime) => ({
+      morningReminderHour: hour,
+      morningReminderMinute: minute,
+    }),
+  },
+  evening: {
+    range: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
+    read: (preference: Preference): ClockTime => ({
+      hour: preference.eveningReminderHour,
+      minute: preference.eveningReminderMinute,
+    }),
+    toInput: ({ hour, minute }: ClockTime) => ({
+      eveningReminderHour: hour,
+      eveningReminderMinute: minute,
+    }),
+  },
+} as const;
+
+function ReminderTimeInput({
   label,
   description,
-  field,
+  period,
 }: {
   label: string;
   description: string;
-  field: 'morning' | 'evening';
+  period: keyof typeof REMINDER_TIME;
 }) {
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const { t } = useTranslation('notification');
   const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
-  const { t } = useTranslation('notification');
+  const [{ data: user }, { data: preference }] = useSuspenseQueries({
+    queries: [useGetMeQueryOptions(), useGetPreferenceQueryOptions()],
+  });
+  const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
+  const isPremium = UserPolicy.isPremiumUser(user);
+  const time = REMINDER_TIME[period];
 
   return (
-    <SettingsTimePicker
+    <SettingsTimeInput
       label={label}
       description={description}
-      field={field}
-      getHour={(p) => (field === 'morning' ? p.morningReminderHour : p.eveningReminderHour)}
-      getMinute={(p) => (field === 'morning' ? p.morningReminderMinute : p.eveningReminderMinute)}
-      buildMutationInput={(h, m) =>
-        field === 'morning'
-          ? { morningReminderHour: h, morningReminderMinute: m }
-          : { eveningReminderHour: h, eveningReminderMinute: m }
-      }
-      isDisabled={PreferencePolicy.isPushDisabled}
+      value={time.read(preference)}
+      onChange={(value) => updatePreference.mutate(time.toInput(value))}
+      {...time.range}
+      timeFormat={preference.timeFormat}
+      isDisabled={PreferencePolicy.isPushDisabled(preference) || updatePreference.isPending}
+      accessory={isPremium ? undefined : <CrownIcon width={14} height={14} />}
       onBeforeOpen={() => {
-        if (!UserPolicy.isPremiumUser(user)) {
-          trackEvent('premium_gate_shown', { feature: 'reminder_time' });
-          premiumDialog.open({
-            description: t('settings.reminderPremium'),
-          });
-          return false;
+        if (isPremium) {
+          return true;
         }
-        return true;
+        trackEvent('premium_gate_shown', { feature: 'reminder_time' });
+        premiumDialog.open({ description: t('settings.reminderPremium') });
+        return false;
       }}
-      accessory={!UserPolicy.isPremiumUser(user) ? <CrownIcon width={14} height={14} /> : undefined}
     />
   );
 }

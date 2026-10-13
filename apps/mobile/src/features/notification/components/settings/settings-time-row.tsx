@@ -3,11 +3,13 @@ import { cn } from '@src/shared/utils/cn';
 import { formatReminderTime, type TimeFormat } from '@src/shared/utils/time';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+import type { PressableProps } from 'react-native';
 
-interface SettingsTimeRowProps extends Pick<
+interface SettingsTimeRowProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
-  'onPress' | 'isDisabled'
+  'children' | 'onPress'
 > {
+  onPress?: PressableProps['onPress'];
   label: string;
   description: string;
   hour: number;
@@ -24,10 +26,17 @@ export function SettingsTimeRow({
   timeFormat,
   isDisabled,
   accessory,
-  onPress,
+  className,
+  ...pressableProps
 }: SettingsTimeRowProps) {
   return (
-    <PressableFeedback onPress={onPress} isDisabled={isDisabled} className="rounded-lg">
+    <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      isDisabled={isDisabled}
+      className={cn('rounded-lg', className)}
+      {...pressableProps}
+    >
       <PressableFeedback.Highlight className="rounded-lg" />
       <HStack justify="between" align="center" className={cn(isDisabled && 'opacity-40')} gap={20}>
         <VStack className="flex-1">

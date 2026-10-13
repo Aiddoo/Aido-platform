@@ -1,9 +1,12 @@
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
 import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
-import { SettingsTimePicker } from '@src/features/notification/components/settings/settings-time-picker';
+import {
+  type ClockTime,
+  SettingsTimeInput,
+} from '@src/features/notification/components/settings/settings-time-input';
 import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import {
-  isWeatherEnabled,
+  type Preference,
   PreferencePolicy,
 } from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
@@ -32,7 +35,7 @@ function WeatherSettingsScreen() {
               ? t('auth:preference.enablePushFirst')
               : t('settings.weatherDescription')
           }
-          isSelected={isWeatherEnabled(preference)}
+          isSelected={PreferencePolicy.isWeatherEnabled(preference)}
           onSelectedChange={(enabled) =>
             updateMutation.mutate({
               weatherMorningEnabled: enabled,
@@ -43,16 +46,16 @@ function WeatherSettingsScreen() {
           isDisabled={pushDisabled}
         />
         <Separator className="bg-gray-2" />
-        <WeatherTimePicker
+        <WeatherTimeInput
           label={t('settings.weatherMorningLabel')}
           description={t('settings.weatherMorningDescription')}
-          field="morning"
+          period="morning"
         />
         <Separator className="bg-gray-2" />
-        <WeatherTimePicker
+        <WeatherTimeInput
           label={t('settings.weatherEveningLabel')}
           description={t('settings.weatherEveningDescription')}
-          field="evening"
+          period="evening"
         />
       </SettingsCard>
     </VStack>
@@ -63,28 +66,53 @@ WeatherSettingsScreen.Loading = function Loading() {
   return <GroupSkeleton rows={3} />;
 };
 
-function WeatherTimePicker({
+const WEATHER_TIME = {
+  morning: {
+    range: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
+    read: (preference: Preference): ClockTime => ({
+      hour: preference.weatherMorningHour,
+      minute: preference.weatherMorningMinute,
+    }),
+    toInput: ({ hour, minute }: ClockTime) => ({
+      weatherMorningHour: hour,
+      weatherMorningMinute: minute,
+    }),
+  },
+  evening: {
+    range: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
+    read: (preference: Preference): ClockTime => ({
+      hour: preference.weatherEveningHour,
+      minute: preference.weatherEveningMinute,
+    }),
+    toInput: ({ hour, minute }: ClockTime) => ({
+      weatherEveningHour: hour,
+      weatherEveningMinute: minute,
+    }),
+  },
+} as const;
+
+function WeatherTimeInput({
   label,
   description,
-  field,
+  period,
 }: {
   label: string;
   description: string;
-  field: 'morning' | 'evening';
+  period: keyof typeof WEATHER_TIME;
 }) {
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
+  const time = WEATHER_TIME[period];
+
   return (
-    <SettingsTimePicker
+    <SettingsTimeInput
       label={label}
       description={description}
-      field={field}
-      getHour={(p) => (field === 'morning' ? p.weatherMorningHour : p.weatherEveningHour)}
-      getMinute={(p) => (field === 'morning' ? p.weatherMorningMinute : p.weatherEveningMinute)}
-      buildMutationInput={(h, m) =>
-        field === 'morning'
-          ? { weatherMorningHour: h, weatherMorningMinute: m }
-          : { weatherEveningHour: h, weatherEveningMinute: m }
-      }
-      isDisabled={PreferencePolicy.isWeatherDisabled}
+      value={time.read(preference)}
+      onChange={(value) => updatePreference.mutate(time.toInput(value))}
+      {...time.range}
+      timeFormat={preference.timeFormat}
+      isDisabled={PreferencePolicy.isWeatherDisabled(preference) || updatePreference.isPending}
     />
   );
 }
