@@ -27,7 +27,7 @@ import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import times from 'es-toolkit/compat/times';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useMemo, useState } from 'react';

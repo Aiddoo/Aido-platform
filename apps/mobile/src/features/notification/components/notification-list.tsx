@@ -14,7 +14,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import times from 'es-toolkit/compat/times';
+import { times } from 'es-toolkit/compat';
 import { Separator, Skeleton, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';

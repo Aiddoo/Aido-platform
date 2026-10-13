@@ -30,7 +30,7 @@ import {
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import times from 'es-toolkit/compat/times';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useMemo, useState } from 'react';
