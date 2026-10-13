@@ -51,7 +51,7 @@ export default function WeatherDetailScreen() {
   const forecast = forecastQuery.data;
   const conditions = conditionsQuery.data;
   const retryForecast = () => {
-    void forecastQuery.refetch();
+    forecastQuery.refetch();
   };
 
   if (session.status === 'unsupported') {
@@ -61,7 +61,7 @@ export default function WeatherDetailScreen() {
         description={t('weather:screen.domesticOnlyDescription')}
         action={t('weather:screen.refreshLocation')}
         onPress={() => {
-          void session.syncLocation(true);
+          session.syncLocation(true);
         }}
       />
     );
@@ -78,8 +78,9 @@ export default function WeatherDetailScreen() {
       session.status === 'unregistered' ||
       session.status === 'denied' ||
       (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902))
-    )
+    ) {
       return <WeatherLocationPrompt />;
+    }
     if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901)) {
       return (
         <WeatherDetailScreen.Empty
@@ -109,8 +110,8 @@ export default function WeatherDetailScreen() {
           tintColor={palette.text}
           refreshing={forecastQuery.isFetching && !forecastQuery.isPending}
           onRefresh={() => {
-            void forecastQuery.refetch();
-            void conditionsQuery.refetch();
+            forecastQuery.refetch();
+            conditionsQuery.refetch();
           }}
         />
       }
@@ -155,9 +156,9 @@ export default function WeatherDetailScreen() {
           </Text>
           <Result.Button
             onPress={() => {
-              void session.syncLocation(true);
-              void forecastQuery.refetch();
-              void conditionsQuery.refetch();
+              session.syncLocation(true);
+              forecastQuery.refetch();
+              conditionsQuery.refetch();
             }}
           >
             {t('common:actions.retry')}
@@ -179,7 +180,7 @@ function WeatherLocation() {
       </Text>
       <TouchableOpacity
         onPress={() => {
-          void session.syncLocation(true);
+          session.syncLocation(true);
         }}
         disabled={session.isSyncing}
         accessibilityRole="button"
@@ -469,7 +470,9 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
-  if (sunrise == null && sunset == null) return null;
+  if (sunrise == null && sunset == null) {
+    return null;
+  }
 
   return (
     <VStack
@@ -516,7 +519,9 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
-  if (pm10 == null && pm25 == null) return null;
+  if (pm10 == null && pm25 == null) {
+    return null;
+  }
 
   return (
     <VStack
@@ -555,20 +560,40 @@ function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) 
 
 function getDustGrade(value: number, type: 'pm10' | 'pm25'): string {
   const thresholds = type === 'pm10' ? ([30, 80, 150] as const) : ([15, 35, 75] as const);
-  if (value <= thresholds[0]) return globalT('weather:dust.good');
-  if (value <= thresholds[1]) return globalT('weather:dust.normal');
-  if (value <= thresholds[2]) return globalT('weather:dust.bad');
+  if (value <= thresholds[0]) {
+    return globalT('weather:dust.good');
+  }
+  if (value <= thresholds[1]) {
+    return globalT('weather:dust.normal');
+  }
+  if (value <= thresholds[2]) {
+    return globalT('weather:dust.bad');
+  }
   return globalT('weather:dust.veryBad');
 }
 
 function getTempColor(temp: number): string {
-  if (temp >= 35) return '#FF3B30';
-  if (temp >= 30) return '#FF8A80';
-  if (temp >= 25) return '#FF9500';
-  if (temp >= 20) return '#F5C842';
-  if (temp >= 15) return '#8BC34A';
-  if (temp >= 10) return '#4FC3F7';
-  if (temp >= 5) return '#A0D8FF';
+  if (temp >= 35) {
+    return '#FF3B30';
+  }
+  if (temp >= 30) {
+    return '#FF8A80';
+  }
+  if (temp >= 25) {
+    return '#FF9500';
+  }
+  if (temp >= 20) {
+    return '#F5C842';
+  }
+  if (temp >= 15) {
+    return '#8BC34A';
+  }
+  if (temp >= 10) {
+    return '#4FC3F7';
+  }
+  if (temp >= 5) {
+    return '#A0D8FF';
+  }
   return '#2196F3';
 }
 

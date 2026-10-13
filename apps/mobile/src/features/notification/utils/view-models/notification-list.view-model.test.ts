@@ -6,7 +6,9 @@ describe('알림 목록 날짜 섹션', () => {
   test('자정이 지나면 같은 캐시 데이터의 오늘 섹션이 어제로 바뀐다', () => {
     // Given
     const dto = createNotificationListResponseDto().notifications[0];
-    if (dto === undefined) throw new Error('알림 fixture가 필요합니다');
+    if (dto === undefined) {
+      throw new Error('알림 fixture가 필요합니다');
+    }
     const notification = { ...toNotification(dto), createdAt: new Date(2026, 9, 4, 23, 59) };
     // When
     const before = toNotificationListItems([notification], new Date(2026, 9, 4, 23, 59));
@@ -20,7 +22,9 @@ describe('알림 목록 날짜 섹션', () => {
   test('같은 날짜 그룹은 헤더를 한 번만 만들고 원래 알림 순서를 유지한다', () => {
     // Given
     const dto = createNotificationListResponseDto().notifications[0];
-    if (dto === undefined) throw new Error('알림 fixture가 필요합니다');
+    if (dto === undefined) {
+      throw new Error('알림 fixture가 필요합니다');
+    }
     const first = { ...toNotification(dto), id: 2, createdAt: new Date(2026, 9, 4, 13) };
     const second = { ...first, id: 1 };
     // When

@@ -17,7 +17,9 @@ export function toNotificationListItems(
   );
   return Object.values(sections).flatMap((items): NotificationListItem[] => {
     const first = items[0];
-    if (first === undefined) return [];
+    if (first === undefined) {
+      return [];
+    }
     return [
       { type: 'header', section: getDateSectionKey(first.createdAt, referenceDate) },
       ...items.map((notification) => ({ type: 'item' as const, notification })),

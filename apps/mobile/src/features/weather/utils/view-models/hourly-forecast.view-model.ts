@@ -16,10 +16,14 @@ export function toUpcomingHourlyForecasts(
   let previousHour = -1;
 
   return forecasts.flatMap((forecast) => {
-    if (forecast.hour < previousHour) dayOffset += 1;
+    if (forecast.hour < previousHour) {
+      dayOffset += 1;
+    }
     previousHour = forecast.hour;
 
-    if (dayOffset === 0 && forecast.hour < currentHour) return [];
+    if (dayOffset === 0 && forecast.hour < currentHour) {
+      return [];
+    }
 
     return [{ ...forecast, id: `${dayOffset}-${forecast.hour}`, dayOffset }];
   });

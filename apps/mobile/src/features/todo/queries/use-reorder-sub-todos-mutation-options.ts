@@ -31,11 +31,15 @@ export const useReorderSubTodosMutationOptions = () => {
       );
 
       queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return {
           ...old,
           todos: old.todos.map((todo) => {
-            if (todo.id !== todoId) return todo;
+            if (todo.id !== todoId) {
+              return todo;
+            }
             const reordered = subTodoIds
               .map((id) => todo.subTodos.find((st) => st.id === id))
               .filter((st) => st != null);

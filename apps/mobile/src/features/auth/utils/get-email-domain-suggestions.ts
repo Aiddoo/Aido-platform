@@ -9,11 +9,15 @@ const EMAIL_DOMAINS = [
 
 export const getEmailDomainSuggestions = (email: string) => {
   const atIndex = email.lastIndexOf('@');
-  if (atIndex < 1) return [];
+  if (atIndex < 1) {
+    return [];
+  }
 
   const localPart = email.slice(0, atIndex);
   const domainPart = email.slice(atIndex + 1).toLowerCase();
-  if (EMAIL_DOMAINS.some((domain) => domain === domainPart)) return [];
+  if (EMAIL_DOMAINS.some((domain) => domain === domainPart)) {
+    return [];
+  }
 
   return EMAIL_DOMAINS.filter((domain) => domain.startsWith(domainPart))
     .slice(0, 3)

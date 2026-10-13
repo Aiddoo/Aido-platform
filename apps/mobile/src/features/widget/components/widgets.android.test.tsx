@@ -29,7 +29,9 @@ type WidgetNode = { type: string; props: NodeProps };
 // The native tree collector invokes local components directly, without a React root.
 function collect(node: ReactNode, result: WidgetNode[] = []): WidgetNode[] {
   Children.forEach(node, (child) => {
-    if (!isValidElement<NodeProps>(child)) return;
+    if (!isValidElement<NodeProps>(child)) {
+      return;
+    }
     if (typeof child.type === 'function') {
       const component = child.type as (props: NodeProps) => ReactNode;
       collect(component(child.props), result);
@@ -101,7 +103,9 @@ function render(
   userId: string | null = 'user-42',
 ) {
   const representation = renderAndroidWidget(props, info, userId);
-  if (!('light' in representation)) throw new Error('Theme variants missing');
+  if (!('light' in representation)) {
+    throw new Error('Theme variants missing');
+  }
   return collect(representation[mode]);
 }
 
@@ -156,7 +160,9 @@ describe('Android 위젯 표시 계약', () => {
     } else {
       expect(texts(nodes)).toContain('＋ 할 일 만들기');
     }
-    if (rows === 4) expect(texts(nodes)).toContain('+4개 더');
+    if (rows === 4) {
+      expect(texts(nodes)).toContain('+4개 더');
+    }
   });
 
   it.each(['ko', 'en'] as const)(

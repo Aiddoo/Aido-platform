@@ -16,17 +16,25 @@ export type WidgetNavigationDestination = z.infer<typeof widgetNavigationDestina
 
 /** URI는 원시값으로만 해석한다. Router·현재 계정·시계는 호출자가 제공한다. */
 export function parseWidgetNavigationUri(uri: string | null): WidgetNavigationDestination | null {
-  if (!uri) return null;
+  if (!uri) {
+    return null;
+  }
 
   try {
     const parsed = new URL(uri);
-    if (!['aido:', 'aido-dev:', 'aido-preview:'].includes(parsed.protocol)) return null;
-    if (parsed.username || parsed.password || parsed.hash || parsed.port) return null;
+    if (!['aido:', 'aido-dev:', 'aido-preview:'].includes(parsed.protocol)) {
+      return null;
+    }
+    if (parsed.username || parsed.password || parsed.hash || parsed.port) {
+      return null;
+    }
 
     const path = `/${parsed.hostname}${parsed.pathname}`.replace(/\/$/, '');
     if (path === '/feed') {
       const parameterKeys = [...parsed.searchParams.keys()];
-      if (new Set(parameterKeys).size !== parameterKeys.length) return null;
+      if (new Set(parameterKeys).size !== parameterKeys.length) {
+        return null;
+      }
       const parameters = Object.fromEntries(parsed.searchParams);
       const result = widgetFeedParametersSchema.safeParse(parameters);
       return result.success ? { kind: 'feed', ...result.data } : null;

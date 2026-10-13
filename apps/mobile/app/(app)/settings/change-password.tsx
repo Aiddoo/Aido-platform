@@ -34,7 +34,9 @@ const ChangePasswordScreen = () => {
 
   const handleNextStep = async () => {
     const isValid = await form.trigger(['currentPassword']);
-    if (isValid) setStep('newPassword');
+    if (isValid) {
+      setStep('newPassword');
+    }
   };
 
   return (
@@ -156,7 +158,9 @@ function NewPasswordStep() {
           try {
             await changePasswordMutation.mutateAsync(data);
           } catch (error) {
-            if (!isBusinessError(error)) showBoundary(error);
+            if (!isBusinessError(error)) {
+              showBoundary(error);
+            }
           }
         })();
       })
@@ -185,7 +189,9 @@ function NewPasswordStep() {
               .delay(ANIMATION.delay.short)
               .withCallback((finished) => {
                 'worklet';
-                if (finished) scheduleOnRN(focusConfirmInput);
+                if (finished) {
+                  scheduleOnRN(focusConfirmInput);
+                }
               })}
           >
             <VStack mb={8}>
@@ -203,7 +209,9 @@ function NewPasswordStep() {
                       default: 'password.mismatch',
                     })}
                     onSubmitEditing={() => {
-                      if (newPasswordConfirm.length > 0 && !error) handleNext();
+                      if (newPasswordConfirm.length > 0 && !error) {
+                        handleNext();
+                      }
                     }}
                   />
                 )}
@@ -226,7 +234,9 @@ function NewPasswordStep() {
                   returnKeyType="next"
                   renderErrorMessage={false}
                   onSubmitEditing={() => {
-                    if (newPassword.length > 0 && !error) handleNext();
+                    if (newPassword.length > 0 && !error) {
+                      handleNext();
+                    }
                   }}
                 />
                 <PasswordStrengthIndicator password={newPassword} />

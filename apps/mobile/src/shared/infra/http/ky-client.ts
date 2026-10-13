@@ -136,7 +136,9 @@ export class KyHttpClient implements HttpClient {
   }
 
   #buildOptions(config?: RequestConfig): Options {
-    if (!config) return {};
+    if (!config) {
+      return {};
+    }
 
     const options: Options = {};
 

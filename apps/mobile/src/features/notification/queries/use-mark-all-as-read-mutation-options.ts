@@ -37,7 +37,7 @@ export const useMarkAllAsReadMutationOptions = () => {
       if (context?.snapshot) {
         restoreNotificationCache(queryClient, context.snapshot);
       }
-      void notificationService.syncBadgeCount();
+      notificationService.syncBadgeCount();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });

@@ -53,7 +53,9 @@ export class WidgetSyncService {
       try {
         const snapshot = createSnapshot();
         const snapshotKey = JSON.stringify({ snapshot: { ...snapshot, updatedAtIso: '' }, userId });
-        if (snapshotKey === this.#lastSnapshotKey) return;
+        if (snapshotKey === this.#lastSnapshotKey) {
+          return;
+        }
 
         await this.#bridge.writeSnapshot(snapshot, userId);
         this.#lastSnapshotKey = snapshotKey;

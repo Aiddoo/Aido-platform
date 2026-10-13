@@ -17,7 +17,9 @@ export function useSendNudgeThanksMutationOptions() {
     mutationFn: async ({ todoId, input }: { todoId: number; input: SendNudgeThanksInput }) =>
       unwrap(await todoNudgeService.sendThanks(todoId, input)),
     onSuccess: async (recipientCount) => {
-      if (recipientCount > 0) trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
+      if (recipientCount > 0) {
+        trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() }),
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
@@ -27,7 +29,7 @@ export function useSendNudgeThanksMutationOptions() {
       if (!isApiError(error)) {
         errorReporter.captureException(toError(error), { feature: 'todo_nudge' });
       }
-      void queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() });
     },
   });
 }

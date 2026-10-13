@@ -107,7 +107,7 @@ function useNotificationPress(notification: Notification) {
       type: notification.type,
       destination: destination.kind,
     });
-    void navigateToDestination(destination).catch((error) =>
+    navigateToDestination(destination).catch((error) =>
       logger.warn('[Notification] Center navigation failed', { error }),
     );
   }, [

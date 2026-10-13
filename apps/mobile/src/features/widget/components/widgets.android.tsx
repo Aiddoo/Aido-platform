@@ -596,9 +596,12 @@ export function renderAndroidWidget(
       props.state === 'loggedOut' ||
       props.state === 'stale' ||
       (props.state === 'empty' && isSmall)
-    )
+    ) {
       return <StateSurface layout={layout} />;
-    if (isSmall) return <SmallSurface layout={layout} />;
+    }
+    if (isSmall) {
+      return <SmallSurface layout={layout} />;
+    }
     return isLarge ? <LargeSurface layout={layout} /> : <MediumSurface layout={layout} />;
   };
   const collection = (dark: boolean) => (

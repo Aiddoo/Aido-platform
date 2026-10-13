@@ -46,7 +46,9 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
   };
 
   const onSubmit = async (data: SignUpFormData) => {
-    if (!data.termsAgreed || !data.privacyAgreed) return;
+    if (!data.termsAgreed || !data.privacyAgreed) {
+      return;
+    }
 
     try {
       const validatedData: RegisterInput = {
@@ -70,7 +72,9 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
         },
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 

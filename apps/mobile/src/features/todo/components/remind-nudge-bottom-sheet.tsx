@@ -58,7 +58,9 @@ export function RemindNudgeBottomSheet({
         },
       );
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 

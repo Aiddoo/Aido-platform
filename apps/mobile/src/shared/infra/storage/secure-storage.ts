@@ -43,7 +43,9 @@ export class SecureStorage implements Storage {
       throw error;
     }
 
-    if (!item) return null;
+    if (!item) {
+      return null;
+    }
 
     try {
       return JSON.parse(item) as T;

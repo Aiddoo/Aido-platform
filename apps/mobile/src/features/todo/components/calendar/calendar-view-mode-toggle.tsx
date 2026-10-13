@@ -34,7 +34,9 @@ export const CalendarViewModeToggle = () => {
   const activeLayout = itemLayouts[value];
 
   useLayoutEffect(() => {
-    if (!activeLayout) return;
+    if (!activeLayout) {
+      return;
+    }
 
     if (!hasAnimated.current) {
       translateX.value = activeLayout.x;

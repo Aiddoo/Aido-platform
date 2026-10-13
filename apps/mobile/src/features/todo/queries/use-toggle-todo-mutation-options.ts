@@ -66,7 +66,7 @@ export const useToggleTodoMutationOptions = () => {
         trackEvent('activation_completed', activationEvent);
       }
       if (variables.body.completed) {
-        void promptAfterSuccessfulCompletion(variables.todoId);
+        promptAfterSuccessfulCompletion(variables.todoId);
       }
     },
     onError: (_error, variables, context) => {

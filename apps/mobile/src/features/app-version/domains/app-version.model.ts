@@ -43,7 +43,9 @@ const compareVersions = (current: string, latest: string): number => {
   const right = latest.split('.').map(Number);
   for (let index = 0; index < 3; index += 1) {
     const difference = (left[index] ?? 0) - (right[index] ?? 0);
-    if (difference !== 0) return difference;
+    if (difference !== 0) {
+      return difference;
+    }
   }
   return 0;
 };

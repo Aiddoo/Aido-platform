@@ -43,7 +43,9 @@ interface TodoRepeatPickerContentProps {
 }
 
 const getInitialSelectedDays = (startDate: Date, daysOfWeek: DayOfWeek[]): DayOfWeek[] => {
-  if (daysOfWeek.length > 0) return daysOfWeek;
+  if (daysOfWeek.length > 0) {
+    return daysOfWeek;
+  }
   const dayOfWeek = getDayOfWeekFromDate(startDate);
   return dayOfWeek ? [dayOfWeek] : [];
 };
@@ -75,7 +77,9 @@ export const TodoRepeatPickerContent = ({
     !hasSelectedDayInRange(startDate, repeatSetting.endDate, repeatSetting.selectedDays);
 
   const handleConfirm = () => {
-    if (isConfirmDisabled) return;
+    if (isConfirmDisabled) {
+      return;
+    }
     onClose({
       type: 'confirm',
       value: {
@@ -89,7 +93,9 @@ export const TodoRepeatPickerContent = ({
   const today = useToday();
 
   const handleCalendarPress = (date: Date) => {
-    if (isBeforeDay(date, today)) return;
+    if (isBeforeDay(date, today)) {
+      return;
+    }
 
     if (!hasCompleteRange) {
       if (isAfterDay(date, startDate)) {

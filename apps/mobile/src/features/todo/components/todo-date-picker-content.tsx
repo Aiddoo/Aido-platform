@@ -223,9 +223,15 @@ const getRepeatSummaryKey = ({
   isWeekdaysSelected: boolean;
   isWeekendsSelected: boolean;
 }): RepeatSummaryKey => {
-  if (isAllSelected) return 'picker.repeatDaily';
-  if (isWeekdaysSelected) return 'picker.repeatWeekdays';
-  if (isWeekendsSelected) return 'picker.repeatWeekends';
+  if (isAllSelected) {
+    return 'picker.repeatDaily';
+  }
+  if (isWeekdaysSelected) {
+    return 'picker.repeatWeekdays';
+  }
+  if (isWeekendsSelected) {
+    return 'picker.repeatWeekends';
+  }
   return 'picker.repeatWeekly';
 };
 

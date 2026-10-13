@@ -26,7 +26,9 @@ export const usePurchaseMutationOptions = () => {
     },
     onError: (err) => {
       // 사용자가 직접 취소한 경우 — 이미 인지하고 있으므로 조용히 무시
-      if (isPurchaseCancelledError(err)) return;
+      if (isPurchaseCancelledError(err)) {
+        return;
+      }
 
       if (isPaymentPendingError(err)) {
         success(t('subscription:toast.paymentPending'));

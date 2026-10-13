@@ -56,7 +56,9 @@ function EditNameForm() {
     try {
       await updateProfileMutation.mutateAsync({ name: data.name }, { onSuccess: () => goBack() });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -93,7 +95,9 @@ function EditNameForm() {
                       : t('editName.required')
                 }
                 onSubmitEditing={() => {
-                  if (canSubmit) handleSubmit(onSubmit)();
+                  if (canSubmit) {
+                    handleSubmit(onSubmit)();
+                  }
                 }}
               />
             )}

@@ -80,7 +80,7 @@ function MyFeedScreen() {
             button={
               <Result.Button
                 onPress={() => {
-                  void createEntry.refetch();
+                  createEntry.refetch();
                 }}
               >
                 {t('common:actions.retry')}
@@ -172,10 +172,12 @@ function useTodoCreateEntry() {
   const categoryId = categories.data?.categories[0]?.id;
 
   useEffect(() => {
-    if (!isRequested || categoryId == null) return;
+    if (!isRequested || categoryId == null) {
+      return;
+    }
     const frameId = requestAnimationFrame(() => {
       router.setParams({ action: undefined });
-      void overlay.open(({ isOpen, close, exit }) => (
+      overlay.open(({ isOpen, close, exit }) => (
         <AddTodoBottomSheet
           mode="create"
           selectedDate={selectedDate}

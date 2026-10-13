@@ -36,7 +36,9 @@ export function createAndroidWidgetTaskHandler({
     if (!ANDROID_WIDGET_DEFINITIONS.some(({ name }) => name === task.widgetInfo.widgetName)) {
       return;
     }
-    if (task.widgetAction === 'WIDGET_DELETED') return;
+    if (task.widgetAction === 'WIDGET_DELETED') {
+      return;
+    }
 
     try {
       if (
@@ -45,9 +47,13 @@ export function createAndroidWidgetTaskHandler({
       ) {
         const uri = task.clickActionData?.uri;
         const userId = task.clickActionData?.userId;
-        if (typeof uri !== 'string') return;
+        if (typeof uri !== 'string') {
+          return;
+        }
         const destination = parseWidgetNavigationUri(uri);
-        if (!destination) return;
+        if (!destination) {
+          return;
+        }
         const hasOwner = typeof userId === 'string' && userId.length > 0;
 
         if (hasOwner) {
@@ -57,7 +63,9 @@ export function createAndroidWidgetTaskHandler({
             userId,
             createdAt: now(),
           });
-          if (!stored) return;
+          if (!stored) {
+            return;
+          }
         } else if (destination.kind !== 'feed' || destination.action != null) {
           return;
         }

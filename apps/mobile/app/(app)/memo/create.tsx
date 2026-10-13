@@ -41,7 +41,9 @@ export default function MemoCreateScreen() {
         | undefined
       >();
       const unsubscribe = stackNavigator?.addListener('transitionEnd', (e) => {
-        if (!e.data.closing) inputRef.current?.focus();
+        if (!e.data.closing) {
+          inputRef.current?.focus();
+        }
       });
       return () => unsubscribe?.();
     }, [navigation]),
@@ -68,7 +70,9 @@ export default function MemoCreateScreen() {
         { onSuccess: () => goBack() },
       );
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   });
 

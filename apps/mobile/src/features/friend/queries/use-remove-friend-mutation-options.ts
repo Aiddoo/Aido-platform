@@ -28,10 +28,14 @@ export const useRemoveFriendMutationOptions = () => {
       const previousData = queryClient.getQueryData<FriendsInfiniteData>(friendsQueryKey);
 
       queryClient.setQueryData<FriendsInfiniteData>(friendsQueryKey, (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
 
         const exists = old.pages.some((page) => page.items.some((item) => item.id === userId));
-        if (!exists) return old;
+        if (!exists) {
+          return old;
+        }
 
         return {
           ...old,

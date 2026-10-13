@@ -33,7 +33,9 @@ export const useUpdatePreferenceMutationOptions = () => {
       const previousData = queryClient.getQueryData<Preference>(AUTH_QUERY_KEYS.preference());
 
       queryClient.setQueryData<Preference>(AUTH_QUERY_KEYS.preference(), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return { ...old, ...input };
       });
 

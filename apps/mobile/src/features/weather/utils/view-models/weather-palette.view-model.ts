@@ -65,16 +65,24 @@ export type TimePalette = {
 };
 
 export function getTimeOfDay(h: number): TimeOfDay {
-  if (h >= 6 && h < 9) return 'dawn';
-  if (h >= 9 && h < 17) return 'day';
-  if (h >= 17 && h < 20) return 'dusk';
+  if (h >= 6 && h < 9) {
+    return 'dawn';
+  }
+  if (h >= 9 && h < 17) {
+    return 'day';
+  }
+  if (h >= 17 && h < 20) {
+    return 'dusk';
+  }
   return 'night';
 }
 
 export function getWeatherPalette(hour: number, theme: 'light' | 'dark'): TimePalette {
   const timeOfDay = getTimeOfDay(hour);
   const palette = TIME_PALETTES[timeOfDay];
-  if (theme === 'light' || timeOfDay === 'night') return palette;
+  if (theme === 'light' || timeOfDay === 'night') {
+    return palette;
+  }
   const gradients = {
     dawn: ['#17102D', '#382755', '#65506A'],
     day: ['#101D33', '#17365A', '#234B78'],

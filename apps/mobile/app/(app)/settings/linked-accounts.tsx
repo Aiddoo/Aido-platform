@@ -56,7 +56,9 @@ function LinkedAccountsList() {
   } | null>(null);
 
   const handleUnlinkConfirm = () => {
-    if (!unlinkTarget) return;
+    if (!unlinkTarget) {
+      return;
+    }
     const target = unlinkTarget;
     setUnlinkTarget(null);
     unlink(target.provider);
@@ -102,7 +104,9 @@ function LinkedAccountsList() {
       <ConfirmDialog
         isOpen={unlinkTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setUnlinkTarget(null);
+          if (!open) {
+            setUnlinkTarget(null);
+          }
         }}
         title={<ConfirmDialog.Title>{t('linkedAccounts.unlinkDialogTitle')}</ConfirmDialog.Title>}
         description={

@@ -136,7 +136,9 @@ function EmailStep({ onNext }: EmailStepProps) {
                       byType: { too_big: 'email.tooLong' },
                     })}
                     onSubmitEditing={() => {
-                      if (isValid) handleNext();
+                      if (isValid) {
+                        handleNext();
+                      }
                     }}
                   />
                   <SuggestedEmailDomainList value={value} onChange={onChange} />
@@ -179,7 +181,9 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   };
 
   const handleResend = () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0) {
+      return;
+    }
 
     forgotPasswordMutation.mutate(
       { email },
@@ -297,7 +301,9 @@ function NewPasswordStep() {
           try {
             await resetPasswordMutation.mutateAsync(data);
           } catch (error) {
-            if (!isBusinessError(error)) showBoundary(error);
+            if (!isBusinessError(error)) {
+              showBoundary(error);
+            }
           }
         })();
       })
@@ -326,7 +332,9 @@ function NewPasswordStep() {
               .delay(ANIMATION.delay.short)
               .withCallback((finished) => {
                 'worklet';
-                if (finished) scheduleOnRN(focusConfirmInput);
+                if (finished) {
+                  scheduleOnRN(focusConfirmInput);
+                }
               })}
           >
             <VStack mb={8}>
@@ -342,7 +350,9 @@ function NewPasswordStep() {
                     isInvalid={!!error}
                     errorMessage={error?.message}
                     onSubmitEditing={() => {
-                      if (newPasswordConfirm.length > 0 && !error) handleNext();
+                      if (newPasswordConfirm.length > 0 && !error) {
+                        handleNext();
+                      }
                     }}
                   />
                 )}
@@ -365,7 +375,9 @@ function NewPasswordStep() {
                   returnKeyType="next"
                   renderErrorMessage={false}
                   onSubmitEditing={() => {
-                    if (newPassword.length > 0 && !error) handleNext();
+                    if (newPassword.length > 0 && !error) {
+                      handleNext();
+                    }
                   }}
                 />
                 <PasswordStrengthIndicator password={newPassword} />

@@ -60,7 +60,7 @@ export function SentNudgeList() {
       ListFooterComponent={
         query.isFetchNextPageError ? (
           <Box p={16}>
-            <Button variant="weak" onPress={() => void query.fetchNextPage()}>
+            <Button variant="weak" onPress={() => query.fetchNextPage()}>
               {t('actions.retry')}
             </Button>
           </Box>
@@ -72,7 +72,7 @@ export function SentNudgeList() {
       }
       onEndReached={() => {
         if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          void query.fetchNextPage({ cancelRefetch: false });
+          query.fetchNextPage({ cancelRefetch: false });
         }
       }}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}

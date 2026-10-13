@@ -58,7 +58,9 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
   const categoryGroups = useMemo(() => toFriendCategoryGroups(todos), [todos]);
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
-  if (categoryGroups.length === 0) return <FriendTodoList.Empty friend={friend} />;
+  if (categoryGroups.length === 0) {
+    return <FriendTodoList.Empty friend={friend} />;
+  }
 
   return (
     <Box gap={16}>

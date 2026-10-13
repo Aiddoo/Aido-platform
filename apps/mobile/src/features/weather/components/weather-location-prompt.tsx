@@ -23,8 +23,11 @@ export function WeatherLocationPrompt() {
       <Spacing size={24} />
       <Result.Button
         onPress={() => {
-          if (denied) void Linking.openSettings().catch(() => undefined);
-          else void session.syncLocation(true);
+          if (denied) {
+            Linking.openSettings().catch(() => undefined);
+          } else {
+            session.syncLocation(true);
+          }
         }}
         isDisabled={session.isSyncing}
         isLoading={session.isSyncing}

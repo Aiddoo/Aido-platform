@@ -34,7 +34,9 @@ export class AchievementService {
       },
     });
 
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = weeklyAchievementListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
@@ -53,7 +55,9 @@ export class AchievementService {
   ): Promise<Result<WeeklyAchievement, ApiError>> => {
     const result = await this.#httpClient.get(`v1/weekly-achievements/${year}/${week}`, { signal });
 
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
 
     const parsed = weeklyAchievementDetailResponseSchema.safeParse(result.value);
     if (!parsed.success) {

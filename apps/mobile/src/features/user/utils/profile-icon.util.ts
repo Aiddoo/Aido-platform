@@ -10,10 +10,14 @@ const DEFAULT_ICON: ImageSourcePropType = defaultProfileIconImage;
 
 /** profileImage 값(아이콘 키 | URL | null)을 Image source로 변환 */
 export const getProfileIconSource = (profileImage: string | null): ImageSourcePropType => {
-  if (!profileImage) return DEFAULT_ICON;
+  if (!profileImage) {
+    return DEFAULT_ICON;
+  }
 
   const localIcon = ICON_MAP.get(profileImage);
-  if (localIcon) return localIcon;
+  if (localIcon) {
+    return localIcon;
+  }
 
   return /^https?:\/\//i.test(profileImage) ? { uri: profileImage } : DEFAULT_ICON;
 };

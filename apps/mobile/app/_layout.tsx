@@ -23,11 +23,13 @@ const AppBootstrapLayout = () => {
 
   useEffect(() => {
     if (fontsLoaded) {
-      void SplashScreen.hideAsync();
+      SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <AppProviders>

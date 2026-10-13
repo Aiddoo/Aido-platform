@@ -61,7 +61,7 @@ export function MemoList() {
       {hasNextPage && (
         <MemoList.More
           onPress={() => {
-            void fetchNextPage({ cancelRefetch: false });
+            fetchNextPage({ cancelRefetch: false });
           }}
           isLoading={isFetchingNextPage}
           isDisabled={isFetching}

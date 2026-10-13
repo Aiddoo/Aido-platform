@@ -66,18 +66,23 @@ function inspectLayout(
         color?: string;
         systemName?: string;
       }>(child)
-    )
+    ) {
       return;
-    if (String(child.type) === 'Link' && child.props.destination)
+    }
+    if (String(child.type) === 'Link' && child.props.destination) {
       destinations.push(child.props.destination);
+    }
     if (
       String(child.type) === 'Image' &&
       child.props.systemName === 'pawprint.fill' &&
       child.props.color
-    )
+    ) {
       pawColors.push(child.props.color);
+    }
     for (const modifier of child.props.modifiers ?? []) {
-      if (modifier?.$type === 'widgetURL' && modifier.url) widgetUrls.push(modifier.url);
+      if (modifier?.$type === 'widgetURL' && modifier.url) {
+        widgetUrls.push(modifier.url);
+      }
     }
     inspectLayout(child.props.children, titles, destinations, widgetUrls, pawColors);
   });
@@ -92,7 +97,9 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
     '%s는 %i개 할 일을 표시하고 루트 이동 URL을 한 번만 지정한다',
     (widgetFamily, visibleRows) => {
       // Given
-      if (!registration) throw new Error('위젯 등록을 찾지 못했습니다');
+      if (!registration) {
+        throw new Error('위젯 등록을 찾지 못했습니다');
+      }
       const snapshot = toWidgetSnapshot(
         buildWidgetSummary({
           topTodos: Array.from({ length: 8 }, (_, index) => ({
@@ -112,7 +119,9 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
         _jsx: jsx,
         _jsxs: jsx,
       });
-      if (typeof render !== 'function') throw new Error('위젯을 실행할 수 없습니다');
+      if (typeof render !== 'function') {
+        throw new Error('위젯을 실행할 수 없습니다');
+      }
       const titles: string[] = [],
         destinations: string[] = [],
         widgetUrls: string[] = [],
@@ -133,10 +142,11 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
         expect(destinations).toContain('aido-dev://feed?date=today&action=add-todo');
         expect(destinations).toContain('aido-dev://todo/1');
       }
-      if (widgetFamily === 'systemLarge')
+      if (widgetFamily === 'systemLarge') {
         expect(
           destinations.filter((url) => url.includes('/feed?date=') && !url.includes('&action=')),
         ).toHaveLength(7);
+      }
     },
   );
 });

@@ -77,7 +77,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
       ListFooterComponent={
         query.isFetchNextPageError ? (
           <Box p={16}>
-            <Button variant="weak" onPress={() => void query.fetchNextPage()}>
+            <Button variant="weak" onPress={() => query.fetchNextPage()}>
               {t('common:actions.retry')}
             </Button>
           </Box>
@@ -90,7 +90,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
       onEndReached={() => {
         if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          void query.fetchNextPage({ cancelRefetch: false });
+          query.fetchNextPage({ cancelRefetch: false });
         }
       }}
       onEndReachedThreshold={0.5}

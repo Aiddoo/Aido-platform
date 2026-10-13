@@ -22,8 +22,9 @@ describe('피드 날짜 선택', () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.restoreAllMocks();
-    if (originalCurrentStateDescriptor)
+    if (originalCurrentStateDescriptor) {
       Object.defineProperty(AppState, 'currentState', originalCurrentStateDescriptor);
+    }
   });
 
   async function setup(initialDate?: string) {

@@ -30,10 +30,14 @@ export function createStoreReviewPromptRepository(
 ): StoreReviewPromptRepository {
   const read = (accountId: string): StoreReviewPromptState => {
     const saved = storage.getString(storageKey(accountId));
-    if (!saved) return createEmptyStoreReviewPromptState();
+    if (!saved) {
+      return createEmptyStoreReviewPromptState();
+    }
     try {
       const parsed = persistedStateSchema.safeParse(JSON.parse(saved));
-      if (!parsed.success) return createEmptyStoreReviewPromptState();
+      if (!parsed.success) {
+        return createEmptyStoreReviewPromptState();
+      }
       return storeReviewPromptStateSchema.parse({
         ...parsed.data,
         dismissedAt: parsed.data.dismissedAt ? new Date(parsed.data.dismissedAt) : null,
@@ -49,7 +53,9 @@ export function createStoreReviewPromptRepository(
   const update = (accountId: string, transition: StateTransition): StoreReviewPromptState => {
     const current = read(accountId);
     const candidate = transition(current);
-    if (candidate === current) return current;
+    if (candidate === current) {
+      return current;
+    }
     const next = storeReviewPromptStateSchema.parse(candidate);
     storage.set(
       storageKey(accountId),

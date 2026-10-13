@@ -28,7 +28,7 @@ export function useReplyToNudgeMutationOptions() {
       if (!isApiError(error)) {
         errorReporter.captureException(toError(error), { feature: 'todo_nudge' });
       }
-      void queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeInteractions() });
     },
   });
 }

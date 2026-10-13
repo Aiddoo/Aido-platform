@@ -35,7 +35,9 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
   const emailInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   useEffect(() => {
-    if (step !== 'email') return;
+    if (step !== 'email') {
+      return;
+    }
 
     const emailFocusTimeoutId = setTimeout(() => {
       emailInputRef.current?.focus();
@@ -103,7 +105,9 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                       byType: { too_big: 'email.tooLong' },
                     })}
                     onSubmitEditing={() => {
-                      if (isEmailValid) handleNext();
+                      if (isEmailValid) {
+                        handleNext();
+                      }
                     }}
                   />
                   <SuggestedEmailDomainList value={value} onChange={onChange} />
@@ -129,7 +133,9 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                 isInvalid={!!error}
                 errorMessage={error?.message}
                 onSubmitEditing={() => {
-                  if (isNameValid) handleNext();
+                  if (isNameValid) {
+                    handleNext();
+                  }
                 }}
               />
             )}

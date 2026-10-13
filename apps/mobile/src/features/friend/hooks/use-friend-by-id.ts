@@ -14,8 +14,9 @@ export function useFriendById(friendId: string) {
   } = useSuspenseInfiniteQuery(useGetFriendQueryOptions({ friendId }));
 
   useEffect(() => {
-    if (!friend && hasNextPage && !isFetching && !isFetchNextPageError)
-      void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+    if (!friend && hasNextPage && !isFetching && !isFetchNextPageError) {
+      fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+    }
   }, [friend, hasNextPage, isFetching, isFetchNextPageError, fetchNextPage]);
 
   return { friend, hasNextPage, isFetching, isFetchNextPageError, error, fetchNextPage };

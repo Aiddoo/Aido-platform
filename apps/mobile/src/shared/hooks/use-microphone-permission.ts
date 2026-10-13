@@ -69,7 +69,9 @@ export const useMicrophonePermission = (
         .with({ granted: false, canAskAgain: true }, () => true)
         .exhaustive();
 
-      if (!shouldRequestPermission) return;
+      if (!shouldRequestPermission) {
+        return;
+      }
 
       // 권한 요청
       const permissionResult = await ExpoSpeechRecognitionModule.requestPermissionsAsync();

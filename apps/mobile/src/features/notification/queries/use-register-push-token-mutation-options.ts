@@ -23,8 +23,12 @@ export const useRegisterPushTokenMutationOptions = () => {
     retry: (failureCount, error) => {
       // 재시도하지 않을 에러들
       if (isNotificationError(error)) {
-        if (isNotPhysicalDeviceError(error)) return false;
-        if (isPermissionDeniedError(error)) return false;
+        if (isNotPhysicalDeviceError(error)) {
+          return false;
+        }
+        if (isPermissionDeniedError(error)) {
+          return false;
+        }
       }
 
       // 네트워크 에러 등은 최대 3회 재시도

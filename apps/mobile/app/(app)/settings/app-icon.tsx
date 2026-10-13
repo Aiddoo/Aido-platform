@@ -48,7 +48,9 @@ function AppIconSettings() {
   const premiumDialog = usePremiumDialog();
 
   const handleIconPress = (key: AppIconKey) => {
-    if (isChanging || key === currentIcon) return;
+    if (isChanging || key === currentIcon) {
+      return;
+    }
 
     if (!isPremium && key !== 'default') {
       trackEvent('premium_gate_shown', { feature: 'app_icon' });
@@ -95,7 +97,9 @@ function AppIconSettings() {
     );
   }
 
-  if (isLoading) return <AppIconPicker.Loading />;
+  if (isLoading) {
+    return <AppIconPicker.Loading />;
+  }
 
   return (
     <>
@@ -119,7 +123,9 @@ function AppIconSettings() {
       <AppIconErrorDialog
         isOpen={changeError !== null}
         onOpenChange={(isOpen) => {
-          if (!isOpen) resetChangeError();
+          if (!isOpen) {
+            resetChangeError();
+          }
         }}
       />
     </>

@@ -7,7 +7,9 @@ export function createAndroidWidgetSnapshotRepository(storage: SyncStorage) {
   return {
     getSnapshot(): WidgetSnapshot | null {
       const raw = storage.getString(ANDROID_WIDGET_STORAGE_KEYS.snapshot);
-      if (raw == null) return null;
+      if (raw == null) {
+        return null;
+      }
 
       try {
         const result = widgetSnapshotSchema.safeParse(JSON.parse(raw));

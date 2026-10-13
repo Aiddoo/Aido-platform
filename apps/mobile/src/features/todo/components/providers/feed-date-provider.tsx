@@ -39,6 +39,8 @@ export function FeedDateProvider({ children, date, onDateChange }: FeedDateProvi
 
 export function useFeedDateContext(): FeedDateContextValue {
   const context = useContext(FeedDateContext);
-  if (context === null) throw new Error('useFeedDate must be used within FeedDateProvider');
+  if (context === null) {
+    throw new Error('useFeedDate must be used within FeedDateProvider');
+  }
   return context;
 }

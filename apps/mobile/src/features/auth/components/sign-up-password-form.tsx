@@ -33,7 +33,9 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
   const passwordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   useEffect(() => {
-    if (step !== 'passwordConfirm') return;
+    if (step !== 'passwordConfirm') {
+      return;
+    }
 
     const passwordConfirmFocusTimeoutId = setTimeout(() => {
       passwordConfirmInputRef.current?.focus();
@@ -96,7 +98,9 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                       isInvalid={!!error}
                       errorMessage={error?.message}
                       onSubmitEditing={() => {
-                        if (isPasswordConfirmValid) handleNext();
+                        if (isPasswordConfirmValid) {
+                          handleNext();
+                        }
                       }}
                     />
                   )}
@@ -124,7 +128,9 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                     })}
                     renderErrorMessage={false}
                     onSubmitEditing={() => {
-                      if (isPasswordValid) handleNext();
+                      if (isPasswordValid) {
+                        handleNext();
+                      }
                     }}
                   />
 

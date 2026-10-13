@@ -102,7 +102,9 @@ export default function MemoDetailScreen() {
       setIsEditing(false);
       Keyboard.dismiss();
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   });
 
@@ -111,7 +113,9 @@ export default function MemoDetailScreen() {
       try {
         await updateMemo({ memoId, input: { content: getValues('content').trim() } });
       } catch (error) {
-        if (!isBusinessError(error)) showBoundary(error);
+        if (!isBusinessError(error)) {
+          showBoundary(error);
+        }
         return;
       }
     }

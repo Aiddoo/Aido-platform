@@ -13,12 +13,15 @@ export function useWeatherIntroduction() {
   const claimed = useRef(false);
 
   useEffect(() => {
-    if (!stable || session.status === 'checking' || !session.needsIntroduction || claimed.current)
+    if (!stable || session.status === 'checking' || !session.needsIntroduction || claimed.current) {
       return;
+    }
     const task = requestIdleCallback(() => {
-      if (claimed.current) return;
+      if (claimed.current) {
+        return;
+      }
       claimed.current = true;
-      void overlay
+      overlay
         .open<boolean>(({ isOpen, close, exit }) => (
           <ConfirmDialog
             isOpen={isOpen}
@@ -58,7 +61,9 @@ export function useWeatherIntroduction() {
         ))
         .then((accepted) => {
           session.dismissIntroduction();
-          if (accepted) void session.syncLocation(true);
+          if (accepted) {
+            session.syncLocation(true);
+          }
         });
     });
     return () => cancelIdleCallback(task);

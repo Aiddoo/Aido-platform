@@ -46,7 +46,9 @@ const AuthContext = createContext<AuthState | null>(null);
 
 function useTestAuth() {
   const value = use(AuthContext);
-  if (!value) throw new Error('Auth fixture missing');
+  if (!value) {
+    throw new Error('Auth fixture missing');
+  }
   return value;
 }
 

@@ -15,7 +15,7 @@ function Harness() {
       <Pressable
         accessibilityRole="button"
         onPress={() => {
-          void overlay.open(({ close, exit }) => (
+          overlay.open(({ close, exit }) => (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="overlay-close"

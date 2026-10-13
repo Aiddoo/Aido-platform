@@ -27,7 +27,7 @@ export const useUpdateMarketingPushConsentMutationOptions = () => {
       );
     },
     onError: (_error, _input, context) => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       if (context?.previousData) {
         queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);
       }

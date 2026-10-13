@@ -29,10 +29,14 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
   const queryClient = useQueryClient();
   const parseMutation = useMutation(useParseMemoMutationOptions());
 
-  if (!aiUsage || !memo || !categoriesData) return null;
+  if (!aiUsage || !memo || !categoriesData) {
+    return null;
+  }
 
   const defaultCategoryId = categoriesData.categories[0]?.id;
-  if (!defaultCategoryId) return null;
+  if (!defaultCategoryId) {
+    return null;
+  }
 
   const remaining = AiUsagePolicy.getRemainingCount(aiUsage);
 
@@ -41,7 +45,9 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
       <ConfirmDialog
         isOpen={isOpen}
         onOpenChange={(open) => {
-          if (!open) onClose();
+          if (!open) {
+            onClose();
+          }
         }}
         title={<ConfirmDialog.Title>{t('memo:aiDialog.limitTitle')}</ConfirmDialog.Title>}
         description={
@@ -95,7 +101,9 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
     <ConfirmDialog
       isOpen={isOpen}
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
       title={<ConfirmDialog.Title>{t('memo:aiDialog.confirmTitle')}</ConfirmDialog.Title>}
       description={

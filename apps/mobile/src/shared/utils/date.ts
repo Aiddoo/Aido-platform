@@ -246,10 +246,18 @@ export const getDateSectionKey = (date: Date, referenceDate: Date) => {
   const now = dayjs(referenceDate);
   const target = dayjs(date);
 
-  if (target.isSame(now, 'day')) return 'today';
-  if (now.subtract(1, 'day').isSame(target, 'day')) return 'yesterday';
-  if (target.isSame(now, 'isoWeek')) return 'thisWeek';
-  if (target.isSame(now, 'month')) return 'thisMonth';
+  if (target.isSame(now, 'day')) {
+    return 'today';
+  }
+  if (now.subtract(1, 'day').isSame(target, 'day')) {
+    return 'yesterday';
+  }
+  if (target.isSame(now, 'isoWeek')) {
+    return 'thisWeek';
+  }
+  if (target.isSame(now, 'month')) {
+    return 'thisMonth';
+  }
   return 'earlier';
 };
 
@@ -264,10 +272,20 @@ export const formatRelativeTime = (date: Date, referenceDate: Date = new Date())
   const diffHours = now.diff(target, 'hour');
   const diffDays = now.diff(target, 'day');
 
-  if (diffMinutes < 1) return t('common:relativeTime.justNow');
-  if (diffMinutes < 60) return t('common:relativeTime.minutesAgo', { count: diffMinutes });
-  if (diffHours < 24) return t('common:relativeTime.hoursAgo', { count: diffHours });
-  if (diffDays < 7) return t('common:relativeTime.daysAgo', { count: diffDays });
-  if (target.year() === now.year()) return target.format(t('common:dateFormats.monthDay'));
+  if (diffMinutes < 1) {
+    return t('common:relativeTime.justNow');
+  }
+  if (diffMinutes < 60) {
+    return t('common:relativeTime.minutesAgo', { count: diffMinutes });
+  }
+  if (diffHours < 24) {
+    return t('common:relativeTime.hoursAgo', { count: diffHours });
+  }
+  if (diffDays < 7) {
+    return t('common:relativeTime.daysAgo', { count: diffDays });
+  }
+  if (target.year() === now.year()) {
+    return target.format(t('common:dateFormats.monthDay'));
+  }
   return target.format(t('common:dateFormats.shortDate'));
 };

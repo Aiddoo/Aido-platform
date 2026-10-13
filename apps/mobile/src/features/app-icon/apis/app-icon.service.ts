@@ -14,18 +14,24 @@ export class AppIconService {
 
   getCurrentIcon = async (signal?: AbortSignal): Promise<AppIconKey> => {
     const nativeKey = await this.#gateway.getCurrentIcon();
-    if (signal?.aborted) throw new Error('App icon lookup cancelled');
+    if (signal?.aborted) {
+      throw new Error('App icon lookup cancelled');
+    }
     return AppIconPolicy.resolveKey({ nativeKey });
   };
 
   changeIcon = (key: AppIconKey): Promise<AppIconKey> => {
-    if (this.#pendingChange) return this.#pendingChange;
+    if (this.#pendingChange) {
+      return this.#pendingChange;
+    }
 
     const operation = this.#gateway
       .changeIcon(AppIconPolicy.nativeName({ key }))
       .then((nativeKey) => AppIconPolicy.resolveKey({ nativeKey }));
     const pendingChange = operation.finally(() => {
-      if (this.#pendingChange === pendingChange) this.#pendingChange = null;
+      if (this.#pendingChange === pendingChange) {
+        this.#pendingChange = null;
+      }
     });
     this.#pendingChange = pendingChange;
     return pendingChange;

@@ -30,8 +30,10 @@ export const useMarkAsReadMutationOptions = () => {
       });
     },
     onError: (_error, _variables, context) => {
-      if (context?.snapshot) restoreNotificationCache(queryClient, context.snapshot);
-      void notificationService.syncBadgeCount();
+      if (context?.snapshot) {
+        restoreNotificationCache(queryClient, context.snapshot);
+      }
+      notificationService.syncBadgeCount();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     },
   });

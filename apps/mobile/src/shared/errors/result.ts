@@ -39,7 +39,9 @@ export const isErr = <T, E extends BusinessError>(
  * - 에러는 onError 콜백에서 처리
  */
 export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
-  if (result.ok) return result.value;
+  if (result.ok) {
+    return result.value;
+  }
   throw result.error;
 };
 

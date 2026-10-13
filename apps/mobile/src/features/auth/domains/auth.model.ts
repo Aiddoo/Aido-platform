@@ -45,8 +45,12 @@ export function pushDisabledMessageKey(preference: Preference) {
 }
 
 export function weatherDisabledMessageKey(preference: Preference) {
-  if (!preference.pushEnabled) return 'auth:preference.enablePushFirst' as const;
-  if (!isWeatherEnabled(preference)) return 'auth:preference.enableWeatherFirst' as const;
+  if (!preference.pushEnabled) {
+    return 'auth:preference.enablePushFirst' as const;
+  }
+  if (!isWeatherEnabled(preference)) {
+    return 'auth:preference.enableWeatherFirst' as const;
+  }
   return undefined;
 }
 

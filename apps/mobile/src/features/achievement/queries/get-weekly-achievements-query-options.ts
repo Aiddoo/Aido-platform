@@ -24,7 +24,9 @@ export function getWeeklyAchievementsQueryOptions(
     },
     initialPageParam: undefined as number | undefined,
     getNextPageParam: (lastPage) => {
-      if (!lastPage.hasNext) return undefined;
+      if (!lastPage.hasNext) {
+        return undefined;
+      }
       return lastPage.nextCursor ?? undefined;
     },
     select: (data) => ({

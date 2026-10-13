@@ -12,7 +12,9 @@ export const useScreenTracking = (): void => {
 
   useEffect(() => {
     const screenName = normalizePathname(pathname);
-    if (screenName === prevScreen.current) return;
+    if (screenName === prevScreen.current) {
+      return;
+    }
     const from = prevScreen.current;
     prevScreen.current = screenName;
 

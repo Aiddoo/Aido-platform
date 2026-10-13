@@ -55,7 +55,7 @@ const OverlayErrorScreen = ({ error }: { error: Error }) => {
     <Pressable
       testID="open-error-overlay"
       onPress={() => {
-        void overlay.open(() => <AsyncErrorScreen error={error} />);
+        overlay.open(() => <AsyncErrorScreen error={error} />);
       }}
     >
       <Text>Open</Text>

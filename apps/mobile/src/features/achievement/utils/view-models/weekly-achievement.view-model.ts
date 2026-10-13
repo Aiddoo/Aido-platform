@@ -3,8 +3,12 @@ import type { WeeklyAchievement } from '../../domains/achievement.model';
 export type BadgeType = 'perfect' | 'almost' | 'completed';
 
 export function getBadgeType(completionRate: number): BadgeType {
-  if (completionRate === 100) return 'perfect';
-  if (completionRate >= 90) return 'almost';
+  if (completionRate === 100) {
+    return 'perfect';
+  }
+  if (completionRate >= 90) {
+    return 'almost';
+  }
   return 'completed';
 }
 

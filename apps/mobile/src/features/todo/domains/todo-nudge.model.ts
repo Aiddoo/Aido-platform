@@ -48,13 +48,17 @@ export type NudgeBannerState = z.infer<typeof nudgeBannerStateSchema>;
 const MAX_MESSAGE_LENGTH = 200;
 
 const normalizeMessage = (message?: string | null): string | undefined => {
-  if (message == null) return undefined;
+  if (message == null) {
+    return undefined;
+  }
   const trimmed = message.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
 const isMessageTooLong = (message?: string | null): boolean => {
-  if (!message) return false;
+  if (!message) {
+    return false;
+  }
   return message.trim().length > MAX_MESSAGE_LENGTH;
 };
 

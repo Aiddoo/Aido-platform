@@ -61,7 +61,7 @@ function AvatarList() {
 
   const handleScrollEnd = () => {
     if (hasNextPage && !isFetching) {
-      void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+      fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
     }
   };
 

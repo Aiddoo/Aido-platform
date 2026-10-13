@@ -30,7 +30,7 @@ export const createFirebaseAnalytics = (logger: Logger): Analytics => {
     extra?: Record<string, unknown>,
   ): void => {
     try {
-      void operation().catch((error) => {
+      operation().catch((error) => {
         warn(label, error, extra);
       });
     } catch (error) {

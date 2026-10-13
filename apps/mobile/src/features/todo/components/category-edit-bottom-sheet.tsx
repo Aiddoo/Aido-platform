@@ -58,7 +58,9 @@ export const CategoryEditBottomSheet = ({
         },
       );
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 

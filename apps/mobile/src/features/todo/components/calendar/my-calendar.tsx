@@ -18,7 +18,7 @@ export function MyCalendar() {
         error ? (
           <Calendar.Error
             onRetry={() => {
-              void refetch();
+              refetch();
             }}
           />
         ) : isPending ? (

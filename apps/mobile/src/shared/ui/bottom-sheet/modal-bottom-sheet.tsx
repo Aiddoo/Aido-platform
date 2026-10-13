@@ -78,7 +78,9 @@ export const ModalBottomSheet = ({
   }, []);
 
   useAndroidSheetBackHandler(true, () => {
-    if (isOpen) callOnClose();
+    if (isOpen) {
+      callOnClose();
+    }
   });
 
   useEffect(

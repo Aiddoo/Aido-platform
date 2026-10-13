@@ -30,8 +30,12 @@ export function SuggestionsList() {
   }
 
   const suggestions = suggestionsQuery.data;
-  if (!suggestions) return <SuggestionsList.Loading />;
-  if (suggestions.length === 0) return <SuggestionsList.Empty />;
+  if (!suggestions) {
+    return <SuggestionsList.Loading />;
+  }
+  if (suggestions.length === 0) {
+    return <SuggestionsList.Empty />;
+  }
 
   const handleDismiss = (suggestionId: number) => {
     setPendingSuggestionId(suggestionId);
@@ -132,7 +136,9 @@ SuggestionsList.Item = function Item({
           suggestedCategoryId={suggestion.suggestedCategoryId}
           isOpen={isOpen}
           onOpenChange={(open) => {
-            if (!open) closeSheet();
+            if (!open) {
+              closeSheet();
+            }
           }}
           onAccepted={onAccepted}
         />

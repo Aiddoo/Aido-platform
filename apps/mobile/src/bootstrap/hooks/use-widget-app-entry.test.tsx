@@ -99,7 +99,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       return id;
     });
     jest.spyOn(global, 'cancelAnimationFrame').mockImplementation((id) => {
-      if (typeof id === 'number') frames.delete(id);
+      if (typeof id === 'number') {
+        frames.delete(id);
+      }
     });
     mockStatus = 'loading';
     mockSegments = ['loading'];
@@ -200,7 +202,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       // Given
       authenticate();
       mockUrl = null;
-      if (scenario === 'unauthenticated') mockStatus = 'unauthenticated';
+      if (scenario === 'unauthenticated') {
+        mockStatus = 'unauthenticated';
+      }
       if (scenario === 'different-account') {
         queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
       }

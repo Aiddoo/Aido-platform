@@ -52,9 +52,13 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
 
       // SDK 상태로 캐시 즉시 반영 (낙관적 업데이트)
       queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         const nextStatus = hasActive ? ('ACTIVE' as const) : ('FREE' as const);
-        if (old.subscriptionStatus === nextStatus) return old;
+        if (old.subscriptionStatus === nextStatus) {
+          return old;
+        }
         return { ...old, subscriptionStatus: nextStatus };
       });
 

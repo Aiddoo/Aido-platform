@@ -27,7 +27,9 @@ export const useUpdateProfileMutationOptions = () => {
       const previousData = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
 
       queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return {
           ...old,
           ...(input.name !== undefined && { name: input.name }),
@@ -40,7 +42,9 @@ export const useUpdateProfileMutationOptions = () => {
     onSuccess: (data, input) => {
       trackEvent('profile_edited', { field: Object.keys(input).join(',') });
       queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return {
           ...old,
           name: data.name,

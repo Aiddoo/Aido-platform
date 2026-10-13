@@ -6,7 +6,9 @@ export const createCompositeLogger = (loggers: Logger[]): Logger => ({
       try {
         logger.debug(message, context);
       } catch (e) {
-        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+        if (__DEV__) {
+          console.warn('[CompositeLogger] failed:', e);
+        }
       }
     }
   },
@@ -15,7 +17,9 @@ export const createCompositeLogger = (loggers: Logger[]): Logger => ({
       try {
         logger.info(message, context);
       } catch (e) {
-        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+        if (__DEV__) {
+          console.warn('[CompositeLogger] failed:', e);
+        }
       }
     }
   },
@@ -24,7 +28,9 @@ export const createCompositeLogger = (loggers: Logger[]): Logger => ({
       try {
         logger.warn(message, context);
       } catch (e) {
-        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+        if (__DEV__) {
+          console.warn('[CompositeLogger] failed:', e);
+        }
       }
     }
   },
@@ -33,7 +39,9 @@ export const createCompositeLogger = (loggers: Logger[]): Logger => ({
       try {
         logger.error(message, error, context);
       } catch (e) {
-        if (__DEV__) console.warn('[CompositeLogger] failed:', e);
+        if (__DEV__) {
+          console.warn('[CompositeLogger] failed:', e);
+        }
       }
     }
   },

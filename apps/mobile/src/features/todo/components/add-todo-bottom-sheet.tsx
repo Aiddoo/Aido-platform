@@ -150,14 +150,20 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const overlay = useOverlay();
 
   useEffect(() => {
-    if (isOpen) isClosingRef.current = false;
+    if (isOpen) {
+      isClosingRef.current = false;
+    }
     return () => {
-      if (pendingFocusRef.current != null) cancelAnimationFrame(pendingFocusRef.current);
+      if (pendingFocusRef.current != null) {
+        cancelAnimationFrame(pendingFocusRef.current);
+      }
     };
   }, [isOpen]);
 
   const focusTodoInput = () => {
-    if (!isOpen || isClosingRef.current) return;
+    if (!isOpen || isClosingRef.current) {
+      return;
+    }
     pendingFocusRef.current = requestAnimationFrame(() => {
       todoInputRef.current?.focus();
     });
@@ -246,7 +252,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         })
         .exhaustive();
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   });
 
@@ -262,7 +270,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         onClose={() => close(null)}
         onExit={() => {
           exit();
-          if (pickerResult) methods.setValue('startDate', pickerResult);
+          if (pickerResult) {
+            methods.setValue('startDate', pickerResult);
+          }
           focusTodoInput();
         }}
       >
@@ -361,7 +371,9 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         onClose={() => close(null)}
         onExit={() => {
           exit();
-          if (pickerResult != null) methods.setValue('categoryId', pickerResult);
+          if (pickerResult != null) {
+            methods.setValue('categoryId', pickerResult);
+          }
           focusTodoInput();
         }}
       >
@@ -678,7 +690,9 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
   const handleRecognitionEnd = () => {
     const currentTitle = methods.getValues('title');
     const currentCategoryId = methods.getValues('categoryId');
-    if (!currentTitle?.trim()) return;
+    if (!currentTitle?.trim()) {
+      return;
+    }
 
     parseMutation.mutate(
       { text: currentTitle.trim(), categoryId: currentCategoryId },

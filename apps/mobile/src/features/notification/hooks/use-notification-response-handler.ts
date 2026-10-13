@@ -32,7 +32,9 @@ export function useNotificationResponseHandler() {
       isCurrentSession,
     }: NotificationResponseInput): Promise<'handled' | 'discarded'> => {
       if (actionIdentifier === 'MARKETING_OPT_OUT') {
-        if (!data.marketingOptOutToken) return 'discarded';
+        if (!data.marketingOptOutToken) {
+          return 'discarded';
+        }
         unwrap(await notificationService.optOutMarketingPush(data.marketingOptOutToken));
         try {
           trackEvent('marketing_push_opted_out', { source: 'push_action' });
@@ -42,17 +44,22 @@ export function useNotificationResponseHandler() {
         return 'handled';
       }
 
-      if (!isCurrentSession()) return 'discarded';
+      if (!isCurrentSession()) {
+        return 'discarded';
+      }
       if (data.notificationId > 0) {
         try {
           unwrap(await notificationService.markAsRead(data.notificationId));
         } catch (error) {
-          if (isApiError(error) && (error.status === 403 || error.status === 404))
+          if (isApiError(error) && (error.status === 403 || error.status === 404)) {
             return 'discarded';
+          }
           throw error;
         }
       }
-      if (!isCurrentSession()) return 'discarded';
+      if (!isCurrentSession()) {
+        return 'discarded';
+      }
 
       await navigate(resolveNotificationDestination(data, { today }));
 
@@ -64,18 +71,20 @@ export function useNotificationResponseHandler() {
           ...(data.variantId && { variant_id: data.variantId }),
           ...(data.purpose && { purpose: data.purpose }),
         });
-        if (data.type === 'WEEKLY_ACHIEVEMENT') trackEvent('badge_opened_from_notification');
+        if (data.type === 'WEEKLY_ACHIEVEMENT') {
+          trackEvent('badge_opened_from_notification');
+        }
       } catch (error) {
         logger.warn('[Notification] Open analytics failed', { error });
       }
 
       if (data.notificationId > 0 && isCurrentSession()) {
-        void optimisticallyMarkNotificationsRead(queryClient, data.notificationId, {
+        optimisticallyMarkNotificationsRead(queryClient, data.notificationId, {
           canApply: isCurrentSession,
         })
           .then(() => (isCurrentSession() ? notificationService.syncBadgeCount() : undefined))
           .catch((error) => logger.warn('[Notification] Local read sync failed', { error }));
-        void notificationService
+        notificationService
           .markOpened(data.notificationId)
           .then(unwrap)
           .then(() =>

@@ -13,7 +13,9 @@ export const SuggestedEmailDomainList = ({
   onChange,
 }: SuggestedEmailDomainListProps) => {
   const suggestions = getEmailDomainSuggestions(value);
-  if (suggestions.length === 0) return null;
+  if (suggestions.length === 0) {
+    return null;
+  }
 
   return (
     <Animated.View entering={FadeInUp.duration(ANIMATION.duration.normal).springify()}>

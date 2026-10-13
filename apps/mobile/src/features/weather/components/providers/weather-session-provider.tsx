@@ -74,18 +74,26 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
 
   const syncLocation = useCallback(
     (requestPermission = false): Promise<void> => {
-      if (!mounted.current) return Promise.resolve();
-      if (activeRequest.current) return activeRequest.current;
+      if (!mounted.current) {
+        return Promise.resolve();
+      }
+      if (activeRequest.current) {
+        return activeRequest.current;
+      }
       const controller = new AbortController();
       abortController.current = controller;
       const task = async () => {
         try {
           let permission = await gateway.getPermission();
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            return;
+          }
           if (!permission.granted && requestPermission && permission.canAskAgain) {
             dismissIntroduction();
             permission = await gateway.requestPermission();
-            if (controller.signal.aborted) return;
+            if (controller.signal.aborted) {
+              return;
+            }
           }
           if (!permission.granted) {
             setStatus(permission.canAskAgain ? 'unregistered' : 'denied');
@@ -96,7 +104,9 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
           setIsSyncing(true);
           const coordinates = await gateway.getCoordinates(controller.signal);
           const place = await gateway.getPlace(coordinates, controller.signal);
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            return;
+          }
           if (
             !WeatherPolicy.isSupportedLocation({ ...coordinates, countryCode: place.countryCode })
           ) {
@@ -119,7 +129,9 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
           }
           await queryClient.cancelQueries({ queryKey: WEATHER_QUERY_KEYS.all });
           unwrap(await service.updateLocation(coordinates, controller.signal));
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted) {
+            return;
+          }
           queryClient.removeQueries({ queryKey: WEATHER_QUERY_KEYS.all });
           previousCoordinates.current = coordinates;
           setLocationName(place.name);
@@ -137,13 +149,18 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
             setNeedsIntroduction(false);
           }
         } finally {
-          if (mounted.current) setIsSyncing(false);
+          if (mounted.current) {
+            setIsSyncing(false);
+          }
         }
       };
       const promise = task().finally(() => {
-        if (activeRequest.current === promise) activeRequest.current = null;
-        if (mounted.current && controller.signal.aborted && AppState.currentState === 'active')
-          void syncLocation();
+        if (activeRequest.current === promise) {
+          activeRequest.current = null;
+        }
+        if (mounted.current && controller.signal.aborted && AppState.currentState === 'active') {
+          syncLocation();
+        }
       });
       activeRequest.current = promise;
       return promise;
@@ -153,20 +170,24 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     mounted.current = true;
-    void syncLocation();
+    syncLocation();
     let clockTimer: ReturnType<typeof setTimeout> | undefined;
     const reconcileClock = () => {
       clearTimeout(clockTimer);
       setClock(createWeatherClock(new Date()));
-      if (AppState.currentState === 'active')
+      if (AppState.currentState === 'active') {
         clockTimer = setTimeout(reconcileClock, 60_000 - (Date.now() % 60_000) + 100);
+      }
     };
     reconcileClock();
     const subscription = AppState.addEventListener('change', (state) => {
       reconcileClock();
-      if (state === 'active' && Date.now() - lastSynchronizedAt.current >= 30 * 60_000)
-        void syncLocation();
-      if (state === 'background') abortController.current?.abort();
+      if (state === 'active' && Date.now() - lastSynchronizedAt.current >= 30 * 60_000) {
+        syncLocation();
+      }
+      if (state === 'background') {
+        abortController.current?.abort();
+      }
     });
     return () => {
       mounted.current = false;
@@ -196,6 +217,8 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
 
 export function useWeatherSession(): WeatherSession {
   const context = use(WeatherSessionContext);
-  if (!context) throw new Error('useWeatherSession must be used within WeatherSessionProvider');
+  if (!context) {
+    throw new Error('useWeatherSession must be used within WeatherSessionProvider');
+  }
   return context;
 }

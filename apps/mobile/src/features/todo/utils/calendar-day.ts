@@ -9,18 +9,34 @@ interface CalendarDayInput {
 }
 
 export const getDatePickerDayStyle = ({ date, isSelected }: CalendarDayInput): CalendarDayType => {
-  if (isSelected) return 'selected';
-  if (isDateToday(date)) return 'today';
-  if (isSunday(date)) return 'sunday';
-  if (isSaturday(date)) return 'saturday';
+  if (isSelected) {
+    return 'selected';
+  }
+  if (isDateToday(date)) {
+    return 'today';
+  }
+  if (isSunday(date)) {
+    return 'sunday';
+  }
+  if (isSaturday(date)) {
+    return 'saturday';
+  }
   return 'default';
 };
 
 export const getMonthViewDayStyle = ({ date, isSelected }: CalendarDayInput): CalendarDayType => {
-  if (isSelected) return 'selected';
-  if (isSunday(date)) return 'sunday';
-  if (isSaturday(date)) return 'saturday';
-  if (isDateToday(date)) return 'today';
+  if (isSelected) {
+    return 'selected';
+  }
+  if (isSunday(date)) {
+    return 'sunday';
+  }
+  if (isSaturday(date)) {
+    return 'saturday';
+  }
+  if (isDateToday(date)) {
+    return 'today';
+  }
   return 'default';
 };
 

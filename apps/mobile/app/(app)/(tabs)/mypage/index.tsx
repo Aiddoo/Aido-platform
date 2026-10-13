@@ -227,7 +227,9 @@ function AppVersionSetting() {
     }
   });
 
-  if (!installation) return null;
+  if (!installation) {
+    return null;
+  }
 
   return (
     <SettingNavigation label={t('section')}>

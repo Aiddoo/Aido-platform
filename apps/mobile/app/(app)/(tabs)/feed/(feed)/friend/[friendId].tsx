@@ -28,7 +28,9 @@ export default function FriendFeedScreen() {
   const { date } = FriendFeedSearchSchema.parse(params);
   const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
   const parsed = userIdParamSchema.shape.userId.safeParse(friendId);
-  if (!parsed.success) return <Redirect href="/feed" />;
+  if (!parsed.success) {
+    return <Redirect href="/feed" />;
+  }
   return (
     <FeedDateProvider date={date} onDateChange={setDate}>
       <QueryErrorBoundary
@@ -57,17 +59,22 @@ function FriendFeedContent() {
     ]),
   );
 
-  if (!friend && isFetchNextPageError)
+  if (!friend && isFetchNextPageError) {
     return (
       <FriendFeedContent.Error
         error={error}
         reset={() => {
-          void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+          fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
         }}
       />
     );
-  if (!friend && hasNextPage) return <FriendFeedContent.Loading />;
-  if (!friend) return <Redirect href="/feed" />;
+  }
+  if (!friend && hasNextPage) {
+    return <FriendFeedContent.Loading />;
+  }
+  if (!friend) {
+    return <Redirect href="/feed" />;
+  }
 
   return (
     <ScrollView

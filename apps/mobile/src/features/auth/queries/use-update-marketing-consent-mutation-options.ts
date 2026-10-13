@@ -23,7 +23,9 @@ export const useUpdateMarketingConsentMutationOptions = () => {
       const previousData = queryClient.getQueryData<Consent>(AUTH_QUERY_KEYS.consent());
 
       queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return {
           ...old,
           marketingAgreedAt: input.agreed ? new Date() : null,
@@ -35,7 +37,9 @@ export const useUpdateMarketingConsentMutationOptions = () => {
 
     onSuccess: (data) => {
       queryClient.setQueryData<Consent>(AUTH_QUERY_KEYS.consent(), (old) => {
-        if (!old) return old;
+        if (!old) {
+          return old;
+        }
         return {
           ...old,
           marketingAgreedAt: data.marketingAgreedAt,

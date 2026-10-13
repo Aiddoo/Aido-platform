@@ -44,7 +44,9 @@ const AddFriendScreen = () => {
         onSuccess: () => goBack(),
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -89,7 +91,9 @@ const AddFriendScreen = () => {
                   byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
                 })}
                 onSubmitEditing={() => {
-                  if (isValid) handleSubmit(onSubmit)();
+                  if (isValid) {
+                    handleSubmit(onSubmit)();
+                  }
                 }}
               />
             )}

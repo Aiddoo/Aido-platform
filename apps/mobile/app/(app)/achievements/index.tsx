@@ -83,7 +83,9 @@ function AchievementsContent({ year }: AchievementsContentProps) {
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onEndReached={() => {
-        if (hasNextPage && !isFetching) void fetchNextPage({ cancelRefetch: false });
+        if (hasNextPage && !isFetching) {
+          fetchNextPage({ cancelRefetch: false });
+        }
       }}
       onEndReachedThreshold={0.5}
       ListHeaderComponent={

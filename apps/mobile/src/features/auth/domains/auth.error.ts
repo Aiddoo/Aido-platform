@@ -73,8 +73,12 @@ export const AuthErrors = {
   },
 
   fromUnknown: (error: unknown): AuthError => {
-    if (error instanceof AuthError) return error;
-    if (error instanceof Error) return AuthErrors.unknown(error.message);
+    if (error instanceof AuthError) {
+      return error;
+    }
+    if (error instanceof Error) {
+      return AuthErrors.unknown(error.message);
+    }
     return AuthErrors.unknown();
   },
 } as const;

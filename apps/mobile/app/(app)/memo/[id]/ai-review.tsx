@@ -51,7 +51,9 @@ interface TodosContextValue {
 const TodosContext = createContext<TodosContextValue | null>(null);
 const useTodos = () => {
   const ctx = use(TodosContext);
-  if (!ctx) throw new Error('TodosContext is required');
+  if (!ctx) {
+    throw new Error('TodosContext is required');
+  }
   return ctx;
 };
 
@@ -142,7 +144,9 @@ function AiReviewContent() {
   };
 
   const handleConfirm = () => {
-    if (todos.length === 0) return;
+    if (todos.length === 0) {
+      return;
+    }
 
     convertMutation.mutate(
       {
@@ -222,7 +226,9 @@ function TodoCard({ index }: TodoCardProps) {
     [categoriesData.categories, todo?.categoryId, todo],
   );
 
-  if (!todo) return null;
+  if (!todo) {
+    return null;
+  }
 
   const dateLabel = todo.endDate
     ? `${formatMonthDay(todo.startDate)} ~ ${formatMonthDay(todo.endDate)}`

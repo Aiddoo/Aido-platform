@@ -36,7 +36,9 @@ export function NudgeThanksButton({ todoId, onPress, ...props }: NudgeThanksButt
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
-  if (!availability.data) return null;
+  if (!availability.data) {
+    return null;
+  }
 
   return (
     <Button
@@ -45,7 +47,7 @@ export function NudgeThanksButton({ todoId, onPress, ...props }: NudgeThanksButt
       color={props.color ?? 'primary'}
       onPress={(event) => {
         onPress?.(event);
-        void overlay
+        overlay
           .open(({ isOpen, close, exit }) => (
             <NudgeThanksButton.Sheet
               todoId={todoId}
@@ -110,7 +112,7 @@ NudgeThanksButton.Recipients = function Recipients({
   const preview = query.data.pages[0];
   const recipients = query.data.pages.flatMap((page) => page.recipients);
 
-  if (mutation.isSuccess)
+  if (mutation.isSuccess) {
     return (
       <VStack gap={24} py={16}>
         <HStack align="center" gap={12}>
@@ -124,9 +126,11 @@ NudgeThanksButton.Recipients = function Recipients({
         <Button onPress={onClose}>{t('common:actions.done')}</Button>
       </VStack>
     );
+  }
 
-  if (preview === undefined || !NudgeInteractionPolicy.isThankable(preview))
+  if (preview === undefined || !NudgeInteractionPolicy.isThankable(preview)) {
     return <NudgeThanksButton.Empty />;
+  }
 
   return (
     <VStack gap={20}>
@@ -140,7 +144,7 @@ NudgeThanksButton.Recipients = function Recipients({
           renderItem={({ item }) => <NudgeThanksButton.Recipient recipient={item} />}
           ListFooterComponent={
             query.isFetchNextPageError ? (
-              <Button variant="weak" size="medium" onPress={() => void query.fetchNextPage()}>
+              <Button variant="weak" size="medium" onPress={() => query.fetchNextPage()}>
                 {t('common:actions.retry')}
               </Button>
             ) : query.isFetchingNextPage ? (
@@ -150,8 +154,9 @@ NudgeThanksButton.Recipients = function Recipients({
             ) : null
           }
           onEndReached={() => {
-            if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError)
-              void query.fetchNextPage({ cancelRefetch: false });
+            if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
+              query.fetchNextPage({ cancelRefetch: false });
+            }
           }}
           onEndReachedThreshold={0.5}
         />
@@ -168,8 +173,9 @@ NudgeThanksButton.Recipients = function Recipients({
         color="primary"
         isLoading={mutation.isPending}
         onPress={() => {
-          if (preview.throughNudgeId !== null)
+          if (preview.throughNudgeId !== null) {
             mutation.mutate({ todoId, input: { throughNudgeId: preview.throughNudgeId } });
+          }
         }}
       >
         {t('todo:interaction.thanksSendCount', { count: preview.totalRecipients })}

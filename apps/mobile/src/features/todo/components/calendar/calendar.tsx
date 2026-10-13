@@ -242,7 +242,9 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   useEffect(() => {
-    if (value === currentPageRef.current) return;
+    if (value === currentPageRef.current) {
+      return;
+    }
     const distance = Math.abs(value - currentPageRef.current);
     currentPageRef.current = value;
     flatListRef.current?.scrollToIndex({
@@ -344,7 +346,9 @@ function fillMonthGrid(weeks: Date[][]): Date[][] {
   while (filled.length < MONTH_WEEKS) {
     const lastWeek = filled.at(-1);
     const lastDate = lastWeek?.[6];
-    if (!lastDate) break;
+    if (!lastDate) {
+      break;
+    }
     filled.push(getWeekDates(getNextDay(lastDate)));
   }
   return filled;
@@ -355,7 +359,9 @@ interface CompletionIndicatorProps {
 }
 
 function CompletionIndicator({ completion }: CompletionIndicatorProps) {
-  if (!completion) return null;
+  if (!completion) {
+    return null;
+  }
   if (completion.isComplete) {
     return <FishIcon width={16} height={12} colorClassName="text-fish" />;
   }

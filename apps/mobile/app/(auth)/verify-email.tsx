@@ -39,7 +39,9 @@ import Animated, { FadeIn } from 'react-native-reanimated';
  */
 const VerifyEmailScreen = () => {
   const params = useLocalSearchParams();
-  if (!verifyEmailScreenParamsSchema.safeParse(params).success) return <Redirect href="/login" />;
+  if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
+    return <Redirect href="/login" />;
+  }
   return <VerifyEmailContent />;
 };
 
@@ -78,7 +80,9 @@ function VerifyEmailContent() {
         },
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -88,7 +92,9 @@ function VerifyEmailContent() {
   };
 
   const handleResend = () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0) {
+      return;
+    }
 
     resend.mutate(
       { email },

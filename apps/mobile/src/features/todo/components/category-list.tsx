@@ -82,7 +82,9 @@ export function CategoryList({ mode }: CategoryListProps) {
   };
 
   const handleDrag = (drag: () => void) => () => {
-    if (mode !== 'reorder' || reorderMutation.isPending) return;
+    if (mode !== 'reorder' || reorderMutation.isPending) {
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     drag();
   };

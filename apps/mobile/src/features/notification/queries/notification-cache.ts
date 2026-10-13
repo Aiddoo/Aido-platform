@@ -11,7 +11,9 @@ function markPagesRead(
   shouldDecrement = true,
   removeReadItems = false,
 ): InfiniteData<NotificationListResult> | undefined {
-  if (!data?.pages) return data;
+  if (!data?.pages) {
+    return data;
+  }
   return {
     ...data,
     pages: data.pages.map((page) => ({
@@ -63,7 +65,9 @@ export async function optimisticallyMarkNotificationsRead(
   { canApply }: { canApply?: () => boolean } = {},
 ): Promise<NotificationCacheSnapshot> {
   await queryClient.cancelQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all });
-  if (canApply && !canApply()) return [];
+  if (canApply && !canApply()) {
+    return [];
+  }
   const snapshot = queryClient.getQueriesData({ queryKey: NOTIFICATION_QUERY_KEYS.all });
   const listEntries = queryClient.getQueriesData<InfiniteData<NotificationListResult>>({
     queryKey: [...NOTIFICATION_QUERY_KEYS.all, 'list'],
@@ -90,5 +94,7 @@ export function restoreNotificationCache(
   queryClient: QueryClient,
   snapshot: NotificationCacheSnapshot,
 ): void {
-  for (const [queryKey, data] of snapshot) queryClient.setQueryData(queryKey, data);
+  for (const [queryKey, data] of snapshot) {
+    queryClient.setQueryData(queryKey, data);
+  }
 }

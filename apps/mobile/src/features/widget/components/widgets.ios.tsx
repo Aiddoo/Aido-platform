@@ -179,7 +179,9 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
     </Link>
   );
   const renderTodoRow = (todo?: WidgetProps['topTodos'][number]) => {
-    if (!todo) return null;
+    if (!todo) {
+      return null;
+    }
     return renderAppLink(
       todo.destination,
       <HStack spacing={8} modifiers={[frame({ height: isLargeWidget ? 27 : 30 })]}>
@@ -310,7 +312,9 @@ function AidoTodayListLayout(props: WidgetProps, environment: WidgetEnvironment)
   }
 
   const renderWeekDay = (day?: NonNullable<WidgetProps['weekDays']>[number], index = 0) => {
-    if (!day) return null;
+    if (!day) {
+      return null;
+    }
     return renderAppLink(
       day.destination,
       <VStack spacing={4} modifiers={[frame({ width: 28 })]}>

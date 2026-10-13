@@ -68,7 +68,9 @@ export const StackedBottomSheetModal = ({
       handleIndicatorStyle={[sharedSheetStyles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}
       onAnimate={(_fromIndex, toIndex) => {
-        if (toIndex >= 0) setIsVisible(true);
+        if (toIndex >= 0) {
+          setIsVisible(true);
+        }
       }}
       onDismiss={() => {
         setIsVisible(false);

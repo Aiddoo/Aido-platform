@@ -87,9 +87,12 @@ export function FriendSearchList({ query }: { query: string }) {
     });
   };
 
-  if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery }))
+  if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery })) {
     return <FriendSearchList.Prompt />;
-  if (!isSettled || search.isPending) return <FriendSearchList.Loading />;
+  }
+  if (!isSettled || search.isPending) {
+    return <FriendSearchList.Loading />;
+  }
 
   const renderAction = (user: SearchedUserViewModel) =>
     match(user.actionState)
@@ -136,7 +139,7 @@ export function FriendSearchList({ query }: { query: string }) {
       footer={
         search.isFetchNextPageError ? (
           <Box py={16}>
-            <Button variant="weak" onPress={() => void search.fetchNextPage()}>
+            <Button variant="weak" onPress={() => search.fetchNextPage()}>
               {t('common:actions.retry')}
             </Button>
           </Box>
@@ -145,7 +148,7 @@ export function FriendSearchList({ query }: { query: string }) {
       hasNextPage={search.hasNextPage && !search.isFetchNextPageError}
       isFetching={search.isFetching}
       isFetchingNextPage={search.isFetchingNextPage}
-      onEndReached={() => void search.fetchNextPage({ cancelRefetch: false })}
+      onEndReached={() => search.fetchNextPage({ cancelRefetch: false })}
     />
   );
 }

@@ -39,8 +39,9 @@ const BADGE_NAME_KEYS = {
 
 const AchievementDetailScreen = () => {
   const params = useLocalSearchParams();
-  if (!achievementScreenParamsSchema.safeParse(params).success)
+  if (!achievementScreenParamsSchema.safeParse(params).success) {
     return <Redirect href="/achievements" />;
+  }
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>

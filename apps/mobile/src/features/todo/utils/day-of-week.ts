@@ -10,16 +10,22 @@ export const hasSelectedDayInRange = (
   endDate: Date,
   selectedDays: DayOfWeek[],
 ): boolean => {
-  if (selectedDays.length === 0) return false;
+  if (selectedDays.length === 0) {
+    return false;
+  }
 
   const diffDays = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (diffDays >= 6) return true;
+  if (diffDays >= 6) {
+    return true;
+  }
 
   const selectedJsDays = new Set(selectedDays.map((d) => DAY_OF_WEEK_MAP[d]));
   const startDay = startDate.getDay();
   for (let i = 0; i <= diffDays; i++) {
-    if (selectedJsDays.has((startDay + i) % 7)) return true;
+    if (selectedJsDays.has((startDay + i) % 7)) {
+      return true;
+    }
   }
   return false;
 };

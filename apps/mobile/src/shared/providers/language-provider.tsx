@@ -49,7 +49,7 @@ export const LanguageProvider = ({
   // languageChanged 이벤트가 react-i18next 리렌더와 dayjs locale 동기화를 처리한다.
   useEffect(() => {
     if (i18n.language !== resolvedLanguage) {
-      void i18n.changeLanguage(resolvedLanguage);
+      i18n.changeLanguage(resolvedLanguage);
     }
   }, [resolvedLanguage]);
 

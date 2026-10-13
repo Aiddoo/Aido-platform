@@ -58,7 +58,7 @@ export function useStableFeedForeground(): boolean {
 
   useEffect(() => {
     let mounted = true;
-    void Linking.getInitialURL()
+    Linking.getInitialURL()
       .then((url) => {
         if (mounted) {
           setHasPendingDeepLink(url !== null);

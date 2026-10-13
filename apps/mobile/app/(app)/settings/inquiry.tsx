@@ -73,7 +73,9 @@ const InquiryScreen = () => {
     try {
       await createInquiryMutation.mutateAsync(data);
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 

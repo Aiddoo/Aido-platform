@@ -9,7 +9,9 @@ export function useShareView(viewShotRef: React.RefObject<ViewShotRef | null>) {
   const [isSharing, setIsSharing] = useState(false);
 
   const shareCapture = useCallback(async () => {
-    if (isSharing) return;
+    if (isSharing) {
+      return;
+    }
     setIsSharing(true);
     try {
       const isAvailable = await Sharing.isAvailableAsync();

@@ -8,7 +8,9 @@ export const findFriendById = (
 ): FriendUser | null => {
   for (const page of pages) {
     const friend = page.items.find((item) => item.id === friendId);
-    if (friend) return friend;
+    if (friend) {
+      return friend;
+    }
   }
   return null;
 };

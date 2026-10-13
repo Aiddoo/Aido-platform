@@ -44,7 +44,7 @@ export function useFeatureDiscoveryHub() {
       });
 
       let finished = false;
-      void overlay.open<void>(({ isOpen, close, exit }) => {
+      overlay.open<void>(({ isOpen, close, exit }) => {
         const dismiss = () => {
           if (finished) {
             return;

@@ -60,7 +60,7 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
     return (
       <SuggestionEntry.Error
         error={suggestionsQuery.error}
-        reset={() => void suggestionsQuery.refetch()}
+        reset={() => suggestionsQuery.refetch()}
       />
     );
   }

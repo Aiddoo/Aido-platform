@@ -31,7 +31,9 @@ describe('공용 시트의 Android 뒤로가기', () => {
     // When
     await hook.rerender({ onDismiss: nextDismiss });
     const subscription = subscribe.mock.calls.at(-1);
-    if (subscription === undefined) throw new Error('뒤로가기 구독이 없어요');
+    if (subscription === undefined) {
+      throw new Error('뒤로가기 구독이 없어요');
+    }
     const handleBack = subscription[1];
     let isHandled: boolean | undefined;
     await act(() => {

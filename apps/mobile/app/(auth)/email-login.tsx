@@ -44,7 +44,9 @@ const EmailLoginScreen = () => {
     try {
       await emailLoginMutation.mutateAsync({ email: data.email, password: data.password });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   });
 

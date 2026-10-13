@@ -22,7 +22,7 @@ export function FriendCalendar({ friendUserId }: FriendCalendarProps) {
         error ? (
           <Calendar.Error
             onRetry={() => {
-              void refetch();
+              refetch();
             }}
           />
         ) : isPending ? (

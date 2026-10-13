@@ -57,11 +57,11 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
 
   useEffect(() => {
     if (authState === 'unauthenticated') {
-      void widgetSyncService.syncLoggedOut(date, buildContext());
+      widgetSyncService.syncLoggedOut(date, buildContext());
       return;
     }
     if (authState === 'authenticated' && userId != null && data?.date === date) {
-      void widgetSyncService.syncSummary(
+      widgetSyncService.syncSummary(
         data,
         buildContext(completions ? Object.values(completions) : undefined, userId),
       );
@@ -86,7 +86,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     const handleLanguageChanged = () => {
       const latest = latestRef.current;
       if (latest.authState === 'unauthenticated') {
-        void widgetSyncService.syncLoggedOut(latest.date, buildContext());
+        widgetSyncService.syncLoggedOut(latest.date, buildContext());
         return;
       }
       if (
@@ -94,7 +94,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
         latest.userId != null &&
         latest.data?.date === latest.date
       ) {
-        void widgetSyncService.syncSummary(
+        widgetSyncService.syncSummary(
           latest.data,
           buildContext(
             latest.completions ? Object.values(latest.completions) : undefined,

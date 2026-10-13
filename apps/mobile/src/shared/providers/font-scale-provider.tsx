@@ -88,7 +88,9 @@ export const FontScaleProvider = ({
 
   const resolveSize = useCallback(
     (size: TextSize): TextSize => {
-      if (fontScale === 'medium') return size;
+      if (fontScale === 'medium') {
+        return size;
+      }
       return SCALE_MAP[fontScale][size];
     },
     [fontScale],

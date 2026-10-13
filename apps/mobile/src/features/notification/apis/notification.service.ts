@@ -179,7 +179,9 @@ export class NotificationService {
 
   markOpened = async (notificationId: number): Promise<Result<boolean, ApiError>> => {
     const result = await this.#httpClient.post(`v1/notifications/${notificationId}/opened`);
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
     const parsed = notificationOpenedResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(
@@ -193,7 +195,9 @@ export class NotificationService {
     const result = await this.#publicHttpClient.post('v1/notifications/marketing-push/opt-out', {
       token,
     });
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
     const parsed = marketingPushOptOutResponseSchema.safeParse(result.value);
     if (!parsed.success) {
       throw new ParseError(

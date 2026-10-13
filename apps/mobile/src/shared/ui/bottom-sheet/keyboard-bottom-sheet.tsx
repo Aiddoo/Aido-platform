@@ -69,28 +69,42 @@ export const KeyboardBottomSheet = ({
     isClosingRef.current = true;
     Keyboard.dismiss();
     sheetRef.current?.forceClose();
-    if (closeRetryTimerRef.current) clearTimeout(closeRetryTimerRef.current);
+    if (closeRetryTimerRef.current) {
+      clearTimeout(closeRetryTimerRef.current);
+    }
     closeRetryTimerRef.current = setTimeout(() => {
       closeRetryTimerRef.current = null;
-      if (isClosingRef.current) sheetRef.current?.forceClose();
+      if (isClosingRef.current) {
+        sheetRef.current?.forceClose();
+      }
     }, 500);
   }, []);
 
   useAndroidSheetBackHandler(isOpen, closeSheet);
 
   const resizeSheet = useCallback(() => {
-    if (isClosingRef.current) return;
-    if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+    if (isClosingRef.current) {
+      return;
+    }
+    if (resizeFrameRef.current !== undefined) {
+      cancelAnimationFrame(resizeFrameRef.current);
+    }
     resizeFrameRef.current = requestAnimationFrame(() => {
       resizeFrameRef.current = undefined;
-      if (!isClosingRef.current) sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+      if (!isClosingRef.current) {
+        sheetRef.current?.snapToIndex(SHEET_INDEX.OPEN);
+      }
     });
   }, []);
 
   useEffect(
     () => () => {
-      if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
-      if (closeRetryTimerRef.current) clearTimeout(closeRetryTimerRef.current);
+      if (resizeFrameRef.current !== undefined) {
+        cancelAnimationFrame(resizeFrameRef.current);
+      }
+      if (closeRetryTimerRef.current) {
+        clearTimeout(closeRetryTimerRef.current);
+      }
     },
     [],
   );
@@ -101,7 +115,9 @@ export const KeyboardBottomSheet = ({
   }, [isOpen, setEnabled]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
@@ -125,7 +141,9 @@ export const KeyboardBottomSheet = ({
 
   useEffect(() => {
     if (!isOpen) {
-      if (resizeFrameRef.current !== undefined) cancelAnimationFrame(resizeFrameRef.current);
+      if (resizeFrameRef.current !== undefined) {
+        cancelAnimationFrame(resizeFrameRef.current);
+      }
       resizeFrameRef.current = undefined;
       lastContentHeightRef.current = 0;
       isClosingRef.current = false;

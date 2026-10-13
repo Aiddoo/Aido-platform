@@ -217,15 +217,20 @@ describe('AuthProvider', () => {
         await expectStatus('locked');
 
         await act(() => {
-          for (const listener of listeners) listener('active');
+          for (const listener of listeners) {
+            listener('active');
+          }
         });
         expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(2);
         await fireEvent.press(screen.getByTestId('logout'));
         await expectStatus('unauthenticated');
 
         await act(() => {
-          if (outcome === 'success') resolveRead('previous-session-token');
-          else rejectRead(new Error('late keychain failure'));
+          if (outcome === 'success') {
+            resolveRead('previous-session-token');
+          } else {
+            rejectRead(new Error('late keychain failure'));
+          }
         });
 
         await expectStatus('unauthenticated');

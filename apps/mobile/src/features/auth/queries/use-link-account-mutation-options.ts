@@ -35,7 +35,9 @@ export const useLinkAccountMutationOptions = () => {
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      if (isCancelledError(error)) return;
+      if (isCancelledError(error)) {
+        return;
+      }
       if (isApiError(error) || isAuthError(error)) {
         toast.error(error.message);
         return;

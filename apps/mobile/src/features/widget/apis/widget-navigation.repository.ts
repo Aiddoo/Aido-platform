@@ -22,11 +22,15 @@ export function createWidgetNavigationRepository(
 
   const getPendingCommand = (): WidgetNavigationCommand | null => {
     const raw = storage.getString(WIDGET_NAVIGATION_COMMAND_KEY);
-    if (raw === cachedRaw) return cachedCommand;
+    if (raw === cachedRaw) {
+      return cachedCommand;
+    }
 
     cachedRaw = raw;
     cachedCommand = null;
-    if (raw === undefined) return null;
+    if (raw === undefined) {
+      return null;
+    }
 
     try {
       const value: unknown = JSON.parse(raw);
@@ -43,9 +47,13 @@ export function createWidgetNavigationRepository(
     subscribe: (listener) => storage.subscribe(WIDGET_NAVIGATION_COMMAND_KEY, listener),
     store: (command) => {
       const result = widgetNavigationCommandSchema.safeParse(command);
-      if (!result.success) return false;
+      if (!result.success) {
+        return false;
+      }
       const current = getPendingCommand();
-      if (current && current.createdAt > result.data.createdAt) return false;
+      if (current && current.createdAt > result.data.createdAt) {
+        return false;
+      }
       storage.set(WIDGET_NAVIGATION_COMMAND_KEY, JSON.stringify(result.data));
       return true;
     },

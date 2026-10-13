@@ -16,11 +16,17 @@ export function getNotificationResponseDisposition({
   actionIdentifier: string;
   isNavigationReady?: boolean;
 }): NotificationResponseDisposition {
-  if (actionIdentifier === 'MARKETING_OPT_OUT') return { status: 'process' };
-  if (authStatus === 'loading' || authStatus === 'locked')
+  if (actionIdentifier === 'MARKETING_OPT_OUT') {
+    return { status: 'process' };
+  }
+  if (authStatus === 'loading' || authStatus === 'locked') {
     return { status: 'defer', reason: 'auth-resolving' };
-  if (authStatus === 'unauthenticated')
+  }
+  if (authStatus === 'unauthenticated') {
     return { status: 'defer', reason: 'authentication-required' };
-  if (!isNavigationReady) return { status: 'defer', reason: 'navigation-not-ready' };
+  }
+  if (!isNavigationReady) {
+    return { status: 'defer', reason: 'navigation-not-ready' };
+  }
   return { status: 'process' };
 }

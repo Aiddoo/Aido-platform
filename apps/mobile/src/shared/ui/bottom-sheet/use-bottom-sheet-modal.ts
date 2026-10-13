@@ -18,7 +18,9 @@ export const useBottomSheetModal = (): UseBottomSheetModalReturn => {
   const presentationFrameRef = useRef<number | undefined>(undefined);
 
   const cancelPresentation = useCallback(() => {
-    if (presentationFrameRef.current === undefined) return;
+    if (presentationFrameRef.current === undefined) {
+      return;
+    }
     cancelAnimationFrame(presentationFrameRef.current);
     presentationFrameRef.current = undefined;
   }, []);

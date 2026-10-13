@@ -18,14 +18,20 @@ export function useDraggableReorderList<TItem extends { id: number }>({
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
-    if (!isDragging && !isPending) setLocalItems(items);
+    if (!isDragging && !isPending) {
+      setLocalItems(items);
+    }
   }, [items, isDragging, isPending]);
 
   function onDragEnd({ data, from, to }: DragEndParams<TItem>) {
     setIsDragging(false);
-    if (isPending) return;
+    if (isPending) {
+      return;
+    }
     const instruction = getReorderInstruction(data, from, to);
-    if (!instruction) return;
+    if (!instruction) {
+      return;
+    }
 
     setLocalItems(data);
     onReorder(instruction);

@@ -46,7 +46,9 @@ export const SignUpVerificationForm = () => {
         },
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -56,7 +58,9 @@ export const SignUpVerificationForm = () => {
   };
 
   const handleResend = () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0) {
+      return;
+    }
 
     resend.mutate(
       { email },

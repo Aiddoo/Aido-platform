@@ -4,7 +4,9 @@ import { parseWidgetNavigationUri } from '../../domains/widget-navigation.model'
 
 export function resolveWidgetAppRoute(url: string | null): Href | null {
   const destination = parseWidgetNavigationUri(url);
-  if (!destination) return null;
+  if (!destination) {
+    return null;
+  }
   if (destination.kind === 'todo') {
     return { pathname: '/todo/[todoId]', params: { todoId: destination.todoId } };
   }
@@ -21,8 +23,12 @@ export function isWidgetAppRouteCurrent(
   { date, action }: { date?: string | string[]; action?: string | string[] },
 ): boolean {
   const destination = parseWidgetNavigationUri(uri);
-  if (!destination) return false;
-  if (destination.kind === 'todo') return pathname === `/todo/${destination.todoId}`;
+  if (!destination) {
+    return false;
+  }
+  if (destination.kind === 'todo') {
+    return pathname === `/todo/${destination.todoId}`;
+  }
 
   return (
     pathname === '/feed' && destination.date === (date ?? 'today') && destination.action === action

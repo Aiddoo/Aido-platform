@@ -25,7 +25,9 @@ export default function NotificationsScreen() {
         value={category}
         onValueChange={(value) => {
           const parsed = notificationCategorySchema.safeParse(value);
-          if (parsed.success) router.setParams({ category: parsed.data });
+          if (parsed.success) {
+            router.setParams({ category: parsed.data });
+          }
         }}
         variant="secondary"
         className="flex-1"

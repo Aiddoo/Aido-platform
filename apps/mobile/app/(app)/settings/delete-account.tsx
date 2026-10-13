@@ -104,7 +104,9 @@ function DeleteAccountForm() {
             submitBehavior="submit"
             returnKeyType="done"
             onSubmitEditing={() => {
-              if (isValid) handleDeletePress();
+              if (isValid) {
+                handleDeletePress();
+              }
             }}
           />
         </Animated.View>

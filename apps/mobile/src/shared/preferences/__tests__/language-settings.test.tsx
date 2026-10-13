@@ -46,7 +46,7 @@ jest.mock('heroui-native', () => {
   const { Pressable, View }: typeof ReactNativeTypes = require('react-native');
 
   const RadioGroupContext = React.createContext((mockValue: string) => {
-    void mockValue;
+    mockValue;
   });
 
   const RadioGroup = (

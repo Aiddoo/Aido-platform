@@ -65,7 +65,9 @@ export const CategoryCreateBottomSheet = ({
         },
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -75,7 +77,9 @@ export const CategoryCreateBottomSheet = ({
         <KeyboardBottomSheet
           isOpen={isOpen}
           onOpenChange={(open) => {
-            if (!open && premiumOpen) return;
+            if (!open && premiumOpen) {
+              return;
+            }
             onOpenChange(open);
           }}
         >
