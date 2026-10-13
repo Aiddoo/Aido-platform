@@ -5,24 +5,15 @@ import { useUpdateTodoCategoryMutationOptions } from '@src/features/todo/queries
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import {
-  BottomSheetInput,
-  Button,
-  Flex,
-  HStack,
-  KeyboardBottomSheet,
-  VStack,
-} from '@src/shared/ui';
+import { BottomSheetInput, Button, KeyboardBottomSheet, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider } from 'react-hook-form';
 import { useFormState } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 
-import { CATEGORY_COLORS } from '../constants/todo-category-colors';
+import { CategoryColorInput } from './category-color-input';
 
 interface CategoryEditBottomSheetProps {
   isOpen: boolean;
@@ -88,29 +79,7 @@ export const CategoryEditBottomSheet = ({
               )}
             </FormField>
             <FormField control={control} name="color">
-              {({ onChange, value }) => (
-                <HStack className="flex-wrap gap-2.5" align="center" justify="center">
-                  {CATEGORY_COLORS.map((color) => {
-                    const isSelected = value === color;
-
-                    return (
-                      <PressableFeedback key={color} onPress={() => onChange(color)}>
-                        <Flex
-                          align="center"
-                          justify="center"
-                          className={cn('size-8 rounded-4xl', isSelected && 'border-2')}
-                          style={isSelected ? { borderColor: color } : undefined}
-                        >
-                          <Flex
-                            className={cn('rounded-4xl', isSelected ? 'size-6' : 'size-7')}
-                            style={{ backgroundColor: color }}
-                          />
-                        </Flex>
-                      </PressableFeedback>
-                    );
-                  })}
-                </HStack>
-              )}
+              {({ onChange, value }) => <CategoryColorInput value={value} onChange={onChange} />}
             </FormField>
           </VStack>
 
