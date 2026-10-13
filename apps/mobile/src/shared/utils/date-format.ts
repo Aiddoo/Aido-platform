@@ -3,7 +3,7 @@ export interface DateFormatContext {
   timeZone: string;
 }
 
-type DateLabel = 'fullDate' | 'monthDay' | 'dayOfMonth' | 'yearMonth' | 'month';
+type DateLabel = 'fullDate' | 'monthDay' | 'dayOfMonth' | 'yearMonth' | 'month' | 'weekday';
 
 const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   fullDate: { year: 'numeric', month: 'long', day: 'numeric' },
@@ -11,6 +11,7 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   dayOfMonth: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
   month: { month: 'short' },
+  weekday: { weekday: 'short' },
 };
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
@@ -44,6 +45,11 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
     return context.locale === 'ko-KR' ? `${day}일` : day;
   }
   return formatter.format(date);
+}
+
+/** YYYY-MM-DD 날짜 key를 기기 시간대와 무관하게 그 날짜 그대로 표시한다. */
+export function formatDateKeyLabel(dateKey: string, kind: DateLabel, context: DateFormatContext) {
+  return formatDateLabel(new Date(`${dateKey}T00:00:00Z`), kind, { ...context, timeZone: 'UTC' });
 }
 
 export function formatClockTime(

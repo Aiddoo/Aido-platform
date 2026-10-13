@@ -33,3 +33,66 @@ describe('날씨 위치 지원 정책', () => {
     expect(differentArea).toBe(true);
   });
 });
+
+describe('미세먼지 등급 정책', () => {
+  test.each([
+    [30, 'good'],
+    [31, 'normal'],
+    [80, 'normal'],
+    [81, 'bad'],
+    [150, 'bad'],
+    [151, 'veryBad'],
+  ] as const)('PM10 %i㎍/㎥은 %s 등급이다', (pm10, expected) => {
+    // Given
+    const conditions = { pm10 };
+    // When
+    const grade = WeatherPolicy.pm10Grade(conditions);
+    // Then
+    expect(grade).toBe(expected);
+  });
+
+  test.each([
+    [15, 'good'],
+    [16, 'normal'],
+    [35, 'normal'],
+    [36, 'bad'],
+    [75, 'bad'],
+    [76, 'veryBad'],
+  ] as const)('PM2.5 %i㎍/㎥은 %s 등급이다', (pm25, expected) => {
+    // Given
+    const conditions = { pm25 };
+    // When
+    const grade = WeatherPolicy.pm25Grade(conditions);
+    // Then
+    expect(grade).toBe(expected);
+  });
+
+  test('측정값이 없으면 등급을 만들지 않는다', () => {
+    // Given
+    const conditions = { pm10: null, pm25: null };
+    // When
+    const grades = [WeatherPolicy.pm10Grade(conditions), WeatherPolicy.pm25Grade(conditions)];
+    // Then
+    expect(grades).toEqual([null, null]);
+  });
+});
+
+describe('기온 색 단계 정책', () => {
+  test.each([
+    [35, 'scorching'],
+    [34.9, 'hot'],
+    [25, 'warm'],
+    [20, 'mild'],
+    [15, 'fresh'],
+    [10, 'cool'],
+    [5, 'chilly'],
+    [4.9, 'cold'],
+  ] as const)('%s°는 %s 단계다', (temperature, expected) => {
+    // Given
+    const input = temperature;
+    // When
+    const tone = WeatherPolicy.temperatureTone(input);
+    // Then
+    expect(tone).toBe(expected);
+  });
+});

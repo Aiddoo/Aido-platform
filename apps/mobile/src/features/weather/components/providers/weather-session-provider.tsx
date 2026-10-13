@@ -18,6 +18,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -33,7 +34,7 @@ type LocationStatus =
   | 'denied'
   | 'unsupported'
   | 'error';
-interface WeatherSession {
+export interface WeatherSession {
   clock: ReturnType<typeof createWeatherClock>;
   locationRevision: number;
   status: LocationStatus;
@@ -197,21 +198,31 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
     };
   }, [syncLocation]);
 
+  const session = useMemo(
+    () => ({
+      clock,
+      locationRevision,
+      status,
+      isSyncing,
+      needsIntroduction,
+      locationName,
+      syncLocation,
+      dismissIntroduction,
+    }),
+    [
+      clock,
+      locationRevision,
+      status,
+      isSyncing,
+      needsIntroduction,
+      locationName,
+      syncLocation,
+      dismissIntroduction,
+    ],
+  );
+
   return (
-    <WeatherSessionContext.Provider
-      value={{
-        clock,
-        locationRevision,
-        status,
-        isSyncing,
-        needsIntroduction,
-        locationName,
-        syncLocation,
-        dismissIntroduction,
-      }}
-    >
-      {children}
-    </WeatherSessionContext.Provider>
+    <WeatherSessionContext.Provider value={session}>{children}</WeatherSessionContext.Provider>
   );
 }
 

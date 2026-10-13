@@ -59,17 +59,23 @@ export const locationSchema = z.object({
 
 export type Location = z.infer<typeof locationSchema>;
 
-export function shouldShowPrecipitation(forecast: WeatherForecast): boolean {
-  return forecast.precipitationType !== 'NONE' && forecast.precipitationProbability >= 30;
-}
+const PRECIPITATION_VISIBLE_PROBABILITY = 30;
+const FORECAST_BOUNDS = { minLatitude: 33, maxLatitude: 39, minLongitude: 124, maxLongitude: 132 };
+const RELOCATION_COORDINATE_DELTA = 0.01;
+const PM10_GRADE_THRESHOLDS = [30, 80, 150] as const;
+const PM25_GRADE_THRESHOLDS = [15, 35, 75] as const;
+const TEMPERATURE_TONE_THRESHOLDS = [
+  [35, 'scorching'],
+  [30, 'hot'],
+  [25, 'warm'],
+  [20, 'mild'],
+  [15, 'fresh'],
+  [10, 'cool'],
+  [5, 'chilly'],
+] as const;
 
-export function shouldShowHourlyPrecipitation(hourly: HourlyForecast): boolean {
-  return hourly.precipitationProbability >= 30;
-}
-
-export function hasHourlyForecasts(forecast: WeatherForecast): boolean {
-  return forecast.hourlyForecasts.length > 0;
-}
+export type DustGrade = 'good' | 'normal' | 'bad' | 'veryBad';
+export type TemperatureTone = (typeof TEMPERATURE_TONE_THRESHOLDS)[number][1] | 'cold';
 
 const weatherLocationInputSchema = z.object({
   latitude: z.number(),
@@ -77,40 +83,90 @@ const weatherLocationInputSchema = z.object({
   countryCode: z.string().nullable(),
 });
 type WeatherLocationInput = z.infer<typeof weatherLocationInputSchema>;
-const isWithinForecastBounds = (latitude: number, longitude: number): boolean =>
-  Number.isFinite(latitude) &&
-  Number.isFinite(longitude) &&
-  latitude >= 33 &&
-  latitude <= 39 &&
-  longitude >= 124 &&
-  longitude <= 132;
+type Coordinates = Pick<WeatherLocationInput, 'latitude' | 'longitude'>;
 
-const hasCoordinateDifference = (
-  latitude: number,
-  longitude: number,
-  previousLatitude: number,
-  previousLongitude: number,
-): boolean =>
-  Math.abs(latitude - previousLatitude) >= 0.01 || Math.abs(longitude - previousLongitude) >= 0.01;
+export function shouldShowPrecipitation(forecast: WeatherForecast): boolean {
+  return (
+    forecast.precipitationType !== 'NONE' &&
+    forecast.precipitationProbability >= PRECIPITATION_VISIBLE_PROBABILITY
+  );
+}
+
+export function shouldShowHourlyPrecipitation(hourly: HourlyForecast): boolean {
+  return hourly.precipitationProbability >= PRECIPITATION_VISIBLE_PROBABILITY;
+}
+
+export function hasHourlyForecasts(forecast: WeatherForecast): boolean {
+  return forecast.hourlyForecasts.length > 0;
+}
+
+export function isWithinSupportedBounds({ latitude, longitude }: Coordinates): boolean {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= FORECAST_BOUNDS.minLatitude &&
+    latitude <= FORECAST_BOUNDS.maxLatitude &&
+    longitude >= FORECAST_BOUNDS.minLongitude &&
+    longitude <= FORECAST_BOUNDS.maxLongitude
+  );
+}
+
+export function isRelocationNeeded(location: Coordinates, previous: Coordinates): boolean {
+  return (
+    Math.abs(location.latitude - previous.latitude) >= RELOCATION_COORDINATE_DELTA ||
+    Math.abs(location.longitude - previous.longitude) >= RELOCATION_COORDINATE_DELTA
+  );
+}
+
+export function isSupportedLocation(location: WeatherLocationInput): boolean {
+  return location.countryCode?.toUpperCase() === 'KR' && isWithinSupportedBounds(location);
+}
+
+export function calculateDustGrade(
+  value: number,
+  [good, normal, bad]: readonly [number, number, number],
+): DustGrade {
+  if (value <= good) {
+    return 'good';
+  }
+  if (value <= normal) {
+    return 'normal';
+  }
+  if (value <= bad) {
+    return 'bad';
+  }
+  return 'veryBad';
+}
+
+export function getPm10Grade(conditions: Pick<WeatherConditions, 'pm10'>): DustGrade | null {
+  if (conditions.pm10 == null) {
+    return null;
+  }
+
+  return calculateDustGrade(conditions.pm10, PM10_GRADE_THRESHOLDS);
+}
+
+export function getPm25Grade(conditions: Pick<WeatherConditions, 'pm25'>): DustGrade | null {
+  if (conditions.pm25 == null) {
+    return null;
+  }
+
+  return calculateDustGrade(conditions.pm25, PM25_GRADE_THRESHOLDS);
+}
+
+export function getTemperatureTone(temperature: number): TemperatureTone {
+  const matched = TEMPERATURE_TONE_THRESHOLDS.find(([minimum]) => temperature >= minimum);
+  return matched?.[1] ?? 'cold';
+}
 
 export const WeatherPolicy = {
-  isWithinSupportedBounds: (
-    location: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
-  ): boolean => isWithinForecastBounds(location.latitude, location.longitude),
-  isRelocationNeeded: (
-    location: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
-    previous: Pick<WeatherLocationInput, 'latitude' | 'longitude'>,
-  ): boolean =>
-    hasCoordinateDifference(
-      location.latitude,
-      location.longitude,
-      previous.latitude,
-      previous.longitude,
-    ),
-  isSupportedLocation: (location: WeatherLocationInput): boolean =>
-    location.countryCode?.toUpperCase() === 'KR' &&
-    isWithinForecastBounds(location.latitude, location.longitude),
+  isWithinSupportedBounds,
+  isRelocationNeeded,
+  isSupportedLocation,
   shouldShowPrecipitation,
   shouldShowHourlyPrecipitation,
   hasHourlyForecasts,
+  pm10Grade: getPm10Grade,
+  pm25Grade: getPm25Grade,
+  temperatureTone: getTemperatureTone,
 } as const;
