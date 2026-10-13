@@ -1,4 +1,3 @@
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useClipboard } from '@src/shared/hooks/use-clipboard';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -7,12 +6,13 @@ import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
+import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
 
 import type { UserTier } from '../domains/user.model';
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { formatUserHashtag } from '../utils/user-hashtag';
+import { UserAvatar } from './user-avatar';
 
 export function ProfileCard() {
   const push = useSingleTap(router.push);
@@ -33,9 +33,11 @@ export function ProfileCard() {
   return (
     <PressableFeedback onPress={() => push('/settings/profile')} className="rounded-2xl px-4 py-3">
       <HStack gap={12} align="center">
-        <Avatar size="lg" alt={t('profile.avatarAlt', { name: user.name })}>
-          <Avatar.Image source={getProfileIconSource(user.profileImage)} />
-        </Avatar>
+        <UserAvatar
+          size="lg"
+          alt={t('profile.avatarAlt', { name: user.name })}
+          profileImage={user.profileImage}
+        />
 
         <VStack className="flex-1">
           <HStack align="center" gap={6}>

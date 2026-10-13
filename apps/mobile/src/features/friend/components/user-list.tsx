@@ -1,8 +1,8 @@
 import { FlashList } from '@shopify/flash-list';
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { Flex, VStack, HStack, ListRow } from '@src/shared/ui';
 import { times } from 'es-toolkit/compat';
-import { Avatar, Skeleton } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { type ReactElement, type ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
@@ -111,11 +111,7 @@ UserList.Item = function Item({ displayName, subtitle, profileImage, action }: U
   return (
     <ListRow
       horizontalPadding="none"
-      left={
-        <Avatar alt={displayName} className="size-10">
-          <Avatar.Image source={getProfileIconSource(profileImage)} />
-        </Avatar>
-      }
+      left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}
       contents={
         subtitle != null ? (
           <ListRow.Texts

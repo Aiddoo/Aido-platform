@@ -1,7 +1,7 @@
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,7 +17,7 @@ import {
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Slot, router, useGlobalSearchParams } from 'expo-router';
-import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -126,9 +126,7 @@ AvatarList.Item = function Item({ name, image, isSelected, onPress }: AvatarList
   return (
     <PressableFeedback onPress={onPress}>
       <VStack align="center" gap={4}>
-        <Avatar size="sm" alt={t('feed.avatarAlt', { name })}>
-          <Avatar.Image source={getProfileIconSource(image)} />
-        </Avatar>
+        <UserAvatar size="sm" alt={t('feed.avatarAlt', { name })} profileImage={image} />
         <Text
           size="e1"
           shade={isSelected ? 9 : 6}

@@ -3,11 +3,11 @@ import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-butto
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { useGetTodoNudgeLimitQueryOptions } from '@src/features/nudge/queries/get-todo-nudge-limit-query-options';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Avatar, ChatBubbleIcon, EyeIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { ChatBubbleIcon, EyeIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
@@ -39,9 +39,7 @@ function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
 
   return (
     <HStack gap={10} align="center">
-      <Avatar alt={ownerName} className="size-11">
-        <Avatar.Image source={getProfileIconSource(detail.owner.profileImage)} />
-      </Avatar>
+      <UserAvatar alt={ownerName} className="size-11" profileImage={detail.owner.profileImage} />
       <VStack flex={1} gap={2} className="min-w-0">
         <Text size="b3" weight="semibold">
           {ownerName}

@@ -1,12 +1,11 @@
 import { ErrorCode } from '@aido/api/errors';
 import { FlashList } from '@shopify/flash-list';
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { isApiError } from '@src/shared/errors';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Avatar,
   Box,
   Button,
   HStack,
@@ -113,9 +112,11 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
         horizontalPadding="medium"
         verticalPadding="large"
         left={
-          <Avatar alt={nudge.receiverName} className="size-11">
-            <Avatar.Image source={getProfileIconSource(nudge.receiverProfileImage)} />
-          </Avatar>
+          <UserAvatar
+            alt={nudge.receiverName}
+            className="size-11"
+            profileImage={nudge.receiverProfileImage}
+          />
         }
         contents={
           <VStack gap={6}>

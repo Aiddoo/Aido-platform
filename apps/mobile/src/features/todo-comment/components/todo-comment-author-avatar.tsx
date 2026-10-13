@@ -1,6 +1,5 @@
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useTranslation } from '@src/shared/i18n';
-import { Avatar } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import type { ComponentProps } from 'react';
 
@@ -21,8 +20,8 @@ const AVATAR_SIZE: Record<TodoCommentAuthorAvatarSize, string> = {
 };
 
 interface TodoCommentAuthorAvatarProps extends Omit<
-  ComponentProps<typeof Avatar>,
-  'alt' | 'children' | 'size'
+  ComponentProps<typeof UserAvatar>,
+  'alt' | 'profileImage' | 'size'
 > {
   author: TodoCommentAuthor | null;
   size: TodoCommentAuthorAvatarSize;
@@ -37,12 +36,11 @@ export function TodoCommentAuthorAvatar({
   const { t } = useTranslation('todoComment');
 
   return (
-    <Avatar
+    <UserAvatar
       {...avatarProps}
       alt={author?.name ?? t('list.unknownUser')}
       className={cn(AVATAR_SIZE[size], className)}
-    >
-      <Avatar.Image source={getProfileIconSource(author?.profileImage ?? null)} />
-    </Avatar>
+      profileImage={author?.profileImage ?? null}
+    />
   );
 }

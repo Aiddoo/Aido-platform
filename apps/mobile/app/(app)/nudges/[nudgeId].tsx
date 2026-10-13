@@ -4,14 +4,13 @@ import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-intera
 import { useGetNudgeInteractionQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-query-options';
 import { useReplyToNudgeMutationOptions } from '@src/features/nudge/queries/use-reply-to-nudge-mutation-options';
 import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
-  Avatar,
   Button,
   CheckIcon,
   ClockIcon,
@@ -57,9 +56,7 @@ function NudgeDetailScreen() {
     <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
       <VStack gap={24}>
         <HStack gap={12} align="center">
-          <Avatar alt={friendName} className="size-12">
-            <Avatar.Image source={getProfileIconSource(profileImage)} />
-          </Avatar>
+          <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
           <VStack flex={1} gap={4}>
             <Text size="b3" weight="semibold">
               {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}

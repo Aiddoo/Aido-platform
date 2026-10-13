@@ -1,10 +1,9 @@
 import { ErrorCode } from '@aido/api/errors';
 import { FlashList } from '@shopify/flash-list';
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Avatar,
   Box,
   Button,
   HeartFilledIcon,
@@ -197,9 +196,7 @@ NudgeThanksButton.Recipient = function Recipient({
 }) {
   return (
     <HStack align="center" gap={12} py={12}>
-      <Avatar alt={recipient.name} className="size-10">
-        <Avatar.Image source={getProfileIconSource(recipient.profileImage)} />
-      </Avatar>
+      <UserAvatar alt={recipient.name} className="size-10" profileImage={recipient.profileImage} />
       <Text size="b3" className="shrink" maxLines={2}>
         {recipient.name}
       </Text>

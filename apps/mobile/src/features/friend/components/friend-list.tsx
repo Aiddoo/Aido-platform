@@ -1,4 +1,4 @@
-import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -20,7 +20,7 @@ import { cn } from '@src/shared/utils/cn';
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Avatar, Popover, PressableFeedback, Skeleton } from 'heroui-native';
+import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -152,9 +152,11 @@ export function FriendList() {
                     <ListRow
                       horizontalPadding="none"
                       left={
-                        <Avatar alt={displayName} className="size-10">
-                          <Avatar.Image source={getProfileIconSource(item.profileImage)} />
-                        </Avatar>
+                        <UserAvatar
+                          alt={displayName}
+                          className="size-10"
+                          profileImage={item.profileImage}
+                        />
                       }
                       contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
                       right={

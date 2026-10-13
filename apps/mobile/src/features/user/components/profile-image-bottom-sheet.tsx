@@ -1,7 +1,7 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker';
 import { useTranslation } from '@src/shared/i18n';
-import { Avatar, Button, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import { Button, HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { BottomSheet } from 'heroui-native';
 import { useEffect, useState } from 'react';
@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { useUpdateProfileMutationOptions } from '../queries/use-update-profile-mutation-options';
-import { getProfileIconSource } from '../utils/profile-icon.util';
+import { UserAvatar } from './user-avatar';
 
 interface ProfileImageBottomSheetProps {
   isOpen: boolean;
@@ -63,12 +63,11 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
               </BottomSheet.Title>
 
               <VStack align="center">
-                <Avatar
+                <UserAvatar
                   className="w-24 h-24 rounded-full"
                   alt={t('profile.imageSheet.selectedAlt')}
-                >
-                  <Avatar.Image source={getProfileIconSource(selectedIcon)} />
-                </Avatar>
+                  profileImage={selectedIcon}
+                />
               </VStack>
 
               <AppIconPicker
