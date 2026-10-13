@@ -2,8 +2,8 @@ import { reportTypeSchema } from '@aido/api';
 import { ReportCard } from '@src/features/ai/components/report-card';
 import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
 import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
 import { getSampleReport } from '@src/features/ai/constants/sample-reports';
+import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
 import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
 import { UserPolicy } from '@src/features/user/domains/user.model';
@@ -21,24 +21,39 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense, useCallback } from 'react';
 import { Image, RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
 import type { z } from 'zod';
 
 type ReportType = z.infer<typeof reportTypeSchema>;
 
+const REPORT_TYPE_LABEL_KEYS = {
+  WEEKLY: 'report.typeWeekly',
+  MONTHLY: 'report.typeMonthly',
+} as const satisfies Record<ReportType, string>;
+
+const SAMPLE_REPORT_IDS = {
+  WEEKLY: 'sample-weekly',
+  MONTHLY: 'sample-monthly',
+} as const satisfies Record<ReportType, string>;
+
+function useReportType() {
+  const { type } = useLocalSearchParams();
+  const setType = useCallback((next: ReportType) => router.setParams({ type: next }), []);
+
+  return [reportTypeSchema.catch('WEEKLY').parse(type), setType] as const;
+}
+
 function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
-  const [activeTab, setActiveTab] = useState<ReportType>('WEEKLY');
-  const [refreshing, onRefresh] = useRefresh(() =>
-    queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.all }),
-  );
+  const [reportType, setReportType] = useReportType();
+  const [refreshing, onRefresh] = useRefresh(() => invalidateAiReports(queryClient));
 
   return (
     <ScrollView
@@ -79,41 +94,19 @@ function ReportsScreen() {
 
         <View className="px-4">
           <Tabs
-            value={activeTab}
+            value={reportType}
             onValueChange={(value) => {
               const parsed = reportTypeSchema.safeParse(value);
               if (parsed.success) {
-                setActiveTab(parsed.data);
+                setReportType(parsed.data);
               }
             }}
             variant="primary"
           >
             <Tabs.List>
               <Tabs.Indicator />
-              <Tabs.Trigger value="WEEKLY">
-                {({ isSelected }) => (
-                  <Tabs.Label>
-                    <Text
-                      size="b4"
-                      className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
-                    >
-                      {t('report.typeWeekly')}
-                    </Text>
-                  </Tabs.Label>
-                )}
-              </Tabs.Trigger>
-              <Tabs.Trigger value="MONTHLY">
-                {({ isSelected }) => (
-                  <Tabs.Label>
-                    <Text
-                      size="b4"
-                      className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
-                    >
-                      {t('report.typeMonthly')}
-                    </Text>
-                  </Tabs.Label>
-                )}
-              </Tabs.Trigger>
+              <ReportTypeTab type="WEEKLY" />
+              <ReportTypeTab type="MONTHLY" />
             </Tabs.List>
           </Tabs>
         </View>
@@ -123,13 +116,13 @@ function ReportsScreen() {
         <View className="px-4 pb-4">
           {match(isPremium)
             .with(true, () => (
-              <QueryErrorBoundary resetKeys={[activeTab]}>
+              <QueryErrorBoundary resetKeys={[reportType]}>
                 <Suspense fallback={<ReportCard.Loading />}>
-                  <ReportList type={activeTab} />
+                  <ReportList />
                 </Suspense>
               </QueryErrorBoundary>
             ))
-            .with(false, () => <FreeReportPreview type={activeTab} />)
+            .with(false, () => <FreeReportPreview />)
             .exhaustive()}
         </View>
       </ScallopedContainer>
@@ -139,11 +132,27 @@ function ReportsScreen() {
   );
 }
 
-function FreeReportPreview({ type }: { type: ReportType }) {
-  const push = useSingleTap(router.push);
-
+function ReportTypeTab({ type }: { type: ReportType }) {
   const { t } = useTranslation('ai');
-  const sampleReport = getSampleReport(`sample-${type.toLowerCase()}`);
+
+  return (
+    <Tabs.Trigger value={type}>
+      {({ isSelected }) => (
+        <Tabs.Label>
+          <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+            {t(REPORT_TYPE_LABEL_KEYS[type])}
+          </Text>
+        </Tabs.Label>
+      )}
+    </Tabs.Trigger>
+  );
+}
+
+function FreeReportPreview() {
+  const push = useSingleTap(router.push);
+  const { t } = useTranslation('ai');
+  const [reportType] = useReportType();
+  const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
 
   return (
     <VStack gap={12}>
@@ -158,11 +167,12 @@ function FreeReportPreview({ type }: { type: ReportType }) {
   );
 }
 
-function ReportList({ type }: { type: ReportType }) {
-  const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type }));
+function ReportList() {
+  const [reportType] = useReportType();
+  const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type: reportType }));
 
   if (reports.length === 0) {
-    return <PremiumPendingPreview type={type} />;
+    return <PremiumPendingPreview />;
   }
 
   return (
@@ -174,13 +184,16 @@ function ReportList({ type }: { type: ReportType }) {
   );
 }
 
-function PremiumPendingPreview({ type }: { type: ReportType }) {
+function PremiumPendingPreview() {
   const { t } = useTranslation('ai');
+  const [reportType] = useReportType();
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
-  const sampleReport = getSampleReport(`sample-${type.toLowerCase()}`);
-
-  const daysUntil = type === 'WEEKLY' ? status.daysUntilWeekly : status.daysUntilMonthly;
-  const reportLabel = type === 'WEEKLY' ? t('report.typeWeekly') : t('report.typeMonthly');
+  const sampleReport = getSampleReport(SAMPLE_REPORT_IDS[reportType]);
+  const daysUntil = match(reportType)
+    .with('WEEKLY', () => status.daysUntilWeekly)
+    .with('MONTHLY', () => status.daysUntilMonthly)
+    .exhaustive();
+  const reportLabel = t(REPORT_TYPE_LABEL_KEYS[reportType]);
 
   return (
     <VStack gap={12}>

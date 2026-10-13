@@ -2,7 +2,6 @@ import { CategoryCreateBottomSheet } from '@src/features/todo/components/categor
 import { CategoryList } from '@src/features/todo/components/category-list';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Flex,
   H3,
   HStack,
   PlusIcon,
@@ -10,24 +9,38 @@ import {
   StyledSafeAreaView,
   Text,
   useOverlay,
+  VStack,
 } from '@src/shared/ui';
 import { fontScaledSize } from '@src/shared/utils/scale';
+import { router, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback, Tabs } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense, useCallback } from 'react';
 import { z } from 'zod';
 
-const TAB = {
+const View = {
   edit: 'edit',
   reorder: 'reorder',
 } as const;
 
-const categoryTabSchema = z.enum(TAB);
-type TabValue = z.infer<typeof categoryTabSchema>;
+const viewSchema = z.enum(View);
+type View = z.infer<typeof viewSchema>;
+
+const VIEW_LABEL_KEYS = {
+  edit: 'categorySettings.editTab',
+  reorder: 'categorySettings.reorderTab',
+} as const satisfies Record<View, string>;
+
+function useView() {
+  const { view } = useLocalSearchParams();
+  const setView = useCallback((next: View) => router.setParams({ view: next }), []);
+
+  return [viewSchema.catch(View.edit).parse(view), setView] as const;
+}
 
 function TodoCategorySettingsScreen() {
   const { t } = useTranslation('settings');
   const createOverlay = useOverlay();
-  const [tab, setTab] = useState<TabValue>(TAB.edit);
+  const [view, setView] = useView();
 
   const handleCreateCategory = () => {
     createOverlay.open(({ isOpen, close, exit }) => (
@@ -47,50 +60,24 @@ function TodoCategorySettingsScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <Flex direction="column" gap={8} flex={1} className="px-4">
-        <Flex direction="column" gap={4} className="my-4">
-          <H3>{t('categorySettings.header')}</H3>
-        </Flex>
+      <VStack gap={8} flex={1} className="px-4">
+        <H3 className="my-4">{t('categorySettings.header')}</H3>
 
         <HStack justify="between" align="center" className="mb-3">
           <Tabs
-            value={tab}
+            value={view}
             onValueChange={(value) => {
-              const parsed = categoryTabSchema.safeParse(value);
+              const parsed = viewSchema.safeParse(value);
               if (parsed.success) {
-                setTab(parsed.data);
+                setView(parsed.data);
               }
             }}
             variant="primary"
           >
             <Tabs.List>
               <Tabs.Indicator />
-              <Tabs.Trigger value={TAB.edit}>
-                {({ isSelected }) => (
-                  <Tabs.Label>
-                    <Text
-                      size="b4"
-                      weight={isSelected ? 'bold' : 'medium'}
-                      shade={isSelected ? 8 : 6}
-                    >
-                      {t('categorySettings.editTab')}
-                    </Text>
-                  </Tabs.Label>
-                )}
-              </Tabs.Trigger>
-              <Tabs.Trigger value={TAB.reorder}>
-                {({ isSelected }) => (
-                  <Tabs.Label>
-                    <Text
-                      size="b4"
-                      weight={isSelected ? 'bold' : 'medium'}
-                      shade={isSelected ? 8 : 6}
-                    >
-                      {t('categorySettings.reorderTab')}
-                    </Text>
-                  </Tabs.Label>
-                )}
-              </Tabs.Trigger>
+              <ViewTab view={View.edit} />
+              <ViewTab view={View.reorder} />
             </Tabs.List>
           </Tabs>
 
@@ -110,12 +97,28 @@ function TodoCategorySettingsScreen() {
 
         <QueryErrorBoundary>
           <Suspense fallback={<CategoryList.Loading />}>
-            <CategoryList mode={tab} />
+            <CategoryList mode={view} />
           </Suspense>
         </QueryErrorBoundary>
-      </Flex>
+      </VStack>
     </StyledSafeAreaView>
   );
 }
 
 export default TodoCategorySettingsScreen;
+
+function ViewTab({ view }: { view: View }) {
+  const { t } = useTranslation('settings');
+
+  return (
+    <Tabs.Trigger value={view}>
+      {({ isSelected }) => (
+        <Tabs.Label>
+          <Text size="b4" weight={isSelected ? 'bold' : 'medium'} shade={isSelected ? 8 : 6}>
+            {t(VIEW_LABEL_KEYS[view])}
+          </Text>
+        </Tabs.Label>
+      )}
+    </Tabs.Trigger>
+  );
+}

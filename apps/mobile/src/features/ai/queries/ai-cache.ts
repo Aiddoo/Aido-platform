@@ -19,3 +19,10 @@ export function getParsedMemo(queryClient: QueryClient, { memoId }: { memoId: nu
 export function clearParsedMemo(queryClient: QueryClient, { memoId }: { memoId: number }) {
   queryClient.removeQueries({ queryKey: AI_QUERY_KEYS.parseMemo({ memoId }) });
 }
+
+export function invalidateAiReports(queryClient: QueryClient) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.status() }),
+    queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.lists() }),
+  ]);
+}
