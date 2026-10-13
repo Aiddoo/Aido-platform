@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { AchievementSummaryCard } from '@src/features/achievement/components/achievement-summary-card';
 import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
-import { CertificateBorder } from '@src/features/achievement/components/certificate-border';
+import { Certificate } from '@src/features/achievement/components/certificate';
 import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/constants/achievement-query-keys';
 import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/achievement/queries/get-weekly-achievements-infinite-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
@@ -13,7 +13,6 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   Button,
-  H3,
   HStack,
   ListRow,
   QueryErrorBoundary,
@@ -119,57 +118,44 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation('achievement');
   return (
     <View>
-      <View className="bg-white rounded-sm overflow-hidden p-3">
-        <CertificateBorder>
-          <View className="px-5 pt-7 pb-5">
-            <VStack align="center" gap={4}>
-              <Text size="e1" tone="brand" className="tracking-widest">
-                WEEKLY BADGE
-              </Text>
-              <H3 className="tracking-wider">{t('card.title')}</H3>
-            </VStack>
+      <Certificate>
+        <Spacing size={12} />
 
-            <Spacing size={12} />
+        <Certificate.Ornament />
 
-            <Text tone="brand" align="center">
-              {'── ✦ ──'}
-            </Text>
+        <Spacing size={16} />
 
-            <Spacing size={16} />
+        <VStack align="center">
+          <Image
+            source={require('@assets/images/badge_empty.webp')}
+            style={{ width: 80, height: 80 }}
+            resizeMode="contain"
+          />
+        </VStack>
 
-            <VStack align="center">
-              <Image
-                source={require('@assets/images/badge_empty.webp')}
-                style={{ width: 80, height: 80 }}
-                resizeMode="contain"
-              />
-            </VStack>
+        <Spacing size={16} />
 
-            <Spacing size={16} />
+        <Text
+          size="b3"
+          shade={7}
+          align="center"
+          weight="medium"
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
+          {t('list.emptyTitle')}
+        </Text>
 
-            <Text
-              size="b3"
-              shade={7}
-              align="center"
-              weight="medium"
-              lineBreakStrategyIOS="hangul-word"
-              textBreakStrategy="highQuality"
-            >
-              {t('list.emptyTitle')}
-            </Text>
+        <Spacing size={20} />
 
-            <Spacing size={20} />
+        <DashedDivider />
 
-            <DashedDivider />
+        <Spacing size={14} />
 
-            <Spacing size={14} />
-
-            <Button size="medium" variant="weak" display="block" onPress={onPress}>
-              {t('list.startNow')}
-            </Button>
-          </View>
-        </CertificateBorder>
-      </View>
+        <Button size="medium" variant="weak" display="block" onPress={onPress}>
+          {t('list.startNow')}
+        </Button>
+      </Certificate>
     </View>
   );
 }

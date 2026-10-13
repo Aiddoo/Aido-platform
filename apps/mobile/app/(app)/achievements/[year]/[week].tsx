@@ -1,5 +1,5 @@
 import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
-import { CertificateBorder } from '@src/features/achievement/components/certificate-border';
+import { Certificate } from '@src/features/achievement/components/certificate';
 import {
   achievementScreenParamsSchema,
   useAchievementScreenParams,
@@ -14,7 +14,6 @@ import { useTrack } from '@src/shared/analytics';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
-  H3,
   H4,
   QueryErrorBoundary,
   ShareIcon,
@@ -64,81 +63,65 @@ function AchievementDetailScreen() {
       contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
     >
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
-        <View className="bg-white rounded-sm overflow-hidden p-3">
-          <CertificateBorder>
-            <View className="px-5 pt-7 pb-5">
-              <VStack align="center" gap={4}>
-                <Text size="e1" tone="brand" className="tracking-widest">
-                  WEEKLY BADGE
-                </Text>
-                <H3 className="tracking-wider">{t('card.title')}</H3>
-                <Text size="b4" shade={6} weight="medium">
-                  {badgeName}
-                </Text>
-              </VStack>
+        <Certificate subtitle={badgeName}>
+          <Spacing size={16} />
 
-              <Spacing size={16} />
+          <VStack align="center" gap={8}>
+            <BadgeIcon type={badgeType} size="large" />
+          </VStack>
 
-              <VStack align="center" gap={8}>
-                <BadgeIcon type={badgeType} size="large" />
-              </VStack>
+          <Spacing size={16} />
 
-              <Spacing size={16} />
+          <Certificate.Ornament />
 
-              <Text tone="brand" align="center">
-                {'── ✦ ──'}
-              </Text>
+          <Spacing size={16} />
 
-              <Spacing size={16} />
-
-              <VStack align="center" gap={4}>
-                <Text size="e1" shade={5}>
-                  {t('card.nameLabel')}
-                </Text>
-                <View className="border-b border-gray-3 pb-1 px-8">
-                  <H4
-                    weight="bold"
-                    align="center"
-                    lineBreakStrategyIOS="hangul-word"
-                    textBreakStrategy="highQuality"
-                  >
-                    {user.name}
-                  </H4>
-                </View>
-              </VStack>
-
-              <Spacing size={16} />
-
-              <Text
-                size="b3"
-                shade={7}
+          <VStack align="center" gap={4}>
+            <Text size="e1" shade={5}>
+              {t('card.nameLabel')}
+            </Text>
+            <View className="border-b border-gray-3 pb-1 px-8">
+              <H4
+                weight="bold"
                 align="center"
-                weight="medium"
                 lineBreakStrategyIOS="hangul-word"
                 textBreakStrategy="highQuality"
               >
-                {t('card.certificate', {
-                  weekLabel: achievement.weekLabel,
-                  total: achievement.totalTodos,
-                  completed: achievement.completedTodos,
-                  rate: achievement.completionRate,
-                })}
-              </Text>
-
-              <Spacing size={20} />
-
-              <DashedDivider />
-
-              <Spacing size={14} />
-
-              <VStack align="center" gap={2}>
-                <Text size="e1" shade={5}>
-                  {achievement.dateRange.startDate} ~ {achievement.dateRange.endDate}
-                </Text>
-              </VStack>
+                {user.name}
+              </H4>
             </View>
-          </CertificateBorder>
-        </View>
+          </VStack>
+
+          <Spacing size={16} />
+
+          <Text
+            size="b3"
+            shade={7}
+            align="center"
+            weight="medium"
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+          >
+            {t('card.certificate', {
+              weekLabel: achievement.weekLabel,
+              total: achievement.totalTodos,
+              completed: achievement.completedTodos,
+              rate: achievement.completionRate,
+            })}
+          </Text>
+
+          <Spacing size={20} />
+
+          <DashedDivider />
+
+          <Spacing size={14} />
+
+          <VStack align="center" gap={2}>
+            <Text size="e1" shade={5}>
+              {achievement.dateRange.startDate} ~ {achievement.dateRange.endDate}
+            </Text>
+          </VStack>
+        </Certificate>
       </ViewShot>
 
       <Spacing size={8} />

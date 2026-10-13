@@ -19,7 +19,8 @@
     "perfectCount_one": "{{count}} time",
     "perfectCount_other": "{{count}} times",
     "streakWeeks_one": "{{count}} week",
-    "streakWeeks_other": "{{count}} weeks"
+    "streakWeeks_other": "{{count}} weeks",
+    "eyebrow": "WEEKLY BADGE"
   },
   "list": {
     "sectionTitle": "History",

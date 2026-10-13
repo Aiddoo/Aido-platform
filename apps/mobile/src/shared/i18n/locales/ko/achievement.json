@@ -17,7 +17,8 @@
     "statStreak": "연속",
     "statAverage": "평균",
     "perfectCount": "{{count}}회",
-    "streakWeeks": "{{count}}주"
+    "streakWeeks": "{{count}}주",
+    "eyebrow": "WEEKLY BADGE"
   },
   "list": {
     "sectionTitle": "기록",
