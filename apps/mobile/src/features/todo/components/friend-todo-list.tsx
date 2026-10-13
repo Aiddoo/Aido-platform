@@ -1,7 +1,7 @@
 import { useFriendScreenParams } from '@src/features/friend/hooks/use-friend-screen-params';
 import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
 import type { FriendUserViewModel } from '@src/features/friend/utils/view-models/friend-user.view-model';
-import { RemindNudgeBottomSheet } from '@src/features/nudge/components/remind-nudge-bottom-sheet';
+import { RemindNudgeBottomSheet } from '@src/features/nudge/components/nudge-bottom-sheet';
 import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queries/get-remind-nudge-cooldown-query-options';
@@ -183,7 +183,7 @@ function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
   const openRemindNudgeSheet = () => {
     overlay.open(({ isOpen, close, exit }) => (
       <RemindNudgeBottomSheet
-        friend={friend}
+        receiver={friend}
         isOpen={isOpen}
         onOpenChange={(open) => {
           if (!open) {

@@ -120,7 +120,8 @@
     "dialogPlaceholder": "(Optional) Cheering you on for {{title}}!",
     "remindTitle": "Shall we start today together?",
     "remindPlaceholder": "(Optional) Let’s start with one small to-do!",
-    "statusUnavailable": "Couldn’t check if you can send a nudge"
+    "statusUnavailable": "Couldn’t check if you can send a nudge",
+    "to": "to. {{name}}"
   },
   "category": {
     "nameLabel": "Category name",

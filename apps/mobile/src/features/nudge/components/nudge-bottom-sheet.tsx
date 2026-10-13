@@ -7,12 +7,11 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { Image, View } from 'react-native';
 
 import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
+import { useSendRemindNudgeMutationOptions } from '../queries/use-send-remind-nudge-mutation-options';
 import { useSendTodoNudgeMutationOptions } from '../queries/use-send-todo-nudge-mutation-options';
 
 export interface NudgeReceiver {
@@ -25,33 +24,73 @@ export interface NudgeTargetTodo {
   title: string;
 }
 
-interface NudgeBottomSheetProps extends Omit<
-  ComponentProps<typeof KeyboardBottomSheet>,
-  'children'
-> {
-  receiver: NudgeReceiver;
-  todo: NudgeTargetTodo;
-}
+type SheetProps = Omit<ComponentProps<typeof KeyboardBottomSheet>, 'children'>;
 
+/** 특정 할 일에 응원 메시지를 보내는 시트 */
 export function NudgeBottomSheet({
   receiver,
   todo,
-  isOpen,
-  onOpenChange,
-  ...bottomSheetProps
-}: NudgeBottomSheetProps) {
-  const { showBoundary } = useErrorBoundary();
-
+  ...sheetProps
+}: SheetProps & { receiver: NudgeReceiver; todo: NudgeTargetTodo }) {
   const { t } = useTranslation('todo');
-  const sendNudgeMutation = useMutation(useSendTodoNudgeMutationOptions());
+  const sendNudge = useMutation(useSendTodoNudgeMutationOptions());
 
+  return (
+    <NudgeMessageSheet
+      {...sheetProps}
+      receiver={receiver}
+      caption={t('nudge.whenTodo', { title: todo.title })}
+      placeholder={t('nudge.placeholder')}
+      onSend={(message) =>
+        sendNudge.mutateAsync({ receiverId: receiver.id, todoId: todo.id, message })
+      }
+    />
+  );
+}
+
+/** 오늘 할 일이 없는 친구에게 독촉 메시지를 보내는 시트 */
+export function RemindNudgeBottomSheet({
+  receiver,
+  ...sheetProps
+}: SheetProps & { receiver: NudgeReceiver }) {
+  const { t } = useTranslation('todo');
+  const sendRemindNudge = useMutation(useSendRemindNudgeMutationOptions());
+
+  return (
+    <NudgeMessageSheet
+      {...sheetProps}
+      receiver={receiver}
+      caption={t('nudge.remindTitle')}
+      placeholder={t('nudge.remindPlaceholder')}
+      onSend={(message) => sendRemindNudge.mutateAsync({ receiverId: receiver.id, message })}
+    />
+  );
+}
+
+interface NudgeMessageSheetProps extends SheetProps {
+  receiver: NudgeReceiver;
+  caption: string;
+  placeholder: string;
+  onSend: (message: string | undefined) => Promise<unknown>;
+}
+
+function NudgeMessageSheet({
+  receiver,
+  caption,
+  placeholder,
+  onSend,
+  onOpenChange,
+  ...sheetProps
+}: NudgeMessageSheetProps) {
+  const { showBoundary } = useErrorBoundary();
+  const { t } = useTranslation('todo');
   const formMethods = useForm({
     resolver: zodResolver(nudgeFormSchema),
     defaultValues: { message: '' },
     mode: 'onChange',
   });
   const { control, handleSubmit, reset } = formMethods;
-  const { isSubmitting, isValid } = useFormState({ control: control });
+  const { isSubmitting, isValid } = useFormState({ control });
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -60,18 +99,10 @@ export function NudgeBottomSheet({
     onOpenChange(open);
   };
 
-  const onSubmit = async (data: NudgeFormInput) => {
+  const onSubmit = async ({ message }: NudgeFormInput) => {
     try {
-      await sendNudgeMutation.mutateAsync(
-        {
-          receiverId: receiver.id,
-          todoId: todo.id,
-          message: data.message,
-        },
-        {
-          onSuccess: () => handleOpenChange(false),
-        },
-      );
+      await onSend(message);
+      handleOpenChange(false);
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
@@ -81,15 +112,13 @@ export function NudgeBottomSheet({
 
   return (
     <FormProvider {...formMethods}>
-      <KeyboardBottomSheet {...bottomSheetProps} isOpen={isOpen} onOpenChange={handleOpenChange}>
+      <KeyboardBottomSheet {...sheetProps} onOpenChange={handleOpenChange}>
         <VStack gap={16} pb={16}>
-          <VStack gap={4}>
-            <VStack gap={2}>
-              <Text size="b3" shade={6}>
-                {t('nudge.whenTodo', { title: todo.title })}
-              </Text>
-              <H4>{t('nudge.sheetTitle')}</H4>
-            </VStack>
+          <VStack gap={2}>
+            <Text size="b3" shade={6}>
+              {caption}
+            </Text>
+            <H4>{t('nudge.sheetTitle')}</H4>
           </VStack>
 
           <View>
@@ -101,9 +130,9 @@ export function NudgeBottomSheet({
             <FormField control={control} name="message">
               {({ onChange, value }, { error }) => (
                 <BottomSheetTextArea
-                  label={`to. ${receiver.displayName}`}
+                  label={t('nudge.to', { name: receiver.displayName })}
                   isInvalid={!!error}
-                  placeholder={t('nudge.placeholder')}
+                  placeholder={placeholder}
                   value={value ?? ''}
                   onChange={onChange}
                   className="z-10 min-h-0 h-[80px]"
