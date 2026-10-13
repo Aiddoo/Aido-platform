@@ -19,7 +19,7 @@ describe('공용 시트의 Android 뒤로가기', () => {
     Platform.OS = originalPlatform;
   });
 
-  it('열린 시트는 최신 닫기 동작을 실행하고 화면 뒤로가기를 소비한다', async () => {
+  it('열린 시트는 구독을 유지한 채 최신 닫기 동작을 실행하고 화면 뒤로가기를 소비한다', async () => {
     // Given
     const previousDismiss = jest.fn();
     const nextDismiss = jest.fn();
@@ -44,7 +44,8 @@ describe('공용 시트의 Android 뒤로가기', () => {
     expect(isHandled).toBe(true);
     expect(nextDismiss).toHaveBeenCalledTimes(1);
     expect(previousDismiss).not.toHaveBeenCalled();
-    expect(remove).toHaveBeenCalledTimes(1);
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    expect(remove).not.toHaveBeenCalled();
   });
 
   it('시트가 닫히거나 화면에서 제거되면 뒤로가기 구독을 정리한다', async () => {
