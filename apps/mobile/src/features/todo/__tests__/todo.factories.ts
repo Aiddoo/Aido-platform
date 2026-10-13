@@ -1,5 +1,4 @@
 import type {
-  AiUsageResponse,
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
   Todo as TodoDto,
@@ -73,22 +72,6 @@ export const createParseTodoResponseDto = (
   overrides?: Partial<ParseTodoResponse>,
 ): ParseTodoResponse => ({
   ...generateParseTodoResponseDto(),
-  ...overrides,
-});
-
-const generateAiUsageResponseDto = (): AiUsageResponse => ({
-  success: true,
-  data: {
-    used: 3,
-    limit: 10,
-    resetsAt: '2026-03-09T00:00:00.000Z',
-  },
-});
-
-export const createAiUsageResponseDto = (
-  overrides?: Partial<AiUsageResponse>,
-): AiUsageResponse => ({
-  ...generateAiUsageResponseDto(),
   ...overrides,
 });
 

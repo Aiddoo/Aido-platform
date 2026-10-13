@@ -1,7 +1,6 @@
 import { createMockHttpClient } from '@src/shared/__tests__';
 
 import {
-  createAiUsageResponseDto,
   createParseTodoResponseDto,
   createTodoApiError,
   createTodoDto,
@@ -247,39 +246,6 @@ describe('TodoService', () => {
 
       // When & Then
       await expect(service.parseTodo('테스트')).rejects.toThrow('Invalid parseTodo response');
-    });
-  });
-
-  // ── getAiUsage ───────────────────────────────
-
-  describe('getAiUsage', () => {
-    test('정상 응답 → AiUsage 반환', async () => {
-      // Given
-      const dto = createAiUsageResponseDto();
-      httpClient.get.mockResolvedValue({ ok: true, value: dto });
-
-      // When
-      const result = await service.getAiUsage();
-
-      // Then
-      expect(httpClient.get).toHaveBeenCalledWith('v1/ai/usage', { signal: undefined });
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value.used).toBe(3);
-        expect(result.value.limit).toBe(10);
-      }
-    });
-
-    test('HTTP 에러 → Result.err 반환', async () => {
-      // Given
-      const apiError = createTodoApiError();
-      httpClient.get.mockResolvedValue({ ok: false, error: apiError });
-
-      // When
-      const result = await service.getAiUsage();
-
-      // Then
-      expect(result).toEqual({ ok: false, error: apiError });
     });
   });
 

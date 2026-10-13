@@ -1,6 +1,5 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useAiService } from '@src/bootstrap/providers/di-context';
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -31,7 +30,7 @@ export const useParseMemoMutationOptions = () => {
     onSuccess: (data, { memoId }) => {
       trackEvent('ai_parse_used', { success: true });
       queryClient.setQueryData(AI_QUERY_KEYS.parseMemo(memoId), data);
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.aiUsage() });
+      queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.usage() });
     },
     onError: (error) => {
       trackEvent('ai_parse_used', { success: false });

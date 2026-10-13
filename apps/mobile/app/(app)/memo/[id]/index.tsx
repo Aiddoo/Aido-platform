@@ -1,6 +1,7 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { AiParseConfirmDialog } from '@src/features/memo/components/ai-parse-confirm-dialog';
 import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
@@ -8,7 +9,6 @@ import { useDeleteMemoMutationOptions } from '@src/features/memo/queries/use-del
 import { useToggleMemoPinMutationOptions } from '@src/features/memo/queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '@src/features/memo/queries/use-update-memo-mutation-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
-import { useGetAiUsageQueryOptions } from '@src/features/todo/queries/get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

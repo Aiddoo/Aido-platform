@@ -1,6 +1,7 @@
 import {
   aiReportListResponseSchema,
   aiReportResponseSchema,
+  aiUsageResponseSchema,
   parseMemoResponseSchema,
   reportStatusResponseSchema,
   suggestionActionResponseSchema,
@@ -12,6 +13,7 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
+import type { AiUsage } from '../domains/ai-usage.model';
 import type {
   AiReport,
   AiSuggestion,
@@ -21,6 +23,7 @@ import type {
   ParsedMemoResult,
   ReportStatus,
 } from '../domains/ai.model';
+import { toAiUsage } from './ai-usage.mapper';
 import {
   toAiReport,
   toAiSuggestion,
@@ -37,6 +40,21 @@ export class AiService {
     this.#httpClient = httpClient;
     this.#logger = logger;
   }
+
+  getAiUsage = async (signal?: AbortSignal): Promise<Result<AiUsage, ApiError>> => {
+    const result = await this.#httpClient.get('v1/ai/usage', { signal });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = aiUsageResponseSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[AiService] Invalid getAiUsage response: ${parsed.error.message}`);
+    }
+
+    return ok(toAiUsage(parsed.data));
+  };
 
   getReportStatus = async (signal?: AbortSignal): Promise<Result<ReportStatus, ApiError>> => {
     const result = await this.#httpClient.get('v1/ai/reports/status', { signal });

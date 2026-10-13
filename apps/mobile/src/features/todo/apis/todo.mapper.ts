@@ -1,5 +1,4 @@
 import type {
-  AiUsageResponse,
   DailyCompletionSummary as DailyCompletionSummaryDTO,
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
@@ -10,7 +9,6 @@ import type {
 } from '@aido/api';
 
 import type {
-  AiUsage,
   DailyCompletionSummary,
   DailyCompletionsResult,
   ParsedTodoResult,
@@ -57,8 +55,6 @@ export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => 
   },
   meta: dto.meta,
 });
-
-export const toAiUsage = (dto: AiUsageResponse): AiUsage => dto.data;
 
 export const toDailyCompletionSummary = (
   dto: DailyCompletionSummaryDTO,

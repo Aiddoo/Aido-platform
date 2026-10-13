@@ -1,10 +1,10 @@
-import { type AiUsage, AiUsagePolicy } from './todo.model';
+import { type AiUsage, AiUsagePolicy } from './ai-usage.model';
 
 describe('AiUsagePolicy', () => {
   const createUsage = (overrides: Partial<AiUsage> = {}): AiUsage => ({
     used: 0,
     limit: 5,
-    resetsAt: '2026-04-30T15:00:00.000Z',
+    resetsAt: new Date('2026-04-30T15:00:00.000Z'),
     ...overrides,
   });
 

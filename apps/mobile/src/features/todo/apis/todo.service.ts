@@ -1,5 +1,4 @@
 import {
-  aiUsageResponseSchema,
   type CreateRecurringTodoInput,
   type CreateTodoInput,
   createRecurringTodoResponseSchema,
@@ -24,7 +23,6 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import type {
-  AiUsage,
   DailyCompletionsResult,
   ParsedTodoResult,
   Todo,
@@ -33,7 +31,6 @@ import type {
   TodoListResult,
 } from '../domains/todo.model';
 import {
-  toAiUsage,
   toDailyCompletionsResult,
   toParsedTodoResult,
   toTodo,
@@ -211,21 +208,6 @@ export class TodoService {
     }
 
     return ok(toParsedTodoResult(parsed.data));
-  };
-
-  getAiUsage = async (signal?: AbortSignal): Promise<Result<AiUsage, ApiError>> => {
-    const result = await this.#httpClient.get('v1/ai/usage', { signal });
-
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = aiUsageResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[TodoService] Invalid getAiUsage response: ${parsed.error.message}`);
-    }
-
-    return ok(toAiUsage(parsed.data));
   };
 
   getDailyCompletions = async (

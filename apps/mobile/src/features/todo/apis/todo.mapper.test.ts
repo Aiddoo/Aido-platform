@@ -1,17 +1,10 @@
 import {
-  createAiUsageResponseDto,
   createDailyCompletionsDto,
   createParseTodoResponseDto,
   createTodoDto,
   createTodoItemResponseDto,
 } from '../__tests__/todo.factories';
-import {
-  toAiUsage,
-  toDailyCompletionsResult,
-  toParsedTodoResult,
-  toTodo,
-  toTodos,
-} from './todo.mapper';
+import { toDailyCompletionsResult, toParsedTodoResult, toTodo, toTodos } from './todo.mapper';
 
 jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
 
@@ -163,23 +156,6 @@ describe('toParsedTodoResult', () => {
 
     // Then
     expect(result.data).not.toHaveProperty('categoryId');
-  });
-});
-
-describe('toAiUsage', () => {
-  test('data 추출', () => {
-    // Given
-    const dto = createAiUsageResponseDto();
-
-    // When
-    const result = toAiUsage(dto);
-
-    // Then
-    expect(result).toEqual({
-      used: 3,
-      limit: 10,
-      resetsAt: '2026-03-09T00:00:00.000Z',
-    });
   });
 });
 

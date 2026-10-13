@@ -1,9 +1,9 @@
 import { ErrorCode } from '@aido/api/errors';
 import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
+import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
-import { AiUsagePolicy } from '@src/features/todo/domains/todo.model';
-import { useGetAiUsageQueryOptions } from '@src/features/todo/queries/get-ai-usage-query-options';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';

@@ -81,13 +81,6 @@ export const parsedTodoResultSchema = z.object({
 });
 export type ParsedTodoResult = z.infer<typeof parsedTodoResultSchema>;
 
-export const aiUsageSchema = z.object({
-  used: z.number(),
-  limit: z.number().nullable(),
-  resetsAt: z.string(),
-});
-export type AiUsage = z.infer<typeof aiUsageSchema>;
-
 export const dailyCompletionSummaryClientSchema = z.object({
   date: z.string(),
   totalTodos: z.number(),
@@ -125,19 +118,6 @@ export const todoSummaryClientSchema = z.object({
   ),
 });
 export type TodoSummary = z.infer<typeof todoSummaryClientSchema>;
-
-export function isLimitReached(usage: AiUsage): boolean {
-  return usage.limit != null && usage.used >= usage.limit;
-}
-
-export function getRemainingCount(usage: AiUsage): number | null {
-  return usage.limit != null ? usage.limit - usage.used : null;
-}
-
-export const AiUsagePolicy = {
-  isLimitReached,
-  getRemainingCount,
-} as const;
 
 export const todoDetailsSchema = z.object({
   todo: todoSchema,
