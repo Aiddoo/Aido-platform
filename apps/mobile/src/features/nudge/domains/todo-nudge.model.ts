@@ -1,3 +1,4 @@
+import { createNudgeSchema, type CreateNudgeInput, type CreateRemindNudgeInput } from '@aido/api';
 import { isSameDay, todoOverlapsDate } from '@src/shared/utils/date';
 import { z } from 'zod';
 
@@ -16,18 +17,8 @@ export const nudgeCooldownInfoSchema = z.object({
 });
 export type NudgeCooldownInfo = z.infer<typeof nudgeCooldownInfoSchema>;
 
-export const sendTodoNudgeInputSchema = z.object({
-  receiverId: z.string(),
-  todoId: z.number(),
-  message: z.string().optional(),
-});
-export type SendTodoNudgeInput = z.infer<typeof sendTodoNudgeInputSchema>;
-
-export const sendRemindNudgeInputSchema = z.object({
-  receiverId: z.string(),
-  message: z.string().optional(),
-});
-export type SendRemindNudgeInput = z.infer<typeof sendRemindNudgeInputSchema>;
+export type SendTodoNudgeInput = CreateNudgeInput;
+export type SendRemindNudgeInput = CreateRemindNudgeInput;
 
 export const sendTodoNudgeResultSchema = z.object({
   message: z.string(),
@@ -45,7 +36,7 @@ const nudgeBannerStateSchema = z.discriminatedUnion('type', [
 ]);
 export type NudgeBannerState = z.infer<typeof nudgeBannerStateSchema>;
 
-const MAX_MESSAGE_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = createNudgeSchema.shape.message.unwrap().maxLength ?? 200;
 
 const normalizeMessage = (message?: string | null): string | undefined => {
   if (message == null) {

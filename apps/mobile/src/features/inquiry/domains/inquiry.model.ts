@@ -1,7 +1,3 @@
-import { z } from 'zod';
+import type { CreateInquiryResponse } from '@aido/api';
 
-export const inquiryResultSchema = z.object({
-  message: z.string(),
-});
-
-export type InquiryResult = z.infer<typeof inquiryResultSchema>;
+export type InquiryResult = CreateInquiryResponse;

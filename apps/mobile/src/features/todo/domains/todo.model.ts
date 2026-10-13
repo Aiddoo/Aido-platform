@@ -1,4 +1,10 @@
-import { dateSchema, todoVisibilitySchema } from '@aido/api';
+import {
+  dateSchema,
+  todoVisibilitySchema,
+  type DailyCompletionSummary as DailyCompletionSummaryResponse,
+  type DailyCompletionsRangeResponse,
+  type TodoSummaryResponse,
+} from '@aido/api';
 import { z } from 'zod';
 
 import { SubTodoPolicy, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
@@ -38,43 +44,9 @@ export const todoListResultSchema = z.object({
 });
 export type TodoListResult = z.infer<typeof todoListResultSchema>;
 
-export const dailyCompletionSummaryClientSchema = z.object({
-  date: z.string(),
-  totalTodos: z.number(),
-  completedTodos: z.number(),
-  isComplete: z.boolean(),
-  completionRate: z.number(),
-  categoryColors: z.array(z.string()),
-});
-export type DailyCompletionSummary = z.infer<typeof dailyCompletionSummaryClientSchema>;
-
-export const dailyCompletionsResultSchema = z.object({
-  completions: z.array(dailyCompletionSummaryClientSchema),
-  totalCompleteDays: z.number(),
-  dateRange: z.object({
-    startDate: dateSchema,
-    endDate: z.string(),
-  }),
-});
-export type DailyCompletionsResult = z.infer<typeof dailyCompletionsResultSchema>;
-
-export const todoSummaryClientSchema = z.object({
-  date: z.string(),
-  totalTodos: z.number(),
-  completedTodos: z.number(),
-  completionRate: z.number(),
-  isComplete: z.boolean(),
-  currentStreak: z.number(),
-  topTodos: z.array(
-    z.object({
-      id: z.number(),
-      title: z.string(),
-      completed: z.boolean(),
-      categoryColor: z.string(),
-    }),
-  ),
-});
-export type TodoSummary = z.infer<typeof todoSummaryClientSchema>;
+export type DailyCompletionSummary = DailyCompletionSummaryResponse;
+export type DailyCompletionsResult = DailyCompletionsRangeResponse;
+export type TodoSummary = TodoSummaryResponse;
 
 export const todoDetailsSchema = z.object({
   todo: todoSchema,
