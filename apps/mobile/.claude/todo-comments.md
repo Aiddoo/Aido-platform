@@ -361,7 +361,7 @@ frame의 연속 전송만 form-local ref gate가 막으며, 별도 `isSubmitting
 
 ## Query, mutation, cache
 
-모든 query와 mutation 옵션은 `presentations/queries`의 옵션 팩토리가 소유한다. component와 hook에서
+모든 query와 mutation 옵션은 `queries/`의 옵션 팩토리가 소유한다. component와 hook에서
 query option 객체를 인라인으로 정의하지 않는다.
 
 - 댓글 개요 cache는 `TODO_COMMENT_QUERY_KEYS.overview({ todoId, sort })`가 소유한다.
@@ -425,11 +425,11 @@ Before
   ComposerBar.tsx + ComposerContent.tsx + MutationForm.tsx + ComposerForm.tsx + DraftChain.tsx
 
 After
-  TodoCommentMessage.tsx
-  TodoCommentOverviewList/TodoCommentOverviewList.tsx
-  TodoCommentConversationList/TodoCommentConversationList.tsx
-  TodoCommentInputBar/TodoCommentInputBar.tsx
-  TodoCommentInputBar/TodoCommentForm.tsx
+  todo-comment-message.tsx
+  todo-comment-overview-list/todo-comment-overview-list.tsx
+  todo-comment-conversation-list/todo-comment-conversation-list.tsx
+  todo-comment-input-bar/todo-comment-input-bar.tsx
+  todo-comment-input-bar/todo-comment-form.tsx
 ```
 
 ```text
@@ -437,42 +437,47 @@ app/(app)/todo/[todoId]/index.tsx
   화면 조립과 query boundary
 
 src/features/todo-comment/
-  models/todo-comment.model.ts
+  domains/todo-comment.model.ts
     shared wire 타입에서 Date만 바꾼 모바일 모델, policy, draft 순수 규칙
-  services/todo-comment.service.ts
-  services/todo-comment.mapper.ts
+  domains/todo-comment-form.schema.ts
+  apis/todo-comment.service.ts
+  apis/todo-comment.mapper.ts
     HTTP 검증과 Date 변환
-  presentations/components/
-    TodoCommentMessage.tsx
-    TodoCommentAuthorAvatar.tsx
-    TodoCommentSortBar.tsx
-    TodoCommentTitleBar.tsx
-    TodoCommentKeyboardScrollView.tsx
-    TodoCommentOverviewList/
-      TodoCommentOverviewList.tsx
-    TodoCommentConversationList/
-      TodoCommentConversationList.tsx
-    TodoCommentInputBar/
-      TodoCommentInputBar.tsx
-      TodoCommentForm.tsx
-  presentations/hooks/use-todo-comment-route.ts
-  presentations/hooks/use-prepare-todo-comment-conversation.ts
-  presentations/hooks/use-todo-comment-navigation.ts
-  presentations/hooks/use-todo-comment-sort.ts
-  presentations/hooks/use-todo-comment-back.ts
-  presentations/hooks/use-android-todo-comment-back-handler.ts
-  presentations/providers/todo-comment-screen-transition-provider.tsx
-  presentations/navigation/
-    todo-comment-route.ts
-    todo-comment-back.ts
-    todo-comment-screen-transition.ts
-  presentations/queries/
-    use-todo-comment-overview-query-options.ts
-    use-todo-comment-conversation-query-options.ts
+  components/
+    todo-comment-message.tsx
+    todo-comment-author-avatar.tsx
+    todo-comment-sort-bar.tsx
+    todo-comment-title-bar.tsx
+    todo-comment-keyboard-scroll-view.tsx
+    providers/todo-comment-screen-transition-provider.tsx
+    todo-comment-overview-list/todo-comment-overview-list.tsx
+    todo-comment-conversation-list/todo-comment-conversation-list.tsx
+    todo-comment-input-bar/
+      todo-comment-input-bar.tsx
+      todo-comment-form.tsx
+  hooks/
+    use-todo-comment-route.ts
+    use-prepare-todo-comment-conversation.ts
+    use-todo-comment-navigation.ts
+    use-todo-comment-sort.ts
+    use-todo-comment-back.ts
+    use-android-todo-comment-back-handler.ts
+    use-is-todo-comment-submitting.ts
+    use-todo-comment-mutation-error-handler.ts
+  queries/
+    get-todo-comment-overview-query-options.ts
+    get-todo-comment-conversation-query-options.ts
     use-create-todo-comment-chain-mutation-options.ts
+    use-update-todo-comment-mutation-options.ts
+    use-delete-todo-comment-mutation-options.ts
+    use-set-todo-comment-like-mutation-options.ts
     todo-comment-cache.ts
     todo-comment-query-invalidation.ts
-  presentations/utils/
+  utils/
+    navigation/
+      todo-comment-route.ts
+      todo-comment-back.ts
+      todo-comment-screen-transition.ts
     todo-comment-cursor-page.ts
     todo-comment-connection-layout.ts
     todo-comment-cache-pages.ts
@@ -482,10 +487,10 @@ src/features/todo-comment/
     comment-form-fields.ts
     comment-conversation-position.ts
     comment-form-layout.ts
-  presentations/view-models/
-    todo-comment-overview.view-model.ts
-    todo-comment-conversation.view-model.ts
-    todo-comment-form.view-model.ts
+    view-models/
+      todo-comment-overview.view-model.ts
+      todo-comment-conversation.view-model.ts
+      todo-comment-form.view-model.ts
 ```
 
 새 파일은 책임이 이 목록과 다를 때만 추가한다. 이미 있는 route state, mapper, query factory, cache

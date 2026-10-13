@@ -1,6 +1,6 @@
 # Mobile App Architecture Guide
 
-**Version**: 1.1.0 · **Last Updated**: 2026-08-26 · **Owner**: Aido Mobile Team
+**Version**: 1.2.0 · **Last Updated**: 2026-10-14 · **Owner**: Aido Mobile Team
 
 Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 새 기능 추가 시 이 문서의 패턴을 **반드시** 따릅니다.
@@ -12,21 +12,22 @@ Feature-based Layered Architecture 기반 React Native/Expo 앱입니다.
 ```
 src/
 ├── bootstrap/providers/          # 앱 초기화 (DI, Auth, Query 등)
-│   ├── di-provider.tsx           # 의존성 주입 컨테이너
+│   ├── di-provider.tsx           # 의존성 주입 컨테이너 생성
+│   ├── di-context.tsx            # DIContainer 타입과 use{Feature}Service 훅
 │   ├── auth-provider.tsx         # 인증 상태 관리
-│   ├── query-provider.tsx        # TanStack Query 설정
-│   └── ...
+│   └── query-provider.tsx        # TanStack Query 설정
 │
-├── core/ports/                   # Port 인터페이스 (외부 의존성 추상화)
-│   ├── http.ts                   # HttpClient
-│   ├── storage.ts                # Storage
-│   └── logger.ts                 # Logger
+├── core/ports/                   # Port 인터페이스 (HttpClient, Storage, Logger, Analytics …)
 │
-├── features/{feature}/           # 기능별 모듈
-│   ├── models/                   # Domain Model + Policy + Error
-│   ├── services/                 # Service + Mapper (HTTP + Zod + 변환 + Policy)
-│   ├── __tests__/                # 테스트 팩토리
-│   └── presentations/            # UI (queries, components, hooks)
+├── features/{feature}/           # 기능별 모듈 (단수 kebab-case: todo, nudge, preference …)
+│   ├── apis/                     # {feature}.service.ts + {entity}.mapper.ts (+ 로컬 저장소 repository)
+│   ├── domains/                  # {entity}.model.ts(스키마·타입·Policy) + {feature}.error.ts
+│   ├── constants/                # {feature}-query-keys.ts, 라벨·옵션 상수
+│   ├── queries/                  # get-…-query-options.ts, use-…-mutation-options.ts, {feature}-cache.ts
+│   ├── components/               # 의미 있는 UI 블록 (Loading·Error·Empty·Item namespace 포함)
+│   ├── hooks/                    # 단일 책임 훅 (라우트 읽기, 상태 튜플, 전환 조정)
+│   ├── utils/                    # 순수 계산, navigation resolver, view-models/
+│   └── __tests__/                # {entity}.factories.ts
 │
 └── shared/
     ├── errors/                   # Result, ApiError, InfraError
@@ -37,8 +38,8 @@ src/
     └── utils/                    # 유틸리티
 ```
 
-> **예외**: `DeviceIdRepository`는 HTTP가 아닌 SecureStore 로컬 스토리지에 접근하므로 Repository 패턴을 유지한다.
-> `features/notification/repositories/device-id.repository.ts` (인터페이스) / `device-id.repository.impl.ts` (구현체)
+> **예외**: HTTP가 아닌 로컬 저장소(SecureStore, MMKV, 위젯 bridge)는 `apis/{name}.repository.ts`로 두고
+> Service가 감싼다. 위젯의 네이티브 경계는 `features/widget/bridge/`에 둔다.
 
 ---
 
@@ -212,47 +213,143 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
   우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.
 - 알림 wire payload는 `@aido/api`를 단일 원본으로 사용한다. 내부 화면 경로는
-  `presentations/navigation`의 순수 resolver가 검증된 route 재료로 결정한다. domain Policy와 화면
+  `utils/navigation`의 순수 resolver가 검증된 route 재료로 결정한다. domain Policy와 화면
   컴포넌트는 Expo Router나 raw metadata를 알지 않는다.
 
-### 1. Models — Domain Model + Policy + Error
+### 컴포넌트 계약
+
+**추출은 추상화가 아니다.** Screen이 길다는 이유만으로 JSX를 다른 파일로 옮기면 읽는 사람이 파일을
+오가야 할 뿐 변경 이유는 줄지 않는다. 독립 파일 컴포넌트는 다음 중 하나일 때만 만든다.
+
+- 이름이 입력·표시·조작 대상을 드러내고(`AmountInput`, `CalculationResult`, `ProductList`)
+  내부에서 데이터 구독·변환·상태 UI를 책임진다.
+- 둘 이상의 화면이 같은 계약으로 쓴다.
+
+한 화면에서만 쓰는 입력·행은 Screen 파일 아래 지역 컴포넌트로 둔다. 내부가 BottomSheet여도 값을
+입력받는다면 `SelectRepeatInput`처럼 `…Input`으로 이름 짓는다.
+
+**입력 래퍼는 원본 계약을 살린다.** shared Input이나 HeroUI 컴포넌트를 감쌀 때는 원본 props를
+`Omit<ComponentProps<typeof X>, …>`로 확장하고, 바꾸는 prop만 다시 선언한다. 사용처는 원본처럼
+`value`/`onChange`/`label`/`placeholder`를 쓴다.
+
+```tsx
+interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'children'> {
+  value: string;
+  onChange: (color: string) => void;
+}
+```
+
+- shared `Input`·`TextArea`는 `value`/`onChange(text)` 계약을 쓴다. raw `TextInput`·`onChangeText`를 다시 쓰지 않는다.
+- HeroUI의 선택형(Checkbox, Switch, ControlField)은 원본 이름 `isSelected`/`onSelectedChange`,
+  `RadioGroup`은 `value`/`onValueChange`, 비활성은 `isDisabled`를 그대로 쓴다. `disabled`·`selected`·`onToggle`처럼
+  같은 의미의 다른 이름을 만들지 않는다.
+- 오버레이 시트·다이얼로그는 `isOpen`/`onOpenChange` 계약을 따른다.
+
+**도메인 식별자는 Props로 받지 않는다.** 화면 식별자(`todoId`, `friendId`, 선택된 항목 id)는 검증된
+`use…ScreenParams()`나 상태 튜플 훅에서 컴포넌트가 직접 읽는다. 값이 `== null`이면 `.Empty`를 보여 준다.
+그래야 식별자가 없는 화면에서도 같은 컴포넌트를 쓸 수 있다. 목록 행의 id, 루트 Overlay에서 렌더되어
+라우트 문맥이 없는 시트의 대상 id는 예외로 Props로 받는다.
+
+```tsx
+export function FriendCalendar() {
+  const { friendId } = useFriendScreenParams();
+  // friendId로 조회
+}
+```
+
+**데이터는 쓰는 컴포넌트가 조회한다.** 화면이 조회해 Props로 내려 주면 Suspense 경계를 블록 단위로
+나눌 수 없다. 목록 컴포넌트는 도메인 대신 정책을 Props로 받는다(`filters`, `orderBy`, `limit`).
+
+```tsx
+<QueryErrorBoundary FallbackComponent={TodoList.Error}>
+  <Suspense fallback={<TodoList.Loading />}>
+    <TodoList />
+  </Suspense>
+</QueryErrorBoundary>
+```
+
+**반복 UI는 지역 컴포넌트로 추상화하고 나열한다.** 항목마다 기획·디자인이 따로 바뀔 수 있는 행은
+설정 배열을 `.map`하지 않고 `<Record />`, `<ActionRow />` 같은 지역 컴포넌트를 명시적으로 나열한다.
+상수로 개수가 정해지는 반복(`InputOTP.Slot`, 스켈레톤)은 es-toolkit `times`로 만든다.
+
+**상태 훅은 `[value, setValue]` 튜플을 반환한다.** URL search param, MMKV, `useState` 어느 저장소든
+사용처는 `useState`처럼 읽는다. 저장소를 바꿔도 사용처는 그대로다.
+
+```tsx
+const View = { friends: 'friends', received: 'received' } as const;
+const viewSchema = z.enum(View);
+
+function useView() {
+  const { view } = useLocalSearchParams();
+  const setView = useCallback(
+    (next: z.infer<typeof viewSchema>) => router.setParams({ view: next }),
+    [],
+  );
+  return [viewSchema.catch(View.friends).parse(view), setView] as const;
+}
+```
+
+화면 파라미터는 `useLocalSearchParams`로 읽는다. `useGlobalSearchParams`는 보이지 않는 화면도 URL
+변경마다 다시 렌더하므로 레이아웃이 자식 경로를 알아야 할 때만 쓴다.
+
+**기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
+반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
+
+### 1. Models — 클라이언트 도메인 모델 + Policy
 
 ```
 features/{feature}/domains/
-├── {feature}.model.ts    # Zod 스키마 + 타입 + Policy
-└── {feature}.error.ts    # ErrorCode + Error + Factory + Guard
+├── {entity}.model.ts    # 스키마 + 타입 + 순수 함수 + {Entity}Policy
+└── {feature}.error.ts   # ErrorCode + Error + Factory + Guard
 ```
 
-**Domain Model**: Zod 스키마로 정의, 서버 DTO와 독립적.
-서버 응답 구조가 변경되어도 Mapper만 수정하면 되고, 앱 전체(Service, Presentation)에 영향이 퍼지지 않는다.
+**Domain Model**은 화면과 Policy가 의존하는 클라이언트 모델이다. 사용처는 항상 `domains/`의 이름만
+import하고, 서버 DTO 이름을 직접 쓰지 않는다. 서버 스펙이 바뀌면 Mapper가 흡수하고 소비처는 그대로 둔다.
+
+`@aido/api`는 서버와 공유하는 wire 계약의 단일 원본이다. 바퀴를 다시 만들지 않도록 다음 순서로 정의한다.
+
+| 서버 응답과의 관계         | 클라이언트 모델 정의                                 |
+| -------------------------- | ---------------------------------------------------- |
+| 필드와 의미가 같다         | `@aido/api` 스키마 재사용 (필요 없는 필드는 `.omit`) |
+| 날짜 등 일부 타입만 다르다 | `sharedSchema.extend({ createdAt: z.date() })`       |
+| 모양·이름이 실제로 다르다  | 독자 스키마 + Mapper 변환                            |
 
 ```typescript
-// {feature}.model.ts
-export const {feature}Schema = z.object({
-  id: z.number(),
-  name: z.string(),
-  createdAt: z.date(),  // 서버는 string, Mapper에서 변환
-});
-export type {Feature} = z.infer<typeof {feature}Schema>;
+// preference.model.ts
+export const preferenceSchema = userPreferenceSchema.omit({ timezone: true });
+export type Preference = z.infer<typeof preferenceSchema>;
 ```
 
-**Policy**: 비즈니스 규칙의 유일한 거처 (순수 함수, 객체 리터럴)
-
-비즈니스 규칙(제한 수량, 유효성 조건, 상태 판단 등)의 변경 지점을 Policy 한 곳으로 응집시킨다.
-요구사항이 변경되거나 추가될 때 Policy만 수정하면 Service, Presentation 어디에서 사용하든 일괄 반영된다.
+**Policy**는 비즈니스 규칙의 유일한 거처다. 규칙은 첫 인자로 클라이언트 모델을 받는 이름 있는 순수 함수로
+작성하고, `{Entity}Policy` 객체가 Facade로 묶는다. 계산식이 바뀌면 순수 함수 하나만 고치고, 소비처는
+`MemoPolicy.isCreatable(limit)`처럼 Policy만 호출한다.
 
 ```typescript
-export const {Feature}Policy = {
-  // 상태 판단
-  is{상태}: (item: {Feature}): boolean => /* 조건 */,
-  // 가능 여부
-  can{동작}: (item: {Feature}): boolean => /* 조건 */,
-  // 유효성 검증
-  isValid{대상}: (value: string): boolean => /* 검증 */,
-  // 비즈니스 상수
-  MAX_{대상}: number,
+const PM10_GRADE_THRESHOLDS = [30, 80, 150] as const;
+
+export function calculateDustGrade(value: number, thresholds: readonly [number, number, number]) {
+  // 순수 계산
+}
+
+export function getPm10Grade(conditions: WeatherConditions) {
+  if (conditions.pm10 == null) {
+    return null;
+  }
+
+  return calculateDustGrade(conditions.pm10, PM10_GRADE_THRESHOLDS);
+}
+
+export const WeatherPolicy = {
+  pm10Grade: getPm10Grade,
 } as const;
 ```
+
+- Policy에 화살표 함수 본문을 인라인으로 쓰지 않는다. 이름 있는 함수가 테스트 단위다.
+- 현재 시각은 인자로 받는다. Policy 안에서 `Date.now()`·`new Date()`를 호출하지 않는다.
+- 다른 피처의 Policy를 재수출하거나 위임만 하는 함수를 두지 않는다.
+- 색상·i18n 키 같은 표시 값은 Policy가 반환하지 않는다. Policy는 등급·단계 같은 의미 값을 돌려주고
+  컴포넌트가 `satisfies Record<Grade, …>` 맵으로 표시한다.
+- Policy 테스트는 Given / When / Then 주석으로 경계값을 검증한다.
 
 **Domain Error**: 클라이언트 비즈니스 에러 (서버 에러 `ApiError`와 완전히 별개)
 
@@ -291,7 +388,7 @@ export const is{Feature}Error = (error: unknown): error is {Feature}Error =>
 ```
 features/{feature}/apis/
 ├── {feature}.service.ts    # Service 클래스
-└── {feature}.mapper.ts     # DTO → Domain 순수 함수
+└── {entity}.mapper.ts      # DTO → 클라이언트 모델 순수 함수
 ```
 
 **Service**: HttpClient를 직접 주입받아 HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 수행
@@ -330,7 +427,7 @@ export class {Feature}Service {
       return err({Feature}Errors.invalidInput());
     }
 
-    const result = await this.#httpClient.post<{Feature}Response>('v1/{feature}s', params);
+    const result = await this.#httpClient.post('v1/{feature}s', params);
     if (!result.ok) {
       return result;
     }
@@ -360,94 +457,57 @@ export const to{Feature} = (dto: {Feature}DTO): {Feature} => ({
 export const to{Feature}s = (dtos: {Feature}DTO[]): {Feature}[] => dtos.map(to{Feature});
 ```
 
-### 3. Presentations — UI 계층
+### 3. Presentations — Query·Mutation·Component
 
 ```
 features/{feature}/
-├── constants/{feature}-query-keys.constant.ts
-├── view-models/
-│   └── {feature}.view-model.ts   # Domain → UI 데이터 변환
+├── constants/{feature}-query-keys.ts
 ├── queries/
-│   ├── get-{feature}s-query-options.ts
-│   └── create-{feature}-mutation-options.ts
-├── components/
-│   └── {Feature}List.tsx
-├── schemas/              # 폼 스키마 (필요 시)
-└── hooks/                # 커스텀 훅 (필요 시)
+│   ├── get-{resource}-query-options.ts            # queryOptions
+│   ├── get-{resource}-infinite-query-options.ts   # infiniteQueryOptions
+│   ├── use-{action}-mutation-options.ts           # mutationOptions
+│   └── {feature}-cache.ts                         # setQueryData·invalidate helper
+├── components/{block}.tsx
+├── hooks/use-{thing}.ts
+└── utils/view-models/{name}.view-model.ts
 ```
 
-#### ViewModel — Domain → UI 데이터 변환
+#### 서버 스펙 변경은 Mapper에서, 화면별 파생은 select에서
 
-Domain 모델을 UI 표시용 데이터로 변환하는 순수 함수. Query Options의 `select`에서 호출한다.
+```
+HTTP(unknown)
+  → Service: @aido/api 스키마 safeParse → ParseError
+  → Mapper: DTO → 클라이언트 모델        ← 서버 스펙 변경은 여기만 고친다
+  → Query 캐시에는 클라이언트 모델이 저장된다
+  → select: filter·orderBy·limit·view-model ← 구독하는 화면별 파생
+  → Component: Policy 호출 + Intl 포맷
+```
 
-| 구분               | 역할                              | 위치                         |
-| ------------------ | --------------------------------- | ---------------------------- |
-| **Policy**         | 비즈니스 규칙 (서버 호출 전 검증) | `models/`                    |
-| **ViewModel**      | Domain → UI 데이터 변환           | `presentations/view-models/` |
-| **Component 상수** | UI 문구, 색상 등                  | 컴포넌트 내부                |
+| 위치             | 책임                                         | 실행 빈도                    |
+| ---------------- | -------------------------------------------- | ---------------------------- |
+| Mapper (queryFn) | 이름·구조 변환, ISO 문자열 → `Date`          | fetch마다 1회, 결과를 캐시   |
+| select           | 같은 캐시에서 화면별 부분집합·정렬·표시 모델 | data나 select 참조가 바뀔 때 |
+| Component        | 표시 포맷, 라벨                              | render마다                   |
 
-단순 변환(필드 하나 추가, 포맷팅)은 `select` 인라인으로 처리하고, 복잡하거나(조건 분기 2개+) 재사용이 필요하면 view-model 파일로 분리한다.
+- select에서 서버 스키마를 변환하지 않는다. 캐시에 DTO가 남으면 낙관적 업데이트(`setQueryData`)가
+  서버 모양을 알아야 하고 모든 구독자가 같은 변환을 반복한다.
+- select 함수는 참조가 안정적이어야 한다. 모듈 수준 함수를 우선하고, 인자가 필요하면
+  `useGet…QueryOptions` 안에서 `useCallback`으로 감싼다. 인라인 화살표는 render마다 다시 실행된다.
+- select는 순수하다. 현재 시각은 인자로 받고 원본 배열을 정렬하지 않는다(es-toolkit `orderBy`).
+- 클라이언트 필터는 query key에 넣지 않고 select로 같은 캐시를 공유한다. 서버 파라미터는 key에 넣는다.
 
 ```typescript
-// 단순한 경우: view-model 파일 없이 select에서 직접 처리
-export const useGet{Feature}sQueryOptions = () => {
-  // ...
-  return queryOptions({
-    // ...
-    select: (items) => items.map((item) => ({
-      ...item,
-      isNew: referenceTime - item.createdAt.getTime() < 24 * 60 * 60 * 1000,
-    })),
+const selectActiveFriends = (data: FriendPage[]) => data.flatMap((page) => page.items);
+
+export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
+  return infiniteQueryOptions({
+    queryKey: FRIEND_QUERY_KEYS.lists(),
+    queryFn: async ({ pageParam, signal }) =>
+      unwrap(await friendService.getFriends({ cursor: pageParam }, signal)),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
-};
-```
-
-**ViewModel 패턴**
-
-```typescript
-// presentations/view-models/{feature}.view-model.ts
-import type { {Feature} } from '../../models/{feature}.model';
-
-export type DerivedType = 'typeA' | 'typeB' | 'typeC';
-
-// 도메인 값 → UI에서 사용할 파생 타입으로 변환
-export function getDerivedType(value: number): DerivedType {
-  if (value === 100) {
-    return 'typeA';
-  }
-  if (value >= 90) {
-    return 'typeB';
-  }
-  return 'typeC';
 }
-
-export interface {Feature}ViewModel extends {Feature} {
-  derivedType: DerivedType;
-}
-
-export function to{Feature}ViewModel(item: {Feature}): {Feature}ViewModel {
-  return {
-    ...item,
-    derivedType: getDerivedType(item.value),
-  };
-}
-```
-
-**Query Options에서 select로 ViewModel 적용**
-
-```typescript
-// presentations/queries/use-get-{feature}s-query-options.ts
-import { to{Feature}ViewModel } from '../view-models/{feature}.view-model';
-
-export const useGet{Feature}sQueryOptions = () => {
-  const service = use{Feature}Service();
-
-  return queryOptions({
-    queryKey: {FEATURE}_QUERY_KEYS.lists(),
-    queryFn: async () => unwrap(await service.get{Feature}s()),
-    select: (data) => data.map(to{Feature}ViewModel),  // ← ViewModel 변환
-  });
-};
 ```
 
 **Component에서 UI 표시 문구 관리**
@@ -455,39 +515,44 @@ export const useGet{Feature}sQueryOptions = () => {
 UI 표시 문구는 i18n 카탈로그 키를 참조한다 (하드코딩 금지 — [i18n-guide.md](./i18n-guide.md)):
 
 ```typescript
-// presentations/components/{Feature}Card.tsx
-import type { DerivedType } from '../view-models/{feature}.view-model';
-
 // 라벨 맵은 값 대신 i18n 키를 담는다 (satisfies로 enum 누락 방지)
-const DERIVED_LABEL_KEYS = {
-  typeA: '{feature}:card.gradeTop',
-  typeB: '{feature}:card.gradeAlmost',
-  typeC: '{feature}:card.gradeStep',
-} as const satisfies Record<DerivedType, string>;
-// 사용처: t(DERIVED_LABEL_KEYS[type])
+const DUST_GRADE_LABEL_KEYS = {
+  good: 'weather:dust.good',
+  moderate: 'weather:dust.moderate',
+  bad: 'weather:dust.bad',
+  veryBad: 'weather:dust.veryBad',
+} as const satisfies Record<DustGrade, string>;
+// 사용처: t(DUST_GRADE_LABEL_KEYS[grade])
 ```
 
 **Query Keys**
 
+키 이름에는 피처 접두사를 반복하지 않고, 인자는 이름 있는 객체로 받는다.
+다른 피처의 캐시는 그 피처의 `{feature}-cache.ts` 함수로만 무효화한다.
+
 ```typescript
-export const {FEATURE}_QUERY_KEYS = {
-  all: ['{feature}'] as const,
-  lists: () => [...{FEATURE}_QUERY_KEYS.all, 'list'] as const,
-  listByDate: (date: string) => [...{FEATURE}_QUERY_KEYS.lists(), date] as const,
+export const NUDGE_QUERY_KEYS = {
+  all: ['nudge'] as const,
+  interactions: () => [...NUDGE_QUERY_KEYS.all, 'interaction'] as const,
+  interaction: ({ nudgeId }: { nudgeId: number }) =>
+    [...NUDGE_QUERY_KEYS.interactions(), 'detail', { nudgeId }] as const,
 } as const;
 ```
 
 **Query Options**
 
 ```typescript
-// Query — unwrap 사용
-export const get{Feature}sQueryOptions = () => {
-  const {feature}Service = use{Feature}Service();
+// get-memo-query-options.ts
+export function getMemoQueryOptions(memoService: MemoService, { memoId }: { memoId: number }) {
   return queryOptions({
-    queryKey: {FEATURE}_QUERY_KEYS.lists(),
-    queryFn: async () => unwrap(await {feature}Service.get{Feature}s()),
+    queryKey: MEMO_QUERY_KEYS.detail({ memoId }),
+    queryFn: async ({ signal }) => unwrap(await memoService.getMemo(memoId, signal)),
   });
-};
+}
+
+export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
+  return getMemoQueryOptions(useMemoService(), { memoId });
+}
 ```
 
 **Mutation 에러 처리**
@@ -529,7 +594,7 @@ HTTP 요청
 **기본 Mutation 예제**
 
 ```typescript
-export const create{Feature}MutationOptions = () => {
+export const useCreate{Feature}MutationOptions = () => {
   const {feature}Service = use{Feature}Service();
   const queryClient = useQueryClient();
   const toast = useAppToast();
@@ -650,18 +715,18 @@ Storage → HttpClient → Service → DIContext → use{Feature}Service() 훅
 **새 Feature 등록**
 
 ```typescript
-// 1. DIContainer 인터페이스에 추가
+// 1. di-context.tsx — DIContainer 인터페이스에 추가
 export interface DIContainer {
   {feature}Service: {Feature}Service;
 }
 
-// 2. useState 초기화에서 생성
+// 2. di-provider.tsx — useState 초기화에서 생성
 const {feature}Service = new {Feature}Service(authHttpClient);
 
 // 3. return에 추가
 return { {feature}Service };
 
-// 4. 훅 export 추가
+// 4. di-context.tsx — 훅 export 추가 (사용처는 di-context에서 import)
 export const use{Feature}Service = () => useDI().{feature}Service;
 ```
 
@@ -671,26 +736,26 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 
 ### Step 1: Models
 
-- [ ] `features/{feature}/domains/{feature}.model.ts` — Zod 스키마 + 타입 + Policy
-- [ ] `features/{feature}/domains/{feature}.error.ts` — ErrorCode + Error + Factory + Guard
+- [ ] `features/{feature}/domains/{entity}.model.ts` — 클라이언트 모델 + 순수 함수 + Policy
+- [ ] (필요 시) `features/{feature}/domains/{feature}.error.ts` — ErrorCode + Error + Factory + Guard
 
 ### Step 2: Services + Mapper
 
-- [ ] `features/{feature}/apis/{feature}.mapper.ts` — DTO → Domain 순수 함수
+- [ ] `features/{feature}/apis/{entity}.mapper.ts` — DTO → 클라이언트 모델 순수 함수
 - [ ] `features/{feature}/apis/{feature}.service.ts` — Service 클래스 (HttpClient 주입, HTTP + Zod + Mapper + Policy)
 
 ### Step 3: DI 등록
 
-- [ ] `bootstrap/providers/di-provider.tsx` — DIContainer + 인스턴스 + Hook
+- [ ] `bootstrap/providers/di-provider.tsx` — 인스턴스 생성
+- [ ] `bootstrap/providers/di-context.tsx` — `DIContainer` 필드 + `use{Feature}Service` 훅
 
 ### Step 4: Presentations
 
-- [ ] `presentations/constants/{feature}-query-keys.constant.ts`
-- [ ] (필요 시) `presentations/view-models/{feature}.view-model.ts` — Domain → UI 데이터 변환
-- [ ] `presentations/queries/` — Query/Mutation Options (ViewModel이 있으면 `select`에서 적용)
-- [ ] `presentations/components/` — UI 컴포넌트
-- [ ] (필요 시) `presentations/schemas/` — 폼 스키마
-- [ ] (필요 시) `presentations/hooks/` — 커스텀 훅
+- [ ] `constants/{feature}-query-keys.ts`
+- [ ] `queries/get-…-query-options.ts`, `queries/use-…-mutation-options.ts`
+- [ ] (다른 피처가 무효화해야 하면) `queries/{feature}-cache.ts`
+- [ ] `components/` — 의미 있는 UI 블록과 `.Loading`·`.Error`·`.Empty`·`.Item`
+- [ ] (필요 시) `hooks/`, `utils/`
 
 ---
 
@@ -702,7 +767,7 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 // private 필드는 # 구문
 readonly #httpClient: HttpClient;
 
-// Service/Mapper 메서드는 arrow function
+// Service 메서드는 arrow function
 get{Feature}s = async (params): Promise<Result<{Feature}sResult, ApiError>> => { ... };
 
 // Service에서 Zod safeParse + ParseError throw

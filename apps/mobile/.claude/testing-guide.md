@@ -44,15 +44,15 @@ UI에서 복잡한 계산이 필요하면 계산을 순수 util 또는 view-mode
 
 ## 파일 위치
 
-| 대상                 | 권장 위치와 이름                                      |
-| -------------------- | ----------------------------------------------------- |
-| Model / Policy       | `models/{feature}.model.test.ts`                      |
-| Mapper               | `services/{feature}.mapper.test.ts`                   |
-| Service              | `services/{feature}.service.test.ts`                  |
-| Feature pure util    | `presentations/utils/{name}.test.ts`                  |
-| 순수 UI 데이터 변환  | `presentations/view-models/{name}.view-model.test.ts` |
-| Shared pure util     | `shared/utils/{name}.test.ts`                         |
-| 테스트 데이터 팩토리 | `features/{feature}/__tests__/{feature}.factories.ts` |
+| 대상                 | 권장 위치와 이름                                     |
+| -------------------- | ---------------------------------------------------- |
+| Model / Policy       | `domains/{entity}.model.test.ts`                     |
+| Mapper               | `apis/{entity}.mapper.test.ts`                       |
+| Service              | `apis/{feature}.service.test.ts`                     |
+| Feature pure util    | `utils/{name}.test.ts`                               |
+| 순수 UI 데이터 변환  | `utils/view-models/{name}.view-model.test.ts`        |
+| Shared pure util     | `shared/utils/{name}.test.ts`                        |
+| 테스트 데이터 팩토리 | `features/{feature}/__tests__/{entity}.factories.ts` |
 
 테스트 파일은 구현 파일 옆에 둔다. `.test.ts`를 기본으로 사용하고, JSX가 꼭 필요한 예외에만
 `.test.tsx`를 사용한다. feature 내부 테스트 값을 다른 파일에서 다시 export하지 않는다.
@@ -126,10 +126,9 @@ pnpm --filter @aido/mobile test --runInBand todo-comment.service.test.ts
 
 # 열린 handle 확인이 필요한 순수 테스트 묶음
 pnpm --filter @aido/mobile test --runInBand --detectOpenHandles \
-  src/features/todo-comment/models \
-  src/features/todo-comment/services \
-  src/features/todo-comment/utils \
-  src/features/todo-comment/view-models
+  src/features/todo-comment/domains \
+  src/features/todo-comment/apis \
+  src/features/todo-comment/utils
 
 # 정적 검증
 pnpm --filter @aido/mobile lint
