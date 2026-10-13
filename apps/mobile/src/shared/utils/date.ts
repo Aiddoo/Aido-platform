@@ -17,7 +17,7 @@ export const formatDate = (date: Date | string | number): string => {
   return d.isValid() ? d.format('YYYY-MM-DD') : '';
 };
 
-function getDateFormatContext(): DateFormatContext {
+export function getDateFormatContext(): DateFormatContext {
   return {
     locale: i18n.language.startsWith('ko') ? 'ko-KR' : 'en-US',
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,

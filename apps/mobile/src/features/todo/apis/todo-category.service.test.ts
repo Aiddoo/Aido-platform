@@ -184,7 +184,7 @@ describe('TodoCategoryService', () => {
   // ── changeTodoCategory ──────────────────────
 
   describe('changeTodoCategory', () => {
-    test('정상 응답 → TodoItem 반환 (카테고리 변경됨)', async () => {
+    test('정상 응답 → Todo 반환 (카테고리 변경됨)', async () => {
       // Given
       const todo = createTodoDto({
         category: { id: 2, name: '업무', color: '#EF4444', sortOrder: 1 },

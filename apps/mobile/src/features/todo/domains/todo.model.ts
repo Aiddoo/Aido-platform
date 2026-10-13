@@ -1,52 +1,48 @@
-import { dayOfWeekSchema } from '@aido/api';
+import { dateSchema, dayOfWeekSchema, todoVisibilitySchema } from '@aido/api';
 import { z } from 'zod';
 
-import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
+import { SubTodoPolicy, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
 
 export { type SubTodo, SubTodoPolicy, type SubTodoStats } from './sub-todo.model';
 
-export const todoVisibilitySchema = z.enum(['PUBLIC', 'PRIVATE']);
+export { todoVisibilitySchema };
+import { todoCategorySchema as categorySchema } from './todo-category.model';
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 
-export const todoCategorySchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  color: z.string(),
-});
+export const todoCategorySchema = categorySchema.pick({ id: true, name: true, color: true });
 export type TodoCategory = z.infer<typeof todoCategorySchema>;
 
-export const todoItemSchema = z.object({
+export const todoSchema = z.object({
   id: z.number(),
   title: z.string(),
-  startDate: z.string(),
-  endDate: z.string().nullable(),
+  startDate: dateSchema,
+  endDate: dateSchema.nullable(),
   category: todoCategorySchema,
   completed: z.boolean(),
-  scheduledTime: z.date().nullable(),
+  scheduledAtMs: z.int().nullable(),
   isAllDay: z.boolean(),
   visibility: todoVisibilitySchema,
   recurrenceGroupId: z.string().nullable(),
   subTodos: z.array(subTodoSchema),
   subTodoStats: subTodoStatsSchema,
-  /** 댓글 수 — 목록에서 대화가 오갔는지 바로 보이게 한다. */
-  commentCount: z.number(),
+  commentCount: z.int().nonnegative(),
 });
-export type TodoItem = z.infer<typeof todoItemSchema>;
-const optimisticTodoItemSchema = todoItemSchema.extend({ optimistic: z.literal(true).readonly() });
-export type OptimisticTodoItem = z.infer<typeof optimisticTodoItemSchema>;
+export type Todo = z.infer<typeof todoSchema>;
+const optimisticTodoSchema = todoSchema.extend({ optimistic: z.literal(true).readonly() });
+export type OptimisticTodo = z.infer<typeof optimisticTodoSchema>;
 
 export const todosByDateSchema = z.object({
   date: z.string(),
-  todos: z.array(todoItemSchema),
+  todos: z.array(todoSchema),
 });
 export type TodosByDate = z.infer<typeof todosByDateSchema>;
 
-export const todosResultSchema = z.object({
-  todos: z.array(todoItemSchema),
+export const todoListResultSchema = z.object({
+  todos: z.array(todoSchema),
   hasNext: z.boolean(),
   nextCursor: z.number().nullable(),
 });
-export type TodosResult = z.infer<typeof todosResultSchema>;
+export type TodoListResult = z.infer<typeof todoListResultSchema>;
 
 export const todoRecurrenceSchema = z.object({
   daysOfWeek: z.array(dayOfWeekSchema).min(1).max(7),
@@ -106,7 +102,7 @@ export const dailyCompletionsResultSchema = z.object({
   completions: z.array(dailyCompletionSummaryClientSchema),
   totalCompleteDays: z.number(),
   dateRange: z.object({
-    startDate: z.string(),
+    startDate: dateSchema,
     endDate: z.string(),
   }),
 });
@@ -144,7 +140,7 @@ export const AiUsagePolicy = {
 } as const;
 
 export const todoDetailsSchema = z.object({
-  todo: todoItemSchema,
+  todo: todoSchema,
   owner: z.object({
     id: z.string(),
     name: z.string().nullable(),
@@ -158,3 +154,26 @@ export const todoDetailsSchema = z.object({
   metrics: z.object({ viewCount: z.number(), commentCount: z.number() }),
 });
 export type TodoDetails = z.infer<typeof todoDetailsSchema>;
+
+export function isRecurringTodo(todo: Todo): boolean {
+  return todo.recurrenceGroupId != null;
+}
+
+export function hasSubTodos(todo: Todo): boolean {
+  return todo.subTodoStats.total > 0;
+}
+
+export function canAddSubTodo(todo: Todo): boolean {
+  return SubTodoPolicy.canAddSubTodo(todo);
+}
+
+export function calculateSubTodoProgress(todo: Todo): number {
+  return SubTodoPolicy.completionProgress(todo);
+}
+
+export const TodoPolicy = {
+  isRecurring: isRecurringTodo,
+  hasSubTodos,
+  canAddSubTodo,
+  completionProgress: calculateSubTodoProgress,
+} as const;

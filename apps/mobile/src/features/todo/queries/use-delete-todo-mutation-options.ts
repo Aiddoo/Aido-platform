@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { isTodoError } from '../domains/todo.error';
-import type { TodosResult } from '../domains/todo.model';
+import type { TodoListResult } from '../domains/todo.model';
 
 interface DeleteTodoMutationParams {
   todoId: number;
@@ -31,11 +31,11 @@ export const useDeleteTodoMutationOptions = () => {
     onMutate: async ({ todoId, startDate }) => {
       await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
 
-      const previousData = queryClient.getQueryData<TodosResult>(
+      const previousData = queryClient.getQueryData<TodoListResult>(
         TODO_QUERY_KEYS.listByDate(startDate),
       );
 
-      queryClient.setQueryData<TodosResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
+      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
         if (!old) {
           return old;
         }

@@ -22,7 +22,7 @@ describe('TodoService', () => {
   // ── getTodos ─────────────────────────────────
 
   describe('getTodos', () => {
-    test('정상 응답 → TodosResult 반환', async () => {
+    test('정상 응답 → TodoListResult 반환', async () => {
       // Given
       const dto = createTodoListResponseDto();
       httpClient.get.mockResolvedValue({ ok: true, value: dto });
@@ -75,7 +75,7 @@ describe('TodoService', () => {
   // ── createTodo ───────────────────────────────
 
   describe('createTodo', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto();
       httpClient.post.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
@@ -135,7 +135,7 @@ describe('TodoService', () => {
   // ── toggleTodoComplete ───────────────────────
 
   describe('toggleTodoComplete', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto({ completed: true });
       httpClient.patch.mockResolvedValue({ ok: true, value: { todo, message: '완료' } });
@@ -286,7 +286,7 @@ describe('TodoService', () => {
   // ── createRecurringTodo ──────────────────────
 
   describe('createRecurringTodo', () => {
-    test('정상 응답 → TodoItem[] 반환', async () => {
+    test('정상 응답 → Todo[] 반환', async () => {
       // Given
       const todos = [createTodoDto({ id: 1 }), createTodoDto({ id: 2 })];
       httpClient.post.mockResolvedValue({
@@ -358,7 +358,7 @@ describe('TodoService', () => {
   // ── reorderTodo ──────────────────────────────
 
   describe('reorderTodo', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto();
       httpClient.patch.mockResolvedValue({

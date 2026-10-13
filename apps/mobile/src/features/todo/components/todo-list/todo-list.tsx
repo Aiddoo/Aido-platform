@@ -1,4 +1,8 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
+import { TodoPolicy } from '@src/features/todo/domains/todo.model';
+import { type Todo } from '@src/features/todo/domains/todo.model';
+import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -18,13 +22,15 @@ import {
   LockIcon,
   MoreIcon,
 } from '@src/shared/ui';
+import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate } from '@src/shared/utils/date';
 import { fontScaledSize } from '@src/shared/utils/scale';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { match } from 'ts-pattern';
@@ -37,7 +43,6 @@ import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categor
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
 import { toTodoCategoryGroups } from '../../utils/view-models/todo-category-group.view-model';
-import { type TodoItemViewModel } from '../../utils/view-models/todo-item.view-model';
 import { AddSubTodoBottomSheet } from '../add-sub-todo-bottom-sheet';
 import { AddTodoBottomSheet } from '../add-todo-bottom-sheet';
 import { CategorySelectBottomSheet } from '../category-select-bottom-sheet';
@@ -51,19 +56,16 @@ import { TodoActionsBottomSheet } from './todo-actions-bottom-sheet';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
-  const [{ data: preference }, { data: categoriesData }, { data: user }, { data: todosData }] =
-    useSuspenseQueries({
-      queries: [
-        useGetPreferenceQueryOptions(),
-        useGetTodoCategoriesQueryOptions(),
-        useGetMeQueryOptions(),
-        useGetTodosByDateQueryOptions(formatDate(selectedDate)),
-      ],
-    });
-  const categoryGroups = toTodoCategoryGroups(
-    todosData.todos,
-    categoriesData.categories,
-    preference.timeFormat,
+  const [{ data: categoriesData }, { data: user }, { data: todosData }] = useSuspenseQueries({
+    queries: [
+      useGetTodoCategoriesQueryOptions(),
+      useGetMeQueryOptions(),
+      useGetTodosByDateQueryOptions(formatDate(selectedDate)),
+    ],
+  });
+  const categoryGroups = useMemo(
+    () => toTodoCategoryGroups(todosData.todos, categoriesData.categories),
+    [todosData.todos, categoriesData.categories],
   );
   const canReorderTodos = categoryGroups.some((group) => group.todos.length >= 2);
 
@@ -158,13 +160,17 @@ function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
 }
 
 interface TodoDraggableListProps {
-  items: TodoItemViewModel[];
+  items: Todo[];
 }
 
 function TodoDraggableList({ items }: TodoDraggableListProps) {
   const reorderMutation = useMutation(useReorderTodoMutationOptions());
 
-  const { items: draggableItems, onDragEnd } = useDraggableReorderList({
+  const {
+    items: draggableItems,
+    onDragBegin,
+    onDragEnd,
+  } = useDraggableReorderList({
     items,
     isPending: reorderMutation.isPending,
     onReorder: ({ movedItemId, targetId, position }) => {
@@ -189,28 +195,32 @@ function TodoDraggableList({ items }: TodoDraggableListProps) {
           />
         </ScaleDecorator>
       )}
+      onDragBegin={onDragBegin}
       onDragEnd={onDragEnd}
     />
   );
 }
 
-interface TodoItemProps {
-  todo: TodoItemViewModel;
+interface TodoListItemProps {
+  todo: Todo;
   drag?: () => void;
   isActive?: boolean;
   isDragDisabled?: boolean;
 }
 
-TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoItemProps) {
+TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoListItemProps) {
+  const editValues = toTodoEditFormValues(todo);
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('todo');
   const todoActions = useTodoActions(todo);
   const subTodoActions = useSubTodoActions(todo);
   const overlay = useOverlay();
-  const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
-  const showDateTime = todo.formattedTime && !todo.isAllDay;
-  const isOptimistic = todo.optimistic;
+  const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
+  const showDateTime = formattedTime != null;
+  const isOptimistic = 'optimistic' in todo && todo.optimistic === true;
 
   /** 행을 누르면 하위 항목이 열리고, 그 안에서 바로 새 항목을 추가할 수 있다. */
   const toggleChecklist = () => setIsExpanded((current) => !current);
@@ -272,13 +282,13 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoItem
       >
         {isOpen && (
           <TodoDatePickerContent
-            startDate={todo.startDateObj}
+            startDate={editValues.startDate}
             onCancel={close}
             onConfirm={(startDate) => {
               todoActions.updateSchedule({
                 startDate: formatDate(startDate),
                 endDate: null,
-                scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
+                scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
                 isAllDay: todo.isAllDay,
               });
               close();
@@ -303,14 +313,14 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoItem
         {isOpen && (
           <Suspense fallback={<ActivityIndicator />}>
             <TodoTimePickerContent
-              draftDate={todo.startDateObj}
-              scheduledTime={todo.scheduledTime24}
+              draftDate={editValues.startDate}
+              scheduledTime={editValues.scheduledTime ?? undefined}
               isAllDay={todo.isAllDay}
               onCancel={close}
               onConfirm={(scheduledTime, isAllDay) => {
                 todoActions.updateSchedule({
-                  startDate: formatDate(todo.startDateObj),
-                  endDate: todo.endDateObj ? formatDate(todo.endDateObj) : null,
+                  startDate: formatDate(editValues.startDate),
+                  endDate: editValues.endDate ? formatDate(editValues.endDate) : null,
                   scheduledTime: isAllDay ? null : (scheduledTime ?? null),
                   isAllDay,
                 });
@@ -444,12 +454,12 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoItem
       middle={
         showDateTime ? (
           <Text size="e1" shade={6}>
-            {todo.formattedTime}
+            {formattedTime}
           </Text>
         ) : undefined
       }
       bottom={
-        todo.hasSubTodos ? (
+        TodoPolicy.hasSubTodos(todo) ? (
           <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
         ) : undefined
       }

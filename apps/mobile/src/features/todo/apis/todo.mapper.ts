@@ -3,8 +3,9 @@ import type {
   DailyCompletionSummary as DailyCompletionSummaryDTO,
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
-  Todo,
+  Todo as TodoDto,
   TodoDetailsResponse,
+  TodoListResponse,
   TodoSummaryResponse,
 } from '@aido/api';
 
@@ -13,29 +14,30 @@ import type {
   DailyCompletionSummary,
   DailyCompletionsResult,
   ParsedTodoResult,
-  TodoItem,
+  Todo,
   TodoDetails,
   TodoSummary,
+  TodoListResult,
 } from '../domains/todo.model';
 import { toSubTodo } from './sub-todo.mapper';
 
-export const toTodoItem = (dto: Todo): TodoItem => ({
+export const toTodo = (dto: TodoDto): Todo => ({
   id: dto.id,
   title: dto.title,
   startDate: dto.startDate,
   endDate: dto.endDate,
-  category: dto.category,
+  category: { id: dto.category.id, name: dto.category.name, color: dto.category.color },
   completed: dto.completed,
-  scheduledTime: dto.scheduledTime ? new Date(dto.scheduledTime) : null,
+  scheduledAtMs: dto.scheduledTime == null ? null : Date.parse(dto.scheduledTime),
   isAllDay: dto.isAllDay,
   visibility: dto.visibility,
   recurrenceGroupId: dto.recurrenceGroupId,
   subTodos: dto.items.map(toSubTodo),
-  subTodoStats: dto.itemStats,
+  subTodoStats: { total: dto.itemStats.total, completed: dto.itemStats.completed },
   commentCount: dto.commentCount,
 });
 
-export const toTodoItems = (dtos: Todo[]): TodoItem[] => dtos.map(toTodoItem);
+export const toTodos = (dtos: TodoDto[]): Todo[] => dtos.map(toTodo);
 
 export const toParsedTodoResult = (dto: ParseTodoResponse): ParsedTodoResult => ({
   data: {
@@ -94,7 +96,7 @@ export const toTodoSummary = (dto: TodoSummaryResponse): TodoSummary => ({
 
 export function toTodoDetails(dto: TodoDetailsResponse): TodoDetails {
   return {
-    todo: toTodoItem(dto.todo),
+    todo: toTodo(dto.todo),
     owner: {
       id: dto.owner.id,
       name: dto.owner.name,
@@ -102,5 +104,13 @@ export function toTodoDetails(dto: TodoDetailsResponse): TodoDetails {
     },
     permissions: { ...dto.permissions },
     metrics: { ...dto.metrics },
+  };
+}
+
+export function toTodoListResult(dto: TodoListResponse): TodoListResult {
+  return {
+    todos: dto.items.map(toTodo),
+    hasNext: dto.pagination.hasNext,
+    nextCursor: dto.pagination.nextCursor,
   };
 }

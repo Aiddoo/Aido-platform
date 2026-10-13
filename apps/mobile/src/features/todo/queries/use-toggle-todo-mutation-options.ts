@@ -7,7 +7,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { TodosResult } from '../domains/todo.model';
+import type { TodoListResult } from '../domains/todo.model';
 import { useStoreReviewPrompt } from '../hooks/use-store-review-prompt';
 
 interface ToggleTodoMutationParams {
@@ -31,11 +31,11 @@ export const useToggleTodoMutationOptions = () => {
     onMutate: async ({ todoId, body, startDate }) => {
       await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
 
-      const previousData = queryClient.getQueryData<TodosResult>(
+      const previousData = queryClient.getQueryData<TodoListResult>(
         TODO_QUERY_KEYS.listByDate(startDate),
       );
 
-      queryClient.setQueryData<TodosResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
+      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
         if (!old) {
           return old;
         }
@@ -47,7 +47,10 @@ export const useToggleTodoMutationOptions = () => {
         };
       });
 
-      return { previousData, startDate };
+      return {
+        completed: previousData?.todos.find((todo) => todo.id === todoId)?.completed,
+        startDate,
+      };
     },
     onSuccess: (_data, variables) => {
       trackEvent('todo_completed', {
@@ -66,13 +69,20 @@ export const useToggleTodoMutationOptions = () => {
         void promptAfterSuccessfulCompletion(variables.todoId);
       }
     },
-    onError: (_error, _variables, context) => {
+    onError: (_error, variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      if (context) {
-        queryClient.setQueryData(
+      const previousCompleted = context?.completed;
+      if (context && previousCompleted != null) {
+        queryClient.setQueryData<TodoListResult>(
           TODO_QUERY_KEYS.listByDate(context.startDate),
-          context.previousData,
+          (current) =>
+            current && {
+              ...current,
+              todos: current.todos.map((todo) =>
+                todo.id === variables.todoId ? { ...todo, completed: previousCompleted } : todo,
+              ),
+            },
         );
       }
     },

@@ -9,23 +9,23 @@ import {
   toAiUsage,
   toDailyCompletionsResult,
   toParsedTodoResult,
-  toTodoItem,
-  toTodoItems,
+  toTodo,
+  toTodos,
 } from './todo.mapper';
 
 jest.useFakeTimers({ now: new Date('2026-03-08T00:00:00.000Z') });
 
-describe('toTodoItem', () => {
-  test('scheduledTime ISO → Date 변환', () => {
+describe('toTodo', () => {
+  test('scheduledTime ISO → 직렬화 가능한 timestamp 변환', () => {
     // Given
     const dto = createTodoDto({ scheduledTime: '2026-03-08T09:00:00.000Z' });
 
     // When
-    const result = toTodoItem(dto);
+    const result = toTodo(dto);
 
     // Then
-    expect(result.scheduledTime).toBeInstanceOf(Date);
-    expect(result.scheduledTime?.toISOString()).toBe('2026-03-08T09:00:00.000Z');
+    expect(result.scheduledAtMs).toBe(Date.parse('2026-03-08T09:00:00.000Z'));
+    expect(JSON.parse(JSON.stringify(result))).toEqual(result);
     expect(result.id).toBe(dto.id);
     expect(result.title).toBe(dto.title);
   });
@@ -35,10 +35,10 @@ describe('toTodoItem', () => {
     const dto = createTodoDto({ scheduledTime: null });
 
     // When
-    const result = toTodoItem(dto);
+    const result = toTodo(dto);
 
     // Then
-    expect(result.scheduledTime).toBeNull();
+    expect(result.scheduledAtMs).toBeNull();
   });
 
   test('isAllDay, completed, visibility 매핑', () => {
@@ -46,7 +46,7 @@ describe('toTodoItem', () => {
     const dto = createTodoDto({ isAllDay: true, completed: true, visibility: 'PRIVATE' });
 
     // When
-    const result = toTodoItem(dto);
+    const result = toTodo(dto);
 
     // Then
     expect(result.isAllDay).toBe(true);
@@ -55,7 +55,7 @@ describe('toTodoItem', () => {
   });
 });
 
-describe('toTodoItem — subTodos/subTodoStats', () => {
+describe('toTodo — subTodos/subTodoStats', () => {
   test('subTodos 배열 매핑', () => {
     // Given
     const dto = createTodoDto({
@@ -67,7 +67,7 @@ describe('toTodoItem — subTodos/subTodoStats', () => {
     });
 
     // When
-    const result = toTodoItem(dto);
+    const result = toTodo(dto);
 
     // Then
     expect(result.subTodos).toHaveLength(2);
@@ -81,7 +81,7 @@ describe('toTodoItem — subTodos/subTodoStats', () => {
     const dto = createTodoDto({ items: [], itemStats: { total: 0, completed: 0 } });
 
     // When
-    const result = toTodoItem(dto);
+    const result = toTodo(dto);
 
     // Then
     expect(result.subTodos).toEqual([]);
@@ -89,13 +89,13 @@ describe('toTodoItem — subTodos/subTodoStats', () => {
   });
 });
 
-describe('toTodoItems', () => {
+describe('toTodos', () => {
   test('배열 변환', () => {
     // Given
     const dtos = [createTodoDto({ id: 1 }), createTodoDto({ id: 2 })];
 
     // When
-    const result = toTodoItems(dtos);
+    const result = toTodos(dtos);
 
     // Then
     expect(result).toHaveLength(2);
@@ -105,7 +105,7 @@ describe('toTodoItems', () => {
 
   test('빈 배열 → 빈 배열', () => {
     // When
-    const result = toTodoItems([]);
+    const result = toTodos([]);
 
     // Then
     expect(result).toEqual([]);

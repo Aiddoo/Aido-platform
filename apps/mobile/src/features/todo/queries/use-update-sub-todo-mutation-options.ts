@@ -7,7 +7,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { TodosResult } from '../domains/todo.model';
+import type { TodoListResult } from '../domains/todo.model';
 
 interface UpdateSubTodoParams {
   todoId: number;
@@ -30,11 +30,11 @@ export const useUpdateSubTodoMutationOptions = () => {
     onMutate: async ({ todoId, subTodoId, title, startDate }) => {
       await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
 
-      const previousData = queryClient.getQueryData<TodosResult>(
+      const previousData = queryClient.getQueryData<TodoListResult>(
         TODO_QUERY_KEYS.listByDate(startDate),
       );
 
-      queryClient.setQueryData<TodosResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
+      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
         if (!old) {
           return old;
         }

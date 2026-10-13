@@ -35,7 +35,11 @@ export function CategoryList({ mode }: CategoryListProps) {
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
-  const { items: draggableCategories, onDragEnd } = useDraggableReorderList({
+  const {
+    items: draggableCategories,
+    onDragBegin,
+    onDragEnd,
+  } = useDraggableReorderList({
     items: data.categories,
     isPending: reorderMutation.isPending,
     onReorder: ({ movedItemId, targetId, position }) => {
@@ -168,6 +172,7 @@ export function CategoryList({ mode }: CategoryListProps) {
           </PressableFeedback>
         </ScaleDecorator>
       )}
+      onDragBegin={onDragBegin}
       onDragEnd={onDragEnd}
       containerStyle={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
     />

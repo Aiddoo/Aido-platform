@@ -13,7 +13,7 @@ describe('SubTodoService', () => {
   });
 
   describe('addSubTodo', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto();
       httpClient.post.mockResolvedValue({ ok: true, value: { message: '추가됨', todo } });
@@ -50,7 +50,7 @@ describe('SubTodoService', () => {
   });
 
   describe('updateSubTodo', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: { message: '수정됨', todo } });
@@ -92,7 +92,7 @@ describe('SubTodoService', () => {
   });
 
   describe('deleteSubTodo', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto();
       httpClient.delete.mockResolvedValue({ ok: true, value: { message: '삭제됨', todo } });
@@ -130,7 +130,7 @@ describe('SubTodoService', () => {
   });
 
   describe('reorderSubTodos', () => {
-    test('정상 응답 → TodoItem 반환', async () => {
+    test('정상 응답 → Todo 반환', async () => {
       // Given
       const todo = createTodoDto();
       httpClient.patch.mockResolvedValue({ ok: true, value: { message: '정렬됨', todo } });

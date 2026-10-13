@@ -1,11 +1,11 @@
+import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useMutation } from '@tanstack/react-query';
 
 import { useChangeTodoCategoryMutationOptions } from '../queries/use-change-todo-category-mutation-options';
 import { useToggleTodoMutationOptions } from '../queries/use-toggle-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../queries/use-update-todo-schedule-mutation-options';
-import type { TodoItemViewModel } from '../utils/view-models/todo-item.view-model';
 
-export function useTodoActions(todo: TodoItemViewModel) {
+export function useTodoActions(todo: Todo) {
   const toggleMutation = useMutation(useToggleTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
   const changeCategoryMutation = useMutation(useChangeTodoCategoryMutationOptions());

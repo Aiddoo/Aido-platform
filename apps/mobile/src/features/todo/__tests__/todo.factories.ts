@@ -2,13 +2,13 @@ import type {
   AiUsageResponse,
   DailyCompletionsRangeResponse,
   ParseTodoResponse,
-  Todo,
+  Todo as TodoDto,
   TodoItemResponse,
   TodoListResponse,
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-const generateTodoDto = (): Todo => ({
+const generateTodoDto = (): TodoDto => ({
   id: 1,
   userId: 'clz7x5p8k0010qz0z8z8z8z8z',
   title: '테스트 할일',
@@ -29,7 +29,7 @@ const generateTodoDto = (): Todo => ({
   updatedAt: '2026-03-08T00:00:00.000Z',
 });
 
-export const createTodoDto = (overrides?: Partial<Todo>): Todo => ({
+export const createTodoDto = (overrides?: Partial<TodoDto>): TodoDto => ({
   ...generateTodoDto(),
   ...overrides,
 });

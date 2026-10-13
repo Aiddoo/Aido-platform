@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import type { TodosResult } from '../domains/todo.model';
+import type { TodoListResult } from '../domains/todo.model';
 
 interface DeleteSubTodoParams {
   todoId: number;
@@ -30,11 +30,11 @@ export const useDeleteSubTodoMutationOptions = () => {
     onMutate: async ({ todoId, subTodoId, startDate }) => {
       await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
 
-      const previousData = queryClient.getQueryData<TodosResult>(
+      const previousData = queryClient.getQueryData<TodoListResult>(
         TODO_QUERY_KEYS.listByDate(startDate),
       );
 
-      queryClient.setQueryData<TodosResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
+      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
         if (!old) {
           return old;
         }

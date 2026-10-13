@@ -1,5 +1,5 @@
 import type { SubTodo } from '../domains/sub-todo.model';
-import type { TodoItem } from '../domains/todo.model';
+import type { Todo } from '../domains/todo.model';
 
 const generateSubTodo = (): SubTodo => ({
   id: 1,
@@ -13,14 +13,14 @@ export const createSubTodo = (overrides?: Partial<SubTodo>): SubTodo => ({
   ...overrides,
 });
 
-const generateParentTodo = (): TodoItem => ({
+const generateParentTodo = (): Todo => ({
   id: 1,
   title: '테스트 할일',
   startDate: '2026-03-08',
   endDate: null,
   category: { id: 1, name: '기본', color: '#3B82F6' },
   completed: false,
-  scheduledTime: null,
+  scheduledAtMs: null,
   isAllDay: false,
   visibility: 'PUBLIC',
   recurrenceGroupId: null,
@@ -29,7 +29,7 @@ const generateParentTodo = (): TodoItem => ({
   commentCount: 0,
 });
 
-export const createParentTodo = (overrides?: Partial<TodoItem>): TodoItem => ({
+export const createParentTodo = (overrides?: Partial<Todo>): Todo => ({
   ...generateParentTodo(),
   ...overrides,
 });

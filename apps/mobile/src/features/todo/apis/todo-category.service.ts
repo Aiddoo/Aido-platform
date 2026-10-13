@@ -17,9 +17,9 @@ import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
 import type { TodoCategoriesResult, TodoCategory } from '../domains/todo-category.model';
-import type { TodoItem } from '../domains/todo.model';
+import type { Todo } from '../domains/todo.model';
 import { toTodoCategory, toTodoCategoryWithCounts } from './todo-category.mapper';
-import { toTodoItem } from './todo.mapper';
+import { toTodo } from './todo.mapper';
 
 export class TodoCategoryService {
   readonly #httpClient: HttpClient;
@@ -111,7 +111,7 @@ export class TodoCategoryService {
   changeTodoCategory = async (
     todoId: number,
     input: ChangeTodoCategoryInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/category`, input);
 
     if (!result.ok) {
@@ -125,7 +125,7 @@ export class TodoCategoryService {
       );
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
   reorderCategory = async (

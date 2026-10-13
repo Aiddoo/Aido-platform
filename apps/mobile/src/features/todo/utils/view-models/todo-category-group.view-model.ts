@@ -1,21 +1,12 @@
-import type { TimeFormat } from '@src/shared/utils/time';
 import { groupBy } from 'es-toolkit';
 
 import type { TodoCategoryWithCount } from '../../domains/todo-category.model';
-import type { TodoItem } from '../../domains/todo.model';
-import { toTodoItemViewModel } from './todo-item.view-model';
+import type { Todo } from '../../domains/todo.model';
 
-export function toTodoCategoryGroups(
-  todos: TodoItem[],
-  categories: TodoCategoryWithCount[],
-  timeFormat: TimeFormat,
-) {
-  const grouped = groupBy(
-    todos.map((todo) => toTodoItemViewModel(todo, timeFormat)),
-    (todo) => todo.category.id,
-  );
-  return categories.map(({ id, name, color }) => ({
-    category: { id, name, color },
-    todos: grouped[id] ?? [],
+export function toTodoCategoryGroups(todos: Todo[], categories: TodoCategoryWithCount[]) {
+  const grouped = groupBy(todos, (todo) => todo.category.id);
+  return categories.map((category) => ({
+    category,
+    todos: grouped[category.id] ?? [],
   }));
 }

@@ -4,8 +4,6 @@ import { z } from 'zod';
 
 import { todoVisibilitySchema } from './todo.model';
 
-const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
 const todoSourceSchema = z.enum(['manual', 'ai']).default('manual');
 
 export const addTodoFormSchema = z
@@ -16,13 +14,12 @@ export const addTodoFormSchema = z
       .max(200, { error: () => t('todo:form.titleMaxLength') }),
     startDate: z.date(),
     endDate: z.date().nullable().default(null),
-    scheduledTime: z
-      .string()
-      .regex(timeRegex, { error: () => t('todo:form.timeFormatInvalid') })
+    scheduledTime: z.iso
+      .time({ precision: -1, error: () => t('todo:form.timeFormatInvalid') })
       .nullish(),
     isAllDay: z.boolean().default(true),
     visibility: todoVisibilitySchema.default('PUBLIC'),
-    categoryId: z.number().int(),
+    categoryId: z.int(),
     isRecurring: z.boolean().default(false),
     repeatEndDate: z.date().nullable().default(null),
     daysOfWeek: z.array(dayOfWeekSchema).default([]),
@@ -37,5 +34,6 @@ export const addTodoFormSchema = z
     path: ['daysOfWeek'],
   });
 
-export type AddTodoFormInput = z.infer<typeof addTodoFormSchema>;
+export type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
+export type AddTodoFormInput = z.output<typeof addTodoFormSchema>;
 export type { DayOfWeek };

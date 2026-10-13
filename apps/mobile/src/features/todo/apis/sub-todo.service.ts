@@ -9,8 +9,8 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
-import type { TodoItem } from '../domains/todo.model';
-import { toTodoItem } from './todo.mapper';
+import type { Todo } from '../domains/todo.model';
+import { toTodo } from './todo.mapper';
 
 export class SubTodoService {
   readonly #httpClient: HttpClient;
@@ -22,7 +22,7 @@ export class SubTodoService {
   addSubTodo = async (
     todoId: number,
     body: CreateTodoItemInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.post(`v1/todos/${todoId}/items`, body);
 
     if (!result.ok) {
@@ -34,14 +34,14 @@ export class SubTodoService {
       throw new ParseError(`[SubTodoService] Invalid addSubTodo response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
   updateSubTodo = async (
     todoId: number,
     subTodoId: number,
     body: UpdateTodoItemInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/items/${subTodoId}`, body);
 
     if (!result.ok) {
@@ -55,13 +55,10 @@ export class SubTodoService {
       );
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
-  deleteSubTodo = async (
-    todoId: number,
-    subTodoId: number,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  deleteSubTodo = async (todoId: number, subTodoId: number): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.delete(`v1/todos/${todoId}/items/${subTodoId}`);
 
     if (!result.ok) {
@@ -75,13 +72,13 @@ export class SubTodoService {
       );
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
   reorderSubTodos = async (
     todoId: number,
     body: ReorderTodoItemsInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/items/reorder`, body);
 
     if (!result.ok) {
@@ -95,6 +92,6 @@ export class SubTodoService {
       );
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 }

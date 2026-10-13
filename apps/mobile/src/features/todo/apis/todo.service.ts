@@ -27,18 +27,19 @@ import type {
   AiUsage,
   DailyCompletionsResult,
   ParsedTodoResult,
-  TodoItem,
+  Todo,
   TodoDetails,
   TodoSummary,
-  TodosResult,
+  TodoListResult,
 } from '../domains/todo.model';
 import {
   toAiUsage,
   toDailyCompletionsResult,
   toParsedTodoResult,
-  toTodoItem,
+  toTodo,
   toTodoDetails,
-  toTodoItems,
+  toTodos,
+  toTodoListResult,
   toTodoSummary,
 } from './todo.mapper';
 
@@ -52,7 +53,7 @@ export class TodoService {
   getTodos = async (
     params: GetTodosQuery,
     signal?: AbortSignal,
-  ): Promise<Result<TodosResult, ApiError>> => {
+  ): Promise<Result<TodoListResult, ApiError>> => {
     const result = await this.#httpClient.get('v1/todos', {
       signal,
       params: {
@@ -74,18 +75,14 @@ export class TodoService {
       throw new ParseError(`[TodoService] Invalid getTodos response: ${parsed.error.message}`);
     }
 
-    return ok({
-      todos: toTodoItems(parsed.data.items),
-      hasNext: parsed.data.pagination.hasNext,
-      nextCursor: parsed.data.pagination.nextCursor,
-    });
+    return ok(toTodoListResult(parsed.data));
   };
 
   getFriendTodos = async (
     friendUserId: string,
     params: GetTodosQuery,
     signal?: AbortSignal,
-  ): Promise<Result<TodosResult, ApiError>> => {
+  ): Promise<Result<TodoListResult, ApiError>> => {
     const result = await this.#httpClient.get(`v1/todos/friends/${friendUserId}`, {
       signal,
       params: {
@@ -107,17 +104,13 @@ export class TodoService {
       );
     }
 
-    return ok({
-      todos: toTodoItems(parsed.data.items),
-      hasNext: parsed.data.pagination.hasNext,
-      nextCursor: parsed.data.pagination.nextCursor,
-    });
+    return ok(toTodoListResult(parsed.data));
   };
 
   toggleTodoComplete = async (
     todoId: number,
     body: ToggleTodoCompleteInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/complete`, body);
 
     if (!result.ok) {
@@ -131,10 +124,10 @@ export class TodoService {
       );
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
-  createTodo = async (params: CreateTodoInput): Promise<Result<TodoItem, ApiError>> => {
+  createTodo = async (params: CreateTodoInput): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.post('v1/todos', params);
 
     if (!result.ok) {
@@ -146,13 +139,10 @@ export class TodoService {
       throw new ParseError(`[TodoService] Invalid createTodo response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
-  updateTodo = async (
-    todoId: number,
-    input: UpdateTodoInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  updateTodo = async (todoId: number, input: UpdateTodoInput): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}`, input);
 
     if (!result.ok) {
@@ -164,13 +154,13 @@ export class TodoService {
       throw new ParseError(`[TodoService] Invalid updateTodo response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
   updateTodoSchedule = async (
     todoId: number,
     input: UpdateTodoScheduleInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/schedule`, input);
 
     if (!result.ok) {
@@ -184,7 +174,7 @@ export class TodoService {
       );
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
   deleteTodo = async (todoId: number): Promise<Result<void, ApiError>> => {
@@ -308,7 +298,7 @@ export class TodoService {
 
   createRecurringTodo = async (
     params: CreateRecurringTodoInput,
-  ): Promise<Result<TodoItem[], ApiError>> => {
+  ): Promise<Result<Todo[], ApiError>> => {
     const result = await this.#httpClient.post('v1/todos/recurring', params);
 
     if (!result.ok) {
@@ -322,13 +312,13 @@ export class TodoService {
       );
     }
 
-    return ok(toTodoItems(parsed.data.todos));
+    return ok(toTodos(parsed.data.todos));
   };
 
   reorderTodo = async (
     todoId: number,
     input: ReorderTodoInput,
-  ): Promise<Result<TodoItem, ApiError>> => {
+  ): Promise<Result<Todo, ApiError>> => {
     const result = await this.#httpClient.patch(`v1/todos/${todoId}/reorder`, input);
 
     if (!result.ok) {
@@ -340,7 +330,7 @@ export class TodoService {
       throw new ParseError(`[TodoService] Invalid reorderTodo response: ${parsed.error.message}`);
     }
 
-    return ok(toTodoItem(parsed.data.todo));
+    return ok(toTodo(parsed.data.todo));
   };
 
   getTodoDetails = async (

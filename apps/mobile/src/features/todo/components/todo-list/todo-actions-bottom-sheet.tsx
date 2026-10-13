@@ -1,3 +1,5 @@
+import type { Todo } from '@src/features/todo/domains/todo.model';
+import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -22,14 +24,13 @@ import { useDeleteTodoMutationOptions } from '../../queries/use-delete-todo-muta
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
-import type { TodoItemViewModel } from '../../utils/view-models/todo-item.view-model';
 import { NudgeThanksButton } from '../nudge-interactions/nudge-thanks-button';
 
 interface TodoActionsBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
-  todo: TodoItemViewModel;
+  todo: Todo;
   onNavigate: (action: 'edit' | 'date' | 'time' | 'category') => void;
 }
 
@@ -44,12 +45,13 @@ export const TodoActionsBottomSheet = ({
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
 
-  const isTodoToday = isDateToday(todo.startDateObj);
+  const editValues = toTodoEditFormValues(todo);
+  const isTodoToday = isDateToday(editValues.startDate);
 
   const handleScheduleToggle = () => {
     const { startDate, endDate } = isTodoToday
-      ? calculateTomorrowSchedule(todo.endDateObj)
-      : calculateTodaySchedule(todo.endDateObj);
+      ? calculateTomorrowSchedule(editValues.endDate)
+      : calculateTodaySchedule(editValues.endDate);
 
     updateScheduleMutation.mutate(
       {
@@ -57,7 +59,7 @@ export const TodoActionsBottomSheet = ({
         input: {
           startDate: formatDate(startDate),
           endDate: endDate ? formatDate(endDate) : null,
-          scheduledTime: todo.isAllDay ? null : (todo.scheduledTime24 ?? null),
+          scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
           isAllDay: todo.isAllDay,
         },
       },

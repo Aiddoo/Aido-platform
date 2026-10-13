@@ -1,6 +1,9 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/utils/view-models/friend-user.view-model';
 import { TodoNudgePolicy } from '@src/features/todo/domains/todo-nudge.model';
+import { TodoPolicy } from '@src/features/todo/domains/todo.model';
+import type { Todo } from '@src/features/todo/domains/todo.model';
+import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -19,19 +22,20 @@ import {
   VStack,
   useOverlay,
 } from '@src/shared/ui';
+import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
 import { useGetRemindNudgeCooldownQueryOptions } from '../queries/get-remind-nudge-cooldown-query-options';
 import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { toFriendCategoryGroups } from '../utils/view-models/friend-todos.view-model';
-import type { TodoItemViewModel } from '../utils/view-models/todo-item.view-model';
 import { RemindNudgeBottomSheet } from './remind-nudge-bottom-sheet';
 import { TodoNudgeButton } from './todo-nudge-button';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
@@ -45,14 +49,13 @@ interface FriendTodoListProps {
 export function FriendTodoList({ friend }: FriendTodoListProps) {
   const [date] = useFeedDate();
   const today = useToday();
-  const [{ data: preference }, { data: todos }, { data: limitInfo }] = useSuspenseQueries({
+  const [{ data: todos }, { data: limitInfo }] = useSuspenseQueries({
     queries: [
-      useGetPreferenceQueryOptions(),
       useGetFriendTodosQueryOptions(friend.id, formatDate(date)),
       useGetTodoNudgeLimitQueryOptions(),
     ],
   });
-  const categoryGroups = toFriendCategoryGroups(todos, preference.timeFormat);
+  const categoryGroups = useMemo(() => toFriendCategoryGroups(todos), [todos]);
   const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   if (categoryGroups.length === 0) return <FriendTodoList.Empty friend={friend} />;
@@ -107,7 +110,7 @@ function CategoryHeader({ label, color }: { label: string; color: string }) {
 }
 
 interface FriendTodoItemProps {
-  todo: TodoItemViewModel;
+  todo: Todo;
   friend: FriendUserViewModel;
   isLimitReached: boolean;
   date: Date;
@@ -123,8 +126,10 @@ FriendTodoList.Item = function Item({
 }: FriendTodoItemProps) {
   const { t } = useTranslation('todo');
   const push = useSingleTap(router.push);
-  const [isExpanded, setIsExpanded] = useState(todo.hasSubTodos);
-  const showDateTime = todo.formattedTime && !todo.isAllDay;
+  const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
+  const showDateTime = formattedTime != null;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },
     today,
@@ -139,12 +144,12 @@ FriendTodoList.Item = function Item({
       middle={
         showDateTime && (
           <Text size="e1" shade={6}>
-            {todo.formattedTime}
+            {formattedTime}
           </Text>
         )
       }
       bottom={
-        todo.hasSubTodos && (
+        TodoPolicy.hasSubTodos(todo) && (
           <TodoProgress value={todo.subTodoStats.completed} total={todo.subTodoStats.total} />
         )
       }
@@ -175,7 +180,7 @@ FriendTodoList.Item = function Item({
           )}
         </HStack>
       }
-      onPress={todo.hasSubTodos ? () => setIsExpanded((prev) => !prev) : undefined}
+      onPress={TodoPolicy.hasSubTodos(todo) ? () => setIsExpanded((prev) => !prev) : undefined}
     >
       {isExpanded && (
         <VStack className="ml-8 pl-4 border-l border-gray-2">

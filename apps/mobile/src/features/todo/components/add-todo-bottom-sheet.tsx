@@ -1,6 +1,7 @@
 import type { DayOfWeek } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
+import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -53,7 +54,7 @@ import { useParseTodoMutationOptions } from '../queries/use-parse-todo-mutation-
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toMemoConversionInput } from '../utils/to-memo-conversion-input';
-import type { TodoItemViewModel } from '../utils/view-models/todo-item.view-model';
+import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import { CategorySelectContent } from './category-select-bottom-sheet';
 import { TodoDatePickerContent } from './todo-date-picker-content';
 import {
@@ -83,7 +84,7 @@ interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
 
 interface AddTodoBottomSheetEditProps extends AddTodoBottomSheetBaseProps {
   mode: 'edit';
-  todo: TodoItemViewModel;
+  todo: Todo;
 }
 
 interface AddTodoBottomSheetConvertMemoProps extends AddTodoBottomSheetBaseProps {
@@ -108,19 +109,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const { isOpen, onOpenChange, onClose } = props;
 
   const defaultValues: AddTodoFormValues = match(props)
-    .with({ mode: 'edit' }, ({ todo }) => ({
-      title: todo.title,
-      startDate: todo.startDateObj,
-      endDate: todo.endDateObj,
-      scheduledTime: todo.isAllDay ? undefined : todo.scheduledTime24,
-      isAllDay: todo.isAllDay,
-      categoryId: todo.category.id,
-      visibility: todo.visibility,
-      isRecurring: false,
-      repeatEndDate: null,
-      daysOfWeek: [],
-      source: 'manual' as const,
-    }))
+    .with({ mode: 'edit' }, ({ todo }) => toTodoEditFormValues(todo))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
       startDate: selectedDate,
