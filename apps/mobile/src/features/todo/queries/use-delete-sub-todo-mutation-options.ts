@@ -28,30 +28,35 @@ export const useDeleteSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, startDate }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      await queryClient.cancelQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
+      });
 
       const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate(startDate),
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
       );
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: old.todos.map((todo) => {
-            if (todo.id !== todoId) {
-              return todo;
-            }
-            return {
-              ...todo,
-              subTodos: todo.subTodos.filter((subTodo) => subTodo.id !== subTodoId),
-              subTodoStats: SubTodoPolicy.statsAfterDelete(todo, subTodoId),
-            };
-          }),
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: old.todos.map((todo) => {
+              if (todo.id !== todoId) {
+                return todo;
+              }
+              return {
+                ...todo,
+                subTodos: todo.subTodos.filter((subTodo) => subTodo.id !== subTodoId),
+                subTodoStats: SubTodoPolicy.statsAfterDelete(todo, subTodoId),
+              };
+            }),
+          };
+        },
+      );
 
       return { previousData, startDate };
     },
@@ -63,7 +68,7 @@ export const useDeleteSubTodoMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.subTodoDeleteFailed') });
       if (context) {
         queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate(context.startDate),
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
           context.previousData,
         );
       }

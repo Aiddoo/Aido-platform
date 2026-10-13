@@ -34,7 +34,9 @@ function AiReviewScreen() {
   const queryClient = useQueryClient();
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);
-  const parsedResult = queryClient.getQueryData<ParsedMemoResult>(AI_QUERY_KEYS.parseMemo(memoId));
+  const parsedResult = queryClient.getQueryData<ParsedMemoResult>(
+    AI_QUERY_KEYS.parseMemo({ memoId }),
+  );
 
   const nextId = useRef(0);
   const [todos, setTodos] = useState<TodoWithId[]>(

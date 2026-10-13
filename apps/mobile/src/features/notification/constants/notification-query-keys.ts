@@ -1,8 +1,15 @@
+import type { NotificationCategory } from '@aido/api';
+
+export interface NotificationListFilters {
+  category?: NotificationCategory;
+  unreadOnly?: boolean;
+  limit?: number;
+}
+
 export const NOTIFICATION_QUERY_KEYS = {
   all: ['notification'] as const,
-
-  list: (filters: { category?: string; unreadOnly?: boolean; limit?: number }) =>
-    [...NOTIFICATION_QUERY_KEYS.all, 'list', filters] as const,
-
+  lists: () => [...NOTIFICATION_QUERY_KEYS.all, 'list'] as const,
+  list: (filters: NotificationListFilters) =>
+    [...NOTIFICATION_QUERY_KEYS.lists(), filters] as const,
   unreadCount: () => [...NOTIFICATION_QUERY_KEYS.all, 'unread-count'] as const,
 } as const;

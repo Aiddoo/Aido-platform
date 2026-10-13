@@ -19,8 +19,11 @@ export function getActivationProgressQueryOptions(
 
   return queryOptions({
     queryKey: identity
-      ? ACTIVATION_QUERY_KEYS.progress(identity.accountId, identity.campaignId)
-      : [...ACTIVATION_QUERY_KEYS.all, 'inactive'],
+      ? ACTIVATION_QUERY_KEYS.progress({
+          accountId: identity.accountId,
+          campaignId: identity.campaignId,
+        })
+      : ACTIVATION_QUERY_KEYS.inactive(),
     queryFn: () => service.getProgress(config, user),
     enabled: identity !== null,
     staleTime: Number.POSITIVE_INFINITY,

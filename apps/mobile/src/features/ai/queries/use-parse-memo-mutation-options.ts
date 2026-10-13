@@ -29,7 +29,7 @@ export const useParseMemoMutationOptions = () => {
     },
     onSuccess: (data, { memoId }) => {
       trackEvent('ai_parse_used', { success: true });
-      queryClient.setQueryData(AI_QUERY_KEYS.parseMemo(memoId), data);
+      queryClient.setQueryData(AI_QUERY_KEYS.parseMemo({ memoId }), data);
       queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.usage() });
     },
     onError: (error) => {

@@ -38,7 +38,7 @@ export function getUserSearchQueryOptions(
   const trimmed = query.trim();
 
   return infiniteQueryOptions({
-    queryKey: FRIEND_QUERY_KEYS.search(trimmed),
+    queryKey: FRIEND_QUERY_KEYS.search({ query: trimmed }),
     queryFn: async ({ pageParam, signal }) => {
       const result = await friendService.searchUsers(
         { query: trimmed, cursor: pageParam.cursor },
@@ -58,7 +58,7 @@ export function getUserSearchQueryOptions(
   });
 }
 
-export function useGetUserSearchQueryOptions(query: string) {
+export function useGetUserSearchQueryOptions({ query }: { query: string }) {
   const { t } = useTranslation('friend');
   const fallbackName = t('fallbackName');
   const select = useCallback(

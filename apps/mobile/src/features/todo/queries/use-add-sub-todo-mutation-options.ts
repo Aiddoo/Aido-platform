@@ -30,36 +30,41 @@ export const useAddSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, title, startDate }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      await queryClient.cancelQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
+      });
 
       const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate(startDate),
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
       );
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: old.todos.map((todo) => {
-            if (todo.id !== todoId) {
-              return todo;
-            }
-            const optimisticSubTodo = {
-              id: Math.random(),
-              title,
-              completed: false,
-              sortOrder: todo.subTodos.length,
-            };
-            return {
-              ...todo,
-              subTodos: [...todo.subTodos, optimisticSubTodo],
-              subTodoStats: SubTodoPolicy.statsAfterAdd(todo),
-            };
-          }),
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: old.todos.map((todo) => {
+              if (todo.id !== todoId) {
+                return todo;
+              }
+              const optimisticSubTodo = {
+                id: Math.random(),
+                title,
+                completed: false,
+                sortOrder: todo.subTodos.length,
+              };
+              return {
+                ...todo,
+                subTodos: [...todo.subTodos, optimisticSubTodo],
+                subTodoStats: SubTodoPolicy.statsAfterAdd(todo),
+              };
+            }),
+          };
+        },
+      );
 
       return { previousData, startDate };
     },
@@ -77,13 +82,13 @@ export const useAddSubTodoMutationOptions = () => {
 
       if (context) {
         queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate(context.startDate),
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
           context.previousData,
         );
       }
     },
     onSettled: (_data, _error, { startDate }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
     },
   });
 };

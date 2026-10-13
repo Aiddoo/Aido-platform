@@ -18,6 +18,6 @@ export function getRemindNudgeCooldownQueryOptions(
   });
 }
 
-export function useGetRemindNudgeCooldownQueryOptions(userId: string) {
+export function useGetRemindNudgeCooldownQueryOptions({ userId }: { userId: string }) {
   return getRemindNudgeCooldownQueryOptions(useTodoNudgeService(), { userId });
 }

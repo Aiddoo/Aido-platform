@@ -33,7 +33,9 @@ import { getNudgeReplyLabelKey } from '../../utils/nudge-reply-label';
 
 export function SentNudgeList() {
   const { t } = useTranslation('common');
-  const query = useSuspenseInfiniteQuery(useGetNudgeInteractionsInfiniteQueryOptions('sent'));
+  const query = useSuspenseInfiniteQuery(
+    useGetNudgeInteractionsInfiniteQueryOptions({ direction: 'sent' }),
+  );
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
 
   const refreshControl = <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />;

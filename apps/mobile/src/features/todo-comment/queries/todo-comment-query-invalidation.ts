@@ -17,8 +17,8 @@ export async function cancelTodoCommentQueries({
   todoId,
 }: TodoCommentQueryParams): Promise<void> {
   await Promise.all([
-    queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.overviews(todoId) }),
-    queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.conversations(todoId) }),
+    queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }) }),
+    queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }) }),
   ]);
 }
 
@@ -29,18 +29,18 @@ export async function invalidateTodoCommentQueries({
 }: InvalidateTodoCommentQueriesParams): Promise<void> {
   const invalidations = [
     queryClient.invalidateQueries({
-      queryKey: TODO_COMMENT_QUERY_KEYS.overviews(todoId),
+      queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
       refetchType: 'active',
     }),
     queryClient.invalidateQueries({
-      queryKey: TODO_COMMENT_QUERY_KEYS.conversations(todoId),
+      queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
       refetchType: 'active',
     }),
   ];
 
   if (invalidatesTodoCount) {
     invalidations.push(
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) }),
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) }),
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
     );

@@ -50,7 +50,7 @@ function containsUnreadNotification(
 }
 
 function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
-  const filters = queryKey[2];
+  const filters = queryKey[NOTIFICATION_QUERY_KEYS.lists().length];
   return (
     typeof filters === 'object' &&
     filters !== null &&
@@ -70,7 +70,7 @@ export async function optimisticallyMarkNotificationsRead(
   }
   const snapshot = queryClient.getQueriesData({ queryKey: NOTIFICATION_QUERY_KEYS.all });
   const listEntries = queryClient.getQueriesData<InfiniteData<NotificationListResult>>({
-    queryKey: [...NOTIFICATION_QUERY_KEYS.all, 'list'],
+    queryKey: NOTIFICATION_QUERY_KEYS.lists(),
   });
   const shouldDecrement =
     notificationId === undefined ||

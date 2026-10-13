@@ -17,7 +17,7 @@ export function getTodoSummaryQueryOptions(
   { date, userId }: { date: string; userId?: string | null },
 ) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.widgetSummaryByDate(date, userId),
+    queryKey: TODO_QUERY_KEYS.widgetSummaryByDate({ date, userId }),
     queryFn: async ({ signal }) => {
       const result = await service.getTodoSummary(signal);
       return unwrap(result);
@@ -29,6 +29,12 @@ export function getTodoSummaryQueryOptions(
   });
 }
 
-export function useGetTodoSummaryQueryOptions(date: string, userId?: string | null) {
+export function useGetTodoSummaryQueryOptions({
+  date,
+  userId,
+}: {
+  date: string;
+  userId?: string | null;
+}) {
   return getTodoSummaryQueryOptions(useTodoService(), { date, userId });
 }

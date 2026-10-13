@@ -25,7 +25,7 @@ export function WeatherForecastBadge() {
     data: forecast,
     error,
     isPending,
-  } = useQuery(useGetForecastQueryOptions(session.clock.date));
+  } = useQuery(useGetForecastQueryOptions({ date: session.clock.date }));
   const label =
     session.status === 'unsupported'
       ? t('badge.domesticOnly')

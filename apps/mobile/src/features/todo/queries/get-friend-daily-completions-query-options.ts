@@ -15,7 +15,11 @@ export function getFriendDailyCompletionsQueryOptions(
   }: { friendUserId: string; startDate: string; endDate: string },
 ) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.friendCompletionsByRange(friendUserId, startDate, endDate),
+    queryKey: TODO_QUERY_KEYS.friendCompletionsByRange({
+      userId: friendUserId,
+      startDate,
+      endDate,
+    }),
     queryFn: async ({ signal }) => {
       const result = await service.getFriendDailyCompletions(
         friendUserId,
@@ -29,11 +33,15 @@ export function getFriendDailyCompletionsQueryOptions(
   });
 }
 
-export function useGetFriendDailyCompletionsQueryOptions(
-  friendUserId: string,
-  startDate: string,
-  endDate: string,
-) {
+export function useGetFriendDailyCompletionsQueryOptions({
+  friendUserId,
+  startDate,
+  endDate,
+}: {
+  friendUserId: string;
+  startDate: string;
+  endDate: string;
+}) {
   return getFriendDailyCompletionsQueryOptions(useTodoService(), {
     friendUserId,
     startDate,

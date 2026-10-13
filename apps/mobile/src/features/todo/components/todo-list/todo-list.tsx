@@ -60,7 +60,7 @@ export function TodoList() {
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetMeQueryOptions(),
-      useGetTodosByDateQueryOptions(formatDate(selectedDate)),
+      useGetTodosByDateQueryOptions({ date: formatDate(selectedDate) }),
     ],
   });
   const categoryGroups = useMemo(

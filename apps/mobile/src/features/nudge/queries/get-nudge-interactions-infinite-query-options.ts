@@ -40,6 +40,10 @@ export function getNudgeInteractionsInfiniteQueryOptions(
   });
 }
 
-export function useGetNudgeInteractionsInfiniteQueryOptions(direction: NudgeDirection) {
+export function useGetNudgeInteractionsInfiniteQueryOptions({
+  direction,
+}: {
+  direction: NudgeDirection;
+}) {
   return getNudgeInteractionsInfiniteQueryOptions(useTodoNudgeService(), { direction });
 }

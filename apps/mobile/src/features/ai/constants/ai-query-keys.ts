@@ -5,10 +5,13 @@ export const AI_QUERY_KEYS = {
   usage: () => [...AI_QUERY_KEYS.all, 'usage'] as const,
   status: () => [...AI_QUERY_KEYS.all, 'status'] as const,
   lists: () => [...AI_QUERY_KEYS.all, 'list'] as const,
-  list: (params?: GetAiReportsParams) => [...AI_QUERY_KEYS.lists(), params] as const,
+  list: (params?: GetAiReportsParams) => [...AI_QUERY_KEYS.lists(), params ?? {}] as const,
   suggestions: () => [...AI_QUERY_KEYS.all, 'suggestions'] as const,
-  suggestion: (id: number) => [...AI_QUERY_KEYS.suggestions(), id] as const,
+  suggestion: ({ suggestionId }: { suggestionId: number }) =>
+    [...AI_QUERY_KEYS.suggestions(), { suggestionId }] as const,
   details: () => [...AI_QUERY_KEYS.all, 'detail'] as const,
-  detail: (id: number) => [...AI_QUERY_KEYS.details(), id] as const,
-  parseMemo: (memoId: number) => [...AI_QUERY_KEYS.all, 'parse-memo', memoId] as const,
+  detail: ({ reportId }: { reportId: number }) =>
+    [...AI_QUERY_KEYS.details(), { reportId }] as const,
+  parseMemo: ({ memoId }: { memoId: number }) =>
+    [...AI_QUERY_KEYS.all, 'parse-memo', { memoId }] as const,
 } as const;

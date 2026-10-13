@@ -37,7 +37,10 @@ function updateProgressCache(
     return;
   }
   queryClient.setQueryData(
-    ACTIVATION_QUERY_KEYS.progress(identity.accountId, identity.campaignId),
+    ACTIVATION_QUERY_KEYS.progress({
+      accountId: identity.accountId,
+      campaignId: identity.campaignId,
+    }),
     progress,
   );
 }

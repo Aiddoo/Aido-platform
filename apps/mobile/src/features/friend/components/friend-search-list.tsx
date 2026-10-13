@@ -37,7 +37,7 @@ export function FriendSearchList({ query }: { query: string }) {
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
-  const options = useGetUserSearchQueryOptions(normalizedQuery);
+  const options = useGetUserSearchQueryOptions({ query: normalizedQuery });
   const search = useInfiniteQuery({
     ...options,
     enabled: options.enabled && isSettled,
@@ -51,7 +51,7 @@ export function FriendSearchList({ query }: { query: string }) {
 
   const patchUser = (userTag: string, patch: Partial<SearchedUser>) => {
     queryClient.setQueryData<InfiniteData<Page<SearchedUser>>>(
-      FRIEND_QUERY_KEYS.search(normalizedQuery),
+      FRIEND_QUERY_KEYS.search({ query: normalizedQuery }),
       (old) => {
         if (!old) {
           return old;

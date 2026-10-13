@@ -28,31 +28,36 @@ export const useUpdateSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, title, startDate }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      await queryClient.cancelQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
+      });
 
       const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate(startDate),
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
       );
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: old.todos.map((todo) => {
-            if (todo.id !== todoId) {
-              return todo;
-            }
-            return {
-              ...todo,
-              subTodos: todo.subTodos.map((subTodo) =>
-                subTodo.id === subTodoId ? { ...subTodo, title } : subTodo,
-              ),
-            };
-          }),
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: old.todos.map((todo) => {
+              if (todo.id !== todoId) {
+                return todo;
+              }
+              return {
+                ...todo,
+                subTodos: todo.subTodos.map((subTodo) =>
+                  subTodo.id === subTodoId ? { ...subTodo, title } : subTodo,
+                ),
+              };
+            }),
+          };
+        },
+      );
 
       return { previousData, startDate };
     },
@@ -64,7 +69,7 @@ export const useUpdateSubTodoMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.subTodoUpdateFailed') });
       if (context) {
         queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate(context.startDate),
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
           context.previousData,
         );
       }

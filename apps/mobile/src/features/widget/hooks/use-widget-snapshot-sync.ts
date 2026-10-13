@@ -44,12 +44,12 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   });
   const userId = user?.id;
   const { data } = useQuery({
-    ...useGetTodoSummaryQueryOptions(date, userId),
+    ...useGetTodoSummaryQueryOptions({ date, userId }),
     enabled: authState === 'authenticated' && userId != null,
     throwOnError: false,
   });
   const { data: completions } = useQuery({
-    ...useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd, userId),
+    ...useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd, userId }),
     enabled: authState === 'authenticated' && userId != null,
     throwOnError: false,
   });

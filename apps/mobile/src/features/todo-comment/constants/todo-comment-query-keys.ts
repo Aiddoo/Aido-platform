@@ -7,12 +7,13 @@ export const TODO_COMMENT_QUERY_TIMING = {
 } as const;
 
 export const TODO_COMMENT_QUERY_KEYS = {
-  all: (todoId: number) => ['todo-comment', todoId] as const,
-  overviews: (todoId: number) => [...TODO_COMMENT_QUERY_KEYS.all(todoId), 'overview'] as const,
+  all: ({ todoId }: { todoId: number }) => ['todo-comment', { todoId }] as const,
+  overviews: ({ todoId }: { todoId: number }) =>
+    [...TODO_COMMENT_QUERY_KEYS.all({ todoId }), 'overview'] as const,
   overview: ({ todoId, sort }: { todoId: number; sort: TodoCommentSort }) =>
-    [...TODO_COMMENT_QUERY_KEYS.overviews(todoId), { sort }] as const,
-  conversations: (todoId: number) =>
-    [...TODO_COMMENT_QUERY_KEYS.all(todoId), 'conversation'] as const,
+    [...TODO_COMMENT_QUERY_KEYS.overviews({ todoId }), { sort }] as const,
+  conversations: ({ todoId }: { todoId: number }) =>
+    [...TODO_COMMENT_QUERY_KEYS.all({ todoId }), 'conversation'] as const,
   conversation: ({
     todoId,
     sort,
@@ -23,7 +24,7 @@ export const TODO_COMMENT_QUERY_KEYS = {
     focusCommentId?: string;
   }) =>
     [
-      ...TODO_COMMENT_QUERY_KEYS.conversations(todoId),
+      ...TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
       { sort, focusCommentId: focusCommentId ?? null },
     ] as const,
 } as const;

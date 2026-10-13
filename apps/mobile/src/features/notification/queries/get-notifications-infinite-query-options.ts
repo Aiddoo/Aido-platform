@@ -1,4 +1,3 @@
-import type { NotificationCategory } from '@aido/api';
 import { useNotificationService } from '@src/bootstrap/providers/di-context';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { NotificationListResult } from '@src/features/notification/domains/notification.model';
@@ -7,13 +6,12 @@ import type { InfiniteData } from '@tanstack/react-query';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 import { uniqBy } from 'es-toolkit';
 
-import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
+import {
+  NOTIFICATION_QUERY_KEYS,
+  type NotificationListFilters,
+} from '../constants/notification-query-keys';
 
-interface NotificationQueryParams {
-  category?: NotificationCategory;
-  unreadOnly?: boolean;
-  limit?: number;
-}
+type NotificationQueryParams = NotificationListFilters;
 
 interface NotificationPageParam {
   cursor?: number;

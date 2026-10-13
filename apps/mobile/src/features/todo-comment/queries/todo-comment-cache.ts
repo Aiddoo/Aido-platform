@@ -58,10 +58,10 @@ function createTodoCommentCacheSnapshot({
   commentId,
 }: TodoCommentCacheParams & { commentId: string }): TodoCommentCacheSnapshot {
   const conversations = queryClient.getQueriesData<ConversationPages>({
-    queryKey: TODO_COMMENT_QUERY_KEYS.conversations(todoId),
+    queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
   });
   const overviews = queryClient.getQueriesData<OverviewPages>({
-    queryKey: TODO_COMMENT_QUERY_KEYS.overviews(todoId),
+    queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
   });
 
   return {
@@ -83,13 +83,13 @@ export function updateTodoCommentCaches({
 }: UpdateTodoCommentCachesParams): void {
   queryClient.setQueriesData<ConversationPages>(
     {
-      queryKey: TODO_COMMENT_QUERY_KEYS.conversations(todoId),
+      queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
     },
     (data) => patchTodoCommentConversationPages(data, commentId, transform),
   );
   queryClient.setQueriesData<OverviewPages>(
     {
-      queryKey: TODO_COMMENT_QUERY_KEYS.overviews(todoId),
+      queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
     },
     (data) => patchTodoCommentOverviewPages(data, commentId, transform),
   );

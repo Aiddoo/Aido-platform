@@ -28,10 +28,10 @@ export const useUpdateMemoMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: async (memo, { memoId }) => {
-      await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail(memoId) });
-      queryClient.setQueryData(MEMO_QUERY_KEYS.detail(memoId), memo);
+      await queryClient.cancelQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) });
+      queryClient.setQueryData(MEMO_QUERY_KEYS.detail({ memoId }), memo);
       trackEvent('memo_updated', { memo_id: memoId });
-      queryClient.removeQueries({ queryKey: AI_QUERY_KEYS.parseMemo(memoId) });
+      queryClient.removeQueries({ queryKey: AI_QUERY_KEYS.parseMemo({ memoId }) });
     },
     onError: (error) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -45,7 +45,7 @@ export const useUpdateMemoMutationOptions = () => {
     onSettled: (_, __, { memoId }) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.list() }),
-        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail(memoId) }),
+        queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.detail({ memoId }) }),
       ]),
   });
 };

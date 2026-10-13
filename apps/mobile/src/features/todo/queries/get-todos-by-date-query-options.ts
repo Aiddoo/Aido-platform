@@ -7,13 +7,13 @@ import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 
 export function getTodosByDateQueryOptions(todoService: TodoService, { date }: { date: string }) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.listByDate(date),
+    queryKey: TODO_QUERY_KEYS.listByDate({ date }),
     queryFn: async ({ signal }) =>
       unwrap(await todoService.getTodos({ startDate: date, endDate: date, size: 200 }, signal)),
     placeholderData: keepPreviousData,
   });
 }
 
-export function useGetTodosByDateQueryOptions(date: string) {
+export function useGetTodosByDateQueryOptions({ date }: { date: string }) {
   return getTodosByDateQueryOptions(useTodoService(), { date });
 }

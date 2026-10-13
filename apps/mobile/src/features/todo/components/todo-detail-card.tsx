@@ -19,7 +19,7 @@ import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 export function TodoDetailCard() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
 
   return (
     <VStack gap={14}>

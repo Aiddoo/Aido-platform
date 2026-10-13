@@ -15,7 +15,7 @@ export function TodoCommentTitleBar() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const { result: backResult, handleBack } = useTodoCommentBack();
-  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { t } = useTranslation(['todo', 'todoComment']);
 
   const handleBackPress = useSingleTap(() => {

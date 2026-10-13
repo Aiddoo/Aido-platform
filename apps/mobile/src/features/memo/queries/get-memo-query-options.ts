@@ -7,7 +7,7 @@ import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 
 export function getMemoQueryOptions(service: MemoService, { id }: { id: number }) {
   return queryOptions({
-    queryKey: MEMO_QUERY_KEYS.detail(id),
+    queryKey: MEMO_QUERY_KEYS.detail({ memoId: id }),
     queryFn: async ({ signal }) => {
       const result = await service.getMemo(id, signal);
       return unwrap(result);
@@ -15,6 +15,6 @@ export function getMemoQueryOptions(service: MemoService, { id }: { id: number }
   });
 }
 
-export function useGetMemoQueryOptions(id: number) {
+export function useGetMemoQueryOptions({ id }: { id: number }) {
   return getMemoQueryOptions(useMemoService(), { id });
 }

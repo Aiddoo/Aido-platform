@@ -40,7 +40,7 @@ const NudgeParamsSchema = z.object({ nudgeId: z.coerce.number().int().positive()
 function NudgeDetailScreen() {
   const { nudgeId } = NudgeParamsSchema.parse(useLocalSearchParams());
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
-    queries: [useGetNudgeInteractionQueryOptions(nudgeId), useGetMeQueryOptions()],
+    queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
   const mutation = useMutation(useReplyToNudgeMutationOptions());
   const { t } = useTranslation('todo');

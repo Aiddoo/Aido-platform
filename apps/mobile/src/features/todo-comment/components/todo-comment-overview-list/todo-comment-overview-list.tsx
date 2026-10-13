@@ -86,8 +86,10 @@ export function TodoCommentOverviewList({
     useCallback(
       () =>
         Promise.all([
-          queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) }),
-          queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.overviews(todoId) }),
+          queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) }),
+          queryClient.invalidateQueries({
+            queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
+          }),
         ]),
       [queryClient, todoId],
     ),

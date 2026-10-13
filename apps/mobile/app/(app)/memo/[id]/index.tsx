@@ -59,7 +59,7 @@ export default function MemoDetailScreen() {
   const { t } = useTranslation(['memo', 'common']);
   const { id: memoId } = useMemoScreenParams();
 
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions(memoId));
+  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ id: memoId }));
 
   const formMethods = useForm({
     resolver: zodResolver(updateMemoSchema),
@@ -119,7 +119,7 @@ export default function MemoDetailScreen() {
   };
 
   const handleAiParse = () => {
-    const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo(memoId));
+    const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo({ memoId }));
     if (cached) {
       push(`/memo/${memoId}/ai-review`);
       return;

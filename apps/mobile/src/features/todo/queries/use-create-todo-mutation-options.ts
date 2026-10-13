@@ -47,7 +47,9 @@ export const useCreateTodoMutationOptions = () => {
     onMutate: async ({ input }) => {
       const startDate = input.startDate;
 
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      await queryClient.cancelQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
+      });
 
       // 카테고리 캐시에서 카테고리 정보 조회
       const categoriesData = queryClient.getQueryData<TodoCategoriesResult>(
@@ -79,21 +81,26 @@ export const useCreateTodoMutationOptions = () => {
         optimistic: true,
       };
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: [...old.todos, optimisticTodo],
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: [...old.todos, optimisticTodo],
+          };
+        },
+      );
 
       return { startDate, optimisticId: optimisticTodo.id };
     },
     onSuccess: (_data, { input, source }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(input.startDate) });
+      queryClient.invalidateQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: input.startDate }),
+      });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success(t('todo:toast.todoAdded'));
@@ -115,7 +122,7 @@ export const useCreateTodoMutationOptions = () => {
 
       if (context?.optimisticId != null) {
         queryClient.setQueryData<TodoListResult>(
-          TODO_QUERY_KEYS.listByDate(context.startDate),
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
           (current) =>
             current && {
               ...current,

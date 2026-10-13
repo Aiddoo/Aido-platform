@@ -47,7 +47,7 @@ describe('메모 수정 후 상세 cache', () => {
     const http = createMockHttpClient();
     http.patch.mockResolvedValue(ok({ message: 'updated', memo: updatedMemo }));
     mockMemoService = new MemoService(http);
-    client.setQueryData(MEMO_QUERY_KEYS.detail(5), toMemoItem(originalMemo));
+    client.setQueryData(MEMO_QUERY_KEYS.detail({ memoId: 5 }), toMemoItem(originalMemo));
   });
 
   afterEach(async () => {
@@ -72,7 +72,7 @@ describe('메모 수정 후 상세 cache', () => {
   it('저장 완료 후 즉시 다시 열어도 검증된 수정 응답으로 폼을 초기화한다', async () => {
     await updateMemo();
 
-    expect(client.getQueryData<MemoItem>(MEMO_QUERY_KEYS.detail(5))).toEqual(
+    expect(client.getQueryData<MemoItem>(MEMO_QUERY_KEYS.detail({ memoId: 5 }))).toEqual(
       toMemoItem(updatedMemo),
     );
   });
@@ -86,7 +86,7 @@ describe('메모 수정 후 상세 cache', () => {
     });
     const refresh = client
       .fetchQuery({
-        queryKey: MEMO_QUERY_KEYS.detail(5),
+        queryKey: MEMO_QUERY_KEYS.detail({ memoId: 5 }),
         queryFn: () => staleResponse,
       })
       .catch(() => undefined);
@@ -95,7 +95,7 @@ describe('메모 수정 후 상세 cache', () => {
     resolveRefresh(toMemoItem(originalMemo));
     await refresh;
 
-    expect(client.getQueryData<MemoItem>(MEMO_QUERY_KEYS.detail(5))).toEqual(
+    expect(client.getQueryData<MemoItem>(MEMO_QUERY_KEYS.detail({ memoId: 5 }))).toEqual(
       toMemoItem(updatedMemo),
     );
   });

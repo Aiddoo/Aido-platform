@@ -108,7 +108,7 @@ NudgeThanksButton.Recipients = function Recipients({
 }) {
   const { t } = useTranslation(['todo', 'common']);
   const { height } = useWindowDimensions();
-  const query = useSuspenseInfiniteQuery(useGetNudgeThanksPreviewInfiniteQueryOptions(todoId));
+  const query = useSuspenseInfiniteQuery(useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }));
   const mutation = useMutation(useSendNudgeThanksMutationOptions());
   const preview = query.data.pages[0];
   const recipients = query.data.pages.flatMap((page) => page.recipients);

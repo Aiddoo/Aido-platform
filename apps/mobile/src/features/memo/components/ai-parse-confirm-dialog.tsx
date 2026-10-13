@@ -24,7 +24,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
 
   const { t } = useTranslation(['memo', 'common']);
   const { data: aiUsage } = useQuery(useGetAiUsageQueryOptions());
-  const { data: memo } = useQuery(useGetMemoQueryOptions(memoId));
+  const { data: memo } = useQuery(useGetMemoQueryOptions({ id: memoId }));
   const { data: categoriesData } = useQuery(useGetTodoCategoriesQueryOptions());
   const queryClient = useQueryClient();
   const parseMutation = useMutation(useParseMemoMutationOptions());
@@ -73,7 +73,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
     remaining != null ? t('memo:aiDialog.warnWithDeduction') : t('memo:aiDialog.warnNoDeduction');
 
   const handleStart = () => {
-    const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo(memoId));
+    const cached = queryClient.getQueryData(AI_QUERY_KEYS.parseMemo({ memoId }));
     if (cached) {
       onClose();
       push(`/memo/${memoId}/ai-review`);

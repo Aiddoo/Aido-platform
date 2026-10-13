@@ -47,7 +47,7 @@ export default function WeatherDetailScreen() {
   const session = useWeatherSession();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const forecastQuery = useQuery(useGetForecastQueryOptions(session.clock.date));
+  const forecastQuery = useQuery(useGetForecastQueryOptions({ date: session.clock.date }));
   const conditionsQuery = useQuery(useGetConditionsQueryOptions());
   const forecast = forecastQuery.data;
   const conditions = conditionsQuery.data;

@@ -51,7 +51,7 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
   const today = useToday();
   const [{ data: todos }, { data: limitInfo }] = useSuspenseQueries({
     queries: [
-      useGetFriendTodosQueryOptions(friend.id, formatDate(date)),
+      useGetFriendTodosQueryOptions({ friendUserId: friend.id, date: formatDate(date) }),
       useGetTodoNudgeLimitQueryOptions(),
     ],
   });
@@ -206,7 +206,9 @@ interface RemindNudgeButtonProps {
 function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
-  const { data: cooldownInfo } = useQuery(useGetRemindNudgeCooldownQueryOptions(friend.id));
+  const { data: cooldownInfo } = useQuery(
+    useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
+  );
   const canNudge = cooldownInfo?.canNudge ?? true;
 
   const openRemindNudgeSheet = () => {

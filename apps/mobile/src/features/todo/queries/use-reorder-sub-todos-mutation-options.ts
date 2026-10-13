@@ -24,29 +24,32 @@ export const useReorderSubTodosMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: ({ todoId, subTodoIds, startDate }) => {
-      queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
 
       const previous = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate(startDate),
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
       );
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: old.todos.map((todo) => {
-            if (todo.id !== todoId) {
-              return todo;
-            }
-            const reordered = subTodoIds
-              .map((id) => todo.subTodos.find((st) => st.id === id))
-              .filter((st) => st != null);
-            return { ...todo, subTodos: reordered };
-          }),
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: old.todos.map((todo) => {
+              if (todo.id !== todoId) {
+                return todo;
+              }
+              const reordered = subTodoIds
+                .map((id) => todo.subTodos.find((st) => st.id === id))
+                .filter((st) => st != null);
+              return { ...todo, subTodos: reordered };
+            }),
+          };
+        },
+      );
 
       return { previous, startDate };
     },
@@ -56,10 +59,15 @@ export const useReorderSubTodosMutationOptions = () => {
     onError: (_err, _vars, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       if (context?.previous) {
-        queryClient.setQueryData(TODO_QUERY_KEYS.listByDate(context.startDate), context.previous);
+        queryClient.setQueryData(
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
+          context.previous,
+        );
       }
       if (context) {
-        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(context.startDate) });
+        queryClient.invalidateQueries({
+          queryKey: TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
+        });
       }
     },
   });

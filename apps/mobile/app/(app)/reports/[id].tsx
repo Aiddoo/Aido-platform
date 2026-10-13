@@ -87,7 +87,7 @@ export default ReportDetailScreen;
 
 function SavedActivityReport() {
   const { id } = useReportScreenParams();
-  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions(id));
+  const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ id }));
   const { trackEvent } = useTrack();
 
   useEffect(() => {

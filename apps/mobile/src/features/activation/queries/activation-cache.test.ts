@@ -61,7 +61,10 @@ describe('activation mutation bridge', () => {
     // Then
     expect(
       queryClient.getQueryData(
-        ACTIVATION_QUERY_KEYS.progress('new-user', 'feature-discovery-2026-08'),
+        ACTIVATION_QUERY_KEYS.progress({
+          accountId: 'new-user',
+          campaignId: 'feature-discovery-2026-08',
+        }),
       ),
     ).toEqual({
       todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
@@ -103,7 +106,10 @@ describe('activation mutation bridge', () => {
     expect(duplicate).toBeNull();
     expect(
       queryClient.getQueryData(
-        ACTIVATION_QUERY_KEYS.progress('new-user', 'feature-discovery-2026-08'),
+        ACTIVATION_QUERY_KEYS.progress({
+          accountId: 'new-user',
+          campaignId: 'feature-discovery-2026-08',
+        }),
       ),
     ).toEqual({
       todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
@@ -129,7 +135,10 @@ describe('activation mutation bridge', () => {
     expect(unlocked).toBe(true);
     expect(
       queryClient.getQueryData(
-        ACTIVATION_QUERY_KEYS.progress('new-user', 'feature-discovery-2026-08'),
+        ACTIVATION_QUERY_KEYS.progress({
+          accountId: 'new-user',
+          campaignId: 'feature-discovery-2026-08',
+        }),
       ),
     ).toEqual({
       todoCreatedAt: null,

@@ -148,7 +148,7 @@ function CommentInputTrigger({ author, placeholder, ...pressableProps }: Comment
 
 function NewCommentButton() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const [, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
@@ -174,7 +174,7 @@ function ReplyToSelectedCommentButton() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const commentId =
     commentRoute.view === 'conversation' && commentRoute.form === null
@@ -227,7 +227,7 @@ function ReplyToSelectedCommentButton() {
 
 function NewCommentForm() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const [, updateCommentRoute] = useTodoCommentRoute();
   const { t } = useTranslation('todoComment');
@@ -252,7 +252,7 @@ function NewCommentForm() {
 function SelectedCommentForm() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions(todoId));
+  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('todoComment');
   const activeForm = commentRoute.view === 'conversation' ? commentRoute.form : null;

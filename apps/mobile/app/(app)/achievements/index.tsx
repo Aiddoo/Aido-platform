@@ -37,10 +37,10 @@ function AchievementsScreen() {
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions(year));
+    useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
 
   const [refreshing, onRefresh] = useRefresh(() =>
-    queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList(year) }),
+    queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList({ year }) }),
   );
 
   const allItems = useMemo(() => data.pages.flatMap((page) => page.items), [data.pages]);

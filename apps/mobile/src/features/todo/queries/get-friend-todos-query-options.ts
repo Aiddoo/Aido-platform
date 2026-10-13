@@ -9,7 +9,7 @@ export function getFriendTodosQueryOptions(
   { friendUserId, date }: { friendUserId: string; date: string },
 ) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.friendListByDate(friendUserId, date),
+    queryKey: TODO_QUERY_KEYS.friendListByDate({ userId: friendUserId, date }),
     queryFn: async ({ signal }) => {
       const result = await todoService.getFriendTodos(
         friendUserId,
@@ -25,6 +25,12 @@ export function getFriendTodosQueryOptions(
   });
 }
 
-export function useGetFriendTodosQueryOptions(friendUserId: string, date: string) {
+export function useGetFriendTodosQueryOptions({
+  friendUserId,
+  date,
+}: {
+  friendUserId: string;
+  date: string;
+}) {
   return getFriendTodosQueryOptions(useTodoService(), { friendUserId, date });
 }

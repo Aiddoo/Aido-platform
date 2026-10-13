@@ -32,6 +32,6 @@ export function getNudgeThanksPreviewInfiniteQueryOptions(
   });
 }
 
-export function useGetNudgeThanksPreviewInfiniteQueryOptions(todoId: number) {
+export function useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }: { todoId: number }) {
   return getNudgeThanksPreviewInfiniteQueryOptions(useTodoNudgeService(), { todoId });
 }

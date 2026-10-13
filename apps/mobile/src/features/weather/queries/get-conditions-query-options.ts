@@ -9,7 +9,7 @@ import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 
 export function getConditionsQueryOptions(weatherService: WeatherService, locationRevision = 0) {
   return queryOptions({
-    queryKey: WEATHER_QUERY_KEYS.conditions(locationRevision),
+    queryKey: WEATHER_QUERY_KEYS.conditions({ locationRevision }),
     queryFn: async ({ signal }) => {
       const result = await weatherService.getConditions(signal);
       return unwrap(result);

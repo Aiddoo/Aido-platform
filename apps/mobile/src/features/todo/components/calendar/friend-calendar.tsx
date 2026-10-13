@@ -12,7 +12,11 @@ interface FriendCalendarProps {
 export function FriendCalendar({ friendUserId }: FriendCalendarProps) {
   const { rangeStart, rangeEnd } = useCalendarRange();
   const { data, error, isPending, refetch } = useQuery(
-    useGetFriendDailyCompletionsQueryOptions(friendUserId, rangeStart, rangeEnd),
+    useGetFriendDailyCompletionsQueryOptions({
+      friendUserId,
+      startDate: rangeStart,
+      endDate: rangeEnd,
+    }),
   );
 
   return (

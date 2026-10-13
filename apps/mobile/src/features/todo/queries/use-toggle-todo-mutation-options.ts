@@ -30,23 +30,28 @@ export const useToggleTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, body, startDate }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      await queryClient.cancelQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
+      });
 
       const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate(startDate),
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
       );
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: old.todos.map((todo) =>
-            todo.id === todoId ? { ...todo, completed: body.completed } : todo,
-          ),
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: old.todos.map((todo) =>
+              todo.id === todoId ? { ...todo, completed: body.completed } : todo,
+            ),
+          };
+        },
+      );
 
       return {
         completed: previousData?.todos.find((todo) => todo.id === todoId)?.completed,
@@ -76,7 +81,7 @@ export const useToggleTodoMutationOptions = () => {
       const previousCompleted = context?.completed;
       if (context && previousCompleted != null) {
         queryClient.setQueryData<TodoListResult>(
-          TODO_QUERY_KEYS.listByDate(context.startDate),
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
           (current) =>
             current && {
               ...current,
@@ -88,9 +93,9 @@ export const useToggleTodoMutationOptions = () => {
       }
     },
     onSettled: (_data, _error, { startDate, todoId }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
       invalidateNudgeInteractions(queryClient);
     },
   });

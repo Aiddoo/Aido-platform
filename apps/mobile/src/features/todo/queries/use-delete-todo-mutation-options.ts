@@ -28,21 +28,26 @@ export const useDeleteTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, startDate }) => {
-      await queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      await queryClient.cancelQueries({
+        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
+      });
 
       const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate(startDate),
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
       );
 
-      queryClient.setQueryData<TodoListResult>(TODO_QUERY_KEYS.listByDate(startDate), (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          todos: old.todos.filter((todo) => todo.id !== todoId),
-        };
-      });
+      queryClient.setQueryData<TodoListResult>(
+        TODO_QUERY_KEYS.listByDate({ date: startDate }),
+        (old) => {
+          if (!old) {
+            return old;
+          }
+          return {
+            ...old,
+            todos: old.todos.filter((todo) => todo.id !== todoId),
+          };
+        },
+      );
 
       return { previousData, startDate };
     },
@@ -55,7 +60,7 @@ export const useDeleteTodoMutationOptions = () => {
 
       if (context?.previousData !== undefined) {
         queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate(context.startDate),
+          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
           context.previousData,
         );
       }
@@ -67,7 +72,7 @@ export const useDeleteTodoMutationOptions = () => {
       toast.error(undefined, { fallback: t('todo:toast.deleteFailedRetry') });
     },
     onSettled: (_data, _error, { startDate }) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate(startDate) });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
     },

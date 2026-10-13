@@ -31,7 +31,9 @@ describe('useGetUserSearchQueryOptions', () => {
     const wrapper = createWrapper(httpClient);
 
     // When
-    await renderHook(() => useInfiniteQuery(useGetUserSearchQueryOptions('a')), { wrapper });
+    await renderHook(() => useInfiniteQuery(useGetUserSearchQueryOptions({ query: 'a' })), {
+      wrapper,
+    });
 
     // Then
     expect(httpClient.get).not.toHaveBeenCalled();
@@ -45,7 +47,7 @@ describe('useGetUserSearchQueryOptions', () => {
 
     // When
     const { result } = await renderHook(
-      () => useInfiniteQuery(useGetUserSearchQueryOptions('홍길동')),
+      () => useInfiniteQuery(useGetUserSearchQueryOptions({ query: '홍길동' })),
       {
         wrapper,
       },

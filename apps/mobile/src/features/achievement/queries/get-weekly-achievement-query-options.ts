@@ -10,7 +10,7 @@ export function getWeeklyAchievementQueryOptions(
   { year, week }: { year: number; week: number },
 ) {
   return queryOptions({
-    queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyDetail(year, week),
+    queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyDetail({ year, week }),
     queryFn: async ({ signal }) => {
       const result = await achievementService.getWeeklyAchievement(year, week, signal);
       return unwrap(result);
@@ -18,6 +18,12 @@ export function getWeeklyAchievementQueryOptions(
   });
 }
 
-export function useGetWeeklyAchievementQueryOptions(year: number, week: number) {
+export function useGetWeeklyAchievementQueryOptions({
+  year,
+  week,
+}: {
+  year: number;
+  week: number;
+}) {
   return getWeeklyAchievementQueryOptions(useAchievementService(), { year, week });
 }

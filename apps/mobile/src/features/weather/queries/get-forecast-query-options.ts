@@ -14,7 +14,7 @@ export function getForecastQueryOptions(
   { date, locationRevision = 0 }: { date: string; locationRevision?: number },
 ) {
   return queryOptions({
-    queryKey: WEATHER_QUERY_KEYS.forecast(date, locationRevision),
+    queryKey: WEATHER_QUERY_KEYS.forecast({ date, locationRevision }),
     queryFn: async ({ signal }) => {
       const result = await weatherService.getForecast(date, signal);
       return unwrap(result);
@@ -29,7 +29,7 @@ export function getForecastQueryOptions(
   });
 }
 
-export function useGetForecastQueryOptions(date: string) {
+export function useGetForecastQueryOptions({ date }: { date: string }) {
   const session = useWeatherSession();
   return queryOptions({
     ...getForecastQueryOptions(useWeatherService(), {

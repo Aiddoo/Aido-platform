@@ -11,11 +11,11 @@ export function getTodoDetailsQueryOptions(
   { todoId }: { todoId: number },
 ) {
   return queryOptions({
-    queryKey: TODO_QUERY_KEYS.details(todoId),
+    queryKey: TODO_QUERY_KEYS.details({ todoId }),
     queryFn: async ({ signal }) => unwrap(await todoService.getTodoDetails(todoId, signal)),
   });
 }
 
-export function useGetTodoDetailsQueryOptions(todoId: number) {
+export function useGetTodoDetailsQueryOptions({ todoId }: { todoId: number }) {
   return getTodoDetailsQueryOptions(useTodoService(), { todoId });
 }

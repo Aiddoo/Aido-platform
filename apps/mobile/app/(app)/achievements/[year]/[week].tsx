@@ -39,7 +39,9 @@ const BADGE_NAME_KEYS = {
 
 function AchievementDetailScreen() {
   const { year, week } = useAchievementScreenParams();
-  const { data: achievement } = useSuspenseQuery(useGetWeeklyAchievementQueryOptions(year, week));
+  const { data: achievement } = useSuspenseQuery(
+    useGetWeeklyAchievementQueryOptions({ year, week }),
+  );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('achievement');
 

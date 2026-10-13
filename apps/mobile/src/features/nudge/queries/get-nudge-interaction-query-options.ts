@@ -16,6 +16,6 @@ export function getNudgeInteractionQueryOptions(
   });
 }
 
-export function useGetNudgeInteractionQueryOptions(nudgeId: number) {
+export function useGetNudgeInteractionQueryOptions({ nudgeId }: { nudgeId: number }) {
   return getNudgeInteractionQueryOptions(useTodoNudgeService(), { nudgeId });
 }

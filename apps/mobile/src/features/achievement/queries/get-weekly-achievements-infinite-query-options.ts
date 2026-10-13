@@ -24,7 +24,7 @@ export function getWeeklyAchievementsInfiniteQueryOptions(
   { year }: { year: number },
 ) {
   return infiniteQueryOptions({
-    queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList(year),
+    queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList({ year }),
     queryFn: async ({ pageParam, signal }) => {
       const result = await achievementService.getWeeklyAchievements(
         {
@@ -46,6 +46,6 @@ export function getWeeklyAchievementsInfiniteQueryOptions(
   });
 }
 
-export function useGetWeeklyAchievementsInfiniteQueryOptions(year: number) {
+export function useGetWeeklyAchievementsInfiniteQueryOptions({ year }: { year: number }) {
   return getWeeklyAchievementsInfiniteQueryOptions(useAchievementService(), { year });
 }

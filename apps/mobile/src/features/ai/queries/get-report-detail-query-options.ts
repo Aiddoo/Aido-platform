@@ -7,7 +7,7 @@ import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
 
 export function getReportDetailQueryOptions(aiService: AiService, { id }: { id: number }) {
   return queryOptions({
-    queryKey: AI_QUERY_KEYS.detail(id),
+    queryKey: AI_QUERY_KEYS.detail({ reportId: id }),
     queryFn: async ({ signal }) => {
       const result = await aiService.getReportById(id, signal);
       return unwrap(result);
@@ -15,6 +15,6 @@ export function getReportDetailQueryOptions(aiService: AiService, { id }: { id: 
   });
 }
 
-export function useGetReportDetailQueryOptions(id: number) {
+export function useGetReportDetailQueryOptions({ id }: { id: number }) {
   return getReportDetailQueryOptions(useAiService(), { id });
 }

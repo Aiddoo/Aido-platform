@@ -8,7 +8,7 @@ import { useCalendarRange } from './use-calendar-range';
 export function MyCalendar() {
   const { rangeStart, rangeEnd } = useCalendarRange();
   const { data, error, isPending, refetch } = useQuery(
-    useGetDailyCompletionsQueryOptions(rangeStart, rangeEnd),
+    useGetDailyCompletionsQueryOptions({ startDate: rangeStart, endDate: rangeEnd }),
   );
 
   return (
