@@ -2,7 +2,6 @@ import { formatUserHashtag } from '@src/features/user/utils/user-hashtag';
 import { useDebouncedValue } from '@src/shared/hooks/use-debounced-value';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import type { Page } from '@src/shared/types/page.type';
 import {
   Box,
   Button,
@@ -12,18 +11,12 @@ import {
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import {
-  type InfiniteData,
-  useMutation,
-  useQueryClient,
-  useInfiniteQuery,
-} from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { match } from 'ts-pattern';
 
-import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
-import { FriendPolicy, type SearchedUser } from '../domains/friend.model';
+import { FriendPolicy } from '../domains/friend.model';
 import { useFriendSearchTracking } from '../hooks/use-friend-search-tracking';
 import { useGetUserSearchQueryOptions } from '../queries/get-user-search-query-options';
 import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-mutation-options';
@@ -33,7 +26,6 @@ import { UserList } from './user-list';
 
 export function FriendSearchList({ query }: { query: string }) {
   const { t } = useTranslation(['friend', 'common']);
-  const queryClient = useQueryClient();
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
@@ -49,43 +41,9 @@ export function FriendSearchList({ query }: { query: string }) {
 
   const items = search.data?.pages.flatMap((page) => page.items) ?? [];
 
-  const patchUser = (userTag: string, patch: Partial<SearchedUser>) => {
-    queryClient.setQueryData<InfiniteData<Page<SearchedUser>>>(
-      FRIEND_QUERY_KEYS.search({ query: normalizedQuery }),
-      (old) => {
-        if (!old) {
-          return old;
-        }
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items.map((user) =>
-              user.userTag === userTag ? { ...user, ...patch } : user,
-            ),
-          })),
-        };
-      },
-    );
-  };
+  const handleAdd = (user: SearchedUserViewModel) => sendRequest.mutate(user.userTag);
 
-  const handleAdd = (user: SearchedUserViewModel) => {
-    sendRequest.mutate(user.userTag, {
-      onSuccess: (result) =>
-        patchUser(
-          user.userTag,
-          result.autoAccepted
-            ? { isFriend: true, isFollowing: true, isFollower: true, requestPending: false }
-            : { requestPending: true },
-        ),
-    });
-  };
-
-  const handleCancel = (user: SearchedUserViewModel) => {
-    cancelRequest.mutate(user.id, {
-      onSuccess: () => patchUser(user.userTag, { requestPending: false }),
-    });
-  };
+  const handleCancel = (user: SearchedUserViewModel) => cancelRequest.mutate(user.id);
 
   if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery })) {
     return <FriendSearchList.Prompt />;

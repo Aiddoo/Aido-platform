@@ -1,3 +1,5 @@
+import { invalidatePremiumAiQueries } from '@src/features/ai/queries/ai-cache';
+import { invalidateMemoResourceLimit } from '@src/features/memo/queries/memo-cache';
 import { invalidateNudgeLimit } from '@src/features/nudge/queries/nudge-cache';
 import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/subscription-query-keys';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
@@ -70,6 +72,8 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
       const invalidateAll = () => {
         queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
         invalidateNudgeLimit(queryClient);
+        invalidatePremiumAiQueries(queryClient);
+        invalidateMemoResourceLimit(queryClient);
       };
 
       if (hasActive) {

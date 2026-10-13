@@ -5,6 +5,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
+import { patchSearchedUser } from './friend-cache';
 
 export const useCancelRequestMutationOptions = () => {
   const friendService = useFriendService();
@@ -16,7 +17,8 @@ export const useCancelRequestMutationOptions = () => {
       const result = await friendService.cancelRequest(userId);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: (_data, userId) => {
+      patchSearchedUser(queryClient, (user) => user.id === userId, { requestPending: false });
       trackEvent('friend_request_cancelled');
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.sent() });
     },

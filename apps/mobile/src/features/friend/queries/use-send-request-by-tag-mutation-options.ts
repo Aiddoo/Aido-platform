@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { isFriendError } from '../domains/friend.error';
+import { patchSearchedUser } from './friend-cache';
 
 export const useSendRequestByTagMutationOptions = () => {
   const friendService = useFriendService();
@@ -26,7 +27,14 @@ export const useSendRequestByTagMutationOptions = () => {
       const result = await friendService.sendRequestByTag(userTag);
       return unwrap(result);
     },
-    onSuccess: () => {
+    onSuccess: (result, userTag) => {
+      patchSearchedUser(
+        queryClient,
+        (user) => user.userTag === userTag,
+        result.autoAccepted
+          ? { isFriend: true, isFollowing: true, isFollower: true, requestPending: false }
+          : { requestPending: true },
+      );
       trackEvent('friend_request_sent');
       const accountId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
       if (accountId) {
