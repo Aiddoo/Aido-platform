@@ -9,13 +9,16 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Pressable } from 'react-native';
 
-import { useGetForecastQueryOptions } from '../queries/get-forecast-query-options';
-import { useWeatherSession } from './providers/weather-session-provider';
+import {
+  isForecastRequestable,
+  useGetForecastQueryOptions,
+} from '../queries/get-forecast-query-options';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
   resolveSkyIconColor,
-} from './weather-icon.resolver';
+} from '../utils/weather-icon';
+import { useWeatherSession } from './providers/weather-session-provider';
 
 export function WeatherForecastBadge() {
   const push = useSingleTap(router.push);
@@ -25,7 +28,7 @@ export function WeatherForecastBadge() {
     data: forecast,
     error,
     isPending,
-  } = useQuery(useGetForecastQueryOptions({ date: session.clock.date }));
+  } = useQuery({ ...useGetForecastQueryOptions(), enabled: isForecastRequestable(session) });
   const label =
     session.status === 'unsupported'
       ? t('badge.domesticOnly')

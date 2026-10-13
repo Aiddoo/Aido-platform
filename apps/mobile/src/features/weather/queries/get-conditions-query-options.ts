@@ -7,27 +7,19 @@ import { queryOptions } from '@tanstack/react-query';
 import { useWeatherSession } from '../components/providers/weather-session-provider';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 
-export function getConditionsQueryOptions(weatherService: WeatherService, locationRevision = 0) {
+export function getConditionsQueryOptions(
+  weatherService: WeatherService,
+  { locationRevision }: { locationRevision: number },
+) {
   return queryOptions({
     queryKey: WEATHER_QUERY_KEYS.conditions({ locationRevision }),
-    queryFn: async ({ signal }) => {
-      const result = await weatherService.getConditions(signal);
-      return unwrap(result);
-    },
+    queryFn: async ({ signal }) => unwrap(await weatherService.getConditions(signal)),
     staleTime: 30 * 60 * 1000,
-    retry: (failureCount, error) => {
-      if (isApiError(error)) {
-        return false;
-      }
-      return failureCount < 2;
-    },
+    retry: (failureCount, error) => !isApiError(error) && failureCount < 2,
   });
 }
 
 export function useGetConditionsQueryOptions() {
-  const session = useWeatherSession();
-  return queryOptions({
-    ...getConditionsQueryOptions(useWeatherService(), session.locationRevision),
-    enabled: !session.isSyncing && session.status === 'registered',
-  });
+  const { locationRevision } = useWeatherSession();
+  return getConditionsQueryOptions(useWeatherService(), { locationRevision });
 }
