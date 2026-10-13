@@ -173,24 +173,47 @@ interface TodoConversationFocus {
 route 파일 `app/(app)/todo/[todoId]/index.tsx`에서 화면 구조가 바로 읽혀야 한다.
 
 ```tsx
-<TodoCommentScreenTransitionProvider>
-  <TodoDetailPage />
-</TodoCommentScreenTransitionProvider>;
-
-function TodoDetailPage() {
+function TodoDetailScreen() {
+  const [commentRoute] = useTodoCommentRoute();
   return (
     <StyledSafeAreaView>
       <TodoCommentTitleBar />
       <Separator />
-      <KeyboardGestureArea>
-        {showsCommentOverview ? (
-          <TodoCommentOverviewList ListHeaderComponent={<TodoCommentOverviewHeader />} />
-        ) : (
-          <TodoCommentConversationList ListHeaderComponent={<TodoCommentConversationHeader />} />
-        )}
-        <TodoCommentInputBar />
-      </KeyboardGestureArea>
+      {/* 실제 코드는 각 목록에 필요한 query/error 경계와 keyboard props를 유지한다. */}
+      {match(commentRoute.view)
+        .with('overview', () => (
+          <TodoCommentOverviewList
+            ListHeaderComponent={
+              <>
+                <TodoDetailCard />
+                <Separator />
+                <TodoCommentSortBar />
+                <Separator />
+              </>
+            }
+          />
+        ))
+        .with('conversation', () => (
+          <TodoCommentConversationList
+            ListHeaderComponent={
+              <>
+                <TodoDetailCard />
+                <Separator />
+              </>
+            }
+          />
+        ))
+        .exhaustive()}
+      <TodoCommentInputBar />
     </StyledSafeAreaView>
+  );
+}
+
+export default function TodoDetailRoute() {
+  return (
+    <TodoCommentScreenTransitionProvider>
+      <TodoDetailScreen />
+    </TodoCommentScreenTransitionProvider>
   );
 }
 ```

@@ -153,9 +153,32 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 ### 화면 조립과 서버 상태
 
 - route 화면은 주요 섹션을 JSX에서 바로 조립해 화면 구성을 파일 진입점에서 읽을 수 있게 한다.
+- `app/`의 첫 화면 컴포넌트는 실제 `Screen` 구성을 보여 준다. 화면 전체를 feature의 `pages/`로
+  옮겨 재수출하거나 `Content → Header → Section` 같은 중간 조립 컴포넌트로 숨기지 않는다.
+- 컴포넌트는 대상과 역할로 이름 짓는다. `AmountInput`, `CalculationResult`, `ProductList`처럼
+  이름만으로 무엇을 입력·표시·조작하는지 드러나야 한다. 위치만 뜻하는 `Header`, `Section`, `Body`를
+  분리 근거로 삼지 않는다. 간격·구분선·화면 순서는 Screen에서 조립하고, 작은 화면 전용 컴포넌트는
+  같은 파일 아래에 둔다. 단순히 줄 수를 줄이기 위한 wrapper는 만들지 않는다.
+- `useForm`, `useFormState`, `useQuery`, `useMutation`은 사용하는 컴포넌트에서 직접 호출한다.
+  Screen의 줄 수를 줄이려고 조회·폼·저장·화면 이동·키보드 제어를 `useEditor`, `useActions` 같은
+  포괄적인 훅에 묶지 않는다. 훅 추출에는 독립적인 단일 책임이 있어야 하며, 이름 변경이나 코드 이동만으로
+  단일 책임을 충족했다고 판단하지 않는다. 순수 요청 데이터 변환은 순수 함수로, 의미 있는 UI는 컴포넌트로 분리한다.
+- 탭·단계·상호 배타적인 화면 상태는 실제 union에 `match(...).with(...).exhaustive()`를 사용한다.
+  외부 URL과 UI 라이브러리가 주는 문자열은 스키마로 검증한 뒤 상태에 넣는다. `as TabValue`로
+  검증을 건너뛰지 않는다. 단순 표시 여부나 두 가지 문구에는 `&&`·삼항식을 그대로 쓸 수 있다.
+- Suspense query나 Provider 소비 때문에 부모가 필요한 경우에는 같은 파일 아래의 `Route`가
+  검증·Provider·화면 전체의 실패/로딩 경계만 맡는다. 실제 `Screen`은 파일 위에서 읽히게 유지한다.
+  경계를 없애려고 query hook을 자기 자신의 Suspense 위로 옮기거나 네비게이터 전체로 경계를 넓히지 않는다.
+- 가상 목록의 `ListHeaderComponent` 안에도 카드·정렬바·구분선 조립을 직접 적는다. 헤더를 목록
+  밖으로 이동해 스크롤·초기 위치를 바꾸지 않는다. 네이티브 API의 `header`나 `ListHeaderComponent`는
+  위치가 정해진 슬롯 계약이므로 이름만 보고 제거하지 않는다.
+- 정상 목록과 오류 화면이 같은 native 슬롯 구성을 쓰면 Screen 안의 JSX 상수로 한 번 정의해 공유할 수
+  있다. `listHeader`의 실제 조립은 같은 Screen에 두고, 별도 `Header`·`Section` 컴포넌트로 숨기지 않는다.
 - route의 `todoId`, search param, 현재 mode 같은 화면 식별자를 여러 단계의 props로 배포하지 않는다.
   feature block이 검증된 Expo Router hook에서 직접 읽고, 이미 조회된 row 데이터나 순수 layout 값만 props로
   받는다.
+- 한 번 전달하는 query options는 `useSuspenseQuery(useGet...QueryOptions(...))`처럼 사용처에서 직접 호출한다.
+  `queryKey`나 `enabled`를 재사용하는 경우에만 옵션을 지역 변수에 둔다.
 - 서버 상태는 `queryOptions`/`infiniteQueryOptions`/`mutationOptions` factory로 정의한다. component는
   식별자를 읽어 factory를 호출하되 query key, queryFn, cache 정책을 인라인으로 만들지 않는다.
 - 순수 `get...QueryOptions(service, { ...dependencies })`는 `get-...-query-options.ts`에 둔다.

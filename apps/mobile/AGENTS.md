@@ -38,11 +38,11 @@ Expo SDK 58.0.1 · React Native 0.88 RC · React 19.3 · Expo Router · TanStack
 ## 아키텍처 한눈에 보기
 
 ```
-Presentation (app/, presentations/)
+Presentation (app/, components/, hooks/, queries/)
      ↓
-Application (services/)   ← HTTP + Zod + Mapper + Policy 모두 담당
+Application (apis/)   ← HTTP + Zod + Mapper + Policy 모두 담당
      ↓
-Domain (models/)          ← Zod 스키마 + Policy + Error
+Domain (domains/)          ← Zod 스키마 + Policy + Error
      ↓
 Infrastructure (shared/infra/, core/ports/)  ← Ky 클라이언트, SecureStore
      ↓
@@ -55,10 +55,14 @@ Bootstrap (bootstrap/providers/)   ← DI 컨테이너, 전역 Provider
 
 ```
 features/{feature}/
-├── models/         # Zod 스키마 + 타입 + Policy + Error
-├── services/       # Service + Mapper (HTTP + Zod + 변환 + 비즈니스 로직)
-├── __tests__/      # 테스트 팩토리
-└── presentations/  # Query Keys / Options, 컴포넌트, view-models
+├── domains/        # Zod 스키마 + 타입 + Policy + Error
+├── apis/           # Service + Mapper (HTTP + Zod + 변환 + 비즈니스 로직)
+├── components/     # 의미 있는 UI 블록
+├── hooks/          # 기능별 상태·동작
+├── queries/        # Query / Mutation Options
+├── constants/      # Query Keys 등
+├── utils/          # 순수 계산, 필요한 view-models
+└── __tests__/      # 테스트 팩토리
 ```
 
 > **예외**: `DeviceIdRepository`는 Repository 패턴 유지 (로컬 스토리지 — HTTP 아님).
@@ -67,6 +71,9 @@ features/{feature}/
 
 ## 핵심 규칙
 
+- **불필요한 훅 금지**: `react-hook-form`과 Query 훅은 사용처에서 직접 쓴다. 화면을 짧게 만들려고 조회·폼·저장·내비게이션을 포괄적인 커스텀 훅에 묶지 않는다. 추출은 독립적인 단일 책임을 기준으로 한다.
+- **코드 스타일**: 짧은 조기 반환도 `if (조건) { return; }`처럼 중괄호를 쓴다. Promise 호출에 `void` 연산자를 붙이지 않으며, 호출 계약에 맞춰 반환하거나 `await`하고 오류 처리 책임을 유지한다. 반환 타입 `void`는 사용할 수 있다. 들여쓰기·공백·import 정렬은 Oxfmt를 따른다.
+- **Screen 구성**: `app/`의 Screen에서 화면 순서·레이아웃·Suspense·Error 경계가 위에서 아래로 읽히게 유지한다. 피처는 의미 있는 UI 블록과 훅·쿼리·모델·정책을 관리한다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않으며, 한 화면에서만 쓰는 작은 컴포넌트는 Screen 아래에 둘 수 있다.
 - **Service 책임**: HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 모두 담당. Service는 서버 에러(ApiError)를 번역/변환하지 않고 pass-through.
 - **에러 분류**:
   - 예측 가능 (4xx, Policy 실패) → `Result.err()` → Mutation `onError`에서 분기
@@ -99,15 +106,15 @@ features/{feature}/
 
 ## 파일 네이밍 규칙
 
-| 파일 유형        | 패턴                                   |
-| ---------------- | -------------------------------------- |
-| 모델             | `{feature}.model.ts`                   |
-| 에러             | `{feature}.error.ts`                   |
-| 서비스           | `{feature}.service.ts`                 |
-| 매퍼             | `{feature}.mapper.ts` (services/ 하위) |
-| Query Options    | `use-{action}-query-options.ts`        |
-| Mutation Options | `use-{action}-mutation-options.ts`     |
-| Query Keys       | `{feature}-query-keys.constant.ts`     |
+| 파일 유형        | 패턴                               |
+| ---------------- | ---------------------------------- |
+| 모델             | `{feature}.model.ts`               |
+| 에러             | `{feature}.error.ts`               |
+| 서비스           | `{feature}.service.ts`             |
+| 매퍼             | `{feature}.mapper.ts` (apis/ 하위) |
+| Query Options    | `use-{action}-query-options.ts`    |
+| Mutation Options | `use-{action}-mutation-options.ts` |
+| Query Keys       | `{feature}-query-keys.ts`          |
 
 ---
 
