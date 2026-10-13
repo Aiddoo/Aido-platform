@@ -18,7 +18,6 @@ import {
   toForgotPasswordResult,
   toLinkedAccount,
   toLinkedAccounts,
-  toPreference,
   toRegisterResult,
   toResendVerificationResult,
   toResetPasswordResult,
@@ -80,49 +79,6 @@ describe('toAuthTokens', () => {
 
     // Then
     expect(result.accountRestored).toBe(true);
-  });
-});
-
-describe('toPreference', () => {
-  test('preference 필드 전체 매핑', () => {
-    // Given
-    const dto = {
-      pushEnabled: true,
-      nightPushEnabled: false,
-      timezone: 'Asia/Seoul',
-      morningReminderHour: 8,
-      morningReminderMinute: 0,
-      eveningReminderHour: 21,
-      eveningReminderMinute: 0,
-      timeFormat: 'TWELVE_HOUR' as const,
-      weatherMorningEnabled: false,
-      weatherMorningHour: 7,
-      weatherMorningMinute: 0,
-      weatherEveningEnabled: false,
-      weatherEveningHour: 18,
-      weatherEveningMinute: 0,
-    };
-
-    // When
-    const result = toPreference(dto);
-
-    // Then
-    expect(result).toEqual({
-      pushEnabled: true,
-      nightPushEnabled: false,
-      morningReminderHour: 8,
-      morningReminderMinute: 0,
-      eveningReminderHour: 21,
-      eveningReminderMinute: 0,
-      timeFormat: 'TWELVE_HOUR',
-      weatherMorningEnabled: false,
-      weatherMorningHour: 7,
-      weatherMorningMinute: 0,
-      weatherEveningEnabled: false,
-      weatherEveningHour: 18,
-      weatherEveningMinute: 0,
-    });
-    expect(result).not.toHaveProperty('timezone');
   });
 });
 

@@ -1,9 +1,9 @@
-import { PreferencePolicy } from '@src/features/auth/domains/auth.model';
 import {
   GroupSkeleton,
   SettingsCard,
   SettingsTimePicker,
 } from '@src/features/notification/components/settings';
+import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';

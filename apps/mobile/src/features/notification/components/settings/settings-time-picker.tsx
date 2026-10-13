@@ -3,9 +3,9 @@ import DateTimePicker, {
   type AndroidNativeProps,
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
-import type { Preference } from '@src/features/auth/domains/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/queries/use-update-preference-mutation-options';
+import type { Preference } from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { PickerHeader } from '@src/features/todo/components/picker-header';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';

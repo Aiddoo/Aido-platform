@@ -18,6 +18,7 @@ import type { InquiryService } from '@src/features/inquiry/apis/inquiry.service'
 import type { MemoService } from '@src/features/memo/apis/memo.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
+import type { PreferenceService } from '@src/features/preference/apis/preference.service';
 import type { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import type { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import type { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
@@ -54,6 +55,7 @@ export interface DIContainer {
   achievementService: AchievementService;
   aiService: AiService;
   authService: AuthService;
+  preferenceService: PreferenceService;
   activationService: ActivationService;
   appVersionService: AppVersionService;
   appIconService: AppIconService;
@@ -118,6 +120,7 @@ export const useErrorReporter = () => useDI().errorReporter;
 export const useAchievementService = () => useDI().achievementService;
 export const useAiService = () => useDI().aiService;
 export const useAuthService = () => useDI().authService;
+export const usePreferenceService = () => useDI().preferenceService;
 export const useActivationService = () => useDI().activationService;
 export const useAppVersionService = () => useDI().appVersionService;
 export const useFriendService = () => useDI().friendService;

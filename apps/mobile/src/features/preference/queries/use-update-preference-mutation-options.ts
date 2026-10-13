@@ -1,6 +1,6 @@
 import type { UpdatePreferenceInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import { useAuthService } from '@src/bootstrap/providers/di-context';
+import { usePreferenceService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -9,30 +9,30 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
-import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import type { Preference } from '../domains/auth.model';
+import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
+import type { Preference } from '../domains/preference.model';
 
 type UpdatePreferenceArgs = UpdatePreferenceInput & {
   trackAs?: string;
 };
 
 export const useUpdatePreferenceMutationOptions = () => {
-  const authService = useAuthService();
+  const preferenceService = usePreferenceService();
   const { trackEvent } = useTrack();
   const queryClient = useQueryClient();
   const toast = useAppToast();
 
   return mutationOptions({
     mutationFn: async ({ trackAs: _trackAs, ...input }: UpdatePreferenceArgs) => {
-      const result = await authService.updatePreference(input);
+      const result = await preferenceService.updatePreference(input);
       return unwrap(result);
     },
     onMutate: async ({ trackAs: _trackAs, ...input }) => {
-      await queryClient.cancelQueries({ queryKey: AUTH_QUERY_KEYS.preference() });
+      await queryClient.cancelQueries({ queryKey: PREFERENCE_QUERY_KEYS.current() });
 
-      const previousData = queryClient.getQueryData<Preference>(AUTH_QUERY_KEYS.preference());
+      const previousData = queryClient.getQueryData<Preference>(PREFERENCE_QUERY_KEYS.current());
 
-      queryClient.setQueryData<Preference>(AUTH_QUERY_KEYS.preference(), (old) => {
+      queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), (old) => {
         if (!old) {
           return old;
         }
@@ -53,13 +53,13 @@ export const useUpdatePreferenceMutationOptions = () => {
         }
       }
       // 서버 응답으로 캐시를 정확하게 업데이트 (invalidate 대신 직접 업데이트로 블링킹 방지)
-      queryClient.setQueryData<Preference>(AUTH_QUERY_KEYS.preference(), data);
+      queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
     },
     onError: (error, _input, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (context?.previousData) {
-        queryClient.setQueryData(AUTH_QUERY_KEYS.preference(), context.previousData);
+        queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), context.previousData);
       }
 
       if (isApiError(error)) {

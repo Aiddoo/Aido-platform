@@ -12,7 +12,6 @@ import {
   linkAccountResponseSchema,
   unlinkAccountResponseSchema,
   linkedAccountsResponseSchema,
-  preferenceResponseSchema,
   type RegisterInput,
   type ResendVerificationInput,
   type ResetPasswordInput,
@@ -21,10 +20,8 @@ import {
   resetPasswordResponseSchema,
   type UpdateMarketingConsentInput,
   type UpdateMarketingPushConsentInput,
-  type UpdatePreferenceInput,
   updateMarketingConsentResponseSchema,
   updateMarketingPushConsentResponseSchema,
-  updatePreferenceResponseSchema,
   type VerifyEmailInput,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
@@ -49,7 +46,6 @@ import type {
   Consent,
   DeleteAccountResult,
   ForgotPasswordResult,
-  Preference,
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
@@ -70,7 +66,6 @@ import {
   toDeleteAccountResult,
   toForgotPasswordResult,
   toLinkedAccounts,
-  toPreference,
   toRegisterResult,
   toResendVerificationResult,
   toResetPasswordResult,
@@ -358,38 +353,6 @@ export class AuthService {
     const tokens = this.#parseAuthTokens(result);
     await this.#saveTokens(tokens.accessToken, tokens.refreshToken);
     return ok(tokens);
-  };
-
-  getPreference = async (signal?: AbortSignal): Promise<Result<Preference, ApiError>> => {
-    const result = await this.#authHttpClient.get('v1/auth/preference', { signal });
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = preferenceResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(`[AuthService] Invalid getPreference response: ${parsed.error.message}`);
-    }
-
-    return ok(toPreference(parsed.data));
-  };
-
-  updatePreference = async (
-    input: UpdatePreferenceInput,
-  ): Promise<Result<Preference, ApiError>> => {
-    const result = await this.#authHttpClient.patch('v1/auth/preference', input);
-    if (!result.ok) {
-      return result;
-    }
-
-    const parsed = updatePreferenceResponseSchema.safeParse(result.value);
-    if (!parsed.success) {
-      throw new ParseError(
-        `[AuthService] Invalid updatePreference response: ${parsed.error.message}`,
-      );
-    }
-
-    return ok(toPreference(parsed.data));
   };
 
   getConsent = async (signal?: AbortSignal): Promise<Result<Consent, ApiError>> => {

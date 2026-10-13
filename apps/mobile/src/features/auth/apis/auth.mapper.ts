@@ -6,7 +6,6 @@ import type {
   ForgotPasswordResponse,
   LinkedAccount as LinkedAccountDTO,
   LinkedAccountsResponse,
-  PreferenceResponse,
   RegisterResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
@@ -20,7 +19,6 @@ import type {
   Consent,
   DeleteAccountResult,
   ForgotPasswordResult,
-  Preference,
   RegisterResult,
   ResendVerificationResult,
   ResetPasswordResult,
@@ -36,22 +34,6 @@ export const toAuthTokens = (dto: AuthTokensDTO): AuthTokens => ({
   userName: dto.name,
   userProfileImage: dto.profileImage,
   accountRestored: dto.accountRestored ?? false,
-});
-
-export const toPreference = (dto: PreferenceResponse): Preference => ({
-  pushEnabled: dto.pushEnabled,
-  nightPushEnabled: dto.nightPushEnabled,
-  morningReminderHour: dto.morningReminderHour,
-  morningReminderMinute: dto.morningReminderMinute,
-  eveningReminderHour: dto.eveningReminderHour,
-  eveningReminderMinute: dto.eveningReminderMinute,
-  timeFormat: dto.timeFormat,
-  weatherMorningEnabled: dto.weatherMorningEnabled,
-  weatherMorningHour: dto.weatherMorningHour,
-  weatherMorningMinute: dto.weatherMorningMinute,
-  weatherEveningEnabled: dto.weatherEveningEnabled,
-  weatherEveningHour: dto.weatherEveningHour,
-  weatherEveningMinute: dto.weatherEveningMinute,
 });
 
 export const toConsent = (dto: ConsentResponse): Consent => ({

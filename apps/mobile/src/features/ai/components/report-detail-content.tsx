@@ -1,4 +1,4 @@
-import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';

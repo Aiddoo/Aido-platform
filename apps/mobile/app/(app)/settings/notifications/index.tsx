@@ -1,6 +1,3 @@
-import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/domains/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/queries/use-update-preference-mutation-options';
 import {
   NavigationRow,
   NavigationSkeleton,
@@ -8,6 +5,9 @@ import {
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/components/settings';
+import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
@@ -67,8 +67,10 @@ function NotificationSettingsForm() {
         <Separator className="bg-gray-2" />
         <NavigationRow
           label={t('settings.weatherLabel')}
-          summary={isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
-          summaryEnabled={isWeatherEnabled(preference)}
+          summary={
+            PreferencePolicy.isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')
+          }
+          summaryEnabled={PreferencePolicy.isWeatherEnabled(preference)}
           onPress={() => push('/settings/notifications/weather')}
           isDisabled={pushDisabled}
         />

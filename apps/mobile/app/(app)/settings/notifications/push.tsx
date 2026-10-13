@@ -1,17 +1,17 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
 import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-mutations';
-import { PreferencePolicy } from '@src/features/auth/domains/auth.model';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
 import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
 import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/queries/use-update-preference-mutation-options';
 import {
   SettingsCard,
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/components/settings';
 import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
+import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';

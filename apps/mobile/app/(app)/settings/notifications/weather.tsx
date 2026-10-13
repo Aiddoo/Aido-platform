@@ -1,12 +1,12 @@
-import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/domains/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/queries/use-update-preference-mutation-options';
 import {
   GroupSkeleton,
   SettingsCard,
   SettingsTimePicker,
   SettingsToggle,
 } from '@src/features/notification/components/settings';
+import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -46,7 +46,7 @@ function WeatherSettingsForm() {
               ? t('auth:preference.enablePushFirst')
               : t('settings.weatherDescription')
           }
-          isSelected={isWeatherEnabled(preference)}
+          isSelected={PreferencePolicy.isWeatherEnabled(preference)}
           onSelectedChange={(enabled) =>
             updateMutation.mutate({
               weatherMorningEnabled: enabled,

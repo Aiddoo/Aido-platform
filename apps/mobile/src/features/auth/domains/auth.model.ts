@@ -11,56 +11,6 @@ export const authTokensSchema = z.object({
 });
 export type AuthTokens = z.infer<typeof authTokensSchema>;
 
-export const preferenceSchema = z.object({
-  pushEnabled: z.boolean(),
-  nightPushEnabled: z.boolean(),
-  morningReminderHour: z.number().int(),
-  morningReminderMinute: z.number().int(),
-  eveningReminderHour: z.number().int(),
-  eveningReminderMinute: z.number().int(),
-  timeFormat: z.enum(['TWELVE_HOUR', 'TWENTY_FOUR_HOUR']),
-  weatherMorningEnabled: z.boolean(),
-  weatherMorningHour: z.number().int(),
-  weatherMorningMinute: z.number().int(),
-  weatherEveningEnabled: z.boolean(),
-  weatherEveningHour: z.number().int(),
-  weatherEveningMinute: z.number().int(),
-});
-export type Preference = z.infer<typeof preferenceSchema>;
-
-export function isWeatherEnabled(preference: Preference) {
-  return preference.weatherMorningEnabled || preference.weatherEveningEnabled;
-}
-
-export function isPushDisabled(preference: Preference) {
-  return !preference.pushEnabled;
-}
-
-export function isWeatherDisabled(preference: Preference) {
-  return !preference.pushEnabled || !isWeatherEnabled(preference);
-}
-
-export function pushDisabledMessageKey(preference: Preference) {
-  return !preference.pushEnabled ? ('auth:preference.enablePushFirst' as const) : undefined;
-}
-
-export function weatherDisabledMessageKey(preference: Preference) {
-  if (!preference.pushEnabled) {
-    return 'auth:preference.enablePushFirst' as const;
-  }
-  if (!isWeatherEnabled(preference)) {
-    return 'auth:preference.enableWeatherFirst' as const;
-  }
-  return undefined;
-}
-
-export const PreferencePolicy = {
-  isPushDisabled,
-  isWeatherDisabled,
-  pushDisabledMessageKey,
-  weatherDisabledMessageKey,
-} as const;
-
 export const consentSchema = z.object({
   termsAgreedAt: z.coerce.date().nullable(),
   privacyAgreedAt: z.coerce.date().nullable(),

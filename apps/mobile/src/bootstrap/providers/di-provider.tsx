@@ -17,6 +17,7 @@ import { DeviceIdService } from '@src/features/notification/apis/device-id.servi
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushTokenService } from '@src/features/notification/apis/push-token.service';
 import { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
+import { PreferenceService } from '@src/features/preference/apis/preference.service';
 import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
@@ -120,6 +121,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Auth
     const authService = new AuthService(publicHttpClient, authHttpClient, tokenStore);
+    const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(
       createActivationProgressRepository(mmkvSyncStorage),
     );
@@ -202,6 +204,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       achievementService,
       aiService,
       authService,
+      preferenceService,
       activationService,
       appVersionService,
       appIconService: new AppIconService(expoAppIconGateway),
