@@ -12,12 +12,11 @@ import { maskEmail } from '@src/features/auth/utils/mask-email';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowLeftIcon,
   H3,
   HStack,
+  ScreenTitleBar,
   StyledSafeAreaView,
   Text,
   TextButton,
@@ -25,8 +24,8 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { type InputOTPRef, PressableFeedback } from 'heroui-native';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { type InputOTPRef } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
@@ -40,8 +39,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 function VerifyEmailScreen() {
   const { showBoundary } = useErrorBoundary();
-
-  const goBack = useSingleTap(router.back);
 
   const { t } = useTranslation(['auth']);
   const { email } = useVerifyEmailScreenParams();
@@ -111,16 +108,7 @@ function VerifyEmailScreen() {
   return (
     <FormProvider {...formMethods}>
       <StyledSafeAreaView className="flex-1 bg-white" edges={['top']}>
-        {/* Header */}
-        <HStack align="center" px={16} py={12}>
-          <PressableFeedback onPress={() => goBack()}>
-            <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-8" />
-          </PressableFeedback>
-          <Text size="b2" weight="semibold" align="center" className="flex-1">
-            {t('auth:verifyEmail.title')}
-          </Text>
-          <View className="w-6" />
-        </HStack>
+        <ScreenTitleBar title={t('auth:verifyEmail.title')} />
 
         <View className="flex-1">
           <ScrollView
