@@ -1,5 +1,5 @@
+import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/subscription-query-keys';
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import type { User } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
@@ -69,7 +69,7 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
 
       const invalidateAll = () => {
         queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
-        queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudgeLimit() });
+        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeLimit() });
       };
 
       if (hasActive) {

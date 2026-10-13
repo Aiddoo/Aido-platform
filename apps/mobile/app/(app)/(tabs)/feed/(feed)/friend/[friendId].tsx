@@ -1,5 +1,6 @@
 import { dateSchema, userIdParamSchema } from '@aido/api';
 import { useFriendById } from '@src/features/friend/hooks/use-friend-by-id';
+import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { Calendar } from '@src/features/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/todo/components/calendar/friend-calendar';
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
@@ -55,7 +56,7 @@ function FriendFeedContent() {
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.nudges() }),
+      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.all }),
     ]),
   );
 

@@ -1,6 +1,10 @@
 import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
 import type { FriendUserViewModel } from '@src/features/friend/utils/view-models/friend-user.view-model';
-import { TodoNudgePolicy } from '@src/features/todo/domains/todo-nudge.model';
+import { RemindNudgeBottomSheet } from '@src/features/nudge/components/remind-nudge-bottom-sheet';
+import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
+import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
+import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queries/get-remind-nudge-cooldown-query-options';
+import { useGetTodoNudgeLimitQueryOptions } from '@src/features/nudge/queries/get-todo-nudge-limit-query-options';
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
@@ -33,11 +37,7 @@ import { useMemo, useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
-import { useGetRemindNudgeCooldownQueryOptions } from '../queries/get-remind-nudge-cooldown-query-options';
-import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { toFriendCategoryGroups } from '../utils/view-models/friend-todos.view-model';
-import { RemindNudgeBottomSheet } from './remind-nudge-bottom-sheet';
-import { TodoNudgeButton } from './todo-nudge-button';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };

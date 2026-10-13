@@ -1,9 +1,9 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import type { TodoNudgeService } from '../apis/todo-nudge.service';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 
 type ThanksPreviewPageParam = { cursor?: number; throughNudgeId?: number };
 const INITIAL_THANKS_PREVIEW_PAGE_PARAM: ThanksPreviewPageParam = {};
@@ -14,7 +14,7 @@ export function getNudgeThanksPreviewInfiniteQueryOptions(
   { todoId }: { todoId: number },
 ) {
   return infiniteQueryOptions({
-    queryKey: [...TODO_QUERY_KEYS.nudgeThanks(todoId), 'pages'],
+    queryKey: [...NUDGE_QUERY_KEYS.nudgeThanks(todoId), 'pages'],
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getThanksPreview(

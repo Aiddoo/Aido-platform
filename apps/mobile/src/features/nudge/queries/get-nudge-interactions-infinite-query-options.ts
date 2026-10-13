@@ -1,9 +1,9 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { unwrap } from '@src/shared/errors/result';
 import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import type { TodoNudgeService } from '../apis/todo-nudge.service';
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { NudgeDirection } from '../domains/nudge-interaction.model';
 
 const INITIAL_PAGE: { cursor?: number } = {};
@@ -13,7 +13,7 @@ export function getNudgeInteractionsInfiniteQueryOptions(
   { direction }: { direction: NudgeDirection },
 ) {
   return infiniteQueryOptions({
-    queryKey: TODO_QUERY_KEYS.nudgeInteractionList(direction),
+    queryKey: NUDGE_QUERY_KEYS.nudgeInteractionList(direction),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getInteractions(

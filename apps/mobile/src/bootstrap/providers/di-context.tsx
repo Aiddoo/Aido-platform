@@ -17,6 +17,7 @@ import type { FriendService } from '@src/features/friend/apis/friend.service';
 import type { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
 import type { MemoService } from '@src/features/memo/apis/memo.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
+import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import type { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import type { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import type { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
@@ -24,7 +25,6 @@ import type { ReorderCoachmarkService } from '@src/features/todo/apis/reorder-co
 import type { StoreReviewPromptService } from '@src/features/todo/apis/store-review-prompt.service';
 import type { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import type { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
-import type { TodoNudgeService } from '@src/features/todo/apis/todo-nudge.service';
 import type { TodoService } from '@src/features/todo/apis/todo.service';
 import type { UserService } from '@src/features/user/apis/user.service';
 import type { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';

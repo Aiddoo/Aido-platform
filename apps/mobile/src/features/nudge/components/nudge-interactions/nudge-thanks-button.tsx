@@ -21,6 +21,7 @@ import { useMutation, useQuery, useSuspenseInfiniteQuery } from '@tanstack/react
 import { Skeleton, Spinner } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { useWindowDimensions } from 'react-native';
+import { match } from 'ts-pattern';
 
 import {
   NudgeInteractionPolicy,
@@ -142,20 +143,25 @@ NudgeThanksButton.Recipients = function Recipients({
           data={recipients}
           keyExtractor={(recipient) => recipient.id}
           renderItem={({ item }) => <NudgeThanksButton.Recipient recipient={item} />}
-          ListFooterComponent={
-            query.isFetchNextPageError ? (
+          ListFooterComponent={match({
+            isFetchNextPageError: query.isFetchNextPageError,
+            isFetchingNextPage: query.isFetchingNextPage,
+          })
+            .with({ isFetchNextPageError: true }, () => (
               <Button variant="weak" size="medium" onPress={() => query.fetchNextPage()}>
                 {t('common:actions.retry')}
               </Button>
-            ) : query.isFetchingNextPage ? (
+            ))
+            .with({ isFetchingNextPage: true }, () => (
               <Box py={12}>
                 <Spinner />
               </Box>
-            ) : null
-          }
+            ))
+            .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
+            .exhaustive()}
           onEndReached={() => {
             if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-              query.fetchNextPage({ cancelRefetch: false });
+              return query.fetchNextPage({ cancelRefetch: false });
             }
           }}
           onEndReachedThreshold={0.5}

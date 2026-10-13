@@ -1,4 +1,5 @@
 import { useTodoNudgeService } from '@src/bootstrap/providers/di-context';
+import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -7,7 +8,6 @@ import { t } from '@src/shared/i18n';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { isTodoNudgeError } from '../domains/todo-nudge.error';
 import type { SendRemindNudgeInput } from '../domains/todo-nudge.model';
 
@@ -25,7 +25,7 @@ export const useSendRemindNudgeMutationOptions = () => {
     onSuccess: (_data, variables) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({
-        queryKey: TODO_QUERY_KEYS.remindNudgeCooldown(variables.receiverId),
+        queryKey: NUDGE_QUERY_KEYS.remindNudgeCooldown(variables.receiverId),
       });
       toast.success(t('todo:toast.remindNudgeSent'));
       trackEvent('remind_nudge_sent');

@@ -1,3 +1,5 @@
+import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
 import { useTranslation } from '@src/shared/i18n';
@@ -19,12 +21,10 @@ import { formatDate, isDateToday } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 
-import { NudgeInteractionPolicy } from '../../domains/nudge-interaction.model';
 import { useDeleteTodoMutationOptions } from '../../queries/use-delete-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { calculateTodaySchedule } from '../../utils/calculate-today-schedule';
 import { calculateTomorrowSchedule } from '../../utils/calculate-tomorrow-schedule';
-import { NudgeThanksButton } from '../nudge-interactions/nudge-thanks-button';
 
 interface TodoActionsBottomSheetProps {
   isOpen: boolean;

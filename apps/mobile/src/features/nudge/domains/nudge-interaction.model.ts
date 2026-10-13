@@ -2,7 +2,7 @@ import { getNudgeInteractionsQuerySchema, nudgeReplyKindSchema } from '@aido/api
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
-import type { Todo } from './todo.model';
+import type { Todo } from '../../todo/domains/todo.model';
 
 export const nudgeDirectionSchema = getNudgeInteractionsQuerySchema.shape.direction;
 export type NudgeDirection = z.infer<typeof nudgeDirectionSchema>;

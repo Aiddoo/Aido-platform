@@ -1,9 +1,9 @@
 import type { NudgeReplyKind } from '@aido/api';
-import { NudgeThanksButton } from '@src/features/todo/components/nudge-interactions/nudge-thanks-button';
-import { NudgeInteractionPolicy } from '@src/features/todo/domains/nudge-interaction.model';
-import { useGetNudgeInteractionQueryOptions } from '@src/features/todo/queries/get-nudge-interaction-query-options';
-import { useReplyToNudgeMutationOptions } from '@src/features/todo/queries/use-reply-to-nudge-mutation-options';
-import { getNudgeReplyLabelKey } from '@src/features/todo/utils/nudge-reply-label';
+import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
+import { useGetNudgeInteractionQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-query-options';
+import { useReplyToNudgeMutationOptions } from '@src/features/nudge/queries/use-reply-to-nudge-mutation-options';
+import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
 import { isApiError } from '@src/shared/errors';

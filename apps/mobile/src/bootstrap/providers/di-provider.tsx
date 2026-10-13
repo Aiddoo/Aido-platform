@@ -16,6 +16,7 @@ import { DeviceIdRepositoryImpl } from '@src/features/notification/apis/device-i
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushTokenService } from '@src/features/notification/apis/push-token.service';
+import { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
 import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
 import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
@@ -25,7 +26,6 @@ import { createStoreReviewPromptRepository } from '@src/features/todo/apis/store
 import { StoreReviewPromptService } from '@src/features/todo/apis/store-review-prompt.service';
 import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
-import { TodoNudgeService } from '@src/features/todo/apis/todo-nudge.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
 import { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';

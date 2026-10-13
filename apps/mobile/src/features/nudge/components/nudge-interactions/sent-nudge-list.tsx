@@ -57,22 +57,27 @@ export function SentNudgeList() {
       keyExtractor={(nudge) => String(nudge.id)}
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
       refreshControl={refreshControl}
-      ListFooterComponent={
-        query.isFetchNextPageError ? (
+      ListFooterComponent={match({
+        isFetchNextPageError: query.isFetchNextPageError,
+        isFetchingNextPage: query.isFetchingNextPage,
+      })
+        .with({ isFetchNextPageError: true }, () => (
           <Box p={16}>
             <Button variant="weak" onPress={() => query.fetchNextPage()}>
               {t('actions.retry')}
             </Button>
           </Box>
-        ) : query.isFetchingNextPage ? (
+        ))
+        .with({ isFetchingNextPage: true }, () => (
           <Box py={16}>
             <Spinner />
           </Box>
-        ) : null
-      }
+        ))
+        .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
+        .exhaustive()}
       onEndReached={() => {
         if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-          query.fetchNextPage({ cancelRefetch: false });
+          return query.fetchNextPage({ cancelRefetch: false });
         }
       }}
       ItemSeparatorComponent={() => <Separator className="mx-4" />}
