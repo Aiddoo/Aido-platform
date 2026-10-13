@@ -1,14 +1,14 @@
 import { ErrorCode } from '@aido/api/errors';
-import type { ParsedMemoResult, ParsedMemoTodo } from '@src/features/ai/models/ai.model';
-import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
-import { useMemoScreenParams } from '@src/features/memo/presentations/hooks/use-memo-screen-params';
-import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/presentations/queries/use-convert-memo-to-todos-mutation-options';
-import { CategorySelectContent } from '@src/features/todo/presentations/components/CategorySelectBottomSheet';
-import { TodoDatePickerContent } from '@src/features/todo/presentations/components/TodoDatePickerContent';
-import { TodoTimePickerContent } from '@src/features/todo/presentations/components/TodoTimePickerContent';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import type { ParsedMemoResult, ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
+import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
+import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
+import { CategorySelectContent } from '@src/features/todo/components/category-select-bottom-sheet';
+import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
+import { TodoTimePickerContent } from '@src/features/todo/components/todo-time-picker-content';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ACTION_CHIP_ICON_SIZE,

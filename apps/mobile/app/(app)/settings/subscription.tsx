@@ -3,20 +3,20 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
-import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
+import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
+import { SubscriptionPlanCard } from '@src/features/subscription/components/subscription-plan-card';
 import {
   isActiveSubscription,
   SubscriptionPolicy,
-} from '@src/features/subscription/models/subscription.model';
-import { SubscriptionPlanCard } from '@src/features/subscription/presentations/components/SubscriptionPlanCard';
-import { useGetOfferingsQueryOptions } from '@src/features/subscription/presentations/queries/get-offerings-query-options';
-import { usePurchaseMutationOptions } from '@src/features/subscription/presentations/queries/use-purchase-mutation-options';
-import { useRestoreMutationOptions } from '@src/features/subscription/presentations/queries/use-restore-mutation-options';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
-import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
-import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+} from '@src/features/subscription/domains/subscription.model';
+import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
+import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
+import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { STORE_URLS } from '@src/shared/constants/store-urls';
+import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BellIcon,

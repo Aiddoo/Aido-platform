@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 
-import { Spacing } from './Spacing';
+import { Spacing } from './spacing';
 
 describe('Spacing 컴포넌트', () => {
   it('기본적으로 vertical 방향의 높이를 적용해야 한다', async () => {

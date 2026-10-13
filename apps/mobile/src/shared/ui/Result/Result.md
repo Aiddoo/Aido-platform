@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { Result } from '@src/shared/ui/Result/Result';
+import { Result } from '@src/shared/ui/result/result';
 
 // 기본 사용
 <Result

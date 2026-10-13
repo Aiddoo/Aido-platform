@@ -1,4 +1,4 @@
-export type { OverlayRender } from './OverlayItem';
-export { OverlayProvider } from './OverlayProvider';
-export { useOverlay } from './useOverlay';
-export { useOverlayState } from './useOverlayState';
+export type { OverlayRender } from './overlay-item';
+export { OverlayProvider } from './overlay-provider';
+export { useOverlay } from './use-overlay';
+export { useOverlayState } from './use-overlay-state';

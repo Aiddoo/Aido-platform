@@ -1,11 +1,11 @@
 import { createMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCreateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-create-memo-mutation-options';
+import { useCreateMemoMutationOptions } from '@src/features/memo/queries/use-create-memo-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, Box, CheckmarkIcon } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
 import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';

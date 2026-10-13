@@ -132,7 +132,7 @@ function createFixture({ mutateRelease, mutateCopy, packageVersion = RELEASE_VER
   );
   write(
     root,
-    'apps/mobile/src/features/feature-discovery/models/feature-discovery.registry.ts',
+    'apps/mobile/src/features/feature-discovery/domains/feature-discovery.registry.ts',
     `${CAMPAIGN_ID}\n${CAMPAIGN_LAUNCHED_AT}\n`,
   );
   writeJson(root, 'apps/mobile/src/shared/i18n/locales/ko/friend.json', publicCopy.friendKo);
@@ -151,12 +151,12 @@ function createFixture({ mutateRelease, mutateCopy, packageVersion = RELEASE_VER
   );
   writeJson(
     root,
-    'apps/mobile/src/shared/i18n/locales/ko/featureDiscovery.json',
+    'apps/mobile/src/shared/i18n/locales/ko/feature-discovery.json',
     publicCopy.discoveryKo,
   );
   writeJson(
     root,
-    'apps/mobile/src/shared/i18n/locales/en/featureDiscovery.json',
+    'apps/mobile/src/shared/i18n/locales/en/feature-discovery.json',
     publicCopy.discoveryEn,
   );
   write(root, 'apps/api/src/follow/presentation/follow.controller.ts', publicCopy.followController);

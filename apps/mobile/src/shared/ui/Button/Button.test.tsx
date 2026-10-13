@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
 
-import { Button } from './Button';
-import { buttonVariants } from './Button.variants';
+import { Button } from './button';
+import { buttonVariants } from './button.variants';
 
 jest.mock('heroui-native', () => {
   const { View } = require('react-native');

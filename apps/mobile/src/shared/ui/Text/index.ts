@@ -1,4 +1,4 @@
-export { Text } from './Text';
+export { Text } from './text';
 export type {
   H1Props,
   HeadingProps,
@@ -8,5 +8,5 @@ export type {
   TextSize,
   TextTone,
   TextWeight,
-} from './Text.types';
-export { H1, H2, H3, H4 } from './Typography';
+} from './text.types';
+export { H1, H2, H3, H4 } from './typography';

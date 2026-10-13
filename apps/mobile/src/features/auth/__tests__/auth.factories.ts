@@ -13,7 +13,7 @@ import type {
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { Consent } from '../models/auth.model';
+import type { Consent } from '../domains/auth.model';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',

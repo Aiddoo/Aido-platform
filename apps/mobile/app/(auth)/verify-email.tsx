@@ -1,16 +1,16 @@
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCooldown } from '@src/features/auth/presentations/hooks/use-cooldown';
+import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
 import {
   verifyEmailScreenParamsSchema,
   useVerifyEmailScreenParams,
-} from '@src/features/auth/presentations/hooks/use-verify-email-screen-params';
-import { useResendVerificationMutationOptions } from '@src/features/auth/presentations/queries/use-resend-verification-mutation-options';
-import { useVerifyEmailMutationOptions } from '@src/features/auth/presentations/queries/use-verify-email-mutation-options';
+} from '@src/features/auth/hooks/use-verify-email-screen-params';
+import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -21,7 +21,7 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { InputOTP, type InputOTPRef, PressableFeedback } from 'heroui-native';

@@ -1,12 +1,12 @@
-import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/models/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
+import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/domains/auth.model';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/auth/queries/use-update-preference-mutation-options';
 import {
   GroupSkeleton,
   SettingsCard,
   SettingsTimePicker,
   SettingsToggle,
-} from '@src/features/notification/presentations/components/settings';
+} from '@src/features/notification/components/settings';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';

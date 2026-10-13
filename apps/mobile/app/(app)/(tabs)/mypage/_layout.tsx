@@ -1,4 +1,4 @@
-import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
+import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { ScreenTitleBar } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';

@@ -1,30 +1,30 @@
 import { ErrorCode } from '@aido/api/errors';
 import catImage from '@assets/images/cat_weather_anchor.png';
-import type { DailyForecast } from '@src/features/weather/models/weather.model';
-import { WeatherPolicy } from '@src/features/weather/models/weather.model';
+import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
 import {
   resolveIconByPrecipitation,
   resolveIconBySky,
   resolveSkyIconColor,
-} from '@src/features/weather/presentations/components/weather-icon.resolver';
-import { WeatherLocationPrompt } from '@src/features/weather/presentations/components/WeatherLocationPrompt';
+} from '@src/features/weather/components/weather-icon.resolver';
+import { WeatherLocationPrompt } from '@src/features/weather/components/weather-location-prompt';
 import {
   getPrecipitationTypeLabel,
   getSkyConditionLabel,
-} from '@src/features/weather/presentations/constants/weather-labels.constant';
-import { useTimePalette } from '@src/features/weather/presentations/hooks/use-time-palette';
-import { useWeatherSession } from '@src/features/weather/presentations/providers/weather-session-provider';
-import { useGetConditionsQueryOptions } from '@src/features/weather/presentations/queries/get-conditions-query-options';
-import { useGetForecastQueryOptions } from '@src/features/weather/presentations/queries/get-forecast-query-options';
+} from '@src/features/weather/constants/weather-labels';
+import type { DailyForecast } from '@src/features/weather/domains/weather.model';
+import { WeatherPolicy } from '@src/features/weather/domains/weather.model';
+import { useTimePalette } from '@src/features/weather/hooks/use-time-palette';
+import { useGetConditionsQueryOptions } from '@src/features/weather/queries/get-conditions-query-options';
+import { useGetForecastQueryOptions } from '@src/features/weather/queries/get-forecast-query-options';
 import {
   type HourlyForecastViewModel,
   toUpcomingHourlyForecasts,
-} from '@src/features/weather/presentations/view-models/hourly-forecast.view-model';
-import type { WeatherForecastViewModel } from '@src/features/weather/presentations/view-models/weather-forecast.view-model';
+} from '@src/features/weather/utils/view-models/hourly-forecast.view-model';
+import type { WeatherForecastViewModel } from '@src/features/weather/utils/view-models/weather-forecast.view-model';
 import { isApiError } from '@src/shared/errors/api-error';
 import { t as globalT, useTranslation } from '@src/shared/i18n';
 import { Box, CrosshairIcon, HStack, Result, Spacing, Text, VStack } from '@src/shared/ui';
-import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/Icon';
+import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/icon';
 import { getWeekdayLabels } from '@src/shared/utils/date';
 import { useQuery } from '@tanstack/react-query';
 import { useHeaderHeight } from 'expo-router/react-navigation';

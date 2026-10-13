@@ -1,13 +1,13 @@
 import type { NudgeReplyKind } from '@aido/api';
-import { NudgeInteractionPolicy } from '@src/features/todo/models/nudge-interaction.model';
-import { NudgeThanksButton } from '@src/features/todo/presentations/components/nudge-interactions/NudgeThanksButton';
-import { useGetNudgeInteractionQueryOptions } from '@src/features/todo/presentations/queries/get-nudge-interaction-query-options';
-import { useReplyToNudgeMutationOptions } from '@src/features/todo/presentations/queries/use-reply-to-nudge-mutation-options';
-import { getNudgeReplyLabelKey } from '@src/features/todo/presentations/utils/nudge-reply-label';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
+import { NudgeThanksButton } from '@src/features/todo/components/nudge-interactions/nudge-thanks-button';
+import { NudgeInteractionPolicy } from '@src/features/todo/domains/nudge-interaction.model';
+import { useGetNudgeInteractionQueryOptions } from '@src/features/todo/queries/get-nudge-interaction-query-options';
+import { useReplyToNudgeMutationOptions } from '@src/features/todo/queries/use-reply-to-nudge-mutation-options';
+import { getNudgeReplyLabelKey } from '@src/features/todo/utils/nudge-reply-label';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
 import { isApiError } from '@src/shared/errors';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,

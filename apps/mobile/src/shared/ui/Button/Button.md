@@ -5,7 +5,7 @@
 ## 사용법
 
 ```tsx
-import { Button } from '@src/shared/ui/Button/Button';
+import { Button } from '@src/shared/ui/button/button';
 
 // 기본 사용 - 텍스트만
 <Button>버튼</Button>
@@ -29,7 +29,7 @@ import { Button } from '@src/shared/ui/Button/Button';
 ### 사용법
 
 ```tsx
-import { KeyboardAdaptiveButton } from '@src/shared/ui/Button/KeyboardAdaptiveButton';
+import { KeyboardAdaptiveButton } from '@src/shared/ui/button/keyboard-adaptive-button';
 
 <KeyboardAdaptiveButton onPress={handleSubmit}>회원가입</KeyboardAdaptiveButton>;
 ```

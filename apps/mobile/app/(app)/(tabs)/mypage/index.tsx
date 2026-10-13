@@ -3,20 +3,20 @@ import {
   useErrorReporter,
   useFeatureDiscoveryStateService,
 } from '@src/bootstrap/providers/di-context';
-import { AppVersionPolicy } from '@src/features/app-version/models/app-version.model';
-import { useAppVersionQueryOptions } from '@src/features/app-version/presentations/queries/get-app-version-query-options';
-import { useDeleteAccountMutationOptions } from '@src/features/auth/presentations/queries/use-delete-account-mutation-options';
-import { useLogoutMutationOptions } from '@src/features/auth/presentations/queries/use-logout-mutation-options';
+import { AppVersionPolicy } from '@src/features/app-version/domains/app-version.model';
+import { useAppVersionQueryOptions } from '@src/features/app-version/queries/get-app-version-query-options';
+import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
+import { useLogoutMutationOptions } from '@src/features/auth/queries/use-logout-mutation-options';
 import {
   FEATURE_DISCOVERY_CAMPAIGN_ID,
   getBundledFeatureDiscoveryCampaign,
-} from '@src/features/feature-discovery/models/feature-discovery.registry';
-import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/presentations/hooks/use-feature-discovery-hub';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { ProfileCard } from '@src/features/user/presentations/components/ProfileCard';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+} from '@src/features/feature-discovery/domains/feature-discovery.registry';
+import { useFeatureDiscoveryHub } from '@src/features/feature-discovery/hooks/use-feature-discovery-hub';
+import { ProfileCard } from '@src/features/user/components/profile-card';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ConfirmDialog,

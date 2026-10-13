@@ -70,7 +70,7 @@ import WeatherSnowIconSvg from '@assets/icons/ic_weather_snow.svg';
 import WeatherSunriseIconSvg from '@assets/icons/ic_weather_sunrise.svg';
 import WeatherSunsetIconSvg from '@assets/icons/ic_weather_sunset.svg';
 
-import { createStyledIcon } from './createStyledIcon';
+import { createStyledIcon } from './create-styled-icon';
 
 // 래핑된 아이콘 컴포넌트들
 export const AppleIcon = createStyledIcon(AppleIconSvg);

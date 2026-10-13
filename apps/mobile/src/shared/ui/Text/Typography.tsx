@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 
-import { Text } from './Text';
-import type { H1Props, HeadingProps } from './Text.types';
+import { Text } from './text';
+import type { H1Props, HeadingProps } from './text.types';
 
 export function H1({ headline, emphasize, className, children, ...props }: H1Props) {
   if (headline) {

@@ -1,6 +1,6 @@
-import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
-import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
+import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,

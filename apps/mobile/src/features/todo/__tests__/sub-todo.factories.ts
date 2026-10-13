@@ -1,5 +1,5 @@
-import type { SubTodo } from '../models/sub-todo.model';
-import type { TodoItem } from '../models/todo.model';
+import type { SubTodo } from '../domains/sub-todo.model';
+import type { TodoItem } from '../domains/todo.model';
 
 const generateSubTodo = (): SubTodo => ({
   id: 1,

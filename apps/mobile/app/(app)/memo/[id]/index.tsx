@@ -1,18 +1,18 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
-import { AiParseConfirmDialog } from '@src/features/memo/presentations/components/AiParseConfirmDialog';
-import { useMemoScreenParams } from '@src/features/memo/presentations/hooks/use-memo-screen-params';
-import { useGetMemoQueryOptions } from '@src/features/memo/presentations/queries/get-memo-query-options';
-import { useDeleteMemoMutationOptions } from '@src/features/memo/presentations/queries/use-delete-memo-mutation-options';
-import { useToggleMemoPinMutationOptions } from '@src/features/memo/presentations/queries/use-toggle-memo-pin-mutation-options';
-import { useUpdateMemoMutationOptions } from '@src/features/memo/presentations/queries/use-update-memo-mutation-options';
-import { AddTodoBottomSheet } from '@src/features/todo/presentations/components/AddTodoBottomSheet';
-import { useGetAiUsageQueryOptions } from '@src/features/todo/presentations/queries/get-ai-usage-query-options';
-import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/presentations/queries/get-todo-categories-query-options';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { AiParseConfirmDialog } from '@src/features/memo/components/ai-parse-confirm-dialog';
+import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
+import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
+import { useDeleteMemoMutationOptions } from '@src/features/memo/queries/use-delete-memo-mutation-options';
+import { useToggleMemoPinMutationOptions } from '@src/features/memo/queries/use-toggle-memo-pin-mutation-options';
+import { useUpdateMemoMutationOptions } from '@src/features/memo/queries/use-update-memo-mutation-options';
+import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
+import { useGetAiUsageQueryOptions } from '@src/features/todo/queries/get-ai-usage-query-options';
+import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
-import { useToday } from '@src/shared/hooks/useToday';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowLeftIcon,
@@ -28,7 +28,7 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';

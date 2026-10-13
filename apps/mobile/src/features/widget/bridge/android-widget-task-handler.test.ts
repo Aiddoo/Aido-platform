@@ -1,9 +1,9 @@
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import { createWidgetNavigationRepository } from '../services/widget-navigation.repository';
+import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
+import { ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget';
 import { createAndroidWidgetTaskHandler } from './android-widget-task-handler';
-import { ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget.constant';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
 import type { WidgetNavigationStorage } from './widget-navigation-storage';
 

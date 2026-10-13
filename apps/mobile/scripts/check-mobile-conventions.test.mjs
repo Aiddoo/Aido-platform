@@ -27,7 +27,7 @@ function withFixture(files, assertion) {
 test('route hook과 옵션 팩토리를 쓰는 댓글 컴포넌트는 통과한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/TodoConversation.tsx': `
+      'apps/mobile/src/features/todo-comment/components/TodoConversation.tsx': `
         interface TodoConversationProps { className?: string }
         export function TodoConversation({ className }: TodoConversationProps) {
           const { todoId } = useTodoScreenParams();
@@ -44,7 +44,7 @@ test('route hook과 옵션 팩토리를 쓰는 댓글 컴포넌트는 통과한�
 test('댓글 식별자를 props로 전달하면 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/TodoConversation.tsx': `
+      'apps/mobile/src/features/todo-comment/components/TodoConversation.tsx': `
         interface TodoConversationProps { todoId: string; commentId?: string }
         export function TodoConversation(props: TodoConversationProps) { return null }
       `,
@@ -60,7 +60,7 @@ test('댓글 식별자를 props로 전달하면 거부한다', () => {
 test('컴포넌트 inline props의 댓글 식별자도 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/TodoConversation.tsx': `
+      'apps/mobile/src/features/todo-comment/components/TodoConversation.tsx': `
         export function TodoConversation({ todoId }: { todoId: string }) { return null }
         export const ReplyComposer = memo(
           ({ anchorCommentId }: { anchorCommentId: string }) => null,
@@ -94,7 +94,7 @@ test('todo route 컴포넌트의 inline props 식별자도 거부한다', () => 
 test('소문자 헬퍼 인자와 아이템 데이터는 props 식별자로 오탐하지 않는다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/TodoConversation.tsx': `
+      'apps/mobile/src/features/todo-comment/components/TodoConversation.tsx': `
         function getCommentPath({ commentId }: { commentId: string }) {
           return commentId;
         }
@@ -114,7 +114,7 @@ test('중첩 댓글 route와 router push를 거부한다', () => {
     {
       'apps/mobile/app/(app)/todo/[todoId]/comment/[commentId].tsx':
         'export default function Screen() {}',
-      'apps/mobile/src/features/todo-comment/presentations/components/ReplyButton.tsx': `
+      'apps/mobile/src/features/todo-comment/components/ReplyButton.tsx': `
         export function ReplyButton() { router.push('/comment/1'); return null }
       `,
     },
@@ -129,7 +129,7 @@ test('중첩 댓글 route와 router push를 거부한다', () => {
 test('컴포넌트의 인라인 query 옵션을 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/TodoConversation.tsx': `
+      'apps/mobile/src/features/todo-comment/components/TodoConversation.tsx': `
         export function TodoConversation() {
           return useInfiniteQuery({ queryKey: ['comments'], queryFn: getComments });
         }
@@ -161,7 +161,7 @@ test('todo route의 인라인 query 옵션도 거부한다', () => {
 test('TodoCheckbox는 HeroUI의 원본 controlled prop 이름을 유지한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo/presentations/components/TodoItem.tsx': `
+      'apps/mobile/src/features/todo/components/TodoItem.tsx': `
         export function InvalidTodoItem() {
           return <TodoCheckbox isChecked onCheckedChange={() => undefined} />;
         }
@@ -180,7 +180,7 @@ test('TodoCheckbox는 HeroUI의 원본 controlled prop 이름을 유지한다', 
 test('댓글 feature의 re-export를 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/hooks/use-comment-form.ts': `
+      'apps/mobile/src/features/todo-comment/hooks/use-comment-form.ts': `
         export { useTodoCommentForm as useCommentForm } from '../providers/todo-comment-form-provider';
       `,
     },
@@ -195,7 +195,7 @@ test('댓글 feature의 re-export를 거부한다', () => {
 test('가져온 값을 다시 export하는 우회도 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/index.ts': `
+      'apps/mobile/src/features/todo-comment/components/index.ts': `
         import DefaultComposer from './DefaultComposer';
         import { TodoConversation as Conversation } from './TodoConversation';
 
@@ -214,7 +214,7 @@ test('가져온 값을 다시 export하는 우회도 거부한다', () => {
 test('같은 파일이 소유한 값의 export는 허용한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/comment-spacing.ts': `
+      'apps/mobile/src/features/todo-comment/components/comment-spacing.ts': `
         const COMMENT_SPACING = 12;
         export { COMMENT_SPACING };
       `,
@@ -228,9 +228,9 @@ test('같은 파일이 소유한 값의 export는 허용한다', () => {
 test('댓글 컴포넌트와 hook의 테스트 파일을 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/components/ReplyButton.test.tsx':
+      'apps/mobile/src/features/todo-comment/components/ReplyButton.test.tsx':
         "test('답글 버튼을 누른다', () => {});",
-      'apps/mobile/src/features/todo-comment/presentations/hooks/use-comment-route-state.test.ts':
+      'apps/mobile/src/features/todo-comment/hooks/use-comment-route-state.test.ts':
         "test('route hook을 연결한다', () => {});",
     },
     (errors) => {
@@ -243,15 +243,15 @@ test('댓글 컴포넌트와 hook의 테스트 파일을 거부한다', () => {
 test('댓글 model, service, pure navigation, util과 view-model 테스트는 허용한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/models/todo-comment.model.test.ts':
+      'apps/mobile/src/features/todo-comment/domains/todo-comment.model.test.ts':
         "test('policy를 계산한다', () => {});",
-      'apps/mobile/src/features/todo-comment/services/todo-comment.service.test.ts':
+      'apps/mobile/src/features/todo-comment/apis/todo-comment.service.test.ts':
         "test('계약을 검증한다', () => {});",
-      'apps/mobile/src/features/todo-comment/presentations/navigation/todo-comment-route.test.ts':
+      'apps/mobile/src/features/todo-comment/utils/navigation/todo-comment-route.test.ts':
         "test('URL 상태를 정규화한다', () => {});",
-      'apps/mobile/src/features/todo-comment/presentations/utils/comment-position.test.ts':
+      'apps/mobile/src/features/todo-comment/utils/comment-position.test.ts':
         "test('위치를 계산한다', () => {});",
-      'apps/mobile/src/features/todo-comment/presentations/view-models/comment.view-model.test.ts':
+      'apps/mobile/src/features/todo-comment/utils/view-models/comment.view-model.test.ts':
         "test('화면 데이터를 만든다', () => {});",
     },
     (errors) => {
@@ -263,11 +263,11 @@ test('댓글 model, service, pure navigation, util과 view-model 테스트는 �
 test('utils 폴더로 옮긴 TSX와 React Native UI 테스트도 거부한다', () => {
   withFixture(
     {
-      'apps/mobile/src/features/todo-comment/presentations/utils/FakeComponent.test.tsx': `
+      'apps/mobile/src/features/todo-comment/utils/FakeComponent.test.tsx': `
         import { render } from '@testing-library/react-native';
         test('컴포넌트를 렌더한다', () => render(<FakeComponent />));
       `,
-      'apps/mobile/src/features/todo-comment/presentations/utils/fake-hook.test.ts': `
+      'apps/mobile/src/features/todo-comment/utils/fake-hook.test.ts': `
         import { renderHook } from '@testing-library/react-native';
         test('hook을 연결한다', () => renderHook(useFakeHook));
       `,

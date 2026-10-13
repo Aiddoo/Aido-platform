@@ -1,20 +1,20 @@
 import { VERIFICATION_CODE } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
-import { PasswordStrengthIndicator } from '@src/features/auth/presentations/components/PasswordStrengthIndicator';
-import { SuggestedEmailDomainList } from '@src/features/auth/presentations/components/SuggestedEmailDomainList';
-import { useCooldown } from '@src/features/auth/presentations/hooks/use-cooldown';
-import { useForgotPasswordMutationOptions } from '@src/features/auth/presentations/queries/use-forgot-password-mutation-options';
-import { useResetPasswordMutationOptions } from '@src/features/auth/presentations/queries/use-reset-password-mutation-options';
+import { PasswordInput } from '@src/features/auth/components/password-input';
+import { PasswordStrengthIndicator } from '@src/features/auth/components/password-strength-indicator';
+import { SuggestedEmailDomainList } from '@src/features/auth/components/suggested-email-domain-list';
 import {
   type ForgotPasswordFormData,
   forgotPasswordFormSchema,
-} from '@src/features/auth/presentations/schemas/forgot-password-form.schema';
+} from '@src/features/auth/domains/forgot-password-form.schema';
+import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
+import { useForgotPasswordMutationOptions } from '@src/features/auth/queries/use-forgot-password-mutation-options';
+import { useResetPasswordMutationOptions } from '@src/features/auth/queries/use-reset-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isApiError } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useStepper } from '@src/shared/hooks/useStepper';
+import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -26,7 +26,7 @@ import {
   TextButton,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { InputOTP, type InputOTPRef } from 'heroui-native';
 import type { ComponentRef } from 'react';

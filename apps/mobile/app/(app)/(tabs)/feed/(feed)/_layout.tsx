@@ -1,8 +1,8 @@
-import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
-import { CalendarProvider } from '@src/features/todo/presentations/providers/calendar-provider';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useGetFriendsQueryOptions } from '@src/features/friend/queries/get-friends-query-options';
+import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { getProfileIconSource } from '@src/features/user/utils/profile-icon.util';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   HStack,

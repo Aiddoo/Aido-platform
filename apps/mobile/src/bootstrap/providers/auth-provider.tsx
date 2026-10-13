@@ -3,7 +3,7 @@ import { sessionExpiredSeverity } from '@src/core/ports/telemetry-event';
 import {
   useWidgetSnapshotSync,
   type WidgetSyncAuthState,
-} from '@src/features/widget/presentations/hooks/use-widget-snapshot-sync';
+} from '@src/features/widget/hooks/use-widget-snapshot-sync';
 import { track } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';

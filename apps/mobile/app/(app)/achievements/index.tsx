@@ -1,13 +1,13 @@
 import { FlashList } from '@shopify/flash-list';
-import { AchievementSummaryCard } from '@src/features/achievement/presentations/components/AchievementSummaryCard';
-import { BadgeIcon } from '@src/features/achievement/presentations/components/BadgeIcon';
-import { CertificateBorder } from '@src/features/achievement/presentations/components/CertificateBorder';
-import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/presentations/constants/achievement-query-keys.constant';
-import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/get-weekly-achievements-query-options';
-import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
+import { AchievementSummaryCard } from '@src/features/achievement/components/achievement-summary-card';
+import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
+import { CertificateBorder } from '@src/features/achievement/components/certificate-border';
+import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/constants/achievement-query-keys';
+import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/queries/get-weekly-achievements-query-options';
+import type { WeeklyAchievementViewModel } from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
-import { useToday } from '@src/shared/hooks/useToday';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,

@@ -5,8 +5,8 @@ import {
   INQUIRY_CONTENT_LIMITS,
 } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/presentations/constants/inquiry-category-labels.constant';
-import { useCreateInquiryMutationOptions } from '@src/features/inquiry/presentations/queries/use-create-inquiry-mutation-options';
+import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/constants/inquiry-category-labels';
+import { useCreateInquiryMutationOptions } from '@src/features/inquiry/queries/use-create-inquiry-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
@@ -20,7 +20,7 @@ import {
   TextArea,
   VStack,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Radio, RadioGroup } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';

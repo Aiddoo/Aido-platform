@@ -25,7 +25,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     useWidgetNavigationRepository: () => repository,
   };
 });
-jest.mock('@src/features/user/presentations/queries/get-me-query-options', () => ({
+jest.mock('@src/features/user/queries/get-me-query-options', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'test-account' }),

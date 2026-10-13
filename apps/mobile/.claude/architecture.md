@@ -195,7 +195,7 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 ### 1. Models — Domain Model + Policy + Error
 
 ```
-features/{feature}/models/
+features/{feature}/domains/
 ├── {feature}.model.ts    # Zod 스키마 + 타입 + Policy
 └── {feature}.error.ts    # ErrorCode + Error + Factory + Guard
 ```
@@ -266,7 +266,7 @@ export const is{Feature}Error = (error: unknown): error is {Feature}Error =>
 ### 2. Services — HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증
 
 ```
-features/{feature}/services/
+features/{feature}/apis/
 ├── {feature}.service.ts    # Service 클래스
 └── {feature}.mapper.ts     # DTO → Domain 순수 함수
 ```
@@ -340,7 +340,7 @@ export const to{Feature}s = (dtos: {Feature}DTO[]): {Feature}[] => dtos.map(to{F
 ### 3. Presentations — UI 계층
 
 ```
-features/{feature}/presentations/
+features/{feature}/
 ├── constants/{feature}-query-keys.constant.ts
 ├── view-models/
 │   └── {feature}.view-model.ts   # Domain → UI 데이터 변환
@@ -648,13 +648,13 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 
 ### Step 1: Models
 
-- [ ] `features/{feature}/models/{feature}.model.ts` — Zod 스키마 + 타입 + Policy
-- [ ] `features/{feature}/models/{feature}.error.ts` — ErrorCode + Error + Factory + Guard
+- [ ] `features/{feature}/domains/{feature}.model.ts` — Zod 스키마 + 타입 + Policy
+- [ ] `features/{feature}/domains/{feature}.error.ts` — ErrorCode + Error + Factory + Guard
 
 ### Step 2: Services + Mapper
 
-- [ ] `features/{feature}/services/{feature}.mapper.ts` — DTO → Domain 순수 함수
-- [ ] `features/{feature}/services/{feature}.service.ts` — Service 클래스 (HttpClient 주입, HTTP + Zod + Mapper + Policy)
+- [ ] `features/{feature}/apis/{feature}.mapper.ts` — DTO → Domain 순수 함수
+- [ ] `features/{feature}/apis/{feature}.service.ts` — Service 클래스 (HttpClient 주입, HTTP + Zod + Mapper + Policy)
 
 ### Step 3: DI 등록
 

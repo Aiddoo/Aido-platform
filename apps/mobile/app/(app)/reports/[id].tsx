@@ -1,14 +1,11 @@
-import type { AiReport } from '@src/features/ai/models/ai.model';
-import { ReportDetailContent } from '@src/features/ai/presentations/components/ReportDetailContent';
-import {
-  getSampleReport,
-  isSampleReportId,
-} from '@src/features/ai/presentations/constants/sample-reports.constant';
+import { ReportDetailContent } from '@src/features/ai/components/report-detail-content';
+import { getSampleReport, isSampleReportId } from '@src/features/ai/constants/sample-reports';
+import type { AiReport } from '@src/features/ai/domains/ai.model';
 import {
   reportScreenParamsSchema,
   useReportScreenParams,
-} from '@src/features/ai/presentations/hooks/use-report-screen-params';
-import { useGetReportDetailQueryOptions } from '@src/features/ai/presentations/queries/get-report-detail-query-options';
+} from '@src/features/ai/hooks/use-report-screen-params';
+import { useGetReportDetailQueryOptions } from '@src/features/ai/queries/get-report-detail-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import {

@@ -1,15 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { useUpdateProfileMutationOptions } from '@src/features/user/presentations/queries/use-update-profile-mutation-options';
 import {
   type UpdateNameFormInput,
   updateNameFormSchema,
-} from '@src/features/user/presentations/schemas/update-name-form.schema';
+} from '@src/features/user/domains/update-name-form.schema';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useUpdateProfileMutationOptions } from '@src/features/user/queries/use-update-profile-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { H3, Input, KeyboardAdaptiveButton, QueryErrorBoundary, Spacing } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense } from 'react';

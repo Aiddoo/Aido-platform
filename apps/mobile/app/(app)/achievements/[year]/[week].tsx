@@ -1,17 +1,17 @@
-import { BadgeIcon } from '@src/features/achievement/presentations/components/BadgeIcon';
-import { CertificateBorder } from '@src/features/achievement/presentations/components/CertificateBorder';
+import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
+import { CertificateBorder } from '@src/features/achievement/components/certificate-border';
 import {
   achievementScreenParamsSchema,
   useAchievementScreenParams,
-} from '@src/features/achievement/presentations/hooks/use-achievement-screen-params';
-import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/presentations/queries/get-weekly-achievement-query-options';
+} from '@src/features/achievement/hooks/use-achievement-screen-params';
+import { useGetWeeklyAchievementQueryOptions } from '@src/features/achievement/queries/get-weekly-achievement-query-options';
 import {
   type BadgeType,
   getBadgeType,
-} from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+} from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
-import { useShareView } from '@src/shared/hooks/useShareView';
+import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   H3,

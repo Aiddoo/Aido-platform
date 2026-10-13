@@ -3,13 +3,13 @@ import { formatDate } from '@src/shared/utils/date';
 import Constants from 'expo-constants';
 import { requestWidgetUpdate, type WidgetInfo } from 'react-native-android-widget';
 
-import { WidgetSnapshotPolicy } from '../models/widget-snapshot.model';
-import { createInitialWidgetProps } from '../presentations/widget-initial-props';
-import { renderAndroidWidget } from '../presentations/widgets.android';
-import { createAndroidWidgetSnapshotRepository } from '../services/android-widget-snapshot.repository';
-import { createWidgetNavigationRepository } from '../services/widget-navigation.repository';
-import { toWidgetProps } from '../services/widget-props.mapper';
-import { ANDROID_WIDGET_DEFINITIONS } from './android-widget.constant';
+import { createAndroidWidgetSnapshotRepository } from '../apis/android-widget-snapshot.repository';
+import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
+import { toWidgetProps } from '../apis/widget-props.mapper';
+import { createInitialWidgetProps } from '../components/widget-initial-props';
+import { renderAndroidWidget } from '../components/widgets.android';
+import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
+import { ANDROID_WIDGET_DEFINITIONS } from './android-widget';
 import type { WidgetBridge } from './widget-bridge';
 
 const snapshotRepository = createAndroidWidgetSnapshotRepository(widgetNavigationStorage);

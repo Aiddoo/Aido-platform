@@ -1,10 +1,10 @@
 import { verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { SignUpPasswordForm } from '@src/features/auth/presentations/components/SignUpPasswordForm';
-import { SignUpUserInfoForm } from '@src/features/auth/presentations/components/SignUpUserInfoForm';
-import { SignUpVerificationForm } from '@src/features/auth/presentations/components/SignUpVerificationForm';
-import { signUpFormSchema } from '@src/features/auth/presentations/schemas/sign-up-form.schema';
-import { useStepper } from '@src/shared/hooks/useStepper';
+import { SignUpPasswordForm } from '@src/features/auth/components/sign-up-password-form';
+import { SignUpUserInfoForm } from '@src/features/auth/components/sign-up-user-info-form';
+import { SignUpVerificationForm } from '@src/features/auth/components/sign-up-verification-form';
+import { signUpFormSchema } from '@src/features/auth/domains/sign-up-form.schema';
+import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { Stack } from 'expo-router';
 import { FormProvider, useForm } from 'react-hook-form';

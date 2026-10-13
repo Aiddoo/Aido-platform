@@ -9,13 +9,13 @@ import ts from 'typescript';
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPOSITORY_ROOT = resolve(MOBILE_ROOT, '../..');
 const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
-const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/presentations/components`;
+const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/components`;
 const TODO_COMMENT_TEST_ROOTS = [
-  `${TODO_COMMENT_ROOT}/models/`,
-  `${TODO_COMMENT_ROOT}/services/`,
-  `${TODO_COMMENT_ROOT}/presentations/navigation/`,
-  `${TODO_COMMENT_ROOT}/presentations/utils/`,
-  `${TODO_COMMENT_ROOT}/presentations/view-models/`,
+  `${TODO_COMMENT_ROOT}/domains/`,
+  `${TODO_COMMENT_ROOT}/apis/`,
+  `${TODO_COMMENT_ROOT}/utils/navigation/`,
+  `${TODO_COMMENT_ROOT}/utils/`,
+  `${TODO_COMMENT_ROOT}/utils/view-models/`,
 ];
 const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',

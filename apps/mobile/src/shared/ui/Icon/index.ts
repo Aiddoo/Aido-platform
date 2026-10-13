@@ -1,4 +1,4 @@
-export { createStyledIcon, type StyledIcon as StyledIconType } from './createStyledIcon';
+export { createStyledIcon, type StyledIcon as StyledIconType } from './create-styled-icon';
 export {
   AppleIcon,
   ArrowLeftIcon,

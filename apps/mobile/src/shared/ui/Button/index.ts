@@ -1,4 +1,4 @@
-export { Button } from './Button';
+export { Button } from './button';
 export type {
   ButtonColor,
   ButtonDisplay,
@@ -6,5 +6,5 @@ export type {
   ButtonRadius,
   ButtonSize,
   ButtonVariant,
-} from './Button.types';
-export { KeyboardAdaptiveButton } from './KeyboardAdaptiveButton';
+} from './button.types';
+export { KeyboardAdaptiveButton } from './keyboard-adaptive-button';

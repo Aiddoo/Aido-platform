@@ -1,3 +1,3 @@
-export { BottomSheetInput } from './BottomSheetInput';
-export { Input } from './Input';
-export type { InputProps, InputSize, InputVariant } from './Input.types';
+export { BottomSheetInput } from './bottom-sheet-input';
+export { Input } from './input';
+export type { InputProps, InputSize, InputVariant } from './input.types';

@@ -1,6 +1,6 @@
-import { Box } from '@src/shared/ui/Box';
-import { CheckmarkIcon } from '@src/shared/ui/Icon';
-import { VStack } from '@src/shared/ui/VStack';
+import { Box } from '@src/shared/ui/box';
+import { CheckmarkIcon } from '@src/shared/ui/icon';
+import { VStack } from '@src/shared/ui/v-stack';
 import { cn } from '@src/shared/utils/cn';
 import { type AvatarRootProps, Avatar as HeroUIAvatar, Skeleton } from 'heroui-native';
 

@@ -1,8 +1,8 @@
 import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
-import { useAutomaticPushRegistration } from '@src/features/activation/presentations/hooks/use-automatic-push-registration';
-import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
-import { getNotificationResponseDisposition } from '@src/features/notification/presentations/navigation/notification-response-disposition';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useAutomaticPushRegistration } from '@src/features/activation/hooks/use-automatic-push-registration';
+import { useNotificationHandler } from '@src/features/notification/hooks/use-notification-handler';
+import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';

@@ -1,11 +1,11 @@
-import { PreferencePolicy } from '@src/features/auth/models/auth.model';
+import { PreferencePolicy } from '@src/features/auth/domains/auth.model';
 import {
   GroupSkeleton,
   SettingsCard,
   SettingsTimePicker,
-} from '@src/features/notification/presentations/components/settings';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+} from '@src/features/notification/components/settings';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import {

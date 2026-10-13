@@ -14,14 +14,14 @@ UI를 구현할 때 다음 우선순위를 **반드시** 따릅니다:
 
 ```tsx
 // 올바른 사용
-import { Text, H1, H2, H3, H4 } from '@src/shared/ui/Text/Text';
-import { Button } from '@src/shared/ui/Button/Button';
-import { TextButton } from '@src/shared/ui/TextButton/TextButton';
-import { Box } from '@src/shared/ui/Box/Box';
-import { Flex } from '@src/shared/ui/Flex/Flex';
-import { HStack } from '@src/shared/ui/HStack/HStack';
-import { VStack } from '@src/shared/ui/VStack/VStack';
-import { Spacing } from '@src/shared/ui/Spacing/Spacing';
+import { Text, H1, H2, H3, H4 } from '@src/shared/ui/text/text';
+import { Button } from '@src/shared/ui/button/button';
+import { TextButton } from '@src/shared/ui/text-button/text-button';
+import { Box } from '@src/shared/ui/box/box';
+import { Flex } from '@src/shared/ui/flex/flex';
+import { HStack } from '@src/shared/ui/h-stack/h-stack';
+import { VStack } from '@src/shared/ui/v-stack/v-stack';
+import { Spacing } from '@src/shared/ui/spacing/spacing';
 ```
 
 ### 2순위: HeroUI Native 컴포넌트
@@ -141,7 +141,7 @@ import { cn } from '@src/shared/utils/cn';
 
 ```tsx
 // StyledSafeAreaView - withUniwind로 래핑됨
-import { StyledSafeAreaView } from '@src/shared/ui/SafeAreaView/SafeAreaView';
+import { StyledSafeAreaView } from '@src/shared/ui/safe-area-view/safe-area-view';
 
 <StyledSafeAreaView className="flex-1 bg-gray-1">{children}</StyledSafeAreaView>;
 ```
@@ -235,7 +235,7 @@ function MyComponent() {
 SVG 아이콘에 `colorClassName`으로 색상을 적용하려면 `createStyledIcon`으로 래핑합니다.
 
 ```tsx
-import { ArrowRightIcon } from '@src/shared/ui/Icon';
+import { ArrowRightIcon } from '@src/shared/ui/icon';
 
 // colorClassName으로 색상 적용 (width/height도 지원)
 <ArrowRightIcon colorClassName="accent-gray-6" width={24} height={24} />

@@ -1,10 +1,10 @@
 import { View } from 'react-native';
 
-import { Button } from '../Button/Button';
-import { Spacing } from '../Spacing/Spacing';
-import { Text } from '../Text/Text';
-import { VStack } from '../VStack/VStack';
-import type { ResultButtonProps, ResultProps } from './Result.types';
+import { Button } from '../button/button';
+import { Spacing } from '../spacing/spacing';
+import { Text } from '../text/text';
+import { VStack } from '../v-stack/v-stack';
+import type { ResultButtonProps, ResultProps } from './result.types';
 
 export function Result({ icon, title, description, button, className }: ResultProps) {
   return (

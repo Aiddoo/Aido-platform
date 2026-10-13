@@ -1,1 +1,0 @@
-export { SettingNavigation } from './SettingNavigation';

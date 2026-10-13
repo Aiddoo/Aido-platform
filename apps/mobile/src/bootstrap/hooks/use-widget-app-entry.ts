@@ -1,14 +1,14 @@
-import type { User } from '@src/features/user/models/user.model';
-import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import type { User } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import {
   type WidgetNavigationCommand,
   WidgetNavigationPolicy,
-} from '@src/features/widget/models/widget-navigation.model';
+} from '@src/features/widget/domains/widget-navigation.model';
 import {
   isWidgetAppRouteCurrent,
   resolveWidgetAppRoute,
-} from '@src/features/widget/presentations/navigation/resolve-widget-app-route';
+} from '@src/features/widget/utils/navigation/resolve-widget-app-route';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';

@@ -128,8 +128,8 @@ pnpm --filter @aido/mobile test --runInBand todo-comment.service.test.ts
 pnpm --filter @aido/mobile test --runInBand --detectOpenHandles \
   src/features/todo-comment/models \
   src/features/todo-comment/services \
-  src/features/todo-comment/presentations/utils \
-  src/features/todo-comment/presentations/view-models
+  src/features/todo-comment/utils \
+  src/features/todo-comment/view-models
 
 # 정적 검증
 pnpm --filter @aido/mobile lint

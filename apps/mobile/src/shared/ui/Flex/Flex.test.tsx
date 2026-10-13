@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 
-import { Flex } from './Flex';
-import { flexVariants } from './Flex.variants';
+import { Flex } from './flex';
+import { flexVariants } from './flex.variants';
 
 describe('flexVariants 함수', () => {
   it('기본 클래스를 포함해야 한다', () => {

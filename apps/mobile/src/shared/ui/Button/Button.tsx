@@ -1,9 +1,9 @@
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback, Spinner } from 'heroui-native';
 
-import { Text } from '../Text/Text';
-import type { ButtonProps } from './Button.types';
-import { buttonVariants, highlightVariants } from './Button.variants';
+import { Text } from '../text/text';
+import type { ButtonProps } from './button.types';
+import { buttonVariants, highlightVariants } from './button.variants';
 
 const textSizeMap = {
   small: 'e1',

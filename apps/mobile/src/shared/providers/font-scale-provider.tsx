@@ -5,7 +5,7 @@ import {
   readFontScale,
   writeFontScale,
 } from '@src/shared/preferences/font-scale.preference';
-import type { TextSize } from '@src/shared/ui/Text/Text.types';
+import type { TextSize } from '@src/shared/ui/text/text.types';
 import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음

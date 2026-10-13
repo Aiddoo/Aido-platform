@@ -5,7 +5,7 @@ HeroUI Native Avatar를 확장한 공용 아바타 컴포넌트. `isSelected` pr
 ## 사용법
 
 ```tsx
-import { Avatar } from '@src/shared/ui/Avatar/Avatar';
+import { Avatar } from '@src/shared/ui/avatar/avatar';
 
 // 기본 사용 (선택 UI 없음)
 <Avatar size="lg" alt="프로필">
@@ -21,7 +21,7 @@ import { Avatar } from '@src/shared/ui/Avatar/Avatar';
 ### 선택 그리드 패턴
 
 ```tsx
-import { Avatar } from '@src/shared/ui/Avatar/Avatar';
+import { Avatar } from '@src/shared/ui/avatar/avatar';
 import { PressableFeedback } from 'heroui-native';
 
 <PressableFeedback onPress={handleSelect} className="rounded-2xl overflow-visible">

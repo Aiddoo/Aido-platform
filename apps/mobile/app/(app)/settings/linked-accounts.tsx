@@ -1,6 +1,6 @@
-import type { OAuthProvider } from '@src/features/auth/models/oauth.model';
-import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
-import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
+import { PROVIDER_CONFIGS } from '@src/features/auth/constants/provider-configs';
+import type { OAuthProvider } from '@src/features/auth/domains/oauth.model';
+import { useLinkedAccounts } from '@src/features/auth/hooks/use-linked-accounts';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,

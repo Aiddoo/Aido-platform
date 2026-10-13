@@ -1,16 +1,16 @@
-import { TodoCommentConversationList } from '@src/features/todo-comment/presentations/components/TodoCommentConversationList/TodoCommentConversationList';
-import { TodoCommentInputBar } from '@src/features/todo-comment/presentations/components/TodoCommentInputBar/TodoCommentInputBar';
-import { TodoCommentKeyboardScrollView } from '@src/features/todo-comment/presentations/components/TodoCommentKeyboardScrollView';
-import { TodoCommentOverviewList } from '@src/features/todo-comment/presentations/components/TodoCommentOverviewList/TodoCommentOverviewList';
-import { TodoCommentSortBar } from '@src/features/todo-comment/presentations/components/TodoCommentSortBar';
-import { TodoCommentTitleBar } from '@src/features/todo-comment/presentations/components/TodoCommentTitleBar';
-import { TODO_COMMENT_INPUT_NATIVE_ID } from '@src/features/todo-comment/presentations/constants/todo-comment-input.constants';
-import { useAndroidTodoCommentBackHandler } from '@src/features/todo-comment/presentations/hooks/use-android-todo-comment-back-handler';
-import { useIsTodoCommentSubmitting } from '@src/features/todo-comment/presentations/hooks/use-is-todo-comment-submitting';
-import { useTodoCommentRoute } from '@src/features/todo-comment/presentations/hooks/use-todo-comment-route';
-import { TodoCommentScreenTransitionProvider } from '@src/features/todo-comment/presentations/providers/todo-comment-screen-transition-provider';
-import { TodoDetailCard } from '@src/features/todo/presentations/components/TodoDetailCard';
-import { useTodoScreenParams } from '@src/features/todo/presentations/hooks/use-todo-screen-params';
+import { TodoCommentScreenTransitionProvider } from '@src/features/todo-comment/components/providers/todo-comment-screen-transition-provider';
+import { TodoCommentConversationList } from '@src/features/todo-comment/components/todo-comment-conversation-list/todo-comment-conversation-list';
+import { TodoCommentInputBar } from '@src/features/todo-comment/components/todo-comment-input-bar/todo-comment-input-bar';
+import { TodoCommentKeyboardScrollView } from '@src/features/todo-comment/components/todo-comment-keyboard-scroll-view';
+import { TodoCommentOverviewList } from '@src/features/todo-comment/components/todo-comment-overview-list/todo-comment-overview-list';
+import { TodoCommentSortBar } from '@src/features/todo-comment/components/todo-comment-sort-bar';
+import { TodoCommentTitleBar } from '@src/features/todo-comment/components/todo-comment-title-bar';
+import { TODO_COMMENT_INPUT_NATIVE_ID } from '@src/features/todo-comment/constants/todo-comment-input.constants';
+import { useAndroidTodoCommentBackHandler } from '@src/features/todo-comment/hooks/use-android-todo-comment-back-handler';
+import { useIsTodoCommentSubmitting } from '@src/features/todo-comment/hooks/use-is-todo-comment-submitting';
+import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';
+import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
+import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import {
   Box,
   QueryErrorBoundary,

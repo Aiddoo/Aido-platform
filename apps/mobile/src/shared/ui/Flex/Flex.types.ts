@@ -1,7 +1,7 @@
 import type { VariantProps } from 'tailwind-variants';
 
-import type { BoxProps } from '../Box/Box.types';
-import type { flexVariants } from './Flex.variants';
+import type { BoxProps } from '../box/box.types';
+import type { flexVariants } from './flex.variants';
 
 type FlexVariantProps = VariantProps<typeof flexVariants>;
 

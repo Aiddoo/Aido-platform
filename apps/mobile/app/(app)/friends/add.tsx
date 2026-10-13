@@ -1,12 +1,12 @@
 import { userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
+import { useSendRequestByTagMutationOptions } from '@src/features/friend/queries/use-send-request-by-tag-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';

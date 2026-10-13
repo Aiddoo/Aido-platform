@@ -1,8 +1,8 @@
-import { FriendList } from '@src/features/friend/presentations/components/FriendList';
-import { ReceivedRequestList } from '@src/features/friend/presentations/components/ReceivedRequestList';
-import { SentRequestList } from '@src/features/friend/presentations/components/SentRequestList';
-import { useFriendListEditMode } from '@src/features/friend/presentations/hooks/use-friend-list-edit-mode';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { FriendList } from '@src/features/friend/components/friend-list';
+import { ReceivedRequestList } from '@src/features/friend/components/received-request-list';
+import { SentRequestList } from '@src/features/friend/components/sent-request-list';
+import { useFriendListEditMode } from '@src/features/friend/hooks/use-friend-list-edit-mode';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
 import { router, useNavigation, useRoute } from 'expo-router';

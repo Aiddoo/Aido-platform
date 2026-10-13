@@ -1,10 +1,10 @@
 import appIconImage from '@assets/images/icon.png';
-import { useExchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/use-exchange-code-mutation-options';
-import { useOpenAppleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-apple-login-mutation-options';
-import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-google-login-mutation-options';
-import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
-import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useExchangeCodeMutationOptions } from '@src/features/auth/queries/use-exchange-code-mutation-options';
+import { useOpenAppleLoginMutationOptions } from '@src/features/auth/queries/use-open-apple-login-mutation-options';
+import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/queries/use-open-google-login-mutation-options';
+import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/queries/use-open-kakao-login-mutation-options';
+import { useOpenNaverLoginMutationOptions } from '@src/features/auth/queries/use-open-naver-login-mutation-options';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {

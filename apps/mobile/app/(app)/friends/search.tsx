@@ -1,4 +1,4 @@
-import { FriendSearchList } from '@src/features/friend/presentations/components/FriendSearchList';
+import { FriendSearchList } from '@src/features/friend/components/friend-search-list';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Input, QueryErrorBoundary, SearchIcon, VStack } from '@src/shared/ui';
 import { useState } from 'react';

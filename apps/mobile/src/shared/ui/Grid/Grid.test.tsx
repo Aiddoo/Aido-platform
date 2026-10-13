@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 
-import { Grid } from './Grid';
-import { GridItem } from './GridItem';
+import { Grid } from './grid';
+import { GridItem } from './grid-item';
 
 describe('Grid 컴포넌트', () => {
   it('children을 렌더링해야 한다', async () => {

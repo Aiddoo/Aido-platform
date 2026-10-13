@@ -1,8 +1,8 @@
-import type { AppIconKey } from '@src/features/app-icon/models/app-icon.model';
-import { AppIconPicker } from '@src/features/app-icon/presentations/components/AppIconPicker';
-import { useAppIcon } from '@src/features/app-icon/presentations/hooks/use-app-icon';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker';
+import type { AppIconKey } from '@src/features/app-icon/domains/app-icon.model';
+import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {

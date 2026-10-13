@@ -3,7 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { isLanguageMode } from '@src/shared/preferences/language.preference';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { DeviceIcon, EnglishIcon, KoreanIcon, StyledSafeAreaView } from '@src/shared/ui';
-import { IconRadioItem } from '@src/shared/ui/IconRadioItem/IconRadioItem';
+import { IconRadioItem } from '@src/shared/ui/icon-radio-item/icon-radio-item';
 import { RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
 

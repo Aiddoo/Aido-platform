@@ -9,9 +9,9 @@ import { forwardRef, useState } from 'react';
 import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 
-import { Text } from '../Text/Text';
-import type { InputInternalProps } from './Input.types';
-import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './Input.variants';
+import { Text } from '../text/text';
+import type { InputInternalProps } from './input.types';
+import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './input.variants';
 
 const StyledTextInput = withUniwind(TextInput);
 

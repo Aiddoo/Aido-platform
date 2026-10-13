@@ -1,10 +1,10 @@
-import { MemoPolicy } from '@src/features/memo/models/memo.model';
-import { MemoList } from '@src/features/memo/presentations/components/MemoList';
-import { MEMO_QUERY_KEYS } from '@src/features/memo/presentations/constants/memo-query-keys.constant';
-import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/presentations/queries/get-memo-resource-limit-query-options';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { MemoList } from '@src/features/memo/components/memo-list';
+import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
+import { MemoPolicy } from '@src/features/memo/domains/memo.model';
+import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,

@@ -1,1 +1,1 @@
-export { AppToast, type AppToastVariant } from './AppToast';
+export { AppToast, type AppToastVariant } from './app-toast';

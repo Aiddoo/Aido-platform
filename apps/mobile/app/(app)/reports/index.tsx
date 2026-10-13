@@ -1,13 +1,13 @@
-import { ReportCard } from '@src/features/ai/presentations/components/ReportCard';
-import { ReportStatusBanner } from '@src/features/ai/presentations/components/ReportStatusBanner';
-import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
-import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
-import { getSampleReport } from '@src/features/ai/presentations/constants/sample-reports.constant';
-import { useGetReportStatusQueryOptions } from '@src/features/ai/presentations/queries/get-report-status-query-options';
-import { useGetReportsQueryOptions } from '@src/features/ai/presentations/queries/get-reports-query-options';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { ReportCard } from '@src/features/ai/components/report-card';
+import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
+import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { getSampleReport } from '@src/features/ai/constants/sample-reports';
+import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
+import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,

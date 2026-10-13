@@ -1,5 +1,5 @@
-import { CategoryCreateBottomSheet } from '@src/features/todo/presentations/components/CategoryCreateBottomSheet';
-import { CategoryList } from '@src/features/todo/presentations/components/CategoryList';
+import { CategoryCreateBottomSheet } from '@src/features/todo/components/category-create-bottom-sheet';
+import { CategoryList } from '@src/features/todo/components/category-list';
 import { useTranslation } from '@src/shared/i18n';
 import {
   type ButtonProps,

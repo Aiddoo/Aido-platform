@@ -1,14 +1,14 @@
-import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/models/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
+import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/domains/auth.model';
+import { useGetPreferenceQueryOptions } from '@src/features/auth/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/auth/queries/use-update-preference-mutation-options';
 import {
   NavigationRow,
   NavigationSkeleton,
   SettingsCard,
   SettingsToggle,
   ToggleSkeleton,
-} from '@src/features/notification/presentations/components/settings';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+} from '@src/features/notification/components/settings';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { formatReminderTime } from '@src/shared/utils/time';

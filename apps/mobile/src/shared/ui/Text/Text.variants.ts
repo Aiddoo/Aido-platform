@@ -1,6 +1,6 @@
 import { tv } from '@src/shared/utils/tv';
 
-import type { TextSize } from './Text.types';
+import type { TextSize } from './text.types';
 
 export const textSizeClasses = {
   h1: 'text-h1',

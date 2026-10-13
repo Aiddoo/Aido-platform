@@ -1,2 +1,2 @@
-export { Grid, useGridColumns } from './Grid';
-export { GridItem } from './GridItem';
+export { Grid, useGridColumns } from './grid';
+export { GridItem } from './grid-item';

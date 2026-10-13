@@ -399,7 +399,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
               displayName: '오늘 할 일',
               description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
               ios: {
-                initialLayout: './src/features/widget/presentations/widgets.ios.tsx',
+                initialLayout: './src/features/widget/components/widgets.ios.tsx',
                 supportedFamilies: ['systemSmall', 'systemMedium', 'systemLarge'],
               },
             },

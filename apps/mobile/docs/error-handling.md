@@ -182,7 +182,7 @@ const MOBILE_ERROR_MESSAGES: Partial<Record<ErrorCodeType, string>> = {
 서버 요청 전에 클라이언트에서 검증하는 에러. 불필요한 네트워크 요청을 방지합니다.
 
 ```typescript
-// features/friend/services/friend.service.ts
+// features/friend/apis/friend.service.ts
 sendRequestByTag = async (
   userTag: string,
 ): Promise<Result<SendRequestResult, FriendServiceError>> => {
@@ -197,7 +197,7 @@ sendRequestByTag = async (
 외부 SDK 에러를 도메인 에러로 변환. SDK 에러가 앱 외부로 유출되지 않도록 합니다.
 
 ```typescript
-// features/auth/services/auth.service.ts
+// features/auth/apis/auth.service.ts
 openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
   try {
     const credential = await AppleAuthentication.signInAsync({ ... });
@@ -216,7 +216,7 @@ openAppleLogin = async (): Promise<Result<AuthTokens, AuthServiceError>> => {
 ### 도메인 에러 정의 패턴
 
 ```typescript
-// features/{domain}/models/{domain}.error.ts
+// features/{domain}/domains/{domain}.error.ts
 // 1) 에러 코드 상수
 export const FriendErrorCode = {
   INVALID_TAG: 'FRIEND_INVALID_TAG',
@@ -512,13 +512,13 @@ retry: (failureCount, error) => {
 
 ### 네이밍 규칙
 
-| 요소           | 패턴                                         | 예시            |
-| -------------- | -------------------------------------------- | --------------- |
-| 에러 코드 상수 | `{Feature}ErrorCode`                         | `AuthErrorCode` |
-| 에러 클래스    | `{Feature}Error`                             | `AuthError`     |
-| 팩토리 객체    | `{Feature}Errors`                            | `AuthErrors`    |
-| 타입 가드      | `is{Feature}Error`                           | `isAuthError`   |
-| 파일 위치      | `features/{domain}/models/{domain}.error.ts` | `auth.error.ts` |
+| 요소           | 패턴                                          | 예시            |
+| -------------- | --------------------------------------------- | --------------- |
+| 에러 코드 상수 | `{Feature}ErrorCode`                          | `AuthErrorCode` |
+| 에러 클래스    | `{Feature}Error`                              | `AuthError`     |
+| 팩토리 객체    | `{Feature}Errors`                             | `AuthErrors`    |
+| 타입 가드      | `is{Feature}Error`                            | `isAuthError`   |
+| 파일 위치      | `features/{domain}/domains/{domain}.error.ts` | `auth.error.ts` |
 
 ---
 
@@ -526,7 +526,7 @@ retry: (failureCount, error) => {
 
 ### 새 도메인 에러 추가 시
 
-- [ ] `features/{domain}/models/{domain}.error.ts` 생성
+- [ ] `features/{domain}/domains/{domain}.error.ts` 생성
 - [ ] `{Feature}ErrorCode` 상수 + 타입 정의
 - [ ] `{Feature}Error` 클래스 — `Error` 상속, `BusinessError` 구현
 - [ ] `{Feature}Errors` 팩토리 객체
@@ -552,5 +552,5 @@ retry: (failureCount, error) => {
 | `shared/infra/http/ky-client.ts`             | KyHttpClient 구현                   |
 | `shared/infra/http/error-handler.ts`         | 에러 코드 → 메시지 매핑 (150+ 코드) |
 | `shared/ui/QueryErrorBoundary/`              | QueryErrorBoundary 컴포넌트         |
-| `features/*/models/*.error.ts`               | 각 도메인 에러 정의                 |
+| `features/*/domains/*.error.ts`              | 각 도메인 에러 정의                 |
 | [testing-strategy.md](./testing-strategy.md) | 테스트 전략 (에러 테스트 패턴 포함) |

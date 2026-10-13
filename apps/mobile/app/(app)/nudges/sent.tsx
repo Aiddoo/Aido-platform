@@ -1,5 +1,5 @@
-import { SentNudgeList } from '@src/features/todo/presentations/components/nudge-interactions/SentNudgeList';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { SentNudgeList } from '@src/features/todo/components/nudge-interactions/sent-nudge-list';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ScreenTitleBar, StyledSafeAreaView } from '@src/shared/ui';
 import { router } from 'expo-router';

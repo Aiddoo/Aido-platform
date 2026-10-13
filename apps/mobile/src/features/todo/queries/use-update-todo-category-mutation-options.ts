@@ -1,0 +1,75 @@
+import type { UpdateTodoCategoryInput } from '@aido/api';
+import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { isTodoCategoryError } from '@src/features/todo/domains/todo-category.error';
+import type { TodoCategoriesResult } from '@src/features/todo/domains/todo-category.model';
+import { useTrack } from '@src/shared/analytics';
+import { isApiError } from '@src/shared/errors';
+import { unwrap } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { t } from '@src/shared/i18n';
+import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+
+import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+
+interface UpdateTodoCategoryParams {
+  id: number;
+  input: UpdateTodoCategoryInput;
+}
+
+export const useUpdateTodoCategoryMutationOptions = () => {
+  const todoCategoryService = useTodoCategoryService();
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const toast = useAppToast();
+
+  return mutationOptions({
+    mutationFn: async ({ id, input }: UpdateTodoCategoryParams) => {
+      const result = await todoCategoryService.updateCategory(id, input);
+      return unwrap(result);
+    },
+    onMutate: async ({ id, input }) => {
+      await queryClient.cancelQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
+
+      const previousData = queryClient.getQueryData<TodoCategoriesResult>(
+        TODO_CATEGORY_QUERY_KEYS.list(),
+      );
+
+      queryClient.setQueryData<TodoCategoriesResult>(TODO_CATEGORY_QUERY_KEYS.list(), (old) => {
+        if (!old) {
+          return old;
+        }
+        return {
+          ...old,
+          categories: old.categories.map((c) => (c.id === id ? { ...c, ...input } : c)),
+        };
+      });
+
+      return { previousData };
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
+      toast.success(t('todo:toast.categoryUpdated'));
+      trackEvent('category_updated', {
+        field: variables.input.color ? 'color' : 'name',
+      });
+    },
+    onError: (error, _variables, context) => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+
+      if (context?.previousData !== undefined) {
+        queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
+      }
+
+      if (isTodoCategoryError(error) || isApiError(error)) {
+        toast.error(error.message);
+        return;
+      }
+      toast.error(undefined, { fallback: t('todo:toast.updateFailedRetry') });
+    },
+  });
+};

@@ -1,8 +1,8 @@
-import { SuggestionsList } from '@src/features/ai/presentations/components/SuggestionsList';
-import { AI_QUERY_KEYS } from '@src/features/ai/presentations/constants/ai-query-keys.constant';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { useRefresh } from '@src/shared/hooks/useRefresh';
+import { SuggestionsList } from '@src/features/ai/components/suggestions-list';
+import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense, useCallback } from 'react';

@@ -1,4 +1,4 @@
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { DocsIcon, Result, StyledSafeAreaView } from '@src/shared/ui';
 import { router } from 'expo-router';

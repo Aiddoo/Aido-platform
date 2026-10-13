@@ -1,7 +1,7 @@
 import { omitBy } from 'es-toolkit';
 import { View, type ViewStyle } from 'react-native';
 
-import type { BoxProps } from './Box.types';
+import type { BoxProps } from './box.types';
 
 export function Box({
   flex,

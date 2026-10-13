@@ -1,8 +1,5 @@
 import { aiReportIdParamSchema, weeklyAchievementParamSchema } from '@aido/api';
-import {
-  isSampleReportId,
-  getSampleReport,
-} from '@src/features/ai/presentations/constants/sample-reports.constant';
+import { isSampleReportId, getSampleReport } from '@src/features/ai/constants/sample-reports';
 
 import { parseWebViewUrl, routeIntegerStringSchema } from './route-params';
 

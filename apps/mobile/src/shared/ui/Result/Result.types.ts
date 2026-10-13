@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import type { ButtonProps } from '../Button/Button.types';
+import type { ButtonProps } from '../button/button.types';
 
 export interface ResultProps {
   /** 상단 아이콘 */

@@ -7,15 +7,12 @@ import { openURL } from 'expo-linking';
 import { AppState } from 'react-native';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
 
-import { parseWidgetNavigationUri } from '../models/widget-navigation.model';
 import {
   createWidgetNavigationRepository,
   type WidgetNavigationRepository,
-} from '../services/widget-navigation.repository';
-import {
-  ANDROID_WIDGET_DEFINITIONS,
-  ANDROID_WIDGET_NAVIGATION_ACTION,
-} from './android-widget.constant';
+} from '../apis/widget-navigation.repository';
+import { parseWidgetNavigationUri } from '../domains/widget-navigation.model';
+import { ANDROID_WIDGET_DEFINITIONS, ANDROID_WIDGET_NAVIGATION_ACTION } from './android-widget';
 import { renderStoredAndroidWidget } from './android-widgets.bridge';
 
 type WidgetTaskDependencies = {
