@@ -1,4 +1,3 @@
-import { dateSchema } from '@aido/api';
 import { useFriendById } from '@src/features/friend/hooks/use-friend-by-id';
 import {
   friendScreenParamsSchema,
@@ -12,6 +11,7 @@ import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { invalidateFriendTodos } from '@src/features/todo/queries/todo-cache';
+import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { Box, QueryErrorBoundary, Spacing, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,12 +21,7 @@ import { RefreshControl, ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
-const FriendFeedSearchSchema = z.object({
-  date: z
-    .union([dateSchema, z.literal('today')])
-    .optional()
-    .catch(undefined),
-});
+const FriendFeedSearchSchema = z.object({ date: feedDateParamSchema });
 
 function FriendFeedScreen() {
   const { friendId } = useFriendScreenParams();

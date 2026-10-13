@@ -10,14 +10,17 @@ import { useAndroidTodoCommentBackHandler } from '@src/features/todo-comment/hoo
 import { useIsTodoCommentSubmitting } from '@src/features/todo-comment/hooks/use-is-todo-comment-submitting';
 import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';
 import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
-import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import {
+  todoScreenParamsSchema,
+  useTodoScreenParams,
+} from '@src/features/todo/hooks/use-todo-screen-params';
 import {
   Box,
   QueryErrorBoundary,
   StyledSafeAreaView,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { Stack } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
@@ -154,6 +157,12 @@ function TodoCommentListError({
 }
 
 export default function TodoDetailRoute() {
+  const params = todoScreenParamsSchema.safeParse(useLocalSearchParams());
+
+  if (!params.success) {
+    return <Redirect href="/feed" />;
+  }
+
   return (
     <TodoCommentScreenTransitionProvider>
       <TodoDetailScreen />

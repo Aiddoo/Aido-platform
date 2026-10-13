@@ -1,5 +1,7 @@
+import { userIdParamSchema } from '@aido/api';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
+import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -20,6 +22,7 @@ import { Slot, router, useGlobalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
+import { z } from 'zod';
 
 export default function FeedGroupLayout() {
   return (
@@ -38,12 +41,18 @@ export default function FeedGroupLayout() {
   );
 }
 
+/** 레이아웃은 자식 경로(내 피드·친구 피드)의 파라미터를 함께 읽어야 해서 global params를 쓴다. */
+const FeedLayoutParamsSchema = z.object({
+  friendId: userIdParamSchema.shape.userId.optional().catch(undefined),
+  date: feedDateParamSchema,
+});
+
 function AvatarList() {
   const push = useSingleTap(router.push);
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('todo');
-  const { friendId, date } = useGlobalSearchParams<{ friendId?: string; date?: string }>();
+  const { friendId, date } = FeedLayoutParamsSchema.parse(useGlobalSearchParams());
   const selectedFriendId = friendId ?? null;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {

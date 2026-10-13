@@ -1,5 +1,5 @@
 import { ActivityReport } from '@src/features/ai/components/activity-report';
-import { getSampleReport, isSampleReportId } from '@src/features/ai/constants/sample-reports';
+import { getSampleReport } from '@src/features/ai/constants/sample-reports';
 import {
   reportScreenParamsSchema,
   useReportScreenParams,
@@ -23,22 +23,15 @@ import { ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function ReportDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { id: report } = useReportScreenParams();
   const { t } = useTranslation('ai');
   const { trackEvent } = useTrack();
   const premiumDialog = usePremiumDialog();
 
-  if (
-    typeof id !== 'string' ||
-    (!isSampleReportId(id) && !reportScreenParamsSchema.safeParse({ id }).success)
-  ) {
-    return <Redirect href="/reports" />;
-  }
-
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      {match(isSampleReportId(id))
-        .with(true, () => (
+      {match(report)
+        .with({ kind: 'sample' }, ({ id }) => (
           <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8 pt-2">
             <ActivityReport report={getSampleReport(id)} />
 
@@ -68,7 +61,7 @@ function ReportDetailScreen() {
             <Spacing size={24} />
           </ScrollView>
         ))
-        .with(false, () => (
+        .with({ kind: 'saved' }, ({ id }) => (
           <QueryErrorBoundary resetKeys={[id]}>
             <Suspense fallback={<ActivityReport.Loading />}>
               <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -83,10 +76,27 @@ function ReportDetailScreen() {
   );
 }
 
-export default ReportDetailScreen;
+export default function ReportDetailRoute() {
+  const params = reportScreenParamsSchema.safeParse(useLocalSearchParams());
+
+  if (!params.success) {
+    return <Redirect href="/reports" />;
+  }
+
+  return <ReportDetailScreen />;
+}
 
 function SavedActivityReport() {
-  const { id } = useReportScreenParams();
+  const { id: report } = useReportScreenParams();
+
+  if (report.kind !== 'saved') {
+    return null;
+  }
+
+  return <SavedActivityReport.Contents id={report.id} />;
+}
+
+SavedActivityReport.Contents = function Contents({ id }: { id: number }) {
   const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions({ id }));
   const { trackEvent } = useTrack();
 
@@ -95,4 +105,4 @@ function SavedActivityReport() {
   }, [trackEvent, id, report.type]);
 
   return <ActivityReport report={report} />;
-}
+};

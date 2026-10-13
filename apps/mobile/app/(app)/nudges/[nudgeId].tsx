@@ -1,6 +1,10 @@
 import type { NudgeReplyKind } from '@aido/api';
 import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
+import {
+  nudgeScreenParamsSchema,
+  useNudgeScreenParams,
+} from '@src/features/nudge/hooks/use-nudge-screen-params';
 import { useGetNudgeInteractionQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-query-options';
 import { useReplyToNudgeMutationOptions } from '@src/features/nudge/queries/use-reply-to-nudge-mutation-options';
 import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
@@ -32,12 +36,9 @@ import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
-import { z } from 'zod';
-
-const NudgeParamsSchema = z.object({ nudgeId: z.coerce.number().int().positive() });
 
 function NudgeDetailScreen() {
-  const { nudgeId } = NudgeParamsSchema.parse(useLocalSearchParams());
+  const { nudgeId } = useNudgeScreenParams();
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
@@ -269,7 +270,7 @@ NudgeDetailScreen.Loading = function Loading() {
 };
 
 export default function NudgeDetailRoute() {
-  const params = NudgeParamsSchema.safeParse(useLocalSearchParams());
+  const params = nudgeScreenParamsSchema.safeParse(useLocalSearchParams());
   const { t } = useTranslation('todo');
   const goBack = useSingleTap(() =>
     router.canGoBack() ? router.back() : router.replace('/notifications'),
