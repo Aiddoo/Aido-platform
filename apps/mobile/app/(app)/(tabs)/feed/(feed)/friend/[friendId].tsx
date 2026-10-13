@@ -1,13 +1,17 @@
-import { dateSchema, userIdParamSchema } from '@aido/api';
+import { dateSchema } from '@aido/api';
 import { useFriendById } from '@src/features/friend/hooks/use-friend-by-id';
-import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
+import {
+  friendScreenParamsSchema,
+  useFriendScreenParams,
+} from '@src/features/friend/hooks/use-friend-screen-params';
+import { invalidateNudges } from '@src/features/nudge/queries/nudge-cache';
 import { Calendar } from '@src/features/todo/components/calendar/calendar';
 import { FriendCalendar } from '@src/features/todo/components/calendar/friend-calendar';
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
 import { PokeBanner } from '@src/features/todo/components/poke-banner';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
+import { invalidateFriendTodos } from '@src/features/todo/queries/todo-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { Box, QueryErrorBoundary, Spacing, type QueryErrorFallbackProps } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,17 +29,13 @@ const FriendFeedSearchSchema = z.object({
 });
 
 function FriendFeedScreen() {
-  const { friendId: rawFriendId } = useLocalSearchParams();
-  const friendId = userIdParamSchema.shape.userId.parse(rawFriendId);
+  const { friendId } = useFriendScreenParams();
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   const { friend, hasNextPage, isFetchNextPageError, error, fetchNextPage } =
     useFriendById(friendId);
   const [refreshing, onRefresh] = useRefresh(() =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.all }),
-    ]),
+    Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
   );
 
   return match({ friend, isFetchNextPageError, hasNextPage })
@@ -54,7 +54,7 @@ function FriendFeedScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <FriendCalendar friendUserId={friend.id} />
+        <FriendCalendar />
 
         <Spacing size={8} />
 
@@ -72,7 +72,7 @@ function FriendFeedScreen() {
             fallback={(props) => <FriendTodoList.Error {...props} />}
           >
             <Suspense fallback={<FriendTodoList.Loading />}>
-              <FriendTodoList key={selectedDateKey} friend={friend} />
+              <FriendTodoList key={selectedDateKey} />
             </Suspense>
           </QueryErrorBoundary>
         </Box>
@@ -113,17 +113,16 @@ FriendFeedScreen.Error = function ErrorState(props: QueryErrorFallbackProps) {
 
 export default function FriendFeedRoute() {
   const params = useLocalSearchParams();
-  const { friendId } = params;
   const { date } = FriendFeedSearchSchema.parse(params);
   const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
-  const parsed = userIdParamSchema.shape.userId.safeParse(friendId);
+  const parsed = friendScreenParamsSchema.safeParse(params);
   if (!parsed.success) {
     return <Redirect href="/feed" />;
   }
   return (
     <FeedDateProvider date={date} onDateChange={setDate}>
       <QueryErrorBoundary
-        resetKeys={[parsed.data]}
+        resetKeys={[parsed.data.friendId]}
         fallback={(props) => <FriendFeedScreen.Error {...props} />}
       >
         <Suspense fallback={<FriendFeedScreen.Loading />}>

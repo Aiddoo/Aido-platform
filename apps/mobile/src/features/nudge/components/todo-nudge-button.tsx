@@ -2,9 +2,12 @@ import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { PawIcon, useOverlay, usePremiumDialog } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { useQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
+import { TodoNudgePolicy } from '../domains/todo-nudge.model';
+import { useGetTodoNudgeLimitQueryOptions } from '../queries/get-todo-nudge-limit-query-options';
 import { NudgeBottomSheet, type NudgeReceiver, type NudgeTargetTodo } from './nudge-bottom-sheet';
 
 interface TodoNudgeButtonProps extends Omit<
@@ -13,14 +16,12 @@ interface TodoNudgeButtonProps extends Omit<
 > {
   receiver: NudgeReceiver;
   todo: NudgeTargetTodo;
-  isLimitReached: boolean;
 }
 
 /** 친구 할 일 목록과 상세가 공유하는 넛지 진입점. 시트와 한도 UX도 이곳에서 한 번만 조립한다. */
 export function TodoNudgeButton({
   receiver,
   todo,
-  isLimitReached,
   isDisabled,
   className,
   hitSlop,
@@ -33,6 +34,9 @@ export function TodoNudgeButton({
   const { trackEvent } = useTrack();
   const overlay = useOverlay();
   const premiumDialog = usePremiumDialog();
+  const limitQuery = useQuery(useGetTodoNudgeLimitQueryOptions());
+  const isLimitReached = limitQuery.data != null && TodoNudgePolicy.isLimitReached(limitQuery.data);
+  const isUnavailable = isDisabled || limitQuery.isPending;
 
   const openNudgeSheet = () => {
     overlay
@@ -70,13 +74,17 @@ export function TodoNudgeButton({
       {...pressableProps}
       onPress={handlePress}
       hitSlop={hitSlop ?? 8}
-      isDisabled={isDisabled}
+      isDisabled={isUnavailable}
       accessibilityRole={accessibilityRole ?? 'button'}
       accessibilityLabel={accessibilityLabel ?? t('friendTodo.nudge')}
-      accessibilityState={{ ...accessibilityState, disabled: isDisabled }}
+      accessibilityState={{ ...accessibilityState, disabled: isUnavailable }}
       className={cn('min-h-11 min-w-11 items-center justify-center', className)}
     >
-      <PawIcon width={18} height={18} colorClassName={isDisabled ? 'text-gray-5' : 'text-main'} />
+      <PawIcon
+        width={18}
+        height={18}
+        colorClassName={isUnavailable ? 'text-gray-5' : 'text-main'}
+      />
     </PressableFeedback>
   );
 }

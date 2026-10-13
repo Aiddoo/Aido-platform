@@ -1,9 +1,10 @@
+import { useFriendScreenParams } from '@src/features/friend/hooks/use-friend-screen-params';
+import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
 import type { FriendUserViewModel } from '@src/features/friend/utils/view-models/friend-user.view-model';
 import { RemindNudgeBottomSheet } from '@src/features/nudge/components/remind-nudge-bottom-sheet';
 import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { useGetRemindNudgeCooldownQueryOptions } from '@src/features/nudge/queries/get-remind-nudge-cooldown-query-options';
-import { useGetTodoNudgeLimitQueryOptions } from '@src/features/nudge/queries/get-todo-nudge-limit-query-options';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
@@ -28,8 +29,7 @@ import {
 } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -42,24 +42,16 @@ import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
 
-interface FriendTodoListProps {
-  friend: FriendUserViewModel;
-}
-
-export function FriendTodoList({ friend }: FriendTodoListProps) {
+export function FriendTodoList() {
+  const { friendId } = useFriendScreenParams();
   const [date] = useFeedDate();
-  const today = useToday();
-  const [{ data: todos }, { data: limitInfo }] = useSuspenseQueries({
-    queries: [
-      useGetFriendTodosQueryOptions({ friendUserId: friend.id, date: formatDate(date) }),
-      useGetTodoNudgeLimitQueryOptions(),
-    ],
-  });
+  const { data: todos } = useSuspenseQuery(
+    useGetFriendTodosQueryOptions({ friendUserId: friendId, date: formatDate(date) }),
+  );
   const categoryGroups = useMemo(() => toFriendCategoryGroups(todos), [todos]);
-  const isLimitReached = TodoNudgePolicy.isLimitReached(limitInfo);
 
   if (categoryGroups.length === 0) {
-    return <FriendTodoList.Empty friend={friend} />;
+    return <FriendTodoList.Empty />;
   }
 
   return (
@@ -69,14 +61,7 @@ export function FriendTodoList({ friend }: FriendTodoListProps) {
           <CategoryHeader label={group.category.name} color={group.category.color} />
           <Box>
             {group.todos.map((todo) => (
-              <FriendTodoList.Item
-                key={todo.id}
-                todo={todo}
-                friend={friend}
-                isLimitReached={isLimitReached}
-                date={date}
-                today={today}
-              />
+              <FriendTodoList.Item key={todo.id} todo={todo} />
             ))}
           </Box>
         </VStack>
@@ -111,22 +96,11 @@ function CategoryHeader({ label, color }: { label: string; color: string }) {
   );
 }
 
-interface FriendTodoItemProps {
-  todo: Todo;
-  friend: FriendUserViewModel;
-  isLimitReached: boolean;
-  date: Date;
-  today: Date;
-}
-
-FriendTodoList.Item = function Item({
-  todo,
-  friend,
-  isLimitReached,
-  date,
-  today,
-}: FriendTodoItemProps) {
+FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const { t } = useTranslation('todo');
+  const friend = useScreenFriend();
+  const [date] = useFeedDate();
+  const today = useToday();
   const push = useSingleTap(router.push);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -171,11 +145,10 @@ FriendTodoList.Item = function Item({
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
-          {canNudgeTodo && (
+          {canNudgeTodo && friend != null && (
             <TodoNudgeButton
               receiver={friend}
               todo={todo}
-              isLimitReached={isLimitReached}
               className="min-h-0 py-1.5"
               hitSlop={COMPACT_ACTION_HIT_SLOP}
             />
@@ -199,11 +172,7 @@ FriendTodoList.Item = function Item({
   );
 };
 
-interface RemindNudgeButtonProps {
-  friend: FriendUserViewModel;
-}
-
-function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
+function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
   const { data: cooldownInfo } = useQuery(
@@ -243,8 +212,9 @@ function RemindNudgeButton({ friend }: RemindNudgeButtonProps) {
   );
 }
 
-FriendTodoList.Empty = function Empty({ friend }: FriendTodoListProps) {
+FriendTodoList.Empty = function Empty() {
   const { t } = useTranslation('todo');
+  const friend = useScreenFriend();
   const [date] = useFeedDate();
   const today = useToday();
   const isToday = isSameDay(date, today);
@@ -253,7 +223,7 @@ FriendTodoList.Empty = function Empty({ friend }: FriendTodoListProps) {
       icon={<DocsIcon width={72} height={72} />}
       title={t('friendTodo.emptyTitle')}
       description={isToday ? t('friendTodo.emptyDescription') : undefined}
-      button={isToday ? <RemindNudgeButton friend={friend} /> : undefined}
+      button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
     />
   );
 };

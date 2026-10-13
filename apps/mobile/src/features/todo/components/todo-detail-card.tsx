@@ -2,7 +2,6 @@ import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interact
 import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
-import { useGetTodoNudgeLimitQueryOptions } from '@src/features/nudge/queries/get-todo-nudge-limit-query-options';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -111,7 +110,6 @@ function TodoMetricLine({ detail }: TodoDetailSectionProps) {
 
 function TodoDetailNudgeAction({ detail }: TodoDetailSectionProps) {
   const { t } = useTranslation('todo');
-  const limitQuery = useQuery(useGetTodoNudgeLimitQueryOptions());
 
   return (
     <TodoNudgeButton
@@ -120,8 +118,6 @@ function TodoDetailNudgeAction({ detail }: TodoDetailSectionProps) {
         displayName: detail.owner.name ?? t('detail.unknownOwner'),
       }}
       todo={detail.todo}
-      isLimitReached={limitQuery.data ? TodoNudgePolicy.isLimitReached(limitQuery.data) : false}
-      isDisabled={limitQuery.isPending}
     />
   );
 }

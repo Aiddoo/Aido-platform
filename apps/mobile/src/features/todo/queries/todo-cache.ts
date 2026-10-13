@@ -110,3 +110,7 @@ export async function invalidateTodoSummaries(
     queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() }),
   ]);
 }
+
+export function invalidateFriendTodos(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.friendLists() });
+}
