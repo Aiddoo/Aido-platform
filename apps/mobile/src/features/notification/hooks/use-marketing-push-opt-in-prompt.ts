@@ -1,6 +1,7 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useToday } from '@src/shared/hooks/use-today';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   readMarketingPushPromptState,
@@ -36,8 +37,9 @@ export function useMarketingPushOptInPrompt(
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const [promptState] = useState(() => readMarketingPushPromptState(storage));
   const [dismissed, setDismissed] = useState(false);
+  const today = useToday();
 
-  const visible = !dismissed && MarketingPushPromptPolicy.shouldPrompt(consent, promptState);
+  const visible = !dismissed && MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
 
   const dismiss = () => {
     recordMarketingPushPrompt(storage, new Date());

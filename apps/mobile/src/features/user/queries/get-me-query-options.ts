@@ -1,45 +1,36 @@
 import { useUserService } from '@src/bootstrap/providers/di-context';
 import type { UserService } from '@src/features/user/apis/user.service';
-import type { User } from '@src/features/user/domains/user.model';
+import { type User, UserPolicy } from '@src/features/user/domains/user.model';
 import { unwrap } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { queryOptions } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
 import { USER_QUERY_KEYS } from '../constants/user-query-keys';
 
-type UserTier = 'ADMIN' | 'PREMIUM' | 'BASIC';
-
-const getUserTier = (user: User): UserTier => {
-  if (user.role === 'ADMIN') {
-    return 'ADMIN';
-  }
-  if (user.subscriptionStatus === 'ACTIVE') {
-    return 'PREMIUM';
-  }
-  return 'BASIC';
-};
+export function toMe(user: User, { defaultName }: { defaultName: string }) {
+  return {
+    ...user,
+    name: user.name ?? defaultName,
+    tier: UserPolicy.tier(user),
+  };
+}
 
 export function getMeQueryOptions(
   userService: UserService,
-  { defaultName }: { defaultName: string },
+  { select }: { select: (user: User) => ReturnType<typeof toMe> },
 ) {
   return queryOptions({
     queryKey: USER_QUERY_KEYS.me(),
-    queryFn: async ({ signal }) => {
-      const result = await userService.getCurrentUser(signal);
-      return unwrap(result);
-    },
-    select: (user) => ({
-      ...user,
-      name: user.name ?? defaultName,
-      tier: getUserTier(user),
-    }),
+    queryFn: async ({ signal }) => unwrap(await userService.getCurrentUser(signal)),
+    select,
   });
 }
 
 export function useGetMeQueryOptions() {
   const { t } = useTranslation('user');
-  return getMeQueryOptions(useUserService(), {
-    defaultName: t('profile.defaultName'),
-  });
+  const defaultName = t('profile.defaultName');
+  const select = useCallback((user: User) => toMe(user, { defaultName }), [defaultName]);
+
+  return getMeQueryOptions(useUserService(), { select });
 }

@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 
 import { createTodoDto } from '../__tests__/todo.factories';
+import { SubTodoPolicy } from '../domains/sub-todo.model';
 import { todoSchema, TodoPolicy } from '../domains/todo.model';
 import { toTodo } from './todo.mapper';
 
@@ -33,7 +34,7 @@ describe('Todo 클라이언트 모델과 캐시', () => {
 
     expect(TodoPolicy.isRecurring(todo)).toBe(true);
     expect(TodoPolicy.hasSubTodos(todo)).toBe(true);
-    expect(TodoPolicy.completionProgress(todo)).toBe(0.25);
+    expect(SubTodoPolicy.completionProgress(todo)).toBe(0.25);
     expect(todo).not.toHaveProperty('itemStats');
     expect(todo).not.toHaveProperty('items');
   });

@@ -15,14 +15,7 @@ const promptState = (overrides?: Partial<MarketingPushPromptState>): MarketingPu
   ...overrides,
 });
 
-beforeEach(() => {
-  jest.useFakeTimers();
-  jest.setSystemTime(new Date('2026-07-20T09:00:00.000Z'));
-});
-
-afterEach(() => {
-  jest.useRealTimers();
-});
+const NOW = new Date('2026-07-20T09:00:00.000Z');
 
 describe('isNotAgreedToMarketingPush', () => {
   it('광고성 푸시 미동의(null)면 true를 반환한다', () => {
@@ -35,7 +28,9 @@ describe('isNotAgreedToMarketingPush', () => {
 
   it('이미 동의한 상태면 false를 반환한다', () => {
     // Given
-    const consent = createConsent({ marketingPushAgreedAt: dayjs().subtract(1, 'day').toDate() });
+    const consent = createConsent({
+      marketingPushAgreedAt: dayjs(NOW).subtract(1, 'day').toDate(),
+    });
 
     // When / Then
     expect(isNotAgreedToMarketingPush(consent)).toBe(false);
@@ -58,62 +53,66 @@ describe('isUnderPromptLimit', () => {
 
 describe('hasCooldownElapsed', () => {
   it('한 번도 닫은 적 없으면(null) true를 반환한다', () => {
-    expect(hasCooldownElapsed(promptState({ lastPromptedAt: null }))).toBe(true);
+    expect(hasCooldownElapsed(promptState({ lastPromptedAt: null }), NOW)).toBe(true);
   });
 
   it('마지막 닫기로부터 정확히 쿨다운(14일)이 지나면 true를 반환한다', () => {
-    const state = promptState({ lastPromptedAt: dayjs().subtract(14, 'day').toISOString() });
-    expect(hasCooldownElapsed(state)).toBe(true);
+    const state = promptState({ lastPromptedAt: dayjs(NOW).subtract(14, 'day').toISOString() });
+    expect(hasCooldownElapsed(state, NOW)).toBe(true);
   });
 
   it('쿨다운이 1ms 모자라면 false를 반환한다', () => {
     const state = promptState({
-      lastPromptedAt: dayjs().subtract(14, 'day').add(1, 'millisecond').toISOString(),
+      lastPromptedAt: dayjs(NOW).subtract(14, 'day').add(1, 'millisecond').toISOString(),
     });
-    expect(hasCooldownElapsed(state)).toBe(false);
+    expect(hasCooldownElapsed(state, NOW)).toBe(false);
   });
 
   it('쿨다운을 훨씬 넘겼으면 true를 반환한다', () => {
-    const state = promptState({ lastPromptedAt: dayjs().subtract(20, 'day').toISOString() });
-    expect(hasCooldownElapsed(state)).toBe(true);
+    const state = promptState({ lastPromptedAt: dayjs(NOW).subtract(20, 'day').toISOString() });
+    expect(hasCooldownElapsed(state, NOW)).toBe(true);
   });
 });
 
 describe('MarketingPushPromptPolicy.shouldPrompt', () => {
   it('동의 정보 로딩 전(undefined)이면 노출하지 않는다', () => {
-    expect(MarketingPushPromptPolicy.shouldPrompt(undefined, promptState())).toBe(false);
+    expect(MarketingPushPromptPolicy.shouldPrompt(undefined, promptState(), NOW)).toBe(false);
   });
 
   it('이미 동의한 유저에게는 노출하지 않는다', () => {
-    const consent = createConsent({ marketingPushAgreedAt: dayjs().subtract(1, 'day').toDate() });
-    expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState())).toBe(false);
+    const consent = createConsent({
+      marketingPushAgreedAt: dayjs(NOW).subtract(1, 'day').toDate(),
+    });
+    expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState(), NOW)).toBe(false);
   });
 
   it('닫기 상한에 도달하면 노출하지 않는다', () => {
     const consent = createConsent({ marketingPushAgreedAt: null });
-    expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState({ count: 3 }))).toBe(false);
+    expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState({ count: 3 }), NOW)).toBe(
+      false,
+    );
   });
 
   it('쿨다운 이내면 노출하지 않는다', () => {
     const consent = createConsent({ marketingPushAgreedAt: null });
     const state = promptState({
-      lastPromptedAt: dayjs().subtract(5, 'day').toISOString(),
+      lastPromptedAt: dayjs(NOW).subtract(5, 'day').toISOString(),
       count: 1,
     });
-    expect(MarketingPushPromptPolicy.shouldPrompt(consent, state)).toBe(false);
+    expect(MarketingPushPromptPolicy.shouldPrompt(consent, state, NOW)).toBe(false);
   });
 
   it('미동의 + 상한 미만 + 쿨다운 경과면 노출한다', () => {
     const consent = createConsent({ marketingPushAgreedAt: null });
     const state = promptState({
-      lastPromptedAt: dayjs().subtract(20, 'day').toISOString(),
+      lastPromptedAt: dayjs(NOW).subtract(20, 'day').toISOString(),
       count: 1,
     });
-    expect(MarketingPushPromptPolicy.shouldPrompt(consent, state)).toBe(true);
+    expect(MarketingPushPromptPolicy.shouldPrompt(consent, state, NOW)).toBe(true);
   });
 
   it('미동의 + 첫 노출이면 노출한다', () => {
     const consent = createConsent({ marketingPushAgreedAt: null });
-    expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState())).toBe(true);
+    expect(MarketingPushPromptPolicy.shouldPrompt(consent, promptState(), NOW)).toBe(true);
   });
 });

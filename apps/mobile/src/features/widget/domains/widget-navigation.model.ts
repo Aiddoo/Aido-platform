@@ -64,14 +64,34 @@ const isTimestampWithinTtl = (createdAt: number, now: number, ttl: number): bool
 
 const isSameAccount = (ownerId: string, userId: string): boolean => ownerId === userId;
 
-export const WidgetNavigationPolicy = {
-  isFresh: (command: Pick<WidgetNavigationCommand, 'createdAt'>, now: number): boolean =>
-    isTimestampWithinTtl(command.createdAt, now, WIDGET_NAVIGATION_COMMAND_TTL_MS),
-  isOwnedBy: (command: Pick<WidgetNavigationCommand, 'userId'>, userId: string): boolean =>
-    isSameAccount(command.userId, userId),
-  isSameCommand: (first: WidgetNavigationCommand, second: WidgetNavigationCommand): boolean =>
+export function isFreshWidgetNavigationCommand(
+  command: Pick<WidgetNavigationCommand, 'createdAt'>,
+  now: number,
+): boolean {
+  return isTimestampWithinTtl(command.createdAt, now, WIDGET_NAVIGATION_COMMAND_TTL_MS);
+}
+
+export function isWidgetNavigationCommandOwnedBy(
+  command: Pick<WidgetNavigationCommand, 'userId'>,
+  userId: string,
+): boolean {
+  return isSameAccount(command.userId, userId);
+}
+
+export function isSameWidgetNavigationCommand(
+  first: WidgetNavigationCommand,
+  second: WidgetNavigationCommand,
+): boolean {
+  return (
     first.id === second.id &&
     first.uri === second.uri &&
     first.userId === second.userId &&
-    first.createdAt === second.createdAt,
-};
+    first.createdAt === second.createdAt
+  );
+}
+
+export const WidgetNavigationPolicy = {
+  isFresh: isFreshWidgetNavigationCommand,
+  isOwnedBy: isWidgetNavigationCommandOwnedBy,
+  isSameCommand: isSameWidgetNavigationCommand,
+} as const;

@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { Avatar, Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
 
+import type { UserTier } from '../domains/user.model';
 import { useGetMeQueryOptions } from '../queries/get-me-query-options';
 import { formatUserHashtag } from '../utils/user-hashtag';
 
@@ -90,7 +91,7 @@ const USER_TIER_CONFIG = {
   },
 } as const;
 
-function UserTierChip({ tier }: { tier: 'ADMIN' | 'PREMIUM' | 'BASIC' }) {
+function UserTierChip({ tier }: { tier: UserTier }) {
   const { t } = useTranslation('user');
   const { labelKey, color, className } = USER_TIER_CONFIG[tier];
   const label = t(labelKey.replace('user:', '') as 'profile.badges.admin');

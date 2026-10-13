@@ -1,8 +1,6 @@
-import { type DayOfWeek, dayOfWeekSchema } from '@aido/api';
+import { type DayOfWeek, dayOfWeekSchema, todoVisibilitySchema } from '@aido/api';
 import { t } from '@src/shared/i18n';
 import { z } from 'zod';
-
-import { todoVisibilitySchema } from './todo.model';
 
 const todoSourceSchema = z.enum(['manual', 'ai']).default('manual');
 

@@ -25,15 +25,28 @@ export type User = z.infer<typeof userSchema>;
 export const updateProfileResultSchema = userSchema.pick({ name: true, profileImage: true });
 export type UpdateProfileResult = z.infer<typeof updateProfileResultSchema>;
 
-const isPremiumUser = (user: User) => {
-  return user.role === 'ADMIN' || user.subscriptionStatus === 'ACTIVE';
-};
+export type UserTier = 'ADMIN' | 'PREMIUM' | 'BASIC';
 
-const hasCredential = (user: User) => {
+export function isPremiumUser(user: Pick<User, 'role' | 'subscriptionStatus'>): boolean {
+  return user.role === 'ADMIN' || user.subscriptionStatus === 'ACTIVE';
+}
+
+export function hasCredential(user: Pick<User, 'providers'>): boolean {
   return user.providers.includes('CREDENTIAL');
-};
+}
+
+export function getUserTier(user: Pick<User, 'role' | 'subscriptionStatus'>): UserTier {
+  if (user.role === 'ADMIN') {
+    return 'ADMIN';
+  }
+  if (user.subscriptionStatus === 'ACTIVE') {
+    return 'PREMIUM';
+  }
+  return 'BASIC';
+}
 
 export const UserPolicy = {
   isPremiumUser,
   hasCredential,
+  tier: getUserTier,
 } as const;

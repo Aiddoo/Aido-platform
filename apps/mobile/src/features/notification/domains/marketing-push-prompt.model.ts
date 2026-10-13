@@ -18,31 +18,32 @@ export function isUnderPromptLimit(promptState: MarketingPushPromptState): boole
 }
 
 /** 마지막 닫기 이후 쿨다운이 경과했는가 (닫은 적 없으면 즉시 true) */
-export function hasCooldownElapsed(promptState: MarketingPushPromptState): boolean {
+export function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Date): boolean {
   if (promptState.lastPromptedAt === null) {
     return true;
   }
 
-  const elapsedMs = Date.now() - new Date(promptState.lastPromptedAt).getTime();
+  const elapsedMs = now.getTime() - new Date(promptState.lastPromptedAt).getTime();
   return elapsedMs >= COOLDOWN_DAYS * MILLISECONDS_PER_DAY;
 }
 
-/**
- * 마케팅 푸시 옵트인 배너 노출 정책.
- *
- * 순수 조건 함수들을 조합한다 — 규칙을 추가하려면 `&&` 한 줄만 더한다.
- * (동의 정보 로딩 전에는 노출하지 않는다)
- */
-export const MarketingPushPromptPolicy = {
-  shouldPrompt(consent: Consent | undefined, promptState: MarketingPushPromptState): boolean {
-    if (consent == null) {
-      return false;
-    }
+/** 동의 정보 로딩 전에는 노출하지 않는다. 규칙을 추가하려면 조건 함수를 하나 더 조합한다. */
+export function shouldPromptMarketingPush(
+  consent: Consent | undefined,
+  promptState: MarketingPushPromptState,
+  now: Date,
+): boolean {
+  if (consent == null) {
+    return false;
+  }
 
-    return (
-      isNotAgreedToMarketingPush(consent) &&
-      isUnderPromptLimit(promptState) &&
-      hasCooldownElapsed(promptState)
-    );
-  },
+  return (
+    isNotAgreedToMarketingPush(consent) &&
+    isUnderPromptLimit(promptState) &&
+    hasCooldownElapsed(promptState, now)
+  );
+}
+
+export const MarketingPushPromptPolicy = {
+  shouldPrompt: shouldPromptMarketingPush,
 } as const;

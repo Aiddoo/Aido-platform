@@ -24,9 +24,10 @@ export const memoResourceLimitSchema = z.object({
 });
 export type MemoResourceLimit = z.infer<typeof memoResourceLimitSchema>;
 
-const isBelowLimit = (currentCount: number, maxPerUser: number): boolean =>
-  currentCount < maxPerUser;
+export function isMemoCreatable(limit: MemoResourceLimit): boolean {
+  return limit.currentCount < limit.maxPerUser;
+}
+
 export const MemoPolicy = {
-  isCreatable: (limit: MemoResourceLimit): boolean =>
-    isBelowLimit(limit.currentCount, limit.maxPerUser),
-};
+  isCreatable: isMemoCreatable,
+} as const;

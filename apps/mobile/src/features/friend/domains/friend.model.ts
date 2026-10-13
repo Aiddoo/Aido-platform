@@ -53,7 +53,15 @@ export function isValidSearchQuery(query: string): boolean {
   return query.trim().length >= SEARCH_MIN_QUERY_LENGTH;
 }
 
+export function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>): boolean {
+  return isValidTag(user.userTag);
+}
+
+export function hasValidSearchQuery(input: FriendSearchInput): boolean {
+  return isValidSearchQuery(input.query);
+}
+
 export const FriendPolicy = {
-  isValidTag: (input: Pick<SearchedUser, 'userTag'>): boolean => isValidTag(input.userTag),
-  isValidSearchQuery: (input: FriendSearchInput): boolean => isValidSearchQuery(input.query),
+  isValidTag: hasValidUserTag,
+  isValidSearchQuery: hasValidSearchQuery,
 } as const;

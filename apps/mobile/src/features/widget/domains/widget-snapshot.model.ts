@@ -81,4 +81,4 @@ export function getWidgetRenderState(
 export const WidgetSnapshotPolicy = {
   isStale: isWidgetSnapshotStale,
   renderState: getWidgetRenderState,
-};
+} as const;

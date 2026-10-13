@@ -44,8 +44,12 @@ export function shouldShowExpirationDetails(
   return (isActiveSubscription(status) || isCancelledSubscription(status)) && expiresAt !== null;
 }
 
+export function isSubscriptionExpirationRelevant(
+  user: Pick<User, 'subscriptionStatus' | 'subscriptionExpiresAt'>,
+): boolean {
+  return shouldShowExpirationDetails(user.subscriptionStatus, user.subscriptionExpiresAt);
+}
+
 export const SubscriptionPolicy = {
-  isExpirationRelevant: (
-    user: Pick<User, 'subscriptionStatus' | 'subscriptionExpiresAt'>,
-  ): boolean => shouldShowExpirationDetails(user.subscriptionStatus, user.subscriptionExpiresAt),
+  isExpirationRelevant: isSubscriptionExpirationRelevant,
 } as const;

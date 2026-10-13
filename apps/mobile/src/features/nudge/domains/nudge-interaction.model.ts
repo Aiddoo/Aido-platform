@@ -76,24 +76,40 @@ export const nudgeThanksPreviewSchema = z.object({
 });
 export type NudgeThanksPreview = z.infer<typeof nudgeThanksPreviewSchema>;
 
+export function getNudgeInteractionStatusOf(
+  nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
+): NudgeInteractionStatus {
+  return getNudgeInteractionStatus(
+    nudge.isAvailable,
+    nudge.isTodoCompleted,
+    nudge.replyKind !== null,
+    nudge.thankedAt !== null,
+  );
+}
+
+export function isThankableTodo(
+  todo: { completed: boolean; visibility: TodoVisibility },
+  { isOwner }: { isOwner: boolean },
+): boolean {
+  return isOwner && todo.completed && todo.visibility === 'PUBLIC';
+}
+
+export function isReplyableNudge(
+  nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
+  currentUserId: string,
+): boolean {
+  return nudge.receiverId === currentUserId && nudge.isAvailable;
+}
+
+export function isThankablePreview(
+  preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
+): boolean {
+  return preview.throughNudgeId !== null && preview.recipients.length > 0;
+}
+
 export const NudgeInteractionPolicy = {
-  getStatus: (
-    nudge: Pick<NudgeInteraction, 'isAvailable' | 'isTodoCompleted' | 'replyKind' | 'thankedAt'>,
-  ): NudgeInteractionStatus =>
-    getNudgeInteractionStatus(
-      nudge.isAvailable,
-      nudge.isTodoCompleted,
-      nudge.replyKind !== null,
-      nudge.thankedAt !== null,
-    ),
-  isThankableTodo: (
-    todo: { completed: boolean; visibility: TodoVisibility },
-    { isOwner }: { isOwner: boolean },
-  ): boolean => isOwner && todo.completed && todo.visibility === 'PUBLIC',
-  isReplyable: (
-    nudge: Pick<NudgeInteraction, 'receiverId' | 'isAvailable'>,
-    currentUserId: string,
-  ): boolean => nudge.receiverId === currentUserId && nudge.isAvailable,
-  isThankable: (preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>): boolean =>
-    preview.throughNudgeId !== null && preview.recipients.length > 0,
-};
+  getStatus: getNudgeInteractionStatusOf,
+  isThankableTodo,
+  isReplyable: isReplyableNudge,
+  isThankable: isThankablePreview,
+} as const;

@@ -8,10 +8,16 @@ type NativeIcon = z.infer<typeof nativeIconSchema>;
 const selectedIconSchema = z.object({ key: appIconKeySchema });
 type SelectedIcon = z.infer<typeof selectedIconSchema>;
 
+export function resolveAppIconKey(icon: NativeIcon): AppIconKey {
+  const result = appIconKeySchema.safeParse(icon.nativeKey);
+  return result.success ? result.data : 'default';
+}
+
+export function getNativeAppIconName(icon: SelectedIcon): AppIconKey | null {
+  return icon.key === 'default' ? null : icon.key;
+}
+
 export const AppIconPolicy = {
-  resolveKey: (icon: NativeIcon): AppIconKey => {
-    const result = appIconKeySchema.safeParse(icon.nativeKey);
-    return result.success ? result.data : 'default';
-  },
-  nativeName: (icon: SelectedIcon): AppIconKey | null => (icon.key === 'default' ? null : icon.key),
+  resolveKey: resolveAppIconKey,
+  nativeName: getNativeAppIconName,
 } as const;

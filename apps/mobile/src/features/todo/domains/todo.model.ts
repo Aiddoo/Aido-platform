@@ -7,12 +7,9 @@ import {
 } from '@aido/api';
 import { z } from 'zod';
 
-import { SubTodoPolicy, subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
-
-export { type SubTodo, SubTodoPolicy, type SubTodoStats } from './sub-todo.model';
-
-export { todoVisibilitySchema };
+import { subTodoSchema, subTodoStatsSchema } from './sub-todo.model';
 import { todoCategorySchema as categorySchema } from './todo-category.model';
+
 export type TodoVisibility = z.infer<typeof todoVisibilitySchema>;
 
 export const todoCategorySchema = categorySchema.pick({ id: true, name: true, color: true });
@@ -72,17 +69,7 @@ export function hasSubTodos(todo: Todo): boolean {
   return todo.subTodoStats.total > 0;
 }
 
-export function canAddSubTodo(todo: Todo): boolean {
-  return SubTodoPolicy.canAddSubTodo(todo);
-}
-
-export function calculateSubTodoProgress(todo: Todo): number {
-  return SubTodoPolicy.completionProgress(todo);
-}
-
 export const TodoPolicy = {
   isRecurring: isRecurringTodo,
   hasSubTodos,
-  canAddSubTodo,
-  completionProgress: calculateSubTodoProgress,
 } as const;
