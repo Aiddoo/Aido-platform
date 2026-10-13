@@ -1,5 +1,5 @@
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
-import { CategorySelectContent } from '@src/features/todo/components/category-select-bottom-sheet';
+import { CategorySelectInput } from '@src/features/todo/components/category-select-bottom-sheet';
 import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
 import { TodoTimePickerContent } from '@src/features/todo/components/todo-time-picker-content';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
@@ -88,12 +88,13 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
     overlay.open<number | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
         <Suspense fallback={<ActivityIndicator />}>
-          <MemoTodoCategoryPicker
-            selectedCategoryId={todo.categoryId}
-            onSelect={(categoryId) => {
+          <CategorySelectInput
+            value={todo.categoryId}
+            onChange={(categoryId) => {
               onChange({ categoryId });
               close(categoryId);
             }}
+            submitLabel={t('aiReview.select')}
           />
         </Suspense>
       </ModalBottomSheet>
@@ -178,25 +179,5 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
         <RobotPixelIcon width={96} height={96} colorClassName="text-main" />
       </Box>
     </VStack>
-  );
-}
-
-function MemoTodoCategoryPicker({
-  selectedCategoryId,
-  onSelect,
-}: {
-  selectedCategoryId: number;
-  onSelect: (categoryId: number) => void;
-}) {
-  const { t } = useTranslation('memo');
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-
-  return (
-    <CategorySelectContent
-      categories={data.categories}
-      selectedCategoryId={selectedCategoryId}
-      onSelect={onSelect}
-      submitLabel={t('aiReview.select')}
-    />
   );
 }

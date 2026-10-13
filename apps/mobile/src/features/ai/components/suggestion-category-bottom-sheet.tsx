@@ -38,8 +38,8 @@ export function SuggestionCategoryBottomSheet({
     <CategorySelectBottomSheet
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      selectedCategoryId={defaultCategoryId}
-      onSelect={async (categoryId) => {
+      value={defaultCategoryId}
+      onChange={async (categoryId) => {
         if (suggestionId == null) {
           return;
         }

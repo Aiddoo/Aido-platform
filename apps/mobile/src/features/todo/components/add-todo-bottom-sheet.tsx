@@ -55,7 +55,7 @@ import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutatio
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
-import { CategorySelectContent } from './category-select-bottom-sheet';
+import { CategorySelectInput } from './category-select-bottom-sheet';
 import { TodoDatePickerContent } from './todo-date-picker-content';
 import {
   type RepeatPickerCloseResult,
@@ -378,12 +378,13 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
         }}
       >
         <Suspense fallback={<ActivityIndicator />}>
-          <CategorySelectModalContent
-            selectedCategoryId={methods.getValues('categoryId')}
-            onSelect={(id) => {
-              pickerResult = id;
-              close(id);
+          <CategorySelectInput
+            value={methods.getValues('categoryId')}
+            onChange={(categoryId) => {
+              pickerResult = categoryId;
+              close(categoryId);
             }}
+            submitLabel={tGlobal('todo:add.submit')}
           />
         </Suspense>
       </ModalBottomSheet>
@@ -598,25 +599,6 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
     />
   );
 };
-
-function CategorySelectModalContent({
-  selectedCategoryId,
-  onSelect,
-}: {
-  selectedCategoryId: number;
-  onSelect: (categoryId: number) => void;
-}) {
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-
-  return (
-    <CategorySelectContent
-      categories={data.categories}
-      selectedCategoryId={selectedCategoryId}
-      onSelect={onSelect}
-      submitLabel={tGlobal('todo:add.submit')}
-    />
-  );
-}
 
 const AiFeatureTooltip = () => {
   const { t } = useTranslation('todo');

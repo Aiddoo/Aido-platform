@@ -343,8 +343,8 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
             exit();
           }
         }}
-        selectedCategoryId={todo.category.id}
-        onSelect={async (categoryId) => {
+        value={todo.category.id}
+        onChange={async (categoryId) => {
           const changed = await todoActions.changeCategory(categoryId).catch(() => null);
 
           if (changed) {
