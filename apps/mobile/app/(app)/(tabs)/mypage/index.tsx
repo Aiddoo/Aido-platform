@@ -37,7 +37,7 @@ import { Separator, Spinner } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-const MyPageScreen = () => {
+function MyPageScreen() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['user', 'settings', 'featureDiscovery']);
@@ -160,7 +160,7 @@ const MyPageScreen = () => {
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 function AppVersionSetting() {
   const { t } = useTranslation('appVersion');

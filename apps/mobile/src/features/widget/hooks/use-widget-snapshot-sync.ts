@@ -43,9 +43,8 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     throwOnError: false,
   });
   const userId = user?.id;
-  const summaryOptions = useGetTodoSummaryQueryOptions(date, userId);
   const { data } = useQuery({
-    ...summaryOptions,
+    ...useGetTodoSummaryQueryOptions(date, userId),
     enabled: authState === 'authenticated' && userId != null,
     throwOnError: false,
   });

@@ -10,15 +10,13 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof userTagParamSchema>;
 
-const AddFriendScreen = () => {
+function AddFriendScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const goBack = useSingleTap(router.back);
@@ -110,6 +108,6 @@ const AddFriendScreen = () => {
       </View>
     </FormProvider>
   );
-};
+}
 
 export default AddFriendScreen;

@@ -24,16 +24,14 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Radio, RadioGroup } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { scrollTo, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
-const InquiryScreen = () => {
+function InquiryScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const { t } = useTranslation('inquiry');
@@ -168,6 +166,6 @@ const InquiryScreen = () => {
       </View>
     </FormProvider>
   );
-};
+}
 
 export default InquiryScreen;

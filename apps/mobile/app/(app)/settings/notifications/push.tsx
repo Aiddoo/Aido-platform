@@ -19,22 +19,7 @@ import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-export default function PushSettingsScreen() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<PushSettingsForm.Loading />}>
-            <PushSettingsForm />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ScrollView>
-    </StyledSafeAreaView>
-  );
-}
-
-function PushSettingsForm() {
+function PushSettingsScreen() {
   // 두 쿼리를 useSuspenseQueries로 병렬 발사 (개별 useSuspenseQuery는 첫 쿼리에서
   // suspend되어 두 번째가 직렬로 늦게 시작되는 waterfall이 생긴다)
   const [{ data: preference }, { data: consent }] = useSuspenseQueries({
@@ -112,7 +97,7 @@ function PushSettingsForm() {
   );
 }
 
-PushSettingsForm.Loading = function Loading() {
+PushSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
@@ -128,3 +113,18 @@ PushSettingsForm.Loading = function Loading() {
     </VStack>
   );
 };
+
+export default function PushSettingsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <Spacing size={20} />
+        <QueryErrorBoundary>
+          <Suspense fallback={<PushSettingsScreen.Loading />}>
+            <PushSettingsScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ScrollView>
+    </StyledSafeAreaView>
+  );
+}

@@ -14,8 +14,7 @@ import { useMutation } from '@tanstack/react-query';
 import type { ComponentRef } from 'react';
 import { Suspense, useCallback, useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useFormState } from 'react-hook-form';
-import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
+import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -24,7 +23,7 @@ import { match } from 'ts-pattern';
 
 const STEPS = ['currentPassword', 'newPassword'] as const;
 
-const ChangePasswordScreen = () => {
+function ChangePasswordScreen() {
   const form = useForm({
     resolver: zodResolver(changePasswordSchema),
     defaultValues: { currentPassword: '', newPassword: '', newPasswordConfirm: '' },
@@ -53,7 +52,7 @@ const ChangePasswordScreen = () => {
       </QueryErrorBoundary>
     </View>
   );
-};
+}
 
 export default ChangePasswordScreen;
 

@@ -26,6 +26,7 @@ import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 export default function MemoScreen() {
+  const { t } = useTranslation('memo');
   const queryClient = useQueryClient();
   const scrollRef = useRef<Animated.ScrollView>(null);
 
@@ -48,11 +49,16 @@ export default function MemoScreen() {
 
   return (
     <Box className="flex-1">
-      <QueryErrorBoundary fallback={(props) => <Header.Error {...props} />}>
-        <Suspense fallback={<Header.Loading />}>
-          <Header />
-        </Suspense>
-      </QueryErrorBoundary>
+      <HStack align="center" px={16} mb={16}>
+        <Box flex={1}>
+          <H3 shade={7}>{t('tab.addMemo')}</H3>
+        </Box>
+        <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+          <Suspense fallback={<MemoCreateButton.Loading />}>
+            <MemoCreateButton />
+          </Suspense>
+        </QueryErrorBoundary>
+      </HStack>
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -84,7 +90,7 @@ export default function MemoScreen() {
   );
 }
 
-function Header() {
+function MemoCreateButton() {
   const push = useSingleTap(router.push);
 
   const toast = useAppToast();
@@ -101,46 +107,36 @@ function Header() {
   };
 
   return (
-    <HStack align="center" px={16} mb={16}>
-      <Box flex={1}>
-        <H3 shade={7}>{t('tab.addMemo')}</H3>
-      </Box>
-      <PressableFeedback
-        onPress={handleCreate}
-        accessibilityRole="button"
-        accessibilityLabel={t('titles.create')}
-        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-        className={cn(
-          'items-center justify-center rounded-full',
-          canCreate ? 'bg-main' : 'bg-gray-4',
-        )}
-      >
-        <PlusIcon width={24} height={24} color="white" />
-      </PressableFeedback>
-    </HStack>
+    <PressableFeedback
+      onPress={handleCreate}
+      accessibilityRole="button"
+      accessibilityLabel={t('titles.create')}
+      style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+      className={cn(
+        'items-center justify-center rounded-full',
+        canCreate ? 'bg-main' : 'bg-gray-4',
+      )}
+    >
+      <PlusIcon width={24} height={24} color="white" />
+    </PressableFeedback>
   );
 }
 
-Header.Loading = function Loading() {
-  return <Box px={16} mb={16} style={{ height: 44 }} />;
+MemoCreateButton.Loading = function Loading() {
+  return <Box style={{ width: fontScaledSize(44), height: fontScaledSize(44) }} />;
 };
 
-// 살아있는 세션의 일시적 401 등으로 Header 쿼리가 실패해도 앱 레벨로 새지 않게 로컬에 담는다.
-// 제목은 유지하고 생성 버튼 자리를 재시도(reset)로 바꿔 레이아웃을 흔들지 않는다.
-Header.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('memo');
+MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
   return (
-    <HStack align="center" px={16} mb={16}>
-      <Box flex={1}>
-        <H3 shade={7}>{t('tab.addMemo')}</H3>
-      </Box>
-      <PressableFeedback
-        onPress={reset}
-        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-        className="items-center justify-center rounded-full bg-gray-8"
-      >
-        <RefreshIcon width={20} height={20} colorClassName="text-white" />
-      </PressableFeedback>
-    </HStack>
+    <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={t('actions.retry')}
+      onPress={reset}
+      style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+      className="items-center justify-center rounded-full bg-gray-8"
+    >
+      <RefreshIcon width={20} height={20} colorClassName="text-white" />
+    </PressableFeedback>
   );
 };

@@ -19,18 +19,9 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { Platform, ScrollView } from 'react-native';
+import { match } from 'ts-pattern';
 
-export default function AppIconScreen() {
-  return (
-    <QueryErrorBoundary fallback={(props) => <AppIconPicker.Error {...props} />}>
-      <Suspense fallback={<AppIconPicker.Loading />}>
-        <AppIconSettings />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
-
-function AppIconSettings() {
+function AppIconScreen() {
   const { t } = useTranslation('appIcon');
   const {
     currentIcon,
@@ -82,8 +73,8 @@ function AppIconSettings() {
     }
   };
 
-  if (!isSupported) {
-    return (
+  return match({ isSupported, isLoading })
+    .with({ isSupported: false }, () => (
       <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
         <ScrollView className="px-4 flex-1">
           <Spacing size={8} />
@@ -94,42 +85,38 @@ function AppIconSettings() {
           </HStack>
         </ScrollView>
       </StyledSafeAreaView>
-    );
-  }
+    ))
+    .with({ isSupported: true, isLoading: true }, () => <AppIconPicker.Loading />)
+    .with({ isSupported: true, isLoading: false }, () => (
+      <>
+        <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+          <ScrollView className="px-4 flex-1">
+            <Spacing size={8} />
+            <Text size="b4" shade={6} className="px-2 pb-2">
+              {t('screen.chooseIcon')}
+            </Text>
 
-  if (isLoading) {
-    return <AppIconPicker.Loading />;
-  }
-
-  return (
-    <>
-      <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-        <ScrollView className="px-4 flex-1">
-          <Spacing size={8} />
-          <Text size="b4" shade={6} className="px-2 pb-2">
-            {t('screen.chooseIcon')}
-          </Text>
-
-          <Box p={16} className="bg-white rounded-2xl">
-            <AppIconPicker
-              value={currentIcon}
-              onChange={handleIconPress}
-              isDisabled={isChanging}
-              isLocked={(key) => !isPremium && key !== 'default'}
-            />
-          </Box>
-        </ScrollView>
-      </StyledSafeAreaView>
-      <AppIconErrorDialog
-        isOpen={changeError !== null}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) {
-            resetChangeError();
-          }
-        }}
-      />
-    </>
-  );
+            <Box p={16} className="bg-white rounded-2xl">
+              <AppIconPicker
+                value={currentIcon}
+                onChange={handleIconPress}
+                isDisabled={isChanging}
+                isLocked={(key) => !isPremium && key !== 'default'}
+              />
+            </Box>
+          </ScrollView>
+        </StyledSafeAreaView>
+        <AppIconErrorDialog
+          isOpen={changeError !== null}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              resetChangeError();
+            }
+          }}
+        />
+      </>
+    ))
+    .exhaustive();
 }
 
 interface AppIconRestartDialogProps {
@@ -183,5 +170,15 @@ function AppIconErrorDialog({ isOpen, onOpenChange }: AppIconErrorDialogProps) {
         </ConfirmDialog.ConfirmButton>
       }
     />
+  );
+}
+
+export default function AppIconRoute() {
+  return (
+    <QueryErrorBoundary fallback={(props) => <AppIconPicker.Error {...props} />}>
+      <Suspense fallback={<AppIconPicker.Loading />}>
+        <AppIconScreen />
+      </Suspense>
+    </QueryErrorBoundary>
   );
 }

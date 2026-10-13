@@ -5,7 +5,10 @@ import {
   SettingsToggle,
   ToggleSkeleton,
 } from '@src/features/notification/components/settings';
-import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import {
+  isWeatherEnabled,
+  PreferencePolicy,
+} from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -18,22 +21,7 @@ import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-export default function NotificationSettingsScreen() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<NotificationSettingsForm.Loading />}>
-            <NotificationSettingsForm />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ScrollView>
-    </StyledSafeAreaView>
-  );
-}
-
-function NotificationSettingsForm() {
+function NotificationSettingsScreen() {
   const push = useSingleTap(router.push);
 
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
@@ -67,10 +55,8 @@ function NotificationSettingsForm() {
         <Separator className="bg-gray-2" />
         <NavigationRow
           label={t('settings.weatherLabel')}
-          summary={
-            PreferencePolicy.isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')
-          }
-          summaryEnabled={PreferencePolicy.isWeatherEnabled(preference)}
+          summary={isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')}
+          summaryEnabled={isWeatherEnabled(preference)}
           onPress={() => push('/settings/notifications/weather')}
           isDisabled={pushDisabled}
         />
@@ -87,7 +73,7 @@ function NotificationSettingsForm() {
   );
 }
 
-NotificationSettingsForm.Loading = function Loading() {
+NotificationSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
@@ -104,3 +90,18 @@ NotificationSettingsForm.Loading = function Loading() {
     </VStack>
   );
 };
+
+export default function NotificationSettingsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <Spacing size={20} />
+        <QueryErrorBoundary>
+          <Suspense fallback={<NotificationSettingsScreen.Loading />}>
+            <NotificationSettingsScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ScrollView>
+    </StyledSafeAreaView>
+  );
+}

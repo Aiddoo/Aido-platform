@@ -60,9 +60,7 @@ export function MemoList() {
       </HStack>
       {hasNextPage && (
         <MemoList.More
-          onPress={() => {
-            fetchNextPage({ cancelRefetch: false });
-          }}
+          onPress={() => fetchNextPage({ cancelRefetch: false })}
           isLoading={isFetchingNextPage}
           isDisabled={isFetching}
           hasError={isFetchNextPageError}

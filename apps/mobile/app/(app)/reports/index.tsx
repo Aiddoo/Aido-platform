@@ -1,3 +1,4 @@
+import { reportTypeSchema } from '@aido/api';
 import { ReportCard } from '@src/features/ai/components/report-card';
 import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
 import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
@@ -7,6 +8,7 @@ import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-rep
 import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -21,38 +23,22 @@ import {
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Image, RefreshControl, ScrollView, View } from 'react-native';
+import { match } from 'ts-pattern';
+import type { z } from 'zod';
 
-type ReportType = 'WEEKLY' | 'MONTHLY';
+type ReportType = z.infer<typeof reportTypeSchema>;
 
-const ReportsScreen = () => {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense fallback={<ReportCard.Loading />}>
-          <ReportsContent />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-};
-
-export default ReportsScreen;
-
-function ReportsContent() {
+function ReportsScreen() {
   const { t } = useTranslation('ai');
   const queryClient = useQueryClient();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
   const [activeTab, setActiveTab] = useState<ReportType>('WEEKLY');
-  const [refreshing, setRefreshing] = useState(false);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.all });
-    setRefreshing(false);
-  }, [queryClient]);
+  const [refreshing, onRefresh] = useRefresh(() =>
+    queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.all }),
+  );
 
   return (
     <ScrollView
@@ -92,62 +78,64 @@ function ReportsContent() {
         <Spacing size={12} />
 
         <View className="px-4">
-          <ReportTypeTabs value={activeTab} onValueChange={setActiveTab} />
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => {
+              const parsed = reportTypeSchema.safeParse(value);
+              if (parsed.success) {
+                setActiveTab(parsed.data);
+              }
+            }}
+            variant="primary"
+          >
+            <Tabs.List>
+              <Tabs.Indicator />
+              <Tabs.Trigger value="WEEKLY">
+                {({ isSelected }) => (
+                  <Tabs.Label>
+                    <Text
+                      size="b4"
+                      className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
+                    >
+                      {t('report.typeWeekly')}
+                    </Text>
+                  </Tabs.Label>
+                )}
+              </Tabs.Trigger>
+              <Tabs.Trigger value="MONTHLY">
+                {({ isSelected }) => (
+                  <Tabs.Label>
+                    <Text
+                      size="b4"
+                      className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
+                    >
+                      {t('report.typeMonthly')}
+                    </Text>
+                  </Tabs.Label>
+                )}
+              </Tabs.Trigger>
+            </Tabs.List>
+          </Tabs>
         </View>
 
         <Spacing size={8} />
 
         <View className="px-4 pb-4">
-          {isPremium && (
-            <QueryErrorBoundary>
-              <Suspense fallback={<ReportCard.Loading />}>
-                <ReportList type={activeTab} />
-              </Suspense>
-            </QueryErrorBoundary>
-          )}
-
-          {!isPremium && <FreeReportPreview type={activeTab} />}
+          {match(isPremium)
+            .with(true, () => (
+              <QueryErrorBoundary resetKeys={[activeTab]}>
+                <Suspense fallback={<ReportCard.Loading />}>
+                  <ReportList type={activeTab} />
+                </Suspense>
+              </QueryErrorBoundary>
+            ))
+            .with(false, () => <FreeReportPreview type={activeTab} />)
+            .exhaustive()}
         </View>
       </ScallopedContainer>
 
       <Spacing size={32} />
     </ScrollView>
-  );
-}
-
-function ReportTypeTabs({
-  value,
-  onValueChange,
-}: {
-  value: ReportType;
-  onValueChange: (v: ReportType) => void;
-}) {
-  const { t } = useTranslation('ai');
-
-  return (
-    <Tabs value={value} onValueChange={(v) => onValueChange(v as ReportType)} variant="primary">
-      <Tabs.List>
-        <Tabs.Indicator />
-        <Tabs.Trigger value="WEEKLY">
-          {({ isSelected }) => (
-            <Tabs.Label>
-              <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                {t('report.typeWeekly')}
-              </Text>
-            </Tabs.Label>
-          )}
-        </Tabs.Trigger>
-        <Tabs.Trigger value="MONTHLY">
-          {({ isSelected }) => (
-            <Tabs.Label>
-              <Text size="b4" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                {t('report.typeMonthly')}
-              </Text>
-            </Tabs.Label>
-          )}
-        </Tabs.Trigger>
-      </Tabs.List>
-    </Tabs>
   );
 }
 
@@ -206,5 +194,17 @@ function PremiumPendingPreview({ type }: { type: ReportType }) {
           : t('report.list.arrivalInDays', { count: daysUntil, type: reportLabel })}
       </Text>
     </VStack>
+  );
+}
+
+export default function ReportsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <QueryErrorBoundary>
+        <Suspense fallback={<ReportCard.Loading />}>
+          <ReportsScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }

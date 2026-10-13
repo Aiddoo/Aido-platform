@@ -11,9 +11,8 @@ export const useUserIdentity = (): void => {
   const errorReporter = useErrorReporter();
   const isAuthenticated = status === 'authenticated';
 
-  const meQueryOptions = useGetMeQueryOptions();
   const { data: me } = useQuery({
-    ...meQueryOptions,
+    ...useGetMeQueryOptions(),
     enabled: isAuthenticated,
   });
 

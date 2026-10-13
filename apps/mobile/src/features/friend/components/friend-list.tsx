@@ -203,7 +203,7 @@ export function FriendList() {
       }
       onEndReached={() => {
         if (hasNextPage && !isFetching) {
-          fetchNextPage({ cancelRefetch: false });
+          return fetchNextPage({ cancelRefetch: false });
         }
       }}
       onEndReachedThreshold={0.5}

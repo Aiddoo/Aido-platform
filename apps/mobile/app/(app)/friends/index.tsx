@@ -5,12 +5,12 @@ import { useFriendListEditMode } from '@src/features/friend/hooks/use-friend-lis
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
-import { router, useNavigation, useRoute } from 'expo-router';
-import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
+import { router, useNavigation, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback, useLayoutEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { match } from 'ts-pattern';
+import { z } from 'zod';
 
 const TabView = {
   friends: 'friends',
@@ -18,31 +18,8 @@ const TabView = {
   sender: 'sender',
 } as const;
 
-type TabValue = (typeof TabView)[keyof typeof TabView];
-
-type RouteParams = {
-  view?: TabValue;
-};
-
-type FriendsRouteParams = {
-  friends: RouteParams;
-};
-
-const useView = () => {
-  const route = useRoute<RouteProp<FriendsRouteParams, 'friends'>>();
-  const navigation = useNavigation<NavigationProp<FriendsRouteParams>>();
-
-  const view = route.params?.view ?? TabView.friends;
-
-  const setView = useCallback(
-    (newView: TabValue) => {
-      navigation.setParams({ view: newView });
-    },
-    [navigation],
-  );
-
-  return [view, setView] as const;
-};
+const friendTabSchema = z.enum(TabView);
+type TabValue = z.infer<typeof friendTabSchema>;
 
 export default function FriendsScreen() {
   const push = useSingleTap(router.push);
@@ -54,8 +31,12 @@ export default function FriendsScreen() {
 
   const handleTabChange = useCallback(
     (value: string) => {
-      setView(value as TabValue);
-      if (value !== TabView.friends) {
+      const parsed = friendTabSchema.safeParse(value);
+      if (!parsed.success) {
+        return;
+      }
+      setView(parsed.data);
+      if (parsed.data !== TabView.friends) {
         setIsEditMode(false);
       }
     },
@@ -79,7 +60,7 @@ export default function FriendsScreen() {
         </HStack>
       ),
     });
-  }, [navigation, view, isEditMode, setIsEditMode, t]);
+  }, [navigation, view, isEditMode, setIsEditMode, t, push]);
 
   return (
     <View className="flex-1 bg-white">
@@ -119,7 +100,7 @@ export default function FriendsScreen() {
           .with(TabView.friends, () => (
             <Tabs.Content value={TabView.friends} className="flex-1">
               <Box flex={1} px={16}>
-                <QueryErrorBoundary>
+                <QueryErrorBoundary resetKeys={[view]}>
                   <Suspense fallback={<FriendList.Loading />}>
                     <FriendList />
                   </Suspense>
@@ -130,7 +111,7 @@ export default function FriendsScreen() {
           .with(TabView.receiver, () => (
             <Tabs.Content value={TabView.receiver} className="flex-1">
               <Box flex={1} px={16}>
-                <QueryErrorBoundary>
+                <QueryErrorBoundary resetKeys={[view]}>
                   <Suspense fallback={<ReceivedRequestList.Loading />}>
                     <ReceivedRequestList />
                   </Suspense>
@@ -141,7 +122,7 @@ export default function FriendsScreen() {
           .with(TabView.sender, () => (
             <Tabs.Content value={TabView.sender} className="flex-1">
               <Box flex={1} px={16}>
-                <QueryErrorBoundary>
+                <QueryErrorBoundary resetKeys={[view]}>
                   <Suspense fallback={<SentRequestList.Loading />}>
                     <SentRequestList />
                   </Suspense>
@@ -153,4 +134,11 @@ export default function FriendsScreen() {
       </Tabs>
     </View>
   );
+}
+
+function useView() {
+  const params = useLocalSearchParams();
+  const view = friendTabSchema.catch(TabView.friends).parse(params.view);
+  const setView = useCallback((view: TabValue) => router.setParams({ view }), []);
+  return [view, setView] as const;
 }

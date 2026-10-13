@@ -37,32 +37,7 @@ const BADGE_NAME_KEYS = {
   completed: 'achievement:badgeNames.completed',
 } as const satisfies Record<BadgeType, string>;
 
-const AchievementDetailScreen = () => {
-  const params = useLocalSearchParams();
-  if (!achievementScreenParamsSchema.safeParse(params).success) {
-    return <Redirect href="/achievements" />;
-  }
-
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense
-          fallback={
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator />
-            </View>
-          }
-        >
-          <AchievementDetailContent />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-};
-
-export default AchievementDetailScreen;
-
-function AchievementDetailContent() {
+function AchievementDetailScreen() {
   const { year, week } = useAchievementScreenParams();
   const { data: achievement } = useSuspenseQuery(useGetWeeklyAchievementQueryOptions(year, week));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -180,5 +155,29 @@ function AchievementDetailContent() {
         />
       </PressableFeedback>
     </ScrollView>
+  );
+}
+
+export default function AchievementDetailRoute() {
+  const params = useLocalSearchParams();
+  const parsed = achievementScreenParamsSchema.safeParse(params);
+  if (!parsed.success) {
+    return <Redirect href="/achievements" />;
+  }
+
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <QueryErrorBoundary resetKeys={[parsed.data.year, parsed.data.week]}>
+        <Suspense
+          fallback={
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator />
+            </View>
+          }
+        >
+          <AchievementDetailScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }

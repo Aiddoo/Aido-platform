@@ -17,10 +17,11 @@ export function useFeatureDiscoveryFeed() {
   const weather = useWeatherSession();
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
-  const configOptions = useFeatureDiscoveryQueryOptions();
-  const userOptions = useGetMeQueryOptions();
-  const { data: config } = useQuery({ ...configOptions, enabled: isAuthenticated });
-  const { data: user } = useQuery({ ...userOptions, enabled: isAuthenticated });
+  const { data: config } = useQuery({
+    ...useFeatureDiscoveryQueryOptions(),
+    enabled: isAuthenticated,
+  });
+  const { data: user } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const appVersion = useMemo(getNativeAppVersion, []);
   const isStable = useStableFeedForeground();
   const { openHub } = useFeatureDiscoveryHub();

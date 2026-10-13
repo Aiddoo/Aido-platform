@@ -6,6 +6,7 @@ import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/constants/achi
 import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/queries/get-weekly-achievements-query-options';
 import type { WeeklyAchievementViewModel } from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
+import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -24,51 +25,23 @@ import {
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, View } from 'react-native';
 
-const AchievementsScreen = () => {
+function AchievementsScreen() {
   const today = useToday();
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense
-          fallback={
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator />
-            </View>
-          }
-        >
-          <AchievementsContent year={today.getFullYear()} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-};
-
-export default AchievementsScreen;
-
-interface AchievementsContentProps {
-  year: number;
-}
-
-function AchievementsContent({ year }: AchievementsContentProps) {
+  const year = today.getFullYear();
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('achievement');
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const queryOptions = useGetWeeklyAchievementsQueryOptions(year);
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(queryOptions);
+    useSuspenseInfiniteQuery(useGetWeeklyAchievementsQueryOptions(year));
 
-  const [refreshing, setRefreshing] = useState(false);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList(year) });
-    setRefreshing(false);
-  }, [queryClient, year]);
+  const [refreshing, onRefresh] = useRefresh(() =>
+    queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList(year) }),
+  );
 
   const allItems = useMemo(() => data.pages.flatMap((page) => page.items), [data.pages]);
 
@@ -84,7 +57,7 @@ function AchievementsContent({ year }: AchievementsContentProps) {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onEndReached={() => {
         if (hasNextPage && !isFetching) {
-          fetchNextPage({ cancelRefetch: false });
+          return fetchNextPage({ cancelRefetch: false });
         }
       }}
       onEndReachedThreshold={0.5}
@@ -110,6 +83,20 @@ function AchievementsContent({ year }: AchievementsContentProps) {
               trackEvent('badge_empty_cta_tapped');
               push('/feed');
             }}
+          />
+          <Spacing size={24} />
+
+          <View className="px-1">
+            <Text size="b2" shade={8} weight="bold">
+              {t('list.sectionTitle')}
+            </Text>
+          </View>
+
+          <Spacing size={32} />
+
+          <Result
+            title={t('list.emptyRecordTitle')}
+            description={t('list.emptyRecordDescription')}
           />
         </View>
       }
@@ -182,18 +169,6 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
           </View>
         </CertificateBorder>
       </View>
-
-      <Spacing size={24} />
-
-      <View className="px-1">
-        <Text size="b2" shade={8} weight="bold">
-          {t('list.sectionTitle')}
-        </Text>
-      </View>
-
-      <Spacing size={32} />
-
-      <Result title={t('list.emptyRecordTitle')} description={t('list.emptyRecordDescription')} />
     </View>
   );
 }
@@ -243,5 +218,25 @@ function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementVi
         verticalPadding="medium"
       />
     </Pressable>
+  );
+}
+
+export default function AchievementsRoute() {
+  const today = useToday();
+
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <QueryErrorBoundary resetKeys={[today.getFullYear()]}>
+        <Suspense
+          fallback={
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator />
+            </View>
+          }
+        >
+          <AchievementsScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }

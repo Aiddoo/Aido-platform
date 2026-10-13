@@ -1,6 +1,5 @@
-import { ReportDetailContent } from '@src/features/ai/components/report-detail-content';
+import { ActivityReport } from '@src/features/ai/components/activity-report';
 import { getSampleReport, isSampleReportId } from '@src/features/ai/constants/sample-reports';
-import type { AiReport } from '@src/features/ai/domains/ai.model';
 import {
   reportScreenParamsSchema,
   useReportScreenParams,
@@ -21,9 +20,13 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect } from 'react';
 import { ScrollView } from 'react-native';
+import { match } from 'ts-pattern';
 
-const ReportDetailScreen = () => {
+function ReportDetailScreen() {
   const { id } = useLocalSearchParams();
+  const { t } = useTranslation('ai');
+  const { trackEvent } = useTrack();
+  const premiumDialog = usePremiumDialog();
 
   if (
     typeof id !== 'string' ||
@@ -34,22 +37,55 @@ const ReportDetailScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      {isSampleReportId(id) ? (
-        <SampleReportDetail report={getSampleReport(id)} />
-      ) : (
-        <QueryErrorBoundary>
-          <Suspense fallback={<ReportDetailContent.Loading />}>
-            <ReportDetailBody />
-          </Suspense>
-        </QueryErrorBoundary>
-      )}
+      {match(isSampleReportId(id))
+        .with(true, () => (
+          <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8 pt-2">
+            <ActivityReport report={getSampleReport(id)} />
+
+            <Spacing size={32} />
+
+            <VStack gap={8} align="center">
+              <Text size="b3" weight="bold" shade={9}>
+                {t('report.lockedDetail.title')}
+              </Text>
+              <Text size="b4" shade={6} className="text-center">
+                {t('report.lockedDetail.description')}
+              </Text>
+              <Spacing size={4} />
+              <Button
+                size="medium"
+                onPress={() => {
+                  trackEvent('premium_gate_shown', { feature: 'ai_report' });
+                  premiumDialog.open({
+                    description: t('report.lockedDetail.premiumDialogDescription'),
+                  });
+                }}
+              >
+                {t('report.lockedDetail.subscribe')}
+              </Button>
+            </VStack>
+
+            <Spacing size={24} />
+          </ScrollView>
+        ))
+        .with(false, () => (
+          <QueryErrorBoundary resetKeys={[id]}>
+            <Suspense fallback={<ActivityReport.Loading />}>
+              <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+                <Spacing size={16} />
+                <SavedActivityReport />
+              </ScrollView>
+            </Suspense>
+          </QueryErrorBoundary>
+        ))
+        .exhaustive()}
     </StyledSafeAreaView>
   );
-};
+}
 
 export default ReportDetailScreen;
 
-function ReportDetailBody() {
+function SavedActivityReport() {
   const { id } = useReportScreenParams();
   const { data: report } = useSuspenseQuery(useGetReportDetailQueryOptions(id));
   const { trackEvent } = useTrack();
@@ -58,47 +94,5 @@ function ReportDetailBody() {
     trackEvent('ai_report_viewed', { report_id: id, report_type: report.type });
   }, [trackEvent, id, report.type]);
 
-  return (
-    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-      <Spacing size={16} />
-      <ReportDetailContent report={report} />
-    </ScrollView>
-  );
-}
-
-function SampleReportDetail({ report }: { report: AiReport }) {
-  const { t } = useTranslation('ai');
-  const { trackEvent } = useTrack();
-  const premiumDialog = usePremiumDialog();
-
-  return (
-    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8 pt-2">
-      <ReportDetailContent report={report} />
-
-      <Spacing size={32} />
-
-      <VStack gap={8} align="center">
-        <Text size="b3" weight="bold" shade={9}>
-          {t('report.lockedDetail.title')}
-        </Text>
-        <Text size="b4" shade={6} className="text-center">
-          {t('report.lockedDetail.description')}
-        </Text>
-        <Spacing size={4} />
-        <Button
-          size="medium"
-          onPress={() => {
-            trackEvent('premium_gate_shown', { feature: 'ai_report' });
-            premiumDialog.open({
-              description: t('report.lockedDetail.premiumDialogDescription'),
-            });
-          }}
-        >
-          {t('report.lockedDetail.subscribe')}
-        </Button>
-      </VStack>
-
-      <Spacing size={24} />
-    </ScrollView>
-  );
+  return <ActivityReport report={report} />;
 }

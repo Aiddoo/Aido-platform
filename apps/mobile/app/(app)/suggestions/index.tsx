@@ -7,22 +7,9 @@ import { QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense, useCallback } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
+import { match } from 'ts-pattern';
 
-const SuggestionsScreen = () => {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense fallback={<SuggestionsList.Loading />}>
-          <SuggestionsContent />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-};
-
-export default SuggestionsScreen;
-
-function SuggestionsContent() {
+function SuggestionsScreen() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const queryClient = useQueryClient();
   const invalidate = useCallback(
@@ -33,28 +20,37 @@ function SuggestionsContent() {
 
   const isPremiumUser = UserPolicy.isPremiumUser(user);
 
-  if (!isPremiumUser) {
-    return (
-      <ScrollView
-        className="flex-1 px-4"
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
-      >
-        <Spacing size={16} />
-        <SuggestionsList.PremiumPreview />
-      </ScrollView>
-    );
-  }
-
   return (
     <ScrollView
       className="flex-1 px-4"
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}
-      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
+      refreshControl={
+        isPremiumUser ? (
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
+        ) : undefined
+      }
     >
       <Spacing size={16} />
-      <QueryErrorBoundary>
-        <SuggestionsList />
-      </QueryErrorBoundary>
+      {match(isPremiumUser)
+        .with(true, () => (
+          <QueryErrorBoundary>
+            <SuggestionsList />
+          </QueryErrorBoundary>
+        ))
+        .with(false, () => <SuggestionsList.PremiumPreview />)
+        .exhaustive()}
     </ScrollView>
+  );
+}
+
+export default function SuggestionsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <QueryErrorBoundary>
+        <Suspense fallback={<SuggestionsList.Loading />}>
+          <SuggestionsScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }

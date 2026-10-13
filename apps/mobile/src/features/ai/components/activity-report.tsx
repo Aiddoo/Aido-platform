@@ -13,67 +13,69 @@ import type { AiReport } from '../domains/ai.model';
 import { formatHour } from '../utils/format-report';
 import { ScallopedContainer } from './scalloped-container';
 
-interface ReportDetailContentProps {
+interface ActivityReportProps {
   report: AiReport;
 }
 
-export function ReportDetailContent({ report }: ReportDetailContentProps) {
+export function ActivityReport({ report }: ActivityReportProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   return (
     <ScallopedContainer>
       <View className="px-5 pt-4 pb-2">
-        <ReportHeader report={report} />
+        <ReportPeriodLabel report={report} />
       </View>
       <VStack className="px-5 pb-4">
-        <ReportDetailContent.Section>
-          <StatsOverview report={report} />
-        </ReportDetailContent.Section>
+        <VStack>
+          <View className="py-4">
+            <TodoCompletionStats report={report} />
+          </View>
+        </VStack>
         {report.categoryBreakdown.length > 0 && (
-          <ReportDetailContent.Section hasDivider>
-            <CategoryBreakdown items={report.categoryBreakdown} />
-          </ReportDetailContent.Section>
+          <VStack>
+            <View className="border-b border-dashed border-gray-3" />
+            <View className="py-4">
+              <CategoryBreakdown items={report.categoryBreakdown} />
+            </View>
+          </VStack>
         )}
         {report.dayPatterns.length > 0 && (
-          <ReportDetailContent.Section hasDivider>
-            <DayPatternChart items={report.dayPatterns} />
-          </ReportDetailContent.Section>
+          <VStack>
+            <View className="border-b border-dashed border-gray-3" />
+            <View className="py-4">
+              <DayPatternChart items={report.dayPatterns} />
+            </View>
+          </VStack>
         )}
         {report.timePatterns.length > 0 && (
-          <ReportDetailContent.Section hasDivider>
-            <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
-          </ReportDetailContent.Section>
+          <VStack>
+            <View className="border-b border-dashed border-gray-3" />
+            <View className="py-4">
+              <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
+            </View>
+          </VStack>
         )}
         {report.aiSummary && (
-          <ReportDetailContent.Section hasDivider>
-            <AiSummarySection summary={report.aiSummary} />
-          </ReportDetailContent.Section>
+          <VStack>
+            <View className="border-b border-dashed border-gray-3" />
+            <View className="py-4">
+              <AiAnalysis summary={report.aiSummary} />
+            </View>
+          </VStack>
         )}
         {report.aiTips.length > 0 && (
-          <ReportDetailContent.Section hasDivider>
-            <AiTipsSection tips={report.aiTips} />
-          </ReportDetailContent.Section>
+          <VStack>
+            <View className="border-b border-dashed border-gray-3" />
+            <View className="py-4">
+              <ImprovementTipList tips={report.aiTips} />
+            </View>
+          </VStack>
         )}
       </VStack>
     </ScallopedContainer>
   );
 }
 
-ReportDetailContent.Section = function Section({
-  children,
-  hasDivider = false,
-}: {
-  children: React.ReactNode;
-  hasDivider?: boolean;
-}) {
-  return (
-    <VStack>
-      {hasDivider && <View className="border-b border-dashed border-gray-3" />}
-      <View className="py-4">{children}</View>
-    </VStack>
-  );
-};
-
-function ReportHeader({ report }: { report: AiReport }) {
+function ReportPeriodLabel({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   return (
     <HStack align="center" gap={8} className="flex-wrap">
@@ -99,7 +101,7 @@ function ReportHeader({ report }: { report: AiReport }) {
   );
 }
 
-function StatsOverview({ report }: { report: AiReport }) {
+function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   const { stats } = report;
   const rateDiff =
@@ -253,7 +255,7 @@ function TimePatternSummary({
   );
 }
 
-function AiSummarySection({ summary }: { summary: string }) {
+function AiAnalysis({ summary }: { summary: string }) {
   const { t } = useTranslation('ai');
   return (
     <VStack gap={16}>
@@ -267,7 +269,7 @@ function AiSummarySection({ summary }: { summary: string }) {
   );
 }
 
-function AiTipsSection({ tips }: { tips: string[] }) {
+function ImprovementTipList({ tips }: { tips: string[] }) {
   const { t } = useTranslation('ai');
   return (
     <VStack gap={16}>
@@ -290,7 +292,7 @@ function AiTipsSection({ tips }: { tips: string[] }) {
   );
 }
 
-ReportDetailContent.Loading = function Loading() {
+ActivityReport.Loading = function Loading() {
   return (
     <VStack className="px-4" gap={16}>
       <Spacing size={16} />

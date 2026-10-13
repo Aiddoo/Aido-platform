@@ -32,37 +32,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
 const NudgeParamsSchema = z.object({ nudgeId: z.coerce.number().int().positive() });
 
-export default function NudgeDetailScreen() {
-  const params = NudgeParamsSchema.safeParse(useLocalSearchParams());
-  const { t } = useTranslation('todo');
-  const goBack = useSingleTap(() =>
-    router.canGoBack() ? router.back() : router.replace('/notifications'),
-  );
-
-  return (
-    <StyledSafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
-      <ScreenTitleBar title={t('interaction.detailTitle')} onBackPress={goBack} />
-      {params.success ? (
-        <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetail.Error}>
-          <Suspense fallback={<NudgeDetail.Loading />}>
-            <NudgeDetail />
-          </Suspense>
-        </QueryErrorBoundary>
-      ) : (
-        <VStack flex={1} p={24}>
-          <Result title={t('interaction.unavailable')} />
-        </VStack>
-      )}
-    </StyledSafeAreaView>
-  );
-}
-
-function NudgeDetail() {
+function NudgeDetailScreen() {
   const { nudgeId } = NudgeParamsSchema.parse(useLocalSearchParams());
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions(nudgeId), useGetMeQueryOptions()],
@@ -127,85 +102,92 @@ function NudgeDetail() {
           </HStack>
         </Button>
 
-        {status === 'UNAVAILABLE' ? (
-          <Result
-            title={t('interaction.unavailable')}
-            description={t('interaction.unavailableDescription')}
-          />
-        ) : isReceived &&
-          !nudge.isTodoCompleted &&
-          NudgeInteractionPolicy.isReplyable(nudge, me.id) ? (
-          <VStack gap={12}>
-            <Text size="b2" weight="bold">
-              {t('interaction.replyTitle')}
-            </Text>
-            <Text size="b4" shade={5}>
-              {t('interaction.replyHint')}
-            </Text>
-            <NudgeDetail.ReplyButton
-              value="STARTING"
-              isSelected={nudge.replyKind === 'STARTING'}
-              isDisabled={mutation.isPending}
-              onPress={() => reply('STARTING')}
+        {match({
+          status,
+          isReceived,
+          isTodoCompleted: nudge.isTodoCompleted,
+          canReply: NudgeInteractionPolicy.isReplyable(nudge, me.id),
+        })
+          .with({ status: 'UNAVAILABLE' }, () => (
+            <Result
+              title={t('interaction.unavailable')}
+              description={t('interaction.unavailableDescription')}
             />
-            <NudgeDetail.ReplyButton
-              value="THANKFUL"
-              isSelected={nudge.replyKind === 'THANKFUL'}
-              isDisabled={mutation.isPending}
-              onPress={() => reply('THANKFUL')}
-            />
-            <NudgeDetail.ReplyButton
-              value="LATER"
-              isSelected={nudge.replyKind === 'LATER'}
-              isDisabled={mutation.isPending}
-              onPress={() => reply('LATER')}
-            />
-            {mutation.isError && (
-              <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
-                {isApiError(mutation.error) ? mutation.error.message : t('toast.retryLater')}
+          ))
+          .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
+            <VStack gap={12}>
+              <Text size="b2" weight="bold">
+                {t('interaction.replyTitle')}
               </Text>
-            )}
-            {mutation.isSuccess && (
-              <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
-                {t('interaction.replySent')}
+              <Text size="b4" shade={5}>
+                {t('interaction.replyHint')}
               </Text>
-            )}
-            <Text size="e1" shade={5}>
-              {t('interaction.replyChangedHint')}
-            </Text>
-            <Text size="e1" shade={5}>
-              {t('interaction.replyCompletionHint')}
-            </Text>
-          </VStack>
-        ) : isReceived && nudge.isTodoCompleted ? (
-          <VStack gap={12}>
-            {status === 'THANKED' ? (
-              <NudgeDetail.ThanksStatus />
-            ) : (
-              <Text size="b3" shade={6}>
-                {t('interaction.completedThanksHint')}
+              <NudgeDetailScreen.ReplyButton
+                value="STARTING"
+                isSelected={nudge.replyKind === 'STARTING'}
+                isDisabled={mutation.isPending}
+                onPress={() => reply('STARTING')}
+              />
+              <NudgeDetailScreen.ReplyButton
+                value="THANKFUL"
+                isSelected={nudge.replyKind === 'THANKFUL'}
+                isDisabled={mutation.isPending}
+                onPress={() => reply('THANKFUL')}
+              />
+              <NudgeDetailScreen.ReplyButton
+                value="LATER"
+                isSelected={nudge.replyKind === 'LATER'}
+                isDisabled={mutation.isPending}
+                onPress={() => reply('LATER')}
+              />
+              {mutation.isError && (
+                <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
+                  {isApiError(mutation.error) ? mutation.error.message : t('toast.retryLater')}
+                </Text>
+              )}
+              {mutation.isSuccess && (
+                <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
+                  {t('interaction.replySent')}
+                </Text>
+              )}
+              <Text size="e1" shade={5}>
+                {t('interaction.replyChangedHint')}
               </Text>
-            )}
-            <NudgeThanksButton
-              todoId={nudge.todoId}
-              className={status === 'THANKED' ? 'hidden' : undefined}
-            />
-          </VStack>
-        ) : status === 'THANKED' ? (
-          <NudgeDetail.ThanksStatus />
-        ) : (
-          <Text size="b3" shade={6}>
-            {nudge.replyKind !== null
-              ? t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) })
-              : t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.waiting')}
-          </Text>
-        )}
+              <Text size="e1" shade={5}>
+                {t('interaction.replyCompletionHint')}
+              </Text>
+            </VStack>
+          ))
+          .with({ isReceived: true, isTodoCompleted: true }, () => (
+            <VStack gap={12}>
+              {status === 'THANKED' ? (
+                <NudgeDetailScreen.ThanksStatus />
+              ) : (
+                <Text size="b3" shade={6}>
+                  {t('interaction.completedThanksHint')}
+                </Text>
+              )}
+              <NudgeThanksButton
+                todoId={nudge.todoId}
+                className={status === 'THANKED' ? 'hidden' : undefined}
+              />
+            </VStack>
+          ))
+          .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
+          .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
+            <Text size="b3" shade={6}>
+              {nudge.replyKind !== null
+                ? t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) })
+                : t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.waiting')}
+            </Text>
+          ))
+          .exhaustive()}
       </VStack>
     </ScrollView>
   );
 }
 
-NudgeDetail.ThanksStatus = function ThanksStatus() {
+NudgeDetailScreen.ThanksStatus = function ThanksStatus() {
   const { t } = useTranslation('todo');
   return (
     <HStack align="center" gap={8}>
@@ -217,7 +199,7 @@ NudgeDetail.ThanksStatus = function ThanksStatus() {
   );
 };
 
-NudgeDetail.ReplyButton = function ReplyButton({
+NudgeDetailScreen.ReplyButton = function ReplyButton({
   value,
   isSelected,
   ...props
@@ -255,7 +237,7 @@ NudgeDetail.ReplyButton = function ReplyButton({
   );
 };
 
-NudgeDetail.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+NudgeDetailScreen.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   const isUnavailable = isApiError(error) && error.status === 404;
   return (
@@ -273,7 +255,7 @@ NudgeDetail.Error = function ErrorState({ error, reset }: QueryErrorFallbackProp
   );
 };
 
-NudgeDetail.Loading = function Loading() {
+NudgeDetailScreen.Loading = function Loading() {
   return (
     <VStack p={24} gap={24}>
       <HStack gap={12} align="center">
@@ -288,3 +270,28 @@ NudgeDetail.Loading = function Loading() {
     </VStack>
   );
 };
+
+export default function NudgeDetailRoute() {
+  const params = NudgeParamsSchema.safeParse(useLocalSearchParams());
+  const { t } = useTranslation('todo');
+  const goBack = useSingleTap(() =>
+    router.canGoBack() ? router.back() : router.replace('/notifications'),
+  );
+
+  return (
+    <StyledSafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
+      <ScreenTitleBar title={t('interaction.detailTitle')} onBackPress={goBack} />
+      {params.success ? (
+        <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
+          <Suspense fallback={<NudgeDetailScreen.Loading />}>
+            <NudgeDetailScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      ) : (
+        <VStack flex={1} p={24}>
+          <Result title={t('interaction.unavailable')} />
+        </VStack>
+      )}
+    </StyledSafeAreaView>
+  );
+}

@@ -27,9 +27,7 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { InputOTP, type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -37,15 +35,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
  * 독립적인 이메일 인증 화면
  * - 로그인 시 미인증 에러(EMAIL_0503) 발생 시 이동
  */
-const VerifyEmailScreen = () => {
-  const params = useLocalSearchParams();
-  if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
-    return <Redirect href="/login" />;
-  }
-  return <VerifyEmailContent />;
-};
 
-function VerifyEmailContent() {
+function VerifyEmailScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const goBack = useSingleTap(router.back);
@@ -197,4 +188,10 @@ function VerifyEmailContent() {
   );
 }
 
-export default VerifyEmailScreen;
+export default function VerifyEmailRoute() {
+  const params = useLocalSearchParams();
+  if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
+    return <Redirect href="/login" />;
+  }
+  return <VerifyEmailScreen />;
+}

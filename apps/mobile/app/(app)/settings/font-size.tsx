@@ -7,7 +7,7 @@ import { SCALED_FONT_STYLES } from '@src/shared/utils/font-scale';
 import { Radio, RadioGroup } from 'heroui-native';
 import { Text as RNText, ScrollView, View } from 'react-native';
 
-const FontSizeSettingsScreen = () => {
+function FontSizeSettingsScreen() {
   const { fontScale, setFontScale } = useFontScale();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -37,7 +37,7 @@ const FontSizeSettingsScreen = () => {
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default FontSizeSettingsScreen;
 

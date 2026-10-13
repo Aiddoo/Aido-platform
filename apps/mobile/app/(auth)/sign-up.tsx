@@ -20,7 +20,7 @@ const SIGN_UP_STEP_TITLE_KEYS = {
   verification: 'auth:signUp.verificationStepTitle',
 } as const satisfies Record<SignUpStep, string>;
 
-const SignUpScreen = () => {
+function SignUpScreen() {
   const { t } = useTranslation(['auth']);
   const { step, setStep } = useStepper<typeof SIGN_UP_STEPS>(SIGN_UP_STEPS);
 
@@ -72,6 +72,6 @@ const SignUpScreen = () => {
         .exhaustive()}
     </View>
   );
-};
+}
 
 export default SignUpScreen;

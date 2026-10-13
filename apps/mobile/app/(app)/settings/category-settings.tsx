@@ -2,7 +2,6 @@ import { CategoryCreateBottomSheet } from '@src/features/todo/components/categor
 import { CategoryList } from '@src/features/todo/components/category-list';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  type ButtonProps,
   Flex,
   H3,
   HStack,
@@ -15,15 +14,17 @@ import {
 import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { Suspense, useState } from 'react';
+import { z } from 'zod';
 
 const TAB = {
   edit: 'edit',
   reorder: 'reorder',
 } as const;
 
-type TabValue = (typeof TAB)[keyof typeof TAB];
+const categoryTabSchema = z.enum(TAB);
+type TabValue = z.infer<typeof categoryTabSchema>;
 
-const TodoCategorySettingsScreen = () => {
+function TodoCategorySettingsScreen() {
   const { t } = useTranslation('settings');
   const createOverlay = useOverlay();
   const [tab, setTab] = useState<TabValue>(TAB.edit);
@@ -52,7 +53,16 @@ const TodoCategorySettingsScreen = () => {
         </Flex>
 
         <HStack justify="between" align="center" className="mb-3">
-          <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} variant="primary">
+          <Tabs
+            value={tab}
+            onValueChange={(value) => {
+              const parsed = categoryTabSchema.safeParse(value);
+              if (parsed.success) {
+                setTab(parsed.data);
+              }
+            }}
+            variant="primary"
+          >
             <Tabs.List>
               <Tabs.Indicator />
               <Tabs.Trigger value={TAB.edit}>
@@ -84,16 +94,18 @@ const TodoCategorySettingsScreen = () => {
             </Tabs.List>
           </Tabs>
 
-          <CreateCategoryButton onPress={handleCreateCategory}>
-            <PlusIcon
-              width={fontScaledSize(18)}
-              height={fontScaledSize(18)}
-              colorClassName="text-main"
-            />
-            <Text size="b3" tone="brand" weight="medium">
-              {t('categorySettings.add')}
-            </Text>
-          </CreateCategoryButton>
+          <PressableFeedback onPress={handleCreateCategory}>
+            <HStack align="center" gap={4}>
+              <PlusIcon
+                width={fontScaledSize(18)}
+                height={fontScaledSize(18)}
+                colorClassName="text-main"
+              />
+              <Text size="b3" tone="brand" weight="medium">
+                {t('categorySettings.add')}
+              </Text>
+            </HStack>
+          </PressableFeedback>
         </HStack>
 
         <QueryErrorBoundary>
@@ -104,16 +116,6 @@ const TodoCategorySettingsScreen = () => {
       </Flex>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default TodoCategorySettingsScreen;
-
-const CreateCategoryButton = ({ onPress, children, ...props }: ButtonProps) => {
-  return (
-    <PressableFeedback onPress={onPress} {...props}>
-      <HStack align="center" gap={4}>
-        {children}
-      </HStack>
-    </PressableFeedback>
-  );
-};

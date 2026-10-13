@@ -7,7 +7,7 @@ import { IconRadioItem } from '@src/shared/ui/icon-radio-item/icon-radio-item';
 import { RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
 
-const ThemeSettingsScreen = () => {
+function ThemeSettingsScreen() {
   const { mode, setMode } = useTheme();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -35,6 +35,6 @@ const ThemeSettingsScreen = () => {
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default ThemeSettingsScreen;

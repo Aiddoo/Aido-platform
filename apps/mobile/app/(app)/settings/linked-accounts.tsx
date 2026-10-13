@@ -19,8 +19,9 @@ import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
+import { match } from 'ts-pattern';
 
-const LinkedAccountsScreen = () => {
+function LinkedAccountsScreen() {
   const { t } = useTranslation('auth');
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -39,7 +40,7 @@ const LinkedAccountsScreen = () => {
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default LinkedAccountsScreen;
 
@@ -217,21 +218,23 @@ const ProviderListRow = memo(function ProviderListRow({
           </Chip>
         </VStack>
       }
-      right={
-        isPending ? (
+      right={match({ isPending, isLinked })
+        .with({ isPending: true }, () => (
           <View className="w-16 items-center">
             <Spinner size="sm" />
           </View>
-        ) : isLinked ? (
+        ))
+        .with({ isPending: false, isLinked: true }, () => (
           <Button size="small" variant="weak" onPress={handleUnlinkPress} isDisabled={!canUnlink}>
             {t('linkedAccounts.unlink')}
           </Button>
-        ) : (
+        ))
+        .with({ isPending: false, isLinked: false }, () => (
           <Button size="small" onPress={handleLinkPress}>
             {t('linkedAccounts.connect')}
           </Button>
-        )
-      }
+        ))
+        .exhaustive()}
     />
   );
 });

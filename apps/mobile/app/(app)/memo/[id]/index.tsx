@@ -33,13 +33,10 @@ import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import type { ComponentRef } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useFormState } from 'react-hook-form';
-import { FormProvider } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import {
   ActivityIndicator,
   Keyboard,
@@ -68,17 +65,11 @@ export default function MemoDetailScreen() {
     resolver: zodResolver(updateMemoSchema),
     defaultValues: { content: memo.content },
   });
-  const {
-    control,
-    handleSubmit,
-    getValues,
-
-    reset,
-  } = formMethods;
+  const { control, handleSubmit, getValues, reset } = formMethods;
   const { isDirty, isValid, isSubmitting } = useFormState({ control });
 
   const [isEditing, setIsEditing] = useState(false);
-  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutateAsync: updateMemo } = useMutation(useUpdateMemoMutationOptions());
   const { mutate: deleteMemo, isPending: isDeletePending } = useMutation(
@@ -147,37 +138,16 @@ export default function MemoDetailScreen() {
   };
 
   const handleDelete = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <ConfirmDialog
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            {t('memo:detail.deleteConfirmDescription')}
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onPress={() => close()} disabled={isDeletePending}>
-            {t('common:actions.cancel')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            color="danger"
-            onPress={() => deleteMemo(memoId, { onSuccess: () => goBack() })}
-            isLoading={isDeletePending}
-          >
-            {t('common:actions.delete')}
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
-    ));
+    if (isDeletePending) {
+      return;
+    }
+
+    deleteMemo(memoId, {
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        goBack();
+      },
+    });
   };
 
   const handleConvertToTodo = () => {
@@ -217,7 +187,7 @@ export default function MemoDetailScreen() {
         <Stack.Screen
           options={{
             headerLeft: () => (
-              <ActionButton
+              <MemoActionButton
                 onPress={handleBack}
                 accessibilityLabel={t('common:actions.goBack')}
                 icon={<ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />}
@@ -225,7 +195,7 @@ export default function MemoDetailScreen() {
             ),
             headerRight: () => (
               <HStack gap={4} align="center">
-                <ActionButton
+                <MemoActionButton
                   onPress={handleTogglePin}
                   accessibilityLabel={t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
                   disabled={isTogglePinPending}
@@ -237,7 +207,7 @@ export default function MemoDetailScreen() {
                     )
                   }
                 />
-                <ActionButton
+                <MemoActionButton
                   onPress={handleAiParse}
                   accessibilityLabel={t('memo:titles.aiReview')}
                   disabled={!defaultCategoryId || isAiUsageLoading}
@@ -249,19 +219,19 @@ export default function MemoDetailScreen() {
                     )
                   }
                 />
-                <ActionButton
+                <MemoActionButton
                   onPress={handleConvertToTodo}
                   accessibilityLabel={t('memo:detail.convertToTodo')}
                   disabled={!defaultCategoryId}
                   icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
                 />
-                <ActionButton
-                  onPress={handleDelete}
+                <MemoActionButton
+                  onPress={() => setIsDeleteDialogOpen(true)}
                   accessibilityLabel={t('common:actions.delete')}
                   icon={<TrashIcon width={20} height={20} colorClassName="text-gray-9" />}
                 />
                 {isEditing && (
-                  <ActionButton
+                  <MemoActionButton
                     onPress={() => handleSave()}
                     accessibilityLabel={t('common:actions.save')}
                     disabled={!isValid || isSubmitting}
@@ -278,7 +248,6 @@ export default function MemoDetailScreen() {
             <FormField control={control} name="content">
               {({ value, onChange }) => (
                 <StyledTextInput
-                  ref={inputRef}
                   value={value}
                   onChangeText={onChange}
                   multiline
@@ -292,16 +261,48 @@ export default function MemoDetailScreen() {
           </Box>
         </VStack>
       </KeyboardAvoidingView>
+
+      <ConfirmDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!isDeletePending) {
+            setIsDeleteDialogOpen(open);
+          }
+        }}
+        title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
+        description={
+          <ConfirmDialog.Description>
+            {t('memo:detail.deleteConfirmDescription')}
+          </ConfirmDialog.Description>
+        }
+        cancelButton={
+          <ConfirmDialog.CancelButton
+            onPress={() => setIsDeleteDialogOpen(false)}
+            disabled={isDeletePending}
+          >
+            {t('common:actions.cancel')}
+          </ConfirmDialog.CancelButton>
+        }
+        confirmButton={
+          <ConfirmDialog.ConfirmButton
+            color="danger"
+            onPress={handleDelete}
+            isLoading={isDeletePending}
+          >
+            {t('common:actions.delete')}
+          </ConfirmDialog.ConfirmButton>
+        }
+      />
     </FormProvider>
   );
 }
 
-type ActionButtonProps = Omit<ComponentProps<typeof Pressable>, 'children'> & {
+type MemoActionButtonProps = Omit<ComponentProps<typeof Pressable>, 'children'> & {
   icon: ReactNode;
   accessibilityLabel: string;
 };
 
-function ActionButton({ icon, className, ...props }: ActionButtonProps) {
+function MemoActionButton({ icon, className, ...props }: MemoActionButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"

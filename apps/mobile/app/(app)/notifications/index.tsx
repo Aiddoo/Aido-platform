@@ -1,6 +1,6 @@
 import { NOTIFICATION_CATEGORY, getNotificationsQuerySchema } from '@aido/api';
 import { NotificationList } from '@src/features/notification/components/notification-list';
-import { UnreadNotificationHeader } from '@src/features/notification/components/unread-notification-header';
+import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
 import { CATEGORY_TABS } from '@src/features/notification/constants/notification';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
@@ -52,8 +52,8 @@ export default function NotificationsScreen() {
         </Tabs.List>
 
         <QueryErrorBoundary>
-          <Suspense fallback={<UnreadNotificationHeader.Loading />}>
-            <UnreadNotificationHeader />
+          <Suspense fallback={<UnreadNotificationCard.Loading />}>
+            <UnreadNotificationCard />
           </Suspense>
         </QueryErrorBoundary>
 

@@ -27,7 +27,7 @@ import { Avatar, Separator } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
 
-const LoginScreen = () => {
+function LoginScreen() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('auth');
@@ -151,7 +151,7 @@ const LoginScreen = () => {
       </VStack>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default LoginScreen;
 
@@ -163,13 +163,13 @@ interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
   labelClassName?: string;
 }
 
-const SocialLoginButton = ({
+function SocialLoginButton({
   icon,
   label,
   className,
   labelClassName,
   ...props
-}: SocialLoginButtonProps) => {
+}: SocialLoginButtonProps) {
   return (
     <Button {...props} className={className}>
       <HStack align="center" gap={8}>
@@ -180,4 +180,4 @@ const SocialLoginButton = ({
       </HStack>
     </Button>
   );
-};
+}

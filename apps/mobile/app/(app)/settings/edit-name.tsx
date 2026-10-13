@@ -14,26 +14,11 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
+import { match, P } from 'ts-pattern';
 
-const EditNameScreen = () => {
-  return (
-    <View className="flex-1 bg-gray-1">
-      <QueryErrorBoundary>
-        <Suspense fallback={<View className="flex-1" />}>
-          <EditNameForm />
-        </Suspense>
-      </QueryErrorBoundary>
-    </View>
-  );
-};
-
-export default EditNameScreen;
-
-function EditNameForm() {
+function EditNameScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const goBack = useSingleTap(router.back);
@@ -87,13 +72,10 @@ function EditNameForm() {
                 submitBehavior="submit"
                 returnKeyType="done"
                 isInvalid={!!error}
-                errorMessage={
-                  error == null
-                    ? undefined
-                    : error.type === 'too_big'
-                      ? t('editName.maxLength')
-                      : t('editName.required')
-                }
+                errorMessage={match(error)
+                  .with(P.nullish, () => undefined)
+                  .with({ type: 'too_big' }, () => t('editName.maxLength'))
+                  .otherwise(() => t('editName.required'))}
                 onSubmitEditing={() => {
                   if (canSubmit) {
                     handleSubmit(onSubmit)();
@@ -113,5 +95,17 @@ function EditNameForm() {
         </KeyboardAdaptiveButton>
       </View>
     </FormProvider>
+  );
+}
+
+export default function EditNameRoute() {
+  return (
+    <View className="flex-1 bg-gray-1">
+      <QueryErrorBoundary>
+        <Suspense fallback={<View className="flex-1" />}>
+          <EditNameScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </View>
   );
 }

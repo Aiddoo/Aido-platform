@@ -74,9 +74,7 @@ export function ReceivedRequestList() {
       hasNextPage={hasNextPage}
       isFetching={isFetching}
       isFetchingNextPage={isFetchingNextPage}
-      onEndReached={() => {
-        fetchNextPage({ cancelRefetch: false });
-      }}
+      onEndReached={() => fetchNextPage({ cancelRefetch: false })}
       refresh={{ isRefreshing, onRefresh: handleRefresh }}
     />
   );

@@ -22,44 +22,35 @@ import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function ReminderSettingsScreen() {
+  const { t } = useTranslation('notification');
+
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
         <Spacing size={20} />
         <QueryErrorBoundary>
-          <Suspense fallback={<ReminderSettingsForm.Loading />}>
-            <ReminderSettingsForm />
+          <Suspense fallback={<GroupSkeleton rows={2} />}>
+            <VStack gap={24}>
+              <SettingsCard>
+                <ReminderTimePicker
+                  label={t('settings.reminderMorningLabel')}
+                  description={t('settings.reminderMorningDescription')}
+                  field="morning"
+                />
+                <Separator className="bg-gray-2" />
+                <ReminderTimePicker
+                  label={t('settings.reminderEveningLabel')}
+                  description={t('settings.reminderEveningDescription')}
+                  field="evening"
+                />
+              </SettingsCard>
+            </VStack>
           </Suspense>
         </QueryErrorBoundary>
       </ScrollView>
     </StyledSafeAreaView>
   );
 }
-
-function ReminderSettingsForm() {
-  const { t } = useTranslation('notification');
-  return (
-    <VStack gap={24}>
-      <SettingsCard>
-        <ReminderTimePicker
-          label={t('settings.reminderMorningLabel')}
-          description={t('settings.reminderMorningDescription')}
-          field="morning"
-        />
-        <Separator className="bg-gray-2" />
-        <ReminderTimePicker
-          label={t('settings.reminderEveningLabel')}
-          description={t('settings.reminderEveningDescription')}
-          field="evening"
-        />
-      </SettingsCard>
-    </VStack>
-  );
-}
-
-ReminderSettingsForm.Loading = function Loading() {
-  return <GroupSkeleton rows={2} />;
-};
 
 function ReminderTimePicker({
   label,

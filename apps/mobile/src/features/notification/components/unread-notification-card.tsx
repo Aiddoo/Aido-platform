@@ -6,7 +6,7 @@ import { Card, SkeletonGroup } from 'heroui-native';
 import { useGetUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
 import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read-mutation-options';
 
-export function UnreadNotificationHeader() {
+export function UnreadNotificationCard() {
   const { data: unreadCount = 0 } = useSuspenseQuery(useGetUnreadCountQueryOptions());
   const markAllAsRead = useMutation(useMarkAllAsReadMutationOptions());
   const { t } = useTranslation('notification');
@@ -43,7 +43,7 @@ export function UnreadNotificationHeader() {
   );
 }
 
-UnreadNotificationHeader.Loading = function Loading() {
+UnreadNotificationCard.Loading = function Loading() {
   return (
     <Card className="mx-4 my-2">
       <SkeletonGroup isLoading isSkeletonOnly>

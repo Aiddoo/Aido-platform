@@ -16,21 +16,7 @@ import { Suspense, useState } from 'react';
 import { Keyboard, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-const DeleteAccountScreen = () => {
-  return (
-    <View className="flex-1 bg-gray-1">
-      <QueryErrorBoundary>
-        <Suspense fallback={<View className="flex-1" />}>
-          <DeleteAccountForm />
-        </Suspense>
-      </QueryErrorBoundary>
-    </View>
-  );
-};
-
-export default DeleteAccountScreen;
-
-function DeleteAccountForm() {
+function DeleteAccountScreen() {
   const { t } = useTranslation(['auth', 'common']);
   const [password, setPassword] = useState('');
   const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());
@@ -133,6 +119,18 @@ function DeleteAccountForm() {
       >
         {t('deleteAccount.submit')}
       </KeyboardAdaptiveButton>
+    </View>
+  );
+}
+
+export default function DeleteAccountRoute() {
+  return (
+    <View className="flex-1 bg-gray-1">
+      <QueryErrorBoundary>
+        <Suspense fallback={<View className="flex-1" />}>
+          <DeleteAccountScreen />
+        </Suspense>
+      </QueryErrorBoundary>
     </View>
   );
 }

@@ -15,14 +15,12 @@ import { Separator } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Image, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
-const EmailLoginScreen = () => {
+function EmailLoginScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const push = useSingleTap(router.push);
@@ -146,6 +144,6 @@ const EmailLoginScreen = () => {
       </View>
     </FormProvider>
   );
-};
+}
 
 export default EmailLoginScreen;

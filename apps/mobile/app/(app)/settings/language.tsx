@@ -7,7 +7,7 @@ import { IconRadioItem } from '@src/shared/ui/icon-radio-item/icon-radio-item';
 import { RadioGroup } from 'heroui-native';
 import { ScrollView } from 'react-native';
 
-const LanguageSettingsScreen = () => {
+function LanguageSettingsScreen() {
   const { languageMode, setLanguageMode } = useLanguage();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -41,6 +41,6 @@ const LanguageSettingsScreen = () => {
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default LanguageSettingsScreen;

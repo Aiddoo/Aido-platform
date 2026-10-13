@@ -19,26 +19,19 @@ import {
 } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { Separator } from 'heroui-native';
-import { Suspense } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { KeyboardGestureArea } from 'react-native-keyboard-controller';
 import type { SharedValue } from 'react-native-reanimated';
 import { useSharedValue } from 'react-native-reanimated';
+import { match } from 'ts-pattern';
 
 const styles = StyleSheet.create({
   keyboardGestureArea: { flex: 1 },
   keyboardScrollView: { flex: 1 },
 });
 
-export default function TodoDetailScreen() {
-  return (
-    <TodoCommentScreenTransitionProvider>
-      <TodoDetailPage />
-    </TodoCommentScreenTransitionProvider>
-  );
-}
-
-function TodoDetailPage() {
+function TodoDetailScreen() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   useAndroidTodoCommentBackHandler();
@@ -47,9 +40,35 @@ function TodoDetailPage() {
   const selectedCommentId =
     commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const activeFormType = commentRoute.form?.type;
-  const showsCommentOverview = commentRoute.view === 'overview';
   const isNativeBackGestureEnabled =
     commentRoute.view === 'overview' && commentRoute.form === null && !isCommentSubmitting;
+
+  const listHeader = (
+    <>
+      <QueryErrorBoundary resetKeys={[todoId]}>
+        <Suspense
+          fallback={
+            <Box px={16} py={18}>
+              <TodoDetailCard.Loading />
+            </Box>
+          }
+        >
+          <Box px={16} py={18}>
+            <TodoDetailCard />
+          </Box>
+        </Suspense>
+      </QueryErrorBoundary>
+      <Separator />
+      {commentRoute.view === 'overview' && (
+        <>
+          <Box px={16} py={6}>
+            <TodoCommentSortBar />
+          </Box>
+          <Separator />
+        </>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -65,45 +84,37 @@ function TodoDetailPage() {
           textInputNativeID={TODO_COMMENT_INPUT_NATIVE_ID}
         >
           <Box flex={1}>
-            {showsCommentOverview ? (
-              <QueryErrorBoundary
-                fallback={(props) => (
-                  <TodoCommentOverviewError
-                    {...props}
+            <QueryErrorBoundary
+              resetKeys={[todoId, commentRoute.view, commentRoute.sort, selectedCommentId]}
+              fallback={(props) => (
+                <TodoCommentListError {...props} extraContentPadding={commentListExtraPadding}>
+                  {listHeader}
+                </TodoCommentListError>
+              )}
+            >
+              {match(commentRoute.view)
+                .with('overview', () => (
+                  <TodoCommentOverviewList
                     extraContentPadding={commentListExtraPadding}
+                    ListHeaderComponent={listHeader}
                   />
-                )}
-                resetKeys={[todoId, commentRoute.sort]}
-              >
-                <TodoCommentOverviewList
-                  extraContentPadding={commentListExtraPadding}
-                  ListHeaderComponent={<TodoCommentOverviewHeader />}
-                />
-              </QueryErrorBoundary>
-            ) : (
-              <QueryErrorBoundary
-                fallback={(props) => (
-                  <TodoCommentConversationError
-                    {...props}
-                    extraContentPadding={commentListExtraPadding}
-                  />
-                )}
-                resetKeys={[todoId, commentRoute.sort, selectedCommentId]}
-              >
-                <Suspense
-                  fallback={
-                    <Box flex={1}>
-                      <TodoCommentConversationList.Loading />
-                    </Box>
-                  }
-                >
-                  <TodoCommentConversationList
-                    extraContentPadding={commentListExtraPadding}
-                    ListHeaderComponent={<TodoCommentConversationHeader />}
-                  />
-                </Suspense>
-              </QueryErrorBoundary>
-            )}
+                ))
+                .with('conversation', () => (
+                  <Suspense
+                    fallback={
+                      <Box flex={1}>
+                        <TodoCommentConversationList.Loading />
+                      </Box>
+                    }
+                  >
+                    <TodoCommentConversationList
+                      extraContentPadding={commentListExtraPadding}
+                      ListHeaderComponent={listHeader}
+                    />
+                  </Suspense>
+                ))
+                .exhaustive()}
+            </QueryErrorBoundary>
 
             <QueryErrorBoundary resetKeys={[todoId, activeFormType, selectedCommentId]}>
               <TodoCommentInputBar extraContentPadding={commentListExtraPadding} />
@@ -115,74 +126,37 @@ function TodoDetailPage() {
   );
 }
 
-function TodoDetailCardSection() {
-  const { todoId } = useTodoScreenParams();
-
-  return (
-    <QueryErrorBoundary resetKeys={[todoId]}>
-      <Suspense
-        fallback={
-          <Box px={16} py={18}>
-            <TodoDetailCard.Loading />
-          </Box>
-        }
-      >
-        <Box px={16} py={18}>
-          <TodoDetailCard />
-        </Box>
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
-
-function TodoCommentOverviewHeader() {
-  return (
-    <>
-      <TodoDetailCardSection />
-      <Separator />
-      <Box px={16} py={6}>
-        <TodoCommentSortBar />
-      </Box>
-      <Separator />
-    </>
-  );
-}
-
-function TodoCommentConversationHeader() {
-  return (
-    <>
-      <TodoDetailCardSection />
-      <Separator />
-    </>
-  );
-}
-
-interface TodoCommentErrorProps extends QueryErrorFallbackProps {
+interface TodoCommentListErrorProps extends QueryErrorFallbackProps {
   extraContentPadding: SharedValue<number>;
+  children: ReactNode;
 }
 
-function TodoCommentOverviewError({ extraContentPadding, ...props }: TodoCommentErrorProps) {
+function TodoCommentListError({
+  children,
+  extraContentPadding,
+  ...props
+}: TodoCommentListErrorProps) {
+  const [commentRoute] = useTodoCommentRoute();
+
   return (
     <TodoCommentKeyboardScrollView
       extraContentPadding={extraContentPadding}
       style={styles.keyboardScrollView}
       showsVerticalScrollIndicator={false}
     >
-      <TodoCommentOverviewHeader />
-      <TodoCommentOverviewList.Error {...props} />
+      {children}
+      {match(commentRoute.view)
+        .with('overview', () => <TodoCommentOverviewList.Error {...props} />)
+        .with('conversation', () => <TodoCommentConversationList.Error {...props} />)
+        .exhaustive()}
     </TodoCommentKeyboardScrollView>
   );
 }
 
-function TodoCommentConversationError({ extraContentPadding, ...props }: TodoCommentErrorProps) {
+export default function TodoDetailRoute() {
   return (
-    <TodoCommentKeyboardScrollView
-      extraContentPadding={extraContentPadding}
-      style={styles.keyboardScrollView}
-      showsVerticalScrollIndicator={false}
-    >
-      <TodoCommentConversationHeader />
-      <TodoCommentConversationList.Error {...props} />
-    </TodoCommentKeyboardScrollView>
+    <TodoCommentScreenTransitionProvider>
+      <TodoDetailScreen />
+    </TodoCommentScreenTransitionProvider>
   );
 }

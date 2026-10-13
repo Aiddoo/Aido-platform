@@ -39,6 +39,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
+import { match, P } from 'ts-pattern';
 
 export default function WeatherDetailScreen() {
   const { t } = useTranslation(['weather', 'common']);
@@ -50,123 +51,131 @@ export default function WeatherDetailScreen() {
   const conditionsQuery = useQuery(useGetConditionsQueryOptions());
   const forecast = forecastQuery.data;
   const conditions = conditionsQuery.data;
-  const retryForecast = () => {
-    forecastQuery.refetch();
-  };
+  const retryForecast = () => forecastQuery.refetch();
 
-  if (session.status === 'unsupported') {
-    return (
+  // 위치 확인/지원 여부를 먼저 판단하고, 기존 예보가 없을 때만 조회 실패 화면을 표시한다.
+  return match({
+    status: session.status,
+    forecast,
+    isPending: forecastQuery.isPending,
+    isSyncing: session.isSyncing,
+    error: forecastQuery.error,
+  })
+    .with({ status: 'unsupported' }, () => (
       <WeatherDetailScreen.Empty
         title={t('weather:screen.domesticOnly')}
         description={t('weather:screen.domesticOnlyDescription')}
         action={t('weather:screen.refreshLocation')}
-        onPress={() => {
-          session.syncLocation(true);
-        }}
+        onPress={() => session.syncLocation(true)}
       />
-    );
-  }
-  if (
-    session.status === 'checking' ||
-    (!forecast && (forecastQuery.isPending || session.isSyncing))
-  ) {
-    return <WeatherDetailScreen.Loading />;
-  }
-  if (!forecast) {
-    const error = forecastQuery.error;
-    if (
-      session.status === 'unregistered' ||
-      session.status === 'denied' ||
-      (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902))
-    ) {
-      return <WeatherLocationPrompt />;
-    }
-    if (isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901)) {
-      return (
+    ))
+    .with(
+      { status: 'checking' },
+      { forecast: P.nullish, isPending: true },
+      { forecast: P.nullish, isSyncing: true },
+      () => <WeatherDetailScreen.Loading />,
+    )
+    .with(
+      { forecast: P.nullish, status: P.union('unregistered', 'denied') },
+      {
+        forecast: P.nullish,
+        error: P.when((error) => isApiError(error) && error.hasCode(ErrorCode.WEATHER_1902)),
+      },
+      () => <WeatherLocationPrompt />,
+    )
+    .with(
+      {
+        forecast: P.nullish,
+        error: P.when((error) => isApiError(error) && error.hasCode(ErrorCode.WEATHER_1901)),
+      },
+      () => (
         <WeatherDetailScreen.Empty
           title={t('weather:screen.kmaPreparing')}
           description={t('weather:screen.checkLater')}
           action={t('common:actions.retry')}
           onPress={retryForecast}
         />
-      );
-    }
-    return (
+      ),
+    )
+    .with({ forecast: P.nullish }, () => (
       <WeatherDetailScreen.Error
         title={t('weather:screen.loadFailed')}
         description={t('weather:screen.retryLater')}
         action={t('common:actions.retry')}
         onPress={retryForecast}
       />
-    );
-  }
-
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="never"
-      contentContainerStyle={{ paddingTop: headerHeight + 24, paddingBottom: insets.bottom + 24 }}
-      refreshControl={
-        <RefreshControl
-          tintColor={palette.text}
-          refreshing={forecastQuery.isFetching && !forecastQuery.isPending}
-          onRefresh={() => {
-            forecastQuery.refetch();
-            conditionsQuery.refetch();
-          }}
-        />
-      }
-    >
-      <WeatherLocation />
-      <Spacing size={4} />
-      <TodayTemperature forecast={forecast} />
-      {forecast.currentTemperature === null && (
-        <Text size="b4" align="center" style={{ color: palette.textSub }}>
-          {t('weather:screen.dailyRange')}
-        </Text>
-      )}
-      <Spacing size={32} />
-      <WeatherStats forecast={forecast} />
-      <Spacing size={20} />
-      {conditions?.feelsLikeTemperature != null && (
-        <>
-          <FeelsLike feelsLike={conditions.feelsLikeTemperature} />
-          <Spacing size={32} />
-        </>
-      )}
-      <HourlyForecastSection
-        items={toUpcomingHourlyForecasts(forecast.hourlyForecasts, session.clock.hour)}
-      />
-      {forecast.dailyForecasts.length > 0 && (
-        <DailyForecastSection items={forecast.dailyForecasts} />
-      )}
-      {conditions && (
-        <>
-          <SunTime sunrise={conditions.sunrise} sunset={conditions.sunset} />
-          <DustInfo pm10={conditions.pm10} pm25={conditions.pm25} />
-        </>
-      )}
-      {(forecastQuery.error || conditionsQuery.error || session.status === 'error') && (
-        <VStack align="center" gap={12} px={24} py={16}>
-          <Text size="b4" align="center" style={{ color: palette.textSub }}>
-            {t(
-              session.status === 'error'
-                ? 'weather:toasts.locationFailed'
-                : 'weather:screen.refreshFailed',
-            )}
-          </Text>
-          <Result.Button
-            onPress={() => {
-              session.syncLocation(true);
-              forecastQuery.refetch();
-              conditionsQuery.refetch();
+    ))
+    .with({ forecast: P.nonNullable }, ({ forecast }) => (
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{
+          paddingTop: headerHeight + 24,
+          paddingBottom: insets.bottom + 24,
+        }}
+        refreshControl={
+          <RefreshControl
+            tintColor={palette.text}
+            refreshing={forecastQuery.isFetching && !forecastQuery.isPending}
+            onRefresh={async () => {
+              await Promise.all([forecastQuery.refetch(), conditionsQuery.refetch()]);
             }}
-          >
-            {t('common:actions.retry')}
-          </Result.Button>
-        </VStack>
-      )}
-    </ScrollView>
-  );
+          />
+        }
+      >
+        <WeatherLocation />
+        <Spacing size={4} />
+        <TodayTemperature forecast={forecast} />
+        {forecast.currentTemperature === null && (
+          <Text size="b4" align="center" style={{ color: palette.textSub }}>
+            {t('weather:screen.dailyRange')}
+          </Text>
+        )}
+        <Spacing size={32} />
+        <WeatherStats forecast={forecast} />
+        <Spacing size={20} />
+        {conditions?.feelsLikeTemperature != null && (
+          <>
+            <FeelsLikeTemperature feelsLike={conditions.feelsLikeTemperature} />
+            <Spacing size={32} />
+          </>
+        )}
+        <HourlyForecastList
+          items={toUpcomingHourlyForecasts(forecast.hourlyForecasts, session.clock.hour)}
+        />
+        {forecast.dailyForecasts.length > 0 && (
+          <DailyForecastList items={forecast.dailyForecasts} />
+        )}
+        {conditions && (
+          <>
+            <SunriseSunsetTimes sunrise={conditions.sunrise} sunset={conditions.sunset} />
+            <AirQuality pm10={conditions.pm10} pm25={conditions.pm25} />
+          </>
+        )}
+        {(forecastQuery.error || conditionsQuery.error || session.status === 'error') && (
+          <VStack align="center" gap={12} px={24} py={16}>
+            <Text size="b4" align="center" style={{ color: palette.textSub }}>
+              {t(
+                session.status === 'error'
+                  ? 'weather:toasts.locationFailed'
+                  : 'weather:screen.refreshFailed',
+              )}
+            </Text>
+            <Result.Button
+              onPress={() =>
+                Promise.all([
+                  session.syncLocation(true),
+                  forecastQuery.refetch(),
+                  conditionsQuery.refetch(),
+                ])
+              }
+            >
+              {t('common:actions.retry')}
+            </Result.Button>
+          </VStack>
+        )}
+      </ScrollView>
+    ))
+    .exhaustive();
 }
 
 function WeatherLocation() {
@@ -179,9 +188,7 @@ function WeatherLocation() {
         {session.locationName ?? t('screen.registeredLocation')}
       </Text>
       <TouchableOpacity
-        onPress={() => {
-          session.syncLocation(true);
-        }}
+        onPress={() => session.syncLocation(true)}
         disabled={session.isSyncing}
         accessibilityRole="button"
         accessibilityLabel={t('screen.refreshLocation')}
@@ -292,7 +299,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FeelsLike({ feelsLike }: { feelsLike: number }) {
+function FeelsLikeTemperature({ feelsLike }: { feelsLike: number }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
@@ -307,7 +314,7 @@ function FeelsLike({ feelsLike }: { feelsLike: number }) {
   );
 }
 
-function HourlyForecastSection({ items }: { items: HourlyForecastViewModel[] }) {
+function HourlyForecastList({ items }: { items: HourlyForecastViewModel[] }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
@@ -341,7 +348,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecastViewModel[] }) 
           contentContainerStyle={{ gap: 8 }}
         >
           {items.map((item) => (
-            <HourlyForecastSection.Item key={item.id} item={item} />
+            <HourlyForecastList.Item key={item.id} item={item} />
           ))}
         </ScrollView>
       </VStack>
@@ -349,7 +356,7 @@ function HourlyForecastSection({ items }: { items: HourlyForecastViewModel[] }) 
   );
 }
 
-HourlyForecastSection.Item = function Item({ item }: { item: HourlyForecastViewModel }) {
+HourlyForecastList.Item = function Item({ item }: { item: HourlyForecastViewModel }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
   const SkyIcon = resolveIconBySky(item.skyCondition);
@@ -387,7 +394,7 @@ HourlyForecastSection.Item = function Item({ item }: { item: HourlyForecastViewM
   );
 };
 
-function DailyForecastSection({ items }: { items: DailyForecast[] }) {
+function DailyForecastList({ items }: { items: DailyForecast[] }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
@@ -466,7 +473,13 @@ function DailyForecastSection({ items }: { items: DailyForecast[] }) {
   );
 }
 
-function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string | null }) {
+function SunriseSunsetTimes({
+  sunrise,
+  sunset,
+}: {
+  sunrise: string | null;
+  sunset: string | null;
+}) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 
@@ -515,7 +528,7 @@ function SunTime({ sunrise, sunset }: { sunrise: string | null; sunset: string |
   );
 }
 
-function DustInfo({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) {
+function AirQuality({ pm10, pm25 }: { pm10: number | null; pm25: number | null }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
 

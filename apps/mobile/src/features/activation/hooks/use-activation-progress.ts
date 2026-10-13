@@ -15,10 +15,8 @@ const EMPTY_PROGRESS: ActivationProgress = {
 export function useActivationProgress() {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
-  const configOptions = useFeatureDiscoveryQueryOptions();
-  const userOptions = useGetMeQueryOptions();
-  const configQuery = useQuery({ ...configOptions, enabled: isAuthenticated });
-  const userQuery = useQuery({ ...userOptions, enabled: isAuthenticated });
+  const configQuery = useQuery({ ...useFeatureDiscoveryQueryOptions(), enabled: isAuthenticated });
+  const userQuery = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const identity = ActivationPolicy.activationIdentity(configQuery.data, userQuery.data);
 
   const progressOptions = useGetActivationProgressQueryOptions({

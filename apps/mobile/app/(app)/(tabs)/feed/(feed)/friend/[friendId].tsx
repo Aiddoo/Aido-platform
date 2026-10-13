@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useCallback } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
+import { match, P } from 'ts-pattern';
 import { z } from 'zod';
 
 const FriendFeedSearchSchema = z.object({
@@ -23,30 +24,7 @@ const FriendFeedSearchSchema = z.object({
     .catch(undefined),
 });
 
-export default function FriendFeedScreen() {
-  const params = useLocalSearchParams();
-  const { friendId } = params;
-  const { date } = FriendFeedSearchSchema.parse(params);
-  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
-  const parsed = userIdParamSchema.shape.userId.safeParse(friendId);
-  if (!parsed.success) {
-    return <Redirect href="/feed" />;
-  }
-  return (
-    <FeedDateProvider date={date} onDateChange={setDate}>
-      <QueryErrorBoundary
-        resetKeys={[parsed.data]}
-        fallback={(props) => <FriendFeedContent.Error {...props} />}
-      >
-        <Suspense fallback={<FriendFeedContent.Loading />}>
-          <FriendFeedContent />
-        </Suspense>
-      </QueryErrorBoundary>
-    </FeedDateProvider>
-  );
-}
-
-function FriendFeedContent() {
+function FriendFeedScreen() {
   const { friendId: rawFriendId } = useLocalSearchParams();
   const friendId = userIdParamSchema.shape.userId.parse(rawFriendId);
   const selectedDateKey = useFeedDateKey();
@@ -60,57 +38,50 @@ function FriendFeedContent() {
     ]),
   );
 
-  if (!friend && isFetchNextPageError) {
-    return (
-      <FriendFeedContent.Error
+  return match({ friend, isFetchNextPageError, hasNextPage })
+    .with({ friend: P.nullish, isFetchNextPageError: true }, () => (
+      <FriendFeedScreen.Error
         error={error}
-        reset={() => {
-          fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
-        }}
+        reset={() => fetchNextPage({ cancelRefetch: false }).catch(() => undefined)}
       />
-    );
-  }
-  if (!friend && hasNextPage) {
-    return <FriendFeedContent.Loading />;
-  }
-  if (!friend) {
-    return <Redirect href="/feed" />;
-  }
+    ))
+    .with({ friend: P.nullish, hasNextPage: true }, () => <FriendFeedScreen.Loading />)
+    .with({ friend: P.nullish }, () => <Redirect href="/feed" />)
+    .with({ friend: P.nonNullable }, ({ friend }) => (
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <FriendCalendar friendUserId={friend.id} />
 
-  return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <FriendCalendar friendUserId={friend.id} />
+        <Spacing size={8} />
 
-      <Spacing size={8} />
-
-      <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
-        <Suspense fallback={<PokeBanner.Loading />}>
-          <PokeBanner />
-        </Suspense>
-      </QueryErrorBoundary>
-
-      <Spacing size={16} />
-
-      <Box px={16} pb={24} style={{ flexGrow: 1 }}>
-        <QueryErrorBoundary
-          resetKeys={[friend.id, selectedDateKey]}
-          fallback={(props) => <FriendTodoList.Error {...props} />}
-        >
-          <Suspense fallback={<FriendTodoList.Loading />}>
-            <FriendTodoList key={selectedDateKey} friend={friend} />
+        <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
+          <Suspense fallback={<PokeBanner.Loading />}>
+            <PokeBanner />
           </Suspense>
         </QueryErrorBoundary>
-      </Box>
-    </ScrollView>
-  );
+
+        <Spacing size={16} />
+
+        <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+          <QueryErrorBoundary
+            resetKeys={[friend.id, selectedDateKey]}
+            fallback={(props) => <FriendTodoList.Error {...props} />}
+          >
+            <Suspense fallback={<FriendTodoList.Loading />}>
+              <FriendTodoList key={selectedDateKey} friend={friend} />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
+      </ScrollView>
+    ))
+    .exhaustive();
 }
 
-FriendFeedContent.Loading = function Loading() {
+FriendFeedScreen.Loading = function Loading() {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -125,7 +96,7 @@ FriendFeedContent.Loading = function Loading() {
     </ScrollView>
   );
 };
-FriendFeedContent.Error = function ErrorState(props: QueryErrorFallbackProps) {
+FriendFeedScreen.Error = function ErrorState(props: QueryErrorFallbackProps) {
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
@@ -139,3 +110,26 @@ FriendFeedContent.Error = function ErrorState(props: QueryErrorFallbackProps) {
     </ScrollView>
   );
 };
+
+export default function FriendFeedRoute() {
+  const params = useLocalSearchParams();
+  const { friendId } = params;
+  const { date } = FriendFeedSearchSchema.parse(params);
+  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
+  const parsed = userIdParamSchema.shape.userId.safeParse(friendId);
+  if (!parsed.success) {
+    return <Redirect href="/feed" />;
+  }
+  return (
+    <FeedDateProvider date={date} onDateChange={setDate}>
+      <QueryErrorBoundary
+        resetKeys={[parsed.data]}
+        fallback={(props) => <FriendFeedScreen.Error {...props} />}
+      >
+        <Suspense fallback={<FriendFeedScreen.Loading />}>
+          <FriendFeedScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </FeedDateProvider>
+  );
+}

@@ -4,7 +4,10 @@ import {
   SettingsTimePicker,
   SettingsToggle,
 } from '@src/features/notification/components/settings';
-import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import {
+  isWeatherEnabled,
+  PreferencePolicy,
+} from '@src/features/preference/domains/preference.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
@@ -14,22 +17,7 @@ import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-export default function WeatherSettingsScreen() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<WeatherSettingsForm.Loading />}>
-            <WeatherSettingsForm />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ScrollView>
-    </StyledSafeAreaView>
-  );
-}
-
-function WeatherSettingsForm() {
+function WeatherSettingsScreen() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const { t } = useTranslation(['notification', 'auth']);
@@ -46,7 +34,7 @@ function WeatherSettingsForm() {
               ? t('auth:preference.enablePushFirst')
               : t('settings.weatherDescription')
           }
-          isSelected={PreferencePolicy.isWeatherEnabled(preference)}
+          isSelected={isWeatherEnabled(preference)}
           onSelectedChange={(enabled) =>
             updateMutation.mutate({
               weatherMorningEnabled: enabled,
@@ -73,7 +61,7 @@ function WeatherSettingsForm() {
   );
 }
 
-WeatherSettingsForm.Loading = function Loading() {
+WeatherSettingsScreen.Loading = function Loading() {
   return <GroupSkeleton rows={3} />;
 };
 
@@ -100,5 +88,20 @@ function WeatherTimePicker({
       }
       isDisabled={PreferencePolicy.isWeatherDisabled}
     />
+  );
+}
+
+export default function WeatherSettingsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <Spacing size={20} />
+        <QueryErrorBoundary>
+          <Suspense fallback={<WeatherSettingsScreen.Loading />}>
+            <WeatherSettingsScreen />
+          </Suspense>
+        </QueryErrorBoundary>
+      </ScrollView>
+    </StyledSafeAreaView>
   );
 }

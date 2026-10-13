@@ -22,6 +22,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useCallback, useEffect } from 'react';
 import { RefreshControl } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 const FeedSearchSchema = z.object({
@@ -32,20 +33,8 @@ const FeedSearchSchema = z.object({
   action: z.literal('add-todo').optional().catch(undefined),
 });
 
-export default function MyFeedPage() {
-  const { date } = FeedSearchSchema.parse(useLocalSearchParams());
-  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
-
-  return (
-    <FeedDateProvider date={date} onDateChange={setDate}>
-      <MyFeedScreen />
-    </FeedDateProvider>
-  );
-}
-
 function MyFeedScreen() {
   const { t } = useTranslation(['widget', 'common']);
-  const createEntry = useTodoCreateEntry();
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   useWeatherIntroduction();
@@ -59,6 +48,52 @@ function MyFeedScreen() {
     ]),
   );
 
+  const { action } = FeedSearchSchema.parse(useLocalSearchParams());
+  const [selectedDate] = useFeedDate();
+  const overlay = useOverlay();
+  const isRequested = action === 'add-todo';
+  const categories = useQuery({
+    ...useGetTodoCategoriesQueryOptions(),
+    enabled: isRequested,
+    throwOnError: false,
+  });
+  const categoryId = categories.data?.categories[0]?.id;
+
+  useEffect(() => {
+    if (!isRequested || categoryId == null) {
+      return;
+    }
+    const frameId = requestAnimationFrame(() => {
+      router.setParams({ action: undefined });
+      overlay.open(({ isOpen, close, exit }) => (
+        <AddTodoBottomSheet
+          mode="create"
+          selectedDate={selectedDate}
+          categoryId={categoryId}
+          isOpen={isOpen}
+          onClose={close}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) {
+              close();
+              exit();
+            }
+          }}
+        />
+      ));
+    });
+    return () => cancelAnimationFrame(frameId);
+  }, [isRequested, categoryId, selectedDate, overlay]);
+
+  const createEntryStatus = !isRequested
+    ? ('idle' as const)
+    : match(categories)
+        .with({ isLoading: true }, () => 'loading' as const)
+        .with({ isError: true }, () => 'error' as const)
+        .with({ isSuccess: true }, () =>
+          categoryId == null ? ('empty' as const) : ('idle' as const),
+        )
+        .otherwise(() => 'idle' as const);
+
   return (
     <NestableScrollContainer
       contentInsetAdjustmentBehavior="automatic"
@@ -66,46 +101,45 @@ function MyFeedScreen() {
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {createEntry.isLoading && (
-        <Box px={16} py={8}>
-          <Text size="b4" shade={6}>
-            {t('widget:entry.loading')}
-          </Text>
-        </Box>
-      )}
-      {createEntry.isError && (
-        <Box px={16} py={8}>
-          <Result
-            title={t('widget:entry.loadError')}
-            button={
-              <Result.Button
-                onPress={() => {
-                  createEntry.refetch();
-                }}
-              >
-                {t('common:actions.retry')}
-              </Result.Button>
-            }
-          />
-        </Box>
-      )}
-      {createEntry.isEmpty && (
-        <Box px={16} py={8}>
-          <Result
-            title={t('widget:entry.emptyCategory')}
-            button={
-              <Result.Button
-                onPress={() => {
-                  router.setParams({ action: undefined });
-                  router.navigate('/settings/category-settings');
-                }}
-              >
-                {t('widget:entry.manageCategories')}
-              </Result.Button>
-            }
-          />
-        </Box>
-      )}
+      {match(createEntryStatus)
+        .with('loading', () => (
+          <Box px={16} py={8}>
+            <Text size="b4" shade={6}>
+              {t('widget:entry.loading')}
+            </Text>
+          </Box>
+        ))
+        .with('error', () => (
+          <Box px={16} py={8}>
+            <Result
+              title={t('widget:entry.loadError')}
+              button={
+                <Result.Button onPress={() => categories.refetch()}>
+                  {t('common:actions.retry')}
+                </Result.Button>
+              }
+            />
+          </Box>
+        ))
+        .with('empty', () => (
+          <Box px={16} py={8}>
+            <Result
+              title={t('widget:entry.emptyCategory')}
+              button={
+                <Result.Button
+                  onPress={() => {
+                    router.setParams({ action: undefined });
+                    router.navigate('/settings/category-settings');
+                  }}
+                >
+                  {t('widget:entry.manageCategories')}
+                </Result.Button>
+              }
+            />
+          </Box>
+        ))
+        .with('idle', () => null)
+        .exhaustive()}
       <MyCalendar />
 
       <Spacing size={10} />
@@ -159,47 +193,13 @@ function MyFeedScreen() {
   );
 }
 
-function useTodoCreateEntry() {
-  const { action } = FeedSearchSchema.parse(useLocalSearchParams());
-  const [selectedDate] = useFeedDate();
-  const overlay = useOverlay();
-  const isRequested = action === 'add-todo';
-  const categories = useQuery({
-    ...useGetTodoCategoriesQueryOptions(),
-    enabled: isRequested,
-    throwOnError: false,
-  });
-  const categoryId = categories.data?.categories[0]?.id;
+export default function MyFeedRoute() {
+  const { date } = FeedSearchSchema.parse(useLocalSearchParams());
+  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
 
-  useEffect(() => {
-    if (!isRequested || categoryId == null) {
-      return;
-    }
-    const frameId = requestAnimationFrame(() => {
-      router.setParams({ action: undefined });
-      overlay.open(({ isOpen, close, exit }) => (
-        <AddTodoBottomSheet
-          mode="create"
-          selectedDate={selectedDate}
-          categoryId={categoryId}
-          isOpen={isOpen}
-          onClose={close}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) {
-              close();
-              exit();
-            }
-          }}
-        />
-      ));
-    });
-    return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDate, overlay]);
-
-  return {
-    isLoading: categories.isLoading,
-    isError: isRequested && categories.isError,
-    isEmpty: isRequested && categories.isSuccess && categoryId == null,
-    refetch: categories.refetch,
-  };
+  return (
+    <FeedDateProvider date={date} onDateChange={setDate}>
+      <MyFeedScreen />
+    </FeedDateProvider>
+  );
 }
