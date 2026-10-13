@@ -1,4 +1,4 @@
-import type { AddTodoFormInput } from '../domains/add-todo-form.schema';
+import type { AddTodoFormInput } from '../../todo/domains/add-todo-form.schema';
 import { toMemoConversionInput } from './to-memo-conversion-input';
 
 const createFormData = (overrides: Partial<AddTodoFormInput> = {}): AddTodoFormInput => ({

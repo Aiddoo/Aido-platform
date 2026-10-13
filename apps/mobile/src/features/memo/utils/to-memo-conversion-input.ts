@@ -1,7 +1,7 @@
 import { convertMemoToTodosSchema, type ConvertMemoToTodosInput } from '@aido/api';
 import { formatDate } from '@src/shared/utils/date';
 
-import type { AddTodoFormInput } from '../domains/add-todo-form.schema';
+import type { AddTodoFormInput } from '../../todo/domains/add-todo-form.schema';
 
 export function toMemoConversionInput(data: AddTodoFormInput): ConvertMemoToTodosInput {
   return convertMemoToTodosSchema.parse({

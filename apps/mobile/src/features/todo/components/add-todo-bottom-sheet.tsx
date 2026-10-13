@@ -4,6 +4,7 @@ import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
+import { toMemoConversionInput } from '@src/features/memo/utils/to-memo-conversion-input';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -53,7 +54,6 @@ import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-rec
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
-import { toMemoConversionInput } from '../utils/to-memo-conversion-input';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import { CategorySelectContent } from './category-select-bottom-sheet';
 import { TodoDatePickerContent } from './todo-date-picker-content';
