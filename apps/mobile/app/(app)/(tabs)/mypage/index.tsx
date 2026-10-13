@@ -19,7 +19,6 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ConfirmDialog,
   ArrowRightIcon,
   H3,
   HStack,
@@ -29,7 +28,7 @@ import {
   StyledSafeAreaView,
   TextButton,
   Text,
-  useOverlay,
+  useConfirmDialog,
 } from '@src/shared/ui';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -167,7 +166,7 @@ function AppVersionSetting() {
   const service = useAppVersionService();
   const errorReporter = useErrorReporter();
   const toast = useAppToast();
-  const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
   const installation = service.getInstallation();
   const query = useQuery({ ...useGetAppVersionQueryOptions(), enabled: false });
 
@@ -199,31 +198,11 @@ function AppVersionSetting() {
     }
 
     if (AppVersionPolicy.shouldShowLatestDialog(input)) {
-      overlay.open(({ isOpen, close, exit }) => (
-        <ConfirmDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-          title={<ConfirmDialog.Title>{t('latestTitle')}</ConfirmDialog.Title>}
-          description={
-            <ConfirmDialog.Description>{t('latestDescription')}</ConfirmDialog.Description>
-          }
-          confirmButton={
-            <ConfirmDialog.ConfirmButton
-              onPress={() => {
-                close();
-                exit();
-              }}
-            >
-              {t('confirm')}
-            </ConfirmDialog.ConfirmButton>
-          }
-        />
-      ));
+      return confirmDialog.open({
+        title: t('latestTitle'),
+        description: t('latestDescription'),
+        confirmLabel: t('confirm'),
+      });
     }
   });
 
@@ -263,90 +242,35 @@ function AccountActionButtons() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const logout = useMutation(useLogoutMutationOptions());
   const deleteAccount = useMutation(useDeleteAccountMutationOptions());
-  const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
 
-  const handleLogoutPress = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <ConfirmDialog
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        title={<ConfirmDialog.Title>{t('logout.confirmTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>{t('logout.confirmDescription')}</ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton
-            onPress={() => {
-              close();
-              exit();
-            }}
-          >
-            {t('common:actions.cancel')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            onPress={() => {
-              close();
-              exit();
-              logout.mutate();
-            }}
-          >
-            {t('common:actions.confirm')}
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
-    ));
+  const handleLogoutPress = async () => {
+    const isConfirmed = await confirmDialog.open({
+      title: t('logout.confirmTitle'),
+      description: t('logout.confirmDescription'),
+      cancelLabel: t('common:actions.cancel'),
+      confirmLabel: t('common:actions.confirm'),
+    });
+    if (isConfirmed) {
+      logout.mutate();
+    }
   };
 
-  const handleWithdrawPress = () => {
+  const handleWithdrawPress = async () => {
     if (UserPolicy.hasCredential(user)) {
       push('/settings/delete-account');
-    } else {
-      overlay.open(({ isOpen, close, exit }) => (
-        <ConfirmDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-          title={<ConfirmDialog.Title>{t('withdraw.confirmTitle')}</ConfirmDialog.Title>}
-          description={
-            <ConfirmDialog.Description>
-              {t('withdraw.confirmDescription')}
-            </ConfirmDialog.Description>
-          }
-          cancelButton={
-            <ConfirmDialog.CancelButton
-              onPress={() => {
-                close();
-                exit();
-              }}
-            >
-              {t('common:actions.cancel')}
-            </ConfirmDialog.CancelButton>
-          }
-          confirmButton={
-            <ConfirmDialog.ConfirmButton
-              color="danger"
-              onPress={() => {
-                close();
-                exit();
-                deleteAccount.mutate({});
-              }}
-            >
-              {t('withdraw.confirmAction')}
-            </ConfirmDialog.ConfirmButton>
-          }
-        />
-      ));
+      return;
+    }
+
+    const isConfirmed = await confirmDialog.open({
+      title: t('withdraw.confirmTitle'),
+      description: t('withdraw.confirmDescription'),
+      cancelLabel: t('common:actions.cancel'),
+      confirmLabel: t('withdraw.confirmAction'),
+      confirmColor: 'danger',
+    });
+    if (isConfirmed) {
+      deleteAccount.mutate({});
     }
   };
 

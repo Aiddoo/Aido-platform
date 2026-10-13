@@ -3,6 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
 import { useOverlay } from '@src/shared/ui/overlay';
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 
 import type { PremiumDialogProps } from './premium-dialog.types';
 
@@ -46,22 +47,25 @@ export function PremiumDialog({
 export function usePremiumDialog() {
   const overlay = useOverlay();
 
-  return {
-    open: (options: { title?: string; description: string; onConfirm?: () => void }) => {
-      overlay.open(({ isOpen, close, exit }) => (
-        <PremiumDialog
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              close();
-              exit();
-            }
-          }}
-          title={options.title}
-          description={options.description}
-          onConfirm={options.onConfirm}
-        />
-      ));
-    },
-  };
+  return useMemo(
+    () => ({
+      open: (options: { title?: string; description: string; onConfirm?: () => void }) => {
+        overlay.open(({ isOpen, close, exit }) => (
+          <PremiumDialog
+            isOpen={isOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                close();
+                exit();
+              }
+            }}
+            title={options.title}
+            description={options.description}
+            onConfirm={options.onConfirm}
+          />
+        ));
+      },
+    }),
+    [overlay],
+  );
 }

@@ -3,12 +3,11 @@ import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ConfirmDialog,
   H3,
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
   Text,
-  useOverlay,
+  useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -20,49 +19,22 @@ function DeleteAccountScreen() {
   const { t } = useTranslation(['auth', 'common']);
   const [password, setPassword] = useState('');
   const deleteAccountMutation = useMutation(useDeleteAccountMutationOptions());
-  const overlay = useOverlay();
+  const confirmDialog = useConfirmDialog();
 
   const isValid = password.length > 0;
 
-  const handleDeletePress = () => {
+  const handleDeletePress = async () => {
     Keyboard.dismiss();
-    overlay.open(({ isOpen, close, exit }) => (
-      <ConfirmDialog
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        title={<ConfirmDialog.Title>{t('deleteAccount.dialogTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>{t('deleteAccount.dialogMessage')}</ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton
-            onPress={() => {
-              close();
-              exit();
-            }}
-          >
-            {t('common:actions.cancel')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            color="danger"
-            onPress={() => {
-              close();
-              exit();
-              deleteAccountMutation.mutate({ password });
-            }}
-          >
-            {t('deleteAccount.confirm')}
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
-    ));
+    const isConfirmed = await confirmDialog.open({
+      title: t('deleteAccount.dialogTitle'),
+      description: t('deleteAccount.dialogMessage'),
+      cancelLabel: t('common:actions.cancel'),
+      confirmLabel: t('deleteAccount.confirm'),
+      confirmColor: 'danger',
+    });
+    if (isConfirmed) {
+      deleteAccountMutation.mutate({ password });
+    }
   };
 
   return (
