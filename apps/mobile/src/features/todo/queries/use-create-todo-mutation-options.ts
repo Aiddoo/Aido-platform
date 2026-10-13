@@ -3,8 +3,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import type { User } from '@src/features/user/domains/user.model';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -113,7 +112,7 @@ export const useCreateTodoMutationOptions = () => {
         is_all_day: input.isAllDay,
         visibility: input.visibility ?? 'PUBLIC',
       });
-      const accountId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
+      const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
         trackAttributedFeatureSuccess({ accountId, feature: 'todo_creation' });
       }

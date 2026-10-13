@@ -1,6 +1,5 @@
 import { useLogger, useStoreReviewPromptService } from '@src/bootstrap/providers/di-context';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import type { User } from '@src/features/user/domains/user.model';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
@@ -59,7 +58,7 @@ export function useStoreReviewPrompt() {
 
   const promptAfterSuccessfulCompletion = useCallback(
     async (todoId: number): Promise<boolean> => {
-      const accountId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
+      const accountId = getCachedMe(queryClient)?.id;
       if (!accountId) {
         return false;
       }

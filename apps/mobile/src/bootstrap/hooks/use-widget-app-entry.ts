@@ -1,6 +1,5 @@
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import type { User } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import {
   type WidgetNavigationCommand,
   WidgetNavigationPolicy,
@@ -58,7 +57,7 @@ export function useWidgetAppEntry() {
         return;
       }
       if (command) {
-        const currentUserId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
+        const currentUserId = getCachedMe(queryClient)?.id;
         if (currentUserId === undefined) {
           return;
         }

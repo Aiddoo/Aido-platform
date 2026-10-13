@@ -1,7 +1,6 @@
 import type { ReorderTodoCategoryInput } from '@aido/api';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import type { User } from '@src/features/user/domains/user.model';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -27,7 +26,7 @@ export const useReorderTodoCategoryMutationOptions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.list() });
       trackEvent('category_reordered', { source: 'settings' });
-      const accountId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
+      const accountId = getCachedMe(queryClient)?.id;
       if (accountId) {
         trackAttributedFeatureSuccess({ accountId, feature: 'category_reorder' });
       }

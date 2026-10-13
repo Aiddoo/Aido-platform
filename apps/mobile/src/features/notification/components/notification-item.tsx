@@ -1,6 +1,6 @@
 import { useLogger } from '@src/bootstrap/providers/di-context';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import { type User, UserPolicy } from '@src/features/user/domains/user.model';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -84,7 +84,7 @@ function useNotificationPress(notification: Notification) {
     }
 
     if (NotificationPolicy.isAiFeature(notification)) {
-      const user = queryClient.getQueryData<User>(USER_QUERY_KEYS.me());
+      const user = getCachedMe(queryClient);
       if (user && !UserPolicy.isPremiumUser(user)) {
         trackEvent('premium_gate_shown', { feature: 'ai_report' });
         premiumDialog.open({
