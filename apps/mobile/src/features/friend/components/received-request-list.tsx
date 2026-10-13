@@ -49,7 +49,7 @@ export function ReceivedRequestList() {
                   size="small"
                   display="inline"
                   onPress={() => acceptMutation.mutate(item.id)}
-                  disabled={isProcessing}
+                  isDisabled={isProcessing}
                 >
                   {t('list.accept')}
                 </Button>
@@ -59,7 +59,7 @@ export function ReceivedRequestList() {
                   size="small"
                   display="inline"
                   onPress={() => rejectMutation.mutate(item.id)}
-                  disabled={isProcessing}
+                  isDisabled={isProcessing}
                 >
                   {t('list.reject')}
                 </Button>

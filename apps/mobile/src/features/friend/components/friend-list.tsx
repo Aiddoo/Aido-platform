@@ -169,7 +169,7 @@ export function FriendList() {
                               size="small"
                               display="inline"
                               onPress={() => openDeleteConfirmDialog(item.id)}
-                              disabled={isProcessing}
+                              isDisabled={isProcessing}
                             >
                               {t('common:actions.delete')}
                             </Button>

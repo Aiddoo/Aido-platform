@@ -236,7 +236,7 @@ function AppVersionSetting() {
       <SettingNavigation.Item
         label={t('item')}
         onPress={handlePress}
-        disabled={query.isFetching}
+        isDisabled={query.isFetching}
         right={
           <HStack align="center" gap={8}>
             <Text size="b3" shade={6} numberOfLines={1}>

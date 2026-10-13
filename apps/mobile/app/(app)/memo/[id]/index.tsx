@@ -278,7 +278,7 @@ export default function MemoDetailScreen() {
         cancelButton={
           <ConfirmDialog.CancelButton
             onPress={() => setIsDeleteDialogOpen(false)}
-            disabled={isDeletePending}
+            isDisabled={isDeletePending}
           >
             {t('common:actions.cancel')}
           </ConfirmDialog.CancelButton>

@@ -44,7 +44,7 @@ export function SentRequestList() {
                 size="small"
                 display="inline"
                 onPress={() => cancelMutation.mutate(item.id)}
-                disabled={isProcessing}
+                isDisabled={isProcessing}
               >
                 {t('common:actions.cancel')}
               </Button>

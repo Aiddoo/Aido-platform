@@ -1,3 +1,4 @@
+import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 
@@ -25,17 +26,16 @@ export function SettingNavigation({ label, children }: SettingNavigationProps) {
 
 interface SettingNavigationItemProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
-  'children' | 'isDisabled'
+  'children'
 > {
   label: string;
   right?: ReactNode;
-  disabled?: boolean;
 }
 
 SettingNavigation.Item = function Item({
   label,
   right,
-  disabled,
+  isDisabled,
   className,
   ...props
 }: SettingNavigationItemProps) {
@@ -43,8 +43,8 @@ SettingNavigation.Item = function Item({
     <PressableFeedback
       accessibilityRole="button"
       accessibilityLabel={label}
-      isDisabled={disabled}
-      className={['rounded-lg', className].filter(Boolean).join(' ')}
+      isDisabled={isDisabled}
+      className={cn('rounded-lg', className)}
       {...props}
     >
       <PressableFeedback.Highlight className="rounded-xl" />
@@ -52,7 +52,7 @@ SettingNavigation.Item = function Item({
         contents={<ListRow.Texts type="1RowTypeA" top={label} topProps={{ shade: 8 }} />}
         right={right ?? <ArrowRightIcon colorClassName="text-gray-6" />}
         horizontalPadding="medium"
-        disabled={disabled}
+        disabled={isDisabled}
         className="min-h-11"
       />
     </PressableFeedback>

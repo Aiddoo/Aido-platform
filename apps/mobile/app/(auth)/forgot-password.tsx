@@ -248,7 +248,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
             <TextButton
               size="medium"
               onPress={handleResend}
-              disabled={cooldown > 0 || forgotPasswordMutation.isPending}
+              isDisabled={cooldown > 0 || forgotPasswordMutation.isPending}
             >
               {cooldown > 0
                 ? t('verification.resendIn', { count: cooldown })

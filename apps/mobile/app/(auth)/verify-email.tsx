@@ -173,7 +173,7 @@ function VerifyEmailScreen() {
                 <TextButton
                   size="medium"
                   onPress={handleResend}
-                  disabled={cooldown > 0 || resend.isPending}
+                  isDisabled={cooldown > 0 || resend.isPending}
                 >
                   {cooldown > 0
                     ? t('auth:verification.resendIn', { count: cooldown })
