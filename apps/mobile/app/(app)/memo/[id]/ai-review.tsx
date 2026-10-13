@@ -2,7 +2,10 @@ import { ErrorCode } from '@aido/api/errors';
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { MemoTodoEditor } from '@src/features/memo/components/memo-todo-editor';
-import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
+import {
+  memoScreenParamsSchema,
+  useMemoScreenParams,
+} from '@src/features/memo/hooks/use-memo-screen-params';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
 import { toReviewedMemoConversionInput } from '@src/features/memo/utils/to-reviewed-memo-conversion-input';
 import { isApiError } from '@src/shared/errors';
@@ -19,7 +22,7 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -161,6 +164,12 @@ AiReviewScreen.Error = function ErrorFallback({ error }: Pick<QueryErrorFallback
 };
 
 export default function AiReviewRoute() {
+  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+
+  if (!params.success) {
+    return <Redirect href="/memo" />;
+  }
+
   return (
     <VStack className="flex-1 bg-white">
       <QueryErrorBoundary fallback={({ error }) => <AiReviewScreen.Error error={error} />}>

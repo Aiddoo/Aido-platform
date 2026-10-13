@@ -3,7 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { AiParseConfirmDialog } from '@src/features/memo/components/ai-parse-confirm-dialog';
-import { useMemoScreenParams } from '@src/features/memo/hooks/use-memo-screen-params';
+import {
+  memoScreenParamsSchema,
+  useMemoScreenParams,
+} from '@src/features/memo/hooks/use-memo-screen-params';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
 import { useDeleteMemoMutationOptions } from '@src/features/memo/queries/use-delete-memo-mutation-options';
 import { useToggleMemoPinMutationOptions } from '@src/features/memo/queries/use-toggle-memo-pin-mutation-options';
@@ -33,7 +36,7 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
+import { Redirect, Stack, router, useLocalSearchParams } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { Suspense, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
@@ -50,7 +53,7 @@ import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
 
-export default function MemoDetailScreen() {
+function MemoDetailScreen() {
   const today = useToday();
   const { showBoundary } = useErrorBoundary();
   const goBack = useSingleTap(router.back);
@@ -321,5 +324,21 @@ function MemoActionButton({ icon, className, ...props }: MemoActionButtonProps) 
     >
       {icon}
     </Pressable>
+  );
+}
+
+export default function MemoDetailRoute() {
+  const params = memoScreenParamsSchema.safeParse(useLocalSearchParams());
+
+  if (!params.success) {
+    return <Redirect href="/memo" />;
+  }
+
+  return (
+    <QueryErrorBoundary resetKeys={[params.data.id]}>
+      <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+        <MemoDetailScreen />
+      </Suspense>
+    </QueryErrorBoundary>
   );
 }
