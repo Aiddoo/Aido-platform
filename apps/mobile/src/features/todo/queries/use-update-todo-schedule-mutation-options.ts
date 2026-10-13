@@ -1,5 +1,6 @@
 import type { UpdateTodoScheduleInput } from '@aido/api';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
@@ -28,6 +29,7 @@ export const useUpdateTodoScheduleMutationOptions = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      invalidateNudgeInteractions(queryClient);
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success(t('todo:toast.scheduleChanged'));
     },

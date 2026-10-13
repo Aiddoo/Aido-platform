@@ -1,5 +1,6 @@
 import type { DeleteTodoCategoryQuery } from '@aido/api';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
+import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { isTodoCategoryError } from '@src/features/todo/domains/todo-category.error';
 import type { TodoCategoriesResult } from '@src/features/todo/domains/todo-category.model';
@@ -52,6 +53,7 @@ export const useDeleteTodoCategoryMutationOptions = () => {
       trackEvent('category_deleted');
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      invalidateNudgeInteractions(queryClient);
       toast.success(t('todo:toast.categoryDeleted'));
     },
     onError: (error, _variables, context) => {

@@ -22,12 +22,9 @@ export const useSendTodoNudgeMutationOptions = () => {
       const result = await todoNudgeService.sendNudge(input);
       return unwrap(result);
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeLimit() });
-      queryClient.invalidateQueries({
-        queryKey: NUDGE_QUERY_KEYS.nudgeCooldown(variables.receiverId),
-      });
+      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.limit() });
       toast.success(t('todo:toast.nudgeSent'));
       trackEvent('nudge_sent');
     },

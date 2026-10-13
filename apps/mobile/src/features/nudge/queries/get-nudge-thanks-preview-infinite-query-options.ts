@@ -14,7 +14,7 @@ export function getNudgeThanksPreviewInfiniteQueryOptions(
   { todoId }: { todoId: number },
 ) {
   return infiniteQueryOptions({
-    queryKey: [...NUDGE_QUERY_KEYS.nudgeThanks(todoId), 'pages'],
+    queryKey: NUDGE_QUERY_KEYS.thanksPreview({ todoId }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getThanksPreview(

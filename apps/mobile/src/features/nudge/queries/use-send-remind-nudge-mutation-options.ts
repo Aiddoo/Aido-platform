@@ -25,7 +25,7 @@ export const useSendRemindNudgeMutationOptions = () => {
     onSuccess: (_data, variables) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({
-        queryKey: NUDGE_QUERY_KEYS.remindNudgeCooldown(variables.receiverId),
+        queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId: variables.receiverId }),
       });
       toast.success(t('todo:toast.remindNudgeSent'));
       trackEvent('remind_nudge_sent');

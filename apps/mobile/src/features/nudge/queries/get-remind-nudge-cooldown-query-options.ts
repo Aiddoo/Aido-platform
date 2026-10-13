@@ -9,7 +9,7 @@ export function getRemindNudgeCooldownQueryOptions(
   { userId }: { userId: string },
 ) {
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.remindNudgeCooldown(userId),
+    queryKey: NUDGE_QUERY_KEYS.remindCooldown({ userId: userId }),
     queryFn: async ({ signal }) => {
       const result = await todoNudgeService.getRemindCooldownInfo(userId, signal);
       return unwrap(result);

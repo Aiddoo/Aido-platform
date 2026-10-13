@@ -17,9 +17,9 @@ export function useReplyToNudgeMutationOptions() {
       unwrap(await todoNudgeService.replyToNudge(nudgeId, input)),
     onSuccess: async (data, variables) => {
       trackEvent('nudge_replied', { reply_kind: variables.input.replyKind });
-      queryClient.setQueryData(NUDGE_QUERY_KEYS.nudgeInteraction(variables.nudgeId), data);
+      queryClient.setQueryData(NUDGE_QUERY_KEYS.interaction({ nudgeId: variables.nudgeId }), data);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeInteractions() }),
+        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() }),
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
       ]);
     },
@@ -27,7 +27,7 @@ export function useReplyToNudgeMutationOptions() {
       if (!isApiError(error)) {
         errorReporter.captureException(toError(error), { feature: 'todo_nudge' });
       }
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeInteractions() });
+      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
     },
   });
 }

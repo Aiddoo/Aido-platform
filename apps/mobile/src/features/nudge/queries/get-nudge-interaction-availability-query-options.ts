@@ -7,7 +7,7 @@ import type { TodoNudgeService } from '../apis/todo-nudge.service';
 
 export function getNudgeInteractionAvailabilityQueryOptions(todoNudgeService: TodoNudgeService) {
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.nudgeInteractionAvailability(),
+    queryKey: NUDGE_QUERY_KEYS.interactionAvailability(),
     queryFn: async ({ signal }) =>
       unwrap(await todoNudgeService.getInteractionAvailability(signal)),
     staleTime: 30_000,

@@ -1,5 +1,6 @@
 import type { UpdateTodoInput } from '@aido/api';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
+import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -30,6 +31,7 @@ export const useUpdateTodoMutationOptions = () => {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      invalidateNudgeInteractions(queryClient);
       queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success(t('todo:toast.todoUpdated'));
       const field = Object.keys(variables.input).join(',');

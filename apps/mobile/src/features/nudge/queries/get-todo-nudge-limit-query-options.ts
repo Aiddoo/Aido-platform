@@ -6,7 +6,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 export function getTodoNudgeLimitQueryOptions(todoNudgeService: TodoNudgeService) {
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.nudgeLimit(),
+    queryKey: NUDGE_QUERY_KEYS.limit(),
     queryFn: async ({ signal }) => {
       const result = await todoNudgeService.getLimitInfo(signal);
       return unwrap(result);

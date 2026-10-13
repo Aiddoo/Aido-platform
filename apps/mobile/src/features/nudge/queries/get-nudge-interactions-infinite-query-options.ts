@@ -13,7 +13,7 @@ export function getNudgeInteractionsInfiniteQueryOptions(
   { direction }: { direction: NudgeDirection },
 ) {
   return infiniteQueryOptions({
-    queryKey: NUDGE_QUERY_KEYS.nudgeInteractionList(direction),
+    queryKey: NUDGE_QUERY_KEYS.interactionList({ direction: direction }),
     queryFn: async ({ pageParam, signal }) =>
       unwrap(
         await todoNudgeService.getInteractions(

@@ -20,7 +20,7 @@ export function useSendNudgeThanksMutationOptions() {
         trackEvent('nudge_thanks_sent', { recipient_count: recipientCount });
       }
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeInteractions() }),
+        queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() }),
         queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
       ]);
     },
@@ -28,7 +28,7 @@ export function useSendNudgeThanksMutationOptions() {
       if (!isApiError(error)) {
         errorReporter.captureException(toError(error), { feature: 'todo_nudge' });
       }
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeInteractions() });
+      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.interactions() });
     },
   });
 }

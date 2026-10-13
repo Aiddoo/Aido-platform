@@ -1,7 +1,7 @@
 import type { ToggleTodoCompleteInput } from '@aido/api';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCompletionForActivation } from '@src/features/activation/queries/activation-mutations';
-import { NUDGE_QUERY_KEYS } from '@src/features/nudge/constants/nudge-query-keys';
+import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
@@ -92,7 +92,7 @@ export const useToggleTodoMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.ranges() });
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details(todoId) });
-      queryClient.invalidateQueries({ queryKey: NUDGE_QUERY_KEYS.nudgeInteractions() });
+      invalidateNudgeInteractions(queryClient);
     },
   });
 };

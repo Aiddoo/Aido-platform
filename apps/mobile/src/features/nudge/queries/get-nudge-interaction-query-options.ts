@@ -10,7 +10,7 @@ export function getNudgeInteractionQueryOptions(
   { nudgeId }: { nudgeId: number },
 ) {
   return queryOptions({
-    queryKey: NUDGE_QUERY_KEYS.nudgeInteraction(nudgeId),
+    queryKey: NUDGE_QUERY_KEYS.interaction({ nudgeId: nudgeId }),
     queryFn: async ({ signal }) => unwrap(await todoNudgeService.getInteraction(nudgeId, signal)),
     staleTime: 30_000,
   });
