@@ -1,5 +1,6 @@
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { VerificationCodeInput } from '@src/features/auth/components/verification-code-input';
 import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
 import {
   verifyEmailScreenParamsSchema,
@@ -7,6 +8,7 @@ import {
 } from '@src/features/auth/hooks/use-verify-email-screen-params';
 import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
+import { maskEmail } from '@src/features/auth/utils/mask-email';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -24,7 +26,7 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { InputOTP, type InputOTPRef, PressableFeedback } from 'heroui-native';
+import { type InputOTPRef, PressableFeedback } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
@@ -104,7 +106,7 @@ function VerifyEmailScreen() {
     );
   };
 
-  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
+  const maskedEmail = maskEmail(email);
 
   return (
     <FormProvider {...formMethods}>
@@ -137,26 +139,14 @@ function VerifyEmailScreen() {
             <VStack gap={32} align="center">
               <FormField control={control} name="code">
                 {({ onChange, value }) => (
-                  <InputOTP
+                  <VerificationCodeInput
+                    isSeparated
                     ref={inputOTPRef}
-                    maxLength={VERIFICATION_CODE.LENGTH}
                     value={value}
                     onChange={onChange}
                     onComplete={handleComplete}
                     isInvalid={isInvalid}
-                  >
-                    <InputOTP.Group>
-                      <InputOTP.Slot index={0} />
-                      <InputOTP.Slot index={1} />
-                      <InputOTP.Slot index={2} />
-                    </InputOTP.Group>
-                    <InputOTP.Separator />
-                    <InputOTP.Group>
-                      <InputOTP.Slot index={3} />
-                      <InputOTP.Slot index={4} />
-                      <InputOTP.Slot index={5} />
-                    </InputOTP.Group>
-                  </InputOTP>
+                  />
                 )}
               </FormField>
 

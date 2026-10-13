@@ -3,6 +3,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { NewPasswordStep } from '@src/features/auth/components/new-password-step';
 import { SuggestedEmailDomainList } from '@src/features/auth/components/suggested-email-domain-list';
+import { VerificationCodeInput } from '@src/features/auth/components/verification-code-input';
 import {
   type ForgotPasswordFormData,
   forgotPasswordFormSchema,
@@ -10,6 +11,7 @@ import {
 import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
 import { useForgotPasswordMutationOptions } from '@src/features/auth/queries/use-forgot-password-mutation-options';
 import { useResetPasswordMutationOptions } from '@src/features/auth/queries/use-reset-password-mutation-options';
+import { maskEmail } from '@src/features/auth/utils/mask-email';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isApiError } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -27,7 +29,7 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { InputOTP, type InputOTPRef } from 'heroui-native';
+import { type InputOTPRef } from 'heroui-native';
 import { useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
@@ -182,7 +184,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   const { t } = useTranslation('auth');
   const { control, getValues, setValue } = useFormContext<ForgotPasswordFormData>();
   const email = getValues('email');
-  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
+  const maskedEmail = maskEmail(email);
 
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [cooldown, setCooldown] = useCooldown(0);
@@ -237,22 +239,12 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
         <VStack gap={32} align="center">
           <FormField control={control} name="code">
             {({ value, onChange }) => (
-              <InputOTP
+              <VerificationCodeInput
                 ref={inputOTPRef}
-                maxLength={VERIFICATION_CODE.LENGTH}
                 value={value}
                 onChange={onChange}
                 onComplete={handleComplete}
-              >
-                <InputOTP.Group>
-                  <InputOTP.Slot index={0} />
-                  <InputOTP.Slot index={1} />
-                  <InputOTP.Slot index={2} />
-                  <InputOTP.Slot index={3} />
-                  <InputOTP.Slot index={4} />
-                  <InputOTP.Slot index={5} />
-                </InputOTP.Group>
-              </InputOTP>
+              />
             )}
           </FormField>
 

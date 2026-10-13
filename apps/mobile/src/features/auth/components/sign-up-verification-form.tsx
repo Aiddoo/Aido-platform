@@ -7,7 +7,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { H3, HStack, Text, TextButton, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { InputOTP, type InputOTPRef } from 'heroui-native';
+import { type InputOTPRef } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormContext, useFormState } from 'react-hook-form';
@@ -17,6 +17,8 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useCooldown } from '../hooks/use-cooldown';
 import { useResendVerificationMutationOptions } from '../queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '../queries/use-verify-email-mutation-options';
+import { maskEmail } from '../utils/mask-email';
+import { VerificationCodeInput } from './verification-code-input';
 
 export const SignUpVerificationForm = () => {
   const { showBoundary } = useErrorBoundary();
@@ -83,7 +85,7 @@ export const SignUpVerificationForm = () => {
     );
   };
 
-  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
+  const maskedEmail = maskEmail(email);
 
   return (
     <View className="flex-1">
@@ -103,23 +105,13 @@ export const SignUpVerificationForm = () => {
         <VStack gap={32} align="center">
           <FormField control={control} name="code">
             {({ onChange, value }) => (
-              <InputOTP
+              <VerificationCodeInput
                 ref={inputOTPRef}
-                maxLength={VERIFICATION_CODE.LENGTH}
                 value={value}
                 onChange={onChange}
                 onComplete={handleComplete}
                 isInvalid={isInvalid}
-              >
-                <InputOTP.Group>
-                  <InputOTP.Slot index={0} />
-                  <InputOTP.Slot index={1} />
-                  <InputOTP.Slot index={2} />
-                  <InputOTP.Slot index={3} />
-                  <InputOTP.Slot index={4} />
-                  <InputOTP.Slot index={5} />
-                </InputOTP.Group>
-              </InputOTP>
+              />
             )}
           </FormField>
 
