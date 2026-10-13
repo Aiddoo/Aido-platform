@@ -9,7 +9,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { TodoListResult } from '../domains/todo.model';
+import { cancelTodoListQuery, removeTodoFromList, restoreTodo, snapshotTodo } from './todo-cache';
 
 interface DeleteTodoMutationParams {
   todoId: number;
@@ -28,28 +28,11 @@ export const useDeleteTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, startDate }) => {
-      await queryClient.cancelQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      });
+      await cancelTodoListQuery(queryClient, { date: startDate });
+      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
+      removeTodoFromList(queryClient, { date: startDate, todoId });
 
-      const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      );
-
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: old.todos.filter((todo) => todo.id !== todoId),
-          };
-        },
-      );
-
-      return { previousData, startDate };
+      return { snapshot };
     },
     onSuccess: (_, { todoId }) => {
       toast.success(t('todo:toast.todoDeleted'));
@@ -58,11 +41,8 @@ export const useDeleteTodoMutationOptions = () => {
     onError: (error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
-      if (context?.previousData !== undefined) {
-        queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          context.previousData,
-        );
+      if (context?.snapshot) {
+        restoreTodo(queryClient, context.snapshot);
       }
 
       if (isApiError(error)) {

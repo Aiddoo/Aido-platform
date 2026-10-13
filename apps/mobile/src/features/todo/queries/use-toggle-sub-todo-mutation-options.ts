@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import type { TodoListResult } from '../domains/todo.model';
+import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from './todo-cache';
 
 interface ToggleSubTodoParams {
   todoId: number;
@@ -26,39 +26,17 @@ export const useToggleSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, completed, startDate }) => {
-      await queryClient.cancelQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      });
+      await cancelTodoListQuery(queryClient, { date: startDate });
+      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
+        ...todo,
+        subTodos: todo.subTodos.map((subTodo) =>
+          subTodo.id === subTodoId ? { ...subTodo, completed } : subTodo,
+        ),
+        subTodoStats: SubTodoPolicy.statsAfterToggle(todo, completed),
+      }));
 
-      const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      );
-
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: old.todos.map((todo) => {
-              if (todo.id !== todoId) {
-                return todo;
-              }
-              return {
-                ...todo,
-                subTodos: todo.subTodos.map((subTodo) =>
-                  subTodo.id === subTodoId ? { ...subTodo, completed } : subTodo,
-                ),
-                subTodoStats: SubTodoPolicy.statsAfterToggle(todo, completed),
-              };
-            }),
-          };
-        },
-      );
-
-      return { previousData, startDate };
+      return { snapshot };
     },
     onSuccess: (_data, { todoId, subTodoId, completed }) => {
       trackEvent('todo_item_completed', {
@@ -69,13 +47,13 @@ export const useToggleSubTodoMutationOptions = () => {
     },
     onError: (_error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      if (context) {
-        queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          context.previousData,
-        );
+      if (context?.snapshot) {
+        restoreTodo(queryClient, context.snapshot);
       }
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
+    },
+    onSettled: (_data, _error, { todoId }) => {
+      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.details({ todoId }) });
     },
   });
 };

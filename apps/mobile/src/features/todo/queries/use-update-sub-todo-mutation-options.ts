@@ -7,7 +7,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { TodoListResult } from '../domains/todo.model';
+import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from './todo-cache';
 
 interface UpdateSubTodoParams {
   todoId: number;
@@ -28,38 +28,16 @@ export const useUpdateSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, subTodoId, title, startDate }) => {
-      await queryClient.cancelQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      });
+      await cancelTodoListQuery(queryClient, { date: startDate });
+      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
+        ...todo,
+        subTodos: todo.subTodos.map((subTodo) =>
+          subTodo.id === subTodoId ? { ...subTodo, title } : subTodo,
+        ),
+      }));
 
-      const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      );
-
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: old.todos.map((todo) => {
-              if (todo.id !== todoId) {
-                return todo;
-              }
-              return {
-                ...todo,
-                subTodos: todo.subTodos.map((subTodo) =>
-                  subTodo.id === subTodoId ? { ...subTodo, title } : subTodo,
-                ),
-              };
-            }),
-          };
-        },
-      );
-
-      return { previousData, startDate };
+      return { snapshot };
     },
     onSuccess: (_data, { todoId, subTodoId }) => {
       trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
@@ -67,11 +45,8 @@ export const useUpdateSubTodoMutationOptions = () => {
     onError: (_error, _variables, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       toast.error(undefined, { fallback: t('todo:toast.subTodoUpdateFailed') });
-      if (context) {
-        queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          context.previousData,
-        );
+      if (context?.snapshot) {
+        restoreTodo(queryClient, context.snapshot);
       }
       queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() });
     },

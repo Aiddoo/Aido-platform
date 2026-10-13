@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoCategoriesResult } from '../domains/todo-category.model';
 import type { OptimisticTodo, TodoListResult } from '../domains/todo.model';
+import { createOptimisticId } from './todo-cache';
 
 export interface CreateTodoParams {
   input: CreateTodoInput;
@@ -63,7 +64,7 @@ export const useCreateTodoMutationOptions = () => {
       }
 
       const optimisticTodo: OptimisticTodo = {
-        id: Math.random(),
+        id: createOptimisticId(),
         title: input.title,
         startDate: input.startDate,
         endDate: null,

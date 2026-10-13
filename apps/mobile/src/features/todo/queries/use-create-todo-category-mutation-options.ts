@@ -15,6 +15,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
+import { createOptimisticId } from './todo-cache';
 
 export const useCreateTodoCategoryMutationOptions = () => {
   const todoCategoryService = useTodoCategoryService();
@@ -37,7 +38,7 @@ export const useCreateTodoCategoryMutationOptions = () => {
       const lastSortOrder = previousData?.categories.at(-1)?.sortOrder ?? 0;
 
       const optimisticCategory: OptimisticTodoCategoryWithCount = {
-        id: Math.random(),
+        id: createOptimisticId(),
         name: input.name,
         color: input.color,
         sortOrder: lastSortOrder + 1,

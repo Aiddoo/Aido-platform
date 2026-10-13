@@ -10,7 +10,13 @@ import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
-import type { TodoListResult } from '../domains/todo.model';
+import {
+  cancelTodoListQuery,
+  createOptimisticId,
+  restoreTodo,
+  snapshotTodo,
+  updateTodoInList,
+} from './todo-cache';
 
 interface AddSubTodoParams {
   todoId: number;
@@ -30,43 +36,18 @@ export const useAddSubTodoMutationOptions = () => {
       return unwrap(result);
     },
     onMutate: async ({ todoId, title, startDate }) => {
-      await queryClient.cancelQueries({
-        queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      });
+      await cancelTodoListQuery(queryClient, { date: startDate });
+      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
+        ...todo,
+        subTodos: [
+          ...todo.subTodos,
+          { id: createOptimisticId(), title, completed: false, sortOrder: todo.subTodos.length },
+        ],
+        subTodoStats: SubTodoPolicy.statsAfterAdd(todo),
+      }));
 
-      const previousData = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      );
-
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: old.todos.map((todo) => {
-              if (todo.id !== todoId) {
-                return todo;
-              }
-              const optimisticSubTodo = {
-                id: Math.random(),
-                title,
-                completed: false,
-                sortOrder: todo.subTodos.length,
-              };
-              return {
-                ...todo,
-                subTodos: [...todo.subTodos, optimisticSubTodo],
-                subTodoStats: SubTodoPolicy.statsAfterAdd(todo),
-              };
-            }),
-          };
-        },
-      );
-
-      return { previousData, startDate };
+      return { snapshot };
     },
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_added', { todo_id: todoId });
@@ -80,11 +61,8 @@ export const useAddSubTodoMutationOptions = () => {
         toast.error(undefined, { fallback: t('todo:toast.subTodoAddFailed') });
       }
 
-      if (context) {
-        queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          context.previousData,
-        );
+      if (context?.snapshot) {
+        restoreTodo(queryClient, context.snapshot);
       }
     },
     onSettled: (_data, _error, { startDate }) => {

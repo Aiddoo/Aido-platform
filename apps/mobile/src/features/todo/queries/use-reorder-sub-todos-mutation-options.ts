@@ -5,7 +5,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
-import type { TodoListResult } from '../domains/todo.model';
+import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from './todo-cache';
 
 interface ReorderSubTodosParams {
   todoId: number;
@@ -23,46 +23,25 @@ export const useReorderSubTodosMutationOptions = () => {
       const result = await subTodoService.reorderSubTodos(todoId, { itemIds: subTodoIds });
       return unwrap(result);
     },
-    onMutate: ({ todoId, subTodoIds, startDate }) => {
-      queryClient.cancelQueries({ queryKey: TODO_QUERY_KEYS.listByDate({ date: startDate }) });
+    onMutate: async ({ todoId, subTodoIds, startDate }) => {
+      await cancelTodoListQuery(queryClient, { date: startDate });
+      const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
+      updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
+        ...todo,
+        subTodos: subTodoIds
+          .map((id) => todo.subTodos.find((subTodo) => subTodo.id === id))
+          .filter((subTodo) => subTodo != null),
+      }));
 
-      const previous = queryClient.getQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-      );
-
-      queryClient.setQueryData<TodoListResult>(
-        TODO_QUERY_KEYS.listByDate({ date: startDate }),
-        (old) => {
-          if (!old) {
-            return old;
-          }
-          return {
-            ...old,
-            todos: old.todos.map((todo) => {
-              if (todo.id !== todoId) {
-                return todo;
-              }
-              const reordered = subTodoIds
-                .map((id) => todo.subTodos.find((st) => st.id === id))
-                .filter((st) => st != null);
-              return { ...todo, subTodos: reordered };
-            }),
-          };
-        },
-      );
-
-      return { previous, startDate };
+      return { snapshot, startDate };
     },
     onSuccess: (_data, { todoId }) => {
       trackEvent('todo_item_reordered', { todo_id: todoId });
     },
     onError: (_err, _vars, context) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      if (context?.previous) {
-        queryClient.setQueryData(
-          TODO_QUERY_KEYS.listByDate({ date: context.startDate }),
-          context.previous,
-        );
+      if (context?.snapshot) {
+        restoreTodo(queryClient, context.snapshot);
       }
       if (context) {
         queryClient.invalidateQueries({
