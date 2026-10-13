@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo.model';
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { type Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
@@ -30,18 +31,28 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import times from 'es-toolkit/compat/times';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense, useMemo, useState } from 'react';
+import { type ReactNode, Suspense, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
-import { NestableDraggableFlatList, ScaleDecorator } from 'react-native-draggable-flatlist';
+import {
+  type DragEndParams,
+  NestableDraggableFlatList,
+  ScaleDecorator,
+} from 'react-native-draggable-flatlist';
 import { match } from 'ts-pattern';
 
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { useFeedDate } from '../../hooks/use-feed-date';
-import { useSubTodoActions } from '../../hooks/use-sub-todo-actions';
-import { useTodoActions } from '../../hooks/use-todo-actions';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
+import { useAddSubTodoMutationOptions } from '../../queries/use-add-sub-todo-mutation-options';
+import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
+import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
+import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub-todos-mutation-options';
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
+import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
+import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
+import { useUpdateSubTodoMutationOptions } from '../../queries/use-update-sub-todo-mutation-options';
+import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
 import { AddSubTodoBottomSheet } from '../add-sub-todo-bottom-sheet';
 import { AddTodoBottomSheet } from '../add-todo-bottom-sheet';
@@ -209,17 +220,16 @@ interface TodoListItemProps {
 }
 
 TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoListItemProps) {
-  const editValues = toTodoEditFormValues(todo);
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('todo');
-  const todoActions = useTodoActions(todo);
-  const subTodoActions = useSubTodoActions(todo);
   const overlay = useOverlay();
+  const toggleTodo = useMutation(useToggleTodoMutationOptions());
+  const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
+  const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
-  const showDateTime = formattedTime != null;
   const isOptimistic = 'optimistic' in todo && todo.optimistic === true;
 
   /** 행을 누르면 하위 항목이 열리고, 그 안에서 바로 새 항목을 추가할 수 있다. */
@@ -228,208 +238,65 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   /** 댓글은 말풍선 버튼으로만 들어간다 — 할 일을 다루는 동작과 섞지 않는다. */
   const openComments = () => push({ pathname: '/todo/[todoId]', params: { todoId: todo.id } });
 
-  const openActionsSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
+  const openSheet = (render: (props: OverlaySheetProps) => ReactNode) =>
+    overlay.open(({ isOpen, close, exit }) =>
+      render({
+        isOpen,
+        onClose: close,
+        onOpenChange: (open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        },
+      }),
+    );
+
+  const openActionsSheet = () =>
+    openSheet((sheetProps) => (
       <TodoActionsBottomSheet
-        isOpen={isOpen}
+        {...sheetProps}
         todo={todo}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        onNavigate={(action) => {
+        onNavigate={(action) =>
           match(action)
-            .with('edit', () => openEditSheet())
-            .with('date', () => openDatePickerSheet())
-            .with('time', () => openTimePickerSheet())
-            .with('category', () => openCategorySheet())
-            .exhaustive();
-        }}
+            .with('edit', () =>
+              openSheet((props) => <AddTodoBottomSheet {...props} mode="edit" todo={todo} />),
+            )
+            .with('date', () => openSheet((props) => <ScheduleDateSheet {...props} todo={todo} />))
+            .with('time', () => openSheet((props) => <ScheduleTimeSheet {...props} todo={todo} />))
+            .with('category', () =>
+              openSheet((props) => <ChangeCategorySheet {...props} todo={todo} />),
+            )
+            .exhaustive()
+        }
       />
     ));
-  };
 
-  const openEditSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <AddTodoBottomSheet
-        mode="edit"
+  const openAddSubTodoSheet = () =>
+    openSheet((sheetProps) => <AddSubTodoSheet {...sheetProps} todo={todo} />);
+
+  const openSubTodoActionsSheet = (subTodo: SubTodo) =>
+    openSheet((sheetProps) => (
+      <SubTodoActionsSheet
+        {...sheetProps}
         todo={todo}
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
+        subTodo={subTodo}
+        onEdit={() =>
+          openSheet((props) => <EditSubTodoSheet {...props} todo={todo} subTodo={subTodo} />)
+        }
       />
     ));
-  };
 
-  const openDatePickerSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <BottomSheet
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-      >
-        {isOpen && (
-          <TodoDatePickerContent
-            startDate={editValues.startDate}
-            onCancel={close}
-            onConfirm={(startDate) => {
-              todoActions.updateSchedule({
-                startDate: formatDate(startDate),
-                endDate: null,
-                scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
-                isAllDay: todo.isAllDay,
-              });
-              close();
-            }}
-          />
-        )}
-      </BottomSheet>
-    ));
-  };
+  const handleSubTodoDragEnd = ({ data, from, to }: DragEndParams<SubTodo>) => {
+    if (from === to || reorderSubTodos.isPending) {
+      return;
+    }
 
-  const openTimePickerSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <BottomSheet
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-      >
-        {isOpen && (
-          <Suspense fallback={<ActivityIndicator />}>
-            <TodoTimePickerContent
-              draftDate={editValues.startDate}
-              scheduledTime={editValues.scheduledTime ?? undefined}
-              isAllDay={todo.isAllDay}
-              onCancel={close}
-              onConfirm={(scheduledTime, isAllDay) => {
-                todoActions.updateSchedule({
-                  startDate: formatDate(editValues.startDate),
-                  endDate: editValues.endDate ? formatDate(editValues.endDate) : null,
-                  scheduledTime: isAllDay ? null : (scheduledTime ?? null),
-                  isAllDay,
-                });
-                close();
-              }}
-            />
-          </Suspense>
-        )}
-      </BottomSheet>
-    ));
-  };
-
-  const openCategorySheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <CategorySelectBottomSheet
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        value={todo.category.id}
-        onChange={async (categoryId) => {
-          const changed = await todoActions.changeCategory(categoryId).catch(() => null);
-
-          if (changed) {
-            close();
-            exit();
-          }
-        }}
-        submitLabel={t('actions.changeSubmit')}
-      />
-    ));
-  };
-
-  const openAddSubTodoSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <AddSubTodoBottomSheet
-        mode="create"
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        onSubmit={async (value) => {
-          const added = await subTodoActions.add(value).catch(() => null);
-
-          if (added) {
-            close();
-          }
-        }}
-      />
-    ));
-  };
-
-  const openSubTodoActionsSheet = (subTodoId: number, currentValue: string) => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <SubTodoActionsBottomSheet
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        onEdit={() => {
-          overlay.open(({ isOpen: editIsOpen, close: editClose, exit: editExit }) => (
-            <AddSubTodoBottomSheet
-              mode="edit"
-              initialValue={currentValue}
-              isOpen={editIsOpen}
-              onClose={editClose}
-              onOpenChange={(open) => {
-                if (!open) {
-                  editClose();
-                  editExit();
-                }
-              }}
-              onSubmit={async (value) => {
-                const updated = await subTodoActions.update(subTodoId, value).catch(() => null);
-
-                if (updated) {
-                  editClose();
-                }
-              }}
-              onDelete={async () => {
-                const removed = await subTodoActions.remove(subTodoId).catch(() => null);
-
-                if (removed) {
-                  editClose();
-                }
-              }}
-            />
-          ));
-        }}
-        onDelete={async () => {
-          const removed = await subTodoActions.remove(subTodoId).catch(() => null);
-
-          if (removed) {
-            close();
-          }
-        }}
-      />
-    ));
+    reorderSubTodos.mutate({
+      todoId: todo.id,
+      subTodoIds: data.map((subTodo) => subTodo.id),
+      startDate: todo.startDate,
+    });
   };
 
   return (
@@ -439,8 +306,14 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
           testID={`todo-checkbox-${todo.id}`}
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
-          onSelectedChange={todoActions.toggle}
-          isDisabled={todoActions.isTogglePending || isOptimistic}
+          onSelectedChange={() =>
+            toggleTodo.mutate({
+              todoId: todo.id,
+              body: { completed: !todo.completed },
+              startDate: todo.startDate,
+            })
+          }
+          isDisabled={toggleTodo.isPending || isOptimistic}
         />
       }
       top={
@@ -452,7 +325,7 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
         </HStack>
       }
       middle={
-        showDateTime ? (
+        formattedTime != null ? (
           <Text size="e1" shade={6}>
             {formattedTime}
           </Text>
@@ -490,7 +363,10 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
       isDisabled={isOptimistic}
     >
       {isExpanded && (
-        <SubTodoList onAddPress={openAddSubTodoSheet} isAddDisabled={!subTodoActions.canAdd}>
+        <SubTodoList
+          onAddPress={openAddSubTodoSheet}
+          isAddDisabled={!SubTodoPolicy.canAddSubTodo(todo)}
+        >
           <NestableDraggableFlatList
             data={todo.subTodos}
             keyExtractor={(item) => String(item.id)}
@@ -499,18 +375,199 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
                 <SubTodoList.Item
                   label={item.title}
                   isSelected={item.completed}
-                  onSelectedChange={(checked) => subTodoActions.toggle(item.id, checked)}
-                  onMorePress={() => openSubTodoActionsSheet(item.id, item.title)}
+                  onSelectedChange={(completed) =>
+                    toggleSubTodo.mutate({
+                      todoId: todo.id,
+                      subTodoId: item.id,
+                      completed,
+                      startDate: todo.startDate,
+                    })
+                  }
+                  onMorePress={() => openSubTodoActionsSheet(item)}
                   drag={itemDrag}
                   isActive={itemIsActive}
-                  isDragDisabled={subTodoActions.isReorderPending}
+                  isDragDisabled={reorderSubTodos.isPending}
                 />
               </ScaleDecorator>
             )}
-            onDragEnd={subTodoActions.handleDragEnd}
+            onDragEnd={handleSubTodoDragEnd}
           />
         </SubTodoList>
       )}
     </TodoRow>
   );
 };
+
+interface OverlaySheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpenChange: (open: boolean) => void;
+}
+
+function ScheduleDateSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps & { todo: Todo }) {
+  const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
+  const editValues = toTodoEditFormValues(todo);
+
+  return (
+    <BottomSheet {...sheetProps}>
+      {sheetProps.isOpen && (
+        <TodoDatePickerContent
+          startDate={editValues.startDate}
+          onCancel={onClose}
+          onConfirm={(startDate) => {
+            updateSchedule.mutate({
+              todoId: todo.id,
+              input: {
+                startDate: formatDate(startDate),
+                endDate: null,
+                scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
+                isAllDay: todo.isAllDay,
+              },
+            });
+            onClose();
+          }}
+        />
+      )}
+    </BottomSheet>
+  );
+}
+
+function ScheduleTimeSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps & { todo: Todo }) {
+  const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
+  const editValues = toTodoEditFormValues(todo);
+
+  return (
+    <BottomSheet {...sheetProps}>
+      {sheetProps.isOpen && (
+        <Suspense fallback={<ActivityIndicator />}>
+          <TodoTimePickerContent
+            draftDate={editValues.startDate}
+            scheduledTime={editValues.scheduledTime ?? undefined}
+            isAllDay={todo.isAllDay}
+            onCancel={onClose}
+            onConfirm={(scheduledTime, isAllDay) => {
+              updateSchedule.mutate({
+                todoId: todo.id,
+                input: {
+                  startDate: formatDate(editValues.startDate),
+                  endDate: editValues.endDate ? formatDate(editValues.endDate) : null,
+                  scheduledTime: isAllDay ? null : (scheduledTime ?? null),
+                  isAllDay,
+                },
+              });
+              onClose();
+            }}
+          />
+        </Suspense>
+      )}
+    </BottomSheet>
+  );
+}
+
+function ChangeCategorySheet({
+  todo,
+  onClose: _onClose,
+  ...sheetProps
+}: OverlaySheetProps & { todo: Todo }) {
+  const { t } = useTranslation('todo');
+  const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
+
+  return (
+    <CategorySelectBottomSheet
+      {...sheetProps}
+      value={todo.category.id}
+      submitLabel={t('actions.changeSubmit')}
+      onChange={async (categoryId) => {
+        const changed = await changeCategory
+          .mutateAsync({ todoId: todo.id, input: { categoryId } })
+          .catch(() => null);
+
+        if (changed) {
+          sheetProps.onOpenChange(false);
+        }
+      }}
+    />
+  );
+}
+
+function AddSubTodoSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps & { todo: Todo }) {
+  const addSubTodo = useMutation(useAddSubTodoMutationOptions());
+
+  return (
+    <AddSubTodoBottomSheet
+      {...sheetProps}
+      mode="create"
+      onClose={onClose}
+      onSubmit={async (title) => {
+        const added = await addSubTodo
+          .mutateAsync({ todoId: todo.id, title, startDate: todo.startDate })
+          .catch(() => null);
+
+        if (added) {
+          onClose();
+        }
+      }}
+    />
+  );
+}
+
+function EditSubTodoSheet({
+  todo,
+  subTodo,
+  onClose,
+  ...sheetProps
+}: OverlaySheetProps & { todo: Todo; subTodo: SubTodo }) {
+  const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const target = { todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate };
+
+  return (
+    <AddSubTodoBottomSheet
+      {...sheetProps}
+      mode="edit"
+      initialValue={subTodo.title}
+      onClose={onClose}
+      onSubmit={async (title) => {
+        const updated = await updateSubTodo.mutateAsync({ ...target, title }).catch(() => null);
+
+        if (updated) {
+          onClose();
+        }
+      }}
+      onDelete={async () => {
+        const removed = await deleteSubTodo.mutateAsync(target).catch(() => null);
+
+        if (removed) {
+          onClose();
+        }
+      }}
+    />
+  );
+}
+
+function SubTodoActionsSheet({
+  todo,
+  subTodo,
+  onClose,
+  onEdit,
+  ...sheetProps
+}: OverlaySheetProps & { todo: Todo; subTodo: SubTodo; onEdit: () => void }) {
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+
+  return (
+    <SubTodoActionsBottomSheet
+      {...sheetProps}
+      onClose={onClose}
+      onEdit={onEdit}
+      onDelete={async () => {
+        const removed = await deleteSubTodo
+          .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate })
+          .catch(() => null);
+
+        if (removed) {
+          onClose();
+        }
+      }}
+    />
+  );
+}
