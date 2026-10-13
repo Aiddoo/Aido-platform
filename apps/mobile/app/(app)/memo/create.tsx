@@ -4,7 +4,7 @@ import { useCreateMemoMutationOptions } from '@src/features/memo/queries/use-cre
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowLeftIcon, Box, CheckmarkIcon } from '@src/shared/ui';
+import { ArrowLeftIcon, Box, CheckmarkIcon, QueryErrorBoundary } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation } from '@tanstack/react-query';
@@ -18,7 +18,7 @@ import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
 
-export default function MemoCreateScreen() {
+function MemoCreateScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const goBack = useSingleTap(router.back);
@@ -139,5 +139,14 @@ export default function MemoCreateScreen() {
         </Box>
       </KeyboardAvoidingView>
     </FormProvider>
+  );
+}
+
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function MemoCreateRoute() {
+  return (
+    <QueryErrorBoundary>
+      <MemoCreateScreen />
+    </QueryErrorBoundary>
   );
 }

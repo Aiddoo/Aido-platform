@@ -6,6 +6,7 @@ import { SignUpVerificationForm } from '@src/features/auth/components/sign-up-ve
 import { signUpFormSchema } from '@src/features/auth/domains/sign-up-form.schema';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
+import { QueryErrorBoundary } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -74,4 +75,11 @@ function SignUpScreen() {
   );
 }
 
-export default SignUpScreen;
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function SignUpRoute() {
+  return (
+    <QueryErrorBoundary>
+      <SignUpScreen />
+    </QueryErrorBoundary>
+  );
+}

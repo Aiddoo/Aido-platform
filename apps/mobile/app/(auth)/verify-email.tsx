@@ -21,6 +21,7 @@ import {
   Text,
   TextButton,
   VStack,
+  QueryErrorBoundary,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -171,5 +172,9 @@ export default function VerifyEmailRoute() {
   if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
     return <Redirect href="/login" />;
   }
-  return <VerifyEmailScreen />;
+  return (
+    <QueryErrorBoundary>
+      <VerifyEmailScreen />
+    </QueryErrorBoundary>
+  );
 }

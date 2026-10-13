@@ -19,6 +19,7 @@ import {
   Text,
   TextArea,
   VStack,
+  QueryErrorBoundary,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -168,4 +169,11 @@ function InquiryScreen() {
   );
 }
 
-export default InquiryScreen;
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function InquiryRoute() {
+  return (
+    <QueryErrorBoundary>
+      <InquiryScreen />
+    </QueryErrorBoundary>
+  );
+}

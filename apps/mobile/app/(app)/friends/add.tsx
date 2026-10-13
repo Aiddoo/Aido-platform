@@ -5,7 +5,14 @@ import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
+import {
+  H3,
+  Input,
+  KeyboardAdaptiveButton,
+  Spacing,
+  Text,
+  QueryErrorBoundary,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -110,4 +117,11 @@ function AddFriendScreen() {
   );
 }
 
-export default AddFriendScreen;
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function AddFriendRoute() {
+  return (
+    <QueryErrorBoundary>
+      <AddFriendScreen />
+    </QueryErrorBoundary>
+  );
+}

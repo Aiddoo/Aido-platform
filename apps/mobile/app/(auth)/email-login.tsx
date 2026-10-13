@@ -7,7 +7,7 @@ import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { Button, H3, HStack, Input, Spacing, TextButton } from '@src/shared/ui';
+import { Button, H3, HStack, Input, Spacing, TextButton, QueryErrorBoundary } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -146,4 +146,11 @@ function EmailLoginScreen() {
   );
 }
 
-export default EmailLoginScreen;
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function EmailLoginRoute() {
+  return (
+    <QueryErrorBoundary>
+      <EmailLoginScreen />
+    </QueryErrorBoundary>
+  );
+}

@@ -26,6 +26,7 @@ import {
   Text,
   TextButton,
   VStack,
+  QueryErrorBoundary,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -85,8 +86,6 @@ function ForgotPasswordScreen() {
     </View>
   );
 }
-
-export default ForgotPasswordScreen;
 
 interface EmailStepProps {
   onNext: () => void;
@@ -265,5 +264,14 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
         </VStack>
       </ScrollView>
     </View>
+  );
+}
+
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function ForgotPasswordRoute() {
+  return (
+    <QueryErrorBoundary>
+      <ForgotPasswordScreen />
+    </QueryErrorBoundary>
   );
 }
