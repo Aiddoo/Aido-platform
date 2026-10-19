@@ -51,7 +51,7 @@
     "@nestjs/config": "catalog:nest12",
     "@nestjs/core": "catalog:nest12",
     "@nestjs/event-emitter": "catalog:nest12",
-    "@nestjs/http-client": "0.0.1",
+    "@nestjs/http-client": "0.0.2",
     "@nestjs/jwt": "catalog:nest12",
     "@nestjs/passport": "catalog:nest12",
     "@nestjs/platform-express": "catalog:nest12",
