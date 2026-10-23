@@ -17,32 +17,24 @@ export const RETENTION_WORKER_POLICY = {
   pollingIntervalSeconds: JOB_POLLING_SECONDS.SCHEDULED,
 } as const;
 
-const RetentionDispatchJobSchema = z
-  .object({
-    name: z.literal(RetentionJobName.DISPATCH),
-    data: z
-      .object({
-        outboxId: z.string().min(1),
-        // rolling 배포 전 enqueue된 payload는 generation이 없다.
-        publishAttempt: z.number().int().positive().optional(),
-      })
-      .strict(),
-  })
-  .strict();
+const RetentionDispatchJobSchema = z.strictObject({
+  name: z.literal(RetentionJobName.DISPATCH),
+  data: z.strictObject({
+    outboxId: z.string().min(1),
+    // rolling 배포 전 enqueue된 payload는 generation이 없다.
+    publishAttempt: z.number().int().positive().optional(),
+  }),
+});
 
 export const RetentionRuntimeJobSchema = z.discriminatedUnion("name", [
-  z
-    .object({
-      name: z.literal(RetentionJobName.STAGE_SWEEP),
-      data: z.object({}).strict(),
-    })
-    .strict(),
-  z
-    .object({
-      name: z.literal(RetentionJobName.OUTBOX_RELAY),
-      data: z.object({}).strict(),
-    })
-    .strict(),
+  z.strictObject({
+    name: z.literal(RetentionJobName.STAGE_SWEEP),
+    data: z.strictObject({}),
+  }),
+  z.strictObject({
+    name: z.literal(RetentionJobName.OUTBOX_RELAY),
+    data: z.strictObject({}),
+  }),
   RetentionDispatchJobSchema,
 ]);
 

@@ -29,11 +29,11 @@ export const encryptionSchema = z.object({
 /**
  * 통합 보안 설정 스키마
  */
-export const securitySchema = z
-  .object({})
-  .merge(corsSchema)
-  .merge(throttleSchema)
-  .merge(encryptionSchema);
+export const securitySchema = z.object({
+  ...corsSchema.shape,
+  ...throttleSchema.shape,
+  ...encryptionSchema.shape,
+});
 
 export type CorsConfig = z.infer<typeof corsSchema>;
 export type ThrottleConfig = z.infer<typeof throttleSchema>;

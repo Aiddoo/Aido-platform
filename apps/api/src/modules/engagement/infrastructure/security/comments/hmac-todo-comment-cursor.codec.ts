@@ -18,34 +18,28 @@ import type { TodoCommentCursorCodecPort } from "../../../application/ports/comm
 
 const CURSOR_DOMAIN = "todo-comment-cursor:v1:";
 const postgresCountSchema = z.number().int().min(0).max(2_147_483_647);
-const cursorPositionSchema = z
-  .object({
-    rootLikeCount: postgresCountSchema,
-    rootReplyCount: postgresCountSchema,
-  })
-  .strict();
-const conversationCursorSchema = z
-  .object({
-    v: z.literal(1),
-    kind: z.literal("conversation"),
-    sort: z.enum(TODO_COMMENT_SORT),
-    todoId: z.number().int().positive(),
-    commentId: z.cuid(),
-    threadId: z.cuid(),
-    scope: z.enum(["TODO", "THREAD"]),
-    position: cursorPositionSchema,
-  })
-  .strict();
-const overviewCursorSchema = z
-  .object({
-    v: z.literal(1),
-    kind: z.literal("overview"),
-    sort: z.enum(TODO_COMMENT_SORT),
-    todoId: z.number().int().positive(),
-    rootId: z.cuid(),
-    position: cursorPositionSchema,
-  })
-  .strict();
+const cursorPositionSchema = z.strictObject({
+  rootLikeCount: postgresCountSchema,
+  rootReplyCount: postgresCountSchema,
+});
+const conversationCursorSchema = z.strictObject({
+  v: z.literal(1),
+  kind: z.literal("conversation"),
+  sort: z.enum(TODO_COMMENT_SORT),
+  todoId: z.number().int().positive(),
+  commentId: z.cuid(),
+  threadId: z.cuid(),
+  scope: z.enum(["TODO", "THREAD"]),
+  position: cursorPositionSchema,
+});
+const overviewCursorSchema = z.strictObject({
+  v: z.literal(1),
+  kind: z.literal("overview"),
+  sort: z.enum(TODO_COMMENT_SORT),
+  todoId: z.number().int().positive(),
+  rootId: z.cuid(),
+  position: cursorPositionSchema,
+});
 
 function invalidCursor(): ApplicationException {
   return new ApplicationException(ErrorCode.SYS_0002);
