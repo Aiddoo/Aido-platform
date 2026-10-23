@@ -41,14 +41,8 @@ import type { ComponentProps, ReactNode } from 'react';
 import { Suspense, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import {
-  ActivityIndicator,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  TextInput,
-} from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, TextInput } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
@@ -192,10 +186,7 @@ function MemoDetailScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <Stack.Screen
           options={{
             headerLeft: () => (
