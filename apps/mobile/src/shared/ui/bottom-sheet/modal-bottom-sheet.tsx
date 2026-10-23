@@ -21,7 +21,7 @@ import {
 } from './constants';
 import { resolveSheetAnimationDuration } from './motion';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
-import { useSheetHorizontalMargin } from './use-sheet-horizontal-margin';
+import { useSheetHorizontalMargins } from './use-sheet-horizontal-margins';
 
 const DISMISS_DISPLACEMENT = 100;
 const DISMISS_VELOCITY = 500;
@@ -51,7 +51,7 @@ export const ModalBottomSheet = ({
 }: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
-  const horizontalMargin = useSheetHorizontalMargin(SHEET_DETACHED_MARGIN);
+  const horizontalMargins = useSheetHorizontalMargins(SHEET_DETACHED_MARGIN);
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
 
@@ -197,8 +197,8 @@ export const ModalBottomSheet = ({
         style={[
           {
             position: 'absolute',
-            left: horizontalMargin,
-            right: horizontalMargin,
+            left: horizontalMargins.left,
+            right: horizontalMargins.right,
             bottom: bottomInset,
             maxHeight,
           },

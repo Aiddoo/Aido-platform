@@ -87,7 +87,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
           enableDynamicSizing
           detached
           bottomInset={insets.bottom || 16}
-          className="mx-4"
+          style={{ marginLeft: insets.left + 16, marginRight: insets.right + 16 }}
           backgroundClassName="rounded-[32px]"
         >
           <VStack gap={32}>

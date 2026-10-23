@@ -13,6 +13,8 @@ import Animated, {
 import { ReText } from 'react-native-redash';
 import { useResolveClassNames } from 'uniwind';
 
+import { StyledSafeAreaView } from '../safe-area-view';
+
 const WIDGET_SIZE = { collapsed: 56, expanded: 180 } as const;
 const TIMING = { fast: 250, normal: 400 } as const;
 
@@ -65,52 +67,63 @@ export const ScrollProgressWidget = memo(function ScrollProgressWidget({
   const percentText = useDerivedValue(() => `${Math.round(progress.value * 100)}%`);
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        { bottom: bottomOffset },
-        containerStyle,
-        {
-          backgroundColor: surface.backgroundColor as string,
-          borderColor: border.borderColor as string,
-        },
-      ]}
+    <StyledSafeAreaView
+      edges={['left', 'right', 'bottom']}
+      style={[styles.anchor, { bottom: bottomOffset }]}
     >
       <Animated.View
-        style={[styles.bar, barOpacity, { backgroundColor: inner.backgroundColor as string }]}
-      >
-        <ReText style={[styles.percent, { color: label.color as string }]} text={percentText} />
-        <Animated.View style={[styles.track, { backgroundColor: track.backgroundColor as string }]}>
-          <Animated.View
-            style={[styles.fill, fillWidth, { backgroundColor: brand.color as string }]}
-          />
-        </Animated.View>
-      </Animated.View>
-
-      <Animated.View
         style={[
-          StyleSheet.absoluteFill,
-          styles.collapsed,
-          arrowOpacity,
-          { backgroundColor: inner.backgroundColor as string },
+          styles.container,
+          containerStyle,
+          {
+            backgroundColor: surface.backgroundColor as string,
+            borderColor: border.borderColor as string,
+          },
         ]}
       >
-        <PressableFeedback onPress={onScrollToTop} className="flex-1 items-center justify-center">
-          <ArrowUpIcon width={20} height={20} colorClassName="text-gray-8" />
-        </PressableFeedback>
+        <Animated.View
+          style={[styles.bar, barOpacity, { backgroundColor: inner.backgroundColor as string }]}
+        >
+          <ReText style={[styles.percent, { color: label.color as string }]} text={percentText} />
+          <Animated.View
+            style={[styles.track, { backgroundColor: track.backgroundColor as string }]}
+          >
+            <Animated.View
+              style={[styles.fill, fillWidth, { backgroundColor: brand.color as string }]}
+            />
+          </Animated.View>
+        </Animated.View>
+
+        <Animated.View
+          style={[
+            StyleSheet.absoluteFill,
+            styles.collapsed,
+            arrowOpacity,
+            { backgroundColor: inner.backgroundColor as string },
+          ]}
+        >
+          <PressableFeedback onPress={onScrollToTop} className="flex-1 items-center justify-center">
+            <ArrowUpIcon width={20} height={20} colorClassName="text-gray-8" />
+          </PressableFeedback>
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+    </StyledSafeAreaView>
   );
 });
 
 const styles = StyleSheet.create({
-  container: {
+  anchor: {
     position: 'absolute',
-    alignSelf: 'center',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    pointerEvents: 'box-none',
+    zIndex: 100,
+  },
+  container: {
     height: 56,
     borderRadius: 28,
     borderWidth: 0.5,
-    zIndex: 100,
   },
   bar: {
     flex: 1,

@@ -38,6 +38,7 @@ import { KeyboardAdaptiveButton } from '@src/shared/ui/button/keyboard-adaptive-
 
 - 키보드 닫힘: 좌우 패딩과 하단 안전영역 여백 적용, 둥근 모서리
 - 키보드 열림: 패딩 제거, 하단에 꽉 차는 직사각형 버튼
+- 가로 safe area(iPhone Duo 세로 레일)는 키보드 상태와 무관하게 항상 비운다. 그래서 부모에 가로 `SafeAreaView`를 두지 않는다
 
 ## Props
 

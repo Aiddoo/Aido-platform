@@ -84,10 +84,17 @@ bottom-sheet/
 ├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
 ├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
 ├── motion.ts                          # 모션 감소용 애니메이션 시간 해석
+├── get-sheet-horizontal-margins.ts    # 가로 safe area를 뺀 영역 기준 최대 폭·가운데 정렬 여백
+├── use-sheet-horizontal-margins.ts    # 창 폭과 safe-area inset으로 위 여백을 계산
 ├── constants.ts                       # 공유 스타일, 상수
 ├── index.ts                           # barrel export
 └── bottom-sheet.md                    # 이 문서
 ```
+
+## 가로 배치
+
+시트는 가로 safe area(iPhone Duo의 좌우 세로 레일, Android 가로 내비게이션 바)를 뺀 콘텐츠
+영역에서 최대 폭 560으로 가운데 정렬한다. 가로 inset이 0인 기기에서는 이전과 같다.
 
 ## Android 뒤로가기와 정리 (1.11.0)
 

@@ -34,7 +34,10 @@ export const KeyboardAdaptiveButton = ({
   });
 
   const containerStyle = useAnimatedStyle(() => ({
-    paddingHorizontal: withTiming(isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X, {
+    paddingLeft: withTiming(insets.left + (isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X), {
+      duration: ANIMATION_DURATION_MS,
+    }),
+    paddingRight: withTiming(insets.right + (isKeyboardOpen.value ? 0 : CONTAINER_PADDING_X), {
       duration: ANIMATION_DURATION_MS,
     }),
     paddingBottom: withTiming(isKeyboardOpen.value ? 0 : insets.bottom || DEFAULT_BOTTOM_PADDING, {
