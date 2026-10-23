@@ -3,9 +3,10 @@ import { Injectable } from "@nestjs/common";
 import { and, or } from "@prisma/orm-postgres/orm-client";
 import sql, { join } from "sql-template-tag";
 
-import { decodeRecord } from "#api/platform/database/database-records";
+import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
 import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { varchar } from "#api/platform/database/database-values";
+import type { PushDispatchOutboxStatus } from "#api/platform/database/database.types";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 
@@ -26,7 +27,14 @@ function toNotificationMetadata(value: unknown): Record<string, unknown> | null 
   return Object.fromEntries(Object.entries(value));
 }
 
+import {
+  lockPublicationGenerations,
+  matchesPublicationGeneration,
+} from "./push-outbox-generation.js";
 import { pushTokenFingerprint } from "./push-token-fingerprint.js";
+
+/** claim된 발행 세대는 처리 중이거나 이미 발행 표시된 상태다. */
+const CLAIMED_OUTBOX_STATUSES: readonly PushDispatchOutboxStatus[] = ["PROCESSING", "PUBLISHED"];
 
 @Injectable()
 export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecycleRepositoryPort {
@@ -45,7 +53,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     });
 
     if (input.publications.length === 0) return [];
-    await this.#lockOutboxGenerations(input.publications);
+    await lockPublicationGenerations(this.client, input.publications, CLAIMED_OUTBOX_STATUSES);
     const values = input.publications.map(
       (publication) =>
         sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
@@ -761,71 +769,23 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     input: ReopenPushDeliveriesAfterClaimFailureInput,
   ): Promise<number> {
     if (input.publications.length === 0) return 0;
-    await this.#lockOutboxGenerations(input.publications);
-    const values = input.publications.map(
-      (publication) =>
-        sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
+    await lockPublicationGenerations(this.client, input.publications, CLAIMED_OUTBOX_STATUSES);
+    const matchesGeneration = matchesPublicationGeneration(input.publications);
+    // dispatch가 아직 PENDING인 세대만 다시 연다. 이미 claim된 dispatch의 outbox를 되돌리지 않는다.
+    return this.client.orm.public.PushDispatchOutbox.where((outbox) =>
+      and(
+        matchesGeneration(outbox),
+        outbox.status.in([...CLAIMED_OUTBOX_STATUSES]),
+        outbox.dispatch.some((dispatch) => dispatch.status.eq("PENDING")),
+      ),
+    ).updateAndCount(
+      encodePatch("PushDispatchOutbox", {
+        status: "PENDING",
+        availableAt: input.availableAt,
+        lockedAt: null,
+        publishedAt: null,
+        lastError: input.error.slice(0, 500),
+      }),
     );
-    return this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			UPDATE "PushDispatchOutbox" AS outbox
-			SET
-				"status" = 'PENDING'::"PushDispatchOutboxStatus",
-				"availableAt" = ${input.availableAt},
-				"lockedAt" = NULL,
-				"publishedAt" = NULL,
-				"lastError" = ${input.error.slice(0, 500)},
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM (VALUES ${join(values)}) AS requested("dispatchId", "publishAttempt")
-			WHERE outbox."dispatchId" = requested."dispatchId"
-				AND outbox."publishAttempts" = requested."publishAttempt"
-				AND outbox."status" IN (
-					'PROCESSING'::"PushDispatchOutboxStatus",
-					'PUBLISHED'::"PushDispatchOutboxStatus"
-				)
-				AND EXISTS (
-					SELECT 1
-					FROM "PushDispatch" AS dispatch
-					WHERE dispatch."id" = requested."dispatchId"
-						AND dispatch."status" = 'PENDING'::"PushDispatchStatus"
-				)
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
-  }
-
-  async #lockOutboxGenerations(publications: readonly PushDeliveryPublication[]): Promise<void> {
-    const values = publications.map(
-      (publication) =>
-        sql`(${publication.dispatchId}::INTEGER, ${publication.publishAttempt}::INTEGER)`,
-    );
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT outbox."dispatchId"
-			FROM (VALUES ${join(values)}) AS requested("dispatchId", "publishAttempt")
-			INNER JOIN "PushDispatchOutbox" AS outbox
-				ON outbox."dispatchId" = requested."dispatchId"
-				AND outbox."publishAttempts" = requested."publishAttempt"
-				AND outbox."status" IN (
-					'PROCESSING'::"PushDispatchOutboxStatus",
-					'PUBLISHED'::"PushDispatchOutboxStatus"
-				)
-			ORDER BY outbox."availableAt" ASC, outbox."dispatchId" ASC
-			FOR UPDATE OF outbox
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
   }
 }

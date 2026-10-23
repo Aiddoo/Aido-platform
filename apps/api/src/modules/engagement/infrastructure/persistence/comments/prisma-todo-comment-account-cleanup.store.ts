@@ -1,8 +1,9 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
+import { and, or } from "@prisma/orm-postgres/orm-client";
 import sql, { join } from "sql-template-tag";
 
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { sqlStatement } from "#api/platform/database/database-sql";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { DELETED_COMMENT_AUTHOR_ID } from "#api/shared/domain/system-user";
 
@@ -19,60 +20,31 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
     return this.txHost.tx;
   }
 
+  /** 잠금 순서를 plan과 cleanup에서 같게 유지하도록 댓글 id 오름차순으로 고정한다. */
+  private commentsOfTodos(todoIds: readonly number[]) {
+    return this.client.orm.public.TodoComment.where((comment) =>
+      comment.todoId.in([...todoIds]),
+    ).orderBy((comment) => comment.id.asc());
+  }
+
   async plan(userId: string): Promise<TodoCommentAccountCleanupPlan> {
-    const sqlRows1 = sqlRowSpec({ todoId: "pg/int4@1" });
-    const sqlRows2 = sqlRowSpec({ id: "pg/text@1" });
-
-    const affectedTodoRows = decodeSqlRows(
-      sqlRows1,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT DISTINCT affected."todoId"
-			FROM (
-				SELECT comment."todoId"
-				FROM "TodoComment" AS comment
-				WHERE comment."authorId" = ${userId}
-
-				UNION
-
-				SELECT comment."todoId"
-				FROM "TodoCommentLike" AS comment_like
-				INNER JOIN "TodoComment" AS comment
-					ON comment."id" = comment_like."commentId"
-				WHERE comment_like."userId" = ${userId}
-			) AS affected
-			ORDER BY affected."todoId"
-		`,
-        )
-          .returnsRow(sqlRows1)
-          .build(),
+    const affectedTodoRows = await this.client.orm.public.TodoComment.where((comment) =>
+      or(
+        comment.authorId.eq(userId),
+        comment.likes.some((commentLike) => commentLike.userId.eq(userId)),
       ),
-    );
+    )
+      .select("todoId")
+      .distinct("todoId")
+      .orderBy((comment) => comment.todoId.asc())
+      .all();
     const affectedTodoIds = affectedTodoRows.map((row) => row.todoId);
 
     if (affectedTodoIds.length === 0) {
       return { affectedTodoIds: [], commentIdsToLock: [] };
     }
 
-    const todoIds = join(affectedTodoIds);
-    const commentRows = decodeSqlRows(
-      sqlRows2,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT comment."id"
-			FROM "TodoComment" AS comment
-			WHERE comment."todoId" IN (${todoIds})
-			ORDER BY comment."id"
-		`,
-        )
-          .returnsRow(sqlRows2)
-          .build(),
-      ),
-    );
+    const commentRows = await this.commentsOfTodos(affectedTodoIds).select("id").all();
 
     return {
       affectedTodoIds,
@@ -89,61 +61,22 @@ export class PrismaTodoCommentAccountCleanupStore implements TodoCommentAccountC
 
     // 최상위 댓글 작성은 Todo.commentCount 행 잠금에서 합류합니다. 먼저 Todo를 잠그면
     // 절대값 재계산과 concurrent increment가 서로 덮어쓰지 않습니다.
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT todo."id"
-			FROM "Todo" AS todo
-			WHERE todo."id" IN (${todoIds})
-			ORDER BY todo."id"
-			FOR UPDATE
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT comment."id"
-			FROM "TodoComment" AS comment
-			WHERE comment."todoId" IN (${todoIds})
-			ORDER BY comment."id"
-			FOR UPDATE
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
+    await this.client.orm.public.Todo.where((todo) => todo.id.in([...plan.affectedTodoIds]))
+      .orderBy((todo) => todo.id.asc())
+      .select("id")
+      .forUpdate()
+      .all();
+    await this.commentsOfTodos(plan.affectedTodoIds).select("id").forUpdate().all();
 
     // purged user의 inactive like도 FK를 잡고 있으므로 모두 제거합니다. active likeCount는
     // 아래의 set-based reconciliation이 실제 남은 행을 기준으로 다시 확정합니다.
     await this.client.orm.public.TodoCommentLike.where({ userId }).deleteAndCount();
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			UPDATE "TodoCommentLike" AS comment_like
-			SET "isActive" = FALSE,
-				"updatedAt" = CURRENT_TIMESTAMP
-			FROM "TodoComment" AS comment
-			WHERE comment."id" = comment_like."commentId"
-				AND comment."authorId" = ${userId}
-				AND comment_like."isActive" = TRUE
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
-
+    await this.client.orm.public.TodoCommentLike.where((commentLike) =>
+      and(
+        commentLike.isActive.eq(true),
+        commentLike.comment.some((comment) => comment.authorId.eq(userId)),
+      ),
+    ).updateAndCount({ isActive: false });
     // 물리 삭제 대신 묘비를 남겨 다른 작성자의 자손과 대화 rail을 보존합니다.
     await this.client
       .execute(

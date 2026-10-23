@@ -69,6 +69,8 @@ export function createMockDatabaseContext(): MockDatabaseContext {
       limit: vi.fn(() => model),
       offset: vi.fn(() => model),
       groupBy: vi.fn(() => grouped),
+      forUpdate: vi.fn(() => model),
+      forNoKeyUpdate: vi.fn(() => model),
     });
   }
   return context;

@@ -2,10 +2,8 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import { compact } from "es-toolkit";
-import sql from "sql-template-tag";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { databaseDate, databaseTimestamp } from "#api/platform/database/database-values";
 import type * as PrismaModels from "#api/platform/database/database.types";
 import {
@@ -44,6 +42,7 @@ type NudgeRowWithRelations = PrismaModels.Nudge & {
 type NudgeInteractionRow = NudgeRowWithRelations & {
   todo: (TodoBriefRow & { userId: string; visibility: string }) | null;
 };
+type InteractionTodoRow = TodoBriefRow & { userId: string; visibility: string };
 type ReminderNudgeRowWithRelations = PrismaModels.ReminderNudge & {
   sender: UserBriefRow | null;
 };
@@ -123,6 +122,16 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         title: todo.title,
         completed: todo.completed,
       },
+    };
+  }
+
+  private static toInteractionTodo(row: InteractionTodoRow): NudgeInteractionTodo {
+    return {
+      id: row.id,
+      ownerId: row.userId,
+      title: row.title,
+      completed: row.completed,
+      visibility: row.visibility,
     };
   }
 
@@ -284,50 +293,20 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   }
 
   async lockInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
-    const interactionTodoRow = sqlRowSpec({
-      id: "pg/int4@1",
-      ownerId: "pg/text@1",
-      title: "pg/text@1",
-      completed: "pg/bool@1",
-      visibility: "pg/text@1",
-    });
-
     // 완료·공개 상태 변경과 답장·감사 저장을 같은 행 잠금으로 직렬화한다.
-    const rows = decodeSqlRows(
-      interactionTodoRow,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT "id", "userId" AS "ownerId", "title", "completed", "visibility"
-			FROM "Todo" WHERE "id" = ${todoId} AND "userId" = ${userId} FOR UPDATE
-		`,
-        )
-          .returnsRow(interactionTodoRow)
-          .build(),
-      ),
-    );
-    return rows[0] ?? null;
+    const row = await this.interactionTodoQuery(todoId, userId).forUpdate().first();
+    return row ? PrismaNudgeRepository.toInteractionTodo(row) : null;
   }
 
   async findInteractionTodo(todoId: number, userId: string): Promise<NudgeInteractionTodo | null> {
-    const row = decodeRecord(
-      "Todo",
-      await this.client.orm.public.Todo.where((row) =>
-        and(row.id.eq(todoId), row.userId.eq(userId)),
-      )
-        .select("id", "userId", "title", "completed", "visibility")
-        .first(),
-    );
-    return row
-      ? {
-          id: row.id,
-          ownerId: row.userId,
-          title: row.title,
-          completed: row.completed,
-          visibility: row.visibility,
-        }
-      : null;
+    const row = await this.interactionTodoQuery(todoId, userId).first();
+    return row ? PrismaNudgeRepository.toInteractionTodo(row) : null;
+  }
+
+  private interactionTodoQuery(todoId: number, userId: string) {
+    return this.client.orm.public.Todo.where((row) =>
+      and(row.id.eq(todoId), row.userId.eq(userId)),
+    ).select("id", "userId", "title", "completed", "visibility");
   }
 
   async findLastReceivedNudgeId(todoId: number, userId: string): Promise<number | null> {
