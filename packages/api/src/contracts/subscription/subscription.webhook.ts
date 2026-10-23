@@ -5,7 +5,7 @@ import { z } from "zod";
  *
  * z.string()으로 type/store를 수용하여 RevenueCat이 새 이벤트/스토어를
  * 추가하더라도 Zod 검증 실패 없이 처리합니다.
- * .passthrough()로 미지정 필드도 통과시킵니다.
+ * z.looseObject()로 미지정 필드도 통과시킵니다.
  *
  * @see https://www.revenuecat.com/docs/integrations/webhooks/event-types-and-fields
  */
