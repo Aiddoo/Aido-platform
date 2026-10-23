@@ -50,7 +50,13 @@ function buildWidgetInfo(maxRows: number, overrides: Partial<WidgetInfo> = {}): 
     widgetId: 42,
     width: maxRows === 0 ? 178 : 374,
     height: maxRows > 3 ? 420 : 210,
-    screenInfo: { screenWidthDp: 412, screenHeightDp: 915, density: 2.6, densityDpi: 420 },
+    screenInfo: {
+      screenWidthDp: 412,
+      screenHeightDp: 915,
+      density: 2.6,
+      densityDpi: 420,
+      fontScale: 1,
+    },
     ...overrides,
   };
 }

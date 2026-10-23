@@ -13,7 +13,6 @@ RUN pnpm dlx "turbo@$(node -p 'require("./package.json").devDependencies.turbo')
 FROM base AS deps
 COPY --from=pruner /app/out/api/json/ ./
 COPY --from=pruner /app/out/api/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=pruner /app/.pnpmfile.cjs ./
 RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild argon2 @swc/core
 
 FROM deps AS builder
@@ -34,7 +33,6 @@ CMD ["pnpm", "dev"]
 FROM base AS migrate-deps
 COPY --from=pruner /app/out/migrate/json/ ./
 COPY --from=pruner /app/out/migrate/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=pruner /app/.pnpmfile.cjs ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts && \
     chmod a+r pnpm-workspace.yaml && \
     pnpm --filter @aido/database-migrate exec prisma --version

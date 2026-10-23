@@ -24,9 +24,9 @@
 | ------------ | ------------------------------------------------ |
 | Monorepo     | Turborepo 2.11, pnpm 10.34                       |
 | Backend      | NestJS 12 ESM, Prisma 8 RC, PostgreSQL 16        |
-| Mobile       | Expo 58, React Native 0.88 RC, React 19.3        |
+| Mobile       | Expo 58, React Native 0.88, React 19.3           |
 | Validation   | Zod 4.3.6, Nest Standard Schema                  |
-| Testing      | Jest Expo 58 (Jest 29), Vitest 5, Testcontainers |
+| Testing      | Jest Expo 58 (Jest 30), Vitest 5, Testcontainers |
 | Code Quality | Oxlint 1.86, Oxfmt 0.71                          |
 | Runtime      | Node.js 24.21.0 LTS                              |
 

@@ -97,7 +97,7 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
 
   jest.mocked(useAuth).mockImplementation(useTestAuth);
 
-  const route = renderRouter(
+  return renderRouter(
     {
       _layout: AuthGateLayout,
       index: RootIndex,
@@ -114,8 +114,6 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
     },
     { initialUrl, wrapper: AuthFixture },
   );
-  await route;
-  return { getPathname: () => route.getPathname() };
 }
 
 describe('root 인증 route 전환', () => {

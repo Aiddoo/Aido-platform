@@ -112,16 +112,25 @@ describe('앱 로컬 날짜 Provider', () => {
   it('날짜가 같아도 복귀할 때 시간대가 바뀌면 현재 상태를 갱신한다', async () => {
     // Given
     jest.setSystemTime(new Date('2026-07-14T00:00:00.000Z'));
-    const options = Intl.DateTimeFormat().resolvedOptions();
-    const timeZone = jest
-      .spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions')
-      .mockReturnValue({ ...options, timeZone: 'Asia/Seoul' });
+    // Jest 30 fake timers replace Intl.DateTimeFormat with a wrapper that binds methods from
+    // the native formatter, so the device time zone is stubbed at the factory instead of the prototype.
+    const createDateTimeFormat = Intl.DateTimeFormat;
+    let deviceTimeZone = 'Asia/Seoul';
+    const dateTimeFormat = jest
+      .spyOn(Intl, 'DateTimeFormat')
+      .mockImplementation((locales, options) => {
+        const formatter = createDateTimeFormat(locales, options);
+        return {
+          ...formatter,
+          resolvedOptions: () => ({ ...formatter.resolvedOptions(), timeZone: deviceTimeZone }),
+        };
+      });
     const { result, analytics, getAppStateListener, unmount } = await setup();
     const previousDate = result.current.currentLocalDate;
     // When
     await act(() => {
       getAppStateListener()?.('background');
-      timeZone.mockReturnValue({ ...options, timeZone: 'Asia/Tokyo' });
+      deviceTimeZone = 'Asia/Tokyo';
       getAppStateListener()?.('active');
     });
     // Then
@@ -130,7 +139,7 @@ describe('앱 로컬 날짜 Provider', () => {
     expect(result.current.currentLocalDate).not.toBe(previousDate);
     expect(analytics.trackEvent).not.toHaveBeenCalled();
     await unmount();
-    timeZone.mockRestore();
+    dateTimeFormat.mockRestore();
   });
 
   it('관측 어댑터 실패가 날짜 변경을 중단시키지 않는다', async () => {
