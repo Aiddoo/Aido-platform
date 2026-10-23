@@ -161,7 +161,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // iOS
     ios: {
       appStoreUrl: 'https://apps.apple.com/app/id6757722325',
-      requireFullScreen: true,
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
       usesAppleSignIn: true,
