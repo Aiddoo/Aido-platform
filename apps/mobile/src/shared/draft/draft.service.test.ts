@@ -34,9 +34,9 @@ describe('DraftService', () => {
     const { service } = createDraftService();
     const draftKey = createMemoDraftKey('user-1', 7);
 
-    service.save(draftKey, { content: '수정 중' }, { sourceUpdatedAt: new Date(NOW - 10_000) });
+    service.save(draftKey, { content: '수정 중' }, { sourceUpdatedAt: NOW - 10_000 });
 
-    expect(service.restore(draftKey, { sourceUpdatedAt: new Date(NOW - 1000) })).toEqual({
+    expect(service.restore(draftKey, { sourceUpdatedAt: NOW - 1000 })).toEqual({
       status: 'discarded',
       reason: 'outdated',
     });

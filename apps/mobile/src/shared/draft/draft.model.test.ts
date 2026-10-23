@@ -81,7 +81,7 @@ describe('resolveDraftRestore', () => {
       resolveDraftRestore(entry, {
         schema: contentSchema,
         now: NOW,
-        sourceUpdatedAt: new Date(NOW - 2000),
+        sourceUpdatedAt: NOW - 2000,
       }),
     ).toEqual({ status: 'discarded', reason: 'outdated' });
   });
@@ -93,7 +93,7 @@ describe('resolveDraftRestore', () => {
       resolveDraftRestore(entry, {
         schema: contentSchema,
         now: NOW,
-        sourceUpdatedAt: new Date(NOW - 5000),
+        sourceUpdatedAt: NOW - 5000,
       }).status,
     ).toBe('restored');
   });

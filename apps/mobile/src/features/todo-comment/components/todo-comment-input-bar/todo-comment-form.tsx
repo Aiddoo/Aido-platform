@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useDraft } from '@src/shared/draft/use-draft';
+import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
 import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -82,22 +82,23 @@ export function TodoCommentForm({
   const isEditing = session.type === 'edit';
   const target = session.type === 'new' ? null : session.target;
   const initialValues = { items: [{ content: isEditing ? (session.target.content ?? '') : '' }] };
-  const [commentDraft, setCommentDraft, clearCommentDraft] = useDraft(
-    createTodoCommentDraftKey({ userId: user.id, todoId, session }),
-    {
-      sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(session),
-      onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
-    },
-  );
+  const {
+    restoredDraft: restoredCommentDraft,
+    saveDraft: saveCommentDraft,
+    clearDraft: clearCommentDraft,
+  } = useDraftStorage(createTodoCommentDraftKey({ userId: user.id, todoId, session }), {
+    sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(session),
+    onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
+  });
   const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
-    defaultValues: commentDraft ?? initialValues,
+    defaultValues: restoredCommentDraft ?? initialValues,
     mode: 'onChange',
   });
   const { control, handleSubmit, setFocus, subscribe } = form;
   const discardCommentDraft = useFormDraftAutosave(subscribe, {
     initialValues,
-    setDraft: setCommentDraft,
+    saveDraft: saveCommentDraft,
     clearDraft: clearCommentDraft,
   });
   const { isSubmitting, cancel, submit } = useTodoCommentFormSubmission(session, {
@@ -111,7 +112,7 @@ export function TodoCommentForm({
     useCommentFormFieldFocus({
       remove,
       setFocus,
-      initialFieldIndex: (commentDraft?.items.length ?? 1) - 1,
+      initialFieldIndex: (restoredCommentDraft?.items.length ?? 1) - 1,
     });
   const showsAppendAction = !isEditing && TodoCommentDraftPolicy.hasCapacity(fields.length);
   const formMaxHeight = getCommentFormMaxHeight(viewportHeight);

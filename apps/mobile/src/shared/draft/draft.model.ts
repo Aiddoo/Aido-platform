@@ -50,18 +50,19 @@ export function isDraftExpired(entry: DraftEntry, now: number, ttlMs: number = D
 }
 
 /** 초안을 쓰기 시작한 뒤 서버 원본이 바뀌었으면 초안은 낡은 원본 위에서 쓴 글이다. */
-export function isDraftOutdated(entry: DraftEntry, sourceUpdatedAt: Date | undefined) {
+export function isDraftOutdated(entry: DraftEntry, sourceUpdatedAt: number | undefined) {
   if (sourceUpdatedAt === undefined || entry.sourceUpdatedAt === null) {
     return false;
   }
 
-  return sourceUpdatedAt.getTime() > entry.sourceUpdatedAt;
+  return sourceUpdatedAt > entry.sourceUpdatedAt;
 }
 
 export interface ResolveDraftRestoreInput<TValue> {
   schema: z.ZodType<TValue>;
   now: number;
-  sourceUpdatedAt?: Date;
+  /** 편집 대상의 서버 수정 시각(epoch ms) */
+  sourceUpdatedAt?: number;
 }
 
 export function resolveDraftRestore<TValue>(

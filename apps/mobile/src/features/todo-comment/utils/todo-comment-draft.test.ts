@@ -73,12 +73,12 @@ describe('getTodoCommentDraftSourceUpdatedAt', () => {
         type: 'edit',
         target: createTodoComment({ createdAt, editedAt: null }),
       }),
-    ).toBe(createdAt);
+    ).toBe(createdAt.getTime());
     expect(
       getTodoCommentDraftSourceUpdatedAt({
         type: 'edit',
         target: createTodoComment({ createdAt, editedAt }),
       }),
-    ).toBe(editedAt);
+    ).toBe(editedAt.getTime());
   });
 });

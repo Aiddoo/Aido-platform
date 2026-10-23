@@ -39,5 +39,5 @@ export function getTodoCommentDraftSourceUpdatedAt(session: TodoCommentFormSessi
     return undefined;
   }
 
-  return session.target.editedAt ?? session.target.createdAt;
+  return (session.target.editedAt ?? session.target.createdAt).getTime();
 }

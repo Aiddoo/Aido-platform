@@ -7,7 +7,8 @@ import {
 import type { DraftRepository } from './draft.repository';
 
 interface DraftSourceOptions {
-  sourceUpdatedAt?: Date;
+  /** 편집 대상의 서버 수정 시각(epoch ms) */
+  sourceUpdatedAt?: number;
 }
 
 export class DraftService {
@@ -37,7 +38,7 @@ export class DraftService {
     this.#repository.save(draftKey.id, {
       value,
       savedAt: this.#now(),
-      sourceUpdatedAt: sourceUpdatedAt?.getTime() ?? null,
+      sourceUpdatedAt: sourceUpdatedAt ?? null,
     });
   };
 

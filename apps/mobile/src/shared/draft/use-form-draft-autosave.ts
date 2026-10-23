@@ -1,4 +1,4 @@
-import { debounce, isEqual } from 'es-toolkit';
+import { debounce, type DebouncedFunction, isEqual } from 'es-toolkit';
 import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import type { FieldValues, UseFormSubscribe } from 'react-hook-form';
 
@@ -7,7 +7,7 @@ export const DRAFT_SAVE_DELAY_MS = 400;
 interface FormDraftAutosaveOptions<TValues extends FieldValues> {
   /** 초안이 없을 때의 값(빈 입력 또는 서버 원본). 같아지면 초안을 지운다. */
   initialValues: TValues;
-  setDraft: (values: TValues) => void;
+  saveDraft: (values: TValues) => void;
   clearDraft: () => void;
 }
 
@@ -18,9 +18,9 @@ interface FormDraftAutosaveOptions<TValues extends FieldValues> {
  */
 export function useFormDraftAutosave<TValues extends FieldValues>(
   subscribe: UseFormSubscribe<TValues>,
-  { initialValues, setDraft, clearDraft }: FormDraftAutosaveOptions<TValues>,
+  { initialValues, saveDraft, clearDraft }: FormDraftAutosaveOptions<TValues>,
 ) {
-  const pendingSaveRef = useRef<ReturnType<typeof debounce> | null>(null);
+  const pendingSaveRef = useRef<DebouncedFunction<(values: TValues) => void> | null>(null);
 
   const persistValues = useEffectEvent((values: TValues) => {
     if (isEqual(values, initialValues)) {
@@ -28,11 +28,11 @@ export function useFormDraftAutosave<TValues extends FieldValues>(
       return;
     }
 
-    setDraft(values);
+    saveDraft(values);
   });
 
   useEffect(() => {
-    const pendingSave = debounce(persistValues, DRAFT_SAVE_DELAY_MS);
+    const pendingSave = debounce((values: TValues) => persistValues(values), DRAFT_SAVE_DELAY_MS);
     pendingSaveRef.current = pendingSave;
     const unsubscribe = subscribe({
       formState: { values: true },
@@ -41,7 +41,9 @@ export function useFormDraftAutosave<TValues extends FieldValues>(
 
     return () => {
       unsubscribe();
+      // es-toolkit flush는 대기 인자만 실행하고 타이머는 남기므로 cancel로 타이머까지 정리한다.
       pendingSave.flush();
+      pendingSave.cancel();
       pendingSaveRef.current = null;
     };
   }, [subscribe]);
