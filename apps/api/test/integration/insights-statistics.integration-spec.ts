@@ -1,9 +1,7 @@
-import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 import postgres from "@prisma/orm-postgres/runtime";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
-import type { Contract } from "#api/generated/prisma8/contract.d";
 import {
   WEEKLY_ACHIEVEMENT_REPOSITORY,
   type WeeklyAchievementRepositoryPort,
@@ -13,7 +11,7 @@ import { GetWeeklyAchievements } from "#api/modules/insights/application/use-cas
 import type { WeeklyAchievementUpsert } from "#api/modules/insights/domain/records/weekly-achievements/weekly-achievement.record";
 import { PrismaTodoCompletionRepository } from "#api/modules/insights/infrastructure/persistence/daily-completions/prisma-todo-completion.repository";
 import { encodeCreate } from "#api/platform/database/database-records";
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
+import { contract } from "#api/platform/database/database.service";
 import { databaseSqlState } from "#api/platform/database/prisma-error.util";
 import {
   createE2eApp,
@@ -22,21 +20,16 @@ import {
 } from "#test/e2e/helpers/e2e-app-factory";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
+import { createStatementObserver } from "#test/setup/statement-observer";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 const AT = new Date("2027-01-08T12:00:00Z");
 let statements: string[] | null = null;
-const trace: SqlMiddleware = {
-  name: "insights-query-observer",
-  familyId: "sql",
-  async afterQuery(plan, result) {
-    if (statements !== null && result.source === "driver") statements.push(plan.sql);
-  },
-  async afterExecute(plan, result) {
-    if (statements !== null && result.source === "driver") statements.push(plan.sql);
-  },
-};
+const trace = createStatementObserver("insights-query-observer", (statement) => {
+  if (statements !== null) {
+    statements.push(statement.sql);
+  }
+});
 describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
   let db: TestDatabase;
   let client: TestDatabaseClient;
@@ -48,10 +41,10 @@ describe("Insights 집계·주간 기록 실제 PostgreSQL 회귀", () => {
     db = new TestDatabase({
       createClient(url) {
         const pool = new Pool({ connectionString: url, max: 4 });
-        const native = postgres<Contract>({
-          contractJson,
+        const native = postgres({
+          contract,
           pg: pool,
-          middleware: [utcTimestampParameters, trace],
+          middleware: [trace],
         });
         let closed = false;
         return {

@@ -14,6 +14,7 @@ import { vi } from "vitest";
 
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 import { createMockDatabaseContext } from "#test/mocks/database.mock";
+import { asTxClient } from "#test/mocks/transaction.mock";
 
 import {
   LazyPgBossClient,
@@ -197,7 +198,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
     context.query.mockResolvedValue([]);
     runtime = new PgBossJobRuntimeAdapter(
       boss,
-      { tx: context },
+      { tx: asTxClient(context) },
       { job: { shutdownTimeoutMs: 90_000 } },
     );
   });

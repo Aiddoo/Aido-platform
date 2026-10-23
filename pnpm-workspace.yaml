@@ -49,13 +49,8 @@ overrides:
   uuid@<11.1.1: ^11.1.1
   valibot@<=1.4.1: ^1.4.2
 
-# Prisma 8 rc.20's unused Composer/Alchemy tooling pins this Effect RC while its
-# adapters declare the final 4.0.1. Scoped to those exact adapters; runtime untouched.
 peerDependencyRules:
   allowedVersions:
-    '@effect/sql-d1@4.0.1>effect': 4.0.0-rc.115
-    '@effect/sql-sqlite-do@4.0.1>effect': 4.0.0-rc.115
-    '@effect/vitest@4.0.1>effect': 4.0.0-rc.115
     'react-native-purchases@10.11.0>react-native': 0.88.0-rc.3
 
 packageExtensions:
@@ -140,11 +135,11 @@ catalogs:
     'react-server-dom-webpack': '19.3.0'
     'uniwind': '1.12.0'
   prisma8:
-    '@prisma/cli-engine': '0.6.2'
-    '@prisma/orm-postgres': '8.0.0-rc.14'
+    '@prisma/cli-engine': '0.9.0'
+    '@prisma/orm-postgres': '8.0.0-rc.20'
     '@types/pg': '8.23.1'
     'pg': '8.23.1'
-    'prisma': '8.0.0-rc.20'
+    'prisma': '8.0.0-rc.27'
   nest12:
     '@nestjs-cls/transactional': '4.0.1'
     '@nestjs/cli': '12.0.10'

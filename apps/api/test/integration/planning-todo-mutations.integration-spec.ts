@@ -1,11 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
-import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 import postgres from "@prisma/orm-postgres/runtime";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 import sql from "sql-template-tag";
 
-import type { Contract } from "#api/generated/prisma8/contract.d";
 import {
   TODO_REPOSITORY,
   type TodoRepositoryPort,
@@ -17,8 +15,8 @@ import { ToggleTodoComplete } from "#api/modules/planning/application/use-cases/
 import { TodoToggledEvent } from "#api/modules/planning/domain/events/todos/todo-toggled.event";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
 import { createEntityId } from "#api/platform/database/database-values";
+import { contract } from "#api/platform/database/database.service";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import {
   DOMAIN_EVENT_PUBLISHER,
@@ -28,9 +26,9 @@ import {
 } from "#api/shared/application/ports/index";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
 import { withDatabaseTransaction } from "#test/setup/database-context";
+import { createStatementObserver, type ObservedStatement } from "#test/setup/statement-observer";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 import {
   createE2eApp,
   destroyE2eApp,
@@ -38,12 +36,7 @@ import {
 } from "../e2e/helpers/e2e-app-factory.js";
 
 const AT = new Date("2027-01-04T12:00:00.000Z");
-interface Statement {
-  readonly sql: string;
-  readonly path: "query" | "execute";
-}
-
-function statementSummary(statements: readonly Statement[]) {
+function statementSummary(statements: readonly ObservedStatement[]) {
   const business = statements.filter(
     ({ sql }) => !/^(BEGIN|COMMIT|ROLLBACK|SAVEPOINT|RELEASE)\b/i.test(sql.trim()),
   );
@@ -58,28 +51,21 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
   let userId: string;
   let todoId: number;
   let categoryId: number;
-  let recording: Statement[] | null = null;
+  let recording: ObservedStatement[] | null = null;
 
   beforeAll(async () => {
-    const trace: SqlMiddleware = {
-      name: "planning-statement-observer",
-      familyId: "sql",
-      async afterQuery(plan, result) {
-        if (recording !== null && result.source === "driver")
-          recording.push({ sql: plan.sql, path: "query" });
-      },
-      async afterExecute(plan, result) {
-        if (recording !== null && result.source === "driver")
-          recording.push({ sql: plan.sql, path: "execute" });
-      },
-    };
+    const trace = createStatementObserver("planning-statement-observer", (statement) => {
+      if (recording !== null) {
+        recording.push(statement);
+      }
+    });
     database = new TestDatabase({
       createClient(url) {
         const pool = new Pool({ connectionString: url, max: 6 });
-        const native = postgres<Contract>({
-          contractJson,
+        const native = postgres({
+          contract,
           pg: pool,
-          middleware: [utcTimestampParameters, trace],
+          middleware: [trace],
         });
         let closed = false;
         return {
@@ -316,7 +302,7 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     // Given
     const items = await createItems(3);
     const itemIds = items.map((item) => item.id).reverse();
-    const statements: Statement[] = [];
+    const statements: ObservedStatement[] = [];
     recording = statements;
     // When
     const response = await context.module
@@ -335,7 +321,7 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
   it("반복 부모 3개와 item 6개는 각 한 번의 bulk INSERT와 잠금 포함 7 SQL로 저장한다", async () => {
     // Given
     await client.orm.public.Todo.where({ id: todoId }).deleteAndCount();
-    const statements: Statement[] = [];
+    const statements: ObservedStatement[] = [];
     recording = statements;
     // When
     const response = await context.module.get(CreateRecurringTodos).execute({

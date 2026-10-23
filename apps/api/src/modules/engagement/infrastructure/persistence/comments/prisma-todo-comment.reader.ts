@@ -24,6 +24,7 @@ import type {
   TodoDetailsRecord,
 } from "../../../application/models/comments/todo-comment.types.js";
 import type { TodoCommentReaderPort } from "../../../application/ports/comments/todo-comment.reader.port.js";
+import { decodeTodoCommentPath } from "./todo-comment-path.js";
 import { buildTodoConversationTreeCtes } from "./todo-conversation-tree.sql.js";
 import { toTodoResponse } from "./todo-details.mapper.js";
 
@@ -144,7 +145,7 @@ function toRecord(row: CommentRow): TodoCommentRecord {
     todoId: row.todoId,
     parentId: row.parentId,
     rootId: row.rootId,
-    path: [...row.path],
+    path: decodeTodoCommentPath(row.path),
     depth: row.depth,
     parentAuthorName: row.parent?.author?.profile?.name ?? null,
     authorId: requireValue(row.authorId, "authorId"),

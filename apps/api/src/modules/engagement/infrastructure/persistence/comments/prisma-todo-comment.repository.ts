@@ -31,6 +31,7 @@ import {
 } from "../../../application/ports/comments/todo-comment.repository.port.js";
 import { TodoComment } from "../../../domain/aggregates/comments/todo-comment.aggregate.js";
 import { TodoCommentId } from "../../../domain/value-objects/comments/todo-comment-id.vo.js";
+import { decodeTodoCommentPath } from "./todo-comment-path.js";
 
 type CommentRow = DatabaseRecord<"TodoComment">;
 
@@ -63,7 +64,7 @@ function toAggregate(row: CommentRow): TodoComment {
     authorId: row.authorId,
     parentId: row.parentId,
     rootId: row.rootId,
-    path: row.path,
+    path: decodeTodoCommentPath(row.path),
     content: row.content,
     deletedAt: row.deletedAt,
     editedAt: row.editedAt,

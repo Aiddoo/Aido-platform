@@ -1,9 +1,7 @@
-import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 import postgres from "@prisma/orm-postgres/runtime";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
-import type { Contract } from "#api/generated/prisma8/contract.d";
 import {
   CHEER_REPOSITORY,
   type CheerRepositoryPort,
@@ -21,13 +19,13 @@ import { SendCheer } from "#api/modules/social/application/use-cases/cheers/send
 import { SendNudge } from "#api/modules/social/application/use-cases/nudges/send-nudge.use-case";
 import { normalizeUserSearchQuery } from "#api/modules/social/domain/policies/friends/user-search-query.policy";
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
 import { createEntityId } from "#api/platform/database/database-values";
+import { contract } from "#api/platform/database/database.service";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { UserFixture, TodoFixture, TodoCategoryFixture } from "#test/fixtures/index";
+import { createStatementObserver } from "#test/setup/statement-observer";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 import {
   createE2eApp,
   destroyE2eApp,
@@ -37,16 +35,11 @@ import {
 const AT = new Date("2027-01-04T20:00:00.000Z");
 const SEED_AT = new Date("2027-01-04T19:00:00.000Z");
 let recording: string[] | null = null;
-const trace: SqlMiddleware = {
-  name: "social-statement-observer",
-  familyId: "sql",
-  async afterQuery(plan, result) {
-    if (recording !== null && result.source === "driver") recording.push(plan.sql);
-  },
-  async afterExecute(plan, result) {
-    if (recording !== null && result.source === "driver") recording.push(plan.sql);
-  },
-};
+const trace = createStatementObserver("social-statement-observer", (statement) => {
+  if (recording !== null) {
+    recording.push(statement.sql);
+  }
+});
 
 describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -60,10 +53,10 @@ describe("Social 일일 한도·쿨다운·native ORM (실제 PostgreSQL)", () =
     database = new TestDatabase({
       createClient(url) {
         const pool = new Pool({ connectionString: url, max: 4 });
-        const native = postgres<Contract>({
-          contractJson,
+        const native = postgres({
+          contract,
           pg: pool,
-          middleware: [utcTimestampParameters, trace],
+          middleware: [trace],
         });
         let closed = false;
         return {

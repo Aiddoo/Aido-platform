@@ -1,11 +1,9 @@
 import { ErrorCode } from "@aido/api/errors";
 import { MEMO_LIMITS } from "@aido/api/vocabulary";
-import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 import postgres from "@prisma/orm-postgres/runtime";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
-import type { Contract } from "#api/generated/prisma8/contract.d";
 import {
   MEMO_REPOSITORY,
   type MemoRepositoryPort,
@@ -16,7 +14,7 @@ import { ReorderMemo } from "#api/modules/notes/application/use-cases/memos/reor
 import { UpdateMemo } from "#api/modules/notes/application/use-cases/memos/update-memo.use-case";
 import { TodoCreatedEvent } from "#api/modules/planning/domain/events/todos/todo-created.event";
 import { encodeCreate } from "#api/platform/database/database-records";
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
+import { contract } from "#api/platform/database/database.service";
 import {
   DatabaseRecordNotFoundError,
   databaseSqlState,
@@ -30,9 +28,9 @@ import {
 } from "#api/shared/application/ports/index";
 import { MemoBuilder } from "#test/builders/memo.builder";
 import { UserFixture, TodoCategoryFixture } from "#test/fixtures/index";
+import { createStatementObserver } from "#test/setup/statement-observer";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 import {
   createE2eApp,
   destroyE2eApp,
@@ -66,23 +64,18 @@ describe("메모 변경 원자성·native ORM (실제 PostgreSQL)", () => {
   let recording: string[] | null = null;
 
   beforeAll(async () => {
-    const trace: SqlMiddleware = {
-      name: "notes-statement-observer",
-      familyId: "sql",
-      async afterQuery(plan, result) {
-        if (recording !== null && result.source === "driver") recording.push(plan.sql);
-      },
-      async afterExecute(plan, result) {
-        if (recording !== null && result.source === "driver") recording.push(plan.sql);
-      },
-    };
+    const trace = createStatementObserver("notes-statement-observer", (statement) => {
+      if (recording !== null) {
+        recording.push(statement.sql);
+      }
+    });
     database = new TestDatabase({
       createClient(url) {
         const pool = new Pool({ connectionString: url, max: 5 });
-        const native = postgres<Contract>({
-          contractJson,
+        const native = postgres({
+          contract,
           pg: pool,
-          middleware: [utcTimestampParameters, trace],
+          middleware: [trace],
         });
         let closed = false;
         return {
