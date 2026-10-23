@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { createDraftKey, DRAFT_TTL_MS, type DraftEntry, resolveDraftRestore } from './draft.model';
+import {
+  createDraftKey,
+  DRAFT_TTL_MS,
+  type DraftEntry,
+  isDraftOwnedBy,
+  resolveDraftRestore,
+} from './draft.model';
 
 const contentSchema = z.object({ content: z.string() });
 const NOW = Date.UTC(2026, 9, 23, 12);
@@ -105,5 +111,29 @@ describe('resolveDraftRestore', () => {
       status: 'discarded',
       reason: 'invalid',
     });
+  });
+});
+
+describe('isDraftOwnedBy', () => {
+  const schema = z.object({ content: z.string() });
+
+  it('키를 만든 사용자만 소유자로 판정한다', () => {
+    const { id } = createDraftKey({ ownerId: 'user-1', scope: 'memo', target: [7], schema });
+
+    expect(isDraftOwnedBy(id, 'user-1')).toBe(true);
+    expect(isDraftOwnedBy(id, 'user-2')).toBe(false);
+  });
+
+  it('소유자 id가 다른 사용자 id의 접두사여도 구분한다', () => {
+    const { id } = createDraftKey({ ownerId: 'user-10', scope: 'memo', target: [7], schema });
+
+    expect(isDraftOwnedBy(id, 'user-1')).toBe(false);
+  });
+
+  it('구분자가 들어간 소유자 id도 인코딩된 구간 그대로 비교한다', () => {
+    const { id } = createDraftKey({ ownerId: 'a:b', scope: 'memo', target: [7], schema });
+
+    expect(isDraftOwnedBy(id, 'a:b')).toBe(true);
+    expect(isDraftOwnedBy(id, 'a')).toBe(false);
   });
 });

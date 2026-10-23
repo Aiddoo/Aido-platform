@@ -25,9 +25,18 @@ export function createDraftKey<TValue>({
 }: CreateDraftKeyInput<TValue>): DraftKey<TValue> {
   const id = [ownerId, scope, ...target]
     .map((segment) => encodeURIComponent(String(segment)))
-    .join(':');
+    .join(DRAFT_KEY_SEPARATOR);
 
   return { id: id as DraftKeyId, schema };
+}
+
+const DRAFT_KEY_SEPARATOR = ':';
+
+/** `createDraftKey`가 각 구간을 URI 인코딩하므로 구분자는 구간 안에 나타나지 않는다. */
+export function isDraftOwnedBy(draftKeyId: string, ownerId: string) {
+  const [encodedOwnerId] = draftKeyId.split(DRAFT_KEY_SEPARATOR);
+
+  return encodedOwnerId === encodeURIComponent(ownerId);
 }
 
 export const draftEntrySchema = z.object({

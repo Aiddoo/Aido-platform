@@ -2,6 +2,7 @@ import {
   type DraftKey,
   type DraftRestoreResult,
   isDraftExpired,
+  isDraftOwnedBy,
   resolveDraftRestore,
 } from './draft.model';
 import type { DraftRepository } from './draft.repository';
@@ -52,6 +53,14 @@ export class DraftService {
     for (const id of this.#repository.findAllIds()) {
       const entry = this.#repository.find(id);
       if (entry === undefined || isDraftExpired(entry, now)) {
+        this.#repository.remove(id);
+      }
+    }
+  };
+
+  removeAllExceptOwner = (ownerId: string): void => {
+    for (const id of this.#repository.findAllIds()) {
+      if (!isDraftOwnedBy(id, ownerId)) {
         this.#repository.remove(id);
       }
     }

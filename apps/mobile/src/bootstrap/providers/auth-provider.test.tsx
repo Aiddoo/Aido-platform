@@ -353,5 +353,29 @@ describe('AuthProvider', () => {
       await expectStatus('unauthenticated');
       expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
     });
+
+    it('세션이 만료되어도 작성 중 초안은 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 한다', async () => {
+      // Given
+      const draftKey = createDraftKey({
+        ownerId: 'user-1',
+        scope: 'memo',
+        target: ['create'],
+        schema: z.object({ content: z.string() }),
+      });
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+      draftService.save(draftKey, { content: '작성 중' });
+
+      // When
+      await act(() => emitSessionExpired({ reason: 'refresh-rejected' }));
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(draftService.restore(draftKey)).toEqual({
+        status: 'restored',
+        value: { content: '작성 중' },
+      });
+    });
   });
 });

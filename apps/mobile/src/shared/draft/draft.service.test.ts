@@ -77,4 +77,18 @@ describe('DraftService', () => {
     expect(service.restore(createMemoDraftKey('user-1', 1))).toEqual({ status: 'empty' });
     expect(service.restore(createMemoDraftKey('user-2', 1))).toEqual({ status: 'empty' });
   });
+
+  it('현재 사용자 외 소유자의 초안만 지우고 현재 사용자의 초안은 남긴다', () => {
+    const { service } = createDraftService();
+    service.save(createMemoDraftKey('user-1', 1), { content: '내 초안' });
+    service.save(createMemoDraftKey('user-2', 1), { content: '이전 사용자 초안' });
+
+    service.removeAllExceptOwner('user-1');
+
+    expect(service.restore(createMemoDraftKey('user-1', 1))).toEqual({
+      status: 'restored',
+      value: { content: '내 초안' },
+    });
+    expect(service.restore(createMemoDraftKey('user-2', 1))).toEqual({ status: 'empty' });
+  });
 });

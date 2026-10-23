@@ -54,6 +54,17 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     setStatusState(next);
   }, []);
 
+  // 사용자가 의도한 미인증 전환(로그아웃·탈퇴)인지 기록한다. 세션 만료는 의도가 아니므로
+  // 작성 중이던 초안을 남겨 같은 사용자가 다시 로그인하면 이어 쓸 수 있게 한다.
+  const isUserInitiatedSignOutRef = useRef(false);
+  const setStatus = useCallback(
+    (next: AuthStatus) => {
+      isUserInitiatedSignOutRef.current = next === 'unauthenticated';
+      applyStatus(next);
+    },
+    [applyStatus],
+  );
+
   /**
    * 판정 실패를 관측하고 미인증으로 폴백한다.
    *
@@ -64,6 +75,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   const fallbackToUnauthenticated = useCallback(
     (error: unknown) => {
       errorReporter.captureException(toError(error), { feature: 'auth' });
+      isUserInitiatedSignOutRef.current = false;
       applyStatus('unauthenticated');
     },
     [errorReporter, applyStatus],
@@ -132,6 +144,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
         return;
       }
 
+      isUserInitiatedSignOutRef.current = false;
       applyStatus('unauthenticated');
 
       // 검색가능 1급 이벤트(원인 진단용) + 집계 이벤트(빈도 파악용, 타입 카탈로그 경유).
@@ -161,19 +174,18 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   // 만료 리스너에서 같은 tick에 clear()하면, 아직 마운트된 인증 화면의 useSuspenseQuery들이
   // 즉시 재요청 → 토큰 없음 → 401 → 다시 만료 → clear 루프를 돈다. 그 401은 ErrorBoundary로
   // 던져져 "재시도/로그아웃" 화면을 띄운다. effect는 인증 화면이 언마운트된 뒤 실행된다.
-  // 초안도 같은 시점에 비워 다음에 로그인한 사용자에게 이전 사용자의 글이 보이지 않게 한다.
+  // 초안은 사용자가 로그아웃·탈퇴했을 때만 같은 시점에 비운다. 세션 만료 때는 남기고,
+  // 다른 사용자가 로그인하면 `useUserIdentity`가 이전 소유자의 초안을 정리한다.
   useEffect(() => {
     if (status === 'unauthenticated') {
       queryClient.clear();
-      draftService.removeAll();
+      if (isUserInitiatedSignOutRef.current) {
+        draftService.removeAll();
+      }
     }
   }, [status, queryClient, draftService]);
 
-  return (
-    <AuthContext.Provider value={{ status, setStatus: applyStatus }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ status, setStatus }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextValue => {

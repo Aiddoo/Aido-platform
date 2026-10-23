@@ -313,7 +313,8 @@ function useView() {
   렌더 없이 디바운스 저장한다. 언마운트(폴더블 전환) 때 대기 중인 저장을 flush하고, 제출 성공·취소 버튼은
   반환된 discard 함수로 대기 저장까지 취소한 뒤 지운다.
 - 키는 feature의 순수 함수(`createTodoCommentDraftKey`, `createMemoDraftKey`)가 `createDraftKey`로 만든다.
-  `ownerId`(사용자 id)가 항상 들어가며, 미인증 전환 시 `AuthProvider`가 초안을 모두 지운다. 7일 지난 초안은 앱 시작 때 정리한다.
+  `ownerId`(사용자 id)가 항상 들어가며, 명시적 로그아웃·회원 탈퇴 때만 `AuthProvider`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 하고,
+  로그인 후 `useUserIdentity`가 현재 사용자 외 소유자의 초안을 지운다. 7일 지난 초안은 앱 시작 때 정리한다.
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.
 - 접기/펼치기에서 컴포넌트를 살릴 수 있으면 초안보다 재마운트를 없애는 쪽을 먼저 택한다(`AdaptivePane`은 pane을 같은 트리 슬롯에 둔다).
