@@ -1,15 +1,10 @@
-import { useWindowSizeClass, type WindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Box } from '../box/box';
 import { HStack } from '../h-stack/h-stack';
 import type { AdaptivePaneProps } from './adaptive-pane.types';
-
-/** Expo `ArrangementView` split 예시와 같은 목록 폭 범위(260~400). */
-const PRIMARY_PANE_WIDTH: Record<Exclude<WindowSizeClass, 'compact'>, number> = {
-  medium: 320,
-  expanded: 400,
-};
+import { getPrimaryPaneWidth } from './get-primary-pane-width';
 
 /**
  * iPhone Duo는 펼치면 탭 바와 툴바를 좌우 세로 레일로 옮긴다.
@@ -25,7 +20,7 @@ export function AdaptivePane({ primary, secondary }: AdaptivePaneProps) {
 
   return (
     <HStack flex={1} style={{ paddingLeft: leftInset, paddingRight: rightInset }}>
-      <Box testID="adaptive-pane-primary" style={{ width: PRIMARY_PANE_WIDTH[windowSizeClass] }}>
+      <Box testID="adaptive-pane-primary" style={{ width: getPrimaryPaneWidth(windowSizeClass) }}>
         {primary}
       </Box>
       <Box className="w-px bg-gray-2" />
