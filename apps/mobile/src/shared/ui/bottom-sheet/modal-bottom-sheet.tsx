@@ -13,9 +13,15 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
-import { MIN_CONTENT_HEIGHT, sharedSheetStyles, TOP_MARGIN } from './constants';
+import {
+  MIN_CONTENT_HEIGHT,
+  SHEET_DETACHED_MARGIN,
+  sharedSheetStyles,
+  TOP_MARGIN,
+} from './constants';
 import { resolveSheetAnimationDuration } from './motion';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
+import { useSheetHorizontalMargin } from './use-sheet-horizontal-margin';
 
 const DISMISS_DISPLACEMENT = 100;
 const DISMISS_VELOCITY = 500;
@@ -45,6 +51,7 @@ export const ModalBottomSheet = ({
 }: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
+  const horizontalMargin = useSheetHorizontalMargin(SHEET_DETACHED_MARGIN);
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
 
@@ -188,8 +195,13 @@ export const ModalBottomSheet = ({
       {/* Sheet */}
       <Animated.View
         style={[
-          sharedSheetStyles.detached,
-          { position: 'absolute', left: 0, right: 0, bottom: bottomInset, maxHeight },
+          {
+            position: 'absolute',
+            left: horizontalMargin,
+            right: horizontalMargin,
+            bottom: bottomInset,
+            maxHeight,
+          },
           sheetAnimatedStyle,
         ]}
       >

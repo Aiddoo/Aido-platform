@@ -25,6 +25,7 @@ import { useResolveClassNames } from 'uniwind';
 
 import { MIN_CONTENT_HEIGHT, SHEET_INDEX, TOP_MARGIN } from './constants';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
+import { useSheetHorizontalMargin } from './use-sheet-horizontal-margin';
 
 interface KeyboardBottomSheetProps {
   isOpen: boolean;
@@ -57,6 +58,7 @@ export const KeyboardBottomSheet = ({
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
+  const horizontalMargin = useSheetHorizontalMargin(0);
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
@@ -245,6 +247,7 @@ export const KeyboardBottomSheet = ({
       enableBlurKeyboardOnGesture
       android_keyboardInputMode="adjustPan"
       topInset={insets.top}
+      style={{ marginHorizontal: horizontalMargin }}
       backgroundStyle={[backgroundStyle, { borderRadius: 32 }]}
       handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}

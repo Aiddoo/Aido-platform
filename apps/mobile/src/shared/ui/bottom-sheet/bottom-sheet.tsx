@@ -8,8 +8,15 @@ import { type LayoutChangeEvent, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
-import { MIN_CONTENT_HEIGHT, SHEET_INDEX, sharedSheetStyles, TOP_MARGIN } from './constants';
+import {
+  MIN_CONTENT_HEIGHT,
+  SHEET_DETACHED_MARGIN,
+  SHEET_INDEX,
+  sharedSheetStyles,
+  TOP_MARGIN,
+} from './constants';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
+import { useSheetHorizontalMargin } from './use-sheet-horizontal-margin';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -30,6 +37,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
   const prevIsOpenRef = useRef(isOpen);
   useAndroidSheetBackHandler(isOpen, () => sheetRef.current?.close());
   const insets = useSafeAreaInsets();
+  const horizontalMargin = useSheetHorizontalMargin(SHEET_DETACHED_MARGIN);
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
@@ -150,7 +158,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
       enablePanDownToClose
       detached
       bottomInset={insets.bottom || 16}
-      style={sharedSheetStyles.detached}
+      style={[sharedSheetStyles.detached, { marginHorizontal: horizontalMargin }]}
       backgroundStyle={[backgroundStyle, sharedSheetStyles.detachedBackground]}
       handleIndicatorStyle={[sharedSheetStyles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}

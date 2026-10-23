@@ -11,10 +11,13 @@ export const SHEET_INDEX = {
 
 export const MIN_CONTENT_HEIGHT = 280;
 export const TOP_MARGIN = 24;
+/** medium 이상 창에서 시트가 화면 전체로 퍼지지 않게 하는 최대 폭(dp). */
+export const SHEET_MAX_WIDTH = 560;
+export const SHEET_DETACHED_MARGIN = 16;
 
 export const sharedSheetStyles = StyleSheet.create({
   detached: {
-    marginHorizontal: 16,
+    marginHorizontal: SHEET_DETACHED_MARGIN,
   },
   detachedBackground: {
     borderRadius: 32,
