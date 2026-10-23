@@ -140,6 +140,22 @@ describe('useDraftStorage + useFormDraftAutosave', () => {
     expect(saveSpy).toHaveBeenCalledWith(draftKey, { content: '마지막 입력' }, {});
   });
 
+  it('전환으로 화면이 사라진 뒤 제출이 성공해 지워도 언마운트 때 저장한 초안까지 지운다', async () => {
+    // Given — 제출 중 접기로 작성기가 언마운트되며 flush로 초안이 저장된다
+    const { result, unmount } = await renderHook(useMemoFormWithDraft, { wrapper });
+    const { form, discardMemoDraft } = result.current;
+    await act(() => form.setValue('content', '제출 중이던 글'));
+    await unmount();
+    expect(draftService.restore(draftKey).status).toBe('restored');
+
+    // When
+    discardMemoDraft();
+    jest.advanceTimersByTime(DRAFT_SAVE_DELAY_MS);
+
+    // Then
+    expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
+  });
+
   it('서버 원본이 초안보다 새로우면 초안 대신 원본으로 시작하고 알린다', async () => {
     // Given
     draftService.save(draftKey, { content: '옛 원본에 쓴 글' }, { sourceUpdatedAt: 1000 });

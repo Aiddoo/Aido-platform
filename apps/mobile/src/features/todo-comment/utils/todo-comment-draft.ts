@@ -20,7 +20,10 @@ interface CreateTodoCommentDraftKeyInput {
   session: TodoCommentFormSession;
 }
 
-/** 새 댓글은 할 일마다, 답글은 대상 댓글마다, 수정은 수정하는 댓글마다 초안을 나눈다. */
+/**
+ * 새 댓글·답글은 할 일마다, 수정은 수정하는 댓글마다 초안을 나눈다.
+ * 답글은 작성 중 대상을 바꿔도 같은 글을 이어 쓰는 계약이라 대상 댓글을 키에 넣지 않는다.
+ */
 export function createTodoCommentDraftKey({
   userId,
   todoId,
@@ -29,7 +32,7 @@ export function createTodoCommentDraftKey({
   return createDraftKey({
     ownerId: userId,
     scope: 'todo-comment',
-    target: session.type === 'new' ? [todoId, 'new'] : [todoId, session.type, session.target.id],
+    target: session.type === 'edit' ? [todoId, 'edit', session.target.id] : [todoId, session.type],
     schema: todoCommentDraftSchema,
   });
 }

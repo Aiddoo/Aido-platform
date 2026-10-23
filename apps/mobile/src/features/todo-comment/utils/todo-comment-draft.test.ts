@@ -25,8 +25,23 @@ describe('createTodoCommentDraftKey', () => {
     });
 
     expect(newKey.id).toBe('user-1:todo-comment:3:new');
-    expect(replyKey.id).toBe('user-1:todo-comment:3:reply:comment-9');
+    expect(replyKey.id).toBe('user-1:todo-comment:3:reply');
     expect(editKey.id).toBe('user-1:todo-comment:3:edit:comment-9');
+  });
+
+  it('답글은 작성 중 대상을 바꿔도 같은 초안을 이어 쓴다', () => {
+    const first = createTodoCommentDraftKey({
+      userId: 'user-1',
+      todoId: 3,
+      session: { type: 'reply', target },
+    });
+    const switched = createTodoCommentDraftKey({
+      userId: 'user-1',
+      todoId: 3,
+      session: { type: 'reply', target: createTodoComment({ id: 'comment-10' }) },
+    });
+
+    expect(switched.id).toBe(first.id);
   });
 
   it('같은 할 일이라도 사용자가 다르면 초안을 공유하지 않는다', () => {
