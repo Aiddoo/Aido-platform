@@ -21,10 +21,7 @@ export function AdaptivePane({ primary, secondary, compactPane = 'primary' }: Ad
   const showsSecondary = !isCompact || compactPane === 'secondary';
 
   return (
-    <HStack
-      flex={1}
-      style={isCompact ? undefined : { paddingLeft: leftInset, paddingRight: rightInset }}
-    >
+    <HStack flex={1} pl={isCompact ? undefined : leftInset} pr={isCompact ? undefined : rightInset}>
       {showsPrimary && (
         <Box
           testID="adaptive-pane-primary"

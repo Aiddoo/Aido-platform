@@ -285,7 +285,7 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   return (
-    <View onLayout={handleLayout}>
+    <Box onLayout={handleLayout}>
       <FlatList
         ref={flatListRef}
         horizontal
@@ -307,7 +307,7 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
         initialNumToRender={3}
         maxToRenderPerBatch={3}
       />
-    </View>
+    </Box>
   );
 }
 

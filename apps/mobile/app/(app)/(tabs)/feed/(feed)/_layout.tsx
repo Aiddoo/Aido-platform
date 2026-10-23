@@ -31,7 +31,7 @@ export default function FeedGroupLayout() {
   return (
     <CalendarProvider>
       <Box flex={1} className="bg-white">
-        <VStack style={{ paddingLeft: leftInset, paddingRight: rightInset }}>
+        <VStack pl={leftInset} pr={rightInset}>
           <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
             <Suspense fallback={<AvatarList.Loading />}>
               <AvatarList />
