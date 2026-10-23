@@ -38,6 +38,7 @@ import { createFeatureAttributionStore } from '@src/shared/analytics/feature-att
 import { ENV } from '@src/shared/config/env';
 import { createDraftRepository } from '@src/shared/draft/draft.repository';
 import { DraftService } from '@src/shared/draft/draft.service';
+import { toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
@@ -59,7 +60,7 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
-import { mmkvDraftStorage } from '@src/shared/infra/storage/mmkv-draft-storage';
+import type { DraftStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
@@ -68,7 +69,12 @@ import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
 
-export const DIProvider = ({ children }: PropsWithChildren) => {
+interface DIProviderProps extends PropsWithChildren {
+  /** 암호화 키 조회가 끝난 초안 저장소. 비동기 준비는 앱 부트스트랩에서 마친다. */
+  draftStorageBootstrap: DraftStorageBootstrap;
+}
+
+export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps) => {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
     const tokenStore = createSecureTokenStore(storage);
@@ -85,7 +91,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     const analytics = createEnvironmentAnalytics(logger);
     const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
-    const draftService = new DraftService(createDraftRepository(mmkvDraftStorage));
+    const draftService = new DraftService(createDraftRepository(draftStorageBootstrap.storage));
     draftService.removeExpired();
 
     // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
@@ -93,6 +99,10 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);
+
+    if (draftStorageBootstrap.failure !== undefined) {
+      errorReporter.captureException(toError(draftStorageBootstrap.failure), { feature: 'draft' });
+    }
 
     const appVersion =
       expoApplicationMetadataGateway.getInstallation()?.currentVersion ?? ENV.APP_VERSION;

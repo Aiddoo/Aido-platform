@@ -78,7 +78,7 @@ export interface HttpClient {
 | ----------------------- | --------------------------------------------------------- | -------------------------------------------- |
 | `HttpClient`            | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`             |
 | `Storage`               | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts`     |
-| `EnumerableSyncStorage` | 초안 전용 MMKV 인스턴스                                   | `shared/infra/storage/mmkv-draft-storage.ts` |
+| `EnumerableSyncStorage` | 초안 전용 MMKV 인스턴스(AES-256)                          | `shared/infra/storage/mmkv-draft-storage.ts` |
 | `Logger`                | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                       |
 | `Analytics`             | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                    |
 | `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
@@ -315,6 +315,9 @@ function useView() {
 - 키는 feature의 순수 함수(`createTodoCommentDraftKey`, `createMemoDraftKey`)가 `createDraftKey`로 만든다.
   `ownerId`(사용자 id)가 항상 들어가며, 명시적 로그아웃·회원 탈퇴 때만 `AuthProvider`가 초안을 모두 지운다. 세션 만료는 초안을 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 하고,
   로그인 후 `useUserIdentity`가 현재 사용자 외 소유자의 초안을 지운다. 7일 지난 초안은 앱 시작 때 정리한다.
+- 초안 저장소는 MMKV `encryptionKey`(AES-256)로 암호화한다. 키는 SecureStore에 최초 1회 만들어 보관한다. 키 조회가 비동기라
+  `app/_layout.tsx`가 `useDraftStorageBootstrap`으로 스플래시 구간에 미리 열어 `DIProvider`에 넘긴다(초안 화면은 여전히 동기 복원).
+  열기에 실패하면 초안 기능만 꺼지고(`disabledDraftStorage`) 앱은 정상 동작하며 Sentry에 보고한다. 평문 `aido.drafts`는 첫 실행에 옮긴 뒤 삭제한다.
 - 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
 - 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.
 - 접기/펼치기에서 컴포넌트를 살릴 수 있으면 초안보다 재마운트를 없애는 쪽을 먼저 택한다(`AdaptivePane`은 pane을 같은 트리 슬롯에 둔다).
