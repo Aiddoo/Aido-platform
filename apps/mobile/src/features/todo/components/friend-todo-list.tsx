@@ -31,11 +31,11 @@ import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { useMemo, useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
+import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
 import { toFriendCategoryGroups } from '../utils/group-friend-todos-by-category';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
@@ -101,7 +101,8 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const friend = useScreenFriend();
   const [date] = useFeedDate();
   const today = useToday();
-  const push = useSingleTap(router.push);
+  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
+  const selectTodo = useSingleTap(setSelectedTodoId);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
@@ -111,7 +112,7 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
     today,
   );
 
-  const openComments = () => push({ pathname: '/todo/[todoId]', params: { todoId: todo.id } });
+  const openComments = () => selectTodo(todo.id);
 
   return (
     <TodoRow
