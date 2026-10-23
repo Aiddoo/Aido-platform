@@ -7,7 +7,9 @@ export const expoAppStoreGateway: AppStoreReviewGateway & AppStoreListingGateway
   requestReview: StoreReview.requestReview,
   async openListing() {
     const url = StoreReview.storeUrl();
-    if (!url) throw new Error('App store listing URL is unavailable');
+    if (!url) {
+      throw new Error('App store listing URL is unavailable');
+    }
     await Linking.openURL(url);
   },
 };

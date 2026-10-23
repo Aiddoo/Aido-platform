@@ -2,10 +2,9 @@ import postgres from "@prisma/orm-postgres/runtime";
 import { vi, type Mock } from "vitest";
 import { mockDeep } from "vitest-mock-extended";
 
+import { contract } from "#api/platform/database/database.service";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 
-import type { Contract } from "../../src/generated/prisma8/contract.d.js";
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 import { TestDatabase } from "./test-database.js";
 
 const MANAGED_ENV = {
@@ -17,7 +16,7 @@ type ExecuteRawMock = Mock<ReturnType<TestDatabaseClient["runtime"]>["execute"]>
 
 function createFakeTestDatabaseClient(executeRawUnsafe: ExecuteRawMock) {
   const client = mockDeep<TestDatabaseClient>();
-  const statics = postgres<Contract>({ contractJson });
+  const statics = postgres({ contract });
   const runtime = mockDeep<ReturnType<TestDatabaseClient["runtime"]>>();
   Object.assign(client, { raw: statics.raw });
   client.close.mockResolvedValue(undefined);

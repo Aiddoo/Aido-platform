@@ -1,5 +1,5 @@
-import type { WidgetSnapshot } from '../models/widget-snapshot.model';
-import type { WidgetSnapshotContext, WidgetSummaryInput } from '../services/widget-snapshot.mapper';
+import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
+import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
 
 /** t를 key(params) 형태로 에코해 굽기 로직을 검증할 수 있게 한다 */
 export const echoTranslate: WidgetSnapshotContext['t'] = (key, params) =>

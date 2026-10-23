@@ -1,6 +1,6 @@
-import type { OAuthProvider } from '@src/features/auth/models/oauth.model';
-import { PROVIDER_CONFIGS } from '@src/features/auth/presentations/constants/provider-configs.constant';
-import { useLinkedAccounts } from '@src/features/auth/presentations/hooks/use-linked-accounts';
+import { PROVIDER_CONFIGS } from '@src/features/auth/constants/oauth-provider-configs';
+import type { OAuthProvider } from '@src/features/auth/domains/oauth.model';
+import { useLinkedAccounts } from '@src/features/auth/hooks/use-linked-accounts';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -14,32 +14,35 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import times from 'es-toolkit/compat/times';
+import { range } from 'es-toolkit';
 import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
 import { Platform, ScrollView, View } from 'react-native';
+import { match } from 'ts-pattern';
 
-const LinkedAccountsScreen = () => {
+function LinkedAccountsScreen() {
   const { t } = useTranslation('auth');
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
 
-        <Text size="b4" shade={6} className="px-2 pb-2">
-          {t('linkedAccounts.description')}
-        </Text>
+          <Text size="b4" shade={6} className="px-2 pb-2">
+            {t('linkedAccounts.description')}
+          </Text>
 
-        <QueryErrorBoundary>
-          <Suspense fallback={<LinkedAccountsList.Loading />}>
-            <LinkedAccountsList />
-          </Suspense>
-        </QueryErrorBoundary>
+          <QueryErrorBoundary>
+            <Suspense fallback={<LinkedAccountsList.Loading />}>
+              <LinkedAccountsList />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default LinkedAccountsScreen;
 
@@ -56,7 +59,9 @@ function LinkedAccountsList() {
   } | null>(null);
 
   const handleUnlinkConfirm = () => {
-    if (!unlinkTarget) return;
+    if (!unlinkTarget) {
+      return;
+    }
     const target = unlinkTarget;
     setUnlinkTarget(null);
     unlink(target.provider);
@@ -102,7 +107,9 @@ function LinkedAccountsList() {
       <ConfirmDialog
         isOpen={unlinkTarget !== null}
         onOpenChange={(open) => {
-          if (!open) setUnlinkTarget(null);
+          if (!open) {
+            setUnlinkTarget(null);
+          }
         }}
         title={<ConfirmDialog.Title>{t('linkedAccounts.unlinkDialogTitle')}</ConfirmDialog.Title>}
         description={
@@ -129,7 +136,7 @@ LinkedAccountsList.Loading = function Loading() {
   return (
     <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
       <SkeletonGroup isLoading isSkeletonOnly>
-        {times(visibleConfigs.length, (index) => (
+        {range(visibleConfigs.length).map((index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
             {index < visibleConfigs.length - 1 && <Separator className="mx-4 bg-gray-2" />}
@@ -213,21 +220,23 @@ const ProviderListRow = memo(function ProviderListRow({
           </Chip>
         </VStack>
       }
-      right={
-        isPending ? (
+      right={match({ isPending, isLinked })
+        .with({ isPending: true }, () => (
           <View className="w-16 items-center">
             <Spinner size="sm" />
           </View>
-        ) : isLinked ? (
+        ))
+        .with({ isPending: false, isLinked: true }, () => (
           <Button size="small" variant="weak" onPress={handleUnlinkPress} isDisabled={!canUnlink}>
             {t('linkedAccounts.unlink')}
           </Button>
-        ) : (
+        ))
+        .with({ isPending: false, isLinked: false }, () => (
           <Button size="small" onPress={handleLinkPress}>
             {t('linkedAccounts.connect')}
           </Button>
-        )
-      }
+        ))
+        .exhaustive()}
     />
   );
 });

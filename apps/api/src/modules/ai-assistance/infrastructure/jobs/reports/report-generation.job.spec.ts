@@ -76,18 +76,19 @@ describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
 
     await job.dispatchReports("WEEKLY");
 
-    expect(runtime.enqueue).toHaveBeenCalledTimes(2);
-    expect(runtime.enqueue).toHaveBeenCalledWith(
-      AI_REPORT_QUEUE,
-      expect.objectContaining({
-        name: "generate-report",
+    expect(runtime.enqueueMany).toHaveBeenCalledOnce();
+    expect(runtime.enqueueMany).toHaveBeenCalledWith(AI_REPORT_QUEUE, [
+      {
         data: expect.objectContaining({
-          userId: "user-1",
-          reportType: "WEEKLY",
+          name: "generate-report",
+          data: expect.objectContaining({ userId: "user-1", reportType: "WEEKLY" }),
         }),
+        options: expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
+      },
+      expect.objectContaining({
+        data: expect.objectContaining({ data: expect.objectContaining({ userId: "user-2" }) }),
       }),
-      expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
-    );
+    ]);
   });
 
   it("preference가 없으면 기존 기본값을 유지한다", async () => {
@@ -104,12 +105,13 @@ describe("ReportGenerationJob — 영속 보고서 생성 job 발행", () => {
     );
     await job.dispatchReports("MONTHLY");
 
-    expect(runtime.enqueue).toHaveBeenCalledWith(
-      AI_REPORT_QUEUE,
-      expect.objectContaining({
-        data: expect.objectContaining({ timezone: "Asia/Seoul", locale: "ko" }),
-      }),
-      expect.any(Object),
-    );
+    expect(runtime.enqueueMany).toHaveBeenCalledWith(AI_REPORT_QUEUE, [
+      {
+        data: expect.objectContaining({
+          data: expect.objectContaining({ timezone: "Asia/Seoul", locale: "ko" }),
+        }),
+        options: expect.any(Object),
+      },
+    ]);
   });
 });

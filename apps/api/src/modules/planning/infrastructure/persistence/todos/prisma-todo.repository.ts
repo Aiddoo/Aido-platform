@@ -1,6 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { groupBy, sortBy } from "es-toolkit";
+import sql, { join } from "sql-template-tag";
 
 import {
   decodeRecord,
@@ -8,6 +9,7 @@ import {
   encodePatch,
   type DatabasePatch,
 } from "#api/platform/database/database-records";
+import { sqlStatement } from "#api/platform/database/database-sql";
 import { databaseTimestamp } from "#api/platform/database/database-values";
 import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
@@ -217,11 +219,24 @@ export class PrismaTodoRepository implements TodoRepositoryPort {
   }
 
   async reorderItems(itemIds: readonly number[]): Promise<void> {
-    for (const [sortOrder, id] of itemIds.entries()) {
-      const affected = await this.client.orm.public.TodoItem.where({ id }).updateAndCount(
-        encodePatch("TodoItem", { sortOrder }),
-      );
-      if (affected === 0) throw new DatabaseRecordNotFoundError();
-    }
+    if (itemIds.length === 0) return;
+    // ORM bulk update는 행마다 다른 값을 쓸 수 없으므로 VALUES 한 문장으로 순서를 갱신한다.
+    const requestedOrders = itemIds.map(
+      (id, sortOrder) => sql`(${id}::INTEGER, ${sortOrder}::INTEGER)`,
+    );
+    const { affectedRows } = await this.client.execute(
+      sqlStatement(
+        this.client,
+        sql`
+			UPDATE "TodoItem" AS item
+			SET "sortOrder" = requested."sortOrder", "updatedAt" = ${now()}
+			FROM (VALUES ${join(requestedOrders)}) AS requested("id", "sortOrder")
+			WHERE item."id" = requested."id"
+		`,
+      )
+        .affectedCount()
+        .build(),
+    );
+    if (affectedRows !== itemIds.length) throw new DatabaseRecordNotFoundError();
   }
 }

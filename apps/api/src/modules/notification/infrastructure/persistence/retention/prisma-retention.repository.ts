@@ -799,28 +799,17 @@ export class PrismaRetentionRepository implements RetentionRepositoryPort {
   }
 
   async #lockOutboxGeneration(outboxId: string, publishAttempt?: number): Promise<void> {
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			SELECT outbox."id"
-			FROM "RetentionPushOutbox" AS outbox
-			WHERE outbox."id" = ${outboxId}
-				AND (${publishAttempt ?? null}::INTEGER IS NULL OR outbox."attempts" = ${publishAttempt ?? null})
-				AND outbox."status" IN (
-					'PROCESSING'::"RetentionOutboxStatus",
-					'PUBLISHED'::"RetentionOutboxStatus"
-				)
-			FOR UPDATE OF outbox
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
+    await this.client.orm.public.RetentionPushOutbox.where((outbox) =>
+      and(
+        outbox.id.eq(outboxId),
+        outbox.status.in(["PROCESSING", "PUBLISHED"]),
+        ...(publishAttempt === undefined ? [] : [outbox.attempts.eq(publishAttempt)]),
+      ),
+    )
+      .select("id")
+      .forUpdate()
+      .first();
   }
-
   async markRateLimitReserved(fence: RetentionDispatchFence, reservedAt: Date): Promise<boolean> {
     const reserved = await this.client
       .execute(

@@ -23,7 +23,6 @@ export class DatabaseHealthIndicator {
 
     try {
       await this.database.db
-        .runtime()
         .execute(
           sqlStatement(this.database.db, sql`SELECT 1`)
             .affectedCount()

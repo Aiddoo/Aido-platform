@@ -10,6 +10,7 @@ function runtime(): Mocked<JobRuntimePort> {
     start: vi.fn(),
     stop: vi.fn(),
     enqueue: vi.fn(),
+    enqueueMany: vi.fn(),
     schedule: vi.fn(),
     unschedule: vi.fn(),
     cancel: vi.fn(),

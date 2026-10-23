@@ -135,7 +135,7 @@ const ErrorEnvelopeSchema = z.object({
   error: z.object({ code: z.string() }),
 });
 
-const HealthSchema = z.object({ status: z.literal("ok") }).passthrough();
+const HealthSchema = z.looseObject({ status: z.literal("ok") });
 
 function parseFixtureOptions(): FixtureOptions {
   const { values } = parseArgs({
@@ -481,7 +481,7 @@ function assertEqual<T>(actual: T, expected: T, label: string): void {
 }
 
 function assertStringArray(
-  actual: readonly string[],
+  actual: readonly (string | null)[],
   expected: readonly string[],
   label: string,
 ): void {

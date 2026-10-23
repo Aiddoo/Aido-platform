@@ -1,10 +1,10 @@
 import appIconImage from '@assets/images/icon.png';
-import { useExchangeCodeMutationOptions } from '@src/features/auth/presentations/queries/use-exchange-code-mutation-options';
-import { useOpenAppleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-apple-login-mutation-options';
-import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-google-login-mutation-options';
-import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-kakao-login-mutation-options';
-import { useOpenNaverLoginMutationOptions } from '@src/features/auth/presentations/queries/use-open-naver-login-mutation-options';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useExchangeCodeMutationOptions } from '@src/features/auth/queries/use-exchange-code-mutation-options';
+import { useOpenAppleLoginMutationOptions } from '@src/features/auth/queries/use-open-apple-login-mutation-options';
+import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/queries/use-open-google-login-mutation-options';
+import { useOpenKakaoLoginMutationOptions } from '@src/features/auth/queries/use-open-kakao-login-mutation-options';
+import { useOpenNaverLoginMutationOptions } from '@src/features/auth/queries/use-open-naver-login-mutation-options';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
 import {
@@ -15,6 +15,7 @@ import {
   HStack,
   KakaoIcon,
   NaverIcon,
+  ReadableContent,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -27,7 +28,7 @@ import { Avatar, Separator } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Platform } from 'react-native';
 
-const LoginScreen = () => {
+function LoginScreen() {
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('auth');
@@ -79,7 +80,7 @@ const LoginScreen = () => {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white mb-2">
-      <VStack flex={1} px={16}>
+      <ReadableContent flex={1} px={16}>
         <VStack flex={1} align="center" justify="center" gap={8}>
           <Avatar alt="Aido logo" size="lg" className="rounded-xl">
             <Avatar.Image source={appIconImage} />
@@ -148,10 +149,10 @@ const LoginScreen = () => {
             {t('login.emailLogin')}
           </TextButton>
         </HStack>
-      </VStack>
+      </ReadableContent>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default LoginScreen;
 
@@ -163,13 +164,13 @@ interface SocialLoginButtonProps extends Omit<ButtonProps, 'children'> {
   labelClassName?: string;
 }
 
-const SocialLoginButton = ({
+function SocialLoginButton({
   icon,
   label,
   className,
   labelClassName,
   ...props
-}: SocialLoginButtonProps) => {
+}: SocialLoginButtonProps) {
   return (
     <Button {...props} className={className}>
       <HStack align="center" gap={8}>
@@ -180,4 +181,4 @@ const SocialLoginButton = ({
       </HStack>
     </Button>
   );
-};
+}

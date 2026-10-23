@@ -139,4 +139,74 @@ describe("Resend Email Adapter — 발송 계약과 인증 정보 비노출", ()
       errorMessage,
     );
   });
+
+  it("재시도 가능한 오류는 지수 백오프로 재시도하고 성공하면 재시도 횟수를 반환한다", async () => {
+    // Given
+    http = new StubResendHttp([
+      resendResponseFixture("send.rate-limit.json", 429),
+      resendResponseFixture("send.application-error.json", 500),
+      resendResponseFixture("send.success.json"),
+    ]);
+    vi.stubGlobal("fetch", http.fetch);
+
+    // When
+    const pending = adapter(true).send(message());
+    await vi.advanceTimersByTimeAsync(1000 + 2000);
+    const result = await pending;
+
+    // Then
+    expect(result).toEqual({ success: true, messageId: "fixture-message", retryCount: 2 });
+    expect(http.requests).toHaveLength(3);
+    expect(Logger.prototype.warn).toHaveBeenCalledWith(
+      "Retryable error (rate_limit_exceeded), retrying in 1000ms... (attempt 1/3)",
+    );
+    expect(Logger.prototype.warn).toHaveBeenCalledWith(
+      "Retryable error (application_error), retrying in 2000ms... (attempt 2/3)",
+    );
+  });
+
+  it("재시도 횟수를 모두 소진하면 마지막 공급자 오류와 재시도 횟수를 반환한다", async () => {
+    // Given
+    http = new StubResendHttp(
+      Array.from({ length: 4 }, () => resendResponseFixture("send.application-error.json", 500)),
+    );
+    vi.stubGlobal("fetch", http.fetch);
+
+    // When
+    const pending = adapter(true).send(message());
+    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000);
+    const result = await pending;
+
+    // Then
+    expect(result).toEqual({ success: false, error: "Persistent failure", retryCount: 3 });
+    expect(http.requests).toHaveLength(4);
+    expect(Logger.prototype.error).toHaveBeenCalledWith({
+      event: EmailLogEvent.DELIVERY_FAILED,
+      errorType: "application_error",
+      retryCount: 3,
+    });
+  });
+
+  it("SDK가 application_error로 변환한 네트워크 예외도 재시도 횟수만큼 재시도한 뒤 실패 결과를 반환한다", async () => {
+    // Given
+    const networkFailure = vi.fn().mockRejectedValue(new Error("socket hang up"));
+    vi.stubGlobal("fetch", networkFailure);
+
+    // When
+    const pending = adapter(true).send(message());
+    await vi.advanceTimersByTimeAsync(1000 + 2000 + 4000);
+    const result = await pending;
+
+    // Then
+    expect(result).toMatchObject({ success: false, retryCount: 3 });
+    expect(networkFailure).toHaveBeenCalledTimes(4);
+    expect(Logger.prototype.warn).toHaveBeenCalledWith(
+      "Retryable error (application_error), retrying in 1000ms... (attempt 1/3)",
+    );
+    expect(Logger.prototype.error).toHaveBeenCalledWith({
+      event: EmailLogEvent.DELIVERY_FAILED,
+      errorType: "application_error",
+      retryCount: 3,
+    });
+  });
 });

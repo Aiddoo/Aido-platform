@@ -1,3 +1,4 @@
+import { errorEnvelopeSchema } from "@aido/api";
 import { ErrorCode, Errors } from "@aido/api/errors";
 /**
  * GlobalExceptionFilter 테스트
@@ -381,5 +382,22 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
     const recorded = JSON.stringify(mockLogger.error.mock.calls);
     for (const secret of ["secret-code", "secret-state", "secret-token"])
       expect(recorded).not.toContain(secret);
+  });
+
+  describe("공유 errorEnvelopeSchema 계약", () => {
+    const exceptions = {
+      업무_오류: () => ApplicationExceptions.invalidParameter({ reason: "invalid" }),
+      HttpException: () => new HttpException({ message: ["a", "b"] }, HttpStatus.BAD_REQUEST),
+      알_수_없는_에러: () => new Error("boom"),
+      데이터베이스_에러: () => sqlQueryError("23505", "User_email_key"),
+    };
+
+    it.each(Object.entries(exceptions))("%s 응답이 envelope 스키마를 만족한다", (_name, create) => {
+      for (const isDevelopment of [true, false]) {
+        createFilter(isDevelopment).catch(create(), mockHost as never);
+        const body = mockResponse.json.mock.lastCall?.[0];
+        expect(errorEnvelopeSchema.safeParse(body).success).toBe(true);
+      }
+    });
   });
 });

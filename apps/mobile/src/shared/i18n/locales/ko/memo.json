@@ -17,6 +17,8 @@
     "placeholder": "아이디어를 자유롭게 적어보세요..."
   },
   "detail": {
+    "emptyTitle": "선택한 메모가 없어요",
+    "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",
     "unpin": "메모 고정 해제",
     "convertToTodo": "할 일로 변환",
@@ -30,7 +32,8 @@
     "retryLater": "잠시 후 다시 시도해주세요",
     "reorderFailed": "순서 변경에 실패했어요",
     "deleteRetry": "잠시 후 다시 삭제해 보세요",
-    "limitReached": "메모 개수가 한도에 도달했어요"
+    "limitReached": "메모 개수가 한도에 도달했어요",
+    "draftOutdated": "메모가 다른 곳에서 수정되어 저장하지 않은 내용을 지웠어요"
   },
   "aiDialog": {
     "limitTitle": "이번 달 AI 파싱 횟수를 모두 사용했어요",

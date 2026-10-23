@@ -1,13 +1,12 @@
-import { i18n } from '@src/shared/i18n';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+import { getDateFormatContext } from './date';
+import { formatLocaleTime } from './date-format';
 
 dayjs.extend(customParseFormat);
 
 export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
-
-/** 앱 표시 언어에 맞는 Intl 로케일 태그 */
-const getIntlLocale = (): string => (i18n.language === 'en' ? 'en-US' : 'ko-KR');
 
 /** "HH:mm" 형식(두 자리, 엄격)인지 검증 */
 export function isValidHHmm(time: string): boolean {
@@ -41,11 +40,7 @@ export function isTwelveHour(timeFormat: TimeFormat): boolean {
 
 /** 앱 표시 언어 로케일로 시:분 포맷 (ko: "오전 8:30", en: "8:30 AM") */
 function formatTimeByLocale(date: Date, hour12: boolean): string {
-  return new Intl.DateTimeFormat(getIntlLocale(), {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12,
-  }).format(date);
+  return formatLocaleTime(date, hour12, getDateFormatContext());
 }
 
 export const toHHmm = (date: Date): string => dayjs(date).format('HH:mm');

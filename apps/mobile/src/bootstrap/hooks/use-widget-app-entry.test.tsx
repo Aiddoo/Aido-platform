@@ -1,13 +1,13 @@
-import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
+import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import {
+  createWidgetNavigationRepository,
+  type WidgetNavigationRepository,
+} from '@src/features/widget/apis/widget-navigation.repository';
 import type { WidgetNavigationStorage } from '@src/features/widget/bridge/widget-navigation-storage';
 import {
   type WidgetNavigationCommand,
   WIDGET_NAVIGATION_COMMAND_TTL_MS,
-} from '@src/features/widget/models/widget-navigation.model';
-import {
-  createWidgetNavigationRepository,
-  type WidgetNavigationRepository,
-} from '@src/features/widget/services/widget-navigation.repository';
+} from '@src/features/widget/domains/widget-navigation.model';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import { router } from 'expo-router';
@@ -28,7 +28,7 @@ jest.mock('../providers/di-context', () => ({
   useErrorReporter: () => mockErrorReporter,
   useWidgetNavigationRepository: () => mockRepository,
 }));
-jest.mock('@src/features/user/presentations/queries/get-me-query-options', () => ({
+jest.mock('@src/features/user/queries/get-me-query-options', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'original-account' }),
@@ -99,7 +99,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       return id;
     });
     jest.spyOn(global, 'cancelAnimationFrame').mockImplementation((id) => {
-      if (typeof id === 'number') frames.delete(id);
+      if (typeof id === 'number') {
+        frames.delete(id);
+      }
     });
     mockStatus = 'loading';
     mockSegments = ['loading'];
@@ -200,7 +202,9 @@ describe('종료된 앱의 위젯 명령 복원', () => {
       // Given
       authenticate();
       mockUrl = null;
-      if (scenario === 'unauthenticated') mockStatus = 'unauthenticated';
+      if (scenario === 'unauthenticated') {
+        mockStatus = 'unauthenticated';
+      }
       if (scenario === 'different-account') {
         queryClient.setQueryData(USER_QUERY_KEYS.me(), { id: 'other-account' });
       }

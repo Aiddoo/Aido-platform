@@ -1,5 +1,5 @@
-import { NotificationBell } from '@src/features/notification/presentations/components/notification-bell';
-import { WeatherForecastBadge } from '@src/features/weather/presentations/components/WeatherForecastBadge';
+import { NotificationBell } from '@src/features/notification/components/notification-bell';
+import { WeatherForecastBadge } from '@src/features/weather/components/weather-forecast-badge';
 import { HStack, ScreenTitleBar } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';

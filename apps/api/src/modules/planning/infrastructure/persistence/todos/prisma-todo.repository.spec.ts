@@ -1,5 +1,9 @@
 import { DatabaseRecordNotFoundError } from "#api/platform/database/prisma-error.util";
-import { createMockTransactionHost, databaseWriteExpectation } from "#test/mocks/database.mock";
+import {
+  createMockTransactionHost,
+  databaseWriteExpectation,
+  nativeSqlParameters,
+} from "#test/mocks/database.mock";
 import { createMockDatabaseContext } from "#test/mocks/index";
 
 import { PrismaTodoRepository } from "./prisma-todo.repository.js";
@@ -18,15 +22,16 @@ describe("PrismaTodoRepository 쓰기 계약", () => {
     );
   });
 
-  it("재정렬 중 사라진 item은 not-found 오류를 반환하고 이후 수정을 중단한다", async () => {
+  it("재정렬은 한 UPDATE로 요청 순서를 쓰고 사라진 item이 있으면 not-found 오류를 반환한다", async () => {
     // Given
     const db = createMockDatabaseContext();
-    db.orm.public.TodoItem.updateAndCount.mockResolvedValueOnce(1).mockResolvedValueOnce(0);
+    db.execute.mockResolvedValue({ affectedRows: 2 });
     const repository = new PrismaTodoRepository(createMockTransactionHost(db));
     // When
     const result = repository.reorderItems([3, 2, 1]);
     // Then
     await expect(result).rejects.toBeInstanceOf(DatabaseRecordNotFoundError);
-    expect(db.orm.public.TodoItem.updateAndCount).toHaveBeenCalledTimes(2);
+    expect(db.execute).toHaveBeenCalledOnce();
+    expect(nativeSqlParameters(db.execute.mock.calls[0]?.[0]).slice(1)).toEqual([3, 0, 2, 1, 1, 2]);
   });
 });

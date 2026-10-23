@@ -1,6 +1,5 @@
+import { isSemanticVersionAtLeast } from "@aido/api";
 import { NOTIFICATION_TYPE } from "@aido/api/vocabulary";
-
-import { isVersionAtLeast } from "#api/shared/domain/version/compare-version";
 
 import type { NotificationType } from "../../types/delivery/notification-type.js";
 
@@ -9,7 +8,7 @@ export type NotificationInboxScope = "legacy" | "all";
 export const NUDGE_INTERACTION_MIN_APP_VERSION = "1.11.0";
 
 export function supportsNudgeInteractions(appVersion: string | null | undefined): boolean {
-  return isVersionAtLeast(appVersion ?? null, NUDGE_INTERACTION_MIN_APP_VERSION);
+  return isSemanticVersionAtLeast(appVersion, NUDGE_INTERACTION_MIN_APP_VERSION);
 }
 
 export function isNudgeInteractionNotification(type: NotificationType): boolean {

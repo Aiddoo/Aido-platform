@@ -39,7 +39,7 @@ updates:
         patterns:
           - '*'
     ignore:
-      # Migration owner/client 7 and separate 8 CLI/runtime must be reviewed together.
+      # Prisma 8 RC는 RC마다 깨지는 변경과 공식 업그레이드 레시피가 있어 prisma8 catalog로 함께 올린다.
       - dependency-name: '@prisma/*'
       - dependency-name: 'prisma'
       # 12.27 uses pg-boss schema 37; later minor versions break old-image rollback.
@@ -69,14 +69,13 @@ updates:
       - dependency-name: 'react-native-webview'
       - dependency-name: 'react-native-keyboard-controller'
       - dependency-name: 'react-native-view-shot'
+      - dependency-name: '@sentry/react-native'
       # ── 메이저 차단 (toolchain/계약 제약 — 사유 해소 시 항목 제거)
       # typescript 7: Expo 58의 CLI 권장 TypeScript 6 cohort와 함께 검증
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major']
-      # jest 30: 모바일 jest-expo 58은 Jest 29 기반; 서버는 Vitest
-      - dependency-name: 'jest'
-        update-types: ['version-update:semver-major']
-      - dependency-name: '@types/jest'
+      # Firebase 27은 iOS dynamic frameworks + SPM, Kotlin 2.4를 요구해 Expo config 플러그인만으로 맞출 수 없다.
+      - dependency-name: '@react-native-firebase/*'
         update-types: ['version-update:semver-major']
       # @types/node: 프로덕션 런타임 Node 24 라인의 타입 surface 유지
       - dependency-name: '@types/node'
@@ -85,6 +84,26 @@ updates:
       - dependency-name: 'zod'
     labels:
       - 'dependencies'
+      - 'automated'
+    commit-message:
+      prefix: 'chore(deps)'
+
+  # API 런타임 이미지 (Node 보안 패치 감지)
+  - package-ecosystem: 'docker'
+    directory: '/apps/api'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'Asia/Seoul'
+    open-pull-requests-limit: 3
+    ignore:
+      # 프로덕션 런타임은 Node 24 LTS 라인을 유지한다.
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
+    labels:
+      - 'dependencies'
+      - 'docker'
       - 'automated'
     commit-message:
       prefix: 'chore(deps)'

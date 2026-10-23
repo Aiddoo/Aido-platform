@@ -1,0 +1,55 @@
+import { View } from 'react-native';
+
+import { Button } from '../button/button';
+import { Spacing } from '../spacing/spacing';
+import { Text } from '../text/text';
+import { VStack } from '../v-stack/v-stack';
+import type { ResultButtonProps, ResultProps } from './result.types';
+
+export function Result({ icon, title, description, button, className }: ResultProps) {
+  return (
+    <VStack align="center" justify="center" className={className} flex={1}>
+      {icon && (
+        <>
+          <View accessible={false} importantForAccessibility="no">
+            {icon}
+          </View>
+          <Spacing size={24} />
+        </>
+      )}
+
+      <Text size="b3" shade={6} align="center" weight="medium">
+        {title}
+      </Text>
+
+      {description && (
+        <>
+          <Spacing size={4} />
+          <Text size="b4" shade={5} align="center">
+            {description}
+          </Text>
+        </>
+      )}
+
+      {button && (
+        <>
+          <Spacing size={24} />
+          {button}
+        </>
+      )}
+    </VStack>
+  );
+}
+
+Result.Button = function ResultButton({
+  children,
+  color = 'dark',
+  className,
+  ...props
+}: ResultButtonProps) {
+  return (
+    <Button size="medium" color={color} display="inline" className={className} {...props}>
+      {children}
+    </Button>
+  );
+};

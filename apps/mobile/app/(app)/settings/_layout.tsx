@@ -1,7 +1,8 @@
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { SettingsMenuPane } from '@src/features/user/components/settings-menu-pane/settings-menu-pane';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
+import { AdaptivePane, ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
 import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
@@ -15,7 +16,7 @@ export default function SettingsLayout() {
   const { fontScale } = useFontScale();
   const { t } = useTranslation(['settings', 'common']);
 
-  return (
+  const settingsStack = (
     <Stack
       screenOptions={{
         header: (props) => <ScreenTitleBar.StackHeader {...props} />,
@@ -58,5 +59,13 @@ export default function SettingsLayout() {
       <Stack.Screen name="subscription" options={{ title: t('titles.subscription') }} />
       <Stack.Screen name="category-settings" options={{ title: t('titles.categorySettings') }} />
     </Stack>
+  );
+
+  return (
+    <AdaptivePane
+      primary={<SettingsMenuPane />}
+      secondary={settingsStack}
+      compactPane="secondary"
+    />
   );
 }

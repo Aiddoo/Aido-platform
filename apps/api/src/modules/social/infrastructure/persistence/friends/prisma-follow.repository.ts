@@ -178,11 +178,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
           row.status.eq("ACCEPTED"),
           row.following.some((user) =>
             and(
-              pattern !== undefined
-                ? this.client.raw.sql`${user.userTag} ILIKE ${pattern}`
-                    .returns("pg/bool@1")
-                    .buildAst()
-                : all(),
+              pattern !== undefined ? user.userTag.ilike(pattern) : all(),
               user.following.some((back) =>
                 and(
                   back.followerId.neq(userId),
@@ -482,14 +478,8 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         user.deletedAt.isNull(),
         user.status.eq("ACTIVE"),
         or(
-          this.client.raw.sql`${user.userTag} ILIKE ${"%" + upperTag + "%"}`
-            .returns("pg/bool@1")
-            .buildAst(),
-          user.profile.some((profile) =>
-            this.client.raw.sql`${profile.name} ILIKE ${"%" + nfcQuery + "%"}`
-              .returns("pg/bool@1")
-              .buildAst(),
-          ),
+          user.userTag.ilike(`%${upperTag}%`),
+          user.profile.some((profile) => profile.name.ilike(`%${nfcQuery}%`)),
         ),
       ),
     ).aggregate((aggregate) => ({ count: aggregate.count() }));

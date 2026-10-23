@@ -1,6 +1,6 @@
-import { FriendSearchList } from '@src/features/friend/presentations/components/FriendSearchList';
+import { FriendSearchList } from '@src/features/friend/components/friend-search-list';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Input, QueryErrorBoundary, SearchIcon, VStack } from '@src/shared/ui';
+import { Box, Input, QueryErrorBoundary, SearchIcon, StyledSafeAreaView } from '@src/shared/ui';
 import { useState } from 'react';
 
 export default function SearchFriendScreen() {
@@ -8,7 +8,7 @@ export default function SearchFriendScreen() {
   const [query, setQuery] = useState('');
 
   return (
-    <VStack flex={1} className="bg-background">
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background">
       <Box px={16} py={12}>
         <Input
           leftContent={<SearchIcon width={20} height={20} colorClassName="text-gray-5" />}
@@ -27,6 +27,6 @@ export default function SearchFriendScreen() {
           <FriendSearchList query={query} />
         </QueryErrorBoundary>
       </Box>
-    </VStack>
+    </StyledSafeAreaView>
   );
 }

@@ -1,39 +1,31 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { useUpdateProfileMutationOptions } from '@src/features/user/presentations/queries/use-update-profile-mutation-options';
 import {
   type UpdateNameFormInput,
   updateNameFormSchema,
-} from '@src/features/user/presentations/schemas/update-name-form.schema';
+} from '@src/features/user/domains/update-name-form.schema';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useUpdateProfileMutationOptions } from '@src/features/user/queries/use-update-profile-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { H3, Input, KeyboardAdaptiveButton, QueryErrorBoundary, Spacing } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import {
+  H3,
+  Input,
+  KeyboardAdaptiveButton,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+} from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
+import { match, P } from 'ts-pattern';
 
-const EditNameScreen = () => {
-  return (
-    <View className="flex-1 bg-gray-1">
-      <QueryErrorBoundary>
-        <Suspense fallback={<View className="flex-1" />}>
-          <EditNameForm />
-        </Suspense>
-      </QueryErrorBoundary>
-    </View>
-  );
-};
-
-export default EditNameScreen;
-
-function EditNameForm() {
+function EditNameScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const goBack = useSingleTap(router.back);
@@ -56,7 +48,9 @@ function EditNameForm() {
     try {
       await updateProfileMutation.mutateAsync({ name: data.name }, { onSuccess: () => goBack() });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -69,35 +63,36 @@ function EditNameForm() {
           keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
         >
-          <H3>{t('editName.header')}</H3>
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <H3>{t('editName.header')}</H3>
 
-          <Spacing size={24} />
+            <Spacing size={24} />
 
-          <FormField control={control} name="name">
-            {({ onChange, value }, { error }) => (
-              <Input
-                label={t('editName.label')}
-                placeholder={t('editName.placeholder')}
-                value={value}
-                onChange={onChange}
-                autoFocus
-                autoCapitalize="none"
-                submitBehavior="submit"
-                returnKeyType="done"
-                isInvalid={!!error}
-                errorMessage={
-                  error == null
-                    ? undefined
-                    : error.type === 'too_big'
-                      ? t('editName.maxLength')
-                      : t('editName.required')
-                }
-                onSubmitEditing={() => {
-                  if (canSubmit) handleSubmit(onSubmit)();
-                }}
-              />
-            )}
-          </FormField>
+            <FormField control={control} name="name">
+              {({ onChange, value }, { error }) => (
+                <Input
+                  label={t('editName.label')}
+                  placeholder={t('editName.placeholder')}
+                  value={value}
+                  onChange={onChange}
+                  autoFocus
+                  autoCapitalize="none"
+                  submitBehavior="submit"
+                  returnKeyType="done"
+                  isInvalid={!!error}
+                  errorMessage={match(error)
+                    .with(P.nullish, () => undefined)
+                    .with({ type: 'too_big' }, () => t('editName.maxLength'))
+                    .otherwise(() => t('editName.required'))}
+                  onSubmitEditing={() => {
+                    if (canSubmit) {
+                      handleSubmit(onSubmit)();
+                    }
+                  }}
+                />
+              )}
+            </FormField>
+          </StyledSafeAreaView>
         </ScrollView>
 
         <KeyboardAdaptiveButton
@@ -109,5 +104,17 @@ function EditNameForm() {
         </KeyboardAdaptiveButton>
       </View>
     </FormProvider>
+  );
+}
+
+export default function EditNameRoute() {
+  return (
+    <View className="flex-1 bg-gray-1">
+      <QueryErrorBoundary>
+        <Suspense fallback={<View className="flex-1" />}>
+          <EditNameScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </View>
   );
 }

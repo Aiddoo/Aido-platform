@@ -1,4 +1,4 @@
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { ArrowLeftIcon, ScreenTitleBar, Text } from '@src/shared/ui';

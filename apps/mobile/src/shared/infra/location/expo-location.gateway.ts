@@ -10,13 +10,18 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
     let finished = false;
     let subscription: Location.LocationSubscription | undefined;
     const finish = (coordinates?: LocationCoordinates, error?: Error) => {
-      if (finished) return;
+      if (finished) {
+        return;
+      }
       finished = true;
       clearTimeout(timer);
       signal.removeEventListener('abort', onAbort);
       subscription?.remove();
-      if (coordinates) resolve(coordinates);
-      else reject(error ?? new LocationUnavailableError('Location unavailable'));
+      if (coordinates) {
+        resolve(coordinates);
+      } else {
+        reject(error ?? new LocationUnavailableError('Location unavailable'));
+      }
     };
     const onAbort = () => finish(undefined, new Error('Location cancelled'));
     const timer = setTimeout(() => finish(undefined, new Error('Location timeout')), 10_000);
@@ -25,7 +30,7 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
       onAbort();
       return;
     }
-    void Location.watchPositionAsync(
+    Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.Balanced,
         distanceInterval: 0,
@@ -36,7 +41,9 @@ function getFreshCoordinates(signal: AbortSignal): Promise<LocationCoordinates> 
     ).then(
       (watch) => {
         subscription = watch;
-        if (finished) watch.remove();
+        if (finished) {
+          watch.remove();
+        }
       },
       () => finish(undefined, new Error('Location unavailable')),
     );
@@ -52,7 +59,9 @@ function waitForNativeResult<T>(
   return new Promise((resolve) => {
     let finished = false;
     const finish = (value: T) => {
-      if (finished) return;
+      if (finished) {
+        return;
+      }
       finished = true;
       clearTimeout(timer);
       signal.removeEventListener('abort', onAbort);
@@ -61,13 +70,17 @@ function waitForNativeResult<T>(
     const onAbort = () => finish(fallback);
     const timer = setTimeout(onAbort, timeout);
     signal.addEventListener('abort', onAbort, { once: true });
-    void operation.then(finish, onAbort);
-    if (signal.aborted) onAbort();
+    operation.then(finish, onAbort);
+    if (signal.aborted) {
+      onAbort();
+    }
   });
 }
 
 async function getPlace(coordinates: LocationCoordinates, signal: AbortSignal) {
-  if (signal.aborted) return { countryCode: null, name: null };
+  if (signal.aborted) {
+    return { countryCode: null, name: null };
+  }
   const places = await waitForNativeResult(
     Location.reverseGeocodeAsync(coordinates),
     signal,
@@ -95,7 +108,9 @@ export const expoLocationGateway: LocationGateway = {
       2_000,
       null,
     );
-    if (signal.aborted) throw new Error('Location cancelled');
+    if (signal.aborted) {
+      throw new Error('Location cancelled');
+    }
     return cached
       ? { latitude: cached.coords.latitude, longitude: cached.coords.longitude }
       : getFreshCoordinates(signal);

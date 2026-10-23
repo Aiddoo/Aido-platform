@@ -1,8 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import sql, { join } from "sql-template-tag";
 
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
+import { encodeCreate } from "#api/platform/database/database-records";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type {
@@ -32,84 +31,51 @@ export class PrismaPushDispatchStagingRepository implements PushDispatchStagingR
   async stageMany(
     inputs: readonly StagePushDispatchInput[],
   ): Promise<readonly StagedPushDispatch[]> {
-    const sqlRows1 = sqlRowSpec({ dispatchId: "pg/int4@1", notificationId: "pg/int4@1" });
-
     if (inputs.length === 0) return [];
 
-    const dispatchValues = inputs.map(
-      (input) => sql`(
-				${input.notificationId},
-				${input.userId},
-				${input.purpose}::"NotificationPurpose",
-				${input.campaignKey ?? null},
-				${input.variantId ?? null},
-				'PENDING'::"PushDispatchStatus",
-				CURRENT_TIMESTAMP
-			)`,
-    );
-    const staged = decodeSqlRows(
-      sqlRows1,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`
-			INSERT INTO "PushDispatch" (
-				"notificationId",
-				"userId",
-				"purpose",
-				"campaignKey",
-				"variantId",
-				"status",
-				"updatedAt"
-			)
-			VALUES ${join(dispatchValues)}
-			RETURNING "id" AS "dispatchId", "notificationId"
-		`,
-        )
-          .returnsRow(sqlRows1)
-          .build(),
-      ),
-    );
-    if (staged.length !== inputs.length) {
+    const dispatches = await this.client.orm.public.PushDispatch.select("id", "notificationId")
+      .createAll(inputs.map(toDispatchCreate))
+      .then((rows) =>
+        rows.map((row) => ({ dispatchId: row.id, notificationId: row.notificationId })),
+      );
+    if (dispatches.length !== inputs.length) {
       throw new Error(
-        `Push dispatch staging returned partial rows: expected=${inputs.length}, actual=${staged.length}`,
+        `Push dispatch staging returned partial rows: expected=${inputs.length}, actual=${dispatches.length}`,
       );
     }
 
     const inputByNotificationId = new Map(inputs.map((input) => [input.notificationId, input]));
-    const outboxValues = staged.map((dispatch) => {
-      const input = inputByNotificationId.get(dispatch.notificationId);
-      if (!input) {
-        throw new Error(
-          `Push dispatch staging input missing: notificationId=${dispatch.notificationId}`,
-        );
-      }
-      return sql`(
-				${dispatch.dispatchId},
-				${input.deliveryMode}::"PushDeliveryMode",
-				${input.force},
-				CURRENT_TIMESTAMP
-			)`;
-    });
-    await this.client
-      .execute(
-        sqlStatement(
-          this.client,
-          sql`
-			INSERT INTO "PushDispatchOutbox" (
-				"dispatchId",
-				"deliveryMode",
-				"force",
-				"updatedAt"
-			)
-			VALUES ${join(outboxValues)}
-		`,
-        )
-          .affectedCount()
-          .build(),
-      )
-      .then((result) => result.affectedRows);
+    await this.client.orm.public.PushDispatchOutbox.createAndCount(
+      dispatches.map((dispatch) => {
+        const input = inputByNotificationId.get(dispatch.notificationId);
+        if (!input) {
+          throw new Error(
+            `Push dispatch staging input missing: notificationId=${dispatch.notificationId}`,
+          );
+        }
+        return toOutboxCreate(dispatch.dispatchId, input);
+      }),
+    );
 
-    return staged;
+    return dispatches;
   }
+}
+
+function toDispatchCreate(input: StagePushDispatchInput) {
+  return encodeCreate("PushDispatch", {
+    notificationId: input.notificationId,
+    userId: input.userId,
+    purpose: input.purpose,
+    campaignKey: input.campaignKey ?? null,
+    variantId: input.variantId ?? null,
+    status: "PENDING",
+  });
+}
+
+function toOutboxCreate(dispatchId: number, input: StagePushDispatchInput) {
+  return encodeCreate("PushDispatchOutbox", {
+    dispatchId,
+    deliveryMode: input.deliveryMode,
+    force: input.force,
+  });
 }

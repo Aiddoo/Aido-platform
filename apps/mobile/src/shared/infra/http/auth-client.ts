@@ -39,15 +39,15 @@ export const createAuthClient = ({
     retry: { limit: 1, shouldRetry: () => false },
     headers: {
       'Content-Type': 'application/json',
-      'X-Timezone': getDeviceTimezone(),
       ...(appVersion && { 'X-App-Version': appVersion }),
     },
     hooks: {
       beforeRequest: [
         async ({ request }) => {
-          // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다.
+          // 언어와 시간대는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다.
           // ky v2에서 beforeRequest는 최초 1회만 실행된다(재시도 시 재실행 안 함) —
           // 401 갱신 후 새 토큰 주입은 token-refresh-hook이 재시도 요청에 직접 넣는다.
+          request.headers.set('X-Timezone', getDeviceTimezone());
           if (i18n.language) {
             request.headers.set('Accept-Language', i18n.language);
           }

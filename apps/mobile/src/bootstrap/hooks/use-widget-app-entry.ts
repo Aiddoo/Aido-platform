@@ -1,14 +1,13 @@
-import type { User } from '@src/features/user/models/user.model';
-import { USER_QUERY_KEYS } from '@src/features/user/presentations/constants/user-query-keys.constant';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import {
   type WidgetNavigationCommand,
   WidgetNavigationPolicy,
-} from '@src/features/widget/models/widget-navigation.model';
+} from '@src/features/widget/domains/widget-navigation.model';
 import {
   isWidgetAppRouteCurrent,
   resolveWidgetAppRoute,
-} from '@src/features/widget/presentations/navigation/resolve-widget-app-route';
+} from '@src/features/widget/utils/navigation/resolve-widget-app-route';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLinkingURL } from 'expo-linking';
 import { router, useGlobalSearchParams, usePathname, useSegments } from 'expo-router';
@@ -45,7 +44,9 @@ export function useWidgetAppEntry() {
 
   const restoreDestination = useEffectEvent(
     (command: WidgetNavigationCommand | null, destinationUrl: string) => {
-      if (status !== 'authenticated' || !isAuthenticatedRouteMounted) return;
+      if (status !== 'authenticated' || !isAuthenticatedRouteMounted) {
+        return;
+      }
       const currentCommand = widgetNavigationRepository.getPendingCommand();
       if (
         command
@@ -56,8 +57,10 @@ export function useWidgetAppEntry() {
         return;
       }
       if (command) {
-        const currentUserId = queryClient.getQueryData<User>(USER_QUERY_KEYS.me())?.id;
-        if (currentUserId === undefined) return;
+        const currentUserId = getCachedMe(queryClient)?.id;
+        if (currentUserId === undefined) {
+          return;
+        }
         if (
           !WidgetNavigationPolicy.isOwnedBy(command, currentUserId) ||
           !WidgetNavigationPolicy.isFresh(command, Date.now())
@@ -69,7 +72,9 @@ export function useWidgetAppEntry() {
       }
 
       const destination = resolveWidgetAppRoute(destinationUrl);
-      if (!destination) return;
+      if (!destination) {
+        return;
+      }
       setPendingInitialUrl(null);
       try {
         if (!isWidgetAppRouteCurrent(destinationUrl, pathname, parameters)) {
@@ -89,7 +94,9 @@ export function useWidgetAppEntry() {
   );
 
   useEffect(() => {
-    if (previousUrlRef.current === url) return;
+    if (previousUrlRef.current === url) {
+      return;
+    }
     previousUrlRef.current = url;
     if (
       status === 'unauthenticated' ||
@@ -113,8 +120,12 @@ export function useWidgetAppEntry() {
       widgetNavigationRepository.clearIfCurrent(pendingCommand);
       return;
     }
-    if (status !== 'authenticated' || !isAuthenticatedRouteMounted) return;
-    if (pendingCommand && meQuery.data === undefined) return;
+    if (status !== 'authenticated' || !isAuthenticatedRouteMounted) {
+      return;
+    }
+    if (pendingCommand && meQuery.data === undefined) {
+      return;
+    }
     if (pendingCommand && !WidgetNavigationPolicy.isOwnedBy(pendingCommand, meQuery.data ?? '')) {
       setPendingInitialUrl(null);
       widgetNavigationRepository.clearIfCurrent(pendingCommand);

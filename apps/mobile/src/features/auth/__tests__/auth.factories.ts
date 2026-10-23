@@ -5,7 +5,6 @@ import type {
   DeleteAccountResponse,
   ForgotPasswordResponse,
   LinkedAccountsResponse,
-  PreferenceResponse,
   RegisterResponse,
   ResendVerificationResponse,
   ResetPasswordResponse,
@@ -13,7 +12,7 @@ import type {
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-import type { Consent } from '../models/auth.model';
+import type { Consent } from '../domains/auth.model';
 
 const generateAuthTokensDto = (): AuthTokensDTO => ({
   userId: 'clz7x5p8k0001qz0z8z8z8z8z',
@@ -25,30 +24,6 @@ const generateAuthTokensDto = (): AuthTokensDTO => ({
 
 export const createAuthTokensDto = (overrides?: Partial<AuthTokensDTO>): AuthTokensDTO => ({
   ...generateAuthTokensDto(),
-  ...overrides,
-});
-
-const generatePreferenceDto = (): PreferenceResponse => ({
-  pushEnabled: true,
-  nightPushEnabled: false,
-  timezone: 'Asia/Seoul',
-  morningReminderHour: 8,
-  morningReminderMinute: 0,
-  eveningReminderHour: 21,
-  eveningReminderMinute: 0,
-  timeFormat: 'TWELVE_HOUR',
-  weatherMorningEnabled: false,
-  weatherMorningHour: 7,
-  weatherMorningMinute: 0,
-  weatherEveningEnabled: false,
-  weatherEveningHour: 18,
-  weatherEveningMinute: 0,
-});
-
-export const createPreferenceDto = (
-  overrides?: Partial<PreferenceResponse>,
-): PreferenceResponse => ({
-  ...generatePreferenceDto(),
   ...overrides,
 });
 

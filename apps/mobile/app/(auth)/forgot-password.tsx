@@ -1,20 +1,21 @@
 import { VERIFICATION_CODE } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PasswordInput } from '@src/features/auth/presentations/components/PasswordInput';
-import { PasswordStrengthIndicator } from '@src/features/auth/presentations/components/PasswordStrengthIndicator';
-import { SuggestedEmailDomainList } from '@src/features/auth/presentations/components/SuggestedEmailDomainList';
-import { useCooldown } from '@src/features/auth/presentations/hooks/use-cooldown';
-import { useForgotPasswordMutationOptions } from '@src/features/auth/presentations/queries/use-forgot-password-mutation-options';
-import { useResetPasswordMutationOptions } from '@src/features/auth/presentations/queries/use-reset-password-mutation-options';
+import { NewPasswordStep } from '@src/features/auth/components/new-password-step';
+import { SuggestedEmailDomainList } from '@src/features/auth/components/suggested-email-domain-list';
+import { VerificationCodeInput } from '@src/features/auth/components/verification-code-input';
 import {
   type ForgotPasswordFormData,
   forgotPasswordFormSchema,
-} from '@src/features/auth/presentations/schemas/forgot-password-form.schema';
+} from '@src/features/auth/domains/forgot-password-form.schema';
+import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
+import { useForgotPasswordMutationOptions } from '@src/features/auth/queries/use-forgot-password-mutation-options';
+import { useResetPasswordMutationOptions } from '@src/features/auth/queries/use-reset-password-mutation-options';
+import { maskEmail } from '@src/features/auth/utils/mask-email';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isApiError } from '@src/shared/errors';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useStepper } from '@src/shared/hooks/useStepper';
+import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -22,27 +23,26 @@ import {
   HStack,
   Input,
   KeyboardAdaptiveButton,
+  ReadableContent,
   Text,
   TextButton,
   VStack,
+  QueryErrorBoundary,
+  StyledSafeAreaView,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { InputOTP, type InputOTPRef } from 'heroui-native';
-import type { ComponentRef } from 'react';
-import { useCallback, useRef } from 'react';
+import { type InputOTPRef } from 'heroui-native';
+import { useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { useFormState } from 'react-hook-form';
-import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
-import type { TextInput } from 'react-native';
-import { Keyboard, ScrollView, View } from 'react-native';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
+import { ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 const STEPS = ['email', 'verificationCode', 'newPassword'] as const;
 
-const ForgotPasswordScreen = () => {
+function ForgotPasswordScreen() {
   const form = useForm({
     resolver: zodResolver(forgotPasswordFormSchema),
     defaultValues: {
@@ -54,23 +54,42 @@ const ForgotPasswordScreen = () => {
     mode: 'onChange',
   });
   const { step, setStep } = useStepper(STEPS);
+  const { showBoundary } = useErrorBoundary();
+  const resetPassword = useMutation(useResetPasswordMutationOptions());
+  const { t } = useTranslation('auth');
+
+  const submitNewPassword = form.handleSubmit(async (input) => {
+    try {
+      await resetPassword.mutateAsync(input);
+    } catch (error) {
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
+    }
+  });
 
   return (
     <View className="flex-1 bg-background">
-      <FormProvider {...form}>
-        {match(step)
-          .with('email', () => <EmailStep onNext={() => setStep('verificationCode')} />)
-          .with('verificationCode', () => (
-            <VerificationCodeStep onNext={() => setStep('newPassword')} />
-          ))
-          .with('newPassword', () => <NewPasswordStep />)
-          .exhaustive()}
-      </FormProvider>
+      <ReadableContent flex={1}>
+        <FormProvider {...form}>
+          {match(step)
+            .with('email', () => <EmailStep onNext={() => setStep('verificationCode')} />)
+            .with('verificationCode', () => (
+              <VerificationCodeStep onNext={() => setStep('newPassword')} />
+            ))
+            .with('newPassword', () => (
+              <NewPasswordStep
+                onSubmit={submitNewPassword}
+                nextLabel={t('forgotPassword.next')}
+                submitLabel={t('forgotPassword.submit')}
+              />
+            ))
+            .exhaustive()}
+        </FormProvider>
+      </ReadableContent>
     </View>
   );
-};
-
-export default ForgotPasswordScreen;
+}
 
 interface EmailStepProps {
   onNext: () => void;
@@ -105,46 +124,50 @@ function EmailStep({ onNext }: EmailStepProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('forgotPassword.emailTitle')}</H3>
-        </Animated.View>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('forgotPassword.emailTitle')}</H3>
+          </Animated.View>
 
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <VStack gap={8}>
-            <FormField control={control} name="email">
-              {({ onChange, onBlur, value }, { error }) => (
-                <VStack gap={8}>
-                  <Input
-                    placeholder={t('forgotPassword.emailPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    onBlur={onBlur}
-                    keyboardType="email-address"
-                    textContentType="emailAddress"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoFocus
-                    returnKeyType="done"
-                    submitBehavior="submit"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'email.invalid',
-                      byType: { too_big: 'email.tooLong' },
-                    })}
-                    onSubmitEditing={() => {
-                      if (isValid) handleNext();
-                    }}
-                  />
-                  <SuggestedEmailDomainList value={value} onChange={onChange} />
-                </VStack>
-              )}
-            </FormField>
-          </VStack>
-        </Animated.View>
+          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+            <VStack gap={8}>
+              <FormField control={control} name="email">
+                {({ onChange, onBlur, value }, { error }) => (
+                  <VStack gap={8}>
+                    <Input
+                      placeholder={t('forgotPassword.emailPlaceholder')}
+                      value={value}
+                      onChange={onChange}
+                      onBlur={onBlur}
+                      keyboardType="email-address"
+                      textContentType="emailAddress"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoFocus
+                      returnKeyType="done"
+                      submitBehavior="submit"
+                      isInvalid={!!error}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'email.invalid',
+                        byType: { too_big: 'email.tooLong' },
+                      })}
+                      onSubmitEditing={() => {
+                        if (isValid) {
+                          handleNext();
+                        }
+                      }}
+                    />
+                    <SuggestedEmailDomainList value={value} onChange={onChange} />
+                  </VStack>
+                )}
+              </FormField>
+            </VStack>
+          </Animated.View>
+        </StyledSafeAreaView>
       </ScrollView>
 
       <KeyboardAdaptiveButton
@@ -166,7 +189,7 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   const { t } = useTranslation('auth');
   const { control, getValues, setValue } = useFormContext<ForgotPasswordFormData>();
   const email = getValues('email');
-  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
+  const maskedEmail = maskEmail(email);
 
   const inputOTPRef = useRef<InputOTPRef>(null);
   const [cooldown, setCooldown] = useCooldown(0);
@@ -179,7 +202,9 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   };
 
   const handleResend = () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0) {
+      return;
+    }
 
     forgotPasswordMutation.mutate(
       { email },
@@ -209,179 +234,52 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('verification.codeSentTo', { email: maskedEmail })}</H3>
-        </Animated.View>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('verification.codeSentTo', { email: maskedEmail })}</H3>
+          </Animated.View>
 
-        <VStack gap={32} align="center">
-          <FormField control={control} name="code">
-            {({ value, onChange }) => (
-              <InputOTP
-                ref={inputOTPRef}
-                maxLength={VERIFICATION_CODE.LENGTH}
-                value={value}
-                onChange={onChange}
-                onComplete={handleComplete}
+          <VStack gap={32} align="center">
+            <FormField control={control} name="code">
+              {({ value, onChange }) => (
+                <VerificationCodeInput
+                  ref={inputOTPRef}
+                  value={value}
+                  onChange={onChange}
+                  onComplete={handleComplete}
+                />
+              )}
+            </FormField>
+
+            <HStack gap={8} justify="center">
+              <Text size="b4" shade={7}>
+                {t('verification.didNotReceive')}
+              </Text>
+              <TextButton
+                size="medium"
+                onPress={handleResend}
+                isDisabled={cooldown > 0 || forgotPasswordMutation.isPending}
               >
-                <InputOTP.Group>
-                  <InputOTP.Slot index={0} />
-                  <InputOTP.Slot index={1} />
-                  <InputOTP.Slot index={2} />
-                  <InputOTP.Slot index={3} />
-                  <InputOTP.Slot index={4} />
-                  <InputOTP.Slot index={5} />
-                </InputOTP.Group>
-              </InputOTP>
-            )}
-          </FormField>
-
-          <HStack gap={8} justify="center">
-            <Text size="b4" shade={7}>
-              {t('verification.didNotReceive')}
-            </Text>
-            <TextButton
-              size="medium"
-              onPress={handleResend}
-              disabled={cooldown > 0 || forgotPasswordMutation.isPending}
-            >
-              {cooldown > 0
-                ? t('verification.resendIn', { count: cooldown })
-                : t('verification.resend')}
-            </TextButton>
-          </HStack>
-        </VStack>
+                {cooldown > 0
+                  ? t('verification.resendIn', { count: cooldown })
+                  : t('verification.resend')}
+              </TextButton>
+            </HStack>
+          </VStack>
+        </StyledSafeAreaView>
       </ScrollView>
     </View>
   );
 }
 
-const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
-
-function NewPasswordStep() {
-  const { showBoundary } = useErrorBoundary();
-
-  const { t } = useTranslation('auth');
-  const { step, setStep } = useStepper(NEW_PASSWORD_SUB_STEPS);
-  const newPasswordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const focusConfirmInput = useCallback(() => {
-    newPasswordConfirmInputRef.current?.focus();
-  }, []);
-
-  const { control, handleSubmit } = useFormContext<ForgotPasswordFormData>();
-  const { isSubmitting, errors } = useFormState({
-    control,
-    name: ['newPassword', 'newPasswordConfirm'],
-  });
-
-  const resetPasswordMutation = useMutation(useResetPasswordMutationOptions());
-
-  const [newPassword, newPasswordConfirm] = useWatch({
-    control,
-    name: ['newPassword', 'newPasswordConfirm'],
-  });
-
-  const isNextEnabled = match(step)
-    .with('newPassword', () => newPassword.length > 0 && !errors.newPassword)
-    .with('newPasswordConfirm', () => newPasswordConfirm.length > 0 && !errors.newPasswordConfirm)
-    .exhaustive();
-
-  const handleNext = () => {
-    match(step)
-      .with('newPassword', () => setStep('newPasswordConfirm'))
-      .with('newPasswordConfirm', () => {
-        Keyboard.dismiss();
-        handleSubmit(async (data) => {
-          try {
-            await resetPasswordMutation.mutateAsync(data);
-          } catch (error) {
-            if (!isBusinessError(error)) showBoundary(error);
-          }
-        })();
-      })
-      .exhaustive();
-  };
-
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function ForgotPasswordRoute() {
   return (
-    <View className="flex-1">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
-          key={step}
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('forgotPassword.newPasswordTitle')}</H3>
-        </Animated.View>
-
-        {step === 'newPasswordConfirm' && (
-          <Animated.View
-            entering={FadeInUp.duration(ANIMATION.duration.slow)
-              .delay(ANIMATION.delay.short)
-              .withCallback((finished) => {
-                'worklet';
-                if (finished) scheduleOnRN(focusConfirmInput);
-              })}
-          >
-            <VStack mb={8}>
-              <FormField control={control} name="newPasswordConfirm">
-                {({ onChange, value }, { error }) => (
-                  <PasswordInput
-                    ref={newPasswordConfirmInputRef}
-                    label={t('forgotPassword.newPasswordConfirmLabel')}
-                    placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    returnKeyType="done"
-                    isInvalid={!!error}
-                    errorMessage={error?.message}
-                    onSubmitEditing={() => {
-                      if (newPasswordConfirm.length > 0 && !error) handleNext();
-                    }}
-                  />
-                )}
-              </FormField>
-            </VStack>
-          </Animated.View>
-        )}
-
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="newPassword">
-            {({ onChange, value }, { error }) => (
-              <VStack gap={4}>
-                <PasswordInput
-                  label={t('forgotPassword.newPasswordLabel')}
-                  placeholder={t('forgotPassword.newPasswordPlaceholder')}
-                  value={value}
-                  onChange={onChange}
-                  autoFocus={step === 'newPassword'}
-                  submitBehavior="submit"
-                  returnKeyType="next"
-                  renderErrorMessage={false}
-                  onSubmitEditing={() => {
-                    if (newPassword.length > 0 && !error) handleNext();
-                  }}
-                />
-                <PasswordStrengthIndicator password={newPassword} />
-              </VStack>
-            )}
-          </FormField>
-        </Animated.View>
-      </ScrollView>
-
-      <KeyboardAdaptiveButton
-        onPress={handleNext}
-        isDisabled={!isNextEnabled}
-        isLoading={isSubmitting}
-      >
-        {step === 'newPasswordConfirm' ? t('forgotPassword.submit') : t('forgotPassword.next')}
-      </KeyboardAdaptiveButton>
-    </View>
+    <QueryErrorBoundary>
+      <ForgotPasswordScreen />
+    </QueryErrorBoundary>
   );
 }

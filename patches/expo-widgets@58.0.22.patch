@@ -1,0 +1,13 @@
+diff --git a/scripts/build-layout-registry.mjs b/scripts/build-layout-registry.mjs
+index d5fc1c8c396d652be23256129978cbd9cb7355a5..9ec11ad08d752bed7bde595c6601735cdfe9e427 100644
+--- a/scripts/build-layout-registry.mjs
++++ b/scripts/build-layout-registry.mjs
+@@ -70,7 +70,7 @@ async function readExpectedWidgets(projectRoot, configPath) {
+     .map((widget) => ({
+       name: widget.name,
+       initialLayout: widget.initialLayout,
+-      initialLayoutFile: path.resolve(projectRoot, widget.initialLayout),
++      initialLayoutFile: fs.realpathSync(path.resolve(projectRoot, widget.initialLayout)),
+     }));
+ }
+ 

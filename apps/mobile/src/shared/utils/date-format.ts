@@ -3,7 +3,7 @@ export interface DateFormatContext {
   timeZone: string;
 }
 
-type DateLabel = 'fullDate' | 'monthDay' | 'dayOfMonth' | 'yearMonth' | 'month';
+type DateLabel = 'fullDate' | 'monthDay' | 'dayOfMonth' | 'yearMonth' | 'month' | 'weekday';
 
 const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   fullDate: { year: 'numeric', month: 'long', day: 'numeric' },
@@ -11,6 +11,7 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   dayOfMonth: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
   month: { month: 'short' },
+  weekday: { weekday: 'short' },
 };
 
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
@@ -19,9 +20,13 @@ const MAX_FORMATTERS = 32;
 function getFormatter(context: DateFormatContext, options: Intl.DateTimeFormatOptions) {
   const key = JSON.stringify([context.locale, context.timeZone, options]);
   const cached = formatterCache.get(key);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
 
-  if (formatterCache.size >= MAX_FORMATTERS) formatterCache.clear();
+  if (formatterCache.size >= MAX_FORMATTERS) {
+    formatterCache.clear();
+  }
   const formatter = new Intl.DateTimeFormat(context.locale, {
     ...options,
     timeZone: context.timeZone,
@@ -31,7 +36,9 @@ function getFormatter(context: DateFormatContext, options: Intl.DateTimeFormatOp
 }
 
 export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormatContext) {
-  if (!Number.isFinite(date.getTime())) return '';
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
   const formatter = getFormatter(context, DATE_OPTIONS[kind]);
   if (kind === 'dayOfMonth') {
     const day = formatter.formatToParts(date).find((part) => part.type === 'day')?.value ?? '';
@@ -40,12 +47,19 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
   return formatter.format(date);
 }
 
+/** YYYY-MM-DD 날짜 key를 기기 시간대와 무관하게 그 날짜 그대로 표시한다. */
+export function formatDateKeyLabel(dateKey: string, kind: DateLabel, context: DateFormatContext) {
+  return formatDateLabel(new Date(`${dateKey}T00:00:00Z`), kind, { ...context, timeZone: 'UTC' });
+}
+
 export function formatClockTime(
   date: Date,
   timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR',
   context: DateFormatContext,
 ) {
-  if (!Number.isFinite(date.getTime())) return '';
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
   const formatter = getFormatter(context, {
     hour: timeFormat === 'TWENTY_FOUR_HOUR' ? '2-digit' : 'numeric',
     minute: '2-digit',
@@ -58,8 +72,18 @@ export function formatClockTime(
   return dayPeriod ? `${dayPeriod} ${hour}:${minute}` : `${hour}:${minute}`;
 }
 
+/** 로케일 기본 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM"). hour12가 false면 "18:30". */
+export function formatLocaleTime(date: Date, hour12: boolean, context: DateFormatContext) {
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
+  return getFormatter(context, { hour: 'numeric', minute: '2-digit', hour12 }).format(date);
+}
+
 export function formatDateKey(date: Date, timeZone: string): string {
-  if (!Number.isFinite(date.getTime())) return '';
+  if (!Number.isFinite(date.getTime())) {
+    return '';
+  }
   const parts = getFormatter(
     { locale: 'en-US', timeZone },
     { year: 'numeric', month: '2-digit', day: '2-digit' },

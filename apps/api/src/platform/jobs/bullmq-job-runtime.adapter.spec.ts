@@ -96,6 +96,12 @@ class FakeQueue implements BullQueueClient {
     return { id: "bull-job-1" };
   }
 
+  async addBulk(
+    jobs: readonly { readonly name: string; readonly data: object; readonly opts: object }[],
+  ): Promise<{ id?: string }[]> {
+    return Promise.all(jobs.map(({ name, data, opts }) => this.add(name, data, opts)));
+  }
+
   async upsertJobScheduler(
     key: string,
     repeat: { pattern: string; tz?: string },
@@ -255,6 +261,19 @@ describe("BullMqJobRuntimeAdapter — Redis rollback runtime", () => {
     const added = factory.queues.get(QUEUE)?.added;
     expect(added?.[0]?.options).toMatchObject({ jobId: "document_42" });
     expect(added?.[1]?.options).toMatchObject({ jobId: "document_42" });
+  });
+
+  it("enqueueMany는 각 작업을 enqueue와 같은 jobId로 addBulk한다", async () => {
+    await runtime.enqueueMany(QUEUE, [
+      { data: { documentId: 42 }, options: options({ idempotencyKey: "document_42" }) },
+      { data: { documentId: 43 }, options: options({ idempotencyKey: "document_43" }) },
+    ]);
+
+    const added = factory.queues.get(QUEUE)?.added;
+    expect(added?.map((job) => job.options)).toEqual([
+      expect.objectContaining({ jobId: "document_42" }),
+      expect.objectContaining({ jobId: "document_43" }),
+    ]);
   });
 
   it("scheduleKey와 timezone을 BullMQ scheduler에 보존한다", async () => {

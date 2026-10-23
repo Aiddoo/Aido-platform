@@ -20,7 +20,7 @@ import {
   databaseFixture,
   databaseWriteExpectation,
 } from "#test/mocks/database.mock";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 import { asTxClient, createMockTxClient } from "#test/mocks/transaction.mock";
 
 import { LoginAttemptRepository } from "./login-attempt.repository.js";
@@ -46,7 +46,7 @@ describe("LoginAttemptRepository — 로그인 시도 리포지토리", () => {
 
   beforeEach(async () => {
     db = createMockDatabaseService();
-    repository = new LoginAttemptRepository(db);
+    repository = new LoginAttemptRepository(asDatabaseService(db));
   });
 
   describe("create", () => {

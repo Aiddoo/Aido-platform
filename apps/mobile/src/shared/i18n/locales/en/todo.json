@@ -24,8 +24,6 @@
     "retryLater": "Please try again in a moment"
   },
   "errors": {
-    "categoryValidationFailed": "Please try again",
-    "todoValidationFailed": "The response format is invalid",
     "nudgeMessageTooLong_one": "Your message can be up to {{count}} character",
     "nudgeMessageTooLong_other": "Your message can be up to {{count}} characters"
   },
@@ -122,7 +120,8 @@
     "dialogPlaceholder": "(Optional) Cheering you on for {{title}}!",
     "remindTitle": "Shall we start today together?",
     "remindPlaceholder": "(Optional) Let’s start with one small to-do!",
-    "statusUnavailable": "Couldn’t check if you can send a nudge"
+    "statusUnavailable": "Couldn’t check if you can send a nudge",
+    "to": "to. {{name}}"
   },
   "category": {
     "nameLabel": "Category name",
@@ -172,6 +171,8 @@
     "dismiss": "Dismiss reorder tip"
   },
   "detail": {
+    "emptyTitle": "No to-do selected",
+    "selectPrompt": "Select a to-do to see its details and comments here",
     "title": "To-do",
     "open": "Comments",
     "pageTitle": "To-do details",

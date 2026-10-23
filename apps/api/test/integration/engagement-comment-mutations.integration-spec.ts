@@ -1,12 +1,10 @@
 import { randomUUID } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
-import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 import postgres from "@prisma/orm-postgres/runtime";
 import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
-import type { Contract } from "#api/generated/prisma8/contract.d";
 import {
   TODO_COMMENT_NOTIFICATION,
   type TodoCommentNotificationPort,
@@ -33,8 +31,8 @@ import {
 import { PushDeliveryAfterCommitPublisher } from "#api/modules/notification/application/services/delivery/push-delivery-after-commit.publisher";
 import { PublishPushDeliveryOutbox } from "#api/modules/notification/application/use-cases/delivery/publish-push-delivery-outbox.use-case";
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
 import { createEntityId } from "#api/platform/database/database-values";
+import { contract } from "#api/platform/database/database.service";
 import { databaseSqlState } from "#api/platform/database/prisma-error.util";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -45,21 +43,16 @@ import {
 } from "#test/e2e/helpers/e2e-app-factory";
 import { UserFixture, TodoFixture, TodoCategoryFixture, FollowFixture } from "#test/fixtures/index";
 import { createDatabaseTransactionFixture } from "#test/setup/database-context";
+import { createStatementObserver } from "#test/setup/statement-observer";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
 
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 const AT = new Date("2027-01-08T12:00:00.000Z");
 let statements: string[] | null = null;
-const trace: SqlMiddleware = {
-  name: "engagement-query-observer",
-  familyId: "sql",
-  async afterQuery(plan, result) {
-    if (statements !== null && result.source === "driver") statements.push(plan.sql);
-  },
-  async afterExecute(plan, result) {
-    if (statements !== null && result.source === "driver") statements.push(plan.sql);
-  },
-};
+const trace = createStatementObserver("engagement-query-observer", (statement) => {
+  if (statements !== null) {
+    statements.push(statement.sql);
+  }
+});
 describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
   let database: TestDatabase;
   let client: TestDatabaseClient;
@@ -75,10 +68,10 @@ describe("Engagement 댓글 실제 PostgreSQL 회귀", () => {
     database = new TestDatabase({
       createClient(url) {
         const pool = new Pool({ connectionString: url, max: 4 });
-        const native = postgres<Contract>({
-          contractJson,
+        const native = postgres({
+          contract,
           pg: pool,
-          middleware: [utcTimestampParameters, trace],
+          middleware: [trace],
         });
         let closed = false;
         return {

@@ -13,7 +13,7 @@ export function createMockTxClient(): MockTransactionClient {
 }
 
 export function asTxClient(mock: MockTransactionClient): Prisma8Transaction {
-  return mock;
+  return mock as unknown as Prisma8Transaction;
 }
 
 export function resetTxClientMocks(client: MockTransactionClient): void {

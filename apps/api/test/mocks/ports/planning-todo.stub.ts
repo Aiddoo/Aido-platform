@@ -103,7 +103,9 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     Object.assign(
       this.#record(id),
       structuredClone(
-        Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)),
+        Object.fromEntries(
+          Object.entries(patch).filter(([_fieldName, value]) => value !== undefined),
+        ),
       ),
     );
   }
@@ -173,7 +175,7 @@ export class StubPlanningTodoRepository implements TodoRepositoryPort {
     if (item === undefined) throw new Error("Todo item fixture is missing");
     Object.assign(
       item,
-      Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)),
+      Object.fromEntries(Object.entries(data).filter(([_fieldName, value]) => value !== undefined)),
     );
   }
   async deleteItem(itemId: number): Promise<void> {

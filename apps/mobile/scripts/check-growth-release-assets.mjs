@@ -156,7 +156,7 @@ assert(
   'server discovery minimum app version must match release metadata',
 );
 const discoveryRegistry = read(
-  'apps/mobile/src/features/feature-discovery/models/feature-discovery.registry.ts',
+  'apps/mobile/src/features/feature-discovery/domains/feature-discovery.registry.ts',
 );
 assert(
   discoveryRegistry.includes(CAMPAIGN_ID),
@@ -174,10 +174,10 @@ const userEn = JSON.parse(read('apps/mobile/src/shared/i18n/locales/en/user.json
 const validationKo = JSON.parse(read('apps/mobile/src/shared/i18n/locales/ko/validation.json'));
 const validationEn = JSON.parse(read('apps/mobile/src/shared/i18n/locales/en/validation.json'));
 const discoveryKo = JSON.parse(
-  read('apps/mobile/src/shared/i18n/locales/ko/featureDiscovery.json'),
+  read('apps/mobile/src/shared/i18n/locales/ko/feature-discovery.json'),
 );
 const discoveryEn = JSON.parse(
-  read('apps/mobile/src/shared/i18n/locales/en/featureDiscovery.json'),
+  read('apps/mobile/src/shared/i18n/locales/en/feature-discovery.json'),
 );
 assert(
   friendKo.search?.placeholder === '이름 또는 해시태그로 검색',

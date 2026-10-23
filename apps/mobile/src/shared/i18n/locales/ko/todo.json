@@ -24,8 +24,6 @@
     "retryLater": "잠시 후 다시 시도해 주세요"
   },
   "errors": {
-    "categoryValidationFailed": "다시 시도해 주세요",
-    "todoValidationFailed": "응답 형식이 올바르지 않아요",
     "nudgeMessageTooLong": "메시지는 {{count}}자 이내로 입력할 수 있어요"
   },
   "form": {
@@ -119,7 +117,8 @@
     "dialogPlaceholder": "(선택) {{title}} 응원할게!",
     "remindTitle": "오늘 할 일, 함께 시작해볼까요?",
     "remindPlaceholder": "(선택) 작은 할 일 하나부터 같이 시작해보자!",
-    "statusUnavailable": "콕 찌르기 상태를 불러오지 못했어요"
+    "statusUnavailable": "콕 찌르기 상태를 불러오지 못했어요",
+    "to": "to. {{name}}"
   },
   "category": {
     "nameLabel": "카테고리 이름",
@@ -167,6 +166,8 @@
     "dismiss": "순서 변경 안내 닫기"
   },
   "detail": {
+    "emptyTitle": "선택한 할 일이 없어요",
+    "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
     "title": "할 일",
     "open": "댓글",
     "pageTitle": "할 일 상세",

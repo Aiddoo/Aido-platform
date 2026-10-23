@@ -1,6 +1,8 @@
 import type {
   Db,
   FindJobsOptions,
+  InsertOptions,
+  JobInsert,
   JobWithMetadata,
   QueueOptions,
   QueueResult,
@@ -14,6 +16,7 @@ import { vi } from "vitest";
 
 import type { EnqueueJobOptions, JobData } from "#api/shared/application/ports/job-runtime.port";
 import { createMockDatabaseContext } from "#test/mocks/database.mock";
+import { asTxClient } from "#test/mocks/transaction.mock";
 
 import {
   LazyPgBossClient,
@@ -75,6 +78,7 @@ class FakePgBossClient implements PgBossClient {
     data: object;
     options: SendOptions;
   }> = [];
+  readonly insertCalls: Array<{ name: string; jobs: JobInsert[]; options: InsertOptions }> = [];
   readonly scheduleCalls: Array<{
     name: string;
     cron: string;
@@ -119,6 +123,11 @@ class FakePgBossClient implements PgBossClient {
   async send(name: string, data: object, options: SendOptions): Promise<string | null> {
     this.sendCalls.push({ name, data, options });
     return "job-1";
+  }
+
+  async insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null> {
+    this.insertCalls.push({ name, jobs, options });
+    return null;
   }
 
   async schedule(
@@ -197,7 +206,7 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
     context.query.mockResolvedValue([]);
     runtime = new PgBossJobRuntimeAdapter(
       boss,
-      { tx: context },
+      { tx: asTxClient(context) },
       { job: { shutdownTimeoutMs: 90_000 } },
     );
   });
@@ -254,6 +263,42 @@ describe("PgBossJobRuntimeAdapter — PostgreSQL 영속 runtime", () => {
       "00000000-0000-4000-8000-000000000001",
     ]);
     expect(context.query).toHaveBeenCalledOnce();
+  });
+
+  it("enqueueMany는 enqueue와 같은 작업 옵션으로 현재 CLS 트랜잭션에서 한 번에 insert한다", async () => {
+    const options = enqueueOptions();
+
+    await runtime.enqueueMany(QUEUE, [
+      { data: { documentId: 42 }, options },
+      { data: { documentId: 43 }, options: enqueueOptions("document:43") },
+    ]);
+
+    expect(boss.createdQueues).toEqual(["document-generation-dead-letter", QUEUE]);
+    expect(boss.sendCalls).toHaveLength(0);
+    expect(boss.insertCalls).toHaveLength(1);
+    expect(boss.insertCalls[0]?.name).toBe(QUEUE);
+    expect(boss.insertCalls[0]?.jobs).toEqual([
+      expect.objectContaining({
+        id: "f987b5bb-6102-5d54-8212-2fe4b94ed26e",
+        singletonKey: "document:42",
+        data: { documentId: 42 },
+        retryLimit: 2,
+        deadLetter: "document-generation-dead-letter",
+      }),
+      expect.objectContaining({ singletonKey: "document:43", data: { documentId: 43 } }),
+    ]);
+
+    await boss.insertCalls[0]?.options.db?.executeSql("SELECT $1::uuid AS id", [
+      "00000000-0000-4000-8000-000000000001",
+    ]);
+    expect(context.query).toHaveBeenCalledOnce();
+  });
+
+  it("빈 enqueueMany는 큐와 작업을 쓰지 않는다", async () => {
+    await runtime.enqueueMany(QUEUE, []);
+
+    expect(boss.createdQueues).toEqual([]);
+    expect(boss.insertCalls).toEqual([]);
   });
 
   it("DLQ worker가 enqueue보다 먼저 등록돼도 typed retry policy로 수렴한다", async () => {

@@ -11,7 +11,7 @@ import { NotificationPublisher } from "#api/modules/notification/notification-de
  */
 import { createMockDatabaseContext } from "#test/mocks/database.mock";
 import { createMockJob } from "#test/mocks/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { AnalyzeAndCreateSuggestions } from "../../../application/use-cases/suggestions/analyze-and-create-suggestions.use-case.js";
 import {
@@ -33,7 +33,7 @@ describe("SuggestionAnalysisProcessor — AI 제안 분석 프로세서", () => 
     processor = new SuggestionAnalysisProcessor(
       analyzeAndCreateSuggestionsUseCase,
       mockNotificationService,
-      createMockDatabaseService(context),
+      asDatabaseService(createMockDatabaseService(context)),
     );
   });
 

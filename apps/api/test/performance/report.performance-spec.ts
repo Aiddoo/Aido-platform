@@ -2,7 +2,6 @@ import { performance } from "node:perf_hooks";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Test, type TestingModule } from "@nestjs/testing";
-import type { SqlMiddleware } from "@prisma/orm-postgres/family-runtime";
 import { and } from "@prisma/orm-postgres/orm-client";
 import postgres from "@prisma/orm-postgres/runtime";
 import { Pool } from "pg";
@@ -11,31 +10,23 @@ import { assembleAggregatedData } from "#api/modules/ai-assistance/domain/servic
 import type { AggregateParams } from "#api/modules/ai-assistance/domain/types/reports/ai-report.types";
 import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure/persistence/reports/prisma-todo-stats.reader";
 import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { DatabaseService, contract } from "#api/platform/database/database.service";
 import { toDateString } from "#api/shared/domain/date/utils/format";
 import { parseLocalDateTime, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { createDatabaseContext, createTestDatabaseService } from "#test/setup/database-context";
+import { createStatementObserver } from "#test/setup/statement-observer";
 import { TestDatabase } from "#test/setup/test-database";
-
-import type { Contract } from "../../src/generated/prisma8/contract.d.js";
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 
 /** 수동 측정 전용. 일반 unit/integration/E2E와 CI에는 포함하지 않는다. */
 it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집계 5쿼리를 교차 측정한다", async () => {
   let pool: Pool | undefined;
   let module: TestingModule | undefined;
   let recordedStatements: number | undefined;
-  const trace: SqlMiddleware = {
-    name: "report-query-observer",
-    familyId: "sql",
-    async afterQuery(_plan, result) {
-      if (recordedStatements !== undefined && result.source === "driver") recordedStatements += 1;
-    },
-    async afterExecute(_plan, result) {
-      if (recordedStatements !== undefined && result.source === "driver") recordedStatements += 1;
-    },
-  };
+  const trace = createStatementObserver("report-query-observer", () => {
+    if (recordedStatements !== undefined) {
+      recordedStatements += 1;
+    }
+  });
   const countStatements = async (fetch: () => Promise<unknown>): Promise<number> => {
     recordedStatements = 0;
     try {
@@ -48,10 +39,10 @@ it("같은 PostgreSQL·pool·데이터에서 기존 8쿼리와 준비된 ORM 집
   const testDb = new TestDatabase({
     createClient: (connectionUri) => {
       pool = new Pool({ connectionString: connectionUri });
-      return postgres<Contract>({
-        contractJson,
+      return postgres({
+        contract,
         pg: pool,
-        middleware: [utcTimestampParameters, trace],
+        middleware: [trace],
       });
     },
   });

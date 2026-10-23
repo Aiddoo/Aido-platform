@@ -1,6 +1,6 @@
 import type { Storage } from '@src/core/ports/storage';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
-import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
+import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
 
 /**
  * SecureStore(키체인) 기반 TokenStore.

@@ -5,7 +5,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-const WebViewScreen = () => {
+function WebViewScreen() {
   const { url } = useLocalSearchParams();
   const { t } = useTranslation();
 
@@ -41,6 +41,6 @@ const WebViewScreen = () => {
       />
     </>
   );
-};
+}
 
 export default WebViewScreen;

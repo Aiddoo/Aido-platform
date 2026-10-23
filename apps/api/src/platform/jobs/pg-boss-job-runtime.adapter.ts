@@ -2,10 +2,13 @@ import { createHash } from "node:crypto";
 
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Inject, Injectable, Logger, type FactoryProvider } from "@nestjs/common";
+import { uniqBy } from "es-toolkit";
 import {
   PgBoss,
   type Db,
   type FindJobsOptions,
+  type InsertOptions,
+  type JobInsert,
   type JobWithMetadata,
   type QueueOptions,
   type QueueResult,
@@ -19,7 +22,9 @@ import {
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 import type {
+  DeadLetterQueue,
   EnqueueJobOptions,
+  EnqueueJobRequest,
   JobCancellationResult,
   JobData,
   JobRetryPolicy,
@@ -44,6 +49,7 @@ export interface PgBossClient {
   createQueue(name: string, options?: QueueOptions): Promise<void>;
   updateQueue(name: string, options: UpdateQueueOptions): Promise<void>;
   send(name: string, data: object, options: SendOptions): Promise<string | null>;
+  insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null>;
   schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
   unschedule(name: string, key?: string): Promise<void>;
   findJobs<T extends JobData>(
@@ -95,6 +101,10 @@ export class LazyPgBossClient implements PgBossClient {
 
   async send(name: string, data: object, options: SendOptions): Promise<string | null> {
     return (await this.ensureStarted()).send(name, data, options);
+  }
+
+  async insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null> {
+    return (await this.ensureStarted()).insert(name, jobs, options);
   }
 
   async schedule(
@@ -238,14 +248,30 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
       await this.ensureQueue(deadLetterQueue, deadLetterJobPolicy);
     }
     await this.ensureQueue(queue);
-    const idempotencyKey = resolveJobIdempotencyKey(options);
-    const pgBossOptions = this.toPgBossOptions(options, nativeJobDatabase(this.txHost.tx, "id"));
     return this.boss.send(queue, data, {
-      ...pgBossOptions,
-      ...(idempotencyKey && {
-        id: deterministicJobId(queue, idempotencyKey),
-      }),
+      ...toPgBossJobOptions(queue, options),
+      db: nativeJobDatabase(this.txHost.tx, "id"),
     });
+  }
+
+  async enqueueMany<T extends JobData>(
+    queue: string,
+    jobs: readonly EnqueueJobRequest<T>[],
+  ): Promise<void> {
+    if (jobs.length === 0) return;
+    for (const deadLetter of uniqueDeadLetters(jobs)) {
+      const deadLetterQueue = resolveDeadLetterQueue(deadLetter);
+      if (deadLetterQueue) {
+        await this.ensureQueue(deadLetterQueue, resolveDeadLetterJobPolicy(deadLetter));
+      }
+    }
+    await this.ensureQueue(queue);
+    // insert는 활성 CLS transaction에서 한 INSERT로 실행되고, 결정적 id 충돌은 send와 같이 무시된다.
+    await this.boss.insert(
+      queue,
+      jobs.map(({ data, options }) => ({ ...toPgBossJobOptions(queue, options), data })),
+      { db: nativeJobDatabase(this.txHost.tx, "id") },
+    );
   }
 
   async schedule<T extends JobData>(
@@ -454,6 +480,30 @@ function hasAffectedCount(result: unknown): result is { readonly affected: numbe
     "affected" in result &&
     typeof result.affected === "number"
   );
+}
+
+/** enqueue와 enqueueMany가 같은 재시도·DLQ·결정적 id 옵션으로 작업을 쓰도록 한 곳에서 변환한다. */
+function toPgBossJobOptions(queue: string, options: EnqueueJobOptions): Omit<JobInsert, "data"> {
+  const idempotencyKey = resolveJobIdempotencyKey(options);
+  return {
+    singletonKey: idempotencyKey,
+    startAfter: options.startAfter,
+    retryLimit: options.retryLimit,
+    retryDelay: options.retryDelaySeconds,
+    retryBackoff: options.retryBackoff,
+    expireInSeconds: options.expireInSeconds,
+    retentionSeconds: options.retentionSeconds,
+    deleteAfterSeconds: options.deleteAfterSeconds,
+    deadLetter: resolveDeadLetterQueue(options.deadLetter),
+    ...(idempotencyKey && { id: deterministicJobId(queue, idempotencyKey) }),
+  };
+}
+
+function uniqueDeadLetters(jobs: readonly EnqueueJobRequest[]): DeadLetterQueue[] {
+  const deadLetters = jobs.flatMap(({ options }) =>
+    options.deadLetter === undefined ? [] : [options.deadLetter],
+  );
+  return uniqBy(deadLetters, (deadLetter) => resolveDeadLetterQueue(deadLetter));
 }
 
 export function deterministicJobId(queue: string, idempotencyKey: string): string {

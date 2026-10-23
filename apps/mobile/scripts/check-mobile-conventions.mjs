@@ -9,13 +9,13 @@ import ts from 'typescript';
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPOSITORY_ROOT = resolve(MOBILE_ROOT, '../..');
 const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
-const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/presentations/components`;
+const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/components`;
 const TODO_COMMENT_TEST_ROOTS = [
-  `${TODO_COMMENT_ROOT}/models/`,
-  `${TODO_COMMENT_ROOT}/services/`,
-  `${TODO_COMMENT_ROOT}/presentations/navigation/`,
-  `${TODO_COMMENT_ROOT}/presentations/utils/`,
-  `${TODO_COMMENT_ROOT}/presentations/view-models/`,
+  `${TODO_COMMENT_ROOT}/domains/`,
+  `${TODO_COMMENT_ROOT}/apis/`,
+  `${TODO_COMMENT_ROOT}/utils/navigation/`,
+  `${TODO_COMMENT_ROOT}/utils/`,
+  `${TODO_COMMENT_ROOT}/utils/view-models/`,
 ];
 const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   '@shopify/flash-list',
@@ -388,6 +388,35 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
   visit(sourceFile);
 }
 
+function getFeatureName(path) {
+  return /\/src\/features\/([^/]+)\//u.exec(path)?.[1] ?? null;
+}
+
+function checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors) {
+  const owner = getFeatureName(sourceFile.fileName);
+  if (owner === null) {
+    return;
+  }
+  for (const statement of sourceFile.statements) {
+    if (
+      !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
+      statement.moduleSpecifier === undefined ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      !statement.moduleSpecifier.text.startsWith('.')
+    ) {
+      continue;
+    }
+    const target = getFeatureName(
+      `${resolve(dirname(sourceFile.fileName), statement.moduleSpecifier.text)}/`,
+    );
+    if (target !== null && target !== owner) {
+      errors.push(
+        `${getLocation(sourceFile, statement, repositoryRoot)} 다른 피처(${target})는 상대경로가 아니라 @src/features/${target} 경로로 import하세요. 피처 경계가 검색과 리뷰에서 드러나야 합니다.`,
+      );
+    }
+  }
+}
+
 export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   const errors = [];
 
@@ -435,6 +464,7 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
       file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
     );
     checkTodoCheckboxProps(sourceFile, repositoryRoot, errors);
+    checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
   }
 
   return errors;

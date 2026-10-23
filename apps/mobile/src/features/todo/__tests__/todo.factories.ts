@@ -1,14 +1,12 @@
 import type {
-  AiUsageResponse,
   DailyCompletionsRangeResponse,
-  ParseTodoResponse,
-  Todo,
+  Todo as TodoDto,
   TodoItemResponse,
   TodoListResponse,
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
-const generateTodoDto = (): Todo => ({
+const generateTodoDto = (): TodoDto => ({
   id: 1,
   userId: 'clz7x5p8k0010qz0z8z8z8z8z',
   title: '테스트 할일',
@@ -29,7 +27,7 @@ const generateTodoDto = (): Todo => ({
   updatedAt: '2026-03-08T00:00:00.000Z',
 });
 
-export const createTodoDto = (overrides?: Partial<Todo>): Todo => ({
+export const createTodoDto = (overrides?: Partial<TodoDto>): TodoDto => ({
   ...generateTodoDto(),
   ...overrides,
 });
@@ -47,48 +45,6 @@ export const createTodoListResponseDto = (
   overrides?: Partial<TodoListResponse>,
 ): TodoListResponse => ({
   ...generateTodoListResponseDto(),
-  ...overrides,
-});
-
-const generateParseTodoResponseDto = (): ParseTodoResponse => ({
-  success: true,
-  data: {
-    title: 'AI 파싱 결과',
-    startDate: '2026-03-08',
-    endDate: null,
-    scheduledTime: '09:00',
-    isAllDay: false,
-    isRecurring: false,
-    recurrence: null,
-    categoryId: 1,
-  },
-  meta: {
-    model: 'gpt-4',
-    processingTimeMs: 150,
-    tokenUsage: { input: 50, output: 30 },
-  },
-});
-
-export const createParseTodoResponseDto = (
-  overrides?: Partial<ParseTodoResponse>,
-): ParseTodoResponse => ({
-  ...generateParseTodoResponseDto(),
-  ...overrides,
-});
-
-const generateAiUsageResponseDto = (): AiUsageResponse => ({
-  success: true,
-  data: {
-    used: 3,
-    limit: 10,
-    resetsAt: '2026-03-09T00:00:00.000Z',
-  },
-});
-
-export const createAiUsageResponseDto = (
-  overrides?: Partial<AiUsageResponse>,
-): AiUsageResponse => ({
-  ...generateAiUsageResponseDto(),
   ...overrides,
 });
 

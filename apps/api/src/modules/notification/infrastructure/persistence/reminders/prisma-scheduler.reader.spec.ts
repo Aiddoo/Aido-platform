@@ -12,8 +12,9 @@ import {
   createMockDatabaseContext,
   nativeRows,
   type MockDatabaseContext,
+  projectedResult,
 } from "#test/mocks/database.mock";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { PrismaSchedulerReader } from "./prisma-scheduler.reader.js";
 
@@ -33,7 +34,11 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
     Object.defineProperty(config, "retentionOnboardingV2", {
       value: { enabled, treatmentPercent: 50 },
     });
-    return new PrismaSchedulerReader(createMockDatabaseService(context), cache, config);
+    return new PrismaSchedulerReader(
+      asDatabaseService(createMockDatabaseService(context)),
+      cache,
+      config,
+    );
   }
 
   it("kill switch가 꺼지면 legacy 후보 쿼리에 조건을 전혀 추가하지 않는다", async () => {
@@ -92,18 +97,20 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
   });
 
   it("잘못 저장된 타임존은 스케줄러 활성 타임존에서 제외한다", async () => {
-    asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue([
-      { timezone: varchar("Asia/Seoul", 50), count: 1 },
-      { timezone: varchar("Invalid/Timezone", 50), count: 1 },
-      { timezone: varchar("UTC", 50), count: 1 },
-    ]);
+    asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue(
+      projectedResult([
+        { timezone: varchar("Asia/Seoul", 50), count: 1 },
+        { timezone: varchar("Invalid/Timezone", 50), count: 1 },
+        { timezone: varchar("UTC", 50), count: 1 },
+      ]),
+    );
     await expect(reader(false).findActiveTimezones()).resolves.toEqual(["Asia/Seoul", "UTC"]);
   });
 
   it("유효한 레거시 타임존 별칭은 저장값 그대로 반환해 기존 사용자를 누락하지 않는다", async () => {
     const timezones = ["UTC", "Etc/UTC", "Asia/Kolkata", "Asia/Calcutta"];
     asMock(context.orm.public.UserPreference.groupBy("timezone").aggregate).mockResolvedValue(
-      timezones.map((timezone) => ({ timezone: varchar(timezone, 50), count: 1 })),
+      projectedResult(timezones.map((timezone) => ({ timezone: varchar(timezone, 50), count: 1 }))),
     );
     await expect(reader(false).findActiveTimezones()).resolves.toEqual(timezones);
   });

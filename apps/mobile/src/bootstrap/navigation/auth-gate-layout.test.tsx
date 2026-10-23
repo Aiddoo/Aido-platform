@@ -25,7 +25,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
     useWidgetNavigationRepository: () => repository,
   };
 });
-jest.mock('@src/features/user/presentations/queries/get-me-query-options', () => ({
+jest.mock('@src/features/user/queries/get-me-query-options', () => ({
   useGetMeQueryOptions: () => ({
     queryKey: ['user', 'me'],
     queryFn: async () => ({ id: 'test-account' }),
@@ -46,7 +46,9 @@ const AuthContext = createContext<AuthState | null>(null);
 
 function useTestAuth() {
   const value = use(AuthContext);
-  if (!value) throw new Error('Auth fixture missing');
+  if (!value) {
+    throw new Error('Auth fixture missing');
+  }
   return value;
 }
 
@@ -95,7 +97,7 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
 
   jest.mocked(useAuth).mockImplementation(useTestAuth);
 
-  const route = renderRouter(
+  return renderRouter(
     {
       _layout: AuthGateLayout,
       index: RootIndex,
@@ -112,8 +114,6 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
     },
     { initialUrl, wrapper: AuthFixture },
   );
-  await route;
-  return { getPathname: () => route.getPathname() };
 }
 
 describe('root 인증 route 전환', () => {

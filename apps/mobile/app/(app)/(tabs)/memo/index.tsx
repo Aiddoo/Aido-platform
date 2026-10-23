@@ -1,12 +1,17 @@
-import { MemoPolicy } from '@src/features/memo/models/memo.model';
-import { MemoList } from '@src/features/memo/presentations/components/MemoList';
-import { MEMO_QUERY_KEYS } from '@src/features/memo/presentations/constants/memo-query-keys.constant';
-import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/presentations/queries/get-memo-resource-limit-query-options';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { useRefresh } from '@src/shared/hooks/useRefresh';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { MemoDetailPane } from '@src/features/memo/components/memo-detail-pane/memo-detail-pane';
+import { MemoList } from '@src/features/memo/components/memo-list';
+import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
+import { MemoPolicy } from '@src/features/memo/domains/memo.model';
+import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
+import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  AdaptivePane,
   Box,
   H3,
   HStack,
@@ -14,18 +19,19 @@ import {
   QueryErrorBoundary,
   RefreshIcon,
   ScrollProgressWidget,
+  StyledSafeAreaView,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
 export default function MemoScreen() {
+  const { t } = useTranslation('memo');
   const queryClient = useQueryClient();
   const scrollRef = useRef<Animated.ScrollView>(null);
 
@@ -46,13 +52,31 @@ export default function MemoScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  return (
+  const windowSizeClass = useWindowSizeClass();
+  const [selectedMemoId] = useSelectedMemo();
+
+  useEffect(() => {
+    if (windowSizeClass !== 'compact' || selectedMemoId === undefined) {
+      return;
+    }
+    router.setParams({ id: undefined });
+    router.push({ pathname: '/memo/[id]', params: { id: selectedMemoId } });
+  }, [windowSizeClass, selectedMemoId]);
+
+  const memoListPane = (
     <Box className="flex-1">
-      <QueryErrorBoundary fallback={(props) => <Header.Error {...props} />}>
-        <Suspense fallback={<Header.Loading />}>
-          <Header />
-        </Suspense>
-      </QueryErrorBoundary>
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <HStack align="center" px={16} mb={16}>
+          <Box flex={1}>
+            <H3 shade={7}>{t('tab.addMemo')}</H3>
+          </Box>
+          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+            <Suspense fallback={<MemoCreateButton.Loading />}>
+              <MemoCreateButton />
+            </Suspense>
+          </QueryErrorBoundary>
+        </HStack>
+      </StyledSafeAreaView>
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -66,13 +90,15 @@ export default function MemoScreen() {
         onScroll={onScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Box px={12} style={{ flexGrow: 1 }}>
-          <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
-            <Suspense fallback={<MemoList.Loading />}>
-              <MemoList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </Box>
+        <StyledSafeAreaView edges={['left', 'right']} className="grow">
+          <Box px={12} style={{ flexGrow: 1 }}>
+            <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
+              <Suspense fallback={<MemoList.Loading />}>
+                <MemoList />
+              </Suspense>
+            </QueryErrorBoundary>
+          </Box>
+        </StyledSafeAreaView>
       </Animated.ScrollView>
 
       <ScrollProgressWidget
@@ -82,9 +108,23 @@ export default function MemoScreen() {
       />
     </Box>
   );
+
+  return (
+    <AdaptivePane
+      primary={memoListPane}
+      secondary={
+        selectedMemoId === undefined ? (
+          <MemoDetailPane.Empty />
+        ) : (
+          <MemoDetailPane key={selectedMemoId} presentation="pane" />
+        )
+      }
+    />
+  );
 }
 
-function Header() {
+function MemoCreateButton() {
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   const toast = useAppToast();
@@ -101,46 +141,38 @@ function Header() {
   };
 
   return (
-    <HStack align="center" px={16} mb={16}>
-      <Box flex={1}>
-        <H3 shade={7}>{t('tab.addMemo')}</H3>
-      </Box>
-      <PressableFeedback
-        onPress={handleCreate}
-        accessibilityRole="button"
-        accessibilityLabel={t('titles.create')}
-        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-        className={cn(
-          'items-center justify-center rounded-full',
-          canCreate ? 'bg-main' : 'bg-gray-4',
-        )}
-      >
-        <PlusIcon width={24} height={24} color="white" />
-      </PressableFeedback>
-    </HStack>
+    <PressableFeedback
+      onPress={handleCreate}
+      accessibilityRole="button"
+      accessibilityLabel={t('titles.create')}
+      style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+      className={cn(
+        'items-center justify-center rounded-full',
+        canCreate ? 'bg-main' : 'bg-gray-4',
+      )}
+    >
+      <PlusIcon width={24} height={24} color="white" />
+    </PressableFeedback>
   );
 }
 
-Header.Loading = function Loading() {
-  return <Box px={16} mb={16} style={{ height: 44 }} />;
+MemoCreateButton.Loading = function Loading() {
+  const fontScaledSize = useFontScaledSize();
+  return <Box style={{ width: fontScaledSize(44), height: fontScaledSize(44) }} />;
 };
 
-// 살아있는 세션의 일시적 401 등으로 Header 쿼리가 실패해도 앱 레벨로 새지 않게 로컬에 담는다.
-// 제목은 유지하고 생성 버튼 자리를 재시도(reset)로 바꿔 레이아웃을 흔들지 않는다.
-Header.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('memo');
+MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const fontScaledSize = useFontScaledSize();
+  const { t } = useTranslation('common');
   return (
-    <HStack align="center" px={16} mb={16}>
-      <Box flex={1}>
-        <H3 shade={7}>{t('tab.addMemo')}</H3>
-      </Box>
-      <PressableFeedback
-        onPress={reset}
-        style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
-        className="items-center justify-center rounded-full bg-gray-8"
-      >
-        <RefreshIcon width={20} height={20} colorClassName="text-white" />
-      </PressableFeedback>
-    </HStack>
+    <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={t('actions.retry')}
+      onPress={reset}
+      style={{ width: fontScaledSize(44), height: fontScaledSize(44) }}
+      className="items-center justify-center rounded-full bg-gray-8"
+    >
+      <RefreshIcon width={20} height={20} colorClassName="text-white" />
+    </PressableFeedback>
   );
 };

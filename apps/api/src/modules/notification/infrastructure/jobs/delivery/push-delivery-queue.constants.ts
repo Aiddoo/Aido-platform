@@ -10,12 +10,10 @@ export const PushDeliveryJobName = {
   DELIVER_DISPATCHES: "deliver-dispatches",
 } as const;
 
-const PushDeliveryPublicationSchema = z
-  .object({
-    dispatchId: z.number().int().positive(),
-    publishAttempt: z.number().int().positive(),
-  })
-  .strict();
+const PushDeliveryPublicationSchema = z.strictObject({
+  dispatchId: z.number().int().positive(),
+  publishAttempt: z.number().int().positive(),
+});
 
 const PushDeliveryPublicationBatchSchema = z
   .array(PushDeliveryPublicationSchema)
@@ -34,20 +32,16 @@ const PushDeliveryPublicationBatchSchema = z
     }
   });
 
-const DeliverPushNotificationsJobSchema = z
-  .object({
-    name: z.literal(PushDeliveryJobName.DELIVER_DISPATCHES),
-    data: PushDeliveryPublicationBatchSchema,
-  })
-  .strict();
+const DeliverPushNotificationsJobSchema = z.strictObject({
+  name: z.literal(PushDeliveryJobName.DELIVER_DISPATCHES),
+  data: PushDeliveryPublicationBatchSchema,
+});
 
 export const PushDeliveryRuntimeJobSchema = z.discriminatedUnion("name", [
-  z
-    .object({
-      name: z.literal(PushDeliveryJobName.RELAY_OUTBOX),
-      data: z.object({}).strict(),
-    })
-    .strict(),
+  z.strictObject({
+    name: z.literal(PushDeliveryJobName.RELAY_OUTBOX),
+    data: z.strictObject({}),
+  }),
   DeliverPushNotificationsJobSchema,
 ]);
 

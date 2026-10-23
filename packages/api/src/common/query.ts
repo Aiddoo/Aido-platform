@@ -20,6 +20,6 @@ export const sortQuerySchema = z.object({
 
 export type SortQuery = z.infer<typeof sortQuerySchema>;
 
-export const commonQuerySchema = paginationQuerySchema.merge(sortQuerySchema);
+export const commonQuerySchema = paginationQuerySchema.extend(sortQuerySchema.shape);
 
 export type CommonQuery = z.infer<typeof commonQuerySchema>;

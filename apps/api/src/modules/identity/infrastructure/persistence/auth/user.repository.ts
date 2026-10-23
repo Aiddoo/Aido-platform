@@ -1,10 +1,8 @@
-import { userStatusSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable, Logger } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";
 import { param } from "@prisma/orm-postgres/relational-core/expression";
-import sql from "sql-template-tag";
 
 import {
   type AuthAccountLifecycleRepositoryPort,
@@ -14,7 +12,6 @@ import {
 } from "#api/modules/identity/application/ports/auth/auth-persistence.port";
 import type { DatabaseCreate } from "#api/platform/database/database-records";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { databaseDate, databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import type { User, UserStatus } from "#api/platform/database/database.types";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
@@ -300,28 +297,15 @@ export class UserRepository implements AuthUserRepositoryPort, AuthAccountLifecy
   }
 
   async findByIdForUpdate(id: string) {
-    const rowSpec = sqlRowSpec({
-      id: "pg/text@1",
-      email: "pg/text@1",
-      status: "pg/text@1",
-      deletedAt: { codecId: "pg/timestamp-string@1", nullable: true },
-    });
-    const rows = decodeSqlRows(
-      rowSpec,
-      await this.client.query(
-        sqlStatement(
-          this.client,
-          sql`SELECT "id", "email", "status"::text AS "status", "deletedAt"
-            FROM "User" WHERE "id" = ${id} FOR NO KEY UPDATE`,
-        )
-          .returnsRow(rowSpec)
-          .build(),
-      ),
+    // FOR NO KEY UPDATE는 계정 변경을 직렬화하면서 이 User를 참조하는 FK 검사는 막지 않는다.
+    return decodeRecord(
+      "User",
+      await this.client.orm.public.User.where((row) => row.id.eq(id))
+        .select("id", "email", "status", "deletedAt")
+        .forNoKeyUpdate()
+        .first(),
     );
-    const row = rows[0];
-    return row === undefined ? null : { ...row, status: userStatusSchema.parse(row.status) };
   }
-
   async hardDelete(id: string): Promise<void> {
     decodeRecord(
       "User",

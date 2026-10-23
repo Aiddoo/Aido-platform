@@ -12,7 +12,7 @@ import {
 } from "@prisma/orm-postgres/relational-core/ast";
 import postgres from "@prisma/orm-postgres/runtime";
 import { isPlainObject } from "es-toolkit";
-import { vi } from "vitest";
+import { vi, type Mock } from "vitest";
 import { mock, mockDeep, mockReset, type DeepMockProxy } from "vitest-mock-extended";
 
 import type { ModelName } from "#api/platform/database/database-records";
@@ -21,18 +21,32 @@ import {
   databaseTimestamp,
   databaseTimestamptz,
 } from "#api/platform/database/database-values";
+import { contract } from "#api/platform/database/database.service";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import type { Prisma8Transaction } from "#api/platform/database/prisma8-transactional.adapter";
 
 import type { Contract } from "../../src/generated/prisma8/contract.d.js";
 import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 
-export type MockDatabaseContext = DeepMockProxy<Prisma8Transaction>;
-const staticClient = postgres<Contract>({ contractJson });
+type OrmModels = Prisma8Transaction["orm"]["public"];
+// rc.15+ collection methods type `this`; resolving it against a mock proxy recurses without bound.
+type CollectionMock<Collection> = {
+  readonly [Member in keyof Collection]: Collection[Member] extends (
+    ...args: infer Args
+  ) => infer Result
+    ? Mock<(...args: Args) => Result>
+    : Collection[Member];
+};
+export type MockDatabaseContext = Omit<DeepMockProxy<Prisma8Transaction>, "orm"> & {
+  readonly orm: {
+    readonly public: { readonly [M in keyof OrmModels]: CollectionMock<OrmModels[M]> };
+  };
+};
+const staticClient = postgres({ contract });
 
 /** Native fluent query mocks. Real SQL/codec builders stay available for atomic operations. */
 export function createMockDatabaseContext(): MockDatabaseContext {
-  const context = mockDeep<Prisma8Transaction>();
+  const context = mockDeep<Prisma8Transaction>() as unknown as MockDatabaseContext;
   Object.assign(context, {
     raw: staticClient.raw,
     sql: staticClient.sql,
@@ -55,6 +69,8 @@ export function createMockDatabaseContext(): MockDatabaseContext {
       limit: vi.fn(() => model),
       offset: vi.fn(() => model),
       groupBy: vi.fn(() => grouped),
+      forUpdate: vi.fn(() => model),
+      forNoKeyUpdate: vi.fn(() => model),
     });
   }
   return context;
@@ -66,6 +82,11 @@ export function nativeRows<Row>(rows: readonly Row[]): AsyncIterableResult<Row> 
       yield* rows;
     })(),
   );
+}
+
+/** Mocks type a method by its widest overload; a select·groupBy projection is matched to it once here. */
+export function projectedResult<Result>(result: unknown): Result {
+  return result as Result;
 }
 
 export function sqlQueryError(sqlState: string, constraint?: string): Error {
@@ -86,7 +107,7 @@ export function assertNativeWhere<M extends ModelName>(
   if (typeof actual !== "function" && (typeof actual !== "object" || actual === null))
     throw new TypeError("Expected native where callback");
   function evaluate(input: unknown) {
-    const collection = Reflect.get(postgres<Contract>({ contractJson }).orm.public, model);
+    const collection = Reflect.get(postgres({ contract }).orm.public, model);
     const where = Reflect.get(collection, "where");
     if (typeof where !== "function") throw new TypeError("Missing native collection");
     let predicate: unknown;
@@ -193,7 +214,7 @@ export function databaseWriteExpectation<M extends ModelName>(
 ): unknown {
   return databaseFixture(
     model,
-    Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined)),
+    Object.fromEntries(Object.entries(fields).filter(([_fieldName, value]) => value !== undefined)),
   );
 }
 
@@ -222,11 +243,11 @@ function normalizePredicate(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(value)
       .map(([key, child]) => [key, normalizePredicate(child)])
-      .filter(([, child]) => child !== undefined),
+      .filter(([_fieldName, child]) => child !== undefined),
   );
 }
 
-export function createMockTransactionHost(context: Prisma8Transaction) {
+export function createMockTransactionHost(context: Prisma8Transaction | MockDatabaseContext) {
   const host = mock<TransactionHost<Prisma8TransactionalAdapter>>();
   Object.defineProperty(host, "tx", { get: () => context });
   return host;
@@ -256,16 +277,27 @@ export function assertNativeOrder<M extends ModelName>(
   actual: unknown,
   expected: (row: ModelAccessor<Contract, M, "public">) => unknown,
 ): void {
-  const collection = Reflect.get(staticClient.orm.public, model);
-  const order = Reflect.get(collection, "orderBy");
-  if (typeof actual !== "function" || typeof order !== "function")
+  if (typeof actual !== "function") {
     throw new TypeError("Expected native order callback");
-  Reflect.apply(order, collection, [
-    (row: ModelAccessor<Contract, M, "public">) => {
-      expect(actual(row)).toEqual(expected(row));
-      return expected(row);
+  }
+  expect(evaluateNativeOrder(model, actual)).toEqual(evaluateNativeOrder(model, expected));
+}
+
+/** rc.20 numbers relation join aliases per accessor, so each order is read from a fresh collection. */
+function evaluateNativeOrder(model: ModelName, order: Function): unknown {
+  const collection = Reflect.get(postgres({ contract }).orm.public, model);
+  const orderBy = Reflect.get(collection, "orderBy");
+  if (typeof orderBy !== "function") {
+    throw new TypeError("Missing native collection");
+  }
+  let ordering: unknown;
+  Reflect.apply(orderBy, collection, [
+    (row: unknown) => {
+      ordering = Reflect.apply(order, undefined, [row]);
+      return ordering;
     },
   ]);
+  return ordering;
 }
 
 export function nativeSqlParameters(plan: { readonly ast: AnyQueryAst } | undefined): unknown[] {

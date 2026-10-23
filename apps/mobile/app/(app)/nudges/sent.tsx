@@ -1,5 +1,5 @@
-import { SentNudgeList } from '@src/features/todo/presentations/components/nudge-interactions/SentNudgeList';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { SentNudgeList } from '@src/features/nudge/components/nudge-interactions/sent-nudge-list';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ScreenTitleBar, StyledSafeAreaView } from '@src/shared/ui';
 import { router } from 'expo-router';
@@ -12,7 +12,7 @@ export default function SentNudgesScreen() {
   );
 
   return (
-    <StyledSafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
+    <StyledSafeAreaView edges={['top', 'left', 'right', 'bottom']} className="flex-1 bg-background">
       <ScreenTitleBar title={t('interaction.sent')} onBackPress={goBack} />
       <QueryErrorBoundary fallback={SentNudgeList.Error}>
         <Suspense fallback={<SentNudgeList.Loading />}>

@@ -39,6 +39,13 @@
   },
   "overrides": [
     {
+      "files": ["apps/mobile/**/*.{js,jsx,ts,tsx,mjs,cjs}"],
+      "rules": {
+        "eslint/curly": ["error", "all"],
+        "eslint/no-void": "error"
+      }
+    },
+    {
       "files": ["apps/api/**/*.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"

@@ -1,40 +1,44 @@
 import { createSessionManager } from '@src/core/session/session-manager';
-import { AchievementService } from '@src/features/achievement/services/achievement.service';
-import { createActivationProgressRepository } from '@src/features/activation/repositories/activation-progress.repository';
-import { ActivationService } from '@src/features/activation/services/activation.service';
-import { AiService } from '@src/features/ai/services/ai.service';
-import { AppIconService } from '@src/features/app-icon/services/app-icon.service';
-import { AppVersionService } from '@src/features/app-version/services/app-version.service';
-import { AuthService } from '@src/features/auth/services/auth.service';
-import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/repositories/feature-discovery-state.repository';
-import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/services/feature-discovery-state.service';
-import { FeatureDiscoveryService } from '@src/features/feature-discovery/services/feature-discovery.service';
-import { FriendService } from '@src/features/friend/services/friend.service';
-import { InquiryService } from '@src/features/inquiry/services/inquiry.service';
-import { MemoService } from '@src/features/memo/services/memo.service';
-import { DeviceIdRepositoryImpl } from '@src/features/notification/repositories/device-id.repository.impl';
-import { DeviceIdService } from '@src/features/notification/services/device-id.service';
-import { NotificationService } from '@src/features/notification/services/notification.service';
-import { PushTokenService } from '@src/features/notification/services/push-token.service';
-import { RevenueCatSdkManager } from '@src/features/subscription/services/revenuecat-sdk-manager';
-import { SubscriptionService } from '@src/features/subscription/services/subscription.service';
-import { TodoCommentService } from '@src/features/todo-comment/services/todo-comment.service';
-import { createReorderCoachmarkRepository } from '@src/features/todo/repositories/reorder-coachmark.repository';
-import { createStoreReviewPromptRepository } from '@src/features/todo/repositories/store-review-prompt.repository';
-import { ReorderCoachmarkService } from '@src/features/todo/services/reorder-coachmark.service';
-import { StoreReviewPromptService } from '@src/features/todo/services/store-review-prompt.service';
-import { SubTodoService } from '@src/features/todo/services/sub-todo.service';
-import { TodoCategoryService } from '@src/features/todo/services/todo-category.service';
-import { TodoNudgeService } from '@src/features/todo/services/todo-nudge.service';
-import { TodoService } from '@src/features/todo/services/todo.service';
-import { UserService } from '@src/features/user/services/user.service';
-import { WeatherLocationStateService } from '@src/features/weather/services/weather-location-state.service';
-import { WeatherService } from '@src/features/weather/services/weather.service';
+import { AchievementService } from '@src/features/achievement/apis/achievement.service';
+import { createActivationProgressRepository } from '@src/features/activation/apis/activation-progress.repository';
+import { ActivationService } from '@src/features/activation/apis/activation.service';
+import { AiService } from '@src/features/ai/apis/ai.service';
+import { AppIconService } from '@src/features/app-icon/apis/app-icon.service';
+import { AppVersionService } from '@src/features/app-version/apis/app-version.service';
+import { AuthService } from '@src/features/auth/apis/auth.service';
+import { createFeatureDiscoveryStateRepository } from '@src/features/feature-discovery/apis/feature-discovery-state.repository';
+import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/apis/feature-discovery-state.service';
+import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
+import { FriendService } from '@src/features/friend/apis/friend.service';
+import { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
+import { MemoService } from '@src/features/memo/apis/memo.service';
+import { DeviceIdRepositoryImpl } from '@src/features/notification/apis/device-id.repository.impl';
+import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
+import { NotificationService } from '@src/features/notification/apis/notification.service';
+import { PushTokenService } from '@src/features/notification/apis/push-token.service';
+import { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
+import { PreferenceService } from '@src/features/preference/apis/preference.service';
+import { RevenueCatSdkManager } from '@src/features/subscription/apis/revenuecat-sdk-manager';
+import { SubscriptionService } from '@src/features/subscription/apis/subscription.service';
+import { TodoCommentService } from '@src/features/todo-comment/apis/todo-comment.service';
+import { createReorderCoachmarkRepository } from '@src/features/todo/apis/reorder-coachmark.repository';
+import { ReorderCoachmarkService } from '@src/features/todo/apis/reorder-coachmark.service';
+import { createStoreReviewPromptRepository } from '@src/features/todo/apis/store-review-prompt.repository';
+import { StoreReviewPromptService } from '@src/features/todo/apis/store-review-prompt.service';
+import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
+import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
+import { TodoService } from '@src/features/todo/apis/todo.service';
+import { UserService } from '@src/features/user/apis/user.service';
+import { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
+import { WeatherService } from '@src/features/weather/apis/weather.service';
+import { createWidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
+import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
-import { createWidgetNavigationRepository } from '@src/features/widget/services/widget-navigation.repository';
-import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
+import { toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
@@ -56,6 +60,7 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
+import type { DraftStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
@@ -64,7 +69,12 @@ import { type PropsWithChildren, useState } from 'react';
 
 import { type DIContainer, DIContext } from './di-context';
 
-export const DIProvider = ({ children }: PropsWithChildren) => {
+interface DIProviderProps extends PropsWithChildren {
+  /** 암호화 키 조회가 끝난 초안 저장소. 비동기 준비는 앱 부트스트랩에서 마친다. */
+  draftStorageBootstrap: DraftStorageBootstrap;
+}
+
+export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps) => {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
     const tokenStore = createSecureTokenStore(storage);
@@ -81,12 +91,18 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     const analytics = createEnvironmentAnalytics(logger);
     const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
+    const draftService = new DraftService(createDraftRepository(draftStorageBootstrap.storage));
+    draftService.removeExpired();
 
     // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
     const errorReporter = createEnvironmentErrorReporter();
 
     // DI 밖(HTTP 훅·화면 추적 등 인프라)에서 breadcrumb를 남길 수 있도록 전역 접근자에 주입.
     setGlobalErrorReporter(errorReporter);
+
+    if (draftStorageBootstrap.failure !== undefined) {
+      errorReporter.captureException(toError(draftStorageBootstrap.failure), { feature: 'draft' });
+    }
 
     const appVersion =
       expoApplicationMetadataGateway.getInstallation()?.currentVersion ?? ENV.APP_VERSION;
@@ -120,6 +136,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     // Auth
     const authService = new AuthService(publicHttpClient, authHttpClient, tokenStore);
+    const preferenceService = new PreferenceService(authHttpClient);
     const activationService = new ActivationService(
       createActivationProgressRepository(mmkvSyncStorage),
     );
@@ -199,9 +216,11 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       sessionManager,
       tokenRefresher,
       featureAttribution,
+      draftService,
       achievementService,
       aiService,
       authService,
+      preferenceService,
       activationService,
       appVersionService,
       appIconService: new AppIconService(expoAppIconGateway),
@@ -231,42 +250,3 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
   return <DIContext.Provider value={di}>{children}</DIContext.Provider>;
 };
-
-// DI 컨텍스트/훅은 di-context로 분리 — 기존 import 경로 호환을 위해 re-export
-export {
-  type DIContainer,
-  StaticDIProvider,
-  useAchievementService,
-  useActivationService,
-  useAppVersionService,
-  useAiService,
-  useAnalytics,
-  useAuthService,
-  useDI,
-  useErrorReporter,
-  useFeatureAttribution,
-  useFeatureDiscoveryService,
-  useFeatureDiscoveryStateService,
-  useFriendService,
-  useInquiryService,
-  useLogger,
-  useMemoService,
-  useNotificationService,
-  useReorderCoachmarkService,
-  useRevenueCatSdkManager,
-  useSessionManager,
-  useStorage,
-  useStoreReviewPromptService,
-  useSubscriptionService,
-  useSubTodoService,
-  useTodoCategoryService,
-  useTodoCommentService,
-  useTodoNudgeService,
-  useTodoService,
-  useTokenRefresher,
-  useTokenStore,
-  useUserService,
-  useWeatherService,
-  useWidgetSyncService,
-  useWidgetNavigationRepository,
-} from './di-context';

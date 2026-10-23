@@ -4,7 +4,6 @@
     "package.json",
     "pnpm-workspace.yaml",
     "pnpm-lock.yaml",
-    ".pnpmfile.cjs",
     "patches/**",
     ".nvmrc",
     "tooling/typescript/**",

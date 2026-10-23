@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
+import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { readJson } from "#api/platform/http/read-json";
+import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import type {
@@ -13,20 +14,21 @@ import { WeatherProviderLogEvent } from "../../observability/forecast/weather-pr
 import { KMA_TIMEZONE } from "./kma.constants.js";
 import { getRegionCode } from "./region-code.js";
 
-interface UvIndexResponse {
-  response?: {
-    header?: {
-      resultCode?: string;
-    };
-    body?: {
-      items?: {
-        item?: Array<{
-          h0?: string;
-        }>;
-      };
-    };
-  };
-}
+const uvIndexResponseSchema = z.object({
+  response: z
+    .object({
+      header: z.object({ resultCode: z.string().optional() }).optional(),
+      body: z
+        .object({
+          items: z
+            .object({ item: z.array(z.object({ h0: z.string().nullish() })).optional() })
+            .optional()
+            .catch(undefined),
+        })
+        .optional(),
+    })
+    .optional(),
+});
 
 @Injectable()
 export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
@@ -80,31 +82,39 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     const hour = toLocalTimeString(date, KMA_TIMEZONE).slice(0, 2);
     const time = `${localDate}${hour}`;
 
-    const url = new URL("https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4");
-    url.searchParams.set("serviceKey", apiKey);
-    url.searchParams.set("numOfRows", "10");
-    url.searchParams.set("dataType", "JSON");
-    url.searchParams.set("areaNo", getRegionCode(lat, lon));
-    url.searchParams.set("time", time);
+    const outcome = await requestVendorJson(
+      this.http,
+      "https://apis.data.go.kr/1360000/LivingWthrIdxServiceV4/getUVIdxV4",
+      {
+        serviceKey: apiKey,
+        numOfRows: 10,
+        dataType: "JSON",
+        areaNo: getRegionCode(lat, lon),
+        time,
+      },
+    );
 
-    const { data: response } = await this.http.request(url.toString(), {
-      responseType: "response",
-      retry: false,
-      throwOnHttpError: false,
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!response.ok) {
+    if (outcome.kind === "http_failure") {
       this.#logger.warn({
         event: WeatherProviderLogEvent.HTTP_FAILED,
         provider: "kma_lifestyle",
         operation: "uv_index",
-        statusCode: response.status,
+        statusCode: outcome.statusCode,
       });
       return null;
     }
 
-    const data = await readJson<UvIndexResponse>(response);
+    const parsedResponse = uvIndexResponseSchema.safeParse(outcome.body);
+    if (!parsedResponse.success) {
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "kma_lifestyle",
+        operation: "uv_index",
+        errorType: "invalid_structure",
+      });
+      return null;
+    }
+    const data = parsedResponse.data;
 
     const resultCode = data?.response?.header?.resultCode;
     if (resultCode !== "00") {

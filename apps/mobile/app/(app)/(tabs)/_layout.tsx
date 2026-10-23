@@ -21,7 +21,9 @@ export default function TabsLayout() {
         name="feed"
         listeners={{
           tabPress: ({ data }) => {
-            if (!data.isPrevented) void Haptics.selectionAsync();
+            if (!data.isPrevented) {
+              Haptics.selectionAsync();
+            }
           },
         }}
       >
@@ -32,7 +34,9 @@ export default function TabsLayout() {
         name="memo"
         listeners={{
           tabPress: ({ data }) => {
-            if (!data.isPrevented) void Haptics.selectionAsync();
+            if (!data.isPrevented) {
+              Haptics.selectionAsync();
+            }
           },
         }}
       >
@@ -43,7 +47,9 @@ export default function TabsLayout() {
         name="mypage"
         listeners={{
           tabPress: ({ data }) => {
-            if (!data.isPrevented) void Haptics.selectionAsync();
+            if (!data.isPrevented) {
+              Haptics.selectionAsync();
+            }
           },
         }}
       >

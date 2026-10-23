@@ -1,11 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import * as Linking from 'expo-linking';
 import type { EffectCallback } from 'react';
-import { AppState, Keyboard } from 'react-native';
+import { AppState } from 'react-native';
+import { useKeyboardState } from 'react-native-keyboard-controller';
 
 import { useStableFeedForeground } from './use-stable-feed-foreground';
 
 let mockHasActiveOverlay = false;
+let mockIsKeyboardVisible = false;
 let focusEffect: EffectCallback | undefined;
 let deepLinkListener: Parameters<typeof Linking.addEventListener>[1] | undefined;
 let idleCallbacks: Array<() => void> = [];
@@ -24,9 +26,12 @@ jest.mock('expo-router', () => ({
   },
 }));
 
+const mockUseKeyboardState = useKeyboardState as jest.Mock;
+
 describe('useStableFeedForeground', () => {
   beforeEach(() => {
     mockHasActiveOverlay = false;
+    mockIsKeyboardVisible = false;
     focusEffect = undefined;
     deepLinkListener = undefined;
     idleCallbacks = [];
@@ -35,8 +40,9 @@ describe('useStableFeedForeground', () => {
       value: 'active',
     });
     jest.spyOn(AppState, 'addEventListener').mockReturnValue({ remove: jest.fn() } as never);
-    jest.spyOn(Keyboard, 'isVisible').mockReturnValue(false);
-    jest.spyOn(Keyboard, 'addListener').mockReturnValue({ remove: jest.fn() } as never);
+    mockUseKeyboardState.mockImplementation((selector) =>
+      selector({ isVisible: mockIsKeyboardVisible }),
+    );
     jest.spyOn(Linking, 'getInitialURL').mockResolvedValue(null);
     jest.spyOn(Linking, 'addEventListener').mockImplementation((_event, listener) => {
       deepLinkListener = listener;
@@ -128,6 +134,26 @@ describe('useStableFeedForeground', () => {
 
     // When
     mockHasActiveOverlay = false;
+    await hook.rerender(undefined);
+
+    // Then
+    await waitFor(() => expect(hook.result.current).toBe(true));
+  });
+
+  it('키보드가 올라와 있는 동안은 자동 노출을 막는다', async () => {
+    // Given
+    mockIsKeyboardVisible = true;
+    const hook = await renderHook(() => useStableFeedForeground());
+    await act(async () => {
+      focusEffect?.();
+      await Promise.resolve();
+    });
+
+    // Then
+    expect(hook.result.current).toBe(false);
+
+    // When
+    mockIsKeyboardVisible = false;
     await hook.rerender(undefined);
 
     // Then

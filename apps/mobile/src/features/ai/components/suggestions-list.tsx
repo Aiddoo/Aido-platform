@@ -1,0 +1,305 @@
+import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import {
+  Button,
+  H4,
+  HStack,
+  Spacing,
+  Text,
+  useOverlay,
+  VStack,
+  DashedDivider,
+} from '@src/shared/ui';
+import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
+import { Spinner } from 'heroui-native';
+import { useState } from 'react';
+import { Image, View } from 'react-native';
+
+import {
+  isSuggestionsPremiumRequiredError,
+  useGetSuggestionsQueryOptions,
+} from '../queries/get-suggestions-query-options';
+import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
+import { ScallopedContainer } from './scalloped-container';
+import { SuggestionCategoryBottomSheet } from './suggestion-category-bottom-sheet';
+
+export function SuggestionsList() {
+  const replace = useSingleTap(router.replace);
+
+  const { t } = useTranslation('ai');
+  const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
+  const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
+  const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
+
+  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
+    return <SuggestionsList.PremiumPreview />;
+  }
+
+  const suggestions = suggestionsQuery.data;
+  if (!suggestions) {
+    return <SuggestionsList.Loading />;
+  }
+  if (suggestions.length === 0) {
+    return <SuggestionsList.Empty />;
+  }
+
+  const handleDismiss = (suggestionId: number) => {
+    setPendingSuggestionId(suggestionId);
+    dismissSuggestionMutation.mutate(
+      {
+        suggestionId,
+        input: { action: 'dismiss' },
+      },
+      {
+        onSettled: () => {
+          setPendingSuggestionId(null);
+        },
+      },
+    );
+  };
+
+  return (
+    <ScallopedContainer>
+      <View className="items-center px-5 pt-4">
+        <Image
+          source={require('@assets/images/ido_cat_suggestion.webp')}
+          style={{ width: 100, height: 100 }}
+          resizeMode="contain"
+        />
+        <Spacing size={8} />
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {t('suggestions.list.header', { count: suggestions.length })}
+        </H4>
+        <Text size="b4" shade={6} align="center">
+          {t('suggestions.list.headerDescription')}
+        </Text>
+      </View>
+
+      <Spacing size={20} />
+
+      <View className="px-4 pb-4">
+        {suggestions.map((suggestion, index) => (
+          <SuggestionsList.Item
+            key={suggestion.id}
+            suggestion={suggestion}
+            onAccepted={() => replace('/feed')}
+            onDismiss={() => handleDismiss(suggestion.id)}
+            isPending={dismissSuggestionMutation.isPending && pendingSuggestionId === suggestion.id}
+            pendingAction={dismissSuggestionMutation.isPending ? 'dismiss' : null}
+            isLast={index === suggestions.length - 1}
+          />
+        ))}
+      </View>
+    </ScallopedContainer>
+  );
+}
+
+SuggestionsList.Loading = function Loading() {
+  return (
+    <VStack className="flex-1" align="center" justify="center">
+      <Spinner size="lg" />
+    </VStack>
+  );
+};
+
+const formatSchedule = (suggestion: AiSuggestion): string => {
+  const days = formatDaysOfWeek(suggestion.daysOfWeek);
+  const time = suggestion.scheduledTime ?? tGlobal('ai:suggestions.list.allDay');
+  return `${days} · ${time}`;
+};
+
+interface SuggestionItemProps {
+  suggestion: AiSuggestion;
+  onAccepted: () => void;
+  onDismiss: () => void;
+  pendingAction?: 'accept' | 'dismiss' | null;
+  isPending?: boolean;
+  isLast?: boolean;
+}
+
+SuggestionsList.Item = function Item({
+  suggestion,
+  onAccepted,
+  onDismiss,
+  pendingAction = null,
+  isPending = false,
+  isLast = false,
+}: SuggestionItemProps) {
+  const { t } = useTranslation('ai');
+  const overlay = useOverlay();
+  const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
+
+  const openCategorySheet = () => {
+    overlay.open(({ isOpen, close, exit }) => {
+      const closeSheet = () => {
+        close();
+        exit();
+      };
+
+      return (
+        <SuggestionCategoryBottomSheet
+          suggestionId={suggestion.id}
+          suggestedCategoryId={suggestion.suggestedCategoryId}
+          isOpen={isOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeSheet();
+            }
+          }}
+          onAccepted={onAccepted}
+        />
+      );
+    });
+  };
+
+  return (
+    <View className="py-2">
+      <VStack gap={8}>
+        <VStack gap={4}>
+          <HStack justify="between" align="center">
+            <Text size="b2" weight="semibold" shade={9}>
+              {suggestion.title}
+            </Text>
+            <Text size="e1" shade={5}>
+              {t('suggestions.list.confidence', { value: confidenceLabel })}
+            </Text>
+          </HStack>
+          <Text size="b4" shade={7}>
+            {formatSchedule(suggestion)}
+          </Text>
+        </VStack>
+
+        <Text size="b4" shade={6}>
+          {suggestion.reason}
+        </Text>
+
+        <HStack justify="between" align="center" className="mt-1">
+          <Text size="e1" shade={5}>
+            {t('suggestions.list.expires', { date: formatMonthDay(suggestion.expiresAt) })}
+          </Text>
+
+          <HStack gap={8}>
+            <Button
+              size="small"
+              variant="weak"
+              color="dark"
+              display="inline"
+              onPress={onDismiss}
+              isDisabled={isPending}
+              isLoading={isPending && pendingAction === 'dismiss'}
+            >
+              {t('suggestions.list.reject')}
+            </Button>
+            <Button
+              size="small"
+              display="inline"
+              onPress={openCategorySheet}
+              isDisabled={isPending}
+              isLoading={isPending && pendingAction === 'accept'}
+            >
+              {t('suggestions.list.accept')}
+            </Button>
+          </HStack>
+        </HStack>
+      </VStack>
+
+      {!isLast && <DashedDivider className="mt-5" />}
+    </View>
+  );
+};
+
+SuggestionsList.Empty = function Empty() {
+  const { t } = useTranslation('ai');
+  return (
+    <ScallopedContainer>
+      <View className="items-center px-5 pt-4">
+        <Image
+          source={require('@assets/images/ido_cat_suggestion.webp')}
+          style={{ width: 100, height: 100 }}
+          resizeMode="contain"
+        />
+        <Spacing size={8} />
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {t('suggestions.list.emptyNoHistory')}
+        </H4>
+        <Text size="b4" shade={6} align="center">
+          {t('suggestions.list.emptyNoHistoryDescription')}
+        </Text>
+      </View>
+
+      <Spacing size={20} />
+
+      <View className="px-4 pb-4">
+        <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
+          <VStack gap={4} align="center">
+            <Text size="b3" weight="semibold" shade={8} align="center">
+              {t('suggestions.list.emptyNoPending')}
+            </Text>
+            <Text size="b4" shade={6} align="center">
+              {t('suggestions.list.emptyNoPendingDescription')}
+            </Text>
+          </VStack>
+        </View>
+      </View>
+    </ScallopedContainer>
+  );
+};
+
+SuggestionsList.PremiumPreview = function PremiumPreview() {
+  const push = useSingleTap(router.push);
+
+  const { t } = useTranslation('ai');
+
+  return (
+    <ScallopedContainer>
+      <View className="items-center px-5 pt-4">
+        <Image
+          source={require('@assets/images/ido_cat_suggestion.webp')}
+          style={{ width: 100, height: 100 }}
+          resizeMode="contain"
+        />
+        <Spacing size={8} />
+        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+          {t('suggestions.paywall.title')}
+        </H4>
+        <Text size="b4" shade={6} align="center">
+          {t('suggestions.paywall.description')}
+        </Text>
+      </View>
+
+      <Spacing size={20} />
+
+      <View className="px-4 pb-4">
+        <View className="py-2 opacity-60">
+          <VStack gap={8}>
+            <VStack gap={4}>
+              <HStack justify="between" align="center">
+                <Text size="b2" weight="semibold" shade={9}>
+                  {t('suggestions.paywall.sampleTitle')}
+                </Text>
+                <Text size="e1" shade={5}>
+                  {t('suggestions.paywall.sampleConfidence')}
+                </Text>
+              </HStack>
+              <Text size="b4" shade={7}>
+                {t('suggestions.paywall.sampleSchedule')}
+              </Text>
+            </VStack>
+            <Text size="b4" shade={6}>
+              {t('suggestions.paywall.sampleReason')}
+            </Text>
+          </VStack>
+        </View>
+
+        <Spacing size={16} />
+
+        <Button size="medium" onPress={() => push('/settings/subscription')}>
+          {t('suggestions.paywall.subscribeCta')}
+        </Button>
+      </View>
+    </ScallopedContainer>
+  );
+};

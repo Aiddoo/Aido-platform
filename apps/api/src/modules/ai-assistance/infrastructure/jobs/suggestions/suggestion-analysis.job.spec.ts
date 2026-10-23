@@ -6,7 +6,7 @@ import { type JobRuntimePort } from "#api/shared/application/ports/job-runtime.p
 import { UserBuilder } from "#test/builders/index";
 import { databaseFixture, nativeRows } from "#test/mocks/database.mock";
 import { asMock } from "#test/mocks/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { SuggestionAnalysisProcessor } from "../../processors/suggestions/suggestion-analysis.processor.js";
 import { AiSuggestionQueueMaintenanceService } from "./ai-suggestion-queue-maintenance.service.js";
@@ -27,7 +27,7 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
     processor = mock<SuggestionAnalysisProcessor>();
     const maintenance = mock<AiSuggestionQueueMaintenanceService>();
     maintenance.cleanExpiredFailures.mockResolvedValue(0);
-    job = new SuggestionAnalysisJob(database, runtime, processor, maintenance);
+    job = new SuggestionAnalysisJob(asDatabaseService(database), runtime, processor, maintenance);
   });
 
   afterEach(() => vi.useRealTimers());
@@ -78,18 +78,19 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
 
     await job.dispatchAnalysis();
 
-    expect(runtime.enqueue).toHaveBeenCalledTimes(2);
-    expect(runtime.enqueue).toHaveBeenCalledWith(
-      AI_SUGGESTION_QUEUE,
-      expect.objectContaining({
-        name: "analyze-suggestion",
+    expect(runtime.enqueueMany).toHaveBeenCalledOnce();
+    expect(runtime.enqueueMany).toHaveBeenCalledWith(AI_SUGGESTION_QUEUE, [
+      {
         data: expect.objectContaining({
-          userId: "user-1",
-          timezone: "Asia/Seoul",
+          name: "analyze-suggestion",
+          data: expect.objectContaining({ userId: "user-1", timezone: "Asia/Seoul" }),
         }),
+        options: expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
+      },
+      expect.objectContaining({
+        data: expect.objectContaining({ data: expect.objectContaining({ userId: "user-2" }) }),
       }),
-      expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
-    );
+    ]);
   });
 
   it("사용자가 없으면 분석 작업을 만들지 않는다", async () => {

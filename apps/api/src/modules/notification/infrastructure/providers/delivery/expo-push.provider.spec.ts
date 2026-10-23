@@ -1,5 +1,3 @@
-import { createRequire } from "node:module";
-
 import { Logger } from "@nestjs/common";
 import { TestBed } from "@suites/unit";
 import { vi } from "vitest";
@@ -15,46 +13,27 @@ vi.hoisted(() => {
   process.env.EXPO_BASE_URL = "https://exp.host";
 });
 
-// Resolve the installed SDK's own transport; no extra dependency or SDK module mock.
-interface FixtureAgent {
-  disableNetConnect(): void;
-  assertNoPendingInterceptors(): void;
-  close(): Promise<void>;
-  get(origin: string): {
-    intercept(options: { path: string; method: string }): {
-      reply(
-        statusCode: number,
-        data: unknown,
-        options: { headers: Record<string, string> },
-      ): unknown;
-    };
-  };
-}
-const require = createRequire(import.meta.url);
-const transport: {
-  MockAgent: new () => FixtureAgent;
-  getGlobalDispatcher(): unknown;
-  setGlobalDispatcher(dispatcher: unknown): void;
-} = createRequire(require.resolve("expo-server-sdk"))("undici");
-
 const token = "ExponentPushToken[notification14-synthetic-token]";
 const credential = "notification14-synthetic-credential-not-real";
 const body = "notification14-synthetic-private-body";
 const privateMessage = `${credential}; token=${token}; body=${body}`;
 const payload = () => ({ token, title: "fixture notification", body });
 const sendPath = "/--/api/v2/push/send";
-let agent: FixtureAgent;
-let originalDispatcher: unknown;
 let provider: ExpoPushProvider;
 let warn: ReturnType<typeof vi.spyOn>;
 let error: ReturnType<typeof vi.spyOn>;
 let nativeFetch: ReturnType<typeof vi.spyOn>;
+let expectedReplies: Array<{ path: string; response: Response }>;
 
+// expo-server-sdk 8 sends through the global fetch, so the fixture answers it in order.
 function reply(path: string, statusCode: number, data: unknown) {
-  return agent
-    .get("https://exp.host")
-    .intercept({ path, method: "POST" })
-    .reply(statusCode, data, { headers: { "content-type": "application/json" } });
+  expectedReplies.push({
+    path,
+    response: new Response(JSON.stringify(data), {
+      status: statusCode,
+      headers: { "content-type": "application/json" },
+    }),
+  });
 }
 function expectPrivateLogsAbsent() {
   const logs = JSON.stringify([...warn.mock.calls, ...error.mock.calls]);
@@ -62,29 +41,29 @@ function expectPrivateLogsAbsent() {
 }
 
 beforeEach(async () => {
-  originalDispatcher = transport.getGlobalDispatcher();
-  agent = new transport.MockAgent();
-  agent.disableNetConnect();
-  transport.setGlobalDispatcher(agent);
+  expectedReplies = [];
   warn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => undefined);
   error = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
-  nativeFetch = vi
-    .spyOn(globalThis, "fetch")
-    .mockRejectedValue(new Error("External fetch blocked by fixture"));
+  nativeFetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const expected = expectedReplies.shift();
+    if (!expected) {
+      throw new Error("External fetch blocked by fixture");
+    }
+    expect(new URL(String(input)).pathname).toBe(expected.path);
+    return expected.response;
+  });
   const { unit } = await TestBed.solitary(ExpoPushProvider)
     .mock(TypedConfigService)
     .impl(() => ({ expoAccessToken: credential }))
     .compile();
   provider = unit;
 });
-afterEach(async () => {
+afterEach(() => {
   try {
-    agent.assertNoPendingInterceptors();
-    expect(nativeFetch).not.toHaveBeenCalled();
+    expect(expectedReplies).toHaveLength(0);
     expectPrivateLogsAbsent();
   } finally {
-    transport.setGlobalDispatcher(originalDispatcher);
-    await agent.close();
+    nativeFetch.mockRestore();
   }
 });
 

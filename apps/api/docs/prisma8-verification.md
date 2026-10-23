@@ -2,6 +2,24 @@
 
 운영 절차는 [.claude/prisma.md](../.claude/prisma.md)와 [DEPLOYMENT.md](../DEPLOYMENT.md), CI 실행 범위는 [CI](../../../docs/server/ci.md)에 있다. 아래는 날짜·환경이 고정된 검증 기록이며 현재 모든 변경의 완료나 운영 적용을 뜻하지 않는다.
 
+## 2026-10-23 rc.20 정렬
+
+ORM `@prisma/orm-postgres@8.0.0-rc.20`, CLI `prisma@8.0.0-rc.27`(orm-toolchain rc.20), `@prisma/cli-engine@0.9.0`으로 올렸다. 설치된 공식 레시피(rc.14→rc.15→…→rc.20)의 스크립트 `data-type-in-contract`, `rewrite-sql-strings`, `remove-nocheck`, `data-type-values`, `contract-from-json`, `expand-type-aliases`를 순서대로 실행했다(뒤의 두 개는 해당 없음으로 무변경). 과거 snapshot 5개의 storage hash가 바뀌었고, 새 계약 표현(FK backing index, `sql` literal, 문자열 timestamp 생성기)은 DB 연산 0개 edge `20261023T0948_prisma8_rc20_contract_alignment`로 기록했다. 적용 이미 된 migration의 `ops.json` postcheck 재작성은 레시피 지침대로 하지 않았다.
+
+코드 변화: `contractFromJson`으로 contract 값을 넘기고, UTC 보정 timestamp middleware를 제거했으며(rc.19 생성기가 UTC 텍스트를 쓰고 codec이 Date를 거부), `Text?[]`로 바뀐 댓글 `path`는 영속성 경계에서 NULL 원소를 거부한다. 테스트의 SQL 관찰은 activity hook으로 옮겼다.
+
+| 검증 (Node 24.22.1, pnpm 12.15.0, Testcontainers PostgreSQL 16) | 결과                                                   |
+| --------------------------------------------------------------- | ------------------------------------------------------ |
+| `pnpm --filter @aido/server test`                               | 494개 파일, 3,103개 테스트 통과                        |
+| `pnpm --filter @aido/server test:integration`                   | 59개 파일, 498개 테스트 통과                           |
+| `pnpm --filter @aido/server test:e2e`                           | 41개 파일, 545개 테스트 통과                           |
+| `prisma migration plan --from 65d810f7…`                        | No changes detected                                    |
+| 빈 PostgreSQL에 `db:deploy` 2회                                 | 전체 graph 적용 후 verify, 재실행 시 verify만 수행     |
+| 옛 marker(`5eefdf63…`) DB에 `db:deploy`                         | `MIGRATION.MARKER_MISMATCH`로 중단                     |
+| `db sign --contract 4ccdcd5a… --no-advance-ref` 후 `db:deploy`  | 0-operation edge 적용, marker `65d810f7…`, verify 통과 |
+
+로컬 Docker dev DB는 기존 데이터를 유지한 채 `pg_dump` 백업 후 재서명했다. 이어서 rc.20 migrate 이미지가 0-operation edge를 적용하고 verify를 통과했으며, 52개 테이블의 행 checksum이 전후 동일했다(2026-10-23). 운영 DB 재서명은 배포 직전에 같은 절차로 실행한다.
+
 검증일: 2026-10-06. Node.js 24.21.0, pnpm 10.34.6, PostgreSQL 16,
 ARM64 Docker 이미지에서 확인했다. 운영 DB에 적용하거나 이미지를 발행하지 않았다.
 

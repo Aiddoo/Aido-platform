@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { retry } from "es-toolkit";
 import { Resend } from "resend";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -10,6 +11,33 @@ import type {
 import type { EmailMessage } from "../../../domain/value-objects/email/email-message.vo.js";
 import { EMAIL_CONSTANTS, RETRYABLE_ERROR_TYPES } from "../../constants/email/email.constants.js";
 import { EmailLogEvent } from "../../observability/email/email-log.events.js";
+
+interface ResendFailure {
+  readonly name: string;
+  readonly message: string;
+}
+
+class ResendApiError extends Error {
+  constructor(readonly failure: ResendFailure) {
+    super(failure.message);
+  }
+}
+
+/** Resend가 거절한 요청은 재시도 가능한 오류 타입일 때만, 네트워크 예외는 항상 재시도한다. */
+function isRetryableSendFailure(error: unknown): boolean {
+  return !(error instanceof ResendApiError) || RETRYABLE_ERROR_TYPES.has(error.failure.name);
+}
+
+/** 시도 횟수에 따라 1초, 2초, 4초... 증가하는 지수 백오프 대기 시간 */
+function calculateBackoffDelay(attempt: number): number {
+  return EMAIL_CONSTANTS.BASE_RETRY_DELAY * 2 ** attempt;
+}
+
+function toLoggedErrorType(failure: ResendFailure): string {
+  return failure.name === "validation_error" || RETRYABLE_ERROR_TYPES.has(failure.name)
+    ? failure.name
+    : "RESEND_ERROR";
+}
 
 /**
  * EmailSenderPort의 Resend 어댑터.
@@ -60,107 +88,78 @@ export class ResendEmailSenderAdapter implements EmailSenderPort {
       };
     }
 
-    return this.#sendWithRetry(tagged);
+    return this.#sendWithRetry(this.#resend, tagged);
   }
 
-  /**
-   * 지수 백오프를 적용한 재시도 로직
-   */
-  async #sendWithRetry(message: EmailMessage, attempt = 0): Promise<EmailSendResult> {
-    // #resend가 없으면 실패 반환 (이 메서드는 #resend가 있을 때만 호출됨)
-    if (!this.#resend) {
-      return {
-        success: false,
-        error: "Resend client not initialized",
-        retryCount: attempt,
-      };
-    }
-
-    const from = `${this.#fromName} <${this.#fromEmail}>`;
+  async #sendWithRetry(resend: Resend, message: EmailMessage): Promise<EmailSendResult> {
+    let attemptCount = 0;
 
     try {
-      const result = await this.#resend.emails.send(
-        {
-          from,
-          to: message.to,
-          subject: message.subject,
-          html: message.html,
-          text: message.text,
-          tags: [...message.tags],
+      const messageId = await retry(
+        async () => {
+          attemptCount += 1;
+          return this.#sendOnce(resend, message);
         },
-        { idempotencyKey: message.idempotencyKey },
+        {
+          retries: EMAIL_CONSTANTS.MAX_RETRIES,
+          shouldRetry: isRetryableSendFailure,
+          delay: (attempt, error) => {
+            const delayMs = calculateBackoffDelay(attempt);
+            const reason =
+              error instanceof ResendApiError
+                ? `Retryable error (${error.failure.name})`
+                : "Network error";
+            this.#logger.warn(
+              `${reason}, retrying in ${delayMs}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
+            );
+            return delayMs;
+          },
+        },
       );
 
-      if (result.error) {
-        // 재시도 가능한 에러인지 확인
-        if (RETRYABLE_ERROR_TYPES.has(result.error.name) && attempt < EMAIL_CONSTANTS.MAX_RETRIES) {
-          const delay = this.#calculateBackoffDelay(attempt);
-          this.#logger.warn(
-            `Retryable error (${result.error.name}), retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
-          );
-          await this.#sleep(delay);
-          return this.#sendWithRetry(message, attempt + 1);
-        }
-
-        this.#logger.error({
-          event: EmailLogEvent.DELIVERY_FAILED,
-          errorType:
-            result.error.name === "validation_error" || RETRYABLE_ERROR_TYPES.has(result.error.name)
-              ? result.error.name
-              : "RESEND_ERROR",
-          retryCount: attempt,
-        });
-        return {
-          success: false,
-          error: result.error.message,
-          retryCount: attempt,
-        };
-      }
-
+      const retryCount = attemptCount - 1;
       this.#logger.log({
         event: EmailLogEvent.DELIVERY_COMPLETED,
-        messageId: result.data?.id,
-        retryCount: attempt,
+        messageId,
+        retryCount,
       });
-      return {
-        success: true,
-        messageId: result.data?.id,
-        retryCount: attempt,
-      };
+      return { success: true, messageId, retryCount };
     } catch (error) {
-      // 네트워크 에러 등 예외 발생 시 재시도
-      if (attempt < EMAIL_CONSTANTS.MAX_RETRIES) {
-        const delay = this.#calculateBackoffDelay(attempt);
-        this.#logger.warn(
-          `Network error, retrying in ${delay}ms... (attempt ${attempt + 1}/${EMAIL_CONSTANTS.MAX_RETRIES})`,
-        );
-        await this.#sleep(delay);
-        return this.#sendWithRetry(message, attempt + 1);
+      const retryCount = attemptCount - 1;
+      if (error instanceof ResendApiError) {
+        this.#logger.error({
+          event: EmailLogEvent.DELIVERY_FAILED,
+          errorType: toLoggedErrorType(error.failure),
+          retryCount,
+        });
+        return { success: false, error: error.failure.message, retryCount };
       }
 
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      this.#logger.error({ event: EmailLogEvent.DELIVERY_FAILED, retryCount: attempt });
-
+      this.#logger.error({ event: EmailLogEvent.DELIVERY_FAILED, retryCount });
       return {
         success: false,
-        error: errorMessage,
-        retryCount: attempt,
+        error: error instanceof Error ? error.message : "Unknown error",
+        retryCount,
       };
     }
   }
 
-  /**
-   * 지수 백오프 딜레이 계산
-   * 시도 횟수에 따라 1초, 2초, 4초... 증가
-   */
-  #calculateBackoffDelay(attempt: number): number {
-    return EMAIL_CONSTANTS.BASE_RETRY_DELAY * 2 ** attempt;
-  }
+  async #sendOnce(resend: Resend, message: EmailMessage): Promise<string | undefined> {
+    const result = await resend.emails.send(
+      {
+        from: `${this.#fromName} <${this.#fromEmail}>`,
+        to: message.to,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        tags: [...message.tags],
+      },
+      { idempotencyKey: message.idempotencyKey },
+    );
 
-  /**
-   * 지정된 시간만큼 대기
-   */
-  async #sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    if (result.error) {
+      throw new ResendApiError(result.error);
+    }
+    return result.data?.id;
   }
 }

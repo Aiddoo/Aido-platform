@@ -18,9 +18,13 @@ const severityToSentryLevel: Record<Severity, Sentry.SeverityLevel> = {
 /** ErrorReporterContext에서 severity를 제외한 나머지를 Sentry tags로 변환(undefined 제거, 문자열화). */
 const toTags = (context?: ErrorReporterContext): Record<string, string> => {
   const tags: Record<string, string> = {};
-  if (!context) return tags;
+  if (!context) {
+    return tags;
+  }
   for (const [key, value] of Object.entries(context)) {
-    if (key === 'severity' || value === undefined) continue;
+    if (key === 'severity' || value === undefined) {
+      continue;
+    }
     tags[key] = String(value);
   }
   return tags;
