@@ -9,7 +9,7 @@ import {
 } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { Separator } from 'heroui-native';
-import { Suspense, type ReactNode } from 'react';
+import { Suspense, useCallback, type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
 import { KeyboardGestureArea } from 'react-native-keyboard-controller';
 import type { SharedValue } from 'react-native-reanimated';
@@ -51,7 +51,9 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const { todoId } = useTodoScreenParams();
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const [commentRoute] = useTodoCommentRoute();
-  useAndroidTodoCommentBackHandler();
+  const isPane = presentation === 'pane';
+  const closePane = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
+  useAndroidTodoCommentBackHandler({ onExit: isPane ? closePane : undefined });
   const commentListExtraPadding = useSharedValue(0);
   const isCommentSubmitting = useIsTodoCommentSubmitting();
   const selectedCommentId =
@@ -59,7 +61,6 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const activeFormType = commentRoute.form?.type;
   const isNativeBackGestureEnabled =
     commentRoute.view === 'overview' && commentRoute.form === null && !isCommentSubmitting;
-  const isPane = presentation === 'pane';
 
   const listHeader = (
     <>
@@ -90,7 +91,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
   const content = (
     <>
-      <TodoCommentTitleBar onClose={isPane ? () => setSelectedTodoId(undefined) : undefined} />
+      <TodoCommentTitleBar onClose={isPane ? closePane : undefined} />
 
       <Separator />
 
