@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const kmaResponseItemSchema = z.object({
+const kmaResponseItemSchema = z.object({
   category: z.string(),
   fcstDate: z.string(),
   fcstTime: z.string(),
