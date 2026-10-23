@@ -1,4 +1,5 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   DocsIcon,
@@ -10,29 +11,29 @@ import {
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
+import { useSelectedMemo } from '../hooks/use-selected-memo';
 import { useGetMemosInfiniteQueryOptions } from '../queries/get-memos-infinite-query-options';
+import { distributeMemosIntoColumns, getMemoColumnCount } from '../utils/memo-list-layout';
 
 export function MemoList() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
+  const windowSizeClass = useWindowSizeClass();
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
     return <MemoList.Empty />;
   }
 
-  const columns = [
-    { key: 'left', items: memos.filter((_, i) => i % 2 === 0) },
-    { key: 'right', items: memos.filter((_, i) => i % 2 === 1) },
-  ];
+  const columns = distributeMemosIntoColumns(memos, getMemoColumnCount(windowSizeClass));
 
   return (
     <VStack gap={20}>
@@ -81,11 +82,16 @@ MemoList.Item = function Item({
   isPinned: boolean;
   date: string;
 }) {
-  const push = useSingleTap(router.push);
+  const [selectedMemoId, setSelectedMemoId] = useSelectedMemo();
+  const selectMemo = useSingleTap(setSelectedMemoId);
 
   return (
-    <PressableFeedback onPress={() => push({ pathname: '/memo/[id]', params: { id } })}>
-      <VStack gap={8} p={16} className="rounded-xl bg-gray-1">
+    <PressableFeedback onPress={() => selectMemo(id)}>
+      <VStack
+        gap={8}
+        p={16}
+        className={cn('rounded-xl', selectedMemoId === id ? 'bg-gray-3' : 'bg-gray-1')}
+      >
         <HStack align="start">
           <Text className="flex-1" size="b3" shade={8} weight="semibold" numberOfLines={4}>
             {content}

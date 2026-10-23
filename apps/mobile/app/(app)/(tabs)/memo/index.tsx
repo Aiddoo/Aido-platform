@@ -1,13 +1,17 @@
+import { MemoDetailPane } from '@src/features/memo/components/memo-detail-pane/memo-detail-pane';
 import { MemoList } from '@src/features/memo/components/memo-list';
 import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
 import { MemoPolicy } from '@src/features/memo/domains/memo.model';
+import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  AdaptivePane,
   Box,
   H3,
   HStack,
@@ -15,13 +19,14 @@ import {
   QueryErrorBoundary,
   RefreshIcon,
   ScrollProgressWidget,
+  Text,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
@@ -47,7 +52,18 @@ export default function MemoScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  return (
+  const windowSizeClass = useWindowSizeClass();
+  const [selectedMemoId] = useSelectedMemo();
+
+  useEffect(() => {
+    if (windowSizeClass !== 'compact' || selectedMemoId === undefined) {
+      return;
+    }
+    router.setParams({ id: undefined });
+    router.push({ pathname: '/memo/[id]', params: { id: selectedMemoId } });
+  }, [windowSizeClass, selectedMemoId]);
+
+  const memoListPane = (
     <Box className="flex-1">
       <HStack align="center" px={16} mb={16}>
         <Box flex={1}>
@@ -86,6 +102,31 @@ export default function MemoScreen() {
         onScrollToTop={handleScrollToTop}
         bottomOffset={16}
       />
+    </Box>
+  );
+
+  return (
+    <AdaptivePane
+      primary={memoListPane}
+      secondary={
+        selectedMemoId === undefined ? (
+          <MemoDetailPlaceholder />
+        ) : (
+          <MemoDetailPane key={selectedMemoId} presentation="pane" />
+        )
+      }
+    />
+  );
+}
+
+function MemoDetailPlaceholder() {
+  const { t } = useTranslation('memo');
+
+  return (
+    <Box flex={1} className="items-center justify-center px-8">
+      <Text size="b4" shade={6} align="center">
+        {t('detail.selectPrompt')}
+      </Text>
     </Box>
   );
 }

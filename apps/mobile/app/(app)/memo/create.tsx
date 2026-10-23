@@ -85,7 +85,7 @@ function MemoCreateScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         <Stack.Screen
           options={{
             headerLeft: () => (

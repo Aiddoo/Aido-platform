@@ -17,6 +17,7 @@
     "placeholder": "아이디어를 자유롭게 적어보세요..."
   },
   "detail": {
+    "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",
     "unpin": "메모 고정 해제",
     "convertToTodo": "할 일로 변환",

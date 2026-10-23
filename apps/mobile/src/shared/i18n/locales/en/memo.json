@@ -17,6 +17,7 @@
     "placeholder": "Write down your ideas freely..."
   },
   "detail": {
+    "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",
     "unpin": "Unpin memo",
     "convertToTodo": "Convert to to-do",
