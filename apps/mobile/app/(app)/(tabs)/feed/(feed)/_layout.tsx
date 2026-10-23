@@ -22,13 +22,16 @@ import { Slot, router, useGlobalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
 export default function FeedGroupLayout() {
+  const { left: leftInset, right: rightInset } = useSafeAreaInsets();
+
   return (
     <CalendarProvider>
       <Box flex={1} className="bg-white">
-        <VStack>
+        <VStack style={{ paddingLeft: leftInset, paddingRight: rightInset }}>
           <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
             <Suspense fallback={<AvatarList.Loading />}>
               <AvatarList />

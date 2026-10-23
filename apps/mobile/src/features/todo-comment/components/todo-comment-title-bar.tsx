@@ -11,7 +11,12 @@ import { useTodoCommentRoute } from '../hooks/use-todo-comment-route';
 
 const SUBTITLE_LAYOUT_PLACEHOLDER = '\u00a0';
 
-export function TodoCommentTitleBar() {
+interface TodoCommentTitleBarProps {
+  /** 라우트를 pop하지 않는 pane에서 댓글 개요의 뒤로가기가 상세를 닫을 때 쓴다. */
+  onClose?: () => void;
+}
+
+export function TodoCommentTitleBar({ onClose }: TodoCommentTitleBarProps) {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const { result: backResult, handleBack } = useTodoCommentBack();
@@ -19,9 +24,14 @@ export function TodoCommentTitleBar() {
   const { t } = useTranslation(['todo', 'todoComment']);
 
   const handleBackPress = useSingleTap(() => {
-    if (!handleBack()) {
-      router.back();
+    if (handleBack()) {
+      return;
     }
+    if (onClose) {
+      onClose();
+      return;
+    }
+    router.back();
   });
 
   return (

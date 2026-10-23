@@ -28,7 +28,6 @@ import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -41,6 +40,7 @@ import { match } from 'ts-pattern';
 
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { useFeedDate } from '../../hooks/use-feed-date';
+import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useAddSubTodoMutationOptions } from '../../queries/use-add-sub-todo-mutation-options';
@@ -219,7 +219,8 @@ interface TodoListItemProps {
 }
 
 TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoListItemProps) {
-  const push = useSingleTap(router.push);
+  const [_, setSelectedTodoId] = useFeedSelectedTodo();
+  const selectTodo = useSingleTap(setSelectedTodoId);
 
   const { t } = useTranslation('todo');
   const overlay = useOverlay();
@@ -234,8 +235,8 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   /** 행을 누르면 하위 항목이 열리고, 그 안에서 바로 새 항목을 추가할 수 있다. */
   const toggleChecklist = () => setIsExpanded((current) => !current);
 
-  /** 댓글은 말풍선 버튼으로만 들어간다 — 할 일을 다루는 동작과 섞지 않는다. */
-  const openComments = () => push({ pathname: '/todo/[todoId]', params: { todoId: todo.id } });
+  /** 댓글은 말풍선 버튼으로만 들어간다 — 할 일을 다루는 동작과 섞지 않는다. 펼친 화면에서는 상세 pane이 열린다. */
+  const openComments = () => selectTodo(todo.id);
 
   const openSheet = (render: (props: OverlaySheetProps) => ReactNode) =>
     overlay.open(({ isOpen, close, exit }) =>
