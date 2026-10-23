@@ -74,13 +74,14 @@ export interface HttpClient {
 }
 ```
 
-| Port            | 구현체                                                    | 위치                                     |
-| --------------- | --------------------------------------------------------- | ---------------------------------------- |
-| `HttpClient`    | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`         |
-| `Storage`       | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts` |
-| `Logger`        | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                   |
-| `Analytics`     | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                |
-| `ErrorReporter` | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`           |
+| Port                    | 구현체                                                    | 위치                                         |
+| ----------------------- | --------------------------------------------------------- | -------------------------------------------- |
+| `HttpClient`            | `KyHttpClient`                                            | `shared/infra/http/ky-client.ts`             |
+| `Storage`               | `SecureStorage`                                           | `shared/infra/storage/secure-storage.ts`     |
+| `EnumerableSyncStorage` | 초안 전용 MMKV 인스턴스                                   | `shared/infra/storage/mmkv-draft-storage.ts` |
+| `Logger`                | `ConsoleLogger` / `SentryLogger`(prod, composite)         | `shared/infra/logger/`                       |
+| `Analytics`             | `FirebaseAnalytics`(prod) / `ConsoleAnalytics`(dev)       | `shared/infra/analytics/`                    |
+| `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
 
@@ -295,6 +296,27 @@ function useView() {
 
 **기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
 반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
+
+### 상태 분류(서버/URL/로컬)와 초안
+
+상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복제하지 않는다.
+
+| 상태                            | 원천                                          | 예                                                                     |
+| ------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
+| 서버 원본                       | TanStack Query 캐시                           | 저장된 메모·댓글·할 일. 초안을 캐시에 넣지 않는다                      |
+| 화면 선택·보기 방식·작성기 종류 | Expo Router search params                     | `todoId`, 메모 `id`, `comment`/`intent`. useState로 사본을 두지 않는다 |
+| 작성 중 초안                    | `shared/draft` 초안 저장소(MMKV, 사용자 범위) | 댓글 작성기, 메모 편집·작성. 긴 본문을 URL에 넣지 않는다               |
+| 일시적 UI 상태                  | `useState` / 지역 Context                     | 다이얼로그 열림, 포커스된 칸, 측정값                                   |
+
+- 폼 값의 원천은 react-hook-form이다. 초안은 `useDraftStorage(draftKey)`가 첫 렌더에 한 번 동기로 읽어
+  `defaultValues`에 넣고(빈 값으로 그린 뒤 채우지 않는다), `useFormDraftAutosave(form.subscribe, …)`가
+  렌더 없이 디바운스 저장한다. 언마운트(폴더블 전환) 때 대기 중인 저장을 flush하고, 제출 성공·취소 버튼은
+  반환된 discard 함수로 대기 저장까지 취소한 뒤 지운다.
+- 키는 feature의 순수 함수(`createTodoCommentDraftKey`, `createMemoDraftKey`)가 `createDraftKey`로 만든다.
+  `ownerId`(사용자 id)가 항상 들어가며, 미인증 전환 시 `AuthProvider`가 초안을 모두 지운다. 7일 지난 초안은 앱 시작 때 정리한다.
+- 편집 초안은 서버 원본 수정 시각(epoch ms)을 함께 저장한다. 원본이 더 새로우면 초안을 버리고 toast로 알린다.
+- 비밀번호·인증 코드 같은 민감 입력은 초안으로 저장하지 않는다.
+- 접기/펼치기에서 컴포넌트를 살릴 수 있으면 초안보다 재마운트를 없애는 쪽을 먼저 택한다(`AdaptivePane`은 pane을 같은 트리 슬롯에 둔다).
 
 ### 1. Models — 클라이언트 도메인 모델 + Policy
 
