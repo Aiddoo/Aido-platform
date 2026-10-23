@@ -298,7 +298,7 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     expect(row).toEqual({ title: "기존 제목", completed: false, completedAt: null, endDate: null });
   });
 
-  it("3개 item 재정렬은 PK 선행 조회 없이 3번 수정하며 잠금 포함 6 SQL로 완료한다", async () => {
+  it("3개 item 재정렬은 PK 선행 조회 없이 한 번의 UPDATE로 수정하며 잠금 포함 4 SQL로 완료한다", async () => {
     // Given
     const items = await createItems(3);
     const itemIds = items.map((item) => item.id).reverse();
@@ -311,7 +311,7 @@ describe("Todo 변경 원자성·native ORM 실행 수 (실제 PostgreSQL)", () 
     recording = null;
     // Then
     expect(response.items.map((item) => item.id)).toEqual(itemIds);
-    expect(statementSummary(statements)).toEqual({ total: 6, orm: 5, locks: 1 });
+    expect(statementSummary(statements)).toEqual({ total: 4, orm: 3, locks: 1 });
     expect(statements.filter(({ sql }) => /^SELECT "TodoItem"/.test(sql))).toHaveLength(0);
     process.stdout.write(
       `PLANNING_QUERY_AFTER_RESULT ${JSON.stringify({ scenario: "reorder-3-items", ...statementSummary(statements), fixture: { items: 3 }, transactionControlsExcluded: true })}\n`,
