@@ -33,6 +33,7 @@ import type { WeatherService } from '@src/features/weather/apis/weather.service'
 import type { WidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
 import type { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
+import type { DraftService } from '@src/shared/draft/draft.service';
 import type { TokenRefresher } from '@src/shared/infra/http/token-refresher';
 import { createContext, type PropsWithChildren, use } from 'react';
 
@@ -50,6 +51,8 @@ export interface DIContainer {
   /** 앱 전체 단일 토큰 리프레셔 — auth-client의 401 훅이 공유 (single-flight) */
   tokenRefresher: TokenRefresher;
   featureAttribution: FeatureAttributionStore;
+  /** 작성 중 초안(사용자 범위 로컬 상태) */
+  draftService: DraftService;
 
   // Services
   achievementService: AchievementService;
@@ -112,6 +115,7 @@ export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
 export const useAnalytics = () => useDI().analytics;
 export const useErrorReporter = () => useDI().errorReporter;
+export const useDraftService = () => useDI().draftService;
 
 // Service Hooks
 export const useAchievementService = () => useDI().achievementService;

@@ -4,3 +4,4 @@ export { createMockHttpClient } from './create-mock-http-client';
 export { createMockStorage } from './create-mock-storage';
 export { createMockSyncStorage } from './create-mock-sync-storage';
 export { createMockTokenStore } from './create-mock-token-store';
+export { createMemorySyncStorage } from './create-memory-sync-storage';

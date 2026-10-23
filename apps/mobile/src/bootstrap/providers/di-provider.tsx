@@ -36,6 +36,8 @@ import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service
 import { createWidgetBridge } from '@src/features/widget/bridge/create-widget-bridge';
 import { createFeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { ENV } from '@src/shared/config/env';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
@@ -57,6 +59,7 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
+import { mmkvDraftStorage } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
 import { createSecureTokenStore } from '@src/shared/infra/storage/secure-token-store';
@@ -82,6 +85,8 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
 
     const analytics = createEnvironmentAnalytics(logger);
     const featureAttribution = createFeatureAttributionStore(mmkvSyncStorage);
+    const draftService = new DraftService(createDraftRepository(mmkvDraftStorage));
+    draftService.removeExpired();
 
     // 앱 레벨 에러/이벤트는 Sentry로 리포팅(검색가능 이벤트 + severity + breadcrumb).
     const errorReporter = createEnvironmentErrorReporter();
@@ -201,6 +206,7 @@ export const DIProvider = ({ children }: PropsWithChildren) => {
       sessionManager,
       tokenRefresher,
       featureAttribution,
+      draftService,
       achievementService,
       aiService,
       authService,

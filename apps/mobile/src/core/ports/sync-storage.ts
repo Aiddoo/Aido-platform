@@ -3,3 +3,8 @@ export interface SyncStorage {
   set(key: string, value: string): void;
   delete(key: string): void;
 }
+
+export interface EnumerableSyncStorage extends SyncStorage {
+  getAllKeys(): string[];
+  clearAll(): void;
+}
