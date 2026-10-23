@@ -3,15 +3,32 @@ packages:
   - packages/*
   - tooling/*
 
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@suites/di.nestjs'
-  - '@suites/doubles.vitest'
-  - '@swc/core'
-  - argon2
-  - esbuild
-  - prisma
-  - '@sentry/cli'
+autoInstallPeers: true
+strictPeerDependencies: true
+networkConcurrency: 8
+
+minimumReleaseAge: 4320
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 43200
+blockExoticSubdeps: true
+
+allowBuilds:
+  '@nestjs/core': true
+  '@suites/di.nestjs': true
+  '@suites/doubles.vitest': true
+  '@swc/core': true
+  argon2: true
+  esbuild: true
+  prisma: true
+  '@sentry/cli': true
+  '@firebase/util': false
+  '@scarf/scarf': false
+  cpu-features: false
+  msgpackr-extract: false
+  protobufjs: false
+  simple-git-hooks: false
+  ssh2: false
+  workerd: false
 
 overrides:
   pg: 8.23.1
@@ -65,6 +82,7 @@ peerDependencyRules:
     '@effect/sql-d1@4.0.1>effect': 4.0.0-rc.115
     '@effect/sql-sqlite-do@4.0.1>effect': 4.0.0-rc.115
     '@effect/vitest@4.0.1>effect': 4.0.0-rc.115
+    'react-native-purchases@10.11.0>react-native': 0.88.0-rc.3
 
 packageExtensions:
   '@expo/image-utils@0.8.17':
