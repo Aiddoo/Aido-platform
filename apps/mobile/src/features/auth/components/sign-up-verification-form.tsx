@@ -4,7 +4,7 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { ApiError } from '@src/shared/errors/api-error';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { H3, HStack, Text, TextButton, VStack } from '@src/shared/ui';
+import { H3, HStack, StyledSafeAreaView, Text, TextButton, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { type InputOTPRef } from 'heroui-native';
@@ -95,47 +95,49 @@ export const SignUpVerificationForm = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
-        </Animated.View>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
+          </Animated.View>
 
-        <VStack gap={32} align="center">
-          <FormField control={control} name="code">
-            {({ onChange, value }) => (
-              <VerificationCodeInput
-                ref={inputOTPRef}
-                value={value}
-                onChange={onChange}
-                onComplete={handleComplete}
-                isInvalid={isInvalid}
-              />
+          <VStack gap={32} align="center">
+            <FormField control={control} name="code">
+              {({ onChange, value }) => (
+                <VerificationCodeInput
+                  ref={inputOTPRef}
+                  value={value}
+                  onChange={onChange}
+                  onComplete={handleComplete}
+                  isInvalid={isInvalid}
+                />
+              )}
+            </FormField>
+
+            {isSubmitting && (
+              <Text size="b4" className="text-main">
+                {t('auth:verification.verifying')}
+              </Text>
             )}
-          </FormField>
 
-          {isSubmitting && (
-            <Text size="b4" className="text-main">
-              {t('auth:verification.verifying')}
-            </Text>
-          )}
-
-          <HStack gap={8} justify="center">
-            <Text size="b4" shade={7}>
-              {t('auth:verification.didNotReceive')}
-            </Text>
-            <TextButton
-              size="medium"
-              onPress={handleResend}
-              isDisabled={cooldown > 0 || resend.isPending}
-            >
-              {cooldown > 0
-                ? t('auth:verification.resendIn', { count: cooldown })
-                : t('auth:verification.resend')}
-            </TextButton>
-          </HStack>
-        </VStack>
+            <HStack gap={8} justify="center">
+              <Text size="b4" shade={7}>
+                {t('auth:verification.didNotReceive')}
+              </Text>
+              <TextButton
+                size="medium"
+                onPress={handleResend}
+                isDisabled={cooldown > 0 || resend.isPending}
+              >
+                {cooldown > 0
+                  ? t('auth:verification.resendIn', { count: cooldown })
+                  : t('auth:verification.resend')}
+              </TextButton>
+            </HStack>
+          </VStack>
+        </StyledSafeAreaView>
       </ScrollView>
     </View>
   );

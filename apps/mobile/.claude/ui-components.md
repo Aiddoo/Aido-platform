@@ -59,7 +59,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Box`                                         | 단순 컨테이너                                                           | `src/shared/ui/box/README.md`                            |
 | `Flex`                                        | Flexbox 레이아웃                                                        | `src/shared/ui/flex/README.md`                           |
 | `HStack`                                      | 수평 레이아웃                                                           | `src/shared/ui/h-stack/README.md`                        |
-| `AdaptivePane`                                | 창 폭 기준 List-detail 2-pane (compact는 한쪽만, 전환 시 재마운트 없음) | `src/shared/ui/adaptive-pane/adaptive-pane.md`           |
+| `AdaptivePane`                                | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음) | `src/shared/ui/adaptive-pane/adaptive-pane.md`           |
 | `VStack`                                      | 수직 레이아웃                                                           | `src/shared/ui/v-stack/README.md`                        |
 | `Grid`                                        | 그리드 레이아웃                                                         | `src/shared/ui/grid/README.md`                           |
 | `GridItem`                                    | 그리드 아이템                                                           | `src/shared/ui/grid/README.md`                           |
@@ -75,6 +75,17 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `ScreenTitleBar`                              | 화면 상단 제목 바 (뒤로가기 · 제목 · 액션, 실시간 값은 subtitle)        | `src/shared/ui/screen-title-bar/screen-title-bar.md`     |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
+
+## 가로 safe area (iPhone Duo 세로 레일)
+
+iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우 세로 레일로 옮긴다. Expo Router는 모든
+화면을 SafeAreaView로 감싸지 않고, ScrollView의 `contentInsetAdjustmentBehavior`는 세로축만 처리한다
+([Expo SDK 58](https://expo.dev/changelog/sdk-58), [react-native#59194](https://github.com/react/react-native/pull/59194)).
+
+- 페이지 ScrollView는 안쪽 내용을 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싼다. 스크롤바와 배경은 가장자리까지 간다.
+- 고정 헤더·하단 버튼·빈/오류 상태·가상화 리스트 화면은 그 화면 루트 컨테이너의 `edges`에 `left`/`right`를 더한다.
+- `SafeAreaView`는 가장 가까운 `SafeAreaProvider`의 inset을 쓴다. 같은 축을 중첩하면 두 번 패딩되므로 한 곳에만 둔다. `ScreenTitleBar.StackHeader`, `KeyboardAdaptiveButton`, 바텀시트, 토스트는 스스로 처리한다.
+- `AdaptivePane`은 pane마다 provider를 두어 레일에 닿는 pane만 inset을 받는다.
 
 ## Wrapper Props 계약
 

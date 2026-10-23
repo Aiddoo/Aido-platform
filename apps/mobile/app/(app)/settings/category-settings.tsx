@@ -60,7 +60,7 @@ function TodoCategorySettingsScreen() {
   };
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
       <VStack gap={8} flex={1} className="px-4">
         <H3 className="my-4">{t('categorySettings.header')}</H3>
 

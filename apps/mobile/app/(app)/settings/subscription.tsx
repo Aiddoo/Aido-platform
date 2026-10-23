@@ -142,99 +142,105 @@ function SubscriptionScreen() {
   return match({ isPremium, isStoreConfigured, offering })
     .with({ isPremium: true }, () => (
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-        <Spacing size={16} />
-
-        <SubscriptionReceipt user={user} />
-
-        <Spacing size={16} />
-
-        <Button onPress={handleManageSubscription} variant="weak" color="dark">
-          {t('subscriber.manageButton')}
-        </Button>
-
-        <Spacing size={16} />
-
-        <View className="items-center">
-          <TextButton
-            size="medium"
-            variant="underline"
-            onPress={() => restore.mutate()}
-            isDisabled={restore.isPending}
-          >
-            {t('subscriber.restoreButton')}
-          </TextButton>
-        </View>
-      </ScrollView>
-    ))
-    .with({ isStoreConfigured: false }, () => (
-      <Result
-        icon={<DocsIcon width={72} height={72} />}
-        title={t('paywall.unavailableTitle')}
-        description={t('paywall.unavailableDescription')}
-      />
-    ))
-    .with({ offering: P.nullish }, () => <SubscriptionScreen.Loading />)
-    .with({ offering: P.nonNullable }, ({ offering }) => (
-      <View className="flex-1">
-        <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+        <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={16} />
 
-          <ScallopedContainer>
-            <View className="px-5 pt-5">
-              <VStack gap={4} className="items-center">
-                <H2>{t('paywall.title')}</H2>
+          <SubscriptionReceipt user={user} />
 
-                <Text size="b3" shade={6}>
-                  {t('paywall.subtitle')}
-                </Text>
-              </VStack>
+          <Spacing size={16} />
 
-              <DashedDivider className="my-6" />
+          <Button onPress={handleManageSubscription} variant="weak" color="dark">
+            {t('subscriber.manageButton')}
+          </Button>
 
-              <VStack gap={20}>
-                {HIGHLIGHT_BENEFITS.map((benefit) => (
-                  <SubscriptionBenefitCard key={benefit.titleKey} benefit={benefit} />
-                ))}
-              </VStack>
+          <Spacing size={16} />
 
-              <Spacing size={20} />
-
-              <AdditionalSubscriptionBenefits />
-
-              <Spacing size={8} />
-
-              <Text size="e2" shade={5} align="center">
-                {t('paywall.futureIncluded')}
-              </Text>
-            </View>
-
-            <DashedDivider className="my-5 mx-5" />
-
-            <View className="px-5 pb-5">
-              <SubscriptionPlanCard
-                plans={offering.plans}
-                selectedPlanId={selectedPlanId}
-                onPlanSelect={setChosenPlanId}
-              />
-            </View>
-          </ScallopedContainer>
-
-          <Spacing size={24} />
-
-          <VStack gap={8} className="items-center">
-            <SubscriptionTerms />
+          <View className="items-center">
             <TextButton
-              size="small"
+              size="medium"
               variant="underline"
               onPress={() => restore.mutate()}
               isDisabled={restore.isPending}
             >
               {t('subscriber.restoreButton')}
             </TextButton>
-          </VStack>
+          </View>
+        </StyledSafeAreaView>
+      </ScrollView>
+    ))
+    .with({ isStoreConfigured: false }, () => (
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+        <Result
+          icon={<DocsIcon width={72} height={72} />}
+          title={t('paywall.unavailableTitle')}
+          description={t('paywall.unavailableDescription')}
+        />
+      </StyledSafeAreaView>
+    ))
+    .with({ offering: P.nullish }, () => <SubscriptionScreen.Loading />)
+    .with({ offering: P.nonNullable }, ({ offering }) => (
+      <View className="flex-1">
+        <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <Spacing size={16} />
+
+            <ScallopedContainer>
+              <View className="px-5 pt-5">
+                <VStack gap={4} className="items-center">
+                  <H2>{t('paywall.title')}</H2>
+
+                  <Text size="b3" shade={6}>
+                    {t('paywall.subtitle')}
+                  </Text>
+                </VStack>
+
+                <DashedDivider className="my-6" />
+
+                <VStack gap={20}>
+                  {HIGHLIGHT_BENEFITS.map((benefit) => (
+                    <SubscriptionBenefitCard key={benefit.titleKey} benefit={benefit} />
+                  ))}
+                </VStack>
+
+                <Spacing size={20} />
+
+                <AdditionalSubscriptionBenefits />
+
+                <Spacing size={8} />
+
+                <Text size="e2" shade={5} align="center">
+                  {t('paywall.futureIncluded')}
+                </Text>
+              </View>
+
+              <DashedDivider className="my-5 mx-5" />
+
+              <View className="px-5 pb-5">
+                <SubscriptionPlanCard
+                  plans={offering.plans}
+                  selectedPlanId={selectedPlanId}
+                  onPlanSelect={setChosenPlanId}
+                />
+              </View>
+            </ScallopedContainer>
+
+            <Spacing size={24} />
+
+            <VStack gap={8} className="items-center">
+              <SubscriptionTerms />
+              <TextButton
+                size="small"
+                variant="underline"
+                onPress={() => restore.mutate()}
+                isDisabled={restore.isPending}
+              >
+                {t('subscriber.restoreButton')}
+              </TextButton>
+            </VStack>
+          </StyledSafeAreaView>
         </ScrollView>
 
-        <View className="px-4 pb-4 pt-2">
+        <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
           <Button
             onPress={handlePurchase}
             isLoading={purchase.isPending}
@@ -242,7 +248,7 @@ function SubscriptionScreen() {
           >
             {t('paywall.subscribeButton')}
           </Button>
-        </View>
+        </StyledSafeAreaView>
       </View>
     ))
     .exhaustive();
@@ -250,9 +256,9 @@ function SubscriptionScreen() {
 
 SubscriptionScreen.Loading = function Loading() {
   return (
-    <View className="flex-1 items-center justify-center">
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
       <Spinner size="lg" color="default" />
-    </View>
+    </StyledSafeAreaView>
   );
 };
 

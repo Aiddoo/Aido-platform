@@ -277,7 +277,7 @@ export default function NudgeDetailRoute() {
   );
 
   return (
-    <StyledSafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
+    <StyledSafeAreaView edges={['top', 'left', 'right', 'bottom']} className="flex-1 bg-background">
       <ScreenTitleBar title={t('interaction.detailTitle')} onBackPress={goBack} />
       {params.success ? (
         <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>

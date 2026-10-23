@@ -8,7 +8,7 @@ import { isBusinessError } from '@src/shared/errors/result';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { H3, KeyboardAdaptiveButton, QueryErrorBoundary } from '@src/shared/ui';
+import { H3, KeyboardAdaptiveButton, QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense } from 'react';
@@ -91,37 +91,39 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('changePassword.currentTitle')}</H3>
-        </Animated.View>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('changePassword.currentTitle')}</H3>
+          </Animated.View>
 
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="currentPassword">
-            {({ onChange, value }, { error }) => (
-              <PasswordInput
-                label={t('changePassword.currentLabel')}
-                placeholder={t('changePassword.currentPlaceholder')}
-                value={value}
-                onChange={onChange}
-                autoFocus
-                submitBehavior="submit"
-                returnKeyType="next"
-                isInvalid={!!error}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'currentPassword.required',
-                })}
-                onSubmitEditing={() => {
-                  if (isValid) {
-                    onNext();
-                  }
-                }}
-              />
-            )}
-          </FormField>
-        </Animated.View>
+          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+            <FormField control={control} name="currentPassword">
+              {({ onChange, value }, { error }) => (
+                <PasswordInput
+                  label={t('changePassword.currentLabel')}
+                  placeholder={t('changePassword.currentPlaceholder')}
+                  value={value}
+                  onChange={onChange}
+                  autoFocus
+                  submitBehavior="submit"
+                  returnKeyType="next"
+                  isInvalid={!!error}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'currentPassword.required',
+                  })}
+                  onSubmitEditing={() => {
+                    if (isValid) {
+                      onNext();
+                    }
+                  }}
+                />
+              )}
+            </FormField>
+          </Animated.View>
+        </StyledSafeAreaView>
       </ScrollView>
 
       <KeyboardAdaptiveButton onPress={onNext} isDisabled={!isValid}>

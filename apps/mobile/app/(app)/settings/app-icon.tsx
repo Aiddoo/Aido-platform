@@ -77,33 +77,41 @@ function AppIconScreen() {
     .with({ isSupported: false }, () => (
       <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
         <ScrollView className="px-4 flex-1">
-          <Spacing size={8} />
-          <HStack justify="center" align="center">
-            <Text size="b4" shade={6}>
-              {t('screen.unsupported')}
-            </Text>
-          </HStack>
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <Spacing size={8} />
+            <HStack justify="center" align="center">
+              <Text size="b4" shade={6}>
+                {t('screen.unsupported')}
+              </Text>
+            </HStack>
+          </StyledSafeAreaView>
         </ScrollView>
       </StyledSafeAreaView>
     ))
-    .with({ isSupported: true, isLoading: true }, () => <AppIconPicker.Loading />)
+    .with({ isSupported: true, isLoading: true }, () => (
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <AppIconPicker.Loading />
+      </StyledSafeAreaView>
+    ))
     .with({ isSupported: true, isLoading: false }, () => (
       <>
         <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
           <ScrollView className="px-4 flex-1">
-            <Spacing size={8} />
-            <Text size="b4" shade={6} className="px-2 pb-2">
-              {t('screen.chooseIcon')}
-            </Text>
+            <StyledSafeAreaView edges={['left', 'right']}>
+              <Spacing size={8} />
+              <Text size="b4" shade={6} className="px-2 pb-2">
+                {t('screen.chooseIcon')}
+              </Text>
 
-            <Box p={16} className="bg-white rounded-2xl">
-              <AppIconPicker
-                value={currentIcon}
-                onChange={handleIconPress}
-                isDisabled={isChanging}
-                isLocked={(key) => !isPremium && key !== 'default'}
-              />
-            </Box>
+              <Box p={16} className="bg-white rounded-2xl">
+                <AppIconPicker
+                  value={currentIcon}
+                  onChange={handleIconPress}
+                  isDisabled={isChanging}
+                  isLocked={(key) => !isPremium && key !== 'default'}
+                />
+              </Box>
+            </StyledSafeAreaView>
           </ScrollView>
         </StyledSafeAreaView>
         <AppIconErrorDialog

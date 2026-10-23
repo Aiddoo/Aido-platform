@@ -12,7 +12,7 @@ export default function SentNudgesScreen() {
   );
 
   return (
-    <StyledSafeAreaView edges={['top', 'bottom']} className="flex-1 bg-background">
+    <StyledSafeAreaView edges={['top', 'left', 'right', 'bottom']} className="flex-1 bg-background">
       <ScreenTitleBar title={t('interaction.sent')} onBackPress={goBack} />
       <QueryErrorBoundary fallback={SentNudgeList.Error}>
         <Suspense fallback={<SentNudgeList.Loading />}>

@@ -28,31 +28,33 @@ function MyPageScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
-        <H3>{t('mypage.header')}</H3>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <H3>{t('mypage.header')}</H3>
 
-        <Spacing size={20} />
+          <Spacing size={20} />
 
-        <QueryErrorBoundary>
-          <Suspense fallback={<ProfileCard.Loading />}>
-            <ProfileCard />
-          </Suspense>
-        </QueryErrorBoundary>
+          <QueryErrorBoundary>
+            <Suspense fallback={<ProfileCard.Loading />}>
+              <ProfileCard />
+            </Suspense>
+          </QueryErrorBoundary>
 
-        <Spacing size={12} />
+          <Spacing size={12} />
 
-        <MyPageMenu />
+          <MyPageMenu />
 
-        <Spacing size={12} />
+          <Spacing size={12} />
 
-        <AppVersionCheck />
+          <AppVersionCheck />
 
-        <Spacing size={32} />
+          <Spacing size={32} />
 
-        <QueryErrorBoundary>
-          <Suspense fallback={null}>
-            <AccountActionButtons />
-          </Suspense>
-        </QueryErrorBoundary>
+          <QueryErrorBoundary>
+            <Suspense fallback={null}>
+              <AccountActionButtons />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

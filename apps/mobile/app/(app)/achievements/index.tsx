@@ -212,7 +212,7 @@ export default function AchievementsRoute() {
   const today = useToday();
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
       <QueryErrorBoundary resetKeys={[today.getFullYear()]}>
         <Suspense
           fallback={

@@ -3,7 +3,14 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { H3, Input, KeyboardAdaptiveButton, Spacing, VStack } from '@src/shared/ui';
+import {
+  H3,
+  Input,
+  KeyboardAdaptiveButton,
+  Spacing,
+  StyledSafeAreaView,
+  VStack,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useEffect, useRef } from 'react';
@@ -71,76 +78,78 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          key={step}
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t(STEP_DESCRIPTION_KEYS[step])}</H3>
-        </Animated.View>
-
-        {step === 'email' && (
+        <StyledSafeAreaView edges={['left', 'right']}>
           <Animated.View
-            entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+            key={step}
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
           >
-            <FormField control={control} name="email">
+            <H3>{t(STEP_DESCRIPTION_KEYS[step])}</H3>
+          </Animated.View>
+
+          {step === 'email' && (
+            <Animated.View
+              entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+            >
+              <FormField control={control} name="email">
+                {({ onChange, value }, { error }) => (
+                  <VStack gap={8}>
+                    <Input
+                      ref={emailInputRef}
+                      label={t('auth:signUp.emailLabel')}
+                      placeholder="example@email.com"
+                      value={value}
+                      onChange={onChange}
+                      keyboardType="email-address"
+                      textContentType="emailAddress"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      submitBehavior="submit"
+                      returnKeyType="next"
+                      isInvalid={!!error}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'email.invalid',
+                        byType: { too_big: 'email.tooLong' },
+                      })}
+                      onSubmitEditing={() => {
+                        if (isEmailValid) {
+                          handleNext();
+                        }
+                      }}
+                    />
+                    <SuggestedEmailDomainList value={value} onChange={onChange} />
+                  </VStack>
+                )}
+              </FormField>
+              <Spacing size={20} />
+            </Animated.View>
+          )}
+
+          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+            <FormField control={control} name="name">
               {({ onChange, value }, { error }) => (
-                <VStack gap={8}>
-                  <Input
-                    ref={emailInputRef}
-                    label={t('auth:signUp.emailLabel')}
-                    placeholder="example@email.com"
-                    value={value}
-                    onChange={onChange}
-                    keyboardType="email-address"
-                    textContentType="emailAddress"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    submitBehavior="submit"
-                    returnKeyType="next"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'email.invalid',
-                      byType: { too_big: 'email.tooLong' },
-                    })}
-                    onSubmitEditing={() => {
-                      if (isEmailValid) {
-                        handleNext();
-                      }
-                    }}
-                  />
-                  <SuggestedEmailDomainList value={value} onChange={onChange} />
-                </VStack>
+                <Input
+                  label={t('auth:signUp.nicknameLabel')}
+                  placeholder={t('auth:signUp.nicknamePlaceholder')}
+                  value={value}
+                  onChange={onChange}
+                  autoCapitalize="none"
+                  submitBehavior="submit"
+                  autoFocus={step === 'name'}
+                  returnKeyType="next"
+                  isInvalid={!!error}
+                  errorMessage={error?.message}
+                  onSubmitEditing={() => {
+                    if (isNameValid) {
+                      handleNext();
+                    }
+                  }}
+                />
               )}
             </FormField>
-            <Spacing size={20} />
           </Animated.View>
-        )}
-
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <FormField control={control} name="name">
-            {({ onChange, value }, { error }) => (
-              <Input
-                label={t('auth:signUp.nicknameLabel')}
-                placeholder={t('auth:signUp.nicknamePlaceholder')}
-                value={value}
-                onChange={onChange}
-                autoCapitalize="none"
-                submitBehavior="submit"
-                autoFocus={step === 'name'}
-                returnKeyType="next"
-                isInvalid={!!error}
-                errorMessage={error?.message}
-                onSubmitEditing={() => {
-                  if (isNameValid) {
-                    handleNext();
-                  }
-                }}
-              />
-            )}
-          </FormField>
-        </Animated.View>
+        </StyledSafeAreaView>
       </ScrollView>
 
       <KeyboardAdaptiveButton color="dark" onPress={handleNext} isDisabled={!isNextButtonEnabled}>

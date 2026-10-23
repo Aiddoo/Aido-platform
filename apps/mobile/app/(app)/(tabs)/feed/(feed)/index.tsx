@@ -27,6 +27,7 @@ import {
   QueryErrorBoundary,
   Result,
   Spacing,
+  StyledSafeAreaView,
   Text,
   useOverlay,
 } from '@src/shared/ui';
@@ -131,94 +132,96 @@ function MyFeedScreen() {
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      {match(createEntryStatus)
-        .with('loading', () => (
-          <Box px={16} py={8}>
-            <Text size="b4" shade={6}>
-              {t('widget:entry.loading')}
-            </Text>
-          </Box>
-        ))
-        .with('error', () => (
-          <Box px={16} py={8}>
-            <Result
-              title={t('widget:entry.loadError')}
-              button={
-                <Result.Button onPress={() => categories.refetch()}>
-                  {t('common:actions.retry')}
-                </Result.Button>
-              }
-            />
-          </Box>
-        ))
-        .with('empty', () => (
-          <Box px={16} py={8}>
-            <Result
-              title={t('widget:entry.emptyCategory')}
-              button={
-                <Result.Button
-                  onPress={() => {
-                    router.setParams({ action: undefined });
-                    router.navigate('/settings/category-settings');
-                  }}
-                >
-                  {t('widget:entry.manageCategories')}
-                </Result.Button>
-              }
-            />
-          </Box>
-        ))
-        .with('idle', () => null)
-        .exhaustive()}
-      <MyCalendar />
+      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+        {match(createEntryStatus)
+          .with('loading', () => (
+            <Box px={16} py={8}>
+              <Text size="b4" shade={6}>
+                {t('widget:entry.loading')}
+              </Text>
+            </Box>
+          ))
+          .with('error', () => (
+            <Box px={16} py={8}>
+              <Result
+                title={t('widget:entry.loadError')}
+                button={
+                  <Result.Button onPress={() => categories.refetch()}>
+                    {t('common:actions.retry')}
+                  </Result.Button>
+                }
+              />
+            </Box>
+          ))
+          .with('empty', () => (
+            <Box px={16} py={8}>
+              <Result
+                title={t('widget:entry.emptyCategory')}
+                button={
+                  <Result.Button
+                    onPress={() => {
+                      router.setParams({ action: undefined });
+                      router.navigate('/settings/category-settings');
+                    }}
+                  >
+                    {t('widget:entry.manageCategories')}
+                  </Result.Button>
+                }
+              />
+            </Box>
+          ))
+          .with('idle', () => null)
+          .exhaustive()}
+        <MyCalendar />
 
-      <Spacing size={10} />
+        <Spacing size={10} />
 
-      {activation.isVisible && (
-        <>
-          <Box px={16}>
-            <ActivationChecklist progress={activation.progress} />
-          </Box>
-          <Spacing size={20} />
-        </>
-      )}
+        {activation.isVisible && (
+          <>
+            <Box px={16}>
+              <ActivationChecklist progress={activation.progress} />
+            </Box>
+            <Spacing size={20} />
+          </>
+        )}
 
-      <Box px={16} style={{ flexGrow: 1 }}>
-        <QueryErrorBoundary
-          resetKeys={[selectedDateKey]}
-          fallback={(props) => <TodoList.Error {...props} />}
-        >
-          <Suspense fallback={<TodoList.Loading />}>
-            <TodoList key={selectedDateKey} />
+        <Box px={16} style={{ flexGrow: 1 }}>
+          <QueryErrorBoundary
+            resetKeys={[selectedDateKey]}
+            fallback={(props) => <TodoList.Error {...props} />}
+          >
+            <Suspense fallback={<TodoList.Loading />}>
+              <TodoList key={selectedDateKey} />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
+
+        <Spacing size={20} />
+
+        {featureDiscovery.isReentryVisible && (
+          <>
+            <Box px={16}>
+              <FeatureDiscoveryReentryCard onPress={featureDiscovery.openFromReentry} />
+            </Box>
+            <Spacing size={20} />
+          </>
+        )}
+
+        <QueryErrorBoundary fallback={() => null}>
+          <Suspense fallback={null}>
+            <MarketingPushOptInBanner />
           </Suspense>
         </QueryErrorBoundary>
-      </Box>
 
-      <Spacing size={20} />
-
-      {featureDiscovery.isReentryVisible && (
-        <>
-          <Box px={16}>
-            <FeatureDiscoveryReentryCard onPress={featureDiscovery.openFromReentry} />
-          </Box>
-          <Spacing size={20} />
-        </>
-      )}
-
-      <QueryErrorBoundary fallback={() => null}>
-        <Suspense fallback={null}>
-          <MarketingPushOptInBanner />
-        </Suspense>
-      </QueryErrorBoundary>
-
-      <Box px={16}>
-        <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
-          <Suspense fallback={<SuggestionEntry.Loading />}>
-            <SuggestionEntry />
-          </Suspense>
-        </QueryErrorBoundary>
-      </Box>
-      <Spacing size={20} />
+        <Box px={16}>
+          <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
+            <Suspense fallback={<SuggestionEntry.Loading />}>
+              <SuggestionEntry />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
+        <Spacing size={20} />
+      </StyledSafeAreaView>
     </NestableScrollContainer>
   );
 

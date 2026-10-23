@@ -60,7 +60,7 @@ ScreenTitleBar/
 ## Expo Router 헤더
 
 `ScreenTitleBar.StackHeader`는 Expo Router의 `NativeStackHeaderProps`를 그대로 받는다.
-기존 `title`, `headerLeft`, `headerRight` 옵션을 공용 제목 바에 연결하고 위쪽 safe-area를 적용한다.
+기존 `title`, `headerLeft`, `headerRight` 옵션을 공용 제목 바에 연결하고 위쪽과 가로 safe-area(iPhone Duo 세로 레일)를 적용한다. 배경은 레일 밑까지 이어지고 버튼·제목만 레일을 피한다.
 화면 저장/취소 버튼과 서버 데이터는 사용처의 옵션에 둔다.
 
 ```tsx

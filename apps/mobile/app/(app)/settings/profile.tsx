@@ -29,42 +29,44 @@ function ProfileScreen() {
   return (
     <>
       <ScrollView className="px-4 flex-1">
-        <Spacing size={8} />
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={8} />
 
-        <ProfileInfoCard onAvatarPress={() => setIsImageSheetOpen(true)} />
+          <ProfileInfoCard onAvatarPress={() => setIsImageSheetOpen(true)} />
 
-        <Spacing size={12} />
+          <Spacing size={12} />
 
-        <SettingNavigation>
-          <SettingNavigation.Item
-            label={t('titles.editName')}
-            onPress={() => push('/settings/edit-name')}
-            right={
-              <HStack align="center" gap={4}>
-                <Text size="b2" shade={6}>
-                  {user.name}
-                </Text>
-                <ArrowRightIcon colorClassName="text-gray-6" />
-              </HStack>
-            }
-          />
-
-          {hasCredential && (
+          <SettingNavigation>
             <SettingNavigation.Item
-              label={t('titles.changePassword')}
-              onPress={() => push('/settings/change-password')}
+              label={t('titles.editName')}
+              onPress={() => push('/settings/edit-name')}
+              right={
+                <HStack align="center" gap={4}>
+                  <Text size="b2" shade={6}>
+                    {user.name}
+                  </Text>
+                  <ArrowRightIcon colorClassName="text-gray-6" />
+                </HStack>
+              }
             />
-          )}
-        </SettingNavigation>
 
-        <Spacing size={12} />
+            {hasCredential && (
+              <SettingNavigation.Item
+                label={t('titles.changePassword')}
+                onPress={() => push('/settings/change-password')}
+              />
+            )}
+          </SettingNavigation>
 
-        <SettingNavigation>
-          <SettingNavigation.Item
-            label={t('titles.linkedAccounts')}
-            onPress={() => push('/settings/linked-accounts')}
-          />
-        </SettingNavigation>
+          <Spacing size={12} />
+
+          <SettingNavigation>
+            <SettingNavigation.Item
+              label={t('titles.linkedAccounts')}
+              onPress={() => push('/settings/linked-accounts')}
+            />
+          </SettingNavigation>
+        </StyledSafeAreaView>
       </ScrollView>
       <ProfileImageBottomSheet isOpen={isImageSheetOpen} onOpenChange={setIsImageSheetOpen} />
     </>

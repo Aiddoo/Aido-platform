@@ -13,6 +13,7 @@ import {
   Box,
   Result,
   type QueryErrorFallbackProps,
+  StyledSafeAreaView,
   Text,
   VStack,
 } from '@src/shared/ui';
@@ -22,22 +23,17 @@ import { Slot, router, useGlobalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { z } from 'zod';
 
 export default function FeedGroupLayout() {
-  const { left: leftInset, right: rightInset } = useSafeAreaInsets();
-
   return (
     <CalendarProvider>
       <Box flex={1} className="bg-white">
-        <VStack pl={leftInset} pr={rightInset}>
-          <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
-            <Suspense fallback={<AvatarList.Loading />}>
-              <AvatarList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </VStack>
+        <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
+          <Suspense fallback={<AvatarList.Loading />}>
+            <AvatarList />
+          </Suspense>
+        </QueryErrorBoundary>
         <Slot />
       </Box>
     </CalendarProvider>
@@ -81,48 +77,52 @@ function AvatarList() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, gap: 12, alignItems: 'flex-start' }}
+      contentContainerStyle={{ paddingHorizontal: 16 }}
       onMomentumScrollEnd={handleScrollEnd}
     >
-      <AvatarList.Item
-        name={t('feed.me')}
-        image={user.profileImage}
-        isSelected={selectedFriendId === null}
-        onPress={() => replace({ pathname: '/feed', params: date ? { date } : undefined })}
-      />
-
-      {friends.map((friend) => (
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-row items-start gap-3">
         <AvatarList.Item
-          key={friend.followId}
-          name={friend.displayName}
-          image={friend.profileImage}
-          isSelected={selectedFriendId === friend.id}
-          onPress={() =>
-            replace({
-              pathname: '/feed/friend/[friendId]',
-              params: { friendId: friend.id, ...(date ? { date } : {}) },
-            })
-          }
+          name={t('feed.me')}
+          image={user.profileImage}
+          isSelected={selectedFriendId === null}
+          onPress={() => replace({ pathname: '/feed', params: date ? { date } : undefined })}
         />
-      ))}
 
-      {isFetchNextPageError && <AvatarList.MoreError onPress={handleScrollEnd} />}
+        {friends.map((friend) => (
+          <AvatarList.Item
+            key={friend.followId}
+            name={friend.displayName}
+            image={friend.profileImage}
+            isSelected={selectedFriendId === friend.id}
+            onPress={() =>
+              replace({
+                pathname: '/feed/friend/[friendId]',
+                params: { friendId: friend.id, ...(date ? { date } : {}) },
+              })
+            }
+          />
+        ))}
 
-      <AvatarList.AddButton onPress={() => push('/friends/search')} />
+        {isFetchNextPageError && <AvatarList.MoreError onPress={handleScrollEnd} />}
+
+        <AvatarList.AddButton onPress={() => push('/friends/search')} />
+      </StyledSafeAreaView>
     </ScrollView>
   );
 }
 
 AvatarList.Loading = function Loading() {
   return (
-    <HStack px={16} gap={12}>
-      {range(3).map((i) => (
-        <VStack key={i} align="center" gap={4}>
-          <Skeleton className="size-8 rounded-full" />
-          <Skeleton className="h-4 w-8 rounded" />
-        </VStack>
-      ))}
-    </HStack>
+    <StyledSafeAreaView edges={['left', 'right']}>
+      <HStack px={16} gap={12}>
+        {range(3).map((i) => (
+          <VStack key={i} align="center" gap={4}>
+            <Skeleton className="size-8 rounded-full" />
+            <Skeleton className="h-4 w-8 rounded" />
+          </VStack>
+        ))}
+      </HStack>
+    </StyledSafeAreaView>
   );
 };
 
@@ -168,12 +168,14 @@ AvatarList.AddButton = function AddButton({ onPress }: { onPress: () => void }) 
 AvatarList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['friend', 'common']);
   return (
-    <HStack px={16} py={8} gap={8} align="center">
-      <Text size="b4" shade={6} className="flex-1">
-        {t('friend:list.loadFailed')}
-      </Text>
-      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
-    </HStack>
+    <StyledSafeAreaView edges={['left', 'right']}>
+      <HStack px={16} py={8} gap={8} align="center">
+        <Text size="b4" shade={6} className="flex-1">
+          {t('friend:list.loadFailed')}
+        </Text>
+        <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+      </HStack>
+    </StyledSafeAreaView>
   );
 };
 

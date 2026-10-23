@@ -8,7 +8,12 @@ import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave'
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowLeftIcon, Box, CheckmarkIcon, QueryErrorBoundary } from '@src/shared/ui';
+import {
+  ArrowLeftIcon,
+  CheckmarkIcon,
+  QueryErrorBoundary,
+  StyledSafeAreaView,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -141,7 +146,7 @@ function MemoCreateScreen() {
             ),
           }}
         />
-        <Box className="flex-1" px={16}>
+        <StyledSafeAreaView edges={['left', 'right']} className="flex-1 px-4">
           <FormField control={control} name="content">
             {({ value, onChange }) => (
               <StyledTextInput
@@ -156,7 +161,7 @@ function MemoCreateScreen() {
               />
             )}
           </FormField>
-        </Box>
+        </StyledSafeAreaView>
       </KeyboardAvoidingView>
     </FormProvider>
   );

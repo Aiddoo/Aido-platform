@@ -23,15 +23,17 @@ function ThemeSettingsScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <RadioGroup
-          value={mode}
-          onValueChange={handleThemeChange}
-          className="bg-white rounded-2xl overflow-hidden gap-0"
-        >
-          <IconRadioItem value="system" label={t('theme.system')} Icon={DeviceIcon} />
-          <IconRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
-          <IconRadioItem value="dark" label={t('theme.dark')} Icon={MoonIcon} />
-        </RadioGroup>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <RadioGroup
+            value={mode}
+            onValueChange={handleThemeChange}
+            className="bg-white rounded-2xl overflow-hidden gap-0"
+          >
+            <IconRadioItem value="system" label={t('theme.system')} Icon={DeviceIcon} />
+            <IconRadioItem value="light" label={t('theme.light')} Icon={SunIcon} />
+            <IconRadioItem value="dark" label={t('theme.dark')} Icon={MoonIcon} />
+          </RadioGroup>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

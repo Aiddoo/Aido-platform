@@ -11,11 +11,13 @@ export function SettingsMenuPane() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['top', 'bottom']}>
       <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
-        <H3>{t('mypage.header')}</H3>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <H3>{t('mypage.header')}</H3>
 
-        <Spacing size={20} />
+          <Spacing size={20} />
 
-        <MyPageMenu />
+          <MyPageMenu />
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

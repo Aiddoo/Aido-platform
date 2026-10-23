@@ -20,7 +20,7 @@ export default function NotificationsScreen() {
   const { t } = useTranslation('notification');
 
   return (
-    <StyledSafeAreaView className="flex-1 bg-background" edges={['bottom']}>
+    <StyledSafeAreaView className="flex-1 bg-background" edges={['left', 'right', 'bottom']}>
       <Tabs
         value={category}
         onValueChange={(value) => {

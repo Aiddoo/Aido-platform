@@ -76,7 +76,7 @@ ScreenTitleBar.StackHeader = function StackHeader({
   };
 
   return (
-    <StyledSafeAreaView edges={['top']} className="bg-white" style={headerStyle}>
+    <StyledSafeAreaView edges={['top', 'left', 'right']} className="bg-white" style={headerStyle}>
       <ScreenTitleBar
         title={
           typeof options.headerTitle === 'string' ? options.headerTitle : (options.title ?? '')

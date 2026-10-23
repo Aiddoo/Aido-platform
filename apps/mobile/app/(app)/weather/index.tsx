@@ -18,6 +18,7 @@ import {
   QueryErrorBoundary,
   Result,
   Spacing,
+  StyledSafeAreaView,
   Text,
   VStack,
 } from '@src/shared/ui';
@@ -99,7 +100,7 @@ function WeatherScrollView({ children }: PropsWithChildren) {
         <RefreshControl tintColor={palette.text} refreshing={isRefreshing} onRefresh={refresh} />
       }
     >
-      {children}
+      <StyledSafeAreaView edges={['left', 'right']}>{children}</StyledSafeAreaView>
     </ScrollView>
   );
 }

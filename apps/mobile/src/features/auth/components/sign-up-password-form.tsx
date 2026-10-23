@@ -3,7 +3,7 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { H3, KeyboardAdaptiveButton, VStack } from '@src/shared/ui';
+import { H3, KeyboardAdaptiveButton, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -73,72 +73,74 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            key={step}
-            entering={FadeIn.duration(ANIMATION.duration.slow)}
-            style={{ marginBottom: 24 }}
-          >
-            <H3>{t('signUp.passwordTitle')}</H3>
-          </Animated.View>
-
-          {step === 'passwordConfirm' && (
+          <StyledSafeAreaView edges={['left', 'right']}>
             <Animated.View
-              entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+              key={step}
+              entering={FadeIn.duration(ANIMATION.duration.slow)}
+              style={{ marginBottom: 24 }}
             >
-              <VStack mb={20}>
-                <FormField control={control} name="passwordConfirm">
-                  {({ onChange, value }, { error }) => (
+              <H3>{t('signUp.passwordTitle')}</H3>
+            </Animated.View>
+
+            {step === 'passwordConfirm' && (
+              <Animated.View
+                entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+              >
+                <VStack mb={20}>
+                  <FormField control={control} name="passwordConfirm">
+                    {({ onChange, value }, { error }) => (
+                      <PasswordInput
+                        ref={passwordConfirmInputRef}
+                        label={t('signUp.passwordConfirmLabel')}
+                        placeholder={t('signUp.passwordConfirmPlaceholder')}
+                        value={value}
+                        onChange={onChange}
+                        returnKeyType="done"
+                        isInvalid={!!error}
+                        errorMessage={error?.message}
+                        onSubmitEditing={() => {
+                          if (isPasswordConfirmValid) {
+                            handleNext();
+                          }
+                        }}
+                      />
+                    )}
+                  </FormField>
+                </VStack>
+              </Animated.View>
+            )}
+
+            <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+              <FormField control={control} name="password">
+                {({ onChange, value }, { error }) => (
+                  <VStack gap={8}>
                     <PasswordInput
-                      ref={passwordConfirmInputRef}
-                      label={t('signUp.passwordConfirmLabel')}
-                      placeholder={t('signUp.passwordConfirmPlaceholder')}
+                      label={t('signUp.passwordLabel')}
+                      placeholder={t('signUp.passwordPlaceholder')}
                       value={value}
                       onChange={onChange}
-                      returnKeyType="done"
+                      autoFocus={step === 'password'}
+                      submitBehavior="submit"
+                      returnKeyType="next"
                       isInvalid={!!error}
-                      errorMessage={error?.message}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'password.pattern',
+                        byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
+                      })}
+                      renderErrorMessage={false}
                       onSubmitEditing={() => {
-                        if (isPasswordConfirmValid) {
+                        if (isPasswordValid) {
                           handleNext();
                         }
                       }}
                     />
-                  )}
-                </FormField>
-              </VStack>
+
+                    <PasswordStrengthIndicator password={password} />
+                  </VStack>
+                )}
+              </FormField>
             </Animated.View>
-          )}
-
-          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-            <FormField control={control} name="password">
-              {({ onChange, value }, { error }) => (
-                <VStack gap={8}>
-                  <PasswordInput
-                    label={t('signUp.passwordLabel')}
-                    placeholder={t('signUp.passwordPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    autoFocus={step === 'password'}
-                    submitBehavior="submit"
-                    returnKeyType="next"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'password.pattern',
-                      byType: { too_small: 'password.tooShort', too_big: 'password.tooLong' },
-                    })}
-                    renderErrorMessage={false}
-                    onSubmitEditing={() => {
-                      if (isPasswordValid) {
-                        handleNext();
-                      }
-                    }}
-                  />
-
-                  <PasswordStrengthIndicator password={password} />
-                </VStack>
-              )}
-            </FormField>
-          </Animated.View>
+          </StyledSafeAreaView>
         </ScrollView>
 
         <KeyboardAdaptiveButton

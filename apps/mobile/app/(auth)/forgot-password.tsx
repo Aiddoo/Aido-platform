@@ -27,6 +27,7 @@ import {
   TextButton,
   VStack,
   QueryErrorBoundary,
+  StyledSafeAreaView,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -120,48 +121,50 @@ function EmailStep({ onNext }: EmailStepProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('forgotPassword.emailTitle')}</H3>
-        </Animated.View>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('forgotPassword.emailTitle')}</H3>
+          </Animated.View>
 
-        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-          <VStack gap={8}>
-            <FormField control={control} name="email">
-              {({ onChange, onBlur, value }, { error }) => (
-                <VStack gap={8}>
-                  <Input
-                    placeholder={t('forgotPassword.emailPlaceholder')}
-                    value={value}
-                    onChange={onChange}
-                    onBlur={onBlur}
-                    keyboardType="email-address"
-                    textContentType="emailAddress"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    autoFocus
-                    returnKeyType="done"
-                    submitBehavior="submit"
-                    isInvalid={!!error}
-                    errorMessage={resolveValidationMessage(error, {
-                      default: 'email.invalid',
-                      byType: { too_big: 'email.tooLong' },
-                    })}
-                    onSubmitEditing={() => {
-                      if (isValid) {
-                        handleNext();
-                      }
-                    }}
-                  />
-                  <SuggestedEmailDomainList value={value} onChange={onChange} />
-                </VStack>
-              )}
-            </FormField>
-          </VStack>
-        </Animated.View>
+          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+            <VStack gap={8}>
+              <FormField control={control} name="email">
+                {({ onChange, onBlur, value }, { error }) => (
+                  <VStack gap={8}>
+                    <Input
+                      placeholder={t('forgotPassword.emailPlaceholder')}
+                      value={value}
+                      onChange={onChange}
+                      onBlur={onBlur}
+                      keyboardType="email-address"
+                      textContentType="emailAddress"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      autoFocus
+                      returnKeyType="done"
+                      submitBehavior="submit"
+                      isInvalid={!!error}
+                      errorMessage={resolveValidationMessage(error, {
+                        default: 'email.invalid',
+                        byType: { too_big: 'email.tooLong' },
+                      })}
+                      onSubmitEditing={() => {
+                        if (isValid) {
+                          handleNext();
+                        }
+                      }}
+                    />
+                    <SuggestedEmailDomainList value={value} onChange={onChange} />
+                  </VStack>
+                )}
+              </FormField>
+            </VStack>
+          </Animated.View>
+        </StyledSafeAreaView>
       </ScrollView>
 
       <KeyboardAdaptiveButton
@@ -228,40 +231,42 @@ function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          entering={FadeIn.duration(ANIMATION.duration.slow)}
-          style={{ marginBottom: 24 }}
-        >
-          <H3>{t('verification.codeSentTo', { email: maskedEmail })}</H3>
-        </Animated.View>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('verification.codeSentTo', { email: maskedEmail })}</H3>
+          </Animated.View>
 
-        <VStack gap={32} align="center">
-          <FormField control={control} name="code">
-            {({ value, onChange }) => (
-              <VerificationCodeInput
-                ref={inputOTPRef}
-                value={value}
-                onChange={onChange}
-                onComplete={handleComplete}
-              />
-            )}
-          </FormField>
+          <VStack gap={32} align="center">
+            <FormField control={control} name="code">
+              {({ value, onChange }) => (
+                <VerificationCodeInput
+                  ref={inputOTPRef}
+                  value={value}
+                  onChange={onChange}
+                  onComplete={handleComplete}
+                />
+              )}
+            </FormField>
 
-          <HStack gap={8} justify="center">
-            <Text size="b4" shade={7}>
-              {t('verification.didNotReceive')}
-            </Text>
-            <TextButton
-              size="medium"
-              onPress={handleResend}
-              isDisabled={cooldown > 0 || forgotPasswordMutation.isPending}
-            >
-              {cooldown > 0
-                ? t('verification.resendIn', { count: cooldown })
-                : t('verification.resend')}
-            </TextButton>
-          </HStack>
-        </VStack>
+            <HStack gap={8} justify="center">
+              <Text size="b4" shade={7}>
+                {t('verification.didNotReceive')}
+              </Text>
+              <TextButton
+                size="medium"
+                onPress={handleResend}
+                isDisabled={cooldown > 0 || forgotPasswordMutation.isPending}
+              >
+                {cooldown > 0
+                  ? t('verification.resendIn', { count: cooldown })
+                  : t('verification.resend')}
+              </TextButton>
+            </HStack>
+          </VStack>
+        </StyledSafeAreaView>
       </ScrollView>
     </View>
   );

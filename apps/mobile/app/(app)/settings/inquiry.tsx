@@ -20,6 +20,7 @@ import {
   TextArea,
   VStack,
   QueryErrorBoundary,
+  StyledSafeAreaView,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -91,70 +92,72 @@ function InquiryScreen() {
           showsVerticalScrollIndicator={false}
           automaticallyAdjustKeyboardInsets
         >
-          <VStack gap={16}>
-            <H3>{t('form.selectCategory')}</H3>
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <VStack gap={16}>
+              <H3>{t('form.selectCategory')}</H3>
 
-            <FormField control={control} name="category">
-              {({ onChange, value }) => (
-                <RadioGroup
-                  value={value}
-                  onValueChange={onChange}
-                  className="bg-white rounded-2xl overflow-hidden gap-0"
-                >
-                  {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                    <RadioGroup.Item key={key} value={key}>
-                      {(_props) => (
-                        <ListRow
-                          contents={
-                            <ListRow.Texts
-                              type="1RowTypeA"
-                              top={tGlobal(labelKey)}
-                              topProps={{ size: 'b3', weight: 'semibold' }}
-                            />
-                          }
-                          right={
-                            <Radio>
-                              <Radio.Indicator />
-                            </Radio>
-                          }
-                          horizontalPadding="medium"
-                          verticalPadding="large"
-                        />
-                      )}
-                    </RadioGroup.Item>
-                  ))}
-                </RadioGroup>
+              <FormField control={control} name="category">
+                {({ onChange, value }) => (
+                  <RadioGroup
+                    value={value}
+                    onValueChange={onChange}
+                    className="bg-white rounded-2xl overflow-hidden gap-0"
+                  >
+                    {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
+                      <RadioGroup.Item key={key} value={key}>
+                        {(_props) => (
+                          <ListRow
+                            contents={
+                              <ListRow.Texts
+                                type="1RowTypeA"
+                                top={tGlobal(labelKey)}
+                                topProps={{ size: 'b3', weight: 'semibold' }}
+                              />
+                            }
+                            right={
+                              <Radio>
+                                <Radio.Indicator />
+                              </Radio>
+                            }
+                            horizontalPadding="medium"
+                            verticalPadding="large"
+                          />
+                        )}
+                      </RadioGroup.Item>
+                    ))}
+                  </RadioGroup>
+                )}
+              </FormField>
+            </VStack>
+
+            <Spacing size={24} />
+
+            <FormField control={control} name="content">
+              {({ onChange, value }, { error }) => (
+                <VStack gap={4}>
+                  <TextArea
+                    label={t('form.contentLabel')}
+                    placeholder={t('form.contentPlaceholder')}
+                    value={value}
+                    onChange={onChange}
+                    isInvalid={!!error}
+                    errorMessage={resolveValidationMessage(error, {
+                      default: 'inquiryContent.tooShort',
+                      byType: { too_big: 'inquiryContent.tooLong' },
+                    })}
+                    maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
+                    className="min-h-40 bg-white border-gray-2"
+                  />
+                  <HStack justify="end" className="-mt-4">
+                    <Text size="e1" weight="medium" className="text-gray-5">
+                      {value.length.toLocaleString()}/
+                      {INQUIRY_CONTENT_LIMITS.MAX_LENGTH.toLocaleString()}
+                    </Text>
+                  </HStack>
+                </VStack>
               )}
             </FormField>
-          </VStack>
-
-          <Spacing size={24} />
-
-          <FormField control={control} name="content">
-            {({ onChange, value }, { error }) => (
-              <VStack gap={4}>
-                <TextArea
-                  label={t('form.contentLabel')}
-                  placeholder={t('form.contentPlaceholder')}
-                  value={value}
-                  onChange={onChange}
-                  isInvalid={!!error}
-                  errorMessage={resolveValidationMessage(error, {
-                    default: 'inquiryContent.tooShort',
-                    byType: { too_big: 'inquiryContent.tooLong' },
-                  })}
-                  maxLength={INQUIRY_CONTENT_LIMITS.MAX_LENGTH}
-                  className="min-h-40 bg-white border-gray-2"
-                />
-                <HStack justify="end" className="-mt-4">
-                  <Text size="e1" weight="medium" className="text-gray-5">
-                    {value.length.toLocaleString()}/
-                    {INQUIRY_CONTENT_LIMITS.MAX_LENGTH.toLocaleString()}
-                  </Text>
-                </HStack>
-              </VStack>
-            )}
-          </FormField>
+          </StyledSafeAreaView>
         </AnimatedScrollView>
 
         <KeyboardAdaptiveButton

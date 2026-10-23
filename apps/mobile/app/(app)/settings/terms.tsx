@@ -112,12 +112,14 @@ export default function TermsSettingsRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<TermsSettingsScreen.Loading />}>
-            <TermsSettingsScreen />
-          </Suspense>
-        </QueryErrorBoundary>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
+          <QueryErrorBoundary>
+            <Suspense fallback={<TermsSettingsScreen.Loading />}>
+              <TermsSettingsScreen />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

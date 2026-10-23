@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
 import { StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdaptivePane } from './adaptive-pane';
 
@@ -79,5 +80,24 @@ describe('AdaptivePane 컴포넌트', () => {
     await rerender(createPane());
 
     expect(onMount.mock.calls).toEqual([['상세'], ['목록']]);
+  });
+
+  it('창 safe area를 물려받지 않고 pane마다 자기 safe area provider를 둔다', async () => {
+    function InsetsProbe({ label }: { label: string }) {
+      const { right } = useSafeAreaInsets();
+      return <Text>{`${label}:${right}`}</Text>;
+    }
+    mockedUseWindowDimensions.mockReturnValue({ width: 900, height: 800, scale: 2, fontScale: 1 });
+    await render(
+      <SafeAreaInsetsContext.Provider value={{ top: 0, right: 84, bottom: 34, left: 0 }}>
+        <AdaptivePane
+          primary={<InsetsProbe label="목록" />}
+          secondary={<InsetsProbe label="상세" />}
+        />
+      </SafeAreaInsetsContext.Provider>,
+    );
+
+    expect(screen.getByText('목록:0')).toBeTruthy();
+    expect(screen.getByText('상세:0')).toBeTruthy();
   });
 });

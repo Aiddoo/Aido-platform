@@ -8,7 +8,14 @@ import { useUpdateProfileMutationOptions } from '@src/features/user/queries/use-
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { H3, Input, KeyboardAdaptiveButton, QueryErrorBoundary, Spacing } from '@src/shared/ui';
+import {
+  H3,
+  Input,
+  KeyboardAdaptiveButton,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -56,34 +63,36 @@ function EditNameScreen() {
           keyboardShouldPersistTaps="always"
           showsVerticalScrollIndicator={false}
         >
-          <H3>{t('editName.header')}</H3>
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <H3>{t('editName.header')}</H3>
 
-          <Spacing size={24} />
+            <Spacing size={24} />
 
-          <FormField control={control} name="name">
-            {({ onChange, value }, { error }) => (
-              <Input
-                label={t('editName.label')}
-                placeholder={t('editName.placeholder')}
-                value={value}
-                onChange={onChange}
-                autoFocus
-                autoCapitalize="none"
-                submitBehavior="submit"
-                returnKeyType="done"
-                isInvalid={!!error}
-                errorMessage={match(error)
-                  .with(P.nullish, () => undefined)
-                  .with({ type: 'too_big' }, () => t('editName.maxLength'))
-                  .otherwise(() => t('editName.required'))}
-                onSubmitEditing={() => {
-                  if (canSubmit) {
-                    handleSubmit(onSubmit)();
-                  }
-                }}
-              />
-            )}
-          </FormField>
+            <FormField control={control} name="name">
+              {({ onChange, value }, { error }) => (
+                <Input
+                  label={t('editName.label')}
+                  placeholder={t('editName.placeholder')}
+                  value={value}
+                  onChange={onChange}
+                  autoFocus
+                  autoCapitalize="none"
+                  submitBehavior="submit"
+                  returnKeyType="done"
+                  isInvalid={!!error}
+                  errorMessage={match(error)
+                    .with(P.nullish, () => undefined)
+                    .with({ type: 'too_big' }, () => t('editName.maxLength'))
+                    .otherwise(() => t('editName.required'))}
+                  onSubmitEditing={() => {
+                    if (canSubmit) {
+                      handleSubmit(onSubmit)();
+                    }
+                  }}
+                />
+              )}
+            </FormField>
+          </StyledSafeAreaView>
         </ScrollView>
 
         <KeyboardAdaptiveButton

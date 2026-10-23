@@ -12,6 +12,7 @@ import {
   Spacing,
   Text,
   QueryErrorBoundary,
+  StyledSafeAreaView,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -67,42 +68,44 @@ function AddFriendScreen() {
           alwaysBounceVertical={false}
           overScrollMode="never"
         >
-          <H3>{t('add.title')}</H3>
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <H3>{t('add.title')}</H3>
 
-          <Spacing size={4} />
+            <Spacing size={4} />
 
-          <Text size="b4" shade={6}>
-            {t('add.description')}
-          </Text>
+            <Text size="b4" shade={6}>
+              {t('add.description')}
+            </Text>
 
-          <Spacing size={24} />
+            <Spacing size={24} />
 
-          <FormField control={control} name="userTag">
-            {({ onChange, value }, { error }) => (
-              <Input
-                label={t('add.tagLabel')}
-                placeholder="ABC12345"
-                value={value}
-                onChange={onChange}
-                autoFocus
-                autoCapitalize="characters"
-                autoCorrect={false}
-                maxLength={8}
-                submitBehavior="submit"
-                returnKeyType="done"
-                isInvalid={!!error}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'userTag.pattern',
-                  byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
-                })}
-                onSubmitEditing={() => {
-                  if (isValid) {
-                    handleSubmit(onSubmit)();
-                  }
-                }}
-              />
-            )}
-          </FormField>
+            <FormField control={control} name="userTag">
+              {({ onChange, value }, { error }) => (
+                <Input
+                  label={t('add.tagLabel')}
+                  placeholder="ABC12345"
+                  value={value}
+                  onChange={onChange}
+                  autoFocus
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={8}
+                  submitBehavior="submit"
+                  returnKeyType="done"
+                  isInvalid={!!error}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'userTag.pattern',
+                    byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
+                  })}
+                  onSubmitEditing={() => {
+                    if (isValid) {
+                      handleSubmit(onSubmit)();
+                    }
+                  }}
+                />
+              )}
+            </FormField>
+          </StyledSafeAreaView>
         </ScrollView>
 
         <KeyboardAdaptiveButton

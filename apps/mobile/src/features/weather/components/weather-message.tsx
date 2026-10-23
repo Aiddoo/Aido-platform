@@ -21,8 +21,12 @@ export function WeatherMessage({ title, description, action, onAction }: Weather
       flex={1}
       align="center"
       justify="center"
-      px={24}
-      style={{ paddingTop: headerHeight, paddingBottom: insets.bottom }}
+      style={{
+        paddingTop: headerHeight,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left + 24,
+        paddingRight: insets.right + 24,
+      }}
     >
       <Text size="b3" weight="medium" align="center" style={{ color: palette.text }}>
         {title}

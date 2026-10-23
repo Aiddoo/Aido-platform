@@ -26,17 +26,19 @@ function LinkedAccountsScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
 
-        <Text size="b4" shade={6} className="px-2 pb-2">
-          {t('linkedAccounts.description')}
-        </Text>
+          <Text size="b4" shade={6} className="px-2 pb-2">
+            {t('linkedAccounts.description')}
+          </Text>
 
-        <QueryErrorBoundary>
-          <Suspense fallback={<LinkedAccountsList.Loading />}>
-            <LinkedAccountsList />
-          </Suspense>
-        </QueryErrorBoundary>
+          <QueryErrorBoundary>
+            <Suspense fallback={<LinkedAccountsList.Loading />}>
+              <LinkedAccountsList />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

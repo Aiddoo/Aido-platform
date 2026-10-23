@@ -23,21 +23,23 @@ function LanguageSettingsScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <RadioGroup
-          value={languageMode}
-          onValueChange={handleChange}
-          className="bg-white rounded-2xl overflow-hidden gap-0"
-        >
-          <IconRadioItem
-            value="system"
-            label={t('language.system')}
-            description={t('language.systemDescription')}
-            Icon={DeviceIcon}
-          />
-          {/* 언어 이름은 해당 언어로 고정 표기한다 (번역하지 않음) */}
-          <IconRadioItem value="ko" label="한국어" Icon={KoreanIcon} />
-          <IconRadioItem value="en" label="English" Icon={EnglishIcon} />
-        </RadioGroup>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <RadioGroup
+            value={languageMode}
+            onValueChange={handleChange}
+            className="bg-white rounded-2xl overflow-hidden gap-0"
+          >
+            <IconRadioItem
+              value="system"
+              label={t('language.system')}
+              description={t('language.systemDescription')}
+              Icon={DeviceIcon}
+            />
+            {/* 언어 이름은 해당 언어로 고정 표기한다 (번역하지 않음) */}
+            <IconRadioItem value="ko" label="한국어" Icon={KoreanIcon} />
+            <IconRadioItem value="en" label="English" Icon={EnglishIcon} />
+          </RadioGroup>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

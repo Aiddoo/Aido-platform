@@ -19,6 +19,7 @@ import {
   QueryErrorBoundary,
   RefreshIcon,
   ScrollProgressWidget,
+  StyledSafeAreaView,
   Text,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -65,16 +66,18 @@ export default function MemoScreen() {
 
   const memoListPane = (
     <Box className="flex-1">
-      <HStack align="center" px={16} mb={16}>
-        <Box flex={1}>
-          <H3 shade={7}>{t('tab.addMemo')}</H3>
-        </Box>
-        <QueryErrorBoundary fallback={MemoCreateButton.Error}>
-          <Suspense fallback={<MemoCreateButton.Loading />}>
-            <MemoCreateButton />
-          </Suspense>
-        </QueryErrorBoundary>
-      </HStack>
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <HStack align="center" px={16} mb={16}>
+          <Box flex={1}>
+            <H3 shade={7}>{t('tab.addMemo')}</H3>
+          </Box>
+          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+            <Suspense fallback={<MemoCreateButton.Loading />}>
+              <MemoCreateButton />
+            </Suspense>
+          </QueryErrorBoundary>
+        </HStack>
+      </StyledSafeAreaView>
 
       <Animated.ScrollView
         ref={scrollRef}
@@ -88,13 +91,15 @@ export default function MemoScreen() {
         onScroll={onScroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <Box px={12} style={{ flexGrow: 1 }}>
-          <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
-            <Suspense fallback={<MemoList.Loading />}>
-              <MemoList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </Box>
+        <StyledSafeAreaView edges={['left', 'right']} className="grow">
+          <Box px={12} style={{ flexGrow: 1 }}>
+            <QueryErrorBoundary fallback={(props) => <MemoList.Error {...props} />}>
+              <Suspense fallback={<MemoList.Loading />}>
+                <MemoList />
+              </Suspense>
+            </QueryErrorBoundary>
+          </Box>
+        </StyledSafeAreaView>
       </Animated.ScrollView>
 
       <ScrollProgressWidget

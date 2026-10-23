@@ -12,10 +12,10 @@ import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   Button,
   QueryErrorBoundary,
   Result,
+  StyledSafeAreaView,
   Text,
   VStack,
   type QueryErrorFallbackProps,
@@ -25,13 +25,11 @@ import * as Haptics from 'expo-haptics';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TodoWithId = ParsedMemoTodo & { _key: string };
 
 function AiReviewScreen() {
   const { t } = useTranslation('memo');
-  const { bottom: safeBottom } = useSafeAreaInsets();
   const goBack = useSingleTap(router.back);
   const { id: memoId } = useMemoScreenParams();
   const queryClient = useQueryClient();
@@ -108,7 +106,7 @@ function AiReviewScreen() {
         ))}
       </ScrollView>
 
-      <Box px={16} style={{ paddingBottom: safeBottom || 16 }}>
+      <StyledSafeAreaView edges={{ bottom: 'maximum' }} className="px-4 pb-4">
         <Button
           onPress={handleConfirm}
           isDisabled={todos.length === 0}
@@ -116,7 +114,7 @@ function AiReviewScreen() {
         >
           {t('aiReview.createCount', { count: todos.length })}
         </Button>
-      </Box>
+      </StyledSafeAreaView>
     </>
   );
 }
@@ -171,12 +169,12 @@ export default function AiReviewRoute() {
   }
 
   return (
-    <VStack className="flex-1 bg-white">
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <QueryErrorBoundary fallback={({ error }) => <AiReviewScreen.Error error={error} />}>
         <Suspense fallback={<AiReviewScreen.Loading />}>
           <AiReviewScreen />
         </Suspense>
       </QueryErrorBoundary>
-    </VStack>
+    </StyledSafeAreaView>
   );
 }

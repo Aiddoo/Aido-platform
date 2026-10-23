@@ -4,11 +4,18 @@ import { SentRequestList } from '@src/features/friend/components/sent-request-li
 import { useFriendListEditMode } from '@src/features/friend/hooks/use-friend-list-edit-mode';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, HStack, QueryErrorBoundary, SearchIcon, Text } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  QueryErrorBoundary,
+  SearchIcon,
+  StyledSafeAreaView,
+  Text,
+} from '@src/shared/ui';
 import { router, useNavigation, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback, useLayoutEffect } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -63,7 +70,7 @@ export default function FriendsScreen() {
   }, [navigation, view, isEditMode, setIsEditMode, t, push]);
 
   return (
-    <View className="flex-1 bg-white">
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
       <Tabs value={view} onValueChange={handleTabChange} variant="secondary" className="flex-1">
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
@@ -132,7 +139,7 @@ export default function FriendsScreen() {
           ))
           .exhaustive()}
       </Tabs>
-    </View>
+    </StyledSafeAreaView>
   );
 }
 

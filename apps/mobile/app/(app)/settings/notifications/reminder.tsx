@@ -33,26 +33,28 @@ export default function ReminderSettingsScreen() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<GroupSkeleton rows={2} />}>
-            <VStack gap={24}>
-              <SettingsCard>
-                <ReminderTimeInput
-                  label={t('settings.reminderMorningLabel')}
-                  description={t('settings.reminderMorningDescription')}
-                  period="morning"
-                />
-                <Separator className="bg-gray-2" />
-                <ReminderTimeInput
-                  label={t('settings.reminderEveningLabel')}
-                  description={t('settings.reminderEveningDescription')}
-                  period="evening"
-                />
-              </SettingsCard>
-            </VStack>
-          </Suspense>
-        </QueryErrorBoundary>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
+          <QueryErrorBoundary>
+            <Suspense fallback={<GroupSkeleton rows={2} />}>
+              <VStack gap={24}>
+                <SettingsCard>
+                  <ReminderTimeInput
+                    label={t('settings.reminderMorningLabel')}
+                    description={t('settings.reminderMorningDescription')}
+                    period="morning"
+                  />
+                  <Separator className="bg-gray-2" />
+                  <ReminderTimeInput
+                    label={t('settings.reminderEveningLabel')}
+                    description={t('settings.reminderEveningDescription')}
+                    period="evening"
+                  />
+                </SettingsCard>
+              </VStack>
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );

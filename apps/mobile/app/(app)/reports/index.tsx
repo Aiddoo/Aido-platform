@@ -60,74 +60,76 @@ function ReportsScreen() {
       className="flex-1 px-4"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
-      <Spacing size={16} />
-
-      <ScallopedContainer>
-        <View className="items-center px-5 pt-4">
-          <Image
-            source={require('@assets/images/ido_cat_suggestion.webp')}
-            style={{ width: 100, height: 100 }}
-            resizeMode="contain"
-          />
-          <Spacing size={8} />
-          <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-            {isPremium ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
-          </H4>
-          <Text size="b4" shade={6} align="center">
-            {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
-          </Text>
-        </View>
-
+      <StyledSafeAreaView edges={['left', 'right']}>
         <Spacing size={16} />
 
-        {isPremium && (
-          <View className="px-4">
-            <QueryErrorBoundary>
-              <Suspense fallback={<ReportStatusBanner.Loading />}>
-                <ReportStatusBanner />
-              </Suspense>
-            </QueryErrorBoundary>
+        <ScallopedContainer>
+          <View className="items-center px-5 pt-4">
+            <Image
+              source={require('@assets/images/ido_cat_suggestion.webp')}
+              style={{ width: 100, height: 100 }}
+              resizeMode="contain"
+            />
+            <Spacing size={8} />
+            <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+              {isPremium ? t('report.list.premiumTitle') : t('report.list.freeTitle')}
+            </H4>
+            <Text size="b4" shade={6} align="center">
+              {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
+            </Text>
           </View>
-        )}
 
-        <Spacing size={12} />
+          <Spacing size={16} />
 
-        <View className="px-4">
-          <Tabs
-            value={reportType}
-            onValueChange={(value) => {
-              const parsed = reportTypeSchema.safeParse(value);
-              if (parsed.success) {
-                setReportType(parsed.data);
-              }
-            }}
-            variant="primary"
-          >
-            <Tabs.List>
-              <Tabs.Indicator />
-              <ReportTypeTab type="WEEKLY" />
-              <ReportTypeTab type="MONTHLY" />
-            </Tabs.List>
-          </Tabs>
-        </View>
-
-        <Spacing size={8} />
-
-        <View className="px-4 pb-4">
-          {match(isPremium)
-            .with(true, () => (
-              <QueryErrorBoundary resetKeys={[reportType]}>
-                <Suspense fallback={<ReportCard.Loading />}>
-                  <ReportList />
+          {isPremium && (
+            <View className="px-4">
+              <QueryErrorBoundary>
+                <Suspense fallback={<ReportStatusBanner.Loading />}>
+                  <ReportStatusBanner />
                 </Suspense>
               </QueryErrorBoundary>
-            ))
-            .with(false, () => <FreeReportPreview />)
-            .exhaustive()}
-        </View>
-      </ScallopedContainer>
+            </View>
+          )}
 
-      <Spacing size={32} />
+          <Spacing size={12} />
+
+          <View className="px-4">
+            <Tabs
+              value={reportType}
+              onValueChange={(value) => {
+                const parsed = reportTypeSchema.safeParse(value);
+                if (parsed.success) {
+                  setReportType(parsed.data);
+                }
+              }}
+              variant="primary"
+            >
+              <Tabs.List>
+                <Tabs.Indicator />
+                <ReportTypeTab type="WEEKLY" />
+                <ReportTypeTab type="MONTHLY" />
+              </Tabs.List>
+            </Tabs>
+          </View>
+
+          <Spacing size={8} />
+
+          <View className="px-4 pb-4">
+            {match(isPremium)
+              .with(true, () => (
+                <QueryErrorBoundary resetKeys={[reportType]}>
+                  <Suspense fallback={<ReportCard.Loading />}>
+                    <ReportList />
+                  </Suspense>
+                </QueryErrorBoundary>
+              ))
+              .with(false, () => <FreeReportPreview />)
+              .exhaustive()}
+          </View>
+        </ScallopedContainer>
+
+        <Spacing size={32} />
+      </StyledSafeAreaView>
     </ScrollView>
   );
 }

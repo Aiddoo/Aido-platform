@@ -30,15 +30,17 @@ function SuggestionsScreen() {
         ) : undefined
       }
     >
-      <Spacing size={16} />
-      {match(isPremiumUser)
-        .with(true, () => (
-          <QueryErrorBoundary>
-            <SuggestionsList />
-          </QueryErrorBoundary>
-        ))
-        .with(false, () => <SuggestionsList.PremiumPreview />)
-        .exhaustive()}
+      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+        <Spacing size={16} />
+        {match(isPremiumUser)
+          .with(true, () => (
+            <QueryErrorBoundary>
+              <SuggestionsList />
+            </QueryErrorBoundary>
+          ))
+          .with(false, () => <SuggestionsList.PremiumPreview />)
+          .exhaustive()}
+      </StyledSafeAreaView>
     </ScrollView>
   );
 }

@@ -33,40 +33,44 @@ function ReportDetailScreen() {
       {match(report)
         .with({ kind: 'sample' }, ({ id }) => (
           <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8 pt-2">
-            <ActivityReport report={getSampleReport(id)} />
+            <StyledSafeAreaView edges={['left', 'right']}>
+              <ActivityReport report={getSampleReport(id)} />
 
-            <Spacing size={32} />
+              <Spacing size={32} />
 
-            <VStack gap={8} align="center">
-              <Text size="b3" weight="bold" shade={9}>
-                {t('report.lockedDetail.title')}
-              </Text>
-              <Text size="b4" shade={6} className="text-center">
-                {t('report.lockedDetail.description')}
-              </Text>
-              <Spacing size={4} />
-              <Button
-                size="medium"
-                onPress={() => {
-                  trackEvent('premium_gate_shown', { feature: 'ai_report' });
-                  premiumDialog.open({
-                    description: t('report.lockedDetail.premiumDialogDescription'),
-                  });
-                }}
-              >
-                {t('report.lockedDetail.subscribe')}
-              </Button>
-            </VStack>
+              <VStack gap={8} align="center">
+                <Text size="b3" weight="bold" shade={9}>
+                  {t('report.lockedDetail.title')}
+                </Text>
+                <Text size="b4" shade={6} className="text-center">
+                  {t('report.lockedDetail.description')}
+                </Text>
+                <Spacing size={4} />
+                <Button
+                  size="medium"
+                  onPress={() => {
+                    trackEvent('premium_gate_shown', { feature: 'ai_report' });
+                    premiumDialog.open({
+                      description: t('report.lockedDetail.premiumDialogDescription'),
+                    });
+                  }}
+                >
+                  {t('report.lockedDetail.subscribe')}
+                </Button>
+              </VStack>
 
-            <Spacing size={24} />
+              <Spacing size={24} />
+            </StyledSafeAreaView>
           </ScrollView>
         ))
         .with({ kind: 'saved' }, ({ id }) => (
           <QueryErrorBoundary resetKeys={[id]}>
             <Suspense fallback={<ActivityReport.Loading />}>
               <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-                <Spacing size={16} />
-                <SavedActivityReport />
+                <StyledSafeAreaView edges={['left', 'right']}>
+                  <Spacing size={16} />
+                  <SavedActivityReport />
+                </StyledSafeAreaView>
               </ScrollView>
             </Suspense>
           </QueryErrorBoundary>

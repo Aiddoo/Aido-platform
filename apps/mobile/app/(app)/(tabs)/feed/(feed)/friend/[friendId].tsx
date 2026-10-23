@@ -13,7 +13,13 @@ import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { invalidateFriendTodos } from '@src/features/todo/queries/todo-cache';
 import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { Box, QueryErrorBoundary, Spacing, type QueryErrorFallbackProps } from '@src/shared/ui';
+import {
+  Box,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  type QueryErrorFallbackProps,
+} from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useCallback } from 'react';
@@ -49,28 +55,30 @@ function FriendFeedScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <FriendCalendar />
+        <StyledSafeAreaView edges={['left', 'right']} className="grow">
+          <FriendCalendar />
 
-        <Spacing size={8} />
+          <Spacing size={8} />
 
-        <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
-          <Suspense fallback={<PokeBanner.Loading />}>
-            <PokeBanner />
-          </Suspense>
-        </QueryErrorBoundary>
-
-        <Spacing size={16} />
-
-        <Box px={16} pb={24} style={{ flexGrow: 1 }}>
-          <QueryErrorBoundary
-            resetKeys={[friend.id, selectedDateKey]}
-            fallback={(props) => <FriendTodoList.Error {...props} />}
-          >
-            <Suspense fallback={<FriendTodoList.Loading />}>
-              <FriendTodoList key={selectedDateKey} />
+          <QueryErrorBoundary fallback={(props) => <PokeBanner.Error {...props} />}>
+            <Suspense fallback={<PokeBanner.Loading />}>
+              <PokeBanner />
             </Suspense>
           </QueryErrorBoundary>
-        </Box>
+
+          <Spacing size={16} />
+
+          <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+            <QueryErrorBoundary
+              resetKeys={[friend.id, selectedDateKey]}
+              fallback={(props) => <FriendTodoList.Error {...props} />}
+            >
+              <Suspense fallback={<FriendTodoList.Loading />}>
+                <FriendTodoList key={selectedDateKey} />
+              </Suspense>
+            </QueryErrorBoundary>
+          </Box>
+        </StyledSafeAreaView>
       </ScrollView>
     ))
     .exhaustive();
@@ -83,11 +91,13 @@ FriendFeedScreen.Loading = function Loading() {
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
     >
-      <Calendar />
-      <Spacing size={16} />
-      <Box px={16}>
-        <FriendTodoList.Loading />
-      </Box>
+      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+        <Calendar />
+        <Spacing size={16} />
+        <Box px={16}>
+          <FriendTodoList.Loading />
+        </Box>
+      </StyledSafeAreaView>
     </ScrollView>
   );
 };
@@ -98,10 +108,12 @@ FriendFeedScreen.Error = function ErrorState(props: QueryErrorFallbackProps) {
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
     >
-      <Calendar />
-      <Box px={16} pb={24} style={{ flexGrow: 1 }}>
-        <FriendTodoList.Error {...props} />
-      </Box>
+      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+        <Calendar />
+        <Box px={16} pb={24} style={{ flexGrow: 1 }}>
+          <FriendTodoList.Error {...props} />
+        </Box>
+      </StyledSafeAreaView>
     </ScrollView>
   );
 };

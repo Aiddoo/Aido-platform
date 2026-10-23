@@ -63,84 +63,86 @@ function AchievementDetailScreen() {
       contentContainerClassName="px-4"
       contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
     >
-      <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
-        <Certificate subtitle={badgeName}>
-          <Spacing size={16} />
+      <StyledSafeAreaView edges={['left', 'right']} className="grow justify-center">
+        <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
+          <Certificate subtitle={badgeName}>
+            <Spacing size={16} />
 
-          <VStack align="center" gap={8}>
-            <BadgeIcon type={badgeType} size="large" />
-          </VStack>
+            <VStack align="center" gap={8}>
+              <BadgeIcon type={badgeType} size="large" />
+            </VStack>
 
-          <Spacing size={16} />
+            <Spacing size={16} />
 
-          <Certificate.Ornament />
+            <Certificate.Ornament />
 
-          <Spacing size={16} />
+            <Spacing size={16} />
 
-          <VStack align="center" gap={4}>
-            <Text size="e1" shade={5}>
-              {t('card.nameLabel')}
+            <VStack align="center" gap={4}>
+              <Text size="e1" shade={5}>
+                {t('card.nameLabel')}
+              </Text>
+              <View className="border-b border-gray-3 pb-1 px-8">
+                <H4
+                  weight="bold"
+                  align="center"
+                  lineBreakStrategyIOS="hangul-word"
+                  textBreakStrategy="highQuality"
+                >
+                  {user.name}
+                </H4>
+              </View>
+            </VStack>
+
+            <Spacing size={16} />
+
+            <Text
+              size="b3"
+              shade={7}
+              align="center"
+              weight="medium"
+              lineBreakStrategyIOS="hangul-word"
+              textBreakStrategy="highQuality"
+            >
+              {t('card.certificate', {
+                weekLabel: achievement.weekLabel,
+                total: achievement.totalTodos,
+                completed: achievement.completedTodos,
+                rate: achievement.completionRate,
+              })}
             </Text>
-            <View className="border-b border-gray-3 pb-1 px-8">
-              <H4
-                weight="bold"
-                align="center"
-                lineBreakStrategyIOS="hangul-word"
-                textBreakStrategy="highQuality"
-              >
-                {user.name}
-              </H4>
-            </View>
-          </VStack>
 
-          <Spacing size={16} />
+            <Spacing size={20} />
 
-          <Text
-            size="b3"
-            shade={7}
-            align="center"
-            weight="medium"
-            lineBreakStrategyIOS="hangul-word"
-            textBreakStrategy="highQuality"
-          >
-            {t('card.certificate', {
-              weekLabel: achievement.weekLabel,
-              total: achievement.totalTodos,
-              completed: achievement.completedTodos,
-              rate: achievement.completionRate,
-            })}
+            <DashedDivider />
+
+            <Spacing size={14} />
+
+            <VStack align="center" gap={2}>
+              <Text size="e1" shade={5}>
+                {achievement.dateRange.startDate} ~ {achievement.dateRange.endDate}
+              </Text>
+            </VStack>
+          </Certificate>
+        </ViewShot>
+
+        <Spacing size={8} />
+
+        <PressableFeedback
+          onPress={handleShare}
+          isDisabled={isSharing}
+          className="flex-row items-center gap-1.5 self-end py-1"
+        >
+          <Text size="b3" shade={6} weight="medium">
+            {t('card.share')}
           </Text>
-
-          <Spacing size={20} />
-
-          <DashedDivider />
-
-          <Spacing size={14} />
-
-          <VStack align="center" gap={2}>
-            <Text size="e1" shade={5}>
-              {achievement.dateRange.startDate} ~ {achievement.dateRange.endDate}
-            </Text>
-          </VStack>
-        </Certificate>
-      </ViewShot>
-
-      <Spacing size={8} />
-
-      <PressableFeedback
-        onPress={handleShare}
-        isDisabled={isSharing}
-        className="flex-row items-center gap-1.5 self-end py-1"
-      >
-        <Text size="b3" shade={6} weight="medium">
-          {t('card.share')}
-        </Text>
-        <ShareIcon
-          width={fontScaledSize(16)}
-          height={fontScaledSize(16)}
-          colorClassName="text-gray-6"
-        />
-      </PressableFeedback>
+          <ShareIcon
+            width={fontScaledSize(16)}
+            height={fontScaledSize(16)}
+            colorClassName="text-gray-6"
+          />
+        </PressableFeedback>
+      </StyledSafeAreaView>
     </ScrollView>
   );
 }

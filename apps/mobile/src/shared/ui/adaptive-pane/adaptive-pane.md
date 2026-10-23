@@ -14,7 +14,9 @@ import { AdaptivePane } from '@src/shared/ui';
 | `medium`   | 600 ~ 839 | `primary`(320 고정) \| `secondary`(나머지)                                    |
 | `expanded` | 840 이상  | `primary`(400 고정) \| `secondary`(나머지)                                    |
 
-- 컨테이너에 가로 safe-area inset(`left`/`right`)을 적용한다. iPhone Duo가 펼치면 탭 바를 우측(또는 좌측) 세로 레일로 옮기기 때문이다. 자식 pane에서 가로 inset을 다시 더하지 않는다.
+- 각 pane을 `SafeAreaProvider`로 감싼다. pane 안의 `SafeAreaView`·`useSafeAreaInsets`는 창이 아닌 그 pane이 실제로 겹치는 safe area만 받는다. iPhone Duo는 접혀도 펼쳐도 탭 바·상태 표시를 좌우 세로 레일로 옮기는데, 펼친 2-pane에서는 레일에 닿는 pane만 inset을 받는다.
+- 컨테이너는 가로 inset을 적용하지 않는다. pane 내용이 스스로 피한다: 스크롤 내용은 `<StyledSafeAreaView edges={['left', 'right']}>`로 감싸고(스크롤바와 배경은 가장자리까지), 고정 헤더·하단 버튼·빈 상태는 그 컨테이너에 `left`/`right`를 둔다. react-native-safe-area-context의 `SafeAreaView`는 가장 가까운 provider의 inset을 쓰므로 같은 축의 `SafeAreaView`를 중첩하지 않는다(중복 패딩).
+- pane 폭은 size class별 최소 목록 폭(320/400)이고 상세 pane은 남은 폭을 채운다. 기기별 고정 폭이 아니라 창 폭 기준이다.
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
 - 두 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 남아 있는 pane은 다시 마운트되지 않아 스크롤·입력·내비게이터 상태가 유지된다.
 
@@ -33,6 +35,7 @@ adaptive-pane/
 ├── adaptive-pane.tsx
 ├── adaptive-pane.types.ts
 ├── adaptive-pane.test.tsx
+├── get-primary-pane-width.ts
 ├── index.ts
-└── README.md
+└── adaptive-pane.md
 ```

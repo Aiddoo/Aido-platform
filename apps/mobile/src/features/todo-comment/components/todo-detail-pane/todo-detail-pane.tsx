@@ -144,9 +144,9 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   if (isPane) {
     return (
       <KeyboardBottomGapProvider>
-        <Box flex={1} className="bg-background">
+        <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background">
           {content}
-        </Box>
+        </StyledSafeAreaView>
       </KeyboardBottomGapProvider>
     );
   }
@@ -155,7 +155,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
     <>
       <Stack.Screen options={{ gestureEnabled: isNativeBackGestureEnabled }} />
 
-      <StyledSafeAreaView className="flex-1 bg-background" edges={['top']}>
+      <StyledSafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
         {content}
       </StyledSafeAreaView>
     </>

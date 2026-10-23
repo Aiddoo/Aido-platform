@@ -108,7 +108,7 @@ function VerifyEmailScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <StyledSafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <StyledSafeAreaView className="flex-1 bg-white" edges={['top', 'left', 'right']}>
         <ScreenTitleBar title={t('auth:verifyEmail.title')} />
 
         <View className="flex-1">

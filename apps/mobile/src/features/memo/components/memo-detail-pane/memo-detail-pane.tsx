@@ -12,7 +12,15 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, ConfirmDialog, HStack, QueryErrorBoundary, useOverlay, VStack } from '@src/shared/ui';
+import {
+  Box,
+  ConfirmDialog,
+  HStack,
+  QueryErrorBoundary,
+  StyledSafeAreaView,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -47,11 +55,13 @@ export function MemoDetailPane({ presentation }: MemoDetailPaneProps) {
   const { id: memoId } = useMemoScreenParams();
 
   return (
-    <QueryErrorBoundary resetKeys={[memoId]}>
-      <Suspense fallback={<ActivityIndicator className="flex-1" />}>
-        <MemoDetailContent presentation={presentation} />
-      </Suspense>
-    </QueryErrorBoundary>
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
+      <QueryErrorBoundary resetKeys={[memoId]}>
+        <Suspense fallback={<ActivityIndicator className="flex-1" />}>
+          <MemoDetailContent presentation={presentation} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }
 
