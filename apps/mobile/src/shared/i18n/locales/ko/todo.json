@@ -166,6 +166,7 @@
     "dismiss": "순서 변경 안내 닫기"
   },
   "detail": {
+    "emptyTitle": "선택한 할 일이 없어요",
     "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
     "title": "할 일",
     "open": "댓글",

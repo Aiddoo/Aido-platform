@@ -20,7 +20,6 @@ import {
   RefreshIcon,
   ScrollProgressWidget,
   StyledSafeAreaView,
-  Text,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -115,24 +114,12 @@ export default function MemoScreen() {
       primary={memoListPane}
       secondary={
         selectedMemoId === undefined ? (
-          <MemoDetailPlaceholder />
+          <MemoDetailPane.Empty />
         ) : (
           <MemoDetailPane key={selectedMemoId} presentation="pane" />
         )
       }
     />
-  );
-}
-
-function MemoDetailPlaceholder() {
-  const { t } = useTranslation('memo');
-
-  return (
-    <Box flex={1} className="items-center justify-center px-8">
-      <Text size="b4" shade={6} align="center">
-        {t('detail.selectPrompt')}
-      </Text>
-    </Box>
   );
 }
 

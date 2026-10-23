@@ -17,6 +17,7 @@
     "placeholder": "Write down your ideas freely..."
   },
   "detail": {
+    "emptyTitle": "No memo selected",
     "selectPrompt": "Select a memo to see it here",
     "pin": "Pin memo",
     "unpin": "Unpin memo",

@@ -1,10 +1,13 @@
 import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
   Box,
+  DocsIcon,
   QueryErrorBoundary,
+  Result,
   StyledSafeAreaView,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -47,6 +50,20 @@ export function TodoDetailPane({ presentation }: TodoDetailPaneProps) {
     </TodoCommentScreenTransitionProvider>
   );
 }
+
+TodoDetailPane.Empty = function Empty() {
+  const { t } = useTranslation('todo');
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background px-8">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('detail.emptyTitle')}
+        description={t('detail.selectPrompt')}
+      />
+    </StyledSafeAreaView>
+  );
+};
 
 function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const { todoId } = useTodoScreenParams();

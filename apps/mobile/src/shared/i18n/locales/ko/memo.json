@@ -17,6 +17,7 @@
     "placeholder": "아이디어를 자유롭게 적어보세요..."
   },
   "detail": {
+    "emptyTitle": "선택한 메모가 없어요",
     "selectPrompt": "메모를 선택하면 여기에 보여요",
     "pin": "메모 고정",
     "unpin": "메모 고정 해제",

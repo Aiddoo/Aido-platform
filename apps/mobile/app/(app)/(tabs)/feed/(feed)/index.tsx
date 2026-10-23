@@ -230,24 +230,12 @@ function MyFeedScreen() {
       primary={feedList}
       secondary={
         selectedTodoId === undefined ? (
-          <FeedDetailPlaceholder />
+          <TodoDetailPane.Empty />
         ) : (
           <TodoDetailPane key={selectedTodoId} presentation="pane" />
         )
       }
     />
-  );
-}
-
-function FeedDetailPlaceholder() {
-  const { t } = useTranslation('todo');
-
-  return (
-    <Box flex={1} className="items-center justify-center px-8">
-      <Text size="b4" shade={6} align="center">
-        {t('detail.selectPrompt')}
-      </Text>
-    </Box>
   );
 }
 

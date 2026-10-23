@@ -15,8 +15,10 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
   ConfirmDialog,
+  DocsIcon,
   HStack,
   QueryErrorBoundary,
+  Result,
   StyledSafeAreaView,
   useOverlay,
   VStack,
@@ -64,6 +66,20 @@ export function MemoDetailPane({ presentation }: MemoDetailPaneProps) {
     </StyledSafeAreaView>
   );
 }
+
+MemoDetailPane.Empty = function Empty() {
+  const { t } = useTranslation('memo');
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white px-8">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('detail.emptyTitle')}
+        description={t('detail.selectPrompt')}
+      />
+    </StyledSafeAreaView>
+  );
+};
 
 function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   const today = useToday();
