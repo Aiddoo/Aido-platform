@@ -7,10 +7,10 @@
     "db:deploy": "sh ../../apps/api/scripts/migrate.sh"
   },
   "dependencies": {
-    "@prisma/cli-engine": "0.6.2",
-    "@prisma/orm-postgres": "8.0.0-rc.14",
-    "pg": "8.23.1",
+    "@prisma/cli-engine": "catalog:prisma8",
+    "@prisma/orm-postgres": "catalog:prisma8",
+    "pg": "catalog:prisma8",
     "pg-boss": "catalog:",
-    "prisma": "8.0.0-rc.20"
+    "prisma": "catalog:prisma8"
   }
 }
