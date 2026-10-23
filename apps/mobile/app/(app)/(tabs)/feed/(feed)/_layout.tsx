@@ -1,12 +1,21 @@
 import { userIdParamSchema } from '@aido/api';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
+import { TodoDetailPane } from '@src/features/todo-comment/components/todo-detail-pane/todo-detail-pane';
+import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';
+import { serializeTodoCommentRoute } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
+import { FeedRouteParamsProvider } from '@src/features/todo/components/providers/feed-route-params-provider';
+import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
+import { createFeedHref, isFeedPathname } from '@src/features/todo/utils/feed-route';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
+import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
 import {
+  AdaptivePane,
   HStack,
   PlusIcon,
   QueryErrorBoundary,
@@ -19,28 +28,70 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { Slot, router, useGlobalSearchParams } from 'expo-router';
+import { Slot, router, usePathname } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { z } from 'zod';
 
 export default function FeedGroupLayout() {
   return (
-    <CalendarProvider>
-      <Box flex={1} className="bg-white">
-        <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
-          <Suspense fallback={<AvatarList.Loading />}>
-            <AvatarList />
-          </Suspense>
-        </QueryErrorBoundary>
-        <Slot />
-      </Box>
-    </CalendarProvider>
+    <FeedRouteParamsProvider>
+      <CalendarProvider>
+        <FeedCompactDetailHandoff />
+        <AdaptivePane
+          primary={
+            <Box flex={1} className="bg-white">
+              <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
+                <Suspense fallback={<AvatarList.Loading />}>
+                  <AvatarList />
+                </Suspense>
+              </QueryErrorBoundary>
+              <Slot />
+            </Box>
+          }
+          secondary={<FeedDetailPane />}
+        />
+      </CalendarProvider>
+    </FeedRouteParamsProvider>
   );
 }
 
-/** 레이아웃은 자식 경로(내 피드·친구 피드)의 파라미터를 함께 읽어야 해서 global params를 쓴다. */
+function FeedDetailPane() {
+  const [selectedTodoId] = useFeedSelectedTodo();
+
+  if (selectedTodoId === undefined) {
+    return <TodoDetailPane.Empty />;
+  }
+
+  return <TodoDetailPane key={selectedTodoId} presentation="pane" />;
+}
+
+function FeedCompactDetailHandoff() {
+  const isFeedInFront = isFeedPathname(usePathname());
+  const windowSizeClass = useWindowSizeClass();
+  const [selectedTodoId] = useFeedSelectedTodo();
+  const [commentRoute] = useTodoCommentRoute();
+
+  useEffect(() => {
+    if (!isFeedInFront || windowSizeClass !== 'compact' || selectedTodoId === undefined) {
+      return;
+    }
+    router.setParams({
+      todoId: undefined,
+      comment: undefined,
+      intent: undefined,
+      returnTo: undefined,
+    });
+    router.push({
+      pathname: '/todo/[todoId]',
+      params: { todoId: selectedTodoId, ...serializeTodoCommentRoute(commentRoute) },
+    });
+  }, [isFeedInFront, windowSizeClass, selectedTodoId, commentRoute]);
+
+  return null;
+}
+
 const FeedLayoutParamsSchema = z.object({
   friendId: userIdParamSchema.shape.userId.optional().catch(undefined),
   date: feedDateParamSchema,
@@ -51,7 +102,7 @@ function AvatarList() {
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('todo');
-  const { friendId, date } = FeedLayoutParamsSchema.parse(useGlobalSearchParams());
+  const { friendId, date } = FeedLayoutParamsSchema.parse(useRouteSearchParams());
   const selectedFriendId = friendId ?? null;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {
@@ -86,7 +137,7 @@ function AvatarList() {
           name={t('feed.me')}
           image={user.profileImage}
           isSelected={selectedFriendId === null}
-          onPress={() => replace({ pathname: '/feed', params: date ? { date } : undefined })}
+          onPress={() => replace(createFeedHref(null, date))}
         />
 
         {friends.map((friend) => (
@@ -95,12 +146,7 @@ function AvatarList() {
             name={friend.displayName}
             image={friend.profileImage}
             isSelected={selectedFriendId === friend.id}
-            onPress={() =>
-              replace({
-                pathname: '/feed/friend/[friendId]',
-                params: { friendId: friend.id, ...(date ? { date } : {}) },
-              })
-            }
+            onPress={() => replace(createFeedHref(friend.id, date))}
           />
         ))}
 

@@ -4,25 +4,19 @@ import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
-import { TodoDetailPane } from '@src/features/todo-comment/components/todo-detail-pane/todo-detail-pane';
-import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';
-import { serializeTodoCommentRoute } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/todo/components/todo-list/todo-list';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
-import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  AdaptivePane,
   Box,
   QueryErrorBoundary,
   Result,
@@ -95,26 +89,6 @@ function MyFeedScreen() {
     return () => cancelAnimationFrame(frameId);
   }, [isRequested, categoryId, selectedDate, overlay]);
 
-  const windowSizeClass = useWindowSizeClass();
-  const [selectedTodoId] = useFeedSelectedTodo();
-  const [commentRoute] = useTodoCommentRoute();
-
-  useEffect(() => {
-    if (windowSizeClass !== 'compact' || selectedTodoId === undefined) {
-      return;
-    }
-    router.setParams({
-      todoId: undefined,
-      comment: undefined,
-      intent: undefined,
-      returnTo: undefined,
-    });
-    router.push({
-      pathname: '/todo/[todoId]',
-      params: { todoId: selectedTodoId, ...serializeTodoCommentRoute(commentRoute) },
-    });
-  }, [windowSizeClass, selectedTodoId, commentRoute]);
-
   const createEntryStatus = !isRequested
     ? ('idle' as const)
     : match(categories)
@@ -125,7 +99,7 @@ function MyFeedScreen() {
         )
         .otherwise(() => 'idle' as const);
 
-  const feedList = (
+  return (
     <NestableScrollContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
@@ -223,19 +197,6 @@ function MyFeedScreen() {
         <Spacing size={20} />
       </StyledSafeAreaView>
     </NestableScrollContainer>
-  );
-
-  return (
-    <AdaptivePane
-      primary={feedList}
-      secondary={
-        selectedTodoId === undefined ? (
-          <TodoDetailPane.Empty />
-        ) : (
-          <TodoDetailPane key={selectedTodoId} presentation="pane" />
-        )
-      }
-    />
   );
 }
 

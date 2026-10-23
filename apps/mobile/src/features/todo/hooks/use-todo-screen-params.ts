@@ -1,6 +1,6 @@
 import { todoDetailsParamSchema } from '@aido/api';
+import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
 import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
-import { useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';
 
 export const todoScreenParamsSchema = z.object({
@@ -8,5 +8,5 @@ export const todoScreenParamsSchema = z.object({
 });
 
 export function useTodoScreenParams() {
-  return todoScreenParamsSchema.parse(useLocalSearchParams());
+  return todoScreenParamsSchema.parse(useRouteSearchParams());
 }

@@ -292,7 +292,9 @@ function useView() {
 ```
 
 화면 파라미터는 `useLocalSearchParams`로 읽는다. `useGlobalSearchParams`는 보이지 않는 화면도 URL
-변경마다 다시 렌더하므로 레이아웃이 자식 경로를 알아야 할 때만 쓴다.
+변경마다 다시 렌더하므로 레이아웃이 자식 경로를 알아야 할 때만 쓴다. 레이아웃이 그리는 pane이 자식 route의
+params를 읽어야 하면 `RouteSearchParamsProvider`로 그 params를 내려 주고, route 훅은 `useRouteSearchParams`로
+읽는다(피드 레이아웃의 `FeedRouteParamsProvider`).
 
 **기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
 반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
