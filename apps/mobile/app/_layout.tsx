@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react-native';
+import { useAppFonts } from '@src/bootstrap/hooks/use-app-fonts';
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
 import { initSentry } from '@src/shared/infra/observability/sentry';
-import { useFonts } from 'expo-font';
 
 import '../global.css';
 import '@src/shared/i18n/init';
@@ -14,12 +14,7 @@ initSentry();
 SplashScreen.preventAutoHideAsync();
 
 const AppBootstrapLayout = () => {
-  const [fontsLoaded] = useFonts({
-    'WantedSans-Regular': require('@assets/fonts/WantedSans-Regular.ttf'),
-    'WantedSans-Medium': require('@assets/fonts/WantedSans-Medium.ttf'),
-    'WantedSans-SemiBold': require('@assets/fonts/WantedSans-SemiBold.ttf'),
-    'WantedSans-Bold': require('@assets/fonts/WantedSans-Bold.ttf'),
-  });
+  const fontsLoaded = useAppFonts();
 
   useEffect(() => {
     if (fontsLoaded) {

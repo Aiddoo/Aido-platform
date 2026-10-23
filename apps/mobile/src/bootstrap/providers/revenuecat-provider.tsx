@@ -6,19 +6,34 @@ import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import type { User } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { ENV } from '@src/shared/config/env';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { type PropsWithChildren, useCallback, useEffect, useRef } from 'react';
+import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { debounce } from 'es-toolkit';
+import { type PropsWithChildren, useCallback, useEffect, useMemo } from 'react';
 import Purchases, { type CustomerInfo } from 'react-native-purchases';
 
 import { useAuth } from './auth-provider';
 import { useRevenueCatSdkManager } from './di-context';
+
+const invalidateSubscriptionQueries = (queryClient: QueryClient) => {
+  queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
+  invalidateNudgeLimit(queryClient);
+  invalidatePremiumAiQueries(queryClient);
+  invalidateMemoResourceLimit(queryClient);
+};
 
 export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
   const { status } = useAuth();
   const sdkManager = useRevenueCatSdkManager();
   const queryClient = useQueryClient();
   const isAuthenticated = status === 'authenticated';
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const syncServerAfterWebhook = useMemo(
+    () =>
+      debounce(() => {
+        invalidateSubscriptionQueries(queryClient);
+      }, WEBHOOK_SYNC_DELAY),
+    [queryClient],
+  );
 
   // SDK 초기화 (앱 시작 시 1회)
   useEffect(() => {
@@ -64,27 +79,16 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
         return { ...old, subscriptionStatus: nextStatus };
       });
 
-      // 이전 타이머 취소 (연속 이벤트 debounce)
-      if (syncTimerRef.current) {
-        clearTimeout(syncTimerRef.current);
-      }
-
-      const invalidateAll = () => {
-        queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
-        invalidateNudgeLimit(queryClient);
-        invalidatePremiumAiQueries(queryClient);
-        invalidateMemoResourceLimit(queryClient);
-      };
-
       if (hasActive) {
         // 구독 활성화: 웹훅 처리 대기 후 서버 동기화
-        syncTimerRef.current = setTimeout(invalidateAll, WEBHOOK_SYNC_DELAY);
+        syncServerAfterWebhook();
       } else {
         // 구독 비활성화 (취소/환불/만료): 즉시 서버 동기화
-        invalidateAll();
+        syncServerAfterWebhook.cancel();
+        invalidateSubscriptionQueries(queryClient);
       }
     },
-    [queryClient],
+    [queryClient, syncServerAfterWebhook],
   );
 
   useEffect(() => {
@@ -96,11 +100,9 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
 
     return () => {
       Purchases.removeCustomerInfoUpdateListener(onCustomerInfoUpdated);
-      if (syncTimerRef.current) {
-        clearTimeout(syncTimerRef.current);
-      }
+      syncServerAfterWebhook.cancel();
     };
-  }, [isAuthenticated, sdkManager, onCustomerInfoUpdated]);
+  }, [isAuthenticated, sdkManager, onCustomerInfoUpdated, syncServerAfterWebhook]);
 
   return <>{children}</>;
 };

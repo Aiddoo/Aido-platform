@@ -4,8 +4,9 @@ import { invalidateFriends } from '@src/features/friend/queries/friend-cache';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { toError } from '@src/shared/errors';
 import { useQueryClient } from '@tanstack/react-query';
+import { debounce } from 'es-toolkit';
 import type * as Notifications from 'expo-notifications';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 
@@ -19,28 +20,9 @@ export function useForegroundNotificationSync({
   const notificationService = useNotificationService();
   const queryClient = useQueryClient();
   const logger = useLogger();
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current !== undefined) {
-        clearTimeout(timerRef.current);
-        timerRef.current = undefined;
-      }
-    };
-  }, [isAuthenticated]);
-
-  return useCallback(
-    (notification?: Notifications.Notification) => {
-      if (!isAuthenticated) {
-        return;
-      }
-      if (timerRef.current !== undefined) {
-        clearTimeout(timerRef.current);
-      }
-
-      timerRef.current = setTimeout(() => {
-        timerRef.current = undefined;
+  const syncNotification = useMemo(
+    () =>
+      debounce((notification?: Notifications.Notification) => {
         const tasks: Promise<void>[] = [
           queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all }),
           notificationService.syncBadgeCount(),
@@ -57,8 +39,24 @@ export function useForegroundNotificationSync({
         Promise.all(tasks).catch((error) =>
           logger.error('[Notification] Handler failed', toError(error)),
         );
-      }, 1000);
+      }, 1000),
+    [logger, notificationService, queryClient],
+  );
+
+  useEffect(() => {
+    return () => {
+      syncNotification.cancel();
+    };
+  }, [syncNotification, isAuthenticated]);
+
+  return useCallback(
+    (notification?: Notifications.Notification) => {
+      if (!isAuthenticated) {
+        return;
+      }
+
+      syncNotification(notification);
     },
-    [isAuthenticated, logger, notificationService, queryClient],
+    [isAuthenticated, syncNotification],
   );
 }
