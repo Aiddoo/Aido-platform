@@ -2,6 +2,7 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
 import { BackHandler } from 'react-native';
 
+import { resolveHardwareBackAction } from '../utils/navigation/todo-comment-back';
 import { useTodoCommentBack } from './use-todo-comment-back';
 
 interface AndroidTodoCommentBackHandlerOptions {
@@ -17,14 +18,15 @@ export function useAndroidTodoCommentBackHandler({
   useFocusEffect(
     useCallback(() => {
       const handleHardwareBack = () => {
-        if (handleBack()) {
-          return true;
+        const action = resolveHardwareBackAction({
+          isHandledByComment: handleBack(),
+          canExit: onExit !== undefined,
+        });
+
+        if (action === 'exit') {
+          onExit?.();
         }
-        if (onExit === undefined) {
-          return false;
-        }
-        onExit();
-        return true;
+        return action !== 'native';
       };
 
       const subscription = BackHandler.addEventListener('hardwareBackPress', handleHardwareBack);

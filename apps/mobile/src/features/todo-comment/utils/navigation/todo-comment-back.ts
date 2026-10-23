@@ -14,6 +14,25 @@ export type TodoCommentBackResult =
       labelKey: TodoCommentBackLabelKey;
     };
 
+export type HardwareBackAction = 'consume' | 'exit' | 'native';
+
+interface ResolveHardwareBackActionParams {
+  isHandledByComment: boolean;
+  canExit: boolean;
+}
+
+/** 댓글 단계(작성기 → 대화 → 개요)를 먼저 되돌리고, 더 되돌릴 게 없으면 pane만 닫는다. pane이 아니면 기본 뒤로가기에 맡긴다. */
+export function resolveHardwareBackAction({
+  isHandledByComment,
+  canExit,
+}: ResolveHardwareBackActionParams): HardwareBackAction {
+  if (isHandledByComment) {
+    return 'consume';
+  }
+
+  return canExit ? 'exit' : 'native';
+}
+
 interface GetTodoCommentBackResultParams {
   route: TodoCommentRoute;
   isSubmitting: boolean;

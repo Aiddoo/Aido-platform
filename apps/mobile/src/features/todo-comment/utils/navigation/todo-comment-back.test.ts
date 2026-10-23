@@ -1,6 +1,6 @@
 import { TODO_COMMENT_SORT } from '@aido/api';
 
-import { getTodoCommentBackResult } from './todo-comment-back';
+import { getTodoCommentBackResult, resolveHardwareBackAction } from './todo-comment-back';
 import type { TodoCommentRoute } from './todo-comment-route';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
@@ -85,5 +85,19 @@ describe('getTodoCommentBackResult', () => {
       status: 'blocked',
       reason: 'comment-submitting',
     });
+  });
+});
+
+describe('resolveHardwareBackAction', () => {
+  it('댓글 단계를 되돌렸으면 그것으로 끝낸다', () => {
+    expect(resolveHardwareBackAction({ isHandledByComment: true, canExit: true })).toBe('consume');
+  });
+
+  it('더 되돌릴 단계가 없고 pane이면 선택을 해제한다', () => {
+    expect(resolveHardwareBackAction({ isHandledByComment: false, canExit: true })).toBe('exit');
+  });
+
+  it('더 되돌릴 단계가 없고 pane이 아니면 기본 뒤로가기에 맡긴다', () => {
+    expect(resolveHardwareBackAction({ isHandledByComment: false, canExit: false })).toBe('native');
   });
 });
