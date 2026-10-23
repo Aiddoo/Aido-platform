@@ -26,6 +26,7 @@ import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { match } from 'ts-pattern';
@@ -228,7 +229,10 @@ interface CalendarPagerProps {
 }
 
 function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) {
-  const [pageWidth, setPageWidth] = useState(0);
+  // 측정 전 첫 프레임은 예전처럼 창 너비로 그려 달력 높이가 0에서 튀어나오지 않게 한다.
+  const { width: windowWidth } = useWindowDimensions();
+  const [measuredPageWidth, setMeasuredPageWidth] = useState<number | null>(null);
+  const pageWidth = measuredPageWidth ?? windowWidth;
   const flatListRef = useRef<FlatList<number>>(null);
   const currentPageRef = useRef(CENTER_PAGE);
 
@@ -242,13 +246,10 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   const handleLayout = useCallback((e: LayoutChangeEvent) => {
-    setPageWidth(e.nativeEvent.layout.width);
+    setMeasuredPageWidth(e.nativeEvent.layout.width);
   }, []);
 
   useEffect(() => {
-    if (pageWidth === 0) {
-      return;
-    }
     flatListRef.current?.scrollToOffset({
       offset: currentPageRef.current * pageWidth,
       animated: false,
@@ -285,29 +286,27 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
 
   return (
     <View onLayout={handleLayout}>
-      {pageWidth > 0 && (
-        <FlatList
-          ref={flatListRef}
-          horizontal
-          pagingEnabled
-          data={data}
-          keyExtractor={(page) => String(page)}
-          renderItem={renderItem}
-          getItemLayout={getItemLayout}
-          initialScrollIndex={currentPageRef.current}
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleScrollEnd}
-          onScrollToIndexFailed={(info) => {
-            flatListRef.current?.scrollToOffset({
-              offset: info.averageItemLength * info.index,
-              animated: false,
-            });
-          }}
-          windowSize={5}
-          initialNumToRender={3}
-          maxToRenderPerBatch={3}
-        />
-      )}
+      <FlatList
+        ref={flatListRef}
+        horizontal
+        pagingEnabled
+        data={data}
+        keyExtractor={(page) => String(page)}
+        renderItem={renderItem}
+        getItemLayout={getItemLayout}
+        initialScrollIndex={currentPageRef.current}
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleScrollEnd}
+        onScrollToIndexFailed={(info) => {
+          flatListRef.current?.scrollToOffset({
+            offset: info.averageItemLength * info.index,
+            animated: false,
+          });
+        }}
+        windowSize={5}
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+      />
     </View>
   );
 }

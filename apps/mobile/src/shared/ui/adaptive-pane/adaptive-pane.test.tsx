@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+import { useEffect } from 'react';
 import { StyleSheet, Text, useWindowDimensions } from 'react-native';
 
 import { AdaptivePane } from './adaptive-pane';
@@ -38,5 +39,45 @@ describe('AdaptivePane 컴포넌트', () => {
     expect(StyleSheet.flatten(screen.getByTestId('adaptive-pane-primary').props.style)).toEqual({
       width: 400,
     });
+  });
+
+  it('compactPane이 secondary면 compact에서 상세만 렌더링한다', async () => {
+    mockedUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 2, fontScale: 1 });
+    await render(
+      <AdaptivePane
+        primary={<Text>목록</Text>}
+        secondary={<Text>상세</Text>}
+        compactPane="secondary"
+      />,
+    );
+
+    expect(screen.queryByText('목록')).toBeNull();
+    expect(screen.getByText('상세')).toBeTruthy();
+  });
+
+  it('접기·펼치기로 size class가 바뀌어도 남아 있는 pane을 다시 마운트하지 않는다', async () => {
+    const onMount = jest.fn();
+    function MountProbe({ label }: { label: string }) {
+      useEffect(() => {
+        onMount(label);
+      }, [label]);
+      return <Text>{label}</Text>;
+    }
+    const createPane = () => (
+      <AdaptivePane
+        primary={<MountProbe label="목록" />}
+        secondary={<MountProbe label="상세" />}
+        compactPane="secondary"
+      />
+    );
+    mockedUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 2, fontScale: 1 });
+    const { rerender } = await render(createPane());
+
+    mockedUseWindowDimensions.mockReturnValue({ width: 900, height: 800, scale: 2, fontScale: 1 });
+    await rerender(createPane());
+    mockedUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 2, fontScale: 1 });
+    await rerender(createPane());
+
+    expect(onMount.mock.calls).toEqual([['상세'], ['목록']]);
   });
 });

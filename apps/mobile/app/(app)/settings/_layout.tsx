@@ -1,6 +1,5 @@
 import { SettingsMenuPane } from '@src/features/user/components/settings-menu-pane/settings-menu-pane';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { AdaptivePane, ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
@@ -11,7 +10,6 @@ import { useResolveClassNames } from 'uniwind';
 
 export default function SettingsLayout() {
   const goBack = useSingleTap(router.back);
-  const windowSizeClass = useWindowSizeClass();
 
   const headerBg = useResolveClassNames('bg-gray-1');
   const titleColor = useResolveClassNames('text-gray-9');
@@ -63,9 +61,11 @@ export default function SettingsLayout() {
     </Stack>
   );
 
-  if (windowSizeClass === 'compact') {
-    return settingsStack;
-  }
-
-  return <AdaptivePane primary={<SettingsMenuPane />} secondary={settingsStack} />;
+  return (
+    <AdaptivePane
+      primary={<SettingsMenuPane />}
+      secondary={settingsStack}
+      compactPane="secondary"
+    />
+  );
 }

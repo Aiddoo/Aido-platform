@@ -8,21 +8,23 @@ import { AdaptivePane } from '@src/shared/ui';
 
 ## 동작
 
-| size class | 폭        | 렌더링                                     |
-| ---------- | --------- | ------------------------------------------ |
-| `compact`  | 600 미만  | `primary`만. 상세는 라우트 push가 대신한다 |
-| `medium`   | 600 ~ 839 | `primary`(320 고정) \| `secondary`(나머지) |
-| `expanded` | 840 이상  | `primary`(400 고정) \| `secondary`(나머지) |
+| size class | 폭        | 렌더링                                                                        |
+| ---------- | --------- | ----------------------------------------------------------------------------- |
+| `compact`  | 600 미만  | `compactPane` 쪽만(기본 `primary`). 목록 화면의 상세는 라우트 push가 대신한다 |
+| `medium`   | 600 ~ 839 | `primary`(320 고정) \| `secondary`(나머지)                                    |
+| `expanded` | 840 이상  | `primary`(400 고정) \| `secondary`(나머지)                                    |
 
 - 컨테이너에 가로 safe-area inset(`left`/`right`)을 적용한다. iPhone Duo가 펼치면 탭 바를 우측(또는 좌측) 세로 레일로 옮기기 때문이다. 자식 pane에서 가로 inset을 다시 더하지 않는다.
 - 하단 탭 바 높이를 가정한 여백을 두지 않는다.
+- 두 pane은 size class와 무관하게 같은 트리 슬롯에 둔다. 접기/펼치기에서 남아 있는 pane은 다시 마운트되지 않아 스크롤·입력·내비게이터 상태가 유지된다.
 
 ## Props
 
-| Prop        | 타입        | 설명                                   |
-| ----------- | ----------- | -------------------------------------- |
-| `primary`   | `ReactNode` | 항상 렌더링하는 목록 영역              |
-| `secondary` | `ReactNode` | medium 이상에서만 렌더링하는 상세 영역 |
+| Prop          | 타입                       | 설명                                                            |
+| ------------- | -------------------------- | --------------------------------------------------------------- |
+| `primary`     | `ReactNode`                | 목록 영역                                                       |
+| `secondary`   | `ReactNode`                | 상세 영역. medium 이상에서 항상 렌더링                          |
+| `compactPane` | `'primary' \| 'secondary'` | compact에서 남길 영역. 설정처럼 상세가 내비게이터면 `secondary` |
 
 ## 파일 구조
 
