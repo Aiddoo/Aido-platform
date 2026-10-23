@@ -1,13 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { EyeIcon, EyeOffIcon, Input } from '@src/shared/ui';
-import type {
-  ComponentRef,
-  ForwardRefExoticComponent,
-  PropsWithoutRef,
-  RefAttributes,
-} from 'react';
-import { forwardRef, useState, type ComponentProps } from 'react';
-import type { TextInput } from 'react-native';
+import { useState, type ComponentProps } from 'react';
 import { Pressable } from 'react-native';
 
 export interface PasswordInputProps extends Omit<
@@ -15,15 +8,12 @@ export interface PasswordInputProps extends Omit<
   'secureTextEntry' | 'rightContent'
 > {}
 
-export const PasswordInput: ForwardRefExoticComponent<
-  PropsWithoutRef<PasswordInputProps> & RefAttributes<ComponentRef<typeof TextInput>>
-> = forwardRef<ComponentRef<typeof TextInput>, PasswordInputProps>((props, ref) => {
+export function PasswordInput(props: PasswordInputProps) {
   const { t } = useTranslation('auth');
   const [isSecure, setIsSecure] = useState(true);
 
   return (
     <Input
-      ref={ref}
       autoCapitalize="none"
       autoCorrect={false}
       secureTextEntry={isSecure}
@@ -44,6 +34,4 @@ export const PasswordInput: ForwardRefExoticComponent<
       {...props}
     />
   );
-});
-
-PasswordInput.displayName = 'PasswordInput';
+}

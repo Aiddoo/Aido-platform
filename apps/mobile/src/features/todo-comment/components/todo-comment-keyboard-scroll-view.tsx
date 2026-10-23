@@ -1,4 +1,4 @@
-import { type ComponentProps, forwardRef } from 'react';
+import type { ComponentProps, Ref } from 'react';
 import { Platform } from 'react-native';
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
 import type Reanimated from 'react-native-reanimated';
@@ -10,21 +10,22 @@ interface TodoCommentKeyboardScrollViewProps extends Omit<
   | 'contentInsetAdjustmentBehavior'
   | 'keyboardDismissMode'
   | 'keyboardShouldPersistTaps'
-> {}
+> {
+  ref?: Ref<Reanimated.ScrollView>;
+}
 
 const usesLegacyAndroidKeyboard =
   Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version < 30;
 const keyboardDismissMode =
   Platform.OS === 'ios' ? 'interactive' : usesLegacyAndroidKeyboard ? 'on-drag' : 'none';
 
-export const TodoCommentKeyboardScrollView = forwardRef<
-  Reanimated.ScrollView,
-  TodoCommentKeyboardScrollViewProps
->(function TodoCommentKeyboardScrollView({ keyboardLiftBehavior = 'whenAtEnd', ...props }, ref) {
+export function TodoCommentKeyboardScrollView({
+  keyboardLiftBehavior = 'whenAtEnd',
+  ...props
+}: TodoCommentKeyboardScrollViewProps) {
   return (
     <KeyboardChatScrollView
       {...props}
-      ref={ref}
       automaticallyAdjustContentInsets={false}
       contentInsetAdjustmentBehavior="never"
       keyboardDismissMode={keyboardDismissMode}
@@ -32,4 +33,4 @@ export const TodoCommentKeyboardScrollView = forwardRef<
       keyboardLiftBehavior={keyboardLiftBehavior}
     />
   );
-});
+}

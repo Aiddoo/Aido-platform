@@ -1,5 +1,5 @@
-import type { ComponentType } from 'react';
-import type { TextInputProps } from 'react-native';
+import type { ComponentType, Ref } from 'react';
+import type { TextInputInstance, TextInputProps } from 'react-native';
 
 import type { TextSize } from '../text/text.types';
 
@@ -9,6 +9,7 @@ export interface TextAreaProps extends Omit<
   TextInputProps,
   'value' | 'defaultValue' | 'onChange' | 'onChangeText'
 > {
+  ref?: Ref<TextInputInstance>;
   value: string;
   onChange: (value: string) => void;
   variant?: TextAreaVariant;
