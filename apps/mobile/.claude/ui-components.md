@@ -13,15 +13,15 @@ UI를 구현할 때 다음 우선순위를 **반드시** 따릅니다:
 `src/shared/ui`에 있는 컴포넌트는 **무조건** 여기서 import합니다.
 
 ```tsx
-// 올바른 사용
-import { Text, H1, H2, H3, H4 } from '@src/shared/ui/text/text';
-import { Button } from '@src/shared/ui/button/button';
-import { TextButton } from '@src/shared/ui/text-button/text-button';
 import { Box } from '@src/shared/ui/box/box';
+import { Button } from '@src/shared/ui/button/button';
 import { Flex } from '@src/shared/ui/flex/flex';
 import { HStack } from '@src/shared/ui/h-stack/h-stack';
-import { VStack } from '@src/shared/ui/v-stack/v-stack';
 import { Spacing } from '@src/shared/ui/spacing/spacing';
+import { TextButton } from '@src/shared/ui/text-button/text-button';
+// 올바른 사용
+import { Text, H1, H2, H3, H4 } from '@src/shared/ui/text/text';
+import { VStack } from '@src/shared/ui/v-stack/v-stack';
 ```
 
 ### 2순위: HeroUI Native 컴포넌트
@@ -150,8 +150,8 @@ import { StyledSafeAreaView } from '@src/shared/ui/safe-area-view/safe-area-view
 **새로운 외부 컴포넌트 래핑:**
 
 ```tsx
-import { withUniwind } from 'uniwind';
 import { SomeComponent } from 'some-library';
+import { withUniwind } from 'uniwind';
 
 const StyledComponent = withUniwind(SomeComponent);
 
@@ -250,6 +250,7 @@ import { ArrowRightIcon } from '@src/shared/ui/icon';
 ```tsx
 // src/shared/ui/Icon/icons.ts에 추가
 import NewIconSvg from '@assets/icons/ic_new.svg';
+
 import { createStyledIcon } from './createStyledIcon';
 
 export const NewIcon = createStyledIcon(NewIconSvg);

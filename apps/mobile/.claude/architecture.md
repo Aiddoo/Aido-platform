@@ -135,7 +135,8 @@ export interface HttpClient {
 
 ```typescript
 export type Result<T, E extends BusinessError = BusinessError> =
-  { ok: true; value: T } | { ok: false; error: E };
+  | { ok: true; value: T }
+  | { ok: false; error: E };
 
 export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
 export const err = <E extends BusinessError>(error: E): Result<never, E> => ({ ok: false, error });

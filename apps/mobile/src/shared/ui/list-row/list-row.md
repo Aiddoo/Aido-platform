@@ -422,7 +422,6 @@ it('should render contents when provided', () => {
 ```tsx
 // Before
 import { ListRow } from '@src/shared/ui/list-row';
-
 // After
 import { ListRow } from '@src/shared/ui/list-row/list-row';
 ```
