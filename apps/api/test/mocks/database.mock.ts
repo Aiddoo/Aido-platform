@@ -193,7 +193,7 @@ export function databaseWriteExpectation<M extends ModelName>(
 ): unknown {
   return databaseFixture(
     model,
-    Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined)),
+    Object.fromEntries(Object.entries(fields).filter(([_fieldName, value]) => value !== undefined)),
   );
 }
 
@@ -222,7 +222,7 @@ function normalizePredicate(value: unknown): unknown {
   return Object.fromEntries(
     Object.entries(value)
       .map(([key, child]) => [key, normalizePredicate(child)])
-      .filter(([, child]) => child !== undefined),
+      .filter(([_fieldName, child]) => child !== undefined),
   );
 }
 

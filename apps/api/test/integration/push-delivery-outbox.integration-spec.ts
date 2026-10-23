@@ -1154,7 +1154,7 @@ describe("일반 push delivery outbox (실제 PostgreSQL)", () => {
     } finally {
       releaseDefer.resolve();
     }
-    const [, claimed] = await Promise.all([deferTransaction, trackedClaim.promise]);
+    const [_deferResult, claimed] = await Promise.all([deferTransaction, trackedClaim.promise]);
 
     expect(claimWaitedForDefer).toBe(true);
     expect(claimed).toBeNull();

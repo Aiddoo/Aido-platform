@@ -47,7 +47,7 @@ describe("Workspace 의존성 경계", () => {
           ...manifest.peerDependencies,
           ...manifest.optionalDependencies,
         })
-          .filter(([, version]) => version.startsWith("workspace:"))
+          .filter(([_packageName, version]) => version.startsWith("workspace:"))
           .map(([name]) => name),
       ]),
     );
