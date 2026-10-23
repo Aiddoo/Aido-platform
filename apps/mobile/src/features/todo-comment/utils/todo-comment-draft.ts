@@ -12,8 +12,6 @@ const todoCommentDraftSchema = z.object({
     .max(TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE),
 });
 
-export type TodoCommentDraft = z.infer<typeof todoCommentDraftSchema>;
-
 interface CreateTodoCommentDraftKeyInput {
   userId: string;
   todoId: number;

@@ -47,7 +47,7 @@ export const draftEntrySchema = z.object({
 
 export type DraftEntry = z.infer<typeof draftEntrySchema>;
 
-export type DraftDiscardReason = 'expired' | 'outdated' | 'invalid';
+type DraftDiscardReason = 'expired' | 'outdated' | 'invalid';
 
 export type DraftRestoreResult<TValue> =
   | { status: 'empty' }
@@ -59,7 +59,7 @@ export function isDraftExpired(entry: DraftEntry, now: number, ttlMs: number = D
 }
 
 /** 초안을 쓰기 시작한 뒤 서버 원본이 바뀌었으면 초안은 낡은 원본 위에서 쓴 글이다. */
-export function isDraftOutdated(entry: DraftEntry, sourceUpdatedAt: number | undefined) {
+function isDraftOutdated(entry: DraftEntry, sourceUpdatedAt: number | undefined) {
   if (sourceUpdatedAt === undefined || entry.sourceUpdatedAt === null) {
     return false;
   }

@@ -59,7 +59,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `Box`                                         | 단순 컨테이너                                                           | `src/shared/ui/box/README.md`                            |
 | `Flex`                                        | Flexbox 레이아웃                                                        | `src/shared/ui/flex/README.md`                           |
 | `HStack`                                      | 수평 레이아웃                                                           | `src/shared/ui/h-stack/README.md`                        |
-| `AdaptivePane`                                | 창 폭 기준 List-detail 2-pane (compact는 한쪽만, 전환 시 재마운트 없음) | `src/shared/ui/adaptive-pane/README.md`                  |
+| `AdaptivePane`                                | 창 폭 기준 List-detail 2-pane (compact는 한쪽만, 전환 시 재마운트 없음) | `src/shared/ui/adaptive-pane/adaptive-pane.md`           |
 | `VStack`                                      | 수직 레이아웃                                                           | `src/shared/ui/v-stack/README.md`                        |
 | `Grid`                                        | 그리드 레이아웃                                                         | `src/shared/ui/grid/README.md`                           |
 | `GridItem`                                    | 그리드 아이템                                                           | `src/shared/ui/grid/README.md`                           |

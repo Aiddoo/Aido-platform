@@ -1,6 +1,6 @@
 /** Material window size class 기준 폭(dp). iOS regular width와도 일치한다. */
-export const MEDIUM_WINDOW_MIN_WIDTH = 600;
-export const EXPANDED_WINDOW_MIN_WIDTH = 840;
+const MEDIUM_WINDOW_MIN_WIDTH = 600;
+const EXPANDED_WINDOW_MIN_WIDTH = 840;
 
 export type WindowSizeClass = 'compact' | 'medium' | 'expanded';
 
