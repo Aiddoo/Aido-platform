@@ -15,6 +15,22 @@ export interface SuccessResponse<T = unknown> {
   timestamp: number;
 }
 
+/**
+ * JSON 오류 응답. code는 새 서버가 추가한 코드도 파싱되도록 문자열로 받고,
+ * details는 개발 환경에서만 내려온다.
+ */
+export const errorEnvelopeSchema = z.object({
+  success: z.literal(false),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    details: z.unknown().optional(),
+  }),
+  timestamp: z.number(),
+});
+
+export type ErrorEnvelope = z.infer<typeof errorEnvelopeSchema>;
+
 export interface RestErrorResponse {
   success: false;
   error: {

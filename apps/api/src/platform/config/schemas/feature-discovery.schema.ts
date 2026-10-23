@@ -1,7 +1,5 @@
+import { featureDiscoveryMinAppVersionSchema } from "@aido/api";
 import { z } from "zod";
-
-const semverPattern =
-  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
 /**
  * Public feature-discovery rollout configuration.
@@ -34,8 +32,7 @@ export function validateFeatureDiscoveryConfig(
   }
 
   if (
-    !config.FEATURE_DISCOVERY_MIN_APP_VERSION ||
-    !semverPattern.test(config.FEATURE_DISCOVERY_MIN_APP_VERSION)
+    !featureDiscoveryMinAppVersionSchema.safeParse(config.FEATURE_DISCOVERY_MIN_APP_VERSION).success
   ) {
     context.addIssue({
       code: "custom",

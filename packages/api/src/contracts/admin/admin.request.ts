@@ -112,7 +112,7 @@ export const targetedNotificationSchema = z
       .max(500, "내용은 500자 이하로 입력해주세요")
       .describe("알림 내용"),
     userIds: z
-      .array(z.string().cuid())
+      .array(z.cuid())
       .min(1, "최소 1명의 사용자를 선택해주세요")
       .max(1000, "최대 1000명까지 선택할 수 있습니다")
       .describe("알림 대상 사용자 ID 목록"),
