@@ -158,7 +158,7 @@ jobs:
 
       - name: Upload candidate checkout proof
         if: steps.policy.outputs.proof_created == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.policy.outputs.proof_name }}
           path: ${{ runner.temp }}/ci-tree-proof/proof.json
@@ -274,7 +274,7 @@ jobs:
         run: pnpm turbo run test --filter='!@aido/server' 2>&1 | tee /tmp/test-unit.log
       - name: Upload unit test logs
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-unit-logs-${{ github.run_id }}
           path: /tmp/test-unit.log
@@ -325,7 +325,7 @@ jobs:
         run: pnpm turbo run build --filter='!@aido/mobile'
       - name: Upload API test logs
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: test-api-logs-${{ github.run_id }}
           path: /tmp/test-api-*.log
