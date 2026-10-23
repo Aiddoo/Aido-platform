@@ -1,11 +1,13 @@
 import { i18n, t } from '@src/shared/i18n';
+import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 
 import { getCalendarWeek } from './calendar-week';
 import { formatClockTime, formatDateLabel, type DateFormatContext } from './date-format';
+import { getDeviceTimezone } from './timezone';
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
@@ -19,8 +21,8 @@ export const formatDate = (date: Date | string | number): string => {
 
 export function getDateFormatContext(): DateFormatContext {
   return {
-    locale: i18n.language.startsWith('ko') ? 'ko-KR' : 'en-US',
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    locale: toResolvedLanguage(i18n.language) === 'ko' ? 'ko-KR' : 'en-US',
+    timeZone: getDeviceTimezone(),
   };
 }
 
@@ -182,7 +184,7 @@ export const withDayOfMonth = (date: Date, dayOfMonth: number): Date => {
 };
 
 export const getWeekDates = (weekStartDate: Date): Date[] => {
-  return times(7, (i) => dayjs(weekStartDate).add(i, 'day').toDate());
+  return range(7).map((i) => dayjs(weekStartDate).add(i, 'day').toDate());
 };
 
 export const getMonthWeeks = (displayDate: Date): Date[][] => {

@@ -13,3 +13,13 @@ export const getLocales = jest.fn(() => [
     temperatureUnit: 'celsius',
   },
 ]);
+
+export const getCalendars = jest.fn(() => [
+  {
+    calendar: 'gregory',
+    uses24hourClock: false,
+    firstWeekday: 1,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    weekendDays: [1, 7],
+  },
+]);

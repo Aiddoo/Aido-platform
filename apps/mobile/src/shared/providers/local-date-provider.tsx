@@ -8,6 +8,7 @@ import {
   millisecondsUntilNextLocalMidnight,
   type LocalDateState,
 } from '@src/shared/utils/local-date-clock';
+import { getDeviceTimezone } from '@src/shared/utils/timezone';
 import {
   createContext,
   type PropsWithChildren,
@@ -23,11 +24,7 @@ const LocalDateContext = createContext<LocalDateState | null>(null);
 
 function readLocalDateState(): LocalDateState {
   const now = new Date();
-  return createLocalDateState(
-    now,
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
-    -now.getTimezoneOffset(),
-  );
+  return createLocalDateState(now, getDeviceTimezone(), -now.getTimezoneOffset());
 }
 
 /**
