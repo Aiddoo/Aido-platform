@@ -35,6 +35,7 @@ COPY --from=pruner /app/out/migrate/json/ ./
 COPY --from=pruner /app/out/migrate/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/.pnpmfile.cjs ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts && \
+    chmod a+r pnpm-workspace.yaml && \
     pnpm --filter @aido/database-migrate exec prisma --version
 
 FROM migrate-deps AS migrate
