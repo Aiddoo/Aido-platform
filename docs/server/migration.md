@@ -195,7 +195,7 @@ PurgeDeletedAccounts가 사용자별 UoW와 기존 Notification/Engagement clean
 
 최소 `SELECT User FOR UPDATE` 한 문장은 중복 purge와 후보 상태 재검증을 위한 lock으로
 사용한다. 설치된 rc.14 public ORM 표면에서 lock API를 확인할 수 없어 기존 native query bridge를
-재사용했다. 값을 바인딩하고 nullable 날짜 codec·상태 schema를 명시했다. 단순 CRUD는 ORM을
+재사용했다. 2026-10-23 rc.20 정렬에서 rc.17 ORM row lock(`forNoKeyUpdate()`)으로 바꿨다. 값을 바인딩하고 nullable 날짜 codec·상태 schema를 명시했다. 단순 CRUD는 ORM을
 사용한다. 실제 PG에서 두 purge가 같은 행 잠금에 대기한 뒤 해제하여 삭제·감사 1회와 나머지 skip을
 검증했다. 정상 복구/purge는 서로 다른 기간 범위이므로 정상 복구 경쟁으로 삭제가 발생했다고
 주장하지 않는다. 후보 조회 후 상태가 바뀐 경우의 방어 검증으로 구분한다.
@@ -292,8 +292,8 @@ REST 응답·메시지·오류 코드는 유지한다. Link의 후속 쓰기 실
 것은 부분 커밋을 수정한 의도한 차이다.
 
 기존 사용자 잠금 SELECT 한 곳을 `findByIdForUpdate`와 `FOR NO KEY UPDATE`로 재사용한다.
-현재 설치 ORM rc.14의 Collection·SelectQuery·AST 및 실제 프로젝트 타입에서 공개 SELECT
-row lock API는 확인되지 않았다. SQL을 추가하거나 일반 잠금 프레임워크를 만들지 않는다.
+당시 설치 ORM rc.14의 Collection·SelectQuery·AST 및 실제 프로젝트 타입에서 공개 SELECT
+row lock API는 확인되지 않았다(rc.20 정렬 후 ORM `forNoKeyUpdate()` 사용). SQL을 추가하거나 일반 잠금 프레임워크를 만들지 않는다.
 [PostgreSQL 공식 잠금 표](https://www.postgresql.org/docs/16/explicit-locking.html#LOCKING-ROWS)에
 맞춰 같은 User의 계정 변경을 직렬화하면서 FK의 KEY SHARE를 허용하며, 실제 PG에서 잠금
 해제 전 감사 INSERT 완료와 기존 purge 1승자도 확인했다. Token/Code caller의 잠금 조회는
@@ -937,7 +937,7 @@ Composition은 직접 factory와 InsightsDailyCompletionsModule/InsightsWeeklyAc
 Cursor의 같은 사용자·연도 anchor 존재 조건을 native ORM relation exists에 포함한다. 정상/
 missing/타인/다른 연도/first week/무커서6경계와 정렬·size+1·반환 날짜를 실제 DB로 비교했다.
 단순 week<cursor로 바꾸어 missing anchor의 빈 페이지 의미를 바꾸지 않는다. 원래 Daily는
-일괄 집계라 N+1이 없었다. 현재 rc.14 native ORM에 bulk upsert API가 없어 기존 singleton ORM과
+일괄 집계라 N+1이 없었다. rc.14~rc.20 native ORM에 bulk upsert API가 없어(rc.20 `createAll`은 `onConflict: 'skip'`만 지원) 기존 singleton ORM과
 UoW를 유지하며 raw bulk SQL이나 SDK 재구현을 추가하지 않는다. 중복 input last-write와 두 번째
 FK23503 실패 시 성공 prefix 전체 rollback을 실제 DB로 검증했다.
 

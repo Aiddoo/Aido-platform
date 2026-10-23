@@ -25,6 +25,23 @@ Repository는 `TransactionHost<Prisma8TransactionalAdapter>.tx`를 읽는다. tr
 
 rc.20의 단건 `.where(predicate).update()`도 `first()`가 고른 행의 PK로 UPDATE한다(`updateFirstGraph`: 식별자 SELECT 후 같은 행 UPDATE). 따라서 predicate 전체가 쓰는 순간에도 유지되는 CAS가 아니다. 회전 버전·상태 fence에는 predicate가 실제 UPDATE에 남는 `updateAll`/조건부 native SQL과 반환 행을 사용한다. PK 단건 수정까지 일괄 변경하지 않는다. 잠금·CAS·rollback은 실제 PostgreSQL fixture로 확인하며 mock query 인자로 경쟁 안전성을 주장하지 않는다.
 
+## ORM 전환 기준과 유지하는 raw SQL (rc.20)
+
+rc.17부터 ORM collection의 `forUpdate()`/`forNoKeyUpdate()`(`{ skipLocked }`, `{ nowait }`)와 SQL builder lock, rc.18 `whereUnique`/`firstOrThrow`를 쓸 수 있다. 행 잠금만 하는 조회, 같은 값으로 바꾸는 조건부 UPDATE 펜스(`updateAll`/`updateAndCount`는 술어를 UPDATE의 WHERE에 남긴다), 다중 INSERT(`createAll`은 RETURNING, `createAndCount`는 count), 문자열 패턴(`ilike`)은 ORM으로 쓴다. ORM lock은 mutation terminal과 함께 쓸 수 없고(`ORM.LOCK_INCOMPATIBLE`), `ScalarUpdateInput`은 리터럴 값만 받으며 증감 연산자가 없다. 아래는 그 한계 때문에 의도적으로 남긴 raw SQL이다.
+
+| 유형                      | 위치                                                                                                                                                                    | 유지 이유                                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 원자 claim                | push outbox·lifecycle `claim*`, retention `claimOutboxes`·`recoverStale*`                                                                                               | `UPDATE … WHERE id IN (SELECT … FOR UPDATE SKIP LOCKED) RETURNING` 한 문장이 잠금과 갱신을 함께 한다. ORM lock은 mutation과 결합할 수 없다 |
+| 행마다 다른 값의 배치 CAS | lifecycle `markRateLimitReserved`·`finalize*`·`release`, `PrismaTodoRepository.reorderItems`                                                                            | `UPDATE … FROM (VALUES …)`. `updateAll`은 모든 행에 같은 값을 쓴다                                                                         |
+| 자기 열 참조 갱신         | lifecycle 종료 outbox(`COALESCE("publishedAt", now)`), 댓글 정리 묘비(`COALESCE("deletedAt", now)`), 카운터(`col + $n`: verification·todo·memo·category·follow·comment) | ORM update 입력은 리터럴만 받고 증감 연산자가 없다                                                                                         |
+| 행마다 생성 값            | 댓글 정리의 작성자 이전(`gen_random_uuid()`)                                                                                                                            | `(authorId, clientRequestId)` unique를 지키려면 행마다 새 값이 필요하다                                                                    |
+| 관계 없는 테이블 EXISTS   | retention `deferOutbox`·`reopenUnclaimedDispatch`·`markRateLimitReserved`                                                                                               | `RetentionPushOutbox`↔`PushDispatch`가 contract 관계가 아니어서 relation filter를 쓸 수 없다                                               |
+| JSON 경로 술어            | `deleteNotificationsByActorId`(`metadata ->> 'senderId'`)                                                                                                               | ORM에 jsonb 경로 연산자가 없고, expression index와 같은 식이어야 한다                                                                      |
+| 재귀·분석·다중 테이블 CTE | 댓글 대화 트리, 성장 지표, 사용자 검색 순위, 댓글 수 재계산, lifecycle 정산                                                                                             | ORM이 재귀 CTE·윈도·임의 JOIN 갱신을 표현하지 않는다                                                                                       |
+| 트랜잭션 제어             | SAVEPOINT(CLS 중첩), `pg_advisory_xact_lock`, SERIALIZABLE, `SELECT 1` health, pg-boss SQL bridge                                                                       | ORM 바깥 기능이다                                                                                                                          |
+
+bulk upsert는 rc.20에도 없다(`createAll`의 `onConflict`는 `'skip'`뿐). `WeeklyAchievement.upsertMany`는 같은 UoW 안의 ORM upsert를 유지한다. raw `ON CONFLICT DO UPDATE`는 같은 키가 한 입력에 두 번 오면 오류가 나서 마지막 값 우선 의미가 바뀐다.
+
 ## Graph 배포와 롤백
 
 `db:deploy`는 API/pg-boss URL guard→pg-boss migrate→application graph→`db verify`를 실행한다. 원격 DB는 기본 거부하며 의도한 배포 환경에서만 `AIDO_ALLOW_REMOTE_DB=1`을 쓴다. DDL lock 대기는 5초다.
