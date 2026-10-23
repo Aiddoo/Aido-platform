@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
+import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { readJson } from "#api/platform/http/read-json";
+import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 import { dayWindowInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 import type {
@@ -12,21 +13,25 @@ import type {
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { KMA_TIMEZONE } from "./kma.constants.js";
 
-interface SunTimeResponse {
-  response?: {
-    header?: {
-      resultCode?: string;
-    };
-    body?: {
-      items?: {
-        item?: {
-          sunrise?: string;
-          sunset?: string;
-        };
-      };
-    };
-  };
-}
+const sunTimeResponseSchema = z.object({
+  response: z
+    .object({
+      header: z.object({ resultCode: z.string().optional() }).optional(),
+      body: z
+        .object({
+          items: z
+            .object({
+              item: z
+                .object({ sunrise: z.string().optional(), sunset: z.string().optional() })
+                .nullish(),
+            })
+            .optional()
+            .catch(undefined),
+        })
+        .optional(),
+    })
+    .optional(),
+});
 
 @Injectable()
 export class KasiSunTimeProvider implements SunTimeProvider {
@@ -51,34 +56,40 @@ export class KasiSunTimeProvider implements SunTimeProvider {
 
       const locdate = dayWindowInTimezone(date, KMA_TIMEZONE).localDate.replaceAll("-", "");
 
-      const url = new URL(
+      const outcome = await requestVendorJson(
+        this.http,
         "https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCRiseSetInfo",
+        {
+          serviceKey: apiKey,
+          longitude: lon,
+          latitude: lat,
+          locdate,
+          dnYn: "Y",
+          _type: "json",
+        },
       );
-      url.searchParams.set("serviceKey", apiKey);
-      url.searchParams.set("longitude", String(lon));
-      url.searchParams.set("latitude", String(lat));
-      url.searchParams.set("locdate", locdate);
-      url.searchParams.set("dnYn", "Y");
-      url.searchParams.set("_type", "json");
 
-      const { data: response } = await this.http.request(url.toString(), {
-        responseType: "response",
-        retry: false,
-        throwOnHttpError: false,
-        signal: AbortSignal.timeout(10_000),
-      });
-
-      if (!response.ok) {
+      if (outcome.kind === "http_failure") {
         this.#logger.warn({
           event: WeatherProviderLogEvent.HTTP_FAILED,
           provider: "kasi",
           operation: "sun_time",
-          statusCode: response.status,
+          statusCode: outcome.statusCode,
         });
         return null;
       }
 
-      const data = await readJson<SunTimeResponse>(response);
+      const parsed = sunTimeResponseSchema.safeParse(outcome.body);
+      if (!parsed.success) {
+        this.#logger.warn({
+          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+          provider: "kasi",
+          operation: "sun_time",
+          errorType: "invalid_structure",
+        });
+        return null;
+      }
+      const data = parsed.data;
 
       const resultCode = data?.response?.header?.resultCode;
       if (resultCode !== "00") {
