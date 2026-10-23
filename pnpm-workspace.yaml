@@ -7,7 +7,7 @@ autoInstallPeers: true
 strictPeerDependencies: true
 networkConcurrency: 8
 
-minimumReleaseAge: 4320
+minimumReleaseAge: 0
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 43200
 blockExoticSubdeps: true
