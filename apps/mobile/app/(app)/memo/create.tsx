@@ -1,16 +1,20 @@
 import { createMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateMemoMutationOptions } from '@src/features/memo/queries/use-create-memo-mutation-options';
+import { createMemoDraftKey } from '@src/features/memo/utils/memo-draft';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
+import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, Box, CheckmarkIcon, QueryErrorBoundary } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
 import type { ComponentRef } from 'react';
-import { useCallback, useRef } from 'react';
+import { Suspense, useCallback, useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { Pressable, TextInput, View } from 'react-native';
@@ -18,6 +22,7 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { withUniwind } from 'uniwind';
 
 const StyledTextInput = withUniwind(TextInput);
+const EMPTY_MEMO_VALUES = { content: '' };
 
 function MemoCreateScreen() {
   const { showBoundary } = useErrorBoundary();
@@ -48,17 +53,29 @@ function MemoCreateScreen() {
     }, [navigation]),
   );
 
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const {
+    restoredDraft: restoredMemoDraft,
+    saveDraft: saveMemoDraft,
+    clearDraft: clearMemoDraft,
+  } = useDraftStorage(createMemoDraftKey({ userId: user.id }));
   const formMethods = useForm({
     resolver: zodResolver(createMemoSchema),
-    defaultValues: { content: '' },
+    defaultValues: restoredMemoDraft ?? EMPTY_MEMO_VALUES,
     mode: 'onChange',
   });
   const {
     control,
     handleSubmit,
+    subscribe,
     formState: { isValid },
   } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
+  const discardMemoDraft = useFormDraftAutosave(subscribe, {
+    initialValues: EMPTY_MEMO_VALUES,
+    saveDraft: saveMemoDraft,
+    clearDraft: clearMemoDraft,
+  });
 
   const createMutation = useMutation(useCreateMemoMutationOptions());
 
@@ -66,7 +83,12 @@ function MemoCreateScreen() {
     try {
       await createMutation.mutateAsync(
         { content: data.content.trim() },
-        { onSuccess: () => goBack() },
+        {
+          onSuccess: () => {
+            discardMemoDraft();
+            goBack();
+          },
+        },
       );
     } catch (error) {
       if (!isBusinessError(error)) {
@@ -144,7 +166,9 @@ function MemoCreateScreen() {
 export default function MemoCreateRoute() {
   return (
     <QueryErrorBoundary>
-      <MemoCreateScreen />
+      <Suspense fallback={null}>
+        <MemoCreateScreen />
+      </Suspense>
     </QueryErrorBoundary>
   );
 }

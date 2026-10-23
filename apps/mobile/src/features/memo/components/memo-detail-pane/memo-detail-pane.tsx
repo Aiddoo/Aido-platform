@@ -4,7 +4,11 @@ import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useDraftStorage } from '@src/shared/draft/use-draft-storage';
+import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isBusinessError } from '@src/shared/errors/result';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -14,7 +18,7 @@ import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tansta
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
-import { Suspense, useState } from 'react';
+import { Suspense, useLayoutEffect, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { ActivityIndicator, Keyboard, TextInput } from 'react-native';
@@ -27,6 +31,7 @@ import { useGetMemoQueryOptions } from '../../queries/get-memo-query-options';
 import { useDeleteMemoMutationOptions } from '../../queries/use-delete-memo-mutation-options';
 import { useToggleMemoPinMutationOptions } from '../../queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '../../queries/use-update-memo-mutation-options';
+import { createMemoDraftKey } from '../../utils/memo-draft';
 import { AiParseConfirmDialog } from '../ai-parse-confirm-dialog';
 import { MemoDetailActionBar, MemoDetailBackButton } from './memo-detail-actions';
 
@@ -65,15 +70,38 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   const leaveMemo = isPane ? deselectMemo : goBack;
 
   const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ id: memoId }));
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const toast = useAppToast();
 
+  const savedValues = { content: memo.content };
+  const {
+    restoredDraft: restoredMemoDraft,
+    saveDraft: saveMemoDraft,
+    clearDraft: clearMemoDraft,
+  } = useDraftStorage(createMemoDraftKey({ userId: user.id, memoId }), {
+    sourceUpdatedAt: memo.updatedAt.getTime(),
+    onOutdatedDiscard: () => toast.warning(t('memo:toasts.draftOutdated')),
+  });
   const formMethods = useForm({
     resolver: zodResolver(updateMemoSchema),
-    defaultValues: { content: memo.content },
+    defaultValues: restoredMemoDraft ?? savedValues,
   });
-  const { control, handleSubmit, getValues, reset } = formMethods;
+  const { control, handleSubmit, getValues, reset, subscribe } = formMethods;
   const { isDirty, isValid, isSubmitting } = useFormState({ control });
+  const discardMemoDraft = useFormDraftAutosave(subscribe, {
+    initialValues: savedValues,
+    saveDraft: saveMemoDraft,
+    clearDraft: clearMemoDraft,
+  });
 
-  const [isEditing, setIsEditing] = useState(false);
+  // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
+  useLayoutEffect(() => {
+    if (restoredMemoDraft !== undefined) {
+      reset({ content: memo.content }, { keepValues: true });
+    }
+  }, [memo.content, reset, restoredMemoDraft]);
+
+  const [isEditing, setIsEditing] = useState(restoredMemoDraft !== undefined);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutateAsync: updateMemo } = useMutation(useUpdateMemoMutationOptions());
@@ -95,6 +123,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
       const content = data.content.trim();
       await updateMemo({ memoId, input: { content } });
       reset({ content });
+      discardMemoDraft();
       setIsEditing(false);
       Keyboard.dismiss();
     } catch (error) {
@@ -108,6 +137,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     if (isDirty && isValid) {
       try {
         await updateMemo({ memoId, input: { content: getValues('content').trim() } });
+        discardMemoDraft();
       } catch (error) {
         if (!isBusinessError(error)) {
           showBoundary(error);
@@ -157,6 +187,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
 
     deleteMemo(memoId, {
       onSuccess: () => {
+        discardMemoDraft();
         setIsDeleteDialogOpen(false);
         leaveMemo();
       },

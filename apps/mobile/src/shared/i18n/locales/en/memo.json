@@ -32,7 +32,8 @@
     "retryLater": "Please try again later",
     "reorderFailed": "Failed to change the order",
     "deleteRetry": "Please try deleting again later",
-    "limitReached": "You've reached the memo limit"
+    "limitReached": "You've reached the memo limit",
+    "draftOutdated": "This memo was changed elsewhere, so your unsaved changes were discarded"
   },
   "aiDialog": {
     "limitTitle": "You've used all your AI parses this month",
