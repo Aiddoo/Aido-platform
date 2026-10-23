@@ -7,31 +7,8 @@ import type {
   HourlyForecast,
   WeatherForecast,
 } from "../../../application/ports/forecast/weather-provider.port.js";
+import type { KmaApiResponse, KmaResponseItem } from "./kma-response.schema.js";
 import { KMA_CATEGORY, KMA_TIMEZONE, PTY_CODE_MAP, SKY_CODE_MAP } from "./kma.constants.js";
-
-export interface KmaResponseItem {
-  category: string;
-  fcstDate: string;
-  fcstTime: string;
-  fcstValue: string;
-}
-
-export interface KmaApiResponse {
-  response: {
-    header: {
-      resultCode: string;
-      resultMsg: string;
-    };
-    body?: {
-      items?: {
-        item?: KmaResponseItem[];
-      };
-      numOfRows?: number;
-      pageNo?: number;
-      totalCount?: number;
-    };
-  };
-}
 
 /**
  * YYYYMMDD 형식을 YYYY-MM-DD로 변환

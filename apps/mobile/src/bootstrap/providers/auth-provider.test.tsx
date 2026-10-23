@@ -1,21 +1,26 @@
 import { emitSessionExpired, subscribeSessionExpired } from '@src/core/events/session-expired';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { TodoService } from '@src/features/todo/services/todo.service';
+import { TodoService } from '@src/features/todo/apis/todo.service';
 import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
-import { UserService } from '@src/features/user/services/user.service';
-import { WidgetSyncService } from '@src/features/widget/services/widget-sync.service';
+import { UserService } from '@src/features/user/apis/user.service';
+import { WidgetSyncService } from '@src/features/widget/apis/widget-sync.service';
 import {
   createMockAnalytics,
   createMockDIContainer,
   createMockHttpClient,
   createMockTokenStore,
+  createMemorySyncStorage,
 } from '@src/shared/__tests__';
+import { createDraftKey } from '@src/shared/draft/draft.model';
+import { createDraftRepository } from '@src/shared/draft/draft.repository';
+import { DraftService } from '@src/shared/draft/draft.service';
 import { KeychainLockedError } from '@src/shared/errors';
 import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AppState, Text } from 'react-native';
+import { z } from 'zod';
 
 import { AuthProvider, useAuth, useAuthStatus } from './auth-provider';
 import { StaticDIProvider } from './di-context';
@@ -43,6 +48,7 @@ describe('AuthProvider', () => {
   let errorReporter: jest.Mocked<ErrorReporter>;
   let analytics: ReturnType<typeof createMockAnalytics>;
   let queryClient: QueryClient;
+  let draftService: DraftService;
   let unsubscribes: Array<() => void>;
   let mountedProviders: Array<Awaited<ReturnType<typeof render>>>;
 
@@ -52,6 +58,7 @@ describe('AuthProvider', () => {
     errorReporter = createMockErrorReporter();
     analytics = createMockAnalytics();
     queryClient = new QueryClient();
+    draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
     unsubscribes = [];
     mountedProviders = [];
   });
@@ -90,6 +97,7 @@ describe('AuthProvider', () => {
           todoService,
           userService,
           widgetSyncService,
+          draftService,
         })}
       >
         <QueryClientProvider client={queryClient}>
@@ -217,15 +225,20 @@ describe('AuthProvider', () => {
         await expectStatus('locked');
 
         await act(() => {
-          for (const listener of listeners) listener('active');
+          for (const listener of listeners) {
+            listener('active');
+          }
         });
         expect(tokenStore.readRefreshToken).toHaveBeenCalledTimes(2);
         await fireEvent.press(screen.getByTestId('logout'));
         await expectStatus('unauthenticated');
 
         await act(() => {
-          if (outcome === 'success') resolveRead('previous-session-token');
-          else rejectRead(new Error('late keychain failure'));
+          if (outcome === 'success') {
+            resolveRead('previous-session-token');
+          } else {
+            rejectRead(new Error('late keychain failure'));
+          }
         });
 
         await expectStatus('unauthenticated');
@@ -318,6 +331,51 @@ describe('AuthProvider', () => {
       await expectStatus('unauthenticated');
       expect(clearedDuringEmit).toBe(false);
       expect(clearSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('로그아웃하면 다음 사용자가 보지 못하도록 작성 중 초안을 모두 지운다', async () => {
+      // Given
+      const draftKey = createDraftKey({
+        ownerId: 'user-1',
+        scope: 'memo',
+        target: ['create'],
+        schema: z.object({ content: z.string() }),
+      });
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+      draftService.save(draftKey, { content: '작성 중' });
+
+      // When
+      await fireEvent.press(screen.getByTestId('logout'));
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(draftService.restore(draftKey)).toEqual({ status: 'empty' });
+    });
+
+    it('세션이 만료되어도 작성 중 초안은 남겨 같은 사용자가 다시 로그인하면 이어 쓰게 한다', async () => {
+      // Given
+      const draftKey = createDraftKey({
+        ownerId: 'user-1',
+        scope: 'memo',
+        target: ['create'],
+        schema: z.object({ content: z.string() }),
+      });
+      tokenStore.readRefreshToken.mockResolvedValue('valid-refresh-token');
+      await renderProvider();
+      await expectStatus('authenticated');
+      draftService.save(draftKey, { content: '작성 중' });
+
+      // When
+      await act(() => emitSessionExpired({ reason: 'refresh-rejected' }));
+
+      // Then
+      await expectStatus('unauthenticated');
+      expect(draftService.restore(draftKey)).toEqual({
+        status: 'restored',
+        value: { content: '작성 중' },
+      });
     });
   });
 });

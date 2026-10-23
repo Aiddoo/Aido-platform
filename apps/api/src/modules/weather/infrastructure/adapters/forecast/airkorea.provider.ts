@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { HttpClient, InjectHttpClient } from "@nestjs/http-client";
+import { z } from "zod";
 
 import { TypedConfigService } from "#api/platform/config/services/config.service";
-import { readJson } from "#api/platform/http/read-json";
+import { requestVendorJson } from "#api/platform/http/request-vendor-json";
 
 import type {
   AirQuality,
@@ -11,26 +12,35 @@ import type {
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
 import { convertToTm } from "./wgs84-to-utmk.js";
 
-interface NearbyStationResponse {
-  response?: {
-    body?: {
-      items?: Array<{
-        stationName?: string;
-      }>;
-    };
-  };
-}
+const nearbyStationResponseSchema = z.object({
+  response: z
+    .object({
+      body: z
+        .object({
+          items: z
+            .array(z.object({ stationName: z.string().nullish() }))
+            .optional()
+            .catch(undefined),
+        })
+        .optional(),
+    })
+    .optional(),
+});
 
-interface AirQualityResponse {
-  response?: {
-    body?: {
-      items?: Array<{
-        pm10Value?: string;
-        pm25Value?: string;
-      }>;
-    };
-  };
-}
+const airQualityResponseSchema = z.object({
+  response: z
+    .object({
+      body: z
+        .object({
+          items: z
+            .array(z.object({ pm10Value: z.string().nullish(), pm25Value: z.string().nullish() }))
+            .optional()
+            .catch(undefined),
+        })
+        .optional(),
+    })
+    .optional(),
+});
 
 @Injectable()
 export class AirkoreaProvider implements AirQualityProvider {
@@ -73,31 +83,39 @@ export class AirkoreaProvider implements AirQualityProvider {
   async #findNearestStation(apiKey: string, lat: number, lon: number): Promise<string | null> {
     const { tmX, tmY } = convertToTm(lat, lon);
 
-    const url = new URL("https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getNearbyMsrstnList");
-    url.searchParams.set("serviceKey", apiKey);
-    url.searchParams.set("returnType", "json");
-    url.searchParams.set("tmX", String(tmX));
-    url.searchParams.set("tmY", String(tmY));
-    url.searchParams.set("ver", "1.1");
+    const outcome = await requestVendorJson(
+      this.http,
+      "https://apis.data.go.kr/B552584/MsrstnInfoInqireSvc/getNearbyMsrstnList",
+      {
+        serviceKey: apiKey,
+        returnType: "json",
+        tmX,
+        tmY,
+        ver: "1.1",
+      },
+    );
 
-    const { data: response } = await this.http.request(url.toString(), {
-      responseType: "response",
-      retry: false,
-      throwOnHttpError: false,
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!response.ok) {
+    if (outcome.kind === "http_failure") {
       this.#logger.warn({
         event: WeatherProviderLogEvent.HTTP_FAILED,
         provider: "airkorea",
         operation: "nearby_station",
-        statusCode: response.status,
+        statusCode: outcome.statusCode,
       });
       return null;
     }
 
-    const data = await readJson<NearbyStationResponse>(response);
+    const parsed = nearbyStationResponseSchema.safeParse(outcome.body);
+    if (!parsed.success) {
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "airkorea",
+        operation: "nearby_station",
+        errorType: "invalid_structure",
+      });
+      return null;
+    }
+    const data = parsed.data;
 
     const items = data?.response?.body?.items;
     if (!items || items.length === 0) {
@@ -130,33 +148,39 @@ export class AirkoreaProvider implements AirQualityProvider {
   }
 
   async #fetchAirQuality(apiKey: string, stationName: string): Promise<AirQuality | null> {
-    const url = new URL(
+    const outcome = await requestVendorJson(
+      this.http,
       "https://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty",
+      {
+        serviceKey: apiKey,
+        returnType: "json",
+        stationName,
+        dataTerm: "DAILY",
+        ver: "1.5",
+      },
     );
-    url.searchParams.set("serviceKey", apiKey);
-    url.searchParams.set("returnType", "json");
-    url.searchParams.set("stationName", stationName);
-    url.searchParams.set("dataTerm", "DAILY");
-    url.searchParams.set("ver", "1.5");
 
-    const { data: response } = await this.http.request(url.toString(), {
-      responseType: "response",
-      retry: false,
-      throwOnHttpError: false,
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!response.ok) {
+    if (outcome.kind === "http_failure") {
       this.#logger.warn({
         event: WeatherProviderLogEvent.HTTP_FAILED,
         provider: "airkorea",
         operation: "air_quality",
-        statusCode: response.status,
+        statusCode: outcome.statusCode,
       });
       return null;
     }
 
-    const data = await readJson<AirQualityResponse>(response);
+    const parsed = airQualityResponseSchema.safeParse(outcome.body);
+    if (!parsed.success) {
+      this.#logger.warn({
+        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+        provider: "airkorea",
+        operation: "air_quality",
+        errorType: "invalid_structure",
+      });
+      return null;
+    }
+    const data = parsed.data;
 
     const items = data?.response?.body?.items;
     if (!items || items.length === 0) {
@@ -180,7 +204,7 @@ export class AirkoreaProvider implements AirQualityProvider {
     };
   }
 
-  #parseValue(value: string | undefined): number | null {
+  #parseValue(value: string | null | undefined): number | null {
     if (value === undefined || value === null || value === "" || value === "-") {
       return null;
     }

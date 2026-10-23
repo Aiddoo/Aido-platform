@@ -8,7 +8,10 @@ import { sqlStatement } from "./database-sql.js";
 import { DatabaseService } from "./database.service.js";
 
 type NativeTransaction = Parameters<Parameters<DatabaseService["db"]["transaction"]>[0]>[0];
-export type Prisma8Transaction = NativeTransaction & { readonly raw: DatabaseService["db"]["raw"] };
+// Statements are prepared once on the client; a CLS context only runs them.
+export type Prisma8Transaction = Omit<NativeTransaction, "prepare"> & {
+  readonly raw: DatabaseService["db"]["raw"];
+};
 
 /** Native transaction methods live on its prototype and must retain their receiver. */
 export function bindDatabaseTransaction(
@@ -33,12 +36,14 @@ export class Prisma8TransactionalAdapter implements TransactionalAdapter<
   optionsFactory(
     connection: DatabaseService,
   ): TransactionalAdapterOptions<Prisma8Transaction, undefined> {
+    // Prepared statements and ORM calls need the runtime's activity source, which the client object lacks.
     const fallback: Prisma8Transaction = Object.assign(connection.db.runtime(), {
       raw: connection.db.raw,
       orm: connection.db.orm,
       sql: connection.db.sql,
       enums: connection.db.enums,
       nativeEnums: connection.db.nativeEnums,
+      toSql: connection.db.toSql,
       invalidated: false,
     });
 

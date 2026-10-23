@@ -39,7 +39,7 @@ import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure
 import { ClsUnitOfWork } from "#api/platform/database/cls-unit-of-work";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { createEntityId, varchar } from "#api/platform/database/database-values";
-import { DatabaseService } from "#api/platform/database/database.service";
+import { DatabaseService, contract } from "#api/platform/database/database.service";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 import { createTestDatabaseService } from "#test/setup/database-context";
@@ -47,8 +47,6 @@ import { suppressLogger } from "#test/setup/suppress-logger";
 import type { TestDatabaseClient } from "#test/setup/test-database";
 import { createUserDatabaseFixture } from "#test/setup/user-database-fixture";
 
-import type { Contract } from "../../src/generated/prisma8/contract.d.js";
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 import { TestDatabase } from "../setup/test-database.js";
 
 @Module({})
@@ -101,7 +99,7 @@ describe("ReportAggregator 통합 테스트 (실제 DB)", () => {
     testDb = new TestDatabase({
       createClient: (connectionUri) => {
         pool = new Pool({ connectionString: connectionUri });
-        return postgres<Contract>({ contractJson, pg: pool });
+        return postgres({ contract, pg: pool });
       },
     });
     prismaClient = await testDb.start();

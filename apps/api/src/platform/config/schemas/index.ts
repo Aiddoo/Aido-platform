@@ -45,22 +45,23 @@ export * from "./webhook.schema.js";
  * 통합 환경변수 스키마
  */
 export const envSchema = z
-  .object({})
-  .merge(appSchema)
-  .merge(appVersionSchema)
-  .merge(cacheSchema)
-  .merge(databaseSchema)
-  .merge(emailSchema)
-  .merge(jwtSchema)
-  .merge(jobSchema)
-  .merge(nudgeSchema)
-  .merge(oauthSchema)
-  .merge(securitySchema)
-  .merge(pushSchema)
-  .merge(retentionSchema)
-  .merge(externalSchema)
-  .merge(webhookSchema)
-  .merge(featureDiscoverySchema)
+  .object({
+    ...appSchema.shape,
+    ...appVersionSchema.shape,
+    ...cacheSchema.shape,
+    ...databaseSchema.shape,
+    ...emailSchema.shape,
+    ...jwtSchema.shape,
+    ...jobSchema.shape,
+    ...nudgeSchema.shape,
+    ...oauthSchema.shape,
+    ...securitySchema.shape,
+    ...pushSchema.shape,
+    ...retentionSchema.shape,
+    ...externalSchema.shape,
+    ...webhookSchema.shape,
+    ...featureDiscoverySchema.shape,
+  })
   .superRefine(validateFeatureDiscoveryConfig)
   .superRefine(validateAppVersionConfig);
 

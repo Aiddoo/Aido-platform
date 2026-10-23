@@ -10,4 +10,4 @@
 
 앱 아이콘 원본은 모두 1024×1024 RGB PNG이며 투명도와 모서리 마스크를 포함하지 않는다. iOS·Android 런처가 플랫폼 규칙에 따라 모양을 적용한다. 프로필과 네이티브 앱 아이콘은 동일한 파일을 참조한다.
 
-레지스트리는 `src/features/app-icon/presentations/constants/app-icons.constant.ts`, 네이티브 등록은 `app.config.ts`의 `expo-quick-actions` 플러그인이 담당한다. 네이티브 등록이 추가되므로 앱을 다시 빌드해야 한다. OTA 업데이트만으로 새 런처 아이콘을 추가하지 않는다.
+레지스트리는 `src/features/app-icon/constants/app-icons.constant.ts`, 네이티브 등록은 `app.config.ts`의 `expo-quick-actions` 플러그인이 담당한다. 네이티브 등록이 추가되므로 앱을 다시 빌드해야 한다. OTA 업데이트만으로 새 런처 아이콘을 추가하지 않는다.

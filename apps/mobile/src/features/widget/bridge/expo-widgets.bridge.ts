@@ -1,9 +1,9 @@
 import { formatDate } from '@src/shared/utils/date';
 import Constants from 'expo-constants';
 
-import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../models/widget-snapshot.model';
-import { aidoWidgets } from '../presentations/widgets';
-import { toWidgetProps } from '../services/widget-props.mapper';
+import { toWidgetProps } from '../apis/widget-props.mapper';
+import { aidoWidgets } from '../components/widgets';
+import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetBridge } from './widget-bridge';
 
 function nextLocalMidnight(now: Date): Date {

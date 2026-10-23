@@ -1,8 +1,9 @@
 import { z } from "zod";
 
+import { semanticVersionPattern } from "../../common/semantic-version.js";
+
 /** Shared by the Zod API contract and its OpenAPI projection. */
-export const featureDiscoveryMinAppVersionPattern =
-  "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$";
+export const featureDiscoveryMinAppVersionPattern = semanticVersionPattern;
 
 /**
  * UTC-only ISO datetime pattern matching Zod's default `z.iso.datetime()`
@@ -20,16 +21,14 @@ export const featureDiscoveryLaunchedAtSchema = z
   .regex(new RegExp(featureDiscoveryUtcDateTimePattern), "Must be a UTC ISO datetime");
 
 export const featureDiscoveryResponseSchema = z.discriminatedUnion("enabled", [
-  z.object({ enabled: z.literal(false) }).strict(),
-  z
-    .object({
-      enabled: z.literal(true),
-      campaignId: z.string().min(1),
-      minAppVersion: featureDiscoveryMinAppVersionSchema,
-      launchedAt: featureDiscoveryLaunchedAtSchema,
-      autoOpen: z.boolean(),
-    })
-    .strict(),
+  z.strictObject({ enabled: z.literal(false) }),
+  z.strictObject({
+    enabled: z.literal(true),
+    campaignId: z.string().min(1),
+    minAppVersion: featureDiscoveryMinAppVersionSchema,
+    launchedAt: featureDiscoveryLaunchedAtSchema,
+    autoOpen: z.boolean(),
+  }),
 ]);
 
 export type FeatureDiscoveryResponse = z.infer<typeof featureDiscoveryResponseSchema>;

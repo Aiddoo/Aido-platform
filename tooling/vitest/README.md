@@ -14,8 +14,8 @@
 | coverage     | `v8`                  | text, lcov, html, json-summary 출력  |
 
 ```typescript
-import { defineConfig, mergeConfig } from 'vitest/config';
 import baseConfig from '@aido/vitest-config';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
 export default mergeConfig(
   baseConfig,

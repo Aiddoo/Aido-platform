@@ -4,7 +4,8 @@ import { isStableFeedForeground } from '@src/shared/utils/stable-feed-foreground
 import * as Linking from 'expo-linking';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, type AppStateStatus, Keyboard } from 'react-native';
+import { AppState, type AppStateStatus } from 'react-native';
+import { useKeyboardState } from 'react-native-keyboard-controller';
 
 export function useStableFeedForeground(): boolean {
   const { status } = useAuth();
@@ -13,7 +14,7 @@ export function useStableFeedForeground(): boolean {
   const [appState, setAppState] = useState<AppStateStatus | null>(
     AppState.currentState === 'active' ? 'active' : null,
   );
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(Keyboard.isVisible());
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const [hasPendingDeepLink, setHasPendingDeepLink] = useState(true);
   const deepLinkReleaseTaskRef = useRef<number | null>(null);
 
@@ -42,23 +43,15 @@ export function useStableFeedForeground(): boolean {
         setHasPendingDeepLink(false);
       }
     });
-    const keyboardShowSubscription = Keyboard.addListener('keyboardDidShow', () => {
-      setIsKeyboardVisible(true);
-    });
-    const keyboardHideSubscription = Keyboard.addListener('keyboardDidHide', () => {
-      setIsKeyboardVisible(false);
-    });
 
     return () => {
       appStateSubscription.remove();
-      keyboardShowSubscription.remove();
-      keyboardHideSubscription.remove();
     };
   }, []);
 
   useEffect(() => {
     let mounted = true;
-    void Linking.getInitialURL()
+    Linking.getInitialURL()
       .then((url) => {
         if (mounted) {
           setHasPendingDeepLink(url !== null);

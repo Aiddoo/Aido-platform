@@ -1,18 +1,18 @@
 import { FlashList } from '@shopify/flash-list';
-import { AchievementSummaryCard } from '@src/features/achievement/presentations/components/AchievementSummaryCard';
-import { BadgeIcon } from '@src/features/achievement/presentations/components/BadgeIcon';
-import { CertificateBorder } from '@src/features/achievement/presentations/components/CertificateBorder';
-import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/presentations/constants/achievement-query-keys.constant';
-import { useGetWeeklyAchievementsQueryOptions } from '@src/features/achievement/presentations/queries/get-weekly-achievements-query-options';
-import type { WeeklyAchievementViewModel } from '@src/features/achievement/presentations/view-models/weekly-achievement.view-model';
+import { AchievementSummaryCard } from '@src/features/achievement/components/achievement-summary-card';
+import { BadgeIcon } from '@src/features/achievement/components/badge-icon';
+import { Certificate } from '@src/features/achievement/components/certificate';
+import { ACHIEVEMENT_QUERY_KEYS } from '@src/features/achievement/constants/achievement-query-keys';
+import { useGetWeeklyAchievementsInfiniteQueryOptions } from '@src/features/achievement/queries/get-weekly-achievements-infinite-query-options';
+import type { WeeklyAchievementViewModel } from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
 import { useTrack } from '@src/shared/analytics';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
-import { useToday } from '@src/shared/hooks/useToday';
+import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
   Button,
-  H3,
   HStack,
   ListRow,
   QueryErrorBoundary,
@@ -21,54 +21,27 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  DashedDivider,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useMemo } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, View } from 'react-native';
 
-const AchievementsScreen = () => {
+function AchievementsScreen() {
   const today = useToday();
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense
-          fallback={
-            <View className="flex-1 items-center justify-center">
-              <ActivityIndicator />
-            </View>
-          }
-        >
-          <AchievementsContent year={today.getFullYear()} />
-        </Suspense>
-      </QueryErrorBoundary>
-    </StyledSafeAreaView>
-  );
-};
-
-export default AchievementsScreen;
-
-interface AchievementsContentProps {
-  year: number;
-}
-
-function AchievementsContent({ year }: AchievementsContentProps) {
+  const year = today.getFullYear();
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('achievement');
   const queryClient = useQueryClient();
   const { trackEvent } = useTrack();
-  const queryOptions = useGetWeeklyAchievementsQueryOptions(year);
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
-    useSuspenseInfiniteQuery(queryOptions);
+    useSuspenseInfiniteQuery(useGetWeeklyAchievementsInfiniteQueryOptions({ year }));
 
-  const [refreshing, setRefreshing] = useState(false);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList(year) });
-    setRefreshing(false);
-  }, [queryClient, year]);
+  const [refreshing, onRefresh] = useRefresh(() =>
+    queryClient.invalidateQueries({ queryKey: ACHIEVEMENT_QUERY_KEYS.weeklyList({ year }) }),
+  );
 
   const allItems = useMemo(() => data.pages.flatMap((page) => page.items), [data.pages]);
 
@@ -83,7 +56,9 @@ function AchievementsContent({ year }: AchievementsContentProps) {
       contentContainerStyle={{ flexGrow: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onEndReached={() => {
-        if (hasNextPage && !isFetching) void fetchNextPage({ cancelRefetch: false });
+        if (hasNextPage && !isFetching) {
+          return fetchNextPage({ cancelRefetch: false });
+        }
       }}
       onEndReachedThreshold={0.5}
       ListHeaderComponent={
@@ -109,6 +84,20 @@ function AchievementsContent({ year }: AchievementsContentProps) {
               push('/feed');
             }}
           />
+          <Spacing size={24} />
+
+          <View className="px-1">
+            <Text size="b2" shade={8} weight="bold">
+              {t('list.sectionTitle')}
+            </Text>
+          </View>
+
+          <Spacing size={32} />
+
+          <Result
+            title={t('list.emptyRecordTitle')}
+            description={t('list.emptyRecordDescription')}
+          />
         </View>
       }
       ListFooterComponent={
@@ -129,69 +118,44 @@ function EmptyAchievementCard({ onPress }: { onPress: () => void }) {
   const { t } = useTranslation('achievement');
   return (
     <View>
-      <View className="bg-white rounded-sm overflow-hidden p-3">
-        <CertificateBorder>
-          <View className="px-5 pt-7 pb-5">
-            <VStack align="center" gap={4}>
-              <Text size="e1" tone="brand" className="tracking-widest">
-                WEEKLY BADGE
-              </Text>
-              <H3 className="tracking-wider">{t('card.title')}</H3>
-            </VStack>
+      <Certificate>
+        <Spacing size={12} />
 
-            <Spacing size={12} />
+        <Certificate.Ornament />
 
-            <Text tone="brand" align="center">
-              {'── ✦ ──'}
-            </Text>
+        <Spacing size={16} />
 
-            <Spacing size={16} />
+        <VStack align="center">
+          <Image
+            source={require('@assets/images/badge_empty.webp')}
+            style={{ width: 80, height: 80 }}
+            resizeMode="contain"
+          />
+        </VStack>
 
-            <VStack align="center">
-              <Image
-                source={require('@assets/images/badge_empty.webp')}
-                style={{ width: 80, height: 80 }}
-                resizeMode="contain"
-              />
-            </VStack>
+        <Spacing size={16} />
 
-            <Spacing size={16} />
-
-            <Text
-              size="b3"
-              shade={7}
-              align="center"
-              weight="medium"
-              lineBreakStrategyIOS="hangul-word"
-              textBreakStrategy="highQuality"
-            >
-              {t('list.emptyTitle')}
-            </Text>
-
-            <Spacing size={20} />
-
-            <View className="border-b border-dashed border-gray-3" />
-
-            <Spacing size={14} />
-
-            <Button size="medium" variant="weak" display="block" onPress={onPress}>
-              {t('list.startNow')}
-            </Button>
-          </View>
-        </CertificateBorder>
-      </View>
-
-      <Spacing size={24} />
-
-      <View className="px-1">
-        <Text size="b2" shade={8} weight="bold">
-          {t('list.sectionTitle')}
+        <Text
+          size="b3"
+          shade={7}
+          align="center"
+          weight="medium"
+          lineBreakStrategyIOS="hangul-word"
+          textBreakStrategy="highQuality"
+        >
+          {t('list.emptyTitle')}
         </Text>
-      </View>
 
-      <Spacing size={32} />
+        <Spacing size={20} />
 
-      <Result title={t('list.emptyRecordTitle')} description={t('list.emptyRecordDescription')} />
+        <DashedDivider />
+
+        <Spacing size={14} />
+
+        <Button size="medium" variant="weak" display="block" onPress={onPress}>
+          {t('list.startNow')}
+        </Button>
+      </Certificate>
     </View>
   );
 }
@@ -241,5 +205,25 @@ function WeeklyBadgeListItem({ achievement }: { achievement: WeeklyAchievementVi
         verticalPadding="medium"
       />
     </Pressable>
+  );
+}
+
+export default function AchievementsRoute() {
+  const today = useToday();
+
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
+      <QueryErrorBoundary resetKeys={[today.getFullYear()]}>
+        <Suspense
+          fallback={
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator />
+            </View>
+          }
+        >
+          <AchievementsScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }

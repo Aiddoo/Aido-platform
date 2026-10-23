@@ -6,7 +6,9 @@ export const routeIntegerStringSchema = z
   .transform((value): unknown => value);
 
 export function parseWebViewUrl(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
+  if (typeof value !== 'string') {
+    return null;
+  }
 
   const parseHttpUrl = (candidate: string) => {
     try {
@@ -18,7 +20,9 @@ export function parseWebViewUrl(value: unknown): string | null {
   };
 
   const directUrl = parseHttpUrl(value);
-  if (directUrl) return directUrl;
+  if (directUrl) {
+    return directUrl;
+  }
 
   try {
     return parseHttpUrl(decodeURIComponent(value));

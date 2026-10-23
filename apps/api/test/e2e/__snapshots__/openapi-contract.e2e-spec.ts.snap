@@ -17348,6 +17348,7 @@ if (limit !== null && used >= limit) {
               "login",
               "link",
             ],
+            "example": "link",
             "type": "string",
           },
         },
@@ -17659,6 +17660,7 @@ if (limit !== null && used >= limit) {
               "login",
               "link",
             ],
+            "example": "link",
             "type": "string",
           },
         },
@@ -18383,6 +18385,7 @@ provider에 따라 필수 토큰이 다릅니다:
               "KAKAO",
               "NAVER",
             ],
+            "example": "GOOGLE",
             "type": "string",
           },
         },
@@ -19476,6 +19479,7 @@ provider에 따라 필수 토큰이 다릅니다:
               "login",
               "link",
             ],
+            "example": "link",
             "type": "string",
           },
         },
@@ -23324,6 +23328,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "시작 날짜 (YYYY-MM-DD, 예: 2026-01-01)",
+            "example": "2026-01-01",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -23335,6 +23340,7 @@ GET /daily-completions?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "종료 날짜 (YYYY-MM-DD, 예: 2026-01-31)",
+            "example": "2026-01-31",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -23499,6 +23505,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "시작 날짜 (YYYY-MM-DD, 예: 2026-01-01)",
+            "example": "2026-01-01",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -23510,6 +23517,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "종료 날짜 (YYYY-MM-DD, 예: 2026-01-31)",
+            "example": "2026-01-31",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -24663,6 +24671,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "example": "clz7x5p8k0005qz0z8z8z8z8z",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -24838,6 +24847,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "example": "clz7x5p8k0005qz0z8z8z8z8z",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -25022,6 +25032,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "required": true,
           "schema": {
             "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "example": "clz7x5p8k0005qz0z8z8z8z8z",
             "format": "cuid",
             "pattern": "^[cC][^\\s-]{8,}$",
             "type": "string",
@@ -25196,6 +25207,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "userTag",
           "required": true,
           "schema": {
+            "example": "JOHN2026",
             "pattern": "^[A-Z0-9]{8}$",
             "type": "string",
           },
@@ -27857,6 +27869,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               "TODO",
               "SOCIAL",
             ],
+            "example": "ALL",
             "type": "string",
           },
         },
@@ -29174,6 +29187,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "name": "id",
           "required": true,
           "schema": {
+            "example": 1,
             "type": "number",
           },
         },
@@ -33711,6 +33725,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "cursor",
           "required": false,
           "schema": {
+            "example": 123,
             "type": "number",
           },
         },
@@ -33721,6 +33736,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "required": false,
           "schema": {
             "default": 20,
+            "example": 20,
             "maximum": 200,
             "minimum": 1,
             "type": "number",
@@ -33741,6 +33757,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "categoryId",
           "required": false,
           "schema": {
+            "example": 1,
             "type": "number",
           },
         },
@@ -33750,6 +33767,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "startDate",
           "required": false,
           "schema": {
+            "example": "2026-01-01",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -33760,6 +33778,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "name": "endDate",
           "required": false,
           "schema": {
+            "example": "2026-01-31",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
             "type": "string",
           },
@@ -40005,6 +40024,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
           "name": "year",
           "required": true,
           "schema": {
+            "example": 2026,
             "maximum": 2100,
             "minimum": 2024,
             "type": "number",
@@ -40026,6 +40046,7 @@ GET /weekly-achievements?year=2026&cursor=21&size=20
           "required": false,
           "schema": {
             "default": 20,
+            "example": 20,
             "maximum": 200,
             "minimum": 1,
             "type": "number",
@@ -40174,6 +40195,7 @@ GET /weekly-achievements/2026/10
           "required": true,
           "schema": {
             "description": "연도 (양의 정수, 예: 2026)",
+            "example": 2026,
             "exclusiveMinimum": true,
             "maximum": 9007199254740991,
             "minimum": 0,
@@ -40187,6 +40209,7 @@ GET /weekly-achievements/2026/10
           "required": true,
           "schema": {
             "description": "주차 (1-53, 예: 12)",
+            "example": 10,
             "maximum": 53,
             "minimum": 1,
             "type": "integer",

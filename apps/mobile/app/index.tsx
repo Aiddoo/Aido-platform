@@ -2,7 +2,7 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { Redirect } from 'expo-router';
 import { match } from 'ts-pattern';
 
-const Index = () => {
+function Index() {
   const { status } = useAuth();
 
   return match(status)
@@ -10,6 +10,6 @@ const Index = () => {
     .with('authenticated', () => <Redirect href="/feed" />)
     .with('unauthenticated', () => <Redirect href="/login" />)
     .exhaustive();
-};
+}
 
 export default Index;

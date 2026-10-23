@@ -12,7 +12,7 @@ export function getError(code: ErrorCodeType): ErrorDefinition {
  * 에러 코드 유효성 검사
  */
 export function isErrorCode(code: string): code is ErrorCodeType {
-  return code in ErrorCode;
+  return Object.hasOwn(ErrorCode, code);
 }
 
 /**

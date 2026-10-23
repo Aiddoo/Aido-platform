@@ -11,7 +11,9 @@ export const widgetNavigationStorage: WidgetNavigationStorage = {
   delete: (key) => getWidgetStorage().remove(key),
   subscribe: (key, listener) => {
     const subscription = getWidgetStorage().addOnValueChangedListener((changedKey) => {
-      if (changedKey === key) listener();
+      if (changedKey === key) {
+        listener();
+      }
     });
     return () => subscription.remove();
   },

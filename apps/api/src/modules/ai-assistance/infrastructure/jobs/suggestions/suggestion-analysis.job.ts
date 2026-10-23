@@ -109,31 +109,29 @@ export class SuggestionAnalysisJob implements OnModuleInit {
           .all()
           .then((row) => decodeRecord("User", row)),
       onBatch: async (batch) => {
-        await Promise.all(
-          batch.map((user) =>
-            this.runtime.enqueue(
-              AI_SUGGESTION_QUEUE,
-              {
-                name: AiSuggestionJobName.ANALYZE,
-                data: {
-                  userId: user.id,
-                  timezone: user.preference?.timezone ?? "Asia/Seoul",
-                  weatherGrid: user.location
-                    ? {
-                        gridX: user.location.gridX,
-                        gridY: user.location.gridY,
-                        lat: user.location.latitude,
-                        lon: user.location.longitude,
-                      }
-                    : null,
-                } satisfies AiSuggestionAnalyzeData,
-              },
-              {
-                ...this.#jobOptions(),
-                idempotencyKey: AiSuggestionJobKey.analyze(user.id, periodId),
-              },
-            ),
-          ),
+        await this.runtime.enqueueMany(
+          AI_SUGGESTION_QUEUE,
+          batch.map((user) => ({
+            data: {
+              name: AiSuggestionJobName.ANALYZE,
+              data: {
+                userId: user.id,
+                timezone: user.preference?.timezone ?? "Asia/Seoul",
+                weatherGrid: user.location
+                  ? {
+                      gridX: user.location.gridX,
+                      gridY: user.location.gridY,
+                      lat: user.location.latitude,
+                      lon: user.location.longitude,
+                    }
+                  : null,
+              } satisfies AiSuggestionAnalyzeData,
+            },
+            options: {
+              ...this.#jobOptions(),
+              idempotencyKey: AiSuggestionJobKey.analyze(user.id, periodId),
+            },
+          })),
         );
         totalEnqueued += batch.length;
         await dispatchJob?.updateProgress({ enqueued: totalEnqueued });

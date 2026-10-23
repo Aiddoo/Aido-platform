@@ -9,6 +9,7 @@ import {
   databaseFixture,
   databaseWriteExpectation,
   nativeRows,
+  projectedResult,
 } from "#test/mocks/database.mock";
 import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
@@ -287,7 +288,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
     it("토큰 패밀리 전체를 폐기한다", async () => {
       // Given - 여러 세션 폐기 Mock 설정
       db.orm.public.Session.updateAll.mockReturnValue(
-        nativeRows([{ id: "session-1" }, { id: "session-2" }]),
+        projectedResult(nativeRows([{ id: "session-1" }, { id: "session-2" }])),
       );
 
       // When - 토큰 패밀리 전체 폐기 실행
@@ -314,7 +315,7 @@ describe("SessionRepository — 세션 리포지토리", () => {
     it("사용자의 모든 세션을 폐기한다", async () => {
       // Given - 사용자의 모든 세션 폐기 Mock 설정
       db.orm.public.Session.updateAll.mockReturnValue(
-        nativeRows([{ id: "session-1" }, { id: "session-2" }]),
+        projectedResult(nativeRows([{ id: "session-1" }, { id: "session-2" }])),
       );
 
       // When - 사용자의 모든 세션 폐기 실행
@@ -334,7 +335,9 @@ describe("SessionRepository — 세션 리포지토리", () => {
 
     it("특정 세션을 제외하고 폐기한다", async () => {
       // Given - 특정 세션 제외 폐기 Mock 설정
-      db.orm.public.Session.updateAll.mockReturnValue(nativeRows([{ id: "other-session" }]));
+      db.orm.public.Session.updateAll.mockReturnValue(
+        projectedResult(nativeRows([{ id: "other-session" }])),
+      );
 
       // When - 현재 세션을 제외하고 나머지 폐기 실행
       const result = await repository.revokeAllByUserId(

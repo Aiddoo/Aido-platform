@@ -1,12 +1,16 @@
-import { isWeatherEnabled, PreferencePolicy } from '@src/features/auth/models/auth.model';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
+import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
+import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
-  GroupSkeleton,
-  SettingsCard,
-  SettingsTimePicker,
-  SettingsToggle,
-} from '@src/features/notification/presentations/components/settings';
+  type ClockTime,
+  SettingsTimeInput,
+} from '@src/features/notification/components/settings/settings-time-input';
+import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
+import {
+  type Preference,
+  PreferencePolicy,
+} from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -14,22 +18,7 @@ import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-export default function WeatherSettingsScreen() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<WeatherSettingsForm.Loading />}>
-            <WeatherSettingsForm />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ScrollView>
-    </StyledSafeAreaView>
-  );
-}
-
-function WeatherSettingsForm() {
+function WeatherSettingsScreen() {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const { t } = useTranslation(['notification', 'auth']);
@@ -46,7 +35,7 @@ function WeatherSettingsForm() {
               ? t('auth:preference.enablePushFirst')
               : t('settings.weatherDescription')
           }
-          isSelected={isWeatherEnabled(preference)}
+          isSelected={PreferencePolicy.isWeatherEnabled(preference)}
           onSelectedChange={(enabled) =>
             updateMutation.mutate({
               weatherMorningEnabled: enabled,
@@ -57,48 +46,90 @@ function WeatherSettingsForm() {
           isDisabled={pushDisabled}
         />
         <Separator className="bg-gray-2" />
-        <WeatherTimePicker
+        <WeatherTimeInput
           label={t('settings.weatherMorningLabel')}
           description={t('settings.weatherMorningDescription')}
-          field="morning"
+          period="morning"
         />
         <Separator className="bg-gray-2" />
-        <WeatherTimePicker
+        <WeatherTimeInput
           label={t('settings.weatherEveningLabel')}
           description={t('settings.weatherEveningDescription')}
-          field="evening"
+          period="evening"
         />
       </SettingsCard>
     </VStack>
   );
 }
 
-WeatherSettingsForm.Loading = function Loading() {
+WeatherSettingsScreen.Loading = function Loading() {
   return <GroupSkeleton rows={3} />;
 };
 
-function WeatherTimePicker({
+const WEATHER_TIME = {
+  morning: {
+    range: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
+    read: (preference: Preference): ClockTime => ({
+      hour: preference.weatherMorningHour,
+      minute: preference.weatherMorningMinute,
+    }),
+    toInput: ({ hour, minute }: ClockTime) => ({
+      weatherMorningHour: hour,
+      weatherMorningMinute: minute,
+    }),
+  },
+  evening: {
+    range: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
+    read: (preference: Preference): ClockTime => ({
+      hour: preference.weatherEveningHour,
+      minute: preference.weatherEveningMinute,
+    }),
+    toInput: ({ hour, minute }: ClockTime) => ({
+      weatherEveningHour: hour,
+      weatherEveningMinute: minute,
+    }),
+  },
+} as const;
+
+function WeatherTimeInput({
   label,
   description,
-  field,
+  period,
 }: {
   label: string;
   description: string;
-  field: 'morning' | 'evening';
+  period: keyof typeof WEATHER_TIME;
 }) {
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const updatePreference = useMutation(useUpdatePreferenceMutationOptions());
+  const time = WEATHER_TIME[period];
+
   return (
-    <SettingsTimePicker
+    <SettingsTimeInput
       label={label}
       description={description}
-      field={field}
-      getHour={(p) => (field === 'morning' ? p.weatherMorningHour : p.weatherEveningHour)}
-      getMinute={(p) => (field === 'morning' ? p.weatherMorningMinute : p.weatherEveningMinute)}
-      buildMutationInput={(h, m) =>
-        field === 'morning'
-          ? { weatherMorningHour: h, weatherMorningMinute: m }
-          : { weatherEveningHour: h, weatherEveningMinute: m }
-      }
-      isDisabled={PreferencePolicy.isWeatherDisabled}
+      value={time.read(preference)}
+      onChange={(value) => updatePreference.mutate(time.toInput(value))}
+      {...time.range}
+      timeFormat={preference.timeFormat}
+      isDisabled={PreferencePolicy.isWeatherDisabled(preference) || updatePreference.isPending}
     />
+  );
+}
+
+export default function WeatherSettingsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
+          <QueryErrorBoundary>
+            <Suspense fallback={<WeatherSettingsScreen.Loading />}>
+              <WeatherSettingsScreen />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
+      </ScrollView>
+    </StyledSafeAreaView>
   );
 }

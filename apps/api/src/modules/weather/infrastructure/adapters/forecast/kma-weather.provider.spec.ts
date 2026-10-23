@@ -78,6 +78,19 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
         ),
     ],
     ["잘못된 응답 구조", () => new Response(JSON.stringify({ response: {} }))],
+    [
+      "검증을 통과하지 못하는 item 형식",
+      () =>
+        new Response(
+          JSON.stringify({
+            response: {
+              header: { resultCode: "00" },
+              body: { items: { item: [{ category: 1 }] } },
+            },
+          }),
+        ),
+    ],
+    ["JSON이 아닌 HTTP 실패 본문", () => new Response("<html>Bad Gateway</html>", { status: 502 })],
   ])("%s는 기존 WEATHER_1901 오류이며 retry하지 않는다", async (_description, response) => {
     // Given
     fetchSpy.mockResolvedValue(response());

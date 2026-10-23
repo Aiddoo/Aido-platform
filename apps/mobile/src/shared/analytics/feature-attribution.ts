@@ -3,6 +3,7 @@ import type { SyncStorage } from '@src/core/ports/sync-storage';
 import { z } from 'zod';
 
 import { FEATURE_KEYS, type FeatureKey } from './events/growth.events';
+import { track } from './track';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 export const FEATURE_ATTRIBUTION_TTL_MS = 7 * DAY_MS;
@@ -96,7 +97,7 @@ export function trackAttributedFeatureSuccess(
       return false;
     }
 
-    analytics.trackEvent('feature_action_success', {
+    track(analytics, 'feature_action_success', {
       campaign_id: consumed.campaignId,
       feature: consumed.feature,
     });

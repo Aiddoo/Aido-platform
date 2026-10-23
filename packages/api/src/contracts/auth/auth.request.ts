@@ -12,7 +12,7 @@ export const emailSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .pipe(z.string().email("올바른 이메일 형식이 아닙니다"))
+  .pipe(z.email("올바른 이메일 형식이 아닙니다"))
   .pipe(z.string().max(255, "이메일은 255자 이내여야 합니다"))
   .describe("이메일 주소 (소문자 자동 변환, 예: user@example.com)");
 
@@ -198,10 +198,7 @@ export const updateProfileSchema = z
     profileImage: z
       .union([
         profileIconKeySchema,
-        z
-          .string()
-          .url("올바른 URL 형식이 아닙니다")
-          .max(500, "프로필 이미지 URL은 500자 이내여야 합니다"),
+        z.url("올바른 URL 형식이 아닙니다").max(500, "프로필 이미지 URL은 500자 이내여야 합니다"),
       ])
       .optional()
       .nullable()

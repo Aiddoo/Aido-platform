@@ -1,4 +1,4 @@
-import type { TodoComment } from '../models/todo-comment.model';
+import type { TodoComment } from '../domains/todo-comment.model';
 
 const CREATED_AT = new Date('2026-08-15T09:00:00.000Z');
 

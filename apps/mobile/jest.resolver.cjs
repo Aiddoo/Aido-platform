@@ -9,8 +9,9 @@ module.exports = (request, options) => {
       options.basedir.includes(`/node_modules/${name}/`) ||
       options.basedir.endsWith(`/node_modules/${name}`),
   );
-  if (!owner && !request.startsWith('react-native-worklets'))
+  if (!owner && !request.startsWith('react-native-worklets')) {
     return reactNativeResolver(request, options);
+  }
 
   // pnpm peer suffixes must not make other packages look like Worklets to its resolver.
   const packageMarker = `/node_modules/${owner}`;

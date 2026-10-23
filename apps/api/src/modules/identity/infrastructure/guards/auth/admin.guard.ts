@@ -1,7 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { Request } from "express";
+import type { Request } from "express";
 
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";

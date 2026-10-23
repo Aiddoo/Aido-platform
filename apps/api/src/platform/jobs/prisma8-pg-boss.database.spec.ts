@@ -1,4 +1,5 @@
 import { createMockDatabaseContext, nativeSqlParameters } from "#test/mocks/database.mock";
+import { asTxClient } from "#test/mocks/transaction.mock";
 
 import { nativeJobDatabase } from "./prisma8-pg-boss.database.js";
 
@@ -15,7 +16,7 @@ describe("nativeJobDatabase", () => {
     const payload = "quote' $3; DELETE FROM jobs";
 
     await expect(
-      nativeJobDatabase(tx, "id").executeSql(
+      nativeJobDatabase(asTxClient(tx), "id").executeSql(
         "SELECT $2::text, $1::text, $2::text, $3::text, $4::boolean, $5::integer",
         [payload, "queue", null, false, 0],
       ),
@@ -35,7 +36,7 @@ describe("nativeJobDatabase", () => {
     tx.query.mockResolvedValue([{ count: 1 }]);
 
     await expect(
-      nativeJobDatabase(tx, "count").executeSql(
+      nativeJobDatabase(asTxClient(tx), "count").executeSql(
         "SELECT count(*) FROM jobs WHERE id = ANY($1::uuid[])",
         [[jobId]],
       ),
@@ -45,7 +46,7 @@ describe("nativeJobDatabase", () => {
 
   it("취소할 작업이 없는 빈 목록도 처리한다", async () => {
     tx.query.mockResolvedValue([{ count: 0 }]);
-    await nativeJobDatabase(tx, "count").executeSql("SELECT $1::uuid[]", [[]]);
+    await nativeJobDatabase(asTxClient(tx), "count").executeSql("SELECT $1::uuid[]", [[]]);
     expect(nativeSqlParameters(tx.query.mock.calls[0]?.[0])).toEqual(["{}"]);
   });
 
@@ -55,7 +56,7 @@ describe("nativeJobDatabase", () => {
     ["invalid UUID array", [["not-a-uuid"]]],
   ])("%s 입력은 DB 쿼리를 실행하기 전에 거부한다", async (_name, values) => {
     await expect(
-      nativeJobDatabase(tx, "id").executeSql("SELECT $1::text", values),
+      nativeJobDatabase(asTxClient(tx), "id").executeSql("SELECT $1::text", values),
     ).rejects.toThrow();
     expect(tx.query).not.toHaveBeenCalled();
   });

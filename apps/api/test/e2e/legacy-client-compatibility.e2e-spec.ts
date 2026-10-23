@@ -11,16 +11,16 @@ import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/inde
 // 현재 validator를 가져오면 새 계약으로 구 클라이언트를 검증하게 되므로 소비 필드를 고정한다.
 const legacyTodoSchema = z.object({
   id: z.number().int(),
-  userId: z.string().cuid(),
+  userId: z.cuid(),
   title: z.string(),
   content: z.string().nullable().optional(),
   completed: z.boolean(),
   startDate: z.string(),
   endDate: z.string().nullable(),
-  scheduledTime: z.string().datetime().nullable(),
+  scheduledTime: z.iso.datetime().nullable(),
   isAllDay: z.boolean(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
 });
 
 const legacyTokensSchema = z.object({ accessToken: z.string(), refreshToken: z.string() });
@@ -36,8 +36,8 @@ const legacyNotificationsSchema = z.object({
       title: z.string(),
       body: z.string(),
       isRead: z.boolean(),
-      createdAt: z.string().datetime(),
-      readAt: z.string().datetime().nullable(),
+      createdAt: z.iso.datetime(),
+      readAt: z.iso.datetime().nullable(),
     }),
   ),
   unreadCount: z.number().int(),

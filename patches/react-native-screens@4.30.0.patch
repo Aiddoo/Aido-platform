@@ -1,0 +1,15 @@
+diff --git a/ios/tabs/host/RNSTabsHostComponentView.mm b/ios/tabs/host/RNSTabsHostComponentView.mm
+index 69bd2fc9cde3b064eda587703386bd98009e13d3..84181aa79b089582453669d2382519435aeb37b0 100644
+--- a/ios/tabs/host/RNSTabsHostComponentView.mm
++++ b/ios/tabs/host/RNSTabsHostComponentView.mm
+@@ -129,6 +129,10 @@ namespace react = facebook::react;
+ - (void)didMoveToWindow
+ {
+   if (self.window != nil && _controller.parentViewController == nil) {
++    // Size the view to the host before attaching: the tabs were installed at the main screen's size and UIKit
++    // doesn't rebuild the tab bar on a later resize (iPhone Duo side rail).
++    // See https://github.com/software-mansion/react-native-screens/issues/4989.
++    _controller.view.frame = self.bounds;
+     BOOL mountResult = [RNSContainerHelpers addChildViewController:_controller
+                                           toViewControllerManaging:self.reactSuperview
+                                                  withContainerView:self];

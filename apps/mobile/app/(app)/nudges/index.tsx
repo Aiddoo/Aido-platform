@@ -1,4 +1,4 @@
-import { nudgeDirectionSchema } from '@src/features/todo/models/nudge-interaction.model';
+import { nudgeDirectionSchema } from '@src/features/nudge/domains/nudge-interaction.model';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';
 

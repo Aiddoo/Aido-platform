@@ -51,10 +51,14 @@ const extra = ExtraSchema.parse(Constants.expoConfig?.extra);
  * 예: "192.168.1.100:8081" → "192.168.1.100"
  */
 const getAutoDetectedDevMachineIp = (): string | undefined => {
-  if (!__DEV__) return undefined;
+  if (!__DEV__) {
+    return undefined;
+  }
 
   const hostUri = Constants.expoConfig?.hostUri;
-  if (!hostUri) return undefined;
+  if (!hostUri) {
+    return undefined;
+  }
 
   const [ip] = hostUri.split(':');
   return ip;

@@ -1,0 +1,169 @@
+import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { FEATURE_DISCOVERY_QUERY_KEYS } from '@src/features/feature-discovery/constants/feature-discovery-query-keys';
+import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
+import { createCurrentUserDto } from '@src/features/user/__tests__/user.factories';
+import { toUser } from '@src/features/user/apis/user.mapper';
+import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
+import { QueryClient } from '@tanstack/react-query';
+
+import { createActivationProgressRepository } from '../apis/activation-progress.repository';
+import { ActivationService } from '../apis/activation.service';
+import { ACTIVATION_QUERY_KEYS } from '../constants/activation-query-keys';
+import {
+  recordTodoCompletionForActivation,
+  recordTodoCreatedForActivation,
+  unlockPushRegistrationForActivation,
+} from './activation-cache';
+
+function createService(): ActivationService {
+  const values = new Map<string, string>();
+  const storage: SyncStorage = {
+    getString: (key) => values.get(key),
+    set: (key, value) => values.set(key, value),
+    delete: (key) => values.delete(key),
+  };
+  return new ActivationService(createActivationProgressRepository(storage));
+}
+
+const config: FeatureDiscoveryConfig = {
+  enabled: true,
+  campaignId: 'feature-discovery-2026-08',
+  minAppVersion: '1.8.0',
+  launchedAt: new Date('2026-08-01T00:00:00.000Z'),
+  autoOpen: true,
+};
+
+const user = toUser(
+  createCurrentUserDto({ userId: 'new-user', createdAt: '2026-08-01T00:00:00.000Z' }),
+);
+
+describe('activation mutation bridge', () => {
+  let queryClient: QueryClient;
+  beforeEach(() => {
+    queryClient = new QueryClient();
+  });
+  afterEach(() => {
+    queryClient.clear();
+  });
+  it('생성 진행 상태를 공용 Query 캐시에 반영한다', () => {
+    // Given
+    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
+    const service = createService();
+
+    // When
+    recordTodoCreatedForActivation({
+      queryClient,
+      service,
+      now: new Date('2026-08-02T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(
+      queryClient.getQueryData(
+        ACTIVATION_QUERY_KEYS.progress({
+          accountId: 'new-user',
+          campaignId: 'feature-discovery-2026-08',
+        }),
+      ),
+    ).toEqual({
+      todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
+      activatedAt: null,
+      pushRegistrationUnlockedAt: null,
+    });
+  });
+
+  it('완료 성공에서 이벤트를 한 번 반환하고 활성 상태를 캐시에 반영한다', () => {
+    // Given
+    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
+    const service = createService();
+    recordTodoCreatedForActivation({
+      queryClient,
+      service,
+      now: new Date('2026-08-02T00:00:00.000Z'),
+    });
+
+    // When
+    const first = recordTodoCompletionForActivation({
+      queryClient,
+      service,
+      completed: true,
+      now: new Date('2026-08-03T00:00:00.000Z'),
+    });
+    const duplicate = recordTodoCompletionForActivation({
+      queryClient,
+      service,
+      completed: true,
+      now: new Date('2026-08-04T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(first).toEqual({
+      campaign_id: 'feature-discovery-2026-08',
+      days_since_signup: 2,
+    });
+    expect(duplicate).toBeNull();
+    expect(
+      queryClient.getQueryData(
+        ACTIVATION_QUERY_KEYS.progress({
+          accountId: 'new-user',
+          campaignId: 'feature-discovery-2026-08',
+        }),
+      ),
+    ).toEqual({
+      todoCreatedAt: new Date('2026-08-02T00:00:00.000Z'),
+      activatedAt: new Date('2026-08-03T00:00:00.000Z'),
+      pushRegistrationUnlockedAt: null,
+    });
+  });
+
+  it('설정의 명시적 푸시 동작을 진행 상태와 공용 캐시에 기록한다', () => {
+    // Given
+    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), user);
+    const service = createService();
+
+    // When
+    const unlocked = unlockPushRegistrationForActivation({
+      queryClient,
+      service,
+      now: new Date('2026-08-02T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(unlocked).toBe(true);
+    expect(
+      queryClient.getQueryData(
+        ACTIVATION_QUERY_KEYS.progress({
+          accountId: 'new-user',
+          campaignId: 'feature-discovery-2026-08',
+        }),
+      ),
+    ).toEqual({
+      todoCreatedAt: null,
+      activatedAt: null,
+      pushRegistrationUnlockedAt: new Date('2026-08-02T00:00:00.000Z'),
+    });
+  });
+
+  it('기존 사용자는 신규 코호트 게이트 해제 대상이 아님을 반환한다', () => {
+    // Given
+    queryClient.setQueryData(FEATURE_DISCOVERY_QUERY_KEYS.config(), config);
+    queryClient.setQueryData(USER_QUERY_KEYS.me(), {
+      ...user,
+      id: 'existing-user',
+      createdAt: new Date('2026-07-01T00:00:00.000Z'),
+    });
+
+    // When
+    const unlocked = unlockPushRegistrationForActivation({
+      queryClient,
+      service: createService(),
+      now: new Date('2026-08-02T00:00:00.000Z'),
+    });
+
+    // Then
+    expect(unlocked).toBe(false);
+  });
+});

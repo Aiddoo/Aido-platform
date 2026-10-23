@@ -1,8 +1,8 @@
 import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
-import { useAutomaticPushRegistration } from '@src/features/activation/presentations/hooks/use-automatic-push-registration';
-import { useNotificationHandler } from '@src/features/notification/presentations/hooks/use-notification-handler';
-import { getNotificationResponseDisposition } from '@src/features/notification/presentations/navigation/notification-response-disposition';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
+import { useAutomaticPushRegistration } from '@src/features/activation/hooks/use-automatic-push-registration';
+import { useNotificationHandler } from '@src/features/notification/hooks/use-notification-handler';
+import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
 import { i18n } from '@src/shared/i18n';
 import { useQuery } from '@tanstack/react-query';
@@ -138,8 +138,9 @@ function useNotificationResponseProcessor({
       if (
         handledResponseIds.current.has(responseId) ||
         processingResponseIds.current.has(responseId)
-      )
+      ) {
         return;
+      }
       if (Date.now() - response.receivedAt > PENDING_RESPONSE_LIFETIME) {
         pendingResponses.current.delete(responseId);
         return;
@@ -152,8 +153,9 @@ function useNotificationResponseProcessor({
       if (
         disposition.status === 'defer' ||
         (response.actionIdentifier !== 'MARKETING_OPT_OUT' && accountId === null)
-      )
+      ) {
         return;
+      }
       if (response.accountId !== null && response.accountId !== accountId) {
         pendingResponses.current.delete(responseId);
         return;
@@ -173,7 +175,9 @@ function useNotificationResponseProcessor({
         handledResponseIds.current.add(responseId);
         if (handledResponseIds.current.size > MAX_HANDLED_RESPONSES) {
           const oldest = handledResponseIds.current.values().next().value;
-          if (oldest !== undefined) handledResponseIds.current.delete(oldest);
+          if (oldest !== undefined) {
+            handledResponseIds.current.delete(oldest);
+          }
         }
         Notifications.clearLastNotificationResponse();
       } catch (error) {
@@ -190,7 +194,9 @@ function useNotificationResponseProcessor({
   const processResponse = useCallback(
     (response: Notifications.NotificationResponse) => {
       const responseId = response.notification.request.identifier;
-      if (handledResponseIds.current.has(responseId)) return;
+      if (handledResponseIds.current.has(responseId)) {
+        return;
+      }
       const parsed = pushNotificationDataSchema.safeParse(
         response.notification.request.content.data,
       );
@@ -208,21 +214,26 @@ function useNotificationResponseProcessor({
       pendingResponses.current.set(responseId, pending);
       if (pendingResponses.current.size > MAX_PENDING_RESPONSES) {
         const oldest = pendingResponses.current.keys().next().value;
-        if (oldest !== undefined) pendingResponses.current.delete(oldest);
+        if (oldest !== undefined) {
+          pendingResponses.current.delete(oldest);
+        }
       }
-      void processPendingResponse(pending);
+      processPendingResponse(pending);
     },
     [accountId, logger, processPendingResponse],
   );
 
   useEffect(() => {
     const retryPending = () => {
-      for (const response of pendingResponses.current.values())
-        void processPendingResponse(response);
+      for (const response of pendingResponses.current.values()) {
+        processPendingResponse(response);
+      }
     };
     retryPending();
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') retryPending();
+      if (state === 'active') {
+        retryPending();
+      }
     });
     return () => subscription.remove();
   }, [processPendingResponse]);

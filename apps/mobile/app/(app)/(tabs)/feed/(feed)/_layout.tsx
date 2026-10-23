@@ -1,49 +1,108 @@
-import { useGetFriendsQueryOptions } from '@src/features/friend/presentations/queries/get-friends-query-options';
-import { CalendarProvider } from '@src/features/todo/presentations/providers/calendar-provider';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { getProfileIconSource } from '@src/features/user/presentations/utils/profile-icon.util';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { userIdParamSchema } from '@aido/api';
+import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
+import { TodoDetailPane } from '@src/features/todo-comment/components/todo-detail-pane/todo-detail-pane';
+import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';
+import { serializeTodoCommentRoute } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
+import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
+import { FeedRouteParamsProvider } from '@src/features/todo/components/providers/feed-route-params-provider';
+import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
+import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
+import { createFeedHref, isFeedPathname } from '@src/features/todo/utils/feed-route';
+import { UserAvatar } from '@src/features/user/components/user-avatar';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
+import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
 import {
+  AdaptivePane,
   HStack,
   PlusIcon,
   QueryErrorBoundary,
   Box,
   Result,
   type QueryErrorFallbackProps,
+  StyledSafeAreaView,
   Text,
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
-import { Slot, router, useGlobalSearchParams } from 'expo-router';
-import { Avatar, PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense, useMemo } from 'react';
+import { range } from 'es-toolkit';
+import { Slot, router, usePathname } from 'expo-router';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import { Suspense, useEffect, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
+import { z } from 'zod';
 
 export default function FeedGroupLayout() {
   return (
-    <CalendarProvider>
-      <Box flex={1} className="bg-white">
-        <VStack>
-          <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
-            <Suspense fallback={<AvatarList.Loading />}>
-              <AvatarList />
-            </Suspense>
-          </QueryErrorBoundary>
-        </VStack>
-        <Slot />
-      </Box>
-    </CalendarProvider>
+    <FeedRouteParamsProvider>
+      <CalendarProvider>
+        <FeedCompactDetailHandoff />
+        <AdaptivePane
+          primary={
+            <Box flex={1} className="bg-white">
+              <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
+                <Suspense fallback={<AvatarList.Loading />}>
+                  <AvatarList />
+                </Suspense>
+              </QueryErrorBoundary>
+              <Slot />
+            </Box>
+          }
+          secondary={<FeedDetailPane />}
+        />
+      </CalendarProvider>
+    </FeedRouteParamsProvider>
   );
 }
+
+function FeedDetailPane() {
+  const [selectedTodoId] = useFeedSelectedTodo();
+
+  if (selectedTodoId === undefined) {
+    return <TodoDetailPane.Empty />;
+  }
+
+  return <TodoDetailPane key={selectedTodoId} presentation="pane" />;
+}
+
+function FeedCompactDetailHandoff() {
+  const isFeedInFront = isFeedPathname(usePathname());
+  const windowSizeClass = useWindowSizeClass();
+  const [selectedTodoId] = useFeedSelectedTodo();
+  const [commentRoute] = useTodoCommentRoute();
+
+  useEffect(() => {
+    if (!isFeedInFront || windowSizeClass !== 'compact' || selectedTodoId === undefined) {
+      return;
+    }
+    router.setParams({
+      todoId: undefined,
+      comment: undefined,
+      intent: undefined,
+      returnTo: undefined,
+    });
+    router.push({
+      pathname: '/todo/[todoId]',
+      params: { todoId: selectedTodoId, ...serializeTodoCommentRoute(commentRoute) },
+    });
+  }, [isFeedInFront, windowSizeClass, selectedTodoId, commentRoute]);
+
+  return null;
+}
+
+const FeedLayoutParamsSchema = z.object({
+  friendId: userIdParamSchema.shape.userId.optional().catch(undefined),
+  date: feedDateParamSchema,
+});
 
 function AvatarList() {
   const push = useSingleTap(router.push);
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('todo');
-  const { friendId, date } = useGlobalSearchParams<{ friendId?: string; date?: string }>();
+  const { friendId, date } = FeedLayoutParamsSchema.parse(useRouteSearchParams());
   const selectedFriendId = friendId ?? null;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {
@@ -52,7 +111,7 @@ function AvatarList() {
     hasNextPage,
     isFetching,
     isFetchNextPageError,
-  } = useSuspenseInfiniteQuery(useGetFriendsQueryOptions());
+  } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
 
   const friends = useMemo(
     () => friendsData.pages.flatMap((page) => page.items),
@@ -61,7 +120,7 @@ function AvatarList() {
 
   const handleScrollEnd = () => {
     if (hasNextPage && !isFetching) {
-      void fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+      fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
     }
   };
 
@@ -69,48 +128,48 @@ function AvatarList() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, gap: 12, alignItems: 'flex-start' }}
+      style={{ flexGrow: 0 }}
+      contentContainerStyle={{ paddingHorizontal: 16 }}
       onMomentumScrollEnd={handleScrollEnd}
     >
-      <AvatarList.Item
-        name={t('feed.me')}
-        image={user.profileImage}
-        isSelected={selectedFriendId === null}
-        onPress={() => replace({ pathname: '/feed', params: date ? { date } : undefined })}
-      />
-
-      {friends.map((friend) => (
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-row items-start gap-3">
         <AvatarList.Item
-          key={friend.followId}
-          name={friend.displayName}
-          image={friend.profileImage}
-          isSelected={selectedFriendId === friend.id}
-          onPress={() =>
-            replace({
-              pathname: '/feed/friend/[friendId]',
-              params: { friendId: friend.id, ...(date ? { date } : {}) },
-            })
-          }
+          name={t('feed.me')}
+          image={user.profileImage}
+          isSelected={selectedFriendId === null}
+          onPress={() => replace(createFeedHref(null, date))}
         />
-      ))}
 
-      {isFetchNextPageError && <AvatarList.MoreError onPress={handleScrollEnd} />}
+        {friends.map((friend) => (
+          <AvatarList.Item
+            key={friend.followId}
+            name={friend.displayName}
+            image={friend.profileImage}
+            isSelected={selectedFriendId === friend.id}
+            onPress={() => replace(createFeedHref(friend.id, date))}
+          />
+        ))}
 
-      <AvatarList.AddButton onPress={() => push('/friends/search')} />
+        {isFetchNextPageError && <AvatarList.MoreError onPress={handleScrollEnd} />}
+
+        <AvatarList.AddButton onPress={() => push('/friends/search')} />
+      </StyledSafeAreaView>
     </ScrollView>
   );
 }
 
 AvatarList.Loading = function Loading() {
   return (
-    <HStack px={16} gap={12}>
-      {times(3).map((i) => (
-        <VStack key={i} align="center" gap={4}>
-          <Skeleton className="size-8 rounded-full" />
-          <Skeleton className="h-4 w-8 rounded" />
-        </VStack>
-      ))}
-    </HStack>
+    <StyledSafeAreaView edges={['left', 'right']}>
+      <HStack px={16} gap={12}>
+        {range(3).map((i) => (
+          <VStack key={i} align="center" gap={4}>
+            <Skeleton className="size-8 rounded-full" />
+            <Skeleton className="h-4 w-8 rounded" />
+          </VStack>
+        ))}
+      </HStack>
+    </StyledSafeAreaView>
   );
 };
 
@@ -126,9 +185,7 @@ AvatarList.Item = function Item({ name, image, isSelected, onPress }: AvatarList
   return (
     <PressableFeedback onPress={onPress}>
       <VStack align="center" gap={4}>
-        <Avatar size="sm" alt={t('feed.avatarAlt', { name })}>
-          <Avatar.Image source={getProfileIconSource(image)} />
-        </Avatar>
+        <UserAvatar size="sm" alt={t('feed.avatarAlt', { name })} profileImage={image} />
         <Text
           size="e1"
           shade={isSelected ? 9 : 6}
@@ -158,12 +215,14 @@ AvatarList.AddButton = function AddButton({ onPress }: { onPress: () => void }) 
 AvatarList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['friend', 'common']);
   return (
-    <HStack px={16} py={8} gap={8} align="center">
-      <Text size="b4" shade={6} className="flex-1">
-        {t('friend:list.loadFailed')}
-      </Text>
-      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
-    </HStack>
+    <StyledSafeAreaView edges={['left', 'right']}>
+      <HStack px={16} py={8} gap={8} align="center">
+        <Text size="b4" shade={6} className="flex-1">
+          {t('friend:list.loadFailed')}
+        </Text>
+        <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+      </HStack>
+    </StyledSafeAreaView>
   );
 };
 

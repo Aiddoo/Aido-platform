@@ -7,8 +7,8 @@ import type {
   Varchar,
 } from "@prisma/orm-postgres/target/codec-types";
 import {
-  pgTimestampCanonical,
-  pgTimestamptzCanonical,
+  pgTimestampStoredText,
+  pgTimestamptzStoredText,
 } from "@prisma/orm-postgres/target/data-types";
 import { z } from "zod";
 
@@ -39,7 +39,7 @@ export function char<const Length extends number>(value: string, length: Length)
 
 /** timestamp without time zone을 기존 서버와 동일하게 UTC로 읽고 쓴다. */
 export function databaseTimestamp(value: Date): TimestampString<3> {
-  const text = pgTimestampCanonical(value.toISOString().slice(0, -1));
+  const text = pgTimestampStoredText(value.toISOString().slice(0, -1));
   return z
     .custom<TimestampString<3>>((candidate) => typeof candidate === "string" && candidate === text)
     .parse(text);
@@ -50,7 +50,7 @@ export function databaseDate(value: Date): string {
 }
 
 export function databaseTimestamptz(value: Date): TimestamptzString<3> {
-  const text = pgTimestamptzCanonical(value.toISOString());
+  const text = pgTimestamptzStoredText(value.toISOString());
   return z
     .custom<TimestamptzString<3>>(
       (candidate) => typeof candidate === "string" && candidate === text,

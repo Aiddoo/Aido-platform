@@ -75,7 +75,7 @@ export class VerificationRepository implements AuthVerificationRepositoryPort {
       .where((fields, functions) => functions.eq(fields.id, id))
       .returning("id", "userId", "type", "token", "expiresAt", "usedAt", "attempts", "createdAt")
       .build();
-    const [row] = await db.runtime().query(plan);
+    const [row] = await db.query(plan);
     return decodeRecord("Verification", requireRecord(row));
   }
 

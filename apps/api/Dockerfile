@@ -1,6 +1,7 @@
-FROM node:24.21.0-alpine3.24 AS base
+FROM node:24.22.1-alpine3.24 AS base
 WORKDIR /app
 ENV COREPACK_HOME=/usr/local/share/corepack
+ENV pnpm_config_verify_deps_before_run=false
 COPY package.json ./
 RUN corepack enable && apk add --no-cache openssl
 
@@ -12,7 +13,6 @@ RUN pnpm dlx "turbo@$(node -p 'require("./package.json").devDependencies.turbo')
 FROM base AS deps
 COPY --from=pruner /app/out/api/json/ ./
 COPY --from=pruner /app/out/api/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=pruner /app/.pnpmfile.cjs /app/.npmrc ./
 RUN pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild argon2 @swc/core
 
 FROM deps AS builder
@@ -33,8 +33,8 @@ CMD ["pnpm", "dev"]
 FROM base AS migrate-deps
 COPY --from=pruner /app/out/migrate/json/ ./
 COPY --from=pruner /app/out/migrate/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=pruner /app/.pnpmfile.cjs /app/.npmrc ./
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts && \
+    chmod a+r pnpm-workspace.yaml && \
     pnpm --filter @aido/database-migrate exec prisma --version
 
 FROM migrate-deps AS migrate
@@ -53,7 +53,7 @@ USER migrate
 RUN test -r "$NODE_EXTRA_CA_CERTS"
 CMD ["pnpm", "db:deploy"]
 
-FROM node:24.21.0-alpine3.24 AS production
+FROM node:24.22.1-alpine3.24 AS production
 WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
 COPY --from=builder --chown=nestjs:nodejs /app/production/ ./

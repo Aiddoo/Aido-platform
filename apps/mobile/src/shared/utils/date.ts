@@ -1,11 +1,13 @@
 import { i18n, t } from '@src/shared/i18n';
+import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekOfYear from 'dayjs/plugin/weekOfYear';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 
 import { getCalendarWeek } from './calendar-week';
 import { formatClockTime, formatDateLabel, type DateFormatContext } from './date-format';
+import { getDeviceTimezone } from './timezone';
 
 dayjs.extend(weekOfYear);
 dayjs.extend(isoWeek);
@@ -17,10 +19,10 @@ export const formatDate = (date: Date | string | number): string => {
   return d.isValid() ? d.format('YYYY-MM-DD') : '';
 };
 
-function getDateFormatContext(): DateFormatContext {
+export function getDateFormatContext(): DateFormatContext {
   return {
-    locale: i18n.language.startsWith('ko') ? 'ko-KR' : 'en-US',
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    locale: toResolvedLanguage(i18n.language) === 'ko' ? 'ko-KR' : 'en-US',
+    timeZone: getDeviceTimezone(),
   };
 }
 
@@ -182,7 +184,7 @@ export const withDayOfMonth = (date: Date, dayOfMonth: number): Date => {
 };
 
 export const getWeekDates = (weekStartDate: Date): Date[] => {
-  return times(7, (i) => dayjs(weekStartDate).add(i, 'day').toDate());
+  return range(7).map((i) => dayjs(weekStartDate).add(i, 'day').toDate());
 };
 
 export const getMonthWeeks = (displayDate: Date): Date[][] => {
@@ -246,10 +248,18 @@ export const getDateSectionKey = (date: Date, referenceDate: Date) => {
   const now = dayjs(referenceDate);
   const target = dayjs(date);
 
-  if (target.isSame(now, 'day')) return 'today';
-  if (now.subtract(1, 'day').isSame(target, 'day')) return 'yesterday';
-  if (target.isSame(now, 'isoWeek')) return 'thisWeek';
-  if (target.isSame(now, 'month')) return 'thisMonth';
+  if (target.isSame(now, 'day')) {
+    return 'today';
+  }
+  if (now.subtract(1, 'day').isSame(target, 'day')) {
+    return 'yesterday';
+  }
+  if (target.isSame(now, 'isoWeek')) {
+    return 'thisWeek';
+  }
+  if (target.isSame(now, 'month')) {
+    return 'thisMonth';
+  }
   return 'earlier';
 };
 
@@ -264,10 +274,20 @@ export const formatRelativeTime = (date: Date, referenceDate: Date = new Date())
   const diffHours = now.diff(target, 'hour');
   const diffDays = now.diff(target, 'day');
 
-  if (diffMinutes < 1) return t('common:relativeTime.justNow');
-  if (diffMinutes < 60) return t('common:relativeTime.minutesAgo', { count: diffMinutes });
-  if (diffHours < 24) return t('common:relativeTime.hoursAgo', { count: diffHours });
-  if (diffDays < 7) return t('common:relativeTime.daysAgo', { count: diffDays });
-  if (target.year() === now.year()) return target.format(t('common:dateFormats.monthDay'));
+  if (diffMinutes < 1) {
+    return t('common:relativeTime.justNow');
+  }
+  if (diffMinutes < 60) {
+    return t('common:relativeTime.minutesAgo', { count: diffMinutes });
+  }
+  if (diffHours < 24) {
+    return t('common:relativeTime.hoursAgo', { count: diffHours });
+  }
+  if (diffDays < 7) {
+    return t('common:relativeTime.daysAgo', { count: diffDays });
+  }
+  if (target.year() === now.year()) {
+    return target.format(t('common:dateFormats.monthDay'));
+  }
   return target.format(t('common:dateFormats.shortDate'));
 };

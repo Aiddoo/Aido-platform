@@ -1,5 +1,6 @@
 import type {
   EnqueueJobOptions,
+  EnqueueJobRequest,
   JobCancellationResult,
   JobData,
   JobEnvelope,
@@ -42,6 +43,15 @@ export class FakeJobRuntime implements JobRuntimePort {
     this.enqueueCalls.push({ queue, data, options });
     this.sequence += 1;
     return `fake-job-${this.sequence}`;
+  }
+
+  async enqueueMany<T extends JobData>(
+    queue: string,
+    jobs: readonly EnqueueJobRequest<T>[],
+  ): Promise<void> {
+    for (const { data, options } of jobs) {
+      await this.enqueue(queue, data, options);
+    }
   }
 
   async schedule<T extends JobData>(

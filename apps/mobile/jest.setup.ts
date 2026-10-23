@@ -34,7 +34,9 @@ require('react-native-gesture-handler/jestSetup');
 const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
 Object.defineProperty(globalThis, 'window', { configurable: true, value: undefined });
 require('react-native-reanimated').setUpTests();
-if (windowDescriptor) Object.defineProperty(globalThis, 'window', windowDescriptor);
+if (windowDescriptor) {
+  Object.defineProperty(globalThis, 'window', windowDescriptor);
+}
 
 jest.mock('react-native-svg', () => {
   const mockSvg = require('react-native-reanimated/src/mock-svg');

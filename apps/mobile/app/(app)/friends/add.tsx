@@ -1,24 +1,30 @@
 import { userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useSendRequestByTagMutationOptions } from '@src/features/friend/presentations/queries/use-send-request-by-tag-mutation-options';
+import { useSendRequestByTagMutationOptions } from '@src/features/friend/queries/use-send-request-by-tag-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { H3, Input, KeyboardAdaptiveButton, Spacing, Text } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import {
+  H3,
+  Input,
+  KeyboardAdaptiveButton,
+  Spacing,
+  Text,
+  QueryErrorBoundary,
+  StyledSafeAreaView,
+} from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof userTagParamSchema>;
 
-const AddFriendScreen = () => {
+function AddFriendScreen() {
   const { showBoundary } = useErrorBoundary();
 
   const goBack = useSingleTap(router.back);
@@ -44,7 +50,9 @@ const AddFriendScreen = () => {
         onSuccess: () => goBack(),
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -60,40 +68,44 @@ const AddFriendScreen = () => {
           alwaysBounceVertical={false}
           overScrollMode="never"
         >
-          <H3>{t('add.title')}</H3>
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <H3>{t('add.title')}</H3>
 
-          <Spacing size={4} />
+            <Spacing size={4} />
 
-          <Text size="b4" shade={6}>
-            {t('add.description')}
-          </Text>
+            <Text size="b4" shade={6}>
+              {t('add.description')}
+            </Text>
 
-          <Spacing size={24} />
+            <Spacing size={24} />
 
-          <FormField control={control} name="userTag">
-            {({ onChange, value }, { error }) => (
-              <Input
-                label={t('add.tagLabel')}
-                placeholder="ABC12345"
-                value={value}
-                onChange={onChange}
-                autoFocus
-                autoCapitalize="characters"
-                autoCorrect={false}
-                maxLength={8}
-                submitBehavior="submit"
-                returnKeyType="done"
-                isInvalid={!!error}
-                errorMessage={resolveValidationMessage(error, {
-                  default: 'userTag.pattern',
-                  byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
-                })}
-                onSubmitEditing={() => {
-                  if (isValid) handleSubmit(onSubmit)();
-                }}
-              />
-            )}
-          </FormField>
+            <FormField control={control} name="userTag">
+              {({ onChange, value }, { error }) => (
+                <Input
+                  label={t('add.tagLabel')}
+                  placeholder="ABC12345"
+                  value={value}
+                  onChange={onChange}
+                  autoFocus
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  maxLength={8}
+                  submitBehavior="submit"
+                  returnKeyType="done"
+                  isInvalid={!!error}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'userTag.pattern',
+                    byType: { too_small: 'userTag.length', too_big: 'userTag.length' },
+                  })}
+                  onSubmitEditing={() => {
+                    if (isValid) {
+                      handleSubmit(onSubmit)();
+                    }
+                  }}
+                />
+              )}
+            </FormField>
+          </StyledSafeAreaView>
         </ScrollView>
 
         <KeyboardAdaptiveButton
@@ -106,6 +118,13 @@ const AddFriendScreen = () => {
       </View>
     </FormProvider>
   );
-};
+}
 
-export default AddFriendScreen;
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function AddFriendRoute() {
+  return (
+    <QueryErrorBoundary>
+      <AddFriendScreen />
+    </QueryErrorBoundary>
+  );
+}

@@ -44,7 +44,7 @@ export class PrismaAdminGrowthMetricsAdapter implements AdminGrowthMetricsPort {
 
     const rows = decodeSqlRows(
       sqlRows1,
-      await this.database.db.runtime().query(
+      await this.database.db.query(
         sqlStatement(
           this.database.db,
           sql`

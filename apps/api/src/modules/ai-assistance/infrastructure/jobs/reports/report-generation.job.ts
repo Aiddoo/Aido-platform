@@ -109,25 +109,23 @@ export class ReportGenerationJob implements OnModuleInit {
           .all()
           .then((row) => decodeRecord("User", row)),
       onBatch: async (batch) => {
-        await Promise.all(
-          batch.map((user) =>
-            this.runtime.enqueue(
-              AI_REPORT_QUEUE,
-              {
-                name: AiReportJobName.GENERATE,
-                data: {
-                  userId: user.id,
-                  timezone: user.preference?.timezone ?? "Asia/Seoul",
-                  locale: user.preference?.locale ?? "ko",
-                  reportType: type,
-                } satisfies AiReportGenerateData,
-              },
-              {
-                ...this.#jobOptions(),
-                idempotencyKey: AiReportJobKey.generate(type, user.id, periodId),
-              },
-            ),
-          ),
+        await this.runtime.enqueueMany(
+          AI_REPORT_QUEUE,
+          batch.map((user) => ({
+            data: {
+              name: AiReportJobName.GENERATE,
+              data: {
+                userId: user.id,
+                timezone: user.preference?.timezone ?? "Asia/Seoul",
+                locale: user.preference?.locale ?? "ko",
+                reportType: type,
+              } satisfies AiReportGenerateData,
+            },
+            options: {
+              ...this.#jobOptions(),
+              idempotencyKey: AiReportJobKey.generate(type, user.id, periodId),
+            },
+          })),
         );
         totalEnqueued += batch.length;
         await dispatchJob?.updateProgress({ enqueued: totalEnqueued });

@@ -17,19 +17,27 @@ export const createConsoleLogger = ({ minLevel }: ConsoleLoggerOptions): Logger 
 
   return {
     debug(message: string, context?: LogContext): void {
-      if (!shouldLog('debug')) return;
+      if (!shouldLog('debug')) {
+        return;
+      }
       context ? console.debug(`[DEBUG] ${message}`, context) : console.debug(`[DEBUG] ${message}`);
     },
     info(message: string, context?: LogContext): void {
-      if (!shouldLog('info')) return;
+      if (!shouldLog('info')) {
+        return;
+      }
       context ? console.info(`[INFO] ${message}`, context) : console.info(`[INFO] ${message}`);
     },
     warn(message: string, context?: LogContext): void {
-      if (!shouldLog('warn')) return;
+      if (!shouldLog('warn')) {
+        return;
+      }
       context ? console.warn(`[WARN] ${message}`, context) : console.warn(`[WARN] ${message}`);
     },
     error(message: string, error?: Error, context?: LogContext): void {
-      if (!shouldLog('error')) return;
+      if (!shouldLog('error')) {
+        return;
+      }
       if (error && context) {
         console.error(`[ERROR] ${message}`, error, context);
       } else if (error) {

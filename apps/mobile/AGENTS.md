@@ -1,6 +1,6 @@
 # Aido Mobile App
 
-> **Version**: 1.2.0 · **Last Updated**: 2026-10-01 · **Owner**: Aido Mobile Team
+> **Version**: 1.3.0 · **Last Updated**: 2026-10-14 · **Owner**: Aido Mobile Team
 
 Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
@@ -31,18 +31,18 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 기술 스택 (요약)
 
-Expo SDK 58.0.1 · React Native 0.88 RC · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · Uniwind · `react-hook-form`
+Expo SDK 58.0.17 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · Uniwind · `react-hook-form`
 
 ---
 
 ## 아키텍처 한눈에 보기
 
 ```
-Presentation (app/, presentations/)
+Presentation (app/, components/, hooks/, queries/)
      ↓
-Application (services/)   ← HTTP + Zod + Mapper + Policy 모두 담당
+Application (apis/)   ← HTTP + Zod + Mapper + Policy 모두 담당
      ↓
-Domain (models/)          ← Zod 스키마 + Policy + Error
+Domain (domains/)          ← Zod 스키마 + Policy + Error
      ↓
 Infrastructure (shared/infra/, core/ports/)  ← Ky 클라이언트, SecureStore
      ↓
@@ -54,24 +54,34 @@ Bootstrap (bootstrap/providers/)   ← DI 컨테이너, 전역 Provider
 ### Feature 구조
 
 ```
-features/{feature}/
-├── models/         # Zod 스키마 + 타입 + Policy + Error
-├── services/       # Service + Mapper (HTTP + Zod + 변환 + 비즈니스 로직)
-├── __tests__/      # 테스트 팩토리
-└── presentations/  # Query Keys / Options, 컴포넌트, view-models
+features/{feature}/   # 단수 kebab-case
+├── domains/        # 클라이언트 모델 + 순수 함수 + Policy + Error
+├── apis/           # Service + Mapper (HTTP + Zod + 변환 + Policy 검증)
+├── components/     # 의미 있는 UI 블록 (.Loading·.Error·.Empty·.Item)
+├── hooks/          # 단일 책임 훅 ([value, setValue] 상태 튜플, 라우트 읽기)
+├── queries/        # Query / Mutation Options, {feature}-cache.ts
+├── constants/      # Query Keys, 라벨·옵션 상수
+├── utils/          # 순수 계산, navigation resolver, view-models/
+└── __tests__/      # 테스트 팩토리
 ```
 
-> **예외**: `DeviceIdRepository`는 Repository 패턴 유지 (로컬 스토리지 — HTTP 아님).
+> **예외**: 로컬 저장소(SecureStore·MMKV)는 `apis/{name}.repository.ts`로 두고 Service가 감싼다.
+> 다른 피처는 `@src/features/{feature}/…` 절대경로로만 import한다 (`check:conventions`가 검사).
 
 ---
 
 ## 핵심 규칙
 
+- **불필요한 훅 금지**: `react-hook-form`과 Query 훅은 사용처에서 직접 쓴다. 화면을 짧게 만들려고 조회·폼·저장·내비게이션을 포괄적인 커스텀 훅에 묶지 않는다. 추출은 독립적인 단일 책임을 기준으로 한다.
+- **코드 스타일**: 짧은 조기 반환도 `if (조건) { return; }`처럼 중괄호를 쓴다. Promise 호출에 `void` 연산자를 붙이지 않는다(Oxlint로 강제). 이벤트 핸들러는 Promise를 반환하고, 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부 `.catch`로 기록한다. 들여쓰기·공백·import 정렬은 Oxfmt를 따른다.
+- **컴포넌트 계약**: 추출은 추상화가 아니다. 입력 래퍼는 `Omit<ComponentProps<typeof X>, …>`로 원본 props(`value`/`onChange`, HeroUI의 `isSelected`/`isDisabled`)를 살린다. 화면 식별자는 Props 대신 컴포넌트가 route hook에서 읽고, 데이터는 쓰는 컴포넌트가 조회한다. 상세: [.claude/architecture.md#컴포넌트-계약](.claude/architecture.md)
+- **Screen 구성**: `app/`의 Screen에서 화면 순서·레이아웃·Suspense·Error 경계가 위에서 아래로 읽히게 유지한다. 피처는 의미 있는 UI 블록과 훅·쿼리·모델·정책을 관리한다. 화면 전체를 피처 `pages/`로 옮겨 재수출하지 않으며, 한 화면에서만 쓰는 작은 컴포넌트는 Screen 아래에 둘 수 있다.
 - **Service 책임**: HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 모두 담당. Service는 서버 에러(ApiError)를 번역/변환하지 않고 pass-through.
 - **에러 분류**:
   - 예측 가능 (4xx, Policy 실패) → `Result.err()` → Mutation `onError`에서 분기
   - 예측 불가 (5xx, 네트워크, Zod 파싱 실패) → `throw` → ErrorBoundary 처리
-- **Mapper**: DTO(ISO 문자열) → Domain(`Date` 객체) 변환. 서버 응답 변경의 충격을 Mapper에서 흡수.
+- **Mapper·select**: 서버 스펙 변경은 Mapper(DTO → 클라이언트 모델, ISO 문자열 → `Date`)가 흡수하고 캐시에는 클라이언트 모델을 둔다. `select`는 화면별 필터·정렬·표시 모델만 만들며 참조가 안정적인 순수 함수를 쓴다.
+- **Model·Policy**: 클라이언트 모델은 `@aido/api` 스키마를 재사용·`extend`하고 모양이 다를 때만 독자 스키마를 둔다. Policy는 모델을 첫 인자로 받는 이름 있는 순수 함수를 `{Entity}Policy`로 묶은 Facade다.
 - **의존성 방향**: `Model ← Service/Mapper/UI` (단방향). Model이 다른 레이어를 알면 안 됨.
 - **UI 컴포넌트 우선순위**: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native.
 - **DTO**: `@aido/api` 사용, 모바일 내부 중복 금지.
@@ -88,7 +98,7 @@ features/{feature}/
 
 1. **Models** — Zod 스키마 + 타입 + Policy + Error 정의
 2. **Services + Mapper** — HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증
-3. **DI 등록** — `bootstrap/providers/di-provider.tsx`에 Service 인스턴스 + `use{Feature}Service` 훅
+3. **DI 등록** — `di-provider.tsx`에 Service 인스턴스, `di-context.tsx`에 `use{Feature}Service` 훅
 4. **Presentations** — Query Keys, Query/Mutation Options, 컴포넌트
 5. **라우트** — `app/` 하위에 화면 추가
 6. **테스트** — Model/Policy, Service/Mapper, 자체 로직이 있는 순수 util/view-model만 선별
@@ -99,15 +109,16 @@ features/{feature}/
 
 ## 파일 네이밍 규칙
 
-| 파일 유형        | 패턴                                   |
-| ---------------- | -------------------------------------- |
-| 모델             | `{feature}.model.ts`                   |
-| 에러             | `{feature}.error.ts`                   |
-| 서비스           | `{feature}.service.ts`                 |
-| 매퍼             | `{feature}.mapper.ts` (services/ 하위) |
-| Query Options    | `use-{action}-query-options.ts`        |
-| Mutation Options | `use-{action}-mutation-options.ts`     |
-| Query Keys       | `{feature}-query-keys.constant.ts`     |
+| 파일 유형        | 패턴                                                                    |
+| ---------------- | ----------------------------------------------------------------------- |
+| 모델 + Policy    | `domains/{entity}.model.ts`                                             |
+| 에러             | `domains/{feature}.error.ts`                                            |
+| 서비스           | `apis/{feature}.service.ts`                                             |
+| 매퍼             | `apis/{entity}.mapper.ts`                                               |
+| Query Options    | `queries/get-{resource}[-infinite]-query-options.ts` (`get…`/`useGet…`) |
+| Mutation Options | `queries/use-{action}-mutation-options.ts`                              |
+| 캐시 helper      | `queries/{feature}-cache.ts`                                            |
+| Query Keys       | `constants/{feature}-query-keys.ts`                                     |
 
 ---
 

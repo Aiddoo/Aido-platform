@@ -1,17 +1,15 @@
 import { useActivationService } from '@src/bootstrap/providers/di-context';
-import { unlockPushRegistrationForActivation } from '@src/features/activation/presentations/activation-mutations';
-import { PreferencePolicy } from '@src/features/auth/models/auth.model';
-import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
-import { useGetPreferenceQueryOptions } from '@src/features/auth/presentations/queries/get-preference-query-options';
-import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-consent-mutation-options';
-import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/presentations/queries/use-update-marketing-push-consent-mutation-options';
-import { useUpdatePreferenceMutationOptions } from '@src/features/auth/presentations/queries/use-update-preference-mutation-options';
-import {
-  SettingsCard,
-  SettingsToggle,
-  ToggleSkeleton,
-} from '@src/features/notification/presentations/components/settings';
-import { useRegisterPushTokenMutationOptions } from '@src/features/notification/presentations/queries/use-register-push-token-mutation-options';
+import { unlockPushRegistrationForActivation } from '@src/features/activation/queries/activation-cache';
+import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
+import { useUpdateMarketingConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-consent-mutation-options';
+import { useUpdateMarketingPushConsentMutationOptions } from '@src/features/auth/queries/use-update-marketing-push-consent-mutation-options';
+import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
+import { ToggleSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
+import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
+import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
+import { PreferencePolicy } from '@src/features/preference/domains/preference.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
@@ -19,22 +17,7 @@ import { Separator } from 'heroui-native';
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-export default function PushSettingsScreen() {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<PushSettingsForm.Loading />}>
-            <PushSettingsForm />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ScrollView>
-    </StyledSafeAreaView>
-  );
-}
-
-function PushSettingsForm() {
+function PushSettingsScreen() {
   // 두 쿼리를 useSuspenseQueries로 병렬 발사 (개별 useSuspenseQuery는 첫 쿼리에서
   // suspend되어 두 번째가 직렬로 늦게 시작되는 waterfall이 생긴다)
   const [{ data: preference }, { data: consent }] = useSuspenseQueries({
@@ -112,7 +95,7 @@ function PushSettingsForm() {
   );
 }
 
-PushSettingsForm.Loading = function Loading() {
+PushSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
@@ -128,3 +111,20 @@ PushSettingsForm.Loading = function Loading() {
     </VStack>
   );
 };
+
+export default function PushSettingsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
+          <QueryErrorBoundary>
+            <Suspense fallback={<PushSettingsScreen.Loading />}>
+              <PushSettingsScreen />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
+      </ScrollView>
+    </StyledSafeAreaView>
+  );
+}

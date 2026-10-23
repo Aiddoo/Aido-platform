@@ -1,7 +1,9 @@
+import { and, or } from "@prisma/orm-postgres/orm-client";
+
 import {
+  assertNativeWhere,
   createMockTransactionHost,
   nativeRows,
-  nativeSqlParameters,
 } from "#test/mocks/database.mock";
 import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
@@ -31,18 +33,24 @@ describe("PrismaPushDeliveryOutboxRepository", () => {
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 
-  it("mark와 defer는 정렬된 generation lock 뒤 guarded update를 사용한다", async () => {
-    asMock(db.execute).mockResolvedValue({ affectedRows: 1 });
-    asMock(db.query).mockResolvedValue([]);
+  it("mark와 defer는 정렬된 generation lock 뒤 세대·상태 술어를 남긴 update를 사용한다", async () => {
+    db.orm.public.PushDispatchOutbox.updateAndCount.mockResolvedValue(1);
     const publications = [{ dispatchId: 9, publishAttempt: 2 }] as const;
 
     await expect(repository.markPublished(publications, new Date())).resolves.toBe(1);
     await expect(
       repository.defer({ publications, availableAt: new Date(), error: "queue unavailable" }),
     ).resolves.toBe(1);
-    expect(nativeSqlParameters(db.execute.mock.calls[0]?.[0])).toEqual([9, 2]);
-    expect(nativeSqlParameters(db.execute.mock.calls[2]?.[0])).toEqual([9, 2]);
-    expect(db.query).not.toHaveBeenCalled();
-    expect(db.execute).toHaveBeenCalledTimes(4);
+
+    const outbox = db.orm.public.PushDispatchOutbox;
+    expect(outbox.forUpdate).toHaveBeenCalledTimes(2);
+    expect(outbox.updateAndCount).toHaveBeenCalledTimes(2);
+    assertNativeWhere("PushDispatchOutbox", outbox.where.mock.calls[0]?.[0], (row) =>
+      and(or(and(row.dispatchId.eq(9), row.publishAttempts.eq(2))), row.status.in(["PROCESSING"])),
+    );
+    assertNativeWhere("PushDispatchOutbox", outbox.where.mock.calls[1]?.[0], (row) =>
+      and(or(and(row.dispatchId.eq(9), row.publishAttempts.eq(2))), row.status.eq("PROCESSING")),
+    );
+    expect(db.execute).not.toHaveBeenCalled();
   });
 });

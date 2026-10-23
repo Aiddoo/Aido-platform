@@ -7,7 +7,7 @@ import { SCALED_FONT_STYLES } from '@src/shared/utils/font-scale';
 import { Radio, RadioGroup } from 'heroui-native';
 import { Text as RNText, ScrollView, View } from 'react-native';
 
-const FontSizeSettingsScreen = () => {
+function FontSizeSettingsScreen() {
   const { fontScale, setFontScale } = useFontScale();
   const { t } = useTranslation('settings');
   const { trackEvent } = useTrack();
@@ -23,21 +23,23 @@ const FontSizeSettingsScreen = () => {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1 py-5" edges={['bottom']}>
       <ScrollView className="px-4 flex-1">
-        <RadioGroup
-          value={fontScale}
-          onValueChange={handleChange}
-          className="bg-white rounded-2xl overflow-hidden gap-0"
-        >
-          <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
-          <FontScaleRadioItem value="small" label={t('fontSize.small')} />
-          <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
-          <FontScaleRadioItem value="large" label={t('fontSize.large')} />
-          <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
-        </RadioGroup>
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <RadioGroup
+            value={fontScale}
+            onValueChange={handleChange}
+            className="bg-white rounded-2xl overflow-hidden gap-0"
+          >
+            <FontScaleRadioItem value="xsmall" label={t('fontSize.xsmall')} />
+            <FontScaleRadioItem value="small" label={t('fontSize.small')} />
+            <FontScaleRadioItem value="medium" label={t('fontSize.medium')} />
+            <FontScaleRadioItem value="large" label={t('fontSize.large')} />
+            <FontScaleRadioItem value="xlarge" label={t('fontSize.xlarge')} />
+          </RadioGroup>
+        </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
   );
-};
+}
 
 export default FontSizeSettingsScreen;
 

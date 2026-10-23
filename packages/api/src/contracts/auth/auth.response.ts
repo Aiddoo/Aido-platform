@@ -301,7 +301,7 @@ export type LogoutResponse = z.infer<typeof logoutResponseSchema>;
 export const resendVerificationResponseSchema = z
   .object({
     message: z.string().describe("응답 메시지"),
-    email: z.string().email().describe("인증 코드를 발송한 이메일 주소"),
+    email: z.email().describe("인증 코드를 발송한 이메일 주소"),
     retryAfterSeconds: z
       .number()
       .int()

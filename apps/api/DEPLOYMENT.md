@@ -32,7 +32,7 @@ migrate 서비스 성공 뒤 API를 교체한다. script의 90초 health gate는
 
 ## DB 전환: API보다 먼저 적용
 
-Prisma ORM rc.14/CLI rc.20은 RC이며 production API와 migration 이미지를 분리한다. API에는 runtime·generated contract, migrate 이미지에는 CLI·contract source·graph·DB guard가 있다. 정확한 생성·CAS 규칙은 [.claude/prisma.md](./.claude/prisma.md)를 참고한다.
+Prisma ORM rc.20/CLI rc.27(orm-toolchain rc.20)은 RC이며 production API와 migration 이미지를 분리한다. API에는 runtime·generated contract, migrate 이미지에는 CLI·contract source·graph·DB guard가 있다. 정확한 생성·CAS 규칙은 [.claude/prisma.md](./.claude/prisma.md)를 참고한다.
 
 `migrate.sh`는 API/pg-boss URL을 먼저 검증하고 pg-boss migration, application graph와 실제 `db verify`를 수행한다. 기본 remote guard는 의도한 deployment의 `AIDO_ALLOW_REMOTE_DB=1`로만 허용한다. pg-boss 별도 URL도 같은 guard 대상이며 DDL lock_timeout은 5초다.
 
@@ -41,11 +41,14 @@ Prisma ORM rc.14/CLI rc.20은 RC이며 production API와 migration 이미지를 
 | 빈 DB               | baseline→후속 graph→schema/marker verify                       |
 | marker 없는 기존 DB | 시스템 댓글 작성자 불변식·baseline schema 검증 뒤 기존 DB 등록 |
 | 기존 marker         | 재서명 없이 현재 위치부터 graph 적용                           |
+| 옛 형식 hash marker | `MARKER_MISMATCH`로 중단. 아래 rc.20 재서명을 먼저 실행        |
 | 이미 target marker  | no-op migrate 전후에도 실제 schema verify; drift면 중단        |
 
 baseline 등록은 `db sign --contract <baseline> --no-advance-ref`이며 기존 migration 이력과 업무 데이터를 지우지 않는다. 운영 DB가 baseline과 일치하는지는 실제 환경에서 확인해야 한다. 로컬 migration 성공을 운영 adoption 성공으로 대신하지 않는다.
 
-Notification14의 `20261007T1840_push_receipt_token_fingerprint`는 nullable `PushDeliveryAttempt.tokenFingerprint VARCHAR(64)` additive 1개다. target contract는 `5eefdf63886315410d0378bf753a05f415396e235f83795390bd693cec24dd95`이며 신규 API가 해당 열에 쓰므로 DDL·verify 성공 후 API를 띄운다. 기존 행은 null로 남고 receipt 상태만 반영하며 이전 token을 추측해 비활성화하지 않는다. 새 값은 실제 발송 token의 SHA256이며 token 원문 snapshot/backfill을 저장하지 않는다.
+Notification14의 `20261007T1840_push_receipt_token_fingerprint`는 nullable `PushDeliveryAttempt.tokenFingerprint VARCHAR(64)` additive 1개다. target contract는 rc.20 형식 hash `4ccdcd5a92f1c8b30bb308ef451fd1c60a1a9582aef001c9cd3cae82c5e0485f`(rc.14 형식 `5eefdf63…`)이며 신규 API가 해당 열에 쓰므로 DDL·verify 성공 후 API를 띄운다. 기존 행은 null로 남고 receipt 상태만 반영하며 이전 token을 추측해 비활성화하지 않는다. 새 값은 실제 발송 token의 SHA256이며 token 원문 snapshot/backfill을 저장하지 않는다.
+
+Prisma rc.20 정렬은 계약 저장 형식만 바꾸고 DB 연산은 없다(`20261023T0948_prisma8_rc20_contract_alignment`, `4ccdcd5a…`→`65d810f7…`). 다만 기존 DB marker의 옛 hash(`5eefdf63…`)는 새 graph에 없으므로, rc.20 migrate 이미지를 처음 실행하기 전에 각 DB에서 한 번 `prisma db sign --contract 4ccdcd5a92f1c8b30bb308ef451fd1c60a1a9582aef001c9cd3cae82c5e0485f --no-advance-ref`를 실행한다. sign은 실제 schema가 그 계약과 일치할 때만 marker를 바꾸므로 drift를 숨기지 않는다. 이후 `db:deploy`가 0-operation edge를 적용하고 verify한다.
 
 댓글 system-author invariant, 기존 unique index를 constraint로 채택하는 graph, subscription-event receipt graph도 해당 migration 경로에 포함된다. schema marker의 강제 변경이나 이미 적용된 graph 수정으로 실패를 우회하지 않는다.
 

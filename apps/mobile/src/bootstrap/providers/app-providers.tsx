@@ -6,6 +6,7 @@ import { HeroUIProvider } from '@src/bootstrap/providers/hero-ui-provider';
 import { NotificationProvider } from '@src/bootstrap/providers/notification-provider';
 import { QueryProvider } from '@src/bootstrap/providers/query-provider';
 import { RevenueCatProvider } from '@src/bootstrap/providers/revenuecat-provider';
+import type { DraftStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { FontScaleProvider } from '@src/shared/providers/font-scale-provider';
 import { LanguageProvider } from '@src/shared/providers/language-provider';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
@@ -15,7 +16,11 @@ import { usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
-export function AppProviders({ children }: PropsWithChildren) {
+interface AppProvidersProps extends PropsWithChildren {
+  draftStorageBootstrap: DraftStorageBootstrap;
+}
+
+export function AppProviders({ children, draftStorageBootstrap }: AppProvidersProps) {
   const pathname = usePathname();
 
   return (
@@ -26,7 +31,7 @@ export function AppProviders({ children }: PropsWithChildren) {
             <ThemeProvider>
               <HeroUIProvider>
                 <QueryProvider>
-                  <DIProvider>
+                  <DIProvider draftStorageBootstrap={draftStorageBootstrap}>
                     <LocalDateProvider>
                       <AuthProvider>
                         <RevenueCatProvider>

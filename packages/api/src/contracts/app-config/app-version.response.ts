@@ -6,17 +6,15 @@ export const appStoreVersionSchema = z
   .string()
   .regex(new RegExp(appStoreVersionPattern), "Must be a stable MAJOR.MINOR.PATCH version");
 
-const platformVersionSchema = z.object({ latestVersion: appStoreVersionSchema }).strict();
+const platformVersionSchema = z.strictObject({ latestVersion: appStoreVersionSchema });
 
 export const appVersionResponseSchema = z.discriminatedUnion("enabled", [
-  z.object({ enabled: z.literal(false) }).strict(),
-  z
-    .object({
-      enabled: z.literal(true),
-      ios: platformVersionSchema,
-      android: platformVersionSchema,
-    })
-    .strict(),
+  z.strictObject({ enabled: z.literal(false) }),
+  z.strictObject({
+    enabled: z.literal(true),
+    ios: platformVersionSchema,
+    android: platformVersionSchema,
+  }),
 ]);
 
 export type AppVersionResponse = z.infer<typeof appVersionResponseSchema>;

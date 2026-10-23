@@ -52,6 +52,11 @@ type JobIdempotencyOptions =
 
 export type EnqueueJobOptions = BaseEnqueueJobOptions & JobIdempotencyOptions;
 
+export interface EnqueueJobRequest<T extends JobData = JobData> {
+  readonly data: T;
+  readonly options: EnqueueJobOptions;
+}
+
 /** rolling 배포 중 신규·레거시 이름을 하나의 런타임 값으로 정규화합니다. */
 export function resolveJobIdempotencyKey(options: EnqueueJobOptions): string | undefined {
   return options.idempotencyKey ?? options.jobKey;
@@ -102,6 +107,11 @@ export interface JobRuntimePort {
     data: T,
     options: EnqueueJobOptions,
   ): Promise<string | null>;
+  /** 같은 큐의 작업을 한 번에 등록한다. 같은 idempotency key의 작업은 enqueue와 같이 한 번만 남는다. */
+  enqueueMany<T extends JobData>(
+    queue: string,
+    jobs: readonly EnqueueJobRequest<T>[],
+  ): Promise<void>;
   schedule<T extends JobData>(
     scheduleKey: string,
     cron: string,

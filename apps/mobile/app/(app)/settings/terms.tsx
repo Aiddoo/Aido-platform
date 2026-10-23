@@ -1,6 +1,6 @@
-import { useGetConsentQueryOptions } from '@src/features/auth/presentations/queries/get-consent-query-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
-import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+import { useGetConsentQueryOptions } from '@src/features/auth/queries/get-consent-query-options';
+import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -17,24 +17,7 @@ import { PressableFeedback, Separator, Skeleton, SkeletonGroup } from 'heroui-na
 import { Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
-const TermsSettingsScreen = () => {
-  return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <ScrollView className="px-4 flex-1">
-        <Spacing size={20} />
-        <QueryErrorBoundary>
-          <Suspense fallback={<TermsSettingsForm.Loading />}>
-            <TermsSettingsForm />
-          </Suspense>
-        </QueryErrorBoundary>
-      </ScrollView>
-    </StyledSafeAreaView>
-  );
-};
-
-export default TermsSettingsScreen;
-
-function TermsSettingsForm() {
+function TermsSettingsScreen() {
   const { t } = useTranslation('settings');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const openUrl = useOpenUrl();
@@ -99,7 +82,7 @@ function TermsSettingsForm() {
   );
 }
 
-TermsSettingsForm.Loading = function Loading() {
+TermsSettingsScreen.Loading = function Loading() {
   return (
     <VStack p={16} gap={8} className="bg-white rounded-2xl">
       <SkeletonGroup isLoading isSkeletonOnly>
@@ -124,3 +107,20 @@ TermsSettingsForm.Loading = function Loading() {
     </VStack>
   );
 };
+
+export default function TermsSettingsRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={20} />
+          <QueryErrorBoundary>
+            <Suspense fallback={<TermsSettingsScreen.Loading />}>
+              <TermsSettingsScreen />
+            </Suspense>
+          </QueryErrorBoundary>
+        </StyledSafeAreaView>
+      </ScrollView>
+    </StyledSafeAreaView>
+  );
+}

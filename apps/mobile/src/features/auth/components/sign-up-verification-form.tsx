@@ -1,0 +1,144 @@
+import { VERIFICATION_CODE, type VerifyEmailInput } from '@aido/api';
+import { ErrorCode } from '@aido/api/errors';
+import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ApiError } from '@src/shared/errors/api-error';
+import { isBusinessError } from '@src/shared/errors/result';
+import { useTranslation } from '@src/shared/i18n';
+import { H3, HStack, StyledSafeAreaView, Text, TextButton, VStack } from '@src/shared/ui';
+import { FormField } from '@src/shared/ui/form-field/form-field';
+import { useMutation } from '@tanstack/react-query';
+import { type InputOTPRef } from 'heroui-native';
+import { useRef, useState } from 'react';
+import { useErrorBoundary } from 'react-error-boundary';
+import { useFormContext, useFormState } from 'react-hook-form';
+import { ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
+
+import { useCooldown } from '../hooks/use-cooldown';
+import { useResendVerificationMutationOptions } from '../queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '../queries/use-verify-email-mutation-options';
+import { maskEmail } from '../utils/mask-email';
+import { VerificationCodeInput } from './verification-code-input';
+
+export const SignUpVerificationForm = () => {
+  const { showBoundary } = useErrorBoundary();
+
+  const { t } = useTranslation(['auth']);
+  const { control, handleSubmit, setValue, reset, getValues } = useFormContext<VerifyEmailInput>();
+
+  const email = getValues('email');
+
+  const inputOTPRef = useRef<InputOTPRef>(null);
+  const [cooldown, setCooldown] = useCooldown(0);
+  const [isInvalid, setIsInvalid] = useState(false);
+
+  const { isSubmitting } = useFormState({ control });
+
+  const verify = useMutation(useVerifyEmailMutationOptions());
+  const resend = useMutation(useResendVerificationMutationOptions());
+
+  const onSubmit = async (data: VerifyEmailInput) => {
+    try {
+      setIsInvalid(false);
+      await verify.mutateAsync(data, {
+        onError: () => {
+          setIsInvalid(true);
+          setValue('code', '');
+          inputOTPRef.current?.clear();
+        },
+      });
+    } catch (error) {
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
+    }
+  };
+
+  const handleComplete = (code: string) => {
+    setValue('code', code);
+    handleSubmit(onSubmit)();
+  };
+
+  const handleResend = () => {
+    if (cooldown > 0) {
+      return;
+    }
+
+    resend.mutate(
+      { email },
+      {
+        onSuccess: (response) => {
+          setCooldown(response.retryAfterSeconds ?? VERIFICATION_CODE.RESEND_COOLDOWN_SECONDS);
+          reset({ email, code: '' });
+          inputOTPRef.current?.clear();
+          setIsInvalid(false);
+        },
+        onError: (error) => {
+          if (error instanceof ApiError && error.hasCode(ErrorCode.VERIFY_0753)) {
+            const remaining = error.details?.remainingSeconds;
+            if (typeof remaining === 'number') {
+              setCooldown(remaining);
+            }
+          }
+        },
+      },
+    );
+  };
+
+  const maskedEmail = maskEmail(email);
+
+  return (
+    <View className="flex-1">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Animated.View
+            entering={FadeIn.duration(ANIMATION.duration.slow)}
+            style={{ marginBottom: 24 }}
+          >
+            <H3>{t('auth:verification.codeSentTo', { email: maskedEmail })}</H3>
+          </Animated.View>
+
+          <VStack gap={32} align="center">
+            <FormField control={control} name="code">
+              {({ onChange, value }) => (
+                <VerificationCodeInput
+                  ref={inputOTPRef}
+                  value={value}
+                  onChange={onChange}
+                  onComplete={handleComplete}
+                  isInvalid={isInvalid}
+                />
+              )}
+            </FormField>
+
+            {isSubmitting && (
+              <Text size="b4" className="text-main">
+                {t('auth:verification.verifying')}
+              </Text>
+            )}
+
+            <HStack gap={8} justify="center">
+              <Text size="b4" shade={7}>
+                {t('auth:verification.didNotReceive')}
+              </Text>
+              <TextButton
+                size="medium"
+                onPress={handleResend}
+                isDisabled={cooldown > 0 || resend.isPending}
+              >
+                {cooldown > 0
+                  ? t('auth:verification.resendIn', { count: cooldown })
+                  : t('auth:verification.resend')}
+              </TextButton>
+            </HStack>
+          </VStack>
+        </StyledSafeAreaView>
+      </ScrollView>
+    </View>
+  );
+};

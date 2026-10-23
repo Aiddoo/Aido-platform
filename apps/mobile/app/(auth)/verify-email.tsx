@@ -1,52 +1,46 @@
 import { VERIFICATION_CODE, type VerifyEmailInput, verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCooldown } from '@src/features/auth/presentations/hooks/use-cooldown';
+import { VerificationCodeInput } from '@src/features/auth/components/verification-code-input';
+import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
 import {
   verifyEmailScreenParamsSchema,
   useVerifyEmailScreenParams,
-} from '@src/features/auth/presentations/hooks/use-verify-email-screen-params';
-import { useResendVerificationMutationOptions } from '@src/features/auth/presentations/queries/use-resend-verification-mutation-options';
-import { useVerifyEmailMutationOptions } from '@src/features/auth/presentations/queries/use-verify-email-mutation-options';
+} from '@src/features/auth/hooks/use-verify-email-screen-params';
+import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
+import { maskEmail } from '@src/features/auth/utils/mask-email';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useAppToast } from '@src/shared/hooks/useAppToast';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ArrowLeftIcon,
   H3,
   HStack,
+  ReadableContent,
+  ScreenTitleBar,
   StyledSafeAreaView,
   Text,
   TextButton,
   VStack,
+  QueryErrorBoundary,
 } from '@src/shared/ui';
-import { FormField } from '@src/shared/ui/FormField/FormField';
+import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { InputOTP, type InputOTPRef, PressableFeedback } from 'heroui-native';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { type InputOTPRef } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { FormProvider } from 'react-hook-form';
-import { useFormState } from 'react-hook-form';
-import { useForm } from 'react-hook-form';
-import { ScrollView, View } from 'react-native';
+import { FormProvider, useFormState, useForm } from 'react-hook-form';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 /**
  * 독립적인 이메일 인증 화면
  * - 로그인 시 미인증 에러(EMAIL_0503) 발생 시 이동
  */
-const VerifyEmailScreen = () => {
-  const params = useLocalSearchParams();
-  if (!verifyEmailScreenParamsSchema.safeParse(params).success) return <Redirect href="/login" />;
-  return <VerifyEmailContent />;
-};
 
-function VerifyEmailContent() {
+function VerifyEmailScreen() {
   const { showBoundary } = useErrorBoundary();
-
-  const goBack = useSingleTap(router.back);
 
   const { t } = useTranslation(['auth']);
   const { email } = useVerifyEmailScreenParams();
@@ -78,7 +72,9 @@ function VerifyEmailContent() {
         },
       });
     } catch (error) {
-      if (!isBusinessError(error)) showBoundary(error);
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
     }
   };
 
@@ -88,7 +84,9 @@ function VerifyEmailContent() {
   };
 
   const handleResend = () => {
-    if (cooldown > 0) return;
+    if (cooldown > 0) {
+      return;
+    }
 
     resend.mutate(
       { email },
@@ -107,23 +105,14 @@ function VerifyEmailContent() {
     );
   };
 
-  const maskedEmail = email.replace(/(.{2})(.*)(@.*)/, '$1****$3');
+  const maskedEmail = maskEmail(email);
 
   return (
     <FormProvider {...formMethods}>
-      <StyledSafeAreaView className="flex-1 bg-white" edges={['top']}>
-        {/* Header */}
-        <HStack align="center" px={16} py={12}>
-          <PressableFeedback onPress={() => goBack()}>
-            <ArrowLeftIcon width={24} height={24} colorClassName="text-gray-8" />
-          </PressableFeedback>
-          <Text size="b2" weight="semibold" align="center" className="flex-1">
-            {t('auth:verifyEmail.title')}
-          </Text>
-          <View className="w-6" />
-        </HStack>
+      <StyledSafeAreaView className="flex-1 bg-white" edges={['top', 'left', 'right']}>
+        <ScreenTitleBar title={t('auth:verifyEmail.title')} />
 
-        <View className="flex-1">
+        <ReadableContent flex={1}>
           <ScrollView
             className="flex-1"
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
@@ -140,26 +129,14 @@ function VerifyEmailContent() {
             <VStack gap={32} align="center">
               <FormField control={control} name="code">
                 {({ onChange, value }) => (
-                  <InputOTP
+                  <VerificationCodeInput
+                    isSeparated
                     ref={inputOTPRef}
-                    maxLength={VERIFICATION_CODE.LENGTH}
                     value={value}
                     onChange={onChange}
                     onComplete={handleComplete}
                     isInvalid={isInvalid}
-                  >
-                    <InputOTP.Group>
-                      <InputOTP.Slot index={0} />
-                      <InputOTP.Slot index={1} />
-                      <InputOTP.Slot index={2} />
-                    </InputOTP.Group>
-                    <InputOTP.Separator />
-                    <InputOTP.Group>
-                      <InputOTP.Slot index={3} />
-                      <InputOTP.Slot index={4} />
-                      <InputOTP.Slot index={5} />
-                    </InputOTP.Group>
-                  </InputOTP>
+                  />
                 )}
               </FormField>
 
@@ -176,7 +153,7 @@ function VerifyEmailContent() {
                 <TextButton
                   size="medium"
                   onPress={handleResend}
-                  disabled={cooldown > 0 || resend.isPending}
+                  isDisabled={cooldown > 0 || resend.isPending}
                 >
                   {cooldown > 0
                     ? t('auth:verification.resendIn', { count: cooldown })
@@ -185,10 +162,20 @@ function VerifyEmailContent() {
               </HStack>
             </VStack>
           </ScrollView>
-        </View>
+        </ReadableContent>
       </StyledSafeAreaView>
     </FormProvider>
   );
 }
 
-export default VerifyEmailScreen;
+export default function VerifyEmailRoute() {
+  const params = useLocalSearchParams();
+  if (!verifyEmailScreenParamsSchema.safeParse(params).success) {
+    return <Redirect href="/login" />;
+  }
+  return (
+    <QueryErrorBoundary>
+      <VerifyEmailScreen />
+    </QueryErrorBoundary>
+  );
+}

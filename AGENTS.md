@@ -19,7 +19,7 @@ Turborepo + pnpm 모노레포. AI 기반 할 일 관리 서비스의 API 서버�
 
 ## 기술 스택 (요약)
 
-NestJS 12 ESM · Prisma 8 RC · PostgreSQL 16 · Expo SDK 58 · React Native 0.88 RC · React 19.3 · TypeScript 6 · Zod 4.3.6 · Oxlint 1.86 · Oxfmt 0.71 · Turbo 2.11 · pnpm 10.34
+NestJS 12.2 ESM · Prisma 8 RC (ORM rc.20, CLI rc.27) · PostgreSQL 16 · Expo SDK 58 · React Native 0.88 · React 19.3 · TypeScript 6.0 · Zod 4.3.6 · Oxlint 1.89 · Oxfmt 0.74 · Turbo 2.11 · pnpm 12.15 · Node 24.22.1
 
 상세: [README.md](./README.md)
 
@@ -90,3 +90,14 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 
 - **API**: [서버 문서 안내](docs/server/README.md) — 작업별 설계·계약·테스트·배포와 검증 기록
 - **Mobile**: [`apps/mobile/.claude/`](apps/mobile/.claude/) — architecture, testing-guide, ui-components, oauth-client-guide
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

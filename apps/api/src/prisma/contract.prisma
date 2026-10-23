@@ -207,17 +207,17 @@ namespace public {
     pushDispatch     PushDispatch?
     user             User                            @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Notification_userId_fkey", index: false)
 
-    @@index(expression: "(metadata ->> 'senderId'::text)", map: "Notification_comment_actor_cleanup_idx", where: "((metadata ->> 'senderId'::text) IS NOT NULL)")
+    @@index(expression: sql`(metadata ->> 'senderId'::text)`, map: "Notification_comment_actor_cleanup_idx", where: sql`((metadata ->> 'senderId'::text) IS NOT NULL)`)
     @@index([createdAt], map: "Notification_createdAt_idx")
-    @@index([friendId], map: "Notification_friend_actor_cleanup_idx", where: "(\"friendId\" IS NOT NULL)")
+    @@index([friendId], map: "Notification_friend_actor_cleanup_idx", where: sql`("friendId" IS NOT NULL)`)
     @@index([todoId, _type, createdAt], map: "Notification_todoId_type_createdAt_idx")
-    @@index(expression: "\"todoId\", type, (metadata ->> 'stage'::text)", map: "Notification_todo_reminder_dedup", where: "((type = 'TODO_REMINDER'::\"NotificationType\") AND (\"todoId\" IS NOT NULL))", unique: true)
+    @@index(expression: sql`"todoId", type, (metadata ->> 'stage'::text)`, map: "Notification_todo_reminder_dedup", where: sql`((type = 'TODO_REMINDER'::"NotificationType") AND ("todoId" IS NOT NULL))`, unique: true)
     @@index([userId, createdAt, id], map: "Notification_userId_createdAt_id_idx")
     @@index([userId, isRead, createdAt], map: "Notification_userId_isRead_createdAt_idx")
     @@index([userId, _type], map: "Notification_userId_type_idx")
     @@index([userId, _type, notificationDate], map: "Notification_userId_type_notificationDate_idx")
-    @@check(expression: "((type <> 'TODO_SHARED'::\"NotificationType\") OR (\"actionType\" <> 'DEEP_LINK'::\"NotificationActionType\") OR ((metadata ->> 'commentId'::text) IS NULL) OR (\"actionUrl\" IS NULL))", map: "Notification_todo_comment_action_url_check")
-    @@check(expression: "(((metadata ->> 'commentId'::text) IS NULL) OR COALESCE(((jsonb_typeof((metadata -> 'senderId'::text)) = 'string'::text) AND (length((metadata ->> 'senderId'::text)) > 0)), false))", map: "Notification_todo_comment_sender_check")
+    @@check(expression: sql`((type <> 'TODO_SHARED'::"NotificationType") OR ("actionType" <> 'DEEP_LINK'::"NotificationActionType") OR ((metadata ->> 'commentId'::text) IS NULL) OR ("actionUrl" IS NULL))`, map: "Notification_todo_comment_action_url_check")
+    @@check(expression: sql`(((metadata ->> 'commentId'::text) IS NULL) OR COALESCE(((jsonb_typeof((metadata -> 'senderId'::text)) = 'string'::text) AND (length((metadata ->> 'senderId'::text)) > 0)), false))`, map: "Notification_todo_comment_sender_check")
   }
 
   model TodoCategory {
@@ -289,7 +289,7 @@ namespace public {
     @@index([senderId, createdAt], map: "Nudge_senderId_createdAt_idx")
     @@index([senderId, id], map: "Nudge_senderId_id_idx")
     @@index([senderId, todoId, createdAt], map: "Nudge_senderId_todoId_createdAt_idx")
-    @@index([todoId, senderId], map: "Nudge_thanked_sender_per_todo", where: "(\"thankedAt\" IS NOT NULL)", unique: true)
+    @@index([todoId, senderId], map: "Nudge_thanked_sender_per_todo", where: sql`("thankedAt" IS NOT NULL)`, unique: true)
     @@index([todoId], map: "Nudge_todoId_idx")
     @@index([todoId, receiverId, thankedAt, id], map: "Nudge_todoId_receiverId_thankedAt_id_idx")
   }
@@ -363,7 +363,7 @@ namespace public {
 
     @@index([campaignKey, status, createdAt], map: "PushDispatch_campaignKey_status_createdAt_idx")
     @@unique([notificationId], map: "PushDispatch_notificationId_key")
-    @@index([processingStartedAt], map: "PushDispatch_processing_lease_idx", where: "(status = 'PROCESSING'::\"PushDispatchStatus\")")
+    @@index([processingStartedAt], map: "PushDispatch_processing_lease_idx", where: sql`(status = 'PROCESSING'::"PushDispatchStatus")`)
     @@index([status, scheduledAt], map: "PushDispatch_status_scheduledAt_idx")
     @@index([userId, localDate, purpose], map: "PushDispatch_userId_localDate_purpose_idx")
   }
@@ -624,7 +624,7 @@ namespace public {
     updatedAt          temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
     parentId           String?
     rootId             String?
-    path               String[]          @default([]) @noCheck(elementNotNull)
+    path               String?[]         @default([])
     depth              Int               @default(0)
     requestFingerprint Char(64)?
     likes   TodoCommentLike[]

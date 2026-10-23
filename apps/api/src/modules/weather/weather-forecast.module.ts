@@ -21,9 +21,18 @@ import { WeatherController } from "./presentation/controllers/forecast/weather.c
 import { weatherForecastReaderProvider } from "./weather-forecast-application.providers.js";
 import { WEATHER_PROVIDERS } from "./weather-forecast.providers.js";
 
+const WEATHER_VENDOR_TIMEOUT_MS = 10_000;
+
 /** 날씨 endpoint와 공급자·캐시·배치 조회의 명시적 조립. */
 @Module({
-  imports: [HttpClientModule.register({ name: "weather", retry: false, throwOnHttpError: false })],
+  imports: [
+    HttpClientModule.register({
+      name: "weather",
+      retry: false,
+      throwOnHttpError: false,
+      timeout: WEATHER_VENDOR_TIMEOUT_MS,
+    }),
+  ],
   controllers: [WeatherController],
   providers: [
     { provide: WEATHER_FORECAST_READER, useExisting: WeatherForecastReader },

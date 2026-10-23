@@ -113,7 +113,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     expect(result.output).toEqual(output);
     expect(result.usage).toEqual({ input: 0, output: 0 });
     expect(fetchSpy).toHaveBeenCalledTimes(3);
-    for (const [, request] of fetchSpy.mock.calls) {
+    for (const [_requestUrl, request] of fetchSpy.mock.calls) {
       const body = JSON.parse(String(request?.body));
       expect(body.generationConfig.maxOutputTokens).toBe(150);
       expect(body).not.toHaveProperty("systemInstruction");

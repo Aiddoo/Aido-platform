@@ -2,17 +2,22 @@ import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import postgres from "@prisma/orm-postgres/runtime";
+import { contractFromJson } from "@prisma/orm-postgres/static";
 import { Pool } from "pg";
 
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { createTestClient } from "#test/setup/database-context";
+import { withTextTimestampGenerators } from "#test/setup/historical-contract";
 import { startManagedTestDatabase } from "#test/setup/managed-test-database";
 
-import type { Contract as PreviousContract } from "../../prisma/migrations8/snapshots/3b9e222613382cd6abc119c89f8788ebf13de46194261b3f24feda8eb7e0d8e9/contract.d.js";
-import previousContractJson from "../../prisma/migrations8/snapshots/3b9e222613382cd6abc119c89f8788ebf13de46194261b3f24feda8eb7e0d8e9/contract.json" with { type: "json" };
+import type { Contract as PreviousContract } from "../../prisma/migrations8/snapshots/242a04c5aa8a763586e1bd3c57ffe283b32afea882c1ac530e7c01fd8fcdf970/contract.d.js";
+import previousContractJson from "../../prisma/migrations8/snapshots/242a04c5aa8a763586e1bd3c57ffe283b32afea882c1ac530e7c01fd8fcdf970/contract.json" with { type: "json" };
 
-const PREVIOUS_CONTRACT = "3b9e222613382cd6abc119c89f8788ebf13de46194261b3f24feda8eb7e0d8e9";
+const previousContract = contractFromJson<PreviousContract>(
+  withTextTimestampGenerators(previousContractJson),
+);
+const PREVIOUS_CONTRACT = "242a04c5aa8a763586e1bd3c57ffe283b32afea882c1ac530e7c01fd8fcdf970";
 const at = new Date("2026-10-07T12:00:00.000Z");
 const expiry = new Date("2026-11-07T12:00:00.000Z");
 
@@ -45,8 +50,8 @@ describe("구독 처리 원장 additive migration (실제 PostgreSQL)", () => {
       migrate: (url) => migrate(url, PREVIOUS_CONTRACT),
     });
     const previousPool = new Pool({ connectionString: database.connectionUri, max: 2 });
-    const previous = postgres<PreviousContract>({
-      contractJson: previousContractJson,
+    const previous = postgres({
+      contract: previousContract,
       pg: previousPool,
     });
     const current = createTestClient(database.connectionUri);

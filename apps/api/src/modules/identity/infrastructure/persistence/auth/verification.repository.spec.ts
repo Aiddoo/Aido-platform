@@ -10,7 +10,7 @@ import {
   databaseWriteExpectation,
 } from "#test/mocks/database.mock";
 import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
-import { createMockDatabaseService } from "#test/mocks/mock-database.factory";
+import { asDatabaseService, createMockDatabaseService } from "#test/mocks/mock-database.factory";
 
 import { VerificationRepository } from "./verification.repository.js";
 
@@ -29,7 +29,7 @@ describe("VerificationRepository — 인증 저장과 독립 실패 기록", () 
     baseDb = createMockDatabaseContext();
     repository = new VerificationRepository(
       createMockTransactionHost(db),
-      createMockDatabaseService(baseDb),
+      asDatabaseService(createMockDatabaseService(baseDb)),
     );
   });
 

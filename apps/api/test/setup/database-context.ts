@@ -5,8 +5,7 @@ import postgres from "@prisma/orm-postgres/runtime";
 import { Pool, type PoolConfig } from "pg";
 import { mock } from "vitest-mock-extended";
 
-import { utcTimestampParameters } from "#api/platform/database/database-timestamp.middleware";
-import type { DatabaseService } from "#api/platform/database/database.service";
+import { type DatabaseService, contract } from "#api/platform/database/database.service";
 import {
   Prisma8TransactionalAdapter,
   bindDatabaseTransaction,
@@ -14,8 +13,6 @@ import {
 } from "#api/platform/database/prisma8-transactional.adapter";
 import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.port";
 
-import type { Contract } from "../../src/generated/prisma8/contract.d.js";
-import contractJson from "../../src/generated/prisma8/contract.json" with { type: "json" };
 import type { TestDatabaseClient } from "./test-database.js";
 
 /** Tests own their pool, including single-connection sessions used in lock tests. */
@@ -24,10 +21,9 @@ export function createTestClient(
   options: PoolConfig = {},
 ): TestDatabaseClient {
   const pool = new Pool({ ...options, connectionString });
-  const client = postgres<Contract>({
-    contractJson,
+  const client = postgres({
+    contract,
     pg: pool,
-    middleware: [utcTimestampParameters],
   });
   let closed = false;
   return {

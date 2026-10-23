@@ -1,14 +1,13 @@
-import { WeatherBackground } from '@src/features/weather/presentations/components/WeatherBackground';
-import { TimePaletteContext } from '@src/features/weather/presentations/hooks/use-time-palette';
-import { useWeatherSession } from '@src/features/weather/presentations/providers/weather-session-provider';
-import { getWeatherPalette } from '@src/features/weather/presentations/view-models/weather-palette.view-model';
-import { useSingleTap } from '@src/shared/hooks/useSingleTap';
+import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
+import { WeatherBackground } from '@src/features/weather/components/weather-background';
+import { TimePaletteContext } from '@src/features/weather/hooks/use-time-palette';
+import { getWeatherPalette } from '@src/features/weather/utils/view-models/weather-palette.view-model';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useTheme } from '@src/shared/providers/theme-provider';
-import { ArrowLeftIcon, Box, HStack, SettingIcon, Text } from '@src/shared/ui';
+import { ArrowLeftIcon, Box, HStack, SettingIcon, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { Slot, Stack, router } from 'expo-router';
 import { Pressable } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function WeatherLayout() {
   const { resolvedTheme } = useTheme();
@@ -40,12 +39,11 @@ WeatherLayout.Header = function Header() {
   const { resolvedTheme } = useTheme();
   const { clock } = useWeatherSession();
   const palette = getWeatherPalette(clock.deviceHour, resolvedTheme);
-  const insets = useSafeAreaInsets();
   const goBack = useSingleTap(router.back);
   const push = useSingleTap(router.push);
 
   return (
-    <Box style={{ paddingTop: insets.top }}>
+    <StyledSafeAreaView edges={['top', 'left', 'right']}>
       <HStack align="center" px={12} py={8}>
         <Pressable
           accessibilityRole="button"
@@ -69,6 +67,6 @@ WeatherLayout.Header = function Header() {
           <SettingIcon width={20} height={20} color={palette.text} />
         </Pressable>
       </HStack>
-    </Box>
+    </StyledSafeAreaView>
   );
 };

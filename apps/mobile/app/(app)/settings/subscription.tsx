@@ -3,20 +3,20 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
-import { ScallopedContainer } from '@src/features/ai/presentations/components/ScallopedContainer';
+import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
+import { SubscriptionPlanCard } from '@src/features/subscription/components/subscription-plan-card';
 import {
   isActiveSubscription,
   SubscriptionPolicy,
-} from '@src/features/subscription/models/subscription.model';
-import { SubscriptionPlanCard } from '@src/features/subscription/presentations/components/SubscriptionPlanCard';
-import { useGetOfferingsQueryOptions } from '@src/features/subscription/presentations/queries/get-offerings-query-options';
-import { usePurchaseMutationOptions } from '@src/features/subscription/presentations/queries/use-purchase-mutation-options';
-import { useRestoreMutationOptions } from '@src/features/subscription/presentations/queries/use-restore-mutation-options';
-import { UserPolicy } from '@src/features/user/models/user.model';
-import { useGetMeQueryOptions } from '@src/features/user/presentations/queries/get-me-query-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls.constant';
-import { STORE_URLS } from '@src/shared/constants/store-urls.constant';
-import { useOpenUrl } from '@src/shared/hooks/useOpenUrl';
+} from '@src/features/subscription/domains/subscription.model';
+import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
+import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
+import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
+import { UserPolicy, type User } from '@src/features/user/domains/user.model';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { STORE_URLS } from '@src/shared/constants/store-urls';
+import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BellIcon,
@@ -39,12 +39,14 @@ import {
   Text,
   TextButton,
   VStack,
+  DashedDivider,
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { Image, Linking, ScrollView, View } from 'react-native';
+import { match, P } from 'ts-pattern';
 
 /** 이미지가 있는 핵심 프리미엄 기능 (문구는 subscription 카탈로그 키) */
 const HIGHLIGHT_BENEFITS = [
@@ -104,134 +106,232 @@ const ALL_BENEFIT_TITLE_KEYS = [
   ...EXTRA_BENEFITS.map((b) => b.titleKey),
 ];
 
-const SubscriptionScreen = () => {
+function SubscriptionScreen() {
+  const { t } = useTranslation('subscription');
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const sdkManager = useRevenueCatSdkManager();
+  const isPremium = UserPolicy.isPremiumUser(user);
+  const isStoreConfigured = sdkManager.isConfigured();
+  const canPurchase = !isPremium && isStoreConfigured;
+  const { data: offering } = useQuery({
+    ...useGetOfferingsQueryOptions(),
+    enabled: canPurchase,
+    throwOnError: (_error, query) => canPurchase && query.state.data === undefined,
+  });
+  const purchase = useMutation(usePurchaseMutationOptions());
+  const restore = useMutation(useRestoreMutationOptions());
+  const [chosenPlanId, setChosenPlanId] = useState<string | null>(null);
+  const defaultPlan =
+    offering?.plans.find((plan) => plan.planType === 'annual') ?? offering?.plans[0];
+  const selectedPlanId = chosenPlanId ?? defaultPlan?.identifier ?? null;
+  const selectedPlan = offering?.plans.find((plan) => plan.identifier === selectedPlanId);
+
+  const handlePurchase = () => {
+    if (!canPurchase || !selectedPlan || purchase.isPending) {
+      return;
+    }
+    purchase.mutate(selectedPlan.identifier);
+  };
+
+  const handleManageSubscription = () => {
+    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
+      return Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
+    }
+  };
+
+  return match({ isPremium, isStoreConfigured, offering })
+    .with({ isPremium: true }, () => (
+      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={16} />
+
+          <SubscriptionReceipt user={user} />
+
+          <Spacing size={16} />
+
+          <Button onPress={handleManageSubscription} variant="weak" color="dark">
+            {t('subscriber.manageButton')}
+          </Button>
+
+          <Spacing size={16} />
+
+          <View className="items-center">
+            <TextButton
+              size="medium"
+              variant="underline"
+              onPress={() => restore.mutate()}
+              isDisabled={restore.isPending}
+            >
+              {t('subscriber.restoreButton')}
+            </TextButton>
+          </View>
+        </StyledSafeAreaView>
+      </ScrollView>
+    ))
+    .with({ isStoreConfigured: false }, () => (
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+        <Result
+          icon={<DocsIcon width={72} height={72} />}
+          title={t('paywall.unavailableTitle')}
+          description={t('paywall.unavailableDescription')}
+        />
+      </StyledSafeAreaView>
+    ))
+    .with({ offering: P.nullish }, () => <SubscriptionScreen.Loading />)
+    .with({ offering: P.nonNullable }, ({ offering }) => (
+      <View className="flex-1">
+        <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+          <StyledSafeAreaView edges={['left', 'right']}>
+            <Spacing size={16} />
+
+            <ScallopedContainer>
+              <View className="px-5 pt-5">
+                <VStack gap={4} className="items-center">
+                  <H2>{t('paywall.title')}</H2>
+
+                  <Text size="b3" shade={6}>
+                    {t('paywall.subtitle')}
+                  </Text>
+                </VStack>
+
+                <DashedDivider className="my-6" />
+
+                <VStack gap={20}>
+                  {HIGHLIGHT_BENEFITS.map((benefit) => (
+                    <SubscriptionBenefitCard key={benefit.titleKey} benefit={benefit} />
+                  ))}
+                </VStack>
+
+                <Spacing size={20} />
+
+                <AdditionalSubscriptionBenefits />
+
+                <Spacing size={8} />
+
+                <Text size="e2" shade={5} align="center">
+                  {t('paywall.futureIncluded')}
+                </Text>
+              </View>
+
+              <DashedDivider className="my-5 mx-5" />
+
+              <View className="px-5 pb-5">
+                <SubscriptionPlanCard
+                  plans={offering.plans}
+                  selectedPlanId={selectedPlanId}
+                  onPlanSelect={setChosenPlanId}
+                />
+              </View>
+            </ScallopedContainer>
+
+            <Spacing size={24} />
+
+            <VStack gap={8} className="items-center">
+              <SubscriptionTerms />
+              <TextButton
+                size="small"
+                variant="underline"
+                onPress={() => restore.mutate()}
+                isDisabled={restore.isPending}
+              >
+                {t('subscriber.restoreButton')}
+              </TextButton>
+            </VStack>
+          </StyledSafeAreaView>
+        </ScrollView>
+
+        <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+          <Button
+            onPress={handlePurchase}
+            isLoading={purchase.isPending}
+            isDisabled={!selectedPlan || purchase.isPending}
+          >
+            {t('paywall.subscribeButton')}
+          </Button>
+        </StyledSafeAreaView>
+      </View>
+    ))
+    .exhaustive();
+}
+
+SubscriptionScreen.Loading = function Loading() {
   return (
-    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
-        <Suspense
-          fallback={
-            <View className="flex-1 items-center justify-center">
-              <Spinner size="lg" color="default" />
-            </View>
-          }
-        >
-          <SubscriptionContent />
-        </Suspense>
-      </QueryErrorBoundary>
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
+      <Spinner size="lg" color="default" />
     </StyledSafeAreaView>
   );
 };
 
-export default SubscriptionScreen;
-
-function SubscriptionContent() {
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isPremium = UserPolicy.isPremiumUser(user);
-
-  if (isPremium) {
-    return <SubscriberView />;
-  }
-
-  return <NonSubscriberView />;
-}
-
-function SubscriberView() {
+function SubscriptionReceipt({ user }: { user: User }) {
   const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const restore = useMutation(useRestoreMutationOptions());
-
   const isActive = isActiveSubscription(user.subscriptionStatus);
-
   const showDetails = SubscriptionPolicy.isExpirationRelevant(user);
 
-  const handleManageSubscription = () => {
-    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
-      Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
-    }
-  };
-
   return (
-    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-      <Spacing size={16} />
+    <ScallopedContainer>
+      <View className="px-5 pt-5">
+        <HStack gap={16} className="items-center">
+          <FillTicketIcon width={40} height={40} />
 
-      <ScallopedContainer>
-        <View className="px-5 pt-5">
-          <HStack gap={16} className="items-center">
-            <FillTicketIcon width={40} height={40} />
+          <VStack gap={2}>
+            <Text size="t3" weight="bold" tone="brand">
+              {t('subscriber.title')}
+            </Text>
 
-            <VStack gap={2}>
-              <Text size="t3" weight="bold" tone="brand">
-                {t('subscriber.title')}
-              </Text>
+            <Text size="b4" shade={6}>
+              {t('subscriber.description')}
+            </Text>
+          </VStack>
+        </HStack>
 
-              <Text size="b4" shade={6}>
-                {t('subscriber.description')}
-              </Text>
-            </VStack>
-          </HStack>
+        <Spacing size={24} />
 
-          <Spacing size={24} />
+        {showDetails && user.subscriptionExpiresAt && (
+          <VStack>
+            <ListRow
+              verticalPadding="small"
+              contents={
+                <Text size="b4" shade={6}>
+                  {isActive ? t('status.nextBillingDate') : t('status.expiresAt')}
+                </Text>
+              }
+              right={
+                <Text size="b4" weight="semibold" shade={8}>
+                  {user.subscriptionExpiresAt && formatFullDate(user.subscriptionExpiresAt)}
+                </Text>
+              }
+            />
 
-          {showDetails && user.subscriptionExpiresAt && (
-            <VStack>
+            {isActive && (
               <ListRow
                 verticalPadding="small"
                 contents={
                   <Text size="b4" shade={6}>
-                    {isActive ? t('status.nextBillingDate') : t('status.expiresAt')}
+                    {t('status.statusLabel')}
                   </Text>
                 }
                 right={
-                  <Text size="b4" weight="semibold" shade={8}>
-                    {user.subscriptionExpiresAt && formatFullDate(user.subscriptionExpiresAt)}
+                  <Text size="b4" weight="semibold" tone="brand">
+                    {t('status.autoRenewal')}
                   </Text>
                 }
               />
+            )}
+          </VStack>
+        )}
+      </View>
 
-              {isActive && (
-                <ListRow
-                  verticalPadding="small"
-                  contents={
-                    <Text size="b4" shade={6}>
-                      {t('status.statusLabel')}
-                    </Text>
-                  }
-                  right={
-                    <Text size="b4" weight="semibold" tone="brand">
-                      {t('status.autoRenewal')}
-                    </Text>
-                  }
-                />
-              )}
-            </VStack>
-          )}
-        </View>
+      <DashedDivider className="my-5 mx-5" />
 
-        <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
+      <View className="px-5">
+        <Text size="b3" weight="semibold" shade={9} className="mb-3">
+          {t('subscriber.benefitsTitle')}
+        </Text>
 
-        <View className="px-5">
-          <Text size="b3" weight="semibold" shade={9} className="mb-3">
-            {t('subscriber.benefitsTitle')}
-          </Text>
-
-          <VStack gap={2}>
-            {ALL_BENEFIT_TITLE_KEYS.map((titleKey) => (
-              <ListRow
-                key={titleKey}
-                verticalPadding="small"
-                left={
-                  <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
-                    <FillCheckIcon width={12} height={12} colorClassName="text-white" />
-                  </View>
-                }
-                contents={
-                  <Text size="b3" shade={8}>
-                    {t(titleKey)}
-                  </Text>
-                }
-              />
-            ))}
+        <VStack gap={2}>
+          {ALL_BENEFIT_TITLE_KEYS.map((titleKey) => (
             <ListRow
+              key={titleKey}
               verticalPadding="small"
               left={
                 <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
@@ -240,163 +340,37 @@ function SubscriberView() {
               }
               contents={
                 <Text size="b3" shade={8}>
-                  {t('benefits.future')}
+                  {t(titleKey)}
                 </Text>
               }
             />
-          </VStack>
-        </View>
-
-        <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
-
-        <View className="px-5 pb-5 items-center">
-          <ReceiptBarcode />
-        </View>
-      </ScallopedContainer>
-
-      <Spacing size={16} />
-
-      <Button onPress={handleManageSubscription} variant="weak" color="dark">
-        {t('subscriber.manageButton')}
-      </Button>
-
-      <Spacing size={16} />
-
-      <View className="items-center">
-        <TextButton
-          size="medium"
-          variant="underline"
-          onPress={() => restore.mutate()}
-          isDisabled={restore.isPending}
-        >
-          {t('subscriber.restoreButton')}
-        </TextButton>
-      </View>
-    </ScrollView>
-  );
-}
-
-function NonSubscriberView() {
-  const sdkManager = useRevenueCatSdkManager();
-
-  if (!sdkManager.isConfigured()) {
-    return <SubscriptionUnavailableView />;
-  }
-
-  return <OfferingsView />;
-}
-
-function SubscriptionUnavailableView() {
-  const { t } = useTranslation('subscription');
-
-  return (
-    <Result
-      icon={<DocsIcon width={72} height={72} />}
-      title={t('paywall.unavailableTitle')}
-      description={t('paywall.unavailableDescription')}
-    />
-  );
-}
-
-function OfferingsView() {
-  const { t } = useTranslation('subscription');
-  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
-
-  const purchase = useMutation(usePurchaseMutationOptions());
-
-  const restore = useMutation(useRestoreMutationOptions());
-
-  const annualPlan = offering.plans.find((p) => p.planType === 'annual');
-  const defaultPlan = annualPlan ?? offering.plans[0];
-
-  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(
-    defaultPlan?.identifier ?? null,
-  );
-
-  const selectedPlan = offering.plans.find((p) => p.identifier === selectedPlanId);
-
-  const handlePurchase = () => {
-    if (!selectedPlan) {
-      return;
-    }
-
-    purchase.mutate(selectedPlan.identifier);
-  };
-
-  return (
-    <View className="flex-1">
-      <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-        <Spacing size={16} />
-
-        <ScallopedContainer>
-          <View className="px-5 pt-5">
-            <VStack gap={4} className="items-center">
-              <H2>{t('paywall.title')}</H2>
-
-              <Text size="b3" shade={6}>
-                {t('paywall.subtitle')}
+          ))}
+          <ListRow
+            verticalPadding="small"
+            left={
+              <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
+                <FillCheckIcon width={12} height={12} colorClassName="text-white" />
+              </View>
+            }
+            contents={
+              <Text size="b3" shade={8}>
+                {t('benefits.future')}
               </Text>
-            </VStack>
-
-            <View className="my-6 border-b border-dashed border-gray-3" />
-
-            <VStack gap={20}>
-              {HIGHLIGHT_BENEFITS.map((benefit) => (
-                <BenefitCard key={benefit.titleKey} benefit={benefit} />
-              ))}
-            </VStack>
-
-            <Spacing size={20} />
-
-            <ExtraBenefitCard />
-
-            <Spacing size={8} />
-
-            <Text size="e2" shade={5} align="center">
-              {t('paywall.futureIncluded')}
-            </Text>
-          </View>
-
-          <View className="my-5 border-b border-dashed border-gray-3 mx-5" />
-
-          <View className="px-5 pb-5">
-            <SubscriptionPlanCard
-              plans={offering.plans}
-              selectedPlanId={selectedPlanId}
-              onPlanSelect={setSelectedPlanId}
-            />
-          </View>
-        </ScallopedContainer>
-
-        <Spacing size={24} />
-
-        <VStack gap={8} className="items-center">
-          <TermsNotice />
-          <TextButton
-            size="small"
-            variant="underline"
-            onPress={() => restore.mutate()}
-            isDisabled={restore.isPending}
-          >
-            {t('subscriber.restoreButton')}
-          </TextButton>
+            }
+          />
         </VStack>
-      </ScrollView>
-
-      <View className="px-4 pb-4 pt-2">
-        <Button
-          onPress={handlePurchase}
-          isLoading={purchase.isPending}
-          isDisabled={!selectedPlan || purchase.isPending}
-        >
-          {t('paywall.subscribeButton')}
-        </Button>
       </View>
-    </View>
+
+      <DashedDivider className="my-5 mx-5" />
+
+      <View className="px-5 pb-5 items-center">
+        <ReceiptBarcode />
+      </View>
+    </ScallopedContainer>
   );
 }
 
-function BenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number] }) {
+function SubscriptionBenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number] }) {
   const { t } = useTranslation('subscription');
 
   return (
@@ -417,7 +391,7 @@ function BenefitCard({ benefit }: { benefit: (typeof HIGHLIGHT_BENEFITS)[number]
   );
 }
 
-function ExtraBenefitCard() {
+function AdditionalSubscriptionBenefits() {
   const { t } = useTranslation('subscription');
 
   return (
@@ -454,7 +428,7 @@ function ExtraBenefitCard() {
   );
 }
 
-function TermsNotice() {
+function SubscriptionTerms() {
   const { t } = useTranslation('subscription');
   const openUrl = useOpenUrl();
 
@@ -491,5 +465,17 @@ function ReceiptBarcode() {
         />
       ))}
     </View>
+  );
+}
+
+export default function SubscriptionRoute() {
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <QueryErrorBoundary>
+        <Suspense fallback={<SubscriptionScreen.Loading />}>
+          <SubscriptionScreen />
+        </Suspense>
+      </QueryErrorBoundary>
+    </StyledSafeAreaView>
   );
 }

@@ -1,5 +1,5 @@
 import { createMockStorage } from '@src/shared/__tests__';
-import { STORAGE_KEYS } from '@src/shared/constants/storage-keys.constant';
+import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
 
 import { createSecureTokenStore } from './secure-token-store';
 

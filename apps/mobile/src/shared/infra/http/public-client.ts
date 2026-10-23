@@ -18,13 +18,13 @@ export const createPublicClient = ({ appVersion }: { appVersion?: string } = {})
     retry: 0,
     headers: {
       'Content-Type': 'application/json',
-      'X-Timezone': getDeviceTimezone(),
       ...(appVersion && { 'X-App-Version': appVersion }),
     },
     hooks: {
       beforeRequest: [
         ({ request }) => {
-          // 언어는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
+          // 언어와 시간대는 런타임에 바뀔 수 있으므로 정적 headers가 아닌 훅에서 주입한다
+          request.headers.set('X-Timezone', getDeviceTimezone());
           if (i18n.language) {
             request.headers.set('Accept-Language', i18n.language);
           }

@@ -36,3 +36,5 @@ class InMemoryMMKV {
 
 export const createMMKV = (): InMemoryMMKV => new InMemoryMMKV();
 export const MMKV = InMemoryMMKV;
+export const existsMMKV = (): boolean => false;
+export const deleteMMKV = (): boolean => false;

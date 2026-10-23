@@ -1,4 +1,4 @@
-import { isVersionAtLeast } from "#api/shared/domain/version/compare-version";
+import { isSemanticVersionAtLeast } from "@aido/api";
 
 export const FEATURE_DISCOVERY_CAMPAIGN_KEY = "feature-discovery-2026-08";
 export const FEATURE_DISCOVERY_MIN_APP_VERSION = "1.8.0";
@@ -12,6 +12,6 @@ export interface PushCapability {
 export function supportsFeatureDiscoveryMarketing(capability: PushCapability): boolean {
   return (
     capability.payloadVersion === 2 &&
-    isVersionAtLeast(capability.appVersion, FEATURE_DISCOVERY_MIN_APP_VERSION)
+    isSemanticVersionAtLeast(capability.appVersion, FEATURE_DISCOVERY_MIN_APP_VERSION)
   );
 }

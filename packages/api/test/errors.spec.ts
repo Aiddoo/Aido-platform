@@ -63,6 +63,12 @@ describe("@aido/api/errors", () => {
       expect(isErrorCode("INVALID_CODE")).toBe(false);
       expect(isErrorCode("")).toBe(false);
     });
+
+    it("상속된 Object 프로퍼티 이름을 에러 코드로 취급하지 않아야 한다", () => {
+      expect(isErrorCode("toString")).toBe(false);
+      expect(isErrorCode("constructor")).toBe(false);
+      expect(isErrorCode("__proto__")).toBe(false);
+    });
   });
 
   describe("createErrorResponse", () => {

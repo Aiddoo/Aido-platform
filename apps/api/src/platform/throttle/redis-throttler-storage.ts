@@ -1,9 +1,11 @@
 import { Logger } from "@nestjs/common";
 import type { ThrottlerStorage } from "@nestjs/throttler";
-import type { ThrottlerStorageRecord } from "@nestjs/throttler/dist/throttler-storage-record.interface.js";
 import type { Redis } from "ioredis";
 
 import { RedisErrorLogSampler } from "../redis/redis-error-log-sampler.js";
+
+/** @nestjs/throttler가 record 타입을 공개 export하지 않아 공개 인터페이스에서 파생한다. */
+type ThrottlerStorageRecord = Awaited<ReturnType<ThrottlerStorage["increment"]>>;
 
 /**
  * Lua 스크립트: atomic throttle increment + block 처리

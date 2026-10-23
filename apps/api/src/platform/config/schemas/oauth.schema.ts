@@ -44,12 +44,12 @@ export const naverOAuthSchema = z.object({
 /**
  * 통합 OAuth 스키마 (dev에서는 선택적)
  */
-export const oauthSchema = z
-  .object({})
-  .merge(googleOAuthSchema)
-  .merge(appleOAuthSchema)
-  .merge(kakaoOAuthSchema)
-  .merge(naverOAuthSchema);
+export const oauthSchema = z.object({
+  ...googleOAuthSchema.shape,
+  ...appleOAuthSchema.shape,
+  ...kakaoOAuthSchema.shape,
+  ...naverOAuthSchema.shape,
+});
 
 export type OAuthConfig = z.infer<typeof oauthSchema>;
 export type GoogleOAuthConfig = z.infer<typeof googleOAuthSchema>;

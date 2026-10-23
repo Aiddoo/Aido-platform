@@ -3,6 +3,8 @@ import { z } from "zod";
 
 type JsonSchema = z.core.JSONSchema.BaseSchema;
 
+// z.toJSONSchema target "openapi-3.0"(zod 4.3.6)는 nullable 양수의 minimum을 잃고 $ref를
+// #/definitions로 바꾸며 tuple 표현이 달라 출시된 OpenAPI 계약과 달라지므로 직접 정규화를 유지한다.
 function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
   let converted: JsonSchema = { ...schema };
   delete converted.id;
