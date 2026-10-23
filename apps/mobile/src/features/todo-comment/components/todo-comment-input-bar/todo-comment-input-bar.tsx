@@ -4,6 +4,7 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useTranslation } from '@src/shared/i18n';
+import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { Box, HStack, Text, TextButton } from '@src/shared/ui';
 import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -22,7 +23,6 @@ import { useCancelTodoCommentScreenTransition } from '../providers/todo-comment-
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { TodoCommentForm } from './todo-comment-form';
 
-const STICKY_OFFSET = { closed: 0, opened: 0 };
 const DEFAULT_BOTTOM_INSET = 16;
 
 interface TodoCommentInputBarProps {
@@ -33,6 +33,7 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
   const [commentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
   const insets = useSafeAreaInsets();
+  const keyboardBottomGap = useKeyboardBottomGap();
   const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const prefersReducedMotion = usePrefersReducedMotion();
   const layoutBaselineRef = useRef({ identity: '', contentHeight: 0 });
@@ -90,7 +91,7 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
   }, [extraContentPadding]);
 
   return (
-    <KeyboardStickyView offset={STICKY_OFFSET}>
+    <KeyboardStickyView offset={{ closed: 0, opened: keyboardBottomGap }}>
       <Box
         px={12}
         pt={8}

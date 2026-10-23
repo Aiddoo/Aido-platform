@@ -1,6 +1,7 @@
 import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
   Box,
   QueryErrorBoundary,
@@ -142,9 +143,11 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
   if (isPane) {
     return (
-      <Box flex={1} className="bg-background">
-        {content}
-      </Box>
+      <KeyboardBottomGapProvider>
+        <Box flex={1} className="bg-background">
+          {content}
+        </Box>
+      </KeyboardBottomGapProvider>
     );
   }
 

@@ -16,8 +16,10 @@ function givenCommentBack(handleBack: () => boolean) {
   mockedUseTodoCommentBack.mockReturnValue({ result: { status: 'native' }, handleBack });
 }
 
+type HardwareBackPressListener = Parameters<typeof BackHandler.addEventListener>[1];
+
 async function pressHardwareBack(options?: { onExit?: () => void }) {
-  let hardwareBackListener: () => boolean | null | undefined = () => undefined;
+  let hardwareBackListener: HardwareBackPressListener = () => undefined;
   jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_eventName, listener) => {
     hardwareBackListener = listener;
     return { remove: jest.fn() };
@@ -25,7 +27,7 @@ async function pressHardwareBack(options?: { onExit?: () => void }) {
 
   await renderHook(() => useAndroidTodoCommentBackHandler(options));
 
-  return hardwareBackListener();
+  return hardwareBackListener({ type: 'hardwareBackPress', timeStamp: 0 });
 }
 
 describe('useAndroidTodoCommentBackHandler', () => {

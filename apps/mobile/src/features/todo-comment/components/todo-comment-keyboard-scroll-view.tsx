@@ -1,3 +1,4 @@
+import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import type { ComponentProps, Ref } from 'react';
 import { Platform } from 'react-native';
 import { KeyboardChatScrollView } from 'react-native-keyboard-controller';
@@ -23,6 +24,8 @@ export function TodoCommentKeyboardScrollView({
   keyboardLiftBehavior = 'whenAtEnd',
   ...props
 }: TodoCommentKeyboardScrollViewProps) {
+  const keyboardBottomGap = useKeyboardBottomGap();
+
   return (
     <KeyboardChatScrollView
       {...props}
@@ -31,6 +34,7 @@ export function TodoCommentKeyboardScrollView({
       keyboardDismissMode={keyboardDismissMode}
       keyboardShouldPersistTaps="handled"
       keyboardLiftBehavior={keyboardLiftBehavior}
+      offset={keyboardBottomGap}
     />
   );
 }
