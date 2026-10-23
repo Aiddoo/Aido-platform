@@ -8,8 +8,8 @@ import {
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  ACTION_CHIP_ICON_SIZE,
   ActionChip,
+  useActionChipIconSize,
   Box,
   CalendarIcon,
   ClockIcon,
@@ -37,6 +37,7 @@ interface MemoTodoEditorProps {
 }
 
 export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps) {
+  const actionChipIconSize = useActionChipIconSize();
   const { t } = useTranslation('memo');
   const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const overlay = useOverlay();
@@ -141,8 +142,8 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
         <ActionChip
           icon={
             <CalendarIcon
-              width={ACTION_CHIP_ICON_SIZE}
-              height={ACTION_CHIP_ICON_SIZE}
+              width={actionChipIconSize}
+              height={actionChipIconSize}
               colorClassName="text-gray-5"
             />
           }
@@ -152,8 +153,8 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
         <ActionChip
           icon={
             <ClockIcon
-              width={ACTION_CHIP_ICON_SIZE}
-              height={ACTION_CHIP_ICON_SIZE}
+              width={actionChipIconSize}
+              height={actionChipIconSize}
               colorClassName="text-gray-5"
             />
           }

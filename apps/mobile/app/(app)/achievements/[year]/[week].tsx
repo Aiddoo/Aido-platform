@@ -11,6 +11,7 @@ import {
 } from '@src/features/achievement/utils/view-models/weekly-achievement.view-model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
@@ -23,7 +24,6 @@ import {
   VStack,
   DashedDivider,
 } from '@src/shared/ui';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -38,6 +38,7 @@ const BADGE_NAME_KEYS = {
 } as const satisfies Record<BadgeType, string>;
 
 function AchievementDetailScreen() {
+  const fontScaledSize = useFontScaledSize();
   const { year, week } = useAchievementScreenParams();
   const { data: achievement } = useSuspenseQuery(
     useGetWeeklyAchievementQueryOptions({ year, week }),

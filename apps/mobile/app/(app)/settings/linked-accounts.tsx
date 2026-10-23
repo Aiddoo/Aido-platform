@@ -14,7 +14,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
@@ -134,7 +134,7 @@ LinkedAccountsList.Loading = function Loading() {
   return (
     <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
       <SkeletonGroup isLoading isSkeletonOnly>
-        {times(visibleConfigs.length, (index) => (
+        {range(visibleConfigs.length).map((index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
             {index < visibleConfigs.length - 1 && <Separator className="mx-4 bg-gray-2" />}

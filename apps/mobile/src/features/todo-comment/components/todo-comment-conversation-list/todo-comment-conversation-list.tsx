@@ -14,7 +14,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Skeleton, Spinner } from 'heroui-native';
 import {
   type ComponentProps,
@@ -593,7 +593,7 @@ TodoCommentConversationList.Empty = function Empty() {
 TodoCommentConversationList.Loading = function Loading({ rows = 4 }: { rows?: number }) {
   return (
     <VStack>
-      {times(rows, (index) => (
+      {range(rows).map((index) => (
         <ConversationRowSkeleton key={index} />
       ))}
     </VStack>

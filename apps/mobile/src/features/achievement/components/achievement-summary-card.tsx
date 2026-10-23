@@ -1,9 +1,9 @@
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { H4, HStack, ShareIcon, Spacing, Text, VStack, DashedDivider } from '@src/shared/ui';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useEffect, useRef } from 'react';
@@ -30,6 +30,7 @@ interface AchievementSummaryCardProps {
 }
 
 export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCardProps) {
+  const fontScaledSize = useFontScaledSize();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();

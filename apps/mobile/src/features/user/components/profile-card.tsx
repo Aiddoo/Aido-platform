@@ -1,9 +1,9 @@
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useClipboard } from '@src/shared/hooks/use-clipboard';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
@@ -15,6 +15,7 @@ import { formatUserHashtag } from '../utils/user-hashtag';
 import { UserAvatar } from './user-avatar';
 
 export function ProfileCard() {
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());

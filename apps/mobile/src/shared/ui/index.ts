@@ -1,4 +1,4 @@
-export { ACTION_CHIP_ICON_SIZE, ActionChip, type ActionChipProps } from './action-chip';
+export { ActionChip, type ActionChipProps, useActionChipIconSize } from './action-chip';
 export { Avatar } from './avatar';
 export { BottomSheet, KeyboardBottomSheet, ModalBottomSheet } from './bottom-sheet';
 export { Box } from './box';

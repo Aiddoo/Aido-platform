@@ -1,12 +1,16 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 import type { PressableProps } from 'react-native';
 
 import { Text } from '../text';
 
-const ICON_SIZE = fontScaledSize(16, 0.3);
+function useActionChipIconSize(): number {
+  const fontScaledSize = useFontScaledSize();
+
+  return fontScaledSize(16, 0.3);
+}
 
 interface ActionChipProps extends Omit<
   ComponentProps<typeof PressableFeedback>,
@@ -49,4 +53,4 @@ export function ActionChip({
 }
 
 export type { ActionChipProps };
-export { ICON_SIZE as ACTION_CHIP_ICON_SIZE };
+export { useActionChipIconSize };

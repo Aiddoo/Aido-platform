@@ -1,5 +1,6 @@
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -17,9 +18,8 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
@@ -41,6 +41,7 @@ import type { FriendUserViewModel } from '../utils/view-models/friend-user.view-
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
 
 export function FriendList() {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation(['friend', 'common']);
   const {
     data,
@@ -230,7 +231,7 @@ FriendList.Loading = function Loading() {
         <Skeleton className="w-12 h-4" />
       </Box>
       <VStack>
-        {times(3, (i) => (
+        {range(3).map((i) => (
           <HStack key={i} align="center" className="py-2" gap={12}>
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="flex-1 h-5" />
@@ -242,6 +243,7 @@ FriendList.Loading = function Loading() {
 };
 
 function EditModeGuideTooltip() {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation(['friend', 'common']);
   const [isOpen, setIsOpen] = useState(false);
 

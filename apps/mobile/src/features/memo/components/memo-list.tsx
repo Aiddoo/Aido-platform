@@ -12,7 +12,7 @@ import {
 } from '@src/shared/ui';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -104,7 +104,7 @@ MemoList.Item = function Item({
 MemoList.Loading = function Loading() {
   return (
     <HStack gap={12} className="flex-wrap">
-      {times(4, (i) => (
+      {range(4).map((i) => (
         <VStack
           key={`memo-skeleton-${i}`}
           gap={8}

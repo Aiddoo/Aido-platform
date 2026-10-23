@@ -18,7 +18,7 @@ import {
   withDayOfMonth,
   withDayOfWeek,
 } from '@src/shared/utils/date';
-import { range } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useRef } from 'react';
 import {

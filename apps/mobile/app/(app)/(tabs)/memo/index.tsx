@@ -3,6 +3,7 @@ import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
 import { MemoPolicy } from '@src/features/memo/domains/memo.model';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -17,7 +18,6 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -91,6 +91,7 @@ export default function MemoScreen() {
 }
 
 function MemoCreateButton() {
+  const fontScaledSize = useFontScaledSize();
   const push = useSingleTap(router.push);
 
   const toast = useAppToast();
@@ -123,10 +124,12 @@ function MemoCreateButton() {
 }
 
 MemoCreateButton.Loading = function Loading() {
+  const fontScaledSize = useFontScaledSize();
   return <Box style={{ width: fontScaledSize(44), height: fontScaledSize(44) }} />;
 };
 
 MemoCreateButton.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
   return (
     <PressableFeedback

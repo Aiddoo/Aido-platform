@@ -1,5 +1,6 @@
 import { CategoryCreateBottomSheet } from '@src/features/todo/components/category-create-bottom-sheet';
 import { CategoryList } from '@src/features/todo/components/category-list';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import {
   H3,
@@ -11,7 +12,6 @@ import {
   useOverlay,
   VStack,
 } from '@src/shared/ui';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { router, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback, Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
@@ -38,6 +38,7 @@ function useView() {
 }
 
 function TodoCategorySettingsScreen() {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('settings');
   const createOverlay = useOverlay();
   const [view, setView] = useView();

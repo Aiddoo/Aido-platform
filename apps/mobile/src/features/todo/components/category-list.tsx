@@ -1,12 +1,12 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/queries/use-reorder-todo-category-mutation-options';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import * as Haptics from 'expo-haptics';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useCallback } from 'react';
@@ -27,6 +27,7 @@ interface CategoryListProps {
 }
 
 export function CategoryList({ mode }: CategoryListProps) {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
   const editOverlay = useOverlay();
   const deleteOverlay = useOverlay();
@@ -182,7 +183,7 @@ export function CategoryList({ mode }: CategoryListProps) {
 CategoryList.Loading = function Loading() {
   return (
     <VStack gap={8} className="bg-white rounded-2xl p-2">
-      {times(2).map((i) => (
+      {range(2).map((i) => (
         <ListRow
           key={`category-loading-${i}`}
           left={

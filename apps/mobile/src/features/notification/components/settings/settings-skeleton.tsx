@@ -1,5 +1,5 @@
 import { HStack, VStack } from '@src/shared/ui';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Separator, Skeleton, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
@@ -31,7 +31,7 @@ export function GroupSkeleton({ rows }: { rows: number }) {
 
       <SettingsCard>
         <SkeletonGroup isLoading isSkeletonOnly>
-          {times(rows, (i) => (
+          {range(rows).map((i) => (
             <View key={i}>
               {i > 0 && <Separator className="bg-gray-2" />}
               <HStack justify="between" align="center" className="py-2">

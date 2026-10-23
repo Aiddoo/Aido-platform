@@ -17,7 +17,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Slot, router, useGlobalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
@@ -113,7 +113,7 @@ function AvatarList() {
 AvatarList.Loading = function Loading() {
   return (
     <HStack px={16} gap={12}>
-      {times(3).map((i) => (
+      {range(3).map((i) => (
         <VStack key={i} align="center" gap={4}>
           <Skeleton className="size-8 rounded-full" />
           <Skeleton className="h-4 w-8 rounded" />

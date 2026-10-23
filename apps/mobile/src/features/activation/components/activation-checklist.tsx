@@ -1,8 +1,8 @@
 import type { ActivationProgress } from '@src/features/activation/domains/activation.model';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 
 interface ActivationChecklistProps {
   progress: ActivationProgress;
@@ -35,6 +35,7 @@ export function ActivationChecklist({ progress }: ActivationChecklistProps) {
 }
 
 function ActivationStep({ label, completed }: { label: string; completed: boolean }) {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const status = completed ? t('activation.completed') : t('activation.incomplete');
 

@@ -1,6 +1,6 @@
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CloseIcon, HStack, Text } from '@src/shared/ui';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { PressableFeedback } from 'heroui-native';
 
 interface PickerHeaderProps {
@@ -16,6 +16,7 @@ export const PickerHeader = ({
   onConfirm,
   isConfirmDisabled = false,
 }: PickerHeaderProps) => {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
   return (
     <HStack className="items-center" px={16}>

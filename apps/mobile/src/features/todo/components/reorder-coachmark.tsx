@@ -1,8 +1,8 @@
 import { useReorderCoachmarkService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { CloseIcon, HStack, InfoIcon, Text } from '@src/shared/ui';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ import type { ReorderCoachmarkKind } from '../apis/reorder-coachmark.repository'
 
 /** 처음 재정렬이 가능해진 계정에 한 번만 길게 눌러 옮기는 방법을 알린다. */
 export function ReorderCoachmark({ kind }: { kind: ReorderCoachmarkKind }) {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const service = useReorderCoachmarkService();
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());

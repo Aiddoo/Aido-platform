@@ -9,12 +9,13 @@ import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
 import { useToday } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
-  ACTION_CHIP_ICON_SIZE,
   ActionChip,
+  useActionChipIconSize,
   ArrowUpIcon,
   BottomSheetInput,
   Box,
@@ -37,7 +38,6 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
@@ -106,6 +106,7 @@ type AddTodoBottomSheetProps =
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
+  const fontScaledSize = useFontScaledSize();
   const { showBoundary } = useErrorBoundary();
   const { isOpen, onOpenChange, onClose } = props;
 
@@ -479,6 +480,7 @@ const formatRepeatLabel = (days: DayOfWeek[]): string => {
 // --- chip components ---
 
 const DateChip = ({ onPress }: { onPress: () => void }) => {
+  const actionChipIconSize = useActionChipIconSize();
   const startDate = useWatch<AddTodoFormValues, 'startDate'>({ name: 'startDate' });
   const today = useToday();
   const label = formatTodoDateLabel({ startDate, scheduledTime: null, isAllDay: true, today });
@@ -487,8 +489,8 @@ const DateChip = ({ onPress }: { onPress: () => void }) => {
     <ActionChip
       icon={
         <CalendarIcon
-          width={ACTION_CHIP_ICON_SIZE}
-          height={ACTION_CHIP_ICON_SIZE}
+          width={actionChipIconSize}
+          height={actionChipIconSize}
           colorClassName="text-main"
         />
       }
@@ -500,6 +502,7 @@ const DateChip = ({ onPress }: { onPress: () => void }) => {
 };
 
 const TimeChip = ({ onPress }: { onPress: () => void }) => {
+  const actionChipIconSize = useActionChipIconSize();
   const [scheduledTime, isAllDay] = useWatch<AddTodoFormValues, ['scheduledTime', 'isAllDay']>({
     name: ['scheduledTime', 'isAllDay'],
   });
@@ -511,8 +514,8 @@ const TimeChip = ({ onPress }: { onPress: () => void }) => {
     <ActionChip
       icon={
         <ClockIcon
-          width={ACTION_CHIP_ICON_SIZE}
-          height={ACTION_CHIP_ICON_SIZE}
+          width={actionChipIconSize}
+          height={actionChipIconSize}
           colorClassName={hasTime ? 'text-main' : 'text-gray-5'}
         />
       }
@@ -524,6 +527,7 @@ const TimeChip = ({ onPress }: { onPress: () => void }) => {
 };
 
 const RepeatChip = ({ onPress }: { onPress: () => void }) => {
+  const actionChipIconSize = useActionChipIconSize();
   const [isRecurring, daysOfWeek] = useWatch<AddTodoFormValues, ['isRecurring', 'daysOfWeek']>({
     name: ['isRecurring', 'daysOfWeek'],
   });
@@ -535,8 +539,8 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
     <ActionChip
       icon={
         <RepeatIcon
-          width={ACTION_CHIP_ICON_SIZE}
-          height={ACTION_CHIP_ICON_SIZE}
+          width={actionChipIconSize}
+          height={actionChipIconSize}
           colorClassName={isActive ? 'text-main' : 'text-gray-5'}
         />
       }
@@ -548,6 +552,7 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
 };
 
 const VisibilityChip = () => {
+  const actionChipIconSize = useActionChipIconSize();
   const { control } = useFormContext<AddTodoFormValues>();
   return (
     <FormField control={control} name="visibility">
@@ -558,14 +563,14 @@ const VisibilityChip = () => {
             icon={
               isPrivate ? (
                 <EyeOffIcon
-                  width={ACTION_CHIP_ICON_SIZE}
-                  height={ACTION_CHIP_ICON_SIZE}
+                  width={actionChipIconSize}
+                  height={actionChipIconSize}
                   colorClassName="text-gray-6"
                 />
               ) : (
                 <EyeIcon
-                  width={ACTION_CHIP_ICON_SIZE}
-                  height={ACTION_CHIP_ICON_SIZE}
+                  width={actionChipIconSize}
+                  height={actionChipIconSize}
                   colorClassName="text-gray-5"
                 />
               )
@@ -603,6 +608,7 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
 };
 
 const AiFeatureTooltip = () => {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const [tooltipOpen, setTooltipOpen] = useState(false);
 
@@ -661,6 +667,7 @@ interface AiParseButtonProps {
 }
 
 const AiParseButton = ({ onClose }: AiParseButtonProps) => {
+  const fontScaledSize = useFontScaledSize();
   const methods = useFormContext<AddTodoFormInput>();
   const { trackEvent } = useTrack();
   const toast = useAppToast();

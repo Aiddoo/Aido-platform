@@ -1,4 +1,5 @@
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
@@ -15,7 +16,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { useRef, useState } from 'react';
@@ -44,6 +44,7 @@ interface EditProps extends BaseProps {
 type AddSubTodoBottomSheetProps = CreateProps | EditProps;
 
 export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
+  const fontScaledSize = useFontScaledSize();
   const { isOpen, onOpenChange, onClose } = props;
 
   const defaultValue = match(props)
@@ -158,6 +159,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
 };
 
 function SpeechTooltip() {
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -216,6 +218,7 @@ interface SpeechButtonProps {
 }
 
 function SpeechButton({ onResult }: SpeechButtonProps) {
+  const fontScaledSize = useFontScaledSize();
   const toast = useAppToast();
 
   const { isRecognizing, start, stop } = useSpeechRecognition({

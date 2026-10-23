@@ -1,5 +1,5 @@
 import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
-import { findKey } from 'es-toolkit/compat';
+import { findKey } from 'es-toolkit';
 
 export const getDayOfWeekFromDate = (date: Date): DayOfWeek | undefined =>
   findKey(DAY_OF_WEEK_MAP, (v) => v === date.getDay()) as DayOfWeek | undefined;

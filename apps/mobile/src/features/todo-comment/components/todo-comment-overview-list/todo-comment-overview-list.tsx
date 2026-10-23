@@ -15,7 +15,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { type ComponentProps, useCallback } from 'react';
 import { RefreshControl, type ScrollViewProps } from 'react-native';
@@ -154,7 +154,7 @@ TodoCommentOverviewList.Empty = function Empty() {
 TodoCommentOverviewList.Loading = function Loading({ rows = 3 }: { rows?: number }) {
   return (
     <VStack>
-      {times(rows, (index) => (
+      {range(rows).map((index) => (
         <OverviewCommentRowSkeleton key={index} />
       ))}
     </VStack>

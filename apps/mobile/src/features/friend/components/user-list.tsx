@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { Flex, VStack, HStack, ListRow } from '@src/shared/ui';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
 import { type ReactElement, type ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
@@ -92,7 +92,7 @@ UserList.Loading = function Loading({ header, rows = 3, hasAction = true }: User
     <ScrollView className="flex-1">
       {header}
       <VStack>
-        {times(rows, (index) => (
+        {range(rows).map((index) => (
           <UserList.ItemLoading key={index} hasAction={hasAction} />
         ))}
       </VStack>

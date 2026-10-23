@@ -5,17 +5,13 @@
 ## 사용법
 
 ```tsx
-import { ActionChip, ACTION_CHIP_ICON_SIZE } from '@src/shared/ui';
+import { ActionChip, useActionChipIconSize } from '@src/shared/ui';
 import { CalendarIcon } from '@src/shared/ui';
 
+const iconSize = useActionChipIconSize();
+
 <ActionChip
-  icon={
-    <CalendarIcon
-      width={ACTION_CHIP_ICON_SIZE}
-      height={ACTION_CHIP_ICON_SIZE}
-      colorClassName="text-main"
-    />
-  }
+  icon={<CalendarIcon width={iconSize} height={iconSize} colorClassName="text-main" />}
   label="오늘"
   isActive
   onPress={() => {}}
@@ -39,7 +35,7 @@ import { CalendarIcon } from '@src/shared/ui';
 
 ### 상수
 
-- `ACTION_CHIP_ICON_SIZE`: 아이콘 권장 크기 (`fontScaledSize(16, 0.3)`)
+- `useActionChipIconSize()`: 아이콘 권장 크기 (`fontScaledSize(16, 0.3)`)
 
 ## 파일 구조
 

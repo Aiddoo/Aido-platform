@@ -4,6 +4,7 @@ import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { type Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -24,10 +25,9 @@ import {
 } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate } from '@src/shared/utils/date';
-import { fontScaledSize } from '@src/shared/utils/scale';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
+import { range } from 'es-toolkit';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useMemo, useState } from 'react';
@@ -99,7 +99,7 @@ export function TodoList() {
 TodoList.Loading = function Loading() {
   return (
     <VStack gap={12}>
-      {times(5, (i) => (
+      {range(5).map((i) => (
         <HStack key={`todo-skeleton-${i}`} gap={12} align="center" className="py-3">
           <Skeleton className="size-5 rounded" />
 
@@ -130,6 +130,7 @@ interface CategoryHeaderProps {
 }
 
 function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
+  const fontScaledSize = useFontScaledSize();
   const [selectedDate] = useFeedDate();
   const overlay = useOverlay();
 
