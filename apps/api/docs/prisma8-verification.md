@@ -18,7 +18,7 @@ ORM `@prisma/orm-postgres@8.0.0-rc.20`, CLI `prisma@8.0.0-rc.27`(orm-toolchain r
 | 옛 marker(`5eefdf63…`) DB에 `db:deploy`                         | `MIGRATION.MARKER_MISMATCH`로 중단                     |
 | `db sign --contract 4ccdcd5a… --no-advance-ref` 후 `db:deploy`  | 0-operation edge 적용, marker `65d810f7…`, verify 통과 |
 
-운영·dev DB 재서명은 실행하지 않았다.
+로컬 Docker dev DB는 기존 데이터를 유지한 채 `pg_dump` 백업 후 재서명했다. 이어서 rc.20 migrate 이미지가 0-operation edge를 적용하고 verify를 통과했으며, 52개 테이블의 행 checksum이 전후 동일했다(2026-10-23). 운영 DB 재서명은 배포 직전에 같은 절차로 실행한다.
 
 검증일: 2026-10-06. Node.js 24.21.0, pnpm 10.34.6, PostgreSQL 16,
 ARM64 Docker 이미지에서 확인했다. 운영 DB에 적용하거나 이미지를 발행하지 않았다.
