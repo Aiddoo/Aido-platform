@@ -1,12 +1,16 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useDraft } from '@src/shared/draft/use-draft';
+import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave';
 import { isApiError } from '@src/shared/errors';
+import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { Box, Button, HStack, SendIcon, Text, TextArea, TextButton, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 import {
   useCallback,
@@ -41,6 +45,10 @@ import { getCommentFormChainFieldLayout } from '../../utils/comment-form-chain-l
 import { getFocusedCommentFieldIndexAfterRemoval } from '../../utils/comment-form-fields';
 import { getCommentFormMaxHeight } from '../../utils/comment-form-layout';
 import {
+  createTodoCommentDraftKey,
+  getTodoCommentDraftSourceUpdatedAt,
+} from '../../utils/todo-comment-draft';
+import {
   prepareTodoCommentSubmission,
   type PreparedTodoCommentSubmission,
 } from '../../utils/todo-comment-submission';
@@ -67,23 +75,44 @@ export function TodoCommentForm({
   ...scrollViewProps
 }: TodoCommentFormProps) {
   const { t } = useTranslation('todoComment');
-  const { isSubmitting, cancel, submit } = useTodoCommentFormSubmission(session);
+  const toast = useAppToast();
+  const { todoId } = useTodoScreenParams();
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { height: viewportHeight } = useWindowDimensions();
   const isEditing = session.type === 'edit';
   const target = session.type === 'new' ? null : session.target;
-  const initialContent = isEditing ? (session.target.content ?? '') : '';
+  const initialValues = { items: [{ content: isEditing ? (session.target.content ?? '') : '' }] };
+  const [commentDraft, setCommentDraft, clearCommentDraft] = useDraft(
+    createTodoCommentDraftKey({ userId: user.id, todoId, session }),
+    {
+      sourceUpdatedAt: getTodoCommentDraftSourceUpdatedAt(session),
+      onOutdatedDiscard: () => toast.warning(t('toasts.draftOutdated')),
+    },
+  );
   const form = useForm({
     resolver: zodResolver(todoCommentFormSchema),
-    defaultValues: { items: [{ content: initialContent }] },
+    defaultValues: commentDraft ?? initialValues,
     mode: 'onChange',
   });
-  const { control, handleSubmit, setFocus } = form;
+  const { control, handleSubmit, setFocus, subscribe } = form;
+  const discardCommentDraft = useFormDraftAutosave(subscribe, {
+    initialValues,
+    setDraft: setCommentDraft,
+    clearDraft: clearCommentDraft,
+  });
+  const { isSubmitting, cancel, submit } = useTodoCommentFormSubmission(session, {
+    onFinish: discardCommentDraft,
+  });
   const { append, remove, fields } = useFieldArray({
     control,
     name: 'items',
   });
   const { focusedFieldIndex, trackFocusedField, focusFieldAfterLayout, removeFieldAndFocusNext } =
-    useCommentFormFieldFocus({ remove, setFocus });
+    useCommentFormFieldFocus({
+      remove,
+      setFocus,
+      initialFieldIndex: (commentDraft?.items.length ?? 1) - 1,
+    });
   const showsAppendAction = !isEditing && TodoCommentDraftPolicy.hasCapacity(fields.length);
   const formMaxHeight = getCommentFormMaxHeight(viewportHeight);
 
@@ -176,7 +205,15 @@ export function TodoCommentForm({
   );
 }
 
-function useTodoCommentFormSubmission(session: TodoCommentFormSession) {
+interface TodoCommentFormSubmissionOptions {
+  /** 제출 성공·명시적 취소로 작성을 끝낼 때 호출한다. 화면이 이미 사라졌어도 호출한다. */
+  onFinish: () => void;
+}
+
+function useTodoCommentFormSubmission(
+  session: TodoCommentFormSession,
+  { onFinish }: TodoCommentFormSubmissionOptions,
+) {
   const { todoId } = useTodoScreenParams();
   const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelPendingTransition = useCancelTodoCommentScreenTransition();
@@ -192,10 +229,11 @@ function useTodoCommentFormSubmission(session: TodoCommentFormSession) {
   }, []);
 
   const cancel = useCallback(() => {
+    onFinish();
     cancelPendingTransition();
     dismissKeyboard();
     updateCommentRoute.cancelForm();
-  }, [cancelPendingTransition, dismissKeyboard, updateCommentRoute]);
+  }, [cancelPendingTransition, dismissKeyboard, onFinish, updateCommentRoute]);
 
   const complete = useCallback(() => {
     cancelPendingTransition();
@@ -228,6 +266,7 @@ function useTodoCommentFormSubmission(session: TodoCommentFormSession) {
             commentId: session.target.id,
             input: { content },
           });
+          onFinish();
 
           if (isMountedRef.current) {
             complete();
@@ -251,6 +290,7 @@ function useTodoCommentFormSubmission(session: TodoCommentFormSession) {
 
         await createCommentChain.mutateAsync(submission.input);
         preparedSubmissionRef.current = null;
+        onFinish();
 
         if (isMountedRef.current) {
           complete();
@@ -263,7 +303,7 @@ function useTodoCommentFormSubmission(session: TodoCommentFormSession) {
         isSubmittingRef.current = false;
       }
     },
-    [complete, createCommentChain, session, todoId, updateComment],
+    [complete, createCommentChain, onFinish, session, todoId, updateComment],
   );
 
   return { isSubmitting, cancel, submit };
@@ -389,10 +429,17 @@ function CommentSubmitButton({
 interface CommentFormFieldFocusOptions {
   remove: (index: number) => void;
   setFocus: (name: CommentFieldName) => void;
+  /** 복원한 초안은 마지막으로 쓰던 이어 쓰기 칸에서 이어 쓴다. */
+  initialFieldIndex: number;
 }
 
-function useCommentFormFieldFocus({ remove, setFocus }: CommentFormFieldFocusOptions) {
-  const [focusedFieldIndex, setFocusedFieldIndex] = useState(0);
+function useCommentFormFieldFocus({
+  remove,
+  setFocus,
+  initialFieldIndex,
+}: CommentFormFieldFocusOptions) {
+  const [mountedFieldIndex] = useState(initialFieldIndex);
+  const [focusedFieldIndex, setFocusedFieldIndex] = useState(mountedFieldIndex);
   const pendingFocusFrameRef = useRef<number | null>(null);
 
   const cancelPendingFocus = useCallback(() => {
@@ -415,9 +462,9 @@ function useCommentFormFieldFocus({ remove, setFocus }: CommentFormFieldFocusOpt
   );
 
   useEffect(() => {
-    focusFieldAfterLayout(0);
+    focusFieldAfterLayout(mountedFieldIndex);
     return cancelPendingFocus;
-  }, [cancelPendingFocus, focusFieldAfterLayout]);
+  }, [cancelPendingFocus, focusFieldAfterLayout, mountedFieldIndex]);
 
   const trackFocusedField = (index: number) => {
     cancelPendingFocus();

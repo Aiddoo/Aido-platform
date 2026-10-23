@@ -322,7 +322,7 @@ function SelectedCommentForm() {
 
   return (
     <TodoCommentForm
-      key={activeForm.type}
+      key={`${activeForm.type}:${target.id}`}
       author={toTodoCommentAuthor(user, detail.owner.id)}
       session={{ type: activeForm.type, target }}
     />

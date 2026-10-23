@@ -68,6 +68,7 @@
     "deleteFailed": "Couldn't delete your comment. Please try again",
     "likeFailed": "Couldn't update the like. Please try again",
     "openConversationFailed": "Couldn't open this conversation. Please tap it again in a moment",
-    "finishFormFirst": "Post or cancel the comment you're writing before moving"
+    "finishFormFirst": "Post or cancel the comment you're writing before moving",
+    "draftOutdated": "This comment was changed elsewhere, so your unsaved edit was discarded"
   }
 }

@@ -66,6 +66,7 @@
     "deleteFailed": "댓글을 삭제하지 못했어요. 다시 시도해 주세요",
     "likeFailed": "좋아요를 반영하지 못했어요. 다시 시도해 주세요",
     "openConversationFailed": "댓글 대화를 열지 못했어요. 잠시 후 다시 눌러 주세요",
-    "finishFormFirst": "작성 중인 댓글을 게시하거나 취소한 뒤 이동해 주세요"
+    "finishFormFirst": "작성 중인 댓글을 게시하거나 취소한 뒤 이동해 주세요",
+    "draftOutdated": "댓글이 다른 곳에서 수정되어 저장하지 않은 수정 내용을 지웠어요"
   }
 }
