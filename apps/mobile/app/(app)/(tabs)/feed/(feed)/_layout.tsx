@@ -77,6 +77,7 @@ function AvatarList() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={{ flexGrow: 0 }}
       contentContainerStyle={{ paddingHorizontal: 16 }}
       onMomentumScrollEnd={handleScrollEnd}
     >
