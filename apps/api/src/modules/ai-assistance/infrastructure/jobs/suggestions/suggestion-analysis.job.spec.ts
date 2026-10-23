@@ -78,18 +78,19 @@ describe("SuggestionAnalysisJob — 영속 추천 분석 job 발행", () => {
 
     await job.dispatchAnalysis();
 
-    expect(runtime.enqueue).toHaveBeenCalledTimes(2);
-    expect(runtime.enqueue).toHaveBeenCalledWith(
-      AI_SUGGESTION_QUEUE,
-      expect.objectContaining({
-        name: "analyze-suggestion",
+    expect(runtime.enqueueMany).toHaveBeenCalledOnce();
+    expect(runtime.enqueueMany).toHaveBeenCalledWith(AI_SUGGESTION_QUEUE, [
+      {
         data: expect.objectContaining({
-          userId: "user-1",
-          timezone: "Asia/Seoul",
+          name: "analyze-suggestion",
+          data: expect.objectContaining({ userId: "user-1", timezone: "Asia/Seoul" }),
         }),
+        options: expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
+      },
+      expect.objectContaining({
+        data: expect.objectContaining({ data: expect.objectContaining({ userId: "user-2" }) }),
       }),
-      expect.objectContaining({ retryLimit: 2, retryBackoff: true }),
-    );
+    ]);
   });
 
   it("사용자가 없으면 분석 작업을 만들지 않는다", async () => {

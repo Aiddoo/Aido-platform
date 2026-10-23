@@ -12,6 +12,7 @@ import { ConfigService } from "@nestjs/config";
 import type { EnvConfig } from "#api/platform/config/index";
 import type {
   EnqueueJobOptions,
+  EnqueueJobRequest,
   JobBackend,
   JobCancellationResult,
   JobData,
@@ -53,6 +54,13 @@ export class RedisDrainJobRuntime implements JobRuntimePort {
     options: EnqueueJobOptions,
   ): Promise<string | null> {
     return this.primary.enqueue(queue, data, options);
+  }
+
+  enqueueMany<T extends JobData>(
+    queue: string,
+    jobs: readonly EnqueueJobRequest<T>[],
+  ): Promise<void> {
+    return this.primary.enqueueMany(queue, jobs);
   }
 
   async schedule<T extends JobData>(

@@ -6,6 +6,7 @@ import { TypedConfigService } from "#api/platform/config/services/config.service
 import { REDIS_CLIENT } from "#api/platform/redis/index";
 import type {
   EnqueueJobOptions,
+  EnqueueJobRequest,
   JobCancellationResult,
   JobData,
   JobRuntimeHealth,
@@ -37,6 +38,9 @@ export interface BullJobClient {
 
 export interface BullQueueClient {
   add(name: string, data: object, options: object): Promise<{ readonly id?: string }>;
+  addBulk(
+    jobs: readonly { readonly name: string; readonly data: object; readonly opts: object }[],
+  ): Promise<readonly { readonly id?: string }[]>;
   upsertJobScheduler(
     key: string,
     repeat: { readonly pattern: string; readonly tz?: string },
@@ -99,6 +103,12 @@ class DefaultBullQueueClient implements BullQueueClient {
 
   async add(name: string, data: object, options: JobsOptions): Promise<{ readonly id?: string }> {
     return this.queue.add(name, data, options);
+  }
+
+  async addBulk(
+    jobs: readonly { readonly name: string; readonly data: object; readonly opts: JobsOptions }[],
+  ): Promise<readonly { readonly id?: string }[]> {
+    return this.queue.addBulk([...jobs]);
   }
 
   async upsertJobScheduler(
@@ -247,6 +257,19 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
       this.jobOptions(options),
     );
     return job.id ?? null;
+  }
+
+  async enqueueMany<T extends JobData>(
+    queueName: string,
+    jobs: readonly EnqueueJobRequest<T>[],
+  ): Promise<void> {
+    await this.queue(queueName).addBulk(
+      jobs.map(({ data, options }) => ({
+        name: queueName,
+        data: this.wrap(data, options),
+        opts: this.jobOptions(options),
+      })),
+    );
   }
 
   async schedule<T extends JobData>(

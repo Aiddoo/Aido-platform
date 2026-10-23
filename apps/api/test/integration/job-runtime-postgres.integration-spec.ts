@@ -148,6 +148,21 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
     expect(duplicate).toBeNull();
   });
 
+  it("enqueueMany는 한 번에 등록하고 이미 있는 idempotencyKey는 enqueue처럼 건너뛴다", async () => {
+    const queue = "integration-enqueue-many";
+    await runtime.enqueue(queue, { documentId: 1 }, options({ idempotencyKey: "many:1" }));
+
+    await runtime.enqueueMany(queue, [
+      { data: { documentId: 1 }, options: options({ idempotencyKey: "many:1" }) },
+      { data: { documentId: 2 }, options: options({ idempotencyKey: "many:2" }) },
+    ]);
+
+    const first = await boss.findJobs(queue, { key: "many:1" });
+    const second = await boss.findJobs(queue, { key: "many:2" });
+    expect(first).toHaveLength(1);
+    expect(second.map((job) => job.data)).toEqual([{ documentId: 2 }]);
+  });
+
   it("재시도 소진 작업을 dead-letter queue에 보존한다", async () => {
     const queue = "integration-retry";
     const deadLetter = "integration-retry-dead-letter";
@@ -259,6 +274,9 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
               .build(),
           );
           await runtime.enqueue(queue, { probeId }, options({ idempotencyKey: probeId }));
+          await runtime.enqueueMany(queue, [
+            { data: { probeId }, options: options({ idempotencyKey: `${probeId}:batch` }) },
+          ]);
           throw new Error("force rollback");
         } finally {
           transactionSource.tx = createDatabaseContext(prisma);
@@ -274,7 +292,9 @@ describe("PgBossJobRuntimeAdapter 통합 테스트 (실제 PostgreSQL)", () => {
           .build(),
       );
     const jobs = await boss.findJobs(queue, { key: probeId });
+    const batchJobs = await boss.findJobs(queue, { key: `${probeId}:batch` });
     expect(rows[0]?.count).toBe(0n);
     expect(jobs).toHaveLength(0);
+    expect(batchJobs).toHaveLength(0);
   });
 });
