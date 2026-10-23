@@ -74,7 +74,7 @@ export async function optimisticallyMarkNotificationsRead(
   });
   const shouldDecrement =
     notificationId === undefined ||
-    listEntries.some(([, data]) => containsUnreadNotification(data, notificationId));
+    listEntries.some(([_queryKey, data]) => containsUnreadNotification(data, notificationId));
 
   notifyManager.batch(() => {
     for (const [queryKey, data] of listEntries) {

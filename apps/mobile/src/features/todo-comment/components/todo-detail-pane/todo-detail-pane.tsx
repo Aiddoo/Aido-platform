@@ -49,7 +49,7 @@ export function TodoDetailPane({ presentation }: TodoDetailPaneProps) {
 
 function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const { todoId } = useTodoScreenParams();
-  const [_, setSelectedTodoId] = useFeedSelectedTodo();
+  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const [commentRoute] = useTodoCommentRoute();
   useAndroidTodoCommentBackHandler();
   const commentListExtraPadding = useSharedValue(0);

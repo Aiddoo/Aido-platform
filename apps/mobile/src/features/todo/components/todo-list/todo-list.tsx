@@ -219,7 +219,7 @@ interface TodoListItemProps {
 }
 
 TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoListItemProps) {
-  const [_, setSelectedTodoId] = useFeedSelectedTodo();
+  const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const selectTodo = useSingleTap(setSelectedTodoId);
 
   const { t } = useTranslation('todo');

@@ -150,7 +150,7 @@ function NewCommentButton() {
   const { todoId } = useTodoScreenParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const [, updateCommentRoute] = useTodoCommentRoute();
+  const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
   const { t } = useTranslation('todoComment');
 
@@ -229,7 +229,7 @@ function NewCommentForm() {
   const { todoId } = useTodoScreenParams();
   const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const [, updateCommentRoute] = useTodoCommentRoute();
+  const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const { t } = useTranslation('todoComment');
 
   if (!detail.permissions.canComment) {

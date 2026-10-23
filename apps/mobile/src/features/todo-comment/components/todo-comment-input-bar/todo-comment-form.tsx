@@ -178,7 +178,7 @@ export function TodoCommentForm({
 
 function useTodoCommentFormSubmission(session: TodoCommentFormSession) {
   const { todoId } = useTodoScreenParams();
-  const [, updateCommentRoute] = useTodoCommentRoute();
+  const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelPendingTransition = useCancelTodoCommentScreenTransition();
   const isSubmitting = useIsTodoCommentSubmitting();
   const updateComment = useMutation(useUpdateTodoCommentMutationOptions({ todoId }));

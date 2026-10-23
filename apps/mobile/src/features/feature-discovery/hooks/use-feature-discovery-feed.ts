@@ -26,7 +26,7 @@ export function useFeatureDiscoveryFeed() {
   const isStable = useStableFeedForeground();
   const { openHub } = useFeatureDiscoveryHub();
   const stateService = useFeatureDiscoveryStateService();
-  const [, refreshState] = useReducer((value: number) => value + 1, 0);
+  const [_refreshCount, refreshState] = useReducer((value: number) => value + 1, 0);
 
   const campaign =
     config?.enabled === true ? getBundledFeatureDiscoveryCampaign(config.campaignId) : null;
