@@ -30,7 +30,10 @@ export function useFeedSelectedTodo(): readonly [
 
       if (navigation.type === 'push') {
         router.push({ pathname: '/todo/[todoId]', params: { todoId: navigation.todoId } });
-      } else if (navigation.type === 'setParams') {
+        return;
+      }
+
+      if (navigation.type === 'setParams') {
         router.setParams(navigation.params);
       }
     },
