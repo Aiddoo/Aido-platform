@@ -74,6 +74,9 @@ updates:
       # typescript 7: Expo 58의 CLI 권장 TypeScript 6 cohort와 함께 검증
       - dependency-name: 'typescript'
         update-types: ['version-update:semver-major']
+      # Firebase 27은 iOS dynamic frameworks + SPM, Kotlin 2.4를 요구해 Expo config 플러그인만으로 맞출 수 없다.
+      - dependency-name: '@react-native-firebase/*'
+        update-types: ['version-update:semver-major']
       # @types/node: 프로덕션 런타임 Node 24 라인의 타입 surface 유지
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
