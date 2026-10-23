@@ -20,12 +20,12 @@ import {
 } from '@src/shared/utils/date';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ReactNode, useCallback, useEffect, useRef } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { match } from 'ts-pattern';
@@ -228,7 +228,7 @@ interface CalendarPagerProps {
 }
 
 function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) {
-  const { width: pageWidth } = useWindowDimensions();
+  const [pageWidth, setPageWidth] = useState(0);
   const flatListRef = useRef<FlatList<number>>(null);
   const currentPageRef = useRef(CENTER_PAGE);
 
@@ -240,6 +240,20 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
     },
     [pageWidth, onChange],
   );
+
+  const handleLayout = useCallback((e: LayoutChangeEvent) => {
+    setPageWidth(e.nativeEvent.layout.width);
+  }, []);
+
+  useEffect(() => {
+    if (pageWidth === 0) {
+      return;
+    }
+    flatListRef.current?.scrollToOffset({
+      offset: currentPageRef.current * pageWidth,
+      animated: false,
+    });
+  }, [pageWidth]);
 
   useEffect(() => {
     if (value === currentPageRef.current) {
@@ -270,27 +284,31 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   return (
-    <FlatList
-      ref={flatListRef}
-      horizontal
-      pagingEnabled
-      data={data}
-      keyExtractor={(page) => String(page)}
-      renderItem={renderItem}
-      getItemLayout={getItemLayout}
-      initialScrollIndex={CENTER_PAGE}
-      showsHorizontalScrollIndicator={false}
-      onMomentumScrollEnd={handleScrollEnd}
-      onScrollToIndexFailed={(info) => {
-        flatListRef.current?.scrollToOffset({
-          offset: info.averageItemLength * info.index,
-          animated: false,
-        });
-      }}
-      windowSize={5}
-      initialNumToRender={3}
-      maxToRenderPerBatch={3}
-    />
+    <View onLayout={handleLayout}>
+      {pageWidth > 0 && (
+        <FlatList
+          ref={flatListRef}
+          horizontal
+          pagingEnabled
+          data={data}
+          keyExtractor={(page) => String(page)}
+          renderItem={renderItem}
+          getItemLayout={getItemLayout}
+          initialScrollIndex={currentPageRef.current}
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={handleScrollEnd}
+          onScrollToIndexFailed={(info) => {
+            flatListRef.current?.scrollToOffset({
+              offset: info.averageItemLength * info.index,
+              animated: false,
+            });
+          }}
+          windowSize={5}
+          initialNumToRender={3}
+          maxToRenderPerBatch={3}
+        />
+      )}
+    </View>
   );
 }
 
