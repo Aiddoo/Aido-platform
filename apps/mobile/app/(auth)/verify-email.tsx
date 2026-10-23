@@ -16,6 +16,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   H3,
   HStack,
+  ReadableContent,
   ScreenTitleBar,
   StyledSafeAreaView,
   Text,
@@ -30,7 +31,7 @@ import { type InputOTPRef } from 'heroui-native';
 import { useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 /**
@@ -111,7 +112,7 @@ function VerifyEmailScreen() {
       <StyledSafeAreaView className="flex-1 bg-white" edges={['top', 'left', 'right']}>
         <ScreenTitleBar title={t('auth:verifyEmail.title')} />
 
-        <View className="flex-1">
+        <ReadableContent flex={1}>
           <ScrollView
             className="flex-1"
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
@@ -161,7 +162,7 @@ function VerifyEmailScreen() {
               </HStack>
             </VStack>
           </ScrollView>
-        </View>
+        </ReadableContent>
       </StyledSafeAreaView>
     </FormProvider>
   );

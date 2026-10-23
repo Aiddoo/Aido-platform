@@ -23,6 +23,7 @@ import {
   HStack,
   Input,
   KeyboardAdaptiveButton,
+  ReadableContent,
   Text,
   TextButton,
   VStack,
@@ -69,21 +70,23 @@ function ForgotPasswordScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <FormProvider {...form}>
-        {match(step)
-          .with('email', () => <EmailStep onNext={() => setStep('verificationCode')} />)
-          .with('verificationCode', () => (
-            <VerificationCodeStep onNext={() => setStep('newPassword')} />
-          ))
-          .with('newPassword', () => (
-            <NewPasswordStep
-              onSubmit={submitNewPassword}
-              nextLabel={t('forgotPassword.next')}
-              submitLabel={t('forgotPassword.submit')}
-            />
-          ))
-          .exhaustive()}
-      </FormProvider>
+      <ReadableContent flex={1}>
+        <FormProvider {...form}>
+          {match(step)
+            .with('email', () => <EmailStep onNext={() => setStep('verificationCode')} />)
+            .with('verificationCode', () => (
+              <VerificationCodeStep onNext={() => setStep('newPassword')} />
+            ))
+            .with('newPassword', () => (
+              <NewPasswordStep
+                onSubmit={submitNewPassword}
+                nextLabel={t('forgotPassword.next')}
+                submitLabel={t('forgotPassword.submit')}
+              />
+            ))
+            .exhaustive()}
+        </FormProvider>
+      </ReadableContent>
     </View>
   );
 }

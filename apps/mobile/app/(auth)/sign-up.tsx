@@ -6,7 +6,7 @@ import { SignUpVerificationForm } from '@src/features/auth/components/sign-up-ve
 import { signUpFormSchema } from '@src/features/auth/domains/sign-up-form.schema';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary } from '@src/shared/ui';
+import { QueryErrorBoundary, ReadableContent } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -54,23 +54,25 @@ function SignUpScreen() {
     <View className="flex-1 bg-background">
       <Stack.Screen options={{ title: t(SIGN_UP_STEP_TITLE_KEYS[step]) }} />
 
-      {match(step)
-        .with('userInfo', () => (
-          <FormProvider {...form}>
-            <SignUpUserInfoForm onNextStep={() => setStep('password')} />
-          </FormProvider>
-        ))
-        .with('password', () => (
-          <FormProvider {...form}>
-            <SignUpPasswordForm onNextStep={enterVerification} />
-          </FormProvider>
-        ))
-        .with('verification', () => (
-          <FormProvider {...verificationForm}>
-            <SignUpVerificationForm />
-          </FormProvider>
-        ))
-        .exhaustive()}
+      <ReadableContent flex={1}>
+        {match(step)
+          .with('userInfo', () => (
+            <FormProvider {...form}>
+              <SignUpUserInfoForm onNextStep={() => setStep('password')} />
+            </FormProvider>
+          ))
+          .with('password', () => (
+            <FormProvider {...form}>
+              <SignUpPasswordForm onNextStep={enterVerification} />
+            </FormProvider>
+          ))
+          .with('verification', () => (
+            <FormProvider {...verificationForm}>
+              <SignUpVerificationForm />
+            </FormProvider>
+          ))
+          .exhaustive()}
+      </ReadableContent>
     </View>
   );
 }

@@ -15,6 +15,7 @@ import {
   HStack,
   KakaoIcon,
   NaverIcon,
+  ReadableContent,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -79,7 +80,7 @@ function LoginScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-white mb-2">
-      <VStack flex={1} px={16}>
+      <ReadableContent flex={1} px={16}>
         <VStack flex={1} align="center" justify="center" gap={8}>
           <Avatar alt="Aido logo" size="lg" className="rounded-xl">
             <Avatar.Image source={appIconImage} />
@@ -148,7 +149,7 @@ function LoginScreen() {
             {t('login.emailLogin')}
           </TextButton>
         </HStack>
-      </VStack>
+      </ReadableContent>
     </StyledSafeAreaView>
   );
 }
