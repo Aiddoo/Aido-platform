@@ -1,6 +1,7 @@
 FROM node:24.22.1-alpine3.24 AS base
 WORKDIR /app
 ENV COREPACK_HOME=/usr/local/share/corepack
+ENV pnpm_config_verify_deps_before_run=false
 COPY package.json ./
 RUN corepack enable && apk add --no-cache openssl
 
