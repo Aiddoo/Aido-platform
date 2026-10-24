@@ -27,7 +27,6 @@ import {
   PawIcon,
   QueryErrorBoundary,
   Result,
-  ScreenTitleBar,
   StyledSafeAreaView,
   Text,
   TextSkeleton,
@@ -294,13 +293,9 @@ NudgeDetailScreen.Loading = function Loading() {
 export default function NudgeDetailRoute() {
   const params = nudgeScreenParamsSchema.safeParse(useLocalSearchParams());
   const { t } = useTranslation('todo');
-  const goBack = useSingleTap(() =>
-    router.canGoBack() ? router.back() : router.replace('/notifications'),
-  );
 
   return (
-    <StyledSafeAreaView edges={['top', 'left', 'right', 'bottom']} className="flex-1 bg-background">
-      <ScreenTitleBar title={t('interaction.detailTitle')} onBackPress={goBack} />
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-background">
       {params.success ? (
         <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
           <Suspense fallback={<NudgeDetailScreen.Loading />}>

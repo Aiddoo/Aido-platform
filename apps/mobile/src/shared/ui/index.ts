@@ -131,14 +131,11 @@ export {
 export { Result } from './result';
 export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer, type ScallopedContainerProps } from './scalloped-container';
-export {
-  ScreenTitleBar,
-  type ScreenTitleBarProps,
-  useStackScreenOptions,
-} from './screen-title-bar';
+export { ScreenTitleBar, type ScreenTitleBarProps } from './screen-title-bar';
 export { ScrollProgressWidget } from './scroll-progress-widget';
 export { SettingNavigation } from './setting-navigation';
 export { Spacing, type SpacingProps } from './spacing';
+export { STACK_BACK_ICON, useStackBackToolbar, useStackScreenOptions } from './stack-header';
 export {
   H1,
   type H1Props,

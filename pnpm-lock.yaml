@@ -204,6 +204,9 @@ catalogs:
       specifier: 4.3.6
       version: 4.3.6
   expo58:
+    '@expo/material-symbols':
+      specifier: 0.1.1
+      version: 0.1.1
     '@expo/metro-runtime':
       specifier: ~58.0.15
       version: 58.0.15
@@ -707,6 +710,9 @@ importers:
       '@babel/runtime':
         specifier: 7.29.10
         version: 7.29.10
+      '@expo/material-symbols':
+        specifier: catalog:expo58
+        version: 0.1.1
       '@expo/metro-runtime':
         specifier: catalog:expo58
         version: 58.0.15(@expo/log-box@58.0.13)(expo@58.0.19)(react-dom@19.3.0(react@19.3.0))(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -2179,6 +2185,10 @@ packages:
     peerDependenciesMeta:
       expo:
         optional: true
+
+  '@expo/material-symbols@0.1.1':
+    resolution: {integrity: sha512-ruA6hZATOPKxo1qSd1NE3HI9FrmEDwcMDhsvzTAdMkP9AapdHfJ/0tKmBMWFJir85voxs1twYxLVrGW9OLGaOg==}
+    hasBin: true
 
   '@expo/metro-config@58.0.17':
     resolution: {integrity: sha512-T2i8chQ5PsF6zgS10AixIteBlPu8oMAcqoD9MPk6CBQvcAdM4bE/x9VuDxuqKcAvFg+bRZMq1JfGAjJcRSmKkQ==}
@@ -13437,6 +13447,8 @@ snapshots:
       stacktrace-parser: 0.1.11
     optionalDependencies:
       expo: 58.0.19(e60e3504b6302d23d34cf5e9e3a33e80)
+
+  '@expo/material-symbols@0.1.1': {}
 
   '@expo/metro-config@58.0.17(expo@58.0.19)(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:

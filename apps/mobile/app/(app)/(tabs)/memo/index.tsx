@@ -5,6 +5,7 @@ import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
 import { invalidateMemos } from '@src/features/memo/queries/memo-cache';
 import { memoDetailHref } from '@src/features/memo/utils/navigation/memo-href';
+import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -104,7 +105,12 @@ export default function MemoScreen() {
     </Box>
   );
 
-  return <AdaptivePane primary={memoListPane} secondary={<SelectedMemoDetailPane />} />;
+  return (
+    <>
+      <NotificationBell.Toolbar />
+      <AdaptivePane primary={memoListPane} secondary={<SelectedMemoDetailPane />} />
+    </>
+  );
 }
 
 function MemoCreateButton() {

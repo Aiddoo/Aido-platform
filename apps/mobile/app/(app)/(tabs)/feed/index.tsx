@@ -4,6 +4,7 @@ import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/com
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
 import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
+import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PokeBanner } from '@src/features/nudge/components/poke-banner';
 import { invalidateNudges } from '@src/features/nudge/queries/nudge-cache';
 import { Calendar } from '@src/features/todo/components/calendar/calendar';
@@ -49,6 +50,7 @@ export default function FeedScreen() {
 
   return (
     <CalendarProvider>
+      <NotificationBell.Toolbar />
       <FeedDateProvider date={date} onDateChange={setDate}>
         <AdaptivePane
           primary={

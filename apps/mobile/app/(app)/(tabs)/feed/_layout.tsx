@@ -1,38 +1,31 @@
-import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { WeatherForecastBadge } from '@src/features/weather/components/weather-forecast-badge';
-import { HStack, ScreenTitleBar } from '@src/shared/ui';
+import { useStackScreenOptions } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 export default function FeedLayout() {
-  const headerBg = useResolveClassNames('bg-white');
+  const screenOptions = useStackScreenOptions({ background: 'bg-white' });
+  const indexBg = useResolveClassNames('bg-white');
   const stackBg = useResolveClassNames('bg-gray-1');
 
   return (
     <Stack
       screenOptions={{
-        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
-        headerShown: true,
-        headerShadowVisible: false,
-        headerTitle: '',
-        headerStyle: { backgroundColor: headerBg.backgroundColor as string },
-        contentStyle: { backgroundColor: stackBg.backgroundColor as string },
-        headerLeft: () => (
-          <HStack align="center" pl={4}>
-            <WeatherForecastBadge />
-          </HStack>
-        ),
-        headerRight: () => (
-          <HStack align="center">
-            <NotificationBell.Header />
-          </HStack>
-        ),
+        ...screenOptions,
+        title: '',
+        contentStyle: { backgroundColor: stackBg.backgroundColor },
       }}
     >
       <Stack.Screen
         name="index"
-        options={{ contentStyle: { backgroundColor: headerBg.backgroundColor as string } }}
-      />
+        options={{ contentStyle: { backgroundColor: indexBg.backgroundColor } }}
+      >
+        <Stack.Toolbar placement="left">
+          <Stack.Toolbar.View hidesSharedBackground>
+            <WeatherForecastBadge />
+          </Stack.Toolbar.View>
+        </Stack.Toolbar>
+      </Stack.Screen>
     </Stack>
   );
 }
