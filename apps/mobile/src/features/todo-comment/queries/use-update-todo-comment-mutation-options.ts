@@ -7,14 +7,12 @@ import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-k
 import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
 import { withEditedTodoCommentContent } from '../utils/todo-comment-cache-transforms';
 import {
+  cancelTodoCommentQueries,
+  invalidateTodoCommentQueries,
   optimisticallyUpdateTodoCommentCaches,
   restoreTodoCommentCaches,
   updateTodoCommentCaches,
 } from './todo-comment-cache';
-import {
-  cancelTodoCommentQueries,
-  invalidateTodoCommentQueries,
-} from './todo-comment-query-invalidation';
 
 interface UpdateTodoCommentMutationParams {
   commentId: string;

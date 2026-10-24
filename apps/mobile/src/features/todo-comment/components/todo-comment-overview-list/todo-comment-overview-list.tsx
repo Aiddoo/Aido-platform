@@ -22,7 +22,6 @@ import { RefreshControl, type ScrollViewProps } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
-import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys';
 import type {
   TodoComment,
   TodoCommentOverviewItem,
@@ -31,6 +30,7 @@ import type {
 import { useTodoCommentNavigation } from '../../hooks/use-todo-comment-navigation';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useGetTodoCommentOverviewQueryOptions } from '../../queries/get-todo-comment-overview-query-options';
+import { invalidateTodoCommentOverviews } from '../../queries/todo-comment-cache';
 import {
   TODO_COMMENT_AUTHOR_AVATAR_SIZE,
   TodoCommentAuthorAvatar,
@@ -87,9 +87,7 @@ export function TodoCommentOverviewList({
       () =>
         Promise.all([
           invalidateTodoDetails(queryClient, { todoId }),
-          queryClient.invalidateQueries({
-            queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
-          }),
+          invalidateTodoCommentOverviews({ queryClient, todoId }),
         ]),
       [queryClient, todoId],
     ),

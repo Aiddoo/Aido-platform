@@ -24,7 +24,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-import { WEATHER_QUERY_KEYS } from '../../constants/weather-query-keys';
+import { cancelWeather, removeWeather } from '../../queries/weather-cache';
 import { createWeatherClock } from '../../utils/view-models/weather-clock.view-model';
 
 type LocationStatus =
@@ -128,12 +128,12 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
             lastSynchronizedAt.current = Date.now();
             return;
           }
-          await queryClient.cancelQueries({ queryKey: WEATHER_QUERY_KEYS.all });
+          await cancelWeather(queryClient);
           unwrap(await service.updateLocation(coordinates, controller.signal));
           if (controller.signal.aborted) {
             return;
           }
-          queryClient.removeQueries({ queryKey: WEATHER_QUERY_KEYS.all });
+          removeWeather(queryClient);
           previousCoordinates.current = coordinates;
           setLocationName(place.name);
           setLocationRevision((value) => value + 1);

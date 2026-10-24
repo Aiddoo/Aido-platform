@@ -9,14 +9,12 @@ import {
   withTodoCommentLikeResult,
 } from '../utils/todo-comment-cache-transforms';
 import {
+  cancelTodoCommentQueries,
+  invalidateTodoCommentQueries,
   optimisticallyUpdateTodoCommentCaches,
   restoreTodoCommentCaches,
   updateTodoCommentCaches,
 } from './todo-comment-cache';
-import {
-  cancelTodoCommentQueries,
-  invalidateTodoCommentQueries,
-} from './todo-comment-query-invalidation';
 
 interface SetTodoCommentLikeMutationParams {
   commentId: string;

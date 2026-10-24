@@ -1,3 +1,4 @@
+import { invalidateTodoSummaries } from '@src/features/todo/queries/todo-cache';
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 
 import { TODO_COMMENT_QUERY_KEYS } from '../constants/todo-comment-query-keys';
@@ -23,6 +24,10 @@ export interface TodoCommentCacheSnapshot {
 interface TodoCommentCacheParams {
   queryClient: QueryClient;
   todoId: number;
+}
+
+interface InvalidateTodoCommentQueriesParams extends TodoCommentCacheParams {
+  invalidatesTodoCount?: boolean;
 }
 
 interface UpdateTodoCommentCachesParams extends TodoCommentCacheParams {
@@ -132,5 +137,51 @@ export function restoreTodoCommentCaches({
     queryClient.setQueryData<OverviewPages>(queryKey, (data) =>
       patchTodoCommentOverviewPages(data, snapshot.commentId, () => comment),
     );
+  });
+}
+
+export async function cancelTodoCommentQueries({
+  queryClient,
+  todoId,
+}: TodoCommentCacheParams): Promise<void> {
+  await Promise.all([
+    queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }) }),
+    queryClient.cancelQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }) }),
+  ]);
+}
+
+export async function invalidateTodoCommentQueries({
+  queryClient,
+  todoId,
+  invalidatesTodoCount = false,
+}: InvalidateTodoCommentQueriesParams): Promise<void> {
+  const invalidations = [
+    queryClient.invalidateQueries({
+      queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
+      refetchType: 'active',
+    }),
+    queryClient.invalidateQueries({
+      queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
+      refetchType: 'active',
+    }),
+  ];
+
+  if (invalidatesTodoCount) {
+    invalidations.push(invalidateTodoSummaries(queryClient, { todoId }));
+  }
+
+  await Promise.all(invalidations);
+}
+
+export function invalidateTodoCommentOverviews({ queryClient, todoId }: TodoCommentCacheParams) {
+  return queryClient.invalidateQueries({ queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }) });
+}
+
+export function invalidateTodoCommentConversations({
+  queryClient,
+  todoId,
+}: TodoCommentCacheParams) {
+  return queryClient.invalidateQueries({
+    queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
   });
 }

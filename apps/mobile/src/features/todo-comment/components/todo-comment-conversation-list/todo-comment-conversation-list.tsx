@@ -39,7 +39,6 @@ import { useKeyboardState } from 'react-native-keyboard-controller';
 import { type SharedValue, useReducedMotion } from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
-import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys';
 import type {
   TodoComment,
   TodoCommentAuthor,
@@ -47,6 +46,7 @@ import type {
 } from '../../domains/todo-comment.model';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useGetTodoCommentConversationQueryOptions } from '../../queries/get-todo-comment-conversation-query-options';
+import { invalidateTodoCommentConversations } from '../../queries/todo-comment-cache';
 import {
   canFetchPreviousComments,
   getCommentFocusRevealOffset,
@@ -436,8 +436,8 @@ export function TodoCommentConversationList({
     }),
   );
   const { color: refreshTint } = useResolveClassNames('text-main');
-  const rows = query.data?.rows ?? [];
-  const focus = query.data?.focus ?? null;
+  const rows = query.data.rows;
+  const focus = query.data.focus;
   const threadId = getConversationThreadId(rows, focus?.commentId ?? null);
   const listIdentity = `${todoId}:${commentRoute.sort}:${threadId ?? focusCommentId ?? 'empty'}`;
 
@@ -446,9 +446,7 @@ export function TodoCommentConversationList({
       () =>
         Promise.all([
           invalidateTodoDetails(queryClient, { todoId }),
-          queryClient.invalidateQueries({
-            queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
-          }),
+          invalidateTodoCommentConversations({ queryClient, todoId }),
         ]),
       [queryClient, todoId],
     ),

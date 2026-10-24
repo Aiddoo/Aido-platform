@@ -8,13 +8,13 @@ import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-botto
 import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/todo/components/todo-list/todo-list';
-import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
 import { useFeedActionParam } from '@src/features/todo/hooks/use-feed-action-param';
 import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { useFeedDateParam } from '@src/features/todo/hooks/use-feed-date-param';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
+import { invalidateFeedTodos } from '@src/features/todo/queries/todo-cache';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
+import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -41,11 +41,7 @@ function MyFeedScreen() {
   const featureDiscovery = useFeatureDiscoveryFeed();
   const activation = useActivationChecklist();
   const [refreshing, onRefresh] = useRefresh(() =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.lists() }),
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.completions() }),
-      queryClient.invalidateQueries({ queryKey: WEATHER_QUERY_KEYS.all }),
-    ]),
+    Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );
 
   const [action, setAction] = useFeedActionParam();

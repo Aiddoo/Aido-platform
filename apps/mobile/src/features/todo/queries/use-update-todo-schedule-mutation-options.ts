@@ -1,7 +1,6 @@
 import type { UpdateTodoScheduleInput } from '@aido/api';
 import { useTodoService } from '@src/bootstrap/providers/di-context';
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -9,7 +8,7 @@ import { t } from '@src/shared/i18n';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { invalidateTodos } from './todo-cache';
 
 interface UpdateTodoScheduleMutationParams {
   todoId: number;
@@ -27,9 +26,8 @@ export const useUpdateTodoScheduleMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
+      invalidateTodos(queryClient);
       invalidateNudgeInteractions(queryClient);
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
       toast.success(t('todo:toast.scheduleChanged'));
     },
     onError: (error) => {
