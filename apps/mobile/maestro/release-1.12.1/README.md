@@ -40,10 +40,14 @@ iOS에서 Maestro `back`은 동작하지 않아 시트는 딤 영역을 눌러 �
 | Android Medium Phone(API 36.1)        | 4/4 통과                                                               |
 | Android 폴더블 AVD                    | 미실행. AVD가 `qemu mprotect failed`로 부팅하지 못함(wipe 후에도 동일) |
 
-### 알려진 문제: iOS에서 두 번째 시트 route의 접근성 트리
+### 알려진 문제: iOS에서 두 번째로 연 시트 route의 접근성 트리
 
-모달 시트 route를 한 번 닫은 뒤 다시 연 시트(옵션 → 날짜 변경처럼 이어 열기 포함)는 화면에 정상으로
-보이고 터치도 동작하지만, XCTest 접근성 트리(VoiceOver와 같은 트리)에 앱 요소가 하나도 잡히지 않는다.
-처음 여는 시트는 정상이다. `replace` 대신 `back` + `push`, 지연 push로 바꿔도 같아 route 전환 방식과는
-무관하다. `react-native-screens` `FullWindowOverlay`의 `accessibilityViewIsModal`과 겹치는지 조사 중이며,
-Accessibility Inspector로 VoiceOver 동작을 확인한 뒤 고친다.
+시트 route를 한 번 닫은 뒤 다시 연 시트(옵션 → 날짜 변경처럼 이어 열기 포함)는 화면에 정상으로 보이고 터치도
+동작하지만, XCTest 접근성 트리에서 시트 화면의 자식이 비어 있다. 처음 여는 시트와, 닫은 뒤의 피드는 정상이다.
+
+배제한 원인: `transparentModal` → `containedTransparentModal`, 시트 route 안의 `GestureHandlerRootView`,
+크기 확정 대기, route 애니메이션(`none`/`fade`), `replace` → `back`+`push`(지연 포함). 어느 쪽으로 바꿔도 같아
+우리 코드가 아닌 RN Fabric·react-native-screens의 iOS 네이티브 계층이나 XCTest 스냅샷 쪽으로 본다.
+
+판단: 화면·터치는 정상이고 VoiceOver 영향은 실기기로만 확정할 수 있어 1.12.1을 막지 않는다. 추적 이슈로 분리하고,
+**스토어 제출 전 실기기 VoiceOver로 옵션 → 날짜 변경 시트를 읽는지 확인**한다. 재현되면 제출을 멈추고 고친다.
