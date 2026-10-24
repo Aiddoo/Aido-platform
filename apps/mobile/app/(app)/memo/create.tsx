@@ -1,5 +1,9 @@
 import { createMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  MemoBackButton,
+  MemoSaveButton,
+} from '@src/features/memo/components/memo-detail-pane/memo-detail-actions';
 import { useCreateMemoMutationOptions } from '@src/features/memo/queries/use-create-memo-mutation-options';
 import { createMemoDraftKey } from '@src/features/memo/utils/memo-draft';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
@@ -8,25 +12,16 @@ import { useFormDraftAutosave } from '@src/shared/draft/use-form-draft-autosave'
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  ArrowLeftIcon,
-  CheckmarkIcon,
-  QueryErrorBoundary,
-  StyledSafeAreaView,
-} from '@src/shared/ui';
+import { QueryErrorBoundary, StyledSafeAreaView, TextArea } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { Stack, router, useFocusEffect, useNavigation } from 'expo-router';
-import type { ComponentRef } from 'react';
 import { Suspense, useCallback, useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { Pressable, TextInput, View } from 'react-native';
+import type { TextInputInstance } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { withUniwind } from 'uniwind';
 
-const StyledTextInput = withUniwind(TextInput);
 const EMPTY_MEMO_VALUES = { content: '' };
 
 function MemoCreateScreen() {
@@ -36,7 +31,7 @@ function MemoCreateScreen() {
 
   const { t } = useTranslation(['memo', 'common']);
   const navigation = useNavigation();
-  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const inputRef = useRef<TextInputInstance>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -115,49 +110,26 @@ function MemoCreateScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         <Stack.Screen
           options={{
-            headerLeft: () => (
-              <View className="justify-center items-center">
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('common:actions.goBack')}
-                  onPress={handleBack}
-                  disabled={isSubmitting}
-                  hitSlop={8}
-                  className="p-2"
-                >
-                  <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
-                </Pressable>
-              </View>
-            ),
+            headerLeft: () => <MemoBackButton onPress={handleBack} isDisabled={isSubmitting} />,
             headerRight: () => (
-              <Pressable
+              <MemoSaveButton
+                isHighlighted={isValid}
+                isDisabled={!isValid || isSubmitting}
                 onPress={() => handleSave()}
-                accessibilityRole="button"
-                accessibilityLabel={t('common:actions.save')}
-                disabled={!isValid || isSubmitting}
-                hitSlop={8}
-                className={cn(
-                  'items-center justify-center rounded-full p-2',
-                  isValid ? 'bg-main' : 'bg-gray-4',
-                )}
-              >
-                <CheckmarkIcon width={20} height={20} color="white" />
-              </Pressable>
+              />
             ),
           }}
         />
         <StyledSafeAreaView edges={['left', 'right']} className="flex-1 px-4">
           <FormField control={control} name="content">
             {({ value, onChange }) => (
-              <StyledTextInput
+              <TextArea
                 ref={inputRef}
+                variant="bare"
+                preserveErrorSpace={false}
                 placeholder={t('create.placeholder')}
                 value={value}
-                onChangeText={onChange}
-                multiline
-                textAlignVertical="top"
-                allowFontScaling={false}
-                className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
+                onChange={onChange}
               />
             )}
           </FormField>

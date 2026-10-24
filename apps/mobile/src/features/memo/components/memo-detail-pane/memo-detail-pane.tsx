@@ -19,22 +19,24 @@ import {
   HStack,
   QueryErrorBoundary,
   Result,
+  RobotIcon,
+  CheckboxIcon,
   StyledSafeAreaView,
+  TextArea,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { impactFeedback } from '@src/shared/utils/haptics';
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
 import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { ActivityIndicator, Keyboard, TextInput } from 'react-native';
+import { ActivityIndicator, Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { withUniwind } from 'uniwind';
 
 import { useMemoScreenParams } from '../../hooks/use-memo-screen-params';
 import { useSelectedMemo } from '../../hooks/use-selected-memo';
@@ -44,9 +46,13 @@ import { useToggleMemoPinMutationOptions } from '../../queries/use-toggle-memo-p
 import { useUpdateMemoMutationOptions } from '../../queries/use-update-memo-mutation-options';
 import { createMemoDraftKey } from '../../utils/memo-draft';
 import { AiParseConfirmDialog } from '../ai-parse-confirm-dialog';
-import { MemoDetailActionBar, MemoDetailBackButton } from './memo-detail-actions';
-
-const StyledTextInput = withUniwind(TextInput);
+import {
+  MemoActionButton,
+  MemoDeleteButton,
+  MemoBackButton,
+  MemoPinButton,
+  MemoSaveButton,
+} from './memo-detail-actions';
 
 interface MemoDetailPaneProps {
   /** `screen`은 `/memo/[id]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
@@ -83,11 +89,9 @@ MemoDetailPane.Empty = function Empty() {
 };
 
 function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
-  const today = useToday();
   const { showBoundary } = useErrorBoundary();
   const goBack = useSingleTap(router.back);
   const navigate = useSingleTap(router.navigate);
-  const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['memo', 'common']);
   const { id: memoId } = useMemoScreenParams();
@@ -96,8 +100,9 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   const isPane = presentation === 'pane';
   const leaveMemo = isPane ? deselectMemo : goBack;
 
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ id: memoId }));
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [{ data: memo }, { data: user }] = useSuspenseQueries({
+    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
+  });
   const toast = useAppToast();
 
   const savedValues = { content: memo.content };
@@ -139,12 +144,6 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     useToggleMemoPinMutationOptions(),
   );
 
-  const overlay = useOverlay();
-  const queryClient = useQueryClient();
-  const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const defaultCategoryId = categoriesData.categories[0]?.id;
-  const { isLoading: isAiUsageLoading } = useQuery(useGetAiUsageQueryOptions());
-
   const handleSave = handleSubmit(async (data) => {
     try {
       const content = data.content.trim();
@@ -180,33 +179,6 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 
-  const handleAiParse = () => {
-    const cached = getParsedMemo(queryClient, { memoId });
-    if (cached) {
-      push(`/memo/${memoId}/ai-review`);
-      return;
-    }
-
-    overlay.open(({ isOpen, close, exit }) => {
-      const closeDialog = () => {
-        close();
-        exit();
-      };
-
-      return (
-        <QueryErrorBoundary
-          fallback={({ reset }) => (
-            <AiParseConfirmDialog.Error isOpen={isOpen} onClose={closeDialog} reset={reset} />
-          )}
-        >
-          <Suspense fallback={null}>
-            <AiParseConfirmDialog isOpen={isOpen} memoId={memoId} onClose={closeDialog} />
-          </Suspense>
-        </QueryErrorBoundary>
-      );
-    });
-  };
-
   const handleDelete = () => {
     if (isDeletePending) {
       return;
@@ -221,51 +193,30 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     });
   };
 
-  const handleConvertToTodo = () => {
-    if (!defaultCategoryId) {
-      return;
-    }
-
-    overlay.open(({ isOpen, close, exit }) => (
-      <AddTodoBottomSheet
-        mode="convert-memo"
-        memoId={memoId}
-        selectedDate={today}
-        categoryId={defaultCategoryId}
-        initialValues={{ title: memo.content.slice(0, 200) }}
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        onSuccess={() => {
+  const backButton = <MemoBackButton onPress={handleBack} />;
+  const actionBar = (
+    <HStack gap={4} align="center">
+      <MemoPinButton
+        isPinned={memo.isPinned}
+        isDisabled={isTogglePinPending}
+        onPress={handleTogglePin}
+      />
+      <AiParseAction />
+      <ConvertToTodoAction
+        onConverted={() => {
           leaveMemo();
           navigate('/feed');
         }}
       />
-    ));
-  };
-
-  const backButton = <MemoDetailBackButton onPress={handleBack} />;
-  const actionBar = (
-    <MemoDetailActionBar
-      isPinned={memo.isPinned}
-      isTogglePinDisabled={isTogglePinPending}
-      onTogglePin={handleTogglePin}
-      isAiParseLoading={isAiUsageLoading}
-      isAiParseDisabled={!defaultCategoryId || isAiUsageLoading}
-      onAiParse={handleAiParse}
-      isConvertToTodoDisabled={!defaultCategoryId}
-      onConvertToTodo={handleConvertToTodo}
-      onDelete={() => setIsDeleteDialogOpen(true)}
-      isSaveVisible={isEditing}
-      isSaveDisabled={!isValid || isSubmitting}
-      isSaveHighlighted={isDirty && isValid}
-      onSave={() => handleSave()}
-    />
+      <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
+      {isEditing && (
+        <MemoSaveButton
+          isHighlighted={isDirty && isValid}
+          isDisabled={!isValid || isSubmitting}
+          onPress={() => handleSave()}
+        />
+      )}
+    </HStack>
   );
 
   return (
@@ -286,14 +237,12 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
           <Box className="flex-1" px={16} py={12}>
             <FormField control={control} name="content">
               {({ value, onChange }) => (
-                <StyledTextInput
+                <TextArea
+                  variant="bare"
+                  preserveErrorSpace={false}
                   value={value}
-                  onChangeText={onChange}
-                  multiline
-                  textAlignVertical="top"
-                  allowFontScaling={false}
+                  onChange={onChange}
                   onFocus={() => setIsEditing(true)}
-                  className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
                 />
               )}
             </FormField>
@@ -333,5 +282,107 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
         }
       />
     </FormProvider>
+  );
+}
+
+function AiParseAction() {
+  const push = useSingleTap(router.push);
+  const { t } = useTranslation('memo');
+  const { id: memoId } = useMemoScreenParams();
+  const overlay = useOverlay();
+  const queryClient = useQueryClient();
+  const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
+  const aiUsageQuery = useQuery(useGetAiUsageQueryOptions());
+  const hasCategory = categoriesQuery.data?.categories[0] != null;
+
+  const handlePress = () => {
+    if (getParsedMemo(queryClient, { memoId })) {
+      push(`/memo/${memoId}/ai-review`);
+      return;
+    }
+
+    overlay.open(({ isOpen, close, exit }) => {
+      const handleOpenChange = (open: boolean) => {
+        if (!open) {
+          close();
+          exit();
+        }
+      };
+
+      return (
+        <QueryErrorBoundary
+          fallback={({ reset }) => (
+            <AiParseConfirmDialog.Error
+              isOpen={isOpen}
+              onOpenChange={handleOpenChange}
+              reset={reset}
+            />
+          )}
+        >
+          <Suspense fallback={null}>
+            <AiParseConfirmDialog isOpen={isOpen} memoId={memoId} onOpenChange={handleOpenChange} />
+          </Suspense>
+        </QueryErrorBoundary>
+      );
+    });
+  };
+
+  return (
+    <MemoActionButton
+      onPress={handlePress}
+      accessibilityLabel={t('titles.aiReview')}
+      isDisabled={!hasCategory || aiUsageQuery.isLoading}
+      icon={
+        aiUsageQuery.isLoading ? (
+          <ActivityIndicator size="small" />
+        ) : (
+          <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
+        )
+      }
+    />
+  );
+}
+
+function ConvertToTodoAction({ onConverted }: { onConverted: () => void }) {
+  const today = useToday();
+  const { t } = useTranslation('memo');
+  const { id: memoId } = useMemoScreenParams();
+  const overlay = useOverlay();
+  const { data: memo } = useQuery(useGetMemoQueryOptions({ memoId }));
+  const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
+  const defaultCategoryId = categoriesQuery.data?.categories[0]?.id;
+
+  const handlePress = () => {
+    if (memo == null || defaultCategoryId == null) {
+      return;
+    }
+
+    overlay.open(({ isOpen, close, exit }) => (
+      <AddTodoBottomSheet
+        mode="convert-memo"
+        memoId={memoId}
+        selectedDate={today}
+        categoryId={defaultCategoryId}
+        initialValues={{ title: memo.content.slice(0, 200) }}
+        isOpen={isOpen}
+        onClose={close}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+        onSuccess={onConverted}
+      />
+    ));
+  };
+
+  return (
+    <MemoActionButton
+      onPress={handlePress}
+      accessibilityLabel={t('detail.convertToTodo')}
+      isDisabled={memo == null || defaultCategoryId == null}
+      icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
+    />
   );
 }

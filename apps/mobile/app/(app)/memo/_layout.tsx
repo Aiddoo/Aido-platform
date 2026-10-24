@@ -1,19 +1,15 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
+import { ScreenTitleBar } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
 export default function MemoLayout() {
-  const goBack = useSingleTap(router.back);
-
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
   const { fontScale } = useFontScale();
-  const { t } = useTranslation(['memo', 'common']);
+  const { t } = useTranslation('memo');
 
   return (
     <Stack
@@ -29,19 +25,6 @@ export default function MemoLayout() {
           color: titleColor.color as string,
         },
         headerTitleAlign: 'center',
-        headerLeft: () => (
-          <View className="justify-center items-center">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common:actions.goBack')}
-              onPress={() => goBack()}
-              hitSlop={8}
-              className="p-2"
-            >
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
-            </Pressable>
-          </View>
-        ),
         animation: 'fade_from_bottom',
         animationDuration: 200,
       }}

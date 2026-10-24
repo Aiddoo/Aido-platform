@@ -1,9 +1,9 @@
 import { MemoDetailPane } from '@src/features/memo/components/memo-detail-pane/memo-detail-pane';
 import { MemoList } from '@src/features/memo/components/memo-list';
-import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
 import { MemoPolicy } from '@src/features/memo/domains/memo.model';
 import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
+import { invalidateMemos } from '@src/features/memo/queries/memo-cache';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -37,9 +37,7 @@ export default function MemoScreen() {
 
   const progress = useSharedValue(0);
 
-  const [refreshing, onRefresh] = useRefresh(() =>
-    Promise.all([queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all })]),
-  );
+  const [refreshing, onRefresh] = useRefresh(() => invalidateMemos(queryClient));
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: ({ contentOffset: { y }, contentSize, layoutMeasurement }) => {
@@ -66,7 +64,7 @@ export default function MemoScreen() {
           <Box flex={1}>
             <H3 shade={7}>{t('tab.addMemo')}</H3>
           </Box>
-          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+          <QueryErrorBoundary fallback={(props) => <MemoCreateButton.Error {...props} />}>
             <Suspense fallback={<MemoCreateButton.Loading />}>
               <MemoCreateButton />
             </Suspense>
@@ -147,7 +145,7 @@ function MemoCreateButton() {
         canCreate ? 'bg-main' : 'bg-gray-4',
       )}
     >
-      <PlusIcon width={24} height={24} color="white" />
+      <PlusIcon width={24} height={24} colorClassName="text-white dark:text-gray-9" />
     </PressableFeedback>
   );
 }

@@ -72,13 +72,13 @@ export function TextArea({
   );
 
   return (
-    <View className="gap-2">
+    <View className={cn('gap-2', variant === 'bare' && 'flex-1')}>
       {label && (
         <Text size="e1" weight="medium" className={textAreaLabelVariants({ isFocused, isInvalid })}>
           {label}
         </Text>
       )}
-      <VStack gap={4}>
+      <VStack gap={4} className={cn(variant === 'bare' && 'flex-1')}>
         <View
           style={growingContainerStyle}
           className={cn(
