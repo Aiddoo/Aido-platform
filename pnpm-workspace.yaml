@@ -97,6 +97,7 @@ catalogs:
     'expo-font': '~58.0.10'
     'expo-glass-effect': '~58.0.5'
     'expo-haptics': '~58.0.7'
+    'expo-hinge': '~58.0.2'
     'expo-linking': '~58.0.14'
     'expo-local-authentication': '~58.0.2'
     'expo-localization': '~58.0.5'
