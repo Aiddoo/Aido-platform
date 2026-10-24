@@ -1,4 +1,3 @@
-import type { DayOfWeek } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
@@ -12,7 +11,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
 import { useToday } from '@src/shared/hooks/use-today';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ActionChip,
   useActionChipIconSize,
@@ -106,7 +105,8 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetConvertMemoProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
-export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
+export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
+  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
   const { showBoundary } = useErrorBoundary();
@@ -388,7 +388,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               pickerResult = categoryId;
               close(categoryId);
             }}
-            submitLabel={tGlobal('todo:add.submit')}
+            submitLabel={t('add.submit')}
           />
         </Suspense>
       </ModalBottomSheet>
@@ -410,7 +410,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               <BottomSheetInput
                 ref={todoInputRef}
                 autoFocus
-                placeholder={tGlobal('todo:add.placeholder')}
+                placeholder={t('add.placeholder')}
                 value={value}
                 onChange={onChange}
                 maxLength={200}
@@ -467,18 +467,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       </KeyboardBottomSheet>
     </FormProvider>
   );
-};
-
-// --- constants ---
-
-// --- helpers ---
-
-const formatRepeatLabel = (days: DayOfWeek[]): string => {
-  if (days.length === 7) {
-    return tGlobal('todo:chip.daily');
-  }
-  return tGlobal('todo:chip.weeklyDays', { days: formatDaysOfWeek(days) });
-};
+}
 
 // --- chip components ---
 
@@ -536,7 +525,11 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
   });
   const { t } = useTranslation('todo');
   const isActive = isRecurring && (daysOfWeek?.length ?? 0) > 0;
-  const label = isActive ? formatRepeatLabel(daysOfWeek ?? []) : t('chip.repeat');
+  const days = daysOfWeek ?? [];
+  const label = match({ isActive, isEveryDay: days.length === 7 })
+    .with({ isActive: false }, () => t('chip.repeat'))
+    .with({ isEveryDay: true }, () => t('chip.daily'))
+    .otherwise(() => t('chip.weeklyDays', { days: formatDaysOfWeek(days) }));
 
   return (
     <ActionChip
@@ -555,6 +548,7 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
 };
 
 const VisibilityChip = () => {
+  const { t } = useTranslation('todo');
   const actionChipIconSize = useActionChipIconSize();
   const { control } = useFormContext<AddTodoFormValues>();
   return (
@@ -578,7 +572,7 @@ const VisibilityChip = () => {
                 />
               )
             }
-            label={isPrivate ? tGlobal('todo:chip.private') : tGlobal('todo:chip.public')}
+            label={isPrivate ? t('chip.private') : t('chip.public')}
             onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
           />
         );
@@ -670,6 +664,7 @@ interface AiParseButtonProps {
 }
 
 const AiParseButton = ({ onClose }: AiParseButtonProps) => {
+  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const methods = useFormContext<AddTodoFormInput>();
   const { trackEvent } = useTrack();
@@ -730,7 +725,7 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
     if (isAiLimitReached) {
       trackEvent('premium_gate_shown', { feature: 'ai_parse' });
       premiumDialog.open({
-        description: tGlobal('todo:premium.unlimitedParse'),
+        description: t('premium.unlimitedParse'),
         onConfirm: onClose,
       });
       return;

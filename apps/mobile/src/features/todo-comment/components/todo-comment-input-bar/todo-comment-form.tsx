@@ -29,6 +29,7 @@ import {
 } from 'react-hook-form';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
+import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment-input';
 import {
@@ -353,15 +354,11 @@ function CommentFormField({
             byType: { too_big: 'comment.tooLong' },
           })}
           growsWithContent
-          placeholder={
-            index > 0
-              ? t('form.chainPlaceholder')
-              : isEditing
-                ? t('input.editPlaceholder')
-                : session.type === 'reply'
-                  ? t('input.replyPlaceholder')
-                  : t('input.placeholder')
-          }
+          placeholder={match({ isChain: index > 0, isEditing, sessionType: session.type })
+            .with({ isChain: true }, () => t('form.chainPlaceholder'))
+            .with({ isEditing: true }, () => t('input.editPlaceholder'))
+            .with({ sessionType: 'reply' }, () => t('input.replyPlaceholder'))
+            .otherwise(() => t('input.placeholder'))}
           accessibilityLabel={t('form.inputLabel', { index: index + 1, count: fieldCount })}
           className="min-h-11 max-h-28"
         />

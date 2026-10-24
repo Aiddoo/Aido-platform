@@ -13,6 +13,7 @@ import { KeyboardStickyView, useKeyboardState } from 'react-native-keyboard-cont
 import type { SharedValue } from 'react-native-reanimated';
 import { ReduceMotion, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { match } from 'ts-pattern';
 
 import { type TodoCommentAuthor, TodoCommentPolicy } from '../../domains/todo-comment.model';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
@@ -114,11 +115,12 @@ const TEXT_ACTION_TOUCH_TARGET = 'min-h-11 min-w-11';
 function CommentInputByRoute() {
   const [commentRoute] = useTodoCommentRoute();
 
-  if (commentRoute.view === 'overview') {
-    return commentRoute.form === null ? <NewCommentButton /> : <NewCommentForm />;
-  }
-
-  return commentRoute.form === null ? <ReplyToSelectedCommentButton /> : <SelectedCommentForm />;
+  return match({ view: commentRoute.view, hasForm: commentRoute.form !== null })
+    .with({ view: 'overview', hasForm: false }, () => <NewCommentButton />)
+    .with({ view: 'overview', hasForm: true }, () => <NewCommentForm />)
+    .with({ view: 'conversation', hasForm: false }, () => <ReplyToSelectedCommentButton />)
+    .with({ view: 'conversation', hasForm: true }, () => <SelectedCommentForm />)
+    .exhaustive();
 }
 
 interface CommentInputTriggerProps extends Omit<
