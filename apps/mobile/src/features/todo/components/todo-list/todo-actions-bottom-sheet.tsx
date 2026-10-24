@@ -52,8 +52,8 @@ export const TodoActionsBottomSheet = ({
 
   const handleScheduleToggle = () => {
     const { startDate, endDate } = isTodoToday
-      ? calculateTomorrowSchedule(editValues.endDate)
-      : calculateTodaySchedule(editValues.endDate);
+      ? calculateTomorrowSchedule(editValues.endDate, today)
+      : calculateTodaySchedule(editValues.endDate, today);
 
     updateScheduleMutation.mutate(
       {

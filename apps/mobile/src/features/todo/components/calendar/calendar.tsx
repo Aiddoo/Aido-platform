@@ -1,4 +1,5 @@
 import { useFeedDate } from '@src/features/todo/hooks/use-feed-date';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import {
@@ -55,6 +56,7 @@ interface CalendarProps {
 export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
   const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
+  const today = useToday();
   const { viewMode } = useCalendarContext();
 
   const pagerHeight = match(viewMode)
@@ -84,7 +86,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
         <HStack gap={8} align="center">
           <CalendarHeaderText displayDate={selectedDate} />
           <PressableFeedback
-            onPress={() => setSelectedDate(new Date())}
+            onPress={() => setSelectedDate(today)}
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>

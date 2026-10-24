@@ -8,10 +8,11 @@ import {
   getDayOfWeekLabel,
   getMonthHeaderText,
   getWeekdayLabels,
+  getNextDay,
   isSameDay,
   isSameMonth,
+  startOfDay,
 } from '@src/shared/utils/date';
-import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo } from 'react';
 import { ScrollView } from 'react-native';
@@ -52,12 +53,11 @@ interface QuickDateOption {
   date: Date;
 }
 
-const getQuickDateOptions = (): QuickDateOption[] => {
-  const today = dayjs();
-  const tomorrow = today.add(1, 'day');
+const getQuickDateOptions = (today: Date): QuickDateOption[] => {
+  const todayStart = startOfDay(today);
   return [
-    { labelKey: 'picker.today', date: today.toDate() },
-    { labelKey: 'picker.tomorrow', date: tomorrow.toDate() },
+    { labelKey: 'picker.today', date: todayStart },
+    { labelKey: 'picker.tomorrow', date: getNextDay(todayStart) },
   ];
 };
 
@@ -69,7 +69,8 @@ interface QuickDateOptionsProps {
 const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
   const { t } = useTranslation('todo');
   const { date: pickerDate } = picker;
-  const options = useMemo(() => getQuickDateOptions(), []);
+  const today = useToday();
+  const options = useMemo(() => getQuickDateOptions(today), [today]);
   const weekdayLabels = getWeekdayLabels();
 
   return (
