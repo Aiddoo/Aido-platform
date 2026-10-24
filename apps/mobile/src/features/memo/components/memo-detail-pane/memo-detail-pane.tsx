@@ -21,6 +21,7 @@ import {
   Result,
   RobotIcon,
   CheckboxIcon,
+  STACK_BACK_ICON,
   StyledSafeAreaView,
   TextArea,
   useOverlay,
@@ -37,6 +38,7 @@ import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
 import { ActivityIndicator, Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
+import { useResolveClassNames } from 'uniwind';
 
 import { useMemoScreenParams } from '../../hooks/use-memo-screen-params';
 import { useSelectedMemo } from '../../hooks/use-selected-memo';
@@ -48,6 +50,7 @@ import { createMemoDraftKey } from '../../utils/memo-draft';
 import { memoAiReviewHref } from '../../utils/navigation/memo-href';
 import { AiParseConfirmDialog } from '../ai-parse-confirm-dialog';
 import {
+  MEMO_TOOLBAR_ICON,
   MemoActionButton,
   MemoDeleteButton,
   MemoBackButton,
@@ -180,6 +183,16 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 
+  const aiParse = useAiParseAction();
+  const convertToTodo = useConvertToTodoAction(() => {
+    leaveMemo();
+    navigate('/feed');
+  });
+  const { color: pinnedTint } = useResolveClassNames('text-main');
+  const { color: saveTint } = useResolveClassNames(
+    isDirty && isValid ? 'text-main' : 'text-gray-4',
+  );
+
   const handleDelete = () => {
     if (isDeletePending) {
       return;
@@ -194,45 +207,94 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     });
   };
 
-  const backButton = <MemoBackButton onPress={handleBack} />;
-  const actionBar = (
-    <HStack gap={4} align="center">
-      <MemoPinButton
-        isPinned={memo.isPinned}
-        isDisabled={isTogglePinPending}
-        onPress={handleTogglePin}
-      />
-      <AiParseAction />
-      <ConvertToTodoAction
-        onConverted={() => {
-          leaveMemo();
-          navigate('/feed');
-        }}
-      />
-      <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
-      {isEditing && (
-        <MemoSaveButton
-          isHighlighted={isDirty && isValid}
-          isDisabled={!isValid || isSubmitting}
-          onPress={() => handleSave()}
-        />
-      )}
-    </HStack>
-  );
-
   return (
     <FormProvider {...formMethods}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         {isPane ? (
           <Box className="bg-white">
             <HStack align="center" justify="between" px={8}>
-              {backButton}
-              {actionBar}
+              <MemoBackButton onPress={handleBack} />
+              <HStack gap={4} align="center">
+                <MemoPinButton
+                  isPinned={memo.isPinned}
+                  isDisabled={isTogglePinPending}
+                  onPress={handleTogglePin}
+                />
+                <MemoActionButton
+                  onPress={aiParse.handlePress}
+                  accessibilityLabel={t('memo:titles.aiReview')}
+                  isDisabled={aiParse.isDisabled}
+                  icon={
+                    aiParse.isLoading ? (
+                      <ActivityIndicator size="small" />
+                    ) : (
+                      <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
+                    )
+                  }
+                />
+                <MemoActionButton
+                  onPress={convertToTodo.handlePress}
+                  accessibilityLabel={t('memo:detail.convertToTodo')}
+                  isDisabled={convertToTodo.isDisabled}
+                  icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
+                />
+                <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
+                {isEditing && (
+                  <MemoSaveButton
+                    isHighlighted={isDirty && isValid}
+                    isDisabled={!isValid || isSubmitting}
+                    onPress={() => handleSave()}
+                  />
+                )}
+              </HStack>
             </HStack>
             <Separator />
           </Box>
         ) : (
-          <Stack.Screen options={{ headerLeft: () => backButton, headerRight: () => actionBar }} />
+          <>
+            <Stack.Toolbar placement="left">
+              <Stack.Toolbar.Button
+                icon={STACK_BACK_ICON}
+                accessibilityLabel={t('common:actions.goBack')}
+                onPress={handleBack}
+              />
+            </Stack.Toolbar>
+            <Stack.Toolbar placement="right">
+              <Stack.Toolbar.Button
+                icon={memo.isPinned ? MEMO_TOOLBAR_ICON.pinned : MEMO_TOOLBAR_ICON.pin}
+                accessibilityLabel={t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+                tintColor={memo.isPinned ? pinnedTint : undefined}
+                disabled={isTogglePinPending}
+                onPress={handleTogglePin}
+              />
+              <Stack.Toolbar.Button
+                icon={MEMO_TOOLBAR_ICON.aiParse}
+                accessibilityLabel={t('memo:titles.aiReview')}
+                disabled={aiParse.isDisabled}
+                onPress={aiParse.handlePress}
+              />
+              <Stack.Toolbar.Button
+                icon={MEMO_TOOLBAR_ICON.convertToTodo}
+                accessibilityLabel={t('memo:detail.convertToTodo')}
+                disabled={convertToTodo.isDisabled}
+                onPress={convertToTodo.handlePress}
+              />
+              <Stack.Toolbar.Button
+                icon={MEMO_TOOLBAR_ICON.delete}
+                accessibilityLabel={t('common:actions.delete')}
+                onPress={() => setIsDeleteDialogOpen(true)}
+              />
+              <Stack.Toolbar.Button
+                hidden={!isEditing}
+                icon={MEMO_TOOLBAR_ICON.save}
+                accessibilityLabel={t('common:actions.save')}
+                variant="prominent"
+                tintColor={saveTint}
+                disabled={!isValid || isSubmitting}
+                onPress={() => handleSave()}
+              />
+            </Stack.Toolbar>
+          </>
         )}
         <VStack className="flex-1 bg-white">
           <Box className="flex-1" px={16} py={12}>
@@ -299,9 +361,9 @@ function MemoDeleteDialog({ isOpen, onOpenChange, isPending, onConfirm }: MemoDe
   );
 }
 
-function AiParseAction() {
+/** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 AI 정리 동작을 쓴다. */
+function useAiParseAction() {
   const push = useSingleTap(router.push);
-  const { t } = useTranslation('memo');
   const { memoId } = useMemoScreenParams();
   const overlay = useOverlay();
   const queryClient = useQueryClient();
@@ -341,25 +403,15 @@ function AiParseAction() {
     });
   };
 
-  return (
-    <MemoActionButton
-      onPress={handlePress}
-      accessibilityLabel={t('titles.aiReview')}
-      isDisabled={!hasCategory || aiUsageQuery.isLoading}
-      icon={
-        aiUsageQuery.isLoading ? (
-          <ActivityIndicator size="small" />
-        ) : (
-          <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
-        )
-      }
-    />
-  );
+  return {
+    handlePress,
+    isDisabled: !hasCategory || aiUsageQuery.isLoading,
+    isLoading: aiUsageQuery.isLoading,
+  };
 }
 
-function ConvertToTodoAction({ onConverted }: { onConverted: () => void }) {
+function useConvertToTodoAction(onConverted: () => void) {
   const today = useToday();
-  const { t } = useTranslation('memo');
   const { memoId } = useMemoScreenParams();
   const overlay = useOverlay();
   const { data: memo } = useQuery(useGetMemoQueryOptions({ memoId }));
@@ -391,12 +443,5 @@ function ConvertToTodoAction({ onConverted }: { onConverted: () => void }) {
     ));
   };
 
-  return (
-    <MemoActionButton
-      onPress={handlePress}
-      accessibilityLabel={t('detail.convertToTodo')}
-      isDisabled={memo == null || defaultCategoryId == null}
-      icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
-    />
-  );
+  return { handlePress, isDisabled: memo == null || defaultCategoryId == null };
 }
