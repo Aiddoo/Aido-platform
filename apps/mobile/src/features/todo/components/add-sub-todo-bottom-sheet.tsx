@@ -16,6 +16,7 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { useMutation } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { useRef, useState } from 'react';
@@ -24,7 +25,14 @@ import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
+import type { SubTodo } from '../domains/sub-todo.model';
+import type { Todo } from '../domains/todo.model';
+import { useAddSubTodoMutationOptions } from '../queries/use-add-sub-todo-mutation-options';
+import { useDeleteSubTodoMutationOptions } from '../queries/use-delete-sub-todo-mutation-options';
+import { useUpdateSubTodoMutationOptions } from '../queries/use-update-sub-todo-mutation-options';
+
 interface BaseProps {
+  todo: Todo;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
@@ -32,66 +40,78 @@ interface BaseProps {
 
 interface CreateProps extends BaseProps {
   mode: 'create';
-  onSubmit: (value: string) => Promise<unknown> | void;
 }
 
 interface EditProps extends BaseProps {
   mode: 'edit';
-  initialValue: string;
-  onSubmit: (value: string) => Promise<unknown> | void;
-  onDelete: () => Promise<unknown> | void;
+  subTodo: SubTodo;
 }
 
 type AddSubTodoBottomSheetProps = CreateProps | EditProps;
 
-export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
+export function AddSubTodoBottomSheet(props: AddSubTodoBottomSheetProps) {
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
-  const { isOpen, onOpenChange, onClose } = props;
+  const { todo, isOpen, onOpenChange, onClose } = props;
 
   const defaultValue = match(props)
-    .with({ mode: 'edit' }, ({ initialValue }) => initialValue)
+    .with({ mode: 'edit' }, ({ subTodo }) => subTodo.title)
     .with({ mode: 'create' }, () => '')
     .exhaustive();
 
   const [value, setValue] = useState(defaultValue);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
-  // 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
-  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const isBusy = isSubmitting || isDeleting;
+  const addSubTodo = useMutation(useAddSubTodoMutationOptions());
+  const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const isSubmitting = addSubTodo.isPending || updateSubTodo.isPending;
+  const isBusy = isSubmitting || deleteSubTodo.isPending;
 
   const isSubmitDisabled = !value.trim() || isBusy;
 
   const handleSubmit = async () => {
-    const trimmed = value.trim();
-    if (!trimmed || isBusy) {
+    const title = value.trim();
+    if (!title || isBusy) {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await props.onSubmit(trimmed);
-      if (props.mode === 'create') {
-        setValue('');
-      }
-    } finally {
-      setIsSubmitting(false);
+    const saved = await match(props)
+      .with({ mode: 'create' }, () =>
+        addSubTodo.mutateAsync({ todoId: todo.id, title, startDate: todo.startDate }),
+      )
+      .with({ mode: 'edit' }, ({ subTodo }) =>
+        updateSubTodo.mutateAsync({
+          todoId: todo.id,
+          subTodoId: subTodo.id,
+          title,
+          startDate: todo.startDate,
+        }),
+      )
+      .exhaustive()
+      .catch(() => null);
+
+    if (saved == null) {
+      return;
     }
+
+    if (props.mode === 'create') {
+      setValue('');
+    }
+    onClose();
   };
 
-  const handleDelete = async (onDelete: () => Promise<unknown> | void) => {
+  const handleDelete = async (subTodo: SubTodo) => {
     if (isBusy) {
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      await onDelete();
-    } finally {
-      setIsDeleting(false);
+    const removed = await deleteSubTodo
+      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate })
+      .catch(() => null);
+
+    if (removed != null) {
+      onClose();
     }
   };
 
@@ -118,7 +138,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
           {props.mode === 'edit' && (
             <PressableFeedback
               testID="sub-todo-delete"
-              onPress={() => handleDelete(props.onDelete)}
+              onPress={() => handleDelete(props.subTodo)}
               isDisabled={isBusy}
               className="size-9 items-center justify-center rounded-full bg-error/10"
             >
@@ -161,7 +181,7 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
       </VStack>
     </KeyboardBottomSheet>
   );
-};
+}
 
 function SpeechTooltip() {
   const fontScaledSize = useFontScaledSize();

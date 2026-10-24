@@ -12,12 +12,18 @@ export function CategorySelectBottomSheet({
   value,
   onChange,
   submitLabel,
+  isPending,
   ...sheetProps
 }: CategorySelectBottomSheetProps) {
   return (
     <BottomSheet {...sheetProps}>
       {sheetProps.isOpen && (
-        <CategorySelectInput value={value} onChange={onChange} submitLabel={submitLabel} />
+        <CategorySelectInput
+          value={value}
+          onChange={onChange}
+          submitLabel={submitLabel}
+          isPending={isPending}
+        />
       )}
     </BottomSheet>
   );
@@ -28,26 +34,20 @@ interface CategorySelectInputProps {
   value: number;
   onChange: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
+  /** 제출을 처리하는 mutation의 `isPending`. */
+  isPending?: boolean;
 }
 
 /** 카테고리 목록을 스스로 조회하고, 고른 카테고리를 제출 버튼으로 확정한다. */
-export function CategorySelectInput({ value, onChange, submitLabel }: CategorySelectInputProps) {
+export function CategorySelectInput({
+  value,
+  onChange,
+  submitLabel,
+  isPending = false,
+}: CategorySelectInputProps) {
   const { t } = useTranslation('todo');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const [localCategoryId, setLocalCategoryId] = useState(value);
-
-  // 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
-  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const submit = async () => {
-    setIsSubmitting(true);
-    try {
-      await onChange(localCategoryId);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <VStack gap={20}>
@@ -87,7 +87,7 @@ export function CategorySelectInput({ value, onChange, submitLabel }: CategorySe
         })}
       </VStack>
 
-      <Button size="large" onPress={submit} isLoading={isSubmitting}>
+      <Button size="large" onPress={() => onChange(localCategoryId)} isLoading={isPending}>
         {submitLabel}
       </Button>
     </VStack>

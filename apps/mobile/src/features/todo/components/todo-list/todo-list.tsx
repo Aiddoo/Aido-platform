@@ -42,14 +42,11 @@ import { useFeedDate } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
-import { useAddSubTodoMutationOptions } from '../../queries/use-add-sub-todo-mutation-options';
 import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
-import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
 import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub-todos-mutation-options';
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
 import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
-import { useUpdateSubTodoMutationOptions } from '../../queries/use-update-sub-todo-mutation-options';
 import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
 import { AddSubTodoBottomSheet } from '../add-sub-todo-bottom-sheet';
@@ -268,16 +265,18 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
     ));
 
   const openAddSubTodoSheet = () =>
-    openSheet((sheetProps) => <AddSubTodoSheet {...sheetProps} todo={todo} />);
+    openSheet((sheetProps) => <AddSubTodoBottomSheet {...sheetProps} mode="create" todo={todo} />);
 
   const openSubTodoActionsSheet = (subTodo: SubTodo) =>
     openSheet((sheetProps) => (
-      <SubTodoActionsSheet
+      <SubTodoActionsBottomSheet
         {...sheetProps}
         todo={todo}
         subTodo={subTodo}
         onEdit={() =>
-          openSheet((props) => <EditSubTodoSheet {...props} todo={todo} subTodo={subTodo} />)
+          openSheet((props) => (
+            <AddSubTodoBottomSheet {...props} mode="edit" todo={todo} subTodo={subTodo} />
+          ))
         }
       />
     ));
@@ -474,6 +473,7 @@ function ChangeCategorySheet({
       {...sheetProps}
       value={todo.category.id}
       submitLabel={t('actions.changeSubmit')}
+      isPending={changeCategory.isPending}
       onChange={async (categoryId) => {
         const changed = await changeCategory
           .mutateAsync({ todoId: todo.id, input: { categoryId } })
@@ -481,88 +481,6 @@ function ChangeCategorySheet({
 
         if (changed) {
           sheetProps.onOpenChange(false);
-        }
-      }}
-    />
-  );
-}
-
-function AddSubTodoSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps & { todo: Todo }) {
-  const addSubTodo = useMutation(useAddSubTodoMutationOptions());
-
-  return (
-    <AddSubTodoBottomSheet
-      {...sheetProps}
-      mode="create"
-      onClose={onClose}
-      onSubmit={async (title) => {
-        const added = await addSubTodo
-          .mutateAsync({ todoId: todo.id, title, startDate: todo.startDate })
-          .catch(() => null);
-
-        if (added) {
-          onClose();
-        }
-      }}
-    />
-  );
-}
-
-function EditSubTodoSheet({
-  todo,
-  subTodo,
-  onClose,
-  ...sheetProps
-}: OverlaySheetProps & { todo: Todo; subTodo: SubTodo }) {
-  const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
-  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
-  const target = { todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate };
-
-  return (
-    <AddSubTodoBottomSheet
-      {...sheetProps}
-      mode="edit"
-      initialValue={subTodo.title}
-      onClose={onClose}
-      onSubmit={async (title) => {
-        const updated = await updateSubTodo.mutateAsync({ ...target, title }).catch(() => null);
-
-        if (updated) {
-          onClose();
-        }
-      }}
-      onDelete={async () => {
-        const removed = await deleteSubTodo.mutateAsync(target).catch(() => null);
-
-        if (removed) {
-          onClose();
-        }
-      }}
-    />
-  );
-}
-
-function SubTodoActionsSheet({
-  todo,
-  subTodo,
-  onClose,
-  onEdit,
-  ...sheetProps
-}: OverlaySheetProps & { todo: Todo; subTodo: SubTodo; onEdit: () => void }) {
-  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
-
-  return (
-    <SubTodoActionsBottomSheet
-      {...sheetProps}
-      onClose={onClose}
-      onEdit={onEdit}
-      onDelete={async () => {
-        const removed = await deleteSubTodo
-          .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate })
-          .catch(() => null);
-
-        if (removed) {
-          onClose();
         }
       }}
     />

@@ -8,40 +8,45 @@ import {
   TrashIcon,
   VStack,
 } from '@src/shared/ui';
+import { useMutation } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { useState } from 'react';
+
+import type { SubTodo } from '../../domains/sub-todo.model';
+import type { Todo } from '../../domains/todo.model';
+import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
 
 interface SubTodoActionsBottomSheetProps {
+  todo: Todo;
+  subTodo: SubTodo;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
   onEdit: () => void;
-  onDelete: () => Promise<unknown> | void;
 }
 
 export function SubTodoActionsBottomSheet({
+  todo,
+  subTodo,
   isOpen,
   onOpenChange,
   onClose,
   onEdit,
-  onDelete,
 }: SubTodoActionsBottomSheetProps) {
   const { t } = useTranslation('todo');
-
-  // 지우는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
-  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const isDeleting = deleteSubTodo.isPending;
 
   const handleDelete = async () => {
     if (isDeleting) {
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      await onDelete();
-    } finally {
-      setIsDeleting(false);
+    const removed = await deleteSubTodo
+      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate })
+      .catch(() => null);
+
+    if (removed != null) {
+      onClose();
     }
   };
 

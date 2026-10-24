@@ -54,6 +54,7 @@ export function SuggestionCategoryBottomSheet({
         }
       }}
       submitLabel={t('suggestions.category.submit')}
+      isPending={handleSuggestionMutation.isPending}
     />
   );
 }
