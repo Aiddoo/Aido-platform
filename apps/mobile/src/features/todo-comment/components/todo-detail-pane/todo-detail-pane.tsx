@@ -109,7 +109,11 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
   const content = (
     <>
-      <TodoCommentTitleBar onBackPress={isPane ? closePane : undefined} />
+      {isPane ? (
+        <TodoCommentTitleBar onBackPress={closePane} />
+      ) : (
+        <TodoCommentTitleBar.StackHeader />
+      )}
 
       <Separator />
 
@@ -172,7 +176,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
     <>
       <Stack.Screen options={{ gestureEnabled: isNativeBackGestureEnabled }} />
 
-      <StyledSafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <StyledSafeAreaView className="flex-1 bg-background" edges={['left', 'right']}>
         {content}
       </StyledSafeAreaView>
     </>
