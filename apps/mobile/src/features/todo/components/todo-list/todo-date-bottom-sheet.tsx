@@ -27,7 +27,6 @@ type TodoDateBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 할 일의 날짜를 바꾸는 시트. 대상은 `/todo/[todoId]/date` route에서 읽는다. */
 export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
 
@@ -47,8 +46,8 @@ export function TodoDateBottomSheet(props: TodoDateBottomSheetProps) {
 TodoDateBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
 
   useEffect(() => {

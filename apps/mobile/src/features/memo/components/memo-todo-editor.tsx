@@ -1,10 +1,5 @@
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
-import { CategorySelectInput } from '@src/features/todo/components/category-select-input';
-import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
-import {
-  type TodoTimeValue,
-  TodoTimePickerContent,
-} from '@src/features/todo/components/todo-time-picker-content';
+import type { TodoTimeValue } from '@src/features/todo/components/todo-time-picker-content';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -14,7 +9,6 @@ import {
   CalendarIcon,
   ClockIcon,
   HStack,
-  ModalBottomSheet,
   RobotPixelIcon,
   Spacing,
   Text,
@@ -24,9 +18,12 @@ import {
 import { formatDate, formatDaysOfWeek, formatMonthDay, toDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { CloseButton } from 'heroui-native';
-import { Suspense } from 'react';
-import { ActivityIndicator, ScrollView, TextInput } from 'react-native';
+import { ScrollView, TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
+
+import { MemoTodoCategoryBottomSheet } from './memo-todo-category-bottom-sheet';
+import { MemoTodoDateBottomSheet } from './memo-todo-date-bottom-sheet';
+import { MemoTodoTimeBottomSheet } from './memo-todo-time-bottom-sheet';
 
 const StyledTextInput = withUniwind(TextInput);
 
@@ -39,10 +36,10 @@ interface MemoTodoEditorProps {
 export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps) {
   const actionChipIconSize = useActionChipIconSize();
   const { t } = useTranslation('memo');
-  const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const overlay = useOverlay();
 
-  const category = categoriesData.categories.find((category) => category.id === todo.categoryId);
+  const category = categoriesResult.categories.find((category) => category.id === todo.categoryId);
 
   const dateLabel = todo.endDate
     ? `${formatMonthDay(todo.startDate)} ~ ${formatMonthDay(todo.endDate)}`
@@ -52,53 +49,52 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
     ? t('aiReview.allDay')
     : (todo.scheduledTime ?? t('aiReview.allDay'));
 
-  const openDatePicker = () => {
+  const handleDateChipPress = () => {
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close(null)} onExit={exit}>
-        <TodoDatePickerContent
-          value={toDate(todo.startDate)}
-          onChange={(date) => {
-            onChange({ startDate: formatDate(date) });
-            close(date);
-          }}
-          onCancel={() => close(null)}
-        />
-      </ModalBottomSheet>
+      <MemoTodoDateBottomSheet
+        isOpen={isOpen}
+        onOpenChange={() => close(null)}
+        onExit={exit}
+        value={toDate(todo.startDate)}
+        onChange={(date) => {
+          onChange({ startDate: formatDate(date) });
+          close(date);
+        }}
+        onCancel={() => close(null)}
+      />
     ));
   };
 
-  const openTimePicker = () => {
+  const handleTimeChipPress = () => {
     overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close(null)} onExit={exit}>
-        <Suspense fallback={<ActivityIndicator />}>
-          <TodoTimePickerContent
-            date={toDate(todo.startDate)}
-            value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: todo.isAllDay }}
-            onChange={(value) => {
-              onChange({ scheduledTime: value.scheduledTime ?? null, isAllDay: value.isAllDay });
-              close(value);
-            }}
-            onCancel={() => close(null)}
-          />
-        </Suspense>
-      </ModalBottomSheet>
+      <MemoTodoTimeBottomSheet
+        isOpen={isOpen}
+        onOpenChange={() => close(null)}
+        onExit={exit}
+        date={toDate(todo.startDate)}
+        value={{ scheduledTime: todo.scheduledTime ?? undefined, isAllDay: todo.isAllDay }}
+        onChange={(value) => {
+          onChange({ scheduledTime: value.scheduledTime ?? null, isAllDay: value.isAllDay });
+          close(value);
+        }}
+        onCancel={() => close(null)}
+      />
     ));
   };
 
-  const openCategoryPicker = () => {
+  const handleCategoryChipPress = () => {
     overlay.open<number | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close(null)} onExit={exit}>
-        <Suspense fallback={<ActivityIndicator />}>
-          <CategorySelectInput
-            value={todo.categoryId}
-            onChange={(categoryId) => {
-              onChange({ categoryId });
-              close(categoryId);
-            }}
-            submitLabel={t('aiReview.select')}
-          />
-        </Suspense>
-      </ModalBottomSheet>
+      <MemoTodoCategoryBottomSheet
+        isOpen={isOpen}
+        onOpenChange={() => close(null)}
+        onExit={exit}
+        value={todo.categoryId}
+        onChange={(categoryId) => {
+          onChange({ categoryId });
+          close(categoryId);
+        }}
+        submitLabel={t('aiReview.select')}
+      />
     ));
   };
 
@@ -148,7 +144,7 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
             />
           }
           label={dateLabel}
-          onPress={openDatePicker}
+          onPress={handleDateChipPress}
         />
         <ActionChip
           icon={
@@ -159,14 +155,14 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
             />
           }
           label={timeLabel}
-          onPress={openTimePicker}
+          onPress={handleTimeChipPress}
         />
         <ActionChip
           icon={
             <Box className="size-2 rounded-full" style={{ backgroundColor: category?.color }} />
           }
           label={category?.name ?? t('aiReview.categoryFallback')}
-          onPress={openCategoryPicker}
+          onPress={handleCategoryChipPress}
         />
       </ScrollView>
 

@@ -22,7 +22,7 @@ import { FormProvider } from 'react-hook-form';
 import { useFormState } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 
-import { DEFAULT_COLOR } from '../constants/todo-category-colors';
+import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category-colors';
 import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
 import { CategoryColorInput } from './category-color-input';
 
@@ -31,30 +31,29 @@ type CategoryCreateBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 카테고리 추가 시트(`/todo-categories/new`). 개수 제한에 걸리면 시트를 닫고 구독 안내를 띄운다. */
 export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps) {
   const { showBoundary } = useErrorBoundary();
   const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
 
   const { t } = useTranslation(['todo', 'common']);
   const createMutation = useMutation(useCreateTodoCategoryMutationOptions());
-  const [premiumOpen, setPremiumOpen] = useState(false);
+  const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
 
   const formMethods = useForm({
     resolver: zodResolver(createTodoCategorySchema),
-    defaultValues: { name: '', color: DEFAULT_COLOR },
+    defaultValues: { name: '', color: DEFAULT_CATEGORY_COLOR },
   });
   const { control, handleSubmit } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
 
-  const onSubmit = async (data: CreateTodoCategoryInput) => {
+  const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
     try {
-      await createMutation.mutateAsync(data, {
+      await createMutation.mutateAsync(values, {
         onSuccess: () => sheet.close(),
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
             sheet.close();
-            setPremiumOpen(true);
+            setIsPremiumDialogOpen(true);
           }
         },
       });
@@ -72,7 +71,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
           {...props}
           isOpen={sheet.isOpen}
           onOpenChange={(open) => {
-            if (!open && premiumOpen) {
+            if (!open && isPremiumDialogOpen) {
               return;
             }
             sheet.onOpenChange(open);
@@ -94,7 +93,7 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
                       byType: { too_big: 'categoryName.tooLong' },
                     })}
                     returnKeyType="done"
-                    onSubmitEditing={() => handleSubmit(onSubmit)()}
+                    onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
                   />
                 )}
               </FormField>
@@ -103,17 +102,21 @@ export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps)
               </FormField>
             </VStack>
 
-            <Button size="large" onPress={() => handleSubmit(onSubmit)()} isLoading={isSubmitting}>
+            <Button
+              size="large"
+              onPress={() => handleSubmit(handleSubmitCategory)()}
+              isLoading={isSubmitting}
+            >
               {t('common:actions.confirm')}
             </Button>
           </VStack>
         </KeyboardBottomSheet>
 
         <PremiumDialog
-          isOpen={premiumOpen}
+          isOpen={isPremiumDialogOpen}
           onOpenChange={(open) => {
             if (!open) {
-              setPremiumOpen(false);
+              setIsPremiumDialogOpen(false);
               sheet.exit();
             }
           }}

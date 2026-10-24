@@ -36,7 +36,6 @@ type CategoryEditBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 카테고리 수정 시트. 대상은 `/todo-categories/[categoryId]/edit` route에서 읽는다. */
 export function CategoryEditBottomSheet(props: CategoryEditBottomSheetProps) {
   const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
 
@@ -57,8 +56,8 @@ interface SheetContentProps {
 
 CategoryEditBottomSheet.Content = function Content({ onClose }: SheetContentProps) {
   const { categoryId } = useTodoCategoryScreenParams();
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const category = useRetainedValue(findSheetCategory(data.categories, categoryId));
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const category = useRetainedValue(findSheetCategory(categoriesResult.categories, categoryId));
 
   useEffect(() => {
     if (category == null) {
@@ -109,9 +108,9 @@ function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
   const { control, handleSubmit } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
 
-  const onSubmit = async (data: CreateTodoCategoryInput) => {
+  const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
     try {
-      await updateMutation.mutateAsync({ id: category.id, input: data }, { onSuccess: onClose });
+      await updateMutation.mutateAsync({ id: category.id, input: values }, { onSuccess: onClose });
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
@@ -137,7 +136,7 @@ function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
                   byType: { too_big: 'categoryName.tooLong' },
                 })}
                 returnKeyType="done"
-                onSubmitEditing={() => handleSubmit(onSubmit)()}
+                onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
               />
             )}
           </FormField>
@@ -146,7 +145,11 @@ function CategoryEditForm({ category, onClose }: CategoryEditFormProps) {
           </FormField>
         </VStack>
 
-        <Button size="large" onPress={() => handleSubmit(onSubmit)()} isLoading={isSubmitting}>
+        <Button
+          size="large"
+          onPress={() => handleSubmit(handleSubmitCategory)()}
+          isLoading={isSubmitting}
+        >
           {t('common:actions.confirm')}
         </Button>
       </VStack>

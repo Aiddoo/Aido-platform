@@ -17,10 +17,7 @@ import { TODO_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '../utils/view-models/todo-sheet-target.view-model';
 import { AddTodoBottomSheet } from './add-todo-bottom-sheet';
 
-/**
- * 할 일 수정 시트. 대상은 `/todo/[todoId]/edit` route에서 읽는다.
- * 키보드 시트가 폼 기본값을 할 일로 정하므로, 할 일을 읽는 동안에는 시트를 띄우지 않는다.
- */
+/** 키보드 시트가 폼 기본값을 할 일로 정하므로, 할 일을 읽는 동안에는 시트를 띄우지 않는다. */
 export function TodoEditBottomSheet() {
   return (
     <QueryErrorBoundary fallback={TodoEditBottomSheet.Error}>
@@ -35,8 +32,8 @@ TodoEditBottomSheet.Form = function Form() {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
 
   useEffect(() => {
     if (todo == null) {

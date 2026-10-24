@@ -27,7 +27,6 @@ type TodoTimeBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 할 일의 시간을 바꾸는 시트. 대상은 `/todo/[todoId]/time` route에서 읽는다. */
 export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
 
@@ -47,8 +46,8 @@ export function TodoTimeBottomSheet(props: TodoTimeBottomSheetProps) {
 TodoTimeBottomSheet.Content = function Content({ onClose }: { onClose: () => void }) {
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
 
   useEffect(() => {

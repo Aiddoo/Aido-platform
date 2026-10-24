@@ -20,10 +20,10 @@ export function CategoryDeleteDialog({
 }: CategoryDeleteDialogProps) {
   const { t } = useTranslation(['todo', 'common']);
   const deleteMutation = useMutation(useDeleteTodoCategoryMutationOptions());
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
 
-  const category = data.categories.find((c) => c.id === categoryId);
-  const otherCategories = data.categories.filter((c) => c.id !== categoryId);
+  const category = categoriesResult.categories.find((c) => c.id === categoryId);
+  const otherCategories = categoriesResult.categories.filter((c) => c.id !== categoryId);
 
   if (!category) {
     return null;

@@ -7,7 +7,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowUpIcon,
   BottomSheetInput,
@@ -51,10 +51,6 @@ type AddSubTodoBottomSheetProps = Omit<
   mode: 'create' | 'edit';
 };
 
-/**
- * 하위 항목 추가·수정 시트. 부모 할 일은 `/todo/[todoId]/sub-todos/…` route에서,
- * 수정할 하위 항목은 `[subTodoId]` 세그먼트에서 읽는다.
- */
 export function AddSubTodoBottomSheet({ mode, ...props }: AddSubTodoBottomSheetProps) {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
 
@@ -79,8 +75,8 @@ interface SheetContentProps {
 AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
 
   useEffect(() => {
     if (todo == null) {
@@ -99,8 +95,8 @@ AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
   const { todoId } = useTodoScreenParams();
   const { subTodoId } = useSubTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
 
   useEffect(() => {
@@ -143,6 +139,7 @@ interface SubTodoFormProps {
 }
 
 function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
+  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
 
@@ -204,7 +201,7 @@ function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
         ref={inputRef}
         testID="sub-todo-input"
         autoFocus
-        placeholder={tGlobal('todo:subTodo.placeholder')}
+        placeholder={t('subTodo.placeholder')}
         value={value}
         onChange={setValue}
         maxLength={200}

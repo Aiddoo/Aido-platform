@@ -40,7 +40,6 @@ type SubTodoActionsBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 하위 항목 동작 시트. 대상은 `/todo/[todoId]/sub-todos/[subTodoId]/actions` route에서 읽는다. */
 export function SubTodoActionsBottomSheet(props: SubTodoActionsBottomSheetProps) {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
 
@@ -64,8 +63,8 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
   const { todoId } = useTodoScreenParams();
   const { subTodoId } = useSubTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
   const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
   const isDeleting = deleteSubTodo.isPending;

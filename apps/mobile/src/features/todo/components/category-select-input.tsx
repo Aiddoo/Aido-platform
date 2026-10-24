@@ -20,7 +20,7 @@ export function CategorySelectInput({
   isLoading = false,
 }: CategorySelectInputProps) {
   const { t } = useTranslation('todo');
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const [localCategoryId, setLocalCategoryId] = useState(value);
 
   return (
@@ -30,7 +30,7 @@ export function CategorySelectInput({
       </Text>
 
       <VStack gap={8}>
-        {data.categories.map((category) => {
+        {categoriesResult.categories.map((category) => {
           const isSelected = localCategoryId === category.id;
 
           return (

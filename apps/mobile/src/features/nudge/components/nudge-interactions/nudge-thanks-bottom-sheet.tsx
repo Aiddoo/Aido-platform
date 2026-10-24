@@ -37,18 +37,17 @@ type NudgeThanksBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange' | 'onExit'
 >;
 
-/** 할 일에 응원을 보낸 친구들에게 감사를 보내는 시트. 대상은 `/todo/[todoId]/thanks` route에서 읽는다. */
 export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoScreenParams();
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
-  const close = () => sheet.close();
+  const handleClose = () => sheet.close();
 
   return (
     <ModalBottomSheet
       {...props}
       isOpen={sheet.isOpen}
-      onOpenChange={close}
+      onOpenChange={handleClose}
       onExit={() => sheet.onOpenChange(false)}
     >
       <VStack gap={20} pb={16}>
@@ -61,11 +60,11 @@ export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
         <QueryErrorBoundary
           resetKeys={[todoId]}
           fallback={(errorProps) => (
-            <NudgeThanksBottomSheet.Error {...errorProps} onClose={close} />
+            <NudgeThanksBottomSheet.Error {...errorProps} onClose={handleClose} />
           )}
         >
           <Suspense fallback={<NudgeThanksBottomSheet.Loading />}>
-            <NudgeThanksBottomSheet.Recipients onClose={close} />
+            <NudgeThanksBottomSheet.Recipients onClose={handleClose} />
           </Suspense>
         </QueryErrorBoundary>
       </VStack>
@@ -77,19 +76,23 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
   const { t } = useTranslation(['todo', 'common']);
   const { todoId } = useTodoScreenParams();
   const { height } = useWindowDimensions();
-  const query = useSuspenseInfiniteQuery(useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }));
-  const mutation = useMutation(useSendNudgeThanksMutationOptions());
-  const preview = query.data.pages[0];
-  const recipients = query.data.pages.flatMap((page) => page.recipients);
+  const thanksPreviewQuery = useSuspenseInfiniteQuery(
+    useGetNudgeThanksPreviewInfiniteQueryOptions({ todoId }),
+  );
+  const sendThanks = useMutation(useSendNudgeThanksMutationOptions());
+  const preview = thanksPreviewQuery.data.pages[0];
+  const recipients = thanksPreviewQuery.data.pages.flatMap((page) => page.recipients);
 
-  if (mutation.isSuccess) {
+  if (sendThanks.isSuccess) {
     return (
       <VStack gap={24} py={16}>
         <HStack align="center" gap={12}>
           <HeartFilledIcon width={28} height={28} colorClassName="text-main" />
           <Text size="b3" weight="semibold" className="shrink">
             {t(
-              mutation.data > 0 ? 'todo:interaction.thanksSent' : 'todo:interaction.alreadyThanked',
+              sendThanks.data > 0
+                ? 'todo:interaction.thanksSent'
+                : 'todo:interaction.alreadyThanked',
             )}
           </Text>
         </HStack>
@@ -98,7 +101,7 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
     );
   }
 
-  if (preview === undefined || !NudgeInteractionPolicy.isThankable(preview)) {
+  if (preview == null || !NudgeInteractionPolicy.isThankable(preview)) {
     return <NudgeThanksBottomSheet.Empty />;
   }
 
@@ -113,11 +116,15 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
           keyExtractor={(recipient) => recipient.id}
           renderItem={({ item }) => <NudgeThanksBottomSheet.Recipient recipient={item} />}
           ListFooterComponent={match({
-            isFetchNextPageError: query.isFetchNextPageError,
-            isFetchingNextPage: query.isFetchingNextPage,
+            isFetchNextPageError: thanksPreviewQuery.isFetchNextPageError,
+            isFetchingNextPage: thanksPreviewQuery.isFetchingNextPage,
           })
             .with({ isFetchNextPageError: true }, () => (
-              <Button variant="weak" size="medium" onPress={() => query.fetchNextPage()}>
+              <Button
+                variant="weak"
+                size="medium"
+                onPress={() => thanksPreviewQuery.fetchNextPage()}
+              >
                 {t('common:actions.retry')}
               </Button>
             ))
@@ -129,8 +136,12 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
             .with({ isFetchNextPageError: false, isFetchingNextPage: false }, () => null)
             .exhaustive()}
           onEndReached={() => {
-            if (query.hasNextPage && !query.isFetching && !query.isFetchNextPageError) {
-              return query.fetchNextPage({ cancelRefetch: false });
+            if (
+              thanksPreviewQuery.hasNextPage &&
+              !thanksPreviewQuery.isFetching &&
+              !thanksPreviewQuery.isFetchNextPageError
+            ) {
+              return thanksPreviewQuery.fetchNextPage({ cancelRefetch: false });
             }
           }}
           onEndReachedThreshold={0.5}
@@ -139,17 +150,17 @@ NudgeThanksBottomSheet.Recipients = function Recipients({ onClose }: { onClose: 
       <Text size="e1" shade={5}>
         {t('todo:interaction.thanksSelectionHint')}
       </Text>
-      {mutation.isError && (
+      {sendThanks.isError && (
         <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
-          {isApiError(mutation.error) ? mutation.error.message : t('todo:toast.retryLater')}
+          {isApiError(sendThanks.error) ? sendThanks.error.message : t('todo:toast.retryLater')}
         </Text>
       )}
       <Button
         color="primary"
-        isLoading={mutation.isPending}
+        isLoading={sendThanks.isPending}
         onPress={() => {
-          if (preview.throughNudgeId !== null) {
-            mutation.mutate({ todoId, input: { throughNudgeId: preview.throughNudgeId } });
+          if (preview.throughNudgeId != null) {
+            sendThanks.mutate({ todoId, input: { throughNudgeId: preview.throughNudgeId } });
           }
         }}
       >

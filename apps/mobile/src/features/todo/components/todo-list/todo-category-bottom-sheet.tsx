@@ -25,7 +25,6 @@ type TodoCategoryBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 할 일의 카테고리를 바꾸는 시트. 대상은 `/todo/[todoId]/category` route에서 읽는다. */
 export function TodoCategoryBottomSheet(props: TodoCategoryBottomSheetProps) {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
 
@@ -46,8 +45,8 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
   const { t } = useTranslation('todo');
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
 
   useEffect(() => {

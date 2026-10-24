@@ -49,7 +49,6 @@ type TodoActionsBottomSheetProps = Omit<
   'children' | 'isOpen' | 'onOpenChange'
 >;
 
-/** 할 일 하나에 대한 동작 시트. 대상은 `/todo/[todoId]/actions` route에서 읽는다. */
 export function TodoActionsBottomSheet(props: TodoActionsBottomSheetProps) {
   const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
 
@@ -73,8 +72,8 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   const today = useToday();
   const { todoId } = useTodoScreenParams();
   const [date] = useTodoSheetDateParam();
-  const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
-  const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
   const updateScheduleMutation = useMutation(useUpdateTodoScheduleMutationOptions());
 
