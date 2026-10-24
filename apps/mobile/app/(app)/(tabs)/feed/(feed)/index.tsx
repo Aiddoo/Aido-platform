@@ -33,7 +33,6 @@ import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 import { match } from 'ts-pattern';
 
 function MyFeedScreen() {
-  const { t } = useTranslation(['widget', 'common']);
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
   useWeatherIntroduction();
@@ -42,6 +41,62 @@ function MyFeedScreen() {
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );
 
+  return (
+    <NestableScrollContainer
+      contentInsetAdjustmentBehavior="automatic"
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
+      <StyledSafeAreaView edges={['left', 'right']} className="grow">
+        <AddTodoRequestEntry />
+        <MyCalendar />
+
+        <Spacing size={10} />
+
+        <ActivationChecklist className="mx-4 mb-5" />
+
+        <Box px={16} style={{ flexGrow: 1 }}>
+          <QueryErrorBoundary resetKeys={[selectedDateKey]} fallback={TodoList.Error}>
+            <Suspense fallback={<TodoList.Loading />}>
+              <TodoList key={selectedDateKey} />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
+
+        <Spacing size={20} />
+
+        {featureDiscovery.isReentryVisible && (
+          <>
+            <Box px={16}>
+              <FeatureDiscoveryReentryCard onPress={featureDiscovery.openFromReentry} />
+            </Box>
+            <Spacing size={20} />
+          </>
+        )}
+
+        <QueryErrorBoundary fallback={() => null}>
+          <Suspense fallback={null}>
+            <MarketingPushOptInBanner />
+          </Suspense>
+        </QueryErrorBoundary>
+
+        <Box px={16}>
+          <QueryErrorBoundary fallback={SuggestionEntry.Error}>
+            <Suspense fallback={<SuggestionEntry.Loading />}>
+              <SuggestionEntry />
+            </Suspense>
+          </QueryErrorBoundary>
+        </Box>
+        <Spacing size={20} />
+      </StyledSafeAreaView>
+    </NestableScrollContainer>
+  );
+}
+
+/** 위젯·딥링크의 할 일 추가 요청을 받아 기본 카테고리로 추가 시트를 연다. */
+function AddTodoRequestEntry() {
+  const { t } = useTranslation(['widget', 'common']);
   const [action, setAction] = useFeedActionParam();
   const [selectedDate] = useFeedDate();
   const overlay = useOverlay();
@@ -88,98 +143,45 @@ function MyFeedScreen() {
         )
         .otherwise(() => 'idle' as const);
 
-  return (
-    <NestableScrollContainer
-      contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <StyledSafeAreaView edges={['left', 'right']} className="grow">
-        {match(createEntryStatus)
-          .with('loading', () => (
-            <Box px={16} py={8}>
-              <Text size="b4" shade={6}>
-                {t('widget:entry.loading')}
-              </Text>
-            </Box>
-          ))
-          .with('error', () => (
-            <Box px={16} py={8}>
-              <Result
-                title={t('widget:entry.loadError')}
-                button={
-                  <Result.Button onPress={() => categories.refetch()}>
-                    {t('common:actions.retry')}
-                  </Result.Button>
-                }
-              />
-            </Box>
-          ))
-          .with('empty', () => (
-            <Box px={16} py={8}>
-              <Result
-                title={t('widget:entry.emptyCategory')}
-                button={
-                  <Result.Button
-                    onPress={() => {
-                      setAction(undefined);
-                      router.navigate('/settings/category-settings');
-                    }}
-                  >
-                    {t('widget:entry.manageCategories')}
-                  </Result.Button>
-                }
-              />
-            </Box>
-          ))
-          .with('idle', () => null)
-          .exhaustive()}
-        <MyCalendar />
-
-        <Spacing size={10} />
-
-        <ActivationChecklist className="mx-4 mb-5" />
-
-        <Box px={16} style={{ flexGrow: 1 }}>
-          <QueryErrorBoundary
-            resetKeys={[selectedDateKey]}
-            fallback={(props) => <TodoList.Error {...props} />}
-          >
-            <Suspense fallback={<TodoList.Loading />}>
-              <TodoList key={selectedDateKey} />
-            </Suspense>
-          </QueryErrorBoundary>
-        </Box>
-
-        <Spacing size={20} />
-
-        {featureDiscovery.isReentryVisible && (
-          <>
-            <Box px={16}>
-              <FeatureDiscoveryReentryCard onPress={featureDiscovery.openFromReentry} />
-            </Box>
-            <Spacing size={20} />
-          </>
-        )}
-
-        <QueryErrorBoundary fallback={() => null}>
-          <Suspense fallback={null}>
-            <MarketingPushOptInBanner />
-          </Suspense>
-        </QueryErrorBoundary>
-
-        <Box px={16}>
-          <QueryErrorBoundary fallback={(props) => <SuggestionEntry.Error {...props} />}>
-            <Suspense fallback={<SuggestionEntry.Loading />}>
-              <SuggestionEntry />
-            </Suspense>
-          </QueryErrorBoundary>
-        </Box>
-        <Spacing size={20} />
-      </StyledSafeAreaView>
-    </NestableScrollContainer>
-  );
+  return match(createEntryStatus)
+    .with('loading', () => (
+      <Box px={16} py={8}>
+        <Text size="b4" shade={6}>
+          {t('widget:entry.loading')}
+        </Text>
+      </Box>
+    ))
+    .with('error', () => (
+      <Box px={16} py={8}>
+        <Result
+          title={t('widget:entry.loadError')}
+          button={
+            <Result.Button onPress={() => categories.refetch()}>
+              {t('common:actions.retry')}
+            </Result.Button>
+          }
+        />
+      </Box>
+    ))
+    .with('empty', () => (
+      <Box px={16} py={8}>
+        <Result
+          title={t('widget:entry.emptyCategory')}
+          button={
+            <Result.Button
+              onPress={() => {
+                setAction(undefined);
+                router.navigate('/settings/category-settings');
+              }}
+            >
+              {t('widget:entry.manageCategories')}
+            </Result.Button>
+          }
+        />
+      </Box>
+    ))
+    .with('idle', () => null)
+    .exhaustive();
 }
 
 export default function MyFeedRoute() {
