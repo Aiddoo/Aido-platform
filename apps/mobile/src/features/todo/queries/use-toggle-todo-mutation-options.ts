@@ -66,7 +66,7 @@ export const useToggleTodoMutationOptions = () => {
       const activationEvent = recordTodoCompletionForActivation({
         queryClient,
         service: activationService,
-        completed: variables.body.completed,
+        isCompleted: variables.body.completed,
       });
       if (activationEvent) {
         trackEvent('activation_completed', activationEvent);

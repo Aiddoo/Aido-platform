@@ -4,8 +4,8 @@ import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
+import { useWeatherSession } from '../components/providers/weather-session-provider';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
-import { useWeatherSession } from '../hooks/weather-session-provider';
 
 export function getConditionsQueryOptions(
   weatherService: WeatherService,

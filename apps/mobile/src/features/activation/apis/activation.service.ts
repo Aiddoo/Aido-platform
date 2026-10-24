@@ -15,7 +15,7 @@ interface ActivationActionInput {
 }
 
 interface TodoCompletionInput extends ActivationActionInput {
-  completed: boolean;
+  isCompleted: boolean;
 }
 
 interface TodoCompletionResult {
@@ -51,11 +51,11 @@ export class ActivationService {
   recordTodoCompletion = ({
     config,
     user,
-    completed,
+    isCompleted,
     now,
   }: TodoCompletionInput): TodoCompletionResult => {
     const identity = ActivationPolicy.activationIdentity(config, user);
-    if (!completed || !identity || !user) {
+    if (!isCompleted || !identity || !user) {
       return { progress: null, event: null };
     }
 

@@ -16,7 +16,7 @@ interface ActivationMutationBridgeInput {
 }
 
 interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
-  completed: boolean;
+  isCompleted: boolean;
 }
 
 function getContext(queryClient: QueryClient) {
@@ -60,11 +60,11 @@ export function recordTodoCreatedForActivation({
 export function recordTodoCompletionForActivation({
   queryClient,
   service,
-  completed,
+  isCompleted,
   now = new Date(),
 }: TodoCompletionBridgeInput): GrowthEventMap['activation_completed'] | null {
   const { config, user } = getContext(queryClient);
-  const result = service.recordTodoCompletion({ config, user, completed, now });
+  const result = service.recordTodoCompletion({ config, user, isCompleted, now });
   if (result.progress) {
     updateProgressCache(queryClient, config, user, result.progress);
   }

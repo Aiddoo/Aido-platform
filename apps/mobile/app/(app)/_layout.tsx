@@ -1,6 +1,6 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { WeatherSessionProvider } from '@src/features/weather/hooks/weather-session-provider';
+import { WeatherSessionProvider } from '@src/features/weather/components/providers/weather-session-provider';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';

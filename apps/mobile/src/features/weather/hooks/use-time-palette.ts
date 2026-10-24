@@ -1,12 +1,12 @@
 import { useTheme } from '@src/shared/providers/theme-provider';
 import { createContext, useContext } from 'react';
 
+import { useWeatherSession } from '../components/providers/weather-session-provider';
 import {
   getWeatherPalette,
   TIME_PALETTES,
   type TimePalette,
 } from '../utils/view-models/weather-palette.view-model';
-import { useWeatherSession } from './weather-session-provider';
 
 export const TimePaletteContext = createContext<TimePalette>(TIME_PALETTES.night);
 export function useTimePalette(): TimePalette {

@@ -3,7 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { ConfirmDialog, useOverlay } from '@src/shared/ui';
 import { useEffect, useRef } from 'react';
 
-import { useWeatherSession } from './weather-session-provider';
+import { useWeatherSession } from '../components/providers/weather-session-provider';
 
 export function useWeatherIntroduction() {
   const session = useWeatherSession();

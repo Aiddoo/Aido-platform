@@ -12,7 +12,7 @@ import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/fe
 import { FriendService } from '@src/features/friend/apis/friend.service';
 import { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
 import { MemoService } from '@src/features/memo/apis/memo.service';
-import { DeviceIdRepositoryImpl } from '@src/features/notification/apis/device-id.repository.impl';
+import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushTokenService } from '@src/features/notification/apis/push-token.service';
@@ -172,7 +172,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     const todoCategoryService = new TodoCategoryService(authHttpClient);
 
     // Notification
-    const deviceIdRepository = new DeviceIdRepositoryImpl();
+    const deviceIdRepository = new DeviceIdRepository();
     const deviceIdService = new DeviceIdService(deviceIdRepository);
     const pushTokenService = new PushTokenService();
     const notificationService = new NotificationService(
