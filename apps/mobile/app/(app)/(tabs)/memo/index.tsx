@@ -1,4 +1,4 @@
-import { MemoDetailPane } from '@src/features/memo/components/memo-detail-pane/memo-detail-pane';
+import { SelectedMemoDetailPane } from '@src/features/memo/components/memo-detail-pane/selected-memo-detail-pane';
 import { MemoList } from '@src/features/memo/components/memo-list';
 import { MemoPolicy } from '@src/features/memo/domains/memo.model';
 import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
@@ -103,18 +103,7 @@ export default function MemoScreen() {
     </Box>
   );
 
-  return (
-    <AdaptivePane
-      primary={memoListPane}
-      secondary={
-        selectedMemoId === undefined ? (
-          <MemoDetailPane.Empty />
-        ) : (
-          <MemoDetailPane key={selectedMemoId} presentation="pane" />
-        )
-      }
-    />
-  );
+  return <AdaptivePane primary={memoListPane} secondary={<SelectedMemoDetailPane />} />;
 }
 
 function MemoCreateButton() {
