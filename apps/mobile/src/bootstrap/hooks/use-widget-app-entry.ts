@@ -29,7 +29,7 @@ export function useWidgetAppEntry() {
   });
   const segments = useSegments();
   const pathname = usePathname();
-  const parameters = useGlobalSearchParams<{ date?: string; action?: string }>();
+  const parameters = useGlobalSearchParams<{ date?: string; action?: string; friendId?: string }>();
   const url = useLinkingURL();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,
