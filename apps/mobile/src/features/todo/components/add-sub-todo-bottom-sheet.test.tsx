@@ -1,7 +1,12 @@
 import '@src/shared/i18n/init';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createMockAnalytics, createMockHttpClient } from '@src/shared/__tests__';
+import {
+  createMockAnalytics,
+  createMockHttpClient,
+  createPendingResponse,
+} from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -27,14 +32,16 @@ function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
 
 async function renderEditSheet() {
   const httpClient = createMockHttpClient();
-  httpClient.patch.mockReturnValue(new Promise(() => undefined));
-  httpClient.delete.mockReturnValue(new Promise(() => undefined));
+  const pendingPatch = createPendingResponse(ok(undefined));
+  const pendingDelete = createPendingResponse(ok(undefined));
+  httpClient.patch.mockReturnValue(pendingPatch.response);
+  httpClient.delete.mockReturnValue(pendingDelete.response);
 
   const todo = createParentTodo({ subTodos: [createSubTodo({ title: '장 보기' })] });
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
-      mutations: { retry: false },
+      mutations: { retry: false, gcTime: 0 },
     },
   });
   queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todo.startDate }), {
@@ -62,12 +69,18 @@ async function renderEditSheet() {
     },
   );
 
-  return { httpClient };
+  return {
+    httpClient,
+    settleRequests: () => {
+      pendingPatch.settle();
+      pendingDelete.settle();
+    },
+  };
 }
 
 describe('AddSubTodoBottomSheet 수정 모드', () => {
   it('보내는 동안 전송과 삭제가 모두 잠긴다', async () => {
-    const { httpClient } = await renderEditSheet();
+    const { httpClient, settleRequests } = await renderEditSheet();
 
     fireEvent.press(submitButton()).catch(() => undefined);
 
@@ -76,10 +89,11 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     });
     expect(deleteButton()).toBeDisabled();
     expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    settleRequests();
   });
 
   it('지우는 동안에도 전송이 함께 잠긴다', async () => {
-    const { httpClient } = await renderEditSheet();
+    const { httpClient, settleRequests } = await renderEditSheet();
 
     fireEvent.press(deleteButton()).catch(() => undefined);
 
@@ -88,5 +102,6 @@ describe('AddSubTodoBottomSheet 수정 모드', () => {
     });
     expect(submitButton()).toBeDisabled();
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
+    settleRequests();
   });
 });

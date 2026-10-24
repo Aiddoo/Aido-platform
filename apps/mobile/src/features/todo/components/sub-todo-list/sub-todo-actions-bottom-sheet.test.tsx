@@ -1,7 +1,12 @@
 import '@src/shared/i18n/init';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
-import { createMockAnalytics, createMockHttpClient } from '@src/shared/__tests__';
+import {
+  createMockAnalytics,
+  createMockHttpClient,
+  createPendingResponse,
+} from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { ok } from '@src/shared/errors/result';
 import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
@@ -25,12 +30,13 @@ function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
 describe('SubTodoActionsBottomSheet', () => {
   it('지우는 동안 라벨이 바뀌고 다시 눌리지 않는다', async () => {
     const httpClient = createMockHttpClient();
-    httpClient.delete.mockReturnValue(new Promise(() => undefined));
+    const pendingDelete = createPendingResponse(ok(undefined));
+    httpClient.delete.mockReturnValue(pendingDelete.response);
     const todo = createParentTodo({ subTodos: [createSubTodo()] });
     const queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
-        mutations: { retry: false },
+        mutations: { retry: false, gcTime: 0 },
       },
     });
     queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todo.startDate }), {
@@ -65,5 +71,6 @@ describe('SubTodoActionsBottomSheet', () => {
     });
     fireEvent.press(screen.getByText('삭제 중...')).catch(() => undefined);
     expect(httpClient.delete).toHaveBeenCalledTimes(1);
+    pendingDelete.settle();
   });
 });
