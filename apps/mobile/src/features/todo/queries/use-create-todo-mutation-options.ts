@@ -10,8 +10,8 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { toDate } from '@src/shared/utils/date';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoCategoriesResult } from '../domains/todo-category.model';
@@ -118,7 +118,7 @@ export const useCreateTodoMutationOptions = () => {
       }
     },
     onError: (error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (context?.optimisticId != null) {
         queryClient.setQueryData<TodoListResult>(

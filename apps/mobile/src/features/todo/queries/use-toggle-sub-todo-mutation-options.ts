@@ -1,8 +1,8 @@
 import { useSubTodoService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -46,7 +46,7 @@ export const useToggleSubTodoMutationOptions = () => {
       });
     },
     onError: (_error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);
       }

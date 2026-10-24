@@ -24,8 +24,9 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
+import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
@@ -175,7 +176,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   };
 
   const handleTogglePin = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactFeedback(ImpactFeedbackStyle.Light);
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 

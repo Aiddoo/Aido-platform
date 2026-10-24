@@ -121,8 +121,8 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
 
       {todo.items.length > 0 && (
         <VStack className="gap-1.5 pl-2 pr-4">
-          {todo.items.map((item) => (
-            <HStack key={item.title} align="center" gap={8}>
+          {todo.items.map((item, index) => (
+            <HStack key={index} align="center" gap={8}>
               <Box className="size-1.5 rounded-full bg-gray-5" />
               <Text size="b3" shade={8}>
                 {item.title}

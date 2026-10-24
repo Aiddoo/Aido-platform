@@ -5,9 +5,10 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import * as Haptics from 'expo-haptics';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useCallback } from 'react';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -84,13 +85,13 @@ export function CategoryList({ mode }: CategoryListProps) {
     if (mode !== 'reorder' || reorderMutation.isPending) {
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactFeedback(ImpactFeedbackStyle.Medium);
     drag();
   };
 
   const handlePlaceholderIndexChange = useCallback((index: number) => {
     if (index >= 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      impactFeedback(ImpactFeedbackStyle.Light);
     }
   }, []);
 

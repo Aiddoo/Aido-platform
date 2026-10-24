@@ -4,8 +4,8 @@ import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
+import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const useCreateInquiryMutationOptions = () => {
@@ -21,7 +21,7 @@ export const useCreateInquiryMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notifySuccess();
 
       toast.success(t('inquiry:toasts.submitted'));
 
@@ -32,7 +32,7 @@ export const useCreateInquiryMutationOptions = () => {
         return;
       }
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       toast.error(error, { fallback: t('inquiry:toasts.submitFailed') });
     },

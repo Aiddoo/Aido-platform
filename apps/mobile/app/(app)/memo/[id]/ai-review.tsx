@@ -20,8 +20,9 @@ import {
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
+import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView } from 'react-native';
@@ -54,7 +55,7 @@ function AiReviewScreen() {
   };
 
   const handleRemoveTodo = (index: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactFeedback(ImpactFeedbackStyle.Light);
     setTodos((prev) => prev.filter((_, i) => i !== index));
   };
 

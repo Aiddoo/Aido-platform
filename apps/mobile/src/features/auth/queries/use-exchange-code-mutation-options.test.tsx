@@ -28,10 +28,7 @@ jest.mock('@src/shared/i18n', () => ({
   t: (key: string) => key,
 }));
 
-jest.mock('expo-haptics', () => ({
-  notificationAsync: jest.fn(),
-  NotificationFeedbackType: { Error: 'error' },
-}));
+jest.mock('@src/shared/utils/haptics');
 
 describe('useExchangeCodeMutationOptions', () => {
   beforeEach(() => {

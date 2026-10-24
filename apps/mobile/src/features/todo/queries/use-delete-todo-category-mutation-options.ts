@@ -8,8 +8,8 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_CATEGORY_QUERY_KEYS } from '../constants/todo-category-query-keys';
 
@@ -56,7 +56,7 @@ export const useDeleteTodoCategoryMutationOptions = () => {
       toast.success(t('todo:toast.categoryDeleted'));
     },
     onError: (error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (context?.previousData !== undefined) {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);

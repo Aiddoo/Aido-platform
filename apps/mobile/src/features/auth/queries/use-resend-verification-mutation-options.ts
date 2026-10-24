@@ -3,8 +3,8 @@ import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 export const useResendVerificationMutationOptions = () => {
   const authService = useAuthService();
@@ -19,7 +19,7 @@ export const useResendVerificationMutationOptions = () => {
       toast.success(t('auth:toasts.codeResent'));
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       toast.error(error, { fallback: t('auth:toasts.codeResendFailed') });
     },

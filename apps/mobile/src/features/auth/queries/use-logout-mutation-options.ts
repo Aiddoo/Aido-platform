@@ -7,8 +7,8 @@ import {
   useRevenueCatSdkManager,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 export const useLogoutMutationOptions = () => {
   const authService = useAuthService();
@@ -46,7 +46,7 @@ export const useLogoutMutationOptions = () => {
       }
     },
     onError: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
     },
     // API 성공/실패 관계없이 항상 로그아웃 처리
     // 캐시 정리는 상태 소유자(AuthProvider)가 미인증 전환 후에 수행한다.

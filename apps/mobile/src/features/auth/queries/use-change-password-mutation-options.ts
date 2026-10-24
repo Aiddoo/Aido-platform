@@ -6,8 +6,8 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
+import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const useChangePasswordMutationOptions = () => {
@@ -22,12 +22,12 @@ export const useChangePasswordMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notifySuccess();
       toast.success(t('auth:toasts.passwordChanged'));
       goBack();
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
         toast.error(t('auth:toasts.currentPasswordMismatch'));

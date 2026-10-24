@@ -7,8 +7,8 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
 import { usePremiumDialog } from '@src/shared/ui';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { isFriendError } from '../domains/friend.error';
@@ -43,7 +43,7 @@ export const useSendRequestByTagMutationOptions = () => {
       toast.success(t('friend:toast.requestSent'));
     },
     onError: (err) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(err) && err.hasCode(ErrorCode.FOLLOW_0909)) {
         trackEvent('premium_gate_shown', { feature: 'friend_limit' });

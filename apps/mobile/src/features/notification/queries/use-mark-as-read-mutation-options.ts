@@ -1,7 +1,7 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import {
@@ -37,7 +37,7 @@ export const useMarkAsReadMutationOptions = () => {
       notificationService
         .syncBadgeCount()
         .catch((error) => logger.warn('[Notification] Badge sync failed', { error }));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
     },
   });
 };

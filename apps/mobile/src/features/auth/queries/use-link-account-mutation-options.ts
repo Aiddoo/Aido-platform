@@ -4,8 +4,8 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
@@ -33,7 +33,7 @@ export const useLinkAccountMutationOptions = () => {
       trackEvent('auth_social_linked', { provider });
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isCancelledError(error)) {
         return;
