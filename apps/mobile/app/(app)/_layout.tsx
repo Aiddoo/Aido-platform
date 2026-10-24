@@ -12,7 +12,7 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-const AppLayout = () => {
+function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
@@ -42,7 +42,7 @@ const AppLayout = () => {
       </Stack>
     </WeatherSessionProvider>
   );
-};
+}
 
 export default AppLayout;
 

@@ -75,7 +75,7 @@ interface DIProviderProps extends PropsWithChildren {
   draftStorageBootstrap: DraftStorageBootstrap;
 }
 
-export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps) => {
+export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps) {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
     const tokenStore = createSecureTokenStore(storage);
@@ -252,4 +252,4 @@ export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps)
   });
 
   return <DIContext.Provider value={di}>{children}</DIContext.Provider>;
-};
+}

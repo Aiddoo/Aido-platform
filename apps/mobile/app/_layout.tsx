@@ -14,7 +14,7 @@ initSentry();
 
 SplashScreen.preventAutoHideAsync();
 
-const AppBootstrapLayout = () => {
+function AppBootstrapLayout() {
   const fontsLoaded = useAppFonts();
   const draftStorageBootstrap = useDraftStorageBootstrap();
   const isReady = fontsLoaded && draftStorageBootstrap !== undefined;
@@ -34,6 +34,6 @@ const AppBootstrapLayout = () => {
       <AuthGateLayout />
     </AppProviders>
   );
-};
+}
 
 export default Sentry.wrap(AppBootstrapLayout);

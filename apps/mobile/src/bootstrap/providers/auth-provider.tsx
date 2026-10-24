@@ -37,7 +37,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export const AuthProvider = ({ children }: PropsWithChildren) => {
+export function AuthProvider({ children }: PropsWithChildren) {
   const tokenStore = useTokenStore();
   const errorReporter = useErrorReporter();
   const analytics = useAnalytics();
@@ -186,7 +186,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   }, [status, queryClient, draftService]);
 
   return <AuthContext.Provider value={{ status, setStatus }}>{children}</AuthContext.Provider>;
-};
+}
 
 export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);

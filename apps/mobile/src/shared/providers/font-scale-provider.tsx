@@ -72,10 +72,10 @@ interface FontScaleProviderProps extends PropsWithChildren {
   syncStorage?: SyncStorage;
 }
 
-export const FontScaleProvider = ({
+export function FontScaleProvider({
   children,
   syncStorage = mmkvSyncStorage,
-}: FontScaleProviderProps) => {
+}: FontScaleProviderProps) {
   const [fontScale, setFontScaleState] = useState<FontScale>(() => readFontScale(syncStorage));
 
   const persistScale = useCallback(
@@ -102,7 +102,7 @@ export const FontScaleProvider = ({
   );
 
   return <FontScaleContext.Provider value={value}>{children}</FontScaleContext.Provider>;
-};
+}
 
 // Text 컴포넌트 내부에서 호출되므로, Provider 없이도 안전하게 동작해야 함
 // (useTheme과 다르게 — useTheme은 Text 내부에서 호출되지 않음)
