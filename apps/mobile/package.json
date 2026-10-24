@@ -1,6 +1,6 @@
 {
   "name": "@aido/mobile",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "private": true,
   "main": "index.ts",
   "scripts": {

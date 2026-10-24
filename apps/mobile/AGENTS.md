@@ -21,6 +21,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 | 에러 처리 (Result, ApiError, BusinessError)                    | [docs/error-handling.md](docs/error-handling.md)                 |
 | 관측 (Analytics · Sentry · Breadcrumb · Severity)              | [.claude/observability.md](.claude/observability.md)             |
 | 테스트 전략 (단위/통합)                                        | [docs/testing-strategy.md](docs/testing-strategy.md)             |
+| 1.12.1 Duo·Mac·SDK 58 정합성·구조 정비                         | [docs/releases/1.12.1-client.md](docs/releases/1.12.1-client.md) |
 | 1.10.1 변경 및 native QA                                       | [docs/releases/1.10.1-client.md](docs/releases/1.10.1-client.md) |
 | 1.10 클라이언트 변경 및 검증                                   | [docs/releases/1.10.0-client.md](docs/releases/1.10.0-client.md) |
 | EAS 빌드                                                       | [docs/eas-build-guide.md](docs/eas-build-guide.md)               |
@@ -31,7 +32,7 @@ Expo 기반 React Native 모바일 앱. Feature-based Layered Architecture.
 
 ## 기술 스택 (요약)
 
-Expo SDK 58.0.17 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · Uniwind · `react-hook-form`
+Expo SDK 58.0.19 · React Native 0.88 · React 19.3 · Expo Router · TanStack Query 5 · Ky · Zod 4.3 · HeroUI Native · Uniwind · `react-hook-form`
 
 ---
 
