@@ -20,7 +20,7 @@ export function Text({
 }: TextProps) {
   const { resolveSize } = useFontScale();
   const resolvedSize = resolveSize(size ?? 'b3');
-  const isNeutralTone = tone === 'neutral' || tone === undefined;
+  const isNeutralTone = tone === 'neutral' || tone == null;
   const shadeClass = isNeutralTone && shade ? shadeClasses[shade] : '';
 
   return (

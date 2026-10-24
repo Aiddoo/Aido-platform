@@ -1,7 +1,7 @@
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
-import { View } from 'react-native';
 
+import { Box } from '../box';
 import { ArrowRightIcon } from '../icon';
 import { Text } from '../text/text';
 import type { TextButtonProps } from './text-button.types';
@@ -41,13 +41,13 @@ export function TextButton({
         {children}
       </Text>
       {variant === 'arrow' && (
-        <View className="ml-1">
+        <Box className="ml-1">
           <ArrowRightIcon
             width={ICON_SIZE_MAP[size]}
             height={ICON_SIZE_MAP[size]}
             colorClassName="text-gray-6"
           />
-        </View>
+        </Box>
       )}
     </PressableFeedback>
   );

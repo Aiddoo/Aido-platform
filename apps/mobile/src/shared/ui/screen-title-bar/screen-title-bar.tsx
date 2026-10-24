@@ -50,7 +50,7 @@ export function ScreenTitleBar({
         <Text size="b2" weight="bold">
           {title}
         </Text>
-        {subtitle !== undefined && (
+        {subtitle != null && (
           <Text size="e1" shade={5}>
             {subtitle}
           </Text>

@@ -49,7 +49,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
   useEffect(() => {
     if (!isOpen) {
       lastContentHeightRef.current = 0;
-      if (resizeFrameRef.current !== undefined) {
+      if (resizeFrameRef.current != null) {
         cancelAnimationFrame(resizeFrameRef.current);
       }
       resizeFrameRef.current = undefined;
@@ -58,7 +58,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
 
   useEffect(
     () => () => {
-      if (resizeFrameRef.current !== undefined) {
+      if (resizeFrameRef.current != null) {
         cancelAnimationFrame(resizeFrameRef.current);
       }
     },
@@ -137,7 +137,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     }
 
     lastContentHeightRef.current = nextHeight;
-    if (resizeFrameRef.current !== undefined) {
+    if (resizeFrameRef.current != null) {
       cancelAnimationFrame(resizeFrameRef.current);
     }
     resizeFrameRef.current = requestAnimationFrame(() => {

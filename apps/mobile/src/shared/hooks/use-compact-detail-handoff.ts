@@ -12,7 +12,7 @@ export function useCompactDetailHandoff<Id>(
   const handoff = useEffectEvent(openDetail);
 
   useEffect(() => {
-    if (!isFocused || !isCompact || selectedId === undefined) {
+    if (!isFocused || !isCompact || selectedId == null) {
       return;
     }
 

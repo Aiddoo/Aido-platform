@@ -1,9 +1,10 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
 import { useCallback, useRef, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
+import { Box } from '../box';
 import { Text } from '../text/text';
 import { TEXT_SIZE_CLASSES } from '../text/text.variants';
 import { VStack } from '../v-stack/v-stack';
@@ -47,9 +48,9 @@ export function TextArea({
   const hasMeasuredVerticalChromeRef = useRef(false);
   const { resolveSize } = useFontScale();
   const InputComponent = textInputComponent ?? StyledTextInput;
-  const resolvedTextSize = textSize === undefined ? undefined : resolveSize(textSize);
+  const resolvedTextSize = textSize == null ? undefined : resolveSize(textSize);
   const growingContainerStyle =
-    growsWithContent && contentHeight !== null && verticalChromeHeight !== null
+    growsWithContent && contentHeight != null && verticalChromeHeight != null
       ? { height: Math.ceil(contentHeight + verticalChromeHeight) }
       : undefined;
 
@@ -61,7 +62,7 @@ export function TextArea({
 
       layoutMeasurementsRef.current = { ...layoutMeasurementsRef.current, ...measurement };
       const { containerHeight, inputHeight } = layoutMeasurementsRef.current;
-      if (containerHeight === undefined || inputHeight === undefined) {
+      if (containerHeight == null || inputHeight == null) {
         return;
       }
 
@@ -72,14 +73,14 @@ export function TextArea({
   );
 
   return (
-    <View className={cn('gap-2', variant === 'bare' && 'flex-1')}>
+    <Box className={cn('gap-2', variant === 'bare' && 'flex-1')}>
       {label && (
         <Text size="e1" weight="medium" className={textAreaLabelVariants({ isFocused, isInvalid })}>
           {label}
         </Text>
       )}
       <VStack gap={4} className={cn(variant === 'bare' && 'flex-1')}>
-        <View
+        <Box
           style={growingContainerStyle}
           className={cn(
             textAreaContainerVariants({ variant, isFocused, isDisabled, isInvalid }),
@@ -101,7 +102,7 @@ export function TextArea({
             textAlignVertical="top"
             className={cn(
               textAreaTextVariants({ variant }),
-              resolvedTextSize === undefined ? undefined : TEXT_SIZE_CLASSES[resolvedTextSize],
+              resolvedTextSize == null ? undefined : TEXT_SIZE_CLASSES[resolvedTextSize],
             )}
             onFocus={(e) => {
               setIsFocused(true);
@@ -123,13 +124,13 @@ export function TextArea({
             }}
             {...props}
           />
-        </View>
-        {(preserveErrorSpace || errorMessage !== undefined) && (
+        </Box>
+        {(preserveErrorSpace || errorMessage != null) && (
           <Text size="e1" className={cn('text-error', !errorMessage && 'opacity-0')}>
             {errorMessage ?? ' '}
           </Text>
         )}
       </VStack>
-    </View>
+    </Box>
   );
 }

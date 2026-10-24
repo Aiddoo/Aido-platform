@@ -25,7 +25,7 @@ export function parseMinute(time: string): number {
 
 /** 유효한 시간 문자열이면 그대로, 아니면 fallback (fallback은 항상 유효한 상수라고 가정) */
 export function resolveTimeOrFallback(time: string | undefined, fallbackTime: string): string {
-  return time !== undefined && isValidHHmm(time) ? time : fallbackTime;
+  return time != null && isValidHHmm(time) ? time : fallbackTime;
 }
 
 /** 날짜에 시·분을 적용하고 초/밀리초를 0으로 초기화 */

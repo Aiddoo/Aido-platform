@@ -1,12 +1,11 @@
-import { View } from 'react-native';
-
+import { Box } from '../box';
 import { Text } from './text';
 import type { H1Props, HeadingProps } from './text.types';
 
 export function H1({ headline, emphasize, className, children, ...props }: H1Props) {
   if (headline) {
     return (
-      <View className={className}>
+      <Box className={className}>
         <Text size="e1" weight="medium" tone="brand" className="mb-1">
           {headline}
         </Text>
@@ -20,7 +19,7 @@ export function H1({ headline, emphasize, className, children, ...props }: H1Pro
         >
           {children}
         </Text>
-      </View>
+      </Box>
     );
   }
 

@@ -1,5 +1,4 @@
-import { View } from 'react-native';
-
+import { Box } from '../box';
 import { Button } from '../button/button';
 import { Spacing } from '../spacing/spacing';
 import { Text } from '../text/text';
@@ -11,9 +10,9 @@ export function Result({ icon, title, description, button, className }: ResultPr
     <VStack align="center" justify="center" className={className} flex={1}>
       {icon && (
         <>
-          <View accessible={false} importantForAccessibility="no">
+          <Box accessible={false} importantForAccessibility="no">
             {icon}
-          </View>
+          </Box>
           <Spacing size={24} />
         </>
       )}

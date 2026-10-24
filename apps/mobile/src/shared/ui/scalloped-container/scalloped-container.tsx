@@ -1,7 +1,9 @@
 import { type ReactNode, useCallback, useState } from 'react';
-import { type ColorValue, type LayoutChangeEvent, View } from 'react-native';
+import { type ColorValue, type LayoutChangeEvent } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
+
+import { Box } from '../box';
 
 const SCALLOP_RADIUS = 8;
 
@@ -18,11 +20,11 @@ export function ScallopedContainer({ children }: ScallopedContainerProps) {
   }, []);
 
   return (
-    <View onLayout={onLayout}>
+    <Box onLayout={onLayout}>
       {width > 0 && <ScallopEdge width={width} position="top" fill={fill} />}
-      <View style={{ backgroundColor: fill }}>{children}</View>
+      <Box style={{ backgroundColor: fill }}>{children}</Box>
       {width > 0 && <ScallopEdge width={width} position="bottom" fill={fill} />}
-    </View>
+    </Box>
   );
 }
 

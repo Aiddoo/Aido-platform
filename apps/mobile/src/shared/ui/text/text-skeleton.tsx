@@ -1,9 +1,9 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { cn } from '@src/shared/utils/cn';
 import { Skeleton } from 'heroui-native';
-import { View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
+import { Box } from '../box';
 import type { TextSize } from './text.types';
 import { TEXT_SIZE_CLASSES } from './text.variants';
 
@@ -18,11 +18,11 @@ export function TextSkeleton({ size = 'b3', className, color }: TextSkeletonProp
   const { fontSize, lineHeight } = useResolveClassNames(TEXT_SIZE_CLASSES[resolveSize(size)]);
 
   return (
-    <View className={cn('justify-center', className)} style={{ height: lineHeight }}>
+    <Box className={cn('justify-center', className)} style={{ height: lineHeight }}>
       <Skeleton
         className="rounded"
         style={color == null ? { height: fontSize } : { height: fontSize, backgroundColor: color }}
       />
-    </View>
+    </Box>
   );
 }

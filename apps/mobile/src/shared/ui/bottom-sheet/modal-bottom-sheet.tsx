@@ -13,6 +13,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
+import { Box } from '../box';
 import {
   MIN_CONTENT_HEIGHT,
   SHEET_DETACHED_MARGIN,
@@ -170,7 +171,7 @@ export const ModalBottomSheet = ({
   }));
 
   return (
-    <View
+    <Box
       testID="modal-bottom-sheet"
       style={StyleSheet.absoluteFill}
       accessibilityViewIsModal
@@ -200,7 +201,7 @@ export const ModalBottomSheet = ({
           sheetAnimatedStyle,
         ]}
       >
-        <View
+        <Box
           style={[SHARED_SHEET_STYLES.detachedBackground, backgroundStyle, { overflow: 'hidden' }]}
         >
           {/* Handle */}
@@ -217,9 +218,9 @@ export const ModalBottomSheet = ({
           </GestureDetector>
 
           {/* Content */}
-          <View style={SHARED_SHEET_STYLES.content}>{children}</View>
-        </View>
+          <Box style={SHARED_SHEET_STYLES.content}>{children}</Box>
+        </Box>
       </Animated.View>
-    </View>
+    </Box>
   );
 };

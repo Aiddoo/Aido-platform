@@ -88,7 +88,7 @@ export const KeyboardBottomSheet = ({
     if (isClosingRef.current) {
       return;
     }
-    if (resizeFrameRef.current !== undefined) {
+    if (resizeFrameRef.current != null) {
       cancelAnimationFrame(resizeFrameRef.current);
     }
     resizeFrameRef.current = requestAnimationFrame(() => {
@@ -101,7 +101,7 @@ export const KeyboardBottomSheet = ({
 
   useEffect(
     () => () => {
-      if (resizeFrameRef.current !== undefined) {
+      if (resizeFrameRef.current != null) {
         cancelAnimationFrame(resizeFrameRef.current);
       }
       if (closeRetryTimerRef.current) {
@@ -143,7 +143,7 @@ export const KeyboardBottomSheet = ({
 
   useEffect(() => {
     if (!isOpen) {
-      if (resizeFrameRef.current !== undefined) {
+      if (resizeFrameRef.current != null) {
         cancelAnimationFrame(resizeFrameRef.current);
       }
       resizeFrameRef.current = undefined;

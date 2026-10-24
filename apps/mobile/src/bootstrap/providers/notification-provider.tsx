@@ -118,7 +118,7 @@ function useNotificationResponseProcessor({
     session.current = { authStatus, accountId };
     if (
       (previous.authStatus === 'authenticated' && authStatus !== 'authenticated') ||
-      (previous.accountId !== null && accountId !== null && previous.accountId !== accountId)
+      (previous.accountId != null && accountId != null && previous.accountId !== accountId)
     ) {
       pendingResponses.current.clear();
       try {
@@ -149,11 +149,11 @@ function useNotificationResponseProcessor({
       });
       if (
         disposition.status === 'defer' ||
-        (response.actionIdentifier !== 'MARKETING_OPT_OUT' && accountId === null)
+        (response.actionIdentifier !== 'MARKETING_OPT_OUT' && accountId == null)
       ) {
         return;
       }
-      if (response.accountId !== null && response.accountId !== accountId) {
+      if (response.accountId != null && response.accountId !== accountId) {
         pendingResponses.current.delete(responseId);
         return;
       }
@@ -172,7 +172,7 @@ function useNotificationResponseProcessor({
         handledResponseIds.current.add(responseId);
         if (handledResponseIds.current.size > MAX_HANDLED_RESPONSES) {
           const oldest = handledResponseIds.current.values().next().value;
-          if (oldest !== undefined) {
+          if (oldest != null) {
             handledResponseIds.current.delete(oldest);
           }
         }
@@ -211,7 +211,7 @@ function useNotificationResponseProcessor({
       pendingResponses.current.set(responseId, pending);
       if (pendingResponses.current.size > MAX_PENDING_RESPONSES) {
         const oldest = pendingResponses.current.keys().next().value;
-        if (oldest !== undefined) {
+        if (oldest != null) {
           pendingResponses.current.delete(oldest);
         }
       }

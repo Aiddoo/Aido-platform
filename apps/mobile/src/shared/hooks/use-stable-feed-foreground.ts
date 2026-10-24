@@ -19,7 +19,7 @@ export function useStableFeedForeground(): boolean {
   const deepLinkReleaseTaskRef = useRef<number | null>(null);
 
   const releasePendingDeepLinkWhenIdle = useCallback(() => {
-    if (deepLinkReleaseTaskRef.current !== null) {
+    if (deepLinkReleaseTaskRef.current != null) {
       cancelIdleCallback(deepLinkReleaseTaskRef.current);
     }
     deepLinkReleaseTaskRef.current = requestIdleCallback(() => {
@@ -54,8 +54,8 @@ export function useStableFeedForeground(): boolean {
     Linking.getInitialURL()
       .then((url) => {
         if (mounted) {
-          setHasPendingDeepLink(url !== null);
-          if (url !== null) {
+          setHasPendingDeepLink(url != null);
+          if (url != null) {
             releasePendingDeepLinkWhenIdle();
           }
         }
@@ -74,7 +74,7 @@ export function useStableFeedForeground(): boolean {
 
     return () => {
       mounted = false;
-      if (deepLinkReleaseTaskRef.current !== null) {
+      if (deepLinkReleaseTaskRef.current != null) {
         cancelIdleCallback(deepLinkReleaseTaskRef.current);
       }
       subscription.remove();

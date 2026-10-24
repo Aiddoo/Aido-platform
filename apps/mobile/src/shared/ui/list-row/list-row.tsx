@@ -2,8 +2,8 @@ import { HStack } from '@src/shared/ui/h-stack';
 import { cn } from '@src/shared/utils/cn';
 import type { ReactNode } from 'react';
 import type { ViewProps } from 'react-native';
-import { View } from 'react-native';
 
+import { Box } from '../box';
 import { ListRowImage } from './list-row-image';
 import { ListRowTexts } from './list-row-texts';
 
@@ -82,9 +82,9 @@ export function ListRow({
       )}
       {...props}
     >
-      {left && <View className={listRowSlotVariants({ alignment: leftAlignment })}>{left}</View>}
-      {contents && <View className="flex-1">{contents}</View>}
-      {right && <View className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</View>}
+      {left && <Box className={listRowSlotVariants({ alignment: leftAlignment })}>{left}</Box>}
+      {contents && <Box className="flex-1">{contents}</Box>}
+      {right && <Box className={listRowSlotVariants({ alignment: rightAlignment })}>{right}</Box>}
     </HStack>
   );
 }

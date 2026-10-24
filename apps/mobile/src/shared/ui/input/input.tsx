@@ -1,8 +1,9 @@
 import { cn } from '@src/shared/utils/cn';
 import { useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput } from 'react-native';
 import { withUniwind } from 'uniwind';
 
+import { Box } from '../box';
 import { Text } from '../text/text';
 import type { InputInternalProps } from './input.types';
 import { inputContainerVariants, inputLabelVariants, inputTextVariants } from './input.variants';
@@ -33,19 +34,19 @@ export function Input({
   const InputComponent = textInputComponent ?? StyledTextInput;
 
   return (
-    <View className="gap-1">
+    <Box className="gap-1">
       {label && (
         <Text size="e1" weight="medium" className={inputLabelVariants({ isFocused, isInvalid })}>
           {label}
         </Text>
       )}
-      <View
+      <Box
         className={cn(
           inputContainerVariants({ variant, size, isFocused, isDisabled, isInvalid }),
           className,
         )}
       >
-        {leftContent && <View className="mr-3">{leftContent}</View>}
+        {leftContent && <Box className="mr-3">{leftContent}</Box>}
         <InputComponent
           ref={ref}
           value={value}
@@ -64,13 +65,13 @@ export function Input({
           }}
           {...props}
         />
-        {rightContent && <View className="ml-3">{rightContent}</View>}
-      </View>
+        {rightContent && <Box className="ml-3">{rightContent}</Box>}
+      </Box>
       {renderErrorMessage && (
         <Text size="e1" className={cn('ml-1', errorMessage ? 'text-error' : 'opacity-0')}>
           {errorMessage || ' '}
         </Text>
       )}
-    </View>
+    </Box>
   );
 }
