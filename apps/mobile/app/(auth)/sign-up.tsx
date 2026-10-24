@@ -3,13 +3,16 @@ import { EmailVerificationCodeStep } from '@src/features/auth/components/email-v
 import { SignUpPasswordForm } from '@src/features/auth/components/sign-up-password-form';
 import { SignUpUserInfoForm } from '@src/features/auth/components/sign-up-user-info-form';
 import { signUpFormSchema } from '@src/features/auth/domains/sign-up-form.schema';
+import { useRegisterMutationOptions } from '@src/features/auth/queries/use-register-mutation-options';
 import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
-import { useStepper } from '@src/shared/hooks/use-stepper';
+import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ReadableContent } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import { useState } from 'react';
+import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
 import { match } from 'ts-pattern';
@@ -25,7 +28,7 @@ const SIGN_UP_STEP_TITLE_KEYS = {
 
 function SignUpScreen() {
   const { t } = useTranslation(['auth']);
-  const { step, setStep } = useStepper<typeof SIGN_UP_STEPS>(SIGN_UP_STEPS);
+  const [step, setStep] = useState<SignUpStep>('userInfo');
 
   const form = useForm({
     resolver: zodResolver(signUpFormSchema),
@@ -42,8 +45,25 @@ function SignUpScreen() {
     mode: 'onTouched',
   });
 
+  const { showBoundary } = useErrorBoundary();
+  const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
+
+  const submitRegister = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...input }) => {
+    if (!termsAgreed || !privacyAgreed) {
+      return;
+    }
+
+    try {
+      await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
+      setStep('verification');
+    } catch (error) {
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
+    }
+  });
 
   return (
     <View className="flex-1 bg-background">
@@ -58,7 +78,7 @@ function SignUpScreen() {
           ))
           .with('password', () => (
             <FormProvider {...form}>
-              <SignUpPasswordForm onNextStep={() => setStep('verification')} />
+              <SignUpPasswordForm onSubmit={submitRegister} />
             </FormProvider>
           ))
           .with('verification', () => {

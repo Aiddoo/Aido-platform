@@ -1,6 +1,4 @@
-import { emailSchema } from '@aido/api';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -13,45 +11,38 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import { type SignUpFormInput, signUpFormSchema } from '../domains/sign-up-form.schema';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
 const USER_INFO_STEPS = ['name', 'email'] as const;
+type UserInfoStep = (typeof USER_INFO_STEPS)[number];
 
 const STEP_DESCRIPTION_KEYS = {
   name: 'auth:signUp.nameTitle',
   email: 'auth:signUp.emailTitle',
-} as const;
+} as const satisfies Record<UserInfoStep, string>;
 
 interface SignUpUserInfoFormProps {
   onNextStep: () => void;
 }
 
-export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
+export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
   const { t } = useTranslation(['auth']);
   const { control } = useFormContext<SignUpFormInput>();
   const [email, name] = useWatch({ control, name: ['email', 'name'] });
-  const { step, setStep } = useStepper<typeof USER_INFO_STEPS>(USER_INFO_STEPS);
+  const [step, setStep] = useState<UserInfoStep>('name');
   const emailInputRef = useRef<ComponentRef<typeof TextInput>>(null);
-
-  useEffect(() => {
-    if (step !== 'email') {
-      return;
-    }
-
-    const emailFocusTimeoutId = setTimeout(() => {
-      emailInputRef.current?.focus();
-    }, 300);
-
-    return () => clearTimeout(emailFocusTimeoutId);
-  }, [step]);
+  const focusEmailInput = useCallback(() => {
+    emailInputRef.current?.focus();
+  }, []);
 
   const handleNext = () => {
     match(step)
@@ -63,7 +54,7 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
   };
 
   const isNameValid = signUpFormSchema.shape.name.safeParse(name).success;
-  const isEmailValid = emailSchema.safeParse(email).success;
+  const isEmailValid = signUpFormSchema.shape.email.safeParse(email).success;
 
   const isNextButtonEnabled = match(step)
     .with('name', () => isNameValid)
@@ -89,7 +80,14 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
 
           {step === 'email' && (
             <Animated.View
-              entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+              entering={FadeInUp.duration(ANIMATION.duration.slow)
+                .delay(ANIMATION.delay.short)
+                .withCallback((finished) => {
+                  'worklet';
+                  if (finished) {
+                    scheduleOnRN(focusEmailInput);
+                  }
+                })}
             >
               <FormField control={control} name="email">
                 {({ onChange, value }, { error }) => (
@@ -160,4 +158,4 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
       </KeyboardAdaptiveButton>
     </View>
   );
-};
+}

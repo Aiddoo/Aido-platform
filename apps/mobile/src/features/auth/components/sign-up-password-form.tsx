@@ -1,16 +1,16 @@
 import { passwordSchema } from '@aido/api';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 import type { SignUpFormInput } from '../domains/sign-up-form.schema';
@@ -19,30 +19,23 @@ import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { TermsBottomSheet } from './terms-bottom-sheet';
 
 const PASSWORD_STEPS = ['password', 'passwordConfirm'] as const;
+type PasswordStep = (typeof PASSWORD_STEPS)[number];
 
 interface SignUpPasswordFormProps {
-  onNextStep: () => void;
+  /** 약관 동의 후 호출하는 회원가입 제출 함수. 폼과 mutation은 화면이 소유한다. */
+  onSubmit: () => Promise<unknown>;
 }
 
-export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
+export function SignUpPasswordForm({ onSubmit }: SignUpPasswordFormProps) {
   const { t } = useTranslation('auth');
   const { control } = useFormContext<SignUpFormInput>();
   const [password, passwordConfirm] = useWatch({ control, name: ['password', 'passwordConfirm'] });
-  const { step, setStep } = useStepper(PASSWORD_STEPS);
+  const [step, setStep] = useState<PasswordStep>('password');
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const passwordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
-
-  useEffect(() => {
-    if (step !== 'passwordConfirm') {
-      return;
-    }
-
-    const passwordConfirmFocusTimeoutId = setTimeout(() => {
-      passwordConfirmInputRef.current?.focus();
-    }, 350);
-
-    return () => clearTimeout(passwordConfirmFocusTimeoutId);
-  }, [step]);
+  const focusPasswordConfirmInput = useCallback(() => {
+    passwordConfirmInputRef.current?.focus();
+  }, []);
 
   const isPasswordValid = passwordSchema.safeParse(password).success;
   const isPasswordConfirmValid = isPasswordValid && password === passwordConfirm;
@@ -84,7 +77,14 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
 
             {step === 'passwordConfirm' && (
               <Animated.View
-                entering={FadeInUp.duration(ANIMATION.duration.slow).delay(ANIMATION.delay.short)}
+                entering={FadeInUp.duration(ANIMATION.duration.slow)
+                  .delay(ANIMATION.delay.short)
+                  .withCallback((finished) => {
+                    'worklet';
+                    if (finished) {
+                      scheduleOnRN(focusPasswordConfirmInput);
+                    }
+                  })}
               >
                 <VStack mb={20}>
                   <FormField control={control} name="passwordConfirm">
@@ -155,11 +155,7 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
         </KeyboardAdaptiveButton>
       </View>
 
-      <TermsBottomSheet
-        isOpen={isTermsOpen}
-        onOpenChange={setIsTermsOpen}
-        onNextStep={onNextStep}
-      />
+      <TermsBottomSheet isOpen={isTermsOpen} onOpenChange={setIsTermsOpen} onSubmit={onSubmit} />
     </>
   );
-};
+}

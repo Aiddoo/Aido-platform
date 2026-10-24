@@ -5,12 +5,12 @@ import { PasswordInput } from '@src/features/auth/components/password-input';
 import { useChangePasswordMutationOptions } from '@src/features/auth/queries/use-change-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
@@ -18,6 +18,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 const STEPS = ['currentPassword', 'newPassword'] as const;
+type ChangePasswordStep = (typeof STEPS)[number];
 
 function ChangePasswordScreen() {
   const form = useForm({
@@ -25,7 +26,7 @@ function ChangePasswordScreen() {
     defaultValues: { currentPassword: '', newPassword: '', newPasswordConfirm: '' },
     mode: 'onChange',
   });
-  const { step, setStep } = useStepper(STEPS);
+  const [step, setStep] = useState<ChangePasswordStep>('currentPassword');
   const { showBoundary } = useErrorBoundary();
   const changePassword = useMutation(useChangePasswordMutationOptions());
   const { t } = useTranslation('auth');

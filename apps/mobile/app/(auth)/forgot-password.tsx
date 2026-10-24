@@ -10,7 +10,6 @@ import { useForgotPasswordMutationOptions } from '@src/features/auth/queries/use
 import { useResetPasswordMutationOptions } from '@src/features/auth/queries/use-reset-password-mutation-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
-import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -24,6 +23,7 @@ import {
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
@@ -31,6 +31,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 const STEPS = ['email', 'verificationCode', 'newPassword'] as const;
+type ForgotPasswordStep = (typeof STEPS)[number];
 
 function ForgotPasswordScreen() {
   const form = useForm({
@@ -43,7 +44,7 @@ function ForgotPasswordScreen() {
     },
     mode: 'onChange',
   });
-  const { step, setStep } = useStepper(STEPS);
+  const [step, setStep] = useState<ForgotPasswordStep>('email');
   const { showBoundary } = useErrorBoundary();
   const forgotPassword = useMutation(useForgotPasswordMutationOptions());
   const resetPassword = useMutation(useResetPasswordMutationOptions());

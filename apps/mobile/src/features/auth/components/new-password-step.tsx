@@ -1,13 +1,12 @@
 import { PasswordInput } from '@src/features/auth/components/password-input';
 import { PasswordStrengthIndicator } from '@src/features/auth/components/password-strength-indicator';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, StyledSafeAreaView, VStack } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
 import { Keyboard, ScrollView, View } from 'react-native';
@@ -16,6 +15,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
 
 const NEW_PASSWORD_SUB_STEPS = ['newPassword', 'newPasswordConfirm'] as const;
+type NewPasswordSubStep = (typeof NEW_PASSWORD_SUB_STEPS)[number];
 
 interface NewPasswordFields {
   newPassword: string;
@@ -32,7 +32,7 @@ interface NewPasswordStepProps {
 /** 새 비밀번호 입력 → 확인 입력 두 단계를 보여 주는 비밀번호 변경·재설정 공용 단계 */
 export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswordStepProps) {
   const { t } = useTranslation('auth');
-  const { step, setStep } = useStepper(NEW_PASSWORD_SUB_STEPS);
+  const [step, setStep] = useState<NewPasswordSubStep>('newPassword');
   const newPasswordConfirmInputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const focusConfirmInput = useCallback(() => {
     newPasswordConfirmInputRef.current?.focus();

@@ -7,7 +7,7 @@ export interface PasswordStrengthIndicatorProps {
   password: string | undefined;
 }
 
-export const PasswordStrengthIndicator = ({ password }: PasswordStrengthIndicatorProps) => {
+export function PasswordStrengthIndicator({ password }: PasswordStrengthIndicatorProps) {
   const { t } = useTranslation('auth');
   const value = password || '';
 
@@ -21,7 +21,7 @@ export const PasswordStrengthIndicator = ({ password }: PasswordStrengthIndicato
       />
     </HStack>
   );
-};
+}
 
 function RuleItem({ satisfied, label }: { satisfied: boolean; label: string }) {
   const color = satisfied ? 'text-success' : 'text-gray-5';
