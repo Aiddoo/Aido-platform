@@ -15,7 +15,7 @@ jest.mock('expo-router', () => {
     back: jest.fn(),
     canGoBack: jest.fn(() => true),
   };
-  return { router, useRouter: () => router, useLocalSearchParams: () => ({}) };
+  return { router, useRouter: () => router, useLocalSearchParams: jest.fn(() => ({})) };
 });
 
 export function createTestQueryClient(): QueryClient {

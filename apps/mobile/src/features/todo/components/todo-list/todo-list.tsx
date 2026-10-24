@@ -45,7 +45,7 @@ import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-muta
 import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
 import {
   subTodoCreateSheetHref,
-  subTodoSheetHref,
+  subTodoActionsSheetHref,
   todoActionsSheetHref,
   todoCreateSheetHref,
 } from '../../utils/navigation/todo-sheet-href';
@@ -213,7 +213,7 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   const openAddSubTodoSheet = () => push(subTodoCreateSheetHref({ todoId: todo.id, date }));
 
   const openSubTodoActionsSheet = (subTodo: SubTodo) =>
-    push(subTodoSheetHref('actions', { todoId: todo.id, subTodoId: subTodo.id, date }));
+    push(subTodoActionsSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }));
 
   const handleSubTodoDragEnd = ({ data, from, to }: DragEndParams<SubTodo>) => {
     if (from === to || reorderSubTodos.isPending) {

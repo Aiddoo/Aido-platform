@@ -1,7 +1,7 @@
 import { type CreateTodoCategoryInput, createTodoCategorySchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { TodoCategory } from '@src/features/todo/domains/todo-category.model';
-import { useTodoCategorySheetParams } from '@src/features/todo/hooks/use-todo-sheet-params';
+import { useTodoCategoryScreenParams } from '@src/features/todo/hooks/use-todo-sheet-params';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useUpdateTodoCategoryMutationOptions } from '@src/features/todo/queries/use-update-todo-category-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
@@ -56,7 +56,7 @@ interface SheetContentProps {
 }
 
 CategoryEditBottomSheet.Content = function Content({ onClose }: SheetContentProps) {
-  const { categoryId } = useTodoCategorySheetParams();
+  const { categoryId } = useTodoCategoryScreenParams();
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useRetainedValue(findSheetCategory(data.categories, categoryId));
 

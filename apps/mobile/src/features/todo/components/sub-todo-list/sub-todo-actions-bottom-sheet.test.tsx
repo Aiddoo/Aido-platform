@@ -2,9 +2,10 @@ import '@src/shared/i18n/init';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createMockAnalytics, createMockHttpClient } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { RouteSearchParamsProvider } from '@src/shared/providers/route-search-params-provider';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
 import { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
 
 import { createParentTodo, createSubTodo } from '../../__tests__/sub-todo.factories';
 import { SubTodoService } from '../../apis/sub-todo.service';
@@ -38,12 +39,14 @@ describe('SubTodoActionsBottomSheet', () => {
       nextCursor: null,
     });
 
+    jest
+      .mocked(useLocalSearchParams)
+      .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
+
     await renderUi(
-      <RouteSearchParamsProvider
-        params={{ todoId: String(todo.id), subTodoId: '1', date: todo.startDate }}
-      >
+      <LocalDateProvider>
         <SubTodoActionsBottomSheet />
-      </RouteSearchParamsProvider>,
+      </LocalDateProvider>,
       {
         di: {
           subTodoService: new SubTodoService(httpClient),

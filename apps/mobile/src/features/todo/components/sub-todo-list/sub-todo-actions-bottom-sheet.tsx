@@ -1,6 +1,6 @@
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import {
-  useSubTodoSheetParams,
+  useSubTodoScreenParams,
   useTodoSheetDateParam,
 } from '@src/features/todo/hooks/use-todo-sheet-params';
 import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
@@ -26,7 +26,10 @@ import { type ComponentProps, Suspense, useEffect } from 'react';
 
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
 import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
-import { subTodoSheetHref, TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
+import {
+  subTodoEditSheetHref,
+  TODO_SHEET_FALLBACK_HREF,
+} from '../../utils/navigation/todo-sheet-href';
 import {
   findSheetSubTodo,
   findSheetTodo,
@@ -59,7 +62,7 @@ interface SubTodoActionsContentProps {
 SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActionsContentProps) {
   const { t } = useTranslation('todo');
   const { todoId } = useTodoScreenParams();
-  const { subTodoId } = useSubTodoSheetParams();
+  const { subTodoId } = useSubTodoScreenParams();
   const [date] = useTodoSheetDateParam();
   const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
@@ -97,7 +100,7 @@ SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActions
         onPress={() =>
           onClose({
             type: 'replace',
-            href: subTodoSheetHref('edit', { todoId: todo.id, subTodoId: subTodo.id, date }),
+            href: subTodoEditSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }),
           })
         }
         isDisabled={isDeleting}

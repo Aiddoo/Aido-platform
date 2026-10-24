@@ -28,6 +28,7 @@ import {
   useGetSuggestionsQueryOptions,
 } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
+import { suggestionCategorySheetHref } from '../utils/navigation/suggestion-sheet-href';
 
 const SUGGESTION_LOADING_COUNT = 2;
 
@@ -110,10 +111,7 @@ SuggestionsList.Item = function Item({
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
   const openCategorySheet = () =>
-    push({
-      pathname: '/suggestions/[suggestionId]/category',
-      params: { suggestionId: String(suggestion.id) },
-    });
+    push(suggestionCategorySheetHref({ suggestionId: suggestion.id }));
 
   return (
     <View className="py-2">

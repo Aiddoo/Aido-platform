@@ -1,6 +1,6 @@
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import {
-  useSubTodoSheetParams,
+  useSubTodoScreenParams,
   useTodoSheetDateParam,
 } from '@src/features/todo/hooks/use-todo-sheet-params';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -97,7 +97,7 @@ AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
 
 AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
   const { todoId } = useTodoScreenParams();
-  const { subTodoId } = useSubTodoSheetParams();
+  const { subTodoId } = useSubTodoScreenParams();
   const [date] = useTodoSheetDateParam();
   const { data } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
   const todo = useRetainedValue(findSheetTodo(data.todos, todoId));
