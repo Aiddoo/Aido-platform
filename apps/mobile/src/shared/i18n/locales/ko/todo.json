@@ -203,12 +203,7 @@
     "loadError": "댓글을 불러오지 못했어요. 다시 시도"
   },
   "interaction": {
-    "title": "콕 주고받기",
-    "received": "받은 콕",
     "detailTitle": "친구의 응원",
-    "entry": "콕 주고받기",
-    "entryDescription": "친구가 보내 준 응원에 한마디 전해 보세요",
-    "emptyTitle": "아직 주고받은 콕이 없어요",
     "loadError": "콕을 불러오지 못했어요",
     "unavailable": "지금은 이 콕에 답할 수 없어요",
     "unavailableDescription": "친구 관계나 할 일의 공개 범위가 바뀌었을 수 있어요",
@@ -232,7 +227,6 @@
     "thanksDescription": "응원해 준 친구 {{count}}명에게 완료 소식과 고마움을 함께 전해요",
     "thanksEmpty": "지금은 고마움을 전할 친구가 없어요",
     "thanksEmptyDescription": "이미 고마움을 전했거나 친구 관계가 바뀌었을 수 있어요",
-    "thanksSend": "고마움 전하기",
     "thanksSent": "친구에게 고마운 마음을 전했어요",
     "alreadyThanked": "이미 고마운 마음을 전했어요",
     "thanksLoadError": "응원해 준 친구들을 불러오지 못했어요",
