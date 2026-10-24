@@ -16,7 +16,7 @@ SplashScreen.preventAutoHideAsync();
 function AppBootstrapLayout() {
   const fontsLoaded = useAppFonts();
   const draftStorageBootstrap = useDraftStorageBootstrap();
-  const isReady = fontsLoaded && draftStorageBootstrap !== undefined;
+  const isReady = fontsLoaded && draftStorageBootstrap != null;
 
   useEffect(() => {
     if (isReady) {

@@ -159,9 +159,13 @@ function Count({ layout, size, width }: { layout: Layout; size: number; width: n
   );
 }
 
+function isHexColor(value: string): value is ColorProp {
+  return /^#[0-9a-f]{6}$/i.test(value);
+}
+
 function TodoRow({ layout, todo }: { layout: Layout; todo: WidgetProps['topTodos'][number] }) {
   const { palette, scale } = layout;
-  const color: ColorProp = /^#[0-9a-f]{6}$/i.test(todo.color) ? (todo.color as ColorProp) : BRAND;
+  const color = isHexColor(todo.color) ? todo.color : BRAND;
   return (
     <FlexWidget
       {...navigation(layout, todo.destination, todo.title)}

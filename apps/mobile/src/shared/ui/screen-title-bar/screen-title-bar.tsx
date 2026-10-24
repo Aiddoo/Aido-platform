@@ -30,7 +30,7 @@ export function ScreenTitleBar({
 
   return (
     <HStack px={16} py={10} align="center" justify="between">
-      {leading !== undefined ? (
+      {leading != null ? (
         leading
       ) : (
         <PressableFeedback

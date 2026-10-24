@@ -33,7 +33,7 @@ export function FriendSearchList({ query }: { query: string }) {
   const search = useInfiniteQuery({
     ...options,
     enabled: options.enabled && isSettled,
-    throwOnError: (_error, query) => query.state.data === undefined,
+    throwOnError: (_error, query) => query.state.data == null,
   });
   useFriendSearchTracking(debouncedQuery);
 

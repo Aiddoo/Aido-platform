@@ -562,7 +562,7 @@ function TodoCommentConversationWindow({
             refreshing={isRefreshing}
             onRefresh={onRefresh}
             tintColor={refreshTint}
-            colors={refreshTint === undefined ? undefined : [refreshTint]}
+            colors={refreshTint == null ? undefined : [refreshTint]}
           />
         }
       />

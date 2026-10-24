@@ -3,10 +3,10 @@ import { invalidateAiSuggestions } from '@src/features/ai/queries/ai-cache';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui';
+import { Box, QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function SuggestionsScreen() {
@@ -49,9 +49,9 @@ export default function SuggestionsRoute() {
       <QueryErrorBoundary>
         <Suspense
           fallback={
-            <View className="px-4 pt-4">
+            <Box className="px-4 pt-4">
               <SuggestionsList.Loading />
-            </View>
+            </Box>
           }
         >
           <SuggestionsScreen />

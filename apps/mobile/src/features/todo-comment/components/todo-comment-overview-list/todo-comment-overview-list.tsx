@@ -128,7 +128,7 @@ export function TodoCommentOverviewList({
           refreshing={isRefreshing}
           onRefresh={refresh}
           tintColor={refreshTint}
-          colors={refreshTint === undefined ? undefined : [refreshTint]}
+          colors={refreshTint == null ? undefined : [refreshTint]}
         />
       }
     />
