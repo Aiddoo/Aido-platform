@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { chunk } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -14,6 +15,9 @@ import {
   type WeatherForecast,
   type WeatherProvider,
 } from "../../ports/forecast/weather-provider.port.js";
+
+/** 정기 sweep의 cache miss 전체를 동시에 보내면 공급자 실패 코드가 몰려 발생해 동시 호출 수를 제한한다. */
+const MAX_CONCURRENT_FORECAST_REQUESTS = 4;
 
 /**
  * 예보 읽기 모델 — 캐시-스루 프로바이더 조회를 캡슐화하는 애플리케이션 서비스.
@@ -120,9 +124,14 @@ export class WeatherForecastReader implements WeatherForecastReaderPort {
       return result;
     }
 
-    const settled = await Promise.allSettled(
-      misses.map((g) => this.#dependencies.weatherProvider.getForecast(g.lat, g.lon, date)),
-    );
+    const settled: PromiseSettledResult<WeatherForecast>[] = [];
+    for (const missChunk of chunk(misses, MAX_CONCURRENT_FORECAST_REQUESTS)) {
+      settled.push(
+        ...(await Promise.allSettled(
+          missChunk.map((g) => this.#dependencies.weatherProvider.getForecast(g.lat, g.lon, date)),
+        )),
+      );
+    }
 
     const cacheEntries: Array<{
       gridX: number;
