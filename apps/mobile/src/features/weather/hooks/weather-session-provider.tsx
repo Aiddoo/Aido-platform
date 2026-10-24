@@ -24,8 +24,8 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-import { cancelWeather, removeWeather } from '../../queries/weather-cache';
-import { createWeatherClock } from '../../utils/view-models/weather-clock.view-model';
+import { cancelWeather, removeWeather } from '../queries/weather-cache';
+import { createWeatherClock } from '../utils/view-models/weather-clock.view-model';
 
 type LocationStatus =
   | 'checking'
@@ -175,7 +175,14 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
     let clockTimer: ReturnType<typeof setTimeout> | undefined;
     const reconcileClock = () => {
       clearTimeout(clockTimer);
-      setClock(createWeatherClock(new Date()));
+      const next = createWeatherClock(new Date());
+      setClock((current) =>
+        current.date === next.date &&
+        current.hour === next.hour &&
+        current.deviceHour === next.deviceHour
+          ? current
+          : next,
+      );
       if (AppState.currentState === 'active') {
         clockTimer = setTimeout(reconcileClock, 60_000 - (Date.now() % 60_000) + 100);
       }

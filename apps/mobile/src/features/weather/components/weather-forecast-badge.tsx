@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Pressable } from 'react-native';
 
+import { useWeatherSession } from '../hooks/weather-session-provider';
 import {
   isForecastRequestable,
   useGetForecastQueryOptions,
@@ -18,7 +19,6 @@ import {
   resolveIconBySky,
   resolveSkyIconColor,
 } from '../utils/weather-icon';
-import { useWeatherSession } from './providers/weather-session-provider';
 
 export function WeatherForecastBadge() {
   const push = useSingleTap(router.push);

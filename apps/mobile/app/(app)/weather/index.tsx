@@ -3,10 +3,10 @@ import { CurrentWeather } from '@src/features/weather/components/current-weather
 import { DailyForecast } from '@src/features/weather/components/daily-forecast';
 import { FeelsLikeTemperature } from '@src/features/weather/components/feels-like-temperature';
 import { HourlyForecast } from '@src/features/weather/components/hourly-forecast';
-import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
 import { SunriseSunset } from '@src/features/weather/components/sunrise-sunset';
 import { WeatherMessage } from '@src/features/weather/components/weather-message';
 import { useTimePalette } from '@src/features/weather/hooks/use-time-palette';
+import { useWeatherSession } from '@src/features/weather/hooks/weather-session-provider';
 import { useGetConditionsQueryOptions } from '@src/features/weather/queries/get-conditions-query-options';
 import { useGetForecastQueryOptions } from '@src/features/weather/queries/get-forecast-query-options';
 import { refetchWeather } from '@src/features/weather/queries/weather-cache';

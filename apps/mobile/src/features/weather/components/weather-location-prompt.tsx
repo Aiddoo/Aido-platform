@@ -3,7 +3,7 @@ import { Result, Spacing, Text, VStack } from '@src/shared/ui';
 import * as Linking from 'expo-linking';
 
 import { useTimePalette } from '../hooks/use-time-palette';
-import { useWeatherSession } from './providers/weather-session-provider';
+import { useWeatherSession } from '../hooks/weather-session-provider';
 
 export function WeatherLocationPrompt() {
   const palette = useTimePalette();

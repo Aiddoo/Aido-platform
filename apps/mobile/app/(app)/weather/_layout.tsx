@@ -1,6 +1,6 @@
-import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
 import { WeatherBackground } from '@src/features/weather/components/weather-background';
 import { TimePaletteContext } from '@src/features/weather/hooks/use-time-palette';
+import { useWeatherSession } from '@src/features/weather/hooks/weather-session-provider';
 import { getWeatherPalette } from '@src/features/weather/utils/view-models/weather-palette.view-model';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';

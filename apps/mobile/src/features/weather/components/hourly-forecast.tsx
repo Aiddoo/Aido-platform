@@ -8,13 +8,13 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Image, ScrollView, View } from 'react-native';
 
 import { useTimePalette } from '../hooks/use-time-palette';
+import { useWeatherSession } from '../hooks/weather-session-provider';
 import { useGetForecastQueryOptions } from '../queries/get-forecast-query-options';
 import {
   type HourlyForecastViewModel,
   toUpcomingHourlyForecasts,
 } from '../utils/view-models/hourly-forecast.view-model';
 import { resolveIconBySky, resolveSkyIconColor } from '../utils/weather-icon';
-import { useWeatherSession } from './providers/weather-session-provider';
 import { WeatherCard } from './weather-card';
 
 export function HourlyForecast() {

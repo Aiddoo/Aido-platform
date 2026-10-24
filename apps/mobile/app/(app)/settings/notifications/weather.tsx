@@ -5,6 +5,7 @@ import {
   SettingsTimeInput,
 } from '@src/features/notification/components/settings/settings-time-input';
 import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
+import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/settings-time-range';
 import {
   type Preference,
   PreferencePolicy,
@@ -68,7 +69,7 @@ WeatherSettingsScreen.Loading = function Loading() {
 
 const WEATHER_TIME = {
   morning: {
-    range: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
+    range: SETTINGS_TIME_RANGE.morning,
     read: (preference: Preference): ClockTime => ({
       hour: preference.weatherMorningHour,
       minute: preference.weatherMorningMinute,
@@ -79,7 +80,7 @@ const WEATHER_TIME = {
     }),
   },
   evening: {
-    range: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
+    range: SETTINGS_TIME_RANGE.evening,
     read: (preference: Preference): ClockTime => ({
       hour: preference.weatherEveningHour,
       minute: preference.weatherEveningMinute,

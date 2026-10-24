@@ -5,12 +5,9 @@ import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
-import {
-  useWeatherSession,
-  type WeatherSession,
-} from '../components/providers/weather-session-provider';
 import { WEATHER_QUERY_KEYS } from '../constants/weather-query-keys';
 import type { WeatherForecast } from '../domains/weather.model';
+import { useWeatherSession, type WeatherSession } from '../hooks/weather-session-provider';
 import { toWeatherForecastViewModel } from '../utils/view-models/weather-forecast.view-model';
 
 /** 위치를 확인하는 중이거나 국외 위치면 예보를 요청하지 않는다. */

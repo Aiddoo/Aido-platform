@@ -4,7 +4,7 @@ import { getNativeAppVersion } from '@src/features/feature-discovery/apis/native
 import { FeatureDiscoveryPolicy } from '@src/features/feature-discovery/domains/feature-discovery.model';
 import { getBundledFeatureDiscoveryCampaign } from '@src/features/feature-discovery/domains/feature-discovery.registry';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
+import { useWeatherSession } from '@src/features/weather/hooks/weather-session-provider';
 import { useStableFeedForeground } from '@src/shared/hooks/use-stable-feed-foreground';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';

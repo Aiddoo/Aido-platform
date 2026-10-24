@@ -29,6 +29,7 @@ import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
+import { createWeatherLocationStateRepository } from '@src/features/weather/apis/weather-location-state.repository';
 import { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createWidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
@@ -241,7 +242,9 @@ export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps)
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
-      weatherLocationStateService: new WeatherLocationStateService(mmkvSyncStorage),
+      weatherLocationStateService: new WeatherLocationStateService(
+        createWeatherLocationStateRepository(mmkvSyncStorage),
+      ),
       locationGateway: expoLocationGateway,
       widgetSyncService,
       widgetNavigationRepository,
