@@ -11,22 +11,16 @@ import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
-  HStack,
-  ListRow,
   NotiIcon,
   Result,
-  Text,
-  TextSkeleton,
   usePremiumDialog,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { times } from 'es-toolkit/compat';
 import { Separator, Spinner } from 'heroui-native';
-import { Fragment, useCallback } from 'react';
-import { Pressable, RefreshControl, ScrollView } from 'react-native';
+import { useCallback } from 'react';
+import { RefreshControl } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
@@ -37,7 +31,8 @@ import { useGetNotificationsInfiniteQueryOptions } from '../queries/get-notifica
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
 import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
 import { getCategoryKey } from '../utils/view-models/notification-category.view-model';
-import { toNotificationListItems } from '../utils/view-models/notification-list.view-model';
+import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';
+import { NotificationListRow } from './notification-list-row';
 
 type NotificationListProps = {
   category?: NotificationCategory;
@@ -51,7 +46,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
     useGetNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
   );
   const today = useToday();
-  const listItems = toNotificationListItems(query.data, today);
+  const listItems = toDateSectionedListItems(query.data, today);
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
 
@@ -61,22 +56,16 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
-            <Box px={16} py={8} className="bg-background">
-              <Text size="b3" shade={5} weight="semibold">
-                {t(`common:dateSections.${section}`)}
-              </Text>
-            </Box>
+            <NotificationListRow.SectionHeader section={section} />
           ))
-          .with({ type: 'item' }, ({ notification }) => (
-            <NotificationList.Item notification={notification} />
-          ))
+          .with({ type: 'item' }, ({ entry }) => <NotificationList.Item notification={entry} />)
           .exhaustive()
       }
       getItemType={(item) => item.type}
       keyExtractor={(item) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => `header-${section}`)
-          .with({ type: 'item' }, ({ notification }) => String(notification.id))
+          .with({ type: 'item' }, ({ entry }) => String(entry.id))
           .exhaustive()
       }
       refreshControl={
@@ -118,37 +107,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
   );
 }
 
-NotificationList.Loading = function Loading() {
-  return (
-    <ScrollView className="flex-1">
-      <Box px={16} py={8}>
-        <TextSkeleton size="b3" className="w-32" />
-      </Box>
-      {times(5, (index) => (
-        <Fragment key={index}>
-          {index > 0 && <Separator className="mx-4" />}
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="large"
-            contents={
-              <VStack gap={3}>
-                <HStack justify="between" align="center">
-                  <TextSkeleton size="b4" className="w-10" />
-                  <TextSkeleton size="b4" className="w-12" />
-                </HStack>
-                <ListRow.Texts.Loading
-                  type="2RowTypeA"
-                  topProps={{ className: 'w-3/4' }}
-                  bottomProps={{ size: 'b3', className: 'w-full' }}
-                />
-              </VStack>
-            }
-          />
-        </Fragment>
-      ))}
-    </ScrollView>
-  );
-};
+NotificationList.Loading = NotificationListRow.Loading;
 
 NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
@@ -176,49 +135,18 @@ interface NotificationItemProps {
 }
 
 NotificationList.Item = function Item({ notification }: NotificationItemProps) {
-  const isUnread = !notification.isRead;
   const handlePress = useSingleTap(useNotificationPress(notification));
   const { t } = useTranslation('notification');
 
   return (
-    <Pressable onPress={handlePress}>
-      <HStack className={isUnread ? 'bg-highlight' : 'bg-background'}>
-        {isUnread && <Box className="w-[3.5px] bg-main self-stretch" />}
-
-        <ListRow
-          contents={
-            <VStack gap={3}>
-              <HStack justify="between" align="center">
-                <Text
-                  size="b4"
-                  tone={isUnread ? 'brand' : 'neutral'}
-                  shade={isUnread ? undefined : 5}
-                  weight="medium"
-                >
-                  {t(`categories.${getCategoryKey(notification.type)}`)}
-                </Text>
-                <Text size="b4" shade={5}>
-                  {formatRelativeTime(notification.createdAt, new Date())}
-                </Text>
-              </HStack>
-
-              <ListRow.Texts
-                type="2RowTypeA"
-                top={notification.title}
-                topProps={{
-                  weight: isUnread ? 'semibold' : 'medium',
-                }}
-                bottom={notification.body}
-                bottomProps={{ size: 'b3', shade: isUnread ? 6 : 5, maxLines: 2 }}
-              />
-            </VStack>
-          }
-          className="flex-1 bg-transparent"
-          horizontalPadding="medium"
-          verticalPadding="large"
-        />
-      </HStack>
-    </Pressable>
+    <NotificationListRow
+      label={t(`categories.${getCategoryKey(notification.type)}`)}
+      title={notification.title}
+      body={notification.body}
+      createdAt={notification.createdAt}
+      isUnread={!notification.isRead}
+      onPress={handlePress}
+    />
   );
 };
 
