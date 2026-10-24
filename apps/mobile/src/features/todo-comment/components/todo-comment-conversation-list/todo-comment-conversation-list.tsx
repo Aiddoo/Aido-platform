@@ -1,7 +1,6 @@
 import { FlashList, type FlashListRef } from '@shopify/flash-list';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { invalidateTodoDetails } from '@src/features/todo/queries/todo-cache';
-import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -14,7 +13,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { Skeleton, Spinner } from 'heroui-native';
 import {
   type ComponentProps,
@@ -37,7 +36,7 @@ import {
   type ScrollViewProps,
 } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
-import type { SharedValue } from 'react-native-reanimated';
+import { type SharedValue, useReducedMotion } from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
 import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys';
@@ -206,7 +205,7 @@ function useFocusedCommentViewport({
   onCommitLayoutEffect,
 }: FocusedCommentViewportOptions) {
   const { t } = useTranslation('todoComment');
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
   const listRef = useRef<FlashListRef<TodoCommentConversationRowViewModel>>(null);
   const hasLoadedRef = useRef(false);
   const announcedFocusCommentIdRef = useRef<string | null>(null);
@@ -593,7 +592,7 @@ TodoCommentConversationList.Empty = function Empty() {
 TodoCommentConversationList.Loading = function Loading({ rows = 4 }: { rows?: number }) {
   return (
     <VStack>
-      {range(rows).map((index) => (
+      {times(rows, (index) => (
         <ConversationRowSkeleton key={index} />
       ))}
     </VStack>

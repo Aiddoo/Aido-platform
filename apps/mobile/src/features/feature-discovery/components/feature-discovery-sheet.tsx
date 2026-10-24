@@ -3,7 +3,6 @@ import type {
   FeatureDiscoveryCard,
   FeatureDiscoveryCardId,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
-import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import { Button, H3, HStack, ModalBottomSheet, Text, TextButton, VStack } from '@src/shared/ui';
@@ -74,7 +73,6 @@ export function FeatureDiscoverySheet({
   onCardCta,
 }: FeatureDiscoverySheetProps) {
   const { t } = useTranslation(['featureDiscovery', 'common']);
-  const prefersReducedMotion = usePrefersReducedMotion();
   const { fontScale } = useFontScale();
   const insets = useSafeAreaInsets();
   const listMaxHeight = Math.max(
@@ -83,12 +81,7 @@ export function FeatureDiscoverySheet({
   );
 
   return (
-    <ModalBottomSheet
-      isOpen={isOpen}
-      onClose={onDismiss}
-      onExit={onExit}
-      reduceMotion={prefersReducedMotion}
-    >
+    <ModalBottomSheet isOpen={isOpen} onClose={onDismiss} onExit={onExit}>
       <VStack gap={12} accessibilityViewIsModal accessibilityLabel={t('hub.sheetLabel')}>
         <HStack align="center" justify="between" gap={12}>
           <H3 className="shrink">{t('hub.title')}</H3>

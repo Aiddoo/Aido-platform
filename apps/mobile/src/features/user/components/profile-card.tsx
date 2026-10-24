@@ -1,10 +1,10 @@
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useClipboard } from '@src/shared/hooks/use-clipboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { setStringAsync } from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
@@ -21,12 +21,14 @@ export function ProfileCard() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
   const { t } = useTranslation('user');
-  const { copyToClipboard } = useClipboard();
 
   const handleCopyUserTag = async () => {
-    const result = await copyToClipboard(user.userTag);
+    const copied = await setStringAsync(user.userTag).then(
+      () => true,
+      () => false,
+    );
 
-    if (result.success) {
+    if (copied) {
       toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
     }
   };

@@ -38,18 +38,13 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 
 ### ModalBottomSheet
 
-기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. 드래그 닫기는 상단 손잡이에서 동작하여 내부 목록 스크롤과 경쟁하지 않습니다. 시스템 Reduce Motion을 따르고, `reduceMotion`으로 애니메이션을 명시적으로 끌 수 있습니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.
+기존 BottomSheet 위에 추가 시트를 띄울 때 사용합니다. 드래그 닫기는 상단 손잡이에서 동작하여 내부 목록 스크롤과 경쟁하지 않습니다. 시스템 Reduce Motion 설정을 Reanimated `ReduceMotion.System`으로 따릅니다. `OverlayProvider` 안에서 절대 위치 뷰로 렌더링하여 gorhom BottomSheet 위에 쌓고 Android navigation bar 충돌을 피합니다.
 
 ```tsx
 import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 
 // useOverlay 등으로 isOpen/onClose/onExit를 관리
-<ModalBottomSheet
-  isOpen={isOpen}
-  onClose={handleClose}
-  onExit={handleExit}
-  reduceMotion={prefersReducedMotion}
->
+<ModalBottomSheet isOpen={isOpen} onClose={handleClose} onExit={handleExit}>
   {/* 피커 내용 */}
 </ModalBottomSheet>;
 ```
@@ -67,13 +62,12 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 
 ### ModalBottomSheet
 
-| Prop           | 타입         | 기본값  | 설명                                                           |
-| -------------- | ------------ | ------- | -------------------------------------------------------------- |
-| `isOpen`       | `boolean`    | -       | 시트 열림 상태                                                 |
-| `onClose`      | `() => void` | -       | 닫기 시작 (backdrop tap, swipe) → 부모가 isOpen을 false로 전환 |
-| `onExit`       | `() => void` | -       | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거        |
-| `reduceMotion` | `boolean`    | `false` | 시스템 모션 감소 설정에 맞춰 전환 시간을 제거                  |
-| `children`     | `ReactNode`  | -       | 시트 내용                                                      |
+| Prop       | 타입         | 기본값 | 설명                                                           |
+| ---------- | ------------ | ------ | -------------------------------------------------------------- |
+| `isOpen`   | `boolean`    | -      | 시트 열림 상태                                                 |
+| `onClose`  | `() => void` | -      | 닫기 시작 (backdrop tap, swipe) → 부모가 isOpen을 false로 전환 |
+| `onExit`   | `() => void` | -      | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거        |
+| `children` | `ReactNode`  | -      | 시트 내용                                                      |
 
 ## 파일 구조
 

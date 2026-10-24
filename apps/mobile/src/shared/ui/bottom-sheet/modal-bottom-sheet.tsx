@@ -19,7 +19,6 @@ import {
   sharedSheetStyles,
   TOP_MARGIN,
 } from './constants';
-import { resolveSheetAnimationDuration } from './motion';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
 import { useSheetHorizontalMargins } from './use-sheet-horizontal-margins';
 
@@ -32,7 +31,6 @@ interface ModalBottomSheetProps {
   onClose: () => void;
   /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
   onExit: () => void;
-  reduceMotion?: boolean;
   children: ReactNode;
 }
 
@@ -42,13 +40,7 @@ interface ModalBottomSheetProps {
  * OverlayProvider가 BottomSheetModalProvider 안에 있으므로
  * gorhom 시트 위에 자연스럽게 렌더됨.
  */
-export const ModalBottomSheet = ({
-  isOpen,
-  onClose,
-  onExit,
-  reduceMotion = false,
-  children,
-}: ModalBottomSheetProps) => {
+export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const horizontalMargins = useSheetHorizontalMargins(SHEET_DETACHED_MARGIN);
@@ -57,9 +49,8 @@ export const ModalBottomSheet = ({
 
   const bottomInset = insets.bottom || 16;
   const maxHeight = Math.max(MIN_CONTENT_HEIGHT, windowHeight - insets.top - TOP_MARGIN);
-  const animationReduceMotion = reduceMotion ? ReduceMotion.Always : ReduceMotion.System;
-  const enterDuration = resolveSheetAnimationDuration(reduceMotion, ANIMATION.duration.slow);
-  const snapDuration = resolveSheetAnimationDuration(reduceMotion, ANIMATION.duration.normal);
+  const enterDuration = ANIMATION.duration.slow;
+  const snapDuration = ANIMATION.duration.normal;
 
   // Refs for callbacks — inline 함수가 매 렌더마다 바뀌어도 애니메이션이 리셋되지 않도록
   const onCloseRef = useRef(onClose);
@@ -107,11 +98,11 @@ export const ModalBottomSheet = ({
       dragY.value = 0;
       translateY.value = withTiming(0, {
         duration: enterDuration,
-        reduceMotion: animationReduceMotion,
+        reduceMotion: ReduceMotion.System,
       });
       backdropOpacity.value = withTiming(0.5, {
         duration: enterDuration,
-        reduceMotion: animationReduceMotion,
+        reduceMotion: ReduceMotion.System,
       });
     } else {
       // Animate out (한 번만 실행)
@@ -119,7 +110,7 @@ export const ModalBottomSheet = ({
         isAnimatingOut.value = true;
         translateY.value = withTiming(
           windowHeight,
-          { duration: enterDuration, reduceMotion: animationReduceMotion },
+          { duration: enterDuration, reduceMotion: ReduceMotion.System },
           (finished) => {
             // withTiming 콜백은 UI thread에서 실행 — JS 호출에 runOnJS 필요
             if (finished) {
@@ -129,14 +120,14 @@ export const ModalBottomSheet = ({
         );
         backdropOpacity.value = withTiming(0, {
           duration: enterDuration,
-          reduceMotion: animationReduceMotion,
+          reduceMotion: ReduceMotion.System,
         });
       }
     }
     // 콜백은 ref로 안정화하며 windowHeight는 열림 애니메이션의 초기값만 사용한다.
   }, [
     isOpen,
-    animationReduceMotion,
+    ReduceMotion.System,
     backdropOpacity,
     callOnExit,
     dragY,
@@ -161,7 +152,7 @@ export const ModalBottomSheet = ({
         // snap back
         dragY.value = withTiming(0, {
           duration: snapDuration,
-          reduceMotion: animationReduceMotion,
+          reduceMotion: ReduceMotion.System,
         });
       }
     });

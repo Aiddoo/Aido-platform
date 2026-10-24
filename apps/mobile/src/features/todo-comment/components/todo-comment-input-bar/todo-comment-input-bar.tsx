@@ -2,7 +2,6 @@ import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-pa
 import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { usePrefersReducedMotion } from '@src/shared/hooks/use-prefers-reduced-motion';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { Box, HStack, Text, TextButton } from '@src/shared/ui';
@@ -12,7 +11,7 @@ import { Suspense, useCallback, useEffect, useRef, type ComponentProps } from 'r
 import type { LayoutChangeEvent } from 'react-native';
 import { KeyboardStickyView, useKeyboardState } from 'react-native-keyboard-controller';
 import type { SharedValue } from 'react-native-reanimated';
-import { withTiming } from 'react-native-reanimated';
+import { ReduceMotion, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { type TodoCommentAuthor, TodoCommentPolicy } from '../../domains/todo-comment.model';
@@ -35,7 +34,6 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
   const insets = useSafeAreaInsets();
   const keyboardBottomGap = useKeyboardBottomGap();
   const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
-  const prefersReducedMotion = usePrefersReducedMotion();
   const layoutBaselineRef = useRef({ identity: '', contentHeight: 0 });
   const wasKeyboardVisibleRef = useRef(isKeyboardVisible);
   const layoutIdentity =
@@ -46,11 +44,12 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
 
   const setExtraContentPadding = useCallback(
     (padding: number) => {
-      extraContentPadding.value = prefersReducedMotion
-        ? padding
-        : withTiming(padding, { duration: ANIMATION.duration.fast });
+      extraContentPadding.value = withTiming(padding, {
+        duration: ANIMATION.duration.fast,
+        reduceMotion: ReduceMotion.System,
+      });
     },
-    [extraContentPadding, prefersReducedMotion],
+    [extraContentPadding],
   );
 
   const handleLayout = useCallback(

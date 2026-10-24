@@ -11,10 +11,6 @@ import { FeatureDiscoverySheet } from './feature-discovery-sheet';
 
 let mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
-jest.mock('@src/shared/hooks/use-prefers-reduced-motion', () => ({
-  usePrefersReducedMotion: () => true,
-}));
-
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => mockSafeAreaInsets,
 }));
@@ -59,22 +55,8 @@ jest.mock('@src/shared/ui', () => {
     Text,
     Button,
     TextButton: Button,
-    ModalBottomSheet: ({
-      isOpen,
-      children,
-      reduceMotion,
-    }: {
-      isOpen: boolean;
-      children: React.ReactNode;
-      reduceMotion: boolean;
-    }) =>
-      isOpen
-        ? React.createElement(
-            View,
-            { testID: 'modal-sheet', accessibilityValue: { text: String(reduceMotion) } },
-            children,
-          )
-        : null,
+    ModalBottomSheet: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
+      isOpen ? React.createElement(View, { testID: 'modal-sheet' }, children) : null,
     CheckIcon: () => null,
     ArrowUpIcon: () => null,
     CalendarIcon: () => null,
@@ -153,7 +135,6 @@ describe('FeatureDiscoverySheet', () => {
     // Then
     expect(onDismiss).toHaveBeenCalledTimes(1);
     expect(onCardCta).toHaveBeenCalledWith('friend_search');
-    expect(screen.getByTestId('modal-sheet').props.accessibilityValue.text).toBe('true');
   });
 
   it('작은 화면의 en × xlarge × safe-area에서도 장문 CTA 목록을 안전한 높이로 스크롤한다', async () => {
