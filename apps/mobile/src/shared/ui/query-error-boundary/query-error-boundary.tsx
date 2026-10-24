@@ -1,9 +1,10 @@
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
-import { classifyBoundaryError, toError } from '@src/shared/errors';
+import { classifyBoundaryError, isApiError, toError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { match } from 'ts-pattern';
 
 import { Result } from '../result/result';
 
@@ -47,17 +48,27 @@ export function QueryErrorBoundary({ children, fallback, resetKeys }: QueryError
           onReset={reset}
           resetKeys={resetKeys}
           onError={(error) => {
-            // 로컬에 담기는 일시적 401은 에러 이슈 대신 warning 이벤트로 남긴다 —
-            // 에러로 리포트하면 콜드스타트마다 알림이 울리고, 완전 무음이면 추적이 불가능하다.
-            if (classifyBoundaryError(error) === 'auth-transition') {
-              errorReporter.captureMessage('query_boundary_auth_contained', {
-                severity: 'warning',
-                feature: 'error_boundary',
-                statusCode: 401,
-              });
-              return;
-            }
-            errorReporter.captureException(toError(error), { feature: 'error_boundary' });
+            match(classifyBoundaryError(error))
+              // 로컬에 담기는 일시적 401은 에러 이슈 대신 warning 이벤트로 남긴다 —
+              // 에러로 리포트하면 콜드스타트마다 알림이 울리고, 완전 무음이면 추적이 불가능하다.
+              .with('auth-transition', () =>
+                errorReporter.captureMessage('query_boundary_auth_contained', {
+                  severity: 'warning',
+                  feature: 'error_boundary',
+                  statusCode: 401,
+                }),
+              )
+              .with('expected-state', () =>
+                errorReporter.addBreadcrumb({
+                  category: 'http',
+                  message: 'query_boundary_expected_state',
+                  data: { code: isApiError(error) ? error.code : undefined, statusCode: 404 },
+                }),
+              )
+              .with('error', () =>
+                errorReporter.captureException(toError(error), { feature: 'error_boundary' }),
+              )
+              .exhaustive();
           }}
           fallbackRender={({ error, resetErrorBoundary }) =>
             // 컴포넌트로 렌더한다 — 그냥 호출하면 fallback 안의 훅이 자기 자리를 못 찾는다.

@@ -100,6 +100,20 @@ describe('QueryErrorBoundary 관측', () => {
     );
   });
 
+  it('fallback이 안내하는 404 상태(위치 미등록)는 예외 이슈 없이 breadcrumb만 남긴다', async () => {
+    // Given
+    const error = new ApiError('WEATHER_1902', '위치 정보가 등록되지 않았어요', 404);
+
+    // When
+    await renderWithBoundary(error);
+
+    // Then
+    expect(errorReporter.captureException).not.toHaveBeenCalled();
+    expect(errorReporter.addBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'query_boundary_expected_state' }),
+    );
+  });
+
   it('진짜 장애(재시도 소진 후)는 기존대로 에러 이벤트로 리포트한다', async () => {
     // Given
     const error = new ServerError(503);
