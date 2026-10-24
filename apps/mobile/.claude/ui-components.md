@@ -44,36 +44,37 @@ import { ScrollView, FlatList, Image } from 'react-native';
 
 ## Shared UI 컴포넌트 목록
 
-| 컴포넌트                                      | 용도                                                                    | 문서                                                     |
-| --------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------- |
-| `Text`, `H1`~`H4`                             | 텍스트, 헤딩                                                            | `src/shared/ui/text/README.md`                           |
-| `FormField`                                   | RHF Controller와 field 오류의 단일 바인딩 경계                          | `src/shared/ui/form-field/form-field.md`                 |
-| `Button`                                      | 기본 버튼                                                               | `src/shared/ui/button/button.md`                         |
-| `KeyboardAdaptiveButton`                      | 키보드 반응 버튼                                                        | `src/shared/ui/button/button.md`                         |
-| `TextButton`                                  | 텍스트/링크 버튼                                                        | `src/shared/ui/text-button/text-button.md`               |
-| `TodoTabIcon`, `MemoTabIcon`, `MyPageTabIcon` | SVG 및 NativeTabs용 공용 탭 아이콘                                      | `src/shared/ui/icon/icon.md`                             |
-| `IconCountButton`                             | 아이콘 + 개수 버튼 (좋아요·답글·댓글)                                   | `src/shared/ui/icon-count-button/icon-count-button.md`   |
-| `Input`                                       | 입력 필드                                                               | `src/shared/ui/input/input.md`                           |
-| `BottomSheetInput`                            | BottomSheet 내부 입력 필드                                              | `src/shared/ui/input/input.md`                           |
-| `Spacing`                                     | 간격 유틸리티                                                           | `src/shared/ui/spacing/spacing.md`                       |
-| `Box`                                         | 단순 컨테이너                                                           | `src/shared/ui/box/README.md`                            |
-| `Flex`                                        | Flexbox 레이아웃                                                        | `src/shared/ui/flex/README.md`                           |
-| `HStack`                                      | 수평 레이아웃                                                           | `src/shared/ui/h-stack/README.md`                        |
-| `AdaptivePane`                                | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음) | `src/shared/ui/adaptive-pane/adaptive-pane.md`           |
-| `ReadableContent`                             | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                      | `src/shared/ui/readable-content/readable-content.md`     |
-| `VStack`                                      | 수직 레이아웃                                                           | `src/shared/ui/v-stack/README.md`                        |
-| `Grid`                                        | 그리드 레이아웃                                                         | `src/shared/ui/grid/README.md`                           |
-| `GridItem`                                    | 그리드 아이템                                                           | `src/shared/ui/grid/README.md`                           |
-| `Result`                                      | 결과 화면 (에러, 빈 상태)                                               | `src/shared/ui/result/result.md`                         |
-| `TextArea`                                    | 여러 줄 텍스트 입력                                                     | `src/shared/ui/text-area/text-area.md`                   |
-| `Avatar`                                      | 선택 가능 아바타 아이콘                                                 | `src/shared/ui/avatar/avatar.md`                         |
-| `ConfirmDialog`                               | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화)   | `src/shared/ui/confirm-dialog/confirm-dialog.md`         |
-| `DashedDivider`                               | 카드 안 구획을 나누는 점선 구분선 (실선은 HeroUI `Separator`)           | `src/shared/ui/dashed-divider/dashed-divider.md`         |
-| `SettingNavigation`, `SettingNavigation.Item` | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component)            | `src/shared/ui/setting-navigation/setting-navigation.md` |
-| `KeyboardBottomSheet`                         | 키보드 연동 바텀시트 (폼용)                                             | `src/shared/ui/bottom-sheet/bottom-sheet.md`             |
-| `BottomSheet`                                 | 키보드 불필요 바텀시트 (피커, 액션시트)                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`             |
-| `ModalBottomSheet`                            | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                        | `src/shared/ui/bottom-sheet/bottom-sheet.md`             |
-| `ScreenTitleBar`                              | 화면 상단 제목 바 (뒤로가기 · 제목 · 액션, 실시간 값은 subtitle)        | `src/shared/ui/screen-title-bar/screen-title-bar.md`     |
+| 컴포넌트                                      | 용도                                                                        | 문서                                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `Text`, `H1`~`H4`                             | 텍스트, 헤딩                                                                | `src/shared/ui/text/README.md`                           |
+| `FormField`                                   | RHF Controller와 field 오류의 단일 바인딩 경계                              | `src/shared/ui/form-field/form-field.md`                 |
+| `Button`                                      | 기본 버튼                                                                   | `src/shared/ui/button/button.md`                         |
+| `KeyboardAdaptiveButton`                      | 키보드 반응 버튼                                                            | `src/shared/ui/button/button.md`                         |
+| `TextButton`                                  | 텍스트/링크 버튼                                                            | `src/shared/ui/text-button/text-button.md`               |
+| `TodoTabIcon`, `MemoTabIcon`, `MyPageTabIcon` | SVG 및 NativeTabs용 공용 탭 아이콘                                          | `src/shared/ui/icon/icon.md`                             |
+| `IconCountButton`                             | 아이콘 + 개수 버튼 (좋아요·답글·댓글)                                       | `src/shared/ui/icon-count-button/icon-count-button.md`   |
+| `Input`                                       | 입력 필드                                                                   | `src/shared/ui/input/input.md`                           |
+| `BottomSheetInput`                            | BottomSheet 내부 입력 필드                                                  | `src/shared/ui/input/input.md`                           |
+| `Spacing`                                     | 간격 유틸리티                                                               | `src/shared/ui/spacing/spacing.md`                       |
+| `Box`                                         | 단순 컨테이너                                                               | `src/shared/ui/box/README.md`                            |
+| `Flex`                                        | Flexbox 레이아웃                                                            | `src/shared/ui/flex/README.md`                           |
+| `HStack`                                      | 수평 레이아웃                                                               | `src/shared/ui/h-stack/README.md`                        |
+| `AdaptivePane`                                | 창 폭 기준 List-detail 2-pane (pane별 safe area, 전환 시 재마운트 없음)     | `src/shared/ui/adaptive-pane/adaptive-pane.md`           |
+| `ReadableContent`                             | 넓은 창에서 폼·안내를 가운데 최대 폭(480)으로 모음                          | `src/shared/ui/readable-content/readable-content.md`     |
+| `VStack`                                      | 수직 레이아웃                                                               | `src/shared/ui/v-stack/README.md`                        |
+| `Grid`                                        | 그리드 레이아웃                                                             | `src/shared/ui/grid/README.md`                           |
+| `GridItem`                                    | 그리드 아이템                                                               | `src/shared/ui/grid/README.md`                           |
+| `Result`                                      | 결과 화면 (에러, 빈 상태)                                                   | `src/shared/ui/result/result.md`                         |
+| `TextArea`                                    | 여러 줄 텍스트 입력                                                         | `src/shared/ui/text-area/text-area.md`                   |
+| `Avatar`                                      | 선택 가능 아바타 아이콘                                                     | `src/shared/ui/avatar/avatar.md`                         |
+| `ConfirmDialog`                               | 중요 액션 확인용 다이얼로그 (cancelButton 선택적, 버튼 flex-1 자동화)       | `src/shared/ui/confirm-dialog/confirm-dialog.md`         |
+| `DashedDivider`                               | 카드 안 구획을 나누는 점선 구분선 (실선은 HeroUI `Separator`)               | `src/shared/ui/dashed-divider/dashed-divider.md`         |
+| `IconRadioItem`                               | `RadioGroup` 안의 라디오 행 (라벨 · 선택적 설명 · 선택적 아이콘 인디케이터) | `src/shared/ui/icon-radio-item/icon-radio-item.md`       |
+| `SettingNavigation`, `SettingNavigation.Item` | 설정 화면 섹션 그룹 + 네비게이션 아이템 (Compound Component)                | `src/shared/ui/setting-navigation/setting-navigation.md` |
+| `KeyboardBottomSheet`                         | 키보드 연동 바텀시트 (폼용)                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`             |
+| `BottomSheet`                                 | 키보드 불필요 바텀시트 (피커, 액션시트)                                     | `src/shared/ui/bottom-sheet/bottom-sheet.md`             |
+| `ModalBottomSheet`                            | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                            | `src/shared/ui/bottom-sheet/bottom-sheet.md`             |
+| `ScreenTitleBar`                              | 화면 상단 제목 바 (뒤로가기 · 제목 · 액션, 실시간 값은 subtitle)            | `src/shared/ui/screen-title-bar/screen-title-bar.md`     |
 
 각 컴포넌트의 상세 Props와 사용 예시는 해당 README를 참조하세요.
 

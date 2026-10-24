@@ -1,24 +1,28 @@
 import { ArrowRightIcon, HStack, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
+import type { ComponentProps } from 'react';
 
-interface NavigationRowProps {
+interface NavigationRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   label: string;
   summary: string;
   summaryEnabled?: boolean;
-  onPress: () => void;
-  isDisabled?: boolean;
 }
 
 export function NavigationRow({
   label,
   summary,
   summaryEnabled,
-  onPress,
   isDisabled,
+  className,
+  ...pressableProps
 }: NavigationRowProps) {
   return (
-    <PressableFeedback onPress={onPress} isDisabled={isDisabled} className="rounded-lg">
+    <PressableFeedback
+      isDisabled={isDisabled}
+      className={cn('rounded-lg', className)}
+      {...pressableProps}
+    >
       <PressableFeedback.Highlight className="rounded-lg" />
       <HStack
         justify="between"

@@ -23,6 +23,7 @@ export { DashedDivider, type DashedDividerProps } from './dashed-divider';
 export { Flex } from './flex';
 export { Grid, GridItem, useGridColumns } from './grid';
 export { HStack } from './h-stack';
+export { IconRadioItem, type IconRadioItemProps } from './icon-radio-item';
 export {
   AppleIcon,
   ArrowLeftIcon,

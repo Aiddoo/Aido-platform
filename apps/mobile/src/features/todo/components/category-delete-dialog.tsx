@@ -3,11 +3,9 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get
 import { useDeleteTodoCategoryMutationOptions } from '@src/features/todo/queries/use-delete-todo-category-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, ConfirmDialog, H4, HStack, Spacing, Text, VStack } from '@src/shared/ui';
-import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Dialog } from 'heroui-native';
+import { Dialog, Radio, RadioGroup } from 'heroui-native';
 import { useState } from 'react';
-import { Pressable } from 'react-native';
 
 interface CategoryDeleteDialogProps {
   categoryId: number;
@@ -108,9 +106,8 @@ const TodoMoveCategoryDeleteSection = ({
   isPending,
 }: TodoMoveCategoryDeleteSectionProps) => {
   const { t } = useTranslation('todo');
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
-    otherCategories[0]?.id ?? null,
-  );
+  const [selectedValue, setSelectedValue] = useState(String(otherCategories[0]?.id));
+  const selectedCategory = otherCategories.find((c) => String(c.id) === selectedValue);
 
   return (
     <>
@@ -127,22 +124,17 @@ const TodoMoveCategoryDeleteSection = ({
 
       <Spacing size={16} />
 
-      <VStack gap={6}>
+      <RadioGroup value={selectedValue} onValueChange={setSelectedValue} className="gap-1.5">
         {otherCategories.map((c) => (
-          <CategoryRadioItem
-            key={c.id}
-            category={c}
-            isSelected={selectedCategoryId === c.id}
-            onSelect={() => setSelectedCategoryId(c.id)}
-          />
+          <CategoryRadioItem key={c.id} category={c} />
         ))}
-      </VStack>
+      </RadioGroup>
 
       <Spacing size={20} />
 
       <DialogActions
         onCancel={onCancel}
-        onDelete={() => onDelete(selectedCategoryId)}
+        onDelete={() => onDelete(selectedCategory?.id ?? null)}
         isPending={isPending}
       />
     </>
@@ -177,21 +169,14 @@ const DialogActions = ({ onCancel, onDelete, isPending }: DialogActionsProps) =>
 
 interface CategoryRadioItemProps {
   category: TodoCategoryWithCount;
-  isSelected: boolean;
-  onSelect: () => void;
 }
 
-const CategoryRadioItem = ({ category, isSelected, onSelect }: CategoryRadioItemProps) => (
-  <Pressable onPress={onSelect}>
+const CategoryRadioItem = ({ category }: CategoryRadioItemProps) => (
+  <RadioGroup.Item value={String(category.id)}>
     <HStack align="center" gap={10} className="rounded-lg px-3 py-2.5">
-      <Box
-        className={cn(
-          'size-[18px] rounded-full border-2 items-center justify-center',
-          isSelected ? 'border-accent' : 'border-gray-4',
-        )}
-      >
-        {isSelected && <Box className="size-[10px] rounded-full bg-accent" />}
-      </Box>
+      <Radio>
+        <Radio.Indicator />
+      </Radio>
       <HStack align="center" gap={8}>
         <Box className="size-2.5 rounded-full" style={{ backgroundColor: category.color }} />
         <Text size="b3" weight="medium">
@@ -199,5 +184,5 @@ const CategoryRadioItem = ({ category, isSelected, onSelect }: CategoryRadioItem
         </Text>
       </HStack>
     </HStack>
-  </Pressable>
+  </RadioGroup.Item>
 );

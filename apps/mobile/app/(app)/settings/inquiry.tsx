@@ -13,8 +13,8 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   H3,
   HStack,
+  IconRadioItem,
   KeyboardAdaptiveButton,
-  ListRow,
   Spacing,
   Text,
   TextArea,
@@ -26,7 +26,7 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
-import { Radio, RadioGroup } from 'heroui-native';
+import { RadioGroup } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
@@ -106,26 +106,7 @@ function InquiryScreen() {
                     className="bg-white rounded-2xl overflow-hidden gap-0"
                   >
                     {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                      <RadioGroup.Item key={key} value={key}>
-                        {(_props) => (
-                          <ListRow
-                            contents={
-                              <ListRow.Texts
-                                type="1RowTypeA"
-                                top={tGlobal(labelKey)}
-                                topProps={{ size: 'b3', weight: 'semibold' }}
-                              />
-                            }
-                            right={
-                              <Radio>
-                                <Radio.Indicator />
-                              </Radio>
-                            }
-                            horizontalPadding="medium"
-                            verticalPadding="large"
-                          />
-                        )}
-                      </RadioGroup.Item>
+                      <IconRadioItem key={key} value={key} label={tGlobal(labelKey)} />
                     ))}
                   </RadioGroup>
                 )}

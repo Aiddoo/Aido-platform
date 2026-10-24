@@ -6,9 +6,12 @@ import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-rea
 import type { StyledIconType } from '../icon';
 import { ListRow } from '../list-row/list-row';
 
-interface IconRadioItemProps extends Omit<ComponentProps<typeof RadioGroup.Item>, 'children'> {
+export interface IconRadioItemProps extends Omit<
+  ComponentProps<typeof RadioGroup.Item>,
+  'children'
+> {
   label: string;
-  Icon: StyledIconType;
+  Icon?: StyledIconType;
   description?: string;
 }
 
@@ -35,9 +38,13 @@ export function IconRadioItem({ value, label, Icon, description, ...props }: Ico
           }
           right={
             <Radio>
-              <Radio.Indicator>
-                <AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />
-              </Radio.Indicator>
+              {Icon ? (
+                <Radio.Indicator>
+                  <AnimatedThumbIcon Icon={Icon} isSelected={isSelected} />
+                </Radio.Indicator>
+              ) : (
+                <Radio.Indicator />
+              )}
             </Radio>
           }
           horizontalPadding="medium"
