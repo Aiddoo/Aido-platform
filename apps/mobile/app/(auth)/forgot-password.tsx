@@ -5,7 +5,7 @@ import { NewPasswordStep } from '@src/features/auth/components/new-password-step
 import { SuggestedEmailDomainList } from '@src/features/auth/components/suggested-email-domain-list';
 import { VerificationCodeInput } from '@src/features/auth/components/verification-code-input';
 import {
-  type ForgotPasswordFormData,
+  type ForgotPasswordFormInput,
   forgotPasswordFormSchema,
 } from '@src/features/auth/domains/forgot-password-form.schema';
 import { useCooldown } from '@src/features/auth/hooks/use-cooldown';
@@ -97,7 +97,7 @@ interface EmailStepProps {
 
 function EmailStep({ onNext }: EmailStepProps) {
   const { t } = useTranslation('auth');
-  const { control, getValues } = useFormContext<ForgotPasswordFormData>();
+  const { control, getValues } = useFormContext<ForgotPasswordFormInput>();
   const { errors } = useFormState({ control, name: 'email' });
   const email = useWatch({ control, name: 'email' });
   const isValid = email.length > 0 && !errors.email;
@@ -187,7 +187,7 @@ interface VerificationCodeStepProps {
 
 function VerificationCodeStep({ onNext }: VerificationCodeStepProps) {
   const { t } = useTranslation('auth');
-  const { control, getValues, setValue } = useFormContext<ForgotPasswordFormData>();
+  const { control, getValues, setValue } = useFormContext<ForgotPasswordFormInput>();
   const email = getValues('email');
   const maskedEmail = maskEmail(email);
 

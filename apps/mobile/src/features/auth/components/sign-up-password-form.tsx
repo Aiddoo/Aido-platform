@@ -13,7 +13,7 @@ import { Keyboard, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import type { SignUpFormData } from '../domains/sign-up-form.schema';
+import type { SignUpFormInput } from '../domains/sign-up-form.schema';
 import { PasswordInput } from './password-input';
 import { PasswordStrengthIndicator } from './password-strength-indicator';
 import { TermsBottomSheet } from './terms-bottom-sheet';
@@ -26,7 +26,7 @@ interface SignUpPasswordFormProps {
 
 export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
   const { t } = useTranslation('auth');
-  const { control } = useFormContext<SignUpFormData>();
+  const { control } = useFormContext<SignUpFormInput>();
   const [password, passwordConfirm] = useWatch({ control, name: ['password', 'passwordConfirm'] });
   const { step, setStep } = useStepper(PASSWORD_STEPS);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
@@ -97,7 +97,9 @@ export const SignUpPasswordForm = ({ onNextStep }: SignUpPasswordFormProps) => {
                         onChange={onChange}
                         returnKeyType="done"
                         isInvalid={!!error}
-                        errorMessage={error?.message}
+                        errorMessage={resolveValidationMessage(error, {
+                          default: 'password.mismatch',
+                        })}
                         onSubmitEditing={() => {
                           if (isPasswordConfirmValid) {
                             handleNext();

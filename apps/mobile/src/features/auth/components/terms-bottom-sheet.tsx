@@ -13,7 +13,7 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { SignUpFormData } from '../domains/sign-up-form.schema';
+import type { SignUpFormInput } from '../domains/sign-up-form.schema';
 import { useRegisterMutationOptions } from '../queries/use-register-mutation-options';
 
 interface TermsBottomSheetProps {
@@ -26,7 +26,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
   const { showBoundary } = useErrorBoundary();
 
   const { t } = useTranslation(['auth', 'common']);
-  const { control, handleSubmit, setValue } = useFormContext<SignUpFormData>();
+  const { control, handleSubmit, setValue } = useFormContext<SignUpFormInput>();
   const insets = useSafeAreaInsets();
   const openUrl = useOpenUrl();
 
@@ -45,7 +45,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
     setValue('marketingPushAgreed', isSelected, { shouldDirty: true });
   };
 
-  const onSubmit = async (data: SignUpFormData) => {
+  const onSubmit = async (data: SignUpFormInput) => {
     if (!data.termsAgreed || !data.privacyAgreed) {
       return;
     }

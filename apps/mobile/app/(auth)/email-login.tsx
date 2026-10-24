@@ -124,7 +124,7 @@ function EmailLoginScreen() {
                     returnKeyType="done"
                     submitBehavior="submit"
                     isInvalid={!!error}
-                    errorMessage={error?.message}
+                    errorMessage={resolveValidationMessage(error, { default: 'password.required' })}
                     onSubmitEditing={() => onSubmit()}
                   />
                 )}

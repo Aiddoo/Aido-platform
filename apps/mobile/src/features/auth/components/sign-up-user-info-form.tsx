@@ -20,7 +20,7 @@ import { ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
-import { type SignUpFormData, signUpFormSchema } from '../domains/sign-up-form.schema';
+import { type SignUpFormInput, signUpFormSchema } from '../domains/sign-up-form.schema';
 import { SuggestedEmailDomainList } from './suggested-email-domain-list';
 
 const USER_INFO_STEPS = ['name', 'email'] as const;
@@ -36,7 +36,7 @@ interface SignUpUserInfoFormProps {
 
 export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
   const { t } = useTranslation(['auth']);
-  const { control } = useFormContext<SignUpFormData>();
+  const { control } = useFormContext<SignUpFormInput>();
   const [email, name] = useWatch({ control, name: ['email', 'name'] });
   const { step, setStep } = useStepper<typeof USER_INFO_STEPS>(USER_INFO_STEPS);
   const emailInputRef = useRef<ComponentRef<typeof TextInput>>(null);
@@ -139,7 +139,10 @@ export const SignUpUserInfoForm = ({ onNextStep }: SignUpUserInfoFormProps) => {
                   autoFocus={step === 'name'}
                   returnKeyType="next"
                   isInvalid={!!error}
-                  errorMessage={error?.message}
+                  errorMessage={resolveValidationMessage(error, {
+                    default: 'nickname.required',
+                    byType: { too_big: 'nickname.tooLong' },
+                  })}
                   onSubmitEditing={() => {
                     if (isNameValid) {
                       handleNext();
