@@ -33,6 +33,30 @@ import { suggestionCategorySheetHref } from '../utils/navigation/suggestion-shee
 
 const SUGGESTION_LOADING_COUNT = 2;
 
+interface SuggestionsIntroProps {
+  title: string;
+  description: string;
+}
+
+function SuggestionsIntro({ title, description }: SuggestionsIntroProps) {
+  return (
+    <Box className="items-center px-5 pt-4">
+      <Image
+        source={require('@assets/images/ido_cat_suggestion.webp')}
+        style={{ width: 100, height: 100 }}
+        resizeMode="contain"
+      />
+      <Spacing size={8} />
+      <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
+        {title}
+      </H4>
+      <Text size="b4" shade={6} align="center">
+        {description}
+      </Text>
+    </Box>
+  );
+}
+
 export function SuggestionsList() {
   const { t } = useTranslation('ai');
   usePrefetchQuery(useGetPreferenceQueryOptions());
@@ -49,20 +73,10 @@ export function SuggestionsList() {
 
   return (
     <ScallopedContainer>
-      <Box className="items-center px-5 pt-4">
-        <Image
-          source={require('@assets/images/ido_cat_suggestion.webp')}
-          style={{ width: 100, height: 100 }}
-          resizeMode="contain"
-        />
-        <Spacing size={8} />
-        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-          {t('suggestions.list.header', { count: suggestions.length })}
-        </H4>
-        <Text size="b4" shade={6} align="center">
-          {t('suggestions.list.headerDescription')}
-        </Text>
-      </Box>
+      <SuggestionsIntro
+        title={t('suggestions.list.header', { count: suggestions.length })}
+        description={t('suggestions.list.headerDescription')}
+      />
 
       <Spacing size={20} />
 
@@ -111,7 +125,7 @@ SuggestionsList.Item = function Item({
   const push = useSingleTap(router.push);
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
-  const openCategorySheet = () =>
+  const handleOpenCategorySheet = () =>
     push(suggestionCategorySheetHref({ suggestionId: suggestion.id }));
 
   return (
@@ -155,7 +169,7 @@ SuggestionsList.Item = function Item({
             <Button
               size="small"
               display="inline"
-              onPress={openCategorySheet}
+              onPress={handleOpenCategorySheet}
               isDisabled={isDismissing}
             >
               {t('suggestions.list.accept')}
@@ -173,20 +187,10 @@ SuggestionsList.Empty = function Empty() {
   const { t } = useTranslation('ai');
   return (
     <ScallopedContainer>
-      <Box className="items-center px-5 pt-4">
-        <Image
-          source={require('@assets/images/ido_cat_suggestion.webp')}
-          style={{ width: 100, height: 100 }}
-          resizeMode="contain"
-        />
-        <Spacing size={8} />
-        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-          {t('suggestions.list.emptyNoHistory')}
-        </H4>
-        <Text size="b4" shade={6} align="center">
-          {t('suggestions.list.emptyNoHistoryDescription')}
-        </Text>
-      </Box>
+      <SuggestionsIntro
+        title={t('suggestions.list.emptyNoHistory')}
+        description={t('suggestions.list.emptyNoHistoryDescription')}
+      />
 
       <Spacing size={20} />
 
@@ -213,20 +217,10 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
 
   return (
     <ScallopedContainer>
-      <Box className="items-center px-5 pt-4">
-        <Image
-          source={require('@assets/images/ido_cat_suggestion.webp')}
-          style={{ width: 100, height: 100 }}
-          resizeMode="contain"
-        />
-        <Spacing size={8} />
-        <H4 align="center" lineBreakStrategyIOS="hangul-word" textBreakStrategy="highQuality">
-          {t('suggestions.paywall.title')}
-        </H4>
-        <Text size="b4" shade={6} align="center">
-          {t('suggestions.paywall.description')}
-        </Text>
-      </Box>
+      <SuggestionsIntro
+        title={t('suggestions.paywall.title')}
+        description={t('suggestions.paywall.description')}
+      />
 
       <Spacing size={20} />
 

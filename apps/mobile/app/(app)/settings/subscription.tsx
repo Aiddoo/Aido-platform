@@ -45,19 +45,85 @@ import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { Image, type ImageSourcePropType, Linking, ScrollView } from 'react-native';
-import { match, P } from 'ts-pattern';
+import { match } from 'ts-pattern';
 
 function SubscriptionScreen() {
-  const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const sdkManager = useRevenueCatSdkManager();
-  const isPremium = UserPolicy.isPremiumUser(user);
-  const isStoreConfigured = sdkManager.isConfigured();
-  const canPurchase = !isPremium && isStoreConfigured;
+
+  return match({
+    isPremium: UserPolicy.isPremiumUser(user),
+    isStoreConfigured: sdkManager.isConfigured(),
+  })
+    .with({ isPremium: true }, () => <SubscriberPane />)
+    .with({ isStoreConfigured: false }, () => <StoreUnavailablePane />)
+    .with({ isPremium: false, isStoreConfigured: true }, () => <PaywallPane />)
+    .exhaustive();
+}
+
+function SubscriberPane() {
+  const { t } = useTranslation('subscription');
+  const restore = useMutation(useRestoreMutationOptions());
+
+  const handleManageSubscription = () => {
+    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
+      return Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
+    }
+  };
+
+  return (
+    <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
+      <StyledSafeAreaView edges={['left', 'right']}>
+        <Spacing size={16} />
+
+        <QueryErrorBoundary>
+          <Suspense fallback={<SubscriptionScreen.Loading />}>
+            <SubscriptionReceipt />
+          </Suspense>
+        </QueryErrorBoundary>
+
+        <Spacing size={16} />
+
+        <Button onPress={handleManageSubscription} variant="weak" color="dark">
+          {t('subscriber.manageButton')}
+        </Button>
+
+        <Spacing size={16} />
+
+        <Box className="items-center">
+          <TextButton
+            size="medium"
+            variant="underline"
+            onPress={() => restore.mutate()}
+            isDisabled={restore.isPending}
+          >
+            {t('subscriber.restoreButton')}
+          </TextButton>
+        </Box>
+      </StyledSafeAreaView>
+    </ScrollView>
+  );
+}
+
+function StoreUnavailablePane() {
+  const { t } = useTranslation('subscription');
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('paywall.unavailableTitle')}
+        description={t('paywall.unavailableDescription')}
+      />
+    </StyledSafeAreaView>
+  );
+}
+
+function PaywallPane() {
+  const { t } = useTranslation('subscription');
   const { data: offering } = useQuery({
     ...useGetOfferingsQueryOptions(),
-    enabled: canPurchase,
-    throwOnError: (_error, query) => canPurchase && query.state.data == null,
+    throwOnError: (_error, query) => query.state.data == null,
   });
   const purchase = useMutation(usePurchaseMutationOptions());
   const restore = useMutation(useRestoreMutationOptions());
@@ -68,152 +134,106 @@ function SubscriptionScreen() {
   const selectedPlan = offering?.plans.find((plan) => plan.identifier === selectedPlanId);
 
   const handlePurchase = () => {
-    if (!canPurchase || !selectedPlan || purchase.isPending) {
+    if (!selectedPlan || purchase.isPending) {
       return;
     }
     purchase.mutate(selectedPlan.identifier);
   };
 
-  const handleManageSubscription = () => {
-    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
-      return Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
-    }
-  };
+  if (offering == null) {
+    return <SubscriptionScreen.Loading />;
+  }
 
-  return match({ isPremium, isStoreConfigured, offering })
-    .with({ isPremium: true }, () => (
+  return (
+    <Box className="flex-1">
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={16} />
 
-          <QueryErrorBoundary>
-            <Suspense fallback={<SubscriptionScreen.Loading />}>
-              <SubscriptionReceipt />
-            </Suspense>
-          </QueryErrorBoundary>
+          <ScallopedContainer>
+            <Box className="px-5 pt-5">
+              <VStack gap={4} className="items-center">
+                <H2>{t('paywall.title')}</H2>
 
-          <Spacing size={16} />
+                <Text size="b3" shade={6}>
+                  {t('paywall.subtitle')}
+                </Text>
+              </VStack>
 
-          <Button onPress={handleManageSubscription} variant="weak" color="dark">
-            {t('subscriber.manageButton')}
-          </Button>
+              <DashedDivider className="my-6" />
 
-          <Spacing size={16} />
+              <VStack gap={20}>
+                <SubscriptionBenefitCard
+                  title={t('benefits.aiParsing.title')}
+                  description={t('benefits.aiParsing.description')}
+                  image={benefitAiParsingImage}
+                />
+                <SubscriptionBenefitCard
+                  title={t('benefits.nudge.title')}
+                  description={t('benefits.nudge.description')}
+                  image={benefitNudgeImage}
+                />
+                <SubscriptionBenefitCard
+                  title={t('benefits.reminder.title')}
+                  description={t('benefits.reminder.description')}
+                  image={benefitNotificationImage}
+                />
+                <SubscriptionBenefitCard
+                  title={t('benefits.appIcon.title')}
+                  description={t('benefits.appIcon.description')}
+                  image={benefitAppIconImage}
+                />
+              </VStack>
 
-          <Box className="items-center">
+              <Spacing size={20} />
+
+              <AdditionalSubscriptionBenefits />
+
+              <Spacing size={8} />
+
+              <Text size="e2" shade={5} align="center">
+                {t('paywall.futureIncluded')}
+              </Text>
+            </Box>
+
+            <DashedDivider className="my-5 mx-5" />
+
+            <Box className="px-5 pb-5">
+              <SubscriptionPlanCard
+                plans={offering.plans}
+                value={selectedPlanId}
+                onValueChange={setChosenPlanId}
+              />
+            </Box>
+          </ScallopedContainer>
+
+          <Spacing size={24} />
+
+          <VStack gap={8} className="items-center">
+            <SubscriptionTerms />
             <TextButton
-              size="medium"
+              size="small"
               variant="underline"
               onPress={() => restore.mutate()}
               isDisabled={restore.isPending}
             >
               {t('subscriber.restoreButton')}
             </TextButton>
-          </Box>
+          </VStack>
         </StyledSafeAreaView>
       </ScrollView>
-    ))
-    .with({ isStoreConfigured: false }, () => (
-      <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
-        <Result
-          icon={<DocsIcon width={72} height={72} />}
-          title={t('paywall.unavailableTitle')}
-          description={t('paywall.unavailableDescription')}
-        />
+
+      <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
+        <Button
+          onPress={handlePurchase}
+          isLoading={purchase.isPending}
+          isDisabled={!selectedPlan || purchase.isPending}
+        >
+          {t('paywall.subscribeButton')}
+        </Button>
       </StyledSafeAreaView>
-    ))
-    .with({ offering: P.nullish }, () => <SubscriptionScreen.Loading />)
-    .with({ offering: P.nonNullable }, ({ offering }) => (
-      <Box className="flex-1">
-        <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
-          <StyledSafeAreaView edges={['left', 'right']}>
-            <Spacing size={16} />
-
-            <ScallopedContainer>
-              <Box className="px-5 pt-5">
-                <VStack gap={4} className="items-center">
-                  <H2>{t('paywall.title')}</H2>
-
-                  <Text size="b3" shade={6}>
-                    {t('paywall.subtitle')}
-                  </Text>
-                </VStack>
-
-                <DashedDivider className="my-6" />
-
-                <VStack gap={20}>
-                  <SubscriptionBenefitCard
-                    title={t('benefits.aiParsing.title')}
-                    description={t('benefits.aiParsing.description')}
-                    image={benefitAiParsingImage}
-                  />
-                  <SubscriptionBenefitCard
-                    title={t('benefits.nudge.title')}
-                    description={t('benefits.nudge.description')}
-                    image={benefitNudgeImage}
-                  />
-                  <SubscriptionBenefitCard
-                    title={t('benefits.reminder.title')}
-                    description={t('benefits.reminder.description')}
-                    image={benefitNotificationImage}
-                  />
-                  <SubscriptionBenefitCard
-                    title={t('benefits.appIcon.title')}
-                    description={t('benefits.appIcon.description')}
-                    image={benefitAppIconImage}
-                  />
-                </VStack>
-
-                <Spacing size={20} />
-
-                <AdditionalSubscriptionBenefits />
-
-                <Spacing size={8} />
-
-                <Text size="e2" shade={5} align="center">
-                  {t('paywall.futureIncluded')}
-                </Text>
-              </Box>
-
-              <DashedDivider className="my-5 mx-5" />
-
-              <Box className="px-5 pb-5">
-                <SubscriptionPlanCard
-                  plans={offering.plans}
-                  value={selectedPlanId}
-                  onValueChange={setChosenPlanId}
-                />
-              </Box>
-            </ScallopedContainer>
-
-            <Spacing size={24} />
-
-            <VStack gap={8} className="items-center">
-              <SubscriptionTerms />
-              <TextButton
-                size="small"
-                variant="underline"
-                onPress={() => restore.mutate()}
-                isDisabled={restore.isPending}
-              >
-                {t('subscriber.restoreButton')}
-              </TextButton>
-            </VStack>
-          </StyledSafeAreaView>
-        </ScrollView>
-
-        <StyledSafeAreaView edges={['left', 'right']} className="px-4 pb-4 pt-2">
-          <Button
-            onPress={handlePurchase}
-            isLoading={purchase.isPending}
-            isDisabled={!selectedPlan || purchase.isPending}
-          >
-            {t('paywall.subscribeButton')}
-          </Button>
-        </StyledSafeAreaView>
-      </Box>
-    ))
-    .exhaustive();
+    </Box>
+  );
 }
 
 SubscriptionScreen.Loading = function Loading() {

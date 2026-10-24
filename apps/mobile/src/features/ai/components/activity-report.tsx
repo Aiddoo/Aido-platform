@@ -17,6 +17,7 @@ import type { TimeFormat } from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
 import { Chip, Separator, SkeletonGroup } from 'heroui-native';
+import type { ReactNode } from 'react';
 
 import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
 import type { AiReport } from '../domains/ai.model';
@@ -33,53 +34,50 @@ export function ActivityReport({ report }: ActivityReportProps) {
         <ReportPeriodLabel report={report} />
       </Box>
       <VStack className="px-5 pb-4">
-        <VStack>
-          <Box className="py-4">
-            <TodoCompletionStats report={report} />
-          </Box>
-        </VStack>
+        <ReportSection hasDivider={false}>
+          <TodoCompletionStats report={report} />
+        </ReportSection>
         {report.categoryBreakdown.length > 0 && (
-          <VStack>
-            <DashedDivider />
-            <Box className="py-4">
-              <CategoryBreakdown items={report.categoryBreakdown} />
-            </Box>
-          </VStack>
+          <ReportSection>
+            <CategoryBreakdown items={report.categoryBreakdown} />
+          </ReportSection>
         )}
         {report.dayPatterns.length > 0 && (
-          <VStack>
-            <DashedDivider />
-            <Box className="py-4">
-              <DayPatternChart items={report.dayPatterns} />
-            </Box>
-          </VStack>
+          <ReportSection>
+            <DayPatternChart items={report.dayPatterns} />
+          </ReportSection>
         )}
         {report.timePatterns.length > 0 && (
-          <VStack>
-            <DashedDivider />
-            <Box className="py-4">
-              <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
-            </Box>
-          </VStack>
+          <ReportSection>
+            <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
+          </ReportSection>
         )}
         {report.aiSummary && (
-          <VStack>
-            <DashedDivider />
-            <Box className="py-4">
-              <AiAnalysis summary={report.aiSummary} />
-            </Box>
-          </VStack>
+          <ReportSection>
+            <AiAnalysis summary={report.aiSummary} />
+          </ReportSection>
         )}
         {report.aiTips.length > 0 && (
-          <VStack>
-            <DashedDivider />
-            <Box className="py-4">
-              <ImprovementTipList tips={report.aiTips} />
-            </Box>
-          </VStack>
+          <ReportSection>
+            <ImprovementTipList tips={report.aiTips} />
+          </ReportSection>
         )}
       </VStack>
     </ScallopedContainer>
+  );
+}
+
+interface ReportSectionProps {
+  hasDivider?: boolean;
+  children: ReactNode;
+}
+
+function ReportSection({ hasDivider = true, children }: ReportSectionProps) {
+  return (
+    <VStack>
+      {hasDivider && <DashedDivider />}
+      <Box className="py-4">{children}</Box>
+    </VStack>
   );
 }
 

@@ -58,7 +58,7 @@ const PROVIDER_ROW_COUNT = Platform.OS === 'ios' ? 4 : 3;
 
 function LinkedAccountsList() {
   const { t } = useTranslation(['auth', 'common']);
-  const { data } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
+  const { data: linkedAccounts } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
   const {
     mutate: link,
     isPending: isLinking,
@@ -72,7 +72,7 @@ function LinkedAccountsList() {
 
   const stateOf = (provider: OAuthProvider, slug: OAuthProviderSlug) =>
     getProviderState({
-      accounts: data.accounts,
+      accounts: linkedAccounts.accounts,
       provider,
       slug,
       linkingSlug: isLinking ? linkingSlug : undefined,
@@ -114,7 +114,7 @@ function LinkedAccountsList() {
           iconClassName="bg-yellow-300"
           label={t('providers.KAKAO')}
           {...stateOf('KAKAO', 'kakao')}
-          canUnlink={data.canUnlink}
+          canUnlink={linkedAccounts.canUnlink}
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
@@ -126,7 +126,7 @@ function LinkedAccountsList() {
           iconClassName="bg-white border border-gray-2"
           label={t('providers.GOOGLE')}
           {...stateOf('GOOGLE', 'google')}
-          canUnlink={data.canUnlink}
+          canUnlink={linkedAccounts.canUnlink}
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
@@ -142,7 +142,7 @@ function LinkedAccountsList() {
               iconClassName="bg-apple-button dark:bg-apple-button-dark"
               label={t('providers.APPLE')}
               {...stateOf('APPLE', 'apple')}
-              canUnlink={data.canUnlink}
+              canUnlink={linkedAccounts.canUnlink}
               onLink={handleLink}
               onUnlinkRequest={handleUnlinkRequest}
             />
@@ -156,37 +156,55 @@ function LinkedAccountsList() {
           iconClassName="bg-success"
           label={t('providers.NAVER')}
           {...stateOf('NAVER', 'naver')}
-          canUnlink={data.canUnlink}
+          canUnlink={linkedAccounts.canUnlink}
           onLink={handleLink}
           onUnlinkRequest={handleUnlinkRequest}
         />
       </VStack>
 
-      <ConfirmDialog
-        isOpen={unlinkTarget != null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setUnlinkTarget(null);
-          }
-        }}
-        title={<ConfirmDialog.Title>{t('linkedAccounts.unlinkDialogTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            {t('linkedAccounts.unlinkDialogMessage', { provider: unlinkTarget?.label ?? '' })}
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton onPress={() => setUnlinkTarget(null)}>
-            {t('common:actions.cancel')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton onPress={handleUnlinkConfirm}>
-            {t('linkedAccounts.unlink')}
-          </ConfirmDialog.ConfirmButton>
-        }
+      <UnlinkConfirmDialog
+        targetLabel={unlinkTarget?.label}
+        onConfirm={handleUnlinkConfirm}
+        onClose={() => setUnlinkTarget(null)}
       />
     </>
+  );
+}
+
+interface UnlinkConfirmDialogProps {
+  targetLabel?: string;
+  onConfirm: () => void;
+  onClose: () => void;
+}
+
+function UnlinkConfirmDialog({ targetLabel, onConfirm, onClose }: UnlinkConfirmDialogProps) {
+  const { t } = useTranslation(['auth', 'common']);
+
+  return (
+    <ConfirmDialog
+      isOpen={targetLabel != null}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+      title={<ConfirmDialog.Title>{t('linkedAccounts.unlinkDialogTitle')}</ConfirmDialog.Title>}
+      description={
+        <ConfirmDialog.Description>
+          {t('linkedAccounts.unlinkDialogMessage', { provider: targetLabel ?? '' })}
+        </ConfirmDialog.Description>
+      }
+      cancelButton={
+        <ConfirmDialog.CancelButton onPress={onClose}>
+          {t('common:actions.cancel')}
+        </ConfirmDialog.CancelButton>
+      }
+      confirmButton={
+        <ConfirmDialog.ConfirmButton onPress={onConfirm}>
+          {t('linkedAccounts.unlink')}
+        </ConfirmDialog.ConfirmButton>
+      }
+    />
   );
 }
 

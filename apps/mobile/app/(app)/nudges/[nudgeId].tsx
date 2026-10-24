@@ -1,6 +1,9 @@
 import type { NudgeReplyKind } from '@aido/api';
 import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
-import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
+import {
+  type NudgeInteraction,
+  NudgeInteractionPolicy,
+} from '@src/features/nudge/domains/nudge-interaction.model';
 import {
   nudgeScreenParamsSchema,
   useNudgeScreenParams,
@@ -40,22 +43,26 @@ import { Suspense, type ComponentProps } from 'react';
 import { ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
 
+const NUDGE_REPLY_KINDS = [
+  'STARTING',
+  'THANKFUL',
+  'LATER',
+] as const satisfies readonly NudgeReplyKind[];
+
 function NudgeDetailScreen() {
   const { nudgeId } = useNudgeScreenParams();
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
-  const mutation = useMutation(useReplyToNudgeMutationOptions());
   const { t } = useTranslation('todo');
   const isReceived = nudge.receiverId === me.id;
   const friendName = isReceived ? nudge.senderName : nudge.receiverName;
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
   const status = NudgeInteractionPolicy.getStatus(nudge);
-  const reply = (replyKind: NudgeReplyKind) => mutation.mutate({ nudgeId, input: { replyKind } });
-  const openThanksSheet = useSingleTap(() =>
+  const handleOpenThanksSheet = useSingleTap(() =>
     router.push(todoThanksSheetHref({ todoId: nudge.todoId })),
   );
-  const openTodo = useSingleTap(() =>
+  const handleOpenTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
   );
 
@@ -90,7 +97,7 @@ function NudgeDetailScreen() {
           color="dark"
           isDisabled={nudge.todoTitle == null}
           className="p-4"
-          onPress={openTodo}
+          onPress={handleOpenTodo}
         >
           <HStack align="center" gap={12} className="w-full">
             <PawIcon width={28} height={28} colorClassName="text-main" />
@@ -119,48 +126,7 @@ function NudgeDetailScreen() {
             />
           ))
           .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
-            <VStack gap={12}>
-              <Text size="b2" weight="bold">
-                {t('interaction.replyTitle')}
-              </Text>
-              <Text size="b4" shade={5}>
-                {t('interaction.replyHint')}
-              </Text>
-              <NudgeDetailScreen.ReplyButton
-                value="STARTING"
-                isSelected={nudge.replyKind === 'STARTING'}
-                isDisabled={mutation.isPending}
-                onPress={() => reply('STARTING')}
-              />
-              <NudgeDetailScreen.ReplyButton
-                value="THANKFUL"
-                isSelected={nudge.replyKind === 'THANKFUL'}
-                isDisabled={mutation.isPending}
-                onPress={() => reply('THANKFUL')}
-              />
-              <NudgeDetailScreen.ReplyButton
-                value="LATER"
-                isSelected={nudge.replyKind === 'LATER'}
-                isDisabled={mutation.isPending}
-                onPress={() => reply('LATER')}
-              />
-              {mutation.isError && (
-                <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
-                  {isApiError(mutation.error) ? mutation.error.message : t('toast.retryLater')}
-                </Text>
-              )}
-              {mutation.isSuccess && (
-                <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
-                  {t('interaction.replySent')}
-                </Text>
-              )}
-              <Text size="e1" shade={5}>
-                {t('interaction.replyChangedHint')}
-              </Text>
-              <Text size="e1" shade={5}>
-                {t('interaction.replyCompletionHint')}
-              </Text>
-            </VStack>
+            <NudgeDetailScreen.ReplyPanel nudge={nudge} />
           ))
           .with({ isReceived: true, isTodoCompleted: true }, () => (
             <VStack gap={12}>
@@ -171,7 +137,7 @@ function NudgeDetailScreen() {
                   {t('interaction.completedThanksHint')}
                 </Text>
               )}
-              {status !== 'THANKED' && <NudgeThanksButton onPress={openThanksSheet} />}
+              {status !== 'THANKED' && <NudgeThanksButton onPress={handleOpenThanksSheet} />}
             </VStack>
           ))
           .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
@@ -190,6 +156,51 @@ function NudgeDetailScreen() {
     </ScrollView>
   );
 }
+
+NudgeDetailScreen.ReplyPanel = function ReplyPanel({ nudge }: { nudge: NudgeInteraction }) {
+  const { t } = useTranslation('todo');
+  const { nudgeId } = useNudgeScreenParams();
+  const replyMutation = useMutation(useReplyToNudgeMutationOptions());
+
+  const handleReply = (replyKind: NudgeReplyKind) =>
+    replyMutation.mutate({ nudgeId, input: { replyKind } });
+
+  return (
+    <VStack gap={12}>
+      <Text size="b2" weight="bold">
+        {t('interaction.replyTitle')}
+      </Text>
+      <Text size="b4" shade={5}>
+        {t('interaction.replyHint')}
+      </Text>
+      {NUDGE_REPLY_KINDS.map((replyKind) => (
+        <NudgeDetailScreen.ReplyButton
+          key={replyKind}
+          value={replyKind}
+          isSelected={nudge.replyKind === replyKind}
+          isDisabled={replyMutation.isPending}
+          onPress={() => handleReply(replyKind)}
+        />
+      ))}
+      {replyMutation.isError && (
+        <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
+          {isApiError(replyMutation.error) ? replyMutation.error.message : t('toast.retryLater')}
+        </Text>
+      )}
+      {replyMutation.isSuccess && (
+        <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
+          {t('interaction.replySent')}
+        </Text>
+      )}
+      <Text size="e1" shade={5}>
+        {t('interaction.replyChangedHint')}
+      </Text>
+      <Text size="e1" shade={5}>
+        {t('interaction.replyCompletionHint')}
+      </Text>
+    </VStack>
+  );
+};
 
 NudgeDetailScreen.ThanksStatus = function ThanksStatus() {
   const { t } = useTranslation('todo');

@@ -41,7 +41,7 @@ const CERTIFICATE_LINE_COUNT = 4;
 export function AchievementSummaryCard() {
   const today = useToday();
   usePrefetchQuery(useGetMeQueryOptions());
-  const { data } = useSuspenseInfiniteQuery(
+  const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: today.getFullYear() }),
   );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -50,7 +50,7 @@ export function AchievementSummaryCard() {
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
-  const latest = data.items[0];
+  const latest = weeklyAchievements.items[0];
   const latestBadgeType = latest == null ? null : AchievementPolicy.badgeType(latest);
   const latestCompletionRate = latest?.completionRate;
   const latestWeekLabel = latest?.weekLabel;
@@ -66,11 +66,11 @@ export function AchievementSummaryCard() {
     });
   }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekLabel]);
 
-  if (latest == null || latestBadgeType == null || data.summary == null) {
+  if (latest == null || latestBadgeType == null || weeklyAchievements.summary == null) {
     return <AchievementSummaryCard.Empty />;
   }
 
-  const { summary } = data;
+  const { summary } = weeklyAchievements;
 
   const handleShare = async () => {
     trackEvent('badge_share_attempted', {
