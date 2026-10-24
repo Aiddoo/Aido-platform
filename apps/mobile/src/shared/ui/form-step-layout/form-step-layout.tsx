@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { StyledSafeAreaView } from '../safe-area-view';
+import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { H3 } from '../text';
 
 export interface FormStepLayoutProps extends Omit<ComponentProps<typeof ScrollView>, 'children'> {

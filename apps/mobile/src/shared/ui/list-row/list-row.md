@@ -47,7 +47,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 | `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리             |
 | `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬          |
 | `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬        |
-| `disabled`          | `boolean`                                    | `false`    | 비활성화 상태           |
+| `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태           |
 | `className`         | `string`                                     | -          | 추가 클래스명           |
 
 #### Vertical Padding 크기
@@ -288,7 +288,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 ```tsx
 <ListRow
   contents={<ListRow.Texts type="1RowTypeA" top="준비 중인 기능" />}
-  disabled={true}
+  isDisabled
   horizontalPadding="medium"
 />
 ```

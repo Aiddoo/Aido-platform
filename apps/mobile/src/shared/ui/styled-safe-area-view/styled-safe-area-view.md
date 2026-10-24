@@ -20,8 +20,8 @@ import { StyledSafeAreaView } from '@src/shared/ui';
 ## 파일 구조
 
 ```
-safe-area-view/
-├── safe-area-view.ts   # withUniwind(SafeAreaView)
-├── safe-area-view.md   # 이 문서
+styled-safe-area-view/
+├── styled-safe-area-view.ts # withUniwind(SafeAreaView)
+├── styled-safe-area-view.md # 이 문서
 └── index.ts            # 배럴
 ```

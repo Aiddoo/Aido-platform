@@ -5,7 +5,7 @@ import { TextInput, View } from 'react-native';
 import { withUniwind } from 'uniwind';
 
 import { Text } from '../text/text';
-import { textSizeClasses } from '../text/text.variants';
+import { TEXT_SIZE_CLASSES } from '../text/text.variants';
 import { VStack } from '../v-stack/v-stack';
 import type { TextAreaInternalProps } from './text-area.types';
 import {
@@ -101,7 +101,7 @@ export function TextArea({
             textAlignVertical="top"
             className={cn(
               textAreaTextVariants({ variant }),
-              resolvedTextSize === undefined ? undefined : textSizeClasses[resolvedTextSize],
+              resolvedTextSize === undefined ? undefined : TEXT_SIZE_CLASSES[resolvedTextSize],
             )}
             onFocus={(e) => {
               setIsFocused(true);

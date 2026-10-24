@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 import type { TextSize } from './text.types';
-import { textSizeClasses } from './text.variants';
+import { TEXT_SIZE_CLASSES } from './text.variants';
 
 export interface TextSkeletonProps {
   size?: TextSize;
@@ -15,7 +15,7 @@ export interface TextSkeletonProps {
 
 export function TextSkeleton({ size = 'b3', className, color }: TextSkeletonProps) {
   const { resolveSize } = useFontScale();
-  const { fontSize, lineHeight } = useResolveClassNames(textSizeClasses[resolveSize(size)]);
+  const { fontSize, lineHeight } = useResolveClassNames(TEXT_SIZE_CLASSES[resolveSize(size)]);
 
   return (
     <View className={cn('justify-center', className)} style={{ height: lineHeight }}>

@@ -86,7 +86,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `QueryErrorBoundary`                          | Suspense 쿼리 오류 경계 (재시도·오류 보고)                                  | `src/shared/ui/query-error-boundary/query-error-boundary.md`     |
 | `ScrollProgressWidget`                        | 스크롤 진행률 플로팅 위젯                                                   | `src/shared/ui/scroll-progress-widget/scroll-progress-widget.md` |
 | `AppToast`                                    | 토스트 본문 (`useAppToast`로 사용)                                          | `src/shared/ui/toast/toast.md`                                   |
-| `StyledSafeAreaView`                          | className을 받는 SafeAreaView                                               | `src/shared/ui/safe-area-view/safe-area-view.md`                 |
+| `StyledSafeAreaView`                          | className을 받는 SafeAreaView                                               | `src/shared/ui/styled-safe-area-view/styled-safe-area-view.md`   |
 |                                               |                                                                             |                                                                  |     |     |     | parent of e993ae5 (refactor(mobile): AI 제안 목록을 Suspense 블록으로 바꾸고 리포트 유형 상수를 한곳에 모은다) |
 | 컴포넌트                                      | 용도                                                                        | 문서                                                             |
 | --------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------         |
@@ -203,7 +203,7 @@ import { cn } from '@src/shared/utils/cn';
 
 ```tsx
 // StyledSafeAreaView - withUniwind로 래핑됨
-import { StyledSafeAreaView } from '@src/shared/ui/safe-area-view/safe-area-view';
+import { StyledSafeAreaView } from '@src/shared/ui/styled-safe-area-view';
 
 <StyledSafeAreaView className="flex-1 bg-gray-1">{children}</StyledSafeAreaView>;
 ```

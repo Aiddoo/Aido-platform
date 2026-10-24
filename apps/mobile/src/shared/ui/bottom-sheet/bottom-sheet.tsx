@@ -12,7 +12,7 @@ import {
   MIN_CONTENT_HEIGHT,
   SHEET_DETACHED_MARGIN,
   SHEET_INDEX,
-  sharedSheetStyles,
+  SHARED_SHEET_STYLES,
   TOP_MARGIN,
 } from './constants';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
@@ -159,16 +159,16 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
       detached
       bottomInset={insets.bottom || 16}
       style={[
-        sharedSheetStyles.detached,
+        SHARED_SHEET_STYLES.detached,
         { marginLeft: horizontalMargins.left, marginRight: horizontalMargins.right },
       ]}
-      backgroundStyle={[backgroundStyle, sharedSheetStyles.detachedBackground]}
-      handleIndicatorStyle={[sharedSheetStyles.handleIndicator, handleIndicatorStyle]}
+      backgroundStyle={[backgroundStyle, SHARED_SHEET_STYLES.detachedBackground]}
+      handleIndicatorStyle={[SHARED_SHEET_STYLES.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
     >
-      <BottomSheetView onLayout={handleContentLayout} style={sharedSheetStyles.content}>
+      <BottomSheetView onLayout={handleContentLayout} style={SHARED_SHEET_STYLES.content}>
         {children}
       </BottomSheetView>
     </GorhomBottomSheet>

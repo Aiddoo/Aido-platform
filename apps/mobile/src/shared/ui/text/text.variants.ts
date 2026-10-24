@@ -2,7 +2,7 @@ import { tv } from '@src/shared/utils/tv';
 
 import type { TextSize } from './text.types';
 
-export const textSizeClasses = {
+export const TEXT_SIZE_CLASSES = {
   h1: 'text-h1',
   t1: 'text-t1',
   t2: 'text-t2',
@@ -34,7 +34,7 @@ export const textVariants = tv({
       semibold: 'font-semibold',
       bold: 'font-bold',
     },
-    size: textSizeClasses,
+    size: TEXT_SIZE_CLASSES,
     align: {
       left: 'text-left',
       center: 'text-center',

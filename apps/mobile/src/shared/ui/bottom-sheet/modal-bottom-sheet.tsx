@@ -16,7 +16,7 @@ import { useResolveClassNames } from 'uniwind';
 import {
   MIN_CONTENT_HEIGHT,
   SHEET_DETACHED_MARGIN,
-  sharedSheetStyles,
+  SHARED_SHEET_STYLES,
   TOP_MARGIN,
 } from './constants';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
@@ -27,8 +27,7 @@ const DISMISS_VELOCITY = 500;
 
 interface ModalBottomSheetProps {
   isOpen: boolean;
-  /** 닫기 시작 (backdrop tap, swipe) → 부모가 isOpen을 false로 전환 */
-  onClose: () => void;
+  onOpenChange: (isOpen: boolean) => void;
   /** 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거 */
   onExit: () => void;
   children: ReactNode;
@@ -40,7 +39,12 @@ interface ModalBottomSheetProps {
  * OverlayProvider가 BottomSheetModalProvider 안에 있으므로
  * gorhom 시트 위에 자연스럽게 렌더됨.
  */
-export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBottomSheetProps) => {
+export const ModalBottomSheet = ({
+  isOpen,
+  onOpenChange,
+  onExit,
+  children,
+}: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const horizontalMargins = useSheetHorizontalMargins(SHEET_DETACHED_MARGIN);
@@ -53,12 +57,12 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
   const snapDuration = ANIMATION.duration.normal;
 
   // Refs for callbacks — inline 함수가 매 렌더마다 바뀌어도 애니메이션이 리셋되지 않도록
-  const onCloseRef = useRef(onClose);
+  const onOpenChangeRef = useRef(onOpenChange);
   const onExitRef = useRef(onExit);
   useLayoutEffect(() => {
-    onCloseRef.current = onClose;
+    onOpenChangeRef.current = onOpenChange;
     onExitRef.current = onExit;
-  }, [onClose, onExit]);
+  }, [onOpenChange, onExit]);
 
   // Animation shared values
   const translateY = useSharedValue(windowHeight);
@@ -72,7 +76,7 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
   }, []);
 
   const callOnClose = useCallback(() => {
-    onCloseRef.current();
+    onOpenChangeRef.current(false);
   }, []);
 
   useAndroidSheetBackHandler(true, () => {
@@ -197,14 +201,14 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
         ]}
       >
         <View
-          style={[sharedSheetStyles.detachedBackground, backgroundStyle, { overflow: 'hidden' }]}
+          style={[SHARED_SHEET_STYLES.detachedBackground, backgroundStyle, { overflow: 'hidden' }]}
         >
           {/* Handle */}
           <GestureDetector gesture={panGesture}>
             <View className="items-center justify-center h-11" collapsable={false}>
               <View
                 style={[
-                  sharedSheetStyles.handleIndicator,
+                  SHARED_SHEET_STYLES.handleIndicator,
                   handleIndicatorStyle,
                   { height: 4, borderRadius: 2 },
                 ]}
@@ -213,7 +217,7 @@ export const ModalBottomSheet = ({ isOpen, onClose, onExit, children }: ModalBot
           </GestureDetector>
 
           {/* Content */}
-          <View style={sharedSheetStyles.content}>{children}</View>
+          <View style={SHARED_SHEET_STYLES.content}>{children}</View>
         </View>
       </Animated.View>
     </View>

@@ -1,6 +1,7 @@
 import type { TodoCategoryWithCount } from '@src/features/todo/domains/todo-category.model';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/queries/use-reorder-todo-category-mutation-options';
+import { useDraggableReorderList } from '@src/shared/hooks/use-draggable-reorder-list';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -28,7 +29,6 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { useDraggableReorderList } from '../hooks/use-draggable-reorder-list';
 import { todoCategoryEditSheetHref } from '../utils/navigation/todo-sheet-href';
 import { CategoryDeleteDialog } from './category-delete-dialog';
 import { ReorderCoachmark } from './reorder-coachmark';
@@ -45,7 +45,7 @@ export function CategoryList({ mode }: CategoryListProps) {
   const push = useSingleTap(router.push);
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
   const {
     items: draggableCategories,
@@ -53,10 +53,12 @@ export function CategoryList({ mode }: CategoryListProps) {
     onDragEnd,
   } = useDraggableReorderList({
     items: data.categories,
+    updatedAt: dataUpdatedAt,
     isPending: reorderMutation.isPending,
-    onReorder: ({ movedItemId, targetId, position }) => {
+    getItemId: (category) => category.id,
+    onReorder: ({ movedId, targetId, position }) => {
       reorderMutation.mutate({
-        id: movedItemId,
+        id: movedId,
         input: { targetCategoryId: targetId, position },
       });
     },

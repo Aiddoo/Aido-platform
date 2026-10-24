@@ -127,7 +127,7 @@ export {
   type ReadableContentProps,
 } from './readable-content';
 export { Result } from './result';
-export { StyledSafeAreaView } from './safe-area-view';
+export { StyledSafeAreaView } from './styled-safe-area-view';
 export { ScallopedContainer, type ScallopedContainerProps } from './scalloped-container';
 export {
   ScreenTitleBar,

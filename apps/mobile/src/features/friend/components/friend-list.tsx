@@ -1,5 +1,6 @@
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { useDraggableReorderList } from '@src/shared/hooks/use-draggable-reorder-list';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
@@ -30,7 +31,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
-import { useDraggableFriendReorderList } from '../hooks/use-draggable-friend-reorder-list';
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/get-friends-infinite-query-options';
 import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
@@ -50,13 +50,18 @@ export function FriendList() {
   const friends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
-  const { items: draggableFriends, onDragEnd } = useDraggableFriendReorderList({
+  const {
+    items: draggableFriends,
+    onDragBegin,
+    onDragEnd,
+  } = useDraggableReorderList({
     items: friends,
     updatedAt: dataUpdatedAt,
     isPending: reorderMutation.isPending,
-    onReorder: ({ movedFollowId, targetFollowId, position }) => {
+    getItemId: (friend) => friend.followId,
+    onReorder: ({ movedId, targetId: targetFollowId, position }) => {
       reorderMutation.mutate({
-        followId: movedFollowId,
+        followId: movedId,
         input: { targetFollowId, position },
       });
     },
@@ -82,6 +87,7 @@ export function FriendList() {
           isActive={isActive}
         />
       )}
+      onDragBegin={onDragBegin}
       onDragEnd={onDragEnd}
       ListEmptyComponent={<FriendList.Empty />}
       ListFooterComponent={

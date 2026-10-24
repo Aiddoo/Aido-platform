@@ -121,7 +121,7 @@ export function TodoTimePickerContent({
           }
           horizontalPadding="medium"
           verticalPadding="medium"
-          disabled={localIsAllDay}
+          isDisabled={localIsAllDay}
         />
         {!localIsAllDay && isIOS && (
           <View className="items-center">

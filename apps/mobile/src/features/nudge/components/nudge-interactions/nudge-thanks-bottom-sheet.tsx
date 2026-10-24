@@ -34,7 +34,7 @@ import { useSendNudgeThanksMutationOptions } from '../../queries/use-send-nudge-
 
 type NudgeThanksBottomSheetProps = Omit<
   ComponentProps<typeof ModalBottomSheet>,
-  'children' | 'isOpen' | 'onClose' | 'onExit'
+  'children' | 'isOpen' | 'onOpenChange' | 'onExit'
 >;
 
 /** 할 일에 응원을 보낸 친구들에게 감사를 보내는 시트. 대상은 `/todo/[todoId]/thanks` route에서 읽는다. */
@@ -48,7 +48,7 @@ export function NudgeThanksBottomSheet(props: NudgeThanksBottomSheetProps) {
     <ModalBottomSheet
       {...props}
       isOpen={sheet.isOpen}
-      onClose={close}
+      onOpenChange={close}
       onExit={() => sheet.onOpenChange(false)}
     >
       <VStack gap={20} pb={16}>

@@ -21,7 +21,7 @@ export interface ListRowProps extends Omit<ViewProps, 'children'> {
   border?: ListRowBorder;
   leftAlignment?: ListRowAlignment;
   rightAlignment?: ListRowAlignment;
-  disabled?: boolean;
+  isDisabled?: boolean;
   className?: string;
 }
 
@@ -29,12 +29,12 @@ const listRowVariants = ({
   verticalPadding = 'medium',
   horizontalPadding = 'none',
   border = 'none',
-  disabled = false,
+  isDisabled = false,
 }: {
   verticalPadding?: ListRowVerticalPadding;
   horizontalPadding?: ListRowHorizontalPadding;
   border?: ListRowBorder;
-  disabled?: boolean;
+  isDisabled?: boolean;
 }) => {
   const paddingY = {
     small: 'py-1',
@@ -50,7 +50,7 @@ const listRowVariants = ({
   }[horizontalPadding];
 
   const borderClass = border === 'indented' ? 'border-b border-gray-3' : '';
-  const disabledClass = disabled ? 'opacity-40' : '';
+  const disabledClass = isDisabled ? 'opacity-40' : '';
 
   return cn(paddingY, paddingX, borderClass, disabledClass);
 };
@@ -68,7 +68,7 @@ export function ListRow({
   border = 'none',
   leftAlignment = 'center',
   rightAlignment = 'center',
-  disabled = false,
+  isDisabled = false,
   className,
   ...props
 }: ListRowProps) {
@@ -77,7 +77,7 @@ export function ListRow({
       align="center"
       gap={12}
       className={cn(
-        listRowVariants({ verticalPadding, horizontalPadding, border, disabled }),
+        listRowVariants({ verticalPadding, horizontalPadding, border, isDisabled }),
         className,
       )}
       {...props}

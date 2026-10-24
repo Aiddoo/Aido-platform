@@ -3,6 +3,7 @@ import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { type Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { useDraggableReorderList } from '@src/shared/hooks/use-draggable-reorder-list';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -33,7 +34,6 @@ import {
   ScaleDecorator,
 } from 'react-native-draggable-flatlist';
 
-import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
@@ -56,7 +56,7 @@ import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from '../todo-row';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
-  const [{ data: categoriesData }, { data: todosData }] = useSuspenseQueries({
+  const [{ data: categoriesData }, { data: todosData, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetTodosByDateQueryOptions({ date: formatDate(selectedDate) }),
@@ -80,7 +80,7 @@ export function TodoList() {
             categoryId={group.category.id}
           />
 
-          <TodoDraggableList items={group.todos} />
+          <TodoDraggableList items={group.todos} updatedAt={dataUpdatedAt} />
         </Box>
       ))}
     </Box>
@@ -140,9 +140,10 @@ function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
 
 interface TodoDraggableListProps {
   items: Todo[];
+  updatedAt: number;
 }
 
-function TodoDraggableList({ items }: TodoDraggableListProps) {
+function TodoDraggableList({ items, updatedAt }: TodoDraggableListProps) {
   const reorderMutation = useMutation(useReorderTodoMutationOptions());
 
   const {
@@ -151,10 +152,12 @@ function TodoDraggableList({ items }: TodoDraggableListProps) {
     onDragEnd,
   } = useDraggableReorderList({
     items,
+    updatedAt,
     isPending: reorderMutation.isPending,
-    onReorder: ({ movedItemId, targetId, position }) => {
+    getItemId: (todo) => todo.id,
+    onReorder: ({ movedId, targetId, position }) => {
       reorderMutation.mutate({
-        id: movedItemId,
+        id: movedId,
         input: { targetTodoId: targetId, position },
       });
     },

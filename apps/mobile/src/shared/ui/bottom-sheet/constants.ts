@@ -15,7 +15,7 @@ export const TOP_MARGIN = 24;
 export const SHEET_MAX_WIDTH = 560;
 export const SHEET_DETACHED_MARGIN = 16;
 
-export const sharedSheetStyles = StyleSheet.create({
+export const SHARED_SHEET_STYLES = StyleSheet.create({
   detached: {
     marginHorizontal: SHEET_DETACHED_MARGIN,
   },

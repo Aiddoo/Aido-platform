@@ -6,7 +6,7 @@ import { StyleSheet } from 'react-native';
 
 import { HStack } from '../h-stack/h-stack';
 import { ArrowLeftIcon } from '../icon';
-import { StyledSafeAreaView } from '../safe-area-view';
+import { StyledSafeAreaView } from '../styled-safe-area-view';
 import { Text } from '../text/text';
 import { TextSkeleton } from '../text/text-skeleton';
 import { VStack } from '../v-stack/v-stack';

@@ -82,7 +82,7 @@ export function useFeatureDiscoveryHub() {
             isOpen={isOpen}
             campaign={campaign}
             viewportHeight={viewportHeight}
-            onDismiss={handleDismiss}
+            onOpenChange={handleDismiss}
             onExit={exit}
             onCardCta={handleCardCta}
           />

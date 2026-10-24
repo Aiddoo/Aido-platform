@@ -43,8 +43,8 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 ```tsx
 import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 
-// useOverlay 등으로 isOpen/onClose/onExit를 관리
-<ModalBottomSheet isOpen={isOpen} onClose={handleClose} onExit={handleExit}>
+// useOverlay 등으로 isOpen/onOpenChange/onExit를 관리
+<ModalBottomSheet isOpen={isOpen} onOpenChange={handleOpenChange} onExit={handleExit}>
   {/* 피커 내용 */}
 </ModalBottomSheet>;
 ```
@@ -96,12 +96,12 @@ const sheet = useSheetRoute('/feed');
 
 ### ModalBottomSheet
 
-| Prop       | 타입         | 기본값 | 설명                                                           |
-| ---------- | ------------ | ------ | -------------------------------------------------------------- |
-| `isOpen`   | `boolean`    | -      | 시트 열림 상태                                                 |
-| `onClose`  | `() => void` | -      | 닫기 시작 (backdrop tap, swipe) → 부모가 isOpen을 false로 전환 |
-| `onExit`   | `() => void` | -      | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거        |
-| `children` | `ReactNode`  | -      | 시트 내용                                                      |
+| Prop           | 타입                        | 기본값 | 설명                                                       |
+| -------------- | --------------------------- | ------ | ---------------------------------------------------------- |
+| `isOpen`       | `boolean`                   | -      | 시트 열림 상태                                             |
+| `onOpenChange` | `(isOpen: boolean) => void` | -      | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출 |
+| `onExit`       | `() => void`                | -      | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거    |
+| `children`     | `ReactNode`                 | -      | 시트 내용                                                  |
 
 ## 파일 구조
 

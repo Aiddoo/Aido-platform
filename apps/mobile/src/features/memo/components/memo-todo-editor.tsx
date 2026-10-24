@@ -54,7 +54,7 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
 
   const openDatePicker = () => {
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
+      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close(null)} onExit={exit}>
         <TodoDatePickerContent
           value={toDate(todo.startDate)}
           onChange={(date) => {
@@ -69,7 +69,7 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
 
   const openTimePicker = () => {
     overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
+      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close(null)} onExit={exit}>
         <Suspense fallback={<ActivityIndicator />}>
           <TodoTimePickerContent
             date={toDate(todo.startDate)}
@@ -87,7 +87,7 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
 
   const openCategoryPicker = () => {
     overlay.open<number | null>(({ isOpen, close, exit }) => (
-      <ModalBottomSheet isOpen={isOpen} onClose={() => close(null)} onExit={exit}>
+      <ModalBottomSheet isOpen={isOpen} onOpenChange={() => close(null)} onExit={exit}>
         <Suspense fallback={<ActivityIndicator />}>
           <CategorySelectInput
             value={todo.categoryId}

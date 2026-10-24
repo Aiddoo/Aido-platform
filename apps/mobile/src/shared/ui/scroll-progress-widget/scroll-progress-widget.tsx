@@ -13,7 +13,7 @@ import Animated, {
 import { ReText } from 'react-native-redash';
 import { useResolveClassNames } from 'uniwind';
 
-import { StyledSafeAreaView } from '../safe-area-view';
+import { StyledSafeAreaView } from '../styled-safe-area-view';
 
 const WIDGET_SIZE = { collapsed: 56, expanded: 180 } as const;
 const TIMING = { fast: 250, normal: 400 } as const;

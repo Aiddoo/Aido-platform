@@ -59,7 +59,7 @@ interface FeatureDiscoveryBottomSheetProps {
   isOpen: boolean;
   campaign: FeatureDiscoveryCampaign;
   viewportHeight: number;
-  onDismiss: () => void;
+  onOpenChange: (isOpen: boolean) => void;
   onExit: () => void;
   onCardCta: (cardId: FeatureDiscoveryCardId) => void;
 }
@@ -68,7 +68,7 @@ export function FeatureDiscoveryBottomSheet({
   isOpen,
   campaign,
   viewportHeight,
-  onDismiss,
+  onOpenChange,
   onExit,
   onCardCta,
 }: FeatureDiscoveryBottomSheetProps) {
@@ -81,13 +81,13 @@ export function FeatureDiscoveryBottomSheet({
   );
 
   return (
-    <ModalBottomSheet isOpen={isOpen} onClose={onDismiss} onExit={onExit}>
+    <ModalBottomSheet isOpen={isOpen} onOpenChange={onOpenChange} onExit={onExit}>
       <VStack gap={12} accessibilityViewIsModal accessibilityLabel={t('hub.sheetLabel')}>
         <HStack align="center" justify="between" gap={12}>
           <H3 className="shrink">{t('hub.title')}</H3>
           <TextButton
             size="small"
-            onPress={onDismiss}
+            onPress={() => onOpenChange(false)}
             accessibilityRole="button"
             accessibilityLabel={t('hub.closeLabel')}
           >

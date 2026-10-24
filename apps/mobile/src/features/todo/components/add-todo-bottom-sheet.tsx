@@ -273,7 +273,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close(null)}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
           if (pickerResult) {
@@ -300,7 +300,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close(null)}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
           if (pickerResult) {
@@ -334,7 +334,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     overlay.open<RepeatPickerCloseResult | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close({ type: 'cancel' })}
+        onOpenChange={() => close({ type: 'cancel' })}
         onExit={() => {
           exit();
           match(pickerResult)
@@ -374,7 +374,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     overlay.open<number | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close(null)}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
           if (pickerResult != null) {

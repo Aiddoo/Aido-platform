@@ -93,7 +93,7 @@ describe('FeatureDiscoveryBottomSheet', () => {
       <FeatureDiscoveryBottomSheet
         isOpen
         campaign={campaign}
-        onDismiss={jest.fn()}
+        onOpenChange={jest.fn()}
         onExit={jest.fn()}
         onCardCta={jest.fn()}
         viewportHeight={480}
@@ -115,13 +115,13 @@ describe('FeatureDiscoveryBottomSheet', () => {
     if (!campaign) {
       throw new Error('bundled campaign missing');
     }
-    const onDismiss = jest.fn();
+    const onOpenChange = jest.fn();
     const onCardCta = jest.fn();
     await render(
       <FeatureDiscoveryBottomSheet
         isOpen
         campaign={campaign}
-        onDismiss={onDismiss}
+        onOpenChange={onOpenChange}
         onExit={jest.fn()}
         onCardCta={onCardCta}
         viewportHeight={800}
@@ -133,7 +133,7 @@ describe('FeatureDiscoveryBottomSheet', () => {
     await fireEvent.press(screen.getByLabelText('친구 찾기 기능으로 이동'));
 
     // Then
-    expect(onDismiss).toHaveBeenCalledTimes(1);
+    expect(onOpenChange).toHaveBeenCalledTimes(1);
     expect(onCardCta).toHaveBeenCalledWith('friend_search');
   });
 
@@ -155,7 +155,7 @@ describe('FeatureDiscoveryBottomSheet', () => {
         <FeatureDiscoveryBottomSheet
           isOpen
           campaign={campaign}
-          onDismiss={jest.fn()}
+          onOpenChange={jest.fn()}
           onExit={jest.fn()}
           onCardCta={jest.fn()}
           viewportHeight={480}
