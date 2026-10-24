@@ -21,6 +21,7 @@ export {
 } from './confirm-dialog';
 export { DashedDivider, type DashedDividerProps } from './dashed-divider';
 export { Flex } from './flex';
+export { FormStepLayout, type FormStepLayoutProps } from './form-step-layout';
 export { Grid, GridItem, useGridColumns } from './grid';
 export { HStack } from './h-stack';
 export { IconRadioItem, type IconRadioItemProps } from './icon-radio-item';

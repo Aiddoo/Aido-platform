@@ -1,20 +1,13 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import {
-  H3,
-  Input,
-  KeyboardAdaptiveButton,
-  Spacing,
-  StyledSafeAreaView,
-  VStack,
-} from '@src/shared/ui';
+import { Input, KeyboardAdaptiveButton, Spacing, VStack, FormStepLayout } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
@@ -63,95 +56,80 @@ export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
 
   return (
     <View className="flex-1">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <StyledSafeAreaView edges={['left', 'right']}>
+      <FormStepLayout title={t(STEP_DESCRIPTION_KEYS[step])}>
+        {step === 'email' && (
           <Animated.View
-            key={step}
-            entering={FadeIn.duration(ANIMATION.duration.slow)}
-            style={{ marginBottom: 24 }}
+            entering={FadeInUp.duration(ANIMATION.duration.slow)
+              .delay(ANIMATION.delay.short)
+              .withCallback((finished) => {
+                'worklet';
+                if (finished) {
+                  scheduleOnRN(focusEmailInput);
+                }
+              })}
           >
-            <H3>{t(STEP_DESCRIPTION_KEYS[step])}</H3>
-          </Animated.View>
-
-          {step === 'email' && (
-            <Animated.View
-              entering={FadeInUp.duration(ANIMATION.duration.slow)
-                .delay(ANIMATION.delay.short)
-                .withCallback((finished) => {
-                  'worklet';
-                  if (finished) {
-                    scheduleOnRN(focusEmailInput);
-                  }
-                })}
-            >
-              <FormField control={control} name="email">
-                {({ onChange, value }, { error }) => (
-                  <VStack gap={8}>
-                    <Input
-                      ref={emailInputRef}
-                      label={t('auth:signUp.emailLabel')}
-                      placeholder="example@email.com"
-                      value={value}
-                      onChange={onChange}
-                      keyboardType="email-address"
-                      textContentType="emailAddress"
-                      autoComplete="email"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      submitBehavior="submit"
-                      returnKeyType="next"
-                      isInvalid={!!error}
-                      errorMessage={resolveValidationMessage(error, {
-                        default: 'email.invalid',
-                        byType: { too_big: 'email.tooLong' },
-                      })}
-                      onSubmitEditing={() => {
-                        if (isEmailValid) {
-                          handleNext();
-                        }
-                      }}
-                    />
-                    <SuggestedEmailDomainList value={value} onChange={onChange} />
-                  </VStack>
-                )}
-              </FormField>
-              <Spacing size={20} />
-            </Animated.View>
-          )}
-
-          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-            <FormField control={control} name="name">
+            <FormField control={control} name="email">
               {({ onChange, value }, { error }) => (
-                <Input
-                  label={t('auth:signUp.nicknameLabel')}
-                  placeholder={t('auth:signUp.nicknamePlaceholder')}
-                  value={value}
-                  onChange={onChange}
-                  autoCapitalize="none"
-                  submitBehavior="submit"
-                  autoFocus={step === 'name'}
-                  returnKeyType="next"
-                  isInvalid={!!error}
-                  errorMessage={resolveValidationMessage(error, {
-                    default: 'nickname.required',
-                    byType: { too_big: 'nickname.tooLong' },
-                  })}
-                  onSubmitEditing={() => {
-                    if (isNameValid) {
-                      handleNext();
-                    }
-                  }}
-                />
+                <VStack gap={8}>
+                  <Input
+                    ref={emailInputRef}
+                    label={t('auth:signUp.emailLabel')}
+                    placeholder="example@email.com"
+                    value={value}
+                    onChange={onChange}
+                    keyboardType="email-address"
+                    textContentType="emailAddress"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    submitBehavior="submit"
+                    returnKeyType="next"
+                    isInvalid={!!error}
+                    errorMessage={resolveValidationMessage(error, {
+                      default: 'email.invalid',
+                      byType: { too_big: 'email.tooLong' },
+                    })}
+                    onSubmitEditing={() => {
+                      if (isEmailValid) {
+                        handleNext();
+                      }
+                    }}
+                  />
+                  <SuggestedEmailDomainList value={value} onChange={onChange} />
+                </VStack>
               )}
             </FormField>
+            <Spacing size={20} />
           </Animated.View>
-        </StyledSafeAreaView>
-      </ScrollView>
+        )}
+
+        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+          <FormField control={control} name="name">
+            {({ onChange, value }, { error }) => (
+              <Input
+                label={t('auth:signUp.nicknameLabel')}
+                placeholder={t('auth:signUp.nicknamePlaceholder')}
+                value={value}
+                onChange={onChange}
+                autoCapitalize="none"
+                submitBehavior="submit"
+                autoFocus={step === 'name'}
+                returnKeyType="next"
+                isInvalid={!!error}
+                errorMessage={resolveValidationMessage(error, {
+                  default: 'nickname.required',
+                  byType: { too_big: 'nickname.tooLong' },
+                })}
+                onSubmitEditing={() => {
+                  if (isNameValid) {
+                    handleNext();
+                  }
+                }}
+              />
+            )}
+          </FormField>
+        </Animated.View>
+      </FormStepLayout>
 
       <KeyboardAdaptiveButton color="dark" onPress={handleNext} isDisabled={!isNextButtonEnabled}>
         {t('auth:signUp.next')}

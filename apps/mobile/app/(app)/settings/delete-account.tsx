@@ -5,19 +5,18 @@ import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  H3,
   KeyboardAdaptiveButton,
   QueryErrorBoundary,
-  StyledSafeAreaView,
   Text,
   useConfirmDialog,
   VStack,
+  FormStepLayout,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
-import { Keyboard, ScrollView, View } from 'react-native';
+import { Keyboard, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const credentialDeleteAccountSchema = deleteAccountSchema.required({ password: true });
@@ -49,52 +48,38 @@ function DeleteAccountScreen() {
 
   return (
     <View className="flex-1">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Animated.View
-            entering={FadeIn.duration(ANIMATION.duration.slow)}
-            style={{ marginBottom: 24 }}
-          >
-            <H3>{t('deleteAccount.passwordTitle')}</H3>
-          </Animated.View>
+      <FormStepLayout title={t('deleteAccount.passwordTitle')}>
+        <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
+          <FormField control={control} name="password">
+            {({ onChange, value }) => (
+              <PasswordInput
+                label={t('deleteAccount.currentPasswordLabel')}
+                placeholder={t('deleteAccount.passwordPlaceholder')}
+                value={value}
+                onChange={onChange}
+                autoFocus
+                submitBehavior="submit"
+                returnKeyType="done"
+                renderErrorMessage={false}
+                onSubmitEditing={() => handleDeletePress()}
+              />
+            )}
+          </FormField>
+        </Animated.View>
 
-          <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
-            <FormField control={control} name="password">
-              {({ onChange, value }) => (
-                <PasswordInput
-                  label={t('deleteAccount.currentPasswordLabel')}
-                  placeholder={t('deleteAccount.passwordPlaceholder')}
-                  value={value}
-                  onChange={onChange}
-                  autoFocus
-                  submitBehavior="submit"
-                  returnKeyType="done"
-                  renderErrorMessage={false}
-                  onSubmitEditing={() => handleDeletePress()}
-                />
-              )}
-            </FormField>
-          </Animated.View>
-
-          <Animated.View
-            entering={FadeIn.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
-          >
-            <VStack mt={16} p={16} gap={4} className="bg-warning-1 rounded-xl">
-              <Text size="b3" shade={7}>
-                {t('deleteAccount.restoreNotice')}
-              </Text>
-              <Text size="b3" shade={5}>
-                {t('deleteAccount.purgeNotice')}
-              </Text>
-            </VStack>
-          </Animated.View>
-        </StyledSafeAreaView>
-      </ScrollView>
+        <Animated.View
+          entering={FadeIn.duration(ANIMATION.duration.normal).delay(ANIMATION.delay.short)}
+        >
+          <VStack mt={16} p={16} gap={4} className="bg-warning-1 rounded-xl">
+            <Text size="b3" shade={7}>
+              {t('deleteAccount.restoreNotice')}
+            </Text>
+            <Text size="b3" shade={5}>
+              {t('deleteAccount.purgeNotice')}
+            </Text>
+          </VStack>
+        </Animated.View>
+      </FormStepLayout>
 
       <KeyboardAdaptiveButton
         color="danger"

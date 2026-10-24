@@ -1,13 +1,11 @@
 import { verifyEmailSchema } from '@aido/api';
-import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { H3, HStack, StyledSafeAreaView, Text, TextButton, VStack } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack, FormStepLayout } from '@src/shared/ui';
 import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { ScrollView, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { View } from 'react-native';
 
 import { useCooldown } from '../hooks/use-cooldown';
 import { maskEmail } from '../utils/mask-email';
@@ -94,53 +92,39 @@ export function EmailVerificationCodeStep({
 
   return (
     <View className="flex-1">
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <StyledSafeAreaView edges={['left', 'right']}>
-          <Animated.View
-            entering={FadeIn.duration(ANIMATION.duration.slow)}
-            style={{ marginBottom: 24 }}
-          >
-            <H3>{t('verification.codeSentTo', { email: maskEmail(email) })}</H3>
-          </Animated.View>
+      <FormStepLayout title={t('verification.codeSentTo', { email: maskEmail(email) })}>
+        <VStack gap={32} align="center">
+          <VerificationCodeInput
+            ref={inputOTPRef}
+            isSeparated={isSeparated}
+            value={code}
+            onChange={setCode}
+            onComplete={handleComplete}
+            isInvalid={isInvalid}
+          />
 
-          <VStack gap={32} align="center">
-            <VerificationCodeInput
-              ref={inputOTPRef}
-              isSeparated={isSeparated}
-              value={code}
-              onChange={setCode}
-              onComplete={handleComplete}
-              isInvalid={isInvalid}
-            />
+          {isVerifying && (
+            <Text size="b4" className="text-main">
+              {t('verification.verifying')}
+            </Text>
+          )}
 
-            {isVerifying && (
-              <Text size="b4" className="text-main">
-                {t('verification.verifying')}
-              </Text>
-            )}
-
-            <HStack gap={8} justify="center">
-              <Text size="b4" shade={7}>
-                {t('verification.didNotReceive')}
-              </Text>
-              <TextButton
-                size="medium"
-                onPress={handleResend}
-                isDisabled={cooldown > 0 || isResending}
-              >
-                {cooldown > 0
-                  ? t('verification.resendIn', { count: cooldown })
-                  : t('verification.resend')}
-              </TextButton>
-            </HStack>
-          </VStack>
-        </StyledSafeAreaView>
-      </ScrollView>
+          <HStack gap={8} justify="center">
+            <Text size="b4" shade={7}>
+              {t('verification.didNotReceive')}
+            </Text>
+            <TextButton
+              size="medium"
+              onPress={handleResend}
+              isDisabled={cooldown > 0 || isResending}
+            >
+              {cooldown > 0
+                ? t('verification.resendIn', { count: cooldown })
+                : t('verification.resend')}
+            </TextButton>
+          </HStack>
+        </VStack>
+      </FormStepLayout>
     </View>
   );
 }
