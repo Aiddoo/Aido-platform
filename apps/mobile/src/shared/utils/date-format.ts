@@ -1,23 +1,56 @@
+import { match } from 'ts-pattern';
+
 export interface DateFormatContext {
   locale: 'ko-KR' | 'en-US';
   timeZone: string;
 }
 
-type DateLabel = 'fullDate' | 'monthDay' | 'dayOfMonth' | 'yearMonth' | 'month' | 'weekday';
+export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
+
+/** 시간대와 무관한 하루 중 시각 (0-23시, 0-59분) */
+export interface TimeOfDay {
+  hour: number;
+  minute: number;
+}
+
+type DateLabel =
+  | 'fullDate'
+  | 'monthDay'
+  | 'numericDate'
+  | 'dottedMonthDay'
+  | 'dayOfMonth'
+  | 'dayNumber'
+  | 'yearMonth'
+  | 'month'
+  | 'weekday';
 
 const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   fullDate: { year: 'numeric', month: 'long', day: 'numeric' },
   monthDay: { month: 'short', day: 'numeric' },
+  numericDate: { year: 'numeric', month: 'numeric', day: 'numeric' },
+  dottedMonthDay: { month: '2-digit', day: '2-digit' },
   dayOfMonth: { day: 'numeric' },
+  dayNumber: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
   month: { month: 'short' },
   weekday: { weekday: 'short' },
 };
 
+const DATE_KEY_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+};
+const ZONED_HOUR_OPTIONS: Intl.DateTimeFormatOptions = { hour: '2-digit', hourCycle: 'h23' };
+const PARTS_LOCALE: DateFormatContext['locale'] = 'en-US';
+
 const formatterCache = new Map<string, Intl.DateTimeFormat>();
 const MAX_FORMATTERS = 32;
 
-function getFormatter(context: DateFormatContext, options: Intl.DateTimeFormatOptions) {
+function getFormatter(
+  context: DateFormatContext,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
   const key = JSON.stringify([context.locale, context.timeZone, options]);
   const cached = formatterCache.get(key);
   if (cached) {
@@ -35,57 +68,198 @@ function getFormatter(context: DateFormatContext, options: Intl.DateTimeFormatOp
   return formatter;
 }
 
-export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormatContext) {
-  if (!Number.isFinite(date.getTime())) {
+function isValidDate(date: Date): boolean {
+  return Number.isFinite(date.getTime());
+}
+
+function findPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
+  return parts.find((part) => part.type === type)?.value ?? '';
+}
+
+function toUtcContext(context: DateFormatContext): DateFormatContext {
+  return { ...context, timeZone: 'UTC' };
+}
+
+function toDateKeyInstant(dateKey: string): Date {
+  return new Date(`${dateKey}T00:00:00Z`);
+}
+
+function toTimeOfDayInstant({ hour, minute }: TimeOfDay): Date {
+  return new Date(Date.UTC(1970, 0, 1, hour, minute));
+}
+
+function getHourCycleOptions(timeFormat: TimeFormat): Intl.DateTimeFormatOptions {
+  return timeFormat === 'TWELVE_HOUR' ? { hour12: true } : { hourCycle: 'h23' };
+}
+
+export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormatContext): string {
+  if (!isValidDate(date)) {
     return '';
   }
   const formatter = getFormatter(context, DATE_OPTIONS[kind]);
-  if (kind === 'dayOfMonth') {
-    const day = formatter.formatToParts(date).find((part) => part.type === 'day')?.value ?? '';
-    return context.locale === 'ko-KR' ? `${day}일` : day;
-  }
-  return formatter.format(date);
+  return match(kind)
+    .with('dayOfMonth', () => {
+      const day = findPart(formatter.formatToParts(date), 'day');
+      return context.locale === 'ko-KR' ? `${day}일` : day;
+    })
+    .with('dayNumber', () => findPart(formatter.formatToParts(date), 'day'))
+    .with('dottedMonthDay', () => {
+      const parts = getFormatter(
+        { ...context, locale: PARTS_LOCALE },
+        DATE_OPTIONS.dottedMonthDay,
+      ).formatToParts(date);
+      return `${findPart(parts, 'month')}.${findPart(parts, 'day')}`;
+    })
+    .otherwise(() => formatter.format(date));
 }
 
 /** YYYY-MM-DD 날짜 key를 기기 시간대와 무관하게 그 날짜 그대로 표시한다. */
-export function formatDateKeyLabel(dateKey: string, kind: DateLabel, context: DateFormatContext) {
-  return formatDateLabel(new Date(`${dateKey}T00:00:00Z`), kind, { ...context, timeZone: 'UTC' });
+export function formatDateKeyLabel(
+  dateKey: string,
+  kind: DateLabel,
+  context: DateFormatContext,
+): string {
+  return formatDateLabel(toDateKeyInstant(dateKey), kind, toUtcContext(context));
+}
+
+/** YYYY-MM-DD 기간을 표시한다. 같은 해면 월·일만, 해가 다르면 연도까지 (ko: "10월 19일 ~ 10월 25일"). */
+export function formatDateKeyRange(
+  startDateKey: string,
+  endDateKey: string,
+  context: DateFormatContext,
+): string {
+  const kind: DateLabel =
+    startDateKey.slice(0, 4) === endDateKey.slice(0, 4) ? 'monthDay' : 'fullDate';
+  return `${formatDateKeyLabel(startDateKey, kind, context)} ~ ${formatDateKeyLabel(endDateKey, kind, context)}`;
 }
 
 /** 로케일 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM", 24시간제: "18:30"). */
 export function formatClockTime(
   date: Date,
-  timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR',
+  timeFormat: TimeFormat,
   context: DateFormatContext,
 ): string {
-  if (!Number.isFinite(date.getTime())) {
+  if (!isValidDate(date)) {
     return '';
   }
-  const hourCycleOptions: Intl.DateTimeFormatOptions =
-    timeFormat === 'TWELVE_HOUR' ? { hour12: true } : { hourCycle: 'h23' };
-  return getFormatter(context, { hour: 'numeric', minute: '2-digit', ...hourCycleOptions }).format(
-    date,
-  );
+  return getFormatter(context, {
+    hour: 'numeric',
+    minute: '2-digit',
+    ...getHourCycleOptions(timeFormat),
+  }).format(date);
 }
 
-/** 로케일 기본 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM"). hour12가 false면 "18:30". */
-export function formatLocaleTime(date: Date, hour12: boolean, context: DateFormatContext) {
-  if (!Number.isFinite(date.getTime())) {
+/** 시간대와 무관한 시각을 로케일 순서로 표시한다 (ko: "오후 2:30", en: "2:30 PM"). */
+export function formatTimeOfDay(
+  time: TimeOfDay,
+  timeFormat: TimeFormat,
+  context: DateFormatContext,
+): string {
+  return formatClockTime(toTimeOfDayInstant(time), timeFormat, toUtcContext(context));
+}
+
+/** 정시를 로케일 순서로 표시한다 (ko: "오후 3시"/"15시", en: "3 PM"/"15"). */
+export function formatHourLabel(
+  hour: number,
+  timeFormat: TimeFormat,
+  context: DateFormatContext,
+): string {
+  const date = toTimeOfDayInstant({ hour, minute: 0 });
+  if (!isValidDate(date)) {
     return '';
   }
-  return getFormatter(context, { hour: 'numeric', minute: '2-digit', hour12 }).format(date);
+  return getFormatter(toUtcContext(context), {
+    hour: 'numeric',
+    ...getHourCycleOptions(timeFormat),
+  }).format(date);
+}
+
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+const RELATIVE_DAY_LIMIT = 7;
+
+const relativeTimeFormatterCache = new Map<DateFormatContext['locale'], Intl.RelativeTimeFormat>();
+
+function getRelativeTimeFormatter(
+  locale: DateFormatContext['locale'],
+): Intl.RelativeTimeFormat | null {
+  if (typeof Intl.RelativeTimeFormat !== 'function') {
+    return null;
+  }
+  const cached = relativeTimeFormatterCache.get(locale);
+  if (cached) {
+    return cached;
+  }
+  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
+  relativeTimeFormatterCache.set(locale, formatter);
+  return formatter;
+}
+
+function toRelativeUnit(elapsedMs: number): [number, Intl.RelativeTimeFormatUnit] | null {
+  if (elapsedMs < HOUR_MS) {
+    return [Math.floor(elapsedMs / MINUTE_MS), 'minute'];
+  }
+  if (elapsedMs < DAY_MS) {
+    return [Math.floor(elapsedMs / HOUR_MS), 'hour'];
+  }
+  if (elapsedMs < RELATIVE_DAY_LIMIT * DAY_MS) {
+    return [Math.floor(elapsedMs / DAY_MS), 'day'];
+  }
+  return null;
+}
+
+/**
+ * 경과 시간을 표시한다. 1분 미만은 justNowLabel, 7일 미만은 "5분 전"·"3시간 전"·"2일 전",
+ * 그 이후는 같은 해면 "1월 5일", 다른 해면 "2025. 1. 5." (연도는 context 시간대 기준).
+ */
+export function formatRelativeTime(
+  date: Date,
+  now: Date,
+  justNowLabel: string,
+  context: DateFormatContext,
+): string {
+  if (!isValidDate(date) || !isValidDate(now)) {
+    return '';
+  }
+  const elapsedMs = now.getTime() - date.getTime();
+  if (elapsedMs < MINUTE_MS) {
+    return justNowLabel;
+  }
+  const relativeUnit = toRelativeUnit(elapsedMs);
+  const relativeTimeFormatter = getRelativeTimeFormatter(context.locale);
+  if (relativeUnit && relativeTimeFormatter) {
+    const [value, unit] = relativeUnit;
+    return relativeTimeFormatter.format(-value, unit);
+  }
+  const isSameYear =
+    formatDateKey(date, context.timeZone).slice(0, 4) ===
+    formatDateKey(now, context.timeZone).slice(0, 4);
+  return formatDateLabel(date, isSameYear ? 'monthDay' : 'numericDate', context);
 }
 
 export function formatDateKey(date: Date, timeZone: string): string {
-  if (!Number.isFinite(date.getTime())) {
+  if (!isValidDate(date)) {
     return '';
   }
-  const parts = getFormatter(
-    { locale: 'en-US', timeZone },
-    { year: 'numeric', month: '2-digit', day: '2-digit' },
-  ).formatToParts(date);
-  const year = parts.find((part) => part.type === 'year')?.value;
-  const month = parts.find((part) => part.type === 'month')?.value;
-  const day = parts.find((part) => part.type === 'day')?.value;
+  const parts = getFormatter({ locale: PARTS_LOCALE, timeZone }, DATE_KEY_OPTIONS).formatToParts(
+    date,
+  );
+  const year = findPart(parts, 'year');
+  const month = findPart(parts, 'month');
+  const day = findPart(parts, 'day');
   return year && month && day ? `${year}-${month}-${day}` : '';
+}
+
+/** 지정 시간대 기준 시(0-23) */
+export function getZonedHour(date: Date, timeZone: string): number {
+  if (!isValidDate(date)) {
+    return Number.NaN;
+  }
+  return Number(
+    findPart(
+      getFormatter({ locale: PARTS_LOCALE, timeZone }, ZONED_HOUR_OPTIONS).formatToParts(date),
+      'hour',
+    ),
+  );
 }

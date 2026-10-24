@@ -2,7 +2,8 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Spacing, Text, VStack, DashedDivider } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { getDayOfWeekLabel } from '@src/shared/utils/date';
+import { getDateFormatContext, getDayOfWeekLabel } from '@src/shared/utils/date';
+import { formatDateKeyRange, formatHourLabel } from '@src/shared/utils/date-format';
 import { formatPercent } from '@src/shared/utils/format';
 import type { TimeFormat } from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -10,7 +11,6 @@ import { Chip, Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
 import type { AiReport } from '../domains/ai.model';
-import { formatHour } from '../utils/format-report';
 import { ScallopedContainer } from './scalloped-container';
 
 interface ActivityReportProps {
@@ -95,7 +95,11 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
       </Text>
 
       <Text size="b4" shade={5}>
-        {report.dateRange.startDate} ~ {report.dateRange.endDate}
+        {formatDateKeyRange(
+          report.dateRange.startDate,
+          report.dateRange.endDate,
+          getDateFormatContext(),
+        )}
       </Text>
     </HStack>
   );
@@ -243,7 +247,7 @@ function TimePatternSummary({
           <Separator orientation="vertical" className="h-3 bg-gray-3" />
 
           <Text size="b4" shade={8}>
-            {formatHour(item.hour, timeFormat)}
+            {formatHourLabel(item.hour, timeFormat, getDateFormatContext())}
           </Text>
 
           <Text size="b4" shade={6}>

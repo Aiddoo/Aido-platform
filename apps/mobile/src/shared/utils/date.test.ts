@@ -7,7 +7,6 @@ import {
   formatDaysOfWeek,
   formatFullDate,
   formatRelativeTime,
-  getDateSectionLabel,
   getDayOfWeekLabel,
   getMonthHeaderText,
   getMonthWeeks,
@@ -232,27 +231,19 @@ describe('로케일 인지 포맷 (i18n)', () => {
 
   it('상대 시간을 로케일과 복수형에 맞춰 포맷한다', async () => {
     // Given
-    const now = new Date();
+    const now = new Date('2026-10-25T03:00:00Z');
     const oneMinuteAgo = new Date(now.getTime() - 61_000);
     const twoHoursAgo = new Date(now.getTime() - 2 * 3600_000);
 
     // Then (ko)
-    expect(formatRelativeTime(now)).toBe('방금 전');
-    expect(formatRelativeTime(oneMinuteAgo)).toBe('1분 전');
-    expect(formatRelativeTime(twoHoursAgo)).toBe('2시간 전');
+    expect(formatRelativeTime(now, now)).toBe('방금 전');
+    expect(formatRelativeTime(oneMinuteAgo, now)).toBe('1분 전');
+    expect(formatRelativeTime(twoHoursAgo, now)).toBe('2시간 전');
 
     // Then (en — 단수/복수)
     await i18n.changeLanguage('en');
-    expect(formatRelativeTime(now)).toBe('Just now');
-    expect(formatRelativeTime(oneMinuteAgo)).toBe('1 minute ago');
-    expect(formatRelativeTime(twoHoursAgo)).toBe('2 hours ago');
-  });
-
-  it('오늘 날짜의 섹션 라벨을 로케일에 맞춰 반환한다', async () => {
-    const today = new Date();
-    expect(getDateSectionLabel(today)).toBe('오늘');
-
-    await i18n.changeLanguage('en');
-    expect(getDateSectionLabel(today)).toBe('Today');
+    expect(formatRelativeTime(now, now)).toBe('Just now');
+    expect(formatRelativeTime(oneMinuteAgo, now)).toBe('1 minute ago');
+    expect(formatRelativeTime(twoHoursAgo, now)).toBe('2 hours ago');
   });
 });

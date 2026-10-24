@@ -1,6 +1,9 @@
 import catImage from '@assets/images/cat_weather_anchor.png';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { Spacing, Text, VStack } from '@src/shared/ui';
+import { getDateFormatContext } from '@src/shared/utils/date';
+import { formatHourLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Image, ScrollView, View } from 'react-native';
 
@@ -54,14 +57,14 @@ export function HourlyForecast() {
 HourlyForecast.Item = function Item({ item }: { item: HourlyForecastViewModel }) {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const SkyIcon = resolveIconBySky(item.skyCondition);
+  const hourLabel = formatHourLabel(item.hour, preference.timeFormat, getDateFormatContext());
 
   return (
     <VStack py={16} px={20} className="items-center justify-between">
       <Text size="b3" align="center" style={{ color: palette.textSub }}>
-        {t(item.dayOffset > 0 ? 'screen.nextDayHourLabel' : 'screen.hourLabel', {
-          hour: item.hour,
-        })}
+        {item.dayOffset > 0 ? t('screen.nextDayHourLabel', { time: hourLabel }) : hourLabel}
       </Text>
 
       <Spacing size={8} />

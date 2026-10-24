@@ -2,11 +2,11 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 import { getDateFormatContext } from './date';
-import { formatLocaleTime } from './date-format';
+import { formatTimeOfDay, type TimeFormat } from './date-format';
 
 dayjs.extend(customParseFormat);
 
-export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';
+export type { TimeFormat };
 
 /** "HH:mm" 형식(두 자리, 엄격)인지 검증 */
 export function isValidHHmm(time: string): boolean {
@@ -36,11 +36,6 @@ export function withTime(date: Date, hour: number, minute: number): Date {
 /** 12시간제 여부 */
 export function isTwelveHour(timeFormat: TimeFormat): boolean {
   return timeFormat === 'TWELVE_HOUR';
-}
-
-/** 앱 표시 언어 로케일로 시:분 포맷 (ko: "오전 8:30", en: "8:30 AM") */
-function formatTimeByLocale(date: Date, hour12: boolean): string {
-  return formatLocaleTime(date, hour12, getDateFormatContext());
 }
 
 export const toHHmm = (date: Date): string => dayjs(date).format('HH:mm');
@@ -78,15 +73,16 @@ export const formatReminderTime = (
   hour: number,
   minute: number,
   timeFormat: TimeFormat = 'TWELVE_HOUR',
-): string => formatTimeByLocale(withTime(new Date(), hour, minute), isTwelveHour(timeFormat));
+): string => formatTimeOfDay({ hour, minute }, timeFormat, getDateFormatContext());
 
 /** "HH:mm" 문자열을 사용자 시간 형식에 맞춰 표시용으로 변환 */
 export const formatTimeDisplay = (time: string, timeFormat: TimeFormat = 'TWELVE_HOUR'): string => {
-  if (!isTwelveHour(timeFormat)) {
-    return time;
-  }
   if (!isValidHHmm(time)) {
     return time;
   }
-  return formatTimeByLocale(withTime(new Date(), parseHour(time), parseMinute(time)), true);
+  return formatTimeOfDay(
+    { hour: parseHour(time), minute: parseMinute(time) },
+    timeFormat,
+    getDateFormatContext(),
+  );
 };

@@ -63,7 +63,7 @@ function NudgeDetailScreen() {
               {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
             </Text>
             <Text size="e1" shade={5}>
-              {formatRelativeTime(nudge.createdAt)}
+              {formatRelativeTime(nudge.createdAt, new Date())}
             </Text>
           </VStack>
         </HStack>

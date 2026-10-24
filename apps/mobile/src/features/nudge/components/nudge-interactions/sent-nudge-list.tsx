@@ -125,7 +125,7 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
                 {nudge.receiverName}
               </Text>
               <Text size="e1" shade={5}>
-                {formatRelativeTime(nudge.createdAt)}
+                {formatRelativeTime(nudge.createdAt, new Date())}
               </Text>
             </HStack>
             <Text size="b3" weight="semibold" maxLines={2}>

@@ -94,7 +94,7 @@ function CommentAuthorLine({ comment }: { comment: TodoComment }) {
         </Text>
       )}
       <Text size="e1" shade={5}>
-        {formatRelativeTime(comment.createdAt)}
+        {formatRelativeTime(comment.createdAt, new Date())}
       </Text>
       {comment.isEdited && (
         <Text size="e1" shade={5}>

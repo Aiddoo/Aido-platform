@@ -44,7 +44,7 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                   {t(`categories.${getCategoryKey(notification.type)}`)}
                 </Text>
                 <Text size="b4" shade={5}>
-                  {formatRelativeTime(notification.createdAt)}
+                  {formatRelativeTime(notification.createdAt, new Date())}
                 </Text>
               </HStack>
 

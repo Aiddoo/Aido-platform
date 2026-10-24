@@ -45,7 +45,6 @@
     "precipProb": "Rain Chance",
     "feelsLike": "Feels like {{temp}}°, meow",
     "hourly": "Hourly Forecast",
-    "hourLabel": "{{hour}}:00",
     "weekly": "Weekly Forecast",
     "sunrise": "Sunrise",
     "sunset": "Sunset",
@@ -57,7 +56,7 @@
     "registeredLocation": "Weather for your saved location",
     "dailyRange": "Today’s low and high temperatures",
     "refreshFailed": "Couldn’t update. Showing the last forecast.",
-    "nextDayHourLabel": "Tomorrow {{hour}}:00"
+    "nextDayHourLabel": "Tomorrow {{time}}"
   },
   "dust": {
     "good": "Good",

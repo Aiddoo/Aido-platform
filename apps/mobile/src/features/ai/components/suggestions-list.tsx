@@ -1,4 +1,5 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
@@ -12,7 +13,8 @@ import {
   DashedDivider,
 } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { formatTimeDisplay, type TimeFormat } from '@src/shared/utils/time';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Spinner } from 'heroui-native';
 import { useState } from 'react';
@@ -105,9 +107,12 @@ SuggestionsList.Loading = function Loading() {
   );
 };
 
-const formatSchedule = (suggestion: AiSuggestion): string => {
+const formatSchedule = (suggestion: AiSuggestion, timeFormat: TimeFormat): string => {
   const days = formatDaysOfWeek(suggestion.daysOfWeek);
-  const time = suggestion.scheduledTime ?? tGlobal('ai:suggestions.list.allDay');
+  const time =
+    suggestion.scheduledTime === null
+      ? tGlobal('ai:suggestions.list.allDay')
+      : formatTimeDisplay(suggestion.scheduledTime, timeFormat);
   return `${days} · ${time}`;
 };
 
@@ -129,6 +134,7 @@ SuggestionsList.Item = function Item({
   isLast = false,
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const overlay = useOverlay();
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
@@ -168,7 +174,7 @@ SuggestionsList.Item = function Item({
             </Text>
           </HStack>
           <Text size="b4" shade={7}>
-            {formatSchedule(suggestion)}
+            {formatSchedule(suggestion, preference.timeFormat)}
           </Text>
         </VStack>
 

@@ -1,3 +1,5 @@
+import type { DateFormatContext } from './date-format';
+
 const ZERO_DECIMAL_CURRENCIES = new Set(['KRW', 'JPY']);
 
 /** 통화 코드 → 해당 통화의 자연스러운 로케일 매핑 (스토어 지역 기반) */
@@ -34,6 +36,11 @@ export function formatCappedCount(count: number, max: number = COUNT_BADGE_MAX):
 export function formatPercent(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded) ? `${rounded}` : `${rounded.toFixed(1)}`;
+}
+
+/** 정수 개수를 앱 표시 언어의 자릿수 구분으로 표시한다 (예: "1,000"). */
+export function formatCount(value: number, locale: DateFormatContext['locale']): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 }
 
 export function formatPrice(amount: number, currencyCode: string) {

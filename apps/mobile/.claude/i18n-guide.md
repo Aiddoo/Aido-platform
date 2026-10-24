@@ -59,7 +59,7 @@ toast.error(t('friend:toast.sendFailed'));
   // 사용처: t(INQUIRY_CATEGORY_LABEL_KEYS[category])
   ```
 - **런타임 키**(에러 코드 등): `tDynamic('errors', code, fallback)` — 타입 검증 우회 전용
-- **날짜/시간**: `@src/shared/utils/date`(formatFullDate, getWeekdayLabels, formatRelativeTime, getDateSectionLabel 등)와 `time.ts`가 이미 로케일 인지 — 재구현 금지. dayjs 전역 locale은 init이 관리 (`dayjs.locale()` 직접 호출 금지)
+- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/utils/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel, formatRelativeTime)로만 만든다. `date.ts`·`time.ts`의 wrapper는 앱 언어 context를 채워 위 헬퍼를 호출한다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고, 전역 locale은 init이 관리 (`dayjs.locale()` 직접 호출 금지). "오늘"은 `useToday()`로 읽어 인자로 넘긴다
 
 ### 에러 메시지
 

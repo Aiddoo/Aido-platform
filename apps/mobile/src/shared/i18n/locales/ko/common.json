@@ -10,14 +10,6 @@
     "retry": "다시 시도",
     "goBack": "뒤로 가기"
   },
-  "dateFormats": {
-    "fullDate": "YYYY년 M월 D일",
-    "monthDay": "M월 D일",
-    "dayOfMonth": "D일",
-    "yearMonth": "YYYY년 M월",
-    "monthLabel": "M월",
-    "shortDate": "YYYY.M.D"
-  },
   "daysOfWeek": {
     "MON": "월",
     "TUE": "화",
@@ -38,10 +30,7 @@
     "earlier": "이전"
   },
   "relativeTime": {
-    "justNow": "방금 전",
-    "minutesAgo": "{{count}}분 전",
-    "hoursAgo": "{{count}}시간 전",
-    "daysAgo": "{{count}}일 전"
+    "justNow": "방금 전"
   },
   "premiumDialog": {
     "title": "프리미엄 기능",

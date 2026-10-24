@@ -24,6 +24,8 @@ import {
   VStack,
   DashedDivider,
 } from '@src/shared/ui';
+import { getDateFormatContext } from '@src/shared/utils/date';
+import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -120,7 +122,11 @@ function AchievementDetailScreen() {
 
             <VStack align="center" gap={2}>
               <Text size="e1" shade={5}>
-                {achievement.dateRange.startDate} ~ {achievement.dateRange.endDate}
+                {formatDateKeyRange(
+                  achievement.dateRange.startDate,
+                  achievement.dateRange.endDate,
+                  getDateFormatContext(),
+                )}
               </Text>
             </VStack>
           </Certificate>

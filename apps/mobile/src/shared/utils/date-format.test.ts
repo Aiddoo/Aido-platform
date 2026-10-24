@@ -1,24 +1,25 @@
-import { formatClockTime, formatDateLabel } from './date-format';
+import {
+  type DateFormatContext,
+  formatClockTime,
+  formatDateKeyLabel,
+  formatDateKeyRange,
+  formatDateLabel,
+  formatHourLabel,
+  formatRelativeTime,
+  formatTimeOfDay,
+  getZonedHour,
+} from './date-format';
 
 const date = new Date('2026-10-01T00:05:00Z');
+const KO_SEOUL: DateFormatContext = { locale: 'ko-KR', timeZone: 'Asia/Seoul' };
+const EN_SEOUL: DateFormatContext = { locale: 'en-US', timeZone: 'Asia/Seoul' };
 
 describe('native date formatting', () => {
   it('uses the explicit locale and time zone', () => {
-    expect(formatDateLabel(date, 'fullDate', { locale: 'ko-KR', timeZone: 'Asia/Seoul' })).toBe(
-      '2026년 10월 1일',
-    );
+    expect(formatDateLabel(date, 'fullDate', KO_SEOUL)).toBe('2026년 10월 1일');
     expect(
       formatDateLabel(date, 'fullDate', { locale: 'en-US', timeZone: 'America/Los_Angeles' }),
     ).toBe('September 30, 2026');
-  });
-
-  it('preserves the input time convention and never displays midnight as 24:00', () => {
-    expect(formatClockTime(date, 'TWENTY_FOUR_HOUR', { locale: 'en-US', timeZone: 'UTC' })).toBe(
-      '00:05',
-    );
-    expect(formatClockTime(date, 'TWELVE_HOUR', { locale: 'ko-KR', timeZone: 'Asia/Seoul' })).toBe(
-      '오전 9:05',
-    );
   });
 
   it('rejects invalid dates without throwing during rendering', () => {
@@ -29,14 +30,12 @@ describe('native date formatting', () => {
 });
 
 describe('formatClockTime', () => {
-  const seoul = { timeZone: 'Asia/Seoul' };
-
   it('ko 12시간제는 오전/오후를 시각 앞에 둔다', () => {
     // Given
     const afternoon = new Date('2026-10-01T05:30:00Z');
 
     // When
-    const result = formatClockTime(afternoon, 'TWELVE_HOUR', { ...seoul, locale: 'ko-KR' });
+    const result = formatClockTime(afternoon, 'TWELVE_HOUR', KO_SEOUL);
 
     // Then
     expect(result).toBe('오후 2:30');
@@ -47,7 +46,7 @@ describe('formatClockTime', () => {
     const morning = new Date('2026-10-01T00:05:00Z');
 
     // When
-    const result = formatClockTime(morning, 'TWENTY_FOUR_HOUR', { ...seoul, locale: 'ko-KR' });
+    const result = formatClockTime(morning, 'TWENTY_FOUR_HOUR', KO_SEOUL);
 
     // Then
     expect(result).toBe('09:05');
@@ -58,9 +57,98 @@ describe('formatClockTime', () => {
     const afternoon = new Date('2026-10-01T05:30:00Z');
 
     // When
-    const result = formatClockTime(afternoon, 'TWELVE_HOUR', { ...seoul, locale: 'en-US' });
+    const result = formatClockTime(afternoon, 'TWELVE_HOUR', EN_SEOUL);
 
     // Then
     expect(result).toBe('2:30 PM');
+  });
+
+  it('24시간제 자정을 24:00이 아닌 00:05로 표시한다', () => {
+    expect(formatClockTime(date, 'TWENTY_FOUR_HOUR', { locale: 'en-US', timeZone: 'UTC' })).toBe(
+      '00:05',
+    );
+  });
+});
+
+describe('formatTimeOfDay', () => {
+  it('기기 시간대와 무관하게 HH:mm 시각을 로케일 순서로 표시한다', () => {
+    const time = { hour: 18, minute: 30 };
+
+    expect(formatTimeOfDay(time, 'TWELVE_HOUR', KO_SEOUL)).toBe('오후 6:30');
+    expect(formatTimeOfDay(time, 'TWELVE_HOUR', EN_SEOUL)).toBe('6:30 PM');
+    expect(formatTimeOfDay(time, 'TWENTY_FOUR_HOUR', KO_SEOUL)).toBe('18:30');
+  });
+});
+
+describe('formatHourLabel', () => {
+  it('정시를 사용자 시간 형식과 로케일 순서로 표시한다', () => {
+    expect(formatHourLabel(0, 'TWELVE_HOUR', KO_SEOUL)).toBe('오전 12시');
+    expect(formatHourLabel(15, 'TWELVE_HOUR', KO_SEOUL)).toBe('오후 3시');
+    expect(formatHourLabel(15, 'TWENTY_FOUR_HOUR', KO_SEOUL)).toBe('15시');
+    expect(formatHourLabel(15, 'TWELVE_HOUR', EN_SEOUL)).toBe('3 PM');
+  });
+});
+
+describe('formatDateKeyLabel', () => {
+  it('위젯용 숫자 일과 MM.DD 표기는 로케일과 무관하게 유지한다', () => {
+    expect(formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL)).toBe('7');
+    expect(formatDateKeyLabel('2026-09-07', 'dottedMonthDay', KO_SEOUL)).toBe('09.07');
+    expect(formatDateKeyLabel('2026-09-07', 'dottedMonthDay', EN_SEOUL)).toBe('09.07');
+  });
+});
+
+describe('formatDateKeyRange', () => {
+  it('같은 해의 기간은 월·일만 표시한다', () => {
+    expect(formatDateKeyRange('2026-10-19', '2026-10-25', KO_SEOUL)).toBe('10월 19일 ~ 10월 25일');
+    expect(formatDateKeyRange('2026-10-19', '2026-10-25', EN_SEOUL)).toBe('Oct 19 ~ Oct 25');
+  });
+
+  it('해를 넘는 기간은 연도까지 표시한다', () => {
+    expect(formatDateKeyRange('2026-12-28', '2027-01-03', KO_SEOUL)).toBe(
+      '2026년 12월 28일 ~ 2027년 1월 3일',
+    );
+  });
+});
+
+describe('formatRelativeTime', () => {
+  const now = new Date('2026-10-25T03:00:00Z');
+  const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
+
+  it('1분 미만은 주입한 justNow 문구를 쓴다', () => {
+    expect(formatRelativeTime(minutesAgo(0.5), now, '방금 전', KO_SEOUL)).toBe('방금 전');
+  });
+
+  it('7일 미만은 분·시간·일 단위 상대 시간으로 표시한다', () => {
+    expect(formatRelativeTime(minutesAgo(5), now, '방금 전', KO_SEOUL)).toBe('5분 전');
+    expect(formatRelativeTime(minutesAgo(3 * 60), now, '방금 전', KO_SEOUL)).toBe('3시간 전');
+    expect(formatRelativeTime(minutesAgo(2 * 24 * 60), now, '방금 전', KO_SEOUL)).toBe('2일 전');
+    expect(formatRelativeTime(minutesAgo(1), now, 'Just now', EN_SEOUL)).toBe('1 minute ago');
+    expect(formatRelativeTime(minutesAgo(2 * 60), now, 'Just now', EN_SEOUL)).toBe('2 hours ago');
+  });
+
+  it('7일 이상은 같은 해면 월·일, 다른 해면 연도를 포함한 날짜로 표시한다', () => {
+    expect(formatRelativeTime(new Date('2026-01-05T03:00:00Z'), now, '', KO_SEOUL)).toBe('1월 5일');
+    expect(formatRelativeTime(new Date('2025-01-05T03:00:00Z'), now, '', EN_SEOUL)).toBe(
+      '1/5/2025',
+    );
+  });
+
+  it('연도 경계는 context 시간대 기준으로 판단한다', () => {
+    // Given: UTC로는 2025년이지만 서울로는 2026년 1월 1일
+    const seoulNewYear = new Date('2025-12-31T16:00:00Z');
+    const later = new Date('2026-02-01T00:00:00Z');
+
+    // When
+    const result = formatRelativeTime(seoulNewYear, later, '', KO_SEOUL);
+
+    // Then
+    expect(result).toBe('1월 1일');
+  });
+});
+
+describe('getZonedHour', () => {
+  it('지정 시간대의 0-23시를 반환한다', () => {
+    expect(getZonedHour(new Date('2026-10-01T15:30:00Z'), 'Asia/Seoul')).toBe(0);
+    expect(getZonedHour(new Date('2026-10-01T14:30:00Z'), 'Asia/Seoul')).toBe(23);
   });
 });

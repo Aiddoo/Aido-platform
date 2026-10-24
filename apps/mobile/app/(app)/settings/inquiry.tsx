@@ -23,6 +23,8 @@ import {
   StyledSafeAreaView,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
+import { getDateFormatContext } from '@src/shared/utils/date';
+import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
 import { Radio, RadioGroup } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';
@@ -150,8 +152,11 @@ function InquiryScreen() {
                   />
                   <HStack justify="end" className="-mt-4">
                     <Text size="e1" weight="medium" className="text-gray-5">
-                      {value.length.toLocaleString()}/
-                      {INQUIRY_CONTENT_LIMITS.MAX_LENGTH.toLocaleString()}
+                      {formatCount(value.length, getDateFormatContext().locale)}/
+                      {formatCount(
+                        INQUIRY_CONTENT_LIMITS.MAX_LENGTH,
+                        getDateFormatContext().locale,
+                      )}
                     </Text>
                   </HStack>
                 </VStack>

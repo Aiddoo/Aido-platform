@@ -10,14 +10,6 @@
     "retry": "Try Again",
     "goBack": "Go back"
   },
-  "dateFormats": {
-    "fullDate": "MMMM D, YYYY",
-    "monthDay": "MMM D",
-    "dayOfMonth": "D",
-    "yearMonth": "MMMM YYYY",
-    "monthLabel": "MMM",
-    "shortDate": "M/D/YYYY"
-  },
   "daysOfWeek": {
     "MON": "Mon",
     "TUE": "Tue",
@@ -38,13 +30,7 @@
     "earlier": "Earlier"
   },
   "relativeTime": {
-    "justNow": "Just now",
-    "minutesAgo_one": "{{count}} minute ago",
-    "minutesAgo_other": "{{count}} minutes ago",
-    "hoursAgo_one": "{{count}} hour ago",
-    "hoursAgo_other": "{{count}} hours ago",
-    "daysAgo_one": "{{count}} day ago",
-    "daysAgo_other": "{{count}} days ago"
+    "justNow": "Just now"
   },
   "premiumDialog": {
     "title": "Premium Feature",

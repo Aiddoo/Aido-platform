@@ -23,11 +23,6 @@
       "aiSummary": "AI 요약",
       "aiTips": "AI 팁"
     },
-    "hour": {
-      "am": "오전 {{hour}}시",
-      "pm": "오후 {{hour}}시",
-      "h24": "{{hour}}시"
-    },
     "dday": {
       "today": "오늘 생성!",
       "inDays": "D-{{count}}"
