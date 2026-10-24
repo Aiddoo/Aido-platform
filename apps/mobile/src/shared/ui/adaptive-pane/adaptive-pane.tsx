@@ -1,7 +1,8 @@
-import { useIsBookPosture } from '@src/shared/hooks/use-is-book-posture';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
+import { findVerticalFold } from '@src/shared/utils/find-vertical-fold';
 import type { ReactNode } from 'react';
-import { I18nManager, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
+import { I18nManager, type StyleProp, type ViewStyle } from 'react-native';
+import { ReservedRegionsProvider, useReservedRegions } from 'react-native-reserved-regions';
 import {
   SafeAreaProvider,
   useSafeAreaFrame,
@@ -21,10 +22,18 @@ import { getPrimaryPaneWidth } from './get-primary-pane-width';
  * 접기/펼치기에서 pane이 다시 마운트되면 스크롤 위치·입력·내비게이터 상태를 잃으므로
  * 두 pane을 size class와 무관하게 같은 트리 슬롯에 두고 보이는 슬롯만 바꾼다.
  */
-export function AdaptivePane({ primary, secondary, compactPane = 'primary' }: AdaptivePaneProps) {
+export function AdaptivePane(props: AdaptivePaneProps) {
+  return (
+    <ReservedRegionsProvider style={{ flex: 1 }}>
+      <AdaptivePaneLayout {...props} />
+    </ReservedRegionsProvider>
+  );
+}
+
+/** 반쯤 접은 자세에서는 접힘선 위치로 목록과 상세를 나누고, 접힘선 폭만큼 비운다. */
+function AdaptivePaneLayout({ primary, secondary, compactPane = 'primary' }: AdaptivePaneProps) {
   const windowSizeClass = useWindowSizeClass();
-  const isBookPosture = useIsBookPosture();
-  const { width: windowWidth } = useWindowDimensions();
+  const fold = findVerticalFold(useReservedRegions());
   const isCompact = windowSizeClass === 'compact';
   const showsPrimary = !isCompact || compactPane === 'primary';
   const showsSecondary = !isCompact || compactPane === 'secondary';
@@ -38,13 +47,18 @@ export function AdaptivePane({ primary, secondary, compactPane = 'primary' }: Ad
           style={
             isCompact
               ? { flex: 1 }
-              : { width: getPrimaryPaneWidth({ windowSizeClass, isBookPosture, windowWidth }) }
+              : { width: getPrimaryPaneWidth({ windowSizeClass, foldFrame: fold?.frame }) }
           }
         >
           {primary}
         </Pane>
       )}
-      {!isCompact && <Box className="w-px bg-gray-2" />}
+      {!isCompact &&
+        (fold == null ? (
+          <Box className="w-px bg-gray-2" />
+        ) : (
+          <Box style={{ width: fold.frame.width }} />
+        ))}
       {showsSecondary && (
         <Pane slot="secondary" isSplit={!isCompact} style={{ flex: 1 }}>
           {secondary}

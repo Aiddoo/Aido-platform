@@ -23,9 +23,10 @@ import { useKeyboardContext } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
-import { MIN_CONTENT_HEIGHT, SHEET_INDEX, TOP_MARGIN } from './constants';
+import { HANDLE_HEIGHT, SHEET_INDEX } from './constants';
+import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
-import { useSheetHorizontalMargins } from './use-sheet-horizontal-margins';
+import { useSheetLayout } from './use-sheet-layout';
 
 interface KeyboardBottomSheetProps {
   isOpen: boolean;
@@ -58,14 +59,11 @@ export const KeyboardBottomSheet = ({
   const closeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resizeFrameRef = useRef<number | undefined>(undefined);
   const insets = useSafeAreaInsets();
-  const horizontalMargins = useSheetHorizontalMargins(0);
+  const { margins, topInset } = useSheetLayout({ minMargin: 0 });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
-  const maxDynamicContentSize = Math.max(
-    MIN_CONTENT_HEIGHT,
-    windowHeight - insets.top - TOP_MARGIN,
-  );
+  const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
 
   const closeSheet = useCallback(() => {
     isClosingRef.current = true;
@@ -246,8 +244,8 @@ export const KeyboardBottomSheet = ({
       keyboardBlurBehavior="restore"
       enableBlurKeyboardOnGesture
       android_keyboardInputMode="adjustPan"
-      topInset={insets.top}
-      style={{ marginLeft: horizontalMargins.left, marginRight: horizontalMargins.right }}
+      topInset={topInset}
+      style={{ marginLeft: margins.left, marginRight: margins.right }}
       backgroundStyle={[backgroundStyle, { borderRadius: 32 }]}
       handleIndicatorStyle={[styles.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}

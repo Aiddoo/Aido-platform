@@ -5,9 +5,11 @@ export {
   BottomSheet,
   KeyboardBottomSheet,
   ModalBottomSheet,
+  SHEET_DETACHED_MARGIN,
   SHEET_ROUTE_SCREEN_OPTIONS,
   type SheetRouteExit,
   SheetRouteScreen,
+  useSheetLayout,
   useSheetRoute,
 } from './bottom-sheet';
 export { Box } from './box';

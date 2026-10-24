@@ -1,7 +1,15 @@
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  Button,
+  HStack,
+  Text,
+  VStack,
+  SHEET_DETACHED_MARGIN,
+  useSheetLayout,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
@@ -23,6 +31,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
   const { control, setValue } = useFormContext<SignUpFormInput>();
   const { isSubmitting } = useFormState({ control });
   const insets = useSafeAreaInsets();
+  const sheetLayout = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN, isFullWindowHost: true });
   const openUrl = useOpenUrl();
 
   const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({
@@ -53,7 +62,8 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
           enableDynamicSizing
           detached
           bottomInset={insets.bottom || 16}
-          style={{ marginLeft: insets.left + 16, marginRight: insets.right + 16 }}
+          topInset={sheetLayout.topInset}
+          style={{ marginLeft: sheetLayout.margins.left, marginRight: sheetLayout.margins.right }}
           backgroundClassName="rounded-[32px]"
         >
           <VStack gap={32}>

@@ -111,21 +111,33 @@ bottom-sheet/
 ├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
 ├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
 ├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
-├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + Overlay)
+├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + 크기 확정 대기 + Overlay)
+├── full-window-host-context.ts        # 시트가 내비게이터 위 전체 창(route·overlay)에 그려지는지
 ├── use-sheet-route.ts                 # 시트 route의 열림 상태와 한 번만 떠나기
 ├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
 ├── motion.ts                          # 모션 감소용 애니메이션 시간 해석
-├── get-sheet-horizontal-margins.ts    # 가로 safe area를 뺀 영역 기준 최대 폭·가운데 정렬 여백
-├── use-sheet-horizontal-margins.ts    # 창 폭과 safe-area inset으로 위 여백을 계산
+├── get-sheet-horizontal-margins.ts    # 주어진 영역 기준 최대 폭·가운데 정렬 여백
+├── get-sheet-layout.ts                # 호스트·reserved region·safe area로 좌우 여백, 위쪽 한계, 최대 높이 계산
+├── use-sheet-layout.ts                # 위 계산에 창 크기·safe area·reserved region을 넣는 훅
 ├── constants.ts                       # 공유 스타일, 상수
 ├── index.ts                           # barrel export
 └── bottom-sheet.md                    # 이 문서
 ```
 
-## 가로 배치
+## 배치 (iPhone Duo·폴더블)
 
-시트는 가로 safe area(iPhone Duo의 좌우 세로 레일, Android 가로 내비게이션 바)를 뺀 콘텐츠
-영역에서 최대 폭 560으로 가운데 정렬한다. 가로 inset이 0인 기기에서는 이전과 같다.
+[Expo의 iPhone Duo 가이드](https://expo.dev/blog/supporting-iphone-duo)대로 시트가 놓인 호스트에 따라 피할 영역을 정한다.
+배치 기하는 `react-native-reserved-regions`가 잰 값만 쓰고 직접 추정하지 않는다.
+
+| 호스트                                      | 좌우                                                                | 위쪽 한계                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| 화면 안(탭 레일이 시트 위에 남음)           | 가로 safe area(세로 레일)를 피해 최대 폭 560 가운데 정렬            | 위쪽 safe area                                                |
+| 전체 창(route 시트, overlay, HeroUI Portal) | 레일을 덮으므로 좌우 대칭. 세로 접힘선이 있으면 더 넓은 면에만 둔다 | 위쪽 safe area와 겹치는 occlusion(레일의 상태 표시) 중 아래쪽 |
+
+최대 높이는 위쪽 한계와 아래 여백 사이(`getSheetMaxHeight`)이고, 내용이 더 길면 시트 안에서 스크롤한다.
+route 시트는 모달이 크기를 받은 뒤 그려서, 시트에서 시트로
+replace할 때 크기가 정해지기 전 위치로 열리지 않게 한다. HeroUI Portal처럼 Context를 이어받지 않는
+전체 창 호스트는 `useSheetLayout({ minMargin, isFullWindowHost: true })`로 같은 계산을 쓴다.
 
 ## Android 뒤로가기와 정리 (1.11.0)
 

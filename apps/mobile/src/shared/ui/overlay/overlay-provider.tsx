@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 
+import { FullWindowHostContext } from '../bottom-sheet/full-window-host-context';
 import { OverlayStateContext } from './overlay-state-context';
 
 export interface OverlayController {
@@ -58,9 +59,11 @@ export const OverlayProvider = ({
     <OverlayContext.Provider value={controller}>
       <OverlayStateContext.Provider value={state}>
         {children}
-        {[...overlays.entries()].map(([id, { element, version }]) => (
-          <Fragment key={`${id}-${version}`}>{element}</Fragment>
-        ))}
+        <FullWindowHostContext value>
+          {[...overlays.entries()].map(([id, { element, version }]) => (
+            <Fragment key={`${id}-${version}`}>{element}</Fragment>
+          ))}
+        </FullWindowHostContext>
       </OverlayStateContext.Provider>
     </OverlayContext.Provider>
   );

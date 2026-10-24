@@ -1,7 +1,7 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, ScrollView } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
   runOnJS,
@@ -14,14 +14,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
 import { Box } from '../box';
-import {
-  MIN_CONTENT_HEIGHT,
-  SHEET_DETACHED_MARGIN,
-  SHARED_SHEET_STYLES,
-  TOP_MARGIN,
-} from './constants';
+import { SHEET_DETACHED_MARGIN, SHARED_SHEET_STYLES } from './constants';
+import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
-import { useSheetHorizontalMargins } from './use-sheet-horizontal-margins';
+import { useSheetLayout } from './use-sheet-layout';
 
 const DISMISS_DISPLACEMENT = 100;
 const DISMISS_VELOCITY = 500;
@@ -48,12 +44,12 @@ export const ModalBottomSheet = ({
 }: ModalBottomSheetProps) => {
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
-  const horizontalMargins = useSheetHorizontalMargins(SHEET_DETACHED_MARGIN);
+  const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
 
   const bottomInset = insets.bottom || 16;
-  const maxHeight = Math.max(MIN_CONTENT_HEIGHT, windowHeight - insets.top - TOP_MARGIN);
+  const maxHeight = getSheetMaxHeight(windowHeight, topInset, bottomInset);
   const enterDuration = ANIMATION.duration.slow;
   const snapDuration = ANIMATION.duration.normal;
 
@@ -193,17 +189,15 @@ export const ModalBottomSheet = ({
         style={[
           {
             position: 'absolute',
-            left: horizontalMargins.left,
-            right: horizontalMargins.right,
+            left: margins.left,
+            right: margins.right,
             bottom: bottomInset,
             maxHeight,
           },
           sheetAnimatedStyle,
         ]}
       >
-        <Box
-          style={[SHARED_SHEET_STYLES.detachedBackground, backgroundStyle, { overflow: 'hidden' }]}
-        >
+        <Box style={[SHARED_SHEET_STYLES.detachedBackground, backgroundStyle, styles.surface]}>
           {/* Handle */}
           <GestureDetector gesture={panGesture}>
             <View className="items-center justify-center h-11" collapsable={false}>
@@ -218,9 +212,21 @@ export const ModalBottomSheet = ({
           </GestureDetector>
 
           {/* Content */}
-          <Box style={SHARED_SHEET_STYLES.content}>{children}</Box>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={SHARED_SHEET_STYLES.content}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {children}
+          </ScrollView>
         </Box>
       </Animated.View>
     </Box>
   );
 };
+
+const styles = StyleSheet.create({
+  surface: { overflow: 'hidden', flexShrink: 1 },
+  scroll: { flexGrow: 0 },
+});
