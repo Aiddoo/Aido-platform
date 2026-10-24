@@ -3,6 +3,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import {
   optimisticallyMarkNotificationsRead,
@@ -36,7 +37,7 @@ export const useMarkAsReadMutationOptions = () => {
       }
       notificationService
         .syncBadgeCount()
-        .catch((error) => logger.warn('[Notification] Badge sync failed', { error }));
+        .catch((error) => logger.warn(NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED, { error }));
       notifyError();
     },
   });

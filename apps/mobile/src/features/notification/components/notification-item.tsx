@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { type Notification, NotificationPolicy } from '../domains/notification.model';
 import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
@@ -108,7 +109,7 @@ function useNotificationPress(notification: Notification) {
       destination: destination.kind,
     });
     navigateToDestination(destination).catch((error) =>
-      logger.warn('[Notification] Center navigation failed', { error }),
+      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, { error }),
     );
   }, [
     notification,

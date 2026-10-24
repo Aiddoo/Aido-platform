@@ -9,6 +9,8 @@ import { useTrack } from '@src/shared/analytics';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+
 export const useLogoutMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
@@ -23,18 +25,18 @@ export const useLogoutMutationOptions = () => {
       try {
         const unregisterResult = await notificationService.unregisterPushToken();
         if (!unregisterResult.ok) {
-          logger.warn('[PushNotification] Unregister skipped', {
+          logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
             error: unregisterResult.error,
           });
         }
       } catch (error) {
         // Silently fail - continue with logout
-        logger.warn('[PushNotification] Unregister error', { error });
+        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error });
       }
 
       const result = await authService.logout();
       if (!result.ok) {
-        logger.warn('[Logout] API failed', { error: result.error });
+        logger.warn(AUTH_LOG_EVENT.LOGOUT_API_FAILED, { error: result.error });
       }
     },
     onError: () => {

@@ -15,6 +15,8 @@ import { t } from '@src/shared/i18n';
 import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
 
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
+
 export const useDeleteAccountMutationOptions = () => {
   const authService = useAuthService();
   const analytics = useAnalytics();
@@ -29,12 +31,12 @@ export const useDeleteAccountMutationOptions = () => {
       try {
         const unregisterResult = await notificationService.unregisterPushToken();
         if (!unregisterResult.ok) {
-          logger.warn('[PushNotification] Unregister skipped', {
+          logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
             error: unregisterResult.error,
           });
         }
       } catch (error) {
-        logger.warn('[PushNotification] Unregister error', { error });
+        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error });
       }
 
       const result = await authService.deleteAccount(input);

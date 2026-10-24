@@ -12,6 +12,7 @@ import { usePremiumDialog } from '@src/shared/ui';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
+import { AI_LOG_EVENT } from '../constants/ai-log-events';
 import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
 
 interface HandleSuggestionParams {
@@ -75,7 +76,7 @@ export const useHandleSuggestionMutationOptions = () => {
         return;
       }
 
-      logger.error('[AiSuggestion] Unexpected error', toError(error));
+      logger.error(AI_LOG_EVENT.SUGGESTION_ACTION_FAILED, toError(error));
       toast.error(undefined, { fallback: t('ai:suggestions.toasts.retryLater') });
     },
   });

@@ -16,6 +16,7 @@ import { ok, type Result } from '@src/shared/errors/result';
 import * as Application from 'expo-application';
 import * as Notifications from 'expo-notifications';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import type { NotificationError } from '../domains/notification.error';
 import type { GetNotificationsQuery, NotificationListResult } from '../domains/notification.model';
 import type { DeviceIdService } from './device-id.service';
@@ -59,7 +60,7 @@ export class NotificationService {
       return tokenResult;
     }
 
-    this.#logger.debug('[PushToken] Registering', { payloadVersion: 2 });
+    this.#logger.debug(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_REGISTERING, { payloadVersion: 2 });
 
     const result = await this.#httpClient.post('v1/notifications/token', {
       token: tokenResult.value,

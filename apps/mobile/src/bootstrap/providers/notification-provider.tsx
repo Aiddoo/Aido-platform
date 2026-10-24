@@ -1,5 +1,6 @@
 import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
 import { useAutomaticPushRegistration } from '@src/features/activation/hooks/use-automatic-push-registration';
+import { NOTIFICATION_LOG_EVENT } from '@src/features/notification/constants/notification-log-events';
 import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
 import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
 import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
@@ -123,7 +124,7 @@ function useNotificationResponseProcessor({
       try {
         Notifications.clearLastNotificationResponse();
       } catch (error) {
-        logger.warn('[Notification] Session response cleanup failed', { error });
+        logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, { error });
       }
     }
   }, [accountId, authStatus, logger]);
@@ -177,7 +178,7 @@ function useNotificationResponseProcessor({
         }
         Notifications.clearLastNotificationResponse();
       } catch (error) {
-        logger.warn('[Notification] Response deferred after a failed attempt', {
+        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, {
           error: toError(error),
         });
       } finally {
@@ -197,7 +198,7 @@ function useNotificationResponseProcessor({
         response.notification.request.content.data,
       );
       if (!parsed.success) {
-        logger.warn('[Notification] Invalid response payload', { error: parsed.error });
+        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, { error: parsed.error });
         return;
       }
       const pending = pendingResponses.current.get(responseId) ?? {
@@ -264,9 +265,7 @@ function useNativeNotificationListeners({
 
   useEffect(() => {
     const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-      logger.info('[Notification] Received in foreground', {
-        title: notification.request.content.title,
-      });
+      logger.info(NOTIFICATION_LOG_EVENT.FOREGROUND_RECEIVED);
       handleForegroundNotification(notification);
     });
     const responseSubscription =
@@ -290,7 +289,7 @@ function useMarketingNotificationCategory() {
         options: { opensAppToForeground: true },
       },
     ]).catch((error) =>
-      logger.warn('[Notification] Marketing category registration failed', { error }),
+      logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_CATEGORY_REGISTRATION_FAILED, { error }),
     );
   }, [logger]);
 }
@@ -314,7 +313,7 @@ function usePushLocaleSync({
       notificationService
         .setupPushNotifications()
         .catch((error) =>
-          logger.warn('[Notification] Push token re-registration skipped', { error }),
+          logger.warn(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_REREGISTRATION_SKIPPED, { error }),
         );
     };
 
@@ -333,7 +332,9 @@ function useNotificationBadgeSync(isAuthenticated: boolean) {
       : notificationService.clearBadge();
     task.catch((error) =>
       logger.error(
-        isAuthenticated ? '[Notification] Badge sync failed' : '[Notification] Badge clear failed',
+        isAuthenticated
+          ? NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED
+          : NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED,
         toError(error),
       ),
     );

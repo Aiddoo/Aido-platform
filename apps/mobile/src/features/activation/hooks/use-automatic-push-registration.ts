@@ -1,6 +1,7 @@
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
 import { useEffect, useMemo, useRef } from 'react';
 
+import { ACTIVATION_LOG_EVENT } from '../constants/activation-log-events';
 import { ActivationPolicy } from '../domains/activation.model';
 import { useActivationProgress } from './use-activation-progress';
 
@@ -43,9 +44,7 @@ export function useAutomaticPushRegistration(): boolean {
     preflightAttemptedRef.current = true;
     notificationService
       .setupPushNotifications({ requestPermission: false })
-      .catch((error) =>
-        logger.warn('[Notification] Existing push token preflight skipped', { error }),
-      );
+      .catch((error) => logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_PREFLIGHT_SKIPPED, { error }));
   }, [activation.isAuthenticated, logger, notificationService]);
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export function useAutomaticPushRegistration(): boolean {
 
     attemptedKeyRef.current = registrationKey;
     notificationService.setupPushNotifications().catch((error) => {
-      logger.warn('[Notification] Push token registration skipped', { error });
+      logger.warn(ACTIVATION_LOG_EVENT.PUSH_TOKEN_REGISTRATION_SKIPPED, { error });
     });
   }, [logger, notificationService, registrationKey]);
 
