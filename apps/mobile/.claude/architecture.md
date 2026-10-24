@@ -324,10 +324,25 @@ function useView() {
 }
 ```
 
-화면 파라미터는 `useLocalSearchParams`로 읽는다. `useGlobalSearchParams`는 보이지 않는 화면도 URL
-변경마다 다시 렌더하므로 레이아웃이 자식 경로를 알아야 할 때만 쓴다. 레이아웃이 그리는 pane이 자식 route의
-params를 읽어야 하면 `RouteSearchParamsProvider`로 그 params를 내려 주고, route 훅은 `useRouteSearchParams`로
-읽는다(피드 레이아웃의 `FeedRouteParamsProvider`).
+#### 라우팅: 폴더 route와 query param
+
+- 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`(`/todo/[todoId]`,
+  `/memo/[memoId]`, `/nudges/[nudgeId]`)로 쓰고 `[id]`는 쓰지 않는다.
+- 같은 화면의 보기 상태(선택한 항목, 필터, 날짜, 친구, 댓글 작성기)는 camelCase query param이다
+  (`/feed?friendId=…&date=…&todoId=…`, `/memo?memoId=…`).
+- param은 `features/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod(`.catch`)로
+  검증해 읽는다. 바꿀 수 있는 param은 `[value, setValue] as const` 튜플을 반환하고 setter는
+  `router.setParams`를 쓴다. 타입은 `z.output`에서 얻고 기존 스키마(`feedDateParamSchema`,
+  `routeIntegerStringSchema`, `@aido/api` param 스키마)를 재사용한다.
+- `useGlobalSearchParams`는 보이지 않는 화면도 URL 변경마다 다시 렌더하므로 화면 훅에서 쓰지 않는다.
+  레이아웃은 네비게이터와 Provider만 두고 자식 route의 params를 읽지 않는다.
+- href는 feature의 순수 함수가 typed 객체로 만든다(`createFeedHref`, `todoActionsSheetHref`,
+  `memoDetailHref`). 경로 문자열을 이어 붙이지 않는다. 알림·위젯 목적지는 `utils/navigation` resolver가
+  이 builder로 정한다.
+- 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` query param으로 바뀌고, 화면이 직접
+  `AdaptivePane`을 그려 상세 pane이 같은 화면의 local params(`todoId`, 댓글 param)를 읽는다. 친구 전환은
+  `router.setParams`라 pane이 다시 마운트되지 않고 history가 쌓이지 않으며, 레이아웃이 자식 params를
+  global params로 읽어 얼려 둘 필요도 없다.
 
 **기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
 반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
@@ -336,12 +351,12 @@ params를 읽어야 하면 `RouteSearchParamsProvider`로 그 params를 내려 �
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복제하지 않는다.
 
-| 상태                            | 원천                                          | 예                                                                     |
-| ------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
-| 서버 원본                       | TanStack Query 캐시                           | 저장된 메모·댓글·할 일. 초안을 캐시에 넣지 않는다                      |
-| 화면 선택·보기 방식·작성기 종류 | Expo Router search params                     | `todoId`, 메모 `id`, `comment`/`intent`. useState로 사본을 두지 않는다 |
-| 작성 중 초안                    | `shared/draft` 초안 저장소(MMKV, 사용자 범위) | 댓글 작성기, 메모 편집·작성. 긴 본문을 URL에 넣지 않는다               |
-| 일시적 UI 상태                  | `useState` / 지역 Context                     | 다이얼로그 열림, 포커스된 칸, 측정값                                   |
+| 상태                            | 원천                                          | 예                                                                                |
+| ------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| 서버 원본                       | TanStack Query 캐시                           | 저장된 메모·댓글·할 일. 초안을 캐시에 넣지 않는다                                 |
+| 화면 선택·보기 방식·작성기 종류 | Expo Router search params                     | `todoId`, `memoId`, `friendId`, `comment`/`intent`. useState로 사본을 두지 않는다 |
+| 작성 중 초안                    | `shared/draft` 초안 저장소(MMKV, 사용자 범위) | 댓글 작성기, 메모 편집·작성. 긴 본문을 URL에 넣지 않는다                          |
+| 일시적 UI 상태                  | `useState` / 지역 Context                     | 다이얼로그 열림, 포커스된 칸, 측정값                                              |
 
 - 폼 값의 원천은 react-hook-form이다. 초안은 `useDraftStorage(draftKey)`가 첫 렌더에 한 번 동기로 읽어
   `defaultValues`에 넣고(빈 값으로 그린 뒤 채우지 않는다), `useFormDraftAutosave(form.subscribe, …)`가
