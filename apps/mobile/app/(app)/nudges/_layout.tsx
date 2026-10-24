@@ -9,9 +9,6 @@ export default function NudgeLayout() {
 
   return (
     <Stack screenOptions={screenOptions}>
-      <Stack.Screen name="sent" options={{ title: t('interaction.sent') }}>
-        {backToolbar}
-      </Stack.Screen>
       <Stack.Screen name="[nudgeId]" options={{ title: t('interaction.detailTitle') }}>
         {backToolbar}
       </Stack.Screen>
