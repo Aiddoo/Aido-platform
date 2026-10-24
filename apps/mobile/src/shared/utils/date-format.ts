@@ -179,44 +179,21 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 const RELATIVE_DAY_LIMIT = 7;
 
-const relativeTimeFormatterCache = new Map<DateFormatContext['locale'], Intl.RelativeTimeFormat>();
-
-function getRelativeTimeFormatter(
-  locale: DateFormatContext['locale'],
-): Intl.RelativeTimeFormat | null {
-  if (typeof Intl.RelativeTimeFormat !== 'function') {
-    return null;
-  }
-  const cached = relativeTimeFormatterCache.get(locale);
-  if (cached) {
-    return cached;
-  }
-  const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'always' });
-  relativeTimeFormatterCache.set(locale, formatter);
-  return formatter;
-}
-
-function toRelativeUnit(elapsedMs: number): [number, Intl.RelativeTimeFormatUnit] | null {
-  if (elapsedMs < HOUR_MS) {
-    return [Math.floor(elapsedMs / MINUTE_MS), 'minute'];
-  }
-  if (elapsedMs < DAY_MS) {
-    return [Math.floor(elapsedMs / HOUR_MS), 'hour'];
-  }
-  if (elapsedMs < RELATIVE_DAY_LIMIT * DAY_MS) {
-    return [Math.floor(elapsedMs / DAY_MS), 'day'];
-  }
-  return null;
+export interface RelativeTimeLabels {
+  justNow: string;
+  minutesAgo: (count: number) => string;
+  hoursAgo: (count: number) => string;
+  daysAgo: (count: number) => string;
 }
 
 /**
- * 경과 시간을 표시한다. 1분 미만은 justNowLabel, 7일 미만은 "5분 전"·"3시간 전"·"2일 전",
+ * 경과 시간을 표시한다. 1분 미만·7일 미만은 주입한 문구("방금 전", "5분 전", "3시간 전", "2일 전"),
  * 그 이후는 같은 해면 "1월 5일", 다른 해면 "2025. 1. 5." (연도는 context 시간대 기준).
  */
 export function formatRelativeTime(
   date: Date,
   now: Date,
-  justNowLabel: string,
+  labels: RelativeTimeLabels,
   context: DateFormatContext,
 ): string {
   if (!isValidDate(date) || !isValidDate(now)) {
@@ -224,13 +201,16 @@ export function formatRelativeTime(
   }
   const elapsedMs = now.getTime() - date.getTime();
   if (elapsedMs < MINUTE_MS) {
-    return justNowLabel;
+    return labels.justNow;
   }
-  const relativeUnit = toRelativeUnit(elapsedMs);
-  const relativeTimeFormatter = getRelativeTimeFormatter(context.locale);
-  if (relativeUnit && relativeTimeFormatter) {
-    const [value, unit] = relativeUnit;
-    return relativeTimeFormatter.format(-value, unit);
+  if (elapsedMs < HOUR_MS) {
+    return labels.minutesAgo(Math.floor(elapsedMs / MINUTE_MS));
+  }
+  if (elapsedMs < DAY_MS) {
+    return labels.hoursAgo(Math.floor(elapsedMs / HOUR_MS));
+  }
+  if (elapsedMs < RELATIVE_DAY_LIMIT * DAY_MS) {
+    return labels.daysAgo(Math.floor(elapsedMs / DAY_MS));
   }
   const isSameYear =
     formatDateKey(date, context.timeZone).slice(0, 4) ===

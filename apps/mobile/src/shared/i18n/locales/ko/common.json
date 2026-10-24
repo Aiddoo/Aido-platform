@@ -30,7 +30,10 @@
     "earlier": "이전"
   },
   "relativeTime": {
-    "justNow": "방금 전"
+    "justNow": "방금 전",
+    "minutesAgo": "{{count}}분 전",
+    "hoursAgo": "{{count}}시간 전",
+    "daysAgo": "{{count}}일 전"
   },
   "premiumDialog": {
     "title": "프리미엄 기능",

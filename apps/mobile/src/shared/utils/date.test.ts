@@ -234,16 +234,19 @@ describe('로케일 인지 포맷 (i18n)', () => {
     const now = new Date('2026-10-25T03:00:00Z');
     const oneMinuteAgo = new Date(now.getTime() - 61_000);
     const twoHoursAgo = new Date(now.getTime() - 2 * 3600_000);
+    const twoDaysAgo = new Date(now.getTime() - 2 * 86_400_000);
 
     // Then (ko)
     expect(formatRelativeTime(now, now)).toBe('방금 전');
     expect(formatRelativeTime(oneMinuteAgo, now)).toBe('1분 전');
     expect(formatRelativeTime(twoHoursAgo, now)).toBe('2시간 전');
+    expect(formatRelativeTime(twoDaysAgo, now)).toBe('2일 전');
 
     // Then (en — 단수/복수)
     await i18n.changeLanguage('en');
     expect(formatRelativeTime(now, now)).toBe('Just now');
     expect(formatRelativeTime(oneMinuteAgo, now)).toBe('1 minute ago');
     expect(formatRelativeTime(twoHoursAgo, now)).toBe('2 hours ago');
+    expect(formatRelativeTime(twoDaysAgo, now)).toBe('2 days ago');
   });
 });

@@ -249,4 +249,14 @@ export const getDateSectionKey = (date: Date, referenceDate: Date) => {
 
 /** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025. 1. 5.") */
 export const formatRelativeTime = (date: Date, now: Date): string =>
-  formatRelativeTimeLabel(date, now, t('common:relativeTime.justNow'), getDateFormatContext());
+  formatRelativeTimeLabel(
+    date,
+    now,
+    {
+      justNow: t('common:relativeTime.justNow'),
+      minutesAgo: (count) => t('common:relativeTime.minutesAgo', { count }),
+      hoursAgo: (count) => t('common:relativeTime.hoursAgo', { count }),
+      daysAgo: (count) => t('common:relativeTime.daysAgo', { count }),
+    },
+    getDateFormatContext(),
+  );

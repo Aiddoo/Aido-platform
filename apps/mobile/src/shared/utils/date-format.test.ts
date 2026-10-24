@@ -113,22 +113,25 @@ describe('formatDateKeyRange', () => {
 describe('formatRelativeTime', () => {
   const now = new Date('2026-10-25T03:00:00Z');
   const minutesAgo = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
+  const labels = {
+    justNow: 'justNow',
+    minutesAgo: (count: number) => `minutes:${count}`,
+    hoursAgo: (count: number) => `hours:${count}`,
+    daysAgo: (count: number) => `days:${count}`,
+  };
 
-  it('1분 미만은 주입한 justNow 문구를 쓴다', () => {
-    expect(formatRelativeTime(minutesAgo(0.5), now, '방금 전', KO_SEOUL)).toBe('방금 전');
-  });
-
-  it('7일 미만은 분·시간·일 단위 상대 시간으로 표시한다', () => {
-    expect(formatRelativeTime(minutesAgo(5), now, '방금 전', KO_SEOUL)).toBe('5분 전');
-    expect(formatRelativeTime(minutesAgo(3 * 60), now, '방금 전', KO_SEOUL)).toBe('3시간 전');
-    expect(formatRelativeTime(minutesAgo(2 * 24 * 60), now, '방금 전', KO_SEOUL)).toBe('2일 전');
-    expect(formatRelativeTime(minutesAgo(1), now, 'Just now', EN_SEOUL)).toBe('1 minute ago');
-    expect(formatRelativeTime(minutesAgo(2 * 60), now, 'Just now', EN_SEOUL)).toBe('2 hours ago');
+  it('7일 미만은 경과 구간에 맞는 주입 문구를 내림한 개수로 고른다', () => {
+    expect(formatRelativeTime(minutesAgo(0.5), now, labels, KO_SEOUL)).toBe('justNow');
+    expect(formatRelativeTime(minutesAgo(59), now, labels, KO_SEOUL)).toBe('minutes:59');
+    expect(formatRelativeTime(minutesAgo(3 * 60 + 59), now, labels, KO_SEOUL)).toBe('hours:3');
+    expect(formatRelativeTime(minutesAgo(6 * 24 * 60), now, labels, KO_SEOUL)).toBe('days:6');
   });
 
   it('7일 이상은 같은 해면 월·일, 다른 해면 연도를 포함한 날짜로 표시한다', () => {
-    expect(formatRelativeTime(new Date('2026-01-05T03:00:00Z'), now, '', KO_SEOUL)).toBe('1월 5일');
-    expect(formatRelativeTime(new Date('2025-01-05T03:00:00Z'), now, '', EN_SEOUL)).toBe(
+    expect(formatRelativeTime(new Date('2026-01-05T03:00:00Z'), now, labels, KO_SEOUL)).toBe(
+      '1월 5일',
+    );
+    expect(formatRelativeTime(new Date('2025-01-05T03:00:00Z'), now, labels, EN_SEOUL)).toBe(
       '1/5/2025',
     );
   });
@@ -139,7 +142,7 @@ describe('formatRelativeTime', () => {
     const later = new Date('2026-02-01T00:00:00Z');
 
     // When
-    const result = formatRelativeTime(seoulNewYear, later, '', KO_SEOUL);
+    const result = formatRelativeTime(seoulNewYear, later, labels, KO_SEOUL);
 
     // Then
     expect(result).toBe('1월 1일');
