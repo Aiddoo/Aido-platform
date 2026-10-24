@@ -1,3 +1,4 @@
+import { logger } from '@src/shared/infra/logger/global-logger';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
@@ -30,7 +31,7 @@ const ExtraSchema = z.object({
 // Types
 // =============================================================================
 
-type PlatformType = 'ios' | 'android' | 'web' | 'windows' | 'macos';
+type PlatformType = typeof Platform.OS;
 
 type ApiUrlContext = {
   platform: PlatformType;
@@ -73,7 +74,7 @@ const toDeviceUrl = (url: string, devMachineIp?: string): string => {
   const resolvedIp = devMachineIp || autoIp;
 
   if (!resolvedIp) {
-    console.warn(
+    logger.warn(
       '[env] 실제 기기에서 개발 서버에 연결할 수 없습니다.\n' +
         '- 개발 머신과 기기가 같은 Wi-Fi에 연결되어 있는지 확인하세요.\n' +
         '- 또는 .env.local 파일에 EXPO_PUBLIC_DEV_MACHINE_IP를 수동으로 설정하세요.\n' +
@@ -87,7 +88,7 @@ const toDeviceUrl = (url: string, devMachineIp?: string): string => {
 
 const resolveApiUrl = (): string => {
   const context: ApiUrlContext = {
-    platform: Platform.OS as PlatformType,
+    platform: Platform.OS,
     env: extra.env,
     apiUrl: extra.apiUrl,
     isPhysicalDevice: Device.isDevice,
@@ -108,7 +109,7 @@ const resolveApiUrl = (): string => {
 
   // 개발 환경에서 디버깅 로그 출력
   if (extra.env === 'development' && __DEV__) {
-    console.log('[env] API URL resolved:', {
+    logger.debug('[env] API URL resolved', {
       platform: context.platform,
       isPhysicalDevice: context.isPhysicalDevice,
       devMachineIp: context.devMachineIp || getAutoDetectedDevMachineIp() || 'auto-detect failed',
@@ -135,7 +136,7 @@ export const ENV = {
   IS_DEV: extra.isDevelopment,
   IS_PRODUCTION: extra.isProduction,
 
-  PLATFORM: Platform.OS as PlatformType,
+  PLATFORM: Platform.OS,
   IS_ANDROID: Platform.OS === 'android',
   IS_IOS: Platform.OS === 'ios',
 
