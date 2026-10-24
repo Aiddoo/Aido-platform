@@ -74,6 +74,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `KeyboardBottomSheet`                         | 키보드 연동 바텀시트 (폼용)                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `BottomSheet`                                 | 키보드 불필요 바텀시트 (피커, 액션시트)                                     | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `ModalBottomSheet`                            | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                            | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
+| `SheetRouteScreen`, `useSheetRoute`           | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `ScreenTitleBar`                              | 화면 상단 제목 바 (뒤로가기 · 제목 · 액션, 실시간 값은 subtitle)            | `src/shared/ui/screen-title-bar/screen-title-bar.md`             |
 | 컴포넌트                                      | 용도                                                                        | 문서                                                             |
 | --------------------------------------------- | -----------------------------------------------------------------------     | --------------------------------------------------------         |
@@ -117,6 +118,7 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `KeyboardBottomSheet`                         | 키보드 연동 바텀시트 (폼용)                                                 | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `BottomSheet`                                 | 키보드 불필요 바텀시트 (피커, 액션시트)                                     | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `ModalBottomSheet`                            | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                            | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
+| `SheetRouteScreen`, `useSheetRoute`           | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `ScreenTitleBar`                              | 화면 상단 제목 바 (뒤로가기 · 제목 · 액션, 실시간 값은 subtitle)            | `src/shared/ui/screen-title-bar/screen-title-bar.md`             |
 | `ScallopedContainer`                          | 위아래 물결 가장자리의 흰 카드 (AI 리포트·제안, 구독 혜택)                  | `src/shared/ui/scalloped-container/scalloped-container.md`       |
 | `TextSkeleton`                                | Text 크기별 줄 높이를 따르는 글자 스켈레톤                                  | `src/shared/ui/text/text.md`                                     |

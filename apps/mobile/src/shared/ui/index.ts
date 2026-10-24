@@ -1,7 +1,15 @@
 export { ActionChip, type ActionChipProps, useActionChipIconSize } from './action-chip';
 export { AdaptivePane, type AdaptivePaneProps } from './adaptive-pane';
 export { Avatar } from './avatar';
-export { BottomSheet, KeyboardBottomSheet, ModalBottomSheet } from './bottom-sheet';
+export {
+  BottomSheet,
+  KeyboardBottomSheet,
+  ModalBottomSheet,
+  SHEET_ROUTE_SCREEN_OPTIONS,
+  type SheetRouteExit,
+  SheetRouteScreen,
+  useSheetRoute,
+} from './bottom-sheet';
 export { Box } from './box';
 export {
   Button,

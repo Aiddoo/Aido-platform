@@ -249,8 +249,10 @@ interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'c
 
 **도메인 식별자는 Props로 받지 않는다.** 화면 식별자(`todoId`, `friendId`, 선택된 항목 id)는 검증된
 `use…ScreenParams()`나 상태 튜플 훅에서 컴포넌트가 직접 읽는다. 값이 `== null`이면 `.Empty`를 보여 준다.
-그래야 식별자가 없는 화면에서도 같은 컴포넌트를 쓸 수 있다. 목록 행의 id, 루트 Overlay에서 렌더되어
-라우트 문맥이 없는 시트의 대상 id는 예외로 Props로 받는다.
+그래야 식별자가 없는 화면에서도 같은 컴포넌트를 쓸 수 있다. 목록 행의 id는 예외로 Props로 받는다.
+할 일·하위 항목·카테고리·제안처럼 대상이 있는 시트는 Expo Router 시트 route(`/todo/[todoId]/actions` 등)로
+띄우고, 시트가 route hook으로 대상 id를 읽어 캐시에서 조회한다. 폼 상태에 묶인 피커처럼 route 문맥이 없는
+Overlay 시트만 대상 값을 Props로 받는다. 시트 route 계약: `src/shared/ui/bottom-sheet/bottom-sheet.md`.
 
 ```tsx
 export function FriendCalendar() {

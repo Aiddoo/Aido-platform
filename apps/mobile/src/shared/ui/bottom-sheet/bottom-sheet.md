@@ -49,6 +49,40 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 </ModalBottomSheet>;
 ```
 
+### 시트 route (`SheetRouteScreen`, `useSheetRoute`)
+
+할 일·하위 항목·카테고리·제안처럼 대상이 있는 시트는 Overlay 대신 Expo Router route로 띄운다.
+대상 id는 폴더 구조(`app/(app)/todo/[todoId]/actions.tsx`)에서 오고, 시트는 route hook으로 읽어
+Query 캐시에서 데이터를 조회하고 mutation을 직접 가진다. 화면 등장·퇴장은 기존 gorhom 시트가 그대로
+맡으므로 키보드 연동과 UI thread 애니메이션은 Overlay 시트와 같다.
+
+```tsx
+// app/(app)/todo/[todoId]/actions.tsx
+export default function TodoActionsSheetRoute() {
+  return (
+    <SheetRouteScreen>
+      <TodoActionsBottomSheet />
+    </SheetRouteScreen>
+  );
+}
+
+// 시트
+const sheet = useSheetRoute('/feed');
+<BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+  …
+</BottomSheet>;
+```
+
+- Stack 레이아웃에 `SHEET_ROUTE_SCREEN_OPTIONS`(`transparentModal`, `animation: 'none'`, 투명 배경)로 등록한다.
+- `sheet.close(next?)`는 닫기 애니메이션을 시작하고, 애니메이션이 끝나 `onOpenChange(false)`가 오면 route를
+  한 번만 떠난다. 기본은 `router.back()`이고 돌아갈 화면이 없으면(콜드 딥링크) fallback으로 `replace`한다.
+- 다음 시트로 이어질 때는 `close({ type: 'replace', href })`로 바꿔 뒤로가기 기록을 쌓지 않는다.
+  완료 후 아래 화면도 바꿔야 하면 `close({ type: 'back-then-replace', href })`를 쓴다.
+- 구독 화면 이동처럼 애니메이션 없이 바로 떠날 때는 `sheet.exit()`를 쓴다.
+- Android 뒤로가기는 시트의 `useAndroidSheetBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
+- `SheetRouteScreen`은 제스처 루트와 Overlay를 route 안에 다시 둔다. iOS transparentModal은 루트 위에
+  따로 표시되므로, 시트 안에서 여는 피커·다이얼로그가 시트 아래로 숨지 않게 하기 위해서다.
+
 ## Props
 
 ### BottomSheet
@@ -76,6 +110,9 @@ bottom-sheet/
 ├── bottom-sheet.tsx                   # gorhom 기반 기본 바텀시트
 ├── keyboard-bottom-sheet.tsx          # gorhom 기반 키보드 연동 바텀시트
 ├── modal-bottom-sheet.tsx             # Overlay 절대 위치 기반 바텀시트 (시트 위 시트)
+├── sheet-route.ts                     # 시트 route Stack 옵션과 route 떠나기 규칙
+├── sheet-route-screen.tsx             # 시트 route 화면 바탕 (제스처 루트 + Overlay)
+├── use-sheet-route.ts                 # 시트 route의 열림 상태와 한 번만 떠나기
 ├── use-android-sheet-back-handler.ts  # 열린 시트의 시스템 뒤로가기 구독과 정리
 ├── motion.ts                          # 모션 감소용 애니메이션 시간 해석
 ├── get-sheet-horizontal-margins.ts    # 가로 safe area를 뺀 영역 기준 최대 폭·가운데 정렬 여백
