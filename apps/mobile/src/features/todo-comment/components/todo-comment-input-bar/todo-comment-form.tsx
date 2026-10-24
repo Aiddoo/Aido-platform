@@ -149,7 +149,7 @@ export function TodoCommentForm({
                 <CommentFormFields.Field
                   key={field.id}
                   author={author}
-                  connectsToNext={fieldLayout.connectsToNext}
+                  isConnectedToNext={fieldLayout.isConnectedToNext}
                   input={
                     <CommentFormField
                       name={`items.${index}.content`}
@@ -536,7 +536,7 @@ interface CommentFormFieldsProps extends Omit<ComponentProps<typeof VStack>, 'ch
 interface CommentFormFieldRowProps extends Omit<ComponentProps<typeof Box>, 'children'> {
   author: TodoCommentAuthor;
   input: ReactNode;
-  connectsToNext: boolean;
+  isConnectedToNext: boolean;
   removeAction?: ReactNode;
   appendAction?: ReactNode;
   submitAction?: ReactNode;
@@ -557,7 +557,7 @@ function CommentFormFields({ children, className, ...stackProps }: CommentFormFi
 CommentFormFields.Field = function Field({
   author,
   input,
-  connectsToNext,
+  isConnectedToNext,
   removeAction,
   appendAction,
   submitAction,
@@ -568,7 +568,7 @@ CommentFormFields.Field = function Field({
 
   return (
     <Box {...boxProps} className={cn('relative min-w-0', className)}>
-      {connectsToNext && (
+      {isConnectedToNext && (
         <Box
           testID="todo-comment-form-connector"
           pointerEvents="none"

@@ -11,7 +11,7 @@ import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from
 interface ToggleSubTodoParams {
   todoId: number;
   subTodoId: number;
-  completed: boolean;
+  isCompleted: boolean;
   startDate: string;
 }
 
@@ -21,28 +21,30 @@ export const useToggleSubTodoMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
-    mutationFn: async ({ todoId, subTodoId, completed }: ToggleSubTodoParams) => {
-      const result = await subTodoService.updateSubTodo(todoId, subTodoId, { completed });
+    mutationFn: async ({ todoId, subTodoId, isCompleted }: ToggleSubTodoParams) => {
+      const result = await subTodoService.updateSubTodo(todoId, subTodoId, {
+        completed: isCompleted,
+      });
       return unwrap(result);
     },
-    onMutate: async ({ todoId, subTodoId, completed, startDate }) => {
+    onMutate: async ({ todoId, subTodoId, isCompleted, startDate }) => {
       await cancelTodoListQuery(queryClient, { date: startDate });
       const snapshot = snapshotTodo(queryClient, { date: startDate, todoId });
       updateTodoInList(queryClient, { date: startDate, todoId }, (todo) => ({
         ...todo,
         subTodos: todo.subTodos.map((subTodo) =>
-          subTodo.id === subTodoId ? { ...subTodo, completed } : subTodo,
+          subTodo.id === subTodoId ? { ...subTodo, completed: isCompleted } : subTodo,
         ),
-        subTodoStats: SubTodoPolicy.statsAfterToggle(todo, completed),
+        subTodoStats: SubTodoPolicy.statsAfterToggle(todo, isCompleted),
       }));
 
       return { snapshot };
     },
-    onSuccess: (_data, { todoId, subTodoId, completed }) => {
+    onSuccess: (_data, { todoId, subTodoId, isCompleted }) => {
       trackEvent('todo_item_completed', {
         todo_id: todoId,
         item_id: subTodoId,
-        is_completed: completed,
+        is_completed: isCompleted,
       });
     },
     onError: (_error, _variables, context) => {

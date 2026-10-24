@@ -109,7 +109,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
   const content = (
     <>
-      <TodoCommentTitleBar onClose={isPane ? closePane : undefined} />
+      <TodoCommentTitleBar onBackPress={isPane ? closePane : undefined} />
 
       <Separator />
 

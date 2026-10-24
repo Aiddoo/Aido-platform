@@ -17,7 +17,7 @@ import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 
-import { ALL_DAYS } from '../constants/day-of-week';
+import { ALL_DAYS_OF_WEEK } from '../constants/day-of-week';
 import { useDatePicker } from '../hooks/use-date-picker';
 import { type RepeatSetting, useRepeatSetting } from '../hooks/use-repeat-setting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
@@ -118,7 +118,7 @@ function DayOfWeekSelector({ repeatSetting }: DayOfWeekSelectorProps) {
           isSelected={isWeekendsSelected}
           onPress={toggleWeekends}
         />
-        {ALL_DAYS.map((key) => {
+        {ALL_DAYS_OF_WEEK.map((key) => {
           const label = getDayOfWeekLabel(key);
           const isSelected = selectedDays.includes(key);
           return (

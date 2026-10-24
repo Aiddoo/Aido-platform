@@ -14,7 +14,7 @@ import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
 import { Platform, View } from 'react-native';
 
-import { DEFAULT_TIME } from '../constants/todo-default-time';
+import { DEFAULT_TODO_TIME } from '../constants/todo-default-time';
 import { PickerHeader } from './picker-header';
 
 const isIOS = Platform.OS === 'ios';
@@ -44,7 +44,7 @@ export function TodoTimePickerContent({
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const { resolvedLanguage } = useLanguage();
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
-  const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TIME);
+  const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TODO_TIME);
   const [showAndroidPicker, setShowAndroidPicker] = useState(false);
 
   const handleConfirm = () => {
@@ -104,7 +104,7 @@ export function TodoTimePickerContent({
                 </PressableFeedback>
                 {showAndroidPicker && (
                   <DateTimePicker
-                    value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
+                    value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
                     mode="time"
                     display="spinner"
                     is24Hour={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
@@ -126,7 +126,7 @@ export function TodoTimePickerContent({
         {!localIsAllDay && isIOS && (
           <View className="items-center">
             <DateTimePicker
-              value={getDateWithTime(draftDate, localTime, DEFAULT_TIME)}
+              value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
               mode="time"
               display="spinner"
               locale={getPickerLocale(resolvedLanguage, preference.timeFormat)}

@@ -179,7 +179,7 @@ function OverviewCommentRow({ item }: OverviewCommentRowProps) {
 
   return (
     <Box className="border-b border-gray-2">
-      <TopLevelCommentSection comment={item.comment} connectsToReply={showsReplyConnection} />
+      <TopLevelCommentSection comment={item.comment} isConnectedToReply={showsReplyConnection} />
 
       {item.previewReply !== null && <PreviewReplySection comment={item.previewReply} />}
 
@@ -278,16 +278,16 @@ function CommentReplySummary({
 
 function TopLevelCommentSection({
   comment,
-  connectsToReply,
+  isConnectedToReply,
 }: {
   comment: TodoComment;
-  connectsToReply: boolean;
+  isConnectedToReply: boolean;
 }) {
   return (
-    <HStack gap={12} align="start" px={16} pt={16} pb={connectsToReply ? 8 : 16}>
+    <HStack gap={12} align="start" px={16} pt={16} pb={isConnectedToReply ? 8 : 16}>
       <Box className="relative self-stretch">
         <TodoCommentAuthorAvatar author={comment.author} size="md" />
-        {connectsToReply && (
+        {isConnectedToReply && (
           <Box
             pointerEvents="none"
             accessibilityElementsHidden

@@ -107,14 +107,8 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetConvertMemoProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
-export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
-  const { t } = useTranslation('todo');
-  const fontScaledSize = useFontScaledSize();
-  const { color: spinnerColor } = useResolveClassNames('text-white');
-  const { showBoundary } = useErrorBoundary();
-  const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
-
-  const defaultValues: AddTodoFormValues = match(props)
+function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
+  return match(props)
     .with({ mode: 'edit' }, ({ todo }) => toTodoEditFormValues(todo))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -143,6 +137,16 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
       source: 'manual' as const,
     }))
     .exhaustive();
+}
+
+export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
+  const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
+  const { color: spinnerColor } = useResolveClassNames('text-white');
+  const { showBoundary } = useErrorBoundary();
+  const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
+
+  const defaultValues = toDefaultFormValues(props);
 
   const methods = useForm({
     resolver: zodResolver(addTodoFormSchema),
@@ -182,7 +186,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
   const { isSubmitting } = useFormState({ control: methods.control });
 
-  const onSubmit = methods.handleSubmit(async (data: AddTodoFormInput) => {
+  const handleSubmitTodo = methods.handleSubmit(async (values: AddTodoFormInput) => {
     try {
       await match(props)
         .with({ mode: 'edit' }, async ({ todo }) => {
@@ -190,12 +194,12 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             {
               todoId: todo.id,
               input: {
-                title: data.title,
-                startDate: formatDate(data.startDate),
-                endDate: data.endDate ? formatDate(data.endDate) : null,
-                scheduledTime: data.isAllDay ? null : (data.scheduledTime ?? null),
-                isAllDay: data.isAllDay,
-                visibility: data.visibility,
+                title: values.title,
+                startDate: formatDate(values.startDate),
+                endDate: values.endDate ? formatDate(values.endDate) : null,
+                scheduledTime: values.isAllDay ? null : (values.scheduledTime ?? null),
+                isAllDay: values.isAllDay,
+                visibility: values.visibility,
               },
             },
             { onSuccess: onClose },
@@ -205,7 +209,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           await convertMemoMutation.mutateAsync(
             {
               memoId: convertProps.memoId,
-              input: toMemoConversionInput(data),
+              input: toMemoConversionInput(values),
               source: 'manual',
             },
             {
@@ -217,42 +221,42 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
           );
         })
         .with({ mode: 'create' }, async (createProps) => {
-          const onMutationSuccess = () => {
+          const handleMutationSuccess = () => {
             onClose();
             createProps.onSuccess?.();
           };
 
-          if (data.isRecurring) {
+          if (values.isRecurring) {
             await createRecurringMutation.mutateAsync(
               {
                 input: {
-                  title: data.title,
-                  startDate: formatDate(data.startDate),
-                  endDate: formatDate(data.repeatEndDate ?? data.startDate),
-                  daysOfWeek: data.daysOfWeek,
-                  scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-                  isAllDay: data.isAllDay,
-                  visibility: data.visibility,
-                  categoryId: data.categoryId,
+                  title: values.title,
+                  startDate: formatDate(values.startDate),
+                  endDate: formatDate(values.repeatEndDate ?? values.startDate),
+                  daysOfWeek: values.daysOfWeek,
+                  scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
+                  isAllDay: values.isAllDay,
+                  visibility: values.visibility,
+                  categoryId: values.categoryId,
                 },
-                source: data.source,
+                source: values.source,
               },
-              { onSuccess: onMutationSuccess },
+              { onSuccess: handleMutationSuccess },
             );
           } else {
             await createMutation.mutateAsync(
               {
                 input: {
-                  title: data.title,
-                  startDate: formatDate(data.startDate),
-                  scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-                  isAllDay: data.isAllDay,
-                  visibility: data.visibility,
-                  categoryId: data.categoryId,
+                  title: values.title,
+                  startDate: formatDate(values.startDate),
+                  scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
+                  isAllDay: values.isAllDay,
+                  visibility: values.visibility,
+                  categoryId: values.categoryId,
                 },
-                source: data.source,
+                source: values.source,
               },
-              { onSuccess: onMutationSuccess },
+              { onSuccess: handleMutationSuccess },
             );
           }
         })
@@ -267,7 +271,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const title = useWatch({ control: methods.control, name: 'title' });
   const isSubmitDisabled = !title?.trim() || isSubmitting;
 
-  const openDatePicker = () => {
+  const handleDateChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: Date | null = null;
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
@@ -294,7 +298,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     ));
   };
 
-  const openTimePicker = () => {
+  const handleTimeChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: TodoTimeValue | null = null;
     overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
@@ -328,7 +332,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     ));
   };
 
-  const openRepeatPicker = () => {
+  const handleRepeatChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: RepeatPickerCloseResult | null = null;
     overlay.open<RepeatPickerCloseResult | null>(({ isOpen, close, exit }) => (
@@ -368,7 +372,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
     ));
   };
 
-  const openCategoryPicker = () => {
+  const handleCategoryChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: number | null = null;
     overlay.open<number | null>(({ isOpen, close, exit }) => (
@@ -419,7 +423,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
                 size="medium"
                 renderErrorMessage={false}
                 returnKeyType="done"
-                onSubmitEditing={() => (isSubmitDisabled ? onClose() : onSubmit())}
+                onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
               />
             )}
           </FormField>
@@ -430,11 +434,11 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             keyboardShouldPersistTaps="always"
             contentContainerClassName="gap-2"
           >
-            <DateChip onPress={openDatePicker} />
-            <TimeChip onPress={openTimePicker} />
-            <RepeatChip onPress={openRepeatPicker} />
+            <DateChip onPress={handleDateChipPress} />
+            <TimeChip onPress={handleTimeChipPress} />
+            <RepeatChip onPress={handleRepeatChipPress} />
             <VisibilityChip />
-            <CategoryChip onPress={openCategoryPicker} />
+            <CategoryChip onPress={handleCategoryChipPress} />
           </ScrollView>
 
           <Box className="h-px bg-gray-2" />
@@ -444,7 +448,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
             <AiParseButton onExit={onExit} />
             <PressableFeedback
               isDisabled={isSubmitDisabled}
-              onPress={() => onSubmit()}
+              onPress={() => handleSubmitTodo()}
               style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className={cn(
                 'items-center justify-center rounded-4xl',
@@ -586,10 +590,10 @@ const VisibilityChip = () => {
 const CategoryChip = ({ onPress }: { onPress: () => void }) => {
   const { t } = useTranslation('todo');
   const categoryId = useWatch<AddTodoFormValues, 'categoryId'>({ name: 'categoryId' });
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useMemo(
-    () => data.categories.find((c) => c.id === categoryId),
-    [data.categories, categoryId],
+    () => categoriesResult.categories.find((c) => c.id === categoryId),
+    [categoriesResult.categories, categoryId],
   );
 
   return (
@@ -609,13 +613,13 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
 const AiFeatureTooltip = () => {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   return (
-    <Popover isOpen={tooltipOpen} onOpenChange={setTooltipOpen}>
+    <Popover isOpen={isTooltipOpen} onOpenChange={setIsTooltipOpen}>
       <Popover.Trigger asChild>
         <PressableFeedback
-          onPress={() => setTooltipOpen(true)}
+          onPress={() => setIsTooltipOpen(true)}
           className="items-center justify-center"
         >
           <HStack gap={4} align="center">
@@ -689,18 +693,18 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
       { text: currentTitle.trim(), categoryId: currentCategoryId },
       {
         onSuccess: (result) => {
-          const { data } = result;
+          const { data: parsedTodo } = result;
           methods.reset(
             (prev) => ({
               ...prev,
-              title: data.title,
-              startDate: data.startDate,
-              endDate: data.endDate,
-              scheduledTime: data.scheduledTime,
-              isAllDay: data.scheduledTime ? false : data.isAllDay,
-              isRecurring: data.isRecurring,
-              daysOfWeek: data.recurrence?.daysOfWeek ?? [],
-              repeatEndDate: data.recurrence?.endDate ?? null,
+              title: parsedTodo.title,
+              startDate: parsedTodo.startDate,
+              endDate: parsedTodo.endDate,
+              scheduledTime: parsedTodo.scheduledTime,
+              isAllDay: parsedTodo.scheduledTime ? false : parsedTodo.isAllDay,
+              isRecurring: parsedTodo.isRecurring,
+              daysOfWeek: parsedTodo.recurrence?.daysOfWeek ?? [],
+              repeatEndDate: parsedTodo.recurrence?.endDate ?? null,
               source: 'ai',
             }),
             { keepDirtyValues: true },

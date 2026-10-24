@@ -17,4 +17,4 @@ export const CATEGORY_COLORS = [
   '#2F9E44',
 ] as const;
 
-export const DEFAULT_COLOR = CATEGORY_COLORS[0];
+export const DEFAULT_CATEGORY_COLOR = CATEGORY_COLORS[0];

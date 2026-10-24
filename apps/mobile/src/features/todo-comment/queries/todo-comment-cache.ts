@@ -43,12 +43,12 @@ interface RestoreTodoCommentCachesParams {
 function findTodoCommentCacheSnapshots<TData>(
   entries: [QueryKey, TData | undefined][],
   commentId: string,
-  findComment: (data: TData | undefined, targetCommentId: string) => TodoComment | undefined,
+  findComment: (cachedPages: TData | undefined, targetCommentId: string) => TodoComment | undefined,
 ): TodoCommentCacheSnapshotEntry[] {
   const snapshots: TodoCommentCacheSnapshotEntry[] = [];
 
-  entries.forEach(([queryKey, data]) => {
-    const comment = findComment(data, commentId);
+  entries.forEach(([queryKey, cachedPages]) => {
+    const comment = findComment(cachedPages, commentId);
     if (comment !== undefined) {
       snapshots.push([queryKey, comment]);
     }
@@ -98,13 +98,13 @@ export function updateTodoCommentCaches({
     {
       queryKey: TODO_COMMENT_QUERY_KEYS.conversations({ todoId }),
     },
-    (data) => patchTodoCommentConversationPages(data, commentId, transform),
+    (cachedPages) => patchTodoCommentConversationPages(cachedPages, commentId, transform),
   );
   queryClient.setQueriesData<OverviewPages>(
     {
       queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
     },
-    (data) => patchTodoCommentOverviewPages(data, commentId, transform),
+    (cachedPages) => patchTodoCommentOverviewPages(cachedPages, commentId, transform),
   );
 }
 
@@ -129,13 +129,13 @@ export function restoreTodoCommentCaches({
   snapshot,
 }: RestoreTodoCommentCachesParams): void {
   snapshot.conversations.forEach(([queryKey, comment]) => {
-    queryClient.setQueryData<ConversationPages>(queryKey, (data) =>
-      patchTodoCommentConversationPages(data, snapshot.commentId, () => comment),
+    queryClient.setQueryData<ConversationPages>(queryKey, (cachedPages) =>
+      patchTodoCommentConversationPages(cachedPages, snapshot.commentId, () => comment),
     );
   });
   snapshot.overviews.forEach(([queryKey, comment]) => {
-    queryClient.setQueryData<OverviewPages>(queryKey, (data) =>
-      patchTodoCommentOverviewPages(data, snapshot.commentId, () => comment),
+    queryClient.setQueryData<OverviewPages>(queryKey, (cachedPages) =>
+      patchTodoCommentOverviewPages(cachedPages, snapshot.commentId, () => comment),
     );
   });
 }

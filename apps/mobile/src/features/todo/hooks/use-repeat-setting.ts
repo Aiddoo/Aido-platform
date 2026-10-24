@@ -3,7 +3,7 @@ import { without } from 'es-toolkit';
 import { useReducer } from 'react';
 import { match } from 'ts-pattern';
 
-import { ALL_DAYS } from '../constants/day-of-week';
+import { ALL_DAYS_OF_WEEK } from '../constants/day-of-week';
 import { getDayOfWeekFromDate } from '../utils/day-of-week';
 
 const WEEKDAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
@@ -58,7 +58,7 @@ export const repeatSettingReducer = (
     }))
     .with({ type: 'toggleAllDays' }, () => ({
       ...state,
-      selectedDays: state.selectedDays.length === 7 ? [] : [...ALL_DAYS],
+      selectedDays: state.selectedDays.length === 7 ? [] : [...ALL_DAYS_OF_WEEK],
     }))
     .with({ type: 'toggleWeekdays' }, () => ({
       ...state,

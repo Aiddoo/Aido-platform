@@ -38,9 +38,9 @@ export default function MemoScreen() {
 
   const progress = useSharedValue(0);
 
-  const [refreshing, onRefresh] = useRefresh(() => invalidateMemos(queryClient));
+  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateMemos(queryClient));
 
-  const onScroll = useAnimatedScrollHandler({
+  const handleScroll = useAnimatedScrollHandler({
     onScroll: ({ contentOffset: { y }, contentSize, layoutMeasurement }) => {
       const scrollable = contentSize.height - layoutMeasurement.height;
       progress.value = scrollable > 0 ? Math.min(Math.max(y / scrollable, 0), 1) : 0;
@@ -82,8 +82,8 @@ export default function MemoScreen() {
         }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
-        onScroll={onScroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        onScroll={handleScroll}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
           <Box px={12} style={{ flexGrow: 1 }}>

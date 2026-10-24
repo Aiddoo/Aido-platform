@@ -39,13 +39,13 @@ function MemoCreateScreen() {
         | {
             addListener(
               event: 'transitionEnd',
-              callback: (e: { data: { closing: boolean } }) => void,
+              callback: (event: { data: { closing: boolean } }) => void,
             ): () => void;
           }
         | undefined
       >();
-      const unsubscribe = stackNavigator?.addListener('transitionEnd', (e) => {
-        if (!e.data.closing) {
+      const unsubscribe = stackNavigator?.addListener('transitionEnd', (event) => {
+        if (!event.data.closing) {
           inputRef.current?.focus();
         }
       });
@@ -79,10 +79,10 @@ function MemoCreateScreen() {
 
   const createMutation = useMutation(useCreateMemoMutationOptions());
 
-  const handleSave = handleSubmit(async (data) => {
+  const handleSave = handleSubmit(async (formValues) => {
     try {
       await createMutation.mutateAsync(
-        { content: data.content.trim() },
+        { content: formValues.content.trim() },
         {
           onSuccess: () => {
             discardMemoDraft();

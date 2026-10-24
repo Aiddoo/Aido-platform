@@ -52,17 +52,17 @@ function patchOverviewItem(
 }
 
 export function findTodoCommentInConversationPages(
-  data: ConversationPages | undefined,
+  cachedPages: ConversationPages | undefined,
   commentId: string,
 ): TodoComment | undefined {
-  if (data === undefined) {
+  if (cachedPages === undefined) {
     return undefined;
   }
 
-  for (const page of data.pages) {
-    const item = page.items.find(({ comment }) => comment.id === commentId);
-    if (item !== undefined) {
-      return item.comment;
+  for (const page of cachedPages.pages) {
+    const conversationItem = page.items.find(({ comment }) => comment.id === commentId);
+    if (conversationItem !== undefined) {
+      return conversationItem.comment;
     }
 
     const ancestor = page.focus?.precedingAncestors.find(({ comment }) => comment.id === commentId);
@@ -75,14 +75,14 @@ export function findTodoCommentInConversationPages(
 }
 
 export function findTodoCommentInOverviewPages(
-  data: OverviewPages | undefined,
+  cachedPages: OverviewPages | undefined,
   commentId: string,
 ): TodoComment | undefined {
-  if (data === undefined) {
+  if (cachedPages === undefined) {
     return undefined;
   }
 
-  for (const page of data.pages) {
+  for (const page of cachedPages.pages) {
     for (const item of page.items) {
       if (item.comment.id === commentId) {
         return item.comment;
@@ -97,15 +97,15 @@ export function findTodoCommentInOverviewPages(
 }
 
 export function patchTodoCommentConversationPages(
-  data: ConversationPages | undefined,
+  cachedPages: ConversationPages | undefined,
   commentId: string,
   transform: TodoCommentTransform,
 ): ConversationPages | undefined {
-  if (data === undefined) {
+  if (cachedPages === undefined) {
     return undefined;
   }
 
-  const pages = mapPreservingIdentity(data.pages, (page) => {
+  const pages = mapPreservingIdentity(cachedPages.pages, (page) => {
     const items = mapPreservingIdentity(page.items, (item) =>
       patchConversationItem(item, commentId, transform),
     );
@@ -123,24 +123,24 @@ export function patchTodoCommentConversationPages(
     return items === page.items && focus === page.focus ? page : { ...page, items, focus };
   });
 
-  return pages === data.pages ? data : { ...data, pages };
+  return pages === cachedPages.pages ? cachedPages : { ...cachedPages, pages };
 }
 
 export function patchTodoCommentOverviewPages(
-  data: OverviewPages | undefined,
+  cachedPages: OverviewPages | undefined,
   commentId: string,
   transform: TodoCommentTransform,
 ): OverviewPages | undefined {
-  if (data === undefined) {
+  if (cachedPages === undefined) {
     return undefined;
   }
 
-  const pages = mapPreservingIdentity(data.pages, (page) => {
+  const pages = mapPreservingIdentity(cachedPages.pages, (page) => {
     const items = mapPreservingIdentity(page.items, (item) =>
       patchOverviewItem(item, commentId, transform),
     );
     return items === page.items ? page : { ...page, items };
   });
 
-  return pages === data.pages ? data : { ...data, pages };
+  return pages === cachedPages.pages ? cachedPages : { ...cachedPages, pages };
 }

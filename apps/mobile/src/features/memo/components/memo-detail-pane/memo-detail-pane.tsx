@@ -145,9 +145,9 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     useToggleMemoPinMutationOptions(),
   );
 
-  const handleSave = handleSubmit(async (data) => {
+  const handleSave = handleSubmit(async (formValues) => {
     try {
-      const content = data.content.trim();
+      const content = formValues.content.trim();
       await updateMemo({ memoId, input: { content } });
       reset({ content });
       discardMemoDraft();

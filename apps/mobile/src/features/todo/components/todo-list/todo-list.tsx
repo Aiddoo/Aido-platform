@@ -1,7 +1,6 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo.model';
-import { TodoPolicy } from '@src/features/todo/domains/todo.model';
-import { type Todo } from '@src/features/todo/domains/todo.model';
+import { type Todo, TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
 import { useDraggableReorderList } from '@src/shared/hooks/use-draggable-reorder-list';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -20,10 +19,8 @@ import {
   LockIcon,
   MoreIcon,
 } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
-import { formatDate } from '@src/shared/utils/date';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
+import { formatDate, getDateFormatContext } from '@src/shared/utils/date';
+import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
@@ -56,7 +53,7 @@ import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from '../todo-row';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
-  const [{ data: categoriesData }, { data: todosData, dataUpdatedAt }] = useSuspenseQueries({
+  const [{ data: categoriesResult }, { data: todosByDate, dataUpdatedAt }] = useSuspenseQueries({
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetTodosByDateQueryOptions({ date: formatDate(selectedDate) }),
@@ -64,8 +61,8 @@ export function TodoList() {
     ],
   });
   const categoryGroups = useMemo(
-    () => toTodoCategoryGroups(todosData.todos, categoriesData.categories),
-    [todosData.todos, categoriesData.categories],
+    () => toTodoCategoryGroups(todosByDate.todos, categoriesResult.categories),
+    [todosByDate.todos, categoriesResult.categories],
   );
   const canReorderTodos = categoryGroups.some((group) => group.todos.length >= 2);
 
@@ -205,17 +202,15 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
   const isOptimistic = 'optimistic' in todo && todo.optimistic === true;
 
-  /** 행을 누르면 하위 항목이 열리고, 그 안에서 바로 새 항목을 추가할 수 있다. */
-  const toggleChecklist = () => setIsExpanded((current) => !current);
+  const handleRowPress = () => setIsExpanded((current) => !current);
 
-  /** 댓글은 말풍선 버튼으로만 들어간다 — 할 일을 다루는 동작과 섞지 않는다. 펼친 화면에서는 상세 pane이 열린다. */
-  const openComments = () => selectTodo(todo.id);
+  const handleCommentsPress = () => selectTodo(todo.id);
 
-  const openActionsSheet = () => push(todoActionsSheetHref({ todoId: todo.id, date }));
+  const handleActionsPress = () => push(todoActionsSheetHref({ todoId: todo.id, date }));
 
-  const openAddSubTodoSheet = () => push(subTodoCreateSheetHref({ todoId: todo.id, date }));
+  const handleAddSubTodoPress = () => push(subTodoCreateSheetHref({ todoId: todo.id, date }));
 
-  const openSubTodoActionsSheet = (subTodo: SubTodo) =>
+  const handleSubTodoMorePress = (subTodo: SubTodo) =>
     push(subTodoActionsSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }));
 
   const handleSubTodoDragEnd = ({ data, from, to }: DragEndParams<SubTodo>) => {
@@ -279,23 +274,23 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
               />
             }
             count={todo.commentCount}
-            onPress={openComments}
+            onPress={handleCommentsPress}
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
-          <PressableFeedback onPress={isOptimistic ? undefined : openActionsSheet} hitSlop={8}>
+          <PressableFeedback onPress={isOptimistic ? undefined : handleActionsPress} hitSlop={8}>
             <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
           </PressableFeedback>
         </HStack>
       }
-      onPress={isOptimistic ? undefined : toggleChecklist}
+      onPress={isOptimistic ? undefined : handleRowPress}
       onLongPress={isOptimistic || isDragDisabled ? undefined : drag}
       isActive={isActive}
       isDisabled={isOptimistic}
     >
       {isExpanded && (
         <SubTodoList
-          onAddPress={openAddSubTodoSheet}
+          onAddPress={handleAddSubTodoPress}
           isAddDisabled={!SubTodoPolicy.canAddSubTodo(todo)}
         >
           <NestableDraggableFlatList
@@ -306,15 +301,15 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
                 <SubTodoList.Item
                   label={item.title}
                   isSelected={item.completed}
-                  onSelectedChange={(completed) =>
+                  onSelectedChange={(isCompleted) =>
                     toggleSubTodo.mutate({
                       todoId: todo.id,
                       subTodoId: item.id,
-                      completed,
+                      isCompleted,
                       startDate: todo.startDate,
                     })
                   }
-                  onMorePress={() => openSubTodoActionsSheet(item)}
+                  onMorePress={() => handleSubTodoMorePress(item)}
                   drag={itemDrag}
                   isActive={itemIsActive}
                   isDragDisabled={reorderSubTodos.isPending}
