@@ -93,6 +93,8 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 `ErrorReporterContext`(`feature`·`errorCode`·`method`·`endpoint`·`statusCode`)가 Sentry tags로 변환된다(`severity` 제외).
 저카디널리티 값만 태그로 — 검색(`errorCode:AUTH_0104`)·필터·그룹핑용.
 
+`feature`는 `core/ports/error-reporter.ts`의 `ErrorReporterFeature` union이며 snake_case 값만 쓴다(`app_icon`, `todo_nudge`). 새 값은 union에 먼저 추가한다.
+
 ---
 
 ## Logger — 이벤트 키 규칙
