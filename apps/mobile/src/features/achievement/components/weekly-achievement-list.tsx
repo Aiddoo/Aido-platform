@@ -45,7 +45,10 @@ export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievement
       data={data.items}
       keyExtractor={(item) => String(item.id)}
       contentContainerClassName="px-4"
-      contentContainerStyle={{ flexGrow: 1 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        justifyContent: data.items.length === 0 ? 'center' : 'flex-start',
+      }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onEndReached={() => {
         if (hasNextPage && !isFetching) {
