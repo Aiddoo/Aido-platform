@@ -2,6 +2,7 @@ import type { TodoCategoryWithCount } from '@src/features/todo/domains/todo-cate
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/queries/use-reorder-todo-category-mutation-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -19,6 +20,7 @@ import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { ImpactFeedbackStyle } from 'expo-haptics';
+import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useCallback } from 'react';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -27,8 +29,8 @@ import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
 import { useDraggableReorderList } from '../hooks/use-draggable-reorder-list';
+import { todoCategoryEditSheetHref } from '../utils/navigation/todo-sheet-href';
 import { CategoryDeleteDialog } from './category-delete-dialog';
-import { CategoryEditBottomSheet } from './category-edit-bottom-sheet';
 import { ReorderCoachmark } from './reorder-coachmark';
 
 export type CategoryListMode = 'edit' | 'reorder';
@@ -40,7 +42,7 @@ interface CategoryListProps {
 export function CategoryList({ mode }: CategoryListProps) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
-  const editOverlay = useOverlay();
+  const push = useSingleTap(router.push);
   const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
@@ -59,22 +61,6 @@ export function CategoryList({ mode }: CategoryListProps) {
       });
     },
   });
-
-  const openEditSheet = (category: TodoCategoryWithCount) => {
-    editOverlay.open(({ isOpen, close, exit }) => (
-      <CategoryEditBottomSheet
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        category={category}
-      />
-    ));
-  };
 
   const openDeleteDialog = (category: TodoCategoryWithCount) => {
     deleteOverlay.open(({ isOpen, close, exit }) => (
@@ -153,7 +139,7 @@ export function CategoryList({ mode }: CategoryListProps) {
                           color="dark"
                           size="small"
                           display="inline"
-                          onPress={() => openEditSheet(item)}
+                          onPress={() => push(todoCategoryEditSheetHref({ categoryId: item.id }))}
                         >
                           {t('actions.edit')}
                         </Button>

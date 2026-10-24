@@ -19,6 +19,8 @@ const SHEET_ROUTES = [
   'todo/[todoId]/sub-todos/new',
   'todo/[todoId]/sub-todos/[subTodoId]/actions',
   'todo/[todoId]/sub-todos/[subTodoId]/edit',
+  'todo-categories/new',
+  'todo-categories/[categoryId]/edit',
 ] as const;
 
 export const unstable_settings = {
