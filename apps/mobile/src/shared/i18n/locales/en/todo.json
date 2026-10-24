@@ -89,7 +89,10 @@
     "changeCategory": "Change category",
     "doToday": "Do today",
     "doTomorrow": "Do tomorrow",
-    "changeSubmit": "Save"
+    "changeSubmit": "Save",
+    "more": "More options",
+    "complete": "Mark as done",
+    "uncomplete": "Mark as not done"
   },
   "list": {
     "loadError": "Something went wrong while loading your to-dos."

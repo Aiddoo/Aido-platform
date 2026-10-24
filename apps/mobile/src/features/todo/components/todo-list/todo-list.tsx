@@ -21,15 +21,18 @@ import {
 } from '@src/shared/ui';
 import { formatDate, getDateFormatContext } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo, useState } from 'react';
+import type { AccessibilityActionEvent } from 'react-native';
 import {
   NestedReorderableList,
   useIsActive,
   useReorderableDrag,
 } from 'react-native-reorderable-list';
+import { match } from 'ts-pattern';
 
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
@@ -49,7 +52,13 @@ import {
 import { CategoryHeaderPill } from '../category-header-pill';
 import { ReorderCoachmark } from '../reorder-coachmark';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
-import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from '../todo-row';
+import {
+  TODO_ROW_ACCESSIBILITY_ACTION,
+  TodoCheckbox,
+  TodoLabel,
+  TodoProgress,
+  TodoRow,
+} from '../todo-row';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
@@ -213,20 +222,42 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
     },
   });
 
+  const handleCompletedToggle = () =>
+    toggleTodo.mutate({
+      todoId: todo.id,
+      body: { completed: !todo.completed },
+      startDate: todo.startDate,
+    });
+
+  /** 행이 하나의 접근성 요소로 읽히므로 안쪽 체크박스·댓글·더보기를 VoiceOver/TalkBack 동작으로 제공한다. */
+  const handleAccessibilityAction = (event: AccessibilityActionEvent) =>
+    match(event.nativeEvent.actionName)
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted, handleCompletedToggle)
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.comments, handleCommentsPress)
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.more, handleActionsPress)
+      .otherwise(noop);
+
   return (
     <TodoRow
+      accessibilityActions={
+        isOptimistic
+          ? undefined
+          : [
+              {
+                name: TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted,
+                label: t(todo.completed ? 'actions.uncomplete' : 'actions.complete'),
+              },
+              { name: TODO_ROW_ACCESSIBILITY_ACTION.comments, label: t('detail.open') },
+              { name: TODO_ROW_ACCESSIBILITY_ACTION.more, label: t('actions.more') },
+            ]
+      }
+      onAccessibilityAction={handleAccessibilityAction}
       left={
         <TodoCheckbox
           testID={`todo-checkbox-${todo.id}`}
           accessibilityLabel={todo.title}
           isSelected={todo.completed}
-          onSelectedChange={() =>
-            toggleTodo.mutate({
-              todoId: todo.id,
-              body: { completed: !todo.completed },
-              startDate: todo.startDate,
-            })
-          }
+          onSelectedChange={handleCompletedToggle}
           isDisabled={toggleTodo.isPending || isOptimistic}
         />
       }
@@ -266,7 +297,12 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
             accessibilityRole="button"
             accessibilityLabel={t('detail.open')}
           />
-          <PressableFeedback onPress={isOptimistic ? undefined : handleActionsPress} hitSlop={8}>
+          <PressableFeedback
+            onPress={isOptimistic ? undefined : handleActionsPress}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t('actions.more')}
+          >
             <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
           </PressableFeedback>
         </HStack>

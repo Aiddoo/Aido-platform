@@ -1,11 +1,14 @@
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text } from '@src/shared/ui';
+import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+import type { AccessibilityActionEvent } from 'react-native';
 import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
+import { match } from 'ts-pattern';
 
 import { SubTodoIndent } from '../sub-todo-indent';
-import { TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
 
 interface SubTodoListProps {
   children: ReactNode;
@@ -47,11 +50,26 @@ SubTodoList.Item = function Item({
   onMorePress,
   ...checkboxProps
 }: SubTodoListItemProps) {
+  const { t } = useTranslation('todo');
   const drag = useReorderableDrag();
   const isActive = useIsActive();
 
+  const handleAccessibilityAction = (event: AccessibilityActionEvent) =>
+    match(event.nativeEvent.actionName)
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted, () => onSelectedChange(!isSelected))
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.more, onMorePress)
+      .otherwise(noop);
+
   return (
     <TodoRow
+      accessibilityActions={[
+        {
+          name: TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted,
+          label: t(isSelected ? 'actions.uncomplete' : 'actions.complete'),
+        },
+        { name: TODO_ROW_ACCESSIBILITY_ACTION.more, label: t('actions.more') },
+      ]}
+      onAccessibilityAction={handleAccessibilityAction}
       left={
         <TodoCheckbox
           {...checkboxProps}
@@ -61,7 +79,12 @@ SubTodoList.Item = function Item({
       }
       top={<TodoLabel isChecked={isSelected}>{label}</TodoLabel>}
       right={
-        <PressableFeedback onPress={onMorePress} hitSlop={8}>
+        <PressableFeedback
+          onPress={onMorePress}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('actions.more')}
+        >
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       }

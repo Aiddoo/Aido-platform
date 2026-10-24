@@ -10,6 +10,13 @@ import { cn } from '@src/shared/utils/cn';
 import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
+/** 행 안쪽 컨트롤을 스크린리더 동작으로 제공할 때 쓰는 이름. */
+export const TODO_ROW_ACCESSIBILITY_ACTION = {
+  toggleCompleted: 'toggleCompleted',
+  comments: 'comments',
+  more: 'more',
+} as const;
+
 interface TodoRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   left?: ReactNode;
   top: ReactNode;
