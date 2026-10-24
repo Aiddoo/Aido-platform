@@ -5,7 +5,7 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { Box, HStack, Text, TextButton } from '@src/shared/ui';
-import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useSuspenseQueries } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useCallback, useEffect, useRef, type ComponentProps } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -150,8 +150,9 @@ function CommentInputTrigger({ author, placeholder, ...pressableProps }: Comment
 
 function NewCommentButton() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [{ data: detail }, { data: user }] = useSuspenseQueries({
+    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
+  });
   const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
   const { t } = useTranslation('todoComment');
@@ -176,8 +177,6 @@ function ReplyToSelectedCommentButton() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const commentId =
     commentRoute.view === 'conversation' && commentRoute.form === null
       ? commentRoute.commentId
@@ -189,6 +188,9 @@ function ReplyToSelectedCommentButton() {
       focusCommentId: commentId,
     }),
   );
+  const [{ data: detail }, { data: user }] = useSuspenseQueries({
+    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
+  });
   const { t } = useTranslation('todoComment');
 
   if (!detail.permissions.canComment) {
@@ -229,8 +231,9 @@ function ReplyToSelectedCommentButton() {
 
 function NewCommentForm() {
   const { todoId } = useTodoScreenParams();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [{ data: detail }, { data: user }] = useSuspenseQueries({
+    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
+  });
   const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const { t } = useTranslation('todoComment');
 
@@ -254,8 +257,6 @@ function NewCommentForm() {
 function SelectedCommentForm() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
-  const { data: detail } = useSuspenseQuery(useGetTodoDetailsQueryOptions({ todoId }));
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const { t } = useTranslation('todoComment');
   const activeForm = commentRoute.view === 'conversation' ? commentRoute.form : null;
   const commentId =
@@ -269,6 +270,9 @@ function SelectedCommentForm() {
       focusCommentId: commentId,
     }),
   );
+  const [{ data: detail }, { data: user }] = useSuspenseQueries({
+    queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
+  });
 
   if (activeForm === null || commentId === undefined) {
     return null;
