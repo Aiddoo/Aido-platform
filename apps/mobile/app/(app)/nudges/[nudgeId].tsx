@@ -35,7 +35,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatRelativeTime } from '@src/shared/utils/date';
-import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
@@ -54,7 +54,7 @@ function NudgeDetailScreen() {
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
   const status = NudgeInteractionPolicy.getStatus(nudge);
   const reply = (replyKind: NudgeReplyKind) => mutation.mutate({ nudgeId, input: { replyKind } });
-  const openThanksSheet = useNudgeThanksSheet();
+  const openThanksSheet = useNudgeThanksSheet(nudge.todoId);
   const openTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
   );
@@ -171,7 +171,7 @@ function NudgeDetailScreen() {
                   {t('interaction.completedThanksHint')}
                 </Text>
               )}
-              {status !== 'THANKED' && <TodoThanksButton openSheet={openThanksSheet} />}
+              {status !== 'THANKED' && <NudgeThanksButton onPress={openThanksSheet} />}
             </VStack>
           ))
           .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
@@ -276,14 +276,6 @@ NudgeDetailScreen.Loading = function Loading() {
     </ScrollView>
   );
 };
-
-/** 감사 시트는 버튼이 사라져도 유지되도록 화면이 연 `openSheet`를 쓴다. */
-function TodoThanksButton(props: Omit<ComponentProps<typeof NudgeThanksButton>, 'todoId'>) {
-  const { nudgeId } = useNudgeScreenParams();
-  const { data: nudge } = useSuspenseQuery(useGetNudgeInteractionQueryOptions({ nudgeId }));
-
-  return <NudgeThanksButton {...props} todoId={nudge.todoId} />;
-}
 
 export default function NudgeDetailRoute() {
   const params = nudgeScreenParamsSchema.safeParse(useLocalSearchParams());

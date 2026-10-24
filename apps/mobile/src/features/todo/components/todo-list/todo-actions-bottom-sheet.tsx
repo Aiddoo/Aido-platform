@@ -1,4 +1,7 @@
-import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import {
+  NudgeThanksButton,
+  useNudgeThanksSheet,
+} from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
@@ -69,6 +72,8 @@ export function TodoActionsBottomSheet({
     );
   };
 
+  const openThanksSheet = useNudgeThanksSheet(todo.id);
+
   const handleDelete = () => {
     deleteMutation.mutate({ todoId: todo.id, startDate: todo.startDate }, { onSuccess: onClose });
   };
@@ -77,7 +82,12 @@ export function TodoActionsBottomSheet({
     <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
       <VStack gap={8}>
         {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
-          <NudgeThanksButton todoId={todo.id} onPress={onClose} />
+          <NudgeThanksButton
+            onPress={() => {
+              onClose();
+              return openThanksSheet();
+            }}
+          />
         )}
         <PressableFeedback
           onPress={() => {

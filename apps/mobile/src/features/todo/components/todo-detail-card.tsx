@@ -1,4 +1,7 @@
-import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import {
+  NudgeThanksButton,
+  useNudgeThanksSheet,
+} from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
@@ -163,9 +166,10 @@ TodoDetailCard.Loading = function Loading() {
 
 function TodoDetailThanksAction({ detail }: TodoDetailSectionProps) {
   const { data: me } = useQuery(useGetMeQueryOptions());
+  const openThanksSheet = useNudgeThanksSheet(detail.todo.id);
   return NudgeInteractionPolicy.isThankableTodo(detail.todo, {
     isOwner: me?.id === detail.owner.id,
   }) ? (
-    <NudgeThanksButton todoId={detail.todo.id} />
+    <NudgeThanksButton onPress={openThanksSheet} />
   ) : null;
 }

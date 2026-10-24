@@ -31,10 +31,10 @@ import { useGetNudgeInteractionAvailabilityQueryOptions } from '../../queries/ge
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/get-nudge-thanks-preview-infinite-query-options';
 import { useSendNudgeThanksMutationOptions } from '../../queries/use-send-nudge-thanks-mutation-options';
 
-/** 감사 시트를 연다. 시트는 이 훅을 호출한 컴포넌트가 마운트된 동안 유지된다. */
-export function useNudgeThanksSheet() {
+/** 할 일의 감사 시트를 여는 함수를 돌려준다. 시트는 이 훅을 호출한 컴포넌트가 마운트된 동안 유지된다. */
+export function useNudgeThanksSheet(todoId: number) {
   const overlay = useOverlay();
-  return (todoId: number) =>
+  return () =>
     overlay
       .open(({ isOpen, close, exit }) => (
         <NudgeThanksButton.Sheet todoId={todoId} isOpen={isOpen} onClose={close} onExit={exit} />
@@ -42,35 +42,15 @@ export function useNudgeThanksSheet() {
       .catch(() => undefined);
 }
 
-interface NudgeThanksButtonProps extends Omit<ComponentProps<typeof Button>, 'children'> {
-  todoId: number;
-  /** 버튼이 사라져도 시트를 유지해야 할 때 상위에서 연 `useNudgeThanksSheet`를 넘긴다. */
-  openSheet?: (todoId: number) => Promise<void>;
-}
-
-export function NudgeThanksButton({
-  todoId,
-  onPress,
-  openSheet,
-  ...props
-}: NudgeThanksButtonProps) {
+export function NudgeThanksButton(props: Omit<ComponentProps<typeof Button>, 'children'>) {
   const { t } = useTranslation('todo');
-  const openOwnSheet = useNudgeThanksSheet();
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
   if (!availability.data) {
     return null;
   }
 
   return (
-    <Button
-      {...props}
-      variant={props.variant ?? 'weak'}
-      color={props.color ?? 'primary'}
-      onPress={(event) => {
-        onPress?.(event);
-        return (openSheet ?? openOwnSheet)(todoId);
-      }}
-    >
+    <Button {...props} variant={props.variant ?? 'weak'} color={props.color ?? 'primary'}>
       <HStack align="center" justify="center" gap={8}>
         <HeartFilledIcon width={20} height={20} colorClassName="text-main" />
         <Text size="b4" tone="brand" weight="semibold" className="shrink">
