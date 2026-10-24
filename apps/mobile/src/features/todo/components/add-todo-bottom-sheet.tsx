@@ -56,7 +56,7 @@ import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutatio
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
-import { CategorySelectInput } from './category-select-bottom-sheet';
+import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
 import {
   type RepeatPickerCloseResult,

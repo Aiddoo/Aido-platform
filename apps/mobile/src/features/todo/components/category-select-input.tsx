@@ -1,33 +1,9 @@
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { BottomSheet, Box, Button, CheckIcon, ListRow, Text, VStack } from '@src/shared/ui';
+import { Box, Button, CheckIcon, ListRow, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, useState } from 'react';
-
-interface CategorySelectBottomSheetProps
-  extends Omit<ComponentProps<typeof BottomSheet>, 'children'>, CategorySelectInputProps {}
-
-export function CategorySelectBottomSheet({
-  value,
-  onChange,
-  submitLabel,
-  isPending,
-  ...sheetProps
-}: CategorySelectBottomSheetProps) {
-  return (
-    <BottomSheet {...sheetProps}>
-      {sheetProps.isOpen && (
-        <CategorySelectInput
-          value={value}
-          onChange={onChange}
-          submitLabel={submitLabel}
-          isPending={isPending}
-        />
-      )}
-    </BottomSheet>
-  );
-}
+import { useState } from 'react';
 
 interface CategorySelectInputProps {
   /** 처음 선택된 카테고리. 시트 안에서 고른 값은 제출할 때 onChange로 전달한다. */

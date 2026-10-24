@@ -18,7 +18,7 @@ import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-q
 import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
 import { TODO_SHEET_FALLBACK_HREF } from '../../utils/navigation/todo-sheet-href';
 import { findSheetTodo } from '../../utils/view-models/todo-sheet-target.view-model';
-import { CategorySelectInput } from '../category-select-bottom-sheet';
+import { CategorySelectInput } from '../category-select-input';
 
 type TodoCategoryBottomSheetProps = Omit<
   ComponentProps<typeof BottomSheet>,

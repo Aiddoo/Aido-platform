@@ -1,5 +1,5 @@
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
-import { CategorySelectInput } from '@src/features/todo/components/category-select-bottom-sheet';
+import { CategorySelectInput } from '@src/features/todo/components/category-select-input';
 import { TodoDatePickerContent } from '@src/features/todo/components/todo-date-picker-content';
 import {
   type TodoTimeValue,

@@ -12,7 +12,6 @@ import {
   ScallopedContainer,
   Spacing,
   Text,
-  useOverlay,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -29,13 +28,10 @@ import {
   useGetSuggestionsQueryOptions,
 } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
-import { SuggestionCategoryBottomSheet } from './suggestion-category-bottom-sheet';
 
 const SUGGESTION_LOADING_COUNT = 2;
 
 export function SuggestionsList() {
-  const replace = useSingleTap(router.replace);
-
   const { t } = useTranslation('ai');
   usePrefetchQuery(useGetPreferenceQueryOptions());
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
@@ -73,7 +69,6 @@ export function SuggestionsList() {
           <SuggestionsList.Item
             key={suggestion.id}
             suggestion={suggestion}
-            onAccepted={() => replace('/feed')}
             onDismiss={() => handleDismiss(suggestion.id)}
             isDismissing={
               dismissSuggestionMutation.isPending &&
@@ -98,7 +93,6 @@ function formatSchedule(suggestion: AiSuggestion, timeFormat: TimeFormat): strin
 
 interface SuggestionItemProps {
   suggestion: AiSuggestion;
-  onAccepted: () => void;
   onDismiss: () => void;
   isDismissing?: boolean;
   isLast?: boolean;
@@ -106,38 +100,20 @@ interface SuggestionItemProps {
 
 SuggestionsList.Item = function Item({
   suggestion,
-  onAccepted,
   onDismiss,
   isDismissing = false,
   isLast = false,
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const overlay = useOverlay();
+  const push = useSingleTap(router.push);
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
-  const openCategorySheet = () => {
-    overlay.open(({ isOpen, close, exit }) => {
-      const closeSheet = () => {
-        close();
-        exit();
-      };
-
-      return (
-        <SuggestionCategoryBottomSheet
-          suggestionId={suggestion.id}
-          suggestedCategoryId={suggestion.suggestedCategoryId}
-          isOpen={isOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              closeSheet();
-            }
-          }}
-          onAccepted={onAccepted}
-        />
-      );
+  const openCategorySheet = () =>
+    push({
+      pathname: '/suggestions/[suggestionId]/category',
+      params: { suggestionId: String(suggestion.id) },
     });
-  };
 
   return (
     <View className="py-2">
