@@ -87,7 +87,7 @@ SuggestionCategoryBottomSheet.Content = function Content({
         }
       }}
       submitLabel={t('suggestions.category.submit')}
-      isPending={handleSuggestionMutation.isPending}
+      isLoading={handleSuggestionMutation.isPending}
     />
   );
 };

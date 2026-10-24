@@ -64,7 +64,7 @@ TodoCategoryBottomSheet.Content = function Content({ onClose }: { onClose: () =>
     <CategorySelectInput
       value={todo.category.id}
       submitLabel={t('actions.changeSubmit')}
-      isPending={changeCategory.isPending}
+      isLoading={changeCategory.isPending}
       onChange={async (categoryId) => {
         const changed = await changeCategory
           .mutateAsync({ todoId: todo.id, input: { categoryId } })

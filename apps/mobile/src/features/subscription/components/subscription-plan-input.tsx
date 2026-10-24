@@ -1,7 +1,8 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack, Box } from '@src/shared/ui';
+import { Box, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPrice } from '@src/shared/utils/format';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { Card, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
@@ -10,36 +11,31 @@ import {
   getMonthlyEquivalent,
   type SubscriptionPlan,
 } from '../domains/subscription.model';
+import { useGetOfferingsQueryOptions } from '../queries/get-offerings-query-options';
 
-interface SubscriptionPlanCardProps extends Omit<ComponentProps<typeof RadioGroup>, 'children'> {
-  plans: SubscriptionPlan[];
-}
+type SubscriptionPlanInputProps = Omit<ComponentProps<typeof RadioGroup>, 'children'>;
 
-export function SubscriptionPlanCard({ plans, ...props }: SubscriptionPlanCardProps) {
-  const monthlyPlan = plans.find((p) => p.planType === 'monthly');
-  const annualPlan = plans.find((p) => p.planType === 'annual');
-  const discountPercent =
+export function SubscriptionPlanInput(props: SubscriptionPlanInputProps) {
+  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
+  const monthlyPlan = offering.plans.find((plan) => plan.planType === 'monthly');
+  const annualPlan = offering.plans.find((plan) => plan.planType === 'annual');
+  const annualDiscountPercent =
     monthlyPlan && annualPlan ? getAnnualDiscountPercent(monthlyPlan.price, annualPlan.price) : 0;
 
   return (
     <RadioGroup className="gap-3" {...props}>
-      {plans.map((plan) => (
-        <PlanCard
-          key={plan.identifier}
-          plan={plan}
-          discountPercent={plan.planType === 'annual' ? discountPercent : 0}
-        />
-      ))}
+      {monthlyPlan && <PlanOption plan={monthlyPlan} discountPercent={0} />}
+      {annualPlan && <PlanOption plan={annualPlan} discountPercent={annualDiscountPercent} />}
     </RadioGroup>
   );
 }
 
-interface PlanCardProps {
+interface PlanOptionProps {
   plan: SubscriptionPlan;
   discountPercent: number;
 }
 
-function PlanCard({ plan, discountPercent }: PlanCardProps) {
+function PlanOption({ plan, discountPercent }: PlanOptionProps) {
   const { t } = useTranslation('subscription');
   const isAnnual = plan.planType === 'annual';
 

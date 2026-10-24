@@ -13,9 +13,8 @@ import {
   Text,
 } from '@src/shared/ui';
 import { router, useNavigation, useLocalSearchParams } from 'expo-router';
-import { Tabs } from 'heroui-native';
+import { PressableFeedback, Tabs } from 'heroui-native';
 import { type ReactNode, Suspense, useCallback, useLayoutEffect } from 'react';
-import { Pressable } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -54,15 +53,12 @@ export default function FriendsScreen() {
     navigation.setOptions({
       headerRight: () => (
         <HStack align="center" gap={4}>
-          <Pressable onPress={() => push('/friends/search')} hitSlop={8} className="p-2">
-            <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
-          </Pressable>
+          <SearchHeaderButton onPress={() => push('/friends/search')} />
           {view === TabView.friends && (
-            <Pressable onPress={() => setIsEditMode(!isEditMode)} hitSlop={8} className="p-2">
-              <Text size="b3" weight="medium" shade={9}>
-                {isEditMode ? t('common:actions.done') : t('list.edit')}
-              </Text>
-            </Pressable>
+            <EditModeHeaderButton
+              isEditMode={isEditMode}
+              onPress={() => setIsEditMode(!isEditMode)}
+            />
           )}
         </HStack>
       ),
@@ -142,4 +138,30 @@ function useView() {
   const view = friendTabSchema.catch(TabView.friends).parse(params.view);
   const setView = useCallback((view: TabValue) => router.setParams({ view }), []);
   return [view, setView] as const;
+}
+
+function SearchHeaderButton({ onPress }: { onPress: () => void }) {
+  return (
+    <PressableFeedback onPress={onPress} hitSlop={8} className="p-2">
+      <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
+    </PressableFeedback>
+  );
+}
+
+function EditModeHeaderButton({
+  isEditMode,
+  onPress,
+}: {
+  isEditMode: boolean;
+  onPress: () => void;
+}) {
+  const { t } = useTranslation(['friend', 'common']);
+
+  return (
+    <PressableFeedback onPress={onPress} hitSlop={8} className="p-2">
+      <Text size="b3" weight="medium" shade={9}>
+        {isEditMode ? t('common:actions.done') : t('list.edit')}
+      </Text>
+    </PressableFeedback>
+  );
 }

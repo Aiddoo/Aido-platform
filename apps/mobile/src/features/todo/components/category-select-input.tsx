@@ -10,16 +10,14 @@ interface CategorySelectInputProps {
   value: number;
   onChange: (categoryId: number) => Promise<unknown> | void;
   submitLabel: string;
-  /** 제출을 처리하는 mutation의 `isPending`. */
-  isPending?: boolean;
+  isLoading?: boolean;
 }
 
-/** 카테고리 목록을 스스로 조회하고, 고른 카테고리를 제출 버튼으로 확정한다. */
 export function CategorySelectInput({
   value,
   onChange,
   submitLabel,
-  isPending = false,
+  isLoading = false,
 }: CategorySelectInputProps) {
   const { t } = useTranslation('todo');
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
@@ -63,7 +61,7 @@ export function CategorySelectInput({
         })}
       </VStack>
 
-      <Button size="large" onPress={() => onChange(localCategoryId)} isLoading={isPending}>
+      <Button size="large" onPress={() => onChange(localCategoryId)} isLoading={isLoading}>
         {submitLabel}
       </Button>
     </VStack>

@@ -2,9 +2,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { z } from 'zod';
 
-const feedActionSearchSchema = z.object({
-  action: z.literal('add-todo').optional().catch(undefined),
-});
+import { feedActionParamSchema } from '../utils/feed-search-params';
+
+const feedActionSearchSchema = z.object({ action: feedActionParamSchema });
 
 type FeedAction = z.output<typeof feedActionSearchSchema>['action'];
 

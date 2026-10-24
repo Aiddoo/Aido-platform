@@ -2,7 +2,6 @@ import { TodoDetailPane } from '@src/features/todo-comment/components/todo-detai
 
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 
-/** 펼친 피드의 상세 pane. 선택된 할 일이 바뀌면 상세를 새로 마운트한다. */
 export function FeedTodoDetailPane() {
   const [selectedTodoId] = useFeedSelectedTodo();
 

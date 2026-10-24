@@ -20,11 +20,7 @@ export function resolveWidgetAppRoute(url: string | null): Href | null {
 export function isWidgetAppRouteCurrent(
   uri: string,
   pathname: string,
-  {
-    date,
-    action,
-    friendId,
-  }: { date?: string | string[]; action?: string | string[]; friendId?: string | string[] },
+  { date, action, friendId }: { date?: string; action?: string; friendId?: string },
 ): boolean {
   const destination = parseWidgetNavigationUri(uri);
   if (!destination) {

@@ -2,7 +2,6 @@ import { ProfileImageBottomSheet } from '@src/features/user/components/profile-i
 import { ProfileInfoCard } from '@src/features/user/components/profile-info-card';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -13,10 +12,10 @@ import {
   Spacing,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
 } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
 import { Suspense, useState } from 'react';
 import { ScrollView } from 'react-native';
 
@@ -91,15 +90,13 @@ function EditNameRow() {
 
 EditNameRow.Loading = function Loading() {
   const { t } = useTranslation('settings');
-  const fontScaledSize = useFontScaledSize();
-
   return (
     <SettingNavigation.Item
       label={t('titles.editName')}
       isDisabled
       right={
         <HStack align="center" gap={4}>
-          <Skeleton className="w-16 rounded" style={{ height: fontScaledSize(23) }} />
+          <TextSkeleton size="b2" className="w-16" />
           <ArrowRightIcon colorClassName="text-gray-6" />
         </HStack>
       }

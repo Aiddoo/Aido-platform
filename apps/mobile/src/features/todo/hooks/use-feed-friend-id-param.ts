@@ -1,13 +1,11 @@
-import { userIdParamSchema } from '@aido/api';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { z } from 'zod';
 
 import { createFeedFriendParams } from '../utils/feed-route';
+import { feedFriendIdParamSchema } from '../utils/feed-search-params';
 
-const feedFriendSearchSchema = z.object({
-  friendId: userIdParamSchema.shape.userId.optional().catch(undefined),
-});
+const feedFriendSearchSchema = z.object({ friendId: feedFriendIdParamSchema });
 
 type FeedFriendId = z.output<typeof feedFriendSearchSchema>['friendId'];
 

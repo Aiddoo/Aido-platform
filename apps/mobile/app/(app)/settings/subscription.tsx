@@ -3,7 +3,7 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
-import { SubscriptionPlanCard } from '@src/features/subscription/components/subscription-plan-card';
+import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
 import {
   isActiveSubscription,
   SubscriptionPolicy,
@@ -199,11 +199,7 @@ function PaywallPane() {
             <DashedDivider className="my-5 mx-5" />
 
             <Box className="px-5 pb-5">
-              <SubscriptionPlanCard
-                plans={offering.plans}
-                value={selectedPlanId}
-                onValueChange={setChosenPlanId}
-              />
+              <SubscriptionPlanInput value={selectedPlanId} onValueChange={setChosenPlanId} />
             </Box>
           </ScallopedContainer>
 
