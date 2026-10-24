@@ -10,9 +10,13 @@ import type {
   WeatherProvider,
 } from "../../../application/ports/forecast/weather-provider.port.js";
 import { WeatherProviderLogEvent } from "../../observability/forecast/weather-provider-log.events.js";
-import { getKmaBaseDateTime } from "./kma-base-datetime.js";
+import {
+  type KmaBaseDateTime,
+  getKmaBaseDateTime,
+  getPreviousKmaBaseDateTime,
+} from "./kma-base-datetime.js";
 import { parseKmaResponse } from "./kma-response-parser.js";
-import { kmaApiResponseSchema } from "./kma-response.schema.js";
+import { type KmaApiResponse, kmaApiResponseSchema } from "./kma-response.schema.js";
 import { KMA_BASE_URL, KMA_ENDPOINTS, KMA_TIMEZONE } from "./kma.constants.js";
 import { convertToGrid } from "./lambert-projection.js";
 
@@ -28,9 +32,42 @@ export class KmaWeatherProvider implements WeatherProvider {
   ) {}
 
   async getForecast(lat: number, lon: number, date: Date): Promise<WeatherForecast> {
-    const { nx, ny } = convertToGrid(lat, lon);
-    const { baseDate, baseTime } = getKmaBaseDateTime(date);
+    const grid = convertToGrid(lat, lon);
 
+    const current = await this.#requestForecast(grid, getKmaBaseDateTime(date));
+    if (current.response.header.resultCode === "00") {
+      return parseKmaResponse(current, date);
+    }
+
+    // 실패 코드는 일시적으로 발생하고 3시간 전 직전 발표도 대상일 예보를 포함하므로 한 번만 대체한다.
+    this.#logger.warn({
+      event: WeatherProviderLogEvent.PREVIOUS_BASE_RETRIED,
+      provider: this.name,
+      operation: "forecast",
+      resultCode: current.response.header.resultCode,
+    });
+    const previous = await this.#requestForecast(grid, getPreviousKmaBaseDateTime(date));
+    if (previous.response.header.resultCode === "00") {
+      return parseKmaResponse(previous, date);
+    }
+
+    this.#logger.error({
+      event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+      provider: this.name,
+      operation: "forecast",
+      errorType: "provider_result",
+      resultCode: previous.response.header.resultCode,
+    });
+    throw ApplicationExceptions.weatherServiceUnavailable({
+      code: previous.response.header.resultCode,
+      message: previous.response.header.resultMsg,
+    });
+  }
+
+  async #requestForecast(
+    { nx, ny }: ReturnType<typeof convertToGrid>,
+    { baseDate, baseTime }: KmaBaseDateTime,
+  ): Promise<KmaApiResponse> {
     const outcome = await requestVendorJson(
       this.http,
       `${KMA_BASE_URL}${KMA_ENDPOINTS.VILLAGE_FORECAST}`,
@@ -78,22 +115,7 @@ export class KmaWeatherProvider implements WeatherProvider {
         reason: "unexpected response structure",
       });
     }
-    const data = parsed.data;
-
-    if (data.response.header.resultCode !== "00") {
-      this.#logger.error({
-        event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
-        provider: this.name,
-        operation: "forecast",
-        errorType: "provider_result",
-      });
-      throw ApplicationExceptions.weatherServiceUnavailable({
-        code: data.response.header.resultCode,
-        message: data.response.header.resultMsg,
-      });
-    }
-
-    return parseKmaResponse(data, date);
+    return parsed.data;
   }
 
   isConfigured(): boolean {

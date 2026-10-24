@@ -70,13 +70,6 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
 
   it.each([
     ["HTTP 실패", () => new Response(null, { status: 503 })],
-    [
-      "공급자 실패 코드",
-      () =>
-        new Response(
-          JSON.stringify({ response: { header: { resultCode: "03", resultMsg: "NO_DATA" } } }),
-        ),
-    ],
     ["잘못된 응답 구조", () => new Response(JSON.stringify({ response: {} }))],
     [
       "검증을 통과하지 못하는 item 형식",
@@ -101,6 +94,78 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("현재 발표가 실패 코드이면 직전 발표로 한 번 재요청하고 대상일 예보를 반환한다", async () => {
+    // Given
+    const date = new Date("2026-07-23T00:00:00Z");
+    const warnLog = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+    const errorLog = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    fetchSpy.mockResolvedValueOnce(providerResultResponse("03")).mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          response: {
+            header: { resultCode: "00", resultMsg: "NORMAL_SERVICE" },
+            body: {
+              items: {
+                item: [
+                  { category: "TMP", fcstDate: "20260723", fcstTime: "0900", fcstValue: "24" },
+                ],
+              },
+            },
+          },
+        }),
+      ),
+    );
+    // When
+    const result = await provider.getForecast(37.5665, 126.978, date);
+    // Then
+    const [current, previous] = fetchSpy.mock.calls.map(
+      ([url]) => new URL(String(url)).searchParams,
+    );
+    expect([current?.get("base_date"), current?.get("base_time")]).toEqual(["20260723", "0800"]);
+    expect([previous?.get("base_date"), previous?.get("base_time")]).toEqual(["20260723", "0500"]);
+    expect(result.hourlyForecasts[0]?.temperature).toBe(24);
+    expect(warnLog.mock.calls).toEqual([
+      [
+        {
+          event: WeatherProviderLogEvent.PREVIOUS_BASE_RETRIED,
+          provider: "kma",
+          operation: "forecast",
+          resultCode: "03",
+        },
+      ],
+    ]);
+    expect(errorLog).not.toHaveBeenCalled();
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("직전 발표도 실패 코드이면 더 재요청하지 않고 마지막 실패 코드로 WEATHER_1901을 던진다", async () => {
+    // Given
+    vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
+    const errorLog = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
+    fetchSpy
+      .mockResolvedValueOnce(providerResultResponse("03"))
+      .mockResolvedValueOnce(providerResultResponse("99"));
+    // When / Then
+    await expect(
+      provider.getForecast(37.5665, 126.978, new Date("2026-07-23T00:00:00Z")),
+    ).rejects.toMatchObject({
+      errorCode: ErrorCode.WEATHER_1901,
+      details: { code: "99", message: "UNKNOWN_ERROR" },
+    });
+    expect(errorLog.mock.calls).toEqual([
+      [
+        {
+          event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
+          provider: "kma",
+          operation: "forecast",
+          errorType: "provider_result",
+          resultCode: "99",
+        },
+      ],
+    ]);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+  });
+
   it("credential 미설정은 isConfigured false이며 한국 지역 미지원 판정이 아니다", () => {
     // Given
     Object.defineProperty(config, "dataGoKrApiKey", { get: () => undefined });
@@ -112,12 +177,9 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
   it("공급자 응답 원문은 로그에 노출하지 않고 기존 1901 details 계약을 유지한다", async () => {
     // Given
     const secret = "PRIVATE_KEY=secret&latitude=37.5665&longitude=126.978 BODY_SECRET";
+    const warnLog = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
     const errorLog = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
-    fetchSpy.mockResolvedValue(
-      new Response(
-        JSON.stringify({ response: { header: { resultCode: "03", resultMsg: secret } } }),
-      ),
-    );
+    fetchSpy.mockImplementation(async () => providerResultResponse("03", secret));
 
     // When / Then
     await expect(
@@ -133,10 +195,15 @@ describe("KMA 예보 HTTP 요청·오류 계약", () => {
           provider: "kma",
           operation: "forecast",
           errorType: "provider_result",
+          resultCode: "03",
         },
       ],
     ]);
-    expect(JSON.stringify(errorLog.mock.calls)).not.toContain(secret);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify([warnLog.mock.calls, errorLog.mock.calls])).not.toContain(secret);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
+
+function providerResultResponse(resultCode: string, resultMsg = "UNKNOWN_ERROR"): Response {
+  return new Response(JSON.stringify({ response: { header: { resultCode, resultMsg } } }));
+}

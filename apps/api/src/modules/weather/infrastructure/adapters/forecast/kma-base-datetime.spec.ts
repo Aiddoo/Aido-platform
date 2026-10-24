@@ -1,4 +1,4 @@
-import { getKmaBaseDateTime } from "./kma-base-datetime.js";
+import { getKmaBaseDateTime, getPreviousKmaBaseDateTime } from "./kma-base-datetime.js";
 
 describe("KMA 발표 시각 (KST)", () => {
   it.each([
@@ -20,6 +20,27 @@ describe("KMA 발표 시각 (KST)", () => {
     const timestamp = date.getTime();
     // When
     const result = getKmaBaseDateTime(date);
+    // Then
+    expect(result).toEqual({ baseDate, baseTime });
+    expect(date.getTime()).toBe(timestamp);
+  });
+});
+
+describe("KMA 직전 발표 시각 (KST)", () => {
+  it.each([
+    ["2026-03-18T01:00:00+09:00", "20260317", "2000"],
+    ["2026-03-18T02:14:00+09:00", "20260317", "2000"],
+    ["2026-03-18T02:15:00+09:00", "20260317", "2300"],
+    ["2026-03-18T05:15:00+09:00", "20260318", "0200"],
+    ["2026-03-18T23:15:00+09:00", "20260318", "2000"],
+    ["2027-01-01T02:30:00+09:00", "20261231", "2300"],
+    ["2026-07-23T00:00:00Z", "20260723", "0500"],
+  ])("%s는 현재 발표 한 단계 전인 %s/%s 발표를 선택한다", (instant, baseDate, baseTime) => {
+    // Given
+    const date = new Date(instant);
+    const timestamp = date.getTime();
+    // When
+    const result = getPreviousKmaBaseDateTime(date);
     // Then
     expect(result).toEqual({ baseDate, baseTime });
     expect(date.getTime()).toBe(timestamp);
