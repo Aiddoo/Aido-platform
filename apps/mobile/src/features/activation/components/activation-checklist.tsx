@@ -1,23 +1,30 @@
-import type { ActivationProgress } from '@src/features/activation/domains/activation.model';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import type { ComponentProps } from 'react';
 
-interface ActivationChecklistProps {
-  progress: ActivationProgress;
-}
+import { useActivationChecklist } from '../hooks/use-activation-progress';
 
-export function ActivationChecklist({ progress }: ActivationChecklistProps) {
+type ActivationChecklistProps = Omit<ComponentProps<typeof VStack>, 'children'>;
+
+export function ActivationChecklist({ className, ...props }: ActivationChecklistProps) {
   const { t } = useTranslation('todo');
+  const { progress, isVisible } = useActivationChecklist();
+
+  if (!isVisible) {
+    return null;
+  }
+
   const hasCreated = progress.todoCreatedAt !== null;
   const hasCompleted = progress.activatedAt !== null;
 
   return (
     <VStack
       gap={12}
-      className="rounded-2xl border border-gray-2 bg-white p-4"
+      className={cn('rounded-2xl border border-gray-2 bg-white p-4', className)}
       accessibilityLabel={t('activation.accessibilityLabel')}
+      {...props}
     >
       <VStack gap={2}>
         <Text size="b2" weight="semibold">

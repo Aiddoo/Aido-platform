@@ -1,5 +1,4 @@
 import { ActivationChecklist } from '@src/features/activation/components/activation-checklist';
-import { useActivationChecklist } from '@src/features/activation/hooks/use-activation-progress';
 import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
@@ -39,7 +38,6 @@ function MyFeedScreen() {
   const queryClient = useQueryClient();
   useWeatherIntroduction();
   const featureDiscovery = useFeatureDiscoveryFeed();
-  const activation = useActivationChecklist();
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([invalidateFeedTodos(queryClient), invalidateWeather(queryClient)]),
   );
@@ -141,14 +139,7 @@ function MyFeedScreen() {
 
         <Spacing size={10} />
 
-        {activation.isVisible && (
-          <>
-            <Box px={16}>
-              <ActivationChecklist progress={activation.progress} />
-            </Box>
-            <Spacing size={20} />
-          </>
-        )}
+        <ActivationChecklist className="mx-4 mb-5" />
 
         <Box px={16} style={{ flexGrow: 1 }}>
           <QueryErrorBoundary

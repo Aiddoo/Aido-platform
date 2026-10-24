@@ -1,5 +1,5 @@
-import { FEATURE_DISCOVERY_QUERY_KEYS } from '@src/features/feature-discovery/constants/feature-discovery-query-keys';
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
+import { getCachedFeatureDiscoveryConfig } from '@src/features/feature-discovery/queries/feature-discovery-cache';
 import type { User } from '@src/features/user/domains/user.model';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import type { GrowthEventMap } from '@src/shared/analytics';
@@ -21,7 +21,7 @@ interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
 
 function getContext(queryClient: QueryClient) {
   return {
-    config: queryClient.getQueryData<FeatureDiscoveryConfig>(FEATURE_DISCOVERY_QUERY_KEYS.config()),
+    config: getCachedFeatureDiscoveryConfig(queryClient),
     user: getCachedMe(queryClient),
   };
 }
