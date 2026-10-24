@@ -111,6 +111,31 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     expect(await cache.getForecast(89, 90, date)).toBeUndefined();
   });
 
+  it("batch miss는 공급자를 최대 4개씩 동시에 호출하고 모든 격자의 결과를 저장한다", async () => {
+    // Given
+    const tracking = new ConcurrencyTrackingWeatherProvider();
+    reader = new WeatherForecastReader({
+      weatherProvider: tracking,
+      weatherCache: cache,
+      logger: mock<ApplicationLogger>(),
+    });
+    const grids = Array.from({ length: 10 }, (_, i) => ({
+      gridX: 50 + i,
+      gridY: 100,
+      lat: 37 + i / 100,
+      lon: 127,
+    }));
+    tracking.results.set("37.05:127", new Error("transient"));
+    // When
+    const result = await reader.getForecastsByGridBatch(grids, date);
+    // Then
+    expect(tracking.maxActive).toBe(4);
+    expect(tracking.calls.map(({ lat }) => lat)).toEqual(grids.map(({ lat }) => lat));
+    expect(result.size).toBe(9);
+    expect(result.has("55:100")).toBe(false);
+    expect(await cache.getForecast(59, 100, date)).toEqual(result.get("59:100"));
+  });
+
   it("빈 batch는 빈 Map을 반환하고 공급자에 접근하지 않는다", async () => {
     // Given
     // When
@@ -120,3 +145,19 @@ describe("WeatherForecastReader — cache·latest fallback·격자 batch", () =>
     expect(weatherProvider.calls).toEqual([]);
   });
 });
+
+class ConcurrencyTrackingWeatherProvider extends StubWeatherProvider {
+  active = 0;
+  maxActive = 0;
+
+  override async getForecast(lat: number, lon: number, date: Date) {
+    this.active += 1;
+    this.maxActive = Math.max(this.maxActive, this.active);
+    try {
+      await Promise.resolve();
+      return await super.getForecast(lat, lon, date);
+    } finally {
+      this.active -= 1;
+    }
+  }
+}

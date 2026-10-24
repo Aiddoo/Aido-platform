@@ -3,4 +3,5 @@ export const WeatherProviderLogEvent = {
   HTTP_FAILED: "weather.provider.http_failed",
   RESPONSE_UNAVAILABLE: "weather.provider.response_unavailable",
   REQUEST_FAILED: "weather.provider.request_failed",
+  PREVIOUS_BASE_RETRIED: "weather.provider.previous_base_retried",
 } as const;
