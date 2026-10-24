@@ -1,0 +1,50 @@
+appId: com.aido.mobile
+name: 할 일 상세가 열리고, 피드의 더보기에서 옵션·날짜 시트가 이어 열리고 닫힌다
+---
+# Given: 할 일 상세 링크(위젯·알림 진입과 같은 경로)
+- openLink: aido-dev://todo/${QA_TODO_ID}
+- extendedWaitUntil:
+    visible: '.*댓글.*|.*Comments?.*'
+    timeout: 15000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.12.1-todo-detail
+# Given: 오늘 피드
+- openLink: aido-dev://feed?date=today
+- extendedWaitUntil:
+    visible: ${QA_TODO_TITLE}
+    timeout: 15000
+# When: 할 일 행의 더보기를 누른다
+# iOS는 행이 하나의 접근성 요소(더보기는 VoiceOver 동작)라 같은 옵션 시트를 링크로 연다.
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - tapOn:
+          text: '더보기|More options'
+          rightOf: ${QA_TODO_TITLE}
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      - openLink: aido-dev://todo/${QA_TODO_ID}/actions?date=today
+# Then: 옵션 시트가 열린다
+- extendedWaitUntil:
+    visible: '.*날짜 변경.*|.*Change date.*'
+    timeout: 10000
+- takeScreenshot: 1.12.1-todo-actions-sheet
+# When: 날짜 변경을 누른다
+- tapOn: '.*날짜 변경.*|.*Change date.*'
+# Then: 옵션 시트가 닫히고 날짜 시트가 이어서 열린다
+- extendedWaitUntil:
+    visible: '.*내일.*|.*Tomorrow.*'
+    timeout: 10000
+- takeScreenshot: 1.12.1-todo-date-sheet
+# When: 바깥을 눌러 닫는다
+- tapOn:
+    point: '50%, 8%'
+# Then: 피드로 돌아온다
+- extendedWaitUntil:
+    notVisible: '.*내일.*|.*Tomorrow.*'
+    timeout: 5000
+- assertVisible: ${QA_TODO_TITLE}
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
