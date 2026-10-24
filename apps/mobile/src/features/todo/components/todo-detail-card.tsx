@@ -1,23 +1,23 @@
-import {
-  NudgeThanksButton,
-  useNudgeThanksSheet,
-} from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import { TodoNudgeButton } from '@src/features/nudge/components/todo-nudge-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { ChatBubbleIcon, EyeIcon, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import type { TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
+import { todoThanksSheetHref } from '../utils/navigation/todo-sheet-href';
 import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
@@ -166,10 +166,10 @@ TodoDetailCard.Loading = function Loading() {
 
 function TodoDetailThanksAction({ detail }: TodoDetailSectionProps) {
   const { data: me } = useQuery(useGetMeQueryOptions());
-  const openThanksSheet = useNudgeThanksSheet(detail.todo.id);
+  const push = useSingleTap(router.push);
   return NudgeInteractionPolicy.isThankableTodo(detail.todo, {
     isOwner: me?.id === detail.owner.id,
   }) ? (
-    <NudgeThanksButton onPress={openThanksSheet} />
+    <NudgeThanksButton onPress={() => push(todoThanksSheetHref({ todoId: detail.todo.id }))} />
   ) : null;
 }

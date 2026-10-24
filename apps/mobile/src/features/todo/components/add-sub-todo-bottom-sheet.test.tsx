@@ -1,31 +1,61 @@
 import '@src/shared/i18n/init';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import { createMockAnalytics, createMockHttpClient } from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
+import { RouteSearchParamsProvider } from '@src/shared/providers/route-search-params-provider';
+import { QueryClient } from '@tanstack/react-query';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories';
 import { SubTodoService } from '../apis/sub-todo.service';
+import { TodoService } from '../apis/todo.service';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { AddSubTodoBottomSheet } from './add-sub-todo-bottom-sheet';
 
 const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
+
+function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
+  return {
+    captureException: jest.fn(),
+    captureMessage: jest.fn(),
+    addBreadcrumb: jest.fn(),
+    setUserId: jest.fn(),
+  };
+}
 
 async function renderEditSheet() {
   const httpClient = createMockHttpClient();
   httpClient.patch.mockReturnValue(new Promise(() => undefined));
   httpClient.delete.mockReturnValue(new Promise(() => undefined));
 
+  const todo = createParentTodo({ subTodos: [createSubTodo({ title: '장 보기' })] });
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
+      mutations: { retry: false },
+    },
+  });
+  queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todo.startDate }), {
+    todos: [todo],
+    hasNext: false,
+    nextCursor: null,
+  });
+
   await renderUi(
-    <AddSubTodoBottomSheet
-      mode="edit"
-      todo={createParentTodo()}
-      subTodo={createSubTodo({ title: '장 보기' })}
-      isOpen
-      onOpenChange={jest.fn()}
-      onClose={jest.fn()}
-    />,
+    <RouteSearchParamsProvider
+      params={{ todoId: String(todo.id), subTodoId: '1', date: todo.startDate }}
+    >
+      <AddSubTodoBottomSheet mode="edit" />
+    </RouteSearchParamsProvider>,
     {
-      di: { subTodoService: new SubTodoService(httpClient), analytics: createMockAnalytics() },
+      di: {
+        subTodoService: new SubTodoService(httpClient),
+        todoService: new TodoService(httpClient),
+        analytics: createMockAnalytics(),
+        errorReporter: createMockErrorReporter(),
+      },
+      queryClient,
     },
   );
 

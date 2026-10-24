@@ -3,7 +3,6 @@ import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { type Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
-import { toTodoEditFormValues } from '@src/features/todo/utils/to-todo-edit-form-values';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -14,8 +13,6 @@ import {
   Result,
   Text,
   type QueryErrorFallbackProps,
-  useOverlay,
-  BottomSheet,
   ChatBubbleIcon,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
@@ -27,39 +24,35 @@ import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { type ReactNode, Suspense, useMemo, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { useMemo, useState } from 'react';
 import {
   type DragEndParams,
   NestableDraggableFlatList,
   ScaleDecorator,
 } from 'react-native-draggable-flatlist';
-import { match } from 'ts-pattern';
 
 import { useDraggableReorderList } from '../../hooks/use-draggable-reorder-list';
-import { useFeedDate } from '../../hooks/use-feed-date';
+import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
 import { useGetTodoCategoriesQueryOptions } from '../../queries/get-todo-categories-query-options';
 import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
-import { useChangeTodoCategoryMutationOptions } from '../../queries/use-change-todo-category-mutation-options';
 import { useReorderSubTodosMutationOptions } from '../../queries/use-reorder-sub-todos-mutation-options';
 import { useReorderTodoMutationOptions } from '../../queries/use-reorder-todo-mutation-options';
 import { useToggleSubTodoMutationOptions } from '../../queries/use-toggle-sub-todo-mutation-options';
 import { useToggleTodoMutationOptions } from '../../queries/use-toggle-todo-mutation-options';
-import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-todo-schedule-mutation-options';
 import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
-import { AddSubTodoBottomSheet } from '../add-sub-todo-bottom-sheet';
-import { AddTodoBottomSheet } from '../add-todo-bottom-sheet';
+import {
+  subTodoCreateSheetHref,
+  subTodoSheetHref,
+  todoActionsSheetHref,
+  todoCreateSheetHref,
+} from '../../utils/navigation/todo-sheet-href';
 import { CategoryHeaderPill } from '../category-header-pill';
-import { CategorySelectBottomSheet } from '../category-select-bottom-sheet';
 import { ReorderCoachmark } from '../reorder-coachmark';
-import { SubTodoActionsBottomSheet } from '../sub-todo-list/sub-todo-actions-bottom-sheet';
 import { SubTodoList } from '../sub-todo-list/sub-todo-list';
-import { TodoDatePickerContent } from '../todo-date-picker-content';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from '../todo-row';
-import { TodoTimePickerContent } from '../todo-time-picker-content';
-import { TodoActionsBottomSheet } from './todo-actions-bottom-sheet';
 
 export function TodoList() {
   const [selectedDate] = useFeedDate();
@@ -125,28 +118,12 @@ interface CategoryHeaderProps {
 
 function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
   const fontScaledSize = useFontScaledSize();
-  const [selectedDate] = useFeedDate();
-  const overlay = useOverlay();
+  const date = useFeedDateKey();
+  const push = useSingleTap(router.push);
 
   return (
     <PressableFeedback
-      onPress={() => {
-        overlay.open(({ isOpen, close, exit }) => (
-          <AddTodoBottomSheet
-            mode="create"
-            selectedDate={selectedDate}
-            categoryId={categoryId}
-            isOpen={isOpen}
-            onClose={close}
-            onOpenChange={(open) => {
-              if (!open) {
-                close();
-                exit();
-              }
-            }}
-          />
-        ));
-      }}
+      onPress={() => push(todoCreateSheetHref({ date, categoryId }))}
       hitSlop={8}
       className="self-start"
     >
@@ -215,7 +192,8 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   const selectTodo = useSingleTap(setSelectedTodoId);
 
   const { t } = useTranslation('todo');
-  const overlay = useOverlay();
+  const date = useFeedDateKey();
+  const push = useSingleTap(router.push);
   const toggleTodo = useMutation(useToggleTodoMutationOptions());
   const toggleSubTodo = useMutation(useToggleSubTodoMutationOptions());
   const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
@@ -230,56 +208,12 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   /** 댓글은 말풍선 버튼으로만 들어간다 — 할 일을 다루는 동작과 섞지 않는다. 펼친 화면에서는 상세 pane이 열린다. */
   const openComments = () => selectTodo(todo.id);
 
-  const openSheet = (render: (props: OverlaySheetProps) => ReactNode) =>
-    overlay.open(({ isOpen, close, exit }) =>
-      render({
-        isOpen,
-        onClose: close,
-        onOpenChange: (open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        },
-      }),
-    );
+  const openActionsSheet = () => push(todoActionsSheetHref({ todoId: todo.id, date }));
 
-  const openActionsSheet = () =>
-    openSheet((sheetProps) => (
-      <TodoActionsBottomSheet
-        {...sheetProps}
-        todo={todo}
-        onNavigate={(action) =>
-          match(action)
-            .with('edit', () =>
-              openSheet((props) => <AddTodoBottomSheet {...props} mode="edit" todo={todo} />),
-            )
-            .with('date', () => openSheet((props) => <ScheduleDateSheet {...props} todo={todo} />))
-            .with('time', () => openSheet((props) => <ScheduleTimeSheet {...props} todo={todo} />))
-            .with('category', () =>
-              openSheet((props) => <ChangeCategorySheet {...props} todo={todo} />),
-            )
-            .exhaustive()
-        }
-      />
-    ));
-
-  const openAddSubTodoSheet = () =>
-    openSheet((sheetProps) => <AddSubTodoBottomSheet {...sheetProps} mode="create" todo={todo} />);
+  const openAddSubTodoSheet = () => push(subTodoCreateSheetHref({ todoId: todo.id, date }));
 
   const openSubTodoActionsSheet = (subTodo: SubTodo) =>
-    openSheet((sheetProps) => (
-      <SubTodoActionsBottomSheet
-        {...sheetProps}
-        todo={todo}
-        subTodo={subTodo}
-        onEdit={() =>
-          openSheet((props) => (
-            <AddSubTodoBottomSheet {...props} mode="edit" todo={todo} subTodo={subTodo} />
-          ))
-        }
-      />
-    ));
+    push(subTodoSheetHref('actions', { todoId: todo.id, subTodoId: subTodo.id, date }));
 
   const handleSubTodoDragEnd = ({ data, from, to }: DragEndParams<SubTodo>) => {
     if (from === to || reorderSubTodos.isPending) {
@@ -391,98 +325,3 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
     </TodoRow>
   );
 };
-
-interface OverlaySheetProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onOpenChange: (open: boolean) => void;
-}
-
-function ScheduleDateSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps & { todo: Todo }) {
-  const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
-  const editValues = toTodoEditFormValues(todo);
-
-  return (
-    <BottomSheet {...sheetProps}>
-      {sheetProps.isOpen && (
-        <TodoDatePickerContent
-          value={editValues.startDate}
-          onCancel={onClose}
-          onChange={(startDate) => {
-            updateSchedule.mutate({
-              todoId: todo.id,
-              input: {
-                startDate: formatDate(startDate),
-                endDate: null,
-                scheduledTime: todo.isAllDay ? null : (editValues.scheduledTime ?? null),
-                isAllDay: todo.isAllDay,
-              },
-            });
-            onClose();
-          }}
-        />
-      )}
-    </BottomSheet>
-  );
-}
-
-function ScheduleTimeSheet({ todo, onClose, ...sheetProps }: OverlaySheetProps & { todo: Todo }) {
-  const updateSchedule = useMutation(useUpdateTodoScheduleMutationOptions());
-  const editValues = toTodoEditFormValues(todo);
-
-  return (
-    <BottomSheet {...sheetProps}>
-      {sheetProps.isOpen && (
-        <Suspense fallback={<ActivityIndicator />}>
-          <TodoTimePickerContent
-            date={editValues.startDate}
-            value={{
-              scheduledTime: editValues.scheduledTime ?? undefined,
-              isAllDay: todo.isAllDay,
-            }}
-            onCancel={onClose}
-            onChange={({ scheduledTime, isAllDay }) => {
-              updateSchedule.mutate({
-                todoId: todo.id,
-                input: {
-                  startDate: formatDate(editValues.startDate),
-                  endDate: editValues.endDate ? formatDate(editValues.endDate) : null,
-                  scheduledTime: isAllDay ? null : (scheduledTime ?? null),
-                  isAllDay,
-                },
-              });
-              onClose();
-            }}
-          />
-        </Suspense>
-      )}
-    </BottomSheet>
-  );
-}
-
-function ChangeCategorySheet({
-  todo,
-  onClose: _onClose,
-  ...sheetProps
-}: OverlaySheetProps & { todo: Todo }) {
-  const { t } = useTranslation('todo');
-  const changeCategory = useMutation(useChangeTodoCategoryMutationOptions());
-
-  return (
-    <CategorySelectBottomSheet
-      {...sheetProps}
-      value={todo.category.id}
-      submitLabel={t('actions.changeSubmit')}
-      isPending={changeCategory.isPending}
-      onChange={async (categoryId) => {
-        const changed = await changeCategory
-          .mutateAsync({ todoId: todo.id, input: { categoryId } })
-          .catch(() => null);
-
-        if (changed) {
-          sheetProps.onOpenChange(false);
-        }
-      }}
-    />
-  );
-}

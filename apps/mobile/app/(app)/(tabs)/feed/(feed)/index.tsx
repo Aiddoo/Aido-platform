@@ -3,28 +3,20 @@ import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
-import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
 import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/todo/components/todo-list/todo-list';
 import { useFeedActionParam } from '@src/features/todo/hooks/use-feed-action-param';
-import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
+import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { useFeedDateParam } from '@src/features/todo/hooks/use-feed-date-param';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { invalidateFeedTodos } from '@src/features/todo/queries/todo-cache';
+import { todoCreateSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { invalidateWeather } from '@src/features/weather/queries/weather-cache';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import {
-  Box,
-  QueryErrorBoundary,
-  Result,
-  Spacing,
-  StyledSafeAreaView,
-  Text,
-  useOverlay,
-} from '@src/shared/ui';
+import { Box, QueryErrorBoundary, Result, Spacing, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense, useEffect } from 'react';
@@ -98,8 +90,7 @@ function MyFeedScreen() {
 function AddTodoRequestEntry() {
   const { t } = useTranslation(['widget', 'common']);
   const [action, setAction] = useFeedActionParam();
-  const [selectedDate] = useFeedDate();
-  const overlay = useOverlay();
+  const selectedDateKey = useFeedDateKey();
   const isRequested = action === 'add-todo';
   const categories = useQuery({
     ...useGetTodoCategoriesQueryOptions(),
@@ -114,24 +105,10 @@ function AddTodoRequestEntry() {
     }
     const frameId = requestAnimationFrame(() => {
       setAction(undefined);
-      overlay.open(({ isOpen, close, exit }) => (
-        <AddTodoBottomSheet
-          mode="create"
-          selectedDate={selectedDate}
-          categoryId={categoryId}
-          isOpen={isOpen}
-          onClose={close}
-          onOpenChange={(isOpen) => {
-            if (!isOpen) {
-              close();
-              exit();
-            }
-          }}
-        />
-      ));
+      router.push(todoCreateSheetHref({ date: selectedDateKey, categoryId }));
     });
     return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDate, overlay, setAction]);
+  }, [isRequested, categoryId, selectedDateKey, setAction]);
 
   const createEntryStatus = !isRequested
     ? ('idle' as const)

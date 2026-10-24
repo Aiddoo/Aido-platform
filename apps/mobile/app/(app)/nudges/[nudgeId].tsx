@@ -1,8 +1,5 @@
 import type { NudgeReplyKind } from '@aido/api';
-import {
-  NudgeThanksButton,
-  useNudgeThanksSheet,
-} from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import {
   nudgeScreenParamsSchema,
@@ -11,6 +8,7 @@ import {
 import { useGetNudgeInteractionQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-query-options';
 import { useReplyToNudgeMutationOptions } from '@src/features/nudge/queries/use-reply-to-nudge-mutation-options';
 import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
+import { todoThanksSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { isApiError } from '@src/shared/errors';
@@ -54,7 +52,9 @@ function NudgeDetailScreen() {
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
   const status = NudgeInteractionPolicy.getStatus(nudge);
   const reply = (replyKind: NudgeReplyKind) => mutation.mutate({ nudgeId, input: { replyKind } });
-  const openThanksSheet = useNudgeThanksSheet(nudge.todoId);
+  const openThanksSheet = useSingleTap(() =>
+    router.push(todoThanksSheetHref({ todoId: nudge.todoId })),
+  );
   const openTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
   );

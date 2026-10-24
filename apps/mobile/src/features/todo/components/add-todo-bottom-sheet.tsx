@@ -68,6 +68,8 @@ interface AddTodoBottomSheetBaseProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
+  /** 닫기 애니메이션 없이 바로 다른 화면으로 떠날 때(구독 화면 이동). 없으면 onClose. */
+  onExit?: () => void;
 }
 
 interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
@@ -110,7 +112,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
   const fontScaledSize = useFontScaledSize();
   const { color: spinnerColor } = useResolveClassNames('text-white');
   const { showBoundary } = useErrorBoundary();
-  const { isOpen, onOpenChange, onClose } = props;
+  const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
 
   const defaultValues: AddTodoFormValues = match(props)
     .with({ mode: 'edit' }, ({ todo }) => toTodoEditFormValues(todo))
@@ -439,7 +441,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 
           <HStack gap={8} align="center" justify="end">
             <AiFeatureTooltip />
-            <AiParseButton onClose={onClose} />
+            <AiParseButton onExit={onExit} />
             <PressableFeedback
               isDisabled={isSubmitDisabled}
               onPress={() => onSubmit()}
@@ -660,10 +662,10 @@ const AiFeatureTooltip = () => {
 };
 
 interface AiParseButtonProps {
-  onClose: () => void;
+  onExit: () => void;
 }
 
-const AiParseButton = ({ onClose }: AiParseButtonProps) => {
+const AiParseButton = ({ onExit }: AiParseButtonProps) => {
   const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const methods = useFormContext<AddTodoFormInput>();
@@ -726,7 +728,7 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
       trackEvent('premium_gate_shown', { feature: 'ai_parse' });
       premiumDialog.open({
         description: t('premium.unlimitedParse'),
-        onConfirm: onClose,
+        onConfirm: onExit,
       });
       return;
     }
