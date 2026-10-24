@@ -27,7 +27,7 @@ import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { type ReactNode, Suspense, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
@@ -99,7 +99,7 @@ export function TodoList() {
 TodoList.Loading = function Loading() {
   return (
     <VStack gap={12}>
-      {range(5).map((i) => (
+      {times(5, (i) => (
         <HStack key={`todo-skeleton-${i}`} gap={12} align="center" className="py-3">
           <Skeleton className="size-5 rounded" />
 

@@ -2,6 +2,7 @@ import { useFeedDate } from '@src/features/todo/hooks/use-feed-date';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import {
   addMonths,
   addWeeks,
@@ -395,9 +396,14 @@ interface CategoryIndicatorProps {
 }
 
 function CategoryIndicator({ colors }: CategoryIndicatorProps) {
+  const [firstColor] = colors;
+
   if (colors.length <= 1) {
     return (
-      <Box style={{ backgroundColor: colors[0] ?? '#9CA3AF' }} className="size-1.5 rounded-2xl" />
+      <Box
+        className={cn('size-1.5 rounded-2xl', !firstColor && 'bg-gray-5')}
+        style={firstColor ? { backgroundColor: firstColor } : undefined}
+      />
     );
   }
 

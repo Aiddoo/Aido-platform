@@ -9,6 +9,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
+import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { View } from 'react-native';
@@ -100,7 +101,7 @@ AppIconPicker.Item = function Item({
 AppIconPicker.Loading = function Loading() {
   return (
     <Grid columns={3} className="p-4">
-      {Array.from({ length: 9 }, (_, index) => (
+      {times(9, (index) => (
         <GridItem key={index} p={8} className="items-center">
           <VStack align="center" gap={8} p={8}>
             <Skeleton className="w-20 h-20 rounded-2xl" />

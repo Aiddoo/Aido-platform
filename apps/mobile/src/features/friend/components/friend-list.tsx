@@ -19,7 +19,7 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
@@ -31,6 +31,7 @@ import Animated, {
   FadeOutRight,
   LinearTransition,
 } from 'react-native-reanimated';
+import { useResolveClassNames } from 'uniwind';
 
 import { useDraggableFriendReorderList } from '../hooks/use-draggable-friend-reorder-list';
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
@@ -58,6 +59,7 @@ export function FriendList() {
 
   const overlay = useOverlay();
   const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const { color: refreshTint } = useResolveClassNames('text-main');
   const [isEditMode] = useFriendListEditMode();
 
   const allFriends = data.pages.flatMap((page) => page.items);
@@ -214,8 +216,8 @@ export function FriendList() {
         <RefreshControl
           refreshing={isRefreshing}
           onRefresh={handleRefresh}
-          tintColor="#FF6B43"
-          colors={['#FF6B43']}
+          tintColor={refreshTint}
+          colors={refreshTint != null ? [refreshTint] : undefined}
         />
       }
       containerStyle={{ flex: 1 }}
@@ -231,7 +233,7 @@ FriendList.Loading = function Loading() {
         <Skeleton className="w-12 h-4" />
       </Box>
       <VStack>
-        {range(3).map((i) => (
+        {times(3, (i) => (
           <HStack key={i} align="center" className="py-2" gap={12}>
             <Skeleton className="w-10 h-10 rounded-full" />
             <Skeleton className="flex-1 h-5" />

@@ -22,6 +22,7 @@ import { useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
 interface BaseProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ type AddSubTodoBottomSheetProps = CreateProps | EditProps;
 
 export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
   const fontScaledSize = useFontScaledSize();
+  const { color: spinnerColor } = useResolveClassNames('text-white');
   const { isOpen, onOpenChange, onClose } = props;
 
   const defaultValue = match(props)
@@ -143,7 +145,10 @@ export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
             )}
           >
             {isSubmitting ? (
-              <Spinner size="sm" color="white" />
+              <Spinner
+                size="sm"
+                color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+              />
             ) : (
               <ArrowUpIcon
                 width={fontScaledSize(18)}

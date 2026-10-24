@@ -29,6 +29,7 @@ import {
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -217,10 +218,10 @@ NudgeDetailScreen.ReplyButton = function ReplyButton({
       color={isSelected ? 'primary' : 'dark'}
       variant="weak"
       size="large"
-      className={`border ${isSelected ? 'border-main' : 'border-gray-2 bg-background'}`}
+      className={cn('border', isSelected ? 'border-main' : 'border-gray-2 bg-background')}
       accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
     >
-      <HStack gap={12} align="center" className={`w-full ${props.isDisabled ? 'opacity-40' : ''}`}>
+      <HStack gap={12} align="center" className={cn('w-full', props.isDisabled && 'opacity-40')}>
         <Icon width={20} height={20} colorClassName="text-main" />
         <Text
           size="b3"

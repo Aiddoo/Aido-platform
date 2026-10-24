@@ -14,7 +14,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { Separator, Skeleton, Spinner } from 'heroui-native';
 import type { ComponentProps } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
@@ -136,7 +136,7 @@ NotificationList.Loading = function Loading() {
         <Skeleton className="w-32 h-5" />
       </Box>
       <VStack>
-        {range(5).map((index) => (
+        {times(5, (index) => (
           <Box key={index} px={16} py={16}>
             <VStack gap={4}>
               <HStack justify="between">

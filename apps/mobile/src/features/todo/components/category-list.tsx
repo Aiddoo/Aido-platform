@@ -7,7 +7,7 @@ import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from
 import { cn } from '@src/shared/utils/cn';
 import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { ImpactFeedbackStyle } from 'expo-haptics';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useCallback } from 'react';
@@ -184,7 +184,7 @@ export function CategoryList({ mode }: CategoryListProps) {
 CategoryList.Loading = function Loading() {
   return (
     <VStack gap={8} className="bg-white rounded-2xl p-2">
-      {range(2).map((i) => (
+      {times(2, (i) => (
         <ListRow
           key={`category-loading-${i}`}
           left={

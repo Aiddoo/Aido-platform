@@ -30,7 +30,7 @@ import {
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
 import { useMemo, useState } from 'react';
 
@@ -73,7 +73,7 @@ export function FriendTodoList() {
 FriendTodoList.Loading = function Loading() {
   return (
     <VStack gap={12}>
-      {range(3).map((i) => (
+      {times(3, (i) => (
         <HStack key={`friend-todo-skeleton-${i}`} gap={12} align="center" className="py-3">
           <Skeleton className="size-5 rounded" />
           <VStack flex={1} gap={2}>

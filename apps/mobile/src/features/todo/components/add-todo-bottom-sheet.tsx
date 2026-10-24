@@ -47,6 +47,7 @@ import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'r
 import type { TextInput } from 'react-native';
 import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 import type { z } from 'zod';
 
 import { type AddTodoFormInput, addTodoFormSchema } from '../domains/add-todo-form.schema';
@@ -107,6 +108,7 @@ type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
 export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const fontScaledSize = useFontScaledSize();
+  const { color: spinnerColor } = useResolveClassNames('text-white');
   const { showBoundary } = useErrorBoundary();
   const { isOpen, onOpenChange, onClose } = props;
 
@@ -448,7 +450,10 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               )}
             >
               {isSubmitting ? (
-                <Spinner size="sm" color="white" />
+                <Spinner
+                  size="sm"
+                  color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+                />
               ) : (
                 <ArrowUpIcon
                   width={fontScaledSize(18)}
@@ -465,8 +470,6 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 };
 
 // --- constants ---
-
-const DEFAULT_CATEGORY_COLOR = '#999';
 
 // --- helpers ---
 
@@ -597,8 +600,8 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
     <ActionChip
       icon={
         <Box
-          className="size-2 rounded-full"
-          style={{ backgroundColor: category?.color ?? DEFAULT_CATEGORY_COLOR }}
+          className={cn('size-2 rounded-full', !category && 'bg-gray-5')}
+          style={category && { backgroundColor: category.color }}
         />
       }
       label={category?.name ?? t('chip.category')}

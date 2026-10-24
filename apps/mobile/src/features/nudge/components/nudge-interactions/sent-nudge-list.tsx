@@ -18,6 +18,7 @@ import {
 } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator, Skeleton, Spinner } from 'heroui-native';
 import { RefreshControl, ScrollView } from 'react-native';
@@ -180,7 +181,7 @@ SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackPr
 SentNudgeList.Loading = function Loading() {
   return (
     <VStack p={24} gap={24} flex={1}>
-      {Array.from({ length: 4 }, (_, index) => (
+      {times(4, (index) => (
         <HStack key={index} gap={12}>
           <Skeleton className="size-11 rounded-full" />
           <VStack flex={1} gap={8}>
