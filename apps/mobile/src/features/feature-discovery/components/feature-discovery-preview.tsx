@@ -19,20 +19,17 @@ import {
   VStack,
 } from '@src/shared/ui';
 import type { ReactNode } from 'react';
+import { match } from 'ts-pattern';
 
 const PREVIEW_HASHTAG = 'MATT2025';
 
 export function FeatureDiscoveryPreview({ cardId }: { cardId: FeatureDiscoveryCardId }) {
-  switch (cardId) {
-    case 'memo_ai':
-      return <MemoAiPreview />;
-    case 'friend_search':
-      return <FriendSearchPreview />;
-    case 'drag_reorder':
-      return <DragReorderPreview />;
-    case 'todo_creation':
-      return <TodoCreationPreview />;
-  }
+  return match(cardId)
+    .with('memo_ai', () => <MemoAiPreview />)
+    .with('friend_search', () => <FriendSearchPreview />)
+    .with('drag_reorder', () => <DragReorderPreview />)
+    .with('todo_creation', () => <TodoCreationPreview />)
+    .exhaustive();
 }
 
 function MemoAiPreview() {
