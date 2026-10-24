@@ -45,7 +45,7 @@ export function useSetTodoCommentLikeMutationOptions({ todoId }: { todoId: numbe
       return { snapshot };
     },
     onError: (error, _params, context) => {
-      if (context !== undefined) {
+      if (context != null) {
         restoreTodoCommentCaches({ queryClient, snapshot: context.snapshot });
       }
       handleMutationError(error, 'like');

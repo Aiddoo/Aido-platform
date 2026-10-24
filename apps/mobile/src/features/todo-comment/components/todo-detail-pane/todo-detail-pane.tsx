@@ -78,7 +78,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
     commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const activeFormType = commentRoute.form?.type;
   const isNativeBackGestureEnabled =
-    commentRoute.view === 'overview' && commentRoute.form === null && !isCommentSubmitting;
+    commentRoute.view === 'overview' && commentRoute.form == null && !isCommentSubmitting;
 
   const listHeader = (
     <>

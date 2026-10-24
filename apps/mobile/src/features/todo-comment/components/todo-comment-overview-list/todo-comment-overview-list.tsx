@@ -71,7 +71,7 @@ export function TodoCommentOverviewList({
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const queryClient = useQueryClient();
-  const query = useInfiniteQuery(
+  const overviewQuery = useInfiniteQuery(
     useGetTodoCommentOverviewQueryOptions({ todoId, sort: commentRoute.sort }),
   );
   const { color: refreshTint } = useResolveClassNames('text-main');
@@ -93,32 +93,32 @@ export function TodoCommentOverviewList({
     ),
   );
 
-  if (query.isError && query.data === undefined) {
-    throw query.error;
+  if (overviewQuery.isError && overviewQuery.data == null) {
+    throw overviewQuery.error;
   }
 
   return (
     <FlashList
       {...flashListProps}
       key={`${todoId}:${commentRoute.sort}`}
-      data={query.data?.items ?? []}
+      data={overviewQuery.data?.items ?? []}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       renderScrollComponent={renderKeyboardScrollView}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={
-        query.isPending ? TodoCommentOverviewList.Loading : TodoCommentOverviewList.Empty
+        overviewQuery.isPending ? TodoCommentOverviewList.Loading : TodoCommentOverviewList.Empty
       }
       ListFooterComponent={
-        query.isFetchingNextPage ? (
+        overviewQuery.isFetchingNextPage ? (
           <Box py={12} className="items-center">
             <Spinner size="sm" accessibilityLabel={t('list.loadingMore')} />
           </Box>
         ) : null
       }
       onEndReached={() => {
-        if (query.hasNextPage && !query.isFetchingNextPage) {
-          query.fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+        if (overviewQuery.hasNextPage && !overviewQuery.isFetchingNextPage) {
+          overviewQuery.fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
         }
       }}
       onEndReachedThreshold={0.5}
@@ -134,20 +134,6 @@ export function TodoCommentOverviewList({
     />
   );
 }
-
-TodoCommentOverviewList.Empty = function Empty() {
-  const { t } = useTranslation('todoComment');
-
-  return (
-    <Box py={48}>
-      <Result
-        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
-        title={t('list.emptyTitle')}
-        description={t('list.emptyDescription')}
-      />
-    </Box>
-  );
-};
 
 TodoCommentOverviewList.Loading = function Loading({ rows = 3 }: { rows?: number }) {
   return (
@@ -169,19 +155,34 @@ TodoCommentOverviewList.Error = function ErrorFallback({ reset }: QueryErrorFall
     />
   );
 };
+
+TodoCommentOverviewList.Empty = function Empty() {
+  const { t } = useTranslation('todoComment');
+
+  return (
+    <Box py={48}>
+      <Result
+        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
+        title={t('list.emptyTitle')}
+        description={t('list.emptyDescription')}
+      />
+    </Box>
+  );
+};
+
 interface OverviewCommentRowProps {
   item: TodoCommentOverviewItem;
 }
 
 function OverviewCommentRow({ item }: OverviewCommentRowProps) {
   const navigation = useTodoCommentNavigation(item.comment);
-  const showsReplyConnection = item.previewReply !== null || item.replySummary.hasMore;
+  const hasReplyConnection = item.previewReply != null || item.replySummary.hasMore;
 
   return (
     <Box className="border-b border-gray-2">
-      <TopLevelCommentSection comment={item.comment} isConnectedToReply={showsReplyConnection} />
+      <TopLevelCommentSection comment={item.comment} isConnectedToReply={hasReplyConnection} />
 
-      {item.previewReply !== null && <PreviewReplySection comment={item.previewReply} />}
+      {item.previewReply != null && <PreviewReplySection comment={item.previewReply} />}
 
       {item.replySummary.hasMore && (
         <Box pl={56} pr={16} pb={10}>

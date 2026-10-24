@@ -18,7 +18,11 @@ import { match } from 'ts-pattern';
 import { type TodoCommentAuthor, TodoCommentPolicy } from '../../domains/todo-comment.model';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useGetTodoCommentConversationQueryOptions } from '../../queries/get-todo-comment-conversation-query-options';
-import { toTodoCommentAuthor } from '../../utils/view-models/todo-comment-form.view-model';
+import {
+  getTodoCommentFormUnavailableReason,
+  getTodoCommentInputLayoutIdentity,
+  toTodoCommentAuthor,
+} from '../../utils/view-models/todo-comment-form.view-model';
 import { useCancelTodoCommentScreenTransition } from '../providers/todo-comment-screen-transition-provider';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 import { TodoCommentForm } from './todo-comment-form';
@@ -37,10 +41,7 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
   const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
   const layoutBaselineRef = useRef({ identity: '', contentHeight: 0 });
   const wasKeyboardVisibleRef = useRef(isKeyboardVisible);
-  const layoutIdentity =
-    commentRoute.view === 'overview'
-      ? `overview:${commentRoute.form?.type ?? 'reading'}`
-      : `conversation:${commentRoute.commentId}:${commentRoute.form?.type ?? 'reading'}`;
+  const layoutIdentity = getTodoCommentInputLayoutIdentity(commentRoute);
   const bottomPadding = isKeyboardVisible ? 8 : (insets.bottom || DEFAULT_BOTTOM_INSET) + 4;
 
   const setExtraContentPadding = useCallback(
@@ -115,7 +116,7 @@ const TEXT_ACTION_TOUCH_TARGET = 'min-h-11 min-w-11';
 function CommentInputByRoute() {
   const [commentRoute] = useTodoCommentRoute();
 
-  return match({ view: commentRoute.view, hasForm: commentRoute.form !== null })
+  return match({ view: commentRoute.view, hasForm: commentRoute.form != null })
     .with({ view: 'overview', hasForm: false }, () => <NewCommentButton />)
     .with({ view: 'overview', hasForm: true }, () => <NewCommentForm />)
     .with({ view: 'conversation', hasForm: false }, () => <ReplyToSelectedCommentButton />)
@@ -178,7 +179,7 @@ function ReplyToSelectedCommentButton() {
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelTransition = useCancelTodoCommentScreenTransition();
   const commentId =
-    commentRoute.view === 'conversation' && commentRoute.form === null
+    commentRoute.view === 'conversation' && commentRoute.form == null
       ? commentRoute.commentId
       : undefined;
   const conversation = useInfiniteQuery(
@@ -197,7 +198,7 @@ function ReplyToSelectedCommentButton() {
     return <CommentingUnavailableMessage />;
   }
 
-  if (commentId === undefined) {
+  if (commentId == null) {
     return null;
   }
 
@@ -205,12 +206,12 @@ function ReplyToSelectedCommentButton() {
     return <TodoCommentInputBar.Loading />;
   }
 
-  if (conversation.isError && conversation.data === undefined) {
+  if (conversation.isError && conversation.data == null) {
     throw conversation.error;
   }
 
   const target = conversation.data?.rows.find((row) => row.comment.id === commentId)?.comment;
-  const canReply = target !== undefined && TodoCommentPolicy.canReply(target);
+  const canReply = target != null && TodoCommentPolicy.canReply(target);
 
   return (
     <CommentInputTrigger
@@ -260,9 +261,7 @@ function SelectedCommentForm() {
   const { t } = useTranslation('todoComment');
   const activeForm = commentRoute.view === 'conversation' ? commentRoute.form : null;
   const commentId =
-    commentRoute.view === 'conversation' && activeForm !== null
-      ? commentRoute.commentId
-      : undefined;
+    commentRoute.view === 'conversation' && activeForm != null ? commentRoute.commentId : undefined;
   const conversation = useInfiniteQuery(
     useGetTodoCommentConversationQueryOptions({
       todoId,
@@ -274,7 +273,7 @@ function SelectedCommentForm() {
     queries: [useGetTodoDetailsQueryOptions({ todoId }), useGetMeQueryOptions()],
   });
 
-  if (activeForm === null || commentId === undefined) {
+  if (activeForm == null || commentId == null) {
     return null;
   }
 
@@ -282,12 +281,12 @@ function SelectedCommentForm() {
     return <TodoCommentInputBar.Loading />;
   }
 
-  if (conversation.isError && conversation.data === undefined) {
+  if (conversation.isError && conversation.data == null) {
     throw conversation.error;
   }
 
   const target = conversation.data?.rows.find((row) => row.comment.id === commentId)?.comment;
-  if (target === undefined) {
+  if (target == null) {
     return (
       <UnavailableCommentFormMessage
         message={
@@ -298,28 +297,15 @@ function SelectedCommentForm() {
     );
   }
 
-  if (activeForm.type === 'reply' && !detail.permissions.canComment) {
+  const unavailableReason = getTodoCommentFormUnavailableReason({
+    formType: activeForm.type,
+    target,
+    canComment: detail.permissions.canComment,
+  });
+  if (unavailableReason != null) {
     return (
       <UnavailableCommentFormMessage
-        message={t('input.commentingDisabled')}
-        onRequestClose={updateCommentRoute.cancelForm}
-      />
-    );
-  }
-
-  if (activeForm.type === 'reply' && !TodoCommentPolicy.canReply(target)) {
-    return (
-      <UnavailableCommentFormMessage
-        message={t('input.replyUnavailable')}
-        onRequestClose={updateCommentRoute.cancelForm}
-      />
-    );
-  }
-
-  if (activeForm.type === 'edit' && !TodoCommentPolicy.canEdit(target)) {
-    return (
-      <UnavailableCommentFormMessage
-        message={t('input.editUnavailable')}
+        message={t(`input.${unavailableReason}`)}
         onRequestClose={updateCommentRoute.cancelForm}
       />
     );

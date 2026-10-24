@@ -47,7 +47,7 @@ export function getTodoCommentBackResult({
   }
 
   if (route.view === 'overview') {
-    return route.form === null
+    return route.form == null
       ? { status: 'native' }
       : {
           status: 'navigate',
@@ -56,7 +56,7 @@ export function getTodoCommentBackResult({
         };
   }
 
-  if (route.form === null) {
+  if (route.form == null) {
     return {
       status: 'navigate',
       destination: 'overview',

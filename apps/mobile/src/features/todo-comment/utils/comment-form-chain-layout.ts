@@ -1,7 +1,7 @@
 export interface CommentFormChainFieldLayout {
   isConnectedToNext: boolean;
-  showsRemoveAction: boolean;
-  showsSubmissionActions: boolean;
+  shouldShowRemoveAction: boolean;
+  shouldShowSubmissionActions: boolean;
 }
 
 export function getCommentFormChainFieldLayout(
@@ -10,7 +10,7 @@ export function getCommentFormChainFieldLayout(
 ): CommentFormChainFieldLayout {
   return {
     isConnectedToNext: fieldIndex < fieldCount - 1,
-    showsRemoveAction: fieldIndex > 0,
-    showsSubmissionActions: fieldIndex === fieldCount - 1,
+    shouldShowRemoveAction: fieldIndex > 0,
+    shouldShowSubmissionActions: fieldIndex === fieldCount - 1,
   };
 }

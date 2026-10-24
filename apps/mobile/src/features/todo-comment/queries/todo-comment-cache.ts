@@ -49,7 +49,7 @@ function findTodoCommentCacheSnapshots<TData>(
 
   entries.forEach(([queryKey, cachedPages]) => {
     const comment = findComment(cachedPages, commentId);
-    if (comment !== undefined) {
+    if (comment != null) {
       snapshots.push([queryKey, comment]);
     }
   });

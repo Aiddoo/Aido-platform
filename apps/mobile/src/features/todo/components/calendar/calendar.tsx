@@ -29,12 +29,15 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   useWindowDimensions,
-  View,
 } from 'react-native';
 import { match } from 'ts-pattern';
 
 import type { DailyCompletionSummary } from '../../domains/todo.model';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
+import {
+  clampCalendarPage,
+  shiftCalendarDate,
+} from '../../utils/view-models/calendar-paging.view-model';
 import { useCalendarContext } from '../providers/calendar-provider';
 import { CalendarDateCell } from './calendar-date-cell';
 import { CalendarNavigation } from './calendar-navigation';
@@ -64,21 +67,8 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
     .with('month', () => MONTH_WEEKS * DATE_CELL_HEIGHT)
     .exhaustive();
 
-  const handlePrevious = () => {
-    const newDate = match(viewMode)
-      .with('week', () => addWeeks(getWeekStart(selectedDate), -1))
-      .with('month', () => addMonths(getMonthStart(selectedDate), -1))
-      .exhaustive();
-    setSelectedDate(newDate);
-  };
-
-  const handleNext = () => {
-    const newDate = match(viewMode)
-      .with('week', () => addWeeks(getWeekStart(selectedDate), 1))
-      .with('month', () => addMonths(getMonthStart(selectedDate), 1))
-      .exhaustive();
-    setSelectedDate(newDate);
-  };
+  const handlePrevious = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, -1));
+  const handleNext = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, 1));
 
   return (
     <VStack className="bg-background" gap={8}>
@@ -146,10 +136,11 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
     [],
   );
 
-  const pageOfWeek = useCallback((week: Date) => {
-    const page = diffWeeks(week, baseWeekRef.current) + CENTER_PAGE;
-    return Math.max(0, Math.min(TOTAL_PAGES - 1, page));
-  }, []);
+  const pageOfWeek = useCallback(
+    (week: Date) =>
+      clampCalendarPage(diffWeeks(week, baseWeekRef.current) + CENTER_PAGE, TOTAL_PAGES),
+    [],
+  );
 
   const handleChange = (page: number) => {
     const week = weekAtPage(page);
@@ -176,10 +167,11 @@ function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
     [],
   );
 
-  const pageOfMonth = useCallback((month: Date) => {
-    const page = diffMonths(month, baseMonthRef.current) + CENTER_PAGE;
-    return Math.max(0, Math.min(TOTAL_PAGES - 1, page));
-  }, []);
+  const pageOfMonth = useCallback(
+    (month: Date) =>
+      clampCalendarPage(diffMonths(month, baseMonthRef.current) + CENTER_PAGE, TOTAL_PAGES),
+    [],
+  );
 
   const handleChange = (page: number) => {
     const month = monthAtPage(page);
@@ -209,16 +201,16 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   const currentPageRef = useRef(CENTER_PAGE);
 
   const handleScrollEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const page = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const page = Math.round(event.nativeEvent.contentOffset.x / pageWidth);
       currentPageRef.current = page;
       onChange(page);
     },
     [pageWidth, onChange],
   );
 
-  const handleLayout = useCallback((e: LayoutChangeEvent) => {
-    setMeasuredPageWidth(e.nativeEvent.layout.width);
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    setMeasuredPageWidth(event.nativeEvent.layout.width);
   }, []);
 
   useEffect(() => {
@@ -250,9 +242,7 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   const renderItem = useCallback(
-    ({ item: page }: { item: number }) => (
-      <View style={{ width: pageWidth }}>{children(page)}</View>
-    ),
+    ({ item: page }: { item: number }) => <Box style={{ width: pageWidth }}>{children(page)}</Box>,
     [pageWidth, children],
   );
 

@@ -134,7 +134,7 @@ function CommentAuthorLine({ comment }: { comment: TodoComment }) {
 
 function CommentBody({ comment }: { comment: TodoComment }) {
   const { t } = useTranslation('todoComment');
-  const mention = comment.replyTo?.authorName ?? null;
+  const mention = comment.replyTo?.authorName;
 
   if (comment.isDeleted) {
     return (
@@ -145,7 +145,7 @@ function CommentBody({ comment }: { comment: TodoComment }) {
   }
   return (
     <HStack gap={4} className="min-w-0 flex-wrap">
-      {mention !== null && (
+      {mention != null && (
         <Text
           size="b3"
           tone="brand"

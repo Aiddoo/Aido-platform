@@ -26,7 +26,7 @@ export interface TodoCommentConversationViewModel {
 }
 
 function getFocus(pages: TodoConversationPage[]): TodoConversationFocus | null {
-  return pages.find((page) => page.focus !== null)?.focus ?? null;
+  return pages.find((page) => page.focus != null)?.focus ?? null;
 }
 
 function getFocusContext(
@@ -35,16 +35,16 @@ function getFocusContext(
   focus: TodoConversationFocus | null,
 ): TodoCommentConversationFocusContext | null {
   if (
-    focus === null ||
+    focus == null ||
     focus.commentId !== comment.id ||
-    comment.parentId === null ||
+    comment.parentId == null ||
     visibleCommentIds.has(comment.parentId)
   ) {
     return null;
   }
 
   const parentItem = focus.precedingAncestors.at(-1);
-  if (parentItem === undefined || parentItem.comment.id !== comment.parentId) {
+  if (parentItem == null || parentItem.comment.id !== comment.parentId) {
     return null;
   }
 

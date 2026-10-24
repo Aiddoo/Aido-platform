@@ -26,7 +26,7 @@ export function getInitialCommentIndex(
   rows: readonly CommentRowIdentity[],
   focusedCommentId: string | null,
 ): number | undefined {
-  if (focusedCommentId === null) {
+  if (focusedCommentId == null) {
     return undefined;
   }
 
@@ -128,7 +128,7 @@ export function canFetchPreviousComments(
   focusIdentity: string | null,
   revealedFocusIdentity: string | null,
 ): boolean {
-  return focusIdentity === null || focusIdentity === revealedFocusIdentity;
+  return focusIdentity == null || focusIdentity === revealedFocusIdentity;
 }
 
 export function toInitialConversationWindow<TPage, TPageParam extends ConversationPageParam>(

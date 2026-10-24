@@ -55,18 +55,18 @@ export function findTodoCommentInConversationPages(
   cachedPages: ConversationPages | undefined,
   commentId: string,
 ): TodoComment | undefined {
-  if (cachedPages === undefined) {
+  if (cachedPages == null) {
     return undefined;
   }
 
   for (const page of cachedPages.pages) {
     const conversationItem = page.items.find(({ comment }) => comment.id === commentId);
-    if (conversationItem !== undefined) {
+    if (conversationItem != null) {
       return conversationItem.comment;
     }
 
     const ancestor = page.focus?.precedingAncestors.find(({ comment }) => comment.id === commentId);
-    if (ancestor !== undefined) {
+    if (ancestor != null) {
       return ancestor.comment;
     }
   }
@@ -78,7 +78,7 @@ export function findTodoCommentInOverviewPages(
   cachedPages: OverviewPages | undefined,
   commentId: string,
 ): TodoComment | undefined {
-  if (cachedPages === undefined) {
+  if (cachedPages == null) {
     return undefined;
   }
 
@@ -101,7 +101,7 @@ export function patchTodoCommentConversationPages(
   commentId: string,
   transform: TodoCommentTransform,
 ): ConversationPages | undefined {
-  if (cachedPages === undefined) {
+  if (cachedPages == null) {
     return undefined;
   }
 
@@ -111,7 +111,7 @@ export function patchTodoCommentConversationPages(
     );
     let focus = page.focus;
 
-    if (page.focus !== null) {
+    if (page.focus != null) {
       const precedingAncestors = mapPreservingIdentity(page.focus.precedingAncestors, (item) =>
         patchConversationItem(item, commentId, transform),
       );
@@ -131,7 +131,7 @@ export function patchTodoCommentOverviewPages(
   commentId: string,
   transform: TodoCommentTransform,
 ): OverviewPages | undefined {
-  if (cachedPages === undefined) {
+  if (cachedPages == null) {
     return undefined;
   }
 

@@ -40,7 +40,7 @@ export function useUpdateTodoCommentMutationOptions({ todoId }: { todoId: number
       return { snapshot };
     },
     onError: (error, _params, context) => {
-      if (context !== undefined) {
+      if (context != null) {
         restoreTodoCommentCaches({ queryClient, snapshot: context.snapshot });
       }
       handleMutationError(error, 'update');

@@ -129,12 +129,12 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
 
   // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
   useLayoutEffect(() => {
-    if (restoredMemoDraft !== undefined) {
+    if (restoredMemoDraft != null) {
       reset({ content: memo.content }, { keepValues: true });
     }
   }, [memo.content, reset, restoredMemoDraft]);
 
-  const [isEditing, setIsEditing] = useState(restoredMemoDraft !== undefined);
+  const [isEditing, setIsEditing] = useState(restoredMemoDraft != null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutateAsync: updateMemo } = useMutation(useUpdateMemoMutationOptions());
@@ -251,38 +251,51 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
         </VStack>
       </KeyboardAvoidingView>
 
-      <ConfirmDialog
+      <MemoDeleteDialog
         isOpen={isDeleteDialogOpen}
-        onOpenChange={(open) => {
-          if (!isDeletePending) {
-            setIsDeleteDialogOpen(open);
-          }
-        }}
-        title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            {t('memo:detail.deleteConfirmDescription')}
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton
-            onPress={() => setIsDeleteDialogOpen(false)}
-            isDisabled={isDeletePending}
-          >
-            {t('common:actions.cancel')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            color="danger"
-            onPress={handleDelete}
-            isLoading={isDeletePending}
-          >
-            {t('common:actions.delete')}
-          </ConfirmDialog.ConfirmButton>
-        }
+        onOpenChange={setIsDeleteDialogOpen}
+        isPending={isDeletePending}
+        onConfirm={handleDelete}
       />
     </FormProvider>
+  );
+}
+
+interface MemoDeleteDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  isPending: boolean;
+  onConfirm: () => void;
+}
+
+function MemoDeleteDialog({ isOpen, onOpenChange, isPending, onConfirm }: MemoDeleteDialogProps) {
+  const { t } = useTranslation(['memo', 'common']);
+
+  return (
+    <ConfirmDialog
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!isPending) {
+          onOpenChange(open);
+        }
+      }}
+      title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
+      description={
+        <ConfirmDialog.Description>
+          {t('memo:detail.deleteConfirmDescription')}
+        </ConfirmDialog.Description>
+      }
+      cancelButton={
+        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)} isDisabled={isPending}>
+          {t('common:actions.cancel')}
+        </ConfirmDialog.CancelButton>
+      }
+      confirmButton={
+        <ConfirmDialog.ConfirmButton color="danger" onPress={onConfirm} isLoading={isPending}>
+          {t('common:actions.delete')}
+        </ConfirmDialog.ConfirmButton>
+      }
+    />
   );
 }
 

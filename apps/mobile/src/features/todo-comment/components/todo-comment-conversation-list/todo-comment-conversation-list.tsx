@@ -150,7 +150,7 @@ const ConversationKeyboardScrollContext =
 
 function useConversationKeyboardScrollContext(): ConversationKeyboardScrollContextValue {
   const context = useContext(ConversationKeyboardScrollContext);
-  if (context === null) {
+  if (context == null) {
     throw new Error('댓글 대화 keyboard scroll은 댓글 목록 안에서 사용해 주세요.');
   }
   return context;
@@ -189,6 +189,12 @@ function isSameFocusViewport(
   );
 }
 
+function getInteractionMode(
+  commentRoute: ReturnType<typeof useTodoCommentRoute>[0],
+): TodoCommentInteractionMode {
+  return commentRoute.view === 'conversation' ? (commentRoute.form?.type ?? 'reading') : 'reading';
+}
+
 interface FocusedCommentViewportOptions {
   rows: TodoCommentConversationRowViewModel[];
   focusCommentId: string | null;
@@ -220,12 +226,13 @@ function useFocusedCommentViewport({
     null,
   );
   const focusViewport = useMemo(
-    () => (focusCommentId === null ? null : { focusCommentId, interactionMode }),
+    () => (focusCommentId == null ? null : { focusCommentId, interactionMode }),
     [focusCommentId, interactionMode],
   );
+  const hasKeyboardLiftPolicyForFocus =
+    keyboardLiftPolicy != null && isSameFocusViewport(keyboardLiftPolicy, focusViewport);
   const keyboardLiftBehavior =
-    keyboardLiftPolicy?.focusCommentId === focusCommentId &&
-    keyboardLiftPolicy.interactionMode === interactionMode
+    keyboardLiftPolicy != null && hasKeyboardLiftPolicyForFocus
       ? keyboardLiftPolicy.behavior
       : 'whenAtEnd';
   const initialScrollIndex = getInitialCommentIndex(rows, focusCommentId);
@@ -239,14 +246,14 @@ function useFocusedCommentViewport({
     }
 
     adjustedFocusViewportRef.current = null;
-    if (!wasKeyboardVisible || keyboardState.isVisible || focusViewport === null) {
+    if (!wasKeyboardVisible || keyboardState.isVisible || focusViewport == null) {
       return;
     }
 
     setKeyboardLiftPolicy((currentPolicy) => {
       if (
-        currentPolicy?.focusCommentId !== focusViewport.focusCommentId ||
-        currentPolicy.interactionMode !== focusViewport.interactionMode ||
+        currentPolicy == null ||
+        !isSameFocusViewport(currentPolicy, focusViewport) ||
         currentPolicy.behavior !== 'persistent'
       ) {
         return currentPolicy;
@@ -274,7 +281,7 @@ function useFocusedCommentViewport({
   const handleListLoad = useCallback(() => {
     hasLoadedRef.current = true;
 
-    if (focusCommentId === null || announcedFocusCommentIdRef.current === focusCommentId) {
+    if (focusCommentId == null || announcedFocusCommentIdRef.current === focusCommentId) {
       return;
     }
 
@@ -297,21 +304,13 @@ function useFocusedCommentViewport({
     const list = listRef.current;
     const focusIndex = getInitialCommentIndex(rows, focusCommentId);
 
-    if (
-      focusCommentId !== null &&
-      focusViewport !== null &&
-      list !== null &&
-      focusIndex !== undefined
-    ) {
+    if (focusCommentId != null && focusViewport != null && list != null && focusIndex != null) {
       const itemLayout = list.getLayout(focusIndex);
-      if (itemLayout !== undefined) {
+      if (itemLayout != null) {
         const firstItemOffset = list.getFirstItemOffset();
         const scrollOffset = list.getAbsoluteLastScrollOffset();
         const viewportHeight = list.getWindowSize().height;
-        if (
-          keyboardLiftPolicy?.focusCommentId !== focusViewport.focusCommentId ||
-          keyboardLiftPolicy.interactionMode !== focusViewport.interactionMode
-        ) {
+        if (!hasKeyboardLiftPolicyForFocus) {
           setKeyboardLiftPolicy({
             ...focusViewport,
             behavior: getFocusedCommentKeyboardLiftBehavior({
@@ -336,7 +335,7 @@ function useFocusedCommentViewport({
             bottomInset: keyboardState.isVisible ? keyboardState.height : 0,
           });
 
-          if (focusRevealOffset !== null) {
+          if (focusRevealOffset != null) {
             const shouldAnimate =
               hasLoadedRef.current &&
               announcedFocusCommentIdRef.current !== focusCommentId &&
@@ -360,7 +359,7 @@ function useFocusedCommentViewport({
       return;
     }
 
-    if (focusCommentId === null || announcedFocusCommentIdRef.current === focusCommentId) {
+    if (focusCommentId == null || announcedFocusCommentIdRef.current === focusCommentId) {
       onCommitLayoutEffect?.();
       return;
     }
@@ -371,13 +370,13 @@ function useFocusedCommentViewport({
       return;
     }
 
-    if (list === null || focusIndex === undefined) {
+    if (list == null || focusIndex == null) {
       onCommitLayoutEffect?.();
       return;
     }
 
     const itemLayout = list.getLayout(focusIndex);
-    if (itemLayout === undefined) {
+    if (itemLayout == null) {
       onCommitLayoutEffect?.();
       return;
     }
@@ -393,8 +392,7 @@ function useFocusedCommentViewport({
   }, [
     focusCommentId,
     focusViewport,
-    keyboardLiftPolicy?.focusCommentId,
-    keyboardLiftPolicy?.interactionMode,
+    hasKeyboardLiftPolicyForFocus,
     keyboardState.height,
     keyboardState.isVisible,
     markFocusAsAnnounced,
@@ -428,7 +426,7 @@ export function TodoCommentConversationList({
   const [commentRoute] = useTodoCommentRoute();
   const focusCommentId = commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const queryClient = useQueryClient();
-  const query = useSuspenseInfiniteQuery(
+  const conversationQuery = useSuspenseInfiniteQuery(
     useGetTodoCommentConversationQueryOptions({
       todoId,
       sort: commentRoute.sort,
@@ -436,8 +434,7 @@ export function TodoCommentConversationList({
     }),
   );
   const { color: refreshTint } = useResolveClassNames('text-main');
-  const rows = query.data.rows;
-  const focus = query.data.focus;
+  const { rows, focus } = conversationQuery.data;
   const threadId = getConversationThreadId(rows, focus?.commentId ?? null);
   const listIdentity = `${todoId}:${commentRoute.sort}:${threadId ?? focusCommentId ?? 'empty'}`;
 
@@ -460,12 +457,12 @@ export function TodoCommentConversationList({
       ListHeaderComponent={ListHeaderComponent}
       conversation={{ rows, focus }}
       pagination={{
-        isFetchingPreviousPage: query.isFetchingPreviousPage,
-        isFetchingNextPage: query.isFetchingNextPage,
-        hasPreviousPage: query.hasPreviousPage,
-        hasNextPage: query.hasNextPage,
-        fetchPreviousPage: () => query.fetchPreviousPage({ cancelRefetch: false }),
-        fetchNextPage: () => query.fetchNextPage({ cancelRefetch: false }),
+        isFetchingPreviousPage: conversationQuery.isFetchingPreviousPage,
+        isFetchingNextPage: conversationQuery.isFetchingNextPage,
+        hasPreviousPage: conversationQuery.hasPreviousPage,
+        hasNextPage: conversationQuery.hasNextPage,
+        fetchPreviousPage: () => conversationQuery.fetchPreviousPage({ cancelRefetch: false }),
+        fetchNextPage: () => conversationQuery.fetchNextPage({ cancelRefetch: false }),
       }}
       isRefreshing={isRefreshing}
       onRefresh={refresh}
@@ -489,7 +486,7 @@ function TodoCommentConversationWindow({
   const { t } = useTranslation('todoComment');
   const [commentRoute] = useTodoCommentRoute();
   const { rows, focus } = conversation;
-  const focusIdentity = focus === null ? null : focus.commentId;
+  const focusIdentity = focus == null ? null : focus.commentId;
   const {
     listRef,
     keyboardLiftBehavior,
@@ -501,8 +498,7 @@ function TodoCommentConversationWindow({
   } = useFocusedCommentViewport({
     rows,
     focusCommentId: focusIdentity,
-    interactionMode:
-      commentRoute.view === 'conversation' ? (commentRoute.form?.type ?? 'reading') : 'reading',
+    interactionMode: getInteractionMode(commentRoute),
     onViewableItemsChanged,
     onCommitLayoutEffect,
   });
@@ -574,19 +570,6 @@ function TodoCommentConversationWindow({
   );
 }
 
-TodoCommentConversationList.Empty = function Empty() {
-  const { t } = useTranslation('todoComment');
-  return (
-    <Box py={48}>
-      <Result
-        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
-        title={t('list.emptyTitle')}
-        description={t('list.emptyDescription')}
-      />
-    </Box>
-  );
-};
-
 TodoCommentConversationList.Loading = function Loading({ rows = 4 }: { rows?: number }) {
   return (
     <VStack>
@@ -606,6 +589,20 @@ TodoCommentConversationList.Error = function ErrorFallback({ reset }: QueryError
     />
   );
 };
+
+TodoCommentConversationList.Empty = function Empty() {
+  const { t } = useTranslation('todoComment');
+  return (
+    <Box py={48}>
+      <Result
+        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
+        title={t('list.emptyTitle')}
+        description={t('list.emptyDescription')}
+      />
+    </Box>
+  );
+};
+
 const ROW_HORIZONTAL_PADDING = 16;
 const MESSAGE_GAP = 12;
 
@@ -616,7 +613,7 @@ interface ConversationRowProps {
 const ConversationRow = memo(function ConversationRow({ row }: ConversationRowProps) {
   return (
     <Box>
-      {row.focusContext !== null && <ConversationContextRow context={row.focusContext} />}
+      {row.focusContext != null && <ConversationContextRow context={row.focusContext} />}
 
       <ConversationCommentRow
         comment={row.comment}
@@ -686,7 +683,7 @@ function ConversationThreadRail({ author, avatarSize, connection }: Conversation
       {layout.lowerLanes.map((lane) => (
         <ConversationVerticalLane key={`lower-${lane.x}`} layout={lane} />
       ))}
-      {layout.incomingBranch !== null && (
+      {layout.incomingBranch != null && (
         <Box
           pointerEvents="none"
           accessibilityElementsHidden

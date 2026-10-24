@@ -61,7 +61,7 @@ const TodoCommentPendingTransitionContext = createContext<
 function useTodoCommentScreenTransitionActionsContext(): TodoCommentScreenTransitionActions {
   const actions = useContext(TodoCommentScreenTransitionActionsContext);
 
-  if (actions === null) {
+  if (actions == null) {
     throw new Error(
       '댓글 화면 전환 액션은 TodoCommentScreenTransitionProvider 안에서 사용해 주세요.',
     );
@@ -85,7 +85,7 @@ export function TodoCommentScreenTransitionProvider({ children }: PropsWithChild
   );
 
   const cancelPendingTransition = useCallback(() => {
-    if (pendingTransitionRef.current === null) {
+    if (pendingTransitionRef.current == null) {
       return false;
     }
 
