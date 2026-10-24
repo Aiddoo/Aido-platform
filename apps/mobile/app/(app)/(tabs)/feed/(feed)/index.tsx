@@ -9,9 +9,10 @@ import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { TodoList } from '@src/features/todo/components/todo-list/todo-list';
 import { TODO_QUERY_KEYS } from '@src/features/todo/constants/todo-query-keys';
+import { useFeedActionParam } from '@src/features/todo/hooks/use-feed-action-param';
 import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
+import { useFeedDateParam } from '@src/features/todo/hooks/use-feed-date-param';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
-import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { WEATHER_QUERY_KEYS } from '@src/features/weather/constants/weather-query-keys';
 import { useWeatherIntroduction } from '@src/features/weather/hooks/use-weather-introduction';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
@@ -26,17 +27,11 @@ import {
   useOverlay,
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Suspense, useCallback, useEffect } from 'react';
+import { router } from 'expo-router';
+import { Suspense, useEffect } from 'react';
 import { RefreshControl } from 'react-native';
 import { NestableScrollContainer } from 'react-native-draggable-flatlist';
 import { match } from 'ts-pattern';
-import { z } from 'zod';
-
-const FeedSearchSchema = z.object({
-  date: feedDateParamSchema,
-  action: z.literal('add-todo').optional().catch(undefined),
-});
 
 function MyFeedScreen() {
   const { t } = useTranslation(['widget', 'common']);
@@ -53,7 +48,7 @@ function MyFeedScreen() {
     ]),
   );
 
-  const { action } = FeedSearchSchema.parse(useLocalSearchParams());
+  const [action, setAction] = useFeedActionParam();
   const [selectedDate] = useFeedDate();
   const overlay = useOverlay();
   const isRequested = action === 'add-todo';
@@ -69,7 +64,7 @@ function MyFeedScreen() {
       return;
     }
     const frameId = requestAnimationFrame(() => {
-      router.setParams({ action: undefined });
+      setAction(undefined);
       overlay.open(({ isOpen, close, exit }) => (
         <AddTodoBottomSheet
           mode="create"
@@ -87,7 +82,7 @@ function MyFeedScreen() {
       ));
     });
     return () => cancelAnimationFrame(frameId);
-  }, [isRequested, categoryId, selectedDate, overlay]);
+  }, [isRequested, categoryId, selectedDate, overlay, setAction]);
 
   const createEntryStatus = !isRequested
     ? ('idle' as const)
@@ -134,7 +129,7 @@ function MyFeedScreen() {
                 button={
                   <Result.Button
                     onPress={() => {
-                      router.setParams({ action: undefined });
+                      setAction(undefined);
                       router.navigate('/settings/category-settings');
                     }}
                   >
@@ -201,8 +196,7 @@ function MyFeedScreen() {
 }
 
 export default function MyFeedRoute() {
-  const { date } = FeedSearchSchema.parse(useLocalSearchParams());
-  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
+  const [date, setDate] = useFeedDateParam();
 
   return (
     <FeedDateProvider date={date} onDateChange={setDate}>

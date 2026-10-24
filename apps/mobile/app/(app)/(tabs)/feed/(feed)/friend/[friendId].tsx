@@ -10,8 +10,8 @@ import { FriendCalendar } from '@src/features/todo/components/calendar/friend-ca
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
 import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
+import { useFeedDateParam } from '@src/features/todo/hooks/use-feed-date-param';
 import { invalidateFriendTodos } from '@src/features/todo/queries/todo-cache';
-import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import {
   Box,
@@ -21,13 +21,10 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQueryClient } from '@tanstack/react-query';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Suspense, useCallback } from 'react';
+import { Redirect, useLocalSearchParams } from 'expo-router';
+import { Suspense } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
-import { z } from 'zod';
-
-const FriendFeedSearchSchema = z.object({ date: feedDateParamSchema });
 
 function FriendFeedScreen() {
   const { friendId } = useFriendScreenParams();
@@ -120,8 +117,7 @@ FriendFeedScreen.Error = function ErrorState(props: QueryErrorFallbackProps) {
 
 export default function FriendFeedRoute() {
   const params = useLocalSearchParams();
-  const { date } = FriendFeedSearchSchema.parse(params);
-  const setDate = useCallback((value: string | undefined) => router.setParams({ date: value }), []);
+  const [date, setDate] = useFeedDateParam();
   const parsed = friendScreenParamsSchema.safeParse(params);
   if (!parsed.success) {
     return <Redirect href="/feed" />;

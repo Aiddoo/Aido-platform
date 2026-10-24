@@ -1,19 +1,18 @@
-import { userIdParamSchema } from '@aido/api';
 import { useGetFriendsInfiniteQueryOptions } from '@src/features/friend/queries/get-friends-infinite-query-options';
 import { TodoDetailPane } from '@src/features/todo-comment/components/todo-detail-pane/todo-detail-pane';
 import { useTodoCommentRoute } from '@src/features/todo-comment/hooks/use-todo-comment-route';
 import { serializeTodoCommentRoute } from '@src/features/todo-comment/utils/navigation/todo-comment-route';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
 import { FeedRouteParamsProvider } from '@src/features/todo/components/providers/feed-route-params-provider';
+import { useFeedDateParam } from '@src/features/todo/hooks/use-feed-date-param';
+import { useFeedFriendIdParam } from '@src/features/todo/hooks/use-feed-friend-id-param';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
-import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
 import {
   AdaptivePane,
   HStack,
@@ -32,7 +31,6 @@ import { Slot, router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
-import { z } from 'zod';
 
 export default function FeedGroupLayout() {
   return (
@@ -83,17 +81,13 @@ function FeedDetailPane() {
   return <TodoDetailPane key={selectedTodoId} presentation="pane" />;
 }
 
-const FeedLayoutParamsSchema = z.object({
-  friendId: userIdParamSchema.shape.userId.optional().catch(undefined),
-  date: feedDateParamSchema,
-});
-
 function AvatarList() {
   const push = useSingleTap(router.push);
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('todo');
-  const { friendId, date } = FeedLayoutParamsSchema.parse(useRouteSearchParams());
+  const friendId = useFeedFriendIdParam();
+  const [date] = useFeedDateParam();
   const selectedFriendId = friendId ?? null;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {
