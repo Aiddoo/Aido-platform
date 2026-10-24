@@ -32,14 +32,14 @@ const variantIconMap: Record<AppToastVariant, ReactNode | null> = {
   danger: <ToastErrorIcon width={ICON_SIZE} height={ICON_SIZE} />,
 };
 
-export const AppToast = ({
+export function AppToast({
   label,
   description,
   variant = 'default',
   icon,
   action,
   toastProps,
-}: AppToastProps) => {
+}: AppToastProps) {
   const resolvedIcon = icon ?? variantIconMap[variant];
 
   return (
@@ -74,4 +74,4 @@ export const AppToast = ({
       </View>
     </Toast>
   );
-};
+}

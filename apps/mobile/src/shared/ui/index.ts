@@ -125,7 +125,7 @@ export {
   type ScreenTitleBarProps,
   useStackScreenOptions,
 } from './screen-title-bar';
-export { ScrollProgressWidget } from './scroll-progress-widget/scroll-progress-widget';
+export { ScrollProgressWidget } from './scroll-progress-widget';
 export { SettingNavigation } from './setting-navigation';
 export { Spacing, type SpacingProps } from './spacing';
 export {
@@ -153,4 +153,4 @@ export { TextButton } from './text-button';
 export { AppToast, type AppToastVariant } from './toast';
 export { VStack } from './v-stack';
 
-export { FormField, type FormFieldProps } from './form-field/form-field';
+export { FormField, type FormFieldProps } from './form-field';

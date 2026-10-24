@@ -109,7 +109,7 @@ Grid/
 ├── GridItem.tsx        # GridItem 컴포넌트
 ├── GridItem.types.ts   # GridItemProps 타입
 ├── Grid.test.tsx       # Grid + GridItem 통합 테스트
-└── README.md           # 문서
+└── grid.md             # 문서
 ```
 
 ## 타입 상속
