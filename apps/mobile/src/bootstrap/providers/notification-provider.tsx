@@ -1,6 +1,7 @@
 import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
 import { useAutomaticPushRegistration } from '@src/features/activation/hooks/use-automatic-push-registration';
-import { useNotificationHandler } from '@src/features/notification/hooks/use-notification-handler';
+import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
+import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
 import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
@@ -21,10 +22,6 @@ import { AppState, Platform } from 'react-native';
 import { useAuth } from './auth-provider';
 import { useLogger, useNotificationService } from './di-context';
 
-type NotificationResponseHandler = ReturnType<
-  typeof useNotificationHandler
->['handleNotificationResponse'];
-
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -40,9 +37,8 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const canRegisterPushAutomatically = useAutomaticPushRegistration();
-  const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
-    isAuthenticated,
-  });
+  const handleNotificationResponse = useNotificationResponseHandler();
+  const handleForegroundNotification = useForegroundNotificationSync({ isAuthenticated });
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const processResponse = useNotificationResponseProcessor({
     accountId: isAuthenticated ? (me?.id ?? null) : null,
@@ -88,7 +84,7 @@ function useNotificationResponseProcessor({
 }: {
   authStatus: 'loading' | 'locked' | 'authenticated' | 'unauthenticated';
   accountId: string | null;
-  handleNotificationResponse: NotificationResponseHandler;
+  handleNotificationResponse: ReturnType<typeof useNotificationResponseHandler>;
 }) {
   const logger = useLogger();
   const navigationRef = useNavigationContainerRef();

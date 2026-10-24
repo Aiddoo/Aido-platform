@@ -80,17 +80,17 @@ export function ProfileCard() {
 
 const USER_TIER_CONFIG = {
   ADMIN: {
-    labelKey: 'user:profile.badges.admin',
+    labelKey: 'profile.badges.admin',
     color: 'warning',
     className: 'self-center shrink-0',
   },
   PREMIUM: {
-    labelKey: 'user:profile.badges.premium',
+    labelKey: 'profile.badges.premium',
     color: 'accent',
     className: 'self-center shrink-0',
   },
   BASIC: {
-    labelKey: 'user:profile.badges.basic',
+    labelKey: 'profile.badges.basic',
     color: 'default',
     className: 'self-center shrink-0 bg-gray-3',
   },
@@ -99,7 +99,7 @@ const USER_TIER_CONFIG = {
 function UserTierChip({ tier }: { tier: UserTier }) {
   const { t } = useTranslation('user');
   const { labelKey, color, className } = USER_TIER_CONFIG[tier];
-  const label = t(labelKey.replace('user:', '') as 'profile.badges.admin');
+  const label = t(labelKey);
 
   return (
     <Chip size="sm" variant="soft" color={color} className={className}>
