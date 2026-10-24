@@ -6,7 +6,7 @@ import {
   writeFontScale,
 } from '@src/shared/preferences/font-scale.preference';
 import type { TextSize } from '@src/shared/ui/text/text.types';
-import { createContext, type PropsWithChildren, use, useCallback, useState } from 'react';
+import { createContext, type PropsWithChildren, use, useCallback, useMemo, useState } from 'react';
 
 // t2↔t1 간 6px 점프를 피하기 위해 해당 구간은 리매핑하지 않음
 const SCALE_MAP: Record<Exclude<FontScale, 'medium'>, Record<TextSize, TextSize>> = {
@@ -96,11 +96,12 @@ export const FontScaleProvider = ({
     [fontScale],
   );
 
-  return (
-    <FontScaleContext.Provider value={{ fontScale, setFontScale: persistScale, resolveSize }}>
-      {children}
-    </FontScaleContext.Provider>
+  const value = useMemo(
+    () => ({ fontScale, setFontScale: persistScale, resolveSize }),
+    [fontScale, persistScale, resolveSize],
   );
+
+  return <FontScaleContext.Provider value={value}>{children}</FontScaleContext.Provider>;
 };
 
 // Text 컴포넌트 내부에서 호출되므로, Provider 없이도 안전하게 동작해야 함

@@ -1,53 +1,17 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
+import { useStackScreenOptions } from '@src/shared/ui';
+import { Stack } from 'expo-router';
 
-const AchievementsLayout = () => {
-  const goBack = useSingleTap(router.back);
-
-  const { t } = useTranslation(['achievement', 'common']);
-  const headerBg = useResolveClassNames('bg-gray-1');
-  const titleColor = useResolveClassNames('text-gray-9');
-  const { fontScale } = useFontScale();
+function AchievementsLayout() {
+  const screenOptions = useStackScreenOptions({ fillContent: true });
+  const { t } = useTranslation('achievement');
 
   return (
-    <Stack
-      screenOptions={{
-        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
-        headerShown: true,
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: headerBg.backgroundColor as string },
-        contentStyle: { backgroundColor: headerBg.backgroundColor as string },
-        headerTitleStyle: {
-          fontSize: getScaledFontSize(fontScale),
-          fontWeight: '600',
-          color: titleColor.color as string,
-        },
-        headerTitleAlign: 'center',
-        headerLeft: () => (
-          <View className="justify-center items-center">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common:actions.goBack')}
-              onPress={() => goBack()}
-              hitSlop={8}
-              className="p-2"
-            >
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
-            </Pressable>
-          </View>
-        ),
-      }}
-    >
+    <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" options={{ title: t('titles.index') }} />
       <Stack.Screen name="[year]/[week]" options={{ title: t('titles.detail') }} />
     </Stack>
   );
-};
+}
 
 export default AchievementsLayout;

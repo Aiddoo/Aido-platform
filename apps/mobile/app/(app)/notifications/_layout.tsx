@@ -1,34 +1,19 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, ScreenTitleBar, Text } from '@src/shared/ui';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
+import { ArrowLeftIcon, Text, useStackScreenOptions } from '@src/shared/ui';
 import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
+import { Pressable } from 'react-native';
 
-const NotificationsLayout = () => {
-  const goBack = useSingleTap(() => (router.canGoBack() ? router.back() : router.replace('/feed')));
-
-  const headerBg = useResolveClassNames('bg-white');
-  const titleColor = useResolveClassNames('text-gray-9');
-  const { fontScale } = useFontScale();
+function NotificationsLayout() {
+  const screenOptions = useStackScreenOptions({ background: 'bg-white' });
   const { t } = useTranslation(['notification', 'common', 'todo']);
+  const goHome = useSingleTap(() => router.replace('/feed'));
   const openSentNudges = useSingleTap(() => router.navigate('/nudges/sent'));
 
   return (
     <Stack
       screenOptions={{
-        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
-        headerShown: true,
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: headerBg.backgroundColor as string },
-        headerTitleStyle: {
-          fontSize: getScaledFontSize(fontScale),
-          fontWeight: '600',
-          color: titleColor.color as string,
-        },
-        headerTitleAlign: 'center',
+        ...screenOptions,
         headerRight: () => (
           <Pressable accessibilityRole="button" onPress={openSentNudges} className="px-2 py-3">
             <Text size="b4" tone="brand" weight="medium">
@@ -36,24 +21,23 @@ const NotificationsLayout = () => {
             </Text>
           </Pressable>
         ),
-        headerLeft: () => (
-          <View className="justify-center items-center">
+        headerLeft: ({ canGoBack }) =>
+          canGoBack ? undefined : (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('common:actions.goBack')}
-              onPress={() => goBack()}
+              onPress={() => goHome()}
               hitSlop={8}
-              className="p-2"
+              className="size-11 items-center justify-center rounded-full"
             >
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
+              <ArrowLeftIcon width={22} height={22} colorClassName="text-gray-9" />
             </Pressable>
-          </View>
-        ),
+          ),
       }}
     >
       <Stack.Screen name="index" options={{ title: t('titles.notifications') }} />
     </Stack>
   );
-};
+}
 
 export default NotificationsLayout;

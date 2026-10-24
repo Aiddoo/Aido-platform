@@ -71,6 +71,15 @@ ScreenTitleBar/
 />
 ```
 
+여러 Stack 레이아웃이 같은 옵션을 쓰므로 `useStackScreenOptions()`로 `header`·`headerShown`·`headerShadowVisible`·`headerStyle`을 한 번에 얻는다.
+배경은 `background`(`bg-gray-1` 기본, `bg-white`), 콘텐츠 배경까지 맞추려면 `fillContent`를 쓴다.
+
+```tsx
+const screenOptions = useStackScreenOptions({ fillContent: true });
+
+<Stack screenOptions={screenOptions} />;
+```
+
 `leading`은 기존 뒤로가기 영역을 대체하는 ReactNode다. 전달하지 않으면 기존 뒤로가기를 사용한다.
 공용 custom header는 Stack의 화면 전환/뒤로가기 동작을 유지하면서 플랫폼별 native toolbar의
 동적 자식 제거 경로를 사용하지 않는다.

@@ -64,8 +64,13 @@ export const ThemeProvider = ({ children, syncStorage = mmkvSyncStorage }: Theme
     };
   }, [resolvedTheme, backgroundColor]);
 
+  const value = useMemo(
+    () => ({ mode, resolvedTheme, setMode: persistMode }),
+    [mode, resolvedTheme, persistMode],
+  );
+
   return (
-    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode: persistMode }}>
+    <ThemeContext.Provider value={value}>
       <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
     </ThemeContext.Provider>
   );

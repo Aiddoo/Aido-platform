@@ -120,7 +120,11 @@ export {
 } from './readable-content';
 export { Result } from './result';
 export { StyledSafeAreaView } from './safe-area-view';
-export { ScreenTitleBar, type ScreenTitleBarProps } from './screen-title-bar';
+export {
+  ScreenTitleBar,
+  type ScreenTitleBarProps,
+  useStackScreenOptions,
+} from './screen-title-bar';
 export { ScrollProgressWidget } from './scroll-progress-widget/scroll-progress-widget';
 export { SettingNavigation } from './setting-navigation';
 export { Spacing, type SpacingProps } from './spacing';
