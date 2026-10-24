@@ -11,7 +11,6 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import { H3, KeyboardAdaptiveButton, QueryErrorBoundary, StyledSafeAreaView } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { Suspense } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { ScrollView, View } from 'react-native';
@@ -50,27 +49,30 @@ function ChangePasswordScreen() {
 
   return (
     <View className="flex-1 bg-gray-1">
-      <QueryErrorBoundary>
-        <Suspense fallback={<View className="flex-1" />}>
-          <FormProvider {...form}>
-            {match(step)
-              .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
-              .with('newPassword', () => (
-                <NewPasswordStep
-                  onSubmit={submitNewPassword}
-                  nextLabel={t('changePassword.next')}
-                  submitLabel={t('changePassword.submit')}
-                />
-              ))
-              .exhaustive()}
-          </FormProvider>
-        </Suspense>
-      </QueryErrorBoundary>
+      <FormProvider {...form}>
+        {match(step)
+          .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
+          .with('newPassword', () => (
+            <NewPasswordStep
+              onSubmit={submitNewPassword}
+              nextLabel={t('changePassword.next')}
+              submitLabel={t('changePassword.submit')}
+            />
+          ))
+          .exhaustive()}
+      </FormProvider>
     </View>
   );
 }
 
-export default ChangePasswordScreen;
+/** 제출 중 예측하지 못한 오류(showBoundary)를 이 화면 안에서 받아 다시 시도하게 한다. */
+export default function ChangePasswordRoute() {
+  return (
+    <QueryErrorBoundary>
+      <ChangePasswordScreen />
+    </QueryErrorBoundary>
+  );
+}
 
 interface CurrentPasswordStepProps {
   onNext: () => void;

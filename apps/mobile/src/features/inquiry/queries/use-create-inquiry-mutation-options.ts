@@ -1,6 +1,6 @@
 import type { CreateInquiryInput } from '@aido/api';
 import { useInquiryService } from '@src/bootstrap/providers/di-context';
-import { unwrap } from '@src/shared/errors/result';
+import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
@@ -28,6 +28,10 @@ export const useCreateInquiryMutationOptions = () => {
       goBack();
     },
     onError: (error) => {
+      if (!isBusinessError(error)) {
+        return;
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       toast.error(error, { fallback: t('inquiry:toasts.submitFailed') });
