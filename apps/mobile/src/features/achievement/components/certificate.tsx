@@ -7,7 +7,8 @@ import { useResolveClassNames } from 'uniwind';
 
 /** 상장 느낌의 이중 SVG 라운드 테두리 */
 function CertificateBorder({ children }: { children: ReactNode }) {
-  const { color: strokeColor } = useResolveClassNames('text-main');
+  const { color } = useResolveClassNames('text-main');
+  const strokeColor = typeof color === 'string' ? color : undefined;
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
@@ -27,7 +28,7 @@ function CertificateBorder({ children }: { children: ReactNode }) {
               height={size.height - 4}
               rx={2}
               ry={2}
-              stroke={strokeColor as string}
+              stroke={strokeColor}
               strokeWidth={1.5}
               fill="none"
               strokeOpacity={0.6}
@@ -39,7 +40,7 @@ function CertificateBorder({ children }: { children: ReactNode }) {
               height={size.height - 14}
               rx={1}
               ry={1}
-              stroke={strokeColor as string}
+              stroke={strokeColor}
               strokeWidth={0.5}
               fill="none"
               strokeOpacity={0.35}

@@ -43,12 +43,6 @@ import { Suspense, type ComponentProps } from 'react';
 import { ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
 
-const NUDGE_REPLY_KINDS = [
-  'STARTING',
-  'THANKFUL',
-  'LATER',
-] as const satisfies readonly NudgeReplyKind[];
-
 function NudgeDetailScreen() {
   const { nudgeId } = useNudgeScreenParams();
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
@@ -173,15 +167,24 @@ NudgeDetailScreen.ReplyPanel = function ReplyPanel({ nudge }: { nudge: NudgeInte
       <Text size="b4" shade={5}>
         {t('interaction.replyHint')}
       </Text>
-      {NUDGE_REPLY_KINDS.map((replyKind) => (
-        <NudgeDetailScreen.ReplyButton
-          key={replyKind}
-          value={replyKind}
-          isSelected={nudge.replyKind === replyKind}
-          isDisabled={replyMutation.isPending}
-          onPress={() => handleReply(replyKind)}
-        />
-      ))}
+      <NudgeDetailScreen.ReplyButton
+        value="STARTING"
+        isSelected={nudge.replyKind === 'STARTING'}
+        isDisabled={replyMutation.isPending}
+        onPress={() => handleReply('STARTING')}
+      />
+      <NudgeDetailScreen.ReplyButton
+        value="THANKFUL"
+        isSelected={nudge.replyKind === 'THANKFUL'}
+        isDisabled={replyMutation.isPending}
+        onPress={() => handleReply('THANKFUL')}
+      />
+      <NudgeDetailScreen.ReplyButton
+        value="LATER"
+        isSelected={nudge.replyKind === 'LATER'}
+        isDisabled={replyMutation.isPending}
+        onPress={() => handleReply('LATER')}
+      />
       {replyMutation.isError && (
         <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
           {isApiError(replyMutation.error) ? replyMutation.error.message : t('toast.retryLater')}
