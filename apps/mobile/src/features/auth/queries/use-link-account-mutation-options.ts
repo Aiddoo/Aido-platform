@@ -10,7 +10,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
 import { isAuthError, isCancelledError } from '../domains/auth.error';
-import type { OAuthProvider, OAuthProviderSlug } from '../domains/oauth.model';
+import { type OAuthProviderSlug, toOAuthProvider } from '../domains/oauth.model';
 
 export const useLinkAccountMutationOptions = () => {
   const authService = useAuthService();
@@ -27,7 +27,7 @@ export const useLinkAccountMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.linkedAccounts() });
       toast.success(
         t('auth:toasts.accountLinked', {
-          provider: getOAuthProviderLabel(provider.toUpperCase() as OAuthProvider),
+          provider: getOAuthProviderLabel(toOAuthProvider(provider)),
         }),
       );
       trackEvent('auth_social_linked', { provider });
