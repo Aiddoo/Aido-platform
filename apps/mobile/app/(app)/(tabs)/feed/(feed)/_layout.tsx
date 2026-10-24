@@ -7,11 +7,11 @@ import { CalendarProvider } from '@src/features/todo/components/providers/calend
 import { FeedRouteParamsProvider } from '@src/features/todo/components/providers/feed-route-params-provider';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { feedDateParamSchema } from '@src/features/todo/utils/feed-date-param';
-import { createFeedHref, isFeedPathname } from '@src/features/todo/utils/feed-route';
+import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
 import {
@@ -28,9 +28,9 @@ import {
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
-import { Slot, router, usePathname } from 'expo-router';
+import { Slot, router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { ScrollView, View } from 'react-native';
 import { z } from 'zod';
 
@@ -38,22 +38,38 @@ export default function FeedGroupLayout() {
   return (
     <FeedRouteParamsProvider>
       <CalendarProvider>
-        <FeedCompactDetailHandoff />
-        <AdaptivePane
-          primary={
-            <Box flex={1} className="bg-white">
-              <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
-                <Suspense fallback={<AvatarList.Loading />}>
-                  <AvatarList />
-                </Suspense>
-              </QueryErrorBoundary>
-              <Slot />
-            </Box>
-          }
-          secondary={<FeedDetailPane />}
-        />
+        <AdaptivePane primary={<FeedListPane />} secondary={<FeedDetailPane />} />
       </CalendarProvider>
     </FeedRouteParamsProvider>
+  );
+}
+
+function FeedListPane() {
+  const [selectedTodoId] = useFeedSelectedTodo();
+  const [commentRoute] = useTodoCommentRoute();
+
+  useCompactDetailHandoff(selectedTodoId, (todoId) => {
+    router.setParams({
+      todoId: undefined,
+      comment: undefined,
+      intent: undefined,
+      returnTo: undefined,
+    });
+    router.push({
+      pathname: '/todo/[todoId]',
+      params: { todoId, ...serializeTodoCommentRoute(commentRoute) },
+    });
+  });
+
+  return (
+    <Box flex={1} className="bg-white">
+      <QueryErrorBoundary fallback={(props) => <AvatarList.Error {...props} />}>
+        <Suspense fallback={<AvatarList.Loading />}>
+          <AvatarList />
+        </Suspense>
+      </QueryErrorBoundary>
+      <Slot />
+    </Box>
   );
 }
 
@@ -65,31 +81,6 @@ function FeedDetailPane() {
   }
 
   return <TodoDetailPane key={selectedTodoId} presentation="pane" />;
-}
-
-function FeedCompactDetailHandoff() {
-  const isFeedInFront = isFeedPathname(usePathname());
-  const windowSizeClass = useWindowSizeClass();
-  const [selectedTodoId] = useFeedSelectedTodo();
-  const [commentRoute] = useTodoCommentRoute();
-
-  useEffect(() => {
-    if (!isFeedInFront || windowSizeClass !== 'compact' || selectedTodoId === undefined) {
-      return;
-    }
-    router.setParams({
-      todoId: undefined,
-      comment: undefined,
-      intent: undefined,
-      returnTo: undefined,
-    });
-    router.push({
-      pathname: '/todo/[todoId]',
-      params: { todoId: selectedTodoId, ...serializeTodoCommentRoute(commentRoute) },
-    });
-  }, [isFeedInFront, windowSizeClass, selectedTodoId, commentRoute]);
-
-  return null;
 }
 
 const FeedLayoutParamsSchema = z.object({

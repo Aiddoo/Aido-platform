@@ -5,10 +5,10 @@ import { MemoPolicy } from '@src/features/memo/domains/memo.model';
 import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
@@ -26,7 +26,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useRef } from 'react';
 import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
@@ -52,16 +52,12 @@ export default function MemoScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  const windowSizeClass = useWindowSizeClass();
   const [selectedMemoId] = useSelectedMemo();
 
-  useEffect(() => {
-    if (windowSizeClass !== 'compact' || selectedMemoId === undefined) {
-      return;
-    }
+  useCompactDetailHandoff(selectedMemoId, (memoId) => {
     router.setParams({ id: undefined });
-    router.push({ pathname: '/memo/[id]', params: { id: selectedMemoId } });
-  }, [windowSizeClass, selectedMemoId]);
+    router.push({ pathname: '/memo/[id]', params: { id: memoId } });
+  });
 
   const memoListPane = (
     <Box className="flex-1">
