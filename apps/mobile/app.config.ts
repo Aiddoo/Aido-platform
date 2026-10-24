@@ -279,7 +279,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             forceStaticLinking: ['RNFBApp', 'RNFBAnalytics'],
           },
           android: {
-            edgeToEdgeEnabled: true,
             // WorkManager restores mergers by reflection, including work saved before an update.
             extraProguardRules:
               '-keep class * extends androidx.work.InputMerger { public <init>(); }',
