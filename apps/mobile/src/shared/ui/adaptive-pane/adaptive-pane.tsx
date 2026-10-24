@@ -1,6 +1,7 @@
+import { useIsBookPosture } from '@src/shared/hooks/use-is-book-posture';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import type { ReactNode } from 'react';
-import { I18nManager, type StyleProp, type ViewStyle } from 'react-native';
+import { I18nManager, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import {
   SafeAreaProvider,
   useSafeAreaFrame,
@@ -22,6 +23,8 @@ import { getPrimaryPaneWidth } from './get-primary-pane-width';
  */
 export function AdaptivePane({ primary, secondary, compactPane = 'primary' }: AdaptivePaneProps) {
   const windowSizeClass = useWindowSizeClass();
+  const isBookPosture = useIsBookPosture();
+  const { width: windowWidth } = useWindowDimensions();
   const isCompact = windowSizeClass === 'compact';
   const showsPrimary = !isCompact || compactPane === 'primary';
   const showsSecondary = !isCompact || compactPane === 'secondary';
@@ -32,7 +35,11 @@ export function AdaptivePane({ primary, secondary, compactPane = 'primary' }: Ad
         <Pane
           slot="primary"
           isSplit={!isCompact}
-          style={isCompact ? { flex: 1 } : { width: getPrimaryPaneWidth(windowSizeClass) }}
+          style={
+            isCompact
+              ? { flex: 1 }
+              : { width: getPrimaryPaneWidth({ windowSizeClass, isBookPosture, windowWidth }) }
+          }
         >
           {primary}
         </Pane>

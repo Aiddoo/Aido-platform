@@ -1,11 +1,20 @@
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
+import { match } from 'ts-pattern';
 
-/** Expo `ArrangementView` split 예시와 같은 목록 폭 범위(260~400). */
-const PRIMARY_PANE_WIDTH: Record<Exclude<WindowSizeClass, 'compact'>, number> = {
-  medium: 320,
-  expanded: 400,
-};
+interface PrimaryPaneWidthInput {
+  windowSizeClass: Exclude<WindowSizeClass, 'compact'>;
+  isBookPosture: boolean;
+  windowWidth: number;
+}
 
-export function getPrimaryPaneWidth(windowSizeClass: Exclude<WindowSizeClass, 'compact'>): number {
-  return PRIMARY_PANE_WIDTH[windowSizeClass];
+export function getPrimaryPaneWidth({
+  windowSizeClass,
+  isBookPosture,
+  windowWidth,
+}: PrimaryPaneWidthInput): number {
+  return match({ windowSizeClass, isBookPosture })
+    .with({ isBookPosture: true }, () => Math.round(windowWidth / 2))
+    .with({ windowSizeClass: 'medium' }, () => 320)
+    .with({ windowSizeClass: 'expanded' }, () => 400)
+    .exhaustive();
 }
