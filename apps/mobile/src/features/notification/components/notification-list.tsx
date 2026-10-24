@@ -7,16 +7,18 @@ import {
   Box,
   Button,
   HStack,
+  ListRow,
   NotiIcon,
   Result,
   Text,
+  TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Separator, Skeleton, Spinner } from 'heroui-native';
-import type { ComponentProps } from 'react';
+import { Separator, Spinner } from 'heroui-native';
+import { Fragment } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
@@ -54,7 +56,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
             </Box>
           ))
           .with({ type: 'item' }, ({ notification }) => (
-            <NotificationList.Item notification={notification} />
+            <NotificationItem notification={notification} />
           ))
           .exhaustive()
       }
@@ -104,16 +106,35 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
   );
 }
 
-NotificationList.Item = function Item(props: ComponentProps<typeof NotificationItem>) {
-  return <NotificationItem {...props} />;
-};
-
-NotificationList.Empty = function Empty() {
-  const { t } = useTranslation('notification');
+NotificationList.Loading = function Loading() {
   return (
-    <VStack flex={1} p={24}>
-      <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />
-    </VStack>
+    <ScrollView className="flex-1">
+      <Box px={16} py={8}>
+        <TextSkeleton size="b3" className="w-32" />
+      </Box>
+      {times(5, (index) => (
+        <Fragment key={index}>
+          {index > 0 && <Separator className="mx-4" />}
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="large"
+            contents={
+              <VStack gap={3}>
+                <HStack justify="between" align="center">
+                  <TextSkeleton size="b4" className="w-10" />
+                  <TextSkeleton size="b4" className="w-12" />
+                </HStack>
+                <ListRow.Texts.Loading
+                  type="2RowTypeA"
+                  topProps={{ className: 'w-3/4' }}
+                  bottomProps={{ size: 'b3', className: 'w-full' }}
+                />
+              </VStack>
+            }
+          />
+        </Fragment>
+      ))}
+    </ScrollView>
   );
 };
 
@@ -129,26 +150,11 @@ NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
   );
 };
 
-NotificationList.Loading = function Loading() {
+NotificationList.Empty = function Empty() {
+  const { t } = useTranslation('notification');
   return (
-    <ScrollView className="flex-1">
-      <Box px={16} py={8}>
-        <Skeleton className="w-32 h-5" />
-      </Box>
-      <VStack>
-        {times(5, (index) => (
-          <Box key={index} px={16} py={16}>
-            <VStack gap={4}>
-              <HStack justify="between">
-                <Skeleton className="w-10 h-4" />
-                <Skeleton className="w-12 h-4" />
-              </HStack>
-              <Skeleton className="w-3/4 h-5" />
-              <Skeleton className="w-full h-4" />
-            </VStack>
-          </Box>
-        ))}
-      </VStack>
-    </ScrollView>
+    <VStack flex={1} p={24}>
+      <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />
+    </VStack>
   );
 };

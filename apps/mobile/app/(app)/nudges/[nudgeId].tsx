@@ -1,5 +1,8 @@
 import type { NudgeReplyKind } from '@aido/api';
-import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import {
+  NudgeThanksButton,
+  useNudgeThanksSheet,
+} from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
 import {
   nudgeScreenParamsSchema,
@@ -26,6 +29,7 @@ import {
   ScreenTitleBar,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -50,6 +54,7 @@ function NudgeDetailScreen() {
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
   const status = NudgeInteractionPolicy.getStatus(nudge);
   const reply = (replyKind: NudgeReplyKind) => mutation.mutate({ nudgeId, input: { replyKind } });
+  const openThanksSheet = useNudgeThanksSheet();
   const openTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
   );
@@ -166,18 +171,20 @@ function NudgeDetailScreen() {
                   {t('interaction.completedThanksHint')}
                 </Text>
               )}
-              <NudgeThanksButton
-                todoId={nudge.todoId}
-                className={status === 'THANKED' ? 'hidden' : undefined}
-              />
+              {status !== 'THANKED' && (
+                <NudgeThanksButton todoId={nudge.todoId} openSheet={openThanksSheet} />
+              )}
             </VStack>
           ))
           .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
           .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
             <Text size="b3" shade={6}>
-              {nudge.replyKind !== null
-                ? t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) })
-                : t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.waiting')}
+              {match(nudge)
+                .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
+                  t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+                )
+                .with({ isTodoCompleted: true }, () => t('interaction.completed'))
+                .otherwise(() => t('interaction.waiting'))}
             </Text>
           ))
           .exhaustive()}
@@ -256,17 +263,19 @@ NudgeDetailScreen.Error = function ErrorState({ error, reset }: QueryErrorFallba
 
 NudgeDetailScreen.Loading = function Loading() {
   return (
-    <VStack p={24} gap={24}>
-      <HStack gap={12} align="center">
-        <Skeleton className="size-12 rounded-full" />
-        <Skeleton className="w-40 h-5 rounded" />
-      </HStack>
-      <Skeleton className="w-3/4 h-8 rounded" />
-      <Skeleton className="w-full h-20 rounded-2xl" />
-      <Skeleton className="w-full h-12 rounded-2xl" />
-      <Skeleton className="w-full h-12 rounded-2xl" />
-      <Skeleton className="w-full h-12 rounded-2xl" />
-    </VStack>
+    <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+      <VStack gap={24}>
+        <HStack gap={12} align="center">
+          <Skeleton className="size-12 rounded-full" />
+          <VStack flex={1} gap={4}>
+            <TextSkeleton size="b3" className="w-40" />
+            <TextSkeleton size="e1" className="w-16" />
+          </VStack>
+        </HStack>
+        <TextSkeleton size="t3" className="w-3/4" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </VStack>
+    </ScrollView>
   );
 };
 

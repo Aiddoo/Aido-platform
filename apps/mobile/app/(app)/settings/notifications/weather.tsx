@@ -1,5 +1,8 @@
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
+import {
+  TimeRowSkeleton,
+  ToggleSkeleton,
+} from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
   SettingsTimeInput,
@@ -64,7 +67,17 @@ function WeatherSettingsScreen() {
 }
 
 WeatherSettingsScreen.Loading = function Loading() {
-  return <GroupSkeleton rows={3} />;
+  return (
+    <VStack gap={24}>
+      <SettingsCard>
+        <ToggleSkeleton hasDescription />
+        <Separator className="bg-gray-2" />
+        <TimeRowSkeleton />
+        <Separator className="bg-gray-2" />
+        <TimeRowSkeleton />
+      </SettingsCard>
+    </VStack>
+  );
 };
 
 const WEATHER_TIME = {

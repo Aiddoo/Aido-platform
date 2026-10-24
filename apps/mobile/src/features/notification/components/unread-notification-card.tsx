@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { BellIcon, HStack, Text, TextButton } from '@src/shared/ui';
+import { BellIcon, HStack, Text, TextButton, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { Card, SkeletonGroup } from 'heroui-native';
+import { Card, Skeleton } from 'heroui-native';
 
 import { useGetUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
 import { useMarkAllAsReadMutationOptions } from '../queries/use-mark-all-as-read-mutation-options';
@@ -46,15 +46,13 @@ export function UnreadNotificationCard() {
 UnreadNotificationCard.Loading = function Loading() {
   return (
     <Card className="mx-4 my-2">
-      <SkeletonGroup isLoading isSkeletonOnly>
-        <HStack align="center" justify="between">
-          <HStack align="center" gap={8}>
-            <SkeletonGroup.Item className="w-[18px] h-[18px] rounded" />
-            <SkeletonGroup.Item className="w-36 h-5 rounded" />
-          </HStack>
-          <SkeletonGroup.Item className="w-14 h-4 rounded" />
+      <HStack align="center" justify="between">
+        <HStack align="center" gap={8}>
+          <Skeleton className="size-[18px] rounded" />
+          <TextSkeleton size="b3" className="w-36" />
         </HStack>
-      </SkeletonGroup>
+        <TextSkeleton size="b4" className="w-14" />
+      </HStack>
     </Card>
   );
 };

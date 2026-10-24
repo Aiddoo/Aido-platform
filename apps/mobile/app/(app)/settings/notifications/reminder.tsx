@@ -1,5 +1,5 @@
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
+import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
   SettingsTimeInput,
@@ -37,7 +37,7 @@ export default function ReminderSettingsScreen() {
         <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={20} />
           <QueryErrorBoundary>
-            <Suspense fallback={<GroupSkeleton rows={2} />}>
+            <Suspense fallback={<ReminderSettingsLoading />}>
               <VStack gap={24}>
                 <SettingsCard>
                   <ReminderTimeInput
@@ -58,6 +58,18 @@ export default function ReminderSettingsScreen() {
         </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
+  );
+}
+
+function ReminderSettingsLoading() {
+  return (
+    <VStack gap={24}>
+      <SettingsCard>
+        <TimeRowSkeleton />
+        <Separator className="bg-gray-2" />
+        <TimeRowSkeleton />
+      </SettingsCard>
+    </VStack>
   );
 }
 

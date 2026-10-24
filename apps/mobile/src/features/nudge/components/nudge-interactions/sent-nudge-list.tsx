@@ -13,6 +13,7 @@ import {
   PawIcon,
   Result,
   Text,
+  TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
@@ -21,6 +22,7 @@ import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Separator, Skeleton, Spinner } from 'heroui-native';
+import { Fragment } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
@@ -180,17 +182,27 @@ SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackPr
 
 SentNudgeList.Loading = function Loading() {
   return (
-    <VStack p={24} gap={24} flex={1}>
+    <ScrollView className="flex-1">
       {times(4, (index) => (
-        <HStack key={index} gap={12}>
-          <Skeleton className="size-11 rounded-full" />
-          <VStack flex={1} gap={8}>
-            <Skeleton className="w-24 h-4 rounded" />
-            <Skeleton className="w-full h-5 rounded" />
-            <Skeleton className="w-1/2 h-3 rounded" />
-          </VStack>
-        </HStack>
+        <Fragment key={index}>
+          {index > 0 && <Separator className="mx-4" />}
+          <ListRow
+            horizontalPadding="medium"
+            verticalPadding="large"
+            left={<Skeleton className="size-11 rounded-full" />}
+            contents={
+              <VStack gap={6}>
+                <HStack justify="between" align="center">
+                  <TextSkeleton size="b4" className="w-20" />
+                  <TextSkeleton size="e1" className="w-12" />
+                </HStack>
+                <TextSkeleton size="b3" className="w-full" />
+                <TextSkeleton size="e1" className="w-16" />
+              </VStack>
+            }
+          />
+        </Fragment>
       ))}
-    </VStack>
+    </ScrollView>
   );
 };

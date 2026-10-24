@@ -99,14 +99,14 @@ PushSettingsScreen.Loading = function Loading() {
   return (
     <VStack gap={24}>
       <SettingsCard>
-        <ToggleSkeleton />
+        <ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />
-        <ToggleSkeleton />
+        <ToggleSkeleton hasDescription />
       </SettingsCard>
       <SettingsCard>
-        <ToggleSkeleton />
+        <ToggleSkeleton hasDescription />
         <Separator className="bg-gray-2" />
-        <ToggleSkeleton />
+        <ToggleSkeleton hasDescription />
       </SettingsCard>
     </VStack>
   );

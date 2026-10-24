@@ -12,6 +12,7 @@ import {
   QueryErrorBoundary,
   Result,
   Text,
+  TextSkeleton,
   VStack,
   useOverlay,
   type QueryErrorFallbackProps,
@@ -30,11 +31,31 @@ import { useGetNudgeInteractionAvailabilityQueryOptions } from '../../queries/ge
 import { useGetNudgeThanksPreviewInfiniteQueryOptions } from '../../queries/get-nudge-thanks-preview-infinite-query-options';
 import { useSendNudgeThanksMutationOptions } from '../../queries/use-send-nudge-thanks-mutation-options';
 
-type NudgeThanksButtonProps = Omit<ComponentProps<typeof Button>, 'children'> & { todoId: number };
-
-export function NudgeThanksButton({ todoId, onPress, ...props }: NudgeThanksButtonProps) {
-  const { t } = useTranslation('todo');
+/** 감사 시트를 연다. 시트는 이 훅을 호출한 컴포넌트가 마운트된 동안 유지된다. */
+export function useNudgeThanksSheet() {
   const overlay = useOverlay();
+  return (todoId: number) =>
+    overlay
+      .open(({ isOpen, close, exit }) => (
+        <NudgeThanksButton.Sheet todoId={todoId} isOpen={isOpen} onClose={close} onExit={exit} />
+      ))
+      .catch(() => undefined);
+}
+
+interface NudgeThanksButtonProps extends Omit<ComponentProps<typeof Button>, 'children'> {
+  todoId: number;
+  /** 버튼이 사라져도 시트를 유지해야 할 때 상위에서 연 `useNudgeThanksSheet`를 넘긴다. */
+  openSheet?: (todoId: number) => Promise<void>;
+}
+
+export function NudgeThanksButton({
+  todoId,
+  onPress,
+  openSheet,
+  ...props
+}: NudgeThanksButtonProps) {
+  const { t } = useTranslation('todo');
+  const openOwnSheet = useNudgeThanksSheet();
   const availability = useQuery(useGetNudgeInteractionAvailabilityQueryOptions());
   if (!availability.data) {
     return null;
@@ -47,16 +68,7 @@ export function NudgeThanksButton({ todoId, onPress, ...props }: NudgeThanksButt
       color={props.color ?? 'primary'}
       onPress={(event) => {
         onPress?.(event);
-        overlay
-          .open(({ isOpen, close, exit }) => (
-            <NudgeThanksButton.Sheet
-              todoId={todoId}
-              isOpen={isOpen}
-              onClose={close}
-              onExit={exit}
-            />
-          ))
-          .catch(() => undefined);
+        return (openSheet ?? openOwnSheet)(todoId);
       }}
     >
       <HStack align="center" justify="center" gap={8}>
@@ -243,10 +255,16 @@ NudgeThanksButton.Error = function ErrorState({
 
 NudgeThanksButton.Loading = function Loading() {
   return (
-    <VStack gap={16} py={16}>
-      <Skeleton className="w-full h-5 rounded" />
-      <Skeleton className="w-1/2 h-10 rounded" />
-      <Skeleton className="w-full h-12 rounded" />
+    <VStack gap={20}>
+      <TextSkeleton size="b3" className="w-full" />
+      <Box style={{ height: 72 }}>
+        <HStack align="center" gap={12} py={12}>
+          <Skeleton className="size-10 rounded-full" />
+          <TextSkeleton size="b3" className="w-24" />
+        </HStack>
+      </Box>
+      <TextSkeleton size="e1" className="w-3/4" />
+      <Skeleton className="h-14 w-full rounded-xl" />
     </VStack>
   );
 };

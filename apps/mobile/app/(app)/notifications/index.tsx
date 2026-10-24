@@ -1,7 +1,10 @@
-import { NOTIFICATION_CATEGORY, getNotificationsQuerySchema } from '@aido/api';
+import {
+  NOTIFICATION_CATEGORY,
+  type NotificationCategory,
+  getNotificationsQuerySchema,
+} from '@aido/api';
 import { NotificationList } from '@src/features/notification/components/notification-list';
 import { UnreadNotificationCard } from '@src/features/notification/components/unread-notification-card';
-import { CATEGORY_TABS } from '@src/features/notification/constants/notification-category-tabs';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -35,20 +38,10 @@ export default function NotificationsScreen() {
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
-          {CATEGORY_TABS.map((tab) => (
-            <Tabs.Trigger key={tab.value} value={tab.value} className="py-3">
-              {({ isSelected }) => (
-                <Tabs.Label>
-                  <Text
-                    size="b3"
-                    className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}
-                  >
-                    {t(tab.labelKey)}
-                  </Text>
-                </Tabs.Label>
-              )}
-            </Tabs.Trigger>
-          ))}
+          <CategoryTab value={NOTIFICATION_CATEGORY.ALL}>{t('categories.all')}</CategoryTab>
+          <CategoryTab value={NOTIFICATION_CATEGORY.NOTICE}>{t('categories.notice')}</CategoryTab>
+          <CategoryTab value={NOTIFICATION_CATEGORY.TODO}>{t('categories.todo')}</CategoryTab>
+          <CategoryTab value={NOTIFICATION_CATEGORY.SOCIAL}>{t('categories.social')}</CategoryTab>
         </Tabs.List>
 
         <QueryErrorBoundary>
@@ -66,5 +59,19 @@ export default function NotificationsScreen() {
         </Tabs.Content>
       </Tabs>
     </StyledSafeAreaView>
+  );
+}
+
+function CategoryTab({ value, children }: { value: NotificationCategory; children: string }) {
+  return (
+    <Tabs.Trigger value={value} className="py-3">
+      {({ isSelected }) => (
+        <Tabs.Label>
+          <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+            {children}
+          </Text>
+        </Tabs.Label>
+      )}
+    </Tabs.Trigger>
   );
 }
