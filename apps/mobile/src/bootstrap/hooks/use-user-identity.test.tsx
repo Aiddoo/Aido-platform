@@ -39,7 +39,7 @@ describe('useUserIdentity', () => {
 
   beforeEach(() => {
     draftService = new DraftService(createDraftRepository(createMemorySyncStorage()));
-    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     const httpClient = createMockHttpClient();
     httpClient.get.mockResolvedValue(ok(createCurrentUserDto()));
     const container = createMockDIContainer({
