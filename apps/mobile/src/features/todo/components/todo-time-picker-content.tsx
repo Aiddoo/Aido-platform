@@ -2,7 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
+import { Box, Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
 import {
   formatTimeDisplay,
   getDateWithTime,
@@ -12,7 +12,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Switch } from 'heroui-native';
 import { useState } from 'react';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 
 import { DEFAULT_TODO_TIME } from '../constants/todo-default-time';
 import { PickerHeader } from './picker-header';
@@ -124,7 +124,7 @@ export function TodoTimePickerContent({
           isDisabled={localIsAllDay}
         />
         {!localIsAllDay && isIOS && (
-          <View className="items-center">
+          <Box className="items-center">
             <DateTimePicker
               value={getDateWithTime(draftDate, localTime, DEFAULT_TODO_TIME)}
               mode="time"
@@ -137,7 +137,7 @@ export function TodoTimePickerContent({
               }}
               style={{ height: 216 }}
             />
-          </View>
+          </Box>
         )}
       </VStack>
 

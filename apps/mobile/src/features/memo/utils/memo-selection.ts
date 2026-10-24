@@ -11,11 +11,11 @@ export function resolveMemoSelection(
   memoId: number | undefined,
 ): MemoSelectionNavigation {
   if (windowSizeClass === 'compact') {
-    return memoId === undefined ? { type: 'none' } : { type: 'push', memoId };
+    return memoId == null ? { type: 'none' } : { type: 'push', memoId };
   }
 
   return {
     type: 'setParams',
-    params: { memoId: memoId === undefined ? undefined : String(memoId) },
+    params: { memoId: memoId == null ? undefined : String(memoId) },
   };
 }

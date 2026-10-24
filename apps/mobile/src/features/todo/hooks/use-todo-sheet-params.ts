@@ -27,7 +27,7 @@ export const todoCategoryScreenParamsSchema = z.object({
 });
 
 function toSheetDateKey(date: SheetDateParam, todayKey: string): string {
-  return date === undefined || date === 'today' ? todayKey : date;
+  return date == null || date === 'today' ? todayKey : date;
 }
 
 /** 시트가 할 일을 읽어 올 목록 날짜(YYYY-MM-DD). 없거나 잘못되면 오늘이다. */

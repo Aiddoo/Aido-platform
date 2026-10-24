@@ -558,7 +558,7 @@ CommentFormFields.Field = function Field({
   appendAction,
   submitAction,
 }: CommentFormFieldRowProps) {
-  const shouldShowSubmissionActions = appendAction !== undefined || submitAction !== undefined;
+  const shouldShowSubmissionActions = appendAction != null || submitAction != null;
 
   return (
     <Box className="relative min-w-0">
@@ -582,7 +582,7 @@ CommentFormFields.Field = function Field({
             <Box flex={1} className="min-w-0">
               {input}
             </Box>
-            {removeAction !== undefined && <Box className="shrink-0">{removeAction}</Box>}
+            {removeAction != null && <Box className="shrink-0">{removeAction}</Box>}
           </HStack>
 
           {shouldShowSubmissionActions && (
@@ -596,7 +596,7 @@ CommentFormFields.Field = function Field({
               <Box flex={1} className="min-w-0">
                 {appendAction}
               </Box>
-              {submitAction !== undefined && <Box className="shrink-0">{submitAction}</Box>}
+              {submitAction != null && <Box className="shrink-0">{submitAction}</Box>}
             </HStack>
           )}
         </VStack>

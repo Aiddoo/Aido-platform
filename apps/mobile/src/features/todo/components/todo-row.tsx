@@ -95,7 +95,7 @@ export function TodoCheckbox({
       className={cn('size-5 rounded-md border border-main shadow-none', className)}
       isSelected={isSelected}
       onSelectedChange={onSelectedChange}
-      isDisabled={isDisabled || onSelectedChange === undefined}
+      isDisabled={isDisabled || onSelectedChange == null}
     />
   );
 }

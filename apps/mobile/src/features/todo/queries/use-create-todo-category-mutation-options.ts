@@ -62,7 +62,7 @@ export const useCreateTodoCategoryMutationOptions = () => {
     onError: (error, _variables, context) => {
       notifyError();
 
-      if (context?.previousData !== undefined) {
+      if (context?.previousData != null) {
         queryClient.setQueryData(TODO_CATEGORY_QUERY_KEYS.list(), context.previousData);
       }
 

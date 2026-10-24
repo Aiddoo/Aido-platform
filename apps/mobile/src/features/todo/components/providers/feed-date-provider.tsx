@@ -17,7 +17,7 @@ const FeedDateContext = createContext<FeedDateContextValue | null>(null);
 
 export function FeedDateProvider({ children, date, onDateChange }: FeedDateProviderProps) {
   const { currentLocalDateKey, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
-  const selectedDateKey = date === undefined || date === 'today' ? currentLocalDateKey : date;
+  const selectedDateKey = date == null || date === 'today' ? currentLocalDateKey : date;
   const selectedDate = useMemo(
     () => toDate(selectedDateKey),
     [selectedDateKey, currentTimeZone, currentUtcOffsetMinutes],
@@ -39,7 +39,7 @@ export function FeedDateProvider({ children, date, onDateChange }: FeedDateProvi
 
 export function useFeedDateContext(): FeedDateContextValue {
   const context = useContext(FeedDateContext);
-  if (context === null) {
+  if (context == null) {
     throw new Error('useFeedDate must be used within FeedDateProvider');
   }
   return context;
