@@ -162,7 +162,7 @@ export function TodoCommentForm({
                     />
                   }
                   removeAction={
-                    fieldLayout.showsRemoveAction && (
+                    fieldLayout.showsRemoveAction ? (
                       <TextButton
                         size="xsmall"
                         className={TEXT_ACTION_TOUCH_TARGET}
@@ -172,11 +172,10 @@ export function TodoCommentForm({
                       >
                         {t('form.remove')}
                       </TextButton>
-                    )
+                    ) : undefined
                   }
                   appendAction={
-                    fieldLayout.showsSubmissionActions &&
-                    showsAppendAction && (
+                    fieldLayout.showsSubmissionActions && showsAppendAction ? (
                       <AppendCommentButton
                         isSubmitting={isSubmitting}
                         onPress={() => {
@@ -185,16 +184,16 @@ export function TodoCommentForm({
                           focusFieldAfterLayout(nextFieldIndex);
                         }}
                       />
-                    )
+                    ) : undefined
                   }
                   submitAction={
-                    fieldLayout.showsSubmissionActions && (
+                    fieldLayout.showsSubmissionActions ? (
                       <CommentSubmitButton
                         isEditing={isEditing}
                         isSubmitting={isSubmitting}
                         onSubmit={handleFormSubmit}
                       />
-                    )
+                    ) : undefined
                   }
                 />
               );
