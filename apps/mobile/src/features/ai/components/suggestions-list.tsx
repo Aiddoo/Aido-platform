@@ -1,22 +1,27 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Button,
+  DashedDivider,
   H4,
   HStack,
+  Result,
+  ScallopedContainer,
   Spacing,
   Text,
   useOverlay,
   VStack,
-  DashedDivider,
+  type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { formatTimeDisplay, type TimeFormat } from '@src/shared/utils/time';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
-import { Spinner } from 'heroui-native';
+import { Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { Image, View } from 'react-native';
 
@@ -25,25 +30,18 @@ import {
   useGetSuggestionsQueryOptions,
 } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
-import { ScallopedContainer } from './scalloped-container';
 import { SuggestionCategoryBottomSheet } from './suggestion-category-bottom-sheet';
+
+const SUGGESTION_LOADING_COUNT = 2;
 
 export function SuggestionsList() {
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('ai');
-  const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
+  const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
   const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
 
-  if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
-    return <SuggestionsList.PremiumPreview />;
-  }
-
-  const suggestions = suggestionsQuery.data;
-  if (!suggestions) {
-    return <SuggestionsList.Loading />;
-  }
   if (suggestions.length === 0) {
     return <SuggestionsList.Empty />;
   }
@@ -89,8 +87,9 @@ export function SuggestionsList() {
             suggestion={suggestion}
             onAccepted={() => replace('/feed')}
             onDismiss={() => handleDismiss(suggestion.id)}
-            isPending={dismissSuggestionMutation.isPending && pendingSuggestionId === suggestion.id}
-            pendingAction={dismissSuggestionMutation.isPending ? 'dismiss' : null}
+            isDismissing={
+              dismissSuggestionMutation.isPending && pendingSuggestionId === suggestion.id
+            }
             isLast={index === suggestions.length - 1}
           />
         ))}
@@ -99,29 +98,20 @@ export function SuggestionsList() {
   );
 }
 
-SuggestionsList.Loading = function Loading() {
-  return (
-    <VStack className="flex-1" align="center" justify="center">
-      <Spinner size="lg" />
-    </VStack>
-  );
-};
-
-const formatSchedule = (suggestion: AiSuggestion, timeFormat: TimeFormat): string => {
+function formatSchedule(suggestion: AiSuggestion, timeFormat: TimeFormat): string {
   const days = formatDaysOfWeek(suggestion.daysOfWeek);
   const time =
     suggestion.scheduledTime === null
       ? tGlobal('ai:suggestions.list.allDay')
       : formatTimeDisplay(suggestion.scheduledTime, timeFormat);
   return `${days} · ${time}`;
-};
+}
 
 interface SuggestionItemProps {
   suggestion: AiSuggestion;
   onAccepted: () => void;
   onDismiss: () => void;
-  pendingAction?: 'accept' | 'dismiss' | null;
-  isPending?: boolean;
+  isDismissing?: boolean;
   isLast?: boolean;
 }
 
@@ -129,8 +119,7 @@ SuggestionsList.Item = function Item({
   suggestion,
   onAccepted,
   onDismiss,
-  pendingAction = null,
-  isPending = false,
+  isDismissing = false,
   isLast = false,
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
@@ -194,8 +183,8 @@ SuggestionsList.Item = function Item({
               color="dark"
               display="inline"
               onPress={onDismiss}
-              isDisabled={isPending}
-              isLoading={isPending && pendingAction === 'dismiss'}
+              isDisabled={isDismissing}
+              isLoading={isDismissing}
             >
               {t('suggestions.list.reject')}
             </Button>
@@ -203,8 +192,7 @@ SuggestionsList.Item = function Item({
               size="small"
               display="inline"
               onPress={openCategorySheet}
-              isDisabled={isPending}
-              isLoading={isPending && pendingAction === 'accept'}
+              isDisabled={isDismissing}
             >
               {t('suggestions.list.accept')}
             </Button>
@@ -305,6 +293,65 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
         <Button size="medium" onPress={() => push('/settings/subscription')}>
           {t('suggestions.paywall.subscribeCta')}
         </Button>
+      </View>
+    </ScallopedContainer>
+  );
+};
+
+SuggestionsList.Loading = function Loading() {
+  const fontScaledSize = useFontScaledSize();
+
+  return (
+    <ScallopedContainer>
+      <View className="items-center px-5 pt-4">
+        <Image
+          source={require('@assets/images/ido_cat_suggestion.webp')}
+          style={{ width: 100, height: 100 }}
+          resizeMode="contain"
+        />
+        <Spacing size={8} />
+        <Skeleton className="w-48 rounded" style={{ height: fontScaledSize(28) }} />
+        <Spacing size={4} />
+        <Skeleton className="w-56 rounded" style={{ height: fontScaledSize(19) }} />
+      </View>
+
+      <Spacing size={20} />
+
+      <View className="px-4 pb-4">
+        {times(SUGGESTION_LOADING_COUNT, (index) => (
+          <View key={index} className="py-2">
+            <VStack gap={8}>
+              <VStack gap={4}>
+                <HStack justify="between" align="center">
+                  <Skeleton className="w-32 rounded" style={{ height: fontScaledSize(23) }} />
+                  <Skeleton className="w-16 rounded" style={{ height: fontScaledSize(17) }} />
+                </HStack>
+                <Skeleton className="w-40 rounded" style={{ height: fontScaledSize(19) }} />
+              </VStack>
+              <Skeleton className="w-full rounded" style={{ height: fontScaledSize(19) }} />
+            </VStack>
+            {index < SUGGESTION_LOADING_COUNT - 1 && <DashedDivider className="mt-5" />}
+          </View>
+        ))}
+      </View>
+    </ScallopedContainer>
+  );
+};
+
+SuggestionsList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+
+  if (isSuggestionsPremiumRequiredError(error)) {
+    return <SuggestionsList.PremiumPreview />;
+  }
+
+  return (
+    <ScallopedContainer>
+      <View className="px-5 py-6">
+        <Result
+          title={t('errorBoundary.title')}
+          button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
+        />
       </View>
     </ScallopedContainer>
   );

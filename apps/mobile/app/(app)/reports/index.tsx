@@ -1,8 +1,9 @@
 import { reportTypeSchema } from '@aido/api';
 import { ReportCard } from '@src/features/ai/components/report-card';
 import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
-import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
-import { getSampleReport } from '@src/features/ai/constants/sample-reports';
+import { REPORT_TYPE_LABEL_KEYS } from '@src/features/ai/constants/report-type';
+import { getSampleReport, SAMPLE_REPORT_IDS } from '@src/features/ai/constants/sample-reports';
+import type { ReportType } from '@src/features/ai/domains/ai.model';
 import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
 import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
@@ -19,6 +20,7 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  ScallopedContainer,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,19 +28,6 @@ import { Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
 import { Image, RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
-import type { z } from 'zod';
-
-type ReportType = z.infer<typeof reportTypeSchema>;
-
-const REPORT_TYPE_LABEL_KEYS = {
-  WEEKLY: 'report.typeWeekly',
-  MONTHLY: 'report.typeMonthly',
-} as const satisfies Record<ReportType, string>;
-
-const SAMPLE_REPORT_IDS = {
-  WEEKLY: 'sample-weekly',
-  MONTHLY: 'sample-monthly',
-} as const satisfies Record<ReportType, string>;
 
 function useReportType() {
   const { type } = useLocalSearchParams();

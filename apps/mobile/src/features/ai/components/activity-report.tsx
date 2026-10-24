@@ -1,17 +1,18 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Spacing, Text, VStack, DashedDivider } from '@src/shared/ui';
+import { DashedDivider, HStack, ScallopedContainer, Spacing, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { getDateFormatContext, getDayOfWeekLabel } from '@src/shared/utils/date';
 import { formatDateKeyRange, formatHourLabel } from '@src/shared/utils/date-format';
 import { formatPercent } from '@src/shared/utils/format';
 import type { TimeFormat } from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { orderBy } from 'es-toolkit';
 import { Chip, Separator, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
+import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
 import type { AiReport } from '../domains/ai.model';
-import { ScallopedContainer } from './scalloped-container';
 
 interface ActivityReportProps {
   report: AiReport;
@@ -82,12 +83,10 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
       <Chip
         size="sm"
         variant="soft"
-        color={report.type === 'WEEKLY' ? 'accent' : 'success'}
+        color={REPORT_TYPE_CHIP_COLORS[report.type]}
         className="self-center"
       >
-        <Chip.Label>
-          {report.type === 'WEEKLY' ? t('report.typeWeekly') : t('report.typeMonthly')}
-        </Chip.Label>
+        <Chip.Label>{t(REPORT_TYPE_LABEL_KEYS[report.type])}</Chip.Label>
       </Chip>
 
       <Text size="b2" weight="semibold" shade={9}>
@@ -230,8 +229,7 @@ function TimePatternSummary({
   timeFormat: TimeFormat;
 }) {
   const { t } = useTranslation('ai');
-  const sorted = [...items].sort((a, b) => b.count - a.count);
-  const top3 = sorted.slice(0, 3);
+  const top3 = orderBy(items, ['count'], ['desc']).slice(0, 3);
 
   return (
     <VStack gap={16}>

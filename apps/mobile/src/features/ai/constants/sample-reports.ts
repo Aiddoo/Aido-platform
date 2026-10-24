@@ -1,6 +1,11 @@
 import { t } from '@src/shared/i18n';
 
-import type { AiReport } from '../domains/ai.model';
+import type { AiReport, ReportType } from '../domains/ai.model';
+
+export const SAMPLE_REPORT_IDS = {
+  WEEKLY: 'sample-weekly',
+  MONTHLY: 'sample-monthly',
+} as const satisfies Record<ReportType, string>;
 
 // 샘플 리포트는 표시 시점 언어를 따라야 하므로 상수가 아닌 빌더 함수로 구성한다
 // (모듈 로드 시점 t() 평가 금지 규칙)
@@ -164,8 +169,8 @@ const buildMonthlySampleReport = (): AiReport => ({
 
 /** 샘플 route param → 빌더 매핑 (표시 시점 언어 반영) */
 const SAMPLE_REPORT_BUILDERS: Record<string, () => AiReport> = {
-  'sample-weekly': buildWeeklySampleReport,
-  'sample-monthly': buildMonthlySampleReport,
+  [SAMPLE_REPORT_IDS.WEEKLY]: buildWeeklySampleReport,
+  [SAMPLE_REPORT_IDS.MONTHLY]: buildMonthlySampleReport,
 };
 
 /** route param이 샘플 리포트 ID인지 판별 */

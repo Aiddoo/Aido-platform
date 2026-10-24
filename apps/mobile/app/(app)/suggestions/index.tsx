@@ -1,22 +1,18 @@
 import { SuggestionsList } from '@src/features/ai/components/suggestions-list';
-import { AI_QUERY_KEYS } from '@src/features/ai/constants/ai-query-keys';
+import { invalidateAiSuggestions } from '@src/features/ai/queries/ai-cache';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { QueryErrorBoundary, Spacing, StyledSafeAreaView } from '@src/shared/ui';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { Suspense, useCallback } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { Suspense } from 'react';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { match } from 'ts-pattern';
 
 function SuggestionsScreen() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const queryClient = useQueryClient();
-  const invalidate = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.suggestions() }),
-    [queryClient],
-  );
-  const [isRefreshing, handleRefresh] = useRefresh(invalidate);
+  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateAiSuggestions(queryClient));
 
   const isPremiumUser = UserPolicy.isPremiumUser(user);
 
@@ -34,8 +30,10 @@ function SuggestionsScreen() {
         <Spacing size={16} />
         {match(isPremiumUser)
           .with(true, () => (
-            <QueryErrorBoundary>
-              <SuggestionsList />
+            <QueryErrorBoundary fallback={(props) => <SuggestionsList.Error {...props} />}>
+              <Suspense fallback={<SuggestionsList.Loading />}>
+                <SuggestionsList />
+              </Suspense>
             </QueryErrorBoundary>
           ))
           .with(false, () => <SuggestionsList.PremiumPreview />)
@@ -49,7 +47,13 @@ export default function SuggestionsRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
       <QueryErrorBoundary>
-        <Suspense fallback={<SuggestionsList.Loading />}>
+        <Suspense
+          fallback={
+            <View className="px-4 pt-4">
+              <SuggestionsList.Loading />
+            </View>
+          }
+        >
           <SuggestionsScreen />
         </Suspense>
       </QueryErrorBoundary>

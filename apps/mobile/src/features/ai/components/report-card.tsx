@@ -3,12 +3,16 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, DashedDivider } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { View } from 'react-native';
 
+import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
+import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
 import type { AiReport } from '../domains/ai.model';
+
+const LOADING_CARD_COUNT = 3;
 
 interface ReportCardProps {
   report: AiReport;
@@ -20,7 +24,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('ai');
-  const reportId = isSample ? `sample-${report.type.toLowerCase()}` : String(report.id);
+  const reportId = isSample ? SAMPLE_REPORT_IDS[report.type] : String(report.id);
 
   return (
     <PressableFeedback
@@ -37,14 +41,8 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
                   <Chip.Label>{t('report.sampleBadge')}</Chip.Label>
                 </Chip>
               )}
-              <Chip
-                size="sm"
-                variant="soft"
-                color={report.type === 'WEEKLY' ? 'accent' : 'success'}
-              >
-                <Chip.Label>
-                  {report.type === 'WEEKLY' ? t('report.typeWeekly') : t('report.typeMonthly')}
-                </Chip.Label>
+              <Chip size="sm" variant="soft" color={REPORT_TYPE_CHIP_COLORS[report.type]}>
+                <Chip.Label>{t(REPORT_TYPE_LABEL_KEYS[report.type])}</Chip.Label>
               </Chip>
             </HStack>
 
@@ -103,7 +101,7 @@ function StatItem({ label, value }: { label: string; value: string }) {
 ReportCard.Loading = function Loading() {
   return (
     <VStack>
-      {range(3).map((i) => (
+      {times(LOADING_CARD_COUNT, (i) => (
         <View key={i} className="py-3">
           <SkeletonGroup isLoading>
             <VStack gap={10}>
@@ -122,7 +120,7 @@ ReportCard.Loading = function Loading() {
               </View>
             </VStack>
           </SkeletonGroup>
-          {i < 2 && <DashedDivider className="mt-3" />}
+          {i < LOADING_CARD_COUNT - 1 && <DashedDivider className="mt-3" />}
         </View>
       ))}
     </VStack>

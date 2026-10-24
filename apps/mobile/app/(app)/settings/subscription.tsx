@@ -3,7 +3,6 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
-import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
 import { SubscriptionPlanCard } from '@src/features/subscription/components/subscription-plan-card';
 import {
   isActiveSubscription,
@@ -38,6 +37,7 @@ import {
   TextButton,
   VStack,
   DashedDivider,
+  ScallopedContainer,
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';

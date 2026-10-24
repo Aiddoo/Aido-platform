@@ -7,8 +7,6 @@ export const AI_QUERY_KEYS = {
   lists: () => [...AI_QUERY_KEYS.all, 'list'] as const,
   list: (params?: GetAiReportsParams) => [...AI_QUERY_KEYS.lists(), params ?? {}] as const,
   suggestions: () => [...AI_QUERY_KEYS.all, 'suggestions'] as const,
-  suggestion: ({ suggestionId }: { suggestionId: number }) =>
-    [...AI_QUERY_KEYS.suggestions(), { suggestionId }] as const,
   details: () => [...AI_QUERY_KEYS.all, 'detail'] as const,
   detail: ({ reportId }: { reportId: number }) =>
     [...AI_QUERY_KEYS.details(), { reportId }] as const,
