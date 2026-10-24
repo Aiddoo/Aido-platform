@@ -1,12 +1,14 @@
-import { verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { EmailVerificationCodeStep } from '@src/features/auth/components/email-verification-code-step';
 import { SignUpPasswordForm } from '@src/features/auth/components/sign-up-password-form';
 import { SignUpUserInfoForm } from '@src/features/auth/components/sign-up-user-info-form';
-import { SignUpVerificationForm } from '@src/features/auth/components/sign-up-verification-form';
 import { signUpFormSchema } from '@src/features/auth/domains/sign-up-form.schema';
+import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
 import { useStepper } from '@src/shared/hooks/use-stepper';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ReadableContent } from '@src/shared/ui';
+import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { FormProvider, useForm } from 'react-hook-form';
 import { View } from 'react-native';
@@ -40,15 +42,8 @@ function SignUpScreen() {
     mode: 'onTouched',
   });
 
-  const verificationForm = useForm({
-    resolver: zodResolver(verifyEmailSchema),
-    defaultValues: { email: '', code: '' },
-  });
-
-  const enterVerification = () => {
-    verificationForm.reset({ email: form.getValues('email'), code: '' });
-    setStep('verification');
-  };
+  const verify = useMutation(useVerifyEmailMutationOptions());
+  const resend = useMutation(useResendVerificationMutationOptions());
 
   return (
     <View className="flex-1 bg-background">
@@ -63,14 +58,19 @@ function SignUpScreen() {
           ))
           .with('password', () => (
             <FormProvider {...form}>
-              <SignUpPasswordForm onNextStep={enterVerification} />
+              <SignUpPasswordForm onNextStep={() => setStep('verification')} />
             </FormProvider>
           ))
-          .with('verification', () => (
-            <FormProvider {...verificationForm}>
-              <SignUpVerificationForm />
-            </FormProvider>
-          ))
+          .with('verification', () => {
+            const email = form.getValues('email');
+            return (
+              <EmailVerificationCodeStep
+                email={email}
+                onComplete={(code) => verify.mutateAsync({ email, code })}
+                onResend={() => resend.mutateAsync({ email })}
+              />
+            );
+          })
           .exhaustive()}
       </ReadableContent>
     </View>

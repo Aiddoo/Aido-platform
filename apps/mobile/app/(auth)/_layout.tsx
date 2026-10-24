@@ -51,7 +51,7 @@ const AuthLayout = () => {
       <Stack.Screen name="email-login" options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="forgot-password" options={{ headerShown: true, title: '' }} />
       <Stack.Screen name="sign-up" options={{ headerShown: true }} />
-      <Stack.Screen name="verify-email" />
+      <Stack.Screen name="verify-email" options={{ headerShown: true }} />
     </Stack>
   );
 };
