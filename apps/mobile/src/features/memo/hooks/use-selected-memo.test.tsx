@@ -20,9 +20,9 @@ describe('useSelectedMemo', () => {
     jest.clearAllMocks();
   });
 
-  it('URL의 id를 숫자로 읽는다', async () => {
+  it('URL의 memoId를 숫자로 읽는다', async () => {
     // Given
-    givenWindow(700, { id: '12' });
+    givenWindow(700, { memoId: '12' });
 
     // When
     const { result } = await renderHook(() => useSelectedMemo());
@@ -31,9 +31,9 @@ describe('useSelectedMemo', () => {
     expect(result.current[0]).toBe(12);
   });
 
-  it('잘못된 id는 선택 없음으로 본다', async () => {
+  it('잘못된 memoId는 선택 없음으로 본다', async () => {
     // Given
-    givenWindow(700, { id: 'abc' });
+    givenWindow(700, { memoId: 'abc' });
 
     // When
     const { result } = await renderHook(() => useSelectedMemo());
@@ -51,7 +51,10 @@ describe('useSelectedMemo', () => {
     result.current[1](5);
 
     // Then
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/memo/[id]', params: { id: 5 } });
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/memo/[memoId]',
+      params: { memoId: '5' },
+    });
     expect(router.setParams).not.toHaveBeenCalled();
   });
 
@@ -64,19 +67,19 @@ describe('useSelectedMemo', () => {
     result.current[1](5);
 
     // Then
-    expect(router.setParams).toHaveBeenCalledWith({ id: '5' });
+    expect(router.setParams).toHaveBeenCalledWith({ memoId: '5' });
     expect(router.push).not.toHaveBeenCalled();
   });
 
   it('medium 이상에서 undefined를 고르면 선택을 해제한다', async () => {
     // Given
-    givenWindow(900, { id: '5' });
+    givenWindow(900, { memoId: '5' });
     const { result } = await renderHook(() => useSelectedMemo());
 
     // When
     result.current[1](undefined);
 
     // Then
-    expect(router.setParams).toHaveBeenCalledWith({ id: undefined });
+    expect(router.setParams).toHaveBeenCalledWith({ memoId: undefined });
   });
 });

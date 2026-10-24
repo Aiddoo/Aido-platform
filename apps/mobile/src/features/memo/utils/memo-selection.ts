@@ -3,7 +3,7 @@ import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 export type MemoSelectionNavigation =
   | { type: 'none' }
   | { type: 'push'; memoId: number }
-  | { type: 'setParams'; params: { id: string | undefined } };
+  | { type: 'setParams'; params: { memoId: string | undefined } };
 
 /** 접힌 화면은 상세 라우트로 push하고, 펼친 화면은 메모 탭 URL param으로 pane을 바꾼다. */
 export function resolveMemoSelection(
@@ -14,5 +14,8 @@ export function resolveMemoSelection(
     return memoId === undefined ? { type: 'none' } : { type: 'push', memoId };
   }
 
-  return { type: 'setParams', params: { id: memoId === undefined ? undefined : String(memoId) } };
+  return {
+    type: 'setParams',
+    params: { memoId: memoId === undefined ? undefined : String(memoId) },
+  };
 }

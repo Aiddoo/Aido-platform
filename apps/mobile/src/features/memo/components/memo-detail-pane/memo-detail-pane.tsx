@@ -45,6 +45,7 @@ import { useDeleteMemoMutationOptions } from '../../queries/use-delete-memo-muta
 import { useToggleMemoPinMutationOptions } from '../../queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '../../queries/use-update-memo-mutation-options';
 import { createMemoDraftKey } from '../../utils/memo-draft';
+import { memoAiReviewHref } from '../../utils/navigation/memo-href';
 import { AiParseConfirmDialog } from '../ai-parse-confirm-dialog';
 import {
   MemoActionButton,
@@ -55,13 +56,13 @@ import {
 } from './memo-detail-actions';
 
 interface MemoDetailPaneProps {
-  /** `screen`은 `/memo/[id]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
+  /** `screen`은 `/memo/[memoId]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
   presentation: 'screen' | 'pane';
 }
 
 /** 메모 식별자는 route의 `id`를 읽는다. 상세 라우트는 pathname, 메모 탭 pane은 같은 이름의 search param이다. */
 export function MemoDetailPane({ presentation }: MemoDetailPaneProps) {
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
@@ -94,7 +95,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   const navigate = useSingleTap(router.navigate);
 
   const { t } = useTranslation(['memo', 'common']);
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
   const [_selectedMemoId, setSelectedMemoId] = useSelectedMemo();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
   const isPane = presentation === 'pane';
@@ -288,7 +289,7 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
 function AiParseAction() {
   const push = useSingleTap(router.push);
   const { t } = useTranslation('memo');
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
   const overlay = useOverlay();
   const queryClient = useQueryClient();
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
@@ -297,7 +298,7 @@ function AiParseAction() {
 
   const handlePress = () => {
     if (getParsedMemo(queryClient, { memoId })) {
-      push(`/memo/${memoId}/ai-review`);
+      push(memoAiReviewHref(memoId));
       return;
     }
 
@@ -346,7 +347,7 @@ function AiParseAction() {
 function ConvertToTodoAction({ onConverted }: { onConverted: () => void }) {
   const today = useToday();
   const { t } = useTranslation('memo');
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
   const overlay = useOverlay();
   const { data: memo } = useQuery(useGetMemoQueryOptions({ memoId }));
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());

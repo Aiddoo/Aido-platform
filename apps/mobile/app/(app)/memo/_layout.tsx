@@ -30,8 +30,8 @@ export default function MemoLayout() {
       }}
     >
       <Stack.Screen name="create" options={{ title: t('titles.create') }} />
-      <Stack.Screen name="[id]/index" options={{ title: '' }} />
-      <Stack.Screen name="[id]/ai-review" options={{ title: t('titles.aiReview') }} />
+      <Stack.Screen name="[memoId]/index" options={{ title: '' }} />
+      <Stack.Screen name="[memoId]/ai-review" options={{ title: t('titles.aiReview') }} />
     </Stack>
   );
 }

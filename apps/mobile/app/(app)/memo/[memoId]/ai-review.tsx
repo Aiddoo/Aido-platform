@@ -32,7 +32,7 @@ type TodoWithId = ParsedMemoTodo & { _key: string };
 function AiReviewScreen() {
   const { t } = useTranslation('memo');
   const goBack = useSingleTap(router.back);
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
   const queryClient = useQueryClient();
   const dismiss = useSingleTap(router.dismiss);
   const navigate = useSingleTap(router.navigate);

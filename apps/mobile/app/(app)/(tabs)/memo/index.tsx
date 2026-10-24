@@ -4,6 +4,7 @@ import { MemoPolicy } from '@src/features/memo/domains/memo.model';
 import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
 import { invalidateMemos } from '@src/features/memo/queries/memo-cache';
+import { memoDetailHref } from '@src/features/memo/utils/navigation/memo-href';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -53,8 +54,8 @@ export default function MemoScreen() {
   const [selectedMemoId] = useSelectedMemo();
 
   useCompactDetailHandoff(selectedMemoId, (memoId) => {
-    router.setParams({ id: undefined });
-    router.push({ pathname: '/memo/[id]', params: { id: memoId } });
+    router.setParams({ memoId: undefined });
+    router.push(memoDetailHref(memoId));
   });
 
   const memoListPane = (

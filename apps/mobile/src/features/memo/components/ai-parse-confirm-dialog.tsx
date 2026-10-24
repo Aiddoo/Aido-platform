@@ -4,6 +4,7 @@ import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
+import { memoAiReviewHref } from '@src/features/memo/utils/navigation/memo-href';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -79,7 +80,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
     const cached = getParsedMemo(queryClient, { memoId });
     if (cached) {
       close();
-      push(`/memo/${memoId}/ai-review`);
+      push(memoAiReviewHref(memoId));
       return;
     }
 
@@ -88,7 +89,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
       {
         onSuccess: () => {
           close();
-          push(`/memo/${memoId}/ai-review`);
+          push(memoAiReviewHref(memoId));
         },
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
