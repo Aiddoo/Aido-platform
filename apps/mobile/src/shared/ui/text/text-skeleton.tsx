@@ -10,15 +10,19 @@ import { textSizeClasses } from './text.variants';
 export interface TextSkeletonProps {
   size?: TextSize;
   className?: string;
+  color?: string;
 }
 
-export function TextSkeleton({ size = 'b3', className }: TextSkeletonProps) {
+export function TextSkeleton({ size = 'b3', className, color }: TextSkeletonProps) {
   const { resolveSize } = useFontScale();
   const { fontSize, lineHeight } = useResolveClassNames(textSizeClasses[resolveSize(size)]);
 
   return (
     <View className={cn('justify-center', className)} style={{ height: lineHeight }}>
-      <Skeleton className="rounded" style={{ height: fontSize }} />
+      <Skeleton
+        className="rounded"
+        style={color == null ? { height: fontSize } : { height: fontSize, backgroundColor: color }}
+      />
     </View>
   );
 }

@@ -3,7 +3,17 @@ import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/queries/use-reorder-todo-category-mutation-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  HStack,
+  ListRow,
+  MenuIcon,
+  Text,
+  TextSkeleton,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -183,19 +193,19 @@ export function CategoryList({ mode }: CategoryListProps) {
 
 CategoryList.Loading = function Loading() {
   return (
-    <VStack gap={8} className="bg-white rounded-2xl p-2">
-      {times(2, (i) => (
+    <VStack className="bg-white rounded-2xl p-2">
+      {times(2, (index) => (
         <ListRow
-          key={`category-loading-${i}`}
-          left={
-            <HStack align="center" gap={8}>
-              <Skeleton className="size-2 rounded-full" />
-              <Skeleton className="h-4 w-20 rounded" />
-            </HStack>
+          key={index}
+          left={<Skeleton className="size-2 rounded-full" />}
+          contents={<TextSkeleton size="b3" className="w-20" />}
+          right={
+            <Box className="h-9 justify-center">
+              <Skeleton className="h-8 w-12 rounded-xl" />
+            </Box>
           }
-          contents={null}
-          right={<Skeleton className="size-5 rounded" />}
           horizontalPadding="medium"
+          verticalPadding="medium"
         />
       ))}
     </VStack>

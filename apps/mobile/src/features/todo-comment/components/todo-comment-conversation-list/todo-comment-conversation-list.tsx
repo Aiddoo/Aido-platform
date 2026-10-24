@@ -758,26 +758,13 @@ function FocusedTodoCommentParentContext({ context }: FocusedTodoCommentParentCo
 
 function ConversationRowSkeleton() {
   return (
-    <HStack
-      px={ROW_HORIZONTAL_PADDING}
-      gap={MESSAGE_GAP}
-      align="start"
-      py={TODO_COMMENT_CONNECTION_GEOMETRY.rowVerticalPadding}
-    >
-      <Skeleton className="size-9 rounded-full" />
-      <VStack flex={1} gap={3}>
-        <HStack align="center" justify="between" gap={8}>
-          <Skeleton className="h-4 w-24 rounded" />
-          <Skeleton className="size-6 rounded-full" />
-        </HStack>
-        <Skeleton className="h-5 w-4/5 rounded" />
-        <HStack align="center" gap={12} className="min-h-11">
-          <Skeleton className="size-5 rounded-full" />
-          <Skeleton className="h-3.5 w-5 rounded" />
-          <Skeleton className="size-5 rounded-full" />
-          <Skeleton className="h-3.5 w-5 rounded" />
-        </HStack>
-      </VStack>
+    <HStack px={ROW_HORIZONTAL_PADDING} gap={MESSAGE_GAP} align="start">
+      <Box py={TODO_COMMENT_CONNECTION_GEOMETRY.rowVerticalPadding}>
+        <Skeleton className="size-9 rounded-full" />
+      </Box>
+      <Box flex={1} py={TODO_COMMENT_CONNECTION_GEOMETRY.rowVerticalPadding} className="min-w-0">
+        <TodoCommentMessage.Loading />
+      </Box>
     </HStack>
   );
 }

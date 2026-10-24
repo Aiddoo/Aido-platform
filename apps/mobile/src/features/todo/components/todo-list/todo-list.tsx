@@ -13,7 +13,6 @@ import {
   PlusIcon,
   Result,
   Text,
-  VStack,
   type QueryErrorFallbackProps,
   useOverlay,
   BottomSheet,
@@ -28,7 +27,7 @@ import { formatDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, Suspense, useMemo, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import {
@@ -71,6 +70,7 @@ export function TodoList() {
     queries: [
       useGetTodoCategoriesQueryOptions(),
       useGetTodosByDateQueryOptions({ date: formatDate(selectedDate) }),
+      useGetPreferenceQueryOptions(),
     ],
   });
   const categoryGroups = useMemo(
@@ -99,18 +99,14 @@ export function TodoList() {
 
 TodoList.Loading = function Loading() {
   return (
-    <VStack gap={12}>
-      {times(5, (i) => (
-        <HStack key={`todo-skeleton-${i}`} gap={12} align="center" className="py-3">
-          <Skeleton className="size-5 rounded" />
-
-          <VStack flex={1} gap={2}>
-            <Skeleton className="h-5 w-3/4 rounded" />
-            <Skeleton className="h-4 w-16 rounded" />
-          </VStack>
-        </HStack>
-      ))}
-    </VStack>
+    <Box gap={8}>
+      <CategoryHeaderPill.Loading />
+      <Box>
+        {times(5, (index) => (
+          <TodoRow.Loading key={index} />
+        ))}
+      </Box>
+    </Box>
   );
 };
 

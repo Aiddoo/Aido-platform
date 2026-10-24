@@ -141,8 +141,7 @@
   "calendar": {
     "week": "Week",
     "month": "Month",
-    "loadFailed": "Couldn’t update calendar markers",
-    "loading": "Loading completion markers"
+    "loadFailed": "Couldn’t update calendar markers"
   },
   "feed": {
     "me": "Me",

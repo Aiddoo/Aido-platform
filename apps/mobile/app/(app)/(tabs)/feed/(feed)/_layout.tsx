@@ -23,9 +23,14 @@ import {
   type QueryErrorFallbackProps,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  usePrefetchInfiniteQuery,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Slot, router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -89,6 +94,8 @@ function AvatarList() {
   const friendId = useFeedFriendIdParam();
   const [date] = useFeedDateParam();
   const selectedFriendId = friendId ?? null;
+  const friendsQueryOptions = useGetFriendsInfiniteQueryOptions();
+  usePrefetchInfiniteQuery(friendsQueryOptions);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const {
     data: friendsData,
@@ -96,7 +103,7 @@ function AvatarList() {
     hasNextPage,
     isFetching,
     isFetchNextPageError,
-  } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
+  } = useSuspenseInfiniteQuery(friendsQueryOptions);
 
   const friends = useMemo(
     () => friendsData.pages.flatMap((page) => page.items),
@@ -145,16 +152,16 @@ function AvatarList() {
 
 AvatarList.Loading = function Loading() {
   return (
-    <StyledSafeAreaView edges={['left', 'right']}>
-      <HStack px={16} gap={12}>
-        {times(3, (i) => (
-          <VStack key={i} align="center" gap={4}>
-            <Skeleton className="size-8 rounded-full" />
-            <Skeleton className="h-4 w-8 rounded" />
+    <Box px={16}>
+      <StyledSafeAreaView edges={['left', 'right']} className="flex-row items-start gap-3">
+        {times(3, (index) => (
+          <VStack key={index} align="center" gap={4}>
+            <Skeleton className="size-10 rounded-full" />
+            <TextSkeleton size="e1" className="w-8" />
           </VStack>
         ))}
-      </HStack>
-    </StyledSafeAreaView>
+      </StyledSafeAreaView>
+    </Box>
   );
 };
 

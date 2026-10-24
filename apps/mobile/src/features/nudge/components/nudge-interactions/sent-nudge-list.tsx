@@ -153,33 +153,6 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
   );
 };
 
-SentNudgeList.Empty = function Empty() {
-  const { t } = useTranslation('todo');
-  return (
-    <VStack flex={1} px={24} py={40}>
-      <Result
-        icon={<PawIcon width={64} height={64} colorClassName="text-main" />}
-        title={t('interaction.sentEmptyTitle')}
-        description={t('interaction.emptyDescription')}
-      />
-    </VStack>
-  );
-};
-
-SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['todo', 'common']);
-  const isDisabled = isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
-  return (
-    <VStack flex={1} px={24} py={32}>
-      <Result
-        title={t(isDisabled ? 'todo:interaction.disabledTitle' : 'todo:interaction.loadError')}
-        description={isDisabled ? t('todo:interaction.disabledDescription') : undefined}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
-      />
-    </VStack>
-  );
-};
-
 SentNudgeList.Loading = function Loading() {
   return (
     <ScrollView className="flex-1">
@@ -204,5 +177,32 @@ SentNudgeList.Loading = function Loading() {
         </Fragment>
       ))}
     </ScrollView>
+  );
+};
+
+SentNudgeList.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'common']);
+  const isDisabled = isApiError(error) && error.hasCode(ErrorCode.NUDGE_1105);
+  return (
+    <VStack flex={1} px={24} py={32}>
+      <Result
+        title={t(isDisabled ? 'todo:interaction.disabledTitle' : 'todo:interaction.loadError')}
+        description={isDisabled ? t('todo:interaction.disabledDescription') : undefined}
+        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+      />
+    </VStack>
+  );
+};
+
+SentNudgeList.Empty = function Empty() {
+  const { t } = useTranslation('todo');
+  return (
+    <VStack flex={1} px={24} py={40}>
+      <Result
+        icon={<PawIcon width={64} height={64} colorClassName="text-main" />}
+        title={t('interaction.sentEmptyTitle')}
+        description={t('interaction.emptyDescription')}
+      />
+    </VStack>
   );
 };

@@ -28,9 +28,8 @@ import {
 } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
-import { Skeleton } from 'heroui-native';
 import { useMemo, useState } from 'react';
 
 import { useFeedDate } from '../hooks/use-feed-date';
@@ -46,9 +45,12 @@ const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
 export function FriendTodoList() {
   const { friendId } = useFriendScreenParams();
   const [date] = useFeedDate();
-  const { data: todos } = useSuspenseQuery(
-    useGetFriendTodosQueryOptions({ friendUserId: friendId, date: formatDate(date) }),
-  );
+  const [{ data: todos }] = useSuspenseQueries({
+    queries: [
+      useGetFriendTodosQueryOptions({ friendUserId: friendId, date: formatDate(date) }),
+      useGetPreferenceQueryOptions(),
+    ],
+  });
   const categoryGroups = useMemo(() => toFriendCategoryGroups(todos), [todos]);
 
   if (categoryGroups.length === 0) {
@@ -71,21 +73,45 @@ export function FriendTodoList() {
   );
 }
 
-FriendTodoList.Loading = function Loading() {
-  return (
-    <VStack gap={12}>
-      {times(3, (i) => (
-        <HStack key={`friend-todo-skeleton-${i}`} gap={12} align="center" className="py-3">
-          <Skeleton className="size-5 rounded" />
-          <VStack flex={1} gap={2}>
-            <Skeleton className="h-5 w-3/4 rounded" />
-            <Skeleton className="h-4 w-16 rounded" />
-          </VStack>
-        </HStack>
-      ))}
-    </VStack>
+function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
+  const { t } = useTranslation('todo');
+  const overlay = useOverlay();
+  const { data: cooldownInfo } = useQuery(
+    useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
   );
-};
+  const canNudge = cooldownInfo?.canNudge ?? true;
+
+  const openRemindNudgeSheet = () => {
+    overlay.open(({ isOpen, close, exit }) => (
+      <RemindNudgeBottomSheet
+        receiver={friend}
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            close();
+            exit();
+          }
+        }}
+      />
+    ));
+  };
+
+  return (
+    <Result.Button
+      color="primary"
+      variant="weak"
+      onPress={openRemindNudgeSheet}
+      isDisabled={!canNudge}
+    >
+      <HStack gap={6} align="center">
+        <Text size="b4" weight="semibold" shade={canNudge ? undefined : 5}>
+          {canNudge ? t('friendTodo.nudge') : t('friendTodo.alreadyNudged')}
+        </Text>
+        <PawIcon width={16} height={16} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
+      </HStack>
+    </Result.Button>
+  );
+}
 
 FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const { t } = useTranslation('todo');
@@ -164,45 +190,28 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   );
 };
 
-function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
-  const { t } = useTranslation('todo');
-  const overlay = useOverlay();
-  const { data: cooldownInfo } = useQuery(
-    useGetRemindNudgeCooldownQueryOptions({ userId: friend.id }),
-  );
-  const canNudge = cooldownInfo?.canNudge ?? true;
-
-  const openRemindNudgeSheet = () => {
-    overlay.open(({ isOpen, close, exit }) => (
-      <RemindNudgeBottomSheet
-        receiver={friend}
-        isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-      />
-    ));
-  };
-
+FriendTodoList.Loading = function Loading() {
   return (
-    <Result.Button
-      color="primary"
-      variant="weak"
-      onPress={openRemindNudgeSheet}
-      isDisabled={!canNudge}
-    >
-      <HStack gap={6} align="center">
-        <Text size="b4" weight="semibold" shade={canNudge ? undefined : 5}>
-          {canNudge ? t('friendTodo.nudge') : t('friendTodo.alreadyNudged')}
-        </Text>
-        <PawIcon width={16} height={16} colorClassName={canNudge ? 'text-main' : 'text-gray-5'} />
-      </HStack>
-    </Result.Button>
+    <VStack gap={8}>
+      <CategoryHeaderPill.Loading />
+      <Box>
+        {times(3, (index) => (
+          <TodoRow.Loading key={index} />
+        ))}
+      </Box>
+    </VStack>
   );
-}
+};
+
+FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['todo', 'common']);
+  return (
+    <Result
+      title={t('todo:list.loadError')}
+      button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+    />
+  );
+};
 
 FriendTodoList.Empty = function Empty() {
   const { t } = useTranslation('todo');
@@ -216,16 +225,6 @@ FriendTodoList.Empty = function Empty() {
       title={t('friendTodo.emptyTitle')}
       description={isToday ? t('friendTodo.emptyDescription') : undefined}
       button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
-    />
-  );
-};
-
-FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['todo', 'common']);
-  return (
-    <Result
-      title={t('todo:list.loadError')}
-      button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
     />
   );
 };

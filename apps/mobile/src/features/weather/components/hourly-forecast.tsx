@@ -4,7 +4,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { Spacing, Text, VStack } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatHourLabel } from '@src/shared/utils/date-format';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { Image, ScrollView, View } from 'react-native';
 
 import { useTimePalette } from '../hooks/use-time-palette';
@@ -21,7 +21,9 @@ export function HourlyForecast() {
   const palette = useTimePalette();
   const { t } = useTranslation('weather');
   const { clock } = useWeatherSession();
-  const { data: forecast } = useSuspenseQuery(useGetForecastQueryOptions());
+  const [{ data: forecast }] = useSuspenseQueries({
+    queries: [useGetForecastQueryOptions(), useGetPreferenceQueryOptions()],
+  });
   const items = toUpcomingHourlyForecasts(forecast.hourlyForecasts, clock.hour);
 
   if (items.length === 0) {

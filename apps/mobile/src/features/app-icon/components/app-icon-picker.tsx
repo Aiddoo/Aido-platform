@@ -7,6 +7,7 @@ import {
   Result,
   type QueryErrorFallbackProps,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { times } from 'es-toolkit/compat';
@@ -100,12 +101,12 @@ AppIconPicker.Item = function Item({
 
 AppIconPicker.Loading = function Loading() {
   return (
-    <Grid columns={3} className="p-4">
-      {times(9, (index) => (
+    <Grid columns={3}>
+      {times(APP_ICONS.length, (index) => (
         <GridItem key={index} p={8} className="items-center">
           <VStack align="center" gap={8} p={8}>
             <Skeleton className="w-20 h-20 rounded-2xl" />
-            <Skeleton className="w-16 h-4 rounded" />
+            <TextSkeleton size="b4" className="w-16" />
           </VStack>
         </GridItem>
       ))}

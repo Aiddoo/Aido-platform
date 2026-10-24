@@ -21,7 +21,7 @@ import {
   withDayOfWeek,
 } from '@src/shared/utils/date';
 import { range } from 'es-toolkit';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -385,15 +385,6 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
   );
 }
 
-Calendar.MarkerLoading = function MarkerLoading() {
-  const { t } = useTranslation('todo');
-  return (
-    <HStack px={16} py={4} align="center" gap={8} accessibilityLabel={t('calendar.loading')}>
-      <Skeleton className="h-3 w-24 rounded" />
-      <Skeleton className="h-3 w-12 rounded" />
-    </HStack>
-  );
-};
 Calendar.Error = function ErrorState({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
   return (

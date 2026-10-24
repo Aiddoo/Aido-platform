@@ -3,7 +3,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/icon';
 import { formatTimeDisplay } from '@src/shared/utils/time';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 
 import { useTimePalette } from '../hooks/use-time-palette';
 import { useGetConditionsQueryOptions } from '../queries/get-conditions-query-options';
@@ -11,7 +11,9 @@ import { WeatherCard } from './weather-card';
 
 export function SunriseSunset() {
   const { t } = useTranslation('weather');
-  const { data: conditions } = useSuspenseQuery(useGetConditionsQueryOptions());
+  const [{ data: conditions }] = useSuspenseQueries({
+    queries: [useGetConditionsQueryOptions(), useGetPreferenceQueryOptions()],
+  });
 
   if (conditions.sunrise == null && conditions.sunset == null) {
     return null;

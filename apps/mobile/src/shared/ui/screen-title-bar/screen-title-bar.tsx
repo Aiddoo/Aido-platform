@@ -1,13 +1,14 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { type NativeStackHeaderProps, router } from 'expo-router';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { StyleSheet } from 'react-native';
 
 import { HStack } from '../h-stack/h-stack';
 import { ArrowLeftIcon } from '../icon';
 import { StyledSafeAreaView } from '../safe-area-view';
 import { Text } from '../text/text';
+import { TextSkeleton } from '../text/text-skeleton';
 import { VStack } from '../v-stack/v-stack';
 import type { ScreenTitleBarProps } from './screen-title-bar.types';
 
@@ -100,9 +101,9 @@ ScreenTitleBar.Loading = function Loading({ hasSubtitle = false }: { hasSubtitle
   return (
     <HStack px={16} py={10} align="center" justify="between">
       <HStack className="size-11" />
-      <VStack align="center" gap={4}>
-        <Skeleton className="h-5 w-16 rounded" />
-        {hasSubtitle && <Skeleton className="h-3 w-12 rounded" />}
+      <VStack align="center" gap={1}>
+        <TextSkeleton size="b2" className="w-16" />
+        {hasSubtitle && <TextSkeleton size="e1" className="w-12" />}
       </VStack>
       <HStack className="size-11" />
     </HStack>

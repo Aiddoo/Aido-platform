@@ -338,15 +338,13 @@ function PreviewReplySection({ comment }: { comment: TodoComment }) {
 
 function OverviewCommentRowSkeleton() {
   return (
-    <VStack className="border-b border-gray-2 px-4 py-4" gap={10}>
-      <HStack gap={12} align="start">
+    <Box className="border-b border-gray-2">
+      <HStack gap={12} align="start" px={16} pt={16} pb={16}>
         <Skeleton className="size-9 rounded-full" />
-        <VStack flex={1} gap={8}>
-          <Skeleton className="h-4 w-24 rounded" />
-          <Skeleton className="h-5 w-4/5 rounded" />
-          <Skeleton className="h-4 w-28 rounded" />
-        </VStack>
+        <Box flex={1} className="min-w-0">
+          <TodoCommentMessage.Loading />
+        </Box>
       </HStack>
-    </VStack>
+    </Box>
   );
 }

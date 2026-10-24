@@ -88,11 +88,7 @@ function AppIconScreen() {
         </ScrollView>
       </StyledSafeAreaView>
     ))
-    .with({ isSupported: true, isLoading: true }, () => (
-      <StyledSafeAreaView edges={['left', 'right']}>
-        <AppIconPicker.Loading />
-      </StyledSafeAreaView>
-    ))
+    .with({ isSupported: true, isLoading: true }, () => <AppIconScreen.Loading />)
     .with({ isSupported: true, isLoading: false }, () => (
       <>
         <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
@@ -126,6 +122,26 @@ function AppIconScreen() {
     ))
     .exhaustive();
 }
+
+AppIconScreen.Loading = function Loading() {
+  const { t } = useTranslation('appIcon');
+  return (
+    <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <ScrollView className="px-4 flex-1">
+        <StyledSafeAreaView edges={['left', 'right']}>
+          <Spacing size={8} />
+          <Text size="b4" shade={6} className="px-2 pb-2">
+            {t('screen.chooseIcon')}
+          </Text>
+
+          <Box p={16} className="bg-white rounded-2xl">
+            <AppIconPicker.Loading />
+          </Box>
+        </StyledSafeAreaView>
+      </ScrollView>
+    </StyledSafeAreaView>
+  );
+};
 
 interface AppIconRestartDialogProps {
   isOpen: boolean;
@@ -184,7 +200,7 @@ function AppIconErrorDialog({ isOpen, onOpenChange }: AppIconErrorDialogProps) {
 export default function AppIconRoute() {
   return (
     <QueryErrorBoundary fallback={(props) => <AppIconPicker.Error {...props} />}>
-      <Suspense fallback={<AppIconPicker.Loading />}>
+      <Suspense fallback={<AppIconScreen.Loading />}>
         <AppIconScreen />
       </Suspense>
     </QueryErrorBoundary>

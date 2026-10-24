@@ -137,8 +137,7 @@
   "calendar": {
     "week": "주",
     "month": "월",
-    "loadFailed": "캘린더 표시를 업데이트하지 못했어요",
-    "loading": "완료 현황을 불러오고 있어요"
+    "loadFailed": "캘린더 표시를 업데이트하지 못했어요"
   },
   "feed": {
     "me": "나",

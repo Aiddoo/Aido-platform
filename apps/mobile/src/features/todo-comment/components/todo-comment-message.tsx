@@ -11,11 +11,13 @@ import {
   IconCountButton,
   MoreIcon,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
-import { Menu, PressableFeedback, Spinner } from 'heroui-native';
+import { times } from 'es-toolkit/compat';
+import { Menu, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { useRef, useState, type ComponentProps } from 'react';
 
 import { type TodoComment, TodoCommentPolicy } from '../domains/todo-comment.model';
@@ -79,6 +81,31 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
     </VStack>
   );
 }
+
+TodoCommentMessage.Loading = function Loading() {
+  return (
+    <VStack gap={3} className="min-w-0">
+      <Box className="min-h-11 justify-center">
+        <VStack gap={3}>
+          <TextSkeleton size="b4" className="w-24" />
+          <TextSkeleton size="b3" className="w-4/5" />
+        </VStack>
+      </Box>
+      <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
+        <HStack align="center">
+          {times(2, (index) => (
+            <Box key={index} className="min-h-11 min-w-11 items-center justify-center px-2 py-1.5">
+              <Skeleton
+                className="rounded-full"
+                style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
+              />
+            </Box>
+          ))}
+        </HStack>
+      </VStack>
+    </VStack>
+  );
+};
 
 function CommentAuthorLine({ comment }: { comment: TodoComment }) {
   const { t } = useTranslation('todoComment');

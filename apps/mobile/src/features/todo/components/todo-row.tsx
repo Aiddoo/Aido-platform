@@ -1,6 +1,13 @@
-import { Box, HStack, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  ICON_COUNT_BUTTON_ICON_SIZE,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { Checkbox, PressableFeedback } from 'heroui-native';
+import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
 interface TodoRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
@@ -55,6 +62,23 @@ export function TodoRow({
     </>
   );
 }
+
+TodoRow.Loading = function Loading() {
+  return (
+    <TodoRow
+      left={<Skeleton className="size-5 rounded-md" />}
+      top={<TextSkeleton size="b3" className="w-3/4" />}
+      right={
+        <Box className="px-2 py-1.5">
+          <Skeleton
+            className="rounded-full"
+            style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
+          />
+        </Box>
+      }
+    />
+  );
+};
 
 type TodoCheckboxProps = ComponentProps<typeof Checkbox>;
 
