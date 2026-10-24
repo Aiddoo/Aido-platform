@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
 
+import { useCalendarRange } from '../../hooks/use-calendar-range';
 import { useGetDailyCompletionsQueryOptions } from '../../queries/get-daily-completions-query-options';
 import { Calendar } from './calendar';
-import { useCalendarRange } from './use-calendar-range';
 
 /** 나의 일일 완료 현황을 표시하는 캘린더 */
 export function MyCalendar() {

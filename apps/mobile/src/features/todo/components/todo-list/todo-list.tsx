@@ -55,6 +55,7 @@ import { useUpdateTodoScheduleMutationOptions } from '../../queries/use-update-t
 import { toTodoCategoryGroups } from '../../utils/group-todos-by-category';
 import { AddSubTodoBottomSheet } from '../add-sub-todo-bottom-sheet';
 import { AddTodoBottomSheet } from '../add-todo-bottom-sheet';
+import { CategoryHeaderPill } from '../category-header-pill';
 import { CategorySelectBottomSheet } from '../category-select-bottom-sheet';
 import { ReorderCoachmark } from '../reorder-coachmark';
 import { SubTodoActionsBottomSheet } from '../sub-todo-list/sub-todo-actions-bottom-sheet';
@@ -154,17 +155,15 @@ function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
         ));
       }}
       hitSlop={8}
-      className="self-start flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-gray-2"
+      className="self-start"
     >
-      <Text size="b4" weight="semibold" style={{ color }}>
-        {label}
-      </Text>
-
-      <PlusIcon
-        width={fontScaledSize(14)}
-        height={fontScaledSize(14)}
-        colorClassName="text-gray-8"
-      />
+      <CategoryHeaderPill label={label} color={color}>
+        <PlusIcon
+          width={fontScaledSize(14)}
+          height={fontScaledSize(14)}
+          colorClassName="text-gray-8"
+        />
+      </CategoryHeaderPill>
     </PressableFeedback>
   );
 }

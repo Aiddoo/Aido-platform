@@ -35,13 +35,13 @@ interface TodoActionsBottomSheetProps {
   onNavigate: (action: 'edit' | 'date' | 'time' | 'category') => void;
 }
 
-export const TodoActionsBottomSheet = ({
+export function TodoActionsBottomSheet({
   isOpen,
   onOpenChange,
   onClose,
   todo,
   onNavigate,
-}: TodoActionsBottomSheetProps) => {
+}: TodoActionsBottomSheetProps) {
   const { t } = useTranslation('todo');
   const today = useToday();
   const deleteMutation = useMutation(useDeleteTodoMutationOptions());
@@ -223,4 +223,4 @@ export const TodoActionsBottomSheet = ({
       </VStack>
     </BottomSheet>
   );
-};
+}

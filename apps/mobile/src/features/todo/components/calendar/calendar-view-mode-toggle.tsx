@@ -1,23 +1,19 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Text } from '@src/shared/ui';
+import { Box, Text } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { PressableFeedback } from 'heroui-native';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { type LayoutChangeEvent, Pressable, View } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useCalendarContext } from '../providers/calendar-provider';
 import type { CalendarViewMode } from './calendar.types';
 
-const CALENDAR_VIEW_MODE = [
-  { value: 'week', labelKey: 'calendar.week' },
-  { value: 'month', labelKey: 'calendar.month' },
-] as const satisfies ReadonlyArray<{ value: CalendarViewMode; labelKey: string }>;
-
 const PADDING = 2;
 const ITEM_HEIGHT = 22;
 const SPRING_CONFIG = { stiffness: 500, damping: 30, mass: 0.8 };
 
-export const CalendarViewModeToggle = () => {
+export function CalendarViewModeToggle() {
   const { t } = useTranslation('todo');
   const { viewMode: value, setViewMode: onChange } = useCalendarContext();
   const [itemLayouts, setItemLayouts] = useState<Record<string, { x: number; width: number }>>({});
@@ -57,25 +53,43 @@ export const CalendarViewModeToggle = () => {
   }));
 
   return (
-    <View className="flex-row items-center bg-gray-2 rounded-lg" style={{ padding: PADDING }}>
+    <Box className="flex-row items-center bg-gray-2 rounded-lg" style={{ padding: PADDING }}>
       <Animated.View className="absolute bg-white rounded-md" style={indicatorStyle} />
-      {CALENDAR_VIEW_MODE.map((mode) => (
-        <Pressable
-          key={mode.value}
-          onPress={() => onChange(mode.value)}
-          onLayout={(e) => handleLayout(mode.value, e)}
-          hitSlop={4}
-          className={cn(
-            'items-center justify-center rounded-md',
-            value === mode.value && 'bg-white',
-          )}
-          style={{ height: ITEM_HEIGHT, paddingHorizontal: 10 }}
-        >
-          <Text size="e1" weight="medium" shade={value === mode.value ? 9 : 5}>
-            {t(mode.labelKey)}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
+      <ViewModeOption
+        label={t('calendar.week')}
+        isActive={value === 'week'}
+        onPress={() => onChange('week')}
+        onLayout={(e) => handleLayout('week', e)}
+      />
+      <ViewModeOption
+        label={t('calendar.month')}
+        isActive={value === 'month'}
+        onPress={() => onChange('month')}
+        onLayout={(e) => handleLayout('month', e)}
+      />
+    </Box>
   );
-};
+}
+
+interface ViewModeOptionProps {
+  label: string;
+  isActive: boolean;
+  onPress: () => void;
+  onLayout: (event: LayoutChangeEvent) => void;
+}
+
+function ViewModeOption({ label, isActive, onPress, onLayout }: ViewModeOptionProps) {
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      onLayout={onLayout}
+      hitSlop={4}
+      className={cn('items-center justify-center rounded-md', isActive && 'bg-white')}
+      style={{ height: ITEM_HEIGHT, paddingHorizontal: 10 }}
+    >
+      <Text size="e1" weight="medium" shade={isActive ? 9 : 5}>
+        {label}
+      </Text>
+    </PressableFeedback>
+  );
+}

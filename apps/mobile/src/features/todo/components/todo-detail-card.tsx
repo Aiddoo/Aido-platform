@@ -14,6 +14,7 @@ import { Skeleton } from 'heroui-native';
 import type { TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
+import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 export function TodoDetailCard() {
@@ -67,7 +68,7 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
       />
 
       {todo.subTodos.length > 0 && (
-        <VStack className="ml-8 border-l border-gray-2 pl-4" gap={0}>
+        <SubTodoIndent>
           {todo.subTodos.map((item) => (
             <TodoRow
               key={item.id}
@@ -75,7 +76,7 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
               top={<TodoLabel isChecked={item.completed}>{item.title}</TodoLabel>}
             />
           ))}
-        </VStack>
+        </SubTodoIndent>
       )}
     </VStack>
   );

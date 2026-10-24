@@ -13,11 +13,11 @@ interface CategoryDeleteDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export const CategoryDeleteDialog = ({
+export function CategoryDeleteDialog({
   categoryId,
   isOpen,
   onOpenChange,
-}: CategoryDeleteDialogProps) => {
+}: CategoryDeleteDialogProps) {
   const { t } = useTranslation(['todo', 'common']);
   const deleteMutation = useMutation(useDeleteTodoCategoryMutationOptions());
   const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
@@ -88,7 +88,7 @@ export const CategoryDeleteDialog = ({
       }
     />
   );
-};
+}
 
 interface TodoMoveCategoryDeleteSectionProps {
   category: TodoCategoryWithCount;

@@ -3,9 +3,9 @@ import { without } from 'es-toolkit';
 import { useReducer } from 'react';
 import { match } from 'ts-pattern';
 
+import { ALL_DAYS } from '../constants/day-of-week';
 import { getDayOfWeekFromDate } from '../utils/day-of-week';
 
-const ALL_DAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const WEEKDAYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
 const WEEKEND_DAYS: DayOfWeek[] = ['SAT', 'SUN'];
 

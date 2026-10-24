@@ -17,7 +17,6 @@ import {
   Box,
   ChatBubbleIcon,
   DocsIcon,
-  Flex,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
@@ -38,6 +37,8 @@ import { useFeedDate } from '../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../hooks/use-feed-selected-todo';
 import { useGetFriendTodosQueryOptions } from '../queries/get-friend-todos-query-options';
 import { toFriendCategoryGroups } from '../utils/group-friend-todos-by-category';
+import { CategoryHeaderPill } from './category-header-pill';
+import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 const COMPACT_ACTION_HIT_SLOP = { top: 8, bottom: 8, left: 0, right: 0 };
@@ -58,7 +59,7 @@ export function FriendTodoList() {
     <Box gap={16}>
       {categoryGroups.map((group) => (
         <VStack key={group.category.id} gap={8}>
-          <CategoryHeader label={group.category.name} color={group.category.color} />
+          <CategoryHeaderPill label={group.category.name} color={group.category.color} />
           <Box>
             {group.todos.map((todo) => (
               <FriendTodoList.Item key={todo.id} todo={todo} />
@@ -85,16 +86,6 @@ FriendTodoList.Loading = function Loading() {
     </VStack>
   );
 };
-
-function CategoryHeader({ label, color }: { label: string; color: string }) {
-  return (
-    <Flex className="self-start flex-row items-center rounded-lg bg-gray-2 px-2.5 py-1">
-      <Text size="b4" weight="semibold" style={{ color }}>
-        {label}
-      </Text>
-    </Flex>
-  );
-}
 
 FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const { t } = useTranslation('todo');
@@ -159,7 +150,7 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
       onPress={TodoPolicy.hasSubTodos(todo) ? () => setIsExpanded((prev) => !prev) : undefined}
     >
       {isExpanded && (
-        <VStack className="ml-8 pl-4 border-l border-gray-2">
+        <SubTodoIndent>
           {todo.subTodos.map((subTodo) => (
             <TodoRow
               key={subTodo.id}
@@ -167,7 +158,7 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
               top={<TodoLabel isChecked={subTodo.completed}>{subTodo.title}</TodoLabel>}
             />
           ))}
-        </VStack>
+        </SubTodoIndent>
       )}
     </TodoRow>
   );

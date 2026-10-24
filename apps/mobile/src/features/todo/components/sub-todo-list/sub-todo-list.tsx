@@ -1,8 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
+import { HStack, MoreIcon, PlusIcon, Text } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
 
+import { SubTodoIndent } from '../sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
 
 interface SubTodoListProps {
@@ -14,7 +15,7 @@ interface SubTodoListProps {
 export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoListProps) {
   const { t } = useTranslation('todo');
   return (
-    <VStack className="ml-8 pl-4 border-l border-gray-2" gap={0}>
+    <SubTodoIndent>
       {children}
 
       {!isAddDisabled && (
@@ -27,7 +28,7 @@ export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoList
           </HStack>
         </PressableFeedback>
       )}
-    </VStack>
+    </SubTodoIndent>
   );
 }
 

@@ -19,13 +19,13 @@ interface SubTodoActionsBottomSheetProps {
   onDelete: () => Promise<unknown> | void;
 }
 
-export const SubTodoActionsBottomSheet = ({
+export function SubTodoActionsBottomSheet({
   isOpen,
   onOpenChange,
   onClose,
   onEdit,
   onDelete,
-}: SubTodoActionsBottomSheetProps) => {
+}: SubTodoActionsBottomSheetProps) {
   const { t } = useTranslation('todo');
 
   // 지우는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
@@ -91,4 +91,4 @@ export const SubTodoActionsBottomSheet = ({
       </VStack>
     </BottomSheet>
   );
-};
+}

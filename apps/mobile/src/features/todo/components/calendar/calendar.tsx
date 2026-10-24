@@ -42,7 +42,6 @@ import { CalendarViewModeToggle } from './calendar-view-mode-toggle';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
-const WEEKDAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
 const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
 const TOTAL_PAGES = 521;
@@ -133,36 +132,6 @@ function CalendarHeaderText({ displayDate }: CalendarHeaderTextProps) {
     </Text>
   );
 }
-
-Calendar.Loading = function Loading() {
-  return (
-    <VStack className="bg-background" gap={8}>
-      <HStack className="px-4 py-2" justify="between" align="center">
-        <Skeleton className="h-6 w-24" />
-        <HStack gap={8}>
-          <Skeleton className="h-8 w-12 rounded-full" />
-          <Skeleton className="h-8 w-12 rounded-full" />
-        </HStack>
-      </HStack>
-
-      <HStack px={8}>
-        {WEEKDAY_INDICES.map((dayIndex) => (
-          <Box key={`weekday-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
-            <Skeleton className="size-4" />
-          </Box>
-        ))}
-      </HStack>
-
-      <HStack px={8}>
-        {WEEKDAY_INDICES.map((dayIndex) => (
-          <Box key={`date-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
-            <Skeleton className="size-8 overflow-hidden rounded-2xl" />
-          </Box>
-        ))}
-      </HStack>
-    </VStack>
-  );
-};
 
 interface CalendarWeekPagerProps {
   completions: CompletionsByDate;

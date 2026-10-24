@@ -22,12 +22,12 @@ interface CategoryEditBottomSheetProps {
   category: TodoCategory;
 }
 
-export const CategoryEditBottomSheet = ({
+export function CategoryEditBottomSheet({
   isOpen,
   onOpenChange,
   onClose,
   category,
-}: CategoryEditBottomSheetProps) => {
+}: CategoryEditBottomSheetProps) {
   const { showBoundary } = useErrorBoundary();
 
   const { t } = useTranslation(['todo', 'common']);
@@ -90,4 +90,4 @@ export const CategoryEditBottomSheet = ({
       </KeyboardBottomSheet>
     </FormProvider>
   );
-};
+}
