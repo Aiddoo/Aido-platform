@@ -1,9 +1,16 @@
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import type { ReactNode } from 'react';
+import { I18nManager, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  SafeAreaProvider,
+  useSafeAreaFrame,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 
 import { Box } from '../box/box';
 import { HStack } from '../h-stack/h-stack';
 import type { AdaptivePaneProps } from './adaptive-pane.types';
+import { getPaneInitialInsets, type PaneSlot } from './get-pane-initial-insets';
 import { getPrimaryPaneWidth } from './get-primary-pane-width';
 
 /**
@@ -22,19 +29,41 @@ export function AdaptivePane({ primary, secondary, compactPane = 'primary' }: Ad
   return (
     <HStack flex={1}>
       {showsPrimary && (
-        <Box
-          testID="adaptive-pane-primary"
+        <Pane
+          slot="primary"
+          isSplit={!isCompact}
           style={isCompact ? { flex: 1 } : { width: getPrimaryPaneWidth(windowSizeClass) }}
         >
-          <SafeAreaProvider>{primary}</SafeAreaProvider>
-        </Box>
+          {primary}
+        </Pane>
       )}
       {!isCompact && <Box className="w-px bg-gray-2" />}
       {showsSecondary && (
-        <Box testID="adaptive-pane-secondary" flex={1}>
-          <SafeAreaProvider>{secondary}</SafeAreaProvider>
-        </Box>
+        <Pane slot="secondary" isSplit={!isCompact} style={{ flex: 1 }}>
+          {secondary}
+        </Pane>
       )}
     </HStack>
+  );
+}
+
+interface PaneProps {
+  slot: PaneSlot;
+  isSplit: boolean;
+  style: StyleProp<ViewStyle>;
+  children: ReactNode;
+}
+
+function Pane({ slot, isSplit, style, children }: PaneProps) {
+  const windowInsets = useSafeAreaInsets();
+  const frame = useSafeAreaFrame();
+  const insets = isSplit
+    ? getPaneInitialInsets(windowInsets, slot, I18nManager.isRTL)
+    : windowInsets;
+
+  return (
+    <Box testID={`adaptive-pane-${slot}`} style={style}>
+      <SafeAreaProvider initialMetrics={{ insets, frame }}>{children}</SafeAreaProvider>
+    </Box>
   );
 }

@@ -76,7 +76,7 @@ describe('AdaptivePane 컴포넌트', () => {
     expect(onMount.mock.calls).toEqual([['상세'], ['목록']]);
   });
 
-  it('창 safe area를 물려받지 않고 pane마다 자기 safe area provider를 둔다', async () => {
+  it('펼친 pane은 첫 프레임부터 자기가 닿는 가장자리의 창 inset만 받는다', async () => {
     function InsetsProbe({ label }: { label: string }) {
       const { right } = useSafeAreaInsets();
       return <Text>{`${label}:${right}`}</Text>;
@@ -92,6 +92,6 @@ describe('AdaptivePane 컴포넌트', () => {
     );
 
     expect(screen.getByText('목록:0')).toBeTruthy();
-    expect(screen.getByText('상세:0')).toBeTruthy();
+    expect(screen.getByText('상세:84')).toBeTruthy();
   });
 });
