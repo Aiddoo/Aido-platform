@@ -52,24 +52,20 @@ export function formatDateKeyLabel(dateKey: string, kind: DateLabel, context: Da
   return formatDateLabel(new Date(`${dateKey}T00:00:00Z`), kind, { ...context, timeZone: 'UTC' });
 }
 
+/** 로케일 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM", 24시간제: "18:30"). */
 export function formatClockTime(
   date: Date,
   timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR',
   context: DateFormatContext,
-) {
+): string {
   if (!Number.isFinite(date.getTime())) {
     return '';
   }
-  const formatter = getFormatter(context, {
-    hour: timeFormat === 'TWENTY_FOUR_HOUR' ? '2-digit' : 'numeric',
-    minute: '2-digit',
-    hourCycle: timeFormat === 'TWENTY_FOUR_HOUR' ? 'h23' : 'h12',
-  });
-  const parts = formatter.formatToParts(date);
-  const hour = parts.find((part) => part.type === 'hour')?.value ?? '';
-  const minute = parts.find((part) => part.type === 'minute')?.value ?? '';
-  const dayPeriod = parts.find((part) => part.type === 'dayPeriod')?.value;
-  return dayPeriod ? `${dayPeriod} ${hour}:${minute}` : `${hour}:${minute}`;
+  const hourCycleOptions: Intl.DateTimeFormatOptions =
+    timeFormat === 'TWELVE_HOUR' ? { hour12: true } : { hourCycle: 'h23' };
+  return getFormatter(context, { hour: 'numeric', minute: '2-digit', ...hourCycleOptions }).format(
+    date,
+  );
 }
 
 /** 로케일 기본 순서의 시:분 (ko: "오전 8:30", en: "8:30 AM"). hour12가 false면 "18:30". */
