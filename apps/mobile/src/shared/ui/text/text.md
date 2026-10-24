@@ -78,6 +78,21 @@ import { Text, H1, H2, H3, H4 } from './core/component/ui/Text';
 </Text>
 ```
 
+## TextSkeleton
+
+같은 `size`의 `Text`가 현재 글꼴 배율에서 차지하는 줄 높이만큼 자리를 잡는 스켈레톤입니다. 높이는
+`useFontScale().resolveSize`로 바뀐 크기의 토큰(`text-b2` 등) 줄 높이를 읽어 정하므로 로딩이 끝나도 높이가 같습니다.
+
+```tsx
+<TextSkeleton size="b2" className="w-24" />
+```
+
+| Prop        | 타입       | 기본값 | 설명                               |
+| ----------- | ---------- | ------ | ---------------------------------- |
+| `size`      | `TextSize` | `'b3'` | 자리를 맞출 Text 크기              |
+| `className` | `string`   | -      | 너비·flex 등 바깥 크기             |
+| `color`     | `string`   | -      | 배경이 특수한 화면의 스켈레톤 색상 |
+
 ## Heading 컴포넌트
 
 `H1`, `H2`, `H3`, `H4`는 시맨틱 Heading 컴포넌트입니다. 자동으로 `accessibilityRole="header"`가 설정됩니다.

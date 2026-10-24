@@ -263,11 +263,42 @@ export function FriendCalendar() {
 나눌 수 없다. 목록 컴포넌트는 도메인 대신 정책을 Props로 받는다(`filters`, `orderBy`, `limit`).
 
 ```tsx
-<QueryErrorBoundary FallbackComponent={TodoList.Error}>
+<QueryErrorBoundary fallback={TodoList.Error}>
   <Suspense fallback={<TodoList.Loading />}>
     <TodoList />
   </Suspense>
 </QueryErrorBoundary>
+```
+
+#### 목록·스켈레톤
+
+- 목록 컴포넌트는 자기 데이터를 `useSuspenseQuery`/`useSuspenseInfiniteQuery`로 구독하고 statics를
+  `.Item` → `.Loading` → `.Error` → `.Empty` 순서로 둔다. Screen은 `QueryErrorBoundary(fallback=X.Error)`
+  → `Suspense(fallback=<X.Loading />)` → `<X />`를 위에서 아래로 쌓는다.
+- 원본을 그대로 넘기는 래퍼(`X.Item = (props) => <UserList.Item {...props} />`)를 만들지 않는다. 공용 행을
+  직접 쓰거나, 행 액션 mutation처럼 실제 책임을 가진 행만 `.Item`으로 둔다. 같은 fallback은 `X.Error = UserList.Error`처럼 참조로 연결한다.
+- 공용 목록은 원본 계약을 확장한다. `UserList`는 `Omit<FlashListProps<T>, …>`에 `hasNextPage`·
+  `isFetchingNextPage`·`fetchNextPage`(TanStack 이름)와 `refreshing`·`onRefresh`(RN 이름)만 더한다.
+- `.Loading`은 `.Item`과 **같은 레이아웃 컴포넌트·슬롯**(`ListRow`의 `left`/`contents`/`right`, `TodoRow`)을
+  쓰고 슬롯만 `Skeleton`으로 채운다. 글자 자리는 `TextSkeleton size`(현재 글꼴 배율의 Text 토큰 줄 높이)를,
+  행 텍스트는 `ListRow.Texts.Loading`을 쓴다. 개수는 `times`로 고정한다. 데이터에 따라 생기는 줄(설명, 하위 항목)은
+  그리지 않아 로딩이 끝날 때 위 내용이 밀리지 않게 한다.
+
+```tsx
+UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
+  return (
+    <ScrollView className="flex-1">
+      {times(rows, (index) => (
+        <ListRow
+          key={index}
+          left={<Skeleton className="size-10 rounded-full" />}
+          contents={<ListRow.Texts.Loading type="1RowTypeA" />}
+          right={right}
+        />
+      ))}
+    </ScrollView>
+  );
+};
 ```
 
 **반복 UI는 지역 컴포넌트로 추상화하고 나열한다.** 항목마다 기획·디자인이 따로 바뀔 수 있는 행은

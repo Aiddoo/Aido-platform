@@ -153,6 +153,23 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 
 ---
 
+### ListRow.Texts.Loading
+
+`ListRow.Texts`와 같은 `VStack`·간격·기본 크기(b2/b3/e1)로 글자 자리를 `TextSkeleton`으로 채웁니다.
+목록의 `.Loading`은 `ListRow`의 같은 슬롯에 이것을 넣어 행 높이를 실제 행과 맞춥니다.
+
+```tsx
+<ListRow
+  left={<Skeleton className="size-10 rounded-full" />}
+  contents={
+    <ListRow.Texts.Loading type="2RowTypeA" bottomProps={{ size: 'b3', className: 'w-full' }} />
+  }
+/>
+```
+
+- `type`: `ListRow.Texts`와 같은 줄 구성
+- `topProps` / `middleProps` / `bottomProps`: `TextSkeletonProps`(`size`, `className`) — 실제 행에서 바꾼 크기만 다시 준다
+
 ### ListRow.Image
 
 이미지를 표시하는 서브 컴포넌트입니다. React Native의 `ImageProps`를 확장합니다.
