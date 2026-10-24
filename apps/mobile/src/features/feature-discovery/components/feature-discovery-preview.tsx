@@ -135,7 +135,7 @@ function TodoCreationPreview() {
         <PreviewChip
           icon={<CalendarIcon width={13} height={13} colorClassName="text-main" />}
           label={t('cards.todoCreation.previewDate')}
-          active
+          isActive
         />
         <PreviewChip
           icon={<ClockIcon width={13} height={13} colorClassName="text-gray-5" />}
@@ -186,11 +186,11 @@ function PreviewCategoryRow({ color, label }: { color: string; label: string }) 
 function PreviewChip({
   icon,
   label,
-  active = false,
+  isActive = false,
 }: {
   icon: ReactNode;
   label: string;
-  active?: boolean;
+  isActive?: boolean;
 }) {
   return (
     <HStack
@@ -199,7 +199,7 @@ function PreviewChip({
       px={9}
       py={6}
       className={
-        active
+        isActive
           ? 'rounded-full border border-main/30 bg-main/10'
           : 'rounded-full border border-gray-3'
       }
@@ -208,7 +208,7 @@ function PreviewChip({
       <Text
         size="e1"
         weight="medium"
-        {...(active ? { tone: 'brand' as const } : { shade: 6 as const })}
+        {...(isActive ? { tone: 'brand' as const } : { shade: 6 as const })}
       >
         {label}
       </Text>

@@ -82,8 +82,8 @@ export function getNudgeInteractionStatusOf(
   return getNudgeInteractionStatus(
     nudge.isAvailable,
     nudge.isTodoCompleted,
-    nudge.replyKind !== null,
-    nudge.thankedAt !== null,
+    nudge.replyKind != null,
+    nudge.thankedAt != null,
   );
 }
 
@@ -104,7 +104,7 @@ export function isReplyableNudge(
 export function isThankablePreview(
   preview: Pick<NudgeThanksPreview, 'throughNudgeId' | 'recipients'>,
 ): boolean {
-  return preview.throughNudgeId !== null && preview.recipients.length > 0;
+  return preview.throughNudgeId != null && preview.recipients.length > 0;
 }
 
 export const NudgeInteractionPolicy = {

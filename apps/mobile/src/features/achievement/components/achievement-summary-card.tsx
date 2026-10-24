@@ -16,6 +16,7 @@ import {
   Text,
   VStack,
   type QueryErrorFallbackProps,
+  Box,
 } from '@src/shared/ui';
 import {
   usePrefetchQuery,
@@ -26,7 +27,7 @@ import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
-import { Image, View } from 'react-native';
+import { Image } from 'react-native';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-badge-labels';
@@ -55,11 +56,7 @@ export function AchievementSummaryCard() {
   const latestWeekLabel = latest?.weekLabel;
 
   useEffect(() => {
-    if (
-      latestBadgeType == null ||
-      latestCompletionRate === undefined ||
-      latestWeekLabel === undefined
-    ) {
+    if (latestBadgeType == null || latestCompletionRate == null || latestWeekLabel == null) {
       return;
     }
     trackEvent('badge_summary_viewed', {
@@ -85,7 +82,7 @@ export function AchievementSummaryCard() {
   };
 
   return (
-    <View>
+    <Box>
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
         <Certificate subtitle={tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[latestBadgeType])}>
           <Spacing size={12} />
@@ -98,7 +95,7 @@ export function AchievementSummaryCard() {
             <Text size="e1" shade={5}>
               {t('card.nameLabel')}
             </Text>
-            <View className="border-b border-gray-3 pb-1 px-8">
+            <Box className="border-b border-gray-3 pb-1 px-8">
               <H4
                 weight="bold"
                 align="center"
@@ -107,7 +104,7 @@ export function AchievementSummaryCard() {
               >
                 {user.name}
               </H4>
-            </View>
+            </Box>
           </VStack>
 
           <Spacing size={16} />
@@ -165,7 +162,7 @@ export function AchievementSummaryCard() {
           colorClassName="text-gray-6"
         />
       </PressableFeedback>
-    </View>
+    </Box>
   );
 }
 

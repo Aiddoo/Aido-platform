@@ -112,7 +112,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
             !WeatherPolicy.isSupportedLocation({ ...coordinates, countryCode: place.countryCode })
           ) {
             setStatus(
-              place.countryCode === null && WeatherPolicy.isWithinSupportedBounds(coordinates)
+              place.countryCode == null && WeatherPolicy.isWithinSupportedBounds(coordinates)
                 ? 'error'
                 : 'unsupported',
             );

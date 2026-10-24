@@ -2,9 +2,8 @@ import { AchievementSummaryCard } from '@src/features/achievement/components/ach
 import { WeeklyAchievementList } from '@src/features/achievement/components/weekly-achievement-list';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Spacing, StyledSafeAreaView, Text } from '@src/shared/ui';
+import { QueryErrorBoundary, Spacing, StyledSafeAreaView, Text, Box } from '@src/shared/ui';
 import { Suspense } from 'react';
-import { View } from 'react-native';
 
 export default function AchievementsScreen() {
   const today = useToday();
@@ -17,13 +16,13 @@ export default function AchievementsScreen() {
       >
         <Suspense
           fallback={
-            <View className="px-4">
+            <Box className="px-4">
               <Spacing size={16} />
               <AchievementSummaryCard.Loading />
               <Spacing size={24} />
               <HistoryTitle />
               <WeeklyAchievementList.Loading />
-            </View>
+            </Box>
           }
         >
           <WeeklyAchievementList
@@ -52,10 +51,10 @@ function HistoryTitle() {
   const { t } = useTranslation('achievement');
 
   return (
-    <View className="px-1 pb-2">
+    <Box className="px-1 pb-2">
       <Text size="b2" shade={8} weight="bold">
         {t('list.sectionTitle')}
       </Text>
-    </View>
+    </Box>
   );
 }

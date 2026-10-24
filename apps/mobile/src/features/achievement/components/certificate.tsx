@@ -1,7 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { H3, Text, VStack } from '@src/shared/ui';
+import { Box, H3, Text, VStack } from '@src/shared/ui';
 import { type ReactNode, useCallback, useState } from 'react';
-import { type LayoutChangeEvent, View } from 'react-native';
+import type { LayoutChangeEvent } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { useResolveClassNames } from 'uniwind';
 
@@ -10,23 +10,21 @@ function CertificateBorder({ children }: { children: ReactNode }) {
   const { color: strokeColor } = useResolveClassNames('text-main');
   const [size, setSize] = useState({ width: 0, height: 0 });
 
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
     setSize({ width, height });
   }, []);
 
-  const { width: w, height: h } = size;
-
   return (
-    <View className="relative" onLayout={onLayout}>
-      {w > 0 && h > 0 && (
-        <View className="absolute inset-0">
-          <Svg width={w} height={h}>
+    <Box className="relative" onLayout={handleLayout}>
+      {size.width > 0 && size.height > 0 && (
+        <Box className="absolute inset-0">
+          <Svg width={size.width} height={size.height}>
             <Rect
               x={2}
               y={2}
-              width={w - 4}
-              height={h - 4}
+              width={size.width - 4}
+              height={size.height - 4}
               rx={2}
               ry={2}
               stroke={strokeColor as string}
@@ -37,8 +35,8 @@ function CertificateBorder({ children }: { children: ReactNode }) {
             <Rect
               x={7}
               y={7}
-              width={w - 14}
-              height={h - 14}
+              width={size.width - 14}
+              height={size.height - 14}
               rx={1}
               ry={1}
               stroke={strokeColor as string}
@@ -47,10 +45,10 @@ function CertificateBorder({ children }: { children: ReactNode }) {
               strokeOpacity={0.35}
             />
           </Svg>
-        </View>
+        </Box>
       )}
-      <View className="m-2">{children}</View>
-    </View>
+      <Box className="m-2">{children}</Box>
+    </Box>
   );
 }
 
@@ -59,9 +57,9 @@ export function Certificate({ subtitle, children }: { subtitle?: string; childre
   const { t } = useTranslation('achievement');
 
   return (
-    <View className="bg-white rounded-sm overflow-hidden p-3">
+    <Box className="bg-white rounded-sm overflow-hidden p-3">
       <CertificateBorder>
-        <View className="px-5 pt-7 pb-5">
+        <Box className="px-5 pt-7 pb-5">
           <VStack align="center" gap={4}>
             <Text size="e1" tone="brand" className="tracking-widest">
               {t('card.eyebrow')}
@@ -74,9 +72,9 @@ export function Certificate({ subtitle, children }: { subtitle?: string; childre
             )}
           </VStack>
           {children}
-        </View>
+        </Box>
       </CertificateBorder>
-    </View>
+    </Box>
   );
 }
 

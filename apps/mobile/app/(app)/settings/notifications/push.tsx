@@ -78,7 +78,7 @@ function PushSettingsScreen() {
         <SettingsToggle
           label={t('settings.marketingLabel')}
           description={t('settings.marketingDescription')}
-          isSelected={consent.marketingAgreedAt !== null}
+          isSelected={consent.marketingAgreedAt != null}
           onSelectedChange={(agreed) => marketingMutation.mutate({ agreed })}
           isDisabled={marketingMutation.isPending}
         />
@@ -86,7 +86,7 @@ function PushSettingsScreen() {
         <SettingsToggle
           label={t('settings.marketingPushLabel')}
           description={t('settings.marketingPushDescription')}
-          isSelected={consent.marketingPushAgreedAt !== null}
+          isSelected={consent.marketingPushAgreedAt != null}
           onSelectedChange={(agreed) => marketingPushMutation.mutate({ agreed })}
           isDisabled={marketingPushMutation.isPending}
         />

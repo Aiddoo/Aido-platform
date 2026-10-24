@@ -17,7 +17,7 @@ export function toNotificationListItems(
   );
   return Object.values(sections).flatMap((items): NotificationListItem[] => {
     const first = items[0];
-    if (first === undefined) {
+    if (first == null) {
       return [];
     }
     return [

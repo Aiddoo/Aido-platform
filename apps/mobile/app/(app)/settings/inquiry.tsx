@@ -21,6 +21,7 @@ import {
   VStack,
   QueryErrorBoundary,
   StyledSafeAreaView,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { getDateFormatContext } from '@src/shared/utils/date';
@@ -29,7 +30,7 @@ import { useMutation } from '@tanstack/react-query';
 import { RadioGroup } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { scrollTo, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
 
@@ -50,9 +51,9 @@ function InquiryScreen() {
       'worklet';
       hasScrolled.value = false;
     },
-    onMove: (e) => {
+    onMove: (event) => {
       'worklet';
-      if (e.height > 0 && !hasScrolled.value) {
+      if (event.height > 0 && !hasScrolled.value) {
         hasScrolled.value = true;
         scrollTo(scrollViewRef, 0, contentHeight.value, true);
       }
@@ -71,9 +72,9 @@ function InquiryScreen() {
   } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
 
-  const onSubmit = async (data: CreateInquiryInput) => {
+  const handleSubmitInquiry = async (values: CreateInquiryInput) => {
     try {
-      await createInquiryMutation.mutateAsync(data);
+      await createInquiryMutation.mutateAsync(values);
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
@@ -83,7 +84,7 @@ function InquiryScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <View className="flex-1 bg-gray-1">
+      <Box className="flex-1 bg-gray-1">
         <AnimatedScrollView
           ref={scrollViewRef}
           onContentSizeChange={(_w, h) => {
@@ -147,13 +148,13 @@ function InquiryScreen() {
         </AnimatedScrollView>
 
         <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(onSubmit)()}
+          onPress={() => handleSubmit(handleSubmitInquiry)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
         >
           {t('form.submit')}
         </KeyboardAdaptiveButton>
-      </View>
+      </Box>
     </FormProvider>
   );
 }

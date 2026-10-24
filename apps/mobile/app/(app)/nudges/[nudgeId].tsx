@@ -78,7 +78,7 @@ function NudgeDetailScreen() {
           <Text size="t3" weight="bold">
             {t('interaction.encouragementTitle')}
           </Text>
-          {nudge.message !== null && (
+          {nudge.message != null && (
             <Text size="b3" shade={6}>
               {nudge.message}
             </Text>
@@ -88,7 +88,7 @@ function NudgeDetailScreen() {
         <Button
           variant="weak"
           color="dark"
-          isDisabled={nudge.todoTitle === null}
+          isDisabled={nudge.todoTitle == null}
           className="p-4"
           onPress={openTodo}
         >

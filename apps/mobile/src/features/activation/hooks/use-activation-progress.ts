@@ -36,7 +36,7 @@ export function useActivationProgress() {
   // those users while still deferring prompts for the new-user cohort.
   const isContextReady = configQuery.isFetched && userQuery.isSuccess;
   const isReady =
-    isAuthenticated && isContextReady && (identity === null || progressQuery.isSuccess);
+    isAuthenticated && isContextReady && (identity == null || progressQuery.isSuccess);
 
   return {
     config: isAuthenticated ? configQuery.data : undefined,

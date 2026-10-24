@@ -1,6 +1,14 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { DashedDivider, HStack, ScallopedContainer, Spacing, Text, VStack } from '@src/shared/ui';
+import {
+  DashedDivider,
+  HStack,
+  ScallopedContainer,
+  Spacing,
+  Text,
+  VStack,
+  Box,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { getDateFormatContext, getDayOfWeekLabel } from '@src/shared/utils/date';
 import { formatDateKeyRange, formatHourLabel } from '@src/shared/utils/date-format';
@@ -9,7 +17,6 @@ import type { TimeFormat } from '@src/shared/utils/time';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { orderBy } from 'es-toolkit';
 import { Chip, Separator, SkeletonGroup } from 'heroui-native';
-import { View } from 'react-native';
 
 import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
 import type { AiReport } from '../domains/ai.model';
@@ -22,53 +29,53 @@ export function ActivityReport({ report }: ActivityReportProps) {
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   return (
     <ScallopedContainer>
-      <View className="px-5 pt-4 pb-2">
+      <Box className="px-5 pt-4 pb-2">
         <ReportPeriodLabel report={report} />
-      </View>
+      </Box>
       <VStack className="px-5 pb-4">
         <VStack>
-          <View className="py-4">
+          <Box className="py-4">
             <TodoCompletionStats report={report} />
-          </View>
+          </Box>
         </VStack>
         {report.categoryBreakdown.length > 0 && (
           <VStack>
             <DashedDivider />
-            <View className="py-4">
+            <Box className="py-4">
               <CategoryBreakdown items={report.categoryBreakdown} />
-            </View>
+            </Box>
           </VStack>
         )}
         {report.dayPatterns.length > 0 && (
           <VStack>
             <DashedDivider />
-            <View className="py-4">
+            <Box className="py-4">
               <DayPatternChart items={report.dayPatterns} />
-            </View>
+            </Box>
           </VStack>
         )}
         {report.timePatterns.length > 0 && (
           <VStack>
             <DashedDivider />
-            <View className="py-4">
+            <Box className="py-4">
               <TimePatternSummary items={report.timePatterns} timeFormat={preference.timeFormat} />
-            </View>
+            </Box>
           </VStack>
         )}
         {report.aiSummary && (
           <VStack>
             <DashedDivider />
-            <View className="py-4">
+            <Box className="py-4">
               <AiAnalysis summary={report.aiSummary} />
-            </View>
+            </Box>
           </VStack>
         )}
         {report.aiTips.length > 0 && (
           <VStack>
             <DashedDivider />
-            <View className="py-4">
+            <Box className="py-4">
               <ImprovementTipList tips={report.aiTips} />
-            </View>
+            </Box>
           </VStack>
         )}
       </VStack>
@@ -108,7 +115,7 @@ function TodoCompletionStats({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
   const { stats } = report;
   const rateDiff =
-    stats.prevCompletionRate !== null ? stats.completionRate - stats.prevCompletionRate : null;
+    stats.prevCompletionRate != null ? stats.completionRate - stats.prevCompletionRate : null;
 
   return (
     <VStack gap={16}>
@@ -124,7 +131,7 @@ function TodoCompletionStats({ report }: { report: AiReport }) {
           <Text size="t2" weight="bold" tone="brand">
             {formatPercent(stats.completionRate)}%
           </Text>
-          {rateDiff !== null && (
+          {rateDiff != null && (
             <Text size="e2" tone={rateDiff >= 0 ? 'success' : 'danger'}>
               {rateDiff > 0 ? '+' : ''}
               {formatPercent(rateDiff)}%
@@ -170,7 +177,7 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
         <VStack key={item.name} gap={4}>
           <HStack justify="between" align="center">
             <HStack align="center" gap={6}>
-              <View className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+              <Box className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
               <Text size="b4" shade={8}>
                 {item.name}
               </Text>
@@ -179,12 +186,12 @@ function CategoryBreakdown({ items }: { items: AiReport['categoryBreakdown'] }) 
               {item.completed}/{item.total} ({item.rate}%)
             </Text>
           </HStack>
-          <View className="h-2 bg-gray-3 rounded-full overflow-hidden">
-            <View
+          <Box className="h-2 bg-gray-3 rounded-full overflow-hidden">
+            <Box
               className="h-full rounded-full"
               style={{ width: `${item.rate}%`, backgroundColor: item.color }}
             />
-          </View>
+          </Box>
         </VStack>
       ))}
     </VStack>
@@ -204,7 +211,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
             <Text size="e2" shade={6}>
               {getDayOfWeekLabel(item.day)}
             </Text>
-            <View
+            <Box
               className={cn(
                 'w-8 h-8 rounded-full items-center justify-center',
                 item.rate >= 80 ? 'bg-main/20' : item.rate >= 50 ? 'bg-main/10' : 'bg-gray-3',
@@ -213,7 +220,7 @@ function DayPatternChart({ items }: { items: AiReport['dayPatterns'] }) {
               <Text size="e2" weight="bold" shade={item.rate >= 50 ? 9 : 5}>
                 {item.rate}
               </Text>
-            </View>
+            </Box>
           </VStack>
         ))}
       </HStack>

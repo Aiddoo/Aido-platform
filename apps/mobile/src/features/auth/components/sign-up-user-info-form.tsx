@@ -1,13 +1,19 @@
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { Input, KeyboardAdaptiveButton, Spacing, VStack, FormStepLayout } from '@src/shared/ui';
+import {
+  Input,
+  KeyboardAdaptiveButton,
+  Spacing,
+  VStack,
+  FormStepLayout,
+  Box,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { View } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
@@ -55,7 +61,7 @@ export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
     .exhaustive();
 
   return (
-    <View className="flex-1">
+    <Box className="flex-1">
       <FormStepLayout title={t(STEP_DESCRIPTION_KEYS[step])}>
         {step === 'email' && (
           <Animated.View
@@ -134,6 +140,6 @@ export function SignUpUserInfoForm({ onNextStep }: SignUpUserInfoFormProps) {
       <KeyboardAdaptiveButton color="dark" onPress={handleNext} isDisabled={!isNextButtonEnabled}>
         {t('auth:signUp.next')}
       </KeyboardAdaptiveButton>
-    </View>
+    </Box>
   );
 }

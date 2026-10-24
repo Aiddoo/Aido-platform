@@ -56,8 +56,8 @@ export function ProfileCard() {
             </Text>
             <Pressable
               hitSlop={8}
-              onPress={(e) => {
-                e.stopPropagation();
+              onPress={(event) => {
+                event.stopPropagation();
                 handleCopyUserTag();
               }}
               className="p-1"

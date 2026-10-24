@@ -23,6 +23,7 @@ import {
   Text,
   VStack,
   type QueryErrorFallbackProps,
+  Box,
 } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateKeyRange } from '@src/shared/utils/date-format';
@@ -31,7 +32,7 @@ import { times } from 'es-toolkit/compat';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useRef } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 const CERTIFICATE_LINE_COUNT = 4;
@@ -104,7 +105,7 @@ function WeeklyAchievementCertificate() {
             <Text size="e1" shade={5}>
               {t('card.nameLabel')}
             </Text>
-            <View className="border-b border-gray-3 pb-1 px-8">
+            <Box className="border-b border-gray-3 pb-1 px-8">
               <H4
                 weight="bold"
                 align="center"
@@ -113,7 +114,7 @@ function WeeklyAchievementCertificate() {
               >
                 {user.name}
               </H4>
-            </View>
+            </Box>
           </VStack>
 
           <Spacing size={16} />

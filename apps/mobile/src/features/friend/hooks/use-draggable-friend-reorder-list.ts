@@ -30,7 +30,7 @@ export const useDraggableFriendReorderList = <TItem extends { followId: string }
     setLocalItems(items);
   }, [updatedAt, items]);
 
-  const onDragEnd = ({ data, from, to }: DragEndParams<TItem>) => {
+  const handleDragEnd = ({ data, from, to }: DragEndParams<TItem>) => {
     if (isPending) {
       return;
     }
@@ -43,5 +43,5 @@ export const useDraggableFriendReorderList = <TItem extends { followId: string }
     onReorder(instruction);
   };
 
-  return { items: localItems, onDragEnd };
+  return { items: localItems, onDragEnd: handleDragEnd };
 };

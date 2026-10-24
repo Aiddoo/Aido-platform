@@ -1,10 +1,10 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
+import { ArrowLeftIcon, ScreenTitleBar, Box } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
 import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const FriendsLayout = () => {
@@ -30,7 +30,7 @@ const FriendsLayout = () => {
         },
         headerTitleAlign: 'center',
         headerLeft: () => (
-          <View className="justify-center items-center">
+          <Box className="justify-center items-center">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t('common:actions.goBack')}
@@ -40,7 +40,7 @@ const FriendsLayout = () => {
             >
               <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
             </Pressable>
-          </View>
+          </Box>
         ),
       }}
     >

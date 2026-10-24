@@ -1,12 +1,11 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, TextButton, VStack, DashedDivider } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack, DashedDivider, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
-import { View } from 'react-native';
 
 import { REPORT_TYPE_CHIP_COLORS, REPORT_TYPE_LABEL_KEYS } from '../constants/report-type';
 import { SAMPLE_REPORT_IDS } from '../constants/sample-reports';
@@ -32,7 +31,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
       className="rounded-xl"
     >
       <PressableFeedback.Highlight className="rounded-xl" />
-      <View className={cn('py-3', !report.hasActivity && 'opacity-50')}>
+      <Box className={cn('py-3', !report.hasActivity && 'opacity-50')}>
         <VStack gap={10}>
           <HStack justify="between" align="center">
             <HStack align="center" gap={6}>
@@ -72,13 +71,13 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
             </Text>
           )}
 
-          <View className="items-end">
+          <Box className="items-end">
             <TextButton size="small" variant="arrow">
               {t('report.card.viewDetail')}
             </TextButton>
-          </View>
+          </Box>
         </VStack>
-      </View>
+      </Box>
 
       {!isLast && <DashedDivider />}
     </PressableFeedback>
@@ -102,7 +101,7 @@ ReportCard.Loading = function Loading() {
   return (
     <VStack>
       {times(LOADING_CARD_COUNT, (i) => (
-        <View key={i} className="py-3">
+        <Box key={i} className="py-3">
           <SkeletonGroup isLoading>
             <VStack gap={10}>
               <HStack justify="between" align="center">
@@ -115,13 +114,13 @@ ReportCard.Loading = function Loading() {
                 <SkeletonGroup.Item className="h-10 w-16 rounded-md" />
               </HStack>
               <SkeletonGroup.Item className="h-4 w-full rounded-md" />
-              <View className="items-end">
+              <Box className="items-end">
                 <SkeletonGroup.Item className="h-3 w-16 rounded-md" />
-              </View>
+              </Box>
             </VStack>
           </SkeletonGroup>
           {i < LOADING_CARD_COUNT - 1 && <DashedDivider className="mt-3" />}
-        </View>
+        </Box>
       ))}
     </VStack>
   );

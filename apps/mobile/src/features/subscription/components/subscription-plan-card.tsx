@@ -1,10 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatPrice } from '@src/shared/utils/format';
 import { Card, Radio, RadioGroup } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { View } from 'react-native';
 
 import {
   getAnnualDiscountPercent,
@@ -65,11 +64,11 @@ function PlanCard({ plan, discountPercent }: PlanCardProps) {
                   {label}
                 </Text>
                 {isAnnual && discountPercent > 0 && (
-                  <View className="bg-main/10 px-2 py-0.5 rounded-full">
+                  <Box className="bg-main/10 px-2 py-0.5 rounded-full">
                     <Text size="e2" weight="bold" className="text-main">
                       {t('plan.discount', { percent: discountPercent })}
                     </Text>
-                  </View>
+                  </Box>
                 )}
               </HStack>
               <Radio>
@@ -86,11 +85,8 @@ function PlanCard({ plan, discountPercent }: PlanCardProps) {
               </Text>
             </HStack>
 
-            <Text
-              size="e1"
-              className={cn('text-gray-5', monthlyEquivalent === null && 'opacity-0')}
-            >
-              {monthlyEquivalent !== null
+            <Text size="e1" className={cn('text-gray-5', monthlyEquivalent == null && 'opacity-0')}>
+              {monthlyEquivalent != null
                 ? t('plan.monthlyEquivalent', {
                     price: formatPrice(monthlyEquivalent, plan.currencyCode),
                   })

@@ -15,6 +15,7 @@ import {
   QueryErrorBoundary,
   Spacing,
   StyledSafeAreaView,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -22,7 +23,7 @@ import { router } from 'expo-router';
 import { Suspense } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 function EditNameScreen() {
@@ -44,9 +45,9 @@ function EditNameScreen() {
 
   const canSubmit = isValid && isDirty;
 
-  const onSubmit = async (data: UpdateNameFormInput) => {
+  const handleSubmitName = async (values: UpdateNameFormInput) => {
     try {
-      await updateProfileMutation.mutateAsync({ name: data.name }, { onSuccess: () => goBack() });
+      await updateProfileMutation.mutateAsync({ name: values.name }, { onSuccess: () => goBack() });
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
@@ -56,7 +57,7 @@ function EditNameScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <View className="flex-1">
+      <Box className="flex-1">
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 24, paddingBottom: 100 }}
@@ -86,7 +87,7 @@ function EditNameScreen() {
                     .otherwise(() => t('editName.required'))}
                   onSubmitEditing={() => {
                     if (canSubmit) {
-                      handleSubmit(onSubmit)();
+                      handleSubmit(handleSubmitName)();
                     }
                   }}
                 />
@@ -96,25 +97,25 @@ function EditNameScreen() {
         </ScrollView>
 
         <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(onSubmit)()}
+          onPress={() => handleSubmit(handleSubmitName)()}
           isDisabled={!canSubmit}
           isLoading={isSubmitting}
         >
           {t('editName.submit')}
         </KeyboardAdaptiveButton>
-      </View>
+      </Box>
     </FormProvider>
   );
 }
 
 export default function EditNameRoute() {
   return (
-    <View className="flex-1 bg-gray-1">
+    <Box className="flex-1 bg-gray-1">
       <QueryErrorBoundary>
-        <Suspense fallback={<View className="flex-1" />}>
+        <Suspense fallback={<Box className="flex-1" />}>
           <EditNameScreen />
         </Suspense>
       </QueryErrorBoundary>
-    </View>
+    </Box>
   );
 }

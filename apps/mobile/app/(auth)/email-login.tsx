@@ -17,6 +17,7 @@ import {
   TextButton,
   QueryErrorBoundary,
   StyledSafeAreaView,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
@@ -27,7 +28,7 @@ import { useRef } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { Image, View } from 'react-native';
+import { Image } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 function EmailLoginScreen() {
@@ -48,9 +49,9 @@ function EmailLoginScreen() {
 
   const emailLoginMutation = useMutation(useEmailLoginMutationOptions());
 
-  const onSubmit = handleSubmit(async (data) => {
+  const handleSubmitEmailLogin = handleSubmit(async (values) => {
     try {
-      await emailLoginMutation.mutateAsync({ email: data.email, password: data.password });
+      await emailLoginMutation.mutateAsync({ email: values.email, password: values.password });
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
@@ -60,7 +61,7 @@ function EmailLoginScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <View className="flex-1 overflow-hidden bg-background">
+      <Box className="flex-1 overflow-hidden bg-background">
         <Image
           source={idoCatHiImage}
           className="absolute right-0 top-0 z-10 h-[100px] w-[100px]"
@@ -125,7 +126,7 @@ function EmailLoginScreen() {
                     submitBehavior="submit"
                     isInvalid={!!error}
                     errorMessage={resolveValidationMessage(error, { default: 'password.required' })}
-                    onSubmitEditing={() => onSubmit()}
+                    onSubmitEditing={() => handleSubmitEmailLogin()}
                   />
                 )}
               </FormField>
@@ -135,7 +136,7 @@ function EmailLoginScreen() {
               <Button
                 testID="email-login-submit"
                 color="primary"
-                onPress={() => onSubmit()}
+                onPress={() => handleSubmitEmailLogin()}
                 isLoading={isSubmitting}
               >
                 {t('emailLogin.submit')}
@@ -155,7 +156,7 @@ function EmailLoginScreen() {
             </StyledSafeAreaView>
           </KeyboardAwareScrollView>
         </ReadableContent>
-      </View>
+      </Box>
     </FormProvider>
   );
 }

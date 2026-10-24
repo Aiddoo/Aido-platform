@@ -1,9 +1,9 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { BellIcon, QueryErrorBoundary, type QueryErrorFallbackProps } from '@src/shared/ui';
+import { BellIcon, QueryErrorBoundary, type QueryErrorFallbackProps, Box } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 
 import { useGetUnreadCountQueryOptions } from '../queries/get-unread-count-query-options';
 
@@ -16,16 +16,16 @@ export function NotificationBell() {
   return (
     <Pressable onPress={() => navigate('/notifications')} hitSlop={8} className="p-2">
       <BellIcon width={24} height={24} colorClassName="text-gray-9" />
-      {hasUnread && <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-main" />}
+      {hasUnread && <Box className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-main" />}
     </Pressable>
   );
 }
 
 NotificationBell.Loading = function Loading() {
   return (
-    <View className="p-2">
+    <Box className="p-2">
       <BellIcon width={24} height={24} colorClassName="text-gray-4" />
-    </View>
+    </Box>
   );
 };
 
@@ -33,7 +33,7 @@ NotificationBell.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
   return (
     <Pressable onPress={reset} hitSlop={8} className="p-2">
       <BellIcon width={24} height={24} colorClassName="text-gray-4" />
-      <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger" />
+      <Box className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger" />
     </Pressable>
   );
 };

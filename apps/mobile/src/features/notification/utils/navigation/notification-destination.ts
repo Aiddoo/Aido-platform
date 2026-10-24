@@ -90,7 +90,7 @@ export function resolveNotificationDestination(
   }
 
   const routing = parseNotificationRouting(source);
-  return routing === null ? NO_DESTINATION : toRouteDestination(routing, today);
+  return routing == null ? NO_DESTINATION : toRouteDestination(routing, today);
 }
 
 function parseNotificationRouting(
@@ -109,7 +109,7 @@ function parseNotificationRouting(
 }
 
 function toExternalDestination(kind: 'browser' | 'webview', url?: string): NotificationDestination {
-  return url !== undefined && /^https?:\/\//.test(url) ? { kind, url } : NO_DESTINATION;
+  return url != null && /^https?:\/\//.test(url) ? { kind, url } : NO_DESTINATION;
 }
 
 function toRouteDestination(

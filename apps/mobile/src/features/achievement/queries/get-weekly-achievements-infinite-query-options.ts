@@ -7,11 +7,11 @@ import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 import type { WeeklyAchievementsResult } from '../domains/achievement.model';
 
 function selectWeeklyAchievements(
-  data: InfiniteData<WeeklyAchievementsResult, number | undefined>,
+  infinitePages: InfiniteData<WeeklyAchievementsResult, number | undefined>,
 ) {
   return {
-    items: data.pages.flatMap((page) => page.items),
-    summary: data.pages[0]?.summary,
+    items: infinitePages.pages.flatMap((page) => page.items),
+    summary: infinitePages.pages[0]?.summary,
   };
 }
 
@@ -36,7 +36,7 @@ export function getWeeklyAchievementsInfiniteQueryOptions(
       if (!lastPage.hasNext) {
         return undefined;
       }
-      return lastPage.nextCursor ?? undefined;
+      return lastPage.nextCursor;
     },
     select: selectWeeklyAchievements,
   });

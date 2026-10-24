@@ -19,13 +19,13 @@ import {
   VStack,
   QueryErrorBoundary,
   FormStepLayout,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
-import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -71,7 +71,7 @@ function ForgotPasswordScreen() {
   });
 
   return (
-    <View className="flex-1 bg-background">
+    <Box className="flex-1 bg-background">
       <ReadableContent flex={1}>
         <FormProvider {...form}>
           {match(step)
@@ -101,7 +101,7 @@ function ForgotPasswordScreen() {
             .exhaustive()}
         </FormProvider>
       </ReadableContent>
-    </View>
+    </Box>
   );
 }
 
@@ -118,7 +118,7 @@ function EmailStep({ onSubmit, isSubmitting }: EmailStepProps) {
   const isValid = email.length > 0 && !errors.email;
 
   return (
-    <View className="flex-1">
+    <Box className="flex-1">
       <FormStepLayout title={t('forgotPassword.emailTitle')}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <VStack gap={8}>
@@ -160,7 +160,7 @@ function EmailStep({ onSubmit, isSubmitting }: EmailStepProps) {
       <KeyboardAdaptiveButton onPress={onSubmit} isDisabled={!isValid} isLoading={isSubmitting}>
         {t('forgotPassword.next')}
       </KeyboardAdaptiveButton>
-    </View>
+    </Box>
   );
 }
 

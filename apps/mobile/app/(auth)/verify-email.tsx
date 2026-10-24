@@ -6,10 +6,9 @@ import {
 import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
 import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent } from '@src/shared/ui';
+import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
-import { View } from 'react-native';
 
 /** 로그인 중 미인증(EMAIL_0503) 계정이 이메일 인증을 마치는 화면 */
 function VerifyEmailScreen() {
@@ -19,7 +18,7 @@ function VerifyEmailScreen() {
   const resend = useMutation(useResendVerificationMutationOptions());
 
   return (
-    <View className="flex-1 bg-white">
+    <Box className="flex-1 bg-white">
       <Stack.Screen options={{ title: t('verifyEmail.title') }} />
 
       <ReadableContent flex={1}>
@@ -30,7 +29,7 @@ function VerifyEmailScreen() {
           onResend={() => resend.mutateAsync({ email })}
         />
       </ReadableContent>
-    </View>
+    </Box>
   );
 }
 

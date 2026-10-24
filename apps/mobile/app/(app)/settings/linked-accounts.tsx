@@ -18,6 +18,7 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  Box,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
@@ -25,7 +26,7 @@ import { times } from 'es-toolkit/compat';
 import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
-import { Platform, ScrollView, View } from 'react-native';
+import { Platform, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function LinkedAccountsScreen() {
@@ -162,7 +163,7 @@ function LinkedAccountsList() {
       </VStack>
 
       <ConfirmDialog
-        isOpen={unlinkTarget !== null}
+        isOpen={unlinkTarget != null}
         onOpenChange={(open) => {
           if (!open) {
             setUnlinkTarget(null);
@@ -256,9 +257,9 @@ const ProviderListRow = memo(function ProviderListRow({
       horizontalPadding="medium"
       verticalPadding="large"
       left={
-        <View className={cn('w-10 h-10 rounded-full items-center justify-center', iconClassName)}>
+        <Box className={cn('w-10 h-10 rounded-full items-center justify-center', iconClassName)}>
           {icon}
-        </View>
+        </Box>
       }
       contents={
         <VStack gap={2}>
@@ -279,9 +280,9 @@ const ProviderListRow = memo(function ProviderListRow({
       }
       right={match({ isPending, isLinked })
         .with({ isPending: true }, () => (
-          <View className="w-16 items-center">
+          <Box className="w-16 items-center">
             <Spinner size="sm" />
-          </View>
+          </Box>
         ))
         .with({ isPending: false, isLinked: true }, () => (
           <Button size="small" variant="weak" onPress={handleUnlinkPress} isDisabled={!canUnlink}>

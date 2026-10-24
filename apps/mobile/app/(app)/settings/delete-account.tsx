@@ -11,12 +11,13 @@ import {
   useConfirmDialog,
   VStack,
   FormStepLayout,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { useForm, useFormState } from 'react-hook-form';
-import { Keyboard, View } from 'react-native';
+import { Keyboard } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 const credentialDeleteAccountSchema = deleteAccountSchema.required({ password: true });
@@ -47,7 +48,7 @@ function DeleteAccountScreen() {
   });
 
   return (
-    <View className="flex-1">
+    <Box className="flex-1">
       <FormStepLayout title={t('deleteAccount.passwordTitle')}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <FormField control={control} name="password">
@@ -89,18 +90,18 @@ function DeleteAccountScreen() {
       >
         {t('deleteAccount.submit')}
       </KeyboardAdaptiveButton>
-    </View>
+    </Box>
   );
 }
 
 export default function DeleteAccountRoute() {
   return (
-    <View className="flex-1 bg-gray-1">
+    <Box className="flex-1 bg-gray-1">
       <QueryErrorBoundary>
-        <Suspense fallback={<View className="flex-1" />}>
+        <Suspense fallback={<Box className="flex-1" />}>
           <DeleteAccountScreen />
         </Suspense>
       </QueryErrorBoundary>
-    </View>
+    </Box>
   );
 }

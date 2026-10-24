@@ -62,7 +62,7 @@ export function WeatherForecastBadge() {
           <WeatherForecastBadge.Loading />
         ) : forecast && session.status !== 'unsupported' ? (
           <Text size="b4" weight="semibold" shade={8}>
-            {temperature !== null && temperature !== undefined
+            {temperature != null
               ? `${temperature}°`
               : `${Math.round(forecast.temperatureMin)}°–${Math.round(forecast.temperatureMax)}°`}
           </Text>

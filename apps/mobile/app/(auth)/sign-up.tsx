@@ -8,13 +8,12 @@ import { useResendVerificationMutationOptions } from '@src/features/auth/queries
 import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent } from '@src/shared/ui';
+import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm } from 'react-hook-form';
-import { View } from 'react-native';
 import { match } from 'ts-pattern';
 
 const SIGN_UP_STEPS = ['userInfo', 'password', 'verification'] as const;
@@ -66,7 +65,7 @@ function SignUpScreen() {
   });
 
   return (
-    <View className="flex-1 bg-background">
+    <Box className="flex-1 bg-background">
       <Stack.Screen options={{ title: t(SIGN_UP_STEP_TITLE_KEYS[step]) }} />
 
       <ReadableContent flex={1}>
@@ -93,7 +92,7 @@ function SignUpScreen() {
           })
           .exhaustive()}
       </ReadableContent>
-    </View>
+    </Box>
   );
 }
 

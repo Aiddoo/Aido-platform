@@ -14,12 +14,13 @@ import {
   Text,
   VStack,
   type QueryErrorFallbackProps,
+  Box,
 } from '@src/shared/ui';
 import { useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { ActivityIndicator, Pressable, RefreshControl, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl } from 'react-native';
 
 import { AchievementPolicy, type WeeklyAchievement } from '../domains/achievement.model';
 import { invalidateWeeklyAchievements } from '../queries/achievement-cache';
@@ -62,9 +63,9 @@ export function WeeklyAchievementList({ ListHeaderComponent }: WeeklyAchievement
       ListFooterComponent={
         <>
           {isFetchingNextPage && (
-            <View className="py-4 items-center">
+            <Box className="py-4 items-center">
               <ActivityIndicator />
-            </View>
+            </Box>
           )}
           <Spacing size={32} />
         </>
@@ -125,10 +126,10 @@ WeeklyAchievementList.Empty = function Empty() {
   const { t } = useTranslation('achievement');
 
   return (
-    <View className="flex-1 justify-center">
+    <Box className="flex-1 justify-center">
       <Spacing size={32} />
       <Result title={t('list.emptyRecordTitle')} description={t('list.emptyRecordDescription')} />
-    </View>
+    </Box>
   );
 };
 

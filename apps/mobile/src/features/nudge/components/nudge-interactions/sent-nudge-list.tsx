@@ -100,7 +100,7 @@ SentNudgeList.Item = function Item({ nudge }: { nudge: NudgeInteraction }) {
     .with('THANKED', () => t('interaction.thanked'))
     .with('COMPLETED', () => t('interaction.completed'))
     .with('REPLIED', () =>
-      nudge.replyKind === null
+      nudge.replyKind == null
         ? ''
         : t('interaction.replyStatus', {
             reply: t(getNudgeReplyLabelKey(nudge.replyKind)),

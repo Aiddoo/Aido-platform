@@ -9,7 +9,7 @@ const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** 아직 광고성 푸시 수신에 동의하지 않았는가 */
 export function isNotAgreedToMarketingPush(consent: Consent): boolean {
-  return consent.marketingPushAgreedAt === null;
+  return consent.marketingPushAgreedAt == null;
 }
 
 /** 닫기 횟수가 상한 미만인가 */
@@ -19,7 +19,7 @@ export function isUnderPromptLimit(promptState: MarketingPushPromptState): boole
 
 /** 마지막 닫기 이후 쿨다운이 경과했는가 (닫은 적 없으면 즉시 true) */
 export function hasCooldownElapsed(promptState: MarketingPushPromptState, now: Date): boolean {
-  if (promptState.lastPromptedAt === null) {
+  if (promptState.lastPromptedAt == null) {
     return true;
   }
 

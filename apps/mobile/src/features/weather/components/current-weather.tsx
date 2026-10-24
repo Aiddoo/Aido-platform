@@ -16,7 +16,6 @@ import { times } from 'es-toolkit/compat';
 import { useHeaderHeight } from 'expo-router/react-navigation';
 import { Skeleton } from 'heroui-native';
 import { Fragment } from 'react';
-import { View } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 import { getPrecipitationTypeLabel, getSkyConditionLabel } from '../constants/weather-labels';
@@ -50,13 +49,13 @@ export function CurrentWeather() {
       <VStack align="center" gap={8}>
         <Text
           className={
-            forecast.currentTemperature === null
+            forecast.currentTemperature == null
               ? 'text-[48px] leading-[56px] font-medium'
               : 'text-[80px] leading-[88px] font-medium tracking-[-2.4px]'
           }
           style={{ color: palette.text }}
         >
-          {forecast.currentTemperature === null
+          {forecast.currentTemperature == null
             ? `${minimum}°–${maximum}°`
             : `${forecast.currentTemperature}°`}
         </Text>
@@ -96,7 +95,7 @@ export function CurrentWeather() {
         )}
       </VStack>
 
-      {forecast.currentTemperature === null && (
+      {forecast.currentTemperature == null && (
         <Text size="b4" align="center" style={{ color: palette.textSub }}>
           {t('screen.dailyRange')}
         </Text>
@@ -120,7 +119,7 @@ CurrentWeather.Loading = function Loading() {
   const { glass } = useTimePalette();
 
   return (
-    <View style={{ paddingTop: headerHeight + 24 }}>
+    <Box style={{ paddingTop: headerHeight + 24 }}>
       <StyledSafeAreaView edges={['left', 'right']}>
         <HStack align="center" gap={4} justify="center">
           <TextSkeleton size="b2" className="w-20" color={glass} />
@@ -152,7 +151,7 @@ CurrentWeather.Loading = function Loading() {
           ))}
         </HStack>
       </StyledSafeAreaView>
-    </View>
+    </Box>
   );
 };
 
@@ -203,5 +202,5 @@ function Stat({ label, value }: { label: string; value: string }) {
 function StatDivider() {
   const palette = useTimePalette();
 
-  return <View className="w-px h-12 opacity-20" style={{ backgroundColor: palette.textSub }} />;
+  return <Box className="w-px h-12 opacity-20" style={{ backgroundColor: palette.textSub }} />;
 }

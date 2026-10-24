@@ -1,7 +1,6 @@
-import { Text } from '@src/shared/ui';
+import { Text, Box } from '@src/shared/ui';
 import { ControlField } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { View } from 'react-native';
 
 interface SettingsToggleProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
   label: string;
@@ -11,7 +10,7 @@ interface SettingsToggleProps extends Omit<ComponentProps<typeof ControlField>, 
 export function SettingsToggle({ label, description, ...controlProps }: SettingsToggleProps) {
   return (
     <ControlField {...controlProps}>
-      <View className="flex-1">
+      <Box className="flex-1">
         <Text size="b2" shade={8}>
           {label}
         </Text>
@@ -20,7 +19,7 @@ export function SettingsToggle({ label, description, ...controlProps }: Settings
             {description}
           </Text>
         )}
-      </View>
+      </Box>
       <ControlField.Indicator />
     </ControlField>
   );

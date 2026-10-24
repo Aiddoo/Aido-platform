@@ -81,5 +81,5 @@ export function unlockPushRegistrationForActivation({
   if (progress) {
     updateProgressCache(queryClient, config, user, progress);
   }
-  return progress !== null && progress.pushRegistrationUnlockedAt !== null;
+  return progress != null && progress.pushRegistrationUnlockedAt != null;
 }

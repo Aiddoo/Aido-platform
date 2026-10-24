@@ -14,6 +14,7 @@ import {
   Text,
   VStack,
   type QueryErrorFallbackProps,
+  Box,
 } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { formatTimeDisplay, type TimeFormat } from '@src/shared/utils/time';
@@ -21,7 +22,7 @@ import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { Image, View } from 'react-native';
+import { Image } from 'react-native';
 
 import {
   isSuggestionsPremiumRequiredError,
@@ -48,7 +49,7 @@ export function SuggestionsList() {
 
   return (
     <ScallopedContainer>
-      <View className="items-center px-5 pt-4">
+      <Box className="items-center px-5 pt-4">
         <Image
           source={require('@assets/images/ido_cat_suggestion.webp')}
           style={{ width: 100, height: 100 }}
@@ -61,11 +62,11 @@ export function SuggestionsList() {
         <Text size="b4" shade={6} align="center">
           {t('suggestions.list.headerDescription')}
         </Text>
-      </View>
+      </Box>
 
       <Spacing size={20} />
 
-      <View className="px-4 pb-4">
+      <Box className="px-4 pb-4">
         {suggestions.map((suggestion, index) => (
           <SuggestionsList.Item
             key={suggestion.id}
@@ -78,7 +79,7 @@ export function SuggestionsList() {
             isLast={index === suggestions.length - 1}
           />
         ))}
-      </View>
+      </Box>
     </ScallopedContainer>
   );
 }
@@ -86,7 +87,7 @@ export function SuggestionsList() {
 function formatSchedule(suggestion: AiSuggestion, timeFormat: TimeFormat): string {
   const days = formatDaysOfWeek(suggestion.daysOfWeek);
   const time =
-    suggestion.scheduledTime === null
+    suggestion.scheduledTime == null
       ? tGlobal('ai:suggestions.list.allDay')
       : formatTimeDisplay(suggestion.scheduledTime, timeFormat);
   return `${days} · ${time}`;
@@ -114,7 +115,7 @@ SuggestionsList.Item = function Item({
     push(suggestionCategorySheetHref({ suggestionId: suggestion.id }));
 
   return (
-    <View className="py-2">
+    <Box className="py-2">
       <VStack gap={8}>
         <VStack gap={4}>
           <HStack justify="between" align="center">
@@ -164,7 +165,7 @@ SuggestionsList.Item = function Item({
       </VStack>
 
       {!isLast && <DashedDivider className="mt-5" />}
-    </View>
+    </Box>
   );
 };
 
@@ -172,7 +173,7 @@ SuggestionsList.Empty = function Empty() {
   const { t } = useTranslation('ai');
   return (
     <ScallopedContainer>
-      <View className="items-center px-5 pt-4">
+      <Box className="items-center px-5 pt-4">
         <Image
           source={require('@assets/images/ido_cat_suggestion.webp')}
           style={{ width: 100, height: 100 }}
@@ -185,12 +186,12 @@ SuggestionsList.Empty = function Empty() {
         <Text size="b4" shade={6} align="center">
           {t('suggestions.list.emptyNoHistoryDescription')}
         </Text>
-      </View>
+      </Box>
 
       <Spacing size={20} />
 
-      <View className="px-4 pb-4">
-        <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
+      <Box className="px-4 pb-4">
+        <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-4 py-8">
           <VStack gap={4} align="center">
             <Text size="b3" weight="semibold" shade={8} align="center">
               {t('suggestions.list.emptyNoPending')}
@@ -199,8 +200,8 @@ SuggestionsList.Empty = function Empty() {
               {t('suggestions.list.emptyNoPendingDescription')}
             </Text>
           </VStack>
-        </View>
-      </View>
+        </Box>
+      </Box>
     </ScallopedContainer>
   );
 };
@@ -212,7 +213,7 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
 
   return (
     <ScallopedContainer>
-      <View className="items-center px-5 pt-4">
+      <Box className="items-center px-5 pt-4">
         <Image
           source={require('@assets/images/ido_cat_suggestion.webp')}
           style={{ width: 100, height: 100 }}
@@ -225,12 +226,12 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
         <Text size="b4" shade={6} align="center">
           {t('suggestions.paywall.description')}
         </Text>
-      </View>
+      </Box>
 
       <Spacing size={20} />
 
-      <View className="px-4 pb-4">
-        <View className="py-2 opacity-60">
+      <Box className="px-4 pb-4">
+        <Box className="py-2 opacity-60">
           <VStack gap={8}>
             <VStack gap={4}>
               <HStack justify="between" align="center">
@@ -249,14 +250,14 @@ SuggestionsList.PremiumPreview = function PremiumPreview() {
               {t('suggestions.paywall.sampleReason')}
             </Text>
           </VStack>
-        </View>
+        </Box>
 
         <Spacing size={16} />
 
         <Button size="medium" onPress={() => push('/settings/subscription')}>
           {t('suggestions.paywall.subscribeCta')}
         </Button>
-      </View>
+      </Box>
     </ScallopedContainer>
   );
 };
@@ -266,7 +267,7 @@ SuggestionsList.Loading = function Loading() {
 
   return (
     <ScallopedContainer>
-      <View className="items-center px-5 pt-4">
+      <Box className="items-center px-5 pt-4">
         <Image
           source={require('@assets/images/ido_cat_suggestion.webp')}
           style={{ width: 100, height: 100 }}
@@ -276,13 +277,13 @@ SuggestionsList.Loading = function Loading() {
         <Skeleton className="w-48 rounded" style={{ height: fontScaledSize(28) }} />
         <Spacing size={4} />
         <Skeleton className="w-56 rounded" style={{ height: fontScaledSize(19) }} />
-      </View>
+      </Box>
 
       <Spacing size={20} />
 
-      <View className="px-4 pb-4">
+      <Box className="px-4 pb-4">
         {times(SUGGESTION_LOADING_COUNT, (index) => (
-          <View key={index} className="py-2">
+          <Box key={index} className="py-2">
             <VStack gap={8}>
               <VStack gap={4}>
                 <HStack justify="between" align="center">
@@ -294,9 +295,9 @@ SuggestionsList.Loading = function Loading() {
               <Skeleton className="w-full rounded" style={{ height: fontScaledSize(19) }} />
             </VStack>
             {index < SUGGESTION_LOADING_COUNT - 1 && <DashedDivider className="mt-5" />}
-          </View>
+          </Box>
         ))}
-      </View>
+      </Box>
     </ScallopedContainer>
   );
 };
@@ -310,12 +311,12 @@ SuggestionsList.Error = function ErrorState({ error, reset }: QueryErrorFallback
 
   return (
     <ScallopedContainer>
-      <View className="px-5 py-6">
+      <Box className="px-5 py-6">
         <Result
           title={t('errorBoundary.title')}
           button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
         />
-      </View>
+      </Box>
     </ScallopedContainer>
   );
 };

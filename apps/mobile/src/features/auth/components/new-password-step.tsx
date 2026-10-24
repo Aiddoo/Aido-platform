@@ -3,13 +3,13 @@ import { PasswordStrengthIndicator } from '@src/features/auth/components/passwor
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { KeyboardAdaptiveButton, VStack, FormStepLayout } from '@src/shared/ui';
+import { KeyboardAdaptiveButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import type { ComponentRef } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import type { TextInput } from 'react-native';
-import { Keyboard, View } from 'react-native';
+import { Keyboard } from 'react-native';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { match } from 'ts-pattern';
@@ -68,7 +68,7 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
   };
 
   return (
-    <View className="flex-1">
+    <Box className="flex-1">
       <FormStepLayout title={t('forgotPassword.newPasswordTitle')}>
         {step === 'newPasswordConfirm' && (
           <Animated.View
@@ -140,6 +140,6 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
       >
         {step === 'newPasswordConfirm' ? submitLabel : nextLabel}
       </KeyboardAdaptiveButton>
-    </View>
+    </Box>
   );
 }

@@ -7,13 +7,12 @@ import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
-import { KeyboardAdaptiveButton, QueryErrorBoundary, FormStepLayout } from '@src/shared/ui';
+import { KeyboardAdaptiveButton, QueryErrorBoundary, FormStepLayout, Box } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useFormState, FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
-import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
@@ -49,7 +48,7 @@ function ChangePasswordScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-1">
+    <Box className="flex-1 bg-gray-1">
       <FormProvider {...form}>
         {match(step)
           .with('currentPassword', () => <CurrentPasswordStep onNext={handleNextStep} />)
@@ -62,7 +61,7 @@ function ChangePasswordScreen() {
           ))
           .exhaustive()}
       </FormProvider>
-    </View>
+    </Box>
   );
 }
 
@@ -87,7 +86,7 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
   const isValid = currentPassword.length > 0 && !errors.currentPassword;
 
   return (
-    <View className="flex-1">
+    <Box className="flex-1">
       <FormStepLayout title={t('changePassword.currentTitle')}>
         <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)}>
           <FormField control={control} name="currentPassword">
@@ -118,6 +117,6 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
       <KeyboardAdaptiveButton onPress={onNext} isDisabled={!isValid}>
         {t('changePassword.next')}
       </KeyboardAdaptiveButton>
-    </View>
+    </Box>
   );
 }

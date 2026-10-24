@@ -1,11 +1,10 @@
 import { verifyEmailSchema } from '@aido/api';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, TextButton, VStack, FormStepLayout } from '@src/shared/ui';
+import { HStack, Text, TextButton, VStack, FormStepLayout, Box } from '@src/shared/ui';
 import type { InputOTPRef } from 'heroui-native';
 import { type ComponentProps, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
-import { View } from 'react-native';
 
 import { useCooldown } from '../hooks/use-cooldown';
 import { maskEmail } from '../utils/mask-email';
@@ -82,7 +81,7 @@ export function EmailVerificationCodeStep({
       clearCode();
     } catch (error) {
       const remainingSeconds = getResendCooldownAfterError(error);
-      if (remainingSeconds !== undefined) {
+      if (remainingSeconds != null) {
         setCooldown(remainingSeconds);
       }
     } finally {
@@ -91,7 +90,7 @@ export function EmailVerificationCodeStep({
   };
 
   return (
-    <View className="flex-1">
+    <Box className="flex-1">
       <FormStepLayout title={t('verification.codeSentTo', { email: maskEmail(email) })}>
         <VStack gap={32} align="center">
           <VerificationCodeInput
@@ -125,6 +124,6 @@ export function EmailVerificationCodeStep({
           </HStack>
         </VStack>
       </FormStepLayout>
-    </View>
+    </Box>
   );
 }

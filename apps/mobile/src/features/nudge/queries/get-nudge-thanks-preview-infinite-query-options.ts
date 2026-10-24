@@ -25,7 +25,7 @@ export function getNudgeThanksPreviewInfiniteQueryOptions(
       ),
     initialPageParam: INITIAL_THANKS_PREVIEW_PAGE_PARAM,
     getNextPageParam: (lastPage) =>
-      lastPage.hasNext && lastPage.nextCursor !== null && lastPage.throughNudgeId !== null
+      lastPage.hasNext && lastPage.nextCursor != null && lastPage.throughNudgeId != null
         ? { cursor: lastPage.nextCursor, throughNudgeId: lastPage.throughNudgeId }
         : undefined,
     staleTime: 30_000,

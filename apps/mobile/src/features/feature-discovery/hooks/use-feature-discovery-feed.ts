@@ -47,7 +47,7 @@ export function useFeatureDiscoveryFeed() {
     config,
     user,
     appVersion,
-    hasBundledCampaign: campaign !== null,
+    hasBundledCampaign: campaign != null,
     hasSeen,
   });
 
@@ -78,8 +78,8 @@ export function useFeatureDiscoveryFeed() {
 
   const isReentryVisible =
     config?.enabled === true &&
-    identity !== null &&
-    campaign !== null &&
+    identity != null &&
+    campaign != null &&
     stateService.isReentryVisible(identity);
 
   const openFromReentry = useCallback(() => {

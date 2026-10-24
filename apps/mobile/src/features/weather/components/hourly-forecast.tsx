@@ -1,11 +1,11 @@
 import catImage from '@assets/images/cat_weather_anchor.png';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
-import { Spacing, Text, VStack } from '@src/shared/ui';
+import { Spacing, Text, VStack, Box } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatHourLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
-import { Image, ScrollView, View } from 'react-native';
+import { Image, ScrollView } from 'react-native';
 
 import { useTimePalette } from '../hooks/use-time-palette';
 import { useWeatherSession } from '../hooks/weather-session-provider';
@@ -31,7 +31,7 @@ export function HourlyForecast() {
   }
 
   return (
-    <View className="relative mt-16">
+    <Box className="relative mt-16">
       <Image
         source={catImage}
         className="absolute right-8 w-[140px] h-[102px] z-10"
@@ -52,7 +52,7 @@ export function HourlyForecast() {
           ))}
         </ScrollView>
       </WeatherCard>
-    </View>
+    </Box>
   );
 }
 

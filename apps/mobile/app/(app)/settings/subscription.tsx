@@ -38,12 +38,13 @@ import {
   VStack,
   DashedDivider,
   ScallopedContainer,
+  Box,
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { Image, type ImageSourcePropType, Linking, ScrollView, View } from 'react-native';
+import { Image, type ImageSourcePropType, Linking, ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 function SubscriptionScreen() {
@@ -56,7 +57,7 @@ function SubscriptionScreen() {
   const { data: offering } = useQuery({
     ...useGetOfferingsQueryOptions(),
     enabled: canPurchase,
-    throwOnError: (_error, query) => canPurchase && query.state.data === undefined,
+    throwOnError: (_error, query) => canPurchase && query.state.data == null,
   });
   const purchase = useMutation(usePurchaseMutationOptions());
   const restore = useMutation(useRestoreMutationOptions());
@@ -99,7 +100,7 @@ function SubscriptionScreen() {
 
           <Spacing size={16} />
 
-          <View className="items-center">
+          <Box className="items-center">
             <TextButton
               size="medium"
               variant="underline"
@@ -108,7 +109,7 @@ function SubscriptionScreen() {
             >
               {t('subscriber.restoreButton')}
             </TextButton>
-          </View>
+          </Box>
         </StyledSafeAreaView>
       </ScrollView>
     ))
@@ -123,13 +124,13 @@ function SubscriptionScreen() {
     ))
     .with({ offering: P.nullish }, () => <SubscriptionScreen.Loading />)
     .with({ offering: P.nonNullable }, ({ offering }) => (
-      <View className="flex-1">
+      <Box className="flex-1">
         <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
           <StyledSafeAreaView edges={['left', 'right']}>
             <Spacing size={16} />
 
             <ScallopedContainer>
-              <View className="px-5 pt-5">
+              <Box className="px-5 pt-5">
                 <VStack gap={4} className="items-center">
                   <H2>{t('paywall.title')}</H2>
 
@@ -172,17 +173,17 @@ function SubscriptionScreen() {
                 <Text size="e2" shade={5} align="center">
                   {t('paywall.futureIncluded')}
                 </Text>
-              </View>
+              </Box>
 
               <DashedDivider className="my-5 mx-5" />
 
-              <View className="px-5 pb-5">
+              <Box className="px-5 pb-5">
                 <SubscriptionPlanCard
                   plans={offering.plans}
                   value={selectedPlanId}
                   onValueChange={setChosenPlanId}
                 />
-              </View>
+              </Box>
             </ScallopedContainer>
 
             <Spacing size={24} />
@@ -210,7 +211,7 @@ function SubscriptionScreen() {
             {t('paywall.subscribeButton')}
           </Button>
         </StyledSafeAreaView>
-      </View>
+      </Box>
     ))
     .exhaustive();
 }
@@ -231,7 +232,7 @@ function SubscriptionReceipt() {
 
   return (
     <ScallopedContainer>
-      <View className="px-5 pt-5">
+      <Box className="px-5 pt-5">
         <HStack gap={16} className="items-center">
           <FillTicketIcon width={40} height={40} />
 
@@ -281,11 +282,11 @@ function SubscriptionReceipt() {
             )}
           </VStack>
         )}
-      </View>
+      </Box>
 
       <DashedDivider className="my-5 mx-5" />
 
-      <View className="px-5">
+      <Box className="px-5">
         <Text size="b3" weight="semibold" shade={9} className="mb-3">
           {t('subscriber.benefitsTitle')}
         </Text>
@@ -301,13 +302,13 @@ function SubscriptionReceipt() {
           <ReceiptBenefitRow title={t('benefits.aiReport.title')} />
           <ReceiptBenefitRow title={t('benefits.future')} />
         </VStack>
-      </View>
+      </Box>
 
       <DashedDivider className="my-5 mx-5" />
 
-      <View className="px-5 pb-5 items-center">
+      <Box className="px-5 pb-5 items-center">
         <ReceiptBarcode />
-      </View>
+      </Box>
     </ScallopedContainer>
   );
 }
@@ -317,9 +318,9 @@ function ReceiptBenefitRow({ title }: { title: string }) {
     <ListRow
       verticalPadding="small"
       left={
-        <View className="bg-main w-5 h-5 rounded-full items-center justify-center">
+        <Box className="bg-main w-5 h-5 rounded-full items-center justify-center">
           <FillCheckIcon width={12} height={12} colorClassName="text-white" />
-        </View>
+        </Box>
       }
       contents={
         <Text size="b3" shade={8}>
@@ -348,9 +349,9 @@ function SubscriptionBenefitCard({ title, description, image }: SubscriptionBene
         </Text>
       </VStack>
 
-      <View className="w-full aspect-video rounded-xl overflow-hidden">
+      <Box className="w-full aspect-video rounded-xl overflow-hidden">
         <Image source={image} className="size-full" resizeMode="cover" />
-      </View>
+      </Box>
     </VStack>
   );
 }
@@ -364,9 +365,9 @@ interface AdditionalBenefitProps {
 function AdditionalBenefit({ Icon, title, description }: AdditionalBenefitProps) {
   return (
     <HStack gap={12} className="items-center">
-      <View className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
+      <Box className="bg-main/10 w-10 h-10 rounded-xl items-center justify-center">
         <Icon width={20} height={20} colorClassName="text-main" />
-      </View>
+      </Box>
 
       <VStack gap={2} className="flex-1">
         <Text size="b3" weight="bold" shade={9}>
@@ -446,7 +447,7 @@ function ReceiptBarcode() {
   return (
     <HStack align="end" justify="center" gap={1.5}>
       {BARCODE_BARS.map((w, i) => (
-        <View
+        <Box
           // 순서와 개수가 고정된 장식 요소이므로 index가 안정적인 key다.
           key={i}
           className="bg-gray-7 rounded-[0.5px]"
