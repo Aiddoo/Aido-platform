@@ -7,9 +7,11 @@ import { KMA_TIMEZONE } from "./kma.constants.js";
 const KMA_BASE_TIMES = ["0200", "0500", "0800", "1100", "1400", "1700", "2000", "2300"] as const;
 const KMA_PUBLICATION_INTERVAL_MINUTES = 180;
 
+export type KmaBaseTime = (typeof KMA_BASE_TIMES)[number];
+
 export interface KmaBaseDateTime {
   readonly baseDate: string;
-  readonly baseTime: string;
+  readonly baseTime: KmaBaseTime;
 }
 
 /** KMA 발표일은 서버 TZ와 무관하게 KST이며 기존 15분 제공 여유를 유지한다. */
