@@ -1,20 +1,12 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useTranslation } from '@src/shared/i18n';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { Stack, router } from 'expo-router';
-import { Platform, Pressable, View } from 'react-native';
+import { ANIMATION } from '@src/shared/constants/animation.constants';
+import { ScreenTitleBar } from '@src/shared/ui';
+import { Stack } from 'expo-router';
+import { Platform } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-const AuthLayout = () => {
-  const { t } = useTranslation('common');
-  const goBack = useSingleTap(router.back);
-
+function AuthLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
   const headerBg = useResolveClassNames('bg-background');
-  const titleColor = useResolveClassNames('text-gray-9');
-  const { fontScale } = useFontScale();
 
   return (
     <Stack
@@ -22,29 +14,10 @@ const AuthLayout = () => {
         header: (props) => <ScreenTitleBar.StackHeader {...props} />,
         headerShown: false,
         animation: Platform.OS === 'ios' ? 'default' : 'fade_from_bottom',
-        animationDuration: 200,
-        contentStyle: { backgroundColor: backgroundColor as string },
+        animationDuration: ANIMATION.duration.normal,
+        contentStyle: { backgroundColor },
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: headerBg.backgroundColor as string },
-        headerTitleStyle: {
-          fontSize: getScaledFontSize(fontScale),
-          fontWeight: '600',
-          color: titleColor.color as string,
-        },
-        headerTitleAlign: 'center',
-        headerLeft: () => (
-          <View className="justify-center items-center">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('actions.goBack')}
-              onPress={() => goBack()}
-              hitSlop={8}
-              className="p-2"
-            >
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
-            </Pressable>
-          </View>
-        ),
+        headerStyle: { backgroundColor: headerBg.backgroundColor },
       }}
     >
       <Stack.Screen name="login" />
@@ -54,6 +27,6 @@ const AuthLayout = () => {
       <Stack.Screen name="verify-email" options={{ headerShown: true }} />
     </Stack>
   );
-};
+}
 
 export default AuthLayout;

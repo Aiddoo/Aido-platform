@@ -1,12 +1,18 @@
-import { PROVIDER_CONFIGS } from '@src/features/auth/constants/oauth-provider-configs';
-import type { OAuthProvider } from '@src/features/auth/domains/oauth.model';
-import { useLinkedAccounts } from '@src/features/auth/hooks/use-linked-accounts';
+import type { OAuthProvider, OAuthProviderSlug } from '@src/features/auth/domains/oauth.model';
+import { useGetLinkedAccountsQueryOptions } from '@src/features/auth/queries/get-linked-accounts-query-options';
+import { useLinkAccountMutationOptions } from '@src/features/auth/queries/use-link-account-mutation-options';
+import { useUnlinkAccountMutationOptions } from '@src/features/auth/queries/use-unlink-account-mutation-options';
+import { getProviderState } from '@src/features/auth/utils/get-provider-state';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  AppleIcon,
   Button,
   ConfirmDialog,
+  GoogleIcon,
   HStack,
+  KakaoIcon,
   ListRow,
+  NaverIcon,
   QueryErrorBoundary,
   Spacing,
   StyledSafeAreaView,
@@ -14,7 +20,8 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { range } from 'es-toolkit';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { Chip, Separator, Skeleton, SkeletonGroup, Spinner } from 'heroui-native';
 import type { ReactNode } from 'react';
 import { Fragment, memo, Suspense, useCallback, useState } from 'react';
@@ -46,12 +53,30 @@ function LinkedAccountsScreen() {
 
 export default LinkedAccountsScreen;
 
-const visibleConfigs =
-  Platform.OS === 'ios' ? PROVIDER_CONFIGS : PROVIDER_CONFIGS.filter((c) => c.provider !== 'APPLE');
+const PROVIDER_ROW_COUNT = Platform.OS === 'ios' ? 4 : 3;
 
 function LinkedAccountsList() {
   const { t } = useTranslation(['auth', 'common']);
-  const { canUnlink, getProviderState, link, unlink } = useLinkedAccounts();
+  const { data } = useSuspenseQuery(useGetLinkedAccountsQueryOptions());
+  const {
+    mutate: link,
+    isPending: isLinking,
+    variables: linkingSlug,
+  } = useMutation(useLinkAccountMutationOptions());
+  const {
+    mutate: unlink,
+    isPending: isUnlinking,
+    variables: unlinkingProvider,
+  } = useMutation(useUnlinkAccountMutationOptions());
+
+  const stateOf = (provider: OAuthProvider, slug: OAuthProviderSlug) =>
+    getProviderState({
+      accounts: data.accounts,
+      provider,
+      slug,
+      linkingSlug: isLinking ? linkingSlug : undefined,
+      unlinkingProvider: isUnlinking ? unlinkingProvider : undefined,
+    });
 
   const [unlinkTarget, setUnlinkTarget] = useState<{
     provider: OAuthProvider;
@@ -68,7 +93,7 @@ function LinkedAccountsList() {
   };
 
   const handleLink = useCallback(
-    (slug: (typeof PROVIDER_CONFIGS)[number]['slug']) => {
+    (slug: OAuthProviderSlug) => {
       link(slug);
     },
     [link],
@@ -81,27 +106,59 @@ function LinkedAccountsList() {
   return (
     <>
       <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
-        {visibleConfigs.map((config, index) => {
-          const { isLinked, isPending } = getProviderState(config.provider, config.slug);
-
-          return (
-            <Fragment key={config.provider}>
-              {index > 0 && <Separator className="mx-4 bg-gray-2" />}
-              <ProviderListRow
-                provider={config.provider}
-                slug={config.slug}
-                icon={config.icon}
-                iconClassName={config.iconClassName}
-                label={t(config.labelKey)}
-                isLinked={isLinked}
-                isPending={isPending}
-                canUnlink={canUnlink}
-                onLink={handleLink}
-                onUnlinkRequest={handleUnlinkRequest}
-              />
-            </Fragment>
-          );
-        })}
+        <ProviderListRow
+          provider="KAKAO"
+          slug="kakao"
+          icon={<KakaoIcon width={18} height={18} />}
+          iconClassName="bg-yellow-300"
+          label={t('providers.KAKAO')}
+          {...stateOf('KAKAO', 'kakao')}
+          canUnlink={data.canUnlink}
+          onLink={handleLink}
+          onUnlinkRequest={handleUnlinkRequest}
+        />
+        <Separator className="mx-4 bg-gray-2" />
+        <ProviderListRow
+          provider="GOOGLE"
+          slug="google"
+          icon={<GoogleIcon width={18} height={18} />}
+          iconClassName="bg-white border border-gray-2"
+          label={t('providers.GOOGLE')}
+          {...stateOf('GOOGLE', 'google')}
+          canUnlink={data.canUnlink}
+          onLink={handleLink}
+          onUnlinkRequest={handleUnlinkRequest}
+        />
+        {Platform.OS === 'ios' && (
+          <>
+            <Separator className="mx-4 bg-gray-2" />
+            <ProviderListRow
+              provider="APPLE"
+              slug="apple"
+              icon={
+                <AppleIcon width={18} height={18} colorClassName="text-white dark:text-black" />
+              }
+              iconClassName="bg-apple-button dark:bg-apple-button-dark"
+              label={t('providers.APPLE')}
+              {...stateOf('APPLE', 'apple')}
+              canUnlink={data.canUnlink}
+              onLink={handleLink}
+              onUnlinkRequest={handleUnlinkRequest}
+            />
+          </>
+        )}
+        <Separator className="mx-4 bg-gray-2" />
+        <ProviderListRow
+          provider="NAVER"
+          slug="naver"
+          icon={<NaverIcon width={18} height={18} colorClassName="text-white" />}
+          iconClassName="bg-success"
+          label={t('providers.NAVER')}
+          {...stateOf('NAVER', 'naver')}
+          canUnlink={data.canUnlink}
+          onLink={handleLink}
+          onUnlinkRequest={handleUnlinkRequest}
+        />
       </VStack>
 
       <ConfirmDialog
@@ -136,10 +193,10 @@ LinkedAccountsList.Loading = function Loading() {
   return (
     <VStack className="bg-white rounded-2xl overflow-hidden border border-gray-2">
       <SkeletonGroup isLoading isSkeletonOnly>
-        {range(visibleConfigs.length).map((index) => (
+        {times(PROVIDER_ROW_COUNT, (index) => (
           <Fragment key={`linked-account-skeleton-${index}`}>
             <SkeletonRow />
-            {index < visibleConfigs.length - 1 && <Separator className="mx-4 bg-gray-2" />}
+            {index < PROVIDER_ROW_COUNT - 1 && <Separator className="mx-4 bg-gray-2" />}
           </Fragment>
         ))}
       </SkeletonGroup>
@@ -162,14 +219,14 @@ function SkeletonRow() {
 
 interface ProviderListRowProps {
   provider: OAuthProvider;
-  slug: (typeof PROVIDER_CONFIGS)[number]['slug'];
+  slug: OAuthProviderSlug;
   icon: ReactNode;
   iconClassName: string;
   label: string;
   isLinked: boolean;
   isPending: boolean;
   canUnlink: boolean;
-  onLink: (slug: (typeof PROVIDER_CONFIGS)[number]['slug']) => void;
+  onLink: (slug: OAuthProviderSlug) => void;
   onUnlinkRequest: (provider: OAuthProvider, label: string) => void;
 }
 

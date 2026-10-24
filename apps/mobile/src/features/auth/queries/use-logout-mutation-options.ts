@@ -4,7 +4,6 @@ import {
   useAuthService,
   useLogger,
   useNotificationService,
-  useRevenueCatSdkManager,
 } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { notifyError } from '@src/shared/utils/haptics';
@@ -15,7 +14,6 @@ export const useLogoutMutationOptions = () => {
   const analytics = useAnalytics();
   const { trackEvent } = useTrack();
   const notificationService = useNotificationService();
-  const sdkManager = useRevenueCatSdkManager();
   const logger = useLogger();
 
   const { setStatus } = useAuth();
@@ -32,12 +30,6 @@ export const useLogoutMutationOptions = () => {
       } catch (error) {
         // Silently fail - continue with logout
         logger.warn('[PushNotification] Unregister error', { error });
-      }
-
-      try {
-        await sdkManager.logOut();
-      } catch (error) {
-        logger.warn('[RevenueCat] LogOut error', { error });
       }
 
       const result = await authService.logout();
