@@ -1,8 +1,5 @@
-import { useFriendById } from '@src/features/friend/hooks/use-friend-by-id';
-import {
-  friendScreenParamsSchema,
-  useFriendScreenParams,
-} from '@src/features/friend/hooks/use-friend-screen-params';
+import { friendScreenParamsSchema } from '@src/features/friend/hooks/use-friend-screen-params';
+import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
 import { PokeBanner } from '@src/features/nudge/components/poke-banner';
 import { invalidateNudges } from '@src/features/nudge/queries/nudge-cache';
 import { Calendar } from '@src/features/todo/components/calendar/calendar';
@@ -27,11 +24,15 @@ import { RefreshControl, ScrollView } from 'react-native';
 import { match, P } from 'ts-pattern';
 
 function FriendFeedScreen() {
-  const { friendId } = useFriendScreenParams();
   const selectedDateKey = useFeedDateKey();
   const queryClient = useQueryClient();
-  const { friend, hasNextPage, isFetchNextPageError, error, fetchNextPage } =
-    useFriendById(friendId);
+  const {
+    data: friend,
+    hasNextPage,
+    isFetchNextPageError,
+    error,
+    fetchNextPage,
+  } = useScreenFriend();
   const [refreshing, onRefresh] = useRefresh(() =>
     Promise.all([invalidateFriendTodos(queryClient), invalidateNudges(queryClient)]),
   );

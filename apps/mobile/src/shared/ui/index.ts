@@ -143,6 +143,8 @@ export {
   type TextSize,
   type TextTone,
   type TextWeight,
+  TextSkeleton,
+  type TextSkeletonProps,
 } from './text';
 export {
   BottomSheetTextArea,

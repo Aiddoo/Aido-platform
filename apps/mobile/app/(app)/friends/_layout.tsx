@@ -1,7 +1,7 @@
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, SearchIcon, ScreenTitleBar } from '@src/shared/ui';
+import { ArrowLeftIcon, ScreenTitleBar } from '@src/shared/ui';
 import { getScaledFontSize } from '@src/shared/utils/font-scale';
 import { Stack, router } from 'expo-router';
 import { Pressable, View } from 'react-native';
@@ -9,7 +9,6 @@ import { useResolveClassNames } from 'uniwind';
 
 const FriendsLayout = () => {
   const goBack = useSingleTap(router.back);
-  const push = useSingleTap(router.push);
 
   const headerBg = useResolveClassNames('bg-white');
   const titleColor = useResolveClassNames('text-gray-9');
@@ -45,19 +44,7 @@ const FriendsLayout = () => {
         ),
       }}
     >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: t('screenTitle'),
-          headerRight: () => (
-            <View className="justify-center items-center">
-              <Pressable onPress={() => push('/friends/search')} hitSlop={8} className="p-2">
-                <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
-              </Pressable>
-            </View>
-          ),
-        }}
-      />
+      <Stack.Screen name="index" options={{ title: t('screenTitle') }} />
       <Stack.Screen name="search" options={{ title: t('search.title') }} />
       <Stack.Screen name="add" options={{ title: '' }} />
     </Stack>

@@ -13,7 +13,7 @@ import {
 } from '@src/shared/ui';
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import type { ComponentProps } from 'react';
+import { Skeleton } from 'heroui-native';
 import { match } from 'ts-pattern';
 
 import { FriendPolicy } from '../domains/friend.model';
@@ -25,7 +25,7 @@ import type { SearchedUserViewModel } from '../utils/view-models/searched-user.v
 import { UserList } from './user-list';
 
 export function FriendSearchList({ query }: { query: string }) {
-  const { t } = useTranslation(['friend', 'common']);
+  const { t } = useTranslation('common');
   const normalizedQuery = query.trim();
   const debouncedQuery = useDebouncedValue(normalizedQuery);
   const isSettled = normalizedQuery === debouncedQuery;
@@ -36,14 +36,6 @@ export function FriendSearchList({ query }: { query: string }) {
     throwOnError: (_error, query) => query.state.data === undefined,
   });
   useFriendSearchTracking(debouncedQuery);
-  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
-  const cancelRequest = useMutation(useCancelRequestMutationOptions());
-
-  const items = search.data?.pages.flatMap((page) => page.items) ?? [];
-
-  const handleAdd = (user: SearchedUserViewModel) => sendRequest.mutate(user.userTag);
-
-  const handleCancel = (user: SearchedUserViewModel) => cancelRequest.mutate(user.id);
 
   if (!FriendPolicy.isValidSearchQuery({ query: normalizedQuery })) {
     return <FriendSearchList.Prompt />;
@@ -52,71 +44,94 @@ export function FriendSearchList({ query }: { query: string }) {
     return <FriendSearchList.Loading />;
   }
 
-  const renderAction = (user: SearchedUserViewModel) =>
-    match(user.actionState)
-      .with('friend', () => <CheckIcon width={20} height={20} colorClassName="text-gray-4" />)
-      .with('pending', () => (
-        <Button
-          variant="weak"
-          color="danger"
-          size="small"
-          display="inline"
-          isDisabled={sendRequest.isPending || cancelRequest.isPending}
-          onPress={() => handleCancel(user)}
-        >
-          {t('friend:search.action.cancel')}
-        </Button>
-      ))
-      .with('add', () => (
-        <Button
-          variant="fill"
-          color="primary"
-          size="small"
-          display="inline"
-          isDisabled={sendRequest.isPending || cancelRequest.isPending}
-          onPress={() => handleAdd(user)}
-        >
-          {t('friend:search.action.add')}
-        </Button>
-      ))
-      .exhaustive();
-
   return (
     <UserList
-      data={items}
+      data={search.data?.pages.flatMap((page) => page.items) ?? []}
       keyExtractor={(item) => item.id}
-      renderItem={(item: SearchedUserViewModel) => (
-        <FriendSearchList.Item
-          displayName={item.displayName}
-          subtitle={formatUserHashtag(item.userTag)}
-          profileImage={item.profileImage}
-          action={renderAction(item)}
-        />
-      )}
-      emptyContent={<FriendSearchList.Empty query={normalizedQuery} />}
-      footer={
+      renderItem={({ item }) => <FriendSearchList.Item user={item} />}
+      ListEmptyComponent={<FriendSearchList.Empty query={normalizedQuery} />}
+      ListFooterComponent={
         search.isFetchNextPageError ? (
           <Box py={16}>
             <Button variant="weak" onPress={() => search.fetchNextPage()}>
-              {t('common:actions.retry')}
+              {t('actions.retry')}
             </Button>
           </Box>
         ) : undefined
       }
       hasNextPage={search.hasNextPage && !search.isFetchNextPageError}
-      isFetching={search.isFetching}
       isFetchingNextPage={search.isFetchingNextPage}
-      onEndReached={() => search.fetchNextPage({ cancelRefetch: false })}
+      fetchNextPage={search.fetchNextPage}
     />
   );
 }
 
-FriendSearchList.Loading = function Loading() {
-  return <UserList.Loading />;
+FriendSearchList.Item = function Item({ user }: { user: SearchedUserViewModel }) {
+  const { t } = useTranslation('friend');
+  const sendRequest = useMutation(useSendRequestByTagMutationOptions());
+  const cancelRequest = useMutation(useCancelRequestMutationOptions());
+  const isProcessing = sendRequest.isPending || cancelRequest.isPending;
+
+  return (
+    <UserList.Item
+      displayName={user.displayName}
+      subtitle={formatUserHashtag(user.userTag)}
+      profileImage={user.profileImage}
+      right={match(user.actionState)
+        .with('friend', () => <CheckIcon width={20} height={20} colorClassName="text-gray-4" />)
+        .with('pending', () => (
+          <Button
+            variant="weak"
+            color="danger"
+            size="small"
+            display="inline"
+            isDisabled={isProcessing}
+            onPress={() => cancelRequest.mutate(user.id)}
+          >
+            {t('search.action.cancel')}
+          </Button>
+        ))
+        .with('add', () => (
+          <Button
+            variant="fill"
+            color="primary"
+            size="small"
+            display="inline"
+            isDisabled={isProcessing}
+            onPress={() => sendRequest.mutate(user.userTag)}
+          >
+            {t('search.action.add')}
+          </Button>
+        ))
+        .exhaustive()}
+    />
+  );
 };
 
-FriendSearchList.Item = function Item(props: ComponentProps<typeof UserList.Item>) {
-  return <UserList.Item {...props} />;
+FriendSearchList.Loading = function Loading() {
+  return <UserList.Loading hasSubtitle right={<Skeleton className="h-8 w-12 rounded-xl" />} />;
+};
+
+FriendSearchList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation(['friend', 'common']);
+  return (
+    <VStack flex={1} p={24}>
+      <Result
+        title={t('friend:search.loadError')}
+        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+      />
+    </VStack>
+  );
+};
+
+FriendSearchList.Empty = function Empty({ query }: { query: string }) {
+  const { t } = useTranslation('friend');
+  return (
+    <UserList.Empty
+      icon={<SearchIcon width={64} height={64} colorClassName="text-gray-4" />}
+      title={t('search.empty.noResults', { query })}
+    />
+  );
 };
 
 FriendSearchList.Prompt = function Prompt() {
@@ -129,28 +144,6 @@ FriendSearchList.Prompt = function Prompt() {
         title={t('search.empty.prompt')}
         description={t('search.empty.tagHint')}
         button={<Result.Button onPress={openAddFriend}>{t('search.empty.addByTag')}</Result.Button>}
-      />
-    </VStack>
-  );
-};
-
-FriendSearchList.Empty = function Empty({ query }: { query: string }) {
-  const { t } = useTranslation('friend');
-  return (
-    <Result
-      icon={<SearchIcon width={64} height={64} colorClassName="text-gray-4" />}
-      title={t('search.empty.noResults', { query })}
-    />
-  );
-};
-
-FriendSearchList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation(['friend', 'common']);
-  return (
-    <VStack flex={1} p={24}>
-      <Result
-        title={t('friend:search.loadError')}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
       />
     </VStack>
   );

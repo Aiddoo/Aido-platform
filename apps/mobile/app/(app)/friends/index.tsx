@@ -14,7 +14,7 @@ import {
 } from '@src/shared/ui';
 import { router, useNavigation, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
-import { Suspense, useCallback, useLayoutEffect } from 'react';
+import { type ReactNode, Suspense, useCallback, useLayoutEffect } from 'react';
 import { Pressable } from 'react-native';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -75,71 +75,65 @@ export default function FriendsScreen() {
         <Tabs.List className="border-b border-gray-2 w-full">
           <Tabs.Indicator className="h-[2px]" />
 
-          <Tabs.Trigger value={TabView.friends} className="py-3">
-            {({ isSelected }) => (
-              <Tabs.Label>
-                <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                  {t('tabs.friends')}
-                </Text>
-              </Tabs.Label>
-            )}
-          </Tabs.Trigger>
-          <Tabs.Trigger value={TabView.receiver} className="py-3">
-            {({ isSelected }) => (
-              <Tabs.Label>
-                <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                  {t('tabs.received')}
-                </Text>
-              </Tabs.Label>
-            )}
-          </Tabs.Trigger>
-          <Tabs.Trigger value={TabView.sender} className="py-3">
-            {({ isSelected }) => (
-              <Tabs.Label>
-                <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
-                  {t('tabs.sent')}
-                </Text>
-              </Tabs.Label>
-            )}
-          </Tabs.Trigger>
+          <FriendTab value={TabView.friends}>{t('tabs.friends')}</FriendTab>
+          <FriendTab value={TabView.receiver}>{t('tabs.received')}</FriendTab>
+          <FriendTab value={TabView.sender}>{t('tabs.sent')}</FriendTab>
         </Tabs.List>
         {match(view)
           .with(TabView.friends, () => (
-            <Tabs.Content value={TabView.friends} className="flex-1">
-              <Box flex={1} px={16}>
-                <QueryErrorBoundary resetKeys={[view]}>
-                  <Suspense fallback={<FriendList.Loading />}>
-                    <FriendList />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </Box>
-            </Tabs.Content>
+            <FriendTabContent value={TabView.friends}>
+              <QueryErrorBoundary resetKeys={[view]} fallback={FriendList.Error}>
+                <Suspense fallback={<FriendList.Loading />}>
+                  <FriendList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </FriendTabContent>
           ))
           .with(TabView.receiver, () => (
-            <Tabs.Content value={TabView.receiver} className="flex-1">
-              <Box flex={1} px={16}>
-                <QueryErrorBoundary resetKeys={[view]}>
-                  <Suspense fallback={<ReceivedRequestList.Loading />}>
-                    <ReceivedRequestList />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </Box>
-            </Tabs.Content>
+            <FriendTabContent value={TabView.receiver}>
+              <QueryErrorBoundary resetKeys={[view]} fallback={ReceivedRequestList.Error}>
+                <Suspense fallback={<ReceivedRequestList.Loading />}>
+                  <ReceivedRequestList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </FriendTabContent>
           ))
           .with(TabView.sender, () => (
-            <Tabs.Content value={TabView.sender} className="flex-1">
-              <Box flex={1} px={16}>
-                <QueryErrorBoundary resetKeys={[view]}>
-                  <Suspense fallback={<SentRequestList.Loading />}>
-                    <SentRequestList />
-                  </Suspense>
-                </QueryErrorBoundary>
-              </Box>
-            </Tabs.Content>
+            <FriendTabContent value={TabView.sender}>
+              <QueryErrorBoundary resetKeys={[view]} fallback={SentRequestList.Error}>
+                <Suspense fallback={<SentRequestList.Loading />}>
+                  <SentRequestList />
+                </Suspense>
+              </QueryErrorBoundary>
+            </FriendTabContent>
           ))
           .exhaustive()}
       </Tabs>
     </StyledSafeAreaView>
+  );
+}
+
+function FriendTab({ value, children }: { value: TabValue; children: string }) {
+  return (
+    <Tabs.Trigger value={value} className="py-3">
+      {({ isSelected }) => (
+        <Tabs.Label>
+          <Text size="b3" className={isSelected ? 'text-main font-semibold' : 'text-gray-5'}>
+            {children}
+          </Text>
+        </Tabs.Label>
+      )}
+    </Tabs.Trigger>
+  );
+}
+
+function FriendTabContent({ value, children }: { value: TabValue; children: ReactNode }) {
+  return (
+    <Tabs.Content value={value} className="flex-1">
+      <Box flex={1} px={16}>
+        {children}
+      </Box>
+    </Tabs.Content>
   );
 }
 

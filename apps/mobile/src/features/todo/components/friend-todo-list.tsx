@@ -89,7 +89,7 @@ FriendTodoList.Loading = function Loading() {
 
 FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const { t } = useTranslation('todo');
-  const friend = useScreenFriend();
+  const { data: friend } = useScreenFriend();
   const [date] = useFeedDate();
   const today = useToday();
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
@@ -206,7 +206,7 @@ function RemindNudgeButton({ friend }: { friend: FriendUserViewModel }) {
 
 FriendTodoList.Empty = function Empty() {
   const { t } = useTranslation('todo');
-  const friend = useScreenFriend();
+  const { data: friend } = useScreenFriend();
   const [date] = useFeedDate();
   const today = useToday();
   const isToday = isSameDay(date, today);
