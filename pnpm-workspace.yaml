@@ -66,7 +66,8 @@ catalog:
   'dayjs': '1.11.23'
   'es-toolkit': '1.53.0'
   'pg-boss': '12.27.0'
-  react-native-reserved-regions: ^0.2.0
+  'react-native-reorderable-list': '0.18.2'
+  'react-native-reserved-regions': '0.2.0'
   'ts-pattern': '5.9.2'
   'typescript': '6.0.3'
   'vite': '8.3.5'
@@ -157,6 +158,5 @@ catalogs:
 patchedDependencies:
   '@sentry/react-native@8.28.0': patches/@sentry__react-native@8.28.0.patch
   '@gorhom/bottom-sheet@5.2.14': patches/@gorhom__bottom-sheet@5.2.14.patch
-  react-native-draggable-flatlist@4.0.3: patches/react-native-draggable-flatlist@4.0.3.patch
   react-native-screens@4.30.0: patches/react-native-screens@4.30.0.patch
   expo-widgets@58.0.23: patches/expo-widgets@58.0.23.patch

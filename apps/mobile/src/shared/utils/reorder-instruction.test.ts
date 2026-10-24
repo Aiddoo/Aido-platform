@@ -1,4 +1,4 @@
-import { getReorderInstruction } from './draggable-reorder';
+import { getReorderInstruction } from './reorder-instruction';
 
 const createItems = (ids: string[]) => ids.map((id) => ({ id }));
 const getItemId = (item: { id: string }) => item.id;

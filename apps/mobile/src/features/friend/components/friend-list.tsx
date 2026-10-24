@@ -1,8 +1,8 @@
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
-import { useDraggableReorderList } from '@src/shared/hooks/use-draggable-reorder-list';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -21,7 +21,6 @@ import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl } from 'react-native';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -29,6 +28,7 @@ import Animated, {
   FadeOutRight,
   LinearTransition,
 } from 'react-native-reanimated';
+import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { useResolveClassNames } from 'uniwind';
 
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
@@ -50,16 +50,12 @@ export function FriendList() {
   const friends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
-  const {
-    items: draggableFriends,
-    onDragBegin,
-    onDragEnd,
-  } = useDraggableReorderList({
+  const reorderableList = useReorderableList({
     items: friends,
     updatedAt: dataUpdatedAt,
     isPending: reorderMutation.isPending,
     getItemId: (friend) => friend.followId,
-    onReorder: ({ movedId, targetId: targetFollowId, position }) => {
+    onReorder: ({ instruction: { movedId, targetId: targetFollowId, position } }) => {
       reorderMutation.mutate({
         followId: movedId,
         input: { targetFollowId, position },
@@ -68,10 +64,10 @@ export function FriendList() {
   });
 
   return (
-    <DraggableFlatList
-      data={draggableFriends}
+    <ReorderableList
+      {...reorderableList}
+      shouldUpdateActiveItem
       keyExtractor={(item) => item.followId}
-      activationDistance={10}
       ListHeaderComponent={
         <HStack py={12} align="center" justify="between">
           <Text size="b4" shade={6}>
@@ -80,15 +76,7 @@ export function FriendList() {
           <EditModeGuideTooltip />
         </HStack>
       }
-      renderItem={({ item, drag, isActive }) => (
-        <FriendList.Item
-          friend={item}
-          drag={reorderMutation.isPending ? undefined : drag}
-          isActive={isActive}
-        />
-      )}
-      onDragBegin={onDragBegin}
-      onDragEnd={onDragEnd}
+      renderItem={({ item }) => <FriendList.Item friend={item} />}
       ListEmptyComponent={<FriendList.Empty />}
       ListFooterComponent={
         isFetchingNextPage ? (
@@ -111,7 +99,7 @@ export function FriendList() {
           colors={refreshTint == null ? undefined : [refreshTint]}
         />
       }
-      containerStyle={{ flex: 1 }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
     />
   );
@@ -119,11 +107,11 @@ export function FriendList() {
 
 interface FriendListItemProps {
   friend: FriendUserViewModel;
-  drag?: () => void;
-  isActive: boolean;
 }
 
-FriendList.Item = function Item({ friend, drag, isActive }: FriendListItemProps) {
+FriendList.Item = function Item({ friend }: FriendListItemProps) {
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
   const [isEditMode] = useFriendListEditMode();
@@ -155,65 +143,61 @@ FriendList.Item = function Item({ friend, drag, isActive }: FriendListItemProps)
   };
 
   return (
-    <ScaleDecorator activeScale={isEditMode ? 1.015 : 1}>
-      <PressableFeedback
-        onLongPress={isEditMode ? drag : undefined}
-        isDisabled={isActive}
-        className={cn(isActive && 'bg-gray-1 rounded-xl')}
-      >
-        <Animated.View layout={LinearTransition.duration(ANIMATION.duration.normal)}>
-          <HStack align="center">
-            {isEditMode && (
-              <Animated.View
-                entering={FadeInLeft.duration(ANIMATION.duration.normal)}
-                exiting={FadeOutLeft.duration(ANIMATION.duration.fast)}
-                className="pr-3 justify-center"
-              >
-                <MenuIcon
-                  width={fontScaledSize(18)}
-                  height={fontScaledSize(18)}
-                  colorClassName="text-gray-5"
-                />
-              </Animated.View>
-            )}
-            <Animated.View
-              className="flex-1"
-              layout={LinearTransition.duration(ANIMATION.duration.normal)}
-            >
-              <ListRow
-                left={
-                  <UserAvatar
-                    alt={friend.displayName}
-                    className="size-10"
-                    profileImage={friend.profileImage}
-                  />
-                }
-                contents={<ListRow.Texts type="1RowTypeA" top={friend.displayName} />}
-                right={
-                  isEditMode && !isActive ? (
-                    <Animated.View
-                      entering={FadeInRight.duration(ANIMATION.duration.normal)}
-                      exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
-                    >
-                      <Button
-                        variant="weak"
-                        color="danger"
-                        size="small"
-                        display="inline"
-                        onPress={openDeleteConfirmDialog}
-                        isDisabled={removeMutation.isPending}
-                      >
-                        {t('actions.delete')}
-                      </Button>
-                    </Animated.View>
-                  ) : null
-                }
+    <PressableFeedback
+      onLongPress={isEditMode ? drag : undefined}
+      isDisabled={isActive}
+      className={cn(isActive && 'bg-gray-1 rounded-xl')}
+    >
+      <HStack align="center">
+        {isEditMode && (
+          <Animated.View
+            entering={FadeInLeft.duration(ANIMATION.duration.normal)}
+            exiting={FadeOutLeft.duration(ANIMATION.duration.fast)}
+            className="pr-3 justify-center"
+          >
+            <MenuIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-gray-5"
+            />
+          </Animated.View>
+        )}
+        <Animated.View
+          className="flex-1"
+          layout={LinearTransition.duration(ANIMATION.duration.normal)}
+        >
+          <ListRow
+            left={
+              <UserAvatar
+                alt={friend.displayName}
+                className="size-10"
+                profileImage={friend.profileImage}
               />
-            </Animated.View>
-          </HStack>
+            }
+            contents={<ListRow.Texts type="1RowTypeA" top={friend.displayName} />}
+            right={
+              isEditMode && !isActive ? (
+                <Animated.View
+                  entering={FadeInRight.duration(ANIMATION.duration.normal)}
+                  exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
+                >
+                  <Button
+                    variant="weak"
+                    color="danger"
+                    size="small"
+                    display="inline"
+                    onPress={openDeleteConfirmDialog}
+                    isDisabled={removeMutation.isPending}
+                  >
+                    {t('actions.delete')}
+                  </Button>
+                </Animated.View>
+              ) : null
+            }
+          />
         </Animated.View>
-      </PressableFeedback>
-    </ScaleDecorator>
+      </HStack>
+    </PressableFeedback>
   );
 };
 

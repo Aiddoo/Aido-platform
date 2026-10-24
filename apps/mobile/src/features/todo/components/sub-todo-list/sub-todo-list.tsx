@@ -2,6 +2,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { HStack, MoreIcon, PlusIcon, Text } from '@src/shared/ui';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 
 import { SubTodoIndent } from '../sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
@@ -37,9 +38,6 @@ interface SubTodoListItemProps extends Omit<ComponentProps<typeof TodoCheckbox>,
   isSelected: boolean;
   onSelectedChange: (checked: boolean) => void;
   onMorePress: () => void;
-  drag?: () => void;
-  isActive?: boolean;
-  isDragDisabled?: boolean;
 }
 
 SubTodoList.Item = function Item({
@@ -47,11 +45,11 @@ SubTodoList.Item = function Item({
   isSelected,
   onSelectedChange,
   onMorePress,
-  drag: itemDrag,
-  isActive: itemIsActive,
-  isDragDisabled,
   ...checkboxProps
 }: SubTodoListItemProps) {
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
+
   return (
     <TodoRow
       left={
@@ -67,8 +65,8 @@ SubTodoList.Item = function Item({
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       }
-      onLongPress={isDragDisabled ? undefined : itemDrag}
-      isActive={itemIsActive}
+      onLongPress={drag}
+      isActive={isActive}
     />
   );
 };

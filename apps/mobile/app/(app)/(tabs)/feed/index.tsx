@@ -40,7 +40,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { Suspense, useEffect } from 'react';
 import { RefreshControl, ScrollView } from 'react-native';
-import { NestableScrollContainer } from 'react-native-draggable-flatlist';
+import { ScrollViewContainer } from 'react-native-reorderable-list';
 import { match, P } from 'ts-pattern';
 
 export default function FeedScreen() {
@@ -76,7 +76,7 @@ function MyFeed() {
   );
 
   return (
-    <NestableScrollContainer
+    <ScrollViewContainer
       contentInsetAdjustmentBehavior="automatic"
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1 }}
@@ -124,7 +124,7 @@ function MyFeed() {
         </Box>
         <Spacing size={20} />
       </StyledSafeAreaView>
-    </NestableScrollContainer>
+    </ScrollViewContainer>
   );
 }
 

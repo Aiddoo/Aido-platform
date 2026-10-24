@@ -2,8 +2,8 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo.model';
 import { type Todo, TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
-import { useDraggableReorderList } from '@src/shared/hooks/use-draggable-reorder-list';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -26,10 +26,10 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import { useMemo, useState } from 'react';
 import {
-  type DragEndParams,
-  NestableDraggableFlatList,
-  ScaleDecorator,
-} from 'react-native-draggable-flatlist';
+  NestedReorderableList,
+  useIsActive,
+  useReorderableDrag,
+} from 'react-native-reorderable-list';
 
 import { useFeedDate, useFeedDateKey } from '../../hooks/use-feed-date';
 import { useFeedSelectedTodo } from '../../hooks/use-feed-selected-todo';
@@ -77,7 +77,7 @@ export function TodoList() {
             categoryId={group.category.id}
           />
 
-          <TodoDraggableList items={group.todos} updatedAt={dataUpdatedAt} />
+          <TodoReorderableList items={group.todos} updatedAt={dataUpdatedAt} />
         </Box>
       ))}
     </Box>
@@ -135,24 +135,19 @@ function CategoryHeader({ label, color, categoryId }: CategoryHeaderProps) {
   );
 }
 
-interface TodoDraggableListProps {
+interface TodoReorderableListProps {
   items: Todo[];
   updatedAt: number;
 }
 
-function TodoDraggableList({ items, updatedAt }: TodoDraggableListProps) {
+function TodoReorderableList({ items, updatedAt }: TodoReorderableListProps) {
   const reorderMutation = useMutation(useReorderTodoMutationOptions());
-
-  const {
-    items: draggableItems,
-    onDragBegin,
-    onDragEnd,
-  } = useDraggableReorderList({
+  const reorderableList = useReorderableList({
     items,
     updatedAt,
     isPending: reorderMutation.isPending,
     getItemId: (todo) => todo.id,
-    onReorder: ({ movedId, targetId, position }) => {
+    onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
         id: movedId,
         input: { targetTodoId: targetId, position },
@@ -161,33 +156,24 @@ function TodoDraggableList({ items, updatedAt }: TodoDraggableListProps) {
   });
 
   return (
-    <NestableDraggableFlatList
-      data={draggableItems}
+    <NestedReorderableList
+      {...reorderableList}
+      shouldUpdateActiveItem
+      scrollEnabled={false}
       keyExtractor={(item) => String(item.id)}
-      renderItem={({ item, drag, isActive }) => (
-        <ScaleDecorator activeScale={1.015}>
-          <TodoList.Item
-            todo={item}
-            drag={drag}
-            isActive={isActive}
-            isDragDisabled={reorderMutation.isPending}
-          />
-        </ScaleDecorator>
-      )}
-      onDragBegin={onDragBegin}
-      onDragEnd={onDragEnd}
+      renderItem={({ item }) => <TodoList.Item todo={item} updatedAt={updatedAt} />}
     />
   );
 }
 
 interface TodoListItemProps {
   todo: Todo;
-  drag?: () => void;
-  isActive?: boolean;
-  isDragDisabled?: boolean;
+  updatedAt: number;
 }
 
-TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoListItemProps) {
+TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const selectTodo = useSingleTap(setSelectedTodoId);
 
@@ -213,17 +199,19 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
   const handleSubTodoMorePress = (subTodo: SubTodo) =>
     push(subTodoActionsSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }));
 
-  const handleSubTodoDragEnd = ({ data, from, to }: DragEndParams<SubTodo>) => {
-    if (from === to || reorderSubTodos.isPending) {
-      return;
-    }
-
-    reorderSubTodos.mutate({
-      todoId: todo.id,
-      subTodoIds: data.map((subTodo) => subTodo.id),
-      startDate: todo.startDate,
-    });
-  };
+  const subTodoReorderableList = useReorderableList({
+    items: todo.subTodos,
+    updatedAt,
+    isPending: reorderSubTodos.isPending,
+    getItemId: (subTodo) => subTodo.id,
+    onReorder: ({ items: reorderedSubTodos }) => {
+      reorderSubTodos.mutate({
+        todoId: todo.id,
+        subTodoIds: reorderedSubTodos.map((subTodo) => subTodo.id),
+        startDate: todo.startDate,
+      });
+    },
+  });
 
   return (
     <TodoRow
@@ -284,7 +272,7 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
         </HStack>
       }
       onPress={isOptimistic ? undefined : handleRowPress}
-      onLongPress={isOptimistic || isDragDisabled ? undefined : drag}
+      onLongPress={isOptimistic ? undefined : drag}
       isActive={isActive}
       isDisabled={isOptimistic}
     >
@@ -293,30 +281,26 @@ TodoList.Item = function Item({ todo, drag, isActive, isDragDisabled }: TodoList
           onAddPress={handleAddSubTodoPress}
           isAddDisabled={!SubTodoPolicy.canAddSubTodo(todo)}
         >
-          <NestableDraggableFlatList
-            data={todo.subTodos}
+          <NestedReorderableList
+            {...subTodoReorderableList}
+            shouldUpdateActiveItem
+            scrollEnabled={false}
             keyExtractor={(item) => String(item.id)}
-            renderItem={({ item, drag: itemDrag, isActive: itemIsActive }) => (
-              <ScaleDecorator activeScale={1.015}>
-                <SubTodoList.Item
-                  label={item.title}
-                  isSelected={item.completed}
-                  onSelectedChange={(isCompleted) =>
-                    toggleSubTodo.mutate({
-                      todoId: todo.id,
-                      subTodoId: item.id,
-                      isCompleted,
-                      startDate: todo.startDate,
-                    })
-                  }
-                  onMorePress={() => handleSubTodoMorePress(item)}
-                  drag={itemDrag}
-                  isActive={itemIsActive}
-                  isDragDisabled={reorderSubTodos.isPending}
-                />
-              </ScaleDecorator>
+            renderItem={({ item }) => (
+              <SubTodoList.Item
+                label={item.title}
+                isSelected={item.completed}
+                onSelectedChange={(isCompleted) =>
+                  toggleSubTodo.mutate({
+                    todoId: todo.id,
+                    subTodoId: item.id,
+                    isCompleted,
+                    startDate: todo.startDate,
+                  })
+                }
+                onMorePress={() => handleSubTodoMorePress(item)}
+              />
             )}
-            onDragEnd={handleSubTodoDragEnd}
           />
         </SubTodoList>
       )}
