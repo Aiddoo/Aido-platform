@@ -43,7 +43,7 @@ export function useFeatureDiscoveryFeed() {
   );
   const hasSeen = identity ? stateService.isSeen(identity) : true;
   const canAutoOpen = FeatureDiscoveryPolicy.canAutoOpen({
-    authStatus: weather.needsIntroduction ? 'loading' : status,
+    authStatus: weather.shouldIntroduce ? 'loading' : status,
     config,
     user,
     appVersion,

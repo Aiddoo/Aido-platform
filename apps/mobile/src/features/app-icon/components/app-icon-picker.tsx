@@ -1,6 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
 import {
   Avatar,
+  Box,
   CrownIcon,
   Grid,
   GridItem,
@@ -13,7 +14,6 @@ import {
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { View } from 'react-native';
 
 import { APP_ICONS } from '../constants/app-icons';
 import type { AppIconKey } from '../domains/app-icon.model';
@@ -75,16 +75,16 @@ AppIconPicker.Item = function Item({
       {...props}
     >
       <VStack align="center" gap={8} p={8} className="overflow-visible">
-        <View>
+        <Box>
           <Avatar isSelected={isSelected} alt={label} className="w-20 h-20 rounded-2xl">
             <Avatar.Image source={icon.preview} />
           </Avatar>
           {isLocked && (
-            <View className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-8 dark:bg-gray-2 dark:border-gray-4 border-gray-8 border items-center justify-center z-10">
+            <Box className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gray-8 dark:bg-gray-2 dark:border-gray-4 border-gray-8 border items-center justify-center z-10">
               <CrownIcon width={14} height={14} />
-            </View>
+            </Box>
           )}
-        </View>
+        </Box>
         <Text
           size="b4"
           weight={isSelected ? 'semibold' : 'normal'}

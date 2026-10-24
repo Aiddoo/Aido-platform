@@ -55,7 +55,7 @@ const CARD_COPY = {
   }
 >;
 
-interface FeatureDiscoverySheetProps {
+interface FeatureDiscoveryBottomSheetProps {
   isOpen: boolean;
   campaign: FeatureDiscoveryCampaign;
   viewportHeight: number;
@@ -64,14 +64,14 @@ interface FeatureDiscoverySheetProps {
   onCardCta: (cardId: FeatureDiscoveryCardId) => void;
 }
 
-export function FeatureDiscoverySheet({
+export function FeatureDiscoveryBottomSheet({
   isOpen,
   campaign,
   viewportHeight,
   onDismiss,
   onExit,
   onCardCta,
-}: FeatureDiscoverySheetProps) {
+}: FeatureDiscoveryBottomSheetProps) {
   const { t } = useTranslation(['featureDiscovery', 'common']);
   const { fontScale } = useFontScale();
   const insets = useSafeAreaInsets();

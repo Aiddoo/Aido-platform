@@ -10,7 +10,7 @@ import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { useWindowDimensions } from 'react-native';
 
-import { FeatureDiscoverySheet } from '../components/feature-discovery-sheet';
+import { FeatureDiscoveryBottomSheet } from '../components/feature-discovery-bottom-sheet';
 import {
   recordFeatureDiscoveryCardCta,
   recordFeatureDiscoveryDismissed,
@@ -43,13 +43,13 @@ export function useFeatureDiscoveryHub() {
         source,
       });
 
-      let finished = false;
+      let isFinished = false;
       overlay.open<void>(({ isOpen, close, exit }) => {
-        const dismiss = () => {
-          if (finished) {
+        const handleDismiss = () => {
+          if (isFinished) {
             return;
           }
-          finished = true;
+          isFinished = true;
           recordFeatureDiscoveryDismissed(analytics, {
             campaignId: campaign.id,
             source,
@@ -57,11 +57,11 @@ export function useFeatureDiscoveryHub() {
           close();
         };
 
-        const openCard = (cardId: FeatureDiscoveryCardId) => {
-          if (finished) {
+        const handleCardCta = (cardId: FeatureDiscoveryCardId) => {
+          if (isFinished) {
             return;
           }
-          finished = true;
+          isFinished = true;
           recordFeatureDiscoveryCardCta(analytics, featureAttribution, {
             accountId,
             campaignId: campaign.id,
@@ -78,13 +78,13 @@ export function useFeatureDiscoveryHub() {
         };
 
         return (
-          <FeatureDiscoverySheet
+          <FeatureDiscoveryBottomSheet
             isOpen={isOpen}
             campaign={campaign}
             viewportHeight={viewportHeight}
-            onDismiss={dismiss}
+            onDismiss={handleDismiss}
             onExit={exit}
-            onCardCta={openCard}
+            onCardCta={handleCardCta}
           />
         );
       });

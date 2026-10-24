@@ -2,13 +2,14 @@ import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, CheckIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import type { ComponentProps } from 'react';
 
 import { useActivationChecklist } from '../hooks/use-activation-progress';
 
-type ActivationChecklistProps = Omit<ComponentProps<typeof VStack>, 'children'>;
+interface ActivationChecklistProps {
+  className?: string;
+}
 
-export function ActivationChecklist({ className, ...props }: ActivationChecklistProps) {
+export function ActivationChecklist({ className }: ActivationChecklistProps) {
   const { t } = useTranslation('todo');
   const { progress, isVisible } = useActivationChecklist();
 
@@ -16,15 +17,14 @@ export function ActivationChecklist({ className, ...props }: ActivationChecklist
     return null;
   }
 
-  const hasCreated = progress.todoCreatedAt !== null;
-  const hasCompleted = progress.activatedAt !== null;
+  const hasCreated = progress.todoCreatedAt != null;
+  const hasCompleted = progress.activatedAt != null;
 
   return (
     <VStack
       gap={12}
       className={cn('rounded-2xl border border-gray-2 bg-white p-4', className)}
       accessibilityLabel={t('activation.accessibilityLabel')}
-      {...props}
     >
       <VStack gap={2}>
         <Text size="b2" weight="semibold">
@@ -35,16 +35,16 @@ export function ActivationChecklist({ className, ...props }: ActivationChecklist
         </Text>
       </VStack>
 
-      <ActivationStep label={t('activation.createTodo')} completed={hasCreated} />
-      <ActivationStep label={t('activation.completeTodo')} completed={hasCompleted} />
+      <ActivationStep label={t('activation.createTodo')} isCompleted={hasCreated} />
+      <ActivationStep label={t('activation.completeTodo')} isCompleted={hasCompleted} />
     </VStack>
   );
 }
 
-function ActivationStep({ label, completed }: { label: string; completed: boolean }) {
+function ActivationStep({ label, isCompleted }: { label: string; isCompleted: boolean }) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
-  const status = completed ? t('activation.completed') : t('activation.incomplete');
+  const status = isCompleted ? t('activation.completed') : t('activation.incomplete');
 
   return (
     <HStack
@@ -56,10 +56,10 @@ function ActivationStep({ label, completed }: { label: string; completed: boolea
       <Box
         className={cn(
           'size-6 items-center justify-center rounded-full border',
-          completed ? 'border-main bg-main' : 'border-gray-4 bg-white',
+          isCompleted ? 'border-main bg-main' : 'border-gray-4 bg-white',
         )}
       >
-        {completed && (
+        {isCompleted && (
           <CheckIcon
             width={fontScaledSize(14)}
             height={fontScaledSize(14)}
@@ -67,7 +67,7 @@ function ActivationStep({ label, completed }: { label: string; completed: boolea
           />
         )}
       </Box>
-      <Text size="b3" weight={completed ? 'medium' : 'normal'} shade={completed ? 5 : 8}>
+      <Text size="b3" weight={isCompleted ? 'medium' : 'normal'} shade={isCompleted ? 5 : 8}>
         {label}
       </Text>
     </HStack>

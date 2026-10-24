@@ -7,7 +7,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
 import { FEATURE_DISCOVERY_CAMPAIGN_ID } from '../domains/feature-discovery.registry';
-import { FeatureDiscoverySheet } from './feature-discovery-sheet';
+import { FeatureDiscoveryBottomSheet } from './feature-discovery-bottom-sheet';
 
 let mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -74,7 +74,7 @@ jest.mock('@src/shared/ui', () => {
 
 const campaign = getBundledFeatureDiscoveryCampaign(FEATURE_DISCOVERY_CAMPAIGN_ID);
 
-describe('FeatureDiscoverySheet', () => {
+describe('FeatureDiscoveryBottomSheet', () => {
   afterEach(async () => {
     mockSafeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
     await act(async () => {
@@ -90,7 +90,7 @@ describe('FeatureDiscoverySheet', () => {
 
     // When
     await render(
-      <FeatureDiscoverySheet
+      <FeatureDiscoveryBottomSheet
         isOpen
         campaign={campaign}
         onDismiss={jest.fn()}
@@ -118,7 +118,7 @@ describe('FeatureDiscoverySheet', () => {
     const onDismiss = jest.fn();
     const onCardCta = jest.fn();
     await render(
-      <FeatureDiscoverySheet
+      <FeatureDiscoveryBottomSheet
         isOpen
         campaign={campaign}
         onDismiss={onDismiss}
@@ -152,7 +152,7 @@ describe('FeatureDiscoverySheet', () => {
     // When
     await render(
       <FontScaleProvider syncStorage={storage}>
-        <FeatureDiscoverySheet
+        <FeatureDiscoveryBottomSheet
           isOpen
           campaign={campaign}
           onDismiss={jest.fn()}

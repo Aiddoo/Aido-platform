@@ -62,7 +62,7 @@ export class ActivationService {
     const result = this.#repository.claimActivated(identity, now);
     return {
       progress: result.progress,
-      event: result.claimed
+      event: result.isClaimed
         ? {
             campaign_id: identity.campaignId,
             days_since_signup: ActivationPolicy.daysSinceSignup(user, now),

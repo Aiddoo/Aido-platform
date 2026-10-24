@@ -18,7 +18,7 @@ const EMPTY_PROGRESS: ActivationProgress = {
 };
 
 interface ClaimActivationResult {
-  claimed: boolean;
+  isClaimed: boolean;
   progress: ActivationProgress;
 }
 
@@ -90,13 +90,13 @@ export function createActivationProgressRepository(
     claimActivated(identity, at) {
       const current = get(identity);
       if (!current.todoCreatedAt || current.activatedAt) {
-        return { claimed: false, progress: current };
+        return { isClaimed: false, progress: current };
       }
 
       const next = { ...current, activatedAt: at };
       return save(identity, next)
-        ? { claimed: true, progress: next }
-        : { claimed: false, progress: current };
+        ? { isClaimed: true, progress: next }
+        : { isClaimed: false, progress: current };
     },
     unlockPushRegistration(identity, at) {
       const current = get(identity);

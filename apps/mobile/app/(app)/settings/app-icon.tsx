@@ -1,6 +1,8 @@
+import { useAppIconService } from '@src/bootstrap/providers/di-context';
 import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker';
 import type { AppIconKey } from '@src/features/app-icon/domains/app-icon.model';
-import { useAppIcon } from '@src/features/app-icon/hooks/use-app-icon';
+import { useGetCurrentAppIconQueryOptions } from '@src/features/app-icon/queries/get-current-app-icon-query-options';
+import { useChangeAppIconMutationOptions } from '@src/features/app-icon/queries/use-change-app-icon-mutation-options';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTrack } from '@src/shared/analytics';
@@ -16,22 +18,26 @@ import {
   useOverlay,
   usePremiumDialog,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 import { Platform, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function AppIconScreen() {
   const { t } = useTranslation('appIcon');
+  const appIconService = useAppIconService();
+  const { data: currentIconKey, isPending: isCurrentIconPending } = useQuery(
+    useGetCurrentAppIconQueryOptions(),
+  );
   const {
-    currentIcon,
-    isSupported,
-    isLoading,
-    isChanging,
-    changeIcon,
-    changeError,
-    resetChangeError,
-  } = useAppIcon();
+    mutate: changeIcon,
+    isPending: isChanging,
+    error: changeError,
+    reset: resetChangeError,
+  } = useMutation(useChangeAppIconMutationOptions());
+  const currentIcon = currentIconKey ?? 'default';
+  const isSupported = appIconService.isSupported();
+  const isLoading = isSupported && isCurrentIconPending;
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const isPremium = UserPolicy.isPremiumUser(user);
   const { trackEvent } = useTrack();
@@ -111,7 +117,7 @@ function AppIconScreen() {
           </ScrollView>
         </StyledSafeAreaView>
         <AppIconErrorDialog
-          isOpen={changeError !== null}
+          isOpen={changeError != null}
           onOpenChange={(isOpen) => {
             if (!isOpen) {
               resetChangeError();

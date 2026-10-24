@@ -1,4 +1,3 @@
-import { NavigationRow } from '@src/features/notification/components/settings/navigation-row';
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
 import {
   NavigationSkeleton,
@@ -10,13 +9,63 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { useUpdatePreferenceMutationOptions } from '@src/features/preference/queries/use-update-preference-mutation-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, Spacing, StyledSafeAreaView, VStack } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  HStack,
+  QueryErrorBoundary,
+  Spacing,
+  StyledSafeAreaView,
+  Text,
+  VStack,
+} from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatReminderTime } from '@src/shared/utils/time';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Separator } from 'heroui-native';
-import { Suspense } from 'react';
+import { PressableFeedback, Separator } from 'heroui-native';
+import { type ComponentProps, Suspense } from 'react';
 import { ScrollView } from 'react-native';
+
+interface NavigationRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
+  label: string;
+  summary: string;
+  isSummaryEnabled?: boolean;
+}
+
+function NavigationRow({
+  label,
+  summary,
+  isSummaryEnabled,
+  isDisabled,
+  className,
+  ...pressableProps
+}: NavigationRowProps) {
+  return (
+    <PressableFeedback
+      isDisabled={isDisabled}
+      className={cn('rounded-lg', className)}
+      {...pressableProps}
+    >
+      <PressableFeedback.Highlight className="rounded-lg" />
+      <HStack
+        justify="between"
+        align="center"
+        className={cn('py-2', isDisabled && 'opacity-40')}
+        gap={20}
+      >
+        <Text size="b2" shade={8}>
+          {label}
+        </Text>
+        <HStack gap={8} align="center">
+          <Text size="b2" className={isSummaryEnabled ? 'text-main' : 'text-gray-5'}>
+            {summary}
+          </Text>
+          <ArrowRightIcon colorClassName="text-gray-6" />
+        </HStack>
+      </HStack>
+    </PressableFeedback>
+  );
+}
 
 function NotificationSettingsScreen() {
   const push = useSingleTap(router.push);
@@ -25,7 +74,7 @@ function NotificationSettingsScreen() {
   const updateMutation = useMutation(useUpdatePreferenceMutationOptions());
   const { t } = useTranslation('notification');
 
-  const pushDisabled = PreferencePolicy.isPushDisabled(preference);
+  const isPushDisabled = PreferencePolicy.isPushDisabled(preference);
 
   return (
     <VStack gap={24}>
@@ -33,9 +82,9 @@ function NotificationSettingsScreen() {
         <SettingsToggle
           label={t('settings.timeFormat24')}
           isSelected={preference.timeFormat === 'TWENTY_FOUR_HOUR'}
-          onSelectedChange={(enabled) =>
+          onSelectedChange={(isEnabled) =>
             updateMutation.mutate({
-              timeFormat: enabled ? 'TWENTY_FOUR_HOUR' : 'TWELVE_HOUR',
+              timeFormat: isEnabled ? 'TWENTY_FOUR_HOUR' : 'TWELVE_HOUR',
             })
           }
           isDisabled={updateMutation.isPending}
@@ -46,7 +95,7 @@ function NotificationSettingsScreen() {
         <NavigationRow
           label={t('settings.pushLabel')}
           summary={preference.pushEnabled ? t('settings.on') : t('settings.off')}
-          summaryEnabled={preference.pushEnabled}
+          isSummaryEnabled={preference.pushEnabled}
           onPress={() => push('/settings/notifications/push')}
         />
         <Separator className="bg-gray-2" />
@@ -55,17 +104,17 @@ function NotificationSettingsScreen() {
           summary={
             PreferencePolicy.isWeatherEnabled(preference) ? t('settings.on') : t('settings.off')
           }
-          summaryEnabled={PreferencePolicy.isWeatherEnabled(preference)}
+          isSummaryEnabled={PreferencePolicy.isWeatherEnabled(preference)}
           onPress={() => push('/settings/notifications/weather')}
-          isDisabled={pushDisabled}
+          isDisabled={isPushDisabled}
         />
         <Separator className="bg-gray-2" />
         <NavigationRow
           label={t('settings.reminderLabel')}
           summary={`${formatReminderTime(preference.morningReminderHour, preference.morningReminderMinute, preference.timeFormat)} / ${formatReminderTime(preference.eveningReminderHour, preference.eveningReminderMinute, preference.timeFormat)}`}
-          summaryEnabled={!pushDisabled}
+          isSummaryEnabled={!isPushDisabled}
           onPress={() => push('/settings/notifications/reminder')}
-          isDisabled={pushDisabled}
+          isDisabled={isPushDisabled}
         />
       </SettingsCard>
     </VStack>

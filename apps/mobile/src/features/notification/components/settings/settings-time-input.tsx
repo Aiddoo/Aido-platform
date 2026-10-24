@@ -4,12 +4,25 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { PickerHeader } from '@src/features/todo/components/picker-header';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import { KeyboardBottomSheet, useOverlay, VStack } from '@src/shared/ui';
-import { getPickerLocale, timeToDate } from '@src/shared/utils/time';
-import { type ComponentProps, useState } from 'react';
-import { Platform, View } from 'react-native';
-
-import { SettingsTimeRow } from './settings-time-row';
+import {
+  ArrowRightIcon,
+  Box,
+  HStack,
+  KeyboardBottomSheet,
+  Text,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
+import {
+  formatReminderTime,
+  getPickerLocale,
+  timeToDate,
+  type TimeFormat,
+} from '@src/shared/utils/time';
+import { PressableFeedback } from 'heroui-native';
+import { type ComponentProps, type ReactNode, useState } from 'react';
+import { Platform } from 'react-native';
 
 type TimePickerProps = Omit<IOSNativeProps, 'mode' | 'display' | 'minuteInterval'>;
 
@@ -47,6 +60,56 @@ function AndroidTimePicker({ onConfirm, onDismiss, ...props }: AndroidTimePicker
         }
       }}
     />
+  );
+}
+
+interface SettingsTimeRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
+  label: string;
+  description: string;
+  hour: number;
+  minute: number;
+  timeFormat: TimeFormat;
+  accessory?: ReactNode;
+}
+
+function SettingsTimeRow({
+  label,
+  description,
+  hour,
+  minute,
+  timeFormat,
+  isDisabled,
+  accessory,
+  className,
+  ...pressableProps
+}: SettingsTimeRowProps) {
+  return (
+    <PressableFeedback
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      isDisabled={isDisabled}
+      className={cn('rounded-lg', className)}
+      {...pressableProps}
+    >
+      <PressableFeedback.Highlight className="rounded-lg" />
+      <HStack justify="between" align="center" className={cn(isDisabled && 'opacity-40')} gap={20}>
+        <VStack className="flex-1">
+          <HStack gap={8} align="center">
+            <Text size="b2" shade={8}>
+              {label}
+            </Text>
+            {accessory}
+            <Text size="b2" className="text-main break-keep">
+              {formatReminderTime(hour, minute, timeFormat)}
+            </Text>
+          </HStack>
+          <Text size="b3" shade={6}>
+            {description}
+          </Text>
+        </VStack>
+        <ArrowRightIcon colorClassName="text-gray-6" />
+      </HStack>
+    </PressableFeedback>
   );
 }
 
@@ -121,7 +184,7 @@ export function SettingsTimeInput({
                 dismiss();
               }}
             />
-            <View style={{ height: 216, alignItems: 'center' }}>
+            <Box style={{ height: 216, alignItems: 'center' }}>
               <TimePicker
                 value={draft}
                 minimumDate={minimumDate}
@@ -133,7 +196,7 @@ export function SettingsTimeInput({
                 }}
                 locale={getPickerLocale(resolvedLanguage, timeFormat)}
               />
-            </View>
+            </Box>
           </VStack>
         </KeyboardBottomSheet>
       );

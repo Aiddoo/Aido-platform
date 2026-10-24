@@ -2,7 +2,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
 import type { WidgetProps } from '../domains/widget-props.model';
-import { createInitialWidgetProps } from './widget-initial-props';
+import { createInitialWidgetProps } from '../utils/widget-initial-props';
 import { renderAndroidWidget } from './widgets.android';
 
 jest.mock('react-native-android-widget', () => ({

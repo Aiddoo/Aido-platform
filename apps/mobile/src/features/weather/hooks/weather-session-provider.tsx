@@ -39,7 +39,7 @@ export interface WeatherSession {
   locationRevision: number;
   status: LocationStatus;
   isSyncing: boolean;
-  needsIntroduction: boolean;
+  shouldIntroduce: boolean;
   locationName: string | null;
   syncLocation(requestPermission?: boolean): Promise<void>;
   dismissIntroduction(): void;
@@ -56,7 +56,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
   const [locationRevision, setLocationRevision] = useState(0);
   const [status, setStatus] = useState<LocationStatus>('checking');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [needsIntroduction, setNeedsIntroduction] = useState(true);
+  const [shouldIntroduce, setShouldIntroduce] = useState(true);
   const [locationName, setLocationName] = useState<string | null>(null);
   const mounted = useRef(false);
   const activeRequest = useRef<Promise<void> | null>(null);
@@ -65,7 +65,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
   const lastSynchronizedAt = useRef(0);
 
   const dismissIntroduction = useCallback(() => {
-    setNeedsIntroduction(false);
+    setShouldIntroduce(false);
     try {
       locationState.markIntroductionSeen();
     } catch {
@@ -98,10 +98,10 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
           }
           if (!permission.granted) {
             setStatus(permission.canAskAgain ? 'unregistered' : 'denied');
-            setNeedsIntroduction(permission.canAskAgain && !locationState.hasSeenIntroduction());
+            setShouldIntroduce(permission.canAskAgain && !locationState.hasSeenIntroduction());
             return;
           }
-          setNeedsIntroduction(false);
+          setShouldIntroduce(false);
           setIsSyncing(true);
           const coordinates = await gateway.getCoordinates(controller.signal);
           const place = await gateway.getPlace(coordinates, controller.signal);
@@ -147,7 +147,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
               } catch {}
             }
             setStatus((current) => (current === 'unsupported' ? current : 'error'));
-            setNeedsIntroduction(false);
+            setShouldIntroduce(false);
           }
         } finally {
           if (mounted.current) {
@@ -211,7 +211,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
       locationRevision,
       status,
       isSyncing,
-      needsIntroduction,
+      shouldIntroduce,
       locationName,
       syncLocation,
       dismissIntroduction,
@@ -221,7 +221,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
       locationRevision,
       status,
       isSyncing,
-      needsIntroduction,
+      shouldIntroduce,
       locationName,
       syncLocation,
       dismissIntroduction,
