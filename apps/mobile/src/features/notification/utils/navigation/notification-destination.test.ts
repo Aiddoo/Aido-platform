@@ -110,14 +110,14 @@ describe('resolveNotificationDestination', () => {
       }),
     ).toEqual({
       kind: 'route',
-      href: { pathname: '/feed/friend/[friendId]', params: { friendId: 'friend-1' } },
+      href: { pathname: '/feed', params: { friendId: 'friend-1' } },
     });
   });
 
   test('피드 알림은 별도 routing 없이 이동한다', () => {
     expect(resolveNotificationDestination({ type: 'STREAK_AT_RISK' })).toEqual({
       kind: 'route',
-      href: '/feed',
+      href: { pathname: '/feed', params: {} },
     });
   });
 });
@@ -147,7 +147,7 @@ describe('콕과 오늘의 알림 이동', () => {
     expect(destination).toEqual({
       kind: 'route',
       href: {
-        pathname: '/feed/friend/[friendId]',
+        pathname: '/feed',
         params: { friendId: 'friend', date: 'today' },
       },
     });

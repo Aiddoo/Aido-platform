@@ -1,16 +1,25 @@
-import type { Href } from 'expo-router';
-
-export function isFeedPathname(pathname: string): boolean {
-  return pathname === '/feed' || pathname.startsWith('/feed/');
+interface FeedHrefParams {
+  friendId?: string;
+  date?: string;
 }
 
-/** 이전 피드의 할 일 선택·댓글 상태는 옮기지 않고 날짜만 유지한다. */
-export function createFeedHref(friendId: string | null, date: string | undefined): Href {
-  const dateParams = date === undefined ? {} : { date };
+/** 피드는 한 화면이고 친구·날짜는 query param으로 고른다. */
+export function createFeedHref({ friendId, date }: FeedHrefParams = {}) {
+  return {
+    pathname: '/feed',
+    params: { ...(friendId != null && { friendId }), ...(date != null && { date }) },
+  } as const;
+}
 
-  if (friendId === null) {
-    return { pathname: '/feed', params: dateParams };
-  }
-
-  return { pathname: '/feed/friend/[friendId]', params: { friendId, ...dateParams } };
+/** 친구를 바꾸면 날짜만 유지하고 이전 피드의 할 일 선택·댓글·요청 상태는 지운다. */
+export function createFeedFriendParams(friendId: string | undefined) {
+  return {
+    friendId,
+    todoId: undefined,
+    comment: undefined,
+    intent: undefined,
+    returnTo: undefined,
+    sort: undefined,
+    action: undefined,
+  };
 }

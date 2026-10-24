@@ -25,19 +25,15 @@ import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useMemo } from 'react';
 import { ScrollView } from 'react-native';
 
-import { useFeedDateParam } from '../hooks/use-feed-date-param';
 import { useFeedFriendIdParam } from '../hooks/use-feed-friend-id-param';
-import { createFeedHref } from '../utils/feed-route';
 
 /** 피드 상단에서 나와 친구를 골라 그 사람의 피드로 바꾸는 가로 아바타 목록. */
 export function FeedAvatarList() {
   const push = useSingleTap(router.push);
-  const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('todo');
-  const friendId = useFeedFriendIdParam();
-  const [date] = useFeedDateParam();
-  const selectedFriendId = friendId ?? null;
+  const [selectedFriendId, setSelectedFriendId] = useFeedFriendIdParam();
+  const selectFriend = useSingleTap(setSelectedFriendId);
   const friendsQueryOptions = useGetFriendsInfiniteQueryOptions();
   usePrefetchInfiniteQuery(friendsQueryOptions);
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -72,8 +68,8 @@ export function FeedAvatarList() {
         <FeedAvatarList.Item
           name={t('feed.me')}
           image={user.profileImage}
-          isSelected={selectedFriendId === null}
-          onPress={() => replace(createFeedHref(null, date))}
+          isSelected={selectedFriendId == null}
+          onPress={() => selectFriend(undefined)}
         />
 
         {friends.map((friend) => (
@@ -82,7 +78,7 @@ export function FeedAvatarList() {
             name={friend.displayName}
             image={friend.profileImage}
             isSelected={selectedFriendId === friend.id}
-            onPress={() => replace(createFeedHref(friend.id, date))}
+            onPress={() => selectFriend(friend.id)}
           />
         ))}
 

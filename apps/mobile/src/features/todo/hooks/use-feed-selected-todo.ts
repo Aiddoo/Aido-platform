@@ -1,8 +1,7 @@
 import { todoDetailsParamSchema } from '@aido/api';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
-import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
 import { routeIntegerStringSchema } from '@src/shared/utils/route-params';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
 import { z } from 'zod';
 
@@ -22,7 +21,7 @@ export function useFeedSelectedTodo(): readonly [
   FeedSelectedTodoId,
   (todoId: number | undefined) => void,
 ] {
-  const { todoId: selectedTodoId } = feedSelectedTodoParamsSchema.parse(useRouteSearchParams());
+  const { todoId: selectedTodoId } = feedSelectedTodoParamsSchema.parse(useLocalSearchParams());
   const windowSizeClass = useWindowSizeClass();
 
   const setSelectedTodoId = useCallback(

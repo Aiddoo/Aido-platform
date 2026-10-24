@@ -30,7 +30,7 @@ export default function FeedLayout() {
       }}
     >
       <Stack.Screen
-        name="(feed)"
+        name="index"
         options={{ contentStyle: { backgroundColor: headerBg.backgroundColor as string } }}
       />
     </Stack>
