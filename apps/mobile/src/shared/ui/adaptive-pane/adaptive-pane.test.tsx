@@ -1,19 +1,13 @@
+import { mockWindowDimensions } from '@src/shared/__tests__';
 import { render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
-import { StyleSheet, Text, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdaptivePane } from './adaptive-pane';
 
-jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
-
-const mockedUseWindowDimensions = jest.mocked(useWindowDimensions);
-
 function renderPane(width: number) {
-  mockedUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 2, fontScale: 1 });
+  mockWindowDimensions(width);
   return render(<AdaptivePane primary={<Text>목록</Text>} secondary={<Text>상세</Text>} />);
 }
 
@@ -43,7 +37,7 @@ describe('AdaptivePane 컴포넌트', () => {
   });
 
   it('compactPane이 secondary면 compact에서 상세만 렌더링한다', async () => {
-    mockedUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 2, fontScale: 1 });
+    mockWindowDimensions(390);
     await render(
       <AdaptivePane
         primary={<Text>목록</Text>}
@@ -71,12 +65,12 @@ describe('AdaptivePane 컴포넌트', () => {
         compactPane="secondary"
       />
     );
-    mockedUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 2, fontScale: 1 });
+    mockWindowDimensions(390);
     const { rerender } = await render(createPane());
 
-    mockedUseWindowDimensions.mockReturnValue({ width: 900, height: 800, scale: 2, fontScale: 1 });
+    mockWindowDimensions(900);
     await rerender(createPane());
-    mockedUseWindowDimensions.mockReturnValue({ width: 390, height: 800, scale: 2, fontScale: 1 });
+    mockWindowDimensions(390);
     await rerender(createPane());
 
     expect(onMount.mock.calls).toEqual([['상세'], ['목록']]);
@@ -87,7 +81,7 @@ describe('AdaptivePane 컴포넌트', () => {
       const { right } = useSafeAreaInsets();
       return <Text>{`${label}:${right}`}</Text>;
     }
-    mockedUseWindowDimensions.mockReturnValue({ width: 900, height: 800, scale: 2, fontScale: 1 });
+    mockWindowDimensions(900);
     await render(
       <SafeAreaInsetsContext.Provider value={{ top: 0, right: 84, bottom: 34, left: 0 }}>
         <AdaptivePane

@@ -1,8 +1,8 @@
+import { mockWindowDimensions } from '@src/shared/__tests__';
 import { RouteSearchParamsProvider } from '@src/shared/providers/route-search-params-provider';
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { PropsWithChildren } from 'react';
-import { useWindowDimensions } from 'react-native';
 
 import { useFeedSelectedTodo } from './use-feed-selected-todo';
 
@@ -10,16 +10,10 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), setParams: jest.fn() },
   useLocalSearchParams: jest.fn(),
 }));
-jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
-const mockedUseWindowDimensions = jest.mocked(useWindowDimensions);
-
 function givenWindow(width: number, params: Record<string, string> = {}) {
-  mockedUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 2, fontScale: 1 });
+  mockWindowDimensions(width);
   mockedUseLocalSearchParams.mockReturnValue(params);
 }
 
