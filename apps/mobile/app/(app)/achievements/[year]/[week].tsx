@@ -26,7 +26,7 @@ import {
 } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateKeyRange } from '@src/shared/utils/date-format';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQueries } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -67,10 +67,9 @@ export default function AchievementDetailScreen() {
 function WeeklyAchievementCertificate() {
   const fontScaledSize = useFontScaledSize();
   const { year, week } = useAchievementScreenParams();
-  const { data: achievement } = useSuspenseQuery(
-    useGetWeeklyAchievementQueryOptions({ year, week }),
-  );
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [{ data: achievement }, { data: user }] = useSuspenseQueries({
+    queries: [useGetWeeklyAchievementQueryOptions({ year, week }), useGetMeQueryOptions()],
+  });
   const { t } = useTranslation('achievement');
 
   const { trackEvent } = useTrack();

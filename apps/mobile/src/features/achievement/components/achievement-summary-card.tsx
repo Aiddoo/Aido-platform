@@ -17,7 +17,11 @@ import {
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { useSuspenseInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  usePrefetchQuery,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -35,6 +39,7 @@ const CERTIFICATE_LINE_COUNT = 4;
 
 export function AchievementSummaryCard() {
   const today = useToday();
+  usePrefetchQuery(useGetMeQueryOptions());
   const { data } = useSuspenseInfiniteQuery(
     useGetWeeklyAchievementsInfiniteQueryOptions({ year: today.getFullYear() }),
   );

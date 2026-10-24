@@ -18,11 +18,10 @@ import {
 } from '@src/shared/ui';
 import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
 import { formatTimeDisplay, type TimeFormat } from '@src/shared/utils/time';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { useState } from 'react';
 import { Image, View } from 'react-native';
 
 import {
@@ -38,27 +37,16 @@ export function SuggestionsList() {
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation('ai');
+  usePrefetchQuery(useGetPreferenceQueryOptions());
   const { data: suggestions } = useSuspenseQuery(useGetSuggestionsQueryOptions());
   const dismissSuggestionMutation = useMutation(useHandleSuggestionMutationOptions());
-  const [pendingSuggestionId, setPendingSuggestionId] = useState<number | null>(null);
 
   if (suggestions.length === 0) {
     return <SuggestionsList.Empty />;
   }
 
   const handleDismiss = (suggestionId: number) => {
-    setPendingSuggestionId(suggestionId);
-    dismissSuggestionMutation.mutate(
-      {
-        suggestionId,
-        input: { action: 'dismiss' },
-      },
-      {
-        onSettled: () => {
-          setPendingSuggestionId(null);
-        },
-      },
-    );
+    dismissSuggestionMutation.mutate({ suggestionId, input: { action: 'dismiss' } });
   };
 
   return (
@@ -88,7 +76,8 @@ export function SuggestionsList() {
             onAccepted={() => replace('/feed')}
             onDismiss={() => handleDismiss(suggestion.id)}
             isDismissing={
-              dismissSuggestionMutation.isPending && pendingSuggestionId === suggestion.id
+              dismissSuggestionMutation.isPending &&
+              dismissSuggestionMutation.variables?.suggestionId === suggestion.id
             }
             isLast={index === suggestions.length - 1}
           />

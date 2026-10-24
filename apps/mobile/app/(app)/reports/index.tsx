@@ -22,7 +22,7 @@ import {
   VStack,
   ScallopedContainer,
 } from '@src/shared/ui';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { usePrefetchQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
@@ -160,6 +160,7 @@ function FreeReportPreview() {
 
 function ReportList() {
   const [reportType] = useReportType();
+  usePrefetchQuery(useGetReportStatusQueryOptions());
   const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type: reportType }));
 
   if (reports.length === 0) {
