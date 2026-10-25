@@ -3,12 +3,16 @@ import { resolve } from "node:path";
 
 import postgres from "@prisma/orm-postgres/runtime";
 import { contractFromJson } from "@prisma/orm-postgres/static";
+import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
 import { encodeCreate } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/database-values";
 import { isUniqueConstraintViolation } from "#api/platform/database/prisma-error.util";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import {
+  USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS,
+  UserFixture,
+} from "#test/fixtures/user.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { withTextTimestampGenerators } from "#test/setup/historical-contract";
 import { startManagedTestDatabase } from "#test/setup/managed-test-database";
@@ -43,12 +47,16 @@ describe("invite_foundation additive migration (실제 PostgreSQL)", () => {
     try {
       const inviter = UserFixture.create({ id: createEntityId(), userTag: "MIGRATE1" });
       const invitee = UserFixture.create({ id: createEntityId(), userTag: "MIGRATE2" });
-      await previous.orm.public.User.create(encodeCreate("User", inviter));
+      await previous.orm.public.User.create(
+        encodeCreate("User", omit(inviter, USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS)),
+      );
 
       // When
       prisma(database.connectionUri, ["db", "migrate"]);
       prisma(database.connectionUri, ["db", "verify"]);
-      await previous.orm.public.User.create(encodeCreate("User", invitee));
+      await previous.orm.public.User.create(
+        encodeCreate("User", omit(invitee, USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS)),
+      );
       const invite = await current.orm.public.Invite.create(
         encodeCreate("Invite", { inviterId: inviter.id, code: "K7M2QX", status: "ACTIVE" }),
       );

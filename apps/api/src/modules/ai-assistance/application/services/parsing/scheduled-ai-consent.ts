@@ -12,7 +12,7 @@ export interface ScheduledAiConsentReaders {
 
 /**
  * 예약 작업(리포트 요약·반복 제안)이 사용자 데이터를 AI로 보내도 되는지.
- * 요청 헤더가 없으므로 사용자가 쓰는 기기 중 가장 높은 앱 버전으로 동의가 필요한지 정한다.
+ * 요청 헤더가 없으므로 푸시 기기·인증 요청에 남은 가장 높은 앱 버전으로 동의가 필요한지 정한다.
  */
 export async function canRunScheduledAi(
   readers: ScheduledAiConsentReaders,

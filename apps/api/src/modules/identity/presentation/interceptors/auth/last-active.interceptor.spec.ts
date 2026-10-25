@@ -42,7 +42,11 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     interceptor.intercept(context, { handle: () => of("ok") });
 
     // Then - 런타임이 정규화한 타임존과 사용자 ID가 기록 경계로 전달된다
-    expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-1", "America/New_York");
+    expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith(
+      "user-1",
+      "America/New_York",
+      undefined,
+    );
   });
 
   it("기존 클라이언트가 X-Timezone을 보내지 않으면 UTC로 기록한다", () => {
@@ -60,7 +64,7 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
     interceptor.intercept(context, { handle: () => of("ok") });
 
     // Then - 기존 기본 날짜 경계 계약인 UTC를 사용한다
-    expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-legacy", "UTC");
+    expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-legacy", "UTC", undefined);
   });
 
   it("같은 사용자의 한 시간 내 요청은 기존처럼 한 번만 기록한다", () => {
@@ -86,7 +90,40 @@ describe("LastActiveInterceptor — 사용자 활동 기록", () => {
 
     // Then - 첫 기록만 fire-and-forget writer로 전달한다
     expect(activityWriter.updateLastActiveAt).toHaveBeenCalledTimes(1);
-    expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith("user-throttled", "Asia/Seoul");
+    expect(activityWriter.updateLastActiveAt).toHaveBeenCalledWith(
+      "user-throttled",
+      "Asia/Seoul",
+      undefined,
+    );
+  });
+
+  it("SemVer 앱 버전은 함께 남기고, 한 시간 이내라도 버전이 바뀌면 바로 남긴다", () => {
+    // Given - 같은 사용자가 1.12.1에서 1.13.0으로 업데이트한 직후 요청과 형식이 틀린 버전
+    const user: CurrentUserPayload = {
+      userId: "user-upgraded",
+      email: "upgraded@example.com",
+      sessionId: "session-upgraded",
+      role: "USER",
+    };
+    const requests = ["1.12.1", "1.12.1", "1.13.0", "dev-build"].map(
+      (appVersion) =>
+        createMockExecutionContext({
+          user,
+          headers: { "x-timezone": "Asia/Seoul", "x-app-version": appVersion },
+        }).context,
+    );
+
+    // When
+    for (const context of requests) {
+      interceptor.intercept(context, { handle: () => of("ok") });
+    }
+
+    // Then - 같은 버전은 throttle하고, 형식이 틀린 버전은 버전 없이 기록한다
+    expect(vi.mocked(activityWriter.updateLastActiveAt).mock.calls).toEqual([
+      ["user-upgraded", "Asia/Seoul", "1.12.1"],
+      ["user-upgraded", "Asia/Seoul", "1.13.0"],
+      ["user-upgraded", "Asia/Seoul", undefined],
+    ]);
   });
 
   it("한 시간 이내라도 사용자 현지 날짜가 바뀌면 새 활동일을 기록한다", () => {

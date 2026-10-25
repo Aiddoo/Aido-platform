@@ -5,10 +5,8 @@ import {
   AI_DATA_SHARING_CONSENT_READER,
   IdentitySettingsModule,
 } from "#api/modules/identity/identity-settings.public";
-import {
-  CLIENT_APP_VERSION_READER,
-  NotificationDeliveryModule,
-} from "#api/modules/notification/notification-delivery.public";
+import { IdentityUserAccessModule } from "#api/modules/identity/identity-user-access.public";
+import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 
 import { PlanningCategoriesModule } from "../planning/planning-categories.public.js";
 import { AI_PROVIDERS } from "./ai-assistance-parsing.providers.js";
@@ -20,6 +18,7 @@ import { AI_CLIENT_APP_VERSION_READER } from "./application/ports/parsing/client
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "./application/ports/parsing/user-locale-preference.reader.port.js";
 import { GeminiAiAdapter } from "./infrastructure/adapters/parsing/gemini-ai.adapter.js";
+import { LatestClientAppVersionAdapter } from "./infrastructure/adapters/parsing/latest-client-app-version.adapter.js";
 import { TodoCategoryReaderAdapter } from "./infrastructure/adapters/parsing/todo-category-reader.adapter.js";
 import { UserLocalePreferenceReader } from "./infrastructure/adapters/parsing/user-locale-preference.reader.js";
 import { aiTaskSettingsProvider } from "./infrastructure/config/parsing/ai-task-config.js";
@@ -31,6 +30,7 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
   imports: [
     AccessModule,
     IdentitySettingsModule,
+    IdentityUserAccessModule,
     NotificationDeliveryModule,
     PlanningCategoriesModule,
   ],
@@ -42,7 +42,7 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
       provide: AI_DATA_SHARING_CONSENT_DECISION_READER,
       useExisting: AI_DATA_SHARING_CONSENT_READER,
     },
-    { provide: AI_CLIENT_APP_VERSION_READER, useExisting: CLIENT_APP_VERSION_READER },
+    { provide: AI_CLIENT_APP_VERSION_READER, useClass: LatestClientAppVersionAdapter },
     { provide: AI_PROVIDER, useClass: GeminiAiAdapter },
     { provide: AI_QUOTA, useExisting: ACCESS_AI_QUOTA },
     { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },

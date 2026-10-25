@@ -3,11 +3,15 @@ import { resolve } from "node:path";
 
 import postgres from "@prisma/orm-postgres/runtime";
 import { contractFromJson } from "@prisma/orm-postgres/static";
+import { omit } from "es-toolkit";
 import { Pool } from "pg";
 
 import { encodeCreate, encodePatch, decodeRecord } from "#api/platform/database/database-records";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
-import { UserFixture } from "#test/fixtures/user.fixture";
+import {
+  USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS,
+  UserFixture,
+} from "#test/fixtures/user.fixture";
 import { createTestClient } from "#test/setup/database-context";
 import { withTextTimestampGenerators } from "#test/setup/historical-contract";
 import { startManagedTestDatabase } from "#test/setup/managed-test-database";
@@ -56,7 +60,9 @@ describe("receipt token fingerprint additive migration (실제 PostgreSQL)", () 
     const current = createTestClient(database.connectionUri);
     try {
       const user = UserFixture.create();
-      await previous.orm.public.User.create(encodeCreate("User", user));
+      await previous.orm.public.User.create(
+        encodeCreate("User", omit(user, USER_FIELDS_ADDED_AFTER_PREVIOUS_CONTRACTS)),
+      );
       const token = await previous.orm.public.PushToken.create(
         encodeCreate("PushToken", {
           userId: user.id,

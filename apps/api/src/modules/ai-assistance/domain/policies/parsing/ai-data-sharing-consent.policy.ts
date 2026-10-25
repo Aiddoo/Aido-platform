@@ -8,7 +8,7 @@ import { AI_DATA_SHARING_CONSENT, type AiDataSharingDecision } from "@aido/api/v
  * 그보다 오래된 앱은 동의를 받을 화면이 없으므로 거부·철회(DECLINED)하지 않았다면 기존처럼 보낸다.
  *
  * - 사용자가 요청한 AI 정리: 요청 헤더의 앱 버전
- * - 예약 작업(리포트 요약·반복 제안): 사용자가 쓰는 기기 중 가장 높은 앱 버전. 알 수 없으면 오래된 앱으로 본다
+ * - 예약 작업(리포트 요약·반복 제안): 푸시 기기와 인증 요청에 남은 버전 중 가장 높은 버전. 알 수 없으면 오래된 앱으로 본다
  */
 export function canShareWithAi(
   decision: AiDataSharingDecision,

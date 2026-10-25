@@ -344,6 +344,9 @@ describe("UserRepository — 사용자 리포지토리", () => {
         expect(rawParameters).toEqual([
           databaseTimestamp(new Date("2026-07-26T15:30:00.000Z")),
           databaseTimestamp(new Date("2026-07-26T15:30:00.000Z")),
+          null,
+          null,
+          databaseTimestamp(new Date("2026-07-26T15:30:00.000Z")),
           databaseTimestamp(new Date("2026-07-26T15:30:00.000Z")),
           "user-123",
           databaseDate(new Date("2026-07-27T00:00:00.000Z")),

@@ -21,6 +21,8 @@ namespace public {
     lastLoginAt                    TimestampString(3)?
     deletedAt                      TimestampString(3)?
     lastActiveAt                   TimestampString(3)?
+    lastSeenAppVersion             VarChar(30)?
+    lastSeenAppVersionAt           TimestampString(3)?
     accounts                       Account[]
     aiReports                      AiReport[]
     dailyCompletions               DailyCompletion[]

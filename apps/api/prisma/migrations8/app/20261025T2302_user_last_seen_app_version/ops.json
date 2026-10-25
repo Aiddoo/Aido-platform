@@ -1,0 +1,122 @@
+[
+  {
+    "id": "column.public.User.lastSeenAppVersion",
+    "label": "Add column \"lastSeenAppVersion\" to \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "lastSeenAppVersion",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"lastSeenAppVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "lastSeenAppVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"lastSeenAppVersion\" on \"User\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"lastSeenAppVersion\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD COLUMN \"lastSeenAppVersion\" character varying(30)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"lastSeenAppVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "lastSeenAppVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"lastSeenAppVersion\" on \"User\""
+        }
+      },
+      {
+        "description": "verify column \"lastSeenAppVersion\" has type \"character varying(30)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "lastSeenAppVersion",
+          "character varying(30)"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.User.lastSeenAppVersionAt",
+    "label": "Add column \"lastSeenAppVersionAt\" to \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "lastSeenAppVersionAt",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"lastSeenAppVersionAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "lastSeenAppVersionAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"lastSeenAppVersionAt\" on \"User\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"lastSeenAppVersionAt\"",
+        "sql": "ALTER TABLE \"public\".\"User\" ADD COLUMN \"lastSeenAppVersionAt\" timestamp(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"lastSeenAppVersionAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "lastSeenAppVersionAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"lastSeenAppVersionAt\" on \"User\""
+        }
+      },
+      {
+        "description": "verify column \"lastSeenAppVersionAt\" has type \"timestamp(3) without time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "User",
+          "lastSeenAppVersionAt",
+          "timestamp(3) without time zone"
+        ]
+      }
+    ]
+  }
+]

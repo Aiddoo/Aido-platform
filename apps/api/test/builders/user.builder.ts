@@ -51,6 +51,8 @@ export class UserBuilder {
       updatedAt: now,
       lastLoginAt: null,
       lastActiveAt: null,
+      lastSeenAppVersion: null,
+      lastSeenAppVersionAt: null,
       deletedAt: null,
     };
   }
