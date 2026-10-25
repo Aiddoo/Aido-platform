@@ -100,11 +100,6 @@
     "memo": "Memos",
     "mypage": "Me"
   },
-  "webview": {
-    "invalidUrl": "Invalid URL",
-    "title": "Browser",
-    "back": "Back"
-  },
   "infraErrors": {
     "network": "Please check your internet connection",
     "timeout": "The request timed out",

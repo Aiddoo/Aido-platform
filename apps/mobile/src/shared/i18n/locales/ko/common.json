@@ -97,11 +97,6 @@
     "memo": "메모",
     "mypage": "마이"
   },
-  "webview": {
-    "invalidUrl": "유효하지 않은 URL입니다",
-    "title": "웹페이지",
-    "back": "뒤로"
-  },
   "infraErrors": {
     "network": "네트워크 연결을 확인해주세요",
     "timeout": "요청 시간이 초과되었어요",

@@ -348,6 +348,8 @@ function useView() {
   `AdaptivePane`을 그려 상세 pane이 같은 화면의 local params(`todoId`, 댓글 param)를 읽는다. 친구 전환은
   `router.setParams`라 pane이 다시 마운트되지 않고 history가 쌓이지 않으며, 레이아웃이 자식 params를
   global params로 읽어 얼려 둘 필요도 없다.
+- 웹 페이지(약관·공지 `WEBVIEW` action)는 route가 아니라 `useOpenUrl`(OS 앱 안 브라우저)로 연다. 앱 자체 WebView
+  화면(`/webview/[url]`)과 `react-native-webview`는 1.13.0에서 지웠고, 예전 `aido://webview/…` 링크는 `+not-found`로 간다.
 
 **기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
 반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
