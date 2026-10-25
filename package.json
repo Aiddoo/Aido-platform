@@ -59,9 +59,9 @@
   "lint-staged": {
     "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}": [
       "oxlint --fix",
-      "oxfmt --write"
+      "oxfmt --write --no-error-on-unmatched-pattern"
     ],
-    "*.{json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}": "oxfmt --write"
+    "*.{json,jsonc,json5,css,scss,md,mdx,yaml,yml,toml}": "oxfmt --write --no-error-on-unmatched-pattern"
   },
   "config": {
     "commitizen": {
