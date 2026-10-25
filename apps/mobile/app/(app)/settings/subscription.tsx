@@ -3,6 +3,7 @@ import benefitAppIconImage from '@assets/images/subscription/benefit-app-icon.we
 import benefitNotificationImage from '@assets/images/subscription/benefit-notification.webp';
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
+import { InvitePawPrintBoard } from '@src/features/invite/components/invite-paw-print-board';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
 import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
 import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
@@ -49,6 +50,7 @@ import {
   ScallopedContainer,
   Box,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatFullDate, formatMonthDay } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
@@ -349,11 +351,14 @@ function SubscriptionReceipt() {
 
   return (
     <ScallopedContainer>
+      {variant === 'reward' && <InvitePawPrintBoard.Stamp className="absolute right-4 top-4" />}
+
       <Box className="px-5 pt-5">
         <HStack gap={16} className="items-center">
           <FillTicketIcon width={40} height={40} />
 
-          <VStack gap={2} className="flex-1">
+          {/* 도장 자리를 비워 두어 긴 제목이 도장 아래로 들어가지 않게 한다 */}
+          <VStack gap={2} className={cn('flex-1', variant === 'reward' && 'pr-10')}>
             <Text size="t3" weight="bold" tone="brand">
               {t(`receipt.${variant}.title`)}
             </Text>

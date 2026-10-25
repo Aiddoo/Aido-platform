@@ -208,6 +208,22 @@ InvitePawPrintBoard.PawPrint = function PawPrint({ cell, newPawPrintOrder }: Paw
   );
 };
 
+/** 초대 보상으로 받은 것을 표시하는 장식 도장. 움직이지 않고 읽기 도구에서 숨긴다 */
+InvitePawPrintBoard.Stamp = function Stamp({ className, ...props }: ComponentProps<typeof Box>) {
+  return (
+    <Box
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      className={pawPrintVariants({ state: 'stamped', className: cn('size-11', className) })}
+      {...props}
+    >
+      <Box className="absolute inset-1 rounded-full border border-dashed border-white/90 dark:border-gray-1/90" />
+      <PawIcon width={20} height={20} colorClassName={pawPrintIconVariants({ state: 'stamped' })} />
+    </Box>
+  );
+};
+
 InvitePawPrintBoard.Milestone = function Milestone() {
   return (
     <Box className={pawPrintVariants({ state: 'milestone' })}>
