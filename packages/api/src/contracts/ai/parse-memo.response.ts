@@ -77,6 +77,12 @@ export type ParseMemoResponse = z.infer<typeof parseMemoResponseSchema>;
 // LLM 내부용 스키마
 // ============================================================================
 
+// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
+// 공급자 요청 schema로 전송되므로 meta를 붙이지 않는다.
+/**
+ * @deprecated parse-memo v1 롤백 경로에서만 쓰는 LLM schema다. v2는 서버 내부 draft schema를 쓴다.
+ */
 export const llmParsedMemoResultSchema = parsedMemoDataSchema;
 
+/** @deprecated llmParsedMemoResultSchema와 함께 제거한다. */
 export type LlmParsedMemoResult = z.infer<typeof llmParsedMemoResultSchema>;

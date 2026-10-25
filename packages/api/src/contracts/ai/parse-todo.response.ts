@@ -62,22 +62,29 @@ export const parseTodoResponseSchema = z.object({
 
 export type ParseTodoResponse = z.infer<typeof parseTodoResponseSchema>;
 
-/** @internal 서비스 내부에서만 사용 */
-export const llmParsedResultSchema = z.object({
-  title: z.string(),
-  startDate: z.string(),
-  endDate: z.string().nullable(),
-  scheduledTime: z.string().nullable(),
-  isAllDay: z.boolean(),
-  isRecurring: z.boolean().default(false),
-  recurrence: z
-    .object({
-      daysOfWeek: z.array(z.string()),
-      endDate: z.string(),
-    })
-    .nullable()
-    .default(null),
-  reasoning: z.string(),
-});
+// TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
+/**
+ * @internal 서비스 내부에서만 사용
+ * @deprecated 사용처가 없는 레거시 LLM 출력 schema다. parse-todo v2는 서버 내부 draft schema를 쓴다.
+ */
+export const llmParsedResultSchema = z
+  .object({
+    title: z.string(),
+    startDate: z.string(),
+    endDate: z.string().nullable(),
+    scheduledTime: z.string().nullable(),
+    isAllDay: z.boolean(),
+    isRecurring: z.boolean().default(false),
+    recurrence: z
+      .object({
+        daysOfWeek: z.array(z.string()),
+        endDate: z.string(),
+      })
+      .nullable()
+      .default(null),
+    reasoning: z.string(),
+  })
+  .meta({ deprecated: true, description: "(deprecated) 사용하지 않는 레거시 LLM 출력 schema" });
 
+/** @deprecated llmParsedResultSchema와 함께 제거한다. */
 export type LlmParsedResult = z.infer<typeof llmParsedResultSchema>;
