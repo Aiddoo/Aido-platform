@@ -88,20 +88,6 @@
       }
     },
     {
-      "files": [
-        "**/*.spec.ts",
-        "**/*.test.ts",
-        "**/*.test.tsx",
-        "**/*.e2e-spec.ts",
-        "**/*.integration-spec.ts",
-        "**/__tests__/**",
-        "apps/api/test/**/*.ts"
-      ],
-      "rules": {
-        "typescript/consistent-type-assertions": "off"
-      }
-    },
-    {
       "files": ["apps/mobile/index.ts"],
       "rules": {
         "typescript/consistent-type-imports": "off"
