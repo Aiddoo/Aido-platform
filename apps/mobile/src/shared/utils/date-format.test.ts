@@ -95,6 +95,29 @@ describe('formatDateKeyLabel', () => {
     expect(formatDateKeyLabel('2026-09-07', 'dottedMonthDay', KO_SEOUL)).toBe('09.07');
     expect(formatDateKeyLabel('2026-09-07', 'dottedMonthDay', EN_SEOUL)).toBe('09.07');
   });
+
+  it('Hermes처럼 ko-KR day 파트에 "일"이 붙어도 dayNumber는 숫자만 돌려준다', () => {
+    // Given
+    const originalFormatToParts = Intl.DateTimeFormat.prototype.formatToParts;
+    const spy = jest
+      .spyOn(Intl.DateTimeFormat.prototype, 'formatToParts')
+      .mockImplementation(function (this: Intl.DateTimeFormat, target) {
+        if (this.resolvedOptions().locale.startsWith('ko')) {
+          return [{ type: 'day', value: '7일' }];
+        }
+        return originalFormatToParts.call(this, target);
+      });
+
+    try {
+      // When
+      const label = formatDateKeyLabel('2026-09-07', 'dayNumber', KO_SEOUL);
+
+      // Then
+      expect(label).toBe('7');
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });
 
 describe('formatDateKeyRange', () => {

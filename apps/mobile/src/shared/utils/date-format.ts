@@ -18,7 +18,6 @@ type DateLabel =
   | 'monthDay'
   | 'numericDate'
   | 'dottedMonthDay'
-  | 'dayOfMonth'
   | 'dayNumber'
   | 'yearMonth'
   | 'month'
@@ -29,7 +28,6 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   monthDay: { month: 'short', day: 'numeric' },
   numericDate: { year: 'numeric', month: 'numeric', day: 'numeric' },
   dottedMonthDay: { month: '2-digit', day: '2-digit' },
-  dayOfMonth: { day: 'numeric' },
   dayNumber: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
   month: { month: 'short' },
@@ -105,12 +103,7 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
   if (!isValidDate(date)) {
     return '';
   }
-  const formatter = getFormatter(context, DATE_OPTIONS[kind]);
   return match(kind)
-    .with('dayOfMonth', () => {
-      const day = formatNumericDay(date, context);
-      return context.locale === 'ko-KR' ? `${day}일` : day;
-    })
     .with('dayNumber', () => formatNumericDay(date, context))
     .with('dottedMonthDay', () => {
       const parts = getFormatter(
@@ -119,7 +112,7 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
       ).formatToParts(date);
       return `${findPart(parts, 'month')}.${findPart(parts, 'day')}`;
     })
-    .otherwise(() => formatter.format(date));
+    .otherwise(() => getFormatter(context, DATE_OPTIONS[kind]).format(date));
 }
 
 /** YYYY-MM-DD 날짜 key를 기기 시간대와 무관하게 그 날짜 그대로 표시한다. */
