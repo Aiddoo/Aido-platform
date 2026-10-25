@@ -44,6 +44,8 @@ COPY apps/api/prisma.config.ts ./apps/api/
 COPY apps/api/src/prisma/contract.prisma ./apps/api/src/prisma/
 COPY apps/api/scripts/guard-database-url.cjs apps/api/scripts/migrate.sh ./apps/api/scripts/
 RUN pnpm --filter @aido/database-migrate exec prisma contract emit --format human
+# 실행 시점은 corepack pnpm만 쓴다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 migrate
 RUN mkdir -p /app/certs && chmod 0755 /app/certs
 ADD --chmod=644 https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/certs/rds-ca.pem
@@ -55,7 +57,8 @@ CMD ["pnpm", "db:deploy"]
 
 FROM node:24.22.1-alpine3.24 AS production
 WORKDIR /app
-RUN apk upgrade --no-cache
+# 운영 서버는 node로만 실행한다. 베이스 이미지 번들 npm의 취약 의존성이 운영 이미지에 남지 않게 걷어 낸다.
+RUN apk upgrade --no-cache && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
 COPY --from=builder --chown=nestjs:nodejs /app/production/ ./
 RUN mkdir -p /app/certs && chmod 0755 /app/certs
