@@ -80,9 +80,11 @@ features/{feature}/   # 단수 kebab-case
 - **Service 책임**: HTTP 호출 + Zod 검증 + Mapper 변환 + Policy 검증을 모두 담당. Service는 서버 에러(ApiError)를 번역/변환하지 않고 pass-through.
 - **에러 분류**:
   - 예측 가능 (4xx, Policy 실패) → `Result.err()` → Mutation `onError`에서 분기
-  - 예측 불가 (5xx, 네트워크, Zod 파싱 실패) → `throw` → ErrorBoundary 처리
+  - 예측 불가 (5xx, 네트워크, Zod 파싱 실패) → `throw` → 조회는 QueryErrorBoundary fallback(다시 시도 + 문의하기), mutation은 기본 토스트
+  - 한 오류는 토스트와 fallback 중 한 곳에서만 보인다
 - **Mapper·select**: 서버 스펙 변경은 Mapper(DTO → 클라이언트 모델, ISO 문자열 → `Date`)가 흡수하고 캐시에는 클라이언트 모델을 둔다. `select`는 화면별 필터·정렬·표시 모델만 만들며 참조가 안정적인 순수 함수를 쓴다.
 - **Model·Policy**: 클라이언트 모델은 `@aido/api` 스키마를 재사용·`extend`하고 모양이 다를 때만 독자 스키마를 둔다. Policy는 모델을 첫 인자로 받는 이름 있는 순수 함수를 `{Entity}Policy`로 묶은 Facade다.
+- **공통 규칙(서버·모바일)**: 날짜·시간대·표시 언어 [dates](../../docs/conventions/dates.md), 응답·오류 [errors](../../docs/conventions/errors.md), 하위 호환 [compatibility](../../docs/conventions/compatibility.md)
 - **의존성 방향**: `Model ← Service/Mapper/UI` (단방향). Model이 다른 레이어를 알면 안 됨.
 - **UI 컴포넌트 우선순위**: Shared UI (`@src/shared/ui`) > HeroUI Native > React Native.
 - **DTO**: `@aido/api` 사용, 모바일 내부 중복 금지.

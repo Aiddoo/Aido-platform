@@ -127,6 +127,26 @@ iPhone Duo(iOS 27.1)는 접힘·펼침 모두 탭 바와 상태 표시를 좌우
 - 이미 존재하는 shared layout, 입력, 버튼, 날짜 유틸을 먼저 찾는다. 같은 역할의 wrapper나 util을
   다시 만들지 않는다.
 
+## 상태·글꼴 배율·시트 규칙
+
+- **레이아웃 프리미티브**: raw RN `View`/`Pressable` 대신 `Box`/`HStack`/`VStack`/`Flex`/`Grid`/`Spacing`/`ListRow`와
+  HeroUI `PressableFeedback`을 쓴다. 예외는 shared/ui 내부 구현과 프리미티브가 지원하지 않는 native ref·Animated뿐이다.
+- **스켈레톤**: `.Loading`은 `.Item`과 같은 레이아웃·슬롯에 `Skeleton`만 바꿔 넣는다. 글자 자리는 `TextSkeleton`
+  (`useFontScaledSize`로 현재 글꼴 배율의 줄 높이), 고정 개수는 es-toolkit `times`다([목록·스켈레톤](architecture.md#목록스켈레톤)).
+- **진행 중**: 저장 버튼의 진행 표시는 mutation `isPending`을 `Button`의 `isLoading`에 넘긴다. 별도 `useState` 로딩이나
+  화면 전체 스피너를 만들지 않는다.
+- **상태 분기**: 탭·단계·결과처럼 서로 배타적인 상태는 union에 ts-pattern `match(...).with(...).exhaustive()`로 그린다.
+- **글꼴 배율**: 버튼·칩·탭처럼 높이가 정해진 컨트롤은 고정 높이와 좌우 padding을 쓰고 글자에 맞춰 커지지 않게 한다.
+  짧은 라벨(확인·취소·저장 등)은 iPhone SE에서 최대 글꼴 배율일 때 ko·en 모두 한 줄에 들어가야 한다. 긴 문구는
+  `shrink`·`numberOfLines`로 줄인다([레이아웃 안전](i18n-guide.md#레이아웃-안전-영어-장문)).
+- **시트·다이얼로그**: 새로 만들지 않고 `SheetRouteScreen`(대상이 있는 route 시트)·`BottomSheet`/`KeyboardBottomSheet`·
+  `ConfirmDialog`를 쓴다. 배치는 `getSheetLayout`(Duo 접힘선·레일, iPad 넓은 창의 좌우 여백)이 정하고, Android 뒤로가기는
+  `useAndroidSheetBackHandler`가 소비한다. Reanimated 애니메이션은 `reduceMotion: ReduceMotion.System`을 지킨다.
+- **iPhone Duo·큰 창**: 배치는 기기 종류가 아니라 창 크기 class(`useWindowSizeClass`: `compact`·`medium`·`expanded`)로
+  정하고, 좁은 창(compact)과 넓은 창의 2-pane(`AdaptivePane`)만 구분한다. [Expo의 Supporting iPhone Duo](https://expo.dev/blog/supporting-iphone-duo)를
+  따른다: 세로 레일(84pt)과 Split View·배치 전환은 safe area inset으로 처리하고(위 [가로 safe area](#가로-safe-area-iphone-duo-세로-레일)),
+  접힘선은 reserved region의 실제 위치를 쓴다.
+
 ---
 
 ## 스타일링 규칙

@@ -17,7 +17,7 @@ src/shared/i18n/
 └── locales/{ko,en}/   # 네임스페이스별 카탈로그 (ko = 원문)
 ```
 
-**네임스페이스**: feature 1:1 (`todo, auth, memo, friend, invite, notification, user, subscription, ai, achievement, inquiry, weather, appIcon`) + 횡단 4개 (`common, errors, validation, settings`).
+**네임스페이스**: feature 1:1 (`todo, todoComment, auth, memo, friend, invite, notification, user, subscription, ai, achievement, inquiry, weather, widget, appIcon, appVersion, featureDiscovery, storeReview`) + 횡단 4개 (`common, errors, validation, settings`). 정본은 `resources.ts`다.
 
 **언어 상태**: `src/shared/preferences/language.preference.ts` (MMKV `aido_language`, `'system'|'ko'|'en'`) + `src/shared/providers/language-provider.tsx` (`useLanguage()` — `resolvedLanguage` 파생, useEffect로 i18n 단방향 동기화. `'system'` 모드는 expo-localization `useLocales()`를 구독해 실행 중 기기 언어 변경도 반영한다). 설정 화면: `app/(app)/settings/language.tsx`.
 
@@ -63,9 +63,24 @@ toast.error(t('friend:toast.sendFailed'));
 
 ### 에러 메시지
 
-- 서버 에러: `errors` 네임스페이스, **키 = ErrorCode 그대로** (145개 전 코드 커버). `error-handler.ts`의 `resolveMessage`가 카탈로그 → 서버 message → `errors:fallback` 순으로 해석
+- 서버 에러: `errors` 네임스페이스, **키 = ErrorCode 그대로** (모든 ErrorCode + `fallback`). `error-handler.ts`의 `resolveMessage`가 카탈로그 → 서버 message → `errors:fallback` 순으로 해석
 - 보안 마스킹 그룹(EMAIL_0502/0507, USER_0602 등)은 **두 언어 모두 동일 문구 유지** — 번역 시에도 그룹 단위로 같게
 - `@aido/api`의 zod message는 서버 소유(한국어 유지) — 모바일 폼은 필드+에러타입 → `validation:*` 키로 표시
+
+### 문구 톤과 고정 용어
+
+- **ko**: 해요체(`저장했어요`, `다시 시도해주세요`). 보조 용언은 붙여 쓴다(`해주세요`, `모아보세요`, `알려줄게요`). 서버 Swagger·기본 오류 문구의 합니다체와 섞지 않는다.
+- **en**: sentence case(`Invite friends`, 제목도 첫 글자만 대문자)로 자연스러운 영어를 쓴다. ko를 직역하지 않고 같은 뜻·같은 보간 변수를 유지한다.
+- **고정 용어**: 같은 개념은 모든 화면에서 같은 말을 쓴다.
+
+  | 개념           | ko             | en                |
+  | -------------- | -------------- | ----------------- |
+  | 앱 이름        | 아이두         | Aido              |
+  | 초대 보상 도장 | 발자국         | paw prints        |
+  | 친구 재촉      | 콕 / 콕 찌르기 | nudge             |
+  | 초대 보상 기간 | 프리미엄 7일   | 7 days of Premium |
+
+- ko/en은 같은 키·같은 보간 변수로 함께 추가한다(`locale-parity.test.ts`).
 
 ### 비번역 대상
 
@@ -85,13 +100,13 @@ toast.error(t('friend:toast.sendFailed'));
 
 - **카탈로그(locales/\*.json)는 앱 소유** — 소비자가 모바일 하나뿐이라 패키지화하지 않는다 (dist 빌드 체인·Metro 우회 비용만 추가). 서버 푸시 템플릿과 중복 문자열 0건 확인됨 (2026-07)
 - **공유 계약은 `@aido/api/errors`의 ErrorCode뿐** — 클라 errors.json이 코드를 키로 소비. 메시지 문구는 서버(정중체)/클라(구어체)로 의도적 분리 유지
-- **서버 발송·생성 텍스트(푸시 템플릿, AI 프롬프트)는 서버 소유** — `apps/api/src/modules/notification/templates/locales/`
+- **서버 발송·생성 텍스트(푸시 템플릿, AI 프롬프트)는 서버 소유** — 푸시는 `apps/api/src/modules/notification/application/messages/delivery/locales/`, AI는 `apps/api/src/modules/ai-assistance/application/prompts/`
 - **저장된 히스토리는 생성 당시 언어 유지가 설계** — 과거 알림 title/body, 과거 AI 리포트 본문은 언어 변경 후에도 그대로 (본문-라벨 일관성)
 
 ## 서버 연동
 
 - Ky 클라이언트가 `Accept-Language: <i18n.language>` 헤더 전송 (auth/public 공통, beforeRequest 훅)
-- 서버는 푸시 토큰 등록 시 `UserPreference.locale` upsert → 푸시 알림 언어 결정 (`apps/api/src/modules/notification/templates/`)
+- 서버는 푸시 토큰 등록 시 `UserPreference.locale` upsert → 푸시 알림 언어 결정 (`apps/api/src/modules/notification/application/messages/delivery/`)
 - 미전송(1.3.x)·미지원 언어는 서버가 'ko'로 처리 — 하위 호환
 
 ## 테스트
