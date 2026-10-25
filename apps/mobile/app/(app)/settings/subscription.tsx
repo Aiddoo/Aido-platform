@@ -14,6 +14,10 @@ import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/
 import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
 import {
+  getSubscriptionStore,
+  type SubscriptionStore,
+} from '@src/features/subscription/utils/subscription-store';
+import {
   type SubscriptionSupportFailure,
   toSubscriptionLoadFailure,
 } from '@src/features/subscription/utils/view-models/subscription-failure.view-model';
@@ -58,7 +62,13 @@ import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
-import { AccessibilityInfo, Image, type ImageSourcePropType, ScrollView } from 'react-native';
+import {
+  AccessibilityInfo,
+  Image,
+  type ImageSourcePropType,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { match, P } from 'ts-pattern';
 
 function SubscriptionScreen() {
@@ -265,6 +275,7 @@ function PaywallPane() {
           <Spacing size={24} />
 
           <VStack gap={8} className="items-center">
+            <SubscriptionRenewalNotice />
             <SubscriptionTerms />
             <TextButton
               size="small"
@@ -691,6 +702,27 @@ function AdditionalSubscriptionBenefits() {
         description={t('benefits.aiReport.description')}
       />
     </VStack>
+  );
+}
+
+const RENEWAL_NOTICE_KEYS = {
+  appStore: 'paywall.renewalNotice.appStore',
+  googlePlay: 'paywall.renewalNotice.googlePlay',
+} as const satisfies Record<SubscriptionStore, string>;
+
+/** 결제 전 자동 갱신 조건과 스토어별 해지 경로 안내 */
+function SubscriptionRenewalNotice() {
+  const { t } = useTranslation('subscription');
+  const store = getSubscriptionStore(Platform.OS);
+
+  if (store == null) {
+    return null;
+  }
+
+  return (
+    <Text size="e2" shade={4} align="center">
+      {t(RENEWAL_NOTICE_KEYS[store])}
+    </Text>
   );
 }
 

@@ -73,6 +73,10 @@
     "grantEnded": "초대 보상 프리미엄이 {{date}}에 끝났어요. 구독하면 다시 모든 기능을 쓸 수 있어요",
     "moreBenefits": "더 많은 프리미엄 혜택",
     "subscribeButton": "구독하기",
+    "renewalNotice": {
+      "appStore": "구독은 기간이 끝나기 24시간 전까지 해지하지 않으면 같은 가격으로 자동 갱신돼요. App Store 구독 설정에서 언제든 해지할 수 있어요.",
+      "googlePlay": "구독은 해지하지 않으면 기간이 끝날 때 같은 가격으로 자동 갱신돼요. Google Play 구독 설정에서 언제든 해지할 수 있어요."
+    },
     "termsPrefix": "구매 시 ",
     "termsLink": "이용약관",
     "termsAnd": " 및 ",

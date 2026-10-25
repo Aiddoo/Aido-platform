@@ -73,6 +73,10 @@
     "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
     "moreBenefits": "More premium benefits",
     "subscribeButton": "Subscribe",
+    "renewalNotice": {
+      "appStore": "Subscriptions renew automatically at the same price unless canceled at least 24 hours before the period ends. You can cancel anytime in your App Store subscription settings.",
+      "googlePlay": "Subscriptions renew automatically at the same price at the end of each period unless canceled. You can cancel anytime in your Google Play subscription settings."
+    },
     "termsPrefix": "By purchasing, you agree to the ",
     "termsLink": "Terms of Service",
     "termsAnd": " and ",
