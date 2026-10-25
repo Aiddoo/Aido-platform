@@ -1,7 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and, or } from "@prisma/orm-postgres/orm-client";
-import { compact } from "es-toolkit";
+import { compact, maxBy, uniqBy } from "es-toolkit";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseDate, databaseTimestamp } from "#api/platform/database/database-values";
@@ -21,6 +21,7 @@ import type {
   NudgeInteractionTodo,
   NudgeRepositoryPort,
   NudgeThanksCandidatePage,
+  NudgeThanksSummary,
   NudgeWithRelations,
   ReminderNudgeWithRelations,
   TargetTodoRecord,
@@ -349,6 +350,22 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
       totalRecipients: ids.length,
       hasNext,
       nextCursor: hasNext ? (pageIds.at(-1) ?? null) : null,
+    };
+  }
+
+  async findThanksSummary(todoId: number, userId: string): Promise<NudgeThanksSummary> {
+    const thanked = decodeRecord(
+      "Nudge",
+      await this.client.orm.public.Nudge.where((row) =>
+        and(row.todoId.eq(todoId), row.receiverId.eq(userId), row.thankedAt.isNotNull()),
+      )
+        .select("senderId", "thankedAt")
+        .all(),
+    );
+    const thankedAtList = compact(thanked.map((item) => item.thankedAt));
+    return {
+      thankedRecipientCount: uniqBy(thanked, (item) => item.senderId).length,
+      lastThankedAt: maxBy(thankedAtList, (thankedAt) => thankedAt.getTime()) ?? null,
     };
   }
 

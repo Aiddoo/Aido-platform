@@ -27,6 +27,7 @@ import type {
   FindNudgesParams,
   FindNudgeThanksCandidatesInput,
   NudgeThanksCandidatePage,
+  NudgeThanksSummary,
 } from "#api/modules/social/application/ports/nudges/nudge.repository.port";
 import { Cheer } from "#api/modules/social/domain/aggregates/cheers/cheer.aggregate";
 import {
@@ -257,6 +258,19 @@ export class StubNudgeRepository implements NudgeRepositoryPort {
       totalRecipients: records.length,
       nextCursor: eligible.length > input.size ? (items.at(-1)?.id ?? null) : null,
       hasNext: eligible.length > input.size,
+    };
+  }
+  async findThanksSummary(todoId: number, userId: string): Promise<NudgeThanksSummary> {
+    const thanked = [...this.records.values()].filter(
+      (record) =>
+        record.todoId === todoId && record.receiverId === userId && record.thankedAt != null,
+    );
+    const thankedTimes = thanked.flatMap((record) =>
+      record.thankedAt == null ? [] : [record.thankedAt.getTime()],
+    );
+    return {
+      thankedRecipientCount: new Set(thanked.map((record) => record.senderId)).size,
+      lastThankedAt: thankedTimes.length > 0 ? new Date(Math.max(...thankedTimes)) : null,
     };
   }
   async findReceivedNudges(input: FindNudgesParams): Promise<NudgeWithRelations[]> {

@@ -417,6 +417,8 @@ describe("콕 답장·감사 E2E (실제 DB)", () => {
     const preview = await getThanksPreview(receiver, todo.id);
     expect(preview.throughNudgeId).toBe(laterNudge.id);
     expect(preview.recipients.map((friend) => friend.id)).toEqual([secondFriend.userId]);
+    expect(preview.thankedRecipientCount).toBe(1);
+    expect(preview.lastThankedAt).toEqual(expect.any(String));
   });
 
   it("다른 할 일의 콕을 감사 기준으로 보내면 거절한다", async () => {
