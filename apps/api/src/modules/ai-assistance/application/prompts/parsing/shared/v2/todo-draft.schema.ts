@@ -93,13 +93,6 @@ export const todoDraftSchema = z.object({
 }) satisfies z.ZodType<TodoDraft>;
 
 export const memoDraftSchema = z.object({
-  totalTaskCount: z
-    .number()
-    .int()
-    .optional()
-    .describe(
-      "Actionable tasks in the whole memo, including ones not written in todos. Excludes reflections, headings, and sub-steps.",
-    ),
   todos: z
     .array(
       todoDraftSchema.extend({
@@ -109,6 +102,14 @@ export const memoDraftSchema = z.object({
       }),
     )
     .describe("Independent to-dos in memo order, only the first 8. Never group them."),
+  // todos 뒤에 두어 모델이 할 일을 쓴 다음 전체 수를 세게 한다(앞에 두면 사고 없이 과대 집계했다).
+  totalTaskCount: z
+    .number()
+    .int()
+    .optional()
+    .describe(
+      "Actionable tasks in the whole memo, including ones not written in todos. Excludes reflections, headings, and sub-steps.",
+    ),
 });
 
 export type MemoDraft = z.infer<typeof memoDraftSchema>;
