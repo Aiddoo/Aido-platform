@@ -99,6 +99,8 @@ export const getMemoProvider: FactoryProvider<GetMemo> = {
 
 ## 저장·효과·캐시
 
+DB 접근은 Prisma ORM을 기본으로 하고 raw SQL은 [Prisma 문서의 유지 목록](prisma.md#orm-전환-기준과-유지하는-raw-sql-rc20)처럼 ORM이 표현하지 못하는 원자성에만 쓴다. 목록·집계에서 행마다 다시 조회하는 N+1을 만들지 않는다. 필요한 id를 모아 한 번에 읽고(`where in`·relation projection) `keyBy`/`groupBy`로 붙인다.
+
 업무 원자성은 UoW와 실제 DB lock/constraint/conditional write로 구현한다. 활성 transaction은 CLS에서 읽고 tx 인자를 계층마다 전달하지 않는다. 실패 기록, commit 뒤 publish/queue, best-effort cache settle은 각 흐름의 기존 의미를 따른다. 외부 AI·push·email 호출은 긴 DB transaction 밖에 둔다.
 
 캐시에는 의미 기반 Port를 사용한다. raw key·TTL·pattern·Redis command는 Infrastructure keyspace에 둔다. queue name/payload/attempt/backoff/재시도 의미도 소유 Context에 응집한다. 제거하거나 바꾸려면 실제 운영 소비자와 전환 범위를 함께 처리한다.
@@ -117,6 +119,6 @@ Object.entries(groupBy(todos, (todo) => todo.title));
 
 ## 오류와 확인
 
-Domain invariant는 DomainException, Application 거부는 ApplicationException과 기존 ErrorCode를 사용한다. HTTP 변환은 platform filter가 담당한다. 원문 개인정보·prompt·공급자 error를 로그에 전달하지 않는다. [logging-guide.md](logging-guide.md)에 형식과 실제 사례가 있다.
+Domain invariant는 DomainException, Application 거부는 ApplicationException과 기존 ErrorCode를 사용한다. HTTP 변환은 platform filter가 담당한다. 응답·오류 계약과 Swagger 문구는 [공통 오류 규칙](../../../docs/conventions/errors.md)을 따른다. 원문 개인정보·prompt·공급자 error를 로그에 전달하지 않는다. [logging-guide.md](logging-guide.md)에 형식과 실제 사례가 있다.
 
 코드·문서 변경 위험에 맞는 검증을 [testing-guide.md](testing-guide.md)에서 선택한다. 구조 검토에서는 실제 consumer/module 연결을, transaction 검토에서는 native DB 증거를, HTTP 변경에서는 계약 테스트를 확인한다. 통과한 전체 검사를 파일마다 반복하거나 구현과 같은 소스 파싱 테스트를 새로 만들지 않는다.

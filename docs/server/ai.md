@@ -43,6 +43,12 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 모든 작업은 `ai.generation.completed`/`ai.generation.failed` 하나의 형식으로 남긴다: `task`, `promptVersion`, `model`, `latencyMs`, 입력·출력·사고 토큰, `finishReason`, `outcome`, `errorKind`, `quotaCharged`, `userId`. 사용자 원문·제목·카테고리 이름은 남기지 않는다.
 
+## 버전과 호환
+
+- 프롬프트를 크게 바꾸면 기능 폴더에 새 버전 폴더(`v1`, `v2`, …)를 만들고 이전 버전은 롤백용으로만 남긴다. 이전 버전 모듈에는 `@deprecated`와 제거 조건이 담긴 `TODO`를 단다.
+- HTTP 경로는 `/v1/ai/*` 그대로다. 프롬프트 버전으로 API 버전을 올리지 않는다. 응답 변경은 `meta.promptVersion` 같은 optional 필드 추가만 한다([하위 호환](../conventions/compatibility.md)).
+- live eval과 로그는 API 키·사용자 원문을 출력하지 않는다. 키는 환경 변수로만 읽고 결과 기록에는 모델·버전·건수·지연·실패 분류만 남긴다.
+
 ## 평가
 
 - 결정 규칙 golden 26건과 흔들린 표현(relativeMinutes 0, 오늘 지난 때)(서울·LA 같은 순간)과 경계(자정·DST·윤일·월말·연말): `resolve-todo-schedule.spec.ts`.

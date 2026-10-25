@@ -33,7 +33,7 @@ Domain에 HTTP DTO나 transport serialization을 넣지 않는다. Application�
 
 ## 오류·copy·호환
 
-공개 오류는 기존 ErrorCode/HTTP 상태/details/envelope를 유지하고 GlobalExceptionFilter가 변환한다. Domain은 번역된 문장을 판정하지 않는다. 기존 한국어 validation 문구는 현재 계약으로 보존하고, 사용자 표시·AI prompt·notification/email copy는 Application typed catalog 또는 Presentation에서 다룬다.
+공개 오류는 기존 ErrorCode/HTTP 상태/details/envelope를 유지하고 GlobalExceptionFilter가 변환한다. 성공·실패 envelope와 ErrorCode 범위는 [공통 오류 규칙](../../../docs/conventions/errors.md), 외부 계약 전체의 호환 범위는 [하위 호환](../../../docs/conventions/compatibility.md)에 있다. Domain은 번역된 문장을 판정하지 않는다. 기존 한국어 validation 문구는 현재 계약으로 보존하고, 사용자 표시·AI prompt·notification/email copy는 Application typed catalog 또는 Presentation에서 다룬다.
 
 API 필드를 제거하거나 의미를 바꾸는 작업은 요청 범위와 실제 소비자·배포 전략을 확인한다. 소비가 없는 내부 forwarding alias/helper는 유지 명분이 없으면 제거할 수 있으나, 배포된 구 앱 계약이나 queue/DB 운영 호환과 혼동하지 않는다.
 
