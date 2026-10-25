@@ -1222,8 +1222,8 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
     const rewarded = friend.invite === 'rewarded';
     await ctx.db.query(
       `INSERT INTO "InviteRedemption" ("id", "inviteId", "inviterId", "inviteeId", "status", "joinedAt", "qualifiedAt",
-         "rewardedAt", "expiresAt", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $6, $9)`,
+         "rewardedAt", "expiresAt", "createdAt", "updatedAt", "timezone", "inviterRewardEligible")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $7, $8, $6, $9, $10, true)`,
       [
         redemptionId,
         invite.id,
@@ -1234,6 +1234,7 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
         rewarded ? utc(qualifiedAt) : null,
         utc(new Date(joinedAt.getTime() + 14 * DAY_MS)),
         utc(ctx.now),
+        content.timezone,
       ],
     );
     const activeDays = rewarded ? 2 : 1;
@@ -1287,8 +1288,8 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
         const startsAt = new Date(endsAt.getTime() - 7 * DAY_MS);
         await ctx.db.query(
           `INSERT INTO "PremiumGrant" ("id", "userId", "source", "sourceKey", "durationDays", "status", "startsAt", "endsAt",
-             "createdAt", "updatedAt")
-           VALUES ($1, $2, 'INVITE', $3, 7, $4, $5, $6, $7, $7)`,
+             "createdAt", "updatedAt", "endingNotifiedAt")
+           VALUES ($1, $2, 'INVITE', $3, 7, $4, $5, $6, $7, $7, $8)`,
           [
             cuidLike(),
             inviteeId,
@@ -1297,6 +1298,8 @@ async function seedInvites(ctx: Context, state: SeedState, premium: Owner): Prom
             utc(startsAt),
             utc(endsAt),
             utc(qualifiedAt),
+            // 끝나기 24시간 전 안내 작업이 같은 알림을 한 번 더 만들지 않게, 아래에서 넣는 알림 시각으로 발송 완료를 표시한다
+            isGrantAccount ? utc(new Date(ctx.now.getTime() - 40 * 60_000)) : null,
           ],
         );
         if (isGrantAccount) {
@@ -1810,6 +1813,11 @@ async function resetNewbie(ctx: Context, content: LocaleContent): Promise<void> 
       [newbie],
     );
     const redemptionIds = rows.flatMap((row) => (typeof row.id === 'string' ? [row.id] : []));
+    // 서버가 실제 수락에서 만든 초대 알림(INVITE_JOINED 등)은 friendId 없이 metadata.redemptionId로만 수락과 이어진다
+    await ctx.db.query(
+      `DELETE FROM "Notification" WHERE "metadata"->>'redemptionId' = ANY($1::text[])`,
+      [redemptionIds],
+    );
     const { rows: grantRows } = await ctx.db.query(
       'SELECT "id" FROM "RewardGrant" WHERE "sourceId" = ANY($1::text[])',
       [redemptionIds],
