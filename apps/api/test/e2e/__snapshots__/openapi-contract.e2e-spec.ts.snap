@@ -2886,6 +2886,8 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "email": "dydals3440@gmail.com",
         "emailVerifiedAt": "2026-01-15T10:30:00.000Z",
         "name": "매튜",
+        "premiumEndsAt": null,
+        "premiumSource": null,
         "profileImage": "https://example.com/profiles/matthew.jpg",
         "providers": [
           "CREDENTIAL",
@@ -2897,6 +2899,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "subscriptionStatus": "FREE",
         "userId": "clz7x5p8k0001qz0z8z8z8z8z",
         "userTag": "MATT2025",
+        "willRenew": false,
       },
       "properties": {
         "createdAt": {
@@ -2924,6 +2927,23 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "string",
             "null",
           ],
+        },
+        "premiumEndsAt": {
+          "description": "프리미엄이 끝나는 시각 (ISO 8601 UTC, 스토어 구독과 보상 기간 중 늦은 쪽, 없으면 null, 구버전 서버는 생략)",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "premiumSource": {
+          "description": "프리미엄 출처 (STORE: 스토어 구독, GRANT: 초대 등 보상 기간, 프리미엄이 아니면 null, 구버전 서버는 생략)",
+          "enum": [
+            "STORE",
+            "GRANT",
+            null,
+          ],
+          "nullable": true,
+          "type": "string",
         },
         "profileImage": {
           "description": "프로필 이미지 (아이콘 키 또는 URL)",
@@ -2999,6 +3019,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "maxLength": 8,
           "minLength": 8,
           "type": "string",
+        },
+        "willRenew": {
+          "description": "스토어 구독이 자동 갱신되는지 여부 (보상 기간만 있으면 false, 구버전 서버는 생략)",
+          "type": "boolean",
         },
       },
       "required": [
@@ -4601,6 +4625,9 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "STREAK_AT_RISK",
                   "WEATHER_MORNING",
                   "WEATHER_EVENING",
+                  "INVITE_JOINED",
+                  "INVITE_REWARDED",
+                  "PREMIUM_GRANT_ENDING",
                 ],
                 "type": "string",
               },
