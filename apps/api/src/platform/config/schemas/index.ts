@@ -15,6 +15,7 @@ import {
   featureDiscoverySchema,
   validateFeatureDiscoveryConfig,
 } from "./feature-discovery.schema.js";
+import { type InviteConfig, inviteSchema, validateInviteConfig } from "./invite.schema.js";
 import { type JobConfig, jobSchema } from "./job.schema.js";
 import { type JwtConfig, jwtSchema } from "./jwt.schema.js";
 import { type NudgeConfig, nudgeSchema } from "./nudge.schema.js";
@@ -32,6 +33,7 @@ export * from "./database.schema.js";
 export * from "./email.schema.js";
 export * from "./external.schema.js";
 export * from "./feature-discovery.schema.js";
+export * from "./invite.schema.js";
 export * from "./job.schema.js";
 export * from "./jwt.schema.js";
 export * from "./nudge.schema.js";
@@ -61,9 +63,11 @@ export const envSchema = z
     ...externalSchema.shape,
     ...webhookSchema.shape,
     ...featureDiscoverySchema.shape,
+    ...inviteSchema.shape,
   })
   .check(validateFeatureDiscoveryConfig)
-  .check(validateAppVersionConfig);
+  .check(validateAppVersionConfig)
+  .check(validateInviteConfig);
 
 /**
  * 환경변수 전체 타입
@@ -82,7 +86,8 @@ export type EnvConfig = AppConfig &
   RetentionConfig &
   ExternalConfig &
   WebhookConfig &
-  FeatureDiscoveryConfig;
+  FeatureDiscoveryConfig &
+  InviteConfig;
 
 /**
  * 환경변수 검증 함수

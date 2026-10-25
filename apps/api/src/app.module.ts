@@ -34,6 +34,7 @@ import { PlanningCategoriesModule } from "#api/modules/planning/planning-categor
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
+import { SocialInvitesModule } from "#api/modules/social/social-invites.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
 import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
@@ -120,6 +121,7 @@ import { AppService } from "./app.service.js";
     NotesMemosModule,
     NotificationDeliveryModule,
     SocialNudgesModule,
+    SocialInvitesModule,
     NotificationRemindersModule,
     BillingSubscriptionsModule,
     PlanningTodosModule,

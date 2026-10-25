@@ -35,6 +35,9 @@ export const SWAGGER_TAGS = {
   /** 응원하기 - 친구 응원 메시지, 쿨다운/제한 관리 */
   CHEERS: "Cheers",
 
+  /** 친구 초대 - 초대 코드·링크, 수락, 보상 */
+  INVITES: "Invites",
+
   /** AI - 자연어 파싱, 주간/월간 리포트, 반복 제안 */
   AI: "AI",
 
@@ -116,6 +119,9 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
   [SWAGGER_TAGS.NUDGES]: "친구 할 일에 콕 찌르기. FREE: 3회/일, 동일 할 일 24시간 쿨다운",
 
   [SWAGGER_TAGS.CHEERS]: "친구에게 응원 메시지. FREE: 3회/일, 동일 사용자 24시간 쿨다운",
+
+  [SWAGGER_TAGS.INVITES]:
+    "초대 코드 발급·재발급, 공개 미리보기, 초대 수락, 초대한 친구 목록. INVITE_ENABLED가 꺼져 있으면 INVITE_2105",
 
   [SWAGGER_TAGS.AI]:
     "자연어 파싱 (스마트 시간 해석), 주간/월간 AI 리포트, 반복 패턴 제안. 리포트/제안은 프리미엄 전용",

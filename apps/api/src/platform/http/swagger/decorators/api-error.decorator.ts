@@ -221,12 +221,37 @@ export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDeco
  * parse(@Body() dto: ParseDto) { ... }
  * ```
  */
-export function ApiTooManyRequestsError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Too many requests";
+export function ApiTooManyRequestsError(
+  errorCode: ErrorCodeType,
+  description?: string,
+): MethodDecorator {
+  const message = description ?? Errors[errorCode]?.message ?? "Too many requests";
 
   return applyDecorators(
     ApiResponse({
       status: HttpStatus.TOO_MANY_REQUESTS,
+      description: message,
+      schema: createErrorSchema(errorCode, message),
+    }),
+  );
+}
+
+/**
+ * 410 Gone 에러 데코레이터
+ *
+ * @example
+ * ```typescript
+ * @Get(':code')
+ * @ApiGoneError(ErrorCode.INVITE_2102)
+ * preview(@Param() params: InviteCodeParamDto) { ... }
+ * ```
+ */
+export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
+  const message = Errors[errorCode]?.message ?? "Gone";
+
+  return applyDecorators(
+    ApiResponse({
+      status: HttpStatus.GONE,
       description: message,
       schema: createErrorSchema(errorCode, message),
     }),

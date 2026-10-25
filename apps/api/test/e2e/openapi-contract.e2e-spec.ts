@@ -141,6 +141,41 @@ describe("OpenAPI 계약 (e2e)", () => {
     expect(document.components).toMatchSnapshot("openapi-components");
   });
 
+  it("친구 초대 API는 operationId·인증·오류 상태를 문서에 선언한다", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+
+    // When
+    const operations = {
+      availability: document.paths["/v1/invites/availability"]?.get,
+      myInvite: document.paths["/v1/invites/me"]?.get,
+      rotate: document.paths["/v1/invites/me/rotate"]?.post,
+      invitees: document.paths["/v1/invites/me/invitees"]?.get,
+      preview: document.paths["/v1/invites/{code}"]?.get,
+    };
+
+    // Then
+    expect(Object.values(operations).map((operation) => operation?.operationId)).toEqual([
+      "getInviteAvailability",
+      "getMyInvite",
+      "rotateInviteCode",
+      "getInvitedFriends",
+      "getInvitePreview",
+    ]);
+    expect(operations.preview?.security).toBeUndefined();
+    expect(operations.myInvite?.security).toEqual([{ bearer: [] }]);
+    expect(Object.keys(operations.preview?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "403", "404", "410", "429"]),
+    );
+    expect(Object.keys(operations.preview?.responses ?? {})).not.toContain("401");
+    expect(Object.keys(operations.rotate?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "401", "403", "429"]),
+    );
+  });
+
   it.each(RELEASED_OPENAPI_CONTRACTS)(
     "스토어 배포된 $releasedClientVersion 클라이언트의 요청·응답·상태 코드 계약을 보존한다",
     (releasedContract) => {
