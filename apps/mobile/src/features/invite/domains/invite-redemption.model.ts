@@ -1,6 +1,8 @@
-import { INVITE_REDEEM_WINDOW_DAYS } from '@aido/api';
+import { INVITE_REDEEM_WINDOW_DAYS, REDEEM_OUTCOME, redeemInviteResponseSchema } from '@aido/api';
+import { match } from 'ts-pattern';
 import { z } from 'zod';
 
+import { InviteRewardPolicy, InviteRewardSchema } from './invite-reward.model';
 import { InviteCodeSchema } from './invite.model';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -28,8 +30,81 @@ export function isWithinDays(from: Date, now: Date, days: number) {
   return now.getTime() - from.getTime() < days * DAY_IN_MS;
 }
 
+// rewards가 있는 REDEEMED만 모르는 보상 종류를 UNKNOWN으로 흡수하도록 바꾼다
+const [RedeemedSchema, ConnectedSchema, AlreadyFriendsSchema] = redeemInviteResponseSchema.options;
+
+export const RedemptionResultSchema = z.discriminatedUnion('outcome', [
+  RedeemedSchema.extend({ rewards: z.array(InviteRewardSchema) }),
+  ConnectedSchema,
+  AlreadyFriendsSchema,
+]);
+
+export type RedemptionResult = z.output<typeof RedemptionResultSchema>;
+
 export const InviteRedemptionPolicy = {
   isFresh(pending: PendingRedemption, now: Date) {
     return isWithinDays(pending.savedAt, now, INVITE_REDEEM_WINDOW_DAYS);
   },
+
+  /** 이름을 정하지 않은 초대한 사람은 화면이 넘긴 대체 호칭으로 부른다(공개 프로필이라 태그는 쓰지 않는다) */
+  inviterName(result: RedemptionResult, unnamedLabel: string) {
+    return result.inviter.name ?? unnamedLabel;
+  },
+
+  /** 보상은 새로 가입해 수락한 경우(REDEEMED)에만 있다 */
+  rewards(result: RedemptionResult) {
+    return result.outcome === REDEEM_OUTCOME.REDEEMED ? result.rewards : [];
+  },
+
+  grantedPremiumDays(result: RedemptionResult) {
+    return InviteRewardPolicy.premiumDays(this.rewards(result));
+  },
+
+  /** 환영 시트가 어떤 결과를 보여 줄지 정한다(문구는 화면이 고른다) */
+  welcomeVariant(result: RedemptionResult) {
+    return match({ result, hasReward: this.grantedPremiumDays(result) > 0 })
+      .with(
+        { result: { outcome: REDEEM_OUTCOME.ALREADY_FRIENDS } },
+        () => 'already-friends' as const,
+      )
+      .with(
+        { result: { friendship: 'FRIENDS' }, hasReward: true },
+        () => 'friends-with-reward' as const,
+      )
+      .with(
+        { result: { friendship: 'REQUESTED' }, hasReward: true },
+        () => 'requested-with-reward' as const,
+      )
+      .with({ result: { friendship: 'FRIENDS' }, hasReward: false }, () => 'friends-only' as const)
+      .with(
+        { result: { friendship: 'REQUESTED' }, hasReward: false },
+        () => 'requested-only' as const,
+      )
+      .exhaustive();
+  },
+
+  /** 초대한 사람 친구 자리가 꽉 차 친구 요청만 보낸 경우 */
+  isFriendRequestOnly(result: RedemptionResult) {
+    return match(this.welcomeVariant(result))
+      .with('requested-with-reward', 'requested-only', () => true)
+      .with('already-friends', 'friends-with-reward', 'friends-only', () => false)
+      .exhaustive();
+  },
+
+  /** 보상이 없을 때 이유. 같은 기기·신원으로 이미 받았거나, 이미 쓰던 계정이다 */
+  missingRewardReason(result: RedemptionResult) {
+    return match({ outcome: result.outcome, hasReward: this.grantedPremiumDays(result) > 0 })
+      .with({ hasReward: true }, () => null)
+      .with({ outcome: REDEEM_OUTCOME.REDEEMED }, () => 'already-claimed' as const)
+      .with({ outcome: REDEEM_OUTCOME.CONNECTED }, () => 'existing-account' as const)
+      .with({ outcome: REDEEM_OUTCOME.ALREADY_FRIENDS }, () => null)
+      .exhaustive();
+  },
+
+  /** 가입한 지 며칠 안 된 계정만 초대 보상을 기대할 수 있다(서버가 최종 판정한다) */
+  isRewardExpected(accountCreatedAt: Date, now: Date) {
+    return isWithinDays(accountCreatedAt, now, INVITE_REDEEM_WINDOW_DAYS);
+  },
 };
+
+export type WelcomeVariant = ReturnType<typeof InviteRedemptionPolicy.welcomeVariant>;

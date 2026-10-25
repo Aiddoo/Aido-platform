@@ -30,7 +30,13 @@
     },
     "signUp": "Join and become friends",
     "login": "I have an account · Log in",
-    "unnamedInviter": "Your friend"
+    "unnamedInviter": "Your friend",
+    "existingAccountNote": "You already use Aido, so you'll become friends right away. Premium rewards go to friends who just joined",
+    "redeemWithReward_one": "Become friends and get {{count}} day of Premium",
+    "redeemWithReward_other": "Become friends and get {{count}} days of Premium",
+    "connect": "Become friends with {{name}}",
+    "ownInviteNote": "This is your own invite link. Send it to a friend to cheer each other on",
+    "openMyInvite": "Go to my invites"
   },
   "result": {
     "notFound": {
@@ -140,5 +146,27 @@
     "linkCopied": "Link copied",
     "rotated": "New invite link created",
     "shareFailed": "Couldn't share. Please try again later"
+  },
+  "entry": {
+    "haveInviteCode": "Have an invite code?",
+    "inviteCodeShort": "Invite code"
+  },
+  "welcome": {
+    "friendsTitle": "You're now friends with {{name}}",
+    "requestedTitle": "Friend request sent to {{name}}",
+    "friendsDescription": "Now you can see and cheer on each other's to-dos",
+    "requestedDescription": "{{name}}'s friend slots are full.\nYou'll be friends once they accept",
+    "alreadyClaimedDescription": "This device already received an invite reward, so you're just friends this time",
+    "existingAccountDescription": "Since you already use Aido, you're friends now without a reward",
+    "rewardTitle_one": "You got {{count}} day of Premium",
+    "rewardTitle_other": "You got {{count}} days of Premium",
+    "rewardDescription_one": "Enjoy all features for {{count}} day",
+    "rewardDescription_other": "Enjoy all features for {{count}} days",
+    "notificationContext": "We'll let you know when your friend finishes a to-do",
+    "notificationButton": "Turn on",
+    "notificationOn": "Friend updates are on",
+    "createFirstTodo": "Make your first to-do",
+    "openFriendFeed": "See {{name}}'s to-dos first",
+    "later": "Maybe later"
   }
 }

@@ -10,6 +10,14 @@ export function inviteCardHref(inviteCode: InviteCode, source: InviteLinkSource)
   return { pathname: '/invite/[inviteCode]', params: { inviteCode, source } } as const;
 }
 
+export function myInviteHref() {
+  return { pathname: '/friends/invite' } as const;
+}
+
 export function invitedFriendsHref(view: InvitedFriendsView = 'all') {
   return { pathname: '/friends/invite/invitees', params: { view } } as const;
+}
+
+export function inviteWelcomeSheetHref(friendId: string) {
+  return { pathname: '/invite-welcome/[friendId]', params: { friendId } } as const;
 }

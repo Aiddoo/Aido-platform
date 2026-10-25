@@ -27,6 +27,7 @@ function createService({ referrer = null }: { referrer?: string | null } = {}) {
     pendingRedemptionRepository,
     installReferrerRepository: createInstallReferrerRepository(storage, { read: readReferrer }),
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
+    installationIdGateway: { get: () => Promise.resolve('6F9619FF-8B86-D011-B42D-00C04FC964FF') },
   });
 
   return { service, publicHttpClient, authHttpClient, pendingRedemptionRepository, readReferrer };
@@ -102,6 +103,64 @@ describe('InviteService', () => {
         signal: undefined,
       });
       expect(result).toEqual({ ok: true, value: false });
+    });
+  });
+
+  describe('redeem', () => {
+    it('설치 식별자와 함께 수락하고 모르는 보상 종류는 UNKNOWN으로 바꿔 반환한다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      authHttpClient.post.mockResolvedValue({
+        ok: true,
+        value: {
+          outcome: 'REDEEMED',
+          inviter: {
+            userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+            name: '민지',
+            userTag: 'K3MQ9XWA',
+            profileImage: 'orange_tabby',
+          },
+          friendship: 'FRIENDS',
+          rewards: [
+            { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+            { rewardType: 'BADGE', quantity: 1 },
+          ],
+        },
+      });
+
+      // When
+      const result = await service.redeem('k7m2qx');
+
+      // Then
+      expect(authHttpClient.post).toHaveBeenCalledWith('v1/invites/K7M2QX/redeem', {
+        installationId: '6F9619FF-8B86-D011-B42D-00C04FC964FF',
+      });
+      expect(result.ok && result.value.outcome === 'REDEEMED' && result.value.rewards).toEqual([
+        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+        { rewardType: 'UNKNOWN', quantity: 0 },
+      ]);
+    });
+
+    it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      const apiError = createInviteApiError({ code: 'INVITE_2103', status: 400 });
+      authHttpClient.post.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.redeem('K7M2QX');
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      authHttpClient.post.mockResolvedValue({ ok: true, value: { outcome: 'UNKNOWN' } });
+
+      // When & Then
+      await expect(service.redeem('K7M2QX')).rejects.toBeInstanceOf(ParseError);
     });
   });
 
@@ -190,18 +249,47 @@ describe('InviteService', () => {
     });
   });
 
-  describe('takePendingRedemption', () => {
-    it('7일 안에 저장한 초대면 반환하고 지운다', () => {
+  describe('findPendingRedemption', () => {
+    it('7일 안에 저장한 초대면 지우지 않고 반환한다', () => {
       // Given
       const { service, pendingRedemptionRepository } = createService();
       const pending = createPendingRedemption({ savedAt: new Date('2026-10-20T00:00:00Z') });
       pendingRedemptionRepository.save(pending);
 
       // When
-      const result = service.takePendingRedemption(new Date('2026-10-25T00:00:00Z'));
+      const result = service.findPendingRedemption(new Date('2026-10-25T00:00:00Z'));
+
+      // Then 10-20 → 10-25 = 5일 ≤ 7일
+      expect(result).toEqual(pending);
+      expect(pendingRedemptionRepository.get()).toEqual(pending);
+    });
+
+    it('7일이 지난 초대면 null을 반환하고 지운다', () => {
+      // Given
+      const { service, pendingRedemptionRepository } = createService();
+      pendingRedemptionRepository.save(
+        createPendingRedemption({ savedAt: new Date('2026-10-10T00:00:00Z') }),
+      );
+
+      // When
+      const result = service.findPendingRedemption(new Date('2026-10-25T00:00:00Z'));
+
+      // Then 10-10 → 10-25 = 15일 > 7일
+      expect(result).toBeNull();
+      expect(pendingRedemptionRepository.get()).toBeNull();
+    });
+  });
+
+  describe('clearPendingRedemption', () => {
+    it('이어서 열 초대를 지운다', () => {
+      // Given
+      const { service, pendingRedemptionRepository } = createService();
+      pendingRedemptionRepository.save(createPendingRedemption());
+
+      // When
+      service.clearPendingRedemption();
 
       // Then
-      expect(result).toEqual(pending);
       expect(pendingRedemptionRepository.get()).toBeNull();
     });
   });

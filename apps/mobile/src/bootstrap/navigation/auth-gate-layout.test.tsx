@@ -49,6 +49,7 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
       read: async () => null,
     }),
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
+    installationIdGateway: { get: async () => null },
   });
   const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
   return {

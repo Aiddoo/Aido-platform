@@ -21,6 +21,7 @@ const SHEET_ROUTES = [
   'todo/[todoId]/sub-todos/[subTodoId]/edit',
   'todo-categories/new',
   'todo-categories/[categoryId]/edit',
+  'invite-welcome/[friendId]',
 ] as const;
 
 export const unstable_settings = {

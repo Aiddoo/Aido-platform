@@ -2,10 +2,15 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { InvitePreviewCard } from '@src/features/invite/components/invite-preview-card';
 import { InvitePreviewPolicy } from '@src/features/invite/domains/invite-preview.model';
+import { InviteRedemptionPolicy } from '@src/features/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
-import type { InviteCode } from '@src/features/invite/domains/invite.model';
+import { type InviteCode, InvitePolicy } from '@src/features/invite/domains/invite.model';
 import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-route-params';
 import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
+import { useGetInviteQueryOptions } from '@src/features/invite/queries/get-invite-query-options';
+import { useRedeemInviteMutationOptions } from '@src/features/invite/queries/use-redeem-invite-mutation-options';
+import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Barcode,
@@ -26,11 +31,11 @@ import {
   TextSkeleton,
   VStack,
 } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function InviteCardScreen() {
@@ -198,8 +203,12 @@ function InviteCardActions() {
   const inviteService = useInviteService();
   const { t } = useTranslation('invite');
 
-  if (inviteCode == null || status === 'authenticated') {
+  if (inviteCode == null) {
     return null;
+  }
+
+  if (status === 'authenticated') {
+    return <InviteRedeemActions inviteCode={inviteCode} />;
   }
 
   const continueAsGuest = (pathname: '/sign-up' | '/login') => {
@@ -223,6 +232,80 @@ function InviteCardActions() {
             {t('card.login')}
           </TextButton>
         </Box>
+      </ReadableContent>
+    </StyledSafeAreaView>
+  );
+}
+
+/**
+ * 로그인한 사용자의 수락 버튼. 가입한 지 얼마 안 된 계정은 보상을, 오래 쓴 계정은 친구 맺기만 안내한다.
+ * 최종 판정은 서버가 하고 결과는 환영 시트가 보여 준다.
+ */
+function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
+  const { t } = useTranslation('invite');
+  const inviteService = useInviteService();
+  const [{ data: preview }, { data: me }, { data: myInvite }] = useSuspenseQueries({
+    queries: [
+      useGetInvitePreviewQueryOptions({ inviteCode }),
+      useGetMeQueryOptions(),
+      useGetInviteQueryOptions(),
+    ],
+  });
+  const redeem = useMutation(useRedeemInviteMutationOptions());
+  const inviterName = InvitePreviewPolicy.inviterName(preview, t('card.unnamedInviter'));
+  const isRewardExpected = InviteRedemptionPolicy.isRewardExpected(me.createdAt, new Date());
+
+  // 로그인한 본인에게 카드를 보여 줬으면 이어서 열 초대를 지운다. 닫고 나가도 다음 실행 때 다시 뜨지 않는다
+  useEffect(() => {
+    inviteService.clearPendingRedemption();
+  }, [inviteService]);
+
+  // 내 링크를 연 경우 수락 요청을 보내지 않고 내 초대 화면으로 안내한다
+  if (InvitePolicy.isOwnCode(myInvite, inviteCode)) {
+    return (
+      <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
+        <ReadableContent px={20} pt={12} pb={12} gap={12}>
+          <Box className="rounded-2xl bg-white px-4 py-3">
+            <Text size="b4" shade={7} align="center">
+              {t('card.ownInviteNote')}
+            </Text>
+          </Box>
+
+          <Button
+            testID="invite-card-open-my-invite"
+            onPress={() => {
+              inviteService.clearPendingRedemption();
+              router.replace(myInviteHref());
+            }}
+          >
+            {t('card.openMyInvite')}
+          </Button>
+        </ReadableContent>
+      </StyledSafeAreaView>
+    );
+  }
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
+      <ReadableContent px={20} pt={12} pb={12} gap={12}>
+        {!isRewardExpected && (
+          <Box className="rounded-2xl bg-white px-4 py-3">
+            <Text size="b4" shade={7} align="center">
+              {t('card.existingAccountNote')}
+            </Text>
+          </Box>
+        )}
+
+        <Button
+          testID="invite-card-redeem"
+          onPress={() => redeem.mutate(inviteCode)}
+          isLoading={redeem.isPending}
+          isDisabled={redeem.isPending}
+        >
+          {isRewardExpected
+            ? t('card.redeemWithReward', { count: InviteRewardPolicy.welcomePremiumDays() })
+            : t('card.connect', { name: inviterName })}
+        </Button>
       </ReadableContent>
     </StyledSafeAreaView>
   );

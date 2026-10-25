@@ -49,6 +49,7 @@ import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gat
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
 import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer.gateway';
+import { expoInstallationIdGateway } from '@src/shared/infra/application/expo-installation-id.gateway';
 import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
@@ -176,6 +177,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
         expoInstallReferrerGateway,
       ),
       pawPrintCelebrationRepository: createPawPrintCelebrationRepository(mmkvSyncStorage),
+      installationIdGateway: expoInstallationIdGateway,
     });
     const inviteShareService = new InviteShareService({
       kakaoShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),

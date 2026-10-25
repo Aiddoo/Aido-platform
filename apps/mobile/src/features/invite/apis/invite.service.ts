@@ -4,12 +4,14 @@ import {
   invitePreviewResponseSchema,
 } from '@aido/api';
 import type { HttpClient } from '@src/core/ports/http';
+import type { InstallationIdGateway } from '@src/core/ports/installation-id';
 import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { err, ok, type Result } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.type';
 
 import type { InvitePreview } from '../domains/invite-preview.model';
+import { type RedemptionResult, RedemptionResultSchema } from '../domains/invite-redemption.model';
 import {
   type InviteLinkSource,
   type PendingRedemption,
@@ -34,6 +36,7 @@ interface InviteServiceDependencies {
   pendingRedemptionRepository: PendingRedemptionRepository;
   installReferrerRepository: InstallReferrerRepository;
   pawPrintCelebrationRepository: PawPrintCelebrationRepository;
+  installationIdGateway: InstallationIdGateway;
 }
 
 interface SavePendingRedemptionInput {
@@ -47,6 +50,7 @@ export class InviteService {
   readonly #pendingRedemptionRepository: PendingRedemptionRepository;
   readonly #installReferrerRepository: InstallReferrerRepository;
   readonly #pawPrintCelebrationRepository: PawPrintCelebrationRepository;
+  readonly #installationIdGateway: InstallationIdGateway;
 
   constructor({
     publicHttpClient,
@@ -54,12 +58,14 @@ export class InviteService {
     pendingRedemptionRepository,
     installReferrerRepository,
     pawPrintCelebrationRepository,
+    installationIdGateway,
   }: InviteServiceDependencies) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
     this.#pendingRedemptionRepository = pendingRedemptionRepository;
     this.#installReferrerRepository = installReferrerRepository;
     this.#pawPrintCelebrationRepository = pawPrintCelebrationRepository;
+    this.#installationIdGateway = installationIdGateway;
   }
 
   getAvailability = async (signal?: AbortSignal): Promise<Result<boolean, ApiError>> => {
@@ -98,6 +104,30 @@ export class InviteService {
     }
 
     return ok(toInvitePreview(parsed.data));
+  };
+
+  /** 초대를 수락한다. 같은 기기에서 보상을 두 번 받지 않게 설치 식별자를 함께 보낸다 */
+  redeem = async (rawCode: string): Promise<Result<RedemptionResult, InviteServiceError>> => {
+    const inviteCode = parseInviteCode(rawCode);
+    if (inviteCode == null) {
+      return err(InviteErrors.invalidCode());
+    }
+
+    const installationId = await this.#installationIdGateway.get().catch(() => null);
+    const result = await this.#authHttpClient.post(
+      `v1/invites/${inviteCode}/redeem`,
+      installationId == null ? {} : { installationId },
+    );
+    if (!result.ok) {
+      return result;
+    }
+
+    const parsed = RedemptionResultSchema.safeParse(result.value);
+    if (!parsed.success) {
+      throw new ParseError(`[InviteService] Invalid redeem response: ${parsed.error.message}`);
+    }
+
+    return ok(parsed.data);
   };
 
   /** 내 초대 코드·링크와 발자국 요약. 처음 부르면 서버가 코드를 만든다 */
@@ -155,21 +185,26 @@ export class InviteService {
   };
 
   /**
-   * 로그인 전에 남긴 초대를 꺼낸다. 지났으면 지우고 null이다.
-   * 로그인 전에만 남기므로 처음 로그인한 계정이 이어서 연다.
+   * 로그인 전에 남긴 초대를 찾는다. 지났으면 지우고 null이다. 로그인 전에만 남기므로 처음 로그인한
+   * 계정이 이어서 연다. 찾기만 하고 지우지 않아 카드가 뜨기 전에 앱이 꺼져도 다음 실행 때 이어서 연다.
    */
-  takePendingRedemption = (now: Date): PendingRedemption | null => {
+  findPendingRedemption = (now: Date): PendingRedemption | null => {
     const pending = this.#pendingRedemptionRepository.get();
     if (pending == null) {
       return null;
     }
 
-    this.#pendingRedemptionRepository.clear();
     if (!InviteRedemptionPolicy.isFresh(pending, now)) {
+      this.#pendingRedemptionRepository.clear();
       return null;
     }
 
     return pending;
+  };
+
+  /** 수락했거나 다시 열어도 같은 실패라 더 이어서 열 필요가 없을 때 */
+  clearPendingRedemption = () => {
+    this.#pendingRedemptionRepository.clear();
   };
 
   #parseInvite(value: unknown, method: string): Invite {

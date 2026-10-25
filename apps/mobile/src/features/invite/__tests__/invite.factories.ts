@@ -6,6 +6,7 @@ import {
 } from '@aido/api';
 import { ApiError } from '@src/shared/errors/api-error';
 
+import type { RedemptionResult } from '../domains/invite-redemption.model';
 import type { PendingRedemption } from '../domains/invite-redemption.model';
 import type { Invite } from '../domains/invite.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
@@ -100,5 +101,20 @@ export const createInvitedFriend = (overrides?: Partial<InvitedFriend>): Invited
   rejectionReason: null,
   joinedAt: new Date('2026-11-02T10:30:00.000Z'),
   qualifiedAt: null,
+  ...overrides,
+});
+
+type RedeemedResult = Extract<RedemptionResult, { outcome: 'REDEEMED' }>;
+
+export const createRedemptionResult = (overrides?: Partial<RedeemedResult>): RedeemedResult => ({
+  outcome: 'REDEEMED',
+  inviter: {
+    userId: 'clz7x5p8k0001qz0z8z8z8z8z',
+    name: '민지',
+    userTag: 'K3MQ9XWA',
+    profileImage: 'orange_tabby',
+  },
+  friendship: 'FRIENDS',
+  rewards: [{ rewardType: 'PREMIUM_DAYS', quantity: 7 }],
   ...overrides,
 });
