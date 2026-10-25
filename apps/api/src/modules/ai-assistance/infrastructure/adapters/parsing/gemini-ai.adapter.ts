@@ -28,7 +28,7 @@ export class GeminiAiAdapter implements AiProvider {
   async generateStructured<T>(
     options: GenerateStructuredOptions<T>,
   ): Promise<GenerateStructuredResult<T>> {
-    if (this.#google === null) {
+    if (this.#google == null) {
       throw new AiProviderError("UNAVAILABLE", undefined);
     }
 
@@ -68,6 +68,6 @@ export class GeminiAiAdapter implements AiProvider {
   }
 
   isAvailable(): boolean {
-    return this.#google !== null;
+    return this.#google != null;
   }
 }

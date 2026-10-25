@@ -41,7 +41,7 @@ function definition(locale: SupportedLocale): SuggestionPromptDefinition {
           ).map(({ pattern, recordedActivity }) => ({
             ...pattern,
             reason:
-              recordedActivity === null
+              recordedActivity == null
                 ? pattern.reason
                 : repeatReason(recordedActivity, pattern.daysOfWeek),
           })),

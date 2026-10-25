@@ -12,7 +12,7 @@ const DAY_LABELS = {
 
 /** 소수 첫째 자리까지. 모델이 차이를 직접 계산하지 않도록 서버가 넣는다. */
 function delta(current: number, previous: number | null): number | null {
-  return previous === null ? null : Math.round((current - previous) * 10) / 10;
+  return previous == null ? null : Math.round((current - previous) * 10) / 10;
 }
 
 /**

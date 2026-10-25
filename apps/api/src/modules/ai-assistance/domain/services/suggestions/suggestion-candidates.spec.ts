@@ -127,14 +127,14 @@ describe("suggestionConfidence·isReasonGrounded", () => {
 
   it("3회 이상·완료율 0.6 이상이면 0.8 + 0.15×완료율이다", () => {
     // Given / When / Then
-    if (run === undefined) throw new Error("candidate missing");
+    if (run == null) throw new Error("candidate missing");
     expect(suggestionConfidence(run, "PATTERN")).toBe(0.91);
     expect(suggestionConfidence({ ...run, occurrences: 2, completed: 2 }, "PATTERN")).toBe(0.65);
   });
 
   it("사유의 숫자는 후보 근거에 있는 값만 허용한다", () => {
     // Given / When / Then
-    if (run === undefined) throw new Error("candidate missing");
+    if (run == null) throw new Error("candidate missing");
     expect(isReasonGrounded("월요일에 러닝을 3번 모두 끝냈어요.", run)).toBe(true);
     expect(isReasonGrounded("7시에 4번 기록했어요.", run)).toBe(true);
     expect(isReasonGrounded("10번 연속 성공했어요.", run)).toBe(false);

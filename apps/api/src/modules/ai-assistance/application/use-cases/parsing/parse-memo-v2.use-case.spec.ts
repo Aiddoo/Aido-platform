@@ -89,7 +89,7 @@ describe("ParseMemo — v2 정규화", () => {
       // Given
       const fixture = createFixture();
       fixture.aiProvider.setRawResponse({
-        ...(totalTaskCount !== undefined && { totalTaskCount }),
+        ...(totalTaskCount != null && { totalTaskCount }),
         todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
       });
       // When

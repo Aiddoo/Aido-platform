@@ -25,7 +25,7 @@ const context: SuggestionContext = {
 
 function readData(prompt: string) {
   const json = prompt.match(/<suggestion_data>\n([\s\S]*?)\n<\/suggestion_data>/)?.[1];
-  if (json === undefined) throw new Error("suggestion_data missing");
+  if (json == null) throw new Error("suggestion_data missing");
   return JSON.parse(json);
 }
 

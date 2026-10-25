@@ -53,7 +53,7 @@ function mostCompletedCategory(data: AggregatedReportData): string | null {
   for (const category of data.categoryBreakdown) {
     if (category.completed > (best?.completed ?? 0)) best = category;
   }
-  return best?.name ?? null;
+  return best == null ? null : best.name;
 }
 
 /** 활동이 없는 기간은 LLM 없이 이 템플릿을 저장한다. */
@@ -82,7 +82,7 @@ export function buildFallbackContent(
   const category = mostCompletedCategory(input.data);
   return {
     aiSummary: copy.activeSummary(input.periodLabel, input.data),
-    aiTips: [category === null ? copy.activeTip(next) : copy.categoryTip(category, next)],
+    aiTips: [category == null ? copy.activeTip(next) : copy.categoryTip(category, next)],
     contentSource: "FALLBACK",
     promptVersion: null,
   };

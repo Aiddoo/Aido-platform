@@ -77,13 +77,15 @@ export function normalizeTodoDraft(
   const warnings: NormalizationWarning[] = [];
   let title = cleanTitle(draft.title);
   if (title === "") {
-    title = cleanTitle(context.fallbackTitle) || NO_ACTION_TITLE[context.locale];
+    // 제목은 null이 아니라 빈 문자열로 비므로 ??가 아니라 빈 문자열 비교로 대체한다.
+    const fallbackTitle = cleanTitle(context.fallbackTitle);
+    title = fallbackTitle === "" ? NO_ACTION_TITLE[context.locale] : fallbackTitle;
     warnings.push("TITLE_FALLBACK");
   }
   const schedule = resolveTodoSchedule(draft, { now: context.now, timeZone: context.timezone });
   warnings.push(...schedule.warnings);
   const categoryId =
-    draft.categoryId !== undefined && context.ownedCategoryIds.has(draft.categoryId)
+    draft.categoryId != null && context.ownedCategoryIds.has(draft.categoryId)
       ? draft.categoryId
       : undefined;
   return {
@@ -95,7 +97,7 @@ export function normalizeTodoDraft(
       isAllDay: schedule.isAllDay,
       isRecurring: schedule.isRecurring,
       recurrence: schedule.recurrence,
-      ...(categoryId !== undefined && { categoryId }),
+      ...(categoryId != null && { categoryId }),
     }),
     intent: "TASK",
     warnings,

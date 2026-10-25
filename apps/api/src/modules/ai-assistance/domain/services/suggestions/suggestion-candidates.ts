@@ -61,7 +61,7 @@ export function buildSuggestionCandidates(
     .map((activity, index) => {
       const records = todos.filter((todo) => todo.title === activity.title);
       const timeCounts = countBy(
-        records.flatMap((record) => (record.scheduledTime === null ? [] : [record.scheduledTime])),
+        records.flatMap((record) => (record.scheduledTime == null ? [] : [record.scheduledTime])),
         (time) => time,
       );
       const topTime = maxBy(Object.entries(timeCounts), ([, count]) => count);
@@ -71,7 +71,7 @@ export function buildSuggestionCandidates(
         occurrences: activity.occurrences,
         completed: activity.completedOccurrences,
         days: activity.days,
-        recordedTime: topTime !== undefined && topTime[1] >= 2 ? topTime[0] : null,
+        recordedTime: topTime != null && topTime[1] >= 2 ? topTime[0] : null,
         categoryName: records[0]?.categoryName ?? "",
       };
     });
@@ -104,8 +104,7 @@ export function resolveSuggestionPicks(
   const resolved: ResolvedSuggestionPick[] = [];
   for (const pick of picks) {
     const candidate = byId.get(pick.candidateId);
-    if (candidate === undefined || seen.has(candidate.id) || excluded.has(candidate.title))
-      continue;
+    if (candidate == null || seen.has(candidate.id) || excluded.has(candidate.title)) continue;
     if (
       options.mode === "PATTERN" &&
       candidate.occurrences < AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES
@@ -144,7 +143,7 @@ export function isReasonGrounded(reason: string, candidate: SuggestionCandidate)
     candidate.occurrences,
     candidate.completed,
     ...candidate.days.flatMap((day) => [day.total, day.completed]),
-    ...(candidate.recordedTime === null ? [] : candidate.recordedTime.split(":").map(Number)),
+    ...(candidate.recordedTime == null ? [] : candidate.recordedTime.split(":").map(Number)),
   ]);
   const numbers = reason.match(/\d+/g) ?? [];
   return numbers.every((value) => allowed.has(Number(value)));

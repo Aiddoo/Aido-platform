@@ -20,7 +20,7 @@ function definition(locale: SupportedLocale): ReportPromptDefinition {
     promptVersion: REPORT_PROMPT_VERSION_V1,
     build: (input) =>
       build(input.data, input.periodLabel, input.type, {
-        prevTips: input.prevTips === null ? null : [...input.prevTips],
+        prevTips: input.prevTips == null ? null : [...input.prevTips],
       }),
     output: structuredOutput(schema, toContent),
   };

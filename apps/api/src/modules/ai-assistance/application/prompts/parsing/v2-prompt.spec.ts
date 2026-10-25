@@ -13,7 +13,7 @@ function tagsOf(text: string): string[] {
 
 function readBlock(prompt: string, tag: string) {
   const json = prompt.match(new RegExp(`<${tag}>\\n([\\s\\S]*?)\\n</${tag}>`))?.[1];
-  if (json === undefined) throw new Error(`${tag} missing`);
+  if (json == null) throw new Error(`${tag} missing`);
   return JSON.parse(json);
 }
 

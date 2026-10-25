@@ -100,7 +100,7 @@ export function analyzeHabitFormation(
     const consecutiveCount = countConsecutiveWeeks(weeks);
     const completionRate = computeCompletionRate(weekMap);
     const lastWeek = weeks[weeks.length - 1];
-    const missedWeeks = lastWeek !== undefined ? Math.max(0, currentWeek - lastWeek) : 0;
+    const missedWeeks = lastWeek != null ? Math.max(0, currentWeek - lastWeek) : 0;
 
     const status = classifyHabit({
       consecutiveCount,

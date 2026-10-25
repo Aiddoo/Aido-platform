@@ -55,7 +55,7 @@ export function generationFailedLog(
     outcome: base.outcome,
     errorKind: base.errorKind,
     statusCode: base.statusCode,
-    ...(base.errorCode !== undefined && { errorCode: base.errorCode }),
+    ...(base.errorCode != null && { errorCode: base.errorCode }),
     quotaCharged: base.quotaCharged,
     userId: base.userId,
   };

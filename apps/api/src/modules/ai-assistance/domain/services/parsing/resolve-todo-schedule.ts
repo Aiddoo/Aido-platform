@@ -60,23 +60,23 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
 
   const dateExplicit = draft.date.kind !== "NONE";
   const resolvedDate = resolveDateRef(draft.date, today);
-  if (resolvedDate.warning !== undefined) warnings.push(resolvedDate.warning);
+  if (resolvedDate.warning != null) warnings.push(resolvedDate.warning);
 
   const recurrenceBase = resolveRecurrenceWindow(draft.repeat, today, resolvedDate.day);
-  const isRecurringDraft = recurrenceBase !== null;
+  const isRecurringDraft = recurrenceBase != null;
 
   let startDay = recurrenceBase?.start ?? resolvedDate.day;
   let scheduledMinutes: number | null = null;
 
   const time =
-    draft.time === null ? null : resolveTime(draft.time, startDay, nowMinutes, today, clock);
+    draft.time == null ? null : resolveTime(draft.time, startDay, nowMinutes, today, clock);
   if (time === "INVALID") {
     warnings.push("INVALID_TIME");
-  } else if (time !== null) {
+  } else if (time != null) {
     scheduledMinutes = time.minutes;
     // 반복 일정의 시작일은 시각과 무관하게 반복 규칙이 정한다.
     if (!isRecurringDraft) {
-      const isRelative = draft.time?.relativeMinutes !== undefined;
+      const isRelative = draft.time?.relativeMinutes != null;
       // 날짜를 말하지 않은 단발 일정의 시각이 이미 지났으면 내일로 넘긴다.
       const passedToday =
         !isRelative && !dateExplicit && time.day.isSame(today) && time.minutes <= nowMinutes;
@@ -85,16 +85,16 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
   }
 
   let endDate: string | null = null;
-  if (draft.endDate !== undefined && draft.endDate.kind !== "NONE") {
+  if (draft.endDate != null && draft.endDate.kind !== "NONE") {
     const end = resolveDateRef(draft.endDate, today);
-    if (end.warning !== undefined) warnings.push(end.warning);
+    if (end.warning != null) warnings.push(end.warning);
     if (end.day.isBefore(startDay)) warnings.push("END_BEFORE_START");
     else if (end.day.isAfter(startDay)) endDate = formatDay(end.day);
   }
 
   let recurrence: ResolvedSchedule["recurrence"] = null;
   if (draft.repeat.pattern === "UNSUPPORTED") warnings.push("UNSUPPORTED_RECURRENCE");
-  if (recurrenceBase !== null) {
+  if (recurrenceBase != null) {
     if (recurrenceBase.days.length === 0) {
       warnings.push("EMPTY_RECURRENCE");
     } else {
@@ -106,13 +106,13 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
     }
   }
 
-  const scheduledTime = scheduledMinutes === null ? null : formatMinutes(scheduledMinutes);
+  const scheduledTime = scheduledMinutes == null ? null : formatMinutes(scheduledMinutes);
   return {
     startDate: formatDay(startDay),
     endDate,
     scheduledTime,
-    isAllDay: scheduledTime === null,
-    isRecurring: recurrence !== null,
+    isAllDay: scheduledTime == null,
+    isRecurring: recurrence != null,
     recurrence,
     warnings,
   };
@@ -142,9 +142,9 @@ function isoIndex(day: DayOfWeek): number {
 }
 
 function resolveWeekday(ref: DateRef, today: CalendarDay): DayResolution {
-  if (ref.weekday === undefined) return { day: today, warning: "INVALID_DATE" };
+  if (ref.weekday == null) return { day: today, warning: "INVALID_DATE" };
   const target = isoIndex(ref.weekday);
-  if (ref.weekOffset === undefined) {
+  if (ref.weekOffset == null) {
     // 요일만 말하면 오늘을 포함해 가장 가까운 그 요일이다.
     const diff = (target - (today.isoWeekday() - 1) + 7) % 7;
     return { day: today.add(diff, "day") };
@@ -161,23 +161,23 @@ function calendarDay(year: number, month: number, day: number): CalendarDay | nu
 
 function resolveCalendarDate(ref: DateRef, today: CalendarDay): DayResolution {
   const { day, month, year } = ref;
-  if (day === undefined) return { day: today, warning: "INVALID_DATE" };
-  if (year !== undefined && month !== undefined) {
+  if (day == null) return { day: today, warning: "INVALID_DATE" };
+  if (year != null && month != null) {
     const exact = calendarDay(year, month, day);
-    return exact === null ? { day: today, warning: "INVALID_DATE" } : { day: exact };
+    return exact == null ? { day: today, warning: "INVALID_DATE" } : { day: exact };
   }
   // 연도·월을 생략하면 아직 지나지 않은 가장 가까운 날짜를 고른다.
   const candidates =
-    month === undefined
+    month == null
       ? [0, 1, 2].map((offset) => {
           const base = today.add(offset, "month");
           return calendarDay(base.year(), base.month() + 1, day);
         })
       : [0, 1, 2, 3, 4].map((offset) => calendarDay(today.year() + offset, month, day));
   const next = candidates.find(
-    (candidate): candidate is CalendarDay => candidate !== null && !candidate.isBefore(today),
+    (candidate): candidate is CalendarDay => candidate != null && !candidate.isBefore(today),
   );
-  return next === undefined ? { day: today, warning: "INVALID_DATE" } : { day: next };
+  return next == null ? { day: today, warning: "INVALID_DATE" } : { day: next };
 }
 
 function resolveTime(
@@ -187,7 +187,7 @@ function resolveTime(
   today: CalendarDay,
   clock: ScheduleClock,
 ): TimeResolution | "INVALID" | null {
-  if (ref.relativeMinutes !== undefined) {
+  if (ref.relativeMinutes != null) {
     // 벽시계 분에 더하면 DST 전환 구간에서 한 시간이 어긋나므로 실제 순간에 더한 뒤 현지로 바꾼다.
     const target = dayjs(clock.now).add(ref.relativeMinutes, "minute").tz(clock.timeZone);
     return {
@@ -195,8 +195,8 @@ function resolveTime(
       minutes: target.hour() * 60 + target.minute(),
     };
   }
-  if (ref.hour === undefined) {
-    if (ref.partOfDay === undefined) return null;
+  if (ref.hour == null) {
+    if (ref.partOfDay == null) return null;
     if (ref.partOfDay === "MIDNIGHT") return { day: targetDay.add(1, "day"), minutes: 0 };
     return { day: targetDay, minutes: PART_OF_DAY_MINUTES[ref.partOfDay] };
   }
@@ -316,10 +316,10 @@ function resolveRecurrenceEnd(
   start: CalendarDay,
   today: CalendarDay,
 ): CalendarDay {
-  if (repeat.until !== undefined && repeat.until.kind !== "NONE") {
+  if (repeat.until != null && repeat.until.kind !== "NONE") {
     return resolveDateRef(repeat.until, today).day;
   }
-  if (repeat.forDuration !== undefined && repeat.forDuration.amount > 0) {
+  if (repeat.forDuration != null && repeat.forDuration.amount > 0) {
     const { unit, amount } = repeat.forDuration;
     const end = match(unit)
       .with("DAY", () => start.add(amount, "day"))

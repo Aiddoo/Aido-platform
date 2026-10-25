@@ -126,7 +126,7 @@ export class ParseTodo {
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
     const userCategories =
-      categoryId === undefined ? await this.#dependencies.categoryReader.findByUserId(userId) : [];
+      categoryId == null ? await this.#dependencies.categoryReader.findByUserId(userId) : [];
     const { system, prompt } = definition.build({
       text,
       timezone,
