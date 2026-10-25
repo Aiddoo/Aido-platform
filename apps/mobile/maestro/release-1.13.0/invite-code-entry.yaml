@@ -1,57 +1,35 @@
 appId: com.aido.mobile
-name: 초대 코드 입력 화면이 형식 오류를 같은 화면에 두고 유효한 코드로 진행한다
+name: 유효한 초대 코드를 직접 입력하면 초대 카드로 이동한다
 tags:
   - smoke
   - full
+  - base
 env:
-  QA_SCHEME: aido-dev
-  QA_INVITE_CODE: ''
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
 ---
-- runFlow: subflows/resolve-invite-code.yaml
-# Given: 로그인된 상태(초대받는 계정)에서 코드 입력 화면(autoFocus)
-- runFlow:
-    file: subflows/sign-in.yaml
-    env:
-      QA_EMAIL: ${QA_INVITEE_EMAIL}
-      QA_PASSWORD: ${QA_INVITEE_PASSWORD}
+- runFlow: subflows/login-invitee.yaml
 - openLink: ${QA_SCHEME}://invite
 - extendedWaitUntil:
     visible: '영문과 숫자 6자리예요.*|It.s 6 letters and numbers.*'
     timeout: 15000
-# When: 헷갈리는 글자(0)가 섞인 6자를 제출한다
-- tapOn: '초대 코드|Invite code'
-- inputText: AB0CDE
-- hideKeyboard
-- tapOn: '확인|Continue'
-# Then: 같은 화면에 오류와 다시 확인 버튼이 남는다
-- extendedWaitUntil:
-    visible: '0, O, 1, I, L은 초대 코드에 쓰지 않아요.*|Invite codes don.t use 0, O, 1, I, or L.*'
-    timeout: 10000
-- assertVisible: '다시 확인|Check again'
-- assertVisible: '영문과 숫자 6자리예요.*|It.s 6 letters and numbers.*'
-- takeScreenshot: 1.13.0-invite-code-invalid
-# 붙여넣기 칩: 클립보드에 글자가 있을 때만 보이므로 있을 때만 확인한다
-# (resolve-invite-code가 코드를 복사해 둔 상태면 보인다)
-- tapOn: '초대 코드|Invite code'
+# 붙여넣기 칩은 클립보드에 글자가 있을 때만 나타난다(조건부 요소라 optional)
+- tapOn:
+    id: invite-code-paste
+    optional: true
+- tapOn:
+    id: invite-code-input
 - eraseText: 10
+- inputText: ${output.code}
 - hideKeyboard
-- runFlow:
-    when:
-      visible: '복사한 코드 붙여넣기|Paste copied code'
-    commands:
-      - tapOn: '복사한 코드 붙여넣기|Paste copied code'
-      - takeScreenshot: 1.13.0-invite-code-pasted
-      - tapOn: '초대 코드|Invite code'
-      - eraseText: 10
-      - hideKeyboard
-# When: 유효한 코드를 입력하고 제출한다
-- tapOn: '초대 코드|Invite code'
-- inputText: ${output.inviteCode}
-- hideKeyboard
-- tapOn: '확인|Continue'
-# Then: 초대 카드로 이동한다
+- tapOn:
+    id: invite-code-submit
 - extendedWaitUntil:
-    visible: '${QA_INVITER_NAME}님이 아이두에.*|${QA_INVITER_NAME} invited you.*'
+    label: 초대 카드
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
     timeout: 20000
 - assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
 - takeScreenshot: 1.13.0-invite-code-valid

@@ -1,0 +1,33 @@
+appId: com.aido.mobile
+name: 두 사람 모두 친구 자리가 꽉 차면 수락이 거절되고 카드에 남는다(INVITE_2106)
+tags:
+  - failure
+  - full
+  - fresh
+  - fill-ab
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+# 사전 조건: maestro-accounts fill-friends a, fill-friends b (래퍼가 fill-ab 태그를 보고 실행한다)
+- runFlow: subflows/login-invitee.yaml
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- tapOn:
+    id: invite-card-redeem
+# Then: 오류 안내가 보이고 환영 시트로 가지 않는다
+- extendedWaitUntil:
+    label: INVITE_2106 안내
+    visible: '친구 자리가 꽉 차서 친구를 맺을 수 없어요.*|.*friend limit.*|.*친구 자리가 꽉.*'
+    timeout: 10000
+- assertNotVisible:
+    id: invite-welcome-sheet
+# Recover: 카드와 수락 버튼이 그대로라 자리를 비운 뒤 다시 누를 수 있다
+- assertVisible:
+    id: invite-card-redeem
+- takeScreenshot: 1.13.0-failure-friend-limit-both-full

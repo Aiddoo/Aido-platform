@@ -1,0 +1,31 @@
+appId: com.aido.mobile
+name: 내 초대 링크를 열면 수락 버튼 없이 내 초대 화면으로 안내한다(INVITE_2103 대응)
+tags:
+  - failure
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-inviter.yaml
+# 클라이언트가 먼저 내 링크를 알아보고 수락 요청(서버의 INVITE_2103)을 보내지 않는다
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    label: 내 링크 안내
+    visible: '내 초대 링크예요.*|This is your own invite link.*'
+    timeout: 20000
+- assertNotVisible:
+    id: invite-card-redeem
+- assertNotVisible:
+    id: invite-card-signup
+- takeScreenshot: 1.13.0-failure-self-invite
+# Recover: 내 초대 화면으로 간다
+- tapOn:
+    id: invite-card-open-my-invite
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 15000

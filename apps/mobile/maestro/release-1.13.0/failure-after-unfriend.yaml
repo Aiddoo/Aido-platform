@@ -1,0 +1,49 @@
+appId: com.aido.mobile
+name: 친구를 끊은 뒤 같은 초대자의 링크를 다시 열면 보상 없이 친구만 맺는다
+tags:
+  - failure
+  - full
+  - fresh
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  # B가 수락해 보상을 이미 받은 상태를 API로 준비한다
+  - runScript: scripts/redeem.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+# When: 앱 UI로 A와 친구를 끊는다
+- openLink: ${QA_SCHEME}://friends
+- extendedWaitUntil:
+    visible: '${output.a.name}'
+    timeout: 20000
+- tapOn:
+    id: friend-edit
+- tapOn:
+    id: friend-delete
+- extendedWaitUntil:
+    visible: '친구를 삭제할까요\?|Remove this friend\?'
+    timeout: 5000
+- tapOn:
+    id: friend-delete-confirm
+- extendedWaitUntil:
+    label: 친구 목록이 비었다
+    visible: '아직 친구가 없어요|No friends yet'
+    timeout: 15000
+# When: A의 링크를 다시 연다
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+- tapOn:
+    id: invite-card-redeem
+# Then: 친구만 맺은 환영 시트(CONNECTED) 또는 이미 수락했다는 안내(INVITE_2104). 어느 쪽이든 보상은 없다
+- extendedWaitUntil:
+    label: 두 번째 결과
+    visible: '${output.a.name}님과 친구가 됐어요|You.re now friends with ${output.a.name}|이미 다른 초대를 수락했어요.*|You.ve already accepted.*'
+    timeout: 20000
+- assertNotVisible: '프리미엄 .*일을 받았어요|You got .* of Premium'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-failure-after-unfriend

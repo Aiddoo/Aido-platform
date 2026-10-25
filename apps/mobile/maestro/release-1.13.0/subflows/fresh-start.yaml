@@ -1,0 +1,21 @@
+appId: com.aido.mobile
+name: 앱 데이터를 비우고 첫 실행 상태로 시작한다
+---
+# docs: reference/commands-available/launchapp.md - clearState, clearKeychain(iOS 전용)
+- runFlow:
+    label: iOS는 Keychain의 토큰까지 비운다
+    when:
+      platform: iOS
+    commands:
+      - launchApp:
+          clearState: true
+          clearKeychain: true
+          stopApp: true
+- runFlow:
+    label: Android는 앱 데이터를 비운다
+    when:
+      platform: Android
+    commands:
+      - launchApp:
+          clearState: true
+          stopApp: true

@@ -1,8 +1,0 @@
-appId: com.aido.mobile
-name: 앱 데이터를 비우고 QA_EMAIL 계정으로 로그인한다
----
-# 호출부가 env로 QA_EMAIL, QA_PASSWORD를 넘긴다
-- launchApp:
-    clearState: true
-    stopApp: true
-- runFlow: ../login.yaml

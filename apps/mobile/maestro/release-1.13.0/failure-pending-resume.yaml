@@ -1,0 +1,47 @@
+appId: com.aido.mobile
+name: 로그인을 취소하고 앱을 다시 열어도 보류한 초대가 로그인 뒤 이어진다
+tags:
+  - failure
+  - full
+  - fresh
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- openLink: ${QA_SCHEME}://invite/${output.code}
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
+# 로그인 화면까지 갔다가 취소한다(초대는 기기에 보류된다)
+- tapOn:
+    id: invite-card-login
+- extendedWaitUntil:
+    visible: '이메일로 로그인|Sign in with email'
+    timeout: 10000
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      - back
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # iOS에서 Maestro back은 동작하지 않아 왼쪽 위 뒤로가기 영역을 누른다
+      - tapOn:
+          point: '8%, 6%'
+# 앱을 완전히 종료했다가 데이터를 지우지 않고 다시 연다
+- stopApp
+- launchApp:
+    stopApp: true
+- runFlow: subflows/login-invitee.yaml
+# Then: 보류한 초대가 이어서 적용된다
+- extendedWaitUntil:
+    label: 이어진 환영 시트
+    visible: '${output.a.name}님과 친구가 됐어요|You.re now friends with ${output.a.name}'
+    timeout: 30000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-failure-pending-resume

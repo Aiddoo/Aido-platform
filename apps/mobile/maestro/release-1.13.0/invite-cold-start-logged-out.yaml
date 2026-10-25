@@ -3,35 +3,39 @@ name: 로그아웃 상태 초대 링크가 초대 카드, 로그인, 보상 적�
 tags:
   - smoke
   - full
+  - fresh
 env:
-  QA_SCHEME: aido-dev
-  QA_INVITE_CODE: ''
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
 ---
-- runFlow: subflows/resolve-invite-code.yaml
-# Given: 로그아웃 상태의 콜드 스타트(앱 데이터 초기화). 링크는 개발 빌드의 커스텀 스킴으로 연다
-- launchApp:
-    clearState: true
-    stopApp: true
-- openLink: ${QA_SCHEME}://invite/${output.inviteCode}
+- openLink:
+    label: 로그아웃 상태에서 커스텀 스킴 초대 링크를 연다
+    link: ${QA_SCHEME}://invite/${output.code}
 # Then: 로그인 화면이 아니라 초대 카드가 먼저 보인다
 - extendedWaitUntil:
-    visible: '${QA_INVITER_NAME}님이 아이두에.*|${QA_INVITER_NAME} invited you.*'
+    label: 초대 카드
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
     timeout: 20000
-- assertVisible: '가입하고 친구 되기|Join and become friends'
-- assertVisible: '이미 계정이 있어요.*|I have an account.*'
+- assertVisible:
+    id: invite-card-signup
+- assertVisible:
+    id: invite-card-login
 - assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
 - takeScreenshot: 1.13.0-invite-card-logged-out
-# When: 아직 초대자와 친구가 아닌 초대받는 계정으로 로그인한다
-- tapOn: '이미 계정이 있어요.*|I have an account.*'
-- runFlow:
-    file: login.yaml
-    env:
-      QA_EMAIL: ${QA_INVITEE_EMAIL}
-      QA_PASSWORD: ${QA_INVITEE_PASSWORD}
+# When: 기존 계정 B로 로그인한다
+- tapOn:
+    id: invite-card-login
+- runFlow: subflows/login-invitee.yaml
 # Then: 보류한 초대가 이어서 적용되고 환영 시트가 열린다
 - extendedWaitUntil:
-    visible: '${QA_INVITER_NAME}님과 친구가 됐어요|You.re now friends with ${QA_INVITER_NAME}|${QA_INVITER_NAME}님에게 친구 요청을 보냈어요|Friend request sent to ${QA_INVITER_NAME}'
+    label: 환영 시트(보상 포함)
+    visible: '${output.a.name}님과 친구가 됐어요|You.re now friends with ${output.a.name}'
     timeout: 30000
+- assertVisible: '프리미엄 .*일을 받았어요|You got .* of Premium'
 - assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
 - takeScreenshot: 1.13.0-invite-welcome-sheet
-- tapOn: '나중에 할게요|Maybe later'
+- tapOn:
+    id: invite-welcome-later

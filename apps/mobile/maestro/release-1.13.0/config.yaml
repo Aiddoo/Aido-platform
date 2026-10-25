@@ -1,0 +1,29 @@
+# 1.13.0 초대 Maestro 워크스페이스. docs: reference/workspace-configuration.md
+# 실행(이 폴더에서): maestro test --include-tags smoke .
+#   태그: smoke | full | failure | flag-off | production-build | android-only
+#   기본 실행에서 뺄 것: --exclude-tags production-build,flag-off
+# 상태가 필요한 flow(태그 fresh)는 실행 전에 초대받는 계정을 reset해야 해서 run.sh가 하나씩 돌린다.
+flows:
+  - '*.yaml'
+testOutputDir: test-output
+executionOrder:
+  # 각 flow는 onFlowStart에서 자기 데이터를 준비하므로 하나가 실패해도 나머지를 계속 돌린다
+  continueOnFailure: true
+  flowsOrder:
+    - entry-points
+    - invite-code-entry
+    - failure-code-format
+    - failure-code-not-found
+    - failure-link-rotated
+    - failure-self-invite
+    - failure-pending-wrong-account
+    - avatar-and-date-smoke
+    - failure-network-error
+    - invite-cold-start-logged-out
+    - premium-grant-subscription
+    - my-invite
+    - failure-already-friends
+    - failure-after-unfriend
+    - failure-pending-resume
+    - failure-friend-limit-requested
+    - failure-friend-limit-both-full

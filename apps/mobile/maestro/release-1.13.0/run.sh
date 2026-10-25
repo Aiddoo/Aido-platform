@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# 1.13.0 초대 Maestro 실행기. 사용: run.sh [smoke|full] [maestro 추가 인자...]
-# 계정·코드는 .env.maestro(키는 .env.maestro.example 참고) 또는 셸 환경 변수로만 받는다.
+# 얇은 실행 래퍼. 사용: run.sh <smoke|full|failure|flag-off> [maestro 추가 인자...]
+#
+# 하는 일은 두 가지뿐이다.
+#  1) .env.maestro를 shell 환경으로 올린다(MAESTRO_ 접두 변수는 Maestro가 flow 변수로 읽는다).
+#  2) 초대 수락 기록은 API로 되돌릴 수 없어서, 'fresh' 태그 flow는 실행 직전에 B를 reset하고 하나씩 돌린다.
+#     그 밖의 flow는 config.yaml 순서로 한 번에 돌린다.
 set -euo pipefail
 
 cd "$(dirname "$0")"
-profile="${1:-smoke}"
+tag="${1:-smoke}"
 shift || true
 
 env_file="${MAESTRO_ENV_FILE:-.env.maestro}"
@@ -15,42 +19,38 @@ if [[ -f "$env_file" ]]; then
   set +a
 fi
 
-require=(QA_INVITER_EMAIL QA_INVITER_PASSWORD QA_INVITER_NAME QA_INVITEE_EMAIL QA_INVITEE_PASSWORD)
-if [[ "$profile" == "full" ]]; then
-  require+=(QA_EXISTING_EMAIL QA_EXISTING_PASSWORD)
+accounts() { node scripts/maestro-accounts.ts "$@"; }
+run_maestro() { maestro ${QA_DEVICE:+--device "$QA_DEVICE"} test ${QA_SCHEME:+-e "QA_SCHEME=$QA_SCHEME"} ${QA_API_BASE_URL:+-e "QA_API_BASE_URL=$QA_API_BASE_URL"} "$@"; }
+
+if [[ "$tag" == "flag-off" ]]; then
+  run_maestro --include-tags flag-off "$@" .
+  exit $?
 fi
-for key in "${require[@]}"; do
-  if [[ -z "${!key:-}" ]]; then
-    echo "필수 환경 변수 $key 가 없습니다. .env.maestro.example 을 참고하세요." >&2
-    exit 1
-  fi
-done
 
-# 순서가 중요하다: 초대받는 계정이 친구 0명인 상태에서 entry-points → code-entry → cold-start → grant 순으로 쓴다
-case "$profile" in
-  smoke) flows=(invite-cold-start-logged-out.yaml invite-code-entry.yaml my-invite.yaml) ;;
-  full)
-    flows=(entry-points.yaml invite-code-entry.yaml invite-cold-start-logged-out.yaml
-      premium-grant-subscription.yaml my-invite.yaml invite-existing-user.yaml avatar-and-date-smoke.yaml)
-    ;;
-  *) echo "profile은 smoke 또는 full 입니다." >&2; exit 1 ;;
-esac
+exclude="production-build,flag-off"
+[[ "${QA_PLATFORM:-}" == "ios" ]] && exclude="$exclude,android-only"
 
-# 선택 변수는 flow의 env 기본값을 덮어쓰도록 -e 로 넘긴다
-args=()
-for key in QA_SCHEME QA_INVITE_CODE INVITE_CODE QA_INVITER_NAME QA_INVITER_EMAIL QA_INVITER_PASSWORD \
-  QA_INVITEE_EMAIL QA_INVITEE_PASSWORD QA_EXISTING_EMAIL QA_EXISTING_PASSWORD; do
-  if [[ -n "${!key:-}" ]]; then
-    name="$key"
-    [[ "$key" == "INVITE_CODE" ]] && name="QA_INVITE_CODE"
-    args+=(-e "$name=${!key}")
-  fi
-done
-
-# Maestro 는 flow 하나씩 독립 실행한다. 하나가 실패해도 나머지를 돌리고 마지막에 실패 수로 종료한다
 failed=0
-for flow in "${flows[@]}"; do
+
+# 1) 상태 변경이 없는 flow: B가 깨끗한 상태에서 한 번에
+accounts reset
+run_maestro --include-tags "$tag" --exclude-tags "fresh,fill-a,fill-ab,$exclude" "$@" . || failed=$((failed + 1))
+
+# 2) B를 소비하는 flow: 하나씩 reset 후 실행. fill-a/fill-ab 태그는 친구 한도를 먼저 채운다
+for flow in *.yaml; do
+  [[ "$flow" == "config.yaml" ]] && continue
+  grep -q '^  - fresh$' "$flow" || continue
+  grep -q "^  - $tag\$" "$flow" || continue
+  accounts reset
+  if grep -q '^  - fill-a$' "$flow"; then
+    accounts fill-friends a
+  elif grep -q '^  - fill-ab$' "$flow"; then
+    accounts fill-friends a
+    accounts fill-friends b
+  fi
   echo "== $flow"
-  maestro ${MAESTRO_DEVICE:+--device "$MAESTRO_DEVICE"} test "${args[@]}" "$@" "$flow" || failed=$((failed + 1))
+  run_maestro "$@" "$flow" || failed=$((failed + 1))
+  accounts clear-friends
 done
+
 exit "$failed"

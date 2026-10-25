@@ -2,15 +2,17 @@ appId: com.aido.mobile
 name: 초대 보상으로 프리미엄을 쓰는 계정의 구독 화면에 이용 기간이 보인다
 tags:
   - full
+  - fresh
 env:
-  QA_SCHEME: aido-dev
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  # B가 수락해 보상(PremiumGrant)을 받은 상태를 API로 준비한다
+  - runScript: scripts/redeem.js
+  - runFlow: subflows/fresh-start.yaml
 ---
-# Given: cold-start 흐름에서 보상을 받은 초대받는 계정(보상 전용 grant)
-- runFlow:
-    file: subflows/sign-in.yaml
-    env:
-      QA_EMAIL: ${QA_INVITEE_EMAIL}
-      QA_PASSWORD: ${QA_INVITEE_PASSWORD}
+- runFlow: subflows/login-invitee.yaml
 - openLink: ${QA_SCHEME}://settings/subscription
 - extendedWaitUntil:
     visible: '초대 보상으로 프리미엄 이용 중|Premium from an invite reward'

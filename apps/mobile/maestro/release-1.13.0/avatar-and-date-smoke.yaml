@@ -2,21 +2,21 @@ appId: com.aido.mobile
 name: 화면을 떠났다 돌아와도 아바타가 유지되고 날짜 이동 뒤 오늘로 돌아온다
 tags:
   - full
+  - base
 env:
-  QA_SCHEME: aido-dev
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
 ---
-# Given: 초대자 계정의 오늘 피드 아바타 줄
-- runFlow:
-    file: subflows/sign-in.yaml
-    env:
-      QA_EMAIL: ${QA_INVITER_EMAIL}
-      QA_PASSWORD: ${QA_INVITER_PASSWORD}
+- runFlow: subflows/login-inviter.yaml
 - openLink: ${QA_SCHEME}://feed?date=today
 - extendedWaitUntil:
     visible: '나 프로필.*|Me profile.*'
     timeout: 20000
 - takeScreenshot: 1.13.0-avatar-before
-# When: 다른 화면으로 갔다가 돌아온다
+# 다른 화면으로 갔다가 돌아온다
 - openLink: ${QA_SCHEME}://mypage
 - extendedWaitUntil:
     visible: '마이|Me'
@@ -26,15 +26,14 @@ env:
     visible: '친구|Friends'
     timeout: 10000
 - openLink: ${QA_SCHEME}://feed?date=today
-# Then: 아바타가 다시 보이고 오류가 없다
 - extendedWaitUntil:
+    label: 아바타가 다시 마운트된다
     visible: '나 프로필.*|Me profile.*'
     timeout: 20000
 - assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
 - takeScreenshot: 1.13.0-avatar-after
-# 날짜 이동 후 오늘로 복귀(1.11.0 date-navigation과 같은 계약). 어제 날짜는 flow 안에서 계산한다
-- evalScript: ${output.prev = new Date(Date.now() - 86400000)}
-- evalScript: ${output.prevIso = output.prev.getFullYear() + '-' + String(output.prev.getMonth() + 1).padStart(2, '0') + '-' + String(output.prev.getDate()).padStart(2, '0')}
+# 날짜 이동 후 오늘 복귀. 어제 날짜는 JS로 계산한다
+- evalScript: ${output.prevIso = (function () { var d = new Date(Date.now() - 86400000); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); })()}
 - openLink: ${QA_SCHEME}://feed?date=${output.prevIso}
 - extendedWaitUntil:
     visible: 'Today|오늘'

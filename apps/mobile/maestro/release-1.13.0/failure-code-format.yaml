@@ -1,0 +1,56 @@
+appId: com.aido.mobile
+name: 코드 형식 오류는 같은 화면에 오류를 두고 입력칸이 유지되며 고쳐서 다시 제출할 수 있다
+tags:
+  - failure
+  - full
+  - base
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: scripts/lib.js
+  - runScript: scripts/setup.js
+  - runFlow: subflows/fresh-start.yaml
+---
+- runFlow: subflows/login-invitee.yaml
+- openLink: ${QA_SCHEME}://invite
+- extendedWaitUntil:
+    visible: '영문과 숫자 6자리예요.*|It.s 6 letters and numbers.*'
+    timeout: 15000
+# Case 1: 6자 미만은 제출 버튼이 비활성이라 오류도 이동도 없다
+- tapOn:
+    id: invite-code-input
+- inputText: AB2
+- hideKeyboard
+- tapOn:
+    id: invite-code-submit
+- assertNotVisible:
+    id: invite-code-error
+# Case 2: 알파벳에 없는 글자(0)가 섞인 6자
+- tapOn:
+    id: invite-code-input
+- eraseText: 10
+- inputText: AB0CDE
+- hideKeyboard
+- tapOn:
+    id: invite-code-submit
+# Then: 같은 화면에 오류가 보이고 카드로 이동하지 않는다
+- extendedWaitUntil:
+    label: 형식 오류 문구
+    visible: '0, O, 1, I, L은 초대 코드에 쓰지 않아요.*|Invite codes don.t use 0, O, 1, I, or L.*'
+    timeout: 10000
+- assertVisible:
+    id: invite-code-error
+- assertVisible: '다시 확인|Check again'
+- assertNotVisible: '${output.a.name}.*'
+- takeScreenshot: 1.13.0-failure-code-format
+# Recover: 포커스가 남아 있어 따로 탭하지 않고 바로 고쳐 입력하면 오류가 사라진다
+- eraseText: 10
+- inputText: ${output.code}
+- assertNotVisible:
+    id: invite-code-error
+- hideKeyboard
+- tapOn:
+    id: invite-code-submit
+- extendedWaitUntil:
+    visible: '${output.a.name}님이 아이두에.*|${output.a.name} invited you.*'
+    timeout: 20000
