@@ -15,7 +15,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useCallback, type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
@@ -78,15 +78,16 @@ TodoDetailPane.Empty = function Empty() {
 };
 
 /** 지워졌거나 더는 볼 수 없는 할 일(친구 끊김·차단 등). 알림·위젯이 예전 할 일을 열 때 보인다. */
-TodoDetailPane.Unavailable = function Unavailable() {
-  const { t } = useTranslation('todo');
+TodoDetailPane.Unavailable = function Unavailable({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation(['todo', 'common']);
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background px-8">
       <Result
         icon={<DocsIcon width={72} height={72} />}
-        title={t('detail.unavailableTitle')}
-        description={t('detail.unavailableDescription')}
+        title={t('todo:detail.unavailableTitle')}
+        description={t('todo:detail.unavailableDescription')}
+        button={<Result.Button onPress={onClose}>{t('common:actions.goBack')}</Result.Button>}
       />
     </StyledSafeAreaView>
   );
@@ -145,7 +146,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
       <Separator />
 
       {isTodoUnavailable ? (
-        <TodoDetailPane.Unavailable />
+        <TodoDetailPane.Unavailable onClose={isPane ? closePane : router.back} />
       ) : (
         <KeyboardGestureArea
           style={styles.keyboardGestureArea}

@@ -258,6 +258,8 @@ export default function TodoDetailRoute() {
 - 목록의 `Loading`, `Error`, `Empty`는 본체와 같은 row 조각을 사용한다. 완료될 때 높이와 배치가
   크게 바뀌는 임의 skeleton을 만들지 않는다.
 - 댓글 query만 실패하면 할 일 상세와 정렬 문맥은 유지하고 댓글 영역만 재시도 상태로 바꾼다.
+- 할 일 자체를 볼 수 없게 되면(404 `TODO_0801`: 삭제·친구 해제·차단·공개 범위 변경) 본문·목록·작성 바의 오류를 각각 띄우지
+  않고 `TodoDetailPane`이 볼 수 없는 할 일 안내 하나와 돌아가기 버튼만 보여 준다.
 - route 식별자는 page에서 자식 prop으로 배포하지 않는다. 각 feature block이 검증된
   `useTodoScreenParams`와 `useTodoCommentRoute`에서 직접 읽고, page는 화면 순서와 boundary만 소유한다.
 
