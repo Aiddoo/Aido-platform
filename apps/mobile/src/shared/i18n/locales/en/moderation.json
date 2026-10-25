@@ -39,7 +39,6 @@
     "toast": "Unblocked"
   },
   "blockedUsers": {
-    "title": "Blocked users",
     "totalCount": "{{count}} total",
     "subtitle": "#{{userTag}} · Blocked {{date}}",
     "emptyTitle": "No blocked users",

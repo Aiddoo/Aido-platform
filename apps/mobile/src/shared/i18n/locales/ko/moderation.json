@@ -39,7 +39,6 @@
     "toast": "차단을 해제했어요"
   },
   "blockedUsers": {
-    "title": "차단한 사용자",
     "totalCount": "총 {{count}}명",
     "subtitle": "#{{userTag}} · {{date}} 차단",
     "emptyTitle": "차단한 사용자가 없어요",

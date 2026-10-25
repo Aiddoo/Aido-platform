@@ -16,12 +16,15 @@ const SHEET_ROUTES = [
   'todo/[todoId]/time',
   'todo/[todoId]/category',
   'todo/[todoId]/thanks',
+  'todo/[todoId]/report',
+  'todo/[todoId]/comments/[commentId]/report',
   'todo/[todoId]/sub-todos/new',
   'todo/[todoId]/sub-todos/[subTodoId]/actions',
   'todo/[todoId]/sub-todos/[subTodoId]/edit',
   'todo-categories/new',
   'todo-categories/[categoryId]/edit',
   'invite-welcome/[friendId]',
+  'users/[userId]/block',
 ] as const;
 
 export const unstable_settings = {

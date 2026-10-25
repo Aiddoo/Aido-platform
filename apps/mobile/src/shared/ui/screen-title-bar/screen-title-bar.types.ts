@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export interface ScreenTitleBarProps {
   /** 가운데 굵게 놓이는 화면 이름 */
   title: string;
@@ -9,4 +11,6 @@ export interface ScreenTitleBarProps {
   backAccessibilityLabel?: string;
   /** 저장 중처럼 현재 화면을 벗어나면 안 될 때 뒤로가기를 잠근다. */
   isBackDisabled?: boolean;
+  /** 오른쪽 44pt 칸에 둘 버튼(⋯ 메뉴 등). 없으면 제목이 가운데에 남도록 빈 칸을 둔다 */
+  right?: ReactNode;
 }

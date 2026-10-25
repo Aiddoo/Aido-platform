@@ -50,3 +50,5 @@ screen-title-bar/
 ├── screen-title-bar.md         # 이 문서
 └── index.ts                    # 배럴
 ```
+
+`right`에 44pt 안에 들어가는 버튼 하나(⋯ 메뉴 등)를 둘 수 있다. 비우면 같은 폭의 빈 칸이 남아 제목이 가운데에 있다.

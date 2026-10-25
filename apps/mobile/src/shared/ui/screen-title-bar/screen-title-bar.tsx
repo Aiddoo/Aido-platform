@@ -17,6 +17,7 @@ export function ScreenTitleBar({
   onBackPress,
   backAccessibilityLabel,
   isBackDisabled = false,
+  right,
 }: ScreenTitleBarProps) {
   const { t } = useTranslation('common');
 
@@ -37,7 +38,7 @@ export function ScreenTitleBar({
       <ScreenTitleBar.Title title={title} subtitle={subtitle} />
 
       {/* 오른쪽이 비어도 제목이 가운데에 남도록 같은 폭을 차지한다. */}
-      <HStack className="size-11" />
+      <HStack className="size-11 items-center justify-center">{right}</HStack>
     </HStack>
   );
 }

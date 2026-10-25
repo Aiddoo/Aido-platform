@@ -68,6 +68,7 @@ export function MyPageMenu() {
     <>
       <SettingNavigation label={t('mypage.sections.activity')}>
         <MyPageMenuItem label={t('mypage.items.friends')} pathname="/friends" />
+        <MyPageMenuItem label={t('mypage.items.blockedUsers')} pathname="/settings/blocked-users" />
         <MyPageMenuItem
           label={t('mypage.items.categories')}
           pathname="/settings/category-settings"

@@ -12,7 +12,8 @@
     "changePassword": "비밀번호 변경",
     "deleteAccount": "회원 탈퇴",
     "subscription": "구독 관리",
-    "categorySettings": "카테고리"
+    "categorySettings": "카테고리",
+    "blockedUsers": "차단한 사용자"
   },
   "language": {
     "system": "시스템 설정",

@@ -12,7 +12,8 @@
     "changePassword": "Change Password",
     "deleteAccount": "Delete Account",
     "subscription": "Manage Subscription",
-    "categorySettings": "Categories"
+    "categorySettings": "Categories",
+    "blockedUsers": "Blocked users"
   },
   "language": {
     "system": "System default",
