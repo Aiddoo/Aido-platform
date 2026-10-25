@@ -19,7 +19,8 @@
     "sending": "전송 중…",
     "sendingAnnouncement": "댓글을 전송하고 있어요",
     "loadingEarlier": "이전 댓글을 불러오는 중",
-    "loadingMore": "다음 댓글을 불러오는 중"
+    "loadingMore": "다음 댓글을 불러오는 중",
+    "blockedAuthor": "차단한 사용자의 댓글이에요"
   },
   "overview": {
     "viewReplies": "답글 {{count}}개 보기"
@@ -47,7 +48,9 @@
     "replyWithCount": "{{name}}님에게 답글 달기, 답글 {{count}}개",
     "likeWithCount": "좋아요, {{count}}개",
     "unlikeWithCount": "좋아요 취소, {{count}}개",
-    "more": "댓글 작업 더 보기"
+    "more": "댓글 작업 더 보기",
+    "report": "신고하기",
+    "block": "차단하기"
   },
   "form": {
     "commentTitle": "댓글",

@@ -1,4 +1,10 @@
-import { COUNT_BADGE_MAX, formatCappedCount, formatPercent, formatPrice } from './format';
+import {
+  COUNT_BADGE_MAX,
+  formatCappedCount,
+  formatCompactCount,
+  formatPercent,
+  formatPrice,
+} from './format';
 
 describe('formatPercent', () => {
   test('정수면 소수점 없이 반환한다', () => {
@@ -66,5 +72,23 @@ describe('formatCappedCount', () => {
   test('상한은 자리마다 다르게 줄 수 있다', () => {
     expect(formatCappedCount(15, 9)).toBe('9+');
     expect(formatCappedCount(9, 9)).toBe('9');
+  });
+});
+
+describe('formatCompactCount', () => {
+  test.each([
+    [999, '999', '999'],
+    [1_000, '1천', '1K'],
+    [1_999, '1.9천', '1.9K'],
+    [9_999, '9.9천', '9.9K'],
+    [10_000, '1만', '10K'],
+    [99_999, '9.9만', '99K'],
+    [1_234_567, '123만', '1.2M'],
+  ])('%i는 ko %s · en %s로 줄이고 반올림하지 않는다', (count, korean, english) => {
+    // When
+    const results = [formatCompactCount(count, 'ko'), formatCompactCount(count, 'en')];
+
+    // Then
+    expect(results).toEqual([korean, english]);
   });
 });

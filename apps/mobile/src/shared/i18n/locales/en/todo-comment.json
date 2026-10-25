@@ -20,7 +20,8 @@
     "sending": "Sending...",
     "sendingAnnouncement": "Sending your comment",
     "loadingEarlier": "Loading earlier comments",
-    "loadingMore": "Loading more comments"
+    "loadingMore": "Loading more comments",
+    "blockedAuthor": "This comment is from a blocked user"
   },
   "overview": {
     "viewReplies_one": "View {{count}} reply",
@@ -49,7 +50,9 @@
     "replyWithCount": "Reply to {{name}}, {{count}} replies",
     "likeWithCount": "Like, {{count}} likes",
     "unlikeWithCount": "Unlike, {{count}} likes",
-    "more": "More comment actions"
+    "more": "More comment actions",
+    "report": "Report",
+    "block": "Block"
   },
   "form": {
     "commentTitle": "Comment",

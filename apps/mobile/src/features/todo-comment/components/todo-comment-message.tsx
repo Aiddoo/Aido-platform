@@ -1,5 +1,11 @@
+import {
+  blockUserConfirmHref,
+  commentReportSheetHref,
+} from '@src/features/moderation/utils/navigation/moderation-href';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
 import {
   Box,
   ChatBubbleIcon,
@@ -17,6 +23,7 @@ import {
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { Menu, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { useRef, useState, type ComponentProps } from 'react';
 
@@ -36,8 +43,8 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
   const { t } = useTranslation('todoComment');
 
   return (
-    <VStack gap={3} className="min-w-0">
-      <HStack align="start" justify="between" gap={8} className="min-w-0">
+    <HStack align="start" gap={8} className="min-w-0">
+      <VStack gap={3} className="min-w-0 flex-1">
         <PressableFeedback
           onPress={navigation.openConversation}
           animation={false}
@@ -45,7 +52,7 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
           accessibilityRole="button"
           accessibilityLabel={t('actions.openConversation')}
           accessibilityState={{ selected: isFocused }}
-          className="min-h-11 min-w-0 flex-1 justify-center overflow-visible rounded-xl"
+          className="min-h-11 min-w-0 justify-center overflow-visible rounded-xl"
         >
           <PressableFeedback.Highlight className="rounded-xl" />
           <VStack gap={3}>
@@ -53,82 +60,117 @@ export function TodoCommentMessage({ comment, isFocused = false }: TodoCommentMe
             <CommentBody comment={comment} />
           </VStack>
         </PressableFeedback>
-        {isActive && (
-          <Box className="shrink-0">
-            <CommentActionMenu
-              comment={comment}
-              isEditPreparing={navigation.isPreparing}
-              canOpenEdit={navigation.canStartEdit}
-              onEdit={navigation.startEdit}
-            />
-          </Box>
-        )}
-      </HStack>
 
-      {isActive && (
-        <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
-          <HStack align="center">
-            <CommentLikeButton comment={comment} />
-            <CommentReplyButton
-              comment={comment}
-              isPreparing={navigation.isPreparing}
-              canOpenReply={navigation.canStartReply}
-              onPress={navigation.startReply}
-            />
-          </HStack>
-        </VStack>
-      )}
-    </VStack>
+        {isActive && (
+          <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
+            <HStack align="center">
+              <CommentLikeButton comment={comment} />
+              <CommentReplyButton
+                comment={comment}
+                isPreparing={navigation.isPreparing}
+                canOpenReply={navigation.canStartReply}
+                onPress={navigation.startReply}
+              />
+            </HStack>
+          </VStack>
+        )}
+      </VStack>
+
+      {/* 메뉴가 없는 댓글도 같은 폭을 남겨 본문 폭이 행마다 같게 한다 */}
+      <Box className="size-11 shrink-0 items-center justify-center">
+        {TodoCommentPolicy.hasActions(comment) && (
+          <CommentActionMenu
+            comment={comment}
+            isEditPreparing={navigation.isPreparing}
+            canOpenEdit={navigation.canStartEdit}
+            onEdit={navigation.startEdit}
+          />
+        )}
+      </Box>
+    </HStack>
   );
 }
 
 TodoCommentMessage.Loading = function Loading() {
   return (
-    <VStack gap={3} className="min-w-0">
-      <Box className="min-h-11 justify-center">
-        <VStack gap={3}>
-          <TextSkeleton size="b4" className="w-24" />
-          <TextSkeleton size="b3" className="w-4/5" />
+    <HStack align="start" gap={8} className="min-w-0">
+      <VStack gap={3} className="min-w-0 flex-1">
+        <Box className="min-h-11 justify-center">
+          <VStack gap={3}>
+            <HStack align="center" gap={4}>
+              <TextSkeleton size="b4" className="w-24" />
+              <TextSkeleton size="e1" className="ml-auto w-10" />
+            </HStack>
+            <TextSkeleton size="b3" className="w-4/5" />
+          </VStack>
+        </Box>
+        <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
+          <HStack align="center">
+            {times(2, (index) => (
+              <Box
+                key={index}
+                className="min-h-11 min-w-11 items-center justify-center px-2 py-1.5"
+              >
+                <Skeleton
+                  className="rounded-full"
+                  style={{
+                    width: ICON_COUNT_BUTTON_ICON_SIZE,
+                    height: ICON_COUNT_BUTTON_ICON_SIZE,
+                  }}
+                />
+              </Box>
+            ))}
+          </HStack>
         </VStack>
-      </Box>
-      <VStack pt={2} ml={-ICON_COUNT_BUTTON_INK_INSET}>
-        <HStack align="center">
-          {times(2, (index) => (
-            <Box key={index} className="min-h-11 min-w-11 items-center justify-center px-2 py-1.5">
-              <Skeleton
-                className="rounded-full"
-                style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
-              />
-            </Box>
-          ))}
-        </HStack>
       </VStack>
-    </VStack>
+      <Box className="size-11 shrink-0" />
+    </HStack>
   );
 };
 
+/**
+ * 이름만 말줄임되고 태그·작성자 배지·시간은 줄지 않는다. 가장 큰 글자에서는 한 줄에 다 담기지 않아
+ * 태그와 시간을 둘째 줄로 내린다.
+ */
 function CommentAuthorLine({ comment }: { comment: TodoComment }) {
   const { t } = useTranslation('todoComment');
+  const { fontScale } = useFontScale();
+  const userTag = comment.author?.userTag;
+  const tagLabel = userTag == null ? null : `#${userTag}`;
+  const timeLabel = [
+    formatRelativeTime(comment.createdAt, new Date()),
+    ...(comment.isEdited ? [t('list.edited')] : []),
+  ].join(' · ');
+  const isMetaOnSecondLine = fontScale === 'xlarge';
 
   return (
-    <HStack gap={4} align="center" className="min-w-0 flex-wrap">
-      <Text size="b4" weight="semibold" className="max-w-full shrink">
-        {comment.author?.name ?? t('list.unknownUser')}
-      </Text>
-      {comment.author?.isTodoOwner === true && (
-        <Text size="e2" tone="brand">
-          {t('list.authorBadge')}
+    <VStack gap={1} className="min-w-0">
+      <HStack gap={4} align="baseline" className="min-w-0">
+        <Text size="b4" weight="semibold" maxLines={1} className="min-w-0 shrink">
+          {comment.author?.name ?? t('list.unknownUser')}
+        </Text>
+        {!isMetaOnSecondLine && tagLabel != null && (
+          <Text size="e1" shade={7} className="shrink-0">
+            {tagLabel}
+          </Text>
+        )}
+        {comment.author?.isTodoOwner === true && (
+          <Text size="e2" tone="brand" className="shrink-0">
+            {t('list.authorBadge')}
+          </Text>
+        )}
+        {!isMetaOnSecondLine && (
+          <Text size="e1" shade={7} className="ml-auto shrink-0 pl-2 tabular-nums">
+            {timeLabel}
+          </Text>
+        )}
+      </HStack>
+      {isMetaOnSecondLine && (
+        <Text size="e1" shade={7} className="tabular-nums">
+          {[tagLabel, timeLabel].filter((label) => label != null).join(' · ')}
         </Text>
       )}
-      <Text size="e1" shade={5}>
-        {formatRelativeTime(comment.createdAt, new Date())}
-      </Text>
-      {comment.isEdited && (
-        <Text size="e1" shade={5}>
-          {t('list.edited')}
-        </Text>
-      )}
-    </HStack>
+    </VStack>
   );
 }
 
@@ -139,7 +181,7 @@ function CommentBody({ comment }: { comment: TodoComment }) {
   if (comment.isDeleted) {
     return (
       <Text size="b4" shade={6}>
-        {t('list.deleted')}
+        {comment.isAuthorBlocked ? t('list.blockedAuthor') : t('list.deleted')}
       </Text>
     );
   }
@@ -176,13 +218,11 @@ function CommentActionMenu({
   onEdit,
 }: CommentActionMenuProps) {
   const { todoId } = useTodoScreenParams();
-  const { t } = useTranslation('todoComment');
+  const { t } = useTranslation(['todoComment', 'moderation']);
+  const push = useSingleTap(router.push);
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const [isOpen, setIsOpen] = useState(false);
-
-  if (!TodoCommentPolicy.canEdit(comment) && !TodoCommentPolicy.canDelete(comment)) {
-    return null;
-  }
+  const author = comment.author;
 
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
@@ -225,6 +265,28 @@ function CommentActionMenu({
               <Menu.ItemTitle>{t('actions.delete')}</Menu.ItemTitle>
             </Menu.Item>
           )}
+          {TodoCommentPolicy.canReport(comment) && (
+            <Menu.Item
+              onPress={() => push(commentReportSheetHref({ todoId, commentId: comment.id }))}
+            >
+              <Menu.ItemTitle>{t('actions.report')}</Menu.ItemTitle>
+            </Menu.Item>
+          )}
+          {author != null && TodoCommentPolicy.canBlockAuthor(comment) && (
+            <Menu.Item
+              variant="danger"
+              onPress={() =>
+                push(
+                  blockUserConfirmHref({
+                    userId: author.id,
+                    displayName: author.name ?? t('moderation:fallbackName'),
+                  }),
+                )
+              }
+            >
+              <Menu.ItemTitle>{t('actions.block')}</Menu.ItemTitle>
+            </Menu.Item>
+          )}
         </Menu.Content>
       </Menu.Portal>
     </Menu>
@@ -264,6 +326,7 @@ function CommentLikeButton({ comment, ...buttonProps }: CommentLikeButtonProps) 
         )
       }
       count={comment.likeCount}
+      countDisplay="compact"
       isDisabled={!TodoCommentPolicy.canLike(comment) || likeComment.isPending}
       accessibilityLabel={
         buttonProps.accessibilityLabel ??
@@ -341,6 +404,7 @@ function CommentReplyButton({
         )
       }
       count={comment.replyCount}
+      countDisplay="compact"
       isDisabled={isDisabled}
       accessibilityLabel={t('actions.replyWithCount', {
         name: authorName,
