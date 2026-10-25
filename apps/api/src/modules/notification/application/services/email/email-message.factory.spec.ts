@@ -3,7 +3,11 @@
  *
  * 명명 팩토리가 종류별 제목·태그를 조립하고 불변식을 강제하는지 검증한다.
  */
-import { createVerificationCodeEmail, createInquiryEmail } from "./email-message.factory.js";
+import {
+  createInquiryEmail,
+  createUserReportEmail,
+  createVerificationCodeEmail,
+} from "./email-message.factory.js";
 
 describe("EmailMessage 값 객체", () => {
   describe("verificationCode", () => {
@@ -44,6 +48,39 @@ describe("EmailMessage 값 객체", () => {
       expect(message.tags).toEqual([
         { name: "type", value: "inquiry" },
         { name: "category", value: "BUG_REPORT" },
+      ]);
+    });
+  });
+
+  describe("userReport", () => {
+    it("신고 ID로 멱등 키를 만들고 신고 내용의 HTML을 이스케이프한다", () => {
+      // Given
+      const data = {
+        reportId: "clz7x5p8k0123qz0z8z8z8z8z",
+        reporterId: "clz7x5p8k0001qz0z8z8z8z8z",
+        reporterTag: "REPORTER",
+        targetUserId: "clz7x5p8k0005qz0z8z8z8z8z",
+        targetUserTag: "TARGET01",
+        targetType: "COMMENT",
+        targetTypeLabel: "댓글",
+        targetId: "clz7x5p8k0099qz0z8z8z8z8z",
+        reason: "HARASSMENT",
+        reasonLabel: "괴롭힘·혐오",
+        detail: "<script>alert(1)</script>",
+        submittedAt: "2026-10-26 18:00 (KST)",
+      } as const;
+
+      // When
+      const message = createUserReportEmail("support@test.com", data);
+
+      // Then
+      expect(message.subject).toBe("[Aido 신고접수] [괴롭힘·혐오] 댓글 · TARGET01");
+      expect(message.idempotencyKey).toBe("user-report:clz7x5p8k0123qz0z8z8z8z8z");
+      expect(message.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+      expect(message.html).not.toContain("<script>");
+      expect(message.tags).toEqual([
+        { name: "type", value: "user-report" },
+        { name: "reason", value: "HARASSMENT" },
       ]);
     });
   });

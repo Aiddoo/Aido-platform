@@ -43,6 +43,9 @@ export const MutationLockKeys = {
   remindNudgeCooldown(senderId: string, receiverId: string): string {
     return `${MUTATION_KEY_PREFIX}:remind-nudge:cooldown:${senderId}:${receiverId}`;
   },
+  userReport(reporterId: string): string {
+    return `${MUTATION_KEY_PREFIX}:user-report:${reporterId}`;
+  },
   todoCategory(userId: string): string {
     return `${MUTATION_KEY_PREFIX}:todo-category:${userId}`;
   },
