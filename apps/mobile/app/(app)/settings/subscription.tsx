@@ -20,10 +20,11 @@ import {
 import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/view-models/subscription-receipt.view-model';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { legalUrl } from '@src/shared/constants/legal-urls';
 import { STORE_URLS } from '@src/shared/constants/store-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Barcode,
   Button,
@@ -696,15 +697,26 @@ function AdditionalSubscriptionBenefits() {
 function SubscriptionTerms() {
   const { t } = useTranslation('subscription');
   const openUrl = useOpenUrl();
+  const { resolvedLanguage } = useLanguage();
 
   return (
     <Text size="e2" shade={4} align="center">
       {t('paywall.termsPrefix')}
-      <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.TERMS)}>
+      <Text
+        size="e2"
+        shade={5}
+        underline
+        onPress={() => openUrl(legalUrl('terms', resolvedLanguage))}
+      >
         {t('paywall.termsLink')}
       </Text>
       {t('paywall.termsAnd')}
-      <Text size="e2" shade={5} underline onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
+      <Text
+        size="e2"
+        shade={5}
+        underline
+        onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+      >
         {t('paywall.privacyLink')}
       </Text>
       {t('paywall.termsSuffix')}

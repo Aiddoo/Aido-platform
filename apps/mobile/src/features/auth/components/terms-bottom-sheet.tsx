@@ -1,6 +1,7 @@
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   ArrowRightIcon,
   Button,
@@ -33,6 +34,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
   const insets = useSafeAreaInsets();
   const sheetLayout = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN, isFullWindowHost: true });
   const openUrl = useOpenUrl();
+  const { resolvedLanguage } = useLanguage();
 
   const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({
     control,
@@ -89,7 +91,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
                       isRequired
                       isSelected={value}
                       onSelectedChange={onChange}
-                      onPressLink={() => openUrl(LEGAL_URLS.TERMS)}
+                      onPressLink={() => openUrl(legalUrl('terms', resolvedLanguage))}
                     />
                   )}
                 </FormField>
@@ -109,7 +111,7 @@ export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottom
                       isRequired
                       isSelected={value}
                       onSelectedChange={onChange}
-                      onPressLink={() => openUrl(LEGAL_URLS.PRIVACY)}
+                      onPressLink={() => openUrl(legalUrl('privacy', resolvedLanguage))}
                     />
                   )}
                 </FormField>

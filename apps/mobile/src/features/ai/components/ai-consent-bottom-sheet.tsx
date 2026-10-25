@@ -1,8 +1,9 @@
 import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/auth/queries/use-update-ai-data-sharing-consent-mutation-options';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   Box,
   Button,
@@ -40,6 +41,7 @@ export function AiConsentBottomSheet({
 }: AiConsentBottomSheetProps) {
   const { t } = useTranslation('ai');
   const openUrl = useOpenUrl();
+  const { resolvedLanguage } = useLanguage();
   const updateConsent = useMutation(useUpdateAiDataSharingConsentMutationOptions());
 
   const handleAgree = () => updateConsent.mutate({ agreed: true }, { onSuccess: () => onAgree() });
@@ -145,7 +147,7 @@ export function AiConsentBottomSheet({
               accessibilityRole="link"
               style={{ minHeight: PRIVACY_LINK_MIN_HEIGHT }}
               className="self-start justify-center"
-              onPress={() => openUrl(LEGAL_URLS.PRIVACY)}
+              onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
             >
               {t('consent.privacyLink')}
             </TextButton>

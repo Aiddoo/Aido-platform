@@ -4,9 +4,10 @@ import { useUpdateAiDataSharingConsentMutationOptions } from '@src/features/auth
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
 import { ToggleSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
-import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
+import { legalUrl } from '@src/shared/constants/legal-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
+import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   ArrowRightIcon,
   HStack,
@@ -32,6 +33,7 @@ function TermsSettingsScreen() {
   const { t } = useTranslation('settings');
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const openUrl = useOpenUrl();
+  const { resolvedLanguage } = useLanguage();
 
   const formatDate = (date: Date | null) => {
     if (!date) {
@@ -43,7 +45,7 @@ function TermsSettingsScreen() {
   return (
     <VStack gap={24}>
       <VStack p={16} gap={8} className="bg-white rounded-2xl">
-        <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.TERMS)}>
+        <PressableFeedback hitSlop={8} onPress={() => openUrl(legalUrl('terms', resolvedLanguage))}>
           <HStack justify="between" align="center">
             <VStack gap={4}>
               <Text size="b2" shade={8}>
@@ -68,7 +70,10 @@ function TermsSettingsScreen() {
 
         <Separator className="bg-gray-2" />
 
-        <PressableFeedback hitSlop={8} onPress={() => openUrl(LEGAL_URLS.PRIVACY)}>
+        <PressableFeedback
+          hitSlop={8}
+          onPress={() => openUrl(legalUrl('privacy', resolvedLanguage))}
+        >
           <HStack justify="between" align="center">
             <VStack gap={4}>
               <Text size="b2" shade={8}>
