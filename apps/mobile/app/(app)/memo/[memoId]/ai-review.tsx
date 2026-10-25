@@ -97,6 +97,11 @@ function AiReviewScreen() {
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 16 }}
       >
+        {parsedResult.omittedTodoCount > 0 && (
+          <Text size="b3" shade={6}>
+            {t('aiReview.omittedTodos', { count: parsedResult.omittedTodoCount })}
+          </Text>
+        )}
         {todos.map((todo, index) => (
           <MemoTodoEditor
             key={todo._key}

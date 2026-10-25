@@ -1,6 +1,6 @@
 import type {
   AiReport as AiReportDto,
-  ParsedMemoData as ParsedMemoDataDto,
+  ParseMemoResponse as ParseMemoResponseDto,
   RecurringSuggestion as RecurringSuggestionDto,
   ReportStatus as ReportStatusDto,
   SuggestionActionResponse as SuggestionActionResponseDto,
@@ -37,4 +37,7 @@ export const toAiSuggestionActionResult = (
   dto: SuggestionActionResponseDto,
 ): AiSuggestionActionResult => ({ ...dto, suggestion: toAiSuggestion(dto.suggestion) });
 
-export const toParsedMemoResult = (dto: ParsedMemoDataDto): ParsedMemoResult => dto;
+export const toParsedMemoResult = ({ data, meta }: ParseMemoResponseDto): ParsedMemoResult => ({
+  ...data,
+  omittedTodoCount: meta.omittedTodoCount == null ? 0 : meta.omittedTodoCount,
+});
