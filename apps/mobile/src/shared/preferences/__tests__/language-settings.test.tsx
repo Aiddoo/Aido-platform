@@ -100,7 +100,7 @@ const renderScreen = async ({
 } = {}) => {
   await render(
     <StaticDIProvider container={createMockDIContainer({ analytics })}>
-      <LanguageProvider syncStorage={storage} deviceLanguage={() => 'ko'}>
+      <LanguageProvider syncStorage={storage} useDeviceLanguage={() => 'ko'}>
         <LanguageSettingsScreen />
       </LanguageProvider>
     </StaticDIProvider>,

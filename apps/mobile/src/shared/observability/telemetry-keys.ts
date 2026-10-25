@@ -180,7 +180,7 @@ export interface GrowthEventMap {
   };
 }
 
-export type LocalDateChangeTrigger = 'midnight_timer' | 'foreground';
+export type LocalDateChangeTrigger = 'midnight_timer' | 'foreground' | 'calendar_change';
 
 /** 앱 생명주기 기반 제품 지표. 진단용 날짜 값은 Sentry breadcrumb에만 남긴다. */
 export interface LifecycleEventMap {

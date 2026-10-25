@@ -1,5 +1,5 @@
 import type { SyncStorage } from '@src/core/ports/sync-storage';
-import { getDeviceLanguage, i18n } from '@src/shared/i18n';
+import { i18n } from '@src/shared/i18n';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import {
   type LanguageMode,
@@ -9,6 +9,7 @@ import {
   writeLanguageMode,
 } from '@src/shared/preferences/language.preference';
 import { noop } from 'es-toolkit';
+import { useLocales } from 'expo-localization';
 import {
   createContext,
   type PropsWithChildren,
@@ -27,22 +28,29 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+function useExpoDeviceLanguage(): string | null {
+  const [deviceLocale] = useLocales();
+  return deviceLocale.languageCode;
+}
+
 interface LanguageProviderProps extends PropsWithChildren {
   syncStorage?: SyncStorage;
-  deviceLanguage?: () => string | null;
+  /** 기기 언어 코드. 기기 언어 설정이 실행 중에 바뀌면 다시 렌더링해 새 값을 돌려준다. */
+  useDeviceLanguage?: () => string | null;
 }
 
 export function LanguageProvider({
   children,
   syncStorage = mmkvSyncStorage,
-  deviceLanguage = getDeviceLanguage,
+  useDeviceLanguage = useExpoDeviceLanguage,
 }: LanguageProviderProps) {
   const [languageMode, setLanguageModeState] = useState<LanguageMode>(() =>
     readLanguageMode(syncStorage),
   );
+  const deviceLanguage = useDeviceLanguage();
 
   const resolvedLanguage = useMemo(
-    () => resolveLanguage(languageMode, deviceLanguage()),
+    () => resolveLanguage(languageMode, deviceLanguage),
     [languageMode, deviceLanguage],
   );
 

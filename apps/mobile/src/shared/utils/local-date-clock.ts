@@ -1,4 +1,5 @@
 import { formatDateKey } from './date-format';
+import { getDeviceTimezone } from './timezone';
 
 export type LocalDateState = {
   currentLocalDate: Date;
@@ -8,6 +9,17 @@ export type LocalDateState = {
 };
 
 const MIDNIGHT_GRACE_MS = 100;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const WALL_CLOCK_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+  hourCycle: 'h23',
+};
 
 export function createLocalDateState(
   now: Date,
@@ -22,6 +34,11 @@ export function createLocalDateState(
   };
 }
 
+/** LocalDateProvider와 Provider 밖의 위젯 렌더러가 같은 기기 시간대 규칙으로 오늘을 계산한다. */
+export function readDeviceLocalDateState(now: Date = new Date()): LocalDateState {
+  return createLocalDateState(now, getDeviceTimezone(), -now.getTimezoneOffset());
+}
+
 export function isSameLocalDateState(previous: LocalDateState, next: LocalDateState): boolean {
   return (
     previous.currentLocalDateKey === next.currentLocalDateKey &&
@@ -30,8 +47,49 @@ export function isSameLocalDateState(previous: LocalDateState, next: LocalDateSt
   );
 }
 
-export function millisecondsUntilNextLocalMidnight(now: Date): number {
-  const nextMidnight = new Date(now);
-  nextMidnight.setHours(24, 0, 0, 0);
-  return Math.max(MIDNIGHT_GRACE_MS, nextMidnight.getTime() - now.getTime() + MIDNIGHT_GRACE_MS);
+/** YYYY-MM-DD 다음 달력 날짜 (윤년·월말 포함, 시간대 무관). */
+export function getNextDateKey(dateKey: string): string {
+  return formatDateKey(new Date(Date.parse(`${dateKey}T00:00:00Z`) + DAY_MS), 'UTC');
+}
+
+function getTimeZoneOffsetMs(instantMs: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    ...WALL_CLOCK_FORMAT_OPTIONS,
+    timeZone,
+  }).formatToParts(new Date(instantMs));
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  const wallClockMs = Date.UTC(
+    read('year'),
+    read('month') - 1,
+    read('day'),
+    read('hour'),
+    read('minute'),
+    read('second'),
+  );
+  return wallClockMs - Math.floor(instantMs / 1000) * 1000;
+}
+
+/**
+ * 지정 시간대에서 다음 날짜가 시작되는 실제 시각.
+ *
+ * 자정이 없거나(00:00→01:00) 두 번 오는(00:00→23:00) DST 날짜도 있어서
+ * 오프셋 후보 두 개 중 다음 날짜 key에 실제로 속하는 가장 이른 시각을 고른다.
+ */
+export function getNextLocalMidnight(now: Date, timeZone: string): Date {
+  const nextDateKey = getNextDateKey(formatDateKey(now, timeZone));
+  const wallMidnightMs = Date.parse(`${nextDateKey}T00:00:00Z`);
+  const firstGuessMs = wallMidnightMs - getTimeZoneOffsetMs(wallMidnightMs, timeZone);
+  const secondGuessMs = wallMidnightMs - getTimeZoneOffsetMs(firstGuessMs, timeZone);
+  const startsNextDate = (instantMs: number) =>
+    instantMs > now.getTime() && formatDateKey(new Date(instantMs), timeZone) === nextDateKey;
+  const candidates = [firstGuessMs, secondGuessMs].filter(startsNextDate).sort((a, b) => a - b);
+  return new Date(candidates[0] ?? Math.max(firstGuessMs, secondGuessMs));
+}
+
+export function millisecondsUntilNextLocalMidnight(now: Date, timeZone: string): number {
+  return Math.max(
+    MIDNIGHT_GRACE_MS,
+    getNextLocalMidnight(now, timeZone).getTime() - now.getTime() + MIDNIGHT_GRACE_MS,
+  );
 }

@@ -5,10 +5,14 @@ import type { PropsWithChildren } from 'react';
 
 import { LanguageProvider, useLanguage } from './language-provider';
 
+interface FakeDevice {
+  language: string | null;
+}
+
 const createWrapper =
-  (syncStorage = createMockSyncStorage(), deviceLanguage: () => string | null = () => 'ko') =>
+  (syncStorage = createMockSyncStorage(), device: FakeDevice = { language: 'ko' }) =>
   ({ children }: PropsWithChildren) => (
-    <LanguageProvider syncStorage={syncStorage} deviceLanguage={deviceLanguage}>
+    <LanguageProvider syncStorage={syncStorage} useDeviceLanguage={() => device.language}>
       {children}
     </LanguageProvider>
   );
@@ -57,7 +61,7 @@ describe('useLanguage', () => {
 
     // When
     const { result } = await renderHook(() => useLanguage(), {
-      wrapper: createWrapper(storage, () => 'en'),
+      wrapper: createWrapper(storage, { language: 'en' }),
     });
 
     // Then
@@ -91,7 +95,7 @@ describe('useLanguage', () => {
     const changeLanguageSpy = jest.spyOn(i18n, 'changeLanguage');
 
     const { result } = await renderHook(() => useLanguage(), {
-      wrapper: createWrapper(storage, () => 'ko'),
+      wrapper: createWrapper(storage, { language: 'ko' }),
     });
 
     // When
@@ -102,5 +106,41 @@ describe('useLanguage', () => {
     // Then
     expect(result.current.resolvedLanguage).toBe('ko');
     expect(changeLanguageSpy).toHaveBeenCalledWith('ko');
+  });
+
+  it('system 모드에서 실행 중 기기 언어가 바뀌면 i18n 언어를 함께 바꾼다', async () => {
+    // Given
+    const storage = createMockSyncStorage();
+    storage.getString.mockReturnValue('system');
+    const device: FakeDevice = { language: 'ko' };
+    const changeLanguageSpy = jest.spyOn(i18n, 'changeLanguage');
+    const { result, rerender } = await renderHook(() => useLanguage(), {
+      wrapper: createWrapper(storage, device),
+    });
+
+    // When
+    device.language = 'en';
+    await rerender({});
+
+    // Then
+    expect(result.current.resolvedLanguage).toBe('en');
+    expect(changeLanguageSpy).toHaveBeenCalledWith('en');
+  });
+
+  it('직접 고른 언어는 실행 중 기기 언어가 바뀌어도 유지한다', async () => {
+    // Given
+    const storage = createMockSyncStorage();
+    storage.getString.mockReturnValue('ko');
+    const device: FakeDevice = { language: 'ko' };
+    const { result, rerender } = await renderHook(() => useLanguage(), {
+      wrapper: createWrapper(storage, device),
+    });
+
+    // When
+    device.language = 'en';
+    await rerender({});
+
+    // Then
+    expect(result.current.resolvedLanguage).toBe('ko');
   });
 });
