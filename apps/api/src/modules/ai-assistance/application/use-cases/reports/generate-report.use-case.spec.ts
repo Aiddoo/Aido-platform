@@ -97,7 +97,7 @@ describe("GenerateReport", () => {
           aiTips: createReportAiResponse(locale).tips,
           stats: { totalTodos: 4, completedTodos: 3 },
           contentSource: "AI",
-          promptVersion: "report@v1",
+          promptVersion: "report@v2",
         });
         expect(f.todoStatsReader.calls[0]?.startDate.toISOString()).toBe(start);
         expect(f.aiProvider.getCallCount()).toBe(1);
@@ -304,5 +304,56 @@ describe("GenerateReport", () => {
       // Then
       expect(result).not.toBeNull();
       expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
+    }));
+
+  it("요약·팁이 비어 있는 출력은 저장하지 않고 폴백으로 바꾼다", () =>
+    withAiAssistanceTime(async () => {
+      // Given
+      const f = useReportActivity(createAiAssistanceFixture());
+      f.aiProvider.setRawResponse({ summary: " ", tips: [] });
+      // When
+      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      // Then
+      expect(f.reportRepository.saved[0]?.contentSource).toBe("FALLBACK");
+    }));
+
+  it("다른 언어로 저장된 지난 팁은 프롬프트에 넣지 않는다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 지난 리포트는 ko, 이번 생성은 en
+      const f = useReportResponse(createAiAssistanceFixture(), "en");
+      await f.reportRepository.create({
+        userId: f.userId,
+        type: "WEEKLY",
+        year: 2026,
+        period: 1,
+        stats: {
+          totalTodos: 1,
+          completedTodos: 1,
+          completionRate: 100,
+          prevCompletionRate: null,
+          streakDays: 1,
+        },
+        categoryBreakdown: [],
+        dayPatterns: [],
+        timePatterns: [],
+        aiSummary: "요약",
+        aiTips: ["지난 한국어 팁"],
+        locale: "ko",
+        hasActivity: true,
+        generatedAt: new Date("2026-01-05T00:00:00Z"),
+        contentSource: "AI",
+        promptVersion: "report@v2",
+      });
+      // When
+      await f.generateReport.execute({
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+        locale: "en",
+      });
+      // Then
+      expect(f.aiProvider.getLastPrompt()).not.toContain("지난 한국어 팁");
+      expect(f.aiProvider.getLastPrompt()).toContain('"start": "2026-03-09"');
+      expect(f.aiProvider.getLastPrompt()).toContain('"end": "2026-03-15"');
     }));
 });

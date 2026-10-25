@@ -295,7 +295,7 @@ export class GenerateReport {
       return buildFallbackContent(input.data, input.periodLabel, locale);
     }
 
-    const definition = reportPrompts.v1[locale];
+    const definition = reportPrompts[this.#dependencies.settings.promptVersion][locale];
     const logBase = {
       task: "report",
       promptVersion: definition.promptVersion,

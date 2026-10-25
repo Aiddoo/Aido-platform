@@ -1,4 +1,5 @@
 import type { BuildReportPromptOptions, ReportPrompt } from "./types.js";
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export type { BuildReportPromptOptions, ReportPrompt } from "./types.js";
 import { z } from "zod";
 
@@ -16,16 +17,22 @@ import type {
 import { buildReportContext } from "./context.js";
 import { buildReportPromptEn } from "./prompt.en.js";
 
-/** 저장된 리포트가 어떤 지시문으로 만들어졌는지 남긴다. */
+/**
+ * 저장된 리포트가 어떤 지시문으로 만들어졌는지 남긴다.
+ * @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다.
+ */
 export const REPORT_PROMPT_VERSION = "report@v1";
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export const reportAiResponseSchema = z.object({
   summary: z.string().describe("한국어 주간/월간 요약: 활동 있으면 4-6문장, 없으면 2-3문장"),
   tips: z.array(z.string()).min(1).max(3).describe("실천 가능한 팁 1-3개 (한국어)"),
 });
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export type ReportAiResponse = z.infer<typeof reportAiResponseSchema>;
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export const reportAiResponseSchemaEn = z.object({
   summary: z
     .string()
@@ -33,6 +40,7 @@ export const reportAiResponseSchemaEn = z.object({
   tips: z.array(z.string()).min(1).max(3).describe("1-3 actionable tips (English)"),
 });
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function getReportAiResponseSchema(locale: SupportedLocale) {
   return reportPromptCatalog[locale].schema;
 }
@@ -87,6 +95,7 @@ function buildReportPromptKo(
   };
 }
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export const reportPromptCatalog = {
   ko: { build: buildReportPromptKo, schema: reportAiResponseSchema },
   en: { build: buildReportPromptEn, schema: reportAiResponseSchemaEn },
@@ -95,6 +104,7 @@ export const reportPromptCatalog = {
   { readonly build: typeof buildReportPromptKo; readonly schema: typeof reportAiResponseSchema }
 >;
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildReportPrompt(
   data: AggregatedReportData,
   periodLabel: string,

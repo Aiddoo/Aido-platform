@@ -14,7 +14,10 @@ const REPORT_DAY_LABELS = {
   en: (day: DayOfWeek) => suggestionContextTranslations.en.days[day],
 } satisfies Record<SupportedLocale, (day: DayOfWeek) => string>;
 
-/** 완료 근거를 시간·카테고리·요일의 교차 사실로 오인하지 않도록 한 분석축만 제공한다. */
+/**
+ * 완료 근거를 시간·카테고리·요일의 교차 사실로 오인하지 않도록 한 분석축만 제공한다.
+ * @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다.
+ */
 export function buildReportContext(
   data: AggregatedReportData,
   periodLabel: string,

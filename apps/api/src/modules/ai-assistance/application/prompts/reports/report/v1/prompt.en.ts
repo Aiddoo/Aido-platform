@@ -43,6 +43,7 @@ ${PROMPT_SECURITY_GUARD_EN}
 
 ${PROMPT_OUTPUT_DISCIPLINE_EN}`;
 
+/** @deprecated report v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildReportPromptEn(
   data: AggregatedReportData,
   periodLabel: string,
