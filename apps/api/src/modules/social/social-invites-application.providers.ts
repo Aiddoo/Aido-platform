@@ -1,5 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { PREMIUM_GRANTER } from "#api/modules/billing/billing-subscriptions.public";
 import { FOLLOW_READER, FRIENDSHIP_ESTABLISHER } from "#api/modules/social/social-friends.public";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
@@ -111,6 +112,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     INVITE_CONFIG,
     MUTATION_LOCK,
     UNIT_OF_WORK,
+    PREMIUM_GRANTER,
   ],
   useFactory: (
     inviteRepository: ConstructorParameters<typeof RedeemInvite>[0]["inviteRepository"],
@@ -126,6 +128,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     inviteConfig: ConstructorParameters<typeof RedeemInvite>[0]["inviteConfig"],
     mutationLock: ConstructorParameters<typeof RedeemInvite>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof RedeemInvite>[0]["unitOfWork"],
+    premiumGranter: ConstructorParameters<typeof RedeemInvite>[0]["premiumGranter"],
   ) =>
     new RedeemInvite({
       inviteRepository,
@@ -139,6 +142,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
       inviteConfig,
       mutationLock,
       unitOfWork,
+      premiumGranter,
       logger: new Logger(RedeemInvite.name),
     }),
 };

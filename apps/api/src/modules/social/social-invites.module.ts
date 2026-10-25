@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
@@ -33,7 +34,7 @@ import {
 } from "./social-invites-application.providers.js";
 
 @Module({
-  imports: [SocialFriendsModule, NotificationDeliveryModule],
+  imports: [SocialFriendsModule, NotificationDeliveryModule, BillingSubscriptionsModule],
   controllers: [InviteController],
   providers: [
     {

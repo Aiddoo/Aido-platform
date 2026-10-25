@@ -1,8 +1,9 @@
 import type { RewardAmount } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import type { InviteFriendship } from "@aido/api/vocabulary";
+import { type InviteFriendship, REWARD_TYPE } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
+import type { PremiumGranterPort } from "#api/modules/billing/billing-subscriptions.public";
 import type {
   FollowReaderPort,
   FriendshipEstablisherPort,
@@ -25,6 +26,7 @@ import {
   rewardClaimSources,
 } from "../../../domain/policies/invites/invite-abuse.policy.js";
 import { InviteRewardPolicy } from "../../../domain/policies/invites/invite-reward.policy.js";
+import { rewardGrantSourceKey } from "../../../domain/types/invites/reward-grant.types.js";
 import { InviteCode } from "../../../domain/value-objects/invites/invite-code.vo.js";
 import { SocialInviteLogEvent } from "../../observability/invites/social-invite-log.events.js";
 import type { ClaimHasherPort } from "../../ports/invites/claim-hasher.port.js";
@@ -77,7 +79,11 @@ interface RedeemInviteDependencies {
     "findInviteeIdentity" | "findByInviteeIdForUpdate" | "create"
   >;
   readonly rewardClaimRepository: Pick<RewardClaimRepositoryPort, "existsAny" | "claimAll">;
-  readonly rewardGrantRepository: Pick<RewardGrantRepositoryPort, "createPending" | "findBySource">;
+  readonly rewardGrantRepository: Pick<
+    RewardGrantRepositoryPort,
+    "createPending" | "findBySource" | "markApplied"
+  >;
+  readonly premiumGranter: PremiumGranterPort;
   readonly followReader: Pick<FollowReaderPort, "isCurrentMutualFriend">;
   readonly friendshipEstablisher: FriendshipEstablisherPort;
   readonly claimHasher: ClaimHasherPort;
@@ -253,6 +259,7 @@ export class RedeemInvite {
           isRewardClaimed,
         );
         await this.#dependencies.rewardGrantRepository.createPending(plans);
+        await this.#applyInviteePremiumNow(redemption.id, identity.userId, context.capturedAt);
 
         // 수락·보상은 이미 기록했으므로 그 사이 친구가 됐어도 REDEEMED로 답해 replay와 맞춘다
         const established = await this.#establish(identity.userId, invite.inviterId, false);
@@ -266,6 +273,40 @@ export class RedeemInvite {
         };
       })
       .exhaustive();
+  }
+
+  /**
+   * 수락 화면이 "프리미엄 7일을 받았어요"를 바로 보여 주므로 초대받은 사람의 프리미엄 일수는 같은
+   * 트랜잭션에서 보상 기간으로 바꾸고 원장을 APPLIED로 남긴다. 친구 한도 잠금 뒤에 사용자 행을 잠가
+   * 웹훅·sweep·지급 작업(사용자 잠금만 잡는다)과 순서가 엇갈리지 않는다. 같은 출처 키라 지급 작업이
+   * 다시 골라도 한 번만 반영된다.
+   */
+  async #applyInviteePremiumNow(
+    redemptionId: string,
+    inviteeId: string,
+    appliedAt: Date,
+  ): Promise<void> {
+    const grants = await this.#dependencies.rewardGrantRepository.findBySource(
+      "INVITE_REDEMPTION",
+      redemptionId,
+    );
+    for (const grant of grants) {
+      if (grant.recipientId !== inviteeId || grant.rewardType !== REWARD_TYPE.PREMIUM_DAYS) {
+        continue;
+      }
+      if (!(await this.#dependencies.rewardGrantRepository.markApplied(grant.id, appliedAt))) {
+        continue;
+      }
+      const result = await this.#dependencies.premiumGranter.grant({
+        userId: inviteeId,
+        source: "INVITE",
+        sourceKey: rewardGrantSourceKey(grant.id),
+        durationDays: grant.quantity,
+      });
+      if (result.status === "user-missing") {
+        throw new ApplicationException(ErrorCode.USER_0601, { userId: inviteeId });
+      }
+    }
   }
 
   /**

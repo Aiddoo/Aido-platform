@@ -1,8 +1,17 @@
-import { FOLLOW_LIMITS, myInviteResponseSchema, redeemInviteResponseSchema } from "@aido/api";
+import {
+  currentUserSchema,
+  FOLLOW_LIMITS,
+  myInviteResponseSchema,
+  redeemInviteResponseSchema,
+} from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { and } from "@prisma/orm-postgres/orm-client";
 import request from "supertest";
 
+import {
+  SUBSCRIPTION_REPOSITORY,
+  type SubscriptionRepositoryPort,
+} from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import { encodePatch } from "#api/platform/database/database-records";
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
@@ -45,14 +54,28 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       .send(installationId === undefined ? {} : { installationId });
   }
 
-  async function pendingGrantsOf(userId: string) {
+  async function rewardGrantsOf(userId: string) {
     return ctx.testDatabase
       .getClient()
-      .orm.public.RewardGrant.where((grant) =>
-        and(grant.recipientId.eq(userId), grant.status.eq("PENDING")),
-      )
-      .select("rewardType", "quantity")
+      .orm.public.RewardGrant.where((grant) => grant.recipientId.eq(userId))
+      .select("rewardType", "quantity", "status")
       .all();
+  }
+
+  async function premiumGrantCountOf(userId: string) {
+    const result = await ctx.testDatabase
+      .getClient()
+      .orm.public.PremiumGrant.where((grant) => grant.userId.eq(userId))
+      .aggregate((aggregate) => ({ count: aggregate.count() }));
+    return result.count;
+  }
+
+  async function meOf(user: VerifiedUser) {
+    const response = await request(ctx.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
+    return currentUserSchema.parse(response.body.data);
   }
 
   it("새 사용자는 친구가 되고 7일 보상을 받으며 응답을 놓쳐 다시 수락하면 같은 결과를 돌려준다", async () => {
@@ -82,9 +105,18 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       rewards: [{ rewardType: "PREMIUM_DAYS", quantity: 7 }],
     });
     expect(repeated.body.data).toEqual(first.body.data);
-    expect(await pendingGrantsOf(invitee.userId)).toEqual([
-      { rewardType: "PREMIUM_DAYS", quantity: 7 },
+    // 수락 화면이 바로 "프리미엄 7일"을 보여 주므로 응답 직후 /me도 이미 보상 기간이다
+    expect(await rewardGrantsOf(invitee.userId)).toEqual([
+      { rewardType: "PREMIUM_DAYS", quantity: 7, status: "APPLIED" },
     ]);
+    expect(await premiumGrantCountOf(invitee.userId)).toBe(1);
+    expect(await meOf(invitee)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      premiumSource: "GRANT",
+      premiumPeriodEndsAt: expect.any(String),
+      willRenew: false,
+      bankedPremiumDays: 0,
+    });
     const joined = await ctx.testDatabase
       .getClient()
       .orm.public.Notification.where((row) =>
@@ -114,7 +146,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       friendship: "FRIENDS",
       rewards: [],
     });
-    expect(await pendingGrantsOf(second.userId)).toEqual([]);
+    expect(await rewardGrantsOf(second.userId)).toEqual([]);
   });
 
   it("가입한 지 7일이 지난 사용자는 보상 없이 CONNECTED로 친구를 맺는다", async () => {
@@ -135,7 +167,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       outcome: "CONNECTED",
       friendship: "FRIENDS",
     });
-    expect(await pendingGrantsOf(veteran.userId)).toEqual([]);
+    expect(await rewardGrantsOf(veteran.userId)).toEqual([]);
   });
 
   it("초대한 사람 친구 자리가 꽉 차 있으면 친구 요청만 보내고 보상 기록은 남긴다", async () => {
@@ -160,6 +192,59 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       friendship: "REQUESTED",
       rewards: [{ rewardType: "PREMIUM_DAYS", quantity: 7 }],
     });
+  });
+
+  it("스토어 구독 중인 새 사용자의 보상은 쌓아 두고 /me가 대기 중인 7일을 바로 보여 준다", async () => {
+    // Given
+    const inviter = await ctx.helpers.createVerifiedUser("store-inviter@test.com", PASSWORD);
+    const invitee = await ctx.helpers.createVerifiedUser("store-invitee@test.com", PASSWORD);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000);
+    const subscriptions = ctx.module.get<SubscriptionRepositoryPort>(SUBSCRIPTION_REPOSITORY);
+    await subscriptions.create({
+      userId: invitee.userId,
+      revenueCatId: "store-invitee-chain",
+      productId: "premium_monthly",
+      status: "ACTIVE",
+      startedAt: new Date(),
+      expiresAt,
+    });
+    await subscriptions.updateUserSubscriptionStatus(invitee.userId, {
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: expiresAt,
+    });
+    const code = await inviteCodeOf(inviter);
+
+    // When
+    await redeem(invitee, code, "store-device").expect(200);
+
+    // Then
+    expect(await meOf(invitee)).toMatchObject({
+      premiumSource: "STORE",
+      premiumPeriodEndsAt: expiresAt.toISOString(),
+      willRenew: true,
+      bankedPremiumDays: 7,
+    });
+  });
+
+  it("ADMIN이 초대받아도 보상 기간을 받고 role은 ADMIN 그대로다", async () => {
+    // Given
+    const inviter = await ctx.helpers.createVerifiedUser("admin-inviter@test.com", PASSWORD);
+    const admin = await ctx.helpers.createVerifiedUser("admin-invitee@test.com", PASSWORD);
+    await ctx.testDatabase
+      .getClient()
+      .orm.public.User.where({ id: admin.userId })
+      .updateAndCount(encodePatch("User", { role: "ADMIN" }));
+    const code = await inviteCodeOf(inviter);
+
+    // When
+    const response = await redeem(admin, code, "admin-device").expect(200);
+
+    // Then
+    expect(redeemInviteResponseSchema.parse(response.body.data)).toMatchObject({
+      outcome: "REDEEMED",
+      rewards: [{ rewardType: "PREMIUM_DAYS", quantity: 7 }],
+    });
+    expect(await meOf(admin)).toMatchObject({ role: "ADMIN", premiumSource: "GRANT" });
   });
 
   it("내 코드는 INVITE_2103, 바뀐 코드는 INVITE_2102, 없는 코드는 INVITE_2101이다", async () => {

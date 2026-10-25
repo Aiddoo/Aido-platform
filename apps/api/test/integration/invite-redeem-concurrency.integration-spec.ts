@@ -1,12 +1,18 @@
 import { ErrorCode } from "@aido/api/errors";
 import { and } from "@prisma/orm-postgres/orm-client";
 
+import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
+import {
+  PREMIUM_ACCESS_READER,
+  type PremiumAccessReaderPort,
+} from "#api/modules/billing/billing-subscriptions.public";
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
 import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/get-my-invite.use-case";
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
 import { RotateInviteCode } from "#api/modules/social/application/use-cases/invites/rotate-invite-code.use-case";
 import { encodeCreate } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/database-values";
+import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { createTestClient } from "#test/setup/database-context";
 import { TestDatabase, type TestDatabaseClient } from "#test/setup/test-database";
@@ -56,7 +62,7 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     return id;
   }
 
-  async function count(model: "InviteRedemption" | "RewardGrant" | "RewardClaim") {
+  async function count(model: "InviteRedemption" | "RewardGrant" | "RewardClaim" | "PremiumGrant") {
     const result = await client.orm.public[model].aggregate((aggregate) => ({
       count: aggregate.count(),
     }));
@@ -93,6 +99,47 @@ describe("초대 수락 동시성 (실제 PostgreSQL)", () => {
     expect(new Set(fulfilled.map((result) => result.redemptionId)).size).toBe(1);
     expect(await count("InviteRedemption")).toBe(1);
     expect(await count("RewardGrant")).toBe(1);
+    expect(await count("PremiumGrant")).toBe(1);
+  });
+
+  it("초대 수락과 초대받은 사람의 스토어 구매 웹훅이 동시에 와도 교착 없이 보상을 한 번만 남긴다", async () => {
+    // Given
+    const inviterId = await createUser("CONCPUR1");
+    const inviteeId = await createUser("CONCPUR2");
+    const { code } = await getMyInvite.execute({ inviterId });
+    const purchasedAt = Date.now();
+    const purchase = SubscriptionEventBuilder.initialPurchase()
+      .withAppUserId(inviteeId)
+      .withOriginalTransactionId("redeem-purchase-chain")
+      .withTransactionId("redeem-purchase-chain")
+      .withEventId("redeem-purchase")
+      .withPurchasedAtMs(purchasedAt)
+      .withExpirationAtMs(purchasedAt + 30 * 24 * 60 * 60 * 1_000)
+      .build();
+
+    // When
+    const [redeemed] = await Promise.all([
+      redeemInvite.execute({
+        inviteeId,
+        code,
+        installationId: "purchase-device",
+        timezone: "Asia/Seoul",
+      }),
+      context.module.get(HandleWebhookEvent).execute({ body: purchase }),
+    ]);
+
+    // Then
+    expect(redeemed.outcome).toBe("REDEEMED");
+    const access = await context.module
+      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+      .getPremiumAccess(inviteeId);
+    // 수락이 먼저면 바로 시작한 7일을 구매 시각에 끊어 다시 쌓고, 구매가 먼저면 처음부터 쌓는다
+    expect(access).toMatchObject({ source: "STORE", bankedDays: 7 });
+    expect(
+      await client.orm.public.RewardGrant.where((grant) => grant.recipientId.eq(inviteeId))
+        .select("status")
+        .all(),
+    ).toEqual([{ status: "APPLIED" }]);
   });
 
   it("서로의 초대를 동시에 수락해도 잠금 순서가 같아 교착 없이 한쪽만 수락된다", async () => {
