@@ -12,7 +12,7 @@ import {
 } from '@src/shared/ui';
 import { formatMonthDay } from '@src/shared/utils/date';
 import { Skeleton } from 'heroui-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 import { type InvitedFriend, InvitedFriendPolicy } from '../domains/invited-friend.model';
 import { invitedFriendChipVariants } from './invited-friend-row.variants';
@@ -62,7 +62,7 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
                     }),
                   )
                   .with('INVITER_MONTHLY_CAP', () => t('friendList.excludedMonthlyCap'))
-                  .with(null, () => t('friendList.excluded'))
+                  .with(P.nullish, () => t('friendList.excluded'))
                   .exhaustive(),
               )
               .with('unknown', () =>

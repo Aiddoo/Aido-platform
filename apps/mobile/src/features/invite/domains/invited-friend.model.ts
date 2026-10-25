@@ -1,19 +1,15 @@
 import {
   INVITE_QUALIFICATION,
   invitedFriendResponseSchema,
-  redemptionRejectionReasonSchema,
   type RedemptionStatus,
-  redemptionStatusSchema,
 } from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
 import { toDisplayName } from './invite-preview.model';
 
-// 구버전 앱이 새 상태·사유를 받아도 목록이 깨지지 않게 UNKNOWN·null로 흡수한다
+// 모르는 새 상태·사유는 @aido/api 스키마가 UNKNOWN·null로 읽는다
 export const InvitedFriendSchema = invitedFriendResponseSchema.extend({
-  status: redemptionStatusSchema.or(z.literal('UNKNOWN')).catch('UNKNOWN'),
-  rejectionReason: redemptionRejectionReasonSchema.nullable().catch(null),
   joinedAt: z.coerce.date(),
   qualifiedAt: z.coerce.date().nullable(),
 });
