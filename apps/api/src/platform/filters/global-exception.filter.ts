@@ -18,6 +18,7 @@ import {
   isRecordNotFoundError,
 } from "#api/platform/database/prisma-error.util";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
+import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
 import { ErrorCodedException } from "#api/shared/domain/exceptions/error-coded.exception";
 
@@ -109,12 +110,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ip_address: "{{auto}}",
         });
         scope.setTags({
-          "http.method": request.method,
-          "http.url": requestPath,
-          "http.status_code": String(statusCode),
-          "error.code": errorResponse.error.code,
+          [SENTRY_TAG.HTTP_METHOD]: request.method,
+          [SENTRY_TAG.HTTP_URL]: requestPath,
+          [SENTRY_TAG.HTTP_STATUS_CODE]: String(statusCode),
+          [SENTRY_TAG.ERROR_CODE]: errorResponse.error.code,
         });
-        scope.setExtra("errorResponse", errorResponse);
+        scope.setExtra(SENTRY_EXTRA.ERROR_RESPONSE, errorResponse);
         Sentry.captureException(exception);
       });
     }

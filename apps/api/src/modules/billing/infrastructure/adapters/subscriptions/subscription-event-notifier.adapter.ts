@@ -8,6 +8,8 @@ import {
   type AdminNotifier,
   PAYMENT_NOTIFIER,
 } from "#api/modules/operations/operations-notifications.public";
+import { SENTRY_DOMAIN, SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
+import { maskUserId } from "#api/shared/domain/utils/mask.util";
 
 import type { SubscriptionEventNotifierPort } from "../../../application/ports/subscriptions/subscription-event-notifier.port.js";
 import type { SubscriptionEventPayload } from "../../../application/types/subscriptions/subscription-event.payload.js";
@@ -42,12 +44,12 @@ export class SubscriptionEventNotifierAdapter implements SubscriptionEventNotifi
   reportWebhookFailure(error: unknown, payload: RevenueCatWebhookPayload): void {
     // 1. Sentry 태깅 캡처 (결제 도메인 컨텍스트)
     Sentry.withScope((scope) => {
-      scope.setTag("domain", "payment");
-      scope.setTag("webhook.event_type", payload.event.type);
-      scope.setTag("webhook.store", payload.event.store ?? "unknown");
-      scope.setExtra("webhook.app_user_id", payload.event.app_user_id);
-      scope.setExtra("webhook.product_id", payload.event.product_id);
-      scope.setExtra("webhook.event_id", payload.event.id);
+      scope.setTag(SENTRY_TAG.DOMAIN, SENTRY_DOMAIN.PAYMENT);
+      scope.setTag(SENTRY_TAG.WEBHOOK_EVENT_TYPE, payload.event.type);
+      scope.setTag(SENTRY_TAG.WEBHOOK_STORE, payload.event.store ?? "unknown");
+      scope.setExtra(SENTRY_EXTRA.WEBHOOK_APP_USER_ID, maskUserId(payload.event.app_user_id));
+      scope.setExtra(SENTRY_EXTRA.WEBHOOK_PRODUCT_ID, payload.event.product_id);
+      scope.setExtra(SENTRY_EXTRA.WEBHOOK_EVENT_ID, payload.event.id);
       Sentry.captureException(error);
     });
 
