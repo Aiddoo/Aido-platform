@@ -902,18 +902,52 @@ describe("HandleWebhookEvent", () => {
       name: "period_type",
       configure: (builder: SubscriptionEventBuilder) => builder.withPeriodType("PROMOTIONAL"),
     },
-  ])("프로모션 구매($name)는 매출 구독 행과 관리자 알림을 만들지 않는다", async ({ configure }) => {
+  ])(
+    "RevenueCat 대시보드가 준 프로모션($name)은 스토어 구독처럼 행을 만들고 프리미엄으로 본다",
+    async ({ configure }) => {
+      // Given
+      const body = payloadFor(configure(SubscriptionEventBuilder.initialPurchase()));
+
+      // When
+      await useCase.execute({ body });
+
+      // Then
+      expect(
+        fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+      ).toMatchObject({ status: "ACTIVE", expiresAt: SUBSCRIPTION_EXPIRY });
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: SUBSCRIPTION_EXPIRY,
+      });
+      expect(fixture.notifier.failures).toEqual([]);
+    },
+  );
+
+  it("프로모션 체인의 이후 취소·만료 이벤트도 구독 없음 실패 없이 처리한다", async () => {
     // Given
-    const body = payloadFor(configure(SubscriptionEventBuilder.initialPurchase()));
+    const promotional = (builder: SubscriptionEventBuilder) =>
+      builder.withStore("PROMOTIONAL").withPeriodType("PROMOTIONAL");
+    await useCase.execute({
+      body: payloadFor(promotional(SubscriptionEventBuilder.initialPurchase()), "promo-purchase"),
+    });
 
     // When
-    await useCase.execute({ body });
+    await useCase.execute({
+      body: payloadFor(promotional(SubscriptionEventBuilder.cancellation()), "promo-cancel"),
+    });
+    vi.setSystemTime(new Date(SUBSCRIPTION_EXPIRY.getTime() + 1));
+    await useCase.execute({
+      body: payloadFor(promotional(SubscriptionEventBuilder.expiration()), "promo-expire"),
+    });
 
     // Then
-    expect(fixture.subscriptionRepository.subscriptions.size).toBe(0);
-    expect(fixture.notifier.events).toEqual([]);
-    expect(fixture.subscriptionRepository.users.get(fixture.user.id)?.subscriptionStatus).toBe(
-      "FREE",
-    );
+    expect(fixture.notifier.failures).toEqual([]);
+    expect(
+      fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+    ).toMatchObject({ status: "EXPIRED", lastProcessedEventId: "promo-expire" });
+    expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+    });
   });
 });

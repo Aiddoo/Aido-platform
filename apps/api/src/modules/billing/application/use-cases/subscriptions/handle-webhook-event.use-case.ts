@@ -54,9 +54,6 @@ interface HandleWebhookEventDependencies {
   readonly logger: ApplicationLogger;
 }
 
-// RevenueCat 프로모션 엔타이틀먼트는 결제가 아니라 매출 구독 행을 만들지 않는다
-const PROMOTIONAL = "PROMOTIONAL";
-
 interface SubscriptionTransition {
   readonly userState: UpdateUserSubscriptionStatusData;
   readonly payload: SubscriptionEventPayload;
@@ -129,15 +126,6 @@ export class HandleWebhookEvent {
           event: BillingLogEvent.WEBHOOK_IGNORED,
           eventType: event.type,
           userId: user.id,
-        });
-        return;
-      }
-      if (this.#isPromotionalPurchase(event)) {
-        this.#dependencies.logger.log({
-          event: BillingLogEvent.WEBHOOK_IGNORED,
-          eventType: event.type,
-          userId: user.id,
-          reason: "promotional",
         });
         return;
       }
@@ -214,11 +202,6 @@ export class HandleWebhookEvent {
         () => true,
       )
       .otherwise(() => false);
-  }
-
-  #isPromotionalPurchase(event: RevenueCatEvent): boolean {
-    const isPurchase = event.type === "INITIAL_PURCHASE" || event.type === "NON_RENEWING_PURCHASE";
-    return isPurchase && (event.store === PROMOTIONAL || event.period_type === PROMOTIONAL);
   }
 
   async #applyEvent(
