@@ -73,5 +73,10 @@
     "openConversationFailed": "Couldn't open this conversation. Please tap it again in a moment",
     "finishFormFirst": "Post or cancel the comment you're writing before moving",
     "draftOutdated": "This comment was changed elsewhere, so your unsaved edit was discarded"
+  },
+  "deleteOthersConfirm": {
+    "title": "Delete this comment?",
+    "description": "You can remove comments on your own to-do. It will be removed for everyone and can't be undone.",
+    "confirm": "Delete"
   }
 }

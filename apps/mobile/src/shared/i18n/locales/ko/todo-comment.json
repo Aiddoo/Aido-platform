@@ -71,5 +71,10 @@
     "openConversationFailed": "댓글 대화를 열지 못했어요. 잠시 후 다시 눌러 주세요",
     "finishFormFirst": "작성 중인 댓글을 게시하거나 취소한 뒤 이동해 주세요",
     "draftOutdated": "댓글이 다른 곳에서 수정되어 저장하지 않은 수정 내용을 지웠어요"
+  },
+  "deleteOthersConfirm": {
+    "title": "이 댓글을 삭제할까요?",
+    "description": "내 할 일에 달린 댓글이라 지울 수 있어요. 모든 사람에게서 사라지고 되돌릴 수 없어요.",
+    "confirm": "삭제"
   }
 }

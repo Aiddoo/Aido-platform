@@ -92,6 +92,36 @@ describe('TodoCommentPolicy', () => {
     });
   });
 
+  describe('isDeletingOthers', () => {
+    test('지울 수만 있고 고칠 수 없으면 할 일 주인이 남의 댓글을 지우는 경우다', () => {
+      // Given
+      const othersComment = createTodoComment({
+        viewer: {
+          isLiked: false,
+          canEdit: false,
+          canDelete: true,
+          canReply: true,
+          canReport: true,
+          canBlock: true,
+        },
+      });
+      const ownComment = createTodoComment({
+        viewer: {
+          isLiked: false,
+          canEdit: true,
+          canDelete: true,
+          canReply: true,
+          canReport: false,
+          canBlock: false,
+        },
+      });
+
+      // When & Then
+      expect(TodoCommentPolicy.isDeletingOthers(othersComment)).toBe(true);
+      expect(TodoCommentPolicy.isDeletingOthers(ownComment)).toBe(false);
+    });
+  });
+
   describe('hasActions', () => {
     test('수정·삭제·신고·차단 중 하나라도 열려 있으면 메뉴를 보인다', () => {
       // Given

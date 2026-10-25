@@ -18,6 +18,7 @@ import {
   MoreIcon,
   Text,
   TextSkeleton,
+  useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
 import { formatRelativeTime } from '@src/shared/utils/date';
@@ -222,7 +223,25 @@ function CommentActionMenu({
   const push = useSingleTap(router.push);
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const [isOpen, setIsOpen] = useState(false);
+  const confirmDialog = useConfirmDialog();
   const author = comment.author;
+
+  // 내 댓글은 바로 지우고, 내 할 일에 달린 남의 댓글은 모두에게서 사라진다는 것을 확인받는다
+  const handleDelete = async () => {
+    if (TodoCommentPolicy.isDeletingOthers(comment)) {
+      const isConfirmed = await confirmDialog.open({
+        title: t('deleteOthersConfirm.title'),
+        description: t('deleteOthersConfirm.description'),
+        confirmLabel: t('deleteOthersConfirm.confirm'),
+        confirmColor: 'danger',
+        cancelLabel: t('actions.cancel'),
+      });
+      if (!isConfirmed) {
+        return;
+      }
+    }
+    deleteComment.mutate({ commentId: comment.id });
+  };
 
   return (
     <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
@@ -257,11 +276,7 @@ function CommentActionMenu({
             </Menu.Item>
           )}
           {TodoCommentPolicy.canDelete(comment) && (
-            <Menu.Item
-              variant="danger"
-              isDisabled={deleteComment.isPending}
-              onPress={() => deleteComment.mutate({ commentId: comment.id })}
-            >
+            <Menu.Item variant="danger" isDisabled={deleteComment.isPending} onPress={handleDelete}>
               <Menu.ItemTitle>{t('actions.delete')}</Menu.ItemTitle>
             </Menu.Item>
           )}

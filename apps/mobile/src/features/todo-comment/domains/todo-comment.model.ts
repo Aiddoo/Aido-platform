@@ -145,6 +145,14 @@ export function canDeleteComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canDelete;
 }
 
+/**
+ * 할 일 주인이 남의 댓글을 지우는 경우. 수정은 작성자만 할 수 있어 지울 수만 있으면 남의 댓글이다.
+ * 모두에게서 사라진다는 결과를 확인받는다.
+ */
+export function isDeletingOthersComment(comment: TodoComment) {
+  return canDeleteComment(comment) && !comment.viewer.canEdit;
+}
+
 export function canReportComment(comment: TodoComment) {
   return isActiveComment(comment) && comment.viewer.canReport;
 }
@@ -173,6 +181,7 @@ export const TodoCommentPolicy = {
   canReply: canReplyToComment,
   canEdit: canEditComment,
   canDelete: canDeleteComment,
+  isDeletingOthers: isDeletingOthersComment,
   canReport: canReportComment,
   canBlockAuthor: canBlockCommentAuthor,
   hasActions: hasCommentActions,
