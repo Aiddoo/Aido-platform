@@ -1,4 +1,9 @@
-import { NOTIFICATION_TYPE, type NotificationContext, type NotificationType } from '@aido/api';
+import {
+  NOTICE_DEEP_LINK_PATH,
+  NOTIFICATION_TYPE,
+  type NotificationContext,
+  type NotificationType,
+} from '@aido/api';
 
 import { createNotificationListResponseDto } from '../../__tests__/notification.factories';
 import { toNotification } from '../../apis/notification.mapper';
@@ -164,6 +169,18 @@ describe('공지 알림의 앱 경로', () => {
       ),
     ).toEqual({ kind: 'route', href });
   });
+
+  test.each(Object.values(NOTICE_DEEP_LINK_PATH))(
+    '서버가 보낼 수 있는 공지 경로 %s는 모두 연다',
+    (url) => {
+      expect(
+        resolveNotificationDestination(
+          { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
+          COMPACT,
+        ),
+      ).toMatchObject({ kind: 'route' });
+    },
+  );
 
   test.each(['ADMIN_BROADCAST', 'ADMIN_TARGETED'] as const)(
     '%s 공지도 같은 경로 표를 따른다',
