@@ -17,6 +17,7 @@ import {
 } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
+  StubAiDataSharingConsent,
   StubAiGenerationAccess,
   StubAiGenerationUnitOfWork,
   StubAiReportRepository,
@@ -85,6 +86,7 @@ export function createAiAssistanceFixture() {
   const weatherForecastReader = new StubAiWeatherForecastReader();
   const reportReader = new StubAiWeeklyReportReader();
   const aiProvider = new GatedFakeAiProvider();
+  const aiDataSharingConsent = new StubAiDataSharingConsent();
   const logger = mock<ApplicationLogger>();
   const contextBuilder = new SuggestionContextBuilder({
     repository,
@@ -95,6 +97,7 @@ export function createAiAssistanceFixture() {
   const analyze = new AnalyzeAndCreateSuggestions({
     repository,
     aiProvider,
+    aiDataSharingConsent,
     unitOfWork,
     contextBuilder,
     logger,
@@ -106,6 +109,7 @@ export function createAiAssistanceFixture() {
   const analyzeV2 = new AnalyzeAndCreateSuggestions({
     repository,
     aiProvider,
+    aiDataSharingConsent,
     unitOfWork,
     contextBuilder,
     logger,
@@ -117,6 +121,7 @@ export function createAiAssistanceFixture() {
     aiReportRepository: reportRepository,
     todoStatsReader,
     aiProvider,
+    aiDataSharingConsent,
     logger,
     entitlementReader: access,
     unitOfWork,
@@ -133,6 +138,7 @@ export function createAiAssistanceFixture() {
     weatherForecastReader,
     reportReader,
     aiProvider,
+    aiDataSharingConsent,
     logger,
     contextBuilder,
     analyze,

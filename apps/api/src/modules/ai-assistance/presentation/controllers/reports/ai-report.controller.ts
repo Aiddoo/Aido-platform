@@ -1,7 +1,8 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Controller, Get, Param, Query } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
+import { AiDataSharingConsentGuard } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -157,6 +158,13 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
   @ApiSuccessResponse({ type: AiReportListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.AI_1308)
+  @ApiForbiddenError(ErrorCode.AI_1311)
+  @UseGuards(AiDataSharingConsentGuard)
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+  })
   async getReports(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetAiReportsQueryDto }) query: GetAiReportsQueryDto,
@@ -198,6 +206,13 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
   })
   @ApiSuccessResponse({ type: AiReportResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiForbiddenError(ErrorCode.AI_1311)
+  @UseGuards(AiDataSharingConsentGuard)
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+  })
   @ApiForbiddenError(ErrorCode.AI_1308)
   @ApiNotFoundError(ErrorCode.AI_1304)
   async getReport(

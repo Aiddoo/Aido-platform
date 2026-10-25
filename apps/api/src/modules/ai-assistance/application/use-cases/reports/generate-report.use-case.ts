@@ -3,8 +3,10 @@ import dayjs from "dayjs";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import {
+  type AiDataSharingConsentDecisionReaderPort,
   type AiProvider,
   AiProviderError,
+  canProcessScheduledAi,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -33,6 +35,7 @@ import { toAiReportView } from "../../read-models/reports/ai-report.read-model.j
 import { computePeriodLabel } from "../../read-models/reports/report-period-label.js";
 import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import {
+  buildConsentDeclinedContent,
   buildFallbackContent,
   buildNoActivityContent,
 } from "../../services/reports/report-fallback.js";
@@ -67,6 +70,10 @@ interface GenerateReportDependencies {
   readonly aiReportRepository: Pick<AiReportRepositoryPort, "exists" | "findLatest" | "create">;
   readonly todoStatsReader: Pick<TodoStatsReaderPort, "fetchAggregationInputs">;
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
+  readonly aiDataSharingConsent: Pick<
+    AiDataSharingConsentDecisionReaderPort,
+    "findAiDataSharingDecision"
+  >;
   readonly logger: Pick<ApplicationLogger, "log" | "debug" | "warn" | "error">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
@@ -289,6 +296,16 @@ export class GenerateReport {
   ): Promise<ReportContent> {
     const { userId, locale, isFinalAttempt } = options;
     if (!input.data.hasActivity) return buildNoActivityContent(input, locale);
+
+    const consentDecision =
+      await this.#dependencies.aiDataSharingConsent.findAiDataSharingDecision(userId);
+    if (!canProcessScheduledAi(consentDecision)) {
+      this.#dependencies.logger.debug({
+        event: AiReportLogEvent.AI_SKIPPED_CONSENT_DECLINED,
+        userId,
+      });
+      return buildConsentDeclinedContent(input, locale);
+    }
 
     if (!this.#dependencies.aiProvider.isAvailable()) {
       this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });

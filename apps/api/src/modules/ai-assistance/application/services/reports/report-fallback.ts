@@ -70,6 +70,14 @@ export function buildNoActivityContent(
   };
 }
 
+/** 사용자가 AI 데이터 처리를 거부해 AI 공급자를 부르지 않고 기록 통계만으로 요약한다. */
+export function buildConsentDeclinedContent(
+  input: ReportFallbackInput,
+  locale: SupportedLocale,
+): ReportContent {
+  return { ...buildFallbackContent(input, locale), contentSource: "CONSENT_DECLINED" };
+}
+
 /** AI를 쓸 수 없거나 마지막 재시도까지 실패한 기간에 저장한다. */
 export function buildFallbackContent(
   input: ReportFallbackInput,

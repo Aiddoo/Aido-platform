@@ -12,6 +12,7 @@ import {
   ApiDoc,
   ApiErrorCodesResponse,
   ApiServiceUnavailableError,
+  ApiForbiddenError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
   ApiUnprocessableError,
@@ -22,6 +23,7 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import { GetAiUsage } from "../../../application/use-cases/parsing/get-ai-usage.use-case.js";
 import { ParseMemo } from "../../../application/use-cases/parsing/parse-memo.use-case.js";
 import { ParseTodo } from "../../../application/use-cases/parsing/parse-todo.use-case.js";
+import { AiDataSharingConsentGuard } from "../../../infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";
 import { AiUsageGuard } from "../../../infrastructure/guards/parsing/ai-usage.guard.js";
 import {
   AiUsageResponseDto,
@@ -69,7 +71,12 @@ export class AiController {
    */
   @Post("parse-todo")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AiUsageGuard)
+  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+  })
   @ApiHeader({
     name: "X-Timezone",
     required: false,
@@ -183,6 +190,7 @@ if (confirmed) {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiUnprocessableError(ErrorCode.AI_1302)
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
+  @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",
@@ -271,7 +279,12 @@ if (confirmed) {
    */
   @Post("parse-memo")
   @HttpCode(HttpStatus.OK)
-  @UseGuards(AiUsageGuard)
+  @UseGuards(AiDataSharingConsentGuard, AiUsageGuard)
+  @ApiHeader({
+    name: "x-app-version",
+    required: false,
+    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+  })
   @ApiHeader({
     name: "X-Timezone",
     required: false,
@@ -338,6 +351,7 @@ if (confirmed) {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiUnprocessableError(ErrorCode.AI_1302)
   @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
+  @ApiForbiddenError(ErrorCode.AI_1311)
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",

@@ -48,6 +48,21 @@ describe("AnalyzeAndCreateSuggestions", () => {
       }),
   );
 
+  it("AI 데이터 처리를 거부한 사용자는 기록을 AI로 보내지 않고 기존 제안도 바꾸지 않는다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 반복 기록이 있지만 AI 데이터 처리를 거부함
+      const f = usePatternResponse(createAiAssistanceFixture());
+      f.aiDataSharingConsent.decision = "DECLINED";
+      seedPendingSuggestion(f);
+      // When
+      const count = await f.analyze.execute(f.userId, "Asia/Seoul");
+      // Then
+      expect(count).toBe(0);
+      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.repository.writes).toEqual([]);
+      expect(f.repository.rows.get(1)?.status).toBe("PENDING");
+    }));
+
   it("기록이 없으면 기존 pending을 보존하고 AI와 쓰기를 모두 생략한다", () =>
     withAiAssistanceTime(async () => {
       // Given - 기록 없는 사용자에게 기존 pending이 있음

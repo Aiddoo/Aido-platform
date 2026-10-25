@@ -21,7 +21,9 @@ import { PrismaTodoStatsReader } from "#api/modules/ai-assistance/infrastructure
 import { PrismaAiSuggestionRepository } from "#api/modules/ai-assistance/infrastructure/persistence/suggestions/prisma-ai-suggestion.repository";
 import { ReportGenerationProcessor } from "#api/modules/ai-assistance/infrastructure/processors/reports/report-generation.processor";
 import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastructure/processors/suggestions/suggestion-analysis.processor";
+import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
+import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -137,6 +139,9 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
   function generation(provider: FakeAiProvider, repository = suggestions) {
     const logger = new Logger("AiGenerationIntegration");
     const service = createTestDatabaseService(client);
+    const consentReader = new AiDataSharingConsentReader({
+      consentRepository: new UserConsentRepository(fixture.txHost),
+    });
     const contextBuilder = new SuggestionContextBuilder({
       repository,
       weatherForecastReader: { getForecastsByGridBatch: async () => new Map() },
@@ -146,6 +151,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
     const analyze = new AnalyzeAndCreateSuggestions({
       repository,
       aiProvider: provider,
+      aiDataSharingConsent: consentReader,
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
@@ -158,6 +164,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       aiReportRepository: reports,
       todoStatsReader: new PrismaTodoStatsReader(fixture.txHost, service),
       aiProvider: provider,
+      aiDataSharingConsent: consentReader,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,

@@ -9,3 +9,9 @@ export {
   USER_LOCALE_PREFERENCE_READER,
   type UserLocalePreferenceReaderPort,
 } from "./application/ports/parsing/user-locale-preference.reader.port.js";
+export {
+  AI_DATA_SHARING_CONSENT_DECISION_READER,
+  type AiDataSharingConsentDecisionReaderPort,
+} from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";
+export { canProcessScheduledAi } from "./domain/policies/parsing/ai-data-sharing-consent.policy.js";
+export { AiDataSharingConsentGuard } from "./infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";

@@ -383,6 +383,21 @@ describe("GenerateReport", () => {
       expect(f.reportRepository.saved[0]?.aiSummary).toBeTruthy();
     }));
 
+  it("AI 데이터 처리를 거부한 사용자는 AI 없이 기록 통계로 요약을 저장한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 활동이 있는 유료 사용자가 AI 데이터 처리를 거부함
+      const f = useReportActivity(createAiAssistanceFixture());
+      f.aiDataSharingConsent.decision = "DECLINED";
+      // When
+      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      // Then - 공급자를 부르지 않고 출처를 구분해 저장
+      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.reportRepository.saved[0]).toMatchObject({
+        contentSource: "CONSENT_DECLINED",
+        promptVersion: null,
+      });
+    }));
+
   it("활동이 없는 기간은 LLM을 부르지 않고 템플릿을 저장한다", () =>
     withAiAssistanceTime(async () => {
       // Given - 기록 없는 집계

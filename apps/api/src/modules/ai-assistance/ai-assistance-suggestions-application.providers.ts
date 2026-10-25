@@ -2,6 +2,7 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import {
+  AI_DATA_SHARING_CONSENT_DECISION_READER,
   AI_PROVIDER,
   AI_TASK_SETTINGS,
   type AiTaskSettingsMap,
@@ -42,6 +43,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
   inject: [
     AI_SUGGESTION_REPOSITORY,
     AI_PROVIDER,
+    AI_DATA_SHARING_CONSENT_DECISION_READER,
     UNIT_OF_WORK,
     SuggestionContextBuilder,
     ENTITLEMENT_READER,
@@ -51,6 +53,9 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
   useFactory: (
     repository: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["repository"],
     aiProvider: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["aiProvider"],
+    aiDataSharingConsent: ConstructorParameters<
+      typeof AnalyzeAndCreateSuggestions
+    >[0]["aiDataSharingConsent"],
     unitOfWork: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["unitOfWork"],
     contextBuilder: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["contextBuilder"],
     entitlementReader: ConstructorParameters<
@@ -64,6 +69,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
     new AnalyzeAndCreateSuggestions({
       repository,
       aiProvider,
+      aiDataSharingConsent,
       unitOfWork,
       contextBuilder,
       entitlementReader,
