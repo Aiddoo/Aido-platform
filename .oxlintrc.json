@@ -36,6 +36,12 @@
     "typescript/consistent-type-imports": "error",
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
+    "typescript/consistent-type-assertions": [
+      "error",
+      {
+        "assertionStyle": "never"
+      }
+    ],
     "typescript/ban-ts-comment": [
       "error",
       {
@@ -79,6 +85,20 @@
             "ts-nocheck": true
           }
         ]
+      }
+    },
+    {
+      "files": [
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.e2e-spec.ts",
+        "**/*.integration-spec.ts",
+        "**/__tests__/**",
+        "apps/api/test/**/*.ts"
+      ],
+      "rules": {
+        "typescript/consistent-type-assertions": "off"
       }
     },
     {
