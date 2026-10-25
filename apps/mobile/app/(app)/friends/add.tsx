@@ -21,7 +21,7 @@ import { useMutation, usePrefetchQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView } from 'react-native';
+import { Platform, ScrollView } from 'react-native';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -89,10 +89,17 @@ function AddFriendScreen() {
                   label={t('add.tagLabel')}
                   placeholder="ABC12345"
                   value={value}
-                  onChange={onChange}
+                  // 태그는 영문 대문자·숫자라 한글 자판 대신 영문 자판을 띄우고, 소문자로 쳐도 대문자로 맞춘다
+                  onChange={(text) => onChange(text.toUpperCase())}
                   autoFocus
+                  keyboardType={Platform.select({
+                    ios: 'ascii-capable',
+                    android: 'visible-password',
+                  })}
                   autoCapitalize="characters"
                   autoCorrect={false}
+                  autoComplete="off"
+                  spellCheck={false}
                   maxLength={8}
                   submitBehavior="submit"
                   returnKeyType="done"
