@@ -14234,53 +14234,48 @@ curl https://api.aido.com/health
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "403": {
           "content": {
@@ -14406,55 +14401,50 @@ curl https://api.aido.com/health
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
           "description": "유효하지 않은 필터 조건입니다.
 
-잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
-                "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "code",
-                  "message",
-                ],
-                "type": "object",
-              },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
-            },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
-          },
+잘못된 파라미터입니다.",
         },
         "403": {
           "content": {
@@ -14622,53 +14612,48 @@ curl https://api.aido.com/health
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "403": {
           "content": {
@@ -14906,53 +14891,48 @@ curl https://api.aido.com/health
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -15363,53 +15343,48 @@ if (confirmed) {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -17283,53 +17258,48 @@ if (limit !== null && used >= limit) {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "회원 탈퇴를 위해 비밀번호를 입력해주세요.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "USER_0612",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "USER_0612",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "회원 탈퇴를 위해 비밀번호를 입력해주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "회원 탈퇴를 위해 비밀번호를 입력해주세요.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "회원 탈퇴를 위해 비밀번호를 입력해주세요.",
         },
         "401": {
           "content": {
@@ -19480,53 +19450,48 @@ provider에 따라 필수 토큰이 다릅니다:
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "마지막 로그인 수단은 해제할 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "USER_0610",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "USER_0610",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "마지막 로그인 수단은 해제할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "마지막 로그인 수단은 해제할 수 없습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "마지막 로그인 수단은 해제할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -20724,53 +20689,48 @@ provider에 따라 필수 토큰이 다릅니다:
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "USER_0613",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "USER_0613",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -21517,53 +21477,48 @@ provider에 따라 필수 토큰이 다릅니다:
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "리마인더 시간 범위가 올바르지 않습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "PREFERENCE_1702",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "PREFERENCE_1702",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "리마인더 시간 범위가 올바르지 않습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "리마인더 시간 범위가 올바르지 않습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "리마인더 시간 범위가 올바르지 않습니다.",
         },
         "401": {
           "content": {
@@ -22344,53 +22299,48 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "USER_0613",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "USER_0613",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -23190,53 +23140,48 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "자신에게 응원할 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "CHEER_1204",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "CHEER_1204",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "자신에게 응원할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "자신에게 응원할 수 없습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "자신에게 응원할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -25597,53 +25542,48 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "검색어가 유효하지 않습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "FOLLOW_0911",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "FOLLOW_0911",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "검색어가 유효하지 않습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "검색어가 유효하지 않습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "검색어가 유효하지 않습니다.",
         },
         "401": {
           "content": {
@@ -26303,53 +26243,48 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "자기 자신에게 친구 요청을 보낼 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "FOLLOW_0904",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "FOLLOW_0904",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "자기 자신에게 친구 요청을 보낼 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "자기 자신에게 친구 요청을 보낼 수 없습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "자기 자신에게 친구 요청을 보낼 수 없습니다.",
         },
         "401": {
           "content": {
@@ -26620,53 +26555,48 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -27736,54 +27666,81 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
         "400": {
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "내 초대 코드는 사용할 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
-                "properties": {
-                  "code": {
-                    "example": "INVITE_2103",
-                    "type": "string",
+              "examples": {
+                "INVITE_2103": {
+                  "summary": "내 초대 코드는 사용할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "INVITE_2103",
+                      "details": null,
+                      "message": "내 초대 코드는 사용할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
                   },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "INVITE_2103",
+                          "SYS_0002",
+                        ],
+                        "example": "INVITE_2103",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "내 초대 코드는 사용할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "내 초대 코드는 사용할 수 없습니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "INVITE_2103: 내 초대 코드는 사용할 수 없습니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -28352,53 +28309,48 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -29039,53 +28991,48 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -29288,53 +29235,48 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -29590,53 +29532,48 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -30052,53 +29989,48 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -31237,53 +31169,48 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "유효하지 않은 푸시 토큰입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "NOTIFICATION_1001",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NOTIFICATION_1001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "유효하지 않은 푸시 토큰입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "유효하지 않은 푸시 토큰입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "유효하지 않은 푸시 토큰입니다.",
         },
         "401": {
           "content": {
@@ -31881,55 +31808,50 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1104",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "자신에게 콕 찌를 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
           "description": "오늘의 할 일에만 콕 찌를 수 있습니다.
 
-자신에게 콕 찌를 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
-                "properties": {
-                  "code": {
-                    "example": "NUDGE_1104",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "message": {
-                    "example": "자신에게 콕 찌를 수 없습니다.",
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "code",
-                  "message",
-                ],
-                "type": "object",
-              },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
-            },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
-          },
+자신에게 콕 찌를 수 없습니다.",
         },
         "401": {
           "content": {
@@ -33000,55 +32922,50 @@ USER_0601: 사용자를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "NUDGE_1104",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "자신에게 콕 찌를 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
           "description": "친구가 이미 오늘 할일을 만들었습니다.
 
-자신에게 콕 찌를 수 없습니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
-                "properties": {
-                  "code": {
-                    "example": "NUDGE_1104",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "message": {
-                    "example": "자신에게 콕 찌를 수 없습니다.",
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "code",
-                  "message",
-                ],
-                "type": "object",
-              },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
-            },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
-          },
+자신에게 콕 찌를 수 없습니다.",
         },
         "401": {
           "content": {
@@ -34800,53 +34717,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -35217,7 +35129,44 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "TODO_CATEGORY_0854",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "최소 1개의 카테고리가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
@@ -35225,49 +35174,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
 
 카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.
 
-최소 1개의 카테고리가 필요합니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
-                "properties": {
-                  "code": {
-                    "example": "TODO_CATEGORY_0854",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "message": {
-                    "example": "최소 1개의 카테고리가 필요합니다.",
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "code",
-                  "message",
-                ],
-                "type": "object",
-              },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
-            },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
-          },
+최소 1개의 카테고리가 필요합니다.",
         },
         "401": {
           "content": {
@@ -36235,53 +36142,48 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -36448,53 +36350,48 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -36984,55 +36881,50 @@ DELETE /todo-categories/3?moveToCategoryId=1
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
           "description": "반복 할 일 생성 한도를 초과했습니다.
 
-잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
-                "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
-                    "type": "object",
-                  },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
-                  },
-                },
-                "required": [
-                  "code",
-                  "message",
-                ],
-                "type": "object",
-              },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
-            },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
-          },
+잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -37403,53 +37295,48 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -37942,53 +37829,48 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -38172,53 +38054,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -38418,53 +38295,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -38668,53 +38540,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -38959,53 +38826,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -39428,53 +39290,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -39660,53 +39517,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -39902,53 +39754,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -40131,53 +39978,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -40359,53 +40201,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -40825,53 +40662,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -41772,53 +41604,48 @@ Todo를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
-              },
-            },
-          },
-          "description": "잘못된 파라미터입니다.
-
-잘못된 요청입니다",
-          "schema": {
-            "properties": {
-              "error": {
                 "properties": {
-                  "code": {
-                    "example": "SYS_0002",
-                    "type": "string",
-                  },
-                  "details": {
-                    "example": null,
-                    "nullable": true,
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
                     "type": "object",
                   },
-                  "message": {
-                    "example": "잘못된 파라미터입니다.",
-                    "type": "string",
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
                   },
                 },
                 "required": [
-                  "code",
-                  "message",
+                  "success",
+                  "error",
+                  "timestamp",
                 ],
                 "type": "object",
               },
-              "success": {
-                "example": false,
-                "type": "boolean",
-              },
-              "timestamp": {
-                "example": 1700000000000,
-                "type": "number",
-              },
             },
-            "required": [
-              "success",
-              "error",
-              "timestamp",
-            ],
-            "type": "object",
           },
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {

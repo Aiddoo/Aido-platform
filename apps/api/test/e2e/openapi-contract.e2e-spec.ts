@@ -219,6 +219,7 @@ describe("OpenAPI 계약 (e2e)", () => {
     // When
     const declared = {
       redeem: {
+        400: declaredErrorCodes(redeemResponses["400"]),
         403: declaredErrorCodes(redeemResponses["403"]),
         404: declaredErrorCodes(redeemResponses["404"]),
         409: declaredErrorCodes(redeemResponses["409"]),
@@ -231,6 +232,7 @@ describe("OpenAPI 계약 (e2e)", () => {
     // Then - 한 상태에 하나만 남기던 데코레이터 중첩으로 코드가 빠지면 안 된다
     expect(declared).toEqual({
       redeem: {
+        400: [ErrorCode.INVITE_2103, ErrorCode.SYS_0002],
         403: [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106],
         404: [ErrorCode.INVITE_2101, ErrorCode.USER_0601],
         409: [ErrorCode.INVITE_2104],

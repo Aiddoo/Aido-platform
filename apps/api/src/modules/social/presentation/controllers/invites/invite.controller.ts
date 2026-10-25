@@ -10,7 +10,6 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
-  ApiBadRequestError,
   ApiConflictError,
   ApiDoc,
   ApiErrorCodesResponse,
@@ -171,7 +170,7 @@ export class InviteController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.INVITE_2101, ErrorCode.USER_0601])
   @ApiGoneError(ErrorCode.INVITE_2102)
-  @ApiBadRequestError(ErrorCode.INVITE_2103)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.INVITE_2103, ErrorCode.SYS_0002])
   @ApiConflictError(ErrorCode.INVITE_2104)
   @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)

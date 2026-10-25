@@ -56,6 +56,9 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: parse-todo·parse-memo 429 응답의 error.code를 AI_1303·AI_1310 enum으로 선언했다. 서버는 이미 공급자 요청 과다를 AI_1310(429)로 보내고 있었고 문서만 AI_1303 하나로 덮여 있었다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
 	preAiRateLimitCodesPathsFingerprint:
 		"9dff8baee88ca0c0f180b0d1905baab0285b835752e08cd703f75287b214a70f",
-	pathsFingerprint:
+	/** 1.13.0: ApiDoc 공통 400·500이 엔드포인트가 선언한 오류 응답을 덮어 content는 ErrorResponseSchema $ref, 선언한 schema는 content 밖에 떠 있던 문서 결함을 고쳤다. 선언한 상태는 그 오류 코드의 inline schema(같은 success·error·timestamp envelope)로 문서화된다. 실제 응답·상태 코드는 같다. */
+	preApiDocCommonErrorsPathsFingerprint:
 		"53e916fb7cfc09aa3c8e1d380f08825aa74cec11787f0868bb4c34d5e02d790f",
+	pathsFingerprint:
+		"8ab2faa843e1a82bea6d6c1c8f30bd29b94d2addcd0d9757b506ed28ec1cd3a2",
 } as const;
