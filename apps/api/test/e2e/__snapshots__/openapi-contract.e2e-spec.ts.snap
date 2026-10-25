@@ -26953,7 +26953,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "지금은 친구 초대를 쓸 수 없어요.",
+                        "example": "지금은 친구 초대를 사용할 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -26981,7 +26981,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "지금은 친구 초대를 쓸 수 없어요.",
+          "description": "지금은 친구 초대를 사용할 수 없습니다.",
         },
         "500": {
           "content": {
@@ -27153,7 +27153,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "지금은 친구 초대를 쓸 수 없어요.",
+                        "example": "지금은 친구 초대를 사용할 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -27181,7 +27181,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "지금은 친구 초대를 쓸 수 없어요.",
+          "description": "지금은 친구 초대를 사용할 수 없습니다.",
         },
         "500": {
           "content": {
@@ -27313,7 +27313,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "지금은 친구 초대를 쓸 수 없어요.",
+                        "example": "지금은 친구 초대를 사용할 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -27341,7 +27341,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "지금은 친구 초대를 쓸 수 없어요.",
+          "description": "지금은 친구 초대를 사용할 수 없습니다.",
         },
         "429": {
           "content": {
@@ -27484,7 +27484,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "지금은 친구 초대를 쓸 수 없어요.",
+                        "example": "지금은 친구 초대를 사용할 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -27512,7 +27512,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "지금은 친구 초대를 쓸 수 없어요.",
+          "description": "지금은 친구 초대를 사용할 수 없습니다.",
         },
         "404": {
           "content": {
@@ -27531,7 +27531,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                        "example": "초대 코드를 찾을 수 없습니다. 코드를 다시 확인해 주세요.",
                         "type": "string",
                       },
                     },
@@ -27559,7 +27559,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+          "description": "초대 코드를 찾을 수 없습니다. 코드를 다시 확인해 주세요.",
         },
         "410": {
           "content": {
@@ -27578,7 +27578,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+                        "example": "초대 링크가 변경되었습니다. 친구에게 새 링크를 받아 주세요.",
                         "type": "string",
                       },
                     },
@@ -27606,7 +27606,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+          "description": "초대 링크가 변경되었습니다. 친구에게 새 링크를 받아 주세요.",
         },
         "429": {
           "content": {
@@ -27741,7 +27741,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "내 초대 코드는 쓸 수 없어요.
+          "description": "내 초대 코드는 사용할 수 없습니다.
 
 잘못된 요청입니다",
           "schema": {
@@ -27758,7 +27758,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                     "type": "object",
                   },
                   "message": {
-                    "example": "내 초대 코드는 쓸 수 없어요.",
+                    "example": "내 초대 코드는 사용할 수 없습니다.",
                     "type": "string",
                   },
                 },
@@ -27837,24 +27837,24 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
             "application/json": {
               "examples": {
                 "INVITE_2105": {
-                  "summary": "지금은 친구 초대를 쓸 수 없어요.",
+                  "summary": "지금은 친구 초대를 사용할 수 없습니다.",
                   "value": {
                     "error": {
                       "code": "INVITE_2105",
                       "details": null,
-                      "message": "지금은 친구 초대를 쓸 수 없어요.",
+                      "message": "지금은 친구 초대를 사용할 수 없습니다.",
                     },
                     "success": false,
                     "timestamp": 1700000000000,
                   },
                 },
                 "INVITE_2106": {
-                  "summary": "친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
+                  "summary": "친구 수 한도에 도달해 친구를 맺을 수 없습니다.",
                   "value": {
                     "error": {
                       "code": "INVITE_2106",
                       "details": null,
-                      "message": "친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
+                      "message": "친구 수 한도에 도달해 친구를 맺을 수 없습니다.",
                     },
                     "success": false,
                     "timestamp": 1700000000000,
@@ -27879,7 +27879,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
                         "type": "object",
                       },
                       "message": {
-                        "example": "지금은 친구 초대를 쓸 수 없어요.",
+                        "example": "지금은 친구 초대를 사용할 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -27907,21 +27907,21 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "INVITE_2105: 지금은 친구 초대를 쓸 수 없어요.
+          "description": "INVITE_2105: 지금은 친구 초대를 사용할 수 없습니다.
 
-INVITE_2106: 친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
+INVITE_2106: 친구 수 한도에 도달해 친구를 맺을 수 없습니다.",
         },
         "404": {
           "content": {
             "application/json": {
               "examples": {
                 "INVITE_2101": {
-                  "summary": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                  "summary": "초대 코드를 찾을 수 없습니다. 코드를 다시 확인해 주세요.",
                   "value": {
                     "error": {
                       "code": "INVITE_2101",
                       "details": null,
-                      "message": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                      "message": "초대 코드를 찾을 수 없습니다. 코드를 다시 확인해 주세요.",
                     },
                     "success": false,
                     "timestamp": 1700000000000,
@@ -27958,7 +27958,7 @@ INVITE_2106: 친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                        "example": "초대 코드를 찾을 수 없습니다. 코드를 다시 확인해 주세요.",
                         "type": "string",
                       },
                     },
@@ -27986,7 +27986,7 @@ INVITE_2106: 친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
               },
             },
           },
-          "description": "INVITE_2101: 초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.
+          "description": "INVITE_2101: 초대 코드를 찾을 수 없습니다. 코드를 다시 확인해 주세요.
 
 USER_0601: 사용자를 찾을 수 없습니다.",
         },
@@ -28007,7 +28007,7 @@ USER_0601: 사용자를 찾을 수 없습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "이미 다른 초대를 수락했어요.",
+                        "example": "이미 다른 초대를 수락했습니다.",
                         "type": "string",
                       },
                     },
@@ -28035,7 +28035,7 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "이미 다른 초대를 수락했어요.",
+          "description": "이미 다른 초대를 수락했습니다.",
         },
         "410": {
           "content": {
@@ -28054,7 +28054,7 @@ USER_0601: 사용자를 찾을 수 없습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+                        "example": "초대 링크가 변경되었습니다. 친구에게 새 링크를 받아 주세요.",
                         "type": "string",
                       },
                     },
@@ -28082,7 +28082,7 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+          "description": "초대 링크가 변경되었습니다. 친구에게 새 링크를 받아 주세요.",
         },
         "429": {
           "content": {
