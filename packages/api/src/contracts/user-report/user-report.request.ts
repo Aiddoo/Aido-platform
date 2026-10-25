@@ -75,3 +75,28 @@ export const createUserReportSchema = z
   });
 
 export type CreateUserReportInput = z.infer<typeof createUserReportSchema>;
+
+export const resolveUserReportParamSchema = z.object({
+  reportId: z.cuid("유효하지 않은 신고 ID입니다").describe("처리할 신고 ID (CUID 25자)"),
+});
+
+export type ResolveUserReportParam = z.infer<typeof resolveUserReportParamSchema>;
+
+/** 운영자가 신고를 확인하고 한 조치. 신고자·신고된 사용자에게는 보이지 않는다 */
+export const resolveUserReportSchema = z
+  .object({
+    note: z
+      .string()
+      .trim()
+      .min(1, "조치 내용을 입력해주세요")
+      .max(
+        USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH,
+        `조치 내용은 최대 ${USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH}자까지 입력할 수 있습니다`,
+      )
+      .describe(
+        `조치 내용 (예: 댓글 삭제·계정 경고·위반 아님, 최대 ${USER_REPORT_LIMITS.MAX_RESOLUTION_NOTE_LENGTH}자)`,
+      ),
+  })
+  .meta({ example: { note: "약관 위반 댓글을 삭제하고 작성자에게 경고했습니다." } });
+
+export type ResolveUserReportInput = z.infer<typeof resolveUserReportSchema>;

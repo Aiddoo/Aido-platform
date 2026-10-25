@@ -8723,6 +8723,107 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "ResolveUserReportDto": {
+      "example": {
+        "note": "약관 위반 댓글을 삭제하고 작성자에게 경고했습니다.",
+      },
+      "properties": {
+        "note": {
+          "description": "조치 내용 (예: 댓글 삭제·계정 경고·위반 아님, 최대 500자)",
+          "maxLength": 500,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "required": [
+        "note",
+      ],
+      "type": "object",
+    },
+    "ResolveUserReportParamDto": {
+      "properties": {
+        "reportId": {
+          "description": "처리할 신고 ID (CUID 25자)",
+          "format": "cuid",
+          "pattern": "^[cC][0-9a-z]{6,}$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "reportId",
+      ],
+      "type": "object",
+    },
+    "ResolveUserReportResponseDto": {
+      "example": {
+        "message": "신고를 처리 완료로 바꿨습니다.",
+        "report": {
+          "createdAt": "2026-10-26T09:00:00.000Z",
+          "id": "clz7x5p8k0123qz0z8z8z8z8z",
+          "resolutionNote": "약관 위반 댓글을 삭제하고 작성자에게 경고했습니다.",
+          "resolvedAt": "2026-10-26T12:00:00.000Z",
+          "status": "RESOLVED",
+        },
+      },
+      "properties": {
+        "message": {
+          "description": "결과 메시지",
+          "type": "string",
+        },
+        "report": {
+          "description": "운영자가 처리한 신고",
+          "properties": {
+            "createdAt": {
+              "description": "신고 접수 시각 (ISO 8601 UTC)",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "id": {
+              "description": "신고 ID (CUID 25자)",
+              "format": "cuid",
+              "pattern": "^[cC][0-9a-z]{6,}$",
+              "type": "string",
+            },
+            "resolutionNote": {
+              "description": "운영자가 남긴 조치 내용 (접수 상태면 null)",
+              "type": [
+                "string",
+                "null",
+              ],
+            },
+            "resolvedAt": {
+              "description": "처리 완료 시각 (ISO 8601 UTC, 접수 상태면 null)",
+              "format": "date-time",
+              "nullable": true,
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "status": {
+              "description": "신고 처리 상태 (OPEN: 접수 | RESOLVED: 처리 완료)",
+              "enum": [
+                "OPEN",
+                "RESOLVED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "id",
+            "status",
+            "createdAt",
+            "resolvedAt",
+            "resolutionNote",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "message",
+        "report",
+      ],
+      "type": "object",
+    },
     "SearchUsersResponseDto": {
       "example": {
         "hasMore": true,
@@ -15169,6 +15270,235 @@ SYS_0002: 잘못된 파라미터입니다.",
       "summary": "특정 사용자 알림 발송",
       "tags": [
         "Admin - 알림 발송",
+      ],
+    },
+  },
+  "/v1/admin/reports/{reportId}/resolution": {
+    "post": {
+      "description": "접수된 신고에 조치 내용을 남기고 처리 완료(RESOLVED)로 바꿉니다.
+
+**처리 흐름**
+1. 신고 접수 이메일의 신고 ID로 대상 콘텐츠와 사용자를 확인합니다
+2. 약관 위반이면 콘텐츠 삭제·계정 제한 등 조치를 합니다
+3. 이 API로 조치 내용(\`note\`)을 남깁니다
+
+이미 처리한 신고를 다시 처리하면 첫 처리 기록을 그대로 돌려줍니다. 조치 내용은 신고자·신고된 사용자에게 보이지 않습니다.",
+      "operationId": "resolveUserReport",
+      "parameters": [
+        {
+          "in": "path",
+          "required": true,
+          "schema": {},
+        },
+        {
+          "description": "처리할 신고 ID (CUID 25자, 신고 접수 이메일의 신고 ID)",
+          "in": "path",
+          "name": "reportId",
+          "required": true,
+          "schema": {
+            "example": "clz7x5p8k0123qz0z8z8z8z8z",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ResolveUserReportDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/ResolveUserReportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "리소스가 성공적으로 생성되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "ADMIN_1401",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "관리자 권한이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "관리자 권한이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "REPORT_2255",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "신고를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "신고를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "신고 처리 완료",
+      "tags": [
+        "Admin - 신고 처리",
       ],
     },
   },

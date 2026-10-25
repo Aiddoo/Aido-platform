@@ -37,7 +37,10 @@ import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialInvitesModule } from "#api/modules/social/social-invites.public";
 import { SocialNudgesModule } from "#api/modules/social/social-nudges.public";
-import { SocialReportsModule } from "#api/modules/social/social-reports.public";
+import {
+  SocialReportsAdminModule,
+  SocialReportsModule,
+} from "#api/modules/social/social-reports.public";
 import { SupportInquiriesModule } from "#api/modules/support/support-inquiries.public";
 import { WeatherForecastModule } from "#api/modules/weather/weather-forecast.public";
 import { CacheModule } from "#api/platform/cache/index";
@@ -130,6 +133,7 @@ import { AppService } from "./app.service.js";
     SocialNudgesModule,
     SocialInvitesModule,
     SocialReportsModule,
+    SocialReportsAdminModule,
     NotificationRemindersModule,
     BillingSubscriptionsModule,
     PlanningTodosModule,

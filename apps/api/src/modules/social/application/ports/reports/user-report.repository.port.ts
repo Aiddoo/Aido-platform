@@ -20,6 +20,9 @@ export interface UserReportRepositoryPort {
   findRecentByTarget(params: FindRecentUserReportParams): Promise<UserReport | null>;
   countByReporterSince(reporterId: string, since: Date): Promise<number>;
   create(plan: UserReportCreationPlan): Promise<UserReport>;
+  findById(reportId: string): Promise<UserReport | null>;
+  /** 접수 상태일 때만 처리 기록을 저장한다. 그사이 다른 운영자가 처리했으면 false */
+  saveResolution(report: UserReport): Promise<boolean>;
   /** 운영자 알림에 쓰는 사용자 태그. 찾지 못한 ID는 결과에 없다. */
   findUserTags(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
 }

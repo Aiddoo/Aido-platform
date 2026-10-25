@@ -5,6 +5,7 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 import { USER_REPORT_NOTIFIER } from "./application/ports/reports/user-report-notifier.port.js";
 import { USER_REPORT_REPOSITORY } from "./application/ports/reports/user-report.repository.port.js";
 import { ReportContent } from "./application/use-cases/reports/report-content.use-case.js";
+import { ResolveUserReport } from "./application/use-cases/reports/resolve-user-report.use-case.js";
 
 export const reportContentProvider: FactoryProvider<ReportContent> = {
   provide: ReportContent,
@@ -22,4 +23,15 @@ export const reportContentProvider: FactoryProvider<ReportContent> = {
       mutationLock,
       logger: new Logger(ReportContent.name),
     }),
+};
+
+export const resolveUserReportProvider: FactoryProvider<ResolveUserReport> = {
+  provide: ResolveUserReport,
+  inject: [USER_REPORT_REPOSITORY, UNIT_OF_WORK],
+  useFactory: (
+    userReportRepository: ConstructorParameters<
+      typeof ResolveUserReport
+    >[0]["userReportRepository"],
+    unitOfWork: ConstructorParameters<typeof ResolveUserReport>[0]["unitOfWork"],
+  ) => new ResolveUserReport({ userReportRepository, unitOfWork }),
 };

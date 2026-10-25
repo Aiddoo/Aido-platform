@@ -175,6 +175,11 @@ export class TypedConfigService {
   // Email Config Helpers
   // ============================================
 
+  /** 외부에서 이 API에 닿는 기준 주소. 끝의 / 는 뗀다 */
+  get apiPublicUrl(): string | undefined {
+    return this.get("API_PUBLIC_URL")?.replace(/\/+$/, "");
+  }
+
   get email() {
     return {
       apiKey: this.get("RESEND_API_KEY"),

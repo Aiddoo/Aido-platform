@@ -1,0 +1,182 @@
+[
+  {
+    "id": "column.public.UserReport.resolutionNote",
+    "label": "Add column \"resolutionNote\" to \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "resolutionNote",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"resolutionNote\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolutionNote"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"resolutionNote\" on \"UserReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"resolutionNote\"",
+        "sql": "ALTER TABLE \"public\".\"UserReport\" ADD COLUMN \"resolutionNote\" character varying(500)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"resolutionNote\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolutionNote"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"resolutionNote\" on \"UserReport\""
+        }
+      },
+      {
+        "description": "verify column \"resolutionNote\" has type \"character varying(500)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolutionNote",
+          "character varying(500)"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.UserReport.resolvedAt",
+    "label": "Add column \"resolvedAt\" to \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "resolvedAt",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"resolvedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolvedAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"resolvedAt\" on \"UserReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"resolvedAt\"",
+        "sql": "ALTER TABLE \"public\".\"UserReport\" ADD COLUMN \"resolvedAt\" timestamp(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"resolvedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolvedAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"resolvedAt\" on \"UserReport\""
+        }
+      },
+      {
+        "description": "verify column \"resolvedAt\" has type \"timestamp(3) without time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolvedAt",
+          "timestamp(3) without time zone"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.UserReport.resolvedById",
+    "label": "Add column \"resolvedById\" to \"UserReport\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "resolvedById",
+        "table": "UserReport"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"resolvedById\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolvedById"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"resolvedById\" on \"UserReport\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"resolvedById\"",
+        "sql": "ALTER TABLE \"public\".\"UserReport\" ADD COLUMN \"resolvedById\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"resolvedById\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolvedById"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"resolvedById\" on \"UserReport\""
+        }
+      },
+      {
+        "description": "verify column \"resolvedById\" has type \"text\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "UserReport",
+          "resolvedById",
+          "text"
+        ]
+      }
+    ]
+  }
+]

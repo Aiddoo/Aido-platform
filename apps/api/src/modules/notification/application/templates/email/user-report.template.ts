@@ -15,6 +15,10 @@ export interface UserReportTemplateData {
   reasonLabel: string;
   detail: string | null;
   submittedAt: string;
+  /** 처리 완료 API 경로. 운영자가 조치 내용을 남길 곳이다 */
+  resolutionEndpoint: string;
+  /** 관리자 API 문서에서 처리 API를 바로 여는 링크. 기준 주소가 없으면 null */
+  resolutionDocsUrl: string | null;
 }
 
 export function getUserReportSubject(data: UserReportTemplateData): string {
@@ -66,6 +70,7 @@ export function getUserReportHtml(data: UserReportTemplateData): string {
                 row("신고된 사용자", `${data.targetUserTag} · ${data.targetUserId}`),
                 row("신고한 사용자", `${data.reporterTag} · ${data.reporterId}`),
                 row("접수 시각", data.submittedAt),
+                row("처리 API", data.resolutionEndpoint),
               ].join("")}
               </table>
               <div style="background-color: #f8f9fa; border-radius: 8px; padding: 24px; margin-bottom: 24px;">
@@ -75,9 +80,16 @@ export function getUserReportHtml(data: UserReportTemplateData): string {
               <div style="background-color: #fff7e6; border-radius: 8px; padding: 16px 20px; border: 1px solid #ffe0a3;">
                 <p style="margin: 0 0 8px; font-size: 13px; font-weight: 700; color: #8a5a00;">처리 체크리스트</p>
                 <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #8a5a00;">
-                  1) 콘텐츠 ID로 원문 확인 2) 약관 위반이면 콘텐츠 삭제·계정 제한 3) 신고 상태를 RESOLVED로 변경
+                  1) 콘텐츠 ID로 원문 확인 2) 약관 위반이면 콘텐츠 삭제·계정 제한 3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
                 </p>
-              </div>
+              </div>${
+                data.resolutionDocsUrl == null
+                  ? ""
+                  : `
+              <p style="margin: 24px 0 0; text-align: center;">
+                <a href="${escape(data.resolutionDocsUrl)}" style="display: inline-block; padding: 12px 20px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #1a1a1a; border-radius: 8px; text-decoration: none;">관리자 문서에서 처리하기</a>
+              </p>`
+              }
             </td>
           </tr>
           <tr>
@@ -109,6 +121,7 @@ export function getUserReportText(data: UserReportTemplateData): string {
 - 신고된 사용자: ${data.targetUserTag} · ${data.targetUserId}
 - 신고한 사용자: ${data.reporterTag} · ${data.reporterId}
 - 접수 시각: ${data.submittedAt}
+- 처리 API: ${data.resolutionEndpoint}${data.resolutionDocsUrl == null ? "" : `\n- 관리자 문서: ${data.resolutionDocsUrl}`}
 
 [신고 내용]
 ${data.detail ?? "(상세 내용 없음)"}
@@ -116,7 +129,7 @@ ${data.detail ?? "(상세 내용 없음)"}
 [처리 체크리스트]
 1) 콘텐츠 ID로 원문 확인
 2) 약관 위반이면 콘텐츠 삭제·계정 제한
-3) 신고 상태를 RESOLVED로 변경
+3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
 
 이 이메일은 Aido 앱에서 자동으로 발송되었습니다.
   `.trim();

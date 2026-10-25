@@ -2,7 +2,7 @@ import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";
 
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import { type UserReport as UserReportRow } from "#api/platform/database/database.types";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
@@ -35,6 +35,9 @@ export class PrismaUserReportRepository implements UserReportRepositoryPort {
       detail: row.detail,
       status: row.status,
       createdAt: row.createdAt,
+      resolvedAt: row.resolvedAt,
+      resolvedById: row.resolvedById,
+      resolutionNote: row.resolutionNote,
     });
   }
 
@@ -90,6 +93,32 @@ export class PrismaUserReportRepository implements UserReportRepositoryPort {
       ),
     );
     return PrismaUserReportRepository.toUserReport(row);
+  }
+
+  async findById(reportId: string): Promise<UserReport | null> {
+    const row = decodeRecord(
+      "UserReport",
+      await this.client.orm.public.UserReport.where((row) => row.id.eq(reportId)).first(),
+    );
+    return row == null ? null : PrismaUserReportRepository.toUserReport(row);
+  }
+
+  async saveResolution(report: UserReport): Promise<boolean> {
+    const { resolvedAt, resolvedById, resolutionNote } = report;
+    if (resolvedAt == null || resolvedById == null || resolutionNote == null) {
+      return false;
+    }
+    const updated = await this.client.orm.public.UserReport.where((row) =>
+      and(row.id.eq(report.id), row.status.eq("OPEN")),
+    ).updateAndCount(
+      encodePatch("UserReport", {
+        status: "RESOLVED",
+        resolvedAt,
+        resolvedById,
+        resolutionNote,
+      }),
+    );
+    return updated > 0;
   }
 
   async findUserTags(userIds: readonly string[]): Promise<ReadonlyMap<string, string>> {

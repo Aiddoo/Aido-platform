@@ -12,6 +12,8 @@ import {
 export class StubUserReportRepository implements UserReportRepositoryPort {
   readonly userTags = new Map<string, string>();
   readonly reports: UserReport[] = [];
+  /** 다음 saveResolution 직전에 다른 운영자가 먼저 저장한 처리 기록. 있으면 저장을 거절한다 */
+  concurrentResolution: UserReport | null = null;
 
   addUser(userId: string, userTag: string): void {
     this.userTags.set(userId, userTag);
@@ -44,9 +46,30 @@ export class StubUserReportRepository implements UserReportRepositoryPort {
       ...plan,
       id: `report-${this.reports.length + 1}`,
       status: "OPEN",
+      resolvedAt: null,
+      resolvedById: null,
+      resolutionNote: null,
     });
     this.reports.push(report);
     return report;
+  }
+
+  async findById(reportId: string): Promise<UserReport | null> {
+    return this.reports.find((report) => report.id === reportId) ?? null;
+  }
+
+  async saveResolution(report: UserReport): Promise<boolean> {
+    const winner = this.concurrentResolution;
+    if (winner == null) {
+      return true;
+    }
+    this.concurrentResolution = null;
+    this.reports.splice(
+      this.reports.findIndex((stored) => stored.id === report.id),
+      1,
+      winner,
+    );
+    return false;
   }
 
   async findUserTags(userIds: readonly string[]): Promise<ReadonlyMap<string, string>> {

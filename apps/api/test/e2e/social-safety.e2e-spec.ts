@@ -7,6 +7,10 @@
 
 import request from "supertest";
 
+import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { DatabaseService } from "#api/platform/database/database.service";
+import { requireRecord } from "#api/platform/database/prisma-error.util";
+
 import {
   createE2eApp,
   destroyE2eApp,
@@ -204,6 +208,87 @@ describe("사용자 차단·신고 E2E", () => {
       // Then
       expect(response.status).toBe(400);
       expect(response.body.error.code).toBe("REPORT_2251");
+    });
+  });
+  describe("운영자 신고 처리", () => {
+    async function createAdmin() {
+      const admin = await ctx.helpers.createVerifiedUser("report-admin@example.com", "Test1234!");
+      decodeRecord(
+        "User",
+        requireRecord(
+          await ctx.module
+            .get(DatabaseService)
+            .db.orm.public.User.where((row) => row.id.eq(admin.userId))
+            .update(encodePatch("User", { role: "ADMIN" })),
+        ),
+      );
+      const login = await ctx.helpers.loginUser("report-admin@example.com", "Test1234!");
+      return { ...admin, accessToken: login.accessToken };
+    }
+
+    async function reportProfile() {
+      const response = await request(server())
+        .post("/v1/reports")
+        .set("Authorization", `Bearer ${me.accessToken}`)
+        .send({ targetType: "PROFILE", reason: "SPAM", targetUserId: other.userId })
+        .expect(201);
+      const reportId: string = response.body.data.report.id;
+      return reportId;
+    }
+
+    it("관리자가 조치 내용을 남기면 처리 완료가 되고, 다시 처리해도 첫 기록을 유지한다", async () => {
+      // Given
+      const admin = await createAdmin();
+      const reportId = await reportProfile();
+
+      // When
+      const resolved = await request(server())
+        .post(`/v1/admin/reports/${reportId}/resolution`)
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .send({ note: "광고 계정이라 이용을 제한했습니다." })
+        .expect(201);
+      const repeated = await request(server())
+        .post(`/v1/admin/reports/${reportId}/resolution`)
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .send({ note: "다시 처리" })
+        .expect(201);
+
+      // Then
+      expect(resolved.body.data.report).toMatchObject({
+        id: reportId,
+        status: "RESOLVED",
+        resolutionNote: "광고 계정이라 이용을 제한했습니다.",
+      });
+      expect(repeated.body.data.report).toEqual(resolved.body.data.report);
+      expect(ctx.fakeEmailService.getSentUserReports()).toEqual([
+        expect.objectContaining({
+          data: expect.objectContaining({
+            resolutionEndpoint: `POST /v1/admin/reports/${reportId}/resolution`,
+          }),
+        }),
+      ]);
+    });
+
+    it("관리자가 아니면 ADMIN_1401, 없는 신고는 REPORT_2255로 거부한다", async () => {
+      // Given
+      const admin = await createAdmin();
+      const reportId = await reportProfile();
+
+      // When
+      const forbidden = await request(server())
+        .post(`/v1/admin/reports/${reportId}/resolution`)
+        .set("Authorization", `Bearer ${me.accessToken}`)
+        .send({ note: "처리" })
+        .expect(403);
+      const missing = await request(server())
+        .post("/v1/admin/reports/clz7x5p8k0999qz0z8z8z8z8z/resolution")
+        .set("Authorization", `Bearer ${admin.accessToken}`)
+        .send({ note: "처리" })
+        .expect(404);
+
+      // Then
+      expect(forbidden.body.error.code).toBe("ADMIN_1401");
+      expect(missing.body.error.code).toBe("REPORT_2255");
     });
   });
 });

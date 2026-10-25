@@ -40,25 +40,55 @@ describe("UserReport", () => {
     expect(plan.detail).toBeNull();
   });
 
-  it("처리를 반복해도 처음 한 번만 상태가 바뀐다", () => {
+  it("처리를 반복해도 첫 처리 기록을 유지한다", () => {
     // Given
-    const report = UserReport.reconstitute({
-      id: "report-1",
-      reporterId: "me",
-      targetUserId: "other",
-      target: profileTarget,
-      reason: "HARASSMENT",
-      detail: null,
-      status: "OPEN",
-      createdAt,
-    });
+    const report = createOpenReport();
+    const resolvedAt = new Date("2026-10-26T12:00:00.000Z");
 
     // When
-    const first = report.resolve();
-    const second = report.resolve();
+    const first = report.resolve({ resolvedById: "admin-1", note: " 댓글 삭제 ", resolvedAt });
+    const second = report.resolve({
+      resolvedById: "admin-2",
+      note: "다시 처리",
+      resolvedAt: new Date("2026-10-26T13:00:00.000Z"),
+    });
 
     // Then
     expect([first, second]).toEqual([true, false]);
-    expect(report.status).toBe("RESOLVED");
+    expect(report).toMatchObject({
+      status: "RESOLVED",
+      resolvedAt,
+      resolvedById: "admin-1",
+      resolutionNote: "댓글 삭제",
+    });
+  });
+
+  it("조치 내용 없이는 처리할 수 없다", () => {
+    // Given
+    const report = createOpenReport();
+
+    // When
+    const resolve = () =>
+      report.resolve({ resolvedById: "admin-1", note: "   ", resolvedAt: createdAt });
+
+    // Then
+    expect(resolve).toThrow(expect.objectContaining({ errorCode: ErrorCode.SYS_0002 }));
+    expect(report.status).toBe("OPEN");
   });
 });
+
+function createOpenReport() {
+  return UserReport.reconstitute({
+    id: "report-1",
+    reporterId: "me",
+    targetUserId: "other",
+    target: profileTarget,
+    reason: "HARASSMENT",
+    detail: null,
+    status: "OPEN",
+    createdAt,
+    resolvedAt: null,
+    resolvedById: null,
+    resolutionNote: null,
+  });
+}

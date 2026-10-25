@@ -726,6 +726,9 @@ namespace public {
     detail       VarChar(500)?
     status       pg.enum(UserReportStatus)      @default("OPEN")
     createdAt    TimestampString(3)             @default(now())
+    resolvedAt     TimestampString(3)?
+    resolvedById   String?
+    resolutionNote VarChar(500)?
     reporter     User                           @relation(name: "UserReport_reporterId_fkey", fields: [reporterId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserReport_reporterId_fkey", index: false)
     targetUser   User                           @relation(name: "UserReport_targetUserId_fkey", fields: [targetUserId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserReport_targetUserId_fkey", index: false)
 

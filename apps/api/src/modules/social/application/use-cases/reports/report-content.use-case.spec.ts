@@ -51,6 +51,9 @@ function seedReport(
       detail: null,
       status: "OPEN",
       createdAt,
+      resolvedAt: null,
+      resolvedById: null,
+      resolutionNote: null,
     }),
   );
 }

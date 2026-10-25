@@ -30,4 +30,6 @@ export const USER_REPORT_LIMITS = {
   DUPLICATE_WINDOW_HOURS: 24,
   /** 한 사용자가 24시간 동안 접수할 수 있는 신고 수 */
   DAILY_LIMIT: 20,
+  /** 운영자가 신고를 처리하며 남기는 조치 메모 */
+  MAX_RESOLUTION_NOTE_LENGTH: 500,
 } as const;

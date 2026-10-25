@@ -68,6 +68,8 @@ describe("EmailMessage 값 객체", () => {
         reasonLabel: "괴롭힘·혐오",
         detail: "<script>alert(1)</script>",
         submittedAt: "2026-10-26 18:00 (KST)",
+        resolutionEndpoint: "POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution",
+        resolutionDocsUrl: null,
       } as const;
 
       // When
@@ -82,6 +84,37 @@ describe("EmailMessage 값 객체", () => {
         { name: "type", value: "user-report" },
         { name: "reason", value: "HARASSMENT" },
       ]);
+    });
+  });
+
+  describe("userReport 처리 링크", () => {
+    it("신고 ID가 든 처리 API와, 기준 주소가 있으면 관리자 문서 링크를 넣는다", () => {
+      // Given
+      const resolutionDocsUrl = "https://api.aido.kr/api/admin/docs#/Admin/resolveUserReport";
+      const data = {
+        reportId: "clz7x5p8k0123qz0z8z8z8z8z",
+        reporterId: "clz7x5p8k0001qz0z8z8z8z8z",
+        reporterTag: "REPORTER",
+        targetUserId: "clz7x5p8k0005qz0z8z8z8z8z",
+        targetUserTag: "TARGET01",
+        targetType: "PROFILE",
+        targetTypeLabel: "프로필·닉네임",
+        targetId: null,
+        reason: "IMPERSONATION",
+        reasonLabel: "사칭",
+        detail: null,
+        submittedAt: "2026-10-26 18:00 (KST)",
+        resolutionEndpoint: "POST /v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution",
+        resolutionDocsUrl,
+      } as const;
+
+      // When
+      const message = createUserReportEmail("support@test.com", data);
+
+      // Then
+      expect(message.html).toContain("/v1/admin/reports/clz7x5p8k0123qz0z8z8z8z8z/resolution");
+      expect(message.html).toContain(`href="${resolutionDocsUrl}"`);
+      expect(message.text).toContain(`관리자 문서: ${resolutionDocsUrl}`);
     });
   });
 

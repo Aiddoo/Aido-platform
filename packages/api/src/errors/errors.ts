@@ -328,6 +328,8 @@ export const ErrorCode = {
   REPORT_2253: "REPORT_2253",
   /** 오늘 신고할 수 있는 횟수를 모두 사용했습니다 */
   REPORT_2254: "REPORT_2254",
+  /** 처리할 신고를 찾을 수 없습니다 (운영자 API) */
+  REPORT_2255: "REPORT_2255",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1454,5 +1456,11 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
     description: "최근 24시간 동안 접수한 신고 수가 한도에 도달했습니다.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.REPORT_2255]: {
+    code: "REPORT_2255",
+    message: "신고를 찾을 수 없습니다.",
+    description: "운영자가 처리하려는 신고 ID가 없습니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
   },
 };
