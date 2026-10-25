@@ -49,6 +49,15 @@ export const nudgeThanksPreviewResponseSchema = z.object({
   totalRecipients: z.number().int().nonnegative().optional().describe("미리보기 전체 친구 수"),
   nextCursor: z.number().int().positive().nullable().optional().describe("다음 페이지 커서"),
   hasNext: z.boolean().optional().describe("다음 페이지 존재 여부"),
+  thankedRecipientCount: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe("이 할 일에서 이미 감사를 전한 친구 수"),
+  lastThankedAt: nullableDatetimeSchema
+    .optional()
+    .describe("마지막으로 감사를 전한 시각 (전한 적 없으면 null)"),
 });
 
 export type NudgeThanksPreviewResponse = z.infer<typeof nudgeThanksPreviewResponseSchema>;
