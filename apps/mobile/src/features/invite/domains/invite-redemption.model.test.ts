@@ -51,39 +51,4 @@ describe('InviteRedemptionPolicy', () => {
       expect(result).toBe(false);
     });
   });
-
-  describe('belongsTo', () => {
-    it('로그인 전에 저장했으면 누가 로그인해도 true를 반환한다', () => {
-      // Given
-      const pending = createPendingRedemption({ ownerId: null });
-
-      // When
-      const result = InviteRedemptionPolicy.belongsTo(pending, 'user-b');
-
-      // Then
-      expect(result).toBe(true);
-    });
-
-    it('같은 계정이면 true를 반환한다', () => {
-      // Given
-      const pending = createPendingRedemption({ ownerId: 'user-a' });
-
-      // When
-      const result = InviteRedemptionPolicy.belongsTo(pending, 'user-a');
-
-      // Then
-      expect(result).toBe(true);
-    });
-
-    it('다른 계정이 저장한 초대면 false를 반환한다', () => {
-      // Given
-      const pending = createPendingRedemption({ ownerId: 'user-a' });
-
-      // When
-      const result = InviteRedemptionPolicy.belongsTo(pending, 'user-b');
-
-      // Then
-      expect(result).toBe(false);
-    });
-  });
 });

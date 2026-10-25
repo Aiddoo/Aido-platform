@@ -47,6 +47,8 @@ interface InviteCodeInputProps extends Omit<
   onChange?: (value: string) => void;
   /** 틀린 글자가 있는 칸만 빨갛게 그린다. 코드 전체가 틀렸으면 isInvalid를 쓴다 */
   invalidIndexes?: readonly number[];
+  /** 제출 횟수. 고치지 않고 다시 제출해 같은 오류가 남아도 바뀔 때마다 다시 흔든다 */
+  submitCount?: number;
 }
 
 /** 6자리 초대 코드 입력. 붙여 넣거나 소문자로 쳐도 서버와 같은 형태로 맞춘다 */
@@ -55,6 +57,7 @@ export function InviteCodeInput({
   onChange = noop,
   isInvalid = false,
   invalidIndexes = [],
+  submitCount = 0,
   textInputProps,
   ...props
 }: InviteCodeInputProps) {
@@ -78,7 +81,7 @@ export function InviteCodeInput({
     );
 
     return () => cancelAnimation(translateX);
-  }, [shouldShake, translateX]);
+  }, [shouldShake, submitCount, translateX]);
 
   return (
     <Animated.View style={shakeStyle}>

@@ -9,7 +9,6 @@ export const createPendingRedemption = (
   inviteCode: 'K7M2QX',
   source: 'universal_link',
   savedAt: new Date('2028-02-23T00:00:00Z'),
-  ownerId: null,
   ...overrides,
 });
 

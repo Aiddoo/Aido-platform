@@ -2,7 +2,6 @@ import { INVITE_LINK_BASE_URL } from '@aido/api';
 
 import type { InviteLinkSource } from '../../domains/invite-redemption.model';
 import { parseInviteCode } from '../../domains/invite.model';
-import { readQueryValue } from '../url-query';
 
 export interface InviteSystemPathOptions {
   /** 이 빌드의 앱 스킴 (aido, aido-preview, aido-dev) */
@@ -51,7 +50,8 @@ export function resolveInviteSystemPath(path: string, options: InviteSystemPathO
   }
 
   if (options.kakaoScheme != null && path.startsWith(`${options.kakaoScheme}://kakaolink`)) {
-    return toInvitePath(readQueryValue(path, 'inviteCode'), 'kakao');
+    // Linking.parse도 안에서 같은 URL 파서를 쓰지만 Expo Go 호스트를 지우려 Constants를 읽어 순수 함수가 아니게 된다
+    return toInvitePath(new URL(path).searchParams.get('inviteCode'), 'kakao');
   }
 
   return null;

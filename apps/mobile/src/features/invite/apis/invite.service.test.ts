@@ -107,25 +107,10 @@ describe('InviteService', () => {
       pendingRedemptionRepository.save(pending);
 
       // When
-      const result = service.takePendingRedemption('user-a', new Date('2026-10-25T00:00:00Z'));
+      const result = service.takePendingRedemption(new Date('2026-10-25T00:00:00Z'));
 
       // Then
       expect(result).toEqual(pending);
-      expect(pendingRedemptionRepository.get()).toBeNull();
-    });
-
-    it('다른 계정이 저장한 초대면 null을 반환하고 지운다', () => {
-      // Given
-      const { service, pendingRedemptionRepository } = createService();
-      pendingRedemptionRepository.save(
-        createPendingRedemption({ ownerId: 'user-a', savedAt: new Date('2026-10-24T00:00:00Z') }),
-      );
-
-      // When
-      const result = service.takePendingRedemption('user-b', new Date('2026-10-25T00:00:00Z'));
-
-      // Then
-      expect(result).toBeNull();
       expect(pendingRedemptionRepository.get()).toBeNull();
     });
   });

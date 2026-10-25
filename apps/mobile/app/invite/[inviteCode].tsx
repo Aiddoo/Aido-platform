@@ -203,7 +203,7 @@ function InviteCardActions() {
   }
 
   const continueAsGuest = (pathname: '/sign-up' | '/login') => {
-    inviteService.savePendingRedemption({ inviteCode, source, ownerId: null }, new Date());
+    inviteService.savePendingRedemption({ inviteCode, source }, new Date());
     router.push(pathname);
   };
 

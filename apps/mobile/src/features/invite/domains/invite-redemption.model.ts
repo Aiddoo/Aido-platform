@@ -20,7 +20,6 @@ export const PendingRedemptionSchema = z.strictObject({
   inviteCode: InviteCodeSchema,
   source: InviteLinkSourceSchema,
   savedAt: z.coerce.date(),
-  ownerId: z.string().nullable(),
 });
 
 export type PendingRedemption = z.output<typeof PendingRedemptionSchema>;
@@ -32,10 +31,5 @@ export function isWithinDays(from: Date, now: Date, days: number) {
 export const InviteRedemptionPolicy = {
   isFresh(pending: PendingRedemption, now: Date) {
     return isWithinDays(pending.savedAt, now, INVITE_REDEEM_WINDOW_DAYS);
-  },
-
-  // 다른 계정으로 로그인한 경우 남의 초대를 대신 수락하지 않는다
-  belongsTo(pending: PendingRedemption, userId: string) {
-    return pending.ownerId == null || pending.ownerId === userId;
   },
 };

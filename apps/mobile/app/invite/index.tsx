@@ -136,6 +136,7 @@ function InviteCodeEntryScreen() {
                   // 틀린 글자가 있으면 그 칸만, 없는 코드처럼 전체가 틀렸으면 모든 칸을 빨갛게 그린다
                   isInvalid={errorMessage != null && invalidIndexes.length === 0}
                   invalidIndexes={invalidIndexes}
+                  submitCount={formState.submitCount}
                   textInputProps={{
                     autoFocus: true,
                     accessibilityLabel: t('codeEntry.inputLabel'),
