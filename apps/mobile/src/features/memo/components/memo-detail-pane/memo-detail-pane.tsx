@@ -55,7 +55,6 @@ import {
   MEMO_TOOLBAR_ICON,
   MemoActionButton,
   MemoDeleteButton,
-  MemoBackButton,
   MemoPinButton,
   MemoSaveButton,
 } from './memo-detail-actions';
@@ -216,41 +215,38 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
         {isPane ? (
           <Box className="bg-white">
-            <HStack align="center" justify="between" px={8}>
-              <MemoBackButton onPress={handleBack} />
-              <HStack gap={4} align="center">
-                <MemoPinButton
-                  isPinned={memo.isPinned}
-                  isDisabled={isTogglePinPending}
-                  onPress={handleTogglePin}
+            <HStack align="center" justify="end" gap={4} px={8}>
+              <MemoPinButton
+                isPinned={memo.isPinned}
+                isDisabled={isTogglePinPending}
+                onPress={handleTogglePin}
+              />
+              <MemoActionButton
+                onPress={aiParse.handlePress}
+                accessibilityLabel={t('memo:titles.aiReview')}
+                isDisabled={aiParse.isDisabled}
+                icon={
+                  aiParse.isLoading ? (
+                    <ActivityIndicator size="small" />
+                  ) : (
+                    <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
+                  )
+                }
+              />
+              <MemoActionButton
+                onPress={convertToTodo.handlePress}
+                accessibilityLabel={t('memo:detail.convertToTodo')}
+                isDisabled={convertToTodo.isDisabled}
+                icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
+              />
+              <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
+              {isEditing && (
+                <MemoSaveButton
+                  isHighlighted={isDirty && isValid}
+                  isDisabled={!isValid || isSubmitting}
+                  onPress={() => handleSave()}
                 />
-                <MemoActionButton
-                  onPress={aiParse.handlePress}
-                  accessibilityLabel={t('memo:titles.aiReview')}
-                  isDisabled={aiParse.isDisabled}
-                  icon={
-                    aiParse.isLoading ? (
-                      <ActivityIndicator size="small" />
-                    ) : (
-                      <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
-                    )
-                  }
-                />
-                <MemoActionButton
-                  onPress={convertToTodo.handlePress}
-                  accessibilityLabel={t('memo:detail.convertToTodo')}
-                  isDisabled={convertToTodo.isDisabled}
-                  icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
-                />
-                <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
-                {isEditing && (
-                  <MemoSaveButton
-                    isHighlighted={isDirty && isValid}
-                    isDisabled={!isValid || isSubmitting}
-                    onPress={() => handleSave()}
-                  />
-                )}
-              </HStack>
+              )}
             </HStack>
             <Separator />
           </Box>
