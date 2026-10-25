@@ -42,11 +42,7 @@ function MyPageScreen() {
             </Suspense>
           </QueryErrorBoundary>
 
-          <QueryErrorBoundary fallback={InviteRewardCard.Error}>
-            <Suspense fallback={<InviteRewardCard.Loading className="mt-3" />}>
-              <InviteRewardCard className="mt-3" />
-            </Suspense>
-          </QueryErrorBoundary>
+          <InviteRewardCard className="mt-3" />
 
           <Spacing size={12} />
 

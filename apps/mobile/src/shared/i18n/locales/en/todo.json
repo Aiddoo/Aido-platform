@@ -159,7 +159,7 @@
   },
   "activation": {
     "title": "Create and complete your first to-do",
-    "description": "Finish these two steps to get started with Aido",
+    "description": "Finish these steps to get started with Aido",
     "createTodo": "Create your first to-do",
     "completeTodo": "Complete the to-do you created",
     "completed": "completed",

@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   Box,
   HStack,
+  QueryErrorBoundary,
   type QueryErrorFallbackProps,
   Text,
   TextButton,
@@ -12,12 +13,12 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ComponentProps, Fragment } from 'react';
+import { type ComponentProps, Fragment, Suspense } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { InvitePolicy } from '../domains/invite.model';
+import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
-import { useGetInviteAvailabilityQueryOptions } from '../queries/get-invite-availability-query-options';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
 import { createPawPrintBoard } from '../utils/view-models/invite-paw-print-board.view-model';
 import { inviteRewardDotVariants } from './invite-reward-card.variants';
@@ -27,15 +28,25 @@ type InviteRewardCardProps = Omit<ComponentProps<typeof PressableFeedback>, 'onP
 // 마이페이지 카드에는 지금 판의 첫 줄 네 칸만 줄여 보여 준다
 const PREVIEW_COLUMNS = 4;
 
-/** 마이페이지의 친구 초대 카드. 초대 기능이 꺼져 있으면 자리를 차지하지 않는다 */
-export function InviteRewardCard(props: InviteRewardCardProps) {
-  const { data: isAvailable } = useSuspenseQuery(useGetInviteAvailabilityQueryOptions());
+/**
+ * 마이페이지의 친구 초대 카드. 다른 진입점처럼 사용 가능 여부를 모르거나 묻지 못했으면 숨긴다.
+ * 가능하다고 확인된 뒤에만 스켈레톤·오류를 보여 꺼진 기능의 오류 카드나 스켈레톤이 번쩍이지 않는다.
+ * 사용 가능 여부는 홈 진입점이 먼저 불러 두어 보통 바로 정해진다.
+ */
+export function InviteRewardCard({ className, ...props }: InviteRewardCardProps) {
+  const isAvailable = useInviteAvailability();
 
   if (!isAvailable) {
     return null;
   }
 
-  return <InviteRewardCard.Contents {...props} />;
+  return (
+    <QueryErrorBoundary fallback={InviteRewardCard.Error}>
+      <Suspense fallback={<InviteRewardCard.Loading className={className} />}>
+        <InviteRewardCard.Contents className={className} {...props} />
+      </Suspense>
+    </QueryErrorBoundary>
+  );
 }
 
 InviteRewardCard.Contents = function Contents({ className, ...props }: InviteRewardCardProps) {

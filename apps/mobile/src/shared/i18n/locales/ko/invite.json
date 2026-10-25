@@ -146,7 +146,7 @@
     "mypageNext": "다음 보상까지 친구 {{count}}명 남았어요",
     "mypageKeepGoing": "친구와 함께 계속 응원해요",
     "checklistStep": "친구 1명 초대하기",
-    "checklistReward": "프리미엄 {{days}}일",
+    "checklistReward": "친구에게 프리미엄 {{days}}일",
     "allDoneDescription": "친구와 같이 하면 더 오래 이어가요",
     "allDoneDismiss": "오늘은 그만 보기",
     "friendsEmptyTitle": "첫 친구를 초대해보세요",

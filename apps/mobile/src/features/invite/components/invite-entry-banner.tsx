@@ -8,8 +8,9 @@ import { useTranslation } from '@src/shared/i18n';
 import { Button, CloseIcon, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, useReducer } from 'react';
+import { type ComponentProps, useCallback, useSyncExternalStore } from 'react';
 import { Image } from 'react-native';
 
 import { useInviteAvailability } from '../hooks/use-invite-availability';
@@ -29,23 +30,23 @@ export function InviteEntryBanner({ className, ...props }: ComponentProps<typeof
     throwOnError: false,
     select: selectUserId,
   });
-  // 오늘 요약이므로 기기 기준 오늘(todayDate)도 같은 날짜다
-  const todaySummaryParams = { date: todayKey, todayDate: todayKey, userId };
-  const { data: summary } = useQuery(useGetTodoSummaryQueryOptions(todaySummaryParams));
-  // 닫은 날은 저장소가 원본이다. MMKV는 구독을 주지 않아 저장한 뒤 다시 그리기만 한다
-  const [, rerender] = useReducer((revision: number) => revision + 1, 0);
+  const { data: summary } = useQuery({
+    // 오늘 요약이므로 기기 기준 오늘(todayDate)도 같은 날짜다
+    ...useGetTodoSummaryQueryOptions({ date: todayKey, todayDate: todayKey, userId }),
+    enabled: userId != null,
+  });
+  // 닫은 날은 저장소가 원본이다. 저장소 변경을 구독해 다른 화면에서 닫아도 따라간다
+  const subscribeDismissal = useCallback(
+    (listener: () => void) =>
+      userId == null ? noop : inviteService.subscribeAllDoneBanner(userId, listener),
+    [inviteService, userId],
+  );
+  const isDismissed = useSyncExternalStore(
+    subscribeDismissal,
+    () => userId != null && inviteService.isAllDoneBannerDismissed(userId, todayKey),
+  );
 
-  const handleDismiss = (ownerId: string) => {
-    inviteService.dismissAllDoneBanner(ownerId, todayKey);
-    rerender();
-  };
-
-  if (
-    !isInviteAvailable ||
-    userId == null ||
-    summary?.isComplete !== true ||
-    inviteService.isAllDoneBannerDismissed(userId, todayKey)
-  ) {
+  if (!isInviteAvailable || userId == null || summary?.isComplete !== true || isDismissed) {
     return null;
   }
 
@@ -87,7 +88,7 @@ export function InviteEntryBanner({ className, ...props }: ComponentProps<typeof
         accessibilityRole="button"
         accessibilityLabel={t('entry.allDoneDismiss')}
         hitSlop={8}
-        onPress={() => handleDismiss(userId)}
+        onPress={() => inviteService.dismissAllDoneBanner(userId, todayKey)}
         className="absolute right-1 top-1 size-11 items-center justify-center rounded-full"
       >
         <CloseIcon width={16} height={16} colorClassName="text-gray-6" />

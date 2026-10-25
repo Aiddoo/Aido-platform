@@ -9,6 +9,7 @@ import { useResendVerificationMutationOptions } from '@src/features/auth/queries
 import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
 import { inviteCodeEntryHref } from '@src/features/invite/utils/navigation/invite-href';
 import { isBusinessError } from '@src/shared/errors/result';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
 import { useMutation } from '@tanstack/react-query';
@@ -53,6 +54,7 @@ function SignUpScreen() {
   const register = useMutation(useRegisterMutationOptions());
   const verify = useMutation(useVerifyEmailMutationOptions());
   const resend = useMutation(useResendVerificationMutationOptions());
+  const openInviteCodeEntry = useSingleTap(() => router.push(inviteCodeEntryHref()));
 
   const submitRegister = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...input }) => {
     if (!termsAgreed || !privacyAgreed) {
@@ -77,7 +79,7 @@ function SignUpScreen() {
           hidden={step !== 'userInfo'}
           icon={INVITE_CODE_ICON}
           accessibilityLabel={t('invite:entry.haveInviteCode')}
-          onPress={() => router.push(inviteCodeEntryHref())}
+          onPress={openInviteCodeEntry}
         >
           {t('invite:entry.inviteCodeShort')}
         </Stack.Toolbar.Button>

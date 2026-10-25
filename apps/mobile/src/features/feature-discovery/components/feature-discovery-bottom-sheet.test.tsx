@@ -164,7 +164,7 @@ describe('FeatureDiscoveryBottomSheet', () => {
     expect(screen.getByText('Invite friends and\ncollect paw prints')).toBeTruthy();
     expect(
       screen.getByText(
-        'Send a link on KakaoTalk. Your friend gets 7 days of Premium on joining, and you get it too once they complete to-dos on 2 different days',
+        'Send a link on KakaoTalk. Your friend gets 7 days of Premium on joining, and you get 7 days once they complete to-dos on 2 different days',
       ),
     ).toBeTruthy();
     const listStyle = StyleSheet.flatten(

@@ -25,7 +25,8 @@ const NON_LIST_HEIGHT_BY_FONT_SCALE = {
 // 보상 일수·조건은 계약 상수에서 읽어 문구와 서버 규칙이 어긋나지 않게 한다
 const CARD_DESCRIPTION_VALUES = {
   friend_invite: {
-    days: InviteRewardPolicy.welcomePremiumDays(),
+    inviteeDays: InviteRewardPolicy.welcomePremiumDays(),
+    inviterDays: InviteRewardPolicy.inviterPremiumDays(),
     activeDays: InvitedFriendPolicy.requiredActiveDays(),
   },
 } as const satisfies Record<FeatureDiscoveryCardId, Record<string, number>>;

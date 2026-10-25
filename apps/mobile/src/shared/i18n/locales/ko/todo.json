@@ -154,12 +154,12 @@
   },
   "activation": {
     "title": "첫 할 일을 만들고 완료해 보세요",
-    "description": "두 단계만 끝내면 Aido를 바로 익힐 수 있어요",
+    "description": "아래 단계를 끝내면 아이두를 바로 익힐 수 있어요",
     "createTodo": "첫 할 일 만들기",
     "completeTodo": "만든 할 일 완료하기",
     "completed": "완료",
     "incomplete": "미완료",
-    "accessibilityLabel": "Aido 시작 체크리스트",
+    "accessibilityLabel": "아이두 시작 체크리스트",
     "stepAccessibilityLabel": "{{label}}, {{status}}"
   },
   "reorderCoachmark": {

@@ -184,6 +184,9 @@ export class InviteService {
     this.#allDoneBannerRepository.dismiss(userId, dateKey);
   };
 
+  subscribeAllDoneBanner = (userId: string, listener: () => void) =>
+    this.#allDoneBannerRepository.subscribe(userId, listener);
+
   getCelebratedPawPrintCount = (userId: string) =>
     this.#pawPrintCelebrationRepository.getCelebratedCount(userId);
 
