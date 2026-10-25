@@ -1,4 +1,5 @@
 import { INVITE_REDEEM_WINDOW_DAYS, REDEEM_OUTCOME, redeemInviteResponseSchema } from '@aido/api';
+import type { PremiumAccess } from '@src/features/subscription/domains/premium-access.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -99,6 +100,17 @@ export const InviteRedemptionPolicy = {
       .with({ outcome: REDEEM_OUTCOME.CONNECTED }, () => 'existing-account' as const)
       .with({ outcome: REDEEM_OUTCOME.ALREADY_FRIENDS }, () => null)
       .exhaustive();
+  },
+
+  /**
+   * 받은 보상 프리미엄이 언제 시작하는지. 수락 뒤 다시 불러온 내 정보(서버가 이어 붙인 결과)로만 판단한다.
+   * 스토어 구독이나 다른 보상 기간이 진행 중이면 그 뒤로 이어진다.
+   */
+  rewardStart(premiumAccess: PremiumAccess) {
+    return match({ source: premiumAccess.source, hasBankedDays: premiumAccess.bankedDays > 0 })
+      .with({ source: 'STORE', hasBankedDays: true }, () => 'after-subscription' as const)
+      .with({ source: 'GRANT', hasBankedDays: true }, () => 'after-current-reward' as const)
+      .otherwise(() => 'now' as const);
   },
 
   /** 가입한 지 며칠 안 된 계정만 초대 보상을 기대할 수 있다(서버가 최종 판정한다) */

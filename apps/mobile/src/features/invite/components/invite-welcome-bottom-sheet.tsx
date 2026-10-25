@@ -3,6 +3,7 @@ import { useFriendScreenParams } from '@src/features/friend/hooks/use-friend-scr
 import { useGetNotificationPermissionQueryOptions } from '@src/features/notification/queries/get-notification-permission-query-options';
 import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
 import { createFeedAddTodoHref, createFeedHref } from '@src/features/todo/utils/feed-route';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BellIcon,
@@ -19,7 +20,7 @@ import {
   useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { type ComponentProps, useEffect } from 'react';
 import { Image, StyleSheet } from 'react-native';
 import Animated, {
@@ -91,6 +92,8 @@ InviteWelcomeBottomSheet.Contents = function Contents({
   onDismiss,
 }: WelcomeContentsProps) {
   const { t } = useTranslation('invite');
+  // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다
+  const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
   const name = InviteRedemptionPolicy.inviterName(result, t('card.unnamedInviter'));
   const premiumDays = InviteRedemptionPolicy.grantedPremiumDays(result);
   const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
@@ -127,7 +130,15 @@ InviteWelcomeBottomSheet.Contents = function Contents({
               {t('welcome.rewardTitle', { count: premiumDays })}
             </Text>
             <Text size="b4" shade={7}>
-              {t('welcome.rewardDescription', { count: premiumDays })}
+              {match(InviteRedemptionPolicy.rewardStart(me.premiumAccess))
+                .with('now', () => t('welcome.rewardDescription', { count: premiumDays }))
+                .with('after-subscription', () =>
+                  t('welcome.rewardAfterSubscription', { count: premiumDays }),
+                )
+                .with('after-current-reward', () =>
+                  t('welcome.rewardAfterCurrentReward', { count: premiumDays }),
+                )
+                .exhaustive()}
             </Text>
           </VStack>
         </HStack>

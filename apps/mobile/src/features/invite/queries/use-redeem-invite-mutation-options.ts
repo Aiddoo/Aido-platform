@@ -26,10 +26,11 @@ export function useRedeemInviteMutationOptions() {
 
   return mutationOptions({
     mutationFn: async (inviteCode: InviteCode) => unwrap(await inviteService.redeem(inviteCode)),
-    onSuccess: (result, inviteCode) => {
+    // 내 정보를 다시 받을 때까지 기다린 뒤 넘어가야 환영 시트가 이어 붙은 보상 기간을 보인다(그동안 버튼은 isPending)
+    onSuccess: async (result, inviteCode) => {
       inviteService.clearPendingRedemption();
       storeRedemptionResult(queryClient, result);
-      invalidateAfterRedeem(queryClient, { inviteCode }).catch(noop);
+      await invalidateAfterRedeem(queryClient, { inviteCode }).catch(noop);
       notifySuccess();
 
       // 이미 친구면 축하할 것이 없어 바로 친구 할 일로 간다
