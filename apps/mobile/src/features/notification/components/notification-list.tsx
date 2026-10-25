@@ -151,7 +151,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
           push(
             userReportSheetHref({
               target: UserReportPolicy.cheerMessageTarget(receivedCheer),
-              displayName: t('moderation:fallbackName'),
+              displayName: receivedCheer.senderName ?? t('moderation:fallbackName'),
             }),
           );
 
