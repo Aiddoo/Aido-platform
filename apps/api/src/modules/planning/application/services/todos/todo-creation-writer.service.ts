@@ -105,9 +105,7 @@ export class TodoCreationWriter {
       sortOrder: maxSortOrder + 1 + index,
       startDate: parseDateOnly(date),
       scheduledTime:
-        data.scheduledTime === undefined || data.scheduledTime === null
-          ? null
-          : parseLocalDateTime(date, data.scheduledTime, timezone),
+        data.scheduledTime == null ? null : parseLocalDateTime(date, data.scheduledTime, timezone),
     }));
     return this.#dependencies.todoRepository.createMany(items, recurrenceGroupId, data.items);
   }

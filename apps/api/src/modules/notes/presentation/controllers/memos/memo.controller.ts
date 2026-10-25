@@ -300,12 +300,9 @@ export class MemoController {
       data: {
         categoryId: dto.categoryId,
         startDate: parseDateOnly(dto.startDate),
-        endDate:
-          dto.endDate === undefined || dto.endDate === null
-            ? undefined
-            : parseDateOnly(dto.endDate),
+        endDate: dto.endDate == null ? undefined : parseDateOnly(dto.endDate),
         scheduledTime:
-          dto.scheduledTime === undefined || dto.scheduledTime === null
+          dto.scheduledTime == null
             ? undefined
             : parseLocalDateTime(dto.startDate, dto.scheduledTime, tz),
         isAllDay: dto.isAllDay,
@@ -364,12 +361,9 @@ export class MemoController {
           title: todo.title,
           categoryId: todo.categoryId,
           startDate: parseDateOnly(todo.startDate),
-          endDate:
-            todo.endDate === undefined || todo.endDate === null
-              ? undefined
-              : parseDateOnly(todo.endDate),
+          endDate: todo.endDate == null ? undefined : parseDateOnly(todo.endDate),
           scheduledTime:
-            todo.scheduledTime === undefined || todo.scheduledTime === null
+            todo.scheduledTime == null
               ? undefined
               : parseLocalDateTime(todo.startDate, todo.scheduledTime, tz),
           isAllDay: todo.isAllDay,

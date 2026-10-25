@@ -49,7 +49,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     const feelsLikeTemperature = this.#calculateFeelsLikeTemperature(currentTemp, windSpeed);
 
     const apiKey = this.configService.dataGoKrApiKey;
-    if (apiKey === undefined || apiKey === null || apiKey === "") {
+    if (apiKey == null || apiKey === "") {
       this.#logger.warn({
         event: WeatherProviderLogEvent.NOT_CONFIGURED,
         provider: "kma_lifestyle",
@@ -144,7 +144,7 @@ export class KmaLifestyleIndexProvider implements LifestyleIndexProvider {
     }
 
     const h0Value = firstItem.h0;
-    if (h0Value === undefined || h0Value === null || h0Value === "") {
+    if (h0Value == null || h0Value === "") {
       this.#logger.warn({
         event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
         provider: "kma_lifestyle",

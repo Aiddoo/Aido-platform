@@ -45,7 +45,7 @@ export class KasiSunTimeProvider implements SunTimeProvider {
   async getSunTime(lat: number, lon: number, date: Date): Promise<SunTime | null> {
     try {
       const apiKey = this.configService.dataGoKrApiKey;
-      if (apiKey === undefined || apiKey === null || apiKey === "") {
+      if (apiKey == null || apiKey === "") {
         this.#logger.warn({
           event: WeatherProviderLogEvent.NOT_CONFIGURED,
           provider: "kasi",
@@ -103,7 +103,7 @@ export class KasiSunTimeProvider implements SunTimeProvider {
       }
 
       const item = data?.response?.body?.items?.item;
-      if (item === undefined || item === null) {
+      if (item == null) {
         this.#logger.warn({
           event: WeatherProviderLogEvent.RESPONSE_UNAVAILABLE,
           provider: "kasi",

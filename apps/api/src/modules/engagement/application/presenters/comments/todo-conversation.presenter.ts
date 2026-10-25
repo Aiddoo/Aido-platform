@@ -14,9 +14,7 @@ function isDirectParent(
   parent: TodoCommentRecord | null | undefined,
   child: TodoCommentRecord | null | undefined,
 ): boolean {
-  return parent !== null && parent !== undefined && child !== null && child !== undefined
-    ? child.parentId === parent.id
-    : false;
+  return parent != null && child != null ? child.parentId === parent.id : false;
 }
 
 /** Wire lane은 순서와 중복을 허용하지 않는다. reader 결과도 경계에서 한 번 정규화한다. */

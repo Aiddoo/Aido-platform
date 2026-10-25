@@ -93,7 +93,7 @@ export class ConvertMemoToTodos {
                   endDate: toDateString(todoData.recurrence.endDate),
                   daysOfWeek: todoData.recurrence.daysOfWeek,
                   scheduledTime:
-                    todoData.scheduledTime === undefined || todoData.scheduledTime === null
+                    todoData.scheduledTime == null
                       ? null
                       : toLocalTimeString(todoData.scheduledTime, timezone),
                   isAllDay: todoData.isAllDay ?? true,

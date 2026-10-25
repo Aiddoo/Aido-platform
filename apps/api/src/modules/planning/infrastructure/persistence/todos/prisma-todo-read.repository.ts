@@ -60,7 +60,7 @@ export class PrismaTodoReadRepository implements TodoReadRepositoryPort {
         todoDatePredicate(todo, startDate, endDate),
       ),
     );
-    if (cursor !== null && cursor !== undefined) {
+    if (cursor != null) {
       // Prisma 8 cursors require every ordering key and do not support relation ordering.
       // Resolve the existing ID cursor, then apply the same exclusive composite keyset.
       const anchor = await this.client.orm.public.Todo.where({ id: cursor })

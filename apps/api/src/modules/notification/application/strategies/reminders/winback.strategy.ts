@@ -78,8 +78,7 @@ export class WinbackStrategy implements TimezoneReminderStrategy {
     );
 
     const activeChecks = checks.filter(
-      (check): check is NonNullable<typeof check> =>
-        check !== null && check !== undefined && !check.alreadySent,
+      (check): check is NonNullable<typeof check> => check != null && !check.alreadySent,
     );
     const locales = await this.#dependencies.preferenceReader.findUserLocales(
       activeChecks.map((check) => check.user.id),

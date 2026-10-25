@@ -172,8 +172,7 @@ export class PostgresPushRateLimiter implements PushRateLimiterPort {
         (localDate !== null &&
           !engagementReserved &&
           ((engagement?.count ?? 0) >= ENGAGEMENT.DAILY_MAX ||
-            (engagement?.lastReservedAt !== null &&
-              engagement?.lastReservedAt !== undefined &&
+            (engagement?.lastReservedAt != null &&
               now - engagement.lastReservedAt.getTime() < ENGAGEMENT.MIN_INTERVAL_MS)));
       if (isLimited) return true;
 

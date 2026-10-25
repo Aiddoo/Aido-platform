@@ -125,9 +125,7 @@ export class GetTodoConversation {
     });
 
     const focusedRecord =
-      window?.anchorIndex === null || window?.anchorIndex === undefined
-        ? undefined
-        : window.items[window.anchorIndex];
+      window?.anchorIndex == null ? undefined : window.items[window.anchorIndex];
     if (
       anchor.mode === "FOCUS" &&
       (window === null || focusedRecord === undefined || focusedRecord.id !== anchor.commentId)

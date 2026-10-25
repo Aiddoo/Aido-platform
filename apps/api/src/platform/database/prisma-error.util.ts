@@ -46,7 +46,7 @@ export class DatabaseRecordNotFoundError extends Error {
 }
 
 export function requireRecord<Row>(row: Row | null | undefined): Row {
-  if (row === null || row === undefined) throw new DatabaseRecordNotFoundError();
+  if (row == null) throw new DatabaseRecordNotFoundError();
   return row;
 }
 

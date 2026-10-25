@@ -24,9 +24,7 @@ export class GeminiAiAdapter implements AiProvider {
   constructor(configService: ConfigService) {
     const apiKey = configService.get<string>("GOOGLE_GENERATIVE_AI_API_KEY");
     this.#model =
-      apiKey === undefined || apiKey === null || apiKey === ""
-        ? null
-        : createGoogleGenerativeAI({ apiKey })(GEMINI_MODEL);
+      apiKey == null || apiKey === "" ? null : createGoogleGenerativeAI({ apiKey })(GEMINI_MODEL);
   }
 
   async generateStructured<T>(

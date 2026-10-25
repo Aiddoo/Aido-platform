@@ -19,7 +19,7 @@ export abstract class ValueObject<TValue> {
   }
 
   equals(other?: ValueObject<TValue> | null): boolean {
-    if (other === null || other === undefined) {
+    if (other == null) {
       return false;
     }
     if (other === this) {

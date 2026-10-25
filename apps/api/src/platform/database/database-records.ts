@@ -118,13 +118,13 @@ export function decodeRecord<M extends ModelName, Row>(
   row: Row,
 ): ApplicationRecord<M, Row>;
 export function decodeRecord(model: string, row: unknown): unknown {
-  if (row === null || row === undefined) return row;
+  if (row == null) return row;
   if (Array.isArray(row)) return row.map((item) => decodeRecordValue(model, item));
   return decodeRecordValue(model, row);
 }
 
 function decodeRecordValue(model: string, row: unknown): unknown {
-  if (row === null || row === undefined) return row;
+  if (row == null) return row;
   if (Array.isArray(row)) return row.map((item) => decodeRecordValue(model, item));
   if (!isPlainObject(row)) throw new TypeError(`Invalid ${model} database record`);
   const metadata = models.get(model);
@@ -134,7 +134,7 @@ function decodeRecordValue(model: string, row: unknown): unknown {
   return Object.fromEntries(
     Object.entries(row).map(([key, value]) => {
       const codec = fields.get(key)?.type.codecId;
-      if (value !== null && value !== undefined) {
+      if (value != null) {
         if (codec === "pg/timestamptz-string@1") {
           if (typeof value !== "string") throw new TypeError(`Invalid ${model}.${key} timestamptz`);
           return [key, applicationTimestamptz(value)];

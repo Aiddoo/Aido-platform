@@ -152,7 +152,7 @@ export class InMemoryCacheAdapter implements ICacheService, OnModuleDestroy {
 
     const promise = factory()
       .then(async (value) => {
-        if (value !== undefined && value !== null) {
+        if (value != null) {
           await this.set(key, value, ttl);
         }
         return value;

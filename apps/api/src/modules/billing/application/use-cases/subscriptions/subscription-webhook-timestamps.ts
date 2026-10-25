@@ -27,7 +27,7 @@ export function requireExpiresAt(
 
 export function optionalExpiresAt(value: number | null | undefined): Date | undefined {
   // 기존 공급자 계약에서 0은 누락된 시각으로 취급한다.
-  return value === undefined || value === null || value === 0 ? undefined : new Date(value);
+  return value == null || value === 0 ? undefined : new Date(value);
 }
 
 export function nullableExpiresAt(value: number | null | undefined): Date | null {

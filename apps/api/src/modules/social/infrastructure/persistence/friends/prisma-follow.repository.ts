@@ -193,7 +193,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       .orderBy((row) => row.sortOrder.asc())
       .orderBy((row) => row.id.asc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Follow.where({ id: cursor })
         .select("id", "sortOrder")
         .first();
@@ -211,7 +211,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Follow.where({ id: cursor })
         .select("id", "createdAt")
         .first();
@@ -229,7 +229,7 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Follow.where({ id: cursor })
         .select("id", "createdAt")
         .first();

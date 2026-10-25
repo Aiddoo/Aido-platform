@@ -56,11 +56,7 @@ export function decodeSqlRows(spec: RawRowSpec, rows: unknown): unknown {
       Object.entries(row).map(([key, value]) => {
         const column = spec[key];
         const codec = typeof column === "string" ? column : column?.codecId;
-        if (
-          value !== null &&
-          value !== undefined &&
-          (codec === "pg/date-string@1" || codec === "pg/timestamp-string@1")
-        ) {
+        if (value != null && (codec === "pg/date-string@1" || codec === "pg/timestamp-string@1")) {
           if (typeof value !== "string") throw new TypeError(`Invalid SQL date: ${key}`);
           return [
             key,

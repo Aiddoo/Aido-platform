@@ -66,7 +66,7 @@ export class PrismaMemoRepository implements MemoRepositoryPort {
       .orderBy((row) => OrderByItem.desc(row.isPinned.buildAst()))
       .orderBy((row) => row.sortOrder.desc())
       .orderBy((row) => row.id.desc());
-    if (cursor === null || cursor === undefined) {
+    if (cursor == null) {
       const rows = decodeRecord("Memo", await collection.limit(size + 1).all());
       return rows.map((row) => PrismaMemoRepository.toDomain(row));
     }

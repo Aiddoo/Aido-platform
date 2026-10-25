@@ -174,7 +174,7 @@ export class RedisCacheAdapter implements ICacheService {
 
     const promise = factory()
       .then(async (value) => {
-        if (value !== undefined && value !== null) {
+        if (value != null) {
           await this.set(key, value, ttl);
         }
         return value;

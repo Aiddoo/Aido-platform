@@ -45,7 +45,7 @@ export class PrismaNotificationReader
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
-    if (cursor !== undefined && cursor !== null) {
+    if (cursor != null) {
       const anchor = await this.client.orm.public.Notification.where({ id: cursor })
         .select("id", "createdAt")
         .first();
