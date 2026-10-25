@@ -301,8 +301,12 @@ export class FollowController {
     operationId: "getFriends",
     description: `나와 맞팔 관계인 친구 목록을 조회합니다.
 
+**정렬**
+- 사용자가 친구 목록 편집에서 정한 순서(\`sortOrder\` 오름차순)입니다. 피드의 친구 줄도 이 순서를 그대로 씁니다.
+- 순서 변경은 \`PATCH /v1/follows/friends/{followId}/reorder\`로 합니다.
+
 **쿼리 파라미터**
-- \`cursor\`: 페이지네이션 커서
+- \`cursor\`: 페이지네이션 커서(이전 페이지 마지막 항목의 \`followId\`)
 - \`limit\`: 페이지 크기 (1-50, 기본값: 20)
 - \`search\`: Aido ID로 검색`,
   })
