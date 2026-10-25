@@ -22,7 +22,7 @@ export interface UserReportTemplateData {
 }
 
 export function getUserReportSubject(data: UserReportTemplateData): string {
-  return `[Aido 신고접수] [${data.reasonLabel}] ${data.targetTypeLabel} · ${data.targetUserTag}`;
+  return `[아이두 신고접수] [${data.reasonLabel}] ${data.targetTypeLabel} · ${data.targetUserTag}`;
 }
 
 function row(label: string, value: string): string {
@@ -44,7 +44,7 @@ export function getUserReportHtml(data: UserReportTemplateData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aido 신고 접수 알림</title>
+  <title>아이두 신고 접수 알림</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -53,7 +53,7 @@ export function getUserReportHtml(data: UserReportTemplateData): string {
         <table role="presentation" style="width: 100%; max-width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px;">
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center;">
-              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">Aido</h1>
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">아이두</h1>
               <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">사용자 신고 접수 알림</p>
             </td>
           </tr>
@@ -96,7 +96,7 @@ export function getUserReportHtml(data: UserReportTemplateData): string {
             <td style="padding: 20px 40px 40px;">
               <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
               <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
-                이 이메일은 Aido 앱에서 자동으로 발송되었습니다.
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
               </p>
             </td>
           </tr>
@@ -111,7 +111,7 @@ export function getUserReportHtml(data: UserReportTemplateData): string {
 
 export function getUserReportText(data: UserReportTemplateData): string {
   return `
-[Aido 신고접수] [${data.reasonLabel}] ${data.targetTypeLabel} · ${data.targetUserTag}
+[아이두 신고접수] [${data.reasonLabel}] ${data.targetTypeLabel} · ${data.targetUserTag}
 
 [접수 정보]
 - 신고 ID: ${data.reportId}
@@ -131,6 +131,6 @@ ${data.detail ?? "(상세 내용 없음)"}
 2) 약관 위반이면 콘텐츠 삭제·계정 제한
 3) 처리 API로 조치 내용을 남겨 RESOLVED로 변경
 
-이 이메일은 Aido 앱에서 자동으로 발송되었습니다.
+이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
   `.trim();
 }

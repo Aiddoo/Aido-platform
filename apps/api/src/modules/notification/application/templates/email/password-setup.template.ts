@@ -7,7 +7,7 @@ export interface PasswordSetupTemplateData {
 }
 
 export function getPasswordSetupSubject(): string {
-  return "[Aido] 비밀번호 설정 인증 코드";
+  return "[아이두] 비밀번호 설정 인증 코드";
 }
 
 export function getPasswordSetupHtml(data: PasswordSetupTemplateData): string {
@@ -28,7 +28,7 @@ export function getPasswordSetupHtml(data: PasswordSetupTemplateData): string {
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
-                Aido
+                아이두
               </h1>
             </td>
           </tr>
@@ -72,7 +72,7 @@ export function getPasswordSetupHtml(data: PasswordSetupTemplateData): string {
             <td style="padding: 20px 40px 40px;">
               <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
               <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
-                이 이메일은 Aido 계정의 비밀번호 설정 요청으로 발송되었습니다.
+                이 이메일은 아이두 계정의 비밀번호 설정 요청으로 발송되었습니다.
               </p>
             </td>
           </tr>
@@ -87,7 +87,7 @@ export function getPasswordSetupHtml(data: PasswordSetupTemplateData): string {
 
 export function getPasswordSetupText(data: PasswordSetupTemplateData): string {
   return `
-[Aido] 비밀번호 설정 인증 코드
+[아이두] 비밀번호 설정 인증 코드
 
 비밀번호 설정 인증 코드: ${data.code}
 
@@ -95,6 +95,6 @@ export function getPasswordSetupText(data: PasswordSetupTemplateData): string {
 
 ⚠️ 본인이 요청하지 않은 경우, 이 이메일을 무시하셔도 됩니다.
 
-이 이메일은 Aido 계정의 비밀번호 설정 요청으로 발송되었습니다.
+이 이메일은 아이두 계정의 비밀번호 설정 요청으로 발송되었습니다.
   `.trim();
 }

@@ -21,7 +21,7 @@ function escapeHtml(value: string): string {
 }
 
 export function getInquirySubject(categoryLabel: string): string {
-  return `[Aido 문의접수] [${categoryLabel}]`;
+  return `[아이두 문의접수] [${categoryLabel}]`;
 }
 
 export function getInquiryHtml(data: InquiryTemplateData): string {
@@ -36,7 +36,7 @@ export function getInquiryHtml(data: InquiryTemplateData): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aido 문의 접수 알림</title>
+  <title>아이두 문의 접수 알림</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -47,7 +47,7 @@ export function getInquiryHtml(data: InquiryTemplateData): string {
           <tr>
             <td style="padding: 40px 40px 20px; text-align: center;">
               <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">
-                Aido
+                아이두
               </h1>
               <p style="margin: 8px 0 0; font-size: 13px; color: #666666;">
                 문의 접수 알림
@@ -122,7 +122,7 @@ export function getInquiryHtml(data: InquiryTemplateData): string {
             <td style="padding: 20px 40px 40px;">
               <hr style="border: none; border-top: 1px solid #eee; margin: 0 0 20px;" />
               <p style="margin: 0; font-size: 12px; line-height: 1.6; color: #999999; text-align: center;">
-                이 이메일은 Aido 앱에서 자동으로 발송되었습니다.
+                이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
               </p>
             </td>
           </tr>
@@ -137,7 +137,7 @@ export function getInquiryHtml(data: InquiryTemplateData): string {
 
 export function getInquiryText(data: InquiryTemplateData): string {
   return `
-[Aido 문의접수] [${data.categoryLabel}] ${data.userEmail}
+[아이두 문의접수] [${data.categoryLabel}] ${data.userEmail}
 
 [접수 정보]
 - 사용자 이메일: ${data.userEmail}
@@ -156,6 +156,6 @@ ${data.content}
 - 유형 분류 및 재현 확인
 - 사용자 회신 초안 작성
 
-이 이메일은 Aido 앱에서 자동으로 발송되었습니다.
+이 이메일은 아이두 앱에서 자동으로 발송되었습니다.
   `.trim();
 }

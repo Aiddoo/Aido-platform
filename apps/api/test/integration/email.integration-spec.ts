@@ -85,7 +85,7 @@ describe("TransactionalEmailSender 통합 테스트 — 실제 SDK + HTTP fixtur
       expect.objectContaining({
         from: "Integration Test <noreply@integration-test.com>",
         to: recipient,
-        subject: "[Aido] 이메일 인증 코드",
+        subject: "[아이두] 이메일 인증 코드",
         html: expect.stringContaining(code),
         text: expect.stringContaining(String(expiryMinutes)),
         tags: [

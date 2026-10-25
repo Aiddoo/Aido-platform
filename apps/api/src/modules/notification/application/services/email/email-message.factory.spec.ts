@@ -18,7 +18,7 @@ describe("EmailMessage 값 객체", () => {
       });
 
       expect(message.to).toBe("user@test.com");
-      expect(message.subject).toBe("[Aido] 이메일 인증 코드");
+      expect(message.subject).toBe("[아이두] 이메일 인증 코드");
       expect(message.text).toContain("123456");
       expect(message.tags).toEqual([{ name: "type", value: "verification" }]);
       expect(message.idempotencyKey).toBeUndefined();
@@ -76,7 +76,7 @@ describe("EmailMessage 값 객체", () => {
       const message = createUserReportEmail("support@test.com", data);
 
       // Then
-      expect(message.subject).toBe("[Aido 신고접수] [괴롭힘·혐오] 댓글 · TARGET01");
+      expect(message.subject).toBe("[아이두 신고접수] [괴롭힘·혐오] 댓글 · TARGET01");
       expect(message.idempotencyKey).toBe("user-report:clz7x5p8k0123qz0z8z8z8z8z");
       expect(message.html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
       expect(message.html).not.toContain("<script>");
