@@ -60,16 +60,19 @@ export class PrismaAdminUserDirectoryAdapter implements AdminUserDirectoryPort {
     filter: BroadcastTargetFilter,
     user: ModelAccessor<Contract, "User", "public">,
   ) {
-    return match(filter)
-      .with(BROADCAST_TARGET_FILTER.ALL, () => all())
-      .with(BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN, () => user.pushTokens.some())
-      .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () =>
-        user.lastLoginAt.gte(databaseTimestamp(subtractDays(7))),
-      )
-      .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () =>
-        user.lastLoginAt.gte(databaseTimestamp(subtractDays(30))),
-      )
-      .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => user.subscriptionStatus.eq("ACTIVE"))
-      .exhaustive();
+    return (
+      match(filter)
+        .with(BROADCAST_TARGET_FILTER.ALL, () => all())
+        .with(BROADCAST_TARGET_FILTER.WITH_PUSH_TOKEN, () => user.pushTokens.some())
+        .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_7_DAYS, () =>
+          user.lastLoginAt.gte(databaseTimestamp(subtractDays(7))),
+        )
+        .with(BROADCAST_TARGET_FILTER.ACTIVE_LAST_30_DAYS, () =>
+          user.lastLoginAt.gte(databaseTimestamp(subtractDays(30))),
+        )
+        // User projection이 보상 기간도 ACTIVE로 쓰므로 "구독자"에는 초대 보상으로 프리미엄인 사용자도 들어간다
+        .with(BROADCAST_TARGET_FILTER.SUBSCRIBERS, () => user.subscriptionStatus.eq("ACTIVE"))
+        .exhaustive()
+    );
   }
 }
