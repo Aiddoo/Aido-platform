@@ -8,6 +8,8 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 - Friends who joined within the last 7 days get 7 days of Premium when they accept
 - When your friend finishes to-dos on 2 different days within 14 days of joining, you get 7 days of Premium and 1 friend slot
 - See your paw prints and rewards at a glance in “Collect paw prints”
+- Rewards are in-app Premium with no cash value, once per device and account
+- Inviter Premium is capped at 30 days per 30 days, 90 days in total (see Terms of Use)
 
 [ Smart to-dos with AI ]
 - Type or say it, and AI picks out the to-do, date, and time
@@ -21,7 +23,6 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 - Find friends by user tag (#) and see each other’s to-dos in the feed
 - Nudge a friend who’s slacking off
 - Send a cheer to friends who finish their day
-- Turn good intentions into everyday habits, together
 
 [ See your progress ]
 - Check your daily completion rate on weekly and monthly calendars
@@ -57,13 +58,6 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 - Or sign up with email
 - Have an invite code? Enter it right on the sign-in screen
 
-Aido is for you if you…
-- keep putting things off
-- make plans alone but give up after a few days
-- want friends to keep you motivated
-- want AI to sort out your to-dos fast
-- like to check in on your productivity every week
-
 Start with today’s to-dos on Aido.
 
 [ Subscription ]
@@ -81,6 +75,7 @@ Subscribe to Aido Premium to unlock:
 
 Premium you earn by inviting friends includes the same features. Rewards earned while you’re subscribed start after your subscription ends.
 
+- Aido Premium is a monthly or yearly auto-renewing subscription. The price and period are shown in the app before you buy.
 - Payment is charged to your Google Play account at confirmation of purchase.
 - Your subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period.
 - You can manage your subscription in Google Play under Payments & subscriptions > Subscriptions after purchase.
