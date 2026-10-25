@@ -62,8 +62,8 @@ export const envSchema = z
     ...webhookSchema.shape,
     ...featureDiscoverySchema.shape,
   })
-  .superRefine(validateFeatureDiscoveryConfig)
-  .superRefine(validateAppVersionConfig);
+  .check(validateFeatureDiscoveryConfig)
+  .check(validateAppVersionConfig);
 
 /**
  * 환경변수 전체 타입

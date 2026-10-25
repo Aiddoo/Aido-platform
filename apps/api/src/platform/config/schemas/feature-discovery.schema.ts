@@ -15,17 +15,18 @@ export const featureDiscoverySchema = z.object({
   FEATURE_DISCOVERY_AUTO_OPEN: z.stringbool().default(true),
 });
 
-export function validateFeatureDiscoveryConfig(
-  config: FeatureDiscoveryConfig,
-  context: z.RefinementCtx,
-): void {
+export function validateFeatureDiscoveryConfig({
+  value: config,
+  issues,
+}: z.core.ParsePayload<FeatureDiscoveryConfig>): void {
   if (!config.FEATURE_DISCOVERY_ENABLED) {
     return;
   }
 
   if (!config.FEATURE_DISCOVERY_CAMPAIGN_ID?.trim()) {
-    context.addIssue({
+    issues.push({
       code: "custom",
+      input: config,
       path: ["FEATURE_DISCOVERY_CAMPAIGN_ID"],
       message: "FEATURE_DISCOVERY_CAMPAIGN_ID is required when FEATURE_DISCOVERY_ENABLED is true",
     });
@@ -34,8 +35,9 @@ export function validateFeatureDiscoveryConfig(
   if (
     !featureDiscoveryMinAppVersionSchema.safeParse(config.FEATURE_DISCOVERY_MIN_APP_VERSION).success
   ) {
-    context.addIssue({
+    issues.push({
       code: "custom",
+      input: config,
       path: ["FEATURE_DISCOVERY_MIN_APP_VERSION"],
       message:
         "FEATURE_DISCOVERY_MIN_APP_VERSION must be a semantic version when FEATURE_DISCOVERY_ENABLED is true",
@@ -46,8 +48,9 @@ export function validateFeatureDiscoveryConfig(
     !config.FEATURE_DISCOVERY_LAUNCHED_AT ||
     !z.iso.datetime().safeParse(config.FEATURE_DISCOVERY_LAUNCHED_AT).success
   ) {
-    context.addIssue({
+    issues.push({
       code: "custom",
+      input: config,
       path: ["FEATURE_DISCOVERY_LAUNCHED_AT"],
       message:
         "FEATURE_DISCOVERY_LAUNCHED_AT must be an ISO datetime when FEATURE_DISCOVERY_ENABLED is true",
