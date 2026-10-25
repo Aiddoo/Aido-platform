@@ -45,6 +45,21 @@ describe("LikeTodoComment — 댓글 사용자 상태", () => {
       },
     ]);
   });
+  it("차단 관계인 작성자의 댓글에는 좋아요를 남기지 않고 누가 차단했는지 알리지 않는다", async () => {
+    // Given
+    const comment = fixture.addComment();
+    fixture.blockReader.block(ENGAGEMENT_OWNER_ID, ENGAGEMENT_VIEWER_ID);
+    // When / Then
+    await expect(
+      new LikeTodoComment(fixture).execute({
+        todoId: 1,
+        commentId: comment.id,
+        userId: ENGAGEMENT_VIEWER_ID,
+      }),
+    ).rejects.toMatchObject({ errorCode: "BLOCK_2204", details: undefined });
+    expect(fixture.repository.likes.size).toBe(0);
+    expect(fixture.notification.liked).toEqual([]);
+  });
   it("알림이 대기하는 동안 완료 이력은 없고 성공 후 표시한다", async () => {
     // Given
     const comment = fixture.addComment();

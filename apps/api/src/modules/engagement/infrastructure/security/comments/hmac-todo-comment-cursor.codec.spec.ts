@@ -17,6 +17,7 @@ const record: TodoConversationRecord = {
   rootId: null,
   path: [],
   depth: 0,
+  parentAuthorId: null,
   parentAuthorName: null,
   authorId: "cm1author0000000000000001",
   authorName: "작성자",

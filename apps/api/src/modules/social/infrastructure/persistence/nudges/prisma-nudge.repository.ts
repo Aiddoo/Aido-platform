@@ -27,6 +27,7 @@ import type {
 } from "../../../application/ports/nudges/nudge.repository.port.js";
 import { Nudge } from "../../../domain/aggregates/nudges/nudge.aggregate.js";
 import { ReminderNudge } from "../../../domain/aggregates/nudges/reminder-nudge.aggregate.js";
+import { hasNoBlockWith } from "../blocks/user-block.filter.js";
 
 type UserBriefRow = {
   id: string;
@@ -280,8 +281,14 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
         .where((nudge) =>
           and(
             params.direction === "received"
-              ? nudge.receiverId.eq(params.userId)
-              : nudge.senderId.eq(params.userId),
+              ? and(
+                  nudge.receiverId.eq(params.userId),
+                  nudge.sender.some((sender) => hasNoBlockWith(sender, params.userId)),
+                )
+              : and(
+                  nudge.senderId.eq(params.userId),
+                  nudge.receiver.some((receiver) => hasNoBlockWith(receiver, params.userId)),
+                ),
             params.cursor !== undefined ? nudge.id.lt(params.cursor) : all(),
           ),
         )
@@ -394,7 +401,12 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   async findReceivedNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
     const { userId, cursor, size } = params;
     let nudges = this.interactions
-      .where({ receiverId: userId })
+      .where((row) =>
+        and(
+          row.receiverId.eq(userId),
+          row.sender.some((sender) => hasNoBlockWith(sender, userId)),
+        ),
+      )
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
@@ -412,7 +424,12 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   async findSentNudges(params: FindNudgesParams): Promise<NudgeWithRelations[]> {
     const { userId, cursor, size } = params;
     let nudges = this.interactions
-      .where({ senderId: userId })
+      .where((row) =>
+        and(
+          row.senderId.eq(userId),
+          row.receiver.some((receiver) => hasNoBlockWith(receiver, userId)),
+        ),
+      )
       .orderBy((row) => row.createdAt.desc())
       .orderBy((row) => row.id.desc())
       .limit(size + 1);
@@ -454,20 +471,34 @@ export class PrismaNudgeRepository implements NudgeRepositoryPort {
   }
 
   async countReceived(userId: string): Promise<number> {
-    return this.client.orm.public.Nudge.where((row) => row.receiverId.eq(userId))
+    return this.client.orm.public.Nudge.where((row) =>
+      and(
+        row.receiverId.eq(userId),
+        row.sender.some((sender) => hasNoBlockWith(sender, userId)),
+      ),
+    )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);
   }
 
   async countSent(userId: string): Promise<number> {
-    return this.client.orm.public.Nudge.where((row) => row.senderId.eq(userId))
+    return this.client.orm.public.Nudge.where((row) =>
+      and(
+        row.senderId.eq(userId),
+        row.receiver.some((receiver) => hasNoBlockWith(receiver, userId)),
+      ),
+    )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);
   }
 
   async countUnreadReceived(userId: string): Promise<number> {
     return this.client.orm.public.Nudge.where((row) =>
-      and(row.receiverId.eq(userId), row.readAt.isNull()),
+      and(
+        row.receiverId.eq(userId),
+        row.readAt.isNull(),
+        row.sender.some((sender) => hasNoBlockWith(sender, userId)),
+      ),
     )
       .aggregate((aggregate) => ({ count: aggregate.count() }))
       .then(({ count }) => count);

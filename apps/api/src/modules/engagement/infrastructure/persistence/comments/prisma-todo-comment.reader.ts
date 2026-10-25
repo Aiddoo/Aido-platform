@@ -46,6 +46,7 @@ interface ConversationQueryRow {
   authorId: string | null;
   authorName: string | null;
   authorProfileImage: string | null;
+  parentAuthorId: string | null;
   parentAuthorName: string | null;
   todoOwnerId: string | null;
   content: string | null;
@@ -70,6 +71,7 @@ interface OverviewRootQueryRow {
   authorId: string | null;
   authorName: string | null;
   authorProfileImage: string | null;
+  parentAuthorId: string | null;
   parentAuthorName: string | null;
   todoOwnerId: string | null;
   content: string | null;
@@ -94,6 +96,7 @@ interface OverviewSummaryQueryRow {
   previewAuthorId: string | null;
   previewAuthorName: string | null;
   previewAuthorProfileImage: string | null;
+  previewParentAuthorId: string | null;
   previewParentAuthorName: string | null;
   todoOwnerId: string;
   previewContent: string | null;
@@ -147,6 +150,7 @@ function toRecord(row: CommentRow): TodoCommentRecord {
     rootId: row.rootId,
     path: decodeTodoCommentPath(row.path),
     depth: row.depth,
+    parentAuthorId: row.parent?.authorId ?? null,
     parentAuthorName: row.parent?.author?.profile?.name ?? null,
     authorId: requireValue(row.authorId, "authorId"),
     authorName: row.author?.profile?.name ?? null,
@@ -173,6 +177,7 @@ function toConversationRecord(row: ConversationQueryRow): TodoConversationRecord
     rootId: row.rootId,
     path: [...requireValue(row.path, "path")],
     depth: requireValue(row.depth, "depth"),
+    parentAuthorId: row.parentAuthorId,
     parentAuthorName: row.parentAuthorName,
     authorId: requireValue(row.authorId, "authorId"),
     authorName: row.authorName,
@@ -207,6 +212,7 @@ function toOverviewRootRecord(row: OverviewRootQueryRow): TodoCommentOverviewRoo
     rootId: row.rootId,
     path: [...requireValue(row.path, "path")],
     depth: requireValue(row.depth, "depth"),
+    parentAuthorId: row.parentAuthorId,
     parentAuthorName: row.parentAuthorName,
     authorId: requireValue(row.authorId, "authorId"),
     authorName: row.authorName,
@@ -237,6 +243,7 @@ function toOverviewPreviewRecord(row: OverviewSummaryQueryRow): TodoCommentRecor
     rootId: row.previewRootId,
     path: [...requireValue(row.previewPath, "previewPath")],
     depth: requireValue(row.previewDepth, "previewDepth"),
+    parentAuthorId: row.previewParentAuthorId,
     parentAuthorName: row.previewParentAuthorName,
     authorId: requireValue(row.previewAuthorId, "previewAuthorId"),
     authorName: row.previewAuthorName,
@@ -440,6 +447,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       authorId: { codecId: "pg/text@1", nullable: true },
       authorName: { codecId: "pg/text@1", nullable: true },
       authorProfileImage: { codecId: "pg/text@1", nullable: true },
+      parentAuthorId: { codecId: "pg/text@1", nullable: true },
       parentAuthorName: { codecId: "pg/text@1", nullable: true },
       todoOwnerId: { codecId: "pg/text@1", nullable: true },
       content: { codecId: "pg/text@1", nullable: true },
@@ -601,6 +609,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected."authorId",
 				author_profile."name" AS "authorName",
 				author_profile."profileImage" AS "authorProfileImage",
+				NULL::TEXT AS "parentAuthorId",
 				NULL::TEXT AS "parentAuthorName",
 				todo."userId" AS "todoOwnerId",
 				selected."content",
@@ -690,6 +699,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       previewAuthorId: { codecId: "pg/text@1", nullable: true },
       previewAuthorName: { codecId: "pg/text@1", nullable: true },
       previewAuthorProfileImage: { codecId: "pg/text@1", nullable: true },
+      previewParentAuthorId: { codecId: "pg/text@1", nullable: true },
       previewParentAuthorName: { codecId: "pg/text@1", nullable: true },
       todoOwnerId: "pg/text@1",
       previewContent: { codecId: "pg/text@1", nullable: true },
@@ -810,6 +820,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				preview."authorId" AS "previewAuthorId",
 				preview_author_profile."name" AS "previewAuthorName",
 				preview_author_profile."profileImage" AS "previewAuthorProfileImage",
+				preview_parent."authorId" AS "previewParentAuthorId",
 				preview_parent_profile."name" AS "previewParentAuthorName",
 				todo."userId" AS "todoOwnerId",
 				preview."content" AS "previewContent",
@@ -885,6 +896,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
       authorId: { codecId: "pg/text@1", nullable: true },
       authorName: { codecId: "pg/text@1", nullable: true },
       authorProfileImage: { codecId: "pg/text@1", nullable: true },
+      parentAuthorId: { codecId: "pg/text@1", nullable: true },
       parentAuthorName: { codecId: "pg/text@1", nullable: true },
       todoOwnerId: { codecId: "pg/text@1", nullable: true },
       content: { codecId: "pg/text@1", nullable: true },
@@ -1163,6 +1175,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
 				selected."authorId",
 				author_profile."name" AS "authorName",
 				author_profile."profileImage" AS "authorProfileImage",
+				parent_comment."authorId" AS "parentAuthorId",
 				parent_profile."name" AS "parentAuthorName",
 				todo."userId" AS "todoOwnerId",
 				selected."content",

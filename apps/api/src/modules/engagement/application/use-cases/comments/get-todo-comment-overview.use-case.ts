@@ -8,9 +8,12 @@ import type {
   TodoCommentOverviewCursor,
   TodoCommentRootPosition,
 } from "../../models/comments/todo-comment.types.js";
+import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
 import { type TodoCommentCursorCodecPort } from "../../ports/comments/todo-comment-cursor-codec.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
+  collectCommentAuthorIds,
+  collectCommentIds,
   toTodoCommentCursorPagination,
   toTodoCommentOverviewItem,
 } from "../../presenters/comments/index.js";
@@ -68,6 +71,7 @@ interface GetTodoCommentOverviewDependencies {
     TodoCommentReaderPort,
     "canAccessTodo" | "listOverview" | "findLikedCommentIds"
   >;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview" | "encodeOverview">;
 }
 
@@ -94,20 +98,33 @@ export class GetTodoCommentOverview {
       throw new ApplicationException(ErrorCode.SYS_0002);
     }
 
-    const commentIds = window.items.flatMap((item) => [
-      item.comment.id,
-      ...(item.previewReply === null ? [] : [item.previewReply.id]),
-    ]);
-    const likedCommentIds = await this.#dependencies.reader.findLikedCommentIds(
-      commentIds,
-      input.viewerId,
+    const visibleRecords = window.items.flatMap((item) =>
+      item.previewReply == null ? [item.comment] : [item.comment, item.previewReply],
     );
+    const participantIds = window.items.flatMap((item) =>
+      item.participantAuthors.map((author) => author.id),
+    );
+    const [likedCommentIds, blockedAuthorIds] = await Promise.all([
+      this.#dependencies.reader.findLikedCommentIds(
+        collectCommentIds(visibleRecords),
+        input.viewerId,
+      ),
+      this.#dependencies.blockReader.findBlockedCounterpartIds(input.viewerId, [
+        ...collectCommentAuthorIds(visibleRecords),
+        ...participantIds,
+      ]),
+    ]);
     const firstRecord = window.items.at(0)?.comment;
     const lastRecord = window.items.at(-1)?.comment;
 
     return {
       items: window.items.map((record) =>
-        toTodoCommentOverviewItem({ record, viewerId: input.viewerId, likedCommentIds }),
+        toTodoCommentOverviewItem({
+          record,
+          viewerId: input.viewerId,
+          likedCommentIds,
+          blockedAuthorIds,
+        }),
       ),
       pagination: toTodoCommentCursorPagination({
         size: input.size,

@@ -2,9 +2,11 @@ import { Module } from "@nestjs/common";
 
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { SocialBlocksModule, USER_BLOCK_READER } from "#api/modules/social/social-blocks.public";
 
 import { TODO_COMMENT_ACCOUNT_CLEANUP } from "./application/ports/comments/todo-comment-account-cleanup.port.js";
 import { TODO_COMMENT_ACCOUNT_CLEANUP_STORE } from "./application/ports/comments/todo-comment-account-cleanup.store.port.js";
+import { TODO_COMMENT_BLOCK_READER } from "./application/ports/comments/todo-comment-block-reader.port.js";
 import { TODO_COMMENT_CURSOR_CODEC } from "./application/ports/comments/todo-comment-cursor-codec.port.js";
 import { TODO_COMMENT_NOTIFICATION } from "./application/ports/comments/todo-comment-notification.port.js";
 import { TODO_COMMENT_READER } from "./application/ports/comments/todo-comment.reader.port.js";
@@ -31,7 +33,7 @@ import { HmacTodoCommentCursorCodec } from "./infrastructure/security/comments/h
 import { TodoCommentController } from "./presentation/controllers/comments/todo-comment.controller.js";
 
 @Module({
-  imports: [NotificationDeliveryModule, PlanningTodosModule],
+  imports: [NotificationDeliveryModule, PlanningTodosModule, SocialBlocksModule],
   controllers: [TodoCommentController],
   providers: [
     HmacTodoCommentCursorCodec,
@@ -47,6 +49,7 @@ import { TodoCommentController } from "./presentation/controllers/comments/todo-
     },
     { provide: TODO_COMMENT_NOTIFICATION, useClass: TodoCommentNotificationAdapter },
     { provide: TODO_VIEW_CACHE, useClass: TodoViewCacheAdapter },
+    { provide: TODO_COMMENT_BLOCK_READER, useExisting: USER_BLOCK_READER },
     getTodoDetailsProvider,
     getTodoCommentOverviewProvider,
     getTodoConversationProvider,

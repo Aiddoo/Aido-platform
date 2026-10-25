@@ -57,9 +57,15 @@ export function toTodoConversationItems(input: {
   focusCommentId: string | null;
   viewerId: string;
   likedCommentIds: ReadonlySet<string>;
+  blockedAuthorIds: ReadonlySet<string>;
 }): TodoConversationItem[] {
   return input.records.map((record, index) => ({
-    comment: toTodoCommentResponse(record, input.viewerId, input.likedCommentIds),
+    comment: toTodoCommentResponse(
+      record,
+      input.viewerId,
+      input.likedCommentIds,
+      input.blockedAuthorIds,
+    ),
     connection: toConversationConnection(
       record,
       index === input.records.length - 1 ? input.nextRecord : input.records[index + 1],
@@ -77,9 +83,15 @@ export function toTodoConversationAncestorItems(input: {
   records: readonly TodoCommentRecord[];
   viewerId: string;
   likedCommentIds: ReadonlySet<string>;
+  blockedAuthorIds: ReadonlySet<string>;
 }): TodoConversationItem[] {
   return input.records.map((record) => ({
-    comment: toTodoCommentResponse(record, input.viewerId, input.likedCommentIds),
+    comment: toTodoCommentResponse(
+      record,
+      input.viewerId,
+      input.likedCommentIds,
+      input.blockedAuthorIds,
+    ),
     connection: {
       visualDepth: record.depth,
       upperLaneDepths: record.depth === 0 ? [] : [record.depth - 1],

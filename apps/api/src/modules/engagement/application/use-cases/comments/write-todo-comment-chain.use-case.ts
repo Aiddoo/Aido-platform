@@ -16,6 +16,7 @@ import type {
   TodoCommentRecord,
 } from "../../models/comments/todo-comment.types.js";
 import { EngagementCommentLogEvent } from "../../observability/comments/engagement-comment-log.events.js";
+import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
 import { type TodoCommentNotificationPort } from "../../ports/comments/todo-comment-notification.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
@@ -25,6 +26,7 @@ import {
 } from "../../ports/comments/todo-comment.repository.port.js";
 import { type TodoViewCachePort } from "../../ports/comments/todo-view-cache.port.js";
 import { toTodoCommentResponse } from "../../presenters/comments/index.js";
+import { assertNotBlocked } from "../../services/comments/assert-not-blocked.js";
 import { assertTodoCommentAccess } from "../../services/comments/assert-todo-comment-access.js";
 import { settleAfterCommit } from "../../services/comments/settle-after-commit.js";
 
@@ -90,6 +92,7 @@ interface WriteTodoCommentChainDependencies {
     | "incrementReplyCount"
   >;
   readonly notification: Pick<TodoCommentNotificationPort, "notifyCommentsWritten">;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly todoViewCache: TodoViewCachePort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -178,6 +181,9 @@ export class WriteTodoCommentChain {
           : await this.#dependencies.repository.findComment(command.todoId, command.parentId);
       if (command.parentId !== null && parent === null) {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: command.parentId });
+      }
+      if (parent != null) {
+        await assertNotBlocked(this.#dependencies.blockReader, command.authorId, parent.authorId);
       }
 
       const chain = await this.#dependencies.repository.createCommentChain({

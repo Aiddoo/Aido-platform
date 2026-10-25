@@ -11,6 +11,7 @@ import type {
   ListTodoConversationParams,
   ListTodoCommentOverviewParams,
 } from "#api/modules/engagement/application/models/comments/todo-comment.types";
+import type { TodoCommentBlockReaderPort } from "#api/modules/engagement/application/ports/comments/todo-comment-block-reader.port";
 import type {
   TodoCommentActivityNotificationInput,
   TodoCommentWrittenInput,
@@ -226,6 +227,10 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
       authorProfileImage: null,
       todoOwnerId: this.todoOwners.get(todoId) ?? comment.authorId,
       parentId: comment.parentId,
+      parentAuthorId:
+        comment.parentId === null
+          ? null
+          : (this.repository.comments.get(comment.parentId)?.authorId ?? null),
       parentAuthorName:
         comment.parentId === null
           ? null
@@ -266,6 +271,28 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   }
   async findUserDisplayName(userId: string) {
     return this.names.get(userId) ?? null;
+  }
+}
+
+/** 차단 쌍을 방향과 상관없이 기억하는 댓글 차단 reader */
+export class StubTodoCommentBlockReader implements TodoCommentBlockReaderPort {
+  readonly blockedPairs = new Set<string>();
+
+  block(blockerId: string, blockedId: string): void {
+    this.blockedPairs.add(`${blockerId}:${blockedId}`);
+  }
+
+  async findBlockedCounterpartIds(
+    viewerId: string,
+    candidateUserIds: readonly string[],
+  ): Promise<ReadonlySet<string>> {
+    return new Set(
+      candidateUserIds.filter(
+        (userId) =>
+          this.blockedPairs.has(`${viewerId}:${userId}`) ||
+          this.blockedPairs.has(`${userId}:${viewerId}`),
+      ),
+    );
   }
 }
 

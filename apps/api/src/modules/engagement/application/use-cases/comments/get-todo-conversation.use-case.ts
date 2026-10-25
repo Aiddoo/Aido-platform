@@ -11,9 +11,11 @@ import type {
   TodoConversationPosition,
   TodoConversationScope,
 } from "../../models/comments/todo-comment.types.js";
+import { type TodoCommentBlockReaderPort } from "../../ports/comments/todo-comment-block-reader.port.js";
 import { type TodoCommentCursorCodecPort } from "../../ports/comments/todo-comment-cursor-codec.port.js";
 import { type TodoCommentReaderPort } from "../../ports/comments/todo-comment.reader.port.js";
 import {
+  collectCommentAuthorIds,
   collectCommentIds,
   toTodoCommentCursorPagination,
   toTodoConversationAncestorItems,
@@ -97,6 +99,7 @@ interface GetTodoConversationDependencies {
     TodoCommentReaderPort,
     "canAccessTodo" | "listConversation" | "findAncestors" | "findLikedCommentIds"
   >;
+  readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<
     TodoCommentCursorCodecPort,
     "decodeConversation" | "encodeConversation"
@@ -139,16 +142,24 @@ export class GetTodoConversation {
 
     const focusRecord = this.getFocusRecord(window.items, window.anchorIndex, anchor);
     const ancestorContext = await this.getFocusAncestors(input.todoId, focusRecord, window.items);
-    const likedCommentIds = await this.#dependencies.reader.findLikedCommentIds(
-      collectCommentIds([...window.items, ...ancestorContext.records]),
-      input.viewerId,
-    );
+    const visibleRecords = [...window.items, ...ancestorContext.records];
+    const [likedCommentIds, blockedAuthorIds] = await Promise.all([
+      this.#dependencies.reader.findLikedCommentIds(
+        collectCommentIds(visibleRecords),
+        input.viewerId,
+      ),
+      this.#dependencies.blockReader.findBlockedCounterpartIds(
+        input.viewerId,
+        collectCommentAuthorIds(visibleRecords),
+      ),
+    ]);
     const items = toTodoConversationItems({
       records: window.items,
       nextRecord: window.nextRecord,
       focusCommentId: focusRecord?.id ?? null,
       viewerId: input.viewerId,
       likedCommentIds,
+      blockedAuthorIds,
     });
     const firstRecord = window.items.at(0);
     const lastRecord = window.items.at(-1);
@@ -161,6 +172,7 @@ export class GetTodoConversation {
         ancestorContext,
         input.viewerId,
         likedCommentIds,
+        blockedAuthorIds,
       ),
       pagination: toTodoCommentCursorPagination({
         size: input.size,
@@ -246,6 +258,7 @@ export class GetTodoConversation {
     ancestorContext: FocusAncestorContext,
     viewerId: string,
     likedCommentIds: ReadonlySet<string>,
+    blockedAuthorIds: ReadonlySet<string>,
   ): TodoConversationFocus | null {
     if (focusRecord === null || itemIndex === null) {
       return null;
@@ -258,6 +271,7 @@ export class GetTodoConversation {
         records: ancestorContext.records,
         viewerId,
         likedCommentIds,
+        blockedAuthorIds,
       }),
       omittedAncestorCount: ancestorContext.omittedCount,
     };

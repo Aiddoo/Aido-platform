@@ -63,6 +63,18 @@ describe("WriteTodoCommentChain — 댓글 작성과 멱등성", () => {
     expect(fixture.invalidatedTodoIds).toEqual([1]);
   });
 
+  it("차단 관계인 사람의 댓글에는 답글을 저장하지 않는다", async () => {
+    // Given
+    const parent = fixture.addComment();
+    fixture.blockReader.block(ENGAGEMENT_VIEWER_ID, ENGAGEMENT_OWNER_ID);
+    // When / Then
+    await expect(
+      new WriteTodoCommentChain(fixture).execute({ ...input(), parentId: parent.id }),
+    ).rejects.toMatchObject({ errorCode: "BLOCK_2204" });
+    expect(fixture.repository.comments.size).toBe(1);
+    expect(fixture.notification.written).toEqual([]);
+  });
+
   it("알림이 실패해도 저장된 댓글과 성공 응답을 유지한다", async () => {
     // Given
     vi.spyOn(fixture.notification, "notifyCommentsWritten").mockRejectedValueOnce(

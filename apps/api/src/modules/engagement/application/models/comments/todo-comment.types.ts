@@ -11,6 +11,8 @@ export interface TodoCommentRecord {
   /** 뿌리 → 부모 순서의 조상 id. focus 조상 조회에만 쓰고 wire에는 싣지 않는다. */
   path: string[];
   depth: number;
+  /** 직계 부모 작성자. 차단 관계면 답글 대상 이름을 가린다. 최상위 댓글이면 null */
+  parentAuthorId: string | null;
   parentAuthorName: string | null;
   authorId: string;
   authorName: string | null;
