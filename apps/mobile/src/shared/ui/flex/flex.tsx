@@ -31,22 +31,22 @@ export function Flex({
   ...props
 }: FlexProps) {
   const spacingStyle = {
-    ...(flex !== undefined && { flex }),
-    ...(gap !== undefined && { gap }),
-    ...(p !== undefined && { padding: p }),
-    ...(px !== undefined && { paddingHorizontal: px }),
-    ...(py !== undefined && { paddingVertical: py }),
-    ...(pt !== undefined && { paddingTop: pt }),
-    ...(pb !== undefined && { paddingBottom: pb }),
-    ...(pl !== undefined && { paddingLeft: pl }),
-    ...(pr !== undefined && { paddingRight: pr }),
-    ...(m !== undefined && { margin: m }),
-    ...(mx !== undefined && { marginHorizontal: mx }),
-    ...(my !== undefined && { marginVertical: my }),
-    ...(mt !== undefined && { marginTop: mt }),
-    ...(mb !== undefined && { marginBottom: mb }),
-    ...(ml !== undefined && { marginLeft: ml }),
-    ...(mr !== undefined && { marginRight: mr }),
+    ...(flex != null && { flex }),
+    ...(gap != null && { gap }),
+    ...(p != null && { padding: p }),
+    ...(px != null && { paddingHorizontal: px }),
+    ...(py != null && { paddingVertical: py }),
+    ...(pt != null && { paddingTop: pt }),
+    ...(pb != null && { paddingBottom: pb }),
+    ...(pl != null && { paddingLeft: pl }),
+    ...(pr != null && { paddingRight: pr }),
+    ...(m != null && { margin: m }),
+    ...(mx != null && { marginHorizontal: mx }),
+    ...(my != null && { marginVertical: my }),
+    ...(mt != null && { marginTop: mt }),
+    ...(mb != null && { marginBottom: mb }),
+    ...(ml != null && { marginLeft: ml }),
+    ...(mr != null && { marginRight: mr }),
   };
 
   return (

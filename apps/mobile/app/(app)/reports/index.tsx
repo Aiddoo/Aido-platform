@@ -1,8 +1,9 @@
 import { reportTypeSchema } from '@aido/api';
 import { ReportCard } from '@src/features/ai/components/report-card';
 import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
-import { ScallopedContainer } from '@src/features/ai/components/scalloped-container';
-import { getSampleReport } from '@src/features/ai/constants/sample-reports';
+import { REPORT_TYPE_LABEL_KEYS } from '@src/features/ai/constants/report-type';
+import { getSampleReport, SAMPLE_REPORT_IDS } from '@src/features/ai/constants/sample-reports';
+import type { ReportType } from '@src/features/ai/domains/ai.model';
 import { invalidateAiReports } from '@src/features/ai/queries/ai-cache';
 import { useGetReportStatusQueryOptions } from '@src/features/ai/queries/get-report-status-query-options';
 import { useGetReportsQueryOptions } from '@src/features/ai/queries/get-reports-query-options';
@@ -19,26 +20,15 @@ import {
   StyledSafeAreaView,
   Text,
   VStack,
+  ScallopedContainer,
+  Box,
 } from '@src/shared/ui';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { usePrefetchQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Tabs } from 'heroui-native';
 import { Suspense, useCallback } from 'react';
-import { Image, RefreshControl, ScrollView, View } from 'react-native';
+import { Image, RefreshControl, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
-import type { z } from 'zod';
-
-type ReportType = z.infer<typeof reportTypeSchema>;
-
-const REPORT_TYPE_LABEL_KEYS = {
-  WEEKLY: 'report.typeWeekly',
-  MONTHLY: 'report.typeMonthly',
-} as const satisfies Record<ReportType, string>;
-
-const SAMPLE_REPORT_IDS = {
-  WEEKLY: 'sample-weekly',
-  MONTHLY: 'sample-monthly',
-} as const satisfies Record<ReportType, string>;
 
 function useReportType() {
   const { type } = useLocalSearchParams();
@@ -64,7 +54,7 @@ function ReportsScreen() {
         <Spacing size={16} />
 
         <ScallopedContainer>
-          <View className="items-center px-5 pt-4">
+          <Box className="items-center px-5 pt-4">
             <Image
               source={require('@assets/images/ido_cat_suggestion.webp')}
               style={{ width: 100, height: 100 }}
@@ -77,23 +67,23 @@ function ReportsScreen() {
             <Text size="b4" shade={6} align="center">
               {isPremium ? t('report.list.premiumDescription') : t('report.list.freeDescription')}
             </Text>
-          </View>
+          </Box>
 
           <Spacing size={16} />
 
           {isPremium && (
-            <View className="px-4">
+            <Box className="px-4">
               <QueryErrorBoundary>
                 <Suspense fallback={<ReportStatusBanner.Loading />}>
                   <ReportStatusBanner />
                 </Suspense>
               </QueryErrorBoundary>
-            </View>
+            </Box>
           )}
 
           <Spacing size={12} />
 
-          <View className="px-4">
+          <Box className="px-4">
             <Tabs
               value={reportType}
               onValueChange={(value) => {
@@ -110,11 +100,11 @@ function ReportsScreen() {
                 <ReportTypeTab type="MONTHLY" />
               </Tabs.List>
             </Tabs>
-          </View>
+          </Box>
 
           <Spacing size={8} />
 
-          <View className="px-4 pb-4">
+          <Box className="px-4 pb-4">
             {match(isPremium)
               .with(true, () => (
                 <QueryErrorBoundary resetKeys={[reportType]}>
@@ -125,7 +115,7 @@ function ReportsScreen() {
               ))
               .with(false, () => <FreeReportPreview />)
               .exhaustive()}
-          </View>
+          </Box>
         </ScallopedContainer>
 
         <Spacing size={32} />
@@ -158,9 +148,9 @@ function FreeReportPreview() {
 
   return (
     <VStack gap={12}>
-      <View className="opacity-60">
+      <Box className="opacity-60">
         <ReportCard report={sampleReport} isSample isLast />
-      </View>
+      </Box>
 
       <Button size="medium" onPress={() => push('/settings/subscription')}>
         {t('report.list.subscribeCta')}
@@ -171,6 +161,7 @@ function FreeReportPreview() {
 
 function ReportList() {
   const [reportType] = useReportType();
+  usePrefetchQuery(useGetReportStatusQueryOptions());
   const { data: reports } = useSuspenseQuery(useGetReportsQueryOptions({ type: reportType }));
 
   if (reports.length === 0) {
@@ -199,9 +190,9 @@ function PremiumPendingPreview() {
 
   return (
     <VStack gap={12}>
-      <View className="opacity-60">
+      <Box className="opacity-60">
         <ReportCard report={sampleReport} isSample isLast />
-      </View>
+      </Box>
 
       <Text size="b3" shade={7} align="center">
         {daysUntil === 0

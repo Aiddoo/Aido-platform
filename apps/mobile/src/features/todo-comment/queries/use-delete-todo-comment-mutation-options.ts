@@ -4,8 +4,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
-import { findCachedTodoComment } from './todo-comment-cache';
-import { invalidateTodoCommentQueries } from './todo-comment-query-invalidation';
+import { findCachedTodoComment, invalidateTodoCommentQueries } from './todo-comment-cache';
 
 interface DeleteTodoCommentMutationParams {
   commentId: string;

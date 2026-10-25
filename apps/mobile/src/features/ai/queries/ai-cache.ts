@@ -26,3 +26,7 @@ export function invalidateAiReports(queryClient: QueryClient) {
     queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.lists() }),
   ]);
 }
+
+export function invalidateAiSuggestions(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: AI_QUERY_KEYS.suggestions() });
+}

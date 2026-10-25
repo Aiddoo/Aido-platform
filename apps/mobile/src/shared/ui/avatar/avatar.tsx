@@ -9,7 +9,7 @@ interface AvatarProps extends AvatarRootProps {
 }
 
 export function Avatar({ isSelected, className, children, ...props }: AvatarProps) {
-  const showSelection = isSelected !== undefined;
+  const showSelection = isSelected != null;
 
   return (
     <Box className={cn(showSelection && 'relative overflow-visible')}>

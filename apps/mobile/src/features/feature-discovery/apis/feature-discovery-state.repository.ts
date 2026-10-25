@@ -38,7 +38,7 @@ export function isFeatureDiscoverySeen(
   identity: FeatureDiscoveryStateIdentity,
 ): boolean {
   try {
-    return storage.getString(featureDiscoverySeenKey(identity)) !== undefined;
+    return storage.getString(featureDiscoverySeenKey(identity)) != null;
   } catch {
     return true;
   }

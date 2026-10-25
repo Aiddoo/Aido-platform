@@ -30,9 +30,9 @@ export function CalendarProvider({ children }: { children: ReactNode }) {
 }
 
 export const useCalendarContext = (): CalendarContextValue => {
-  const ctx = useContext(CalendarContext);
-  if (!ctx) {
+  const calendar = useContext(CalendarContext);
+  if (!calendar) {
     throw new Error('Calendar subcomponents must be used within <CalendarProvider>');
   }
-  return ctx;
+  return calendar;
 };

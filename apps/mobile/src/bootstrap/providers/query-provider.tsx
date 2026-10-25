@@ -48,6 +48,6 @@ const queryClient = new QueryClient({
 });
 
 /** 앱 전역 React Query 캐시 및 기본 옵션을 제공하는 Provider. */
-export const QueryProvider = ({ children }: PropsWithChildren) => {
+export function QueryProvider({ children }: PropsWithChildren) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-};
+}

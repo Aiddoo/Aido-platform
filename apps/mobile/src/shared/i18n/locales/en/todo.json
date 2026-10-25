@@ -89,7 +89,10 @@
     "changeCategory": "Change category",
     "doToday": "Do today",
     "doTomorrow": "Do tomorrow",
-    "changeSubmit": "Save"
+    "changeSubmit": "Save",
+    "more": "More options",
+    "complete": "Mark as done",
+    "uncomplete": "Mark as not done"
   },
   "list": {
     "loadError": "Something went wrong while loading your to-dos."
@@ -141,8 +144,7 @@
   "calendar": {
     "week": "Week",
     "month": "Month",
-    "loadFailed": "Couldn’t update calendar markers",
-    "loading": "Loading completion markers"
+    "loadFailed": "Couldn’t update calendar markers"
   },
   "feed": {
     "me": "Me",
@@ -206,20 +208,11 @@
     "loadError": "Couldn't load comments. Try again"
   },
   "interaction": {
-    "title": "Your nudges",
-    "received": "Received",
-    "sent": "Sent",
     "detailTitle": "A little encouragement",
-    "entry": "Your nudges",
-    "entryDescription": "Send a little reply to a friend who cheered you on",
-    "emptyTitle": "No nudges yet",
-    "emptyDescription": "Tap the paw on a friend’s to-do to cheer them on",
     "loadError": "Couldn’t load your nudges",
     "unavailable": "You can’t reply to this nudge right now",
     "unavailableDescription": "Your friendship or this to-do’s visibility may have changed",
     "unavailableTodo": "This to-do is no longer available",
-    "disabledTitle": "Nudge replies are on their way",
-    "disabledDescription": "You can still manage your to-dos and send nudges to friends",
     "from": "Encouragement from {{name}}",
     "to": "Encouragement for {{name}}",
     "openTodo": "View to-do",
@@ -238,14 +231,12 @@
     "thanksTitle": "Thank your friends",
     "thanksEmpty": "No one new to thank right now",
     "thanksEmptyDescription": "You may have thanked them already, or your friendship may have changed",
-    "thanksSend": "Send thanks",
     "thanksSent": "Your thanks have been sent",
     "alreadyThanked": "You’ve already sent your thanks",
     "thanksLoadError": "Couldn’t load the friends who cheered you on",
     "encouragementTitle": "Cheering you on, at your own pace!",
     "replyCompletionHint": "Sending a reply does not complete your to-do",
     "completedThanksHint": "You did it! Send a little thanks to the friends who cheered you on.",
-    "sentEmptyTitle": "No nudges sent yet",
     "thanksSelectionHint": "Your thanks will go to everyone in this list. Any nudges that arrive later can be thanked separately.",
     "thanksSendCount_one": "Thank {{count}} friend",
     "thanksSendCount_other": "Thank {{count}} friends",

@@ -2,7 +2,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import type { WidgetInfo } from 'react-native-android-widget';
 
 import type { WidgetProps } from '../domains/widget-props.model';
-import { createInitialWidgetProps } from './widget-initial-props';
+import { createInitialWidgetProps } from '../utils/widget-initial-props';
 import { renderAndroidWidget } from './widgets.android';
 
 jest.mock('react-native-android-widget', () => ({
@@ -265,8 +265,15 @@ describe('Android 위젯 표시 계약', () => {
 
   it('긴 제목에는 한 줄 말줄임을 적용하고 큰 카운트는 축소한다', () => {
     // Given
-    const props = { ...buildProps(2), completedTodos: 12345, totalTodos: 999999 };
-    props.topTodos[0] = { ...props.topTodos[0]!, title: '아주 긴 제목 '.repeat(30) };
+    const baseProps = buildProps(2);
+    const props = {
+      ...baseProps,
+      completedTodos: 12345,
+      totalTodos: 999999,
+      topTodos: baseProps.topTodos.map((todo, index) =>
+        index === 0 ? { ...todo, title: '아주 긴 제목 '.repeat(30) } : todo,
+      ),
+    };
     // When
     const nodes = render(props);
     const title = nodes.find((node) => node.props.text === props.topTodos[0]?.title);

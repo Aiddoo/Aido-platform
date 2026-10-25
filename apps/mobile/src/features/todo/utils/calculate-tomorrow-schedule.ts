@@ -1,4 +1,4 @@
-import { getNextDay, isBeforeDay } from '@src/shared/utils/date';
+import { getNextDay, isBeforeDay, startOfDay } from '@src/shared/utils/date';
 
 interface TomorrowSchedule {
   startDate: Date;
@@ -7,9 +7,9 @@ interface TomorrowSchedule {
 
 export const calculateTomorrowSchedule = (
   endDateObj: Date | null,
-  today?: Date,
+  today: Date,
 ): TomorrowSchedule => {
-  const tomorrow = getNextDay(today ?? new Date());
+  const tomorrow = getNextDay(startOfDay(today));
   const isEndDateExpired = endDateObj != null && isBeforeDay(endDateObj, tomorrow);
 
   return {

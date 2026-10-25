@@ -14,6 +14,7 @@ import type { ApiError } from '@src/shared/errors/api-error';
 import { ParseError } from '@src/shared/errors/infra-error';
 import { ok, type Result } from '@src/shared/errors/result';
 
+import { AI_LOG_EVENT } from '../constants/ai-log-events';
 import type { AiUsage } from '../domains/ai-usage.model';
 import type {
   AiReport,
@@ -89,7 +90,7 @@ export class AiService {
 
     const parsed = reportStatusResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error('[AiService] Parse failed', undefined, {
+      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'getReportStatus',
         zodError: parsed.error.message,
       });
@@ -114,7 +115,7 @@ export class AiService {
 
     const parsed = aiReportListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error('[AiService] Parse failed', undefined, {
+      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'getReports',
         zodError: parsed.error.message,
       });
@@ -133,7 +134,7 @@ export class AiService {
 
     const parsed = aiReportResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error('[AiService] Parse failed', undefined, {
+      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'getReportById',
         zodError: parsed.error.message,
       });
@@ -152,7 +153,7 @@ export class AiService {
 
     const parsed = suggestionListResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error('[AiService] Parse failed', undefined, {
+      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'getSuggestions',
         zodError: parsed.error.message,
       });
@@ -177,7 +178,7 @@ export class AiService {
 
     const parsed = parseMemoResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error('[AiService] Parse failed', undefined, {
+      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'parseMemo',
         zodError: parsed.error.message,
       });
@@ -199,7 +200,7 @@ export class AiService {
 
     const parsed = suggestionActionResponseSchema.safeParse(result.value);
     if (!parsed.success) {
-      this.#logger.error('[AiService] Parse failed', undefined, {
+      this.#logger.error(AI_LOG_EVENT.RESPONSE_PARSE_FAILED, undefined, {
         method: 'handleSuggestionAction',
         zodError: parsed.error.message,
       });

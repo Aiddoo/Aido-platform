@@ -1,6 +1,8 @@
 import type { Logger } from '@src/core/ports/logger';
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
+import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
+
 /**
  * RevenueCat SDK 라이프사이클 관리
  *
@@ -17,7 +19,7 @@ export class RevenueCatSdkManager {
 
   configure = (apiKey: string): void => {
     if (!apiKey) {
-      this.#logger.warn('[RevenueCatSdkManager] API key is empty, skipping configure');
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_SKIPPED);
       return;
     }
 
@@ -28,7 +30,7 @@ export class RevenueCatSdkManager {
       Purchases.configure({ apiKey });
       this.#configured = true;
     } catch (error) {
-      this.#logger.warn('[RevenueCatSdkManager] Configure failed', {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_CONFIGURE_FAILED, {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -42,7 +44,7 @@ export class RevenueCatSdkManager {
     try {
       await Purchases.logIn(userId);
     } catch (error) {
-      this.#logger.warn('[RevenueCatSdkManager] logIn failed', {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGIN_FAILED, {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -61,7 +63,7 @@ export class RevenueCatSdkManager {
 
       await Purchases.logOut();
     } catch (error) {
-      this.#logger.warn('[RevenueCatSdkManager] logOut failed', {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.REVENUECAT_LOGOUT_FAILED, {
         error: error instanceof Error ? error.message : String(error),
       });
     }

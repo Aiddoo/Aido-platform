@@ -4,16 +4,21 @@ import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-intera
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
-import { ChatBubbleIcon, EyeIcon, HStack, Text, VStack } from '@src/shared/ui';
+import { ChatBubbleIcon, EyeIcon, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 
 import type { TodoDetails } from '../domains/todo.model';
 import { useTodoScreenParams } from '../hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '../queries/get-todo-details-query-options';
+import { todoThanksSheetHref } from '../utils/navigation/todo-sheet-href';
+import { SubTodoIndent } from './sub-todo-indent';
 import { TodoCheckbox, TodoLabel, TodoProgress, TodoRow } from './todo-row';
 
 export function TodoDetailCard() {
@@ -67,7 +72,7 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
       />
 
       {todo.subTodos.length > 0 && (
-        <VStack className="ml-8 border-l border-gray-2 pl-4" gap={0}>
+        <SubTodoIndent>
           {todo.subTodos.map((item) => (
             <TodoRow
               key={item.id}
@@ -75,7 +80,7 @@ function TodoBody({ detail }: TodoDetailSectionProps) {
               top={<TodoLabel isChecked={item.completed}>{item.title}</TodoLabel>}
             />
           ))}
-        </VStack>
+        </SubTodoIndent>
       )}
     </VStack>
   );
@@ -138,23 +143,33 @@ TodoDetailCard.Loading = function Loading() {
     <VStack gap={14}>
       <HStack gap={10} align="center">
         <Skeleton className="size-11 rounded-full" />
-        <VStack gap={6}>
-          <Skeleton className="h-4 w-24 rounded" />
-          <Skeleton className="h-3 w-16 rounded" />
+        <VStack flex={1} gap={2} className="min-w-0">
+          <TextSkeleton size="b3" className="w-24" />
+          <TextSkeleton size="e1" className="w-16" />
         </VStack>
       </HStack>
-      <Skeleton className="h-6 w-4/5 rounded" />
-      <Skeleton className="ml-8 h-5 w-3/5 rounded" />
-      <Skeleton className="h-3 w-28 rounded" />
+      <TodoRow
+        left={<Skeleton className="size-5 rounded-md" />}
+        top={<TextSkeleton size="b3" className="w-4/5" />}
+      />
+      <HStack gap={16} align="center">
+        {times(2, (index) => (
+          <HStack key={index} gap={4} align="center">
+            <Skeleton className="size-4 rounded-full" />
+            <TextSkeleton size="e1" className="w-4" />
+          </HStack>
+        ))}
+      </HStack>
     </VStack>
   );
 };
 
 function TodoDetailThanksAction({ detail }: TodoDetailSectionProps) {
   const { data: me } = useQuery(useGetMeQueryOptions());
+  const push = useSingleTap(router.push);
   return NudgeInteractionPolicy.isThankableTodo(detail.todo, {
     isOwner: me?.id === detail.owner.id,
   }) ? (
-    <NudgeThanksButton todoId={detail.todo.id} />
+    <NudgeThanksButton onPress={() => push(todoThanksSheetHref({ todoId: detail.todo.id }))} />
   ) : null;
 }

@@ -1,6 +1,9 @@
 import type { NudgeReplyKind } from '@aido/api';
 import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
-import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-interaction.model';
+import {
+  type NudgeInteraction,
+  NudgeInteractionPolicy,
+} from '@src/features/nudge/domains/nudge-interaction.model';
 import {
   nudgeScreenParamsSchema,
   useNudgeScreenParams,
@@ -8,6 +11,7 @@ import {
 import { useGetNudgeInteractionQueryOptions } from '@src/features/nudge/queries/get-nudge-interaction-query-options';
 import { useReplyToNudgeMutationOptions } from '@src/features/nudge/queries/use-reply-to-nudge-mutation-options';
 import { getNudgeReplyLabelKey } from '@src/features/nudge/utils/nudge-reply-label';
+import { todoThanksSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { isApiError } from '@src/shared/errors';
@@ -23,12 +27,13 @@ import {
   PawIcon,
   QueryErrorBoundary,
   Result,
-  ScreenTitleBar,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -42,14 +47,15 @@ function NudgeDetailScreen() {
   const [{ data: nudge }, { data: me }] = useSuspenseQueries({
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
-  const mutation = useMutation(useReplyToNudgeMutationOptions());
   const { t } = useTranslation('todo');
   const isReceived = nudge.receiverId === me.id;
   const friendName = isReceived ? nudge.senderName : nudge.receiverName;
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
   const status = NudgeInteractionPolicy.getStatus(nudge);
-  const reply = (replyKind: NudgeReplyKind) => mutation.mutate({ nudgeId, input: { replyKind } });
-  const openTodo = useSingleTap(() =>
+  const handleOpenThanksSheet = useSingleTap(() =>
+    router.push(todoThanksSheetHref({ todoId: nudge.todoId })),
+  );
+  const handleOpenTodo = useSingleTap(() =>
     router.navigate({ pathname: '/todo/[todoId]', params: { todoId: nudge.todoId } }),
   );
 
@@ -63,7 +69,7 @@ function NudgeDetailScreen() {
               {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
             </Text>
             <Text size="e1" shade={5}>
-              {formatRelativeTime(nudge.createdAt)}
+              {formatRelativeTime(nudge.createdAt, new Date())}
             </Text>
           </VStack>
         </HStack>
@@ -72,7 +78,7 @@ function NudgeDetailScreen() {
           <Text size="t3" weight="bold">
             {t('interaction.encouragementTitle')}
           </Text>
-          {nudge.message !== null && (
+          {nudge.message != null && (
             <Text size="b3" shade={6}>
               {nudge.message}
             </Text>
@@ -82,9 +88,9 @@ function NudgeDetailScreen() {
         <Button
           variant="weak"
           color="dark"
-          isDisabled={nudge.todoTitle === null}
+          isDisabled={nudge.todoTitle == null}
           className="p-4"
-          onPress={openTodo}
+          onPress={handleOpenTodo}
         >
           <HStack align="center" gap={12} className="w-full">
             <PawIcon width={28} height={28} colorClassName="text-main" />
@@ -113,48 +119,7 @@ function NudgeDetailScreen() {
             />
           ))
           .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
-            <VStack gap={12}>
-              <Text size="b2" weight="bold">
-                {t('interaction.replyTitle')}
-              </Text>
-              <Text size="b4" shade={5}>
-                {t('interaction.replyHint')}
-              </Text>
-              <NudgeDetailScreen.ReplyButton
-                value="STARTING"
-                isSelected={nudge.replyKind === 'STARTING'}
-                isDisabled={mutation.isPending}
-                onPress={() => reply('STARTING')}
-              />
-              <NudgeDetailScreen.ReplyButton
-                value="THANKFUL"
-                isSelected={nudge.replyKind === 'THANKFUL'}
-                isDisabled={mutation.isPending}
-                onPress={() => reply('THANKFUL')}
-              />
-              <NudgeDetailScreen.ReplyButton
-                value="LATER"
-                isSelected={nudge.replyKind === 'LATER'}
-                isDisabled={mutation.isPending}
-                onPress={() => reply('LATER')}
-              />
-              {mutation.isError && (
-                <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
-                  {isApiError(mutation.error) ? mutation.error.message : t('toast.retryLater')}
-                </Text>
-              )}
-              {mutation.isSuccess && (
-                <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
-                  {t('interaction.replySent')}
-                </Text>
-              )}
-              <Text size="e1" shade={5}>
-                {t('interaction.replyChangedHint')}
-              </Text>
-              <Text size="e1" shade={5}>
-                {t('interaction.replyCompletionHint')}
-              </Text>
-            </VStack>
+            <NudgeDetailScreen.ReplyPanel nudge={nudge} />
           ))
           .with({ isReceived: true, isTodoCompleted: true }, () => (
             <VStack gap={12}>
@@ -165,18 +130,18 @@ function NudgeDetailScreen() {
                   {t('interaction.completedThanksHint')}
                 </Text>
               )}
-              <NudgeThanksButton
-                todoId={nudge.todoId}
-                className={status === 'THANKED' ? 'hidden' : undefined}
-              />
+              {status !== 'THANKED' && <NudgeThanksButton onPress={handleOpenThanksSheet} />}
             </VStack>
           ))
           .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
           .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
             <Text size="b3" shade={6}>
-              {nudge.replyKind !== null
-                ? t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(nudge.replyKind)) })
-                : t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.waiting')}
+              {match(nudge)
+                .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
+                  t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+                )
+                .with({ isTodoCompleted: true }, () => t('interaction.completed'))
+                .otherwise(() => t('interaction.waiting'))}
             </Text>
           ))
           .exhaustive()}
@@ -184,6 +149,60 @@ function NudgeDetailScreen() {
     </ScrollView>
   );
 }
+
+NudgeDetailScreen.ReplyPanel = function ReplyPanel({ nudge }: { nudge: NudgeInteraction }) {
+  const { t } = useTranslation('todo');
+  const { nudgeId } = useNudgeScreenParams();
+  const replyMutation = useMutation(useReplyToNudgeMutationOptions());
+
+  const handleReply = (replyKind: NudgeReplyKind) =>
+    replyMutation.mutate({ nudgeId, input: { replyKind } });
+
+  return (
+    <VStack gap={12}>
+      <Text size="b2" weight="bold">
+        {t('interaction.replyTitle')}
+      </Text>
+      <Text size="b4" shade={5}>
+        {t('interaction.replyHint')}
+      </Text>
+      <NudgeDetailScreen.ReplyButton
+        value="STARTING"
+        isSelected={nudge.replyKind === 'STARTING'}
+        isDisabled={replyMutation.isPending}
+        onPress={() => handleReply('STARTING')}
+      />
+      <NudgeDetailScreen.ReplyButton
+        value="THANKFUL"
+        isSelected={nudge.replyKind === 'THANKFUL'}
+        isDisabled={replyMutation.isPending}
+        onPress={() => handleReply('THANKFUL')}
+      />
+      <NudgeDetailScreen.ReplyButton
+        value="LATER"
+        isSelected={nudge.replyKind === 'LATER'}
+        isDisabled={replyMutation.isPending}
+        onPress={() => handleReply('LATER')}
+      />
+      {replyMutation.isError && (
+        <Text size="b4" tone="danger" accessibilityLiveRegion="polite">
+          {isApiError(replyMutation.error) ? replyMutation.error.message : t('toast.retryLater')}
+        </Text>
+      )}
+      {replyMutation.isSuccess && (
+        <Text size="b4" tone="brand" accessibilityLiveRegion="polite">
+          {t('interaction.replySent')}
+        </Text>
+      )}
+      <Text size="e1" shade={5}>
+        {t('interaction.replyChangedHint')}
+      </Text>
+      <Text size="e1" shade={5}>
+        {t('interaction.replyCompletionHint')}
+      </Text>
+    </VStack>
+  );
+};
 
 NudgeDetailScreen.ThanksStatus = function ThanksStatus() {
   const { t } = useTranslation('todo');
@@ -217,10 +236,10 @@ NudgeDetailScreen.ReplyButton = function ReplyButton({
       color={isSelected ? 'primary' : 'dark'}
       variant="weak"
       size="large"
-      className={`border ${isSelected ? 'border-main' : 'border-gray-2 bg-background'}`}
+      className={cn('border', isSelected ? 'border-main' : 'border-gray-2 bg-background')}
       accessibilityState={{ selected: isSelected, disabled: props.isDisabled }}
     >
-      <HStack gap={12} align="center" className={`w-full ${props.isDisabled ? 'opacity-40' : ''}`}>
+      <HStack gap={12} align="center" className={cn('w-full', props.isDisabled && 'opacity-40')}>
         <Icon width={20} height={20} colorClassName="text-main" />
         <Text
           size="b3"
@@ -255,30 +274,28 @@ NudgeDetailScreen.Error = function ErrorState({ error, reset }: QueryErrorFallba
 
 NudgeDetailScreen.Loading = function Loading() {
   return (
-    <VStack p={24} gap={24}>
-      <HStack gap={12} align="center">
-        <Skeleton className="size-12 rounded-full" />
-        <Skeleton className="w-40 h-5 rounded" />
-      </HStack>
-      <Skeleton className="w-3/4 h-8 rounded" />
-      <Skeleton className="w-full h-20 rounded-2xl" />
-      <Skeleton className="w-full h-12 rounded-2xl" />
-      <Skeleton className="w-full h-12 rounded-2xl" />
-      <Skeleton className="w-full h-12 rounded-2xl" />
-    </VStack>
+    <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+      <VStack gap={24}>
+        <HStack gap={12} align="center">
+          <Skeleton className="size-12 rounded-full" />
+          <VStack flex={1} gap={4}>
+            <TextSkeleton size="b3" className="w-40" />
+            <TextSkeleton size="e1" className="w-16" />
+          </VStack>
+        </HStack>
+        <TextSkeleton size="t3" className="w-3/4" />
+        <Skeleton className="h-14 w-full rounded-xl" />
+      </VStack>
+    </ScrollView>
   );
 };
 
 export default function NudgeDetailRoute() {
   const params = nudgeScreenParamsSchema.safeParse(useLocalSearchParams());
   const { t } = useTranslation('todo');
-  const goBack = useSingleTap(() =>
-    router.canGoBack() ? router.back() : router.replace('/notifications'),
-  );
 
   return (
-    <StyledSafeAreaView edges={['top', 'left', 'right', 'bottom']} className="flex-1 bg-background">
-      <ScreenTitleBar title={t('interaction.detailTitle')} onBackPress={goBack} />
+    <StyledSafeAreaView edges={['left', 'right', 'bottom']} className="flex-1 bg-background">
       {params.success ? (
         <QueryErrorBoundary resetKeys={[params.data.nudgeId]} fallback={NudgeDetailScreen.Error}>
           <Suspense fallback={<NudgeDetailScreen.Loading />}>

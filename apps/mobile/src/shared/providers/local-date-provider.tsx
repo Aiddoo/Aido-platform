@@ -106,7 +106,7 @@ export function LocalDateProvider({ children }: PropsWithChildren) {
     let localMidnightTimer: ReturnType<typeof setTimeout> | null = null;
 
     const clearLocalMidnightTimer = () => {
-      if (localMidnightTimer !== null) {
+      if (localMidnightTimer != null) {
         clearTimeout(localMidnightTimer);
         localMidnightTimer = null;
       }
@@ -149,7 +149,7 @@ export function LocalDateProvider({ children }: PropsWithChildren) {
 
 export function useLocalDate(): LocalDateState {
   const localDateState = useContext(LocalDateContext);
-  if (localDateState === null) {
+  if (localDateState == null) {
     throw new Error('useLocalDate must be used within LocalDateProvider');
   }
   return localDateState;

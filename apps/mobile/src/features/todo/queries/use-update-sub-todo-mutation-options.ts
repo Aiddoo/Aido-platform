@@ -3,8 +3,8 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { cancelTodoListQuery, restoreTodo, snapshotTodo, updateTodoInList } from './todo-cache';
@@ -43,7 +43,7 @@ export const useUpdateSubTodoMutationOptions = () => {
       trackEvent('todo_item_updated', { todo_id: todoId, item_id: subTodoId });
     },
     onError: (_error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
       toast.error(undefined, { fallback: t('todo:toast.subTodoUpdateFailed') });
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);

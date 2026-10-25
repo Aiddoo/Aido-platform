@@ -1,6 +1,8 @@
 import { pushNotificationDataSchema, type PushNotificationData } from '@aido/api';
 import { useAutomaticPushRegistration } from '@src/features/activation/hooks/use-automatic-push-registration';
-import { useNotificationHandler } from '@src/features/notification/hooks/use-notification-handler';
+import { NOTIFICATION_LOG_EVENT } from '@src/features/notification/constants/notification-log-events';
+import { useForegroundNotificationSync } from '@src/features/notification/hooks/use-foreground-notification-sync';
+import { useNotificationResponseHandler } from '@src/features/notification/hooks/use-notification-response-handler';
 import { getNotificationResponseDisposition } from '@src/features/notification/utils/navigation/notification-response-disposition';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { toError } from '@src/shared/errors';
@@ -21,10 +23,6 @@ import { AppState, Platform } from 'react-native';
 import { useAuth } from './auth-provider';
 import { useLogger, useNotificationService } from './di-context';
 
-type NotificationResponseHandler = ReturnType<
-  typeof useNotificationHandler
->['handleNotificationResponse'];
-
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -40,9 +38,8 @@ function NativeNotificationProvider({ children }: PropsWithChildren) {
   const { status } = useAuth();
   const isAuthenticated = status === 'authenticated';
   const canRegisterPushAutomatically = useAutomaticPushRegistration();
-  const { handleNotificationResponse, handleForegroundNotification } = useNotificationHandler({
-    isAuthenticated,
-  });
+  const handleNotificationResponse = useNotificationResponseHandler();
+  const handleForegroundNotification = useForegroundNotificationSync({ isAuthenticated });
   const { data: me } = useQuery({ ...useGetMeQueryOptions(), enabled: isAuthenticated });
   const processResponse = useNotificationResponseProcessor({
     accountId: isAuthenticated ? (me?.id ?? null) : null,
@@ -88,7 +85,7 @@ function useNotificationResponseProcessor({
 }: {
   authStatus: 'loading' | 'locked' | 'authenticated' | 'unauthenticated';
   accountId: string | null;
-  handleNotificationResponse: NotificationResponseHandler;
+  handleNotificationResponse: ReturnType<typeof useNotificationResponseHandler>;
 }) {
   const logger = useLogger();
   const navigationRef = useNavigationContainerRef();
@@ -121,13 +118,13 @@ function useNotificationResponseProcessor({
     session.current = { authStatus, accountId };
     if (
       (previous.authStatus === 'authenticated' && authStatus !== 'authenticated') ||
-      (previous.accountId !== null && accountId !== null && previous.accountId !== accountId)
+      (previous.accountId != null && accountId != null && previous.accountId !== accountId)
     ) {
       pendingResponses.current.clear();
       try {
         Notifications.clearLastNotificationResponse();
       } catch (error) {
-        logger.warn('[Notification] Session response cleanup failed', { error });
+        logger.warn(NOTIFICATION_LOG_EVENT.SESSION_RESPONSE_CLEANUP_FAILED, { error });
       }
     }
   }, [accountId, authStatus, logger]);
@@ -152,11 +149,11 @@ function useNotificationResponseProcessor({
       });
       if (
         disposition.status === 'defer' ||
-        (response.actionIdentifier !== 'MARKETING_OPT_OUT' && accountId === null)
+        (response.actionIdentifier !== 'MARKETING_OPT_OUT' && accountId == null)
       ) {
         return;
       }
-      if (response.accountId !== null && response.accountId !== accountId) {
+      if (response.accountId != null && response.accountId !== accountId) {
         pendingResponses.current.delete(responseId);
         return;
       }
@@ -175,13 +172,13 @@ function useNotificationResponseProcessor({
         handledResponseIds.current.add(responseId);
         if (handledResponseIds.current.size > MAX_HANDLED_RESPONSES) {
           const oldest = handledResponseIds.current.values().next().value;
-          if (oldest !== undefined) {
+          if (oldest != null) {
             handledResponseIds.current.delete(oldest);
           }
         }
         Notifications.clearLastNotificationResponse();
       } catch (error) {
-        logger.warn('[Notification] Response deferred after a failed attempt', {
+        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_DEFERRED, {
           error: toError(error),
         });
       } finally {
@@ -201,7 +198,7 @@ function useNotificationResponseProcessor({
         response.notification.request.content.data,
       );
       if (!parsed.success) {
-        logger.warn('[Notification] Invalid response payload', { error: parsed.error });
+        logger.warn(NOTIFICATION_LOG_EVENT.RESPONSE_PAYLOAD_INVALID, { error: parsed.error });
         return;
       }
       const pending = pendingResponses.current.get(responseId) ?? {
@@ -214,7 +211,7 @@ function useNotificationResponseProcessor({
       pendingResponses.current.set(responseId, pending);
       if (pendingResponses.current.size > MAX_PENDING_RESPONSES) {
         const oldest = pendingResponses.current.keys().next().value;
-        if (oldest !== undefined) {
+        if (oldest != null) {
           pendingResponses.current.delete(oldest);
         }
       }
@@ -268,9 +265,7 @@ function useNativeNotificationListeners({
 
   useEffect(() => {
     const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-      logger.info('[Notification] Received in foreground', {
-        title: notification.request.content.title,
-      });
+      logger.info(NOTIFICATION_LOG_EVENT.FOREGROUND_RECEIVED);
       handleForegroundNotification(notification);
     });
     const responseSubscription =
@@ -294,7 +289,7 @@ function useMarketingNotificationCategory() {
         options: { opensAppToForeground: true },
       },
     ]).catch((error) =>
-      logger.warn('[Notification] Marketing category registration failed', { error }),
+      logger.warn(NOTIFICATION_LOG_EVENT.MARKETING_CATEGORY_REGISTRATION_FAILED, { error }),
     );
   }, [logger]);
 }
@@ -318,7 +313,7 @@ function usePushLocaleSync({
       notificationService
         .setupPushNotifications()
         .catch((error) =>
-          logger.warn('[Notification] Push token re-registration skipped', { error }),
+          logger.warn(NOTIFICATION_LOG_EVENT.PUSH_TOKEN_REREGISTRATION_SKIPPED, { error }),
         );
     };
 
@@ -337,7 +332,9 @@ function useNotificationBadgeSync(isAuthenticated: boolean) {
       : notificationService.clearBadge();
     task.catch((error) =>
       logger.error(
-        isAuthenticated ? '[Notification] Badge sync failed' : '[Notification] Badge clear failed',
+        isAuthenticated
+          ? NOTIFICATION_LOG_EVENT.BADGE_SYNC_FAILED
+          : NOTIFICATION_LOG_EVENT.BADGE_CLEAR_FAILED,
         toError(error),
       ),
     );

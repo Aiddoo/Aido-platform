@@ -4,10 +4,15 @@
     "tooLong": "Email must be 255 characters or fewer"
   },
   "password": {
+    "required": "Please enter your password",
     "tooShort": "Password must be at least 8 characters",
     "tooLong": "Password must be 72 characters or fewer",
     "pattern": "Password must be at least 8 characters and include letters and numbers",
     "mismatch": "Passwords don't match"
+  },
+  "nickname": {
+    "required": "Please enter a nickname",
+    "tooLong": "Name must be 20 characters or fewer"
   },
   "userTag": {
     "length": "Hashtags are 8 characters long",

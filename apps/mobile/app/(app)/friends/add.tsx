@@ -13,13 +13,14 @@ import {
   Text,
   QueryErrorBoundary,
   StyledSafeAreaView,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import type { z } from 'zod';
 
 type FormData = z.infer<typeof userTagParamSchema>;
@@ -44,9 +45,9 @@ function AddFriendScreen() {
   } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
 
-  const onSubmit = async (data: FormData) => {
+  const handleSubmitFriendRequest = async (values: FormData) => {
     try {
-      await sendRequestMutation.mutateAsync(data.userTag, {
+      await sendRequestMutation.mutateAsync(values.userTag, {
         onSuccess: () => goBack(),
       });
     } catch (error) {
@@ -58,7 +59,7 @@ function AddFriendScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <View className="flex-1 bg-white">
+      <Box className="flex-1 bg-white">
         <ScrollView
           className="flex-1"
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}
@@ -99,7 +100,7 @@ function AddFriendScreen() {
                   })}
                   onSubmitEditing={() => {
                     if (isValid) {
-                      handleSubmit(onSubmit)();
+                      handleSubmit(handleSubmitFriendRequest)();
                     }
                   }}
                 />
@@ -109,13 +110,13 @@ function AddFriendScreen() {
         </ScrollView>
 
         <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(onSubmit)()}
+          onPress={() => handleSubmit(handleSubmitFriendRequest)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
         >
           {t('add.submit')}
         </KeyboardAdaptiveButton>
-      </View>
+      </Box>
     </FormProvider>
   );
 }

@@ -28,7 +28,6 @@
     "monthly": "월간 구독",
     "perYear": "/년",
     "perMonth": "/월",
-    "current": "현재 플랜",
     "discount": "{{percent}}% 할인",
     "monthlyEquivalent": "월 {{price}} 상당"
   },

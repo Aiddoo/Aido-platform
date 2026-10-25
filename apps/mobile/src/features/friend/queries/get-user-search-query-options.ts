@@ -13,15 +13,15 @@ import { toSearchedUserViewModel } from '../utils/view-models/searched-user.view
 type SearchUsersPageParam = { cursor?: string };
 const INITIAL_SEARCH_USERS_PAGE_PARAM: SearchUsersPageParam = {};
 
-type UserSearchData = InfiniteData<Page<SearchedUser>, SearchUsersPageParam>;
+type UserSearchPages = InfiniteData<Page<SearchedUser>, SearchUsersPageParam>;
 
-export function selectSearchedUserViewModels(data: UserSearchData, fallbackName: string) {
+export function selectSearchedUserViewModels(searchPages: UserSearchPages, fallbackName: string) {
   return {
-    pages: data.pages.map((page) => ({
+    pages: searchPages.pages.map((page) => ({
       ...page,
       items: page.items.map((user) => toSearchedUserViewModel(user, fallbackName)),
     })),
-    pageParams: data.pageParams,
+    pageParams: searchPages.pageParams,
   };
 }
 
@@ -32,7 +32,7 @@ export function getUserSearchQueryOptions(
     select,
   }: {
     query: string;
-    select: (data: UserSearchData) => ReturnType<typeof selectSearchedUserViewModels>;
+    select: (searchPages: UserSearchPages) => ReturnType<typeof selectSearchedUserViewModels>;
   },
 ) {
   const trimmed = query.trim();
@@ -52,7 +52,7 @@ export function getUserSearchQueryOptions(
       if (!lastPage.hasMore) {
         return undefined;
       }
-      return lastPage.nextCursor === null ? undefined : { cursor: lastPage.nextCursor };
+      return lastPage.nextCursor == null ? undefined : { cursor: lastPage.nextCursor };
     },
     select,
   });
@@ -62,7 +62,7 @@ export function useGetUserSearchQueryOptions({ query }: { query: string }) {
   const { t } = useTranslation('friend');
   const fallbackName = t('fallbackName');
   const select = useCallback(
-    (data: UserSearchData) => selectSearchedUserViewModels(data, fallbackName),
+    (searchPages: UserSearchPages) => selectSearchedUserViewModels(searchPages, fallbackName),
     [fallbackName],
   );
 

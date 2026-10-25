@@ -30,6 +30,7 @@ describe('StoreReviewPromptPolicy', () => {
   });
 
   it('거절 후 90일 동안 숨기고 쿨다운이 지나면 다시 허용한다', () => {
+    const dismissedAt = new Date('2026-08-12T00:00:00.000Z');
     const eligible: StoreReviewPromptState = {
       ...EMPTY_STATE,
       completions: [
@@ -37,19 +38,19 @@ describe('StoreReviewPromptPolicy', () => {
         { todoId: 2, localDate: '2026-08-10' },
         { todoId: 3, localDate: '2026-08-11' },
       ],
-      dismissedAt: new Date('2026-08-12T00:00:00.000Z'),
+      dismissedAt,
     };
 
     expect(
       StoreReviewPromptPolicy.shouldPrompt(
         eligible,
-        new Date(eligible.dismissedAt!.getTime() + STORE_REVIEW_DISMISSAL_COOLDOWN_MS - 1),
+        new Date(dismissedAt.getTime() + STORE_REVIEW_DISMISSAL_COOLDOWN_MS - 1),
       ),
     ).toBe(false);
     expect(
       StoreReviewPromptPolicy.shouldPrompt(
         eligible,
-        new Date(eligible.dismissedAt!.getTime() + STORE_REVIEW_DISMISSAL_COOLDOWN_MS),
+        new Date(dismissedAt.getTime() + STORE_REVIEW_DISMISSAL_COOLDOWN_MS),
       ),
     ).toBe(true);
   });

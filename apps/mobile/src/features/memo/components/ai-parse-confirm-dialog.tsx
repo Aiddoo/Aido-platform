@@ -4,6 +4,7 @@ import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseMemoMutationOptions } from '@src/features/ai/queries/use-parse-memo-mutation-options';
 import { useGetMemoQueryOptions } from '@src/features/memo/queries/get-memo-query-options';
+import { memoAiReviewHref } from '@src/features/memo/utils/navigation/memo-href';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -15,27 +16,34 @@ import { router } from 'expo-router';
 interface AiParseConfirmDialogProps {
   isOpen: boolean;
   memoId: number;
-  onClose: () => void;
+  onOpenChange: (isOpen: boolean) => void;
 }
 
-export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirmDialogProps) {
+export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseConfirmDialogProps) {
   const push = useSingleTap(router.push);
   const replace = useSingleTap(router.replace);
 
   const { t } = useTranslation(['memo', 'common']);
-  const [{ data: aiUsage }, { data: memo }, { data: categoriesData }] = useSuspenseQueries({
+  const [{ data: aiUsage }, { data: memo }, categoriesQuery] = useSuspenseQueries({
     queries: [
       useGetAiUsageQueryOptions(),
-      useGetMemoQueryOptions({ id: memoId }),
+      useGetMemoQueryOptions({ memoId }),
       useGetTodoCategoriesQueryOptions(),
     ],
   });
   const queryClient = useQueryClient();
   const parseMutation = useMutation(useParseMemoMutationOptions());
-  const defaultCategoryId = categoriesData.categories[0]?.id;
+  const defaultCategoryId = categoriesQuery.data.categories[0]?.id;
+  const close = () => onOpenChange(false);
 
   if (defaultCategoryId == null) {
-    return null;
+    return (
+      <AiParseConfirmDialog.Error
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        reset={() => categoriesQuery.refetch()}
+      />
+    );
   }
 
   const remaining = AiUsagePolicy.getRemainingCount(aiUsage);
@@ -44,11 +52,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
     return (
       <ConfirmDialog
         isOpen={isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            onClose();
-          }
-        }}
+        onOpenChange={onOpenChange}
         title={<ConfirmDialog.Title>{t('memo:aiDialog.limitTitle')}</ConfirmDialog.Title>}
         description={
           <ConfirmDialog.Description>
@@ -56,7 +60,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
           </ConfirmDialog.Description>
         }
         cancelButton={
-          <ConfirmDialog.CancelButton onPress={onClose}>
+          <ConfirmDialog.CancelButton onPress={close}>
             {t('common:actions.close')}
           </ConfirmDialog.CancelButton>
         }
@@ -75,8 +79,8 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
   const handleStart = () => {
     const cached = getParsedMemo(queryClient, { memoId });
     if (cached) {
-      onClose();
-      push(`/memo/${memoId}/ai-review`);
+      close();
+      push(memoAiReviewHref(memoId));
       return;
     }
 
@@ -84,12 +88,12 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
       { memoId, content: memo.content, categoryId: defaultCategoryId },
       {
         onSuccess: () => {
-          onClose();
-          push(`/memo/${memoId}/ai-review`);
+          close();
+          push(memoAiReviewHref(memoId));
         },
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
-            onClose();
+            close();
             replace('/settings/subscription');
           }
         },
@@ -100,11 +104,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
   return (
     <ConfirmDialog
       isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
-      }}
+      onOpenChange={onOpenChange}
       title={<ConfirmDialog.Title>{t('memo:aiDialog.confirmTitle')}</ConfirmDialog.Title>}
       description={
         <ConfirmDialog.Description>
@@ -121,7 +121,7 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
         </ConfirmDialog.Description>
       }
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={onClose}>
+        <ConfirmDialog.CancelButton onPress={close}>
           {t('common:actions.close')}
         </ConfirmDialog.CancelButton>
       }
@@ -136,22 +136,18 @@ export function AiParseConfirmDialog({ isOpen, memoId, onClose }: AiParseConfirm
 
 AiParseConfirmDialog.Error = function ErrorDialog({
   isOpen,
-  onClose,
+  onOpenChange,
   reset,
-}: Pick<AiParseConfirmDialogProps, 'isOpen' | 'onClose'> & { reset: () => void }) {
+}: Pick<AiParseConfirmDialogProps, 'isOpen' | 'onOpenChange'> & { reset: () => void }) {
   const { t } = useTranslation('common');
 
   return (
     <ConfirmDialog
       isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
-      }}
+      onOpenChange={onOpenChange}
       title={<ConfirmDialog.Title>{t('errorBoundary.title')}</ConfirmDialog.Title>}
       cancelButton={
-        <ConfirmDialog.CancelButton onPress={onClose}>
+        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)}>
           {t('actions.close')}
         </ConfirmDialog.CancelButton>
       }

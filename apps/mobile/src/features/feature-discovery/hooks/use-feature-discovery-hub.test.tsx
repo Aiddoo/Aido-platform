@@ -52,8 +52,8 @@ jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
 }));
 
-jest.mock('../components/feature-discovery-sheet', () => ({
-  FeatureDiscoverySheet: ({ onCardCta }: { onCardCta: (cardId: 'memo_ai') => void }) => {
+jest.mock('../components/feature-discovery-bottom-sheet', () => ({
+  FeatureDiscoveryBottomSheet: ({ onCardCta }: { onCardCta: (cardId: 'memo_ai') => void }) => {
     const React = require('react');
     const { Pressable, Text } = require('react-native');
     return React.createElement(

@@ -19,6 +19,14 @@ describe('classifyBoundaryError', () => {
     expect(classifyBoundaryError(error)).toBe('error');
   });
 
+  it('404 ApiError는 expected-state로 분류한다 (위치 미등록처럼 fallback이 안내하는 상태)', () => {
+    // Given
+    const error = new ApiError('WEATHER_1902', '위치 미등록', 404);
+
+    // When / Then
+    expect(classifyBoundaryError(error)).toBe('expected-state');
+  });
+
   it('5xx·기타 인프라 에러는 error로 분류한다', () => {
     // Given
     const error = new ServerError(500);

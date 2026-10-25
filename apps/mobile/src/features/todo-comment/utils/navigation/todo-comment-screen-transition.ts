@@ -71,7 +71,7 @@ export function getTodoCommentNavigationAvailability({
     return { status: 'blocked', reason: 'comment-submitting' };
   }
 
-  if (route.form === null) {
+  if (route.form == null) {
     return { status: 'available' };
   }
 
@@ -143,7 +143,7 @@ export function startTodoCommentSortChange({
     return { status: 'blocked', reason: 'comment-submitting' };
   }
 
-  if (currentScreen.route.form !== null) {
+  if (currentScreen.route.form != null) {
     return { status: 'blocked', reason: 'comment-form-active' };
   }
 
@@ -151,7 +151,7 @@ export function startTodoCommentSortChange({
     return { status: 'ignored', reason: 'same-sort' };
   }
 
-  if (pendingTransition !== null) {
+  if (pendingTransition != null) {
     return { status: 'ignored', reason: 'transition-in-progress' };
   }
 

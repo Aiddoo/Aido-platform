@@ -6,9 +6,9 @@ import { requestWidgetUpdate, type WidgetInfo } from 'react-native-android-widge
 import { createAndroidWidgetSnapshotRepository } from '../apis/android-widget-snapshot.repository';
 import { createWidgetNavigationRepository } from '../apis/widget-navigation.repository';
 import { toWidgetProps } from '../apis/widget-props.mapper';
-import { createInitialWidgetProps } from '../components/widget-initial-props';
 import { renderAndroidWidget } from '../components/widgets.android';
 import { WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
+import { createInitialWidgetProps } from '../utils/widget-initial-props';
 import { ANDROID_WIDGET_DEFINITIONS } from './android-widget';
 import type { WidgetBridge } from './widget-bridge';
 

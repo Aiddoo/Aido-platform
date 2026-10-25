@@ -47,7 +47,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 | `border`            | `'indented' \| 'none'`                       | `'none'`   | 하단 테두리             |
 | `leftAlignment`     | `'top' \| 'center'`                          | `'center'` | 왼쪽 영역 정렬          |
 | `rightAlignment`    | `'top' \| 'center'`                          | `'center'` | 오른쪽 영역 정렬        |
-| `disabled`          | `boolean`                                    | `false`    | 비활성화 상태           |
+| `isDisabled`        | `boolean`                                    | `false`    | 비활성화 상태           |
 | `className`         | `string`                                     | -          | 추가 클래스명           |
 
 #### Vertical Padding 크기
@@ -152,6 +152,23 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 - 상세 정보 (제목 + 설명 + 추가정보)
 
 ---
+
+### ListRow.Texts.Loading
+
+`ListRow.Texts`와 같은 `VStack`·간격·기본 크기(b2/b3/e1)로 글자 자리를 `TextSkeleton`으로 채웁니다.
+목록의 `.Loading`은 `ListRow`의 같은 슬롯에 이것을 넣어 행 높이를 실제 행과 맞춥니다.
+
+```tsx
+<ListRow
+  left={<Skeleton className="size-10 rounded-full" />}
+  contents={
+    <ListRow.Texts.Loading type="2RowTypeA" bottomProps={{ size: 'b3', className: 'w-full' }} />
+  }
+/>
+```
+
+- `type`: `ListRow.Texts`와 같은 줄 구성
+- `topProps` / `middleProps` / `bottomProps`: `TextSkeletonProps`(`size`, `className`) — 실제 행에서 바꾼 크기만 다시 준다
 
 ### ListRow.Image
 
@@ -271,7 +288,7 @@ import { ListRow } from '@src/shared/ui/list-row/list-row';
 ```tsx
 <ListRow
   contents={<ListRow.Texts type="1RowTypeA" top="준비 중인 기능" />}
-  disabled={true}
+  isDisabled
   horizontalPadding="medium"
 />
 ```

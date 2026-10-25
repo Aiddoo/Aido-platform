@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { z } from 'zod';
 
 export const memoScreenParamsSchema = z.object({
-  id: routeIntegerStringSchema.pipe(memoIdParamSchema.shape.id),
+  memoId: routeIntegerStringSchema.pipe(memoIdParamSchema.shape.id),
 });
 
 export function useMemoScreenParams() {

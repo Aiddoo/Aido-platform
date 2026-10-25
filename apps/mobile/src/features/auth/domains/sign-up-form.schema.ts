@@ -1,25 +1,23 @@
-import { emailSchema, passwordSchema } from '@aido/api';
-import { t } from '@src/shared/i18n';
+import { registerSchema } from '@aido/api';
 import { z } from 'zod';
 
+const { email, password, passwordConfirm, name } = registerSchema.shape;
+
+/** 회원가입 폼. 서버 계약과 달리 닉네임은 필수이고, 약관 동의는 체크 전 false를 허용한다. */
 export const signUpFormSchema = z
   .object({
-    email: emailSchema,
+    email,
+    password,
+    passwordConfirm,
+    name: name.unwrap(),
     termsAgreed: z.boolean(),
     privacyAgreed: z.boolean(),
     marketingAgreed: z.boolean(),
     marketingPushAgreed: z.boolean(),
-    password: passwordSchema,
-    passwordConfirm: z.string(),
-    name: z
-      .string()
-      .min(1, { error: () => t('auth:forms.nicknameRequired') })
-      .max(20, { error: () => t('auth:forms.nameMaxLength', { max: 20 }) })
-      .trim(),
   })
   .refine((data) => data.password === data.passwordConfirm, {
-    error: () => t('auth:forms.passwordMismatch'),
     path: ['passwordConfirm'],
   });
 
-export type SignUpFormData = z.infer<typeof signUpFormSchema>;
+export type SignUpFormInput = z.input<typeof signUpFormSchema>;
+export type SignUpFormOutput = z.output<typeof signUpFormSchema>;

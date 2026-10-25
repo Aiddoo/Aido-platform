@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react-native';
 import type { Breadcrumb } from '@src/core/ports/breadcrumb';
 import type { ErrorReporter, ErrorReporterContext } from '@src/core/ports/error-reporter';
 import type { Severity } from '@src/core/ports/severity';
+import { mapValues, omitBy } from 'es-toolkit';
 
 /**
  * Severity → Sentry `SeverityLevel` 매핑.
@@ -16,19 +17,11 @@ const severityToSentryLevel: Record<Severity, Sentry.SeverityLevel> = {
 };
 
 /** ErrorReporterContext에서 severity를 제외한 나머지를 Sentry tags로 변환(undefined 제거, 문자열화). */
-const toTags = (context?: ErrorReporterContext): Record<string, string> => {
-  const tags: Record<string, string> = {};
-  if (!context) {
-    return tags;
-  }
-  for (const [key, value] of Object.entries(context)) {
-    if (key === 'severity' || value === undefined) {
-      continue;
-    }
-    tags[key] = String(value);
-  }
-  return tags;
-};
+const toTags = (context?: ErrorReporterContext): Record<string, string> =>
+  mapValues(
+    omitBy(context ?? {}, (value, key) => key === 'severity' || value == null),
+    (value) => String(value),
+  );
 
 /**
  * Sentry 기반 ErrorReporter 어댑터.

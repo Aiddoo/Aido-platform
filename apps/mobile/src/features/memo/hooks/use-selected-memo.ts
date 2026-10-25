@@ -6,16 +6,17 @@ import { useCallback } from 'react';
 import { z } from 'zod';
 
 import { resolveMemoSelection } from '../utils/memo-selection';
+import { memoDetailHref } from '../utils/navigation/memo-href';
 
 const selectedMemoParamsSchema = z.object({
-  id: routeIntegerStringSchema.pipe(memoIdParamSchema.shape.id).optional().catch(undefined),
+  memoId: routeIntegerStringSchema.pipe(memoIdParamSchema.shape.id).optional().catch(undefined),
 });
 
-type SelectedMemoId = z.output<typeof selectedMemoParamsSchema>['id'];
+type SelectedMemoId = z.output<typeof selectedMemoParamsSchema>['memoId'];
 
-/** 메모 탭 URL의 `id`를 선택된 메모로 읽고, 화면 크기에 맞는 방식으로 선택을 바꾼다. */
+/** 메모 탭 URL의 `memoId`를 선택된 메모로 읽고, 화면 크기에 맞는 방식으로 선택을 바꾼다. */
 export function useSelectedMemo(): readonly [SelectedMemoId, (memoId: number | undefined) => void] {
-  const { id: selectedMemoId } = selectedMemoParamsSchema.parse(useLocalSearchParams());
+  const { memoId: selectedMemoId } = selectedMemoParamsSchema.parse(useLocalSearchParams());
   const windowSizeClass = useWindowSizeClass();
 
   const setSelectedMemoId = useCallback(
@@ -23,7 +24,7 @@ export function useSelectedMemo(): readonly [SelectedMemoId, (memoId: number | u
       const navigation = resolveMemoSelection(windowSizeClass, memoId);
 
       if (navigation.type === 'push') {
-        router.push({ pathname: '/memo/[id]', params: { id: navigation.memoId } });
+        router.push(memoDetailHref(navigation.memoId));
         return;
       }
 

@@ -3,8 +3,8 @@ import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { isPaymentPendingError, isPurchaseCancelledError } from '../domains/subscription.error';
 
@@ -21,7 +21,7 @@ export const usePurchaseMutationOptions = () => {
     onSuccess: (_data, identifier) => {
       trackEvent('subscription_started', { product_id: identifier });
       // 캐시 동기화는 RevenueCatProvider의 CustomerInfo 리스너가 전담
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notifySuccess();
       success(t('subscription:toast.purchaseSuccess'));
     },
     onError: (err) => {
@@ -35,7 +35,7 @@ export const usePurchaseMutationOptions = () => {
         return;
       }
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
       error(t('subscription:toast.purchaseFailed'));
     },
   });

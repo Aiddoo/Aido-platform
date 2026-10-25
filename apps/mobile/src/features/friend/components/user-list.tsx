@@ -1,59 +1,47 @@
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, type FlashListProps } from '@shopify/flash-list';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
-import { Flex, VStack, HStack, ListRow } from '@src/shared/ui';
-import { range } from 'es-toolkit';
+import { useTranslation } from '@src/shared/i18n';
+import {
+  Flex,
+  ListRow,
+  Result,
+  type ListRowProps,
+  type QueryErrorFallbackProps,
+} from '@src/shared/ui';
+import type { FetchNextPageOptions } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
 import { Skeleton } from 'heroui-native';
-import { type ReactElement, type ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
-interface UserListRefresh {
-  isRefreshing: boolean;
-  onRefresh: () => void;
-}
+const contentContainerStyle = { flexGrow: 1 };
 
-interface UserListProps<T> {
-  data: T[];
-  renderItem: (item: T) => ReactElement;
-  keyExtractor: (item: T) => string;
-  emptyContent: ReactNode;
-  header?: ReactElement;
-  footer?: ReactElement;
+interface UserListProps<T> extends Omit<
+  FlashListProps<T>,
+  'onEndReached' | 'refreshControl' | 'contentContainerStyle'
+> {
   hasNextPage: boolean;
-  isFetching: boolean;
   isFetchingNextPage: boolean;
-  onEndReached: () => void;
-  refresh?: UserListRefresh;
+  fetchNextPage: (options?: FetchNextPageOptions) => Promise<unknown>;
 }
 
 export function UserList<T>({
-  data,
-  renderItem,
-  keyExtractor,
-  emptyContent,
-  header,
-  footer,
   hasNextPage,
-  isFetching,
   isFetchingNextPage,
-  onEndReached,
-  refresh,
+  fetchNextPage,
+  refreshing,
+  onRefresh,
+  ListFooterComponent,
+  ...props
 }: UserListProps<T>) {
   const { color: refreshTint } = useResolveClassNames('text-main');
 
   return (
     <FlashList
-      ListHeaderComponent={header}
-      data={data}
-      renderItem={({ item }) => renderItem(item)}
-      keyExtractor={keyExtractor}
-      ListEmptyComponent={
-        <Flex flex={1} justify="center" align="center">
-          {emptyContent}
-        </Flex>
-      }
+      {...props}
       ListFooterComponent={
-        footer ??
+        ListFooterComponent ??
         (isFetchingNextPage ? (
           <Flex py={16} align="center">
             <ActivityIndicator color={refreshTint} />
@@ -61,59 +49,45 @@ export function UserList<T>({
         ) : null)
       }
       onEndReached={() => {
-        if (hasNextPage && !isFetching) {
-          onEndReached();
+        if (hasNextPage) {
+          return fetchNextPage({ cancelRefetch: false });
         }
       }}
       onEndReachedThreshold={0.5}
       refreshControl={
-        refresh != null ? (
+        onRefresh == null ? undefined : (
           <RefreshControl
-            refreshing={refresh.isRefreshing}
-            onRefresh={refresh.onRefresh}
+            refreshing={refreshing ?? false}
+            onRefresh={onRefresh}
             tintColor={refreshTint}
-            colors={refreshTint != null ? [refreshTint] : undefined}
+            colors={refreshTint == null ? undefined : [refreshTint]}
           />
-        ) : undefined
+        )
       }
-      contentContainerStyle={{ flexGrow: 1 }}
+      contentContainerStyle={contentContainerStyle}
     />
   );
 }
 
-interface UserListLoadingProps {
-  header?: ReactNode;
-  rows?: number;
-  hasAction?: boolean;
-}
-
-UserList.Loading = function Loading({ header, rows = 3, hasAction = true }: UserListLoadingProps) {
-  return (
-    <ScrollView className="flex-1">
-      {header}
-      <VStack>
-        {range(rows).map((index) => (
-          <UserList.ItemLoading key={index} hasAction={hasAction} />
-        ))}
-      </VStack>
-    </ScrollView>
-  );
-};
-
-interface UserListItemProps {
+interface UserListItemProps extends Omit<ListRowProps, 'left' | 'contents'> {
   displayName: string;
   subtitle?: string;
   profileImage: string | null;
-  action?: ReactNode;
 }
 
-UserList.Item = function Item({ displayName, subtitle, profileImage, action }: UserListItemProps) {
+UserList.Item = function Item({
+  displayName,
+  subtitle,
+  profileImage,
+  ...props
+}: UserListItemProps) {
   return (
     <ListRow
-      horizontalPadding="none"
       left={<UserAvatar alt={displayName} className="size-10" profileImage={profileImage} />}
       contents={
-        subtitle != null ? (
+        subtitle == null ? (
+          <ListRow.Texts type="1RowTypeA" top={displayName} topProps={{ maxLines: 1 }} />
+        ) : (
           <ListRow.Texts
             type="2RowTypeA"
             top={displayName}
@@ -121,25 +95,55 @@ UserList.Item = function Item({ displayName, subtitle, profileImage, action }: U
             bottom={subtitle}
             bottomProps={{ maxLines: 1 }}
           />
-        ) : (
-          <ListRow.Texts type="1RowTypeA" top={displayName} topProps={{ maxLines: 1 }} />
         )
       }
-      right={action}
+      {...props}
     />
   );
 };
 
-interface UserListItemLoadingProps {
-  hasAction?: boolean;
+interface UserListLoadingProps {
+  rows?: number;
+  hasSubtitle?: boolean;
+  right?: ReactNode;
+  ListHeaderComponent?: ReactNode;
 }
 
-UserList.ItemLoading = function Loading({ hasAction = true }: UserListItemLoadingProps) {
+UserList.Loading = function Loading({
+  rows = 3,
+  hasSubtitle = false,
+  right,
+  ListHeaderComponent,
+}: UserListLoadingProps) {
   return (
-    <HStack align="center" className="py-2" gap={12}>
-      <Skeleton className="w-10 h-10 rounded-full" />
-      <Skeleton className="flex-1 h-5" />
-      {hasAction ? <Skeleton className="w-12 h-8 rounded" /> : null}
-    </HStack>
+    <ScrollView className="flex-1" contentContainerStyle={contentContainerStyle}>
+      {ListHeaderComponent}
+      {times(rows, (index) => (
+        <ListRow
+          key={index}
+          left={<Skeleton className="size-10 rounded-full" />}
+          contents={<ListRow.Texts.Loading type={hasSubtitle ? '2RowTypeA' : '1RowTypeA'} />}
+          right={right}
+        />
+      ))}
+    </ScrollView>
+  );
+};
+
+UserList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation();
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+    />
+  );
+};
+
+UserList.Empty = function Empty(props: ComponentProps<typeof Result>) {
+  return (
+    <Flex flex={1} justify="center" align="center">
+      <Result {...props} />
+    </Flex>
   );
 };

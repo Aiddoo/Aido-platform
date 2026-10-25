@@ -1,3 +1,4 @@
+import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
 import { i18n, t } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import dayjs from 'dayjs';
@@ -6,7 +7,11 @@ import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { range } from 'es-toolkit';
 
 import { getCalendarWeek } from './calendar-week';
-import { formatClockTime, formatDateLabel, type DateFormatContext } from './date-format';
+import {
+  formatDateLabel,
+  formatRelativeTime as formatRelativeTimeLabel,
+  type DateFormatContext,
+} from './date-format';
 import { getDeviceTimezone } from './timezone';
 
 dayjs.extend(weekOfYear);
@@ -26,22 +31,11 @@ export function getDateFormatContext(): DateFormatContext {
   };
 }
 
-export const formatTime = (
-  date: Date | string | number,
-  timeFormat: 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR' = 'TWELVE_HOUR',
-): string => formatClockTime(dayjs(date).toDate(), timeFormat, getDateFormatContext());
-
 export const formatFullDate = (date: Date | string | number): string =>
   formatDateLabel(dayjs(date).toDate(), 'fullDate', getDateFormatContext());
 
 export const formatMonthDay = (date: Date | string | number): string =>
   formatDateLabel(dayjs(date).toDate(), 'monthDay', getDateFormatContext());
-
-export const formatDayOfMonth = (date: Date | string | number): string =>
-  formatDateLabel(dayjs(date).toDate(), 'dayOfMonth', getDateFormatContext());
-
-export const formatTime24 = (date: Date | string | number): string =>
-  formatClockTime(dayjs(date).toDate(), 'TWENTY_FOUR_HOUR', getDateFormatContext());
 
 export const toDate = (date: Date | string | number): Date => {
   const d = dayjs(date);
@@ -58,7 +52,7 @@ export const toNullableDate = (date?: Date | string | number | null): Date | nul
 };
 
 // Predicates
-export const isDateToday = (date: Date, now: Date = new Date()): boolean => {
+export const isDateToday = (date: Date, now: Date): boolean => {
   return dayjs(date).isSame(now, 'day');
 };
 
@@ -68,10 +62,6 @@ export const isSameDay = (date1: Date, date2: Date): boolean => {
 
 export const isSameMonth = (date1: Date, date2: Date): boolean => {
   return dayjs(date1).isSame(date2, 'month');
-};
-
-export const isSameWeek = (date1: Date, date2: Date): boolean => {
-  return dayjs(date1).isSame(date2, 'week');
 };
 
 export const isAfterDay = (date1: Date, date2: Date): boolean => {
@@ -91,8 +81,6 @@ export const isSaturday = (date: Date): boolean => {
 };
 
 // DayOfWeek
-import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
-
 /** DayOfWeek 배열을 요일 순서로 정렬 후 로케일 라벨로 변환 (예: "월, 수, 금") */
 export const formatDaysOfWeek = (daysOfWeek: DayOfWeek[]): string =>
   [...daysOfWeek]
@@ -125,6 +113,10 @@ export const getMonthHeaderText = (date: Date): string => {
 
 export const getWeekStart = (date: Date): Date => {
   return getCalendarWeek(date).start;
+};
+
+export const startOfDay = (date: Date): Date => {
+  return dayjs(date).startOf('day').toDate();
 };
 
 export const getMonthStart = (date: Date): Date => {
@@ -206,14 +198,6 @@ export const getMonthWeeks = (displayDate: Date): Date[][] => {
   return weeks;
 };
 
-export const getCurrentWeekStart = (): Date => {
-  return getWeekStart(new Date());
-};
-
-export const getCurrentMonthStart = (): Date => {
-  return dayjs().startOf('month').toDate();
-};
-
 // Todo 날짜 유틸
 
 /** 투두가 특정 날짜에 해당하는지 (YYYY-MM-DD 문자열 사전순 비교) */
@@ -263,31 +247,16 @@ export const getDateSectionKey = (date: Date, referenceDate: Date) => {
   return 'earlier';
 };
 
-export const getDateSectionLabel = (date: Date, referenceDate: Date = new Date()): string =>
-  t(`common:dateSections.${getDateSectionKey(date, referenceDate)}`);
-
-/** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025.1.5") */
-export const formatRelativeTime = (date: Date, referenceDate: Date = new Date()): string => {
-  const now = dayjs(referenceDate);
-  const target = dayjs(date);
-  const diffMinutes = now.diff(target, 'minute');
-  const diffHours = now.diff(target, 'hour');
-  const diffDays = now.diff(target, 'day');
-
-  if (diffMinutes < 1) {
-    return t('common:relativeTime.justNow');
-  }
-  if (diffMinutes < 60) {
-    return t('common:relativeTime.minutesAgo', { count: diffMinutes });
-  }
-  if (diffHours < 24) {
-    return t('common:relativeTime.hoursAgo', { count: diffHours });
-  }
-  if (diffDays < 7) {
-    return t('common:relativeTime.daysAgo', { count: diffDays });
-  }
-  if (target.year() === now.year()) {
-    return target.format(t('common:dateFormats.monthDay'));
-  }
-  return target.format(t('common:dateFormats.shortDate'));
-};
+/** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025. 1. 5.") */
+export const formatRelativeTime = (date: Date, now: Date): string =>
+  formatRelativeTimeLabel(
+    date,
+    now,
+    {
+      justNow: t('common:relativeTime.justNow'),
+      minutesAgo: (count) => t('common:relativeTime.minutesAgo', { count }),
+      hoursAgo: (count) => t('common:relativeTime.hoursAgo', { count }),
+      daysAgo: (count) => t('common:relativeTime.daysAgo', { count }),
+    },
+    getDateFormatContext(),
+  );

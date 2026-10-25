@@ -11,53 +11,49 @@ import {
   Button,
   KeyboardBottomSheet,
   PremiumDialog,
+  useSheetRoute,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type ComponentProps, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider } from 'react-hook-form';
 import { useFormState } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 
-import { DEFAULT_COLOR } from '../constants/todo-category-colors';
+import { DEFAULT_CATEGORY_COLOR } from '../constants/todo-category-colors';
+import { TODO_CATEGORY_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
 import { CategoryColorInput } from './category-color-input';
 
-interface CategoryCreateBottomSheetProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onClose: () => void;
-  onExit: () => void;
-}
+type CategoryCreateBottomSheetProps = Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children' | 'isOpen' | 'onOpenChange'
+>;
 
-export const CategoryCreateBottomSheet = ({
-  isOpen,
-  onOpenChange,
-  onClose,
-  onExit,
-}: CategoryCreateBottomSheetProps) => {
+export function CategoryCreateBottomSheet(props: CategoryCreateBottomSheetProps) {
   const { showBoundary } = useErrorBoundary();
+  const sheet = useSheetRoute(TODO_CATEGORY_SHEET_FALLBACK_HREF);
 
   const { t } = useTranslation(['todo', 'common']);
   const createMutation = useMutation(useCreateTodoCategoryMutationOptions());
-  const [premiumOpen, setPremiumOpen] = useState(false);
+  const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
 
   const formMethods = useForm({
     resolver: zodResolver(createTodoCategorySchema),
-    defaultValues: { name: '', color: DEFAULT_COLOR },
+    defaultValues: { name: '', color: DEFAULT_CATEGORY_COLOR },
   });
   const { control, handleSubmit } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
 
-  const onSubmit = async (data: CreateTodoCategoryInput) => {
+  const handleSubmitCategory = async (values: CreateTodoCategoryInput) => {
     try {
-      await createMutation.mutateAsync(data, {
-        onSuccess: onClose,
+      await createMutation.mutateAsync(values, {
+        onSuccess: () => sheet.close(),
         onError: (error) => {
           if (isApiError(error) && error.hasCode(ErrorCode.TODO_CATEGORY_0857)) {
-            onClose();
-            setPremiumOpen(true);
+            sheet.close();
+            setIsPremiumDialogOpen(true);
           }
         },
       });
@@ -72,12 +68,13 @@ export const CategoryCreateBottomSheet = ({
     <FormProvider {...formMethods}>
       <>
         <KeyboardBottomSheet
-          isOpen={isOpen}
+          {...props}
+          isOpen={sheet.isOpen}
           onOpenChange={(open) => {
-            if (!open && premiumOpen) {
+            if (!open && isPremiumDialogOpen) {
               return;
             }
-            onOpenChange(open);
+            sheet.onOpenChange(open);
           }}
         >
           <VStack gap={40} pb={12}>
@@ -96,7 +93,7 @@ export const CategoryCreateBottomSheet = ({
                       byType: { too_big: 'categoryName.tooLong' },
                     })}
                     returnKeyType="done"
-                    onSubmitEditing={() => handleSubmit(onSubmit)()}
+                    onSubmitEditing={() => handleSubmit(handleSubmitCategory)()}
                   />
                 )}
               </FormField>
@@ -105,24 +102,28 @@ export const CategoryCreateBottomSheet = ({
               </FormField>
             </VStack>
 
-            <Button size="large" onPress={() => handleSubmit(onSubmit)()} isLoading={isSubmitting}>
+            <Button
+              size="large"
+              onPress={() => handleSubmit(handleSubmitCategory)()}
+              isLoading={isSubmitting}
+            >
               {t('common:actions.confirm')}
             </Button>
           </VStack>
         </KeyboardBottomSheet>
 
         <PremiumDialog
-          isOpen={premiumOpen}
+          isOpen={isPremiumDialogOpen}
           onOpenChange={(open) => {
             if (!open) {
-              setPremiumOpen(false);
-              onExit();
+              setIsPremiumDialogOpen(false);
+              sheet.exit();
             }
           }}
-          onConfirm={onExit}
+          onConfirm={() => sheet.exit()}
           description={t('category.premiumMore')}
         />
       </>
     </FormProvider>
   );
-};
+}

@@ -8,6 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 
 import type { StoreReviewDecision } from '../apis/store-review-prompt.service';
+import { TODO_LOG_EVENT } from '../constants/todo-log-events';
 
 interface StoreReviewPromptDialogProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export function useStoreReviewPrompt() {
             )),
         );
       } catch (error) {
-        logger.warn('[StoreReview] Prompt skipped', { error: toError(error).message });
+        logger.warn(TODO_LOG_EVENT.STORE_REVIEW_PROMPT_SKIPPED, { error: toError(error).message });
         return false;
       }
     },

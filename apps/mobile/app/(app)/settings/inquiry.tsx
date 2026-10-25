@@ -13,21 +13,24 @@ import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
   H3,
   HStack,
+  IconRadioItem,
   KeyboardAdaptiveButton,
-  ListRow,
   Spacing,
   Text,
   TextArea,
   VStack,
   QueryErrorBoundary,
   StyledSafeAreaView,
+  Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
+import { getDateFormatContext } from '@src/shared/utils/date';
+import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
-import { Radio, RadioGroup } from 'heroui-native';
+import { RadioGroup } from 'heroui-native';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
-import { ScrollView, View } from 'react-native';
+import { ScrollView } from 'react-native';
 import { useKeyboardHandler } from 'react-native-keyboard-controller';
 import Animated, { scrollTo, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
 
@@ -48,9 +51,9 @@ function InquiryScreen() {
       'worklet';
       hasScrolled.value = false;
     },
-    onMove: (e) => {
+    onMove: (event) => {
       'worklet';
-      if (e.height > 0 && !hasScrolled.value) {
+      if (event.height > 0 && !hasScrolled.value) {
         hasScrolled.value = true;
         scrollTo(scrollViewRef, 0, contentHeight.value, true);
       }
@@ -69,9 +72,9 @@ function InquiryScreen() {
   } = formMethods;
   const { isSubmitting } = useFormState({ control: control });
 
-  const onSubmit = async (data: CreateInquiryInput) => {
+  const handleSubmitInquiry = async (values: CreateInquiryInput) => {
     try {
-      await createInquiryMutation.mutateAsync(data);
+      await createInquiryMutation.mutateAsync(values);
     } catch (error) {
       if (!isBusinessError(error)) {
         showBoundary(error);
@@ -81,7 +84,7 @@ function InquiryScreen() {
 
   return (
     <FormProvider {...formMethods}>
-      <View className="flex-1 bg-gray-1">
+      <Box className="flex-1 bg-gray-1">
         <AnimatedScrollView
           ref={scrollViewRef}
           onContentSizeChange={(_w, h) => {
@@ -104,26 +107,7 @@ function InquiryScreen() {
                     className="bg-white rounded-2xl overflow-hidden gap-0"
                   >
                     {Object.entries(INQUIRY_CATEGORY_LABEL_KEYS).map(([key, labelKey]) => (
-                      <RadioGroup.Item key={key} value={key}>
-                        {(_props) => (
-                          <ListRow
-                            contents={
-                              <ListRow.Texts
-                                type="1RowTypeA"
-                                top={tGlobal(labelKey)}
-                                topProps={{ size: 'b3', weight: 'semibold' }}
-                              />
-                            }
-                            right={
-                              <Radio>
-                                <Radio.Indicator />
-                              </Radio>
-                            }
-                            horizontalPadding="medium"
-                            verticalPadding="large"
-                          />
-                        )}
-                      </RadioGroup.Item>
+                      <IconRadioItem key={key} value={key} label={tGlobal(labelKey)} />
                     ))}
                   </RadioGroup>
                 )}
@@ -150,8 +134,11 @@ function InquiryScreen() {
                   />
                   <HStack justify="end" className="-mt-4">
                     <Text size="e1" weight="medium" className="text-gray-5">
-                      {value.length.toLocaleString()}/
-                      {INQUIRY_CONTENT_LIMITS.MAX_LENGTH.toLocaleString()}
+                      {formatCount(value.length, getDateFormatContext().locale)}/
+                      {formatCount(
+                        INQUIRY_CONTENT_LIMITS.MAX_LENGTH,
+                        getDateFormatContext().locale,
+                      )}
                     </Text>
                   </HStack>
                 </VStack>
@@ -161,13 +148,13 @@ function InquiryScreen() {
         </AnimatedScrollView>
 
         <KeyboardAdaptiveButton
-          onPress={() => handleSubmit(onSubmit)()}
+          onPress={() => handleSubmit(handleSubmitInquiry)()}
           isDisabled={!isValid}
           isLoading={isSubmitting}
         >
           {t('form.submit')}
         </KeyboardAdaptiveButton>
-      </View>
+      </Box>
     </FormProvider>
   );
 }

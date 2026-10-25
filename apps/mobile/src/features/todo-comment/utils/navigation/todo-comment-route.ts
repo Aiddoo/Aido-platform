@@ -153,7 +153,7 @@ export function reduceTodoCommentRoute(
         },
       };
     case 'cancelForm':
-      if (route.form === null) {
+      if (route.form == null) {
         return route;
       }
 
@@ -163,7 +163,7 @@ export function reduceTodoCommentRoute(
 
       return { ...route, form: null };
     case 'completeForm':
-      if (route.form === null) {
+      if (route.form == null) {
         return route;
       }
 
@@ -178,12 +178,12 @@ export function serializeTodoCommentRoute(route: TodoCommentRoute): TodoCommentR
     return {
       sort: route.sort,
       comment: undefined,
-      intent: route.form === null ? undefined : 'create',
+      intent: route.form == null ? undefined : 'create',
       returnTo: undefined,
     };
   }
 
-  if (route.form === null) {
+  if (route.form == null) {
     return {
       sort: route.sort,
       comment: route.commentId,
@@ -217,7 +217,7 @@ export function areTodoCommentRoutesEqual(
       return false;
     }
 
-    if (firstRoute.form === null || secondRoute.form === null) {
+    if (firstRoute.form == null || secondRoute.form == null) {
       return firstRoute.form === secondRoute.form;
     }
 

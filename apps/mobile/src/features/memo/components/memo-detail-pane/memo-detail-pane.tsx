@@ -19,21 +19,26 @@ import {
   HStack,
   QueryErrorBoundary,
   Result,
+  RobotIcon,
+  CheckboxIcon,
+  STACK_BACK_ICON,
   StyledSafeAreaView,
+  TextArea,
   useOverlay,
   VStack,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { impactFeedback } from '@src/shared/utils/haptics';
+import { useMutation, useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
+import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useLayoutEffect, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { ActivityIndicator, Keyboard, TextInput } from 'react-native';
+import { ActivityIndicator, Keyboard } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { withUniwind } from 'uniwind';
+import { useResolveClassNames } from 'uniwind';
 
 import { useMemoScreenParams } from '../../hooks/use-memo-screen-params';
 import { useSelectedMemo } from '../../hooks/use-selected-memo';
@@ -42,19 +47,25 @@ import { useDeleteMemoMutationOptions } from '../../queries/use-delete-memo-muta
 import { useToggleMemoPinMutationOptions } from '../../queries/use-toggle-memo-pin-mutation-options';
 import { useUpdateMemoMutationOptions } from '../../queries/use-update-memo-mutation-options';
 import { createMemoDraftKey } from '../../utils/memo-draft';
+import { memoAiReviewHref } from '../../utils/navigation/memo-href';
 import { AiParseConfirmDialog } from '../ai-parse-confirm-dialog';
-import { MemoDetailActionBar, MemoDetailBackButton } from './memo-detail-actions';
-
-const StyledTextInput = withUniwind(TextInput);
+import {
+  MEMO_TOOLBAR_ICON,
+  MemoActionButton,
+  MemoDeleteButton,
+  MemoBackButton,
+  MemoPinButton,
+  MemoSaveButton,
+} from './memo-detail-actions';
 
 interface MemoDetailPaneProps {
-  /** `screen`은 `/memo/[id]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
+  /** `screen`은 `/memo/[memoId]` 전체 화면, `pane`은 펼친 메모 탭의 오른쪽 상세 영역이다. */
   presentation: 'screen' | 'pane';
 }
 
 /** 메모 식별자는 route의 `id`를 읽는다. 상세 라우트는 pathname, 메모 탭 pane은 같은 이름의 search param이다. */
 export function MemoDetailPane({ presentation }: MemoDetailPaneProps) {
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
 
   return (
     <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-white">
@@ -82,21 +93,20 @@ MemoDetailPane.Empty = function Empty() {
 };
 
 function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
-  const today = useToday();
   const { showBoundary } = useErrorBoundary();
   const goBack = useSingleTap(router.back);
   const navigate = useSingleTap(router.navigate);
-  const push = useSingleTap(router.push);
 
   const { t } = useTranslation(['memo', 'common']);
-  const { id: memoId } = useMemoScreenParams();
+  const { memoId } = useMemoScreenParams();
   const [_selectedMemoId, setSelectedMemoId] = useSelectedMemo();
   const deselectMemo = useSingleTap(() => setSelectedMemoId(undefined));
   const isPane = presentation === 'pane';
   const leaveMemo = isPane ? deselectMemo : goBack;
 
-  const { data: memo } = useSuspenseQuery(useGetMemoQueryOptions({ id: memoId }));
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const [{ data: memo }, { data: user }] = useSuspenseQueries({
+    queries: [useGetMemoQueryOptions({ memoId }), useGetMeQueryOptions()],
+  });
   const toast = useAppToast();
 
   const savedValues = { content: memo.content };
@@ -122,12 +132,12 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
 
   // 복원한 초안을 입력값으로 둔 채 비교 기준만 서버 원본으로 맞춰 isDirty가 "저장 안 된 변경"을 뜻하게 한다.
   useLayoutEffect(() => {
-    if (restoredMemoDraft !== undefined) {
+    if (restoredMemoDraft != null) {
       reset({ content: memo.content }, { keepValues: true });
     }
   }, [memo.content, reset, restoredMemoDraft]);
 
-  const [isEditing, setIsEditing] = useState(restoredMemoDraft !== undefined);
+  const [isEditing, setIsEditing] = useState(restoredMemoDraft != null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const { mutateAsync: updateMemo } = useMutation(useUpdateMemoMutationOptions());
@@ -138,15 +148,9 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     useToggleMemoPinMutationOptions(),
   );
 
-  const overlay = useOverlay();
-  const queryClient = useQueryClient();
-  const { data: categoriesData } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
-  const defaultCategoryId = categoriesData.categories[0]?.id;
-  const { isLoading: isAiUsageLoading } = useQuery(useGetAiUsageQueryOptions());
-
-  const handleSave = handleSubmit(async (data) => {
+  const handleSave = handleSubmit(async (formValues) => {
     try {
-      const content = data.content.trim();
+      const content = formValues.content.trim();
       await updateMemo({ memoId, input: { content } });
       reset({ content });
       discardMemoDraft();
@@ -175,36 +179,19 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
   };
 
   const handleTogglePin = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactFeedback(ImpactFeedbackStyle.Light);
     togglePin({ memoId, isPinned: !memo.isPinned });
   };
 
-  const handleAiParse = () => {
-    const cached = getParsedMemo(queryClient, { memoId });
-    if (cached) {
-      push(`/memo/${memoId}/ai-review`);
-      return;
-    }
-
-    overlay.open(({ isOpen, close, exit }) => {
-      const closeDialog = () => {
-        close();
-        exit();
-      };
-
-      return (
-        <QueryErrorBoundary
-          fallback={({ reset }) => (
-            <AiParseConfirmDialog.Error isOpen={isOpen} onClose={closeDialog} reset={reset} />
-          )}
-        >
-          <Suspense fallback={null}>
-            <AiParseConfirmDialog isOpen={isOpen} memoId={memoId} onClose={closeDialog} />
-          </Suspense>
-        </QueryErrorBoundary>
-      );
-    });
-  };
+  const aiParse = useAiParseAction();
+  const convertToTodo = useConvertToTodoAction(() => {
+    leaveMemo();
+    navigate('/feed');
+  });
+  const { color: pinnedTint } = useResolveClassNames('text-main');
+  const { color: saveTint } = useResolveClassNames(
+    isDirty && isValid ? 'text-main' : 'text-gray-4',
+  );
 
   const handleDelete = () => {
     if (isDeletePending) {
@@ -220,8 +207,219 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
     });
   };
 
-  const handleConvertToTodo = () => {
-    if (!defaultCategoryId) {
+  return (
+    <FormProvider {...formMethods}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
+        {isPane ? (
+          <Box className="bg-white">
+            <HStack align="center" justify="between" px={8}>
+              <MemoBackButton onPress={handleBack} />
+              <HStack gap={4} align="center">
+                <MemoPinButton
+                  isPinned={memo.isPinned}
+                  isDisabled={isTogglePinPending}
+                  onPress={handleTogglePin}
+                />
+                <MemoActionButton
+                  onPress={aiParse.handlePress}
+                  accessibilityLabel={t('memo:titles.aiReview')}
+                  isDisabled={aiParse.isDisabled}
+                  icon={
+                    aiParse.isLoading ? (
+                      <ActivityIndicator size="small" />
+                    ) : (
+                      <RobotIcon width={20} height={20} colorClassName="text-gray-9" />
+                    )
+                  }
+                />
+                <MemoActionButton
+                  onPress={convertToTodo.handlePress}
+                  accessibilityLabel={t('memo:detail.convertToTodo')}
+                  isDisabled={convertToTodo.isDisabled}
+                  icon={<CheckboxIcon width={20} height={20} colorClassName="text-gray-9" />}
+                />
+                <MemoDeleteButton onPress={() => setIsDeleteDialogOpen(true)} />
+                {isEditing && (
+                  <MemoSaveButton
+                    isHighlighted={isDirty && isValid}
+                    isDisabled={!isValid || isSubmitting}
+                    onPress={() => handleSave()}
+                  />
+                )}
+              </HStack>
+            </HStack>
+            <Separator />
+          </Box>
+        ) : (
+          <>
+            <Stack.Toolbar placement="left">
+              <Stack.Toolbar.Button
+                icon={STACK_BACK_ICON}
+                accessibilityLabel={t('common:actions.goBack')}
+                onPress={handleBack}
+              />
+            </Stack.Toolbar>
+            <Stack.Toolbar placement="right">
+              <Stack.Toolbar.Button
+                icon={memo.isPinned ? MEMO_TOOLBAR_ICON.pinned : MEMO_TOOLBAR_ICON.pin}
+                accessibilityLabel={t(memo.isPinned ? 'memo:detail.unpin' : 'memo:detail.pin')}
+                tintColor={memo.isPinned ? pinnedTint : undefined}
+                disabled={isTogglePinPending}
+                onPress={handleTogglePin}
+              />
+              <Stack.Toolbar.Button
+                icon={MEMO_TOOLBAR_ICON.aiParse}
+                accessibilityLabel={t('memo:titles.aiReview')}
+                disabled={aiParse.isDisabled}
+                onPress={aiParse.handlePress}
+              />
+              <Stack.Toolbar.Button
+                icon={MEMO_TOOLBAR_ICON.convertToTodo}
+                accessibilityLabel={t('memo:detail.convertToTodo')}
+                disabled={convertToTodo.isDisabled}
+                onPress={convertToTodo.handlePress}
+              />
+              <Stack.Toolbar.Button
+                icon={MEMO_TOOLBAR_ICON.delete}
+                accessibilityLabel={t('common:actions.delete')}
+                onPress={() => setIsDeleteDialogOpen(true)}
+              />
+              <Stack.Toolbar.Button
+                hidden={!isEditing}
+                icon={MEMO_TOOLBAR_ICON.save}
+                accessibilityLabel={t('common:actions.save')}
+                variant="prominent"
+                tintColor={saveTint}
+                disabled={!isValid || isSubmitting}
+                onPress={() => handleSave()}
+              />
+            </Stack.Toolbar>
+          </>
+        )}
+        <VStack className="flex-1 bg-white">
+          <Box className="flex-1" px={16} py={12}>
+            <FormField control={control} name="content">
+              {({ value, onChange }) => (
+                <TextArea
+                  variant="bare"
+                  preserveErrorSpace={false}
+                  value={value}
+                  onChange={onChange}
+                  onFocus={() => setIsEditing(true)}
+                />
+              )}
+            </FormField>
+          </Box>
+        </VStack>
+      </KeyboardAvoidingView>
+
+      <MemoDeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        isPending={isDeletePending}
+        onConfirm={handleDelete}
+      />
+    </FormProvider>
+  );
+}
+
+interface MemoDeleteDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  isPending: boolean;
+  onConfirm: () => void;
+}
+
+function MemoDeleteDialog({ isOpen, onOpenChange, isPending, onConfirm }: MemoDeleteDialogProps) {
+  const { t } = useTranslation(['memo', 'common']);
+
+  return (
+    <ConfirmDialog
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!isPending) {
+          onOpenChange(open);
+        }
+      }}
+      title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
+      description={
+        <ConfirmDialog.Description>
+          {t('memo:detail.deleteConfirmDescription')}
+        </ConfirmDialog.Description>
+      }
+      cancelButton={
+        <ConfirmDialog.CancelButton onPress={() => onOpenChange(false)} isDisabled={isPending}>
+          {t('common:actions.cancel')}
+        </ConfirmDialog.CancelButton>
+      }
+      confirmButton={
+        <ConfirmDialog.ConfirmButton color="danger" onPress={onConfirm} isLoading={isPending}>
+          {t('common:actions.delete')}
+        </ConfirmDialog.ConfirmButton>
+      }
+    />
+  );
+}
+
+/** 헤더가 JS(pane)든 네이티브(Stack 화면)든 같은 AI 정리 동작을 쓴다. */
+function useAiParseAction() {
+  const push = useSingleTap(router.push);
+  const { memoId } = useMemoScreenParams();
+  const overlay = useOverlay();
+  const queryClient = useQueryClient();
+  const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
+  const aiUsageQuery = useQuery(useGetAiUsageQueryOptions());
+  const hasCategory = categoriesQuery.data?.categories[0] != null;
+
+  const handlePress = () => {
+    if (getParsedMemo(queryClient, { memoId })) {
+      push(memoAiReviewHref(memoId));
+      return;
+    }
+
+    overlay.open(({ isOpen, close, exit }) => {
+      const handleOpenChange = (open: boolean) => {
+        if (!open) {
+          close();
+          exit();
+        }
+      };
+
+      return (
+        <QueryErrorBoundary
+          fallback={({ reset }) => (
+            <AiParseConfirmDialog.Error
+              isOpen={isOpen}
+              onOpenChange={handleOpenChange}
+              reset={reset}
+            />
+          )}
+        >
+          <Suspense fallback={null}>
+            <AiParseConfirmDialog isOpen={isOpen} memoId={memoId} onOpenChange={handleOpenChange} />
+          </Suspense>
+        </QueryErrorBoundary>
+      );
+    });
+  };
+
+  return {
+    handlePress,
+    isDisabled: !hasCategory || aiUsageQuery.isLoading,
+    isLoading: aiUsageQuery.isLoading,
+  };
+}
+
+function useConvertToTodoAction(onConverted: () => void) {
+  const today = useToday();
+  const { memoId } = useMemoScreenParams();
+  const overlay = useOverlay();
+  const { data: memo } = useQuery(useGetMemoQueryOptions({ memoId }));
+  const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
+  const defaultCategoryId = categoriesQuery.data?.categories[0]?.id;
+
+  const handlePress = () => {
+    if (memo == null || defaultCategoryId == null) {
       return;
     }
 
@@ -240,97 +438,10 @@ function MemoDetailContent({ presentation }: MemoDetailPaneProps) {
             exit();
           }
         }}
-        onSuccess={() => {
-          leaveMemo();
-          navigate('/feed');
-        }}
+        onSuccess={onConverted}
       />
     ));
   };
 
-  const backButton = <MemoDetailBackButton onPress={handleBack} />;
-  const actionBar = (
-    <MemoDetailActionBar
-      isPinned={memo.isPinned}
-      isTogglePinDisabled={isTogglePinPending}
-      onTogglePin={handleTogglePin}
-      isAiParseLoading={isAiUsageLoading}
-      isAiParseDisabled={!defaultCategoryId || isAiUsageLoading}
-      onAiParse={handleAiParse}
-      isConvertToTodoDisabled={!defaultCategoryId}
-      onConvertToTodo={handleConvertToTodo}
-      onDelete={() => setIsDeleteDialogOpen(true)}
-      isSaveVisible={isEditing}
-      isSaveDisabled={!isValid || isSubmitting}
-      isSaveHighlighted={isDirty && isValid}
-      onSave={() => handleSave()}
-    />
-  );
-
-  return (
-    <FormProvider {...formMethods}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" automaticOffset>
-        {isPane ? (
-          <Box className="bg-white">
-            <HStack align="center" justify="between" px={8}>
-              {backButton}
-              {actionBar}
-            </HStack>
-            <Separator />
-          </Box>
-        ) : (
-          <Stack.Screen options={{ headerLeft: () => backButton, headerRight: () => actionBar }} />
-        )}
-        <VStack className="flex-1 bg-white">
-          <Box className="flex-1" px={16} py={12}>
-            <FormField control={control} name="content">
-              {({ value, onChange }) => (
-                <StyledTextInput
-                  value={value}
-                  onChangeText={onChange}
-                  multiline
-                  textAlignVertical="top"
-                  allowFontScaling={false}
-                  onFocus={() => setIsEditing(true)}
-                  className="flex-1 text-gray-8 text-input-lg placeholder:text-gray-5"
-                />
-              )}
-            </FormField>
-          </Box>
-        </VStack>
-      </KeyboardAvoidingView>
-
-      <ConfirmDialog
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={(open) => {
-          if (!isDeletePending) {
-            setIsDeleteDialogOpen(open);
-          }
-        }}
-        title={<ConfirmDialog.Title>{t('memo:detail.deleteConfirmTitle')}</ConfirmDialog.Title>}
-        description={
-          <ConfirmDialog.Description>
-            {t('memo:detail.deleteConfirmDescription')}
-          </ConfirmDialog.Description>
-        }
-        cancelButton={
-          <ConfirmDialog.CancelButton
-            onPress={() => setIsDeleteDialogOpen(false)}
-            isDisabled={isDeletePending}
-          >
-            {t('common:actions.cancel')}
-          </ConfirmDialog.CancelButton>
-        }
-        confirmButton={
-          <ConfirmDialog.ConfirmButton
-            color="danger"
-            onPress={handleDelete}
-            isLoading={isDeletePending}
-          >
-            {t('common:actions.delete')}
-          </ConfirmDialog.ConfirmButton>
-        }
-      />
-    </FormProvider>
-  );
+  return { handlePress, isDisabled: memo == null || defaultCategoryId == null };
 }

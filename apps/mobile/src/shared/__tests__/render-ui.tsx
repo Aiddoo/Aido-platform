@@ -8,15 +8,21 @@ import type { ReactElement, ReactNode } from 'react';
 
 import { createMockDIContainer } from './create-mock-di-container';
 
-jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), replace: jest.fn(), back: jest.fn() },
-}));
+jest.mock('expo-router', () => {
+  const router = {
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    canGoBack: jest.fn(() => true),
+  };
+  return { router, useRouter: () => router, useLocalSearchParams: jest.fn(() => ({})) };
+});
 
 export function createTestQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0 },
-      mutations: { retry: false },
+      mutations: { retry: false, gcTime: 0 },
     },
   });
 }

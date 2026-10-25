@@ -37,13 +37,13 @@ describe('ActivationService', () => {
     const first = service.recordTodoCompletion({
       config,
       user,
-      completed: true,
+      isCompleted: true,
       now: new Date('2026-08-03T12:00:00.000Z'),
     });
     const duplicate = service.recordTodoCompletion({
       config,
       user,
-      completed: true,
+      isCompleted: true,
       now: new Date('2026-08-04T12:00:00.000Z'),
     });
 
@@ -72,7 +72,7 @@ describe('ActivationService', () => {
     const uncomplete = service.recordTodoCompletion({
       config,
       user: { id: 'new-user', createdAt: new Date('2026-08-01T00:00:00.000Z') },
-      completed: false,
+      isCompleted: false,
       now: new Date('2026-08-02T12:00:00.000Z'),
     });
 

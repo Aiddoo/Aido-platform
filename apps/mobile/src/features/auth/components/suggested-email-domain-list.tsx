@@ -8,10 +8,7 @@ import { getEmailDomainSuggestions } from '../utils/get-email-domain-suggestions
 
 type SuggestedEmailDomainListProps = Pick<ComponentProps<typeof Input>, 'value' | 'onChange'>;
 
-export const SuggestedEmailDomainList = ({
-  value = '',
-  onChange,
-}: SuggestedEmailDomainListProps) => {
+export function SuggestedEmailDomainList({ value = '', onChange }: SuggestedEmailDomainListProps) {
   const suggestions = getEmailDomainSuggestions(value);
   if (suggestions.length === 0) {
     return null;
@@ -34,4 +31,4 @@ export const SuggestedEmailDomainList = ({
       </HStack>
     </Animated.View>
   );
-};
+}

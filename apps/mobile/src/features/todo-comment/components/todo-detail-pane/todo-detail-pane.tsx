@@ -78,7 +78,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
     commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const activeFormType = commentRoute.form?.type;
   const isNativeBackGestureEnabled =
-    commentRoute.view === 'overview' && commentRoute.form === null && !isCommentSubmitting;
+    commentRoute.view === 'overview' && commentRoute.form == null && !isCommentSubmitting;
 
   const listHeader = (
     <>
@@ -109,7 +109,11 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
   const content = (
     <>
-      <TodoCommentTitleBar onClose={isPane ? closePane : undefined} />
+      {isPane ? (
+        <TodoCommentTitleBar onBackPress={closePane} />
+      ) : (
+        <TodoCommentTitleBar.StackHeader />
+      )}
 
       <Separator />
 
@@ -172,7 +176,7 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
     <>
       <Stack.Screen options={{ gestureEnabled: isNativeBackGestureEnabled }} />
 
-      <StyledSafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
+      <StyledSafeAreaView className="flex-1 bg-background" edges={['left', 'right']}>
         {content}
       </StyledSafeAreaView>
     </>

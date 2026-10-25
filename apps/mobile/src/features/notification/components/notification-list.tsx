@@ -1,29 +1,38 @@
 import type { NotificationCategory } from '@aido/api';
 import { FlashList } from '@shopify/flash-list';
+import { useLogger } from '@src/bootstrap/providers/di-context';
+import { UserPolicy } from '@src/features/user/domains/user.model';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
+import { useTrack } from '@src/shared/analytics';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
-import { useToday } from '@src/shared/hooks/use-today';
-import { useTranslation } from '@src/shared/i18n';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
+import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import {
   Box,
   Button,
-  HStack,
   NotiIcon,
   Result,
-  Text,
+  usePremiumDialog,
   VStack,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
-import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
-import { Separator, Skeleton, Spinner } from 'heroui-native';
-import type { ComponentProps } from 'react';
-import { RefreshControl, ScrollView } from 'react-native';
+import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { Separator, Spinner } from 'heroui-native';
+import { useCallback } from 'react';
+import { RefreshControl } from 'react-native';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
+import { type Notification, NotificationPolicy } from '../domains/notification.model';
+import { useNotificationNavigation } from '../hooks/use-notification-navigation';
 import { useGetNotificationsInfiniteQueryOptions } from '../queries/get-notifications-infinite-query-options';
-import { toNotificationListItems } from '../utils/view-models/notification-list.view-model';
-import { NotificationItem } from './notification-item';
+import { useMarkAsReadMutationOptions } from '../queries/use-mark-as-read-mutation-options';
+import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
+import { getCategoryKey } from '../utils/view-models/notification-category.view-model';
+import { toDateSectionedListItems } from '../utils/view-models/notification-list.view-model';
+import { NotificationListRow } from './notification-list-row';
 
 type NotificationListProps = {
   category?: NotificationCategory;
@@ -37,7 +46,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
     useGetNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
   );
   const today = useToday();
-  const listItems = toNotificationListItems(query.data, today);
+  const listItems = toDateSectionedListItems(query.data, today);
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
 
@@ -47,22 +56,16 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
       renderItem={({ item }) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => (
-            <Box px={16} py={8} className="bg-background">
-              <Text size="b3" shade={5} weight="semibold">
-                {t(`common:dateSections.${section}`)}
-              </Text>
-            </Box>
+            <NotificationListRow.SectionHeader section={section} />
           ))
-          .with({ type: 'item' }, ({ notification }) => (
-            <NotificationList.Item notification={notification} />
-          ))
+          .with({ type: 'item' }, ({ entry }) => <NotificationList.Item notification={entry} />)
           .exhaustive()
       }
       getItemType={(item) => item.type}
       keyExtractor={(item) =>
         match(item)
           .with({ type: 'header' }, ({ section }) => `header-${section}`)
-          .with({ type: 'item' }, ({ notification }) => String(notification.id))
+          .with({ type: 'item' }, ({ entry }) => String(entry.id))
           .exhaustive()
       }
       refreshControl={
@@ -104,18 +107,7 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
   );
 }
 
-NotificationList.Item = function Item(props: ComponentProps<typeof NotificationItem>) {
-  return <NotificationItem {...props} />;
-};
-
-NotificationList.Empty = function Empty() {
-  const { t } = useTranslation('notification');
-  return (
-    <VStack flex={1} p={24}>
-      <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />
-    </VStack>
-  );
-};
+NotificationList.Loading = NotificationListRow.Loading;
 
 NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['notification', 'common']);
@@ -129,26 +121,85 @@ NotificationList.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
   );
 };
 
-NotificationList.Loading = function Loading() {
+NotificationList.Empty = function Empty() {
+  const { t } = useTranslation('notification');
   return (
-    <ScrollView className="flex-1">
-      <Box px={16} py={8}>
-        <Skeleton className="w-32 h-5" />
-      </Box>
-      <VStack>
-        {range(5).map((index) => (
-          <Box key={index} px={16} py={16}>
-            <VStack gap={4}>
-              <HStack justify="between">
-                <Skeleton className="w-10 h-4" />
-                <Skeleton className="w-12 h-4" />
-              </HStack>
-              <Skeleton className="w-3/4 h-5" />
-              <Skeleton className="w-full h-4" />
-            </VStack>
-          </Box>
-        ))}
-      </VStack>
-    </ScrollView>
+    <VStack flex={1} p={24}>
+      <Result icon={<NotiIcon width={72} height={72} />} title={t('list.empty')} />
+    </VStack>
   );
 };
+
+interface NotificationItemProps {
+  notification: Notification;
+}
+
+NotificationList.Item = function Item({ notification }: NotificationItemProps) {
+  const handlePress = useSingleTap(useNotificationPress(notification));
+  const { t } = useTranslation('notification');
+
+  return (
+    <NotificationListRow
+      label={t(`categories.${getCategoryKey(notification.type)}`)}
+      title={notification.title}
+      body={notification.body}
+      createdAt={notification.createdAt}
+      isUnread={!notification.isRead}
+      onPress={handlePress}
+    />
+  );
+};
+
+function useNotificationPress(notification: Notification) {
+  const navigateToDestination = useNotificationNavigation();
+  const today = useTodayKey();
+  const logger = useLogger();
+
+  const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
+  const { trackEvent } = useTrack();
+  const queryClient = useQueryClient();
+  const premiumDialog = usePremiumDialog();
+
+  return useCallback(() => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    if (NotificationPolicy.isAiFeature(notification)) {
+      const user = getCachedMe(queryClient);
+      if (user && !UserPolicy.isPremiumUser(user)) {
+        trackEvent('premium_gate_shown', { feature: 'ai_report' });
+        premiumDialog.open({
+          description: tGlobal('notification:list.premiumDescription'),
+        });
+        return;
+      }
+    }
+
+    const destination = resolveNotificationDestination(
+      {
+        type: notification.type,
+        context: notification.context,
+        routing: notification.routing,
+        action: notification.action,
+      },
+      { today },
+    );
+    trackEvent('notification_center_opened', {
+      type: notification.type,
+      destination: destination.kind,
+    });
+    navigateToDestination(destination).catch((error) =>
+      logger.warn(NOTIFICATION_LOG_EVENT.CENTER_NAVIGATION_FAILED, { error }),
+    );
+  }, [
+    notification,
+    markAsRead,
+    trackEvent,
+    queryClient,
+    premiumDialog,
+    navigateToDestination,
+    today,
+    logger,
+  ]);
+}

@@ -33,7 +33,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export const ThemeProvider = ({ children, syncStorage = mmkvSyncStorage }: ThemeProviderProps) => {
+export function ThemeProvider({ children, syncStorage = mmkvSyncStorage }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
   const [mode, setMode] = useState<ThemeMode>(() => readThemeMode(syncStorage));
 
@@ -64,12 +64,17 @@ export const ThemeProvider = ({ children, syncStorage = mmkvSyncStorage }: Theme
     };
   }, [resolvedTheme, backgroundColor]);
 
+  const value = useMemo(
+    () => ({ mode, resolvedTheme, setMode: persistMode }),
+    [mode, resolvedTheme, persistMode],
+  );
+
   return (
-    <ThemeContext.Provider value={{ mode, resolvedTheme, setMode: persistMode }}>
+    <ThemeContext.Provider value={value}>
       <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
     </ThemeContext.Provider>
   );
-};
+}
 
 export const useTheme = (): ThemeContextValue => {
   const context = use(ThemeContext);

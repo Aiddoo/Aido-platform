@@ -1,8 +1,8 @@
 import { useTranslation } from '@src/shared/i18n';
-import { Text } from '@src/shared/ui';
+import { Box, Text } from '@src/shared/ui';
 import { parseWebViewUrl } from '@src/shared/utils/route-params';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 function WebViewScreen() {
@@ -13,9 +13,9 @@ function WebViewScreen() {
 
   if (!decodedUrl) {
     return (
-      <View className="flex-1 justify-center items-center">
+      <Box className="flex-1 justify-center items-center">
         <Text size="b3">{t('webview.invalidUrl')}</Text>
-      </View>
+      </Box>
     );
   }
 
@@ -34,9 +34,9 @@ function WebViewScreen() {
         startInLoadingState
         scalesPageToFit
         renderLoading={() => (
-          <View className="flex-1 justify-center items-center">
+          <Box className="flex-1 justify-center items-center">
             <ActivityIndicator size="large" />
-          </View>
+          </Box>
         )}
       />
     </>

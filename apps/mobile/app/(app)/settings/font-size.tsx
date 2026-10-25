@@ -2,10 +2,10 @@ import { useTrack } from '@src/shared/analytics';
 import { useTranslation } from '@src/shared/i18n';
 import { type FontScale, isFontScale } from '@src/shared/preferences/font-scale.preference';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { StyledSafeAreaView } from '@src/shared/ui';
+import { StyledSafeAreaView, Box } from '@src/shared/ui';
 import { SCALED_FONT_STYLES } from '@src/shared/utils/font-scale';
 import { Radio, RadioGroup } from 'heroui-native';
-import { Text as RNText, ScrollView, View } from 'react-native';
+import { Text as RNText, ScrollView } from 'react-native';
 
 function FontSizeSettingsScreen() {
   const { fontScale, setFontScale } = useFontScale();
@@ -54,8 +54,8 @@ function FontScaleRadioItem({ value, label }: FontScaleRadioItemProps) {
   return (
     <RadioGroup.Item value={value}>
       {() => (
-        <View className="flex-row items-center gap-3 px-4 py-4">
-          <View className="flex-1 gap-1">
+        <Box className="flex-row items-center gap-3 px-4 py-4">
+          <Box className="flex-1 gap-1">
             <RNText allowFontScaling={false} className="text-b3 font-semibold text-foreground">
               {label}
             </RNText>
@@ -66,9 +66,9 @@ function FontScaleRadioItem({ value, label }: FontScaleRadioItemProps) {
             >
               {sample}
             </RNText>
-          </View>
+          </Box>
           <Radio />
-        </View>
+        </Box>
       )}
     </RadioGroup.Item>
   );

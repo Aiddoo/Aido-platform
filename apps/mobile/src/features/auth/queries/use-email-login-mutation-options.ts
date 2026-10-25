@@ -3,12 +3,12 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
-import { unwrap } from '@src/shared/errors/result';
+import { isBusinessError, unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const useEmailLoginMutationOptions = () => {
@@ -32,7 +32,11 @@ export const useEmailLoginMutationOptions = () => {
       trackEvent('auth_login', { method: 'email' });
     },
     onError: (error, variables) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (!isBusinessError(error)) {
+        return;
+      }
+
+      notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.EMAIL_0503)) {
         push({ pathname: '/(auth)/verify-email', params: { email: variables.email } });

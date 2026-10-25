@@ -21,7 +21,7 @@
 
 ## 한 route와 URL 상태
 
-`useTodoScreenParams`가 pathname의 `todoId`를 읽고, `useTodoCommentRoute`가 `sort`, `comment`,
+`useTodoScreenParams`가 자기 route의 `todoId`(상세 화면은 path, 피드 pane은 피드 화면 query)를 읽고, `useTodoCommentRoute`가 `sort`, `comment`,
 `intent`, `returnTo`를 검증한다. 저장 매체가 Expo search param이어도 View에는 React 상태와 같은 tuple
 인터페이스만 노출한다.
 

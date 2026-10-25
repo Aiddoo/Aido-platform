@@ -10,9 +10,9 @@ type NudgeInteractionsPageParam = { cursor?: number };
 const INITIAL_PAGE: NudgeInteractionsPageParam = {};
 
 function selectNudgeInteractions(
-  data: InfiniteData<NudgeInteractionPage, NudgeInteractionsPageParam>,
+  infinitePages: InfiniteData<NudgeInteractionPage, NudgeInteractionsPageParam>,
 ) {
-  return data.pages.flatMap((page) => page.items);
+  return infinitePages.pages.flatMap((page) => page.items);
 }
 
 export function getNudgeInteractionsInfiniteQueryOptions(
@@ -34,7 +34,7 @@ export function getNudgeInteractionsInfiniteQueryOptions(
       ),
     initialPageParam: INITIAL_PAGE,
     getNextPageParam: (page) =>
-      page.hasNext && page.nextCursor !== null ? { cursor: page.nextCursor } : undefined,
+      page.hasNext && page.nextCursor != null ? { cursor: page.nextCursor } : undefined,
     select: selectNudgeInteractions,
     staleTime: 30_000,
   });

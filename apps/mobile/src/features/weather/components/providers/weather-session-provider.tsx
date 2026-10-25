@@ -24,7 +24,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-import { WEATHER_QUERY_KEYS } from '../../constants/weather-query-keys';
+import { cancelWeather, removeWeather } from '../../queries/weather-cache';
 import { createWeatherClock } from '../../utils/view-models/weather-clock.view-model';
 
 type LocationStatus =
@@ -39,7 +39,7 @@ export interface WeatherSession {
   locationRevision: number;
   status: LocationStatus;
   isSyncing: boolean;
-  needsIntroduction: boolean;
+  shouldIntroduce: boolean;
   locationName: string | null;
   syncLocation(requestPermission?: boolean): Promise<void>;
   dismissIntroduction(): void;
@@ -56,7 +56,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
   const [locationRevision, setLocationRevision] = useState(0);
   const [status, setStatus] = useState<LocationStatus>('checking');
   const [isSyncing, setIsSyncing] = useState(false);
-  const [needsIntroduction, setNeedsIntroduction] = useState(true);
+  const [shouldIntroduce, setShouldIntroduce] = useState(true);
   const [locationName, setLocationName] = useState<string | null>(null);
   const mounted = useRef(false);
   const activeRequest = useRef<Promise<void> | null>(null);
@@ -65,7 +65,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
   const lastSynchronizedAt = useRef(0);
 
   const dismissIntroduction = useCallback(() => {
-    setNeedsIntroduction(false);
+    setShouldIntroduce(false);
     try {
       locationState.markIntroductionSeen();
     } catch {
@@ -98,10 +98,10 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
           }
           if (!permission.granted) {
             setStatus(permission.canAskAgain ? 'unregistered' : 'denied');
-            setNeedsIntroduction(permission.canAskAgain && !locationState.hasSeenIntroduction());
+            setShouldIntroduce(permission.canAskAgain && !locationState.hasSeenIntroduction());
             return;
           }
-          setNeedsIntroduction(false);
+          setShouldIntroduce(false);
           setIsSyncing(true);
           const coordinates = await gateway.getCoordinates(controller.signal);
           const place = await gateway.getPlace(coordinates, controller.signal);
@@ -112,7 +112,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
             !WeatherPolicy.isSupportedLocation({ ...coordinates, countryCode: place.countryCode })
           ) {
             setStatus(
-              place.countryCode === null && WeatherPolicy.isWithinSupportedBounds(coordinates)
+              place.countryCode == null && WeatherPolicy.isWithinSupportedBounds(coordinates)
                 ? 'error'
                 : 'unsupported',
             );
@@ -128,12 +128,12 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
             lastSynchronizedAt.current = Date.now();
             return;
           }
-          await queryClient.cancelQueries({ queryKey: WEATHER_QUERY_KEYS.all });
+          await cancelWeather(queryClient);
           unwrap(await service.updateLocation(coordinates, controller.signal));
           if (controller.signal.aborted) {
             return;
           }
-          queryClient.removeQueries({ queryKey: WEATHER_QUERY_KEYS.all });
+          removeWeather(queryClient);
           previousCoordinates.current = coordinates;
           setLocationName(place.name);
           setLocationRevision((value) => value + 1);
@@ -147,7 +147,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
               } catch {}
             }
             setStatus((current) => (current === 'unsupported' ? current : 'error'));
-            setNeedsIntroduction(false);
+            setShouldIntroduce(false);
           }
         } finally {
           if (mounted.current) {
@@ -175,7 +175,14 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
     let clockTimer: ReturnType<typeof setTimeout> | undefined;
     const reconcileClock = () => {
       clearTimeout(clockTimer);
-      setClock(createWeatherClock(new Date()));
+      const next = createWeatherClock(new Date());
+      setClock((current) =>
+        current.date === next.date &&
+        current.hour === next.hour &&
+        current.deviceHour === next.deviceHour
+          ? current
+          : next,
+      );
       if (AppState.currentState === 'active') {
         clockTimer = setTimeout(reconcileClock, 60_000 - (Date.now() % 60_000) + 100);
       }
@@ -204,7 +211,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
       locationRevision,
       status,
       isSyncing,
-      needsIntroduction,
+      shouldIntroduce,
       locationName,
       syncLocation,
       dismissIntroduction,
@@ -214,7 +221,7 @@ export function WeatherSessionProvider({ children }: PropsWithChildren) {
       locationRevision,
       status,
       isSyncing,
-      needsIntroduction,
+      shouldIntroduce,
       locationName,
       syncLocation,
       dismissIntroduction,

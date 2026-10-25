@@ -15,6 +15,7 @@ import { OverlayProvider, QueryErrorBoundary } from '@src/shared/ui';
 import { usePathname } from 'expo-router';
 import type { PropsWithChildren } from 'react';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { ReservedRegionsProvider } from 'react-native-reserved-regions';
 
 interface AppProvidersProps extends PropsWithChildren {
   draftStorageBootstrap: DraftStorageBootstrap;
@@ -36,11 +37,13 @@ export function AppProviders({ children, draftStorageBootstrap }: AppProvidersPr
                       <AuthProvider>
                         <RevenueCatProvider>
                           <NotificationProvider>
-                            <BottomSheetModalProvider>
-                              <QueryErrorBoundary>
-                                <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>
-                              </QueryErrorBoundary>
-                            </BottomSheetModalProvider>
+                            <ReservedRegionsProvider style={{ flex: 1 }}>
+                              <BottomSheetModalProvider>
+                                <QueryErrorBoundary>
+                                  <OverlayProvider resetKey={pathname}>{children}</OverlayProvider>
+                                </QueryErrorBoundary>
+                              </BottomSheetModalProvider>
+                            </ReservedRegionsProvider>
                           </NotificationProvider>
                         </RevenueCatProvider>
                       </AuthProvider>

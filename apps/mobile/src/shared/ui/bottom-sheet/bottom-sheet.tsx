@@ -1,22 +1,22 @@
 import GorhomBottomSheet, {
   BottomSheetBackdrop,
   type BottomSheetBackdropProps,
-  BottomSheetView,
+  BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useRef } from 'react';
-import { type LayoutChangeEvent, useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResolveClassNames } from 'uniwind';
 
 import {
-  MIN_CONTENT_HEIGHT,
+  HANDLE_HEIGHT,
   SHEET_DETACHED_MARGIN,
   SHEET_INDEX,
-  sharedSheetStyles,
-  TOP_MARGIN,
+  SHARED_SHEET_STYLES,
 } from './constants';
+import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
-import { useSheetHorizontalMargins } from './use-sheet-horizontal-margins';
+import { useSheetLayout } from './use-sheet-layout';
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -37,19 +37,18 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
   const prevIsOpenRef = useRef(isOpen);
   useAndroidSheetBackHandler(isOpen, () => sheetRef.current?.close());
   const insets = useSafeAreaInsets();
-  const horizontalMargins = useSheetHorizontalMargins(SHEET_DETACHED_MARGIN);
+  const { margins, topInset } = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN });
   const { height: windowHeight } = useWindowDimensions();
   const backgroundStyle = useResolveClassNames('bg-white dark:bg-gray-1');
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
-  const maxDynamicContentSize = Math.max(
-    MIN_CONTENT_HEIGHT,
-    windowHeight - insets.top - TOP_MARGIN,
-  );
+  const bottomInset = insets.bottom || 16;
+  const maxDynamicContentSize =
+    getSheetMaxHeight(windowHeight, topInset, bottomInset) - HANDLE_HEIGHT;
 
   useEffect(() => {
     if (!isOpen) {
       lastContentHeightRef.current = 0;
-      if (resizeFrameRef.current !== undefined) {
+      if (resizeFrameRef.current != null) {
         cancelAnimationFrame(resizeFrameRef.current);
       }
       resizeFrameRef.current = undefined;
@@ -58,7 +57,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
 
   useEffect(
     () => () => {
-      if (resizeFrameRef.current !== undefined) {
+      if (resizeFrameRef.current != null) {
         cancelAnimationFrame(resizeFrameRef.current);
       }
     },
@@ -124,12 +123,12 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     [],
   );
 
-  const handleContentLayout = (event: LayoutChangeEvent) => {
+  const handleContentSizeChange = (_width: number, height: number) => {
     if (!isOpen || isClosingRef.current) {
       return;
     }
 
-    const nextHeight = Math.round(event.nativeEvent.layout.height);
+    const nextHeight = Math.round(height);
     const prevHeight = lastContentHeightRef.current;
 
     if (Math.abs(nextHeight - prevHeight) < 2) {
@@ -137,7 +136,7 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
     }
 
     lastContentHeightRef.current = nextHeight;
-    if (resizeFrameRef.current !== undefined) {
+    if (resizeFrameRef.current != null) {
       cancelAnimationFrame(resizeFrameRef.current);
     }
     resizeFrameRef.current = requestAnimationFrame(() => {
@@ -157,20 +156,25 @@ export const BottomSheet = ({ isOpen, onOpenChange, onCloseStart, children }: Bo
       maxDynamicContentSize={maxDynamicContentSize}
       enablePanDownToClose
       detached
-      bottomInset={insets.bottom || 16}
+      bottomInset={bottomInset}
       style={[
-        sharedSheetStyles.detached,
-        { marginLeft: horizontalMargins.left, marginRight: horizontalMargins.right },
+        SHARED_SHEET_STYLES.detached,
+        { marginLeft: margins.left, marginRight: margins.right },
       ]}
-      backgroundStyle={[backgroundStyle, sharedSheetStyles.detachedBackground]}
-      handleIndicatorStyle={[sharedSheetStyles.handleIndicator, handleIndicatorStyle]}
+      backgroundStyle={[backgroundStyle, SHARED_SHEET_STYLES.detachedBackground]}
+      handleIndicatorStyle={[SHARED_SHEET_STYLES.handleIndicator, handleIndicatorStyle]}
       backdropComponent={renderBackdrop}
       onAnimate={handleAnimate}
       onChange={handleSheetChange}
     >
-      <BottomSheetView onLayout={handleContentLayout} style={sharedSheetStyles.content}>
+      <BottomSheetScrollView
+        onContentSizeChange={handleContentSizeChange}
+        contentContainerStyle={SHARED_SHEET_STYLES.content}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
         {children}
-      </BottomSheetView>
+      </BottomSheetScrollView>
     </GorhomBottomSheet>
   );
 };

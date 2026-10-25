@@ -10,12 +10,12 @@ interface PickerHeaderProps {
   isConfirmDisabled?: boolean;
 }
 
-export const PickerHeader = ({
+export function PickerHeader({
   title,
   onCancel,
   onConfirm,
   isConfirmDisabled = false,
-}: PickerHeaderProps) => {
+}: PickerHeaderProps) {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('common');
   return (
@@ -46,4 +46,4 @@ export const PickerHeader = ({
       </Box>
     </HStack>
   );
-};
+}

@@ -1,3 +1,9 @@
+import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import {
+  useSubTodoScreenParams,
+  useTodoSheetDateParam,
+} from '@src/features/todo/hooks/use-todo-sheet-params';
+import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowRightIcon,
@@ -5,90 +11,152 @@ import {
   Box,
   EditIcon,
   ListRow,
+  QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  Result,
+  type SheetRouteExit,
   TrashIcon,
+  useSheetRoute,
   VStack,
 } from '@src/shared/ui';
-import { PressableFeedback } from 'heroui-native';
-import { useState } from 'react';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
+import { PressableFeedback, Skeleton } from 'heroui-native';
+import { type ComponentProps, Suspense, useEffect } from 'react';
 
-interface SubTodoActionsBottomSheetProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  onClose: () => void;
-  onEdit: () => void;
-  onDelete: () => Promise<unknown> | void;
+import { useGetTodosByDateQueryOptions } from '../../queries/get-todos-by-date-query-options';
+import { useDeleteSubTodoMutationOptions } from '../../queries/use-delete-sub-todo-mutation-options';
+import {
+  subTodoEditSheetHref,
+  TODO_SHEET_FALLBACK_HREF,
+} from '../../utils/navigation/todo-sheet-href';
+import {
+  findSheetSubTodo,
+  findSheetTodo,
+} from '../../utils/view-models/todo-sheet-target.view-model';
+
+type SubTodoActionsBottomSheetProps = Omit<
+  ComponentProps<typeof BottomSheet>,
+  'children' | 'isOpen' | 'onOpenChange'
+>;
+
+export function SubTodoActionsBottomSheet(props: SubTodoActionsBottomSheetProps) {
+  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+
+  return (
+    <BottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <QueryErrorBoundary fallback={SubTodoActionsBottomSheet.Error}>
+        <Suspense fallback={<SubTodoActionsBottomSheet.Loading />}>
+          <SubTodoActionsBottomSheet.Content onClose={sheet.close} />
+        </Suspense>
+      </QueryErrorBoundary>
+    </BottomSheet>
+  );
 }
 
-export const SubTodoActionsBottomSheet = ({
-  isOpen,
-  onOpenChange,
-  onClose,
-  onEdit,
-  onDelete,
-}: SubTodoActionsBottomSheetProps) => {
-  const { t } = useTranslation('todo');
+interface SubTodoActionsContentProps {
+  onClose: (next?: SheetRouteExit) => void;
+}
 
-  // 지우는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
-  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
-  const [isDeleting, setIsDeleting] = useState(false);
+SubTodoActionsBottomSheet.Content = function Content({ onClose }: SubTodoActionsContentProps) {
+  const { t } = useTranslation('todo');
+  const { todoId } = useTodoScreenParams();
+  const { subTodoId } = useSubTodoScreenParams();
+  const [date] = useTodoSheetDateParam();
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const isDeleting = deleteSubTodo.isPending;
+
+  useEffect(() => {
+    if (todo == null || subTodo == null) {
+      onClose();
+    }
+  }, [todo, subTodo, onClose]);
+
+  if (todo == null || subTodo == null) {
+    return null;
+  }
 
   const handleDelete = async () => {
     if (isDeleting) {
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      await onDelete();
-    } finally {
-      setIsDeleting(false);
+    const removed = await deleteSubTodo
+      .mutateAsync({ todoId: todo.id, subTodoId: subTodo.id, startDate: todo.startDate })
+      .catch(() => null);
+
+    if (removed != null) {
+      onClose();
     }
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={8}>
-        <PressableFeedback
-          onPress={() => {
-            onEdit();
-            onClose();
-          }}
-          isDisabled={isDeleting}
-        >
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
-                <EditIcon width={16} height={16} colorClassName="text-gray-7" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
-            }
-            right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
-          />
-        </PressableFeedback>
+    <VStack gap={8}>
+      <PressableFeedback
+        onPress={() =>
+          onClose({
+            type: 'replace',
+            href: subTodoEditSheetHref({ todoId: todo.id, subTodoId: subTodo.id, date }),
+          })
+        }
+        isDisabled={isDeleting}
+      >
+        <ListRow
+          horizontalPadding="medium"
+          verticalPadding="medium"
+          left={
+            <Box className="size-7 items-center justify-center rounded-full bg-gray-2">
+              <EditIcon width={16} height={16} colorClassName="text-gray-7" />
+            </Box>
+          }
+          contents={
+            <ListRow.Texts type="1RowTypeA" top={t('actions.edit')} topProps={{ size: 'b2' }} />
+          }
+          right={<ArrowRightIcon width={16} height={16} colorClassName="text-gray-7" />}
+        />
+      </PressableFeedback>
 
-        <PressableFeedback onPress={handleDelete} isDisabled={isDeleting}>
-          <ListRow
-            horizontalPadding="medium"
-            verticalPadding="medium"
-            left={
-              <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
-                <TrashIcon width={16} height={16} colorClassName="text-error" />
-              </Box>
-            }
-            contents={
-              <ListRow.Texts
-                type="1RowTypeA"
-                top={isDeleting ? t('actions.deleting') : t('actions.delete')}
-                topProps={{ size: 'b2', tone: 'danger' }}
-              />
-            }
-          />
-        </PressableFeedback>
-      </VStack>
-    </BottomSheet>
+      <PressableFeedback onPress={handleDelete} isDisabled={isDeleting}>
+        <ListRow
+          horizontalPadding="medium"
+          verticalPadding="medium"
+          left={
+            <Box className="size-7 items-center justify-center rounded-full bg-error/10 dark:bg-error/20">
+              <TrashIcon width={16} height={16} colorClassName="text-error" />
+            </Box>
+          }
+          contents={
+            <ListRow.Texts
+              type="1RowTypeA"
+              top={isDeleting ? t('actions.deleting') : t('actions.delete')}
+              topProps={{ size: 'b2', tone: 'danger' }}
+            />
+          }
+        />
+      </PressableFeedback>
+    </VStack>
+  );
+};
+
+SubTodoActionsBottomSheet.Loading = function Loading() {
+  return (
+    <VStack gap={8}>
+      {times(2, (index) => (
+        <Skeleton key={index} className="h-14 w-full rounded-xl" />
+      ))}
+    </VStack>
+  );
+};
+
+SubTodoActionsBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+    />
   );
 };

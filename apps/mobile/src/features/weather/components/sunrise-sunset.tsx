@@ -1,7 +1,9 @@
+import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack } from '@src/shared/ui';
 import { WeatherSunriseIcon, WeatherSunsetIcon } from '@src/shared/ui/icon';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { formatTimeDisplay } from '@src/shared/utils/time';
+import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 
 import { useTimePalette } from '../hooks/use-time-palette';
 import { useGetConditionsQueryOptions } from '../queries/get-conditions-query-options';
@@ -9,7 +11,9 @@ import { WeatherCard } from './weather-card';
 
 export function SunriseSunset() {
   const { t } = useTranslation('weather');
-  const { data: conditions } = useSuspenseQuery(useGetConditionsQueryOptions());
+  const [{ data: conditions }] = useSuspenseQueries({
+    queries: [useGetConditionsQueryOptions(), useGetPreferenceQueryOptions()],
+  });
 
   if (conditions.sunrise == null && conditions.sunset == null) {
     return null;
@@ -43,6 +47,7 @@ function SunTime({
   time: string;
 }) {
   const palette = useTimePalette();
+  const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
 
   return (
     <VStack align="center" gap={4}>
@@ -53,7 +58,7 @@ function SunTime({
         </Text>
       </HStack>
       <Text size="b1" weight="semibold" style={{ color: palette.text }}>
-        {time}
+        {formatTimeDisplay(time, preference.timeFormat)}
       </Text>
     </VStack>
   );

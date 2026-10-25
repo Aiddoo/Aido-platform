@@ -46,9 +46,7 @@ export function getNotificationsInfiniteQueryOptions(
     initialPageParam: INITIAL_NOTIFICATION_PAGE_PARAM,
 
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore && lastPage.nextCursor !== null
-        ? { cursor: lastPage.nextCursor }
-        : undefined,
+      lastPage.hasMore && lastPage.nextCursor != null ? { cursor: lastPage.nextCursor } : undefined,
 
     select: selectNotifications,
   });
@@ -58,8 +56,8 @@ export function useGetNotificationsInfiniteQueryOptions(params?: NotificationQue
   return getNotificationsInfiniteQueryOptions(useNotificationService(), { params });
 }
 
-const selectNotifications = (data: InfiniteData<NotificationListResult>) =>
+const selectNotifications = (infinitePages: InfiniteData<NotificationListResult>) =>
   uniqBy(
-    data.pages.flatMap((page) => page.notifications),
+    infinitePages.pages.flatMap((page) => page.notifications),
     (notification) => notification.id,
   );

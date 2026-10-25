@@ -45,7 +45,6 @@
     "precipProb": "강수확률",
     "feelsLike": "체감온도 {{temp}}°로 예상된다냥",
     "hourly": "시간별 예보",
-    "hourLabel": "{{hour}}시",
     "weekly": "주간 예보",
     "sunrise": "일출",
     "sunset": "일몰",
@@ -57,7 +56,7 @@
     "registeredLocation": "등록한 위치의 날씨",
     "dailyRange": "오늘의 최저·최고 기온이에요",
     "refreshFailed": "업데이트하지 못해 마지막 예보를 보여드려요",
-    "nextDayHourLabel": "내일 {{hour}}시"
+    "nextDayHourLabel": "내일 {{time}}"
   },
   "dust": {
     "good": "좋음",

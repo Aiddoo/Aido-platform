@@ -12,6 +12,17 @@ describe('calculateTomorrowSchedule', () => {
       // Then
       expect(result.startDate).toEqual(TOMORROW);
     });
+
+    it('오늘이 하루 중 시각을 가져도 startDate는 내일 자정이 된다', () => {
+      // Given: 공유 today는 자정이 아닌 현재 시각을 담는다
+      const todayAfternoon = new Date(2025, 5, 10, 15, 30);
+
+      // When
+      const result = calculateTomorrowSchedule(null, todayAfternoon);
+
+      // Then
+      expect(result.startDate).toEqual(TOMORROW);
+    });
   });
 
   describe('endDate 처리', () => {

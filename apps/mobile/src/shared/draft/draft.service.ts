@@ -52,7 +52,7 @@ export class DraftService {
 
     for (const id of this.#repository.findAllIds()) {
       const entry = this.#repository.find(id);
-      if (entry === undefined || isDraftExpired(entry, now)) {
+      if (entry == null || isDraftExpired(entry, now)) {
         this.#repository.remove(id);
       }
     }

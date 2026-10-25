@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { NATIVE_TAB_ICON_SOURCES } from '@src/shared/ui';
-import * as Haptics from 'expo-haptics';
+import { selectionFeedback } from '@src/shared/utils/haptics';
 import { NativeTabs } from 'expo-router/native-tabs';
 import { useResolveClassNames } from 'uniwind';
 
@@ -22,7 +22,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: ({ data }) => {
             if (!data.isPrevented) {
-              Haptics.selectionAsync();
+              selectionFeedback();
             }
           },
         }}
@@ -35,7 +35,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: ({ data }) => {
             if (!data.isPrevented) {
-              Haptics.selectionAsync();
+              selectionFeedback();
             }
           },
         }}
@@ -48,7 +48,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: ({ data }) => {
             if (!data.isPrevented) {
-              Haptics.selectionAsync();
+              selectionFeedback();
             }
           },
         }}

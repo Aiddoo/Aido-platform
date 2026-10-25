@@ -12,6 +12,7 @@ import {
   usePendingTodoCommentTransition,
   useTodoCommentScreenTransitionActions,
 } from '../components/providers/todo-comment-screen-transition-provider';
+import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import type { TodoCommentSort } from '../domains/todo-comment.model';
 import { useGetTodoCommentOverviewQueryOptions } from '../queries/get-todo-comment-overview-query-options';
 import { useTodoCommentRoute } from './use-todo-comment-route';
@@ -73,7 +74,7 @@ export function useTodoCommentSort(): TodoCommentSortState {
       };
 
       prefetchAndCommitSort().catch((error) =>
-        logger.error('[TodoComment] Sort change failed', toError(error)),
+        logger.error(TODO_COMMENT_LOG_EVENT.SORT_CHANGE_FAILED, toError(error)),
       );
     },
     [

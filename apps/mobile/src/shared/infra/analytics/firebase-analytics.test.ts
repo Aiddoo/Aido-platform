@@ -67,7 +67,7 @@ describe('createFirebaseAnalytics', () => {
 
     expect(() => analytics.trackEvent('invalid-event')).not.toThrow();
 
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] trackEvent failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.track-event.failed', {
       eventName: 'invalid-event',
       error: 'invalid event',
     });
@@ -81,7 +81,7 @@ describe('createFirebaseAnalytics', () => {
     expect(() => analytics.trackEvent('todo_created')).not.toThrow();
     await Promise.resolve();
 
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] trackEvent failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.track-event.failed', {
       eventName: 'todo_created',
       error: 'native event rejected',
     });
@@ -96,7 +96,7 @@ describe('createFirebaseAnalytics', () => {
 
     expect(() => analytics.trackScreenView('TodoDetail')).not.toThrow();
 
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] trackScreenView failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.track-screen-view.failed', {
       screenName: 'TodoDetail',
       error: 'invalid screen',
     });
@@ -110,7 +110,7 @@ describe('createFirebaseAnalytics', () => {
     expect(() => analytics.setUserId('user-1')).not.toThrow();
     await Promise.resolve();
 
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] setUserId failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.set-user-id.failed', {
       error: 'native rejected',
     });
   });
@@ -124,7 +124,7 @@ describe('createFirebaseAnalytics', () => {
 
     expect(() => analytics.setUserId('invalid-user')).not.toThrow();
 
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] setUserId failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.set-user-id.failed', {
       error: 'invalid user id',
     });
   });
@@ -139,7 +139,7 @@ describe('createFirebaseAnalytics', () => {
 
     expect(mockSetUserProperty).toHaveBeenNthCalledWith(1, firebaseAnalytics, 'streak', '7');
     expect(mockSetUserProperty).toHaveBeenNthCalledWith(2, firebaseAnalytics, 'premium', 'true');
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] setUserProperty failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.set-user-property.failed', {
       key: 'streak',
       error: 'property rejected',
     });
@@ -154,7 +154,7 @@ describe('createFirebaseAnalytics', () => {
     await Promise.resolve();
 
     expect(mockResetAnalyticsData).toHaveBeenCalledWith(firebaseAnalytics);
-    expect(logger.warn).toHaveBeenCalledWith('[FirebaseAnalytics] resetData failed', {
+    expect(logger.warn).toHaveBeenCalledWith('firebase-analytics.reset-data.failed', {
       error: 'reset rejected',
     });
   });

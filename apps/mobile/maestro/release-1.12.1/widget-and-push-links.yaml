@@ -1,0 +1,30 @@
+appId: com.aido.mobile
+name: 기존 위젯 URI와 알림 화면 링크가 새 라우트에서도 열린다
+---
+# Given: 1.11.x 위젯이 저장한 생성 URI
+- openLink: aido-dev://feed?date=today&action=add-todo
+# Then: 할 일 작성 시트가 열린다
+- extendedWaitUntil:
+    visible: '.*종일.*|.*All day.*'
+    timeout: 15000
+- takeScreenshot: 1.12.1-widget-add-todo
+- tapOn:
+    point: '50%, 12%'
+# Given: 1.11.x 위젯이 저장한 할 일 상세 URI
+- openLink: aido-dev://todo/${QA_TODO_ID}
+- extendedWaitUntil:
+    visible: '.*댓글.*|.*Comments?.*'
+    timeout: 15000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.12.1-widget-todo-detail
+- tapOn:
+    point: '50%, 12%'
+# Given: 알림함 링크
+- openLink: aido-dev://notifications
+- extendedWaitUntil:
+    visible: '.*알림.*|.*Notifications.*'
+    timeout: 15000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.12.1-notifications
+- tapOn:
+    point: '50%, 12%'

@@ -10,14 +10,6 @@
     "retry": "Try Again",
     "goBack": "Go back"
   },
-  "dateFormats": {
-    "fullDate": "MMMM D, YYYY",
-    "monthDay": "MMM D",
-    "dayOfMonth": "D",
-    "yearMonth": "MMMM YYYY",
-    "monthLabel": "MMM",
-    "shortDate": "M/D/YYYY"
-  },
   "daysOfWeek": {
     "MON": "Mon",
     "TUE": "Tue",

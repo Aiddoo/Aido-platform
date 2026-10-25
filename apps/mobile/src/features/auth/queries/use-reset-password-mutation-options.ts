@@ -6,8 +6,8 @@ import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t } from '@src/shared/i18n';
+import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 
 export const useResetPasswordMutationOptions = () => {
@@ -22,12 +22,12 @@ export const useResetPasswordMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notifySuccess();
       toast.success(t('auth:toasts.passwordResetDone'));
       replace('/(auth)/email-login');
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(error)) {
         if (error.hasCode(ErrorCode.VERIFY_0751)) {

@@ -2,13 +2,21 @@ import aidoBannerImage from '@assets/images/aido_banner.webp';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { BottomSheetTextArea, Button, H4, KeyboardBottomSheet, Text, VStack } from '@src/shared/ui';
+import {
+  BottomSheetTextArea,
+  Button,
+  H4,
+  KeyboardBottomSheet,
+  Text,
+  VStack,
+  Box,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { useMutation } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm, useFormState } from 'react-hook-form';
-import { Image, View } from 'react-native';
+import { Image } from 'react-native';
 
 import { type NudgeFormInput, nudgeFormSchema } from '../domains/nudge-form.schema';
 import { useSendRemindNudgeMutationOptions } from '../queries/use-send-remind-nudge-mutation-options';
@@ -99,7 +107,7 @@ function NudgeMessageSheet({
     onOpenChange(open);
   };
 
-  const onSubmit = async ({ message }: NudgeFormInput) => {
+  const handleSubmitNudge = async ({ message }: NudgeFormInput) => {
     try {
       await onSend(message);
       handleOpenChange(false);
@@ -121,7 +129,7 @@ function NudgeMessageSheet({
             <H4>{t('nudge.sheetTitle')}</H4>
           </VStack>
 
-          <View>
+          <Box>
             <Image
               source={aidoBannerImage}
               className="absolute right-4 size-[72px] -translate-y-11"
@@ -140,13 +148,13 @@ function NudgeMessageSheet({
                 />
               )}
             </FormField>
-          </View>
+          </Box>
 
           <Button
             color="primary"
             size="large"
             display="block"
-            onPress={() => handleSubmit(onSubmit)()}
+            onPress={() => handleSubmit(handleSubmitNudge)()}
             isDisabled={!isValid}
             isLoading={isSubmitting}
           >

@@ -6,8 +6,8 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { PREFERENCE_QUERY_KEYS } from '../constants/preference-query-keys';
 import type { Preference } from '../domains/preference.model';
@@ -57,7 +57,7 @@ export const useUpdatePreferenceMutationOptions = () => {
       queryClient.setQueryData<Preference>(PREFERENCE_QUERY_KEYS.current(), data);
     },
     onError: (error, _input, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (context?.previousData) {
         queryClient.setQueryData(PREFERENCE_QUERY_KEYS.current(), context.previousData);

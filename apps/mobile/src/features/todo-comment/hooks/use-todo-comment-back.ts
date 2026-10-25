@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
 import { useCancelTodoCommentScreenTransition } from '../components/providers/todo-comment-screen-transition-provider';
+import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import {
   getTodoCommentBackResult,
   type TodoCommentBackResult,
@@ -37,7 +38,7 @@ export function useTodoCommentBack(): TodoCommentBack {
     }
 
     KeyboardController.dismiss({ animated: false }).catch((error) =>
-      logger.warn('[TodoComment] Keyboard dismiss failed', { error }),
+      logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error }),
     );
 
     if (result.destination === 'overview') {

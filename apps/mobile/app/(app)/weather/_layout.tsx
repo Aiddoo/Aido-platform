@@ -1,18 +1,16 @@
-import { useWeatherSession } from '@src/features/weather/components/providers/weather-session-provider';
 import { WeatherBackground } from '@src/features/weather/components/weather-background';
-import { TimePaletteContext } from '@src/features/weather/hooks/use-time-palette';
-import { getWeatherPalette } from '@src/features/weather/utils/view-models/weather-palette.view-model';
+import {
+  TimePaletteContext,
+  useWeatherSessionPalette,
+} from '@src/features/weather/hooks/use-time-palette';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useTheme } from '@src/shared/providers/theme-provider';
 import { ArrowLeftIcon, Box, HStack, SettingIcon, StyledSafeAreaView, Text } from '@src/shared/ui';
 import { Slot, Stack, router } from 'expo-router';
 import { Pressable } from 'react-native';
 
 export default function WeatherLayout() {
-  const { resolvedTheme } = useTheme();
-  const { clock } = useWeatherSession();
-  const palette = getWeatherPalette(clock.deviceHour, resolvedTheme);
+  const palette = useWeatherSessionPalette();
 
   return (
     <TimePaletteContext.Provider value={palette}>
@@ -21,7 +19,7 @@ export default function WeatherLayout() {
           headerShown: true,
           headerTransparent: true,
           headerShadowVisible: false,
-          header: () => <WeatherLayout.Header />,
+          header: () => <WeatherHeader />,
           contentStyle: { backgroundColor: palette.bg },
           statusBarStyle: 'light',
         }}
@@ -34,11 +32,9 @@ export default function WeatherLayout() {
   );
 }
 
-WeatherLayout.Header = function Header() {
+function WeatherHeader() {
   const { t } = useTranslation('weather');
-  const { resolvedTheme } = useTheme();
-  const { clock } = useWeatherSession();
-  const palette = getWeatherPalette(clock.deviceHour, resolvedTheme);
+  const palette = useWeatherSessionPalette();
   const goBack = useSingleTap(router.back);
   const push = useSingleTap(router.push);
 
@@ -69,4 +65,4 @@ WeatherLayout.Header = function Header() {
       </HStack>
     </StyledSafeAreaView>
   );
-};
+}

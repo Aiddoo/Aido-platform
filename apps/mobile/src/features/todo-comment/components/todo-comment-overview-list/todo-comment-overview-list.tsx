@@ -15,14 +15,13 @@ import {
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Skeleton, Spinner } from 'heroui-native';
 import { type ComponentProps, useCallback } from 'react';
 import { RefreshControl, type ScrollViewProps } from 'react-native';
 import type { SharedValue } from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
-import { TODO_COMMENT_QUERY_KEYS } from '../../constants/todo-comment-query-keys';
 import type {
   TodoComment,
   TodoCommentOverviewItem,
@@ -31,6 +30,7 @@ import type {
 import { useTodoCommentNavigation } from '../../hooks/use-todo-comment-navigation';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useGetTodoCommentOverviewQueryOptions } from '../../queries/get-todo-comment-overview-query-options';
+import { invalidateTodoCommentOverviews } from '../../queries/todo-comment-cache';
 import {
   TODO_COMMENT_AUTHOR_AVATAR_SIZE,
   TodoCommentAuthorAvatar,
@@ -71,7 +71,7 @@ export function TodoCommentOverviewList({
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const queryClient = useQueryClient();
-  const query = useInfiniteQuery(
+  const overviewQuery = useInfiniteQuery(
     useGetTodoCommentOverviewQueryOptions({ todoId, sort: commentRoute.sort }),
   );
   const { color: refreshTint } = useResolveClassNames('text-main');
@@ -87,40 +87,38 @@ export function TodoCommentOverviewList({
       () =>
         Promise.all([
           invalidateTodoDetails(queryClient, { todoId }),
-          queryClient.invalidateQueries({
-            queryKey: TODO_COMMENT_QUERY_KEYS.overviews({ todoId }),
-          }),
+          invalidateTodoCommentOverviews({ queryClient, todoId }),
         ]),
       [queryClient, todoId],
     ),
   );
 
-  if (query.isError && query.data === undefined) {
-    throw query.error;
+  if (overviewQuery.isError && overviewQuery.data == null) {
+    throw overviewQuery.error;
   }
 
   return (
     <FlashList
       {...flashListProps}
       key={`${todoId}:${commentRoute.sort}`}
-      data={query.data?.items ?? []}
+      data={overviewQuery.data?.items ?? []}
       keyExtractor={keyExtractor}
       renderItem={renderItem}
       renderScrollComponent={renderKeyboardScrollView}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={
-        query.isPending ? TodoCommentOverviewList.Loading : TodoCommentOverviewList.Empty
+        overviewQuery.isPending ? TodoCommentOverviewList.Loading : TodoCommentOverviewList.Empty
       }
       ListFooterComponent={
-        query.isFetchingNextPage ? (
+        overviewQuery.isFetchingNextPage ? (
           <Box py={12} className="items-center">
             <Spinner size="sm" accessibilityLabel={t('list.loadingMore')} />
           </Box>
         ) : null
       }
       onEndReached={() => {
-        if (query.hasNextPage && !query.isFetchingNextPage) {
-          query.fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
+        if (overviewQuery.hasNextPage && !overviewQuery.isFetchingNextPage) {
+          overviewQuery.fetchNextPage({ cancelRefetch: false }).catch(() => undefined);
         }
       }}
       onEndReachedThreshold={0.5}
@@ -130,31 +128,17 @@ export function TodoCommentOverviewList({
           refreshing={isRefreshing}
           onRefresh={refresh}
           tintColor={refreshTint}
-          colors={refreshTint === undefined ? undefined : [refreshTint]}
+          colors={refreshTint == null ? undefined : [refreshTint]}
         />
       }
     />
   );
 }
 
-TodoCommentOverviewList.Empty = function Empty() {
-  const { t } = useTranslation('todoComment');
-
-  return (
-    <Box py={48}>
-      <Result
-        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
-        title={t('list.emptyTitle')}
-        description={t('list.emptyDescription')}
-      />
-    </Box>
-  );
-};
-
 TodoCommentOverviewList.Loading = function Loading({ rows = 3 }: { rows?: number }) {
   return (
     <VStack>
-      {range(rows).map((index) => (
+      {times(rows, (index) => (
         <OverviewCommentRowSkeleton key={index} />
       ))}
     </VStack>
@@ -171,19 +155,34 @@ TodoCommentOverviewList.Error = function ErrorFallback({ reset }: QueryErrorFall
     />
   );
 };
+
+TodoCommentOverviewList.Empty = function Empty() {
+  const { t } = useTranslation('todoComment');
+
+  return (
+    <Box py={48}>
+      <Result
+        icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
+        title={t('list.emptyTitle')}
+        description={t('list.emptyDescription')}
+      />
+    </Box>
+  );
+};
+
 interface OverviewCommentRowProps {
   item: TodoCommentOverviewItem;
 }
 
 function OverviewCommentRow({ item }: OverviewCommentRowProps) {
   const navigation = useTodoCommentNavigation(item.comment);
-  const showsReplyConnection = item.previewReply !== null || item.replySummary.hasMore;
+  const hasReplyConnection = item.previewReply != null || item.replySummary.hasMore;
 
   return (
     <Box className="border-b border-gray-2">
-      <TopLevelCommentSection comment={item.comment} connectsToReply={showsReplyConnection} />
+      <TopLevelCommentSection comment={item.comment} isConnectedToReply={hasReplyConnection} />
 
-      {item.previewReply !== null && <PreviewReplySection comment={item.previewReply} />}
+      {item.previewReply != null && <PreviewReplySection comment={item.previewReply} />}
 
       {item.replySummary.hasMore && (
         <Box pl={56} pr={16} pb={10}>
@@ -280,16 +279,16 @@ function CommentReplySummary({
 
 function TopLevelCommentSection({
   comment,
-  connectsToReply,
+  isConnectedToReply,
 }: {
   comment: TodoComment;
-  connectsToReply: boolean;
+  isConnectedToReply: boolean;
 }) {
   return (
-    <HStack gap={12} align="start" px={16} pt={16} pb={connectsToReply ? 8 : 16}>
+    <HStack gap={12} align="start" px={16} pt={16} pb={isConnectedToReply ? 8 : 16}>
       <Box className="relative self-stretch">
         <TodoCommentAuthorAvatar author={comment.author} size="md" />
-        {connectsToReply && (
+        {isConnectedToReply && (
           <Box
             pointerEvents="none"
             accessibilityElementsHidden
@@ -340,15 +339,13 @@ function PreviewReplySection({ comment }: { comment: TodoComment }) {
 
 function OverviewCommentRowSkeleton() {
   return (
-    <VStack className="border-b border-gray-2 px-4 py-4" gap={10}>
-      <HStack gap={12} align="start">
+    <Box className="border-b border-gray-2">
+      <HStack gap={12} align="start" px={16} pt={16} pb={16}>
         <Skeleton className="size-9 rounded-full" />
-        <VStack flex={1} gap={8}>
-          <Skeleton className="h-4 w-24 rounded" />
-          <Skeleton className="h-5 w-4/5 rounded" />
-          <Skeleton className="h-4 w-28 rounded" />
-        </VStack>
+        <Box flex={1} className="min-w-0">
+          <TodoCommentMessage.Loading />
+        </Box>
       </HStack>
-    </VStack>
+    </Box>
   );
 }

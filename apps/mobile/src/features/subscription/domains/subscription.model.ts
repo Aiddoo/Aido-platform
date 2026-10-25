@@ -41,7 +41,7 @@ export function shouldShowExpirationDetails(
   status: SubscriptionStatus,
   expiresAt: Date | null,
 ): expiresAt is Date {
-  return (isActiveSubscription(status) || isCancelledSubscription(status)) && expiresAt !== null;
+  return (isActiveSubscription(status) || isCancelledSubscription(status)) && expiresAt != null;
 }
 
 export function isSubscriptionExpirationRelevant(

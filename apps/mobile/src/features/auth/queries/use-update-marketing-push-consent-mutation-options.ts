@@ -1,8 +1,8 @@
 import type { UpdateMarketingPushConsentInput } from '@aido/api';
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
 import type { Consent } from '../domains/auth.model';
@@ -27,7 +27,7 @@ export const useUpdateMarketingPushConsentMutationOptions = () => {
       );
     },
     onError: (_error, _input, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
       if (context?.previousData) {
         queryClient.setQueryData(AUTH_QUERY_KEYS.consent(), context.previousData);
       }

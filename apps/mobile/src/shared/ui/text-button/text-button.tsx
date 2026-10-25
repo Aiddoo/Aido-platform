@@ -1,13 +1,13 @@
 import { cn } from '@src/shared/utils/cn';
 import { PressableFeedback } from 'heroui-native';
-import { View } from 'react-native';
 
+import { Box } from '../box';
 import { ArrowRightIcon } from '../icon';
 import { Text } from '../text/text';
 import type { TextButtonProps } from './text-button.types';
 import { textButtonVariants } from './text-button.variants';
 
-const textSizeMap = {
+const TEXT_SIZE_MAP = {
   xsmall: 'e2',
   small: 'e1',
   medium: 'b4',
@@ -15,7 +15,7 @@ const textSizeMap = {
   xlarge: 'b2',
 } as const;
 
-const iconSizeMap = {
+const ICON_SIZE_MAP = {
   xsmall: 12,
   small: 14,
   medium: 16,
@@ -37,17 +37,17 @@ export function TextButton({
       className={cn(textButtonVariants({ size, variant, isDisabled }), className)}
       {...props}
     >
-      <Text size={textSizeMap[size]} shade={6} underline={variant === 'underline'}>
+      <Text size={TEXT_SIZE_MAP[size]} shade={6} underline={variant === 'underline'}>
         {children}
       </Text>
       {variant === 'arrow' && (
-        <View className="ml-1">
+        <Box className="ml-1">
           <ArrowRightIcon
-            width={iconSizeMap[size]}
-            height={iconSizeMap[size]}
+            width={ICON_SIZE_MAP[size]}
+            height={ICON_SIZE_MAP[size]}
             colorClassName="text-gray-6"
           />
-        </View>
+        </Box>
       )}
     </PressableFeedback>
   );

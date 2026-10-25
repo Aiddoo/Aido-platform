@@ -1,11 +1,11 @@
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { Box } from '@src/shared/ui/box';
 import { Button, type ButtonProps } from '@src/shared/ui/button';
 import { HStack } from '@src/shared/ui/h-stack';
 import { H4, Text } from '@src/shared/ui/text';
 import { VStack } from '@src/shared/ui/v-stack';
 import { Dialog } from 'heroui-native';
 import { cloneElement, isValidElement, type ReactNode } from 'react';
-import { View } from 'react-native';
 
 import type { ConfirmDialogProps } from './confirm-dialog.types';
 
@@ -34,13 +34,13 @@ export function ConfirmDialog({
             </VStack>
             {cancelButton && stackActions ? (
               <VStack gap={8} className="w-full">
-                <View className="w-full">{asFullWidthAction(confirmButton)}</View>
-                <View className="w-full">{asFullWidthAction(cancelButton)}</View>
+                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
+                <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>
               </VStack>
             ) : cancelButton ? (
               <HStack gap={8} className="w-full">
-                <View className="flex-1">{cancelButton}</View>
-                <View className="flex-1">{confirmButton}</View>
+                <Box className="flex-1">{cancelButton}</Box>
+                <Box className="flex-1">{confirmButton}</Box>
               </HStack>
             ) : (
               <HStack className="w-full justify-end">{confirmButton}</HStack>

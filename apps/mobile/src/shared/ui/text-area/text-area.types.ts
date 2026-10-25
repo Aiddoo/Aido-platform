@@ -3,7 +3,7 @@ import type { TextInputInstance, TextInputProps } from 'react-native';
 
 import type { TextSize } from '../text/text.types';
 
-export type TextAreaVariant = 'filled' | 'line' | 'plain';
+export type TextAreaVariant = 'filled' | 'line' | 'plain' | 'bare';
 
 export interface TextAreaProps extends Omit<
   TextInputProps,

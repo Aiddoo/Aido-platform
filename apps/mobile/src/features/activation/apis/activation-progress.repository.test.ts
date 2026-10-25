@@ -40,10 +40,10 @@ describe('ActivationProgressRepository', () => {
     const duplicate = repository.claimActivated(identity, new Date('2026-08-03T12:00:00.000Z'));
 
     // Then
-    expect(beforeCreate.claimed).toBe(false);
-    expect(first.claimed).toBe(true);
+    expect(beforeCreate.isClaimed).toBe(false);
+    expect(first.isClaimed).toBe(true);
     expect(first.progress.activatedAt?.toISOString()).toBe('2026-08-02T12:00:00.000Z');
-    expect(duplicate.claimed).toBe(false);
+    expect(duplicate.isClaimed).toBe(false);
   });
 
   it('손상된 로컬 값은 빈 진행 상태로 안전하게 복구한다', () => {

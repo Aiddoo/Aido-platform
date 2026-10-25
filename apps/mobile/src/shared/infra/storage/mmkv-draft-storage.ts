@@ -61,7 +61,7 @@ function migrateLegacyDrafts(target: EnumerableSyncStorage) {
     const legacy = createMMKV({ id: LEGACY_DRAFT_STORAGE_ID });
     for (const key of legacy.getAllKeys()) {
       const value = legacy.getString(key);
-      if (value !== undefined) {
+      if (value != null) {
         target.set(key, value);
       }
     }

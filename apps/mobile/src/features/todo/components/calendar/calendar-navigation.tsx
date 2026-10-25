@@ -6,7 +6,7 @@ interface CalendarNavigationProps {
   onNext: () => void;
 }
 
-export const CalendarNavigation = ({ onPrevious, onNext }: CalendarNavigationProps) => {
+export function CalendarNavigation({ onPrevious, onNext }: CalendarNavigationProps) {
   return (
     <HStack gap={4}>
       <PressableFeedback onPress={onPrevious} className="p-1">
@@ -17,4 +17,4 @@ export const CalendarNavigation = ({ onPrevious, onNext }: CalendarNavigationPro
       </PressableFeedback>
     </HStack>
   );
-};
+}

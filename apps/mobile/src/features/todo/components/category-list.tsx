@@ -2,22 +2,32 @@ import type { TodoCategoryWithCount } from '@src/features/todo/domains/todo-cate
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
 import { useReorderTodoCategoryMutationOptions } from '@src/features/todo/queries/use-reorder-todo-category-mutation-options';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, HStack, ListRow, MenuIcon, Text, useOverlay, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  HStack,
+  ListRow,
+  MenuIcon,
+  Text,
+  TextSkeleton,
+  useOverlay,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
-import * as Haptics from 'expo-haptics';
+import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { useCallback } from 'react';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { useDraggableReorderList } from '../hooks/use-draggable-reorder-list';
+import { todoCategoryEditSheetHref } from '../utils/navigation/todo-sheet-href';
 import { CategoryDeleteDialog } from './category-delete-dialog';
-import { CategoryEditBottomSheet } from './category-edit-bottom-sheet';
 import { ReorderCoachmark } from './reorder-coachmark';
 
 export type CategoryListMode = 'edit' | 'reorder';
@@ -27,45 +37,55 @@ interface CategoryListProps {
 }
 
 export function CategoryList({ mode }: CategoryListProps) {
-  const fontScaledSize = useFontScaledSize();
-  const { t } = useTranslation('common');
-  const editOverlay = useOverlay();
-  const deleteOverlay = useOverlay();
   const containerBgStyle = useResolveClassNames('bg-white');
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data, dataUpdatedAt } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const reorderMutation = useMutation(useReorderTodoCategoryMutationOptions());
-  const {
-    items: draggableCategories,
-    onDragBegin,
-    onDragEnd,
-  } = useDraggableReorderList({
+  const reorderableList = useReorderableList({
     items: data.categories,
+    updatedAt: dataUpdatedAt,
     isPending: reorderMutation.isPending,
-    onReorder: ({ movedItemId, targetId, position }) => {
+    getItemId: (category) => category.id,
+    onReorder: ({ instruction: { movedId, targetId, position } }) => {
       reorderMutation.mutate({
-        id: movedItemId,
+        id: movedId,
         input: { targetCategoryId: targetId, position },
       });
     },
   });
 
-  const openEditSheet = (category: TodoCategoryWithCount) => {
-    editOverlay.open(({ isOpen, close, exit }) => (
-      <CategoryEditBottomSheet
-        isOpen={isOpen}
-        onClose={close}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-        category={category}
-      />
-    ));
-  };
+  return (
+    <ReorderableList
+      {...reorderableList}
+      dragEnabled={reorderableList.dragEnabled && mode === 'reorder'}
+      shouldUpdateActiveItem
+      ListHeaderComponent={
+        mode === 'reorder' && reorderableList.data.length >= 2 ? (
+          <Box className="pb-2">
+            <ReorderCoachmark kind="category" />
+          </Box>
+        ) : undefined
+      }
+      keyExtractor={(item) => String(item.id)}
+      renderItem={({ item }) => <CategoryList.Item category={item} mode={mode} />}
+      style={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
+    />
+  );
+}
 
-  const openDeleteDialog = (category: TodoCategoryWithCount) => {
+interface CategoryListItemProps {
+  category: TodoCategoryWithCount;
+  mode: CategoryListProps['mode'];
+}
+
+CategoryList.Item = function Item({ category, mode }: CategoryListItemProps) {
+  const fontScaledSize = useFontScaledSize();
+  const { t } = useTranslation('common');
+  const push = useSingleTap(router.push);
+  const deleteOverlay = useOverlay();
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
+
+  const openDeleteDialog = () => {
     deleteOverlay.open(({ isOpen, close, exit }) => (
       <CategoryDeleteDialog
         categoryId={category.id}
@@ -80,121 +100,76 @@ export function CategoryList({ mode }: CategoryListProps) {
     ));
   };
 
-  const handleDrag = (drag: () => void) => () => {
-    if (mode !== 'reorder' || reorderMutation.isPending) {
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    drag();
-  };
-
-  const handlePlaceholderIndexChange = useCallback((index: number) => {
-    if (index >= 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  }, []);
-
   return (
-    <DraggableFlatList
-      data={draggableCategories}
-      ListHeaderComponent={
-        mode === 'reorder' && draggableCategories.length >= 2 ? (
-          <Box className="pb-2">
-            <ReorderCoachmark kind="category" />
-          </Box>
-        ) : undefined
-      }
-      keyExtractor={(item) => String(item.id)}
-      onPlaceholderIndexChange={handlePlaceholderIndexChange}
-      renderItem={({
-        item,
-        drag,
-        isActive,
-      }: {
-        item: TodoCategoryWithCount;
-        drag: () => void;
-        isActive: boolean;
-      }) => (
-        <ScaleDecorator activeScale={mode === 'reorder' ? 1.02 : 1}>
-          <PressableFeedback
-            onLongPress={mode === 'reorder' ? handleDrag(drag) : undefined}
-            isDisabled={isActive}
-            className={cn('rounded-xl', isActive && 'bg-white shadow-md shadow-black/10')}
-          >
-            <ListRow
-              left={<Box className="size-2 rounded-full" style={{ backgroundColor: item.color }} />}
-              contents={
-                <Text size="b3" weight="medium">
-                  {item.name}
-                </Text>
-              }
-              right={
-                <Animated.View
-                  key={mode}
-                  entering={FadeIn.duration(250)}
-                  className="h-9 justify-center"
-                >
-                  {match(mode)
-                    .with('edit', () => (
-                      <HStack align="center" gap={4}>
-                        <Button
-                          variant="weak"
-                          color="dark"
-                          size="small"
-                          display="inline"
-                          onPress={() => openEditSheet(item)}
-                        >
-                          {t('actions.edit')}
-                        </Button>
-                        <Button
-                          variant="weak"
-                          color="danger"
-                          size="small"
-                          display="inline"
-                          onPress={() => openDeleteDialog(item)}
-                        >
-                          {t('actions.delete')}
-                        </Button>
-                      </HStack>
-                    ))
-                    .with('reorder', () => (
-                      <MenuIcon
-                        width={fontScaledSize(18)}
-                        height={fontScaledSize(18)}
-                        colorClassName="text-gray-5"
-                      />
-                    ))
-                    .exhaustive()}
-                </Animated.View>
-              }
-              horizontalPadding="medium"
-              verticalPadding="medium"
-            />
-          </PressableFeedback>
-        </ScaleDecorator>
-      )}
-      onDragBegin={onDragBegin}
-      onDragEnd={onDragEnd}
-      containerStyle={{ ...containerBgStyle, borderRadius: 16, padding: 8 }}
-    />
+    <PressableFeedback
+      onLongPress={mode === 'reorder' ? drag : undefined}
+      isDisabled={isActive}
+      className={cn('rounded-xl', isActive && 'bg-white shadow-md shadow-black/10')}
+    >
+      <ListRow
+        left={<Box className="size-2 rounded-full" style={{ backgroundColor: category.color }} />}
+        contents={
+          <Text size="b3" weight="medium">
+            {category.name}
+          </Text>
+        }
+        right={
+          <Animated.View key={mode} entering={FadeIn.duration(250)} className="h-9 justify-center">
+            {match(mode)
+              .with('edit', () => (
+                <HStack align="center" gap={4}>
+                  <Button
+                    variant="weak"
+                    color="dark"
+                    size="small"
+                    display="inline"
+                    onPress={() => push(todoCategoryEditSheetHref({ categoryId: category.id }))}
+                  >
+                    {t('actions.edit')}
+                  </Button>
+                  <Button
+                    variant="weak"
+                    color="danger"
+                    size="small"
+                    display="inline"
+                    onPress={() => openDeleteDialog()}
+                  >
+                    {t('actions.delete')}
+                  </Button>
+                </HStack>
+              ))
+              .with('reorder', () => (
+                <MenuIcon
+                  width={fontScaledSize(18)}
+                  height={fontScaledSize(18)}
+                  colorClassName="text-gray-5"
+                />
+              ))
+              .exhaustive()}
+          </Animated.View>
+        }
+        horizontalPadding="medium"
+        verticalPadding="medium"
+      />
+    </PressableFeedback>
   );
-}
+};
 
 CategoryList.Loading = function Loading() {
   return (
-    <VStack gap={8} className="bg-white rounded-2xl p-2">
-      {range(2).map((i) => (
+    <VStack className="bg-white rounded-2xl p-2">
+      {times(2, (index) => (
         <ListRow
-          key={`category-loading-${i}`}
-          left={
-            <HStack align="center" gap={8}>
-              <Skeleton className="size-2 rounded-full" />
-              <Skeleton className="h-4 w-20 rounded" />
-            </HStack>
+          key={index}
+          left={<Skeleton className="size-2 rounded-full" />}
+          contents={<TextSkeleton size="b3" className="w-20" />}
+          right={
+            <Box className="h-9 justify-center">
+              <Skeleton className="h-8 w-12 rounded-xl" />
+            </Box>
           }
-          contents={null}
-          right={<Skeleton className="size-5 rounded" />}
           horizontalPadding="medium"
+          verticalPadding="medium"
         />
       ))}
     </VStack>

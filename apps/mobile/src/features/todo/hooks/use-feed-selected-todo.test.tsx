@@ -1,8 +1,6 @@
-import { RouteSearchParamsProvider } from '@src/shared/providers/route-search-params-provider';
+import { mockWindowDimensions } from '@src/shared/__tests__';
 import { renderHook } from '@testing-library/react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { PropsWithChildren } from 'react';
-import { useWindowDimensions } from 'react-native';
 
 import { useFeedSelectedTodo } from './use-feed-selected-todo';
 
@@ -10,16 +8,10 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn(), setParams: jest.fn() },
   useLocalSearchParams: jest.fn(),
 }));
-jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
-  __esModule: true,
-  default: jest.fn(),
-}));
 
 const mockedUseLocalSearchParams = jest.mocked(useLocalSearchParams);
-const mockedUseWindowDimensions = jest.mocked(useWindowDimensions);
-
 function givenWindow(width: number, params: Record<string, string> = {}) {
-  mockedUseWindowDimensions.mockReturnValue({ width, height: 800, scale: 2, fontScale: 1 });
+  mockWindowDimensions(width);
   mockedUseLocalSearchParams.mockReturnValue(params);
 }
 
@@ -39,18 +31,12 @@ describe('useFeedSelectedTodo', () => {
     expect(result.current[0]).toBe(42);
   });
 
-  it('피드 레이아웃이 넘긴 자식 route params를 자기 route params보다 먼저 읽는다', async () => {
+  it('친구 피드에서도 같은 피드 화면의 todoId를 읽는다', async () => {
     // Given
-    givenWindow(900, { todoId: '1' });
+    givenWindow(900, { friendId: 'friend-1', todoId: '42' });
 
     // When
-    const { result } = await renderHook(() => useFeedSelectedTodo(), {
-      wrapper: ({ children }: PropsWithChildren) => (
-        <RouteSearchParamsProvider params={{ friendId: 'friend-1', todoId: '42' }}>
-          {children}
-        </RouteSearchParamsProvider>
-      ),
-    });
+    const { result } = await renderHook(() => useFeedSelectedTodo());
 
     // Then
     expect(result.current[0]).toBe(42);

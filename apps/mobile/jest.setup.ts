@@ -24,6 +24,9 @@ jest.mock('expo-speech-recognition', () =>
 jest.mock('react-native-keyboard-controller', () =>
   require('./src/shared/__tests__/mocks/react-native-keyboard-controller'),
 );
+jest.mock('react-native-reserved-regions', () =>
+  require('./src/shared/__tests__/mocks/react-native-reserved-regions'),
+);
 jest.mock(
   'react-native-safe-area-context',
   () => require('react-native-safe-area-context/jest/mock').default,

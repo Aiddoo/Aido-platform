@@ -1,8 +1,7 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack, Box } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Separator, SkeletonGroup } from 'heroui-native';
-import { View } from 'react-native';
 
 import { useGetReportStatusQueryOptions } from '../queries/get-report-status-query-options';
 import { formatDday } from '../utils/format-report';
@@ -12,7 +11,7 @@ export function ReportStatusBanner() {
   const { data: status } = useSuspenseQuery(useGetReportStatusQueryOptions());
 
   return (
-    <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-2 py-3">
+    <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-2 py-3">
       <HStack className="items-stretch">
         <VStack gap={4} align="center" className="flex-1">
           <Text size="b4" shade={6}>
@@ -34,13 +33,13 @@ export function ReportStatusBanner() {
           </Text>
         </VStack>
       </HStack>
-    </View>
+    </Box>
   );
 }
 
 ReportStatusBanner.Loading = function Loading() {
   return (
-    <View className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-2 py-3">
+    <Box className="rounded-2xl border border-dashed border-gray-3 bg-gray-1 px-2 py-3">
       <SkeletonGroup isLoading>
         <HStack className="items-stretch">
           <VStack gap={4} align="center" className="flex-1">
@@ -56,6 +55,6 @@ ReportStatusBanner.Loading = function Loading() {
           </VStack>
         </HStack>
       </SkeletonGroup>
-    </View>
+    </Box>
   );
 };

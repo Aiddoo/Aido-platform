@@ -8,6 +8,7 @@ import {
   usePendingTodoCommentTransition,
   useTodoCommentScreenTransitionActions,
 } from '../components/providers/todo-comment-screen-transition-provider';
+import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import type { TodoComment } from '../domains/todo-comment.model';
 import type { TodoCommentNavigationDestination } from '../utils/navigation/todo-comment-route';
 import type { TodoCommentNavigationTransition } from '../utils/navigation/todo-comment-screen-transition';
@@ -106,7 +107,7 @@ export function useTodoCommentNavigation(comment: TodoComment): TodoCommentNavig
   const requestNavigation = useCallback(
     (destination: TodoCommentNavigationDestination) => {
       navigate(destination).catch((error) =>
-        logger.error('[TodoComment] Navigation failed', toError(error)),
+        logger.error(TODO_COMMENT_LOG_EVENT.NAVIGATION_FAILED, toError(error)),
       );
     },
     [logger, navigate],

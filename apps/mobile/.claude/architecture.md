@@ -249,8 +249,10 @@ interface CategoryColorInputProps extends Omit<ComponentProps<typeof HStack>, 'c
 
 **도메인 식별자는 Props로 받지 않는다.** 화면 식별자(`todoId`, `friendId`, 선택된 항목 id)는 검증된
 `use…ScreenParams()`나 상태 튜플 훅에서 컴포넌트가 직접 읽는다. 값이 `== null`이면 `.Empty`를 보여 준다.
-그래야 식별자가 없는 화면에서도 같은 컴포넌트를 쓸 수 있다. 목록 행의 id, 루트 Overlay에서 렌더되어
-라우트 문맥이 없는 시트의 대상 id는 예외로 Props로 받는다.
+그래야 식별자가 없는 화면에서도 같은 컴포넌트를 쓸 수 있다. 목록 행의 id는 예외로 Props로 받는다.
+할 일·하위 항목·카테고리·제안처럼 대상이 있는 시트는 Expo Router 시트 route(`/todo/[todoId]/actions` 등)로
+띄우고, 시트가 route hook으로 대상 id를 읽어 캐시에서 조회한다. 폼 상태에 묶인 피커처럼 route 문맥이 없는
+Overlay 시트만 대상 값을 Props로 받는다. 시트 route 계약: `src/shared/ui/bottom-sheet/bottom-sheet.md`.
 
 ```tsx
 export function FriendCalendar() {
@@ -263,11 +265,42 @@ export function FriendCalendar() {
 나눌 수 없다. 목록 컴포넌트는 도메인 대신 정책을 Props로 받는다(`filters`, `orderBy`, `limit`).
 
 ```tsx
-<QueryErrorBoundary FallbackComponent={TodoList.Error}>
+<QueryErrorBoundary fallback={TodoList.Error}>
   <Suspense fallback={<TodoList.Loading />}>
     <TodoList />
   </Suspense>
 </QueryErrorBoundary>
+```
+
+#### 목록·스켈레톤
+
+- 목록 컴포넌트는 자기 데이터를 `useSuspenseQuery`/`useSuspenseInfiniteQuery`로 구독하고 statics를
+  `.Item` → `.Loading` → `.Error` → `.Empty` 순서로 둔다. Screen은 `QueryErrorBoundary(fallback=X.Error)`
+  → `Suspense(fallback=<X.Loading />)` → `<X />`를 위에서 아래로 쌓는다.
+- 원본을 그대로 넘기는 래퍼(`X.Item = (props) => <UserList.Item {...props} />`)를 만들지 않는다. 공용 행을
+  직접 쓰거나, 행 액션 mutation처럼 실제 책임을 가진 행만 `.Item`으로 둔다. 같은 fallback은 `X.Error = UserList.Error`처럼 참조로 연결한다.
+- 공용 목록은 원본 계약을 확장한다. `UserList`는 `Omit<FlashListProps<T>, …>`에 `hasNextPage`·
+  `isFetchingNextPage`·`fetchNextPage`(TanStack 이름)와 `refreshing`·`onRefresh`(RN 이름)만 더한다.
+- `.Loading`은 `.Item`과 **같은 레이아웃 컴포넌트·슬롯**(`ListRow`의 `left`/`contents`/`right`, `TodoRow`)을
+  쓰고 슬롯만 `Skeleton`으로 채운다. 글자 자리는 `TextSkeleton size`(현재 글꼴 배율의 Text 토큰 줄 높이)를,
+  행 텍스트는 `ListRow.Texts.Loading`을 쓴다. 개수는 `times`로 고정한다. 데이터에 따라 생기는 줄(설명, 하위 항목)은
+  그리지 않아 로딩이 끝날 때 위 내용이 밀리지 않게 한다.
+
+```tsx
+UserList.Loading = function Loading({ rows = 3, right }: UserListLoadingProps) {
+  return (
+    <ScrollView className="flex-1">
+      {times(rows, (index) => (
+        <ListRow
+          key={index}
+          left={<Skeleton className="size-10 rounded-full" />}
+          contents={<ListRow.Texts.Loading type="1RowTypeA" />}
+          right={right}
+        />
+      ))}
+    </ScrollView>
+  );
+};
 ```
 
 **반복 UI는 지역 컴포넌트로 추상화하고 나열한다.** 항목마다 기획·디자인이 따로 바뀔 수 있는 행은
@@ -291,10 +324,25 @@ function useView() {
 }
 ```
 
-화면 파라미터는 `useLocalSearchParams`로 읽는다. `useGlobalSearchParams`는 보이지 않는 화면도 URL
-변경마다 다시 렌더하므로 레이아웃이 자식 경로를 알아야 할 때만 쓴다. 레이아웃이 그리는 pane이 자식 route의
-params를 읽어야 하면 `RouteSearchParamsProvider`로 그 params를 내려 주고, route 훅은 `useRouteSearchParams`로
-읽는다(피드 레이아웃의 `FeedRouteParamsProvider`).
+#### 라우팅: 폴더 route와 query param
+
+- 리소스는 폴더 route다. 세그먼트는 kebab-case, 동적 세그먼트는 `[{entity}Id]`(`/todo/[todoId]`,
+  `/memo/[memoId]`, `/nudges/[nudgeId]`)로 쓰고 `[id]`는 쓰지 않는다.
+- 같은 화면의 보기 상태(선택한 항목, 필터, 날짜, 친구, 댓글 작성기)는 camelCase query param이다
+  (`/feed?friendId=…&date=…&todoId=…`, `/memo?memoId=…`).
+- param은 `features/{feature}/hooks/use-…-param(s).ts`에서 `useLocalSearchParams` + zod(`.catch`)로
+  검증해 읽는다. 바꿀 수 있는 param은 `[value, setValue] as const` 튜플을 반환하고 setter는
+  `router.setParams`를 쓴다. 타입은 `z.output`에서 얻고 기존 스키마(`feedDateParamSchema`,
+  `routeIntegerStringSchema`, `@aido/api` param 스키마)를 재사용한다.
+- `useGlobalSearchParams`는 보이지 않는 화면도 URL 변경마다 다시 렌더하므로 화면 훅에서 쓰지 않는다.
+  레이아웃은 네비게이터와 Provider만 두고 자식 route의 params를 읽지 않는다.
+- href는 feature의 순수 함수가 typed 객체로 만든다(`createFeedHref`, `todoActionsSheetHref`,
+  `memoDetailHref`). 경로 문자열을 이어 붙이지 않는다. 알림·위젯 목적지는 `utils/navigation` resolver가
+  이 builder로 정한다.
+- 피드는 `/feed` 한 화면이다. 내 피드와 친구 피드는 `friendId` query param으로 바뀌고, 화면이 직접
+  `AdaptivePane`을 그려 상세 pane이 같은 화면의 local params(`todoId`, 댓글 param)를 읽는다. 친구 전환은
+  `router.setParams`라 pane이 다시 마운트되지 않고 history가 쌓이지 않으며, 레이아웃이 자식 params를
+  global params로 읽어 얼려 둘 필요도 없다.
 
 **기다리지 않는 Promise는 실패를 처리한다.** `void` 연산자를 쓰지 않는다. 이벤트 핸들러는 Promise를
 반환하고, 결과를 기다리지 않는 호출은 실패를 내부에서 처리하는 함수이거나 호출부에서 `.catch`로 기록한다.
@@ -303,12 +351,12 @@ params를 읽어야 하면 `RouteSearchParamsProvider`로 그 params를 내려 �
 
 상태는 원천 하나에만 둔다. 같은 값을 두 저장소에 복제하지 않는다.
 
-| 상태                            | 원천                                          | 예                                                                     |
-| ------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------- |
-| 서버 원본                       | TanStack Query 캐시                           | 저장된 메모·댓글·할 일. 초안을 캐시에 넣지 않는다                      |
-| 화면 선택·보기 방식·작성기 종류 | Expo Router search params                     | `todoId`, 메모 `id`, `comment`/`intent`. useState로 사본을 두지 않는다 |
-| 작성 중 초안                    | `shared/draft` 초안 저장소(MMKV, 사용자 범위) | 댓글 작성기, 메모 편집·작성. 긴 본문을 URL에 넣지 않는다               |
-| 일시적 UI 상태                  | `useState` / 지역 Context                     | 다이얼로그 열림, 포커스된 칸, 측정값                                   |
+| 상태                            | 원천                                          | 예                                                                                |
+| ------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| 서버 원본                       | TanStack Query 캐시                           | 저장된 메모·댓글·할 일. 초안을 캐시에 넣지 않는다                                 |
+| 화면 선택·보기 방식·작성기 종류 | Expo Router search params                     | `todoId`, `memoId`, `friendId`, `comment`/`intent`. useState로 사본을 두지 않는다 |
+| 작성 중 초안                    | `shared/draft` 초안 저장소(MMKV, 사용자 범위) | 댓글 작성기, 메모 편집·작성. 긴 본문을 URL에 넣지 않는다                          |
+| 일시적 UI 상태                  | `useState` / 지역 Context                     | 다이얼로그 열림, 포커스된 칸, 측정값                                              |
 
 - 폼 값의 원천은 react-hook-form이다. 초안은 `useDraftStorage(draftKey)`가 첫 렌더에 한 번 동기로 읽어
   `defaultValues`에 넣고(빈 값으로 그린 뒤 채우지 않는다), `useFormDraftAutosave(form.subscribe, …)`가

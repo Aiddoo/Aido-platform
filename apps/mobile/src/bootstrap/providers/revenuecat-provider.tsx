@@ -1,7 +1,7 @@
 import { invalidatePremiumAiQueries } from '@src/features/ai/queries/ai-cache';
 import { invalidateMemoResourceLimit } from '@src/features/memo/queries/memo-cache';
 import { invalidateNudgeLimit } from '@src/features/nudge/queries/nudge-cache';
-import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/subscription-query-keys';
+import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/webhook-sync';
 import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import type { User } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
@@ -21,7 +21,7 @@ const invalidateSubscriptionQueries = (queryClient: QueryClient) => {
   invalidateMemoResourceLimit(queryClient);
 };
 
-export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
+export function RevenueCatProvider({ children }: PropsWithChildren) {
   const { status } = useAuth();
   const sdkManager = useRevenueCatSdkManager();
   const queryClient = useQueryClient();
@@ -105,4 +105,4 @@ export const RevenueCatProvider = ({ children }: PropsWithChildren) => {
   }, [isAuthenticated, sdkManager, onCustomerInfoUpdated, syncServerAfterWebhook]);
 
   return <>{children}</>;
-};
+}
