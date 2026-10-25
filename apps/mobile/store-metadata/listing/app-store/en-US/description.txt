@@ -13,10 +13,10 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 
 [ Smart to-dos with AI ]
 - Type or say it, and AI picks out the to-do, date, and time
-- “Next Friday,” “in 3 days,” and “end of the month” are worked out from today in your time zone
+- “Next Friday” or “in 3 days” is worked out from today in your time zone
 - Say “work out every Mon, Wed, and Fri” to set up a repeating to-do
 - Turn a single note into several to-dos with AI
-- Get routine suggestions based on to-dos you’ve done again and again (Premium)
+- Get routine suggestions based on to-dos you repeat (Premium)
 - Weekly and monthly AI reports break down your completion rate, categories, and best days (Premium)
 
 [ Stay motivated with friends ]
@@ -27,7 +27,6 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 [ See your progress ]
 - Check your daily completion rate on weekly and monthly calendars
 - Build streaks and stay consistent
-- Look back on your week and month with AI reports (Premium)
 
 [ Stay organized ]
 - Sort to-dos with color-coded categories
@@ -43,8 +42,10 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 - Set your own reminder times (Premium)
 
 [ Home Screen widgets ]
-- See today’s to-dos and progress right on your Home Screen
-- At midnight, widgets switch to the new day without opening the app
+- Small, medium, and large sizes show today’s to-dos, progress, and streak
+- The large widget adds your week, with paw prints on days you finished it all
+- Tap a to-do or date to open it, or “+ Add to-do” to start one
+- After midnight, widgets switch to the new day without opening the app
 
 [ Make it yours ]
 - Light, dark, or system theme
@@ -56,7 +57,7 @@ Just say what you need to do and it becomes a to-do. With friends by your side, 
 [ Easy to start ]
 - Sign in with Kakao, Google, Naver, or Apple
 - Or sign up with email
-- Have an invite code? Enter it right on the sign-in screen
+- Have an invite code? Enter it on the sign-in screen
 
 Start with today’s to-dos on Aido.
 

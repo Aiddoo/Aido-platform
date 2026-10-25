@@ -20,7 +20,10 @@ pnpm --filter @aido/mobile test:store-listing
 | Google Play | `ko-KR`, `en-US` | `title`(30) `short_description`(80) `full_description`(4000) `release_notes`(500)                                   |
 
 - `release_notes`는 요약 한 줄 + `../<버전>/release.json`의 항목 그대로예요. 두 스토어 문안이 같아야 해요.
-- App Store 설명과 Play 설명은 구독 안내(결제 계정·관리 경로)와 큰 화면 한 줄만 달라요.
+- App Store 설명과 Play 설명은 구독 안내(결제 계정·관리 경로), 큰 화면 한 줄, 위젯 크기 표기(App Store 작은·중간·큰 /
+  Play 2×2·4×2·4×4, 영어 Home Screen / home screen)만 달라요.
+- 위젯은 실제 동작만 써요: 오늘 할 일·달성률·연속 기록, 큰 위젯의 주간 발자국, 할 일·날짜·‘＋ 할 일 만들기’ 탭,
+  자정 뒤 새 날짜. Android는 OS 갱신 주기를 따라서 ‘자정 정각’·‘바로’라고 쓰지 않아요.
 
 ## 문구 규칙
 
