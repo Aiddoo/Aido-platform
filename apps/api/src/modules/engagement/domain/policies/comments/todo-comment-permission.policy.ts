@@ -3,6 +3,9 @@ export interface TodoCommentViewerPermissions {
   readonly canEdit: boolean;
   readonly canDelete: boolean;
   readonly canReply: boolean;
+  /** 남의 댓글만 신고·차단할 수 있다. 가린 댓글·삭제된 댓글은 대상을 알 수 없어 막는다 */
+  readonly canReport: boolean;
+  readonly canBlock: boolean;
 }
 
 export function getTodoCommentViewerPermissions(input: {
@@ -13,12 +16,15 @@ export function getTodoCommentViewerPermissions(input: {
 }): TodoCommentViewerPermissions {
   const isAuthor = input.authorId === input.viewerId;
   const canManage = !input.isDeleted && isAuthor;
+  const canModerate = !input.isDeleted && !isAuthor;
 
   return {
     isLiked: !input.isDeleted && input.isLiked,
     canEdit: canManage,
     canDelete: canManage,
     canReply: !input.isDeleted,
+    canReport: canModerate,
+    canBlock: canModerate,
   };
 }
 

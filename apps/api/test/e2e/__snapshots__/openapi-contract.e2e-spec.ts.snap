@@ -10107,6 +10107,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       "null",
                     ],
                   },
+                  "userTag": {
+                    "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                    "maxLength": 8,
+                    "minLength": 8,
+                    "type": "string",
+                  },
                 },
                 "required": [
                   "id",
@@ -10212,6 +10218,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "viewer": {
                 "description": "현재 사용자의 댓글 권한과 상태",
                 "properties": {
+                  "canBlock": {
+                    "description": "현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)",
+                    "type": "boolean",
+                  },
                   "canDelete": {
                     "description": "현재 사용자의 삭제 가능 여부",
                     "type": "boolean",
@@ -10222,6 +10232,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   },
                   "canReply": {
                     "description": "현재 사용자의 답글 작성 가능 여부",
+                    "type": "boolean",
+                  },
+                  "canReport": {
+                    "description": "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
                     "type": "boolean",
                   },
                   "isLiked": {
@@ -10326,6 +10340,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "string",
                     "null",
                   ],
+                },
+                "userTag": {
+                  "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                  "maxLength": 8,
+                  "minLength": 8,
+                  "type": "string",
                 },
               },
               "required": [
@@ -10432,6 +10452,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "viewer": {
               "description": "현재 사용자의 댓글 권한과 상태",
               "properties": {
+                "canBlock": {
+                  "description": "현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)",
+                  "type": "boolean",
+                },
                 "canDelete": {
                   "description": "현재 사용자의 삭제 가능 여부",
                   "type": "boolean",
@@ -10442,6 +10466,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 },
                 "canReply": {
                   "description": "현재 사용자의 답글 작성 가능 여부",
+                  "type": "boolean",
+                },
+                "canReport": {
+                  "description": "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
                   "type": "boolean",
                 },
                 "isLiked": {
@@ -10521,6 +10549,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                           "null",
                         ],
                       },
+                      "userTag": {
+                        "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                        "maxLength": 8,
+                        "minLength": 8,
+                        "type": "string",
+                      },
                     },
                     "required": [
                       "id",
@@ -10626,6 +10660,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "viewer": {
                     "description": "현재 사용자의 댓글 권한과 상태",
                     "properties": {
+                      "canBlock": {
+                        "description": "현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)",
+                        "type": "boolean",
+                      },
                       "canDelete": {
                         "description": "현재 사용자의 삭제 가능 여부",
                         "type": "boolean",
@@ -10636,6 +10674,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       },
                       "canReply": {
                         "description": "현재 사용자의 답글 작성 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canReport": {
+                        "description": "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
                         "type": "boolean",
                       },
                       "isLiked": {
@@ -10702,6 +10744,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                           "null",
                         ],
                       },
+                      "userTag": {
+                        "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                        "maxLength": 8,
+                        "minLength": 8,
+                        "type": "string",
+                      },
                     },
                     "required": [
                       "id",
@@ -10807,6 +10855,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "viewer": {
                     "description": "현재 사용자의 댓글 권한과 상태",
                     "properties": {
+                      "canBlock": {
+                        "description": "현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)",
+                        "type": "boolean",
+                      },
                       "canDelete": {
                         "description": "현재 사용자의 삭제 가능 여부",
                         "type": "boolean",
@@ -10817,6 +10869,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       },
                       "canReply": {
                         "description": "현재 사용자의 답글 작성 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canReport": {
+                        "description": "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
                         "type": "boolean",
                       },
                       "isLiked": {
@@ -10892,6 +10948,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                             "string",
                             "null",
                           ],
+                        },
+                        "userTag": {
+                          "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                          "maxLength": 8,
+                          "minLength": 8,
+                          "type": "string",
                         },
                       },
                       "required": [
@@ -11040,6 +11102,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                               "null",
                             ],
                           },
+                          "userTag": {
+                            "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                            "maxLength": 8,
+                            "minLength": 8,
+                            "type": "string",
+                          },
                         },
                         "required": [
                           "id",
@@ -11145,6 +11213,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       "viewer": {
                         "description": "현재 사용자의 댓글 권한과 상태",
                         "properties": {
+                          "canBlock": {
+                            "description": "현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)",
+                            "type": "boolean",
+                          },
                           "canDelete": {
                             "description": "현재 사용자의 삭제 가능 여부",
                             "type": "boolean",
@@ -11155,6 +11227,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                           },
                           "canReply": {
                             "description": "현재 사용자의 답글 작성 가능 여부",
+                            "type": "boolean",
+                          },
+                          "canReport": {
+                            "description": "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
                             "type": "boolean",
                           },
                           "isLiked": {
@@ -11309,6 +11385,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                           "null",
                         ],
                       },
+                      "userTag": {
+                        "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+                        "maxLength": 8,
+                        "minLength": 8,
+                        "type": "string",
+                      },
                     },
                     "required": [
                       "id",
@@ -11414,6 +11496,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                   "viewer": {
                     "description": "현재 사용자의 댓글 권한과 상태",
                     "properties": {
+                      "canBlock": {
+                        "description": "현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)",
+                        "type": "boolean",
+                      },
                       "canDelete": {
                         "description": "현재 사용자의 삭제 가능 여부",
                         "type": "boolean",
@@ -11424,6 +11510,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                       },
                       "canReply": {
                         "description": "현재 사용자의 답글 작성 가능 여부",
+                        "type": "boolean",
+                      },
+                      "canReport": {
+                        "description": "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
                         "type": "boolean",
                       },
                       "isLiked": {
@@ -11629,6 +11719,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "string",
                 "null",
               ],
+            },
+            "userTag": {
+              "description": "댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)",
+              "maxLength": 8,
+              "minLength": 8,
+              "type": "string",
             },
           },
           "required": [

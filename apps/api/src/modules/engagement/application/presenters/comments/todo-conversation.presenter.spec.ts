@@ -27,6 +27,7 @@ function createRecord(
     parentAuthorName: null,
     authorId: `author-${id}`,
     authorName: id,
+    authorUserTag: null,
     authorProfileImage: null,
     todoOwnerId: "owner",
     content: id,

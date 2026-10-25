@@ -35,6 +35,7 @@ export function createCommentRecordFixture(
     parentAuthorName: null,
     authorId: ENGAGEMENT_OWNER_ID,
     authorName: "작성자",
+    authorUserTag: null,
     authorProfileImage: null,
     todoOwnerId: ENGAGEMENT_OWNER_ID,
     content: "댓글",

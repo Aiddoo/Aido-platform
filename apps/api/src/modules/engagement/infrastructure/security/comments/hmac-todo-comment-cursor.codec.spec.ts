@@ -21,6 +21,7 @@ const record: TodoConversationRecord = {
   parentAuthorName: null,
   authorId: "cm1author0000000000000001",
   authorName: "작성자",
+  authorUserTag: null,
   authorProfileImage: null,
   todoOwnerId: "cm1author0000000000000001",
   content: "댓글",

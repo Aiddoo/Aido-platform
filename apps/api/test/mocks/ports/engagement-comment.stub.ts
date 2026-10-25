@@ -224,6 +224,7 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
       todoId,
       authorId: comment.authorId,
       authorName: this.names.get(comment.authorId) ?? null,
+      authorUserTag: null,
       authorProfileImage: null,
       todoOwnerId: this.todoOwners.get(todoId) ?? comment.authorId,
       parentId: comment.parentId,

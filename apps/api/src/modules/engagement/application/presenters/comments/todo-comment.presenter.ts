@@ -39,6 +39,7 @@ export function toTodoCommentResponse(
       ? {
           id: authorId,
           name: record.authorName,
+          userTag: record.authorUserTag ?? undefined,
           profileImage: record.authorProfileImage,
           isTodoOwner: authorId === record.todoOwnerId,
         }

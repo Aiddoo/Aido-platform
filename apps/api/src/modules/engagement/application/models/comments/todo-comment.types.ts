@@ -16,6 +16,8 @@ export interface TodoCommentRecord {
   parentAuthorName: string | null;
   authorId: string;
   authorName: string | null;
+  /** 작성자 Aido ID. 같은 이름의 작성자를 구분하는 데 쓴다 */
+  authorUserTag: string | null;
   authorProfileImage: string | null;
   todoOwnerId: string;
   content: string | null;

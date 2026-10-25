@@ -8,6 +8,11 @@ export const todoCommentAuthorSchema = z
   .object({
     id: z.cuid().describe("댓글 작성자 ID (CUID)"),
     name: z.string().nullable().describe("댓글 작성자 이름 (미설정 시 null)"),
+    userTag: z
+      .string()
+      .length(8)
+      .optional()
+      .describe("댓글 작성자 Aido ID (8자 영숫자 대문자, 같은 이름의 작성자 구분용, 1.13.0+)"),
     profileImage: z.string().nullable().describe("댓글 작성자 프로필 이미지 URL (미설정 시 null)"),
     isTodoOwner: z.boolean().describe("할 일 작성자 여부"),
   })
@@ -26,6 +31,16 @@ export const todoCommentViewerSchema = z
     canEdit: z.boolean().describe("현재 사용자의 수정 가능 여부"),
     canDelete: z.boolean().describe("현재 사용자의 삭제 가능 여부"),
     canReply: z.boolean().describe("현재 사용자의 답글 작성 가능 여부"),
+    canReport: z
+      .boolean()
+      .optional()
+      .describe(
+        "현재 사용자가 이 댓글을 신고할 수 있는지 (남의 댓글이고 가리지 않았을 때, 1.13.0+)",
+      ),
+    canBlock: z
+      .boolean()
+      .optional()
+      .describe("현재 사용자가 이 댓글 작성자를 차단할 수 있는지 (1.13.0+)"),
   })
   .describe("현재 사용자의 댓글 권한과 상태");
 
