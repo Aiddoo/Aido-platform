@@ -4,12 +4,15 @@ import { DomainException } from "#api/shared/domain/index";
 
 import { TodoComment } from "./todo-comment.aggregate.js";
 
+const AUTHOR_ID = "cm1author0000000000000001";
+const OWNER_ID = "cm1owner00000000000000001";
+
 function createComment(overrides: Partial<Parameters<typeof TodoComment.reconstitute>[0]> = {}) {
   const createdAt = new Date("2026-08-14T00:00:00.000Z");
   return TodoComment.reconstitute({
     id: "cm1todoacomment00000000001",
     todoId: 1,
-    authorId: "cm1author0000000000000001",
+    authorId: AUTHOR_ID,
     parentId: null,
     rootId: null,
     path: [],
@@ -54,11 +57,42 @@ describe("TodoComment — 댓글 Aggregate", () => {
     const comment = createComment();
     const deletedAt = new Date("2026-08-14T02:00:00.000Z");
 
-    comment.delete("cm1author0000000000000001", deletedAt);
-    comment.delete("cm1author0000000000000001", new Date("2026-08-14T03:00:00.000Z"));
+    comment.delete({ actorId: AUTHOR_ID, todoOwnerId: OWNER_ID, deletedAt });
+    comment.delete({
+      actorId: AUTHOR_ID,
+      todoOwnerId: OWNER_ID,
+      deletedAt: new Date("2026-08-14T03:00:00.000Z"),
+    });
 
     expect(comment.content).toBeNull();
     expect(comment.deletedAt).toEqual(deletedAt);
+  });
+
+  it("할 일 주인은 자기 할 일에 달린 남의 댓글을 지울 수 있다", () => {
+    // Given
+    const comment = createComment();
+    const deletedAt = new Date("2026-08-14T02:00:00.000Z");
+
+    // When
+    comment.delete({ actorId: OWNER_ID, todoOwnerId: OWNER_ID, deletedAt });
+
+    // Then
+    expect(comment.content).toBeNull();
+    expect(comment.deletedAt).toEqual(deletedAt);
+  });
+
+  it("작성자도 할 일 주인도 아니면 지울 수 없다", () => {
+    // Given
+    const comment = createComment();
+
+    // When / Then
+    expect(() =>
+      comment.delete({
+        actorId: "cm1stranger00000000000001",
+        todoOwnerId: OWNER_ID,
+        deletedAt: new Date("2026-08-14T02:00:00.000Z"),
+      }),
+    ).toThrow(expect.objectContaining({ errorCode: ErrorCode.TODO_0832 }));
   });
 
   it("삭제된 댓글의 상호작용을 거부한다", () => {

@@ -307,7 +307,7 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
     return friendship !== null;
   }
 
-  async canAccessTodo(todoId: number, viewerId: string): Promise<boolean> {
+  async findAccessibleTodoOwnerId(todoId: number, viewerId: string): Promise<string | null> {
     const todo = decodeRecord(
       "Todo",
       await this.client.orm.public.Todo.where((row) => row.id.eq(todoId))
@@ -315,19 +315,19 @@ export class PrismaTodoCommentReader implements TodoCommentReaderPort {
         .first(),
     );
 
-    if (todo === null) {
-      return false;
+    if (todo == null) {
+      return null;
     }
 
     if (todo.userId === viewerId) {
-      return true;
+      return todo.userId;
     }
 
     if (todo.visibility !== "PUBLIC") {
-      return false;
+      return null;
     }
 
-    return this.isAcceptedFriend(todo.userId, viewerId);
+    return (await this.isAcceptedFriend(todo.userId, viewerId)) ? todo.userId : null;
   }
 
   async findAccessibleTodoDetails(

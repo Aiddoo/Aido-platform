@@ -55,7 +55,25 @@ describe("DeleteTodoComment — 댓글 사용자 상태", () => {
       MutationLockKeys.todoComment(parent.id),
     ]);
   });
-  it("다른 작성자의 삭제는 TODO_0832로 거부하고 count와 원문을 유지한다", async () => {
+  it("할 일 주인은 자기 할 일에 친구가 단 댓글을 모두에게서 지운다", async () => {
+    // Given
+    const comment = fixture.addComment({ authorId: ENGAGEMENT_VIEWER_ID });
+    // When
+    const result = await new DeleteTodoComment(fixture).execute({
+      todoId: 1,
+      commentId: comment.id,
+      userId: ENGAGEMENT_OWNER_ID,
+    });
+    // Then
+    expect(result).toEqual({ commentId: comment.id, isDeleted: true });
+    expect(fixture.repository.comments.get(comment.id)).toMatchObject({
+      content: null,
+      deletedAt: ENGAGEMENT_TIME,
+    });
+    expect(fixture.repository.commentCounts.get(1)).toBe(0);
+    expect(fixture.invalidatedTodoIds).toEqual([1]);
+  });
+  it("작성자도 할 일 주인도 아닌 사람의 삭제는 TODO_0832로 거부하고 count와 원문을 유지한다", async () => {
     // Given
     const comment = fixture.addComment();
     // When / Then

@@ -81,7 +81,7 @@ function throwMappedWriteError(error: unknown): never {
 interface WriteTodoCommentChainDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "findCommentRecords" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "findCommentRecords" | "findLikedCommentIds"
   >;
   readonly repository: Pick<
     TodoCommentRepositoryPort,

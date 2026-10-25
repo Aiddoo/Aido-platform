@@ -69,7 +69,7 @@ function getAnchor(
 interface GetTodoCommentOverviewDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "listOverview" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "listOverview" | "findLikedCommentIds"
   >;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<TodoCommentCursorCodecPort, "decodeOverview" | "encodeOverview">;

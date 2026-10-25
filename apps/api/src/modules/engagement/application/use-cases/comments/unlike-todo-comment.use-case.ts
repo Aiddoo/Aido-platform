@@ -19,7 +19,7 @@ export interface UnlikeTodoCommentInput {
 }
 
 interface UnlikeTodoCommentDependencies {
-  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo">;
+  readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId">;
   readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "removeLike">;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;

@@ -107,8 +107,12 @@ export class TodoComment extends AggregateRoot<TodoCommentProps> {
     this.props.updatedAt = new Date(editedAt);
   }
 
-  delete(userId: string, deletedAt: Date): void {
-    this.assertAuthor(userId);
+  /** 작성자와 할 일 주인만 지울 수 있다. 주인은 자기 할 일에 달린 남의 댓글을 모두에게서 지운다 */
+  delete(input: { actorId: string; todoOwnerId: string; deletedAt: Date }): void {
+    if (input.actorId !== this.props.authorId && input.actorId !== input.todoOwnerId) {
+      throw new DomainException(ErrorCode.TODO_0832, { commentId: this.props.id.getValue() });
+    }
+    const { deletedAt } = input;
 
     if (this.isDeleted) {
       return;

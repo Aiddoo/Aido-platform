@@ -24,7 +24,7 @@ export interface DeleteTodoCommentInput {
 }
 
 interface DeleteTodoCommentDependencies {
-  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo">;
+  readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId">;
   readonly repository: Pick<
     TodoCommentRepositoryPort,
     "findComment" | "decrementTodoCommentCount" | "deleteComment" | "dropDeletedFromAncestors"
@@ -44,7 +44,11 @@ export class DeleteTodoComment {
 
   async execute(input: DeleteTodoCommentInput): Promise<DeleteTodoCommentResponse> {
     const outcome = await this.#dependencies.unitOfWork.run(async () => {
-      await assertTodoCommentAccess(this.#dependencies.reader, input.todoId, input.userId);
+      const todoOwnerId = await assertTodoCommentAccess(
+        this.#dependencies.reader,
+        input.todoId,
+        input.userId,
+      );
       const snapshot = await this.#dependencies.repository.findComment(
         input.todoId,
         input.commentId,
@@ -67,12 +71,13 @@ export class DeleteTodoComment {
         throw new ApplicationException(ErrorCode.TODO_0831, { commentId: input.commentId });
       }
 
+      const deletion = { actorId: input.userId, todoOwnerId, deletedAt: now() };
       if (comment.isDeleted) {
-        comment.delete(input.userId, now());
+        comment.delete(deletion);
         return false;
       }
 
-      comment.delete(input.userId, now());
+      comment.delete(deletion);
       const countDecremented = await this.#dependencies.repository.decrementTodoCommentCount(
         input.todoId,
       );

@@ -570,14 +570,20 @@ describe("할 일 댓글 E2E", () => {
     expect(details.body.data.metrics.commentCount).toBe(4);
   });
 
-  it("작성자만 수정·삭제하고, 허용된 viewer의 좋아요 상태는 conversation에 반영한다", async () => {
+  it("작성자만 수정하고 할 일 주인은 남의 댓글도 지우며, 허용된 viewer의 좋아요 상태는 conversation에 반영한다", async () => {
     const owner = await ctx.helpers.createVerifiedUser("comment-owner@example.com", "Test1234!", {
       name: "할 일 주인",
     });
     const author = await ctx.helpers.createVerifiedUser("comment-author@example.com", "Test1234!", {
       name: "댓글 작성자",
     });
+    const bystander = await ctx.helpers.createVerifiedUser(
+      "comment-bystander@example.com",
+      "Test1234!",
+      { name: "다른 친구" },
+    );
     await ctx.helpers.createFriendship(owner, author);
+    await ctx.helpers.createFriendship(owner, bystander);
     const todoId = await createTodo(owner.accessToken, "PUBLIC");
     const commentId = await writeComment(author.accessToken, todoId, "수정 전");
 
@@ -585,8 +591,12 @@ describe("할 일 댓글 E2E", () => {
     expect(ownerView.items[0]).toMatchObject({
       comment: {
         id: commentId,
-        viewer: { canEdit: false, canDelete: false, canReply: true },
+        viewer: { canEdit: false, canDelete: true, canReply: true },
       },
+    });
+    const bystanderView = await getConversation(bystander.accessToken, todoId);
+    expect(bystanderView.items[0]).toMatchObject({
+      comment: { id: commentId, viewer: { canEdit: false, canDelete: false } },
     });
 
     const forbiddenEdit = await request(ctx.app.getHttpServer())
@@ -632,16 +642,18 @@ describe("할 일 댓글 E2E", () => {
 
     const forbiddenDelete = await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${commentId}`)
-      .set("Authorization", `Bearer ${owner.accessToken}`)
+      .set("Authorization", `Bearer ${bystander.accessToken}`)
       .expect(403);
     expect(forbiddenDelete.body.error.code).toBe("TODO_0832");
 
     await request(ctx.app.getHttpServer())
       .delete(`/v1/todos/${todoId}/comments/${commentId}`)
-      .set("Authorization", `Bearer ${author.accessToken}`)
+      .set("Authorization", `Bearer ${owner.accessToken}`)
       .expect(200);
 
-    await expect(getConversation(owner.accessToken, todoId)).resolves.toMatchObject({ items: [] });
+    await expect(getConversation(author.accessToken, todoId)).resolves.toMatchObject({
+      items: [],
+    });
   });
 
   it("좋아요는 멱등이고 비친구와 삭제 묘비의 좋아요 변경은 일관된 오류로 거부한다", async () => {

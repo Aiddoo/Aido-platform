@@ -45767,6 +45767,7 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
   },
   "/v1/todos/{todoId}/comments/{commentId}": {
     "delete": {
+      "description": "작성자는 자기 댓글을, 할 일 주인은 자기 할 일에 달린 모든 댓글을 삭제할 수 있습니다. 삭제한 댓글은 모든 사람에게 삭제된 댓글로 보입니다.",
       "operationId": "deleteTodoComment",
       "parameters": [
         {
@@ -45981,7 +45982,7 @@ TODO_0822: 하위 항목을 찾을 수 없습니다.",
           "bearer": [],
         },
       ],
-      "summary": "본인 댓글 삭제",
+      "summary": "댓글 삭제",
       "tags": [
         "Todos",
       ],

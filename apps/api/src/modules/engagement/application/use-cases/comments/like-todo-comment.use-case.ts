@@ -25,7 +25,7 @@ export interface LikeTodoCommentInput {
 }
 
 interface LikeTodoCommentDependencies {
-  readonly reader: Pick<TodoCommentReaderPort, "canAccessTodo" | "findUserDisplayName">;
+  readonly reader: Pick<TodoCommentReaderPort, "findAccessibleTodoOwnerId" | "findUserDisplayName">;
   readonly repository: Pick<
     TodoCommentRepositoryPort,
     "findComment" | "setLike" | "findPendingLikeNotification" | "markLikeNotified"

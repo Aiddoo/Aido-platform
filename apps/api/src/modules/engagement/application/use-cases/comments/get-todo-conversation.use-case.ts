@@ -97,7 +97,7 @@ interface FocusAncestorContext {
 interface GetTodoConversationDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "listConversation" | "findAncestors" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "listConversation" | "findAncestors" | "findLikedCommentIds"
   >;
   readonly blockReader: Pick<TodoCommentBlockReaderPort, "findBlockedCounterpartIds">;
   readonly cursorCodec: Pick<

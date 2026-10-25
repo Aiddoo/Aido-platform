@@ -24,7 +24,7 @@ export interface UpdateTodoCommentInput {
 interface UpdateTodoCommentDependencies {
   readonly reader: Pick<
     TodoCommentReaderPort,
-    "canAccessTodo" | "findCommentRecord" | "findLikedCommentIds"
+    "findAccessibleTodoOwnerId" | "findCommentRecord" | "findLikedCommentIds"
   >;
   readonly repository: Pick<TodoCommentRepositoryPort, "findComment" | "updateComment">;
   readonly mutationLock: MutationLockPort;

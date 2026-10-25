@@ -207,12 +207,15 @@ export class StubEngagementCommentReader implements TodoCommentReaderPort {
   ancestors: TodoCommentRecord[] | undefined;
   likedCommentIds: Set<string> | undefined;
   constructor(readonly repository: StubEngagementCommentRepository) {}
-  async canAccessTodo(todoId: number, viewerId: string) {
-    return this.accessiblePairs.has(`${todoId}:${viewerId}`);
+  async findAccessibleTodoOwnerId(todoId: number, viewerId: string) {
+    if (!this.accessiblePairs.has(`${todoId}:${viewerId}`)) {
+      return null;
+    }
+    return this.todoOwners.get(todoId) ?? viewerId;
   }
   async findAccessibleTodoDetails(todoId: number, viewerId: string) {
     const record = this.details.get(todoId);
-    return record !== undefined && (await this.canAccessTodo(todoId, viewerId))
+    return record !== undefined && (await this.findAccessibleTodoOwnerId(todoId, viewerId)) != null
       ? { ...structuredClone(record), isOwner: record.owner.id === viewerId }
       : null;
   }

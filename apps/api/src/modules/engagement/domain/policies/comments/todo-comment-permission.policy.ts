@@ -13,15 +13,18 @@ export function getTodoCommentViewerPermissions(input: {
   readonly isLiked: boolean;
   readonly authorId: string;
   readonly viewerId: string;
+  /** 할 일 주인은 자기 할 일에 달린 남의 댓글도 지울 수 있다(수정은 작성자만) */
+  readonly todoOwnerId: string;
 }): TodoCommentViewerPermissions {
   const isAuthor = input.authorId === input.viewerId;
+  const isTodoOwner = input.todoOwnerId === input.viewerId;
   const canManage = !input.isDeleted && isAuthor;
   const canModerate = !input.isDeleted && !isAuthor;
 
   return {
     isLiked: !input.isDeleted && input.isLiked,
     canEdit: canManage,
-    canDelete: canManage,
+    canDelete: !input.isDeleted && (isAuthor || isTodoOwner),
     canReply: !input.isDeleted,
     canReport: canModerate,
     canBlock: canModerate,

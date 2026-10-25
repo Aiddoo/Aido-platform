@@ -28,6 +28,7 @@ export function toTodoCommentResponse(
     isLiked: likedCommentIds.has(record.id),
     authorId,
     viewerId,
+    todoOwnerId: record.todoOwnerId,
   });
 
   return {
