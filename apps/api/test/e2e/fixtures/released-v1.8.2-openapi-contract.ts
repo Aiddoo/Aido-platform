@@ -48,8 +48,11 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: parse-memo 응답 meta에 optional omittedTodoCount만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	preMemoOmittedTodoCountSchemasFingerprint:
 		"e60ac224071f77495d22aba244893511f8c27ad4b09715d97af23ec501574f45",
-	schemasFingerprint:
+	/** 1.13.0: 약관 동의 응답(ConsentResponseDto)에 optional aiDataSharingDecision·aiDataSharingAgreedAt·aiDataSharingConsentVersion만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	preAiDataSharingConsentSchemasFingerprint:
 		"75dd9b40d832b9fd34bcddf42d26bd81af7832250fac3146809c2199c289c7ee",
+	schemasFingerprint:
+		"29a3b0988b2c0456613124a8f646c378127a224cc7f9922995b7ef500a4cbcec",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	preTodoSummaryDatePathsFingerprint:
 		"dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",
@@ -71,6 +74,9 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: 차단·신고 추가로 POST /follows/{userTag} 403의 error.code를 BLOCK_2203(차단한 사용자)·FOLLOW_0909(친구 한도) enum으로 선언했다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
 	preFriendSafetyPathsFingerprint:
 		"733aed3fa3ebd0c70664d1461ed6dad9b072ce6aa936f28915b389e98ebf9987",
-	pathsFingerprint:
+	/** 1.13.0: AI 파싱·리포트·제안 라우트에 선택 x-app-version 헤더와 403 AI_1311만 추가. 헤더가 없거나 1.13.0 미만이면 동의 없이도 기존처럼 처리한다. */
+	preAiDataSharingConsentPathsFingerprint:
 		"b717111ffbc46d9cbdd8019424d953dac7702ee838605c6e9d6bf4317b7afa4d",
+	pathsFingerprint:
+		"bd13f953b15aad255f06dac683d6babb50278d7d31ad075911e184d8e561099c",
 } as const;

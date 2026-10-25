@@ -1055,6 +1055,9 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     "ConsentResponseDto": {
       "example": {
         "agreedTermsVersion": "1.0.0",
+        "aiDataSharingAgreedAt": "2026-10-26T09:00:00.000Z",
+        "aiDataSharingConsentVersion": "2026-10-26",
+        "aiDataSharingDecision": "AGREED",
         "marketingAgreedAt": null,
         "marketingPushAgreedAt": null,
         "privacyAgreedAt": "2026-01-17T10:00:00.000Z",
@@ -1067,6 +1070,29 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
             "string",
             "null",
           ],
+        },
+        "aiDataSharingAgreedAt": {
+          "description": "AI 데이터 처리 동의 시각 (ISO 8601 UTC, 미동의·철회 시 null, 1.13.0+)",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "aiDataSharingConsentVersion": {
+          "description": "마지막으로 답한 AI 데이터 처리 안내 버전 (답한 적 없으면 null, 1.13.0+)",
+          "type": [
+            "string",
+            "null",
+          ],
+        },
+        "aiDataSharingDecision": {
+          "description": "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 안내 버전이 바뀜)",
+          "enum": [
+            "AGREED",
+            "DECLINED",
+            "UNDECIDED",
+          ],
+          "type": "string",
         },
         "marketingAgreedAt": {
           "description": "마케팅 수신 동의 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z, 미동의 시 null)",
@@ -12867,6 +12893,65 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "UpdateAiDataSharingConsentDto": {
+      "example": {
+        "agreed": true,
+        "version": "2026-10-26",
+      },
+      "properties": {
+        "agreed": {
+          "description": "AI 데이터 처리(Google Gemini 전송) 동의 여부 (true: 동의, false: 거부·철회)",
+          "type": "boolean",
+        },
+        "version": {
+          "description": "사용자에게 보여 준 안내 버전 (현재: 2026-10-26)",
+          "enum": [
+            "2026-10-26",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "agreed",
+        "version",
+      ],
+      "type": "object",
+    },
+    "UpdateAiDataSharingConsentResponseDto": {
+      "example": {
+        "aiDataSharingAgreedAt": "2026-10-26T09:00:00.000Z",
+        "aiDataSharingConsentVersion": "2026-10-26",
+        "aiDataSharingDecision": "AGREED",
+      },
+      "properties": {
+        "aiDataSharingAgreedAt": {
+          "description": "AI 데이터 처리 동의 시각 (거부·철회 시 null)",
+          "format": "date-time",
+          "nullable": true,
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "aiDataSharingConsentVersion": {
+          "description": "답한 AI 데이터 처리 안내 버전",
+          "type": "string",
+        },
+        "aiDataSharingDecision": {
+          "description": "현재 안내 버전 기준 AI 데이터 처리 동의 상태 (AGREED: 동의 | DECLINED: 거부·철회 | UNDECIDED: 아직 답하지 않았거나 안내 버전이 바뀜)",
+          "enum": [
+            "AGREED",
+            "DECLINED",
+            "UNDECIDED",
+          ],
+          "type": "string",
+        },
+      },
+      "required": [
+        "aiDataSharingDecision",
+        "aiDataSharingAgreedAt",
+        "aiDataSharingConsentVersion",
+      ],
+      "type": "object",
+    },
     "UpdateLocationDto": {
       "properties": {
         "latitude": {
@@ -15578,6 +15663,15 @@ SYS_0002: 잘못된 파라미터입니다.",
             "type": "string",
           },
         },
+        {
+          "description": "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "requestBody": {
         "content": {
@@ -15711,6 +15805,53 @@ SYS_0002: 잘못된 파라미터입니다.",
             },
           },
           "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1311",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
         },
         "422": {
           "content": {
@@ -16030,6 +16171,15 @@ if (confirmed) {
             "type": "string",
           },
         },
+        {
+          "description": "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "requestBody": {
         "content": {
@@ -16163,6 +16313,53 @@ if (confirmed) {
             },
           },
           "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AI_1311",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
         },
         "422": {
           "content": {
@@ -16404,6 +16601,15 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
             "type": "integer",
           },
         },
+        {
+          "description": "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -16531,11 +16737,41 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "AI_1308": {
+                  "summary": "AI 리포트는 프리미엄 기능입니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1308",
+                      "details": null,
+                      "message": "AI 리포트는 프리미엄 기능입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1311": {
+                  "summary": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1311",
+                      "details": null,
+                      "message": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AI_1308",
+                          "AI_1311",
+                        ],
                         "example": "AI_1308",
                         "type": "string",
                       },
@@ -16573,7 +16809,9 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
               },
             },
           },
-          "description": "AI 리포트는 프리미엄 기능입니다.",
+          "description": "AI_1308: AI 리포트는 프리미엄 기능입니다.
+
+AI_1311: AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
         },
         "500": {
           "content": {
@@ -16863,6 +17101,15 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
             "type": "integer",
           },
         },
+        {
+          "description": "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
       ],
       "responses": {
         "200": {
@@ -16990,11 +17237,41 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "AI_1308": {
+                  "summary": "AI 리포트는 프리미엄 기능입니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1308",
+                      "details": null,
+                      "message": "AI 리포트는 프리미엄 기능입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1311": {
+                  "summary": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1311",
+                      "details": null,
+                      "message": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AI_1308",
+                          "AI_1311",
+                        ],
                         "example": "AI_1308",
                         "type": "string",
                       },
@@ -17032,7 +17309,9 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
               },
             },
           },
-          "description": "AI 리포트는 프리미엄 기능입니다.",
+          "description": "AI_1308: AI 리포트는 프리미엄 기능입니다.
+
+AI_1311: AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
         },
         "404": {
           "content": {
@@ -17241,7 +17520,17 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
 - KST 07:30 이후 호출하면 새 제안을 확인할 수 있습니다.
 - 빈 배열이라면 "아직 분석할 데이터가 부족합니다" 등의 안내를 표시하세요.",
       "operationId": "getAiSuggestions",
-      "parameters": [],
+      "parameters": [
+        {
+          "description": "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
       "responses": {
         "200": {
           "content": {
@@ -17331,11 +17620,41 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "AI_1309": {
+                  "summary": "AI 제안은 프리미엄 기능입니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1309",
+                      "details": null,
+                      "message": "AI 제안은 프리미엄 기능입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1311": {
+                  "summary": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1311",
+                      "details": null,
+                      "message": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AI_1309",
+                          "AI_1311",
+                        ],
                         "example": "AI_1309",
                         "type": "string",
                       },
@@ -17373,7 +17692,9 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
               },
             },
           },
-          "description": "AI 제안은 프리미엄 기능입니다.",
+          "description": "AI_1309: AI 제안은 프리미엄 기능입니다.
+
+AI_1311: AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
         },
         "500": {
           "content": {
@@ -17427,6 +17748,15 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
             "maximum": 9007199254740991,
             "minimum": 0,
             "type": "integer",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
           },
         },
       ],
@@ -17566,11 +17896,41 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "AI_1309": {
+                  "summary": "AI 제안은 프리미엄 기능입니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1309",
+                      "details": null,
+                      "message": "AI 제안은 프리미엄 기능입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1311": {
+                  "summary": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1311",
+                      "details": null,
+                      "message": "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AI_1309",
+                          "AI_1311",
+                        ],
                         "example": "AI_1309",
                         "type": "string",
                       },
@@ -17608,7 +17968,9 @@ America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니�
               },
             },
           },
-          "description": "AI 제안은 프리미엄 기능입니다.",
+          "description": "AI_1309: AI 제안은 프리미엄 기능입니다.
+
+AI_1311: AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
         },
         "404": {
           "content": {
@@ -18495,7 +18857,10 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
 | \`termsAgreedAt\` | string? | 서비스 이용약관 동의 시점 |
 | \`privacyAgreedAt\` | string? | 개인정보처리방침 동의 시점 |
 | \`agreedTermsVersion\` | string? | 동의한 약관 버전 |
-| \`marketingAgreedAt\` | string? | 마케팅 수신 동의 시점 (null = 미동의/철회) |",
+| \`marketingAgreedAt\` | string? | 마케팅 수신 동의 시점 (null = 미동의/철회) |
+| \`aiDataSharingDecision\` | string? | AI 데이터 처리 동의 상태 (AGREED / DECLINED / UNDECIDED, 1.13.0+) |
+| \`aiDataSharingAgreedAt\` | string? | AI 데이터 처리 동의 시점 (null = 미동의/철회) |
+| \`aiDataSharingConsentVersion\` | string? | 마지막으로 답한 AI 데이터 처리 안내 버전 |",
       "operationId": "getConsent",
       "parameters": [],
       "responses": {
@@ -18601,6 +18966,175 @@ USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
         },
       ],
       "summary": "약관 동의 상태 조회",
+      "tags": [
+        "User - 인증",
+      ],
+    },
+  },
+  "/v1/auth/consent/ai-data-sharing": {
+    "patch": {
+      "description": "입력한 할 일·메모 텍스트와 리포트용 기록 통계를 Google Gemini로 보내 처리하는 데 동의하거나 거부·철회합니다.
+
+**요청 Body**
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`agreed\` | boolean | true=동의, false=거부·철회 |
+| \`version\` | string | 앱이 보여 준 안내 버전. 현재 버전만 받습니다 |
+
+거부·철회하면 AI 할 일 정리·메모 정리·반복 제안·리포트 AI 요약을 쓰지 않으며, 그 밖의 기능은 그대로 쓸 수 있습니다.
+1.13.0 이상 앱은 동의하지 않은 상태에서 AI 기능을 요청하면 \`AI_1311\`을 받습니다.",
+      "operationId": "updateAiDataSharingConsent",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/UpdateAiDataSharingConsentDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/UpdateAiDataSharingConsentResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "AI 데이터 처리 동의 변경",
       "tags": [
         "User - 인증",
       ],
