@@ -1,3 +1,4 @@
+import { AI_PARSE_LIMITS } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
@@ -99,7 +100,10 @@ function AiReviewScreen() {
       >
         {parsedResult.omittedTodoCount > 0 && (
           <Text size="b3" shade={6}>
-            {t('aiReview.omittedTodos', { count: parsedResult.omittedTodoCount })}
+            {t('aiReview.omittedTodos', {
+              count: parsedResult.omittedTodoCount,
+              max: AI_PARSE_LIMITS.MEMO_MAX_TODOS,
+            })}
           </Text>
         )}
         {todos.map((todo, index) => (

@@ -1,3 +1,4 @@
+import { REDEMPTION_REJECTION_REASON } from '@aido/api';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -56,12 +57,14 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
               )
               .with('excluded', () =>
                 match(friend.rejectionReason)
-                  .with('EXPIRED', () =>
+                  .with(REDEMPTION_REJECTION_REASON.EXPIRED, () =>
                     t('friendList.excludedExpired', {
                       days: InvitedFriendPolicy.qualificationWindowDays(),
                     }),
                   )
-                  .with('INVITER_MONTHLY_CAP', () => t('friendList.excludedMonthlyCap'))
+                  .with(REDEMPTION_REJECTION_REASON.INVITER_MONTHLY_CAP, () =>
+                    t('friendList.excludedMonthlyCap'),
+                  )
                   .with(P.nullish, () => t('friendList.excluded'))
                   .exhaustive(),
               )

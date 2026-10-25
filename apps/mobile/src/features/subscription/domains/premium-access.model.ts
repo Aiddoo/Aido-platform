@@ -1,9 +1,6 @@
-import { premiumSourceSchema } from '@aido/api';
+import { PREMIUM_GRANT_ENDING_NOTICE_DAYS, PREMIUM_SOURCE, premiumSourceSchema } from '@aido/api';
 import { formatDateKey } from '@src/shared/utils/date-format';
 import { z } from 'zod';
-
-/** 끝나기 며칠 전부터 안내할지 (서버 PREMIUM_GRANT_ENDING 푸시와 같은 하루 전) */
-const PREMIUM_ENDING_NOTICE_DAYS = 1;
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -16,7 +13,7 @@ export const PremiumAccessSchema = z.object({
   willRenew: z.boolean(),
   /** 지금 기간이 끝난 뒤 받은 순서대로 이어서 시작하는 보상 일수. 출처와 상관없이 있을 수 있다 */
   bankedDays: z.number().int().nonnegative(),
-  /** 프리미엄이 아닐 때 최근 7일 안에 끝난 마지막 보상 기간의 끝. 서버가 7일이 지나면 null로 보낸다 */
+  /** 프리미엄이 아닐 때 최근 @aido/api PREMIUM_GRANT_ENDED_WINDOW_DAYS일 안에 끝난 마지막 보상 기간의 끝. 그 뒤로는 서버가 null로 보낸다 */
   grantEndedAt: z.date().nullable(),
 });
 
@@ -44,7 +41,7 @@ export type PremiumEndingNotice = 'tomorrow' | 'today';
 
 export const PremiumAccessPolicy = {
   isGrantOnly(access: PremiumAccess) {
-    return access.source === 'GRANT';
+    return access.source === PREMIUM_SOURCE.GRANT;
   },
 
   hasBankedDays(access: PremiumAccess) {
@@ -69,7 +66,7 @@ export const PremiumAccessPolicy = {
 
     if (
       hasPassed(access.endsAt, now) ||
-      !isWithinNoticeDays(daysLeft, PREMIUM_ENDING_NOTICE_DAYS)
+      !isWithinNoticeDays(daysLeft, PREMIUM_GRANT_ENDING_NOTICE_DAYS)
     ) {
       return null;
     }
@@ -79,7 +76,9 @@ export const PremiumAccessPolicy = {
 
   /** 보상 기간 중에 구독하면 남은 보상이 구독 뒤로 미뤄진다는 것을 함께 알린다 */
   purchaseSuccessMessage(access: PremiumAccess | undefined) {
-    return access?.source === 'GRANT' ? 'purchaseSuccessWithReward' : 'purchaseSuccess';
+    return access?.source === PREMIUM_SOURCE.GRANT
+      ? 'purchaseSuccessWithReward'
+      : 'purchaseSuccess';
   },
 
   /** 무료 페이월에서 "초대 보상 프리미엄이 끝났어요"를 붙일 날짜. 아직 프리미엄이면 null이다 */
@@ -89,7 +88,7 @@ export const PremiumAccessPolicy = {
 
   /** 복원할 구매가 없어도 보상 기간은 그대로라는 것을 알린다 */
   restoreEmptyMessage(access: PremiumAccess | undefined) {
-    return access?.source === 'GRANT' ? 'restoreEmptyWithReward' : 'restoreEmpty';
+    return access?.source === PREMIUM_SOURCE.GRANT ? 'restoreEmptyWithReward' : 'restoreEmpty';
   },
 
   // 서버가 다시 계산한 값이 하나라도 바뀌면 한도·사용량 같은 프리미엄 의존 데이터도 달라진다

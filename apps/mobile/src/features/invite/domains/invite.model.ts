@@ -168,9 +168,14 @@ export const InvitePolicy = {
     return InviteRewardPolicy.friendSlots(myInvite.rewardsEarned);
   },
 
-  /** 최근 30일 동안 초대로 받을 수 있는 프리미엄 일수 */
+  /** 최근 premiumCapWindowDays일 동안 초대로 받을 수 있는 프리미엄 일수 */
   monthlyPremiumCapDays() {
     return INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS;
+  },
+
+  /** monthlyPremiumCapDays를 세는 기간(일) */
+  premiumCapWindowDays() {
+    return INVITE_REWARD_CAPS.WINDOW_DAYS;
   },
 
   /** 지금까지 초대로 받을 수 있는 프리미엄 일수 */

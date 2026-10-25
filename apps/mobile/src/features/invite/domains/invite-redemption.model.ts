@@ -1,4 +1,10 @@
-import { INVITE_REDEEM_WINDOW_DAYS, REDEEM_OUTCOME, redeemInviteResponseSchema } from '@aido/api';
+import {
+  INVITE_FRIENDSHIP,
+  INVITE_REDEEM_WINDOW_DAYS,
+  PREMIUM_SOURCE,
+  REDEEM_OUTCOME,
+  redeemInviteResponseSchema,
+} from '@aido/api';
 import type { PremiumAccess } from '@src/features/subscription/domains/premium-access.model';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
@@ -74,16 +80,19 @@ export const InviteRedemptionPolicy = {
         () => 'already-friends' as const,
       )
       .with(
-        { result: { friendship: 'FRIENDS' }, hasReward: true },
+        { result: { friendship: INVITE_FRIENDSHIP.FRIENDS }, hasReward: true },
         () => 'friends-with-reward' as const,
       )
       .with(
-        { result: { friendship: 'REQUESTED' }, hasReward: true },
+        { result: { friendship: INVITE_FRIENDSHIP.REQUESTED }, hasReward: true },
         () => 'requested-with-reward' as const,
       )
-      .with({ result: { friendship: 'FRIENDS' }, hasReward: false }, () => 'friends-only' as const)
       .with(
-        { result: { friendship: 'REQUESTED' }, hasReward: false },
+        { result: { friendship: INVITE_FRIENDSHIP.FRIENDS }, hasReward: false },
+        () => 'friends-only' as const,
+      )
+      .with(
+        { result: { friendship: INVITE_FRIENDSHIP.REQUESTED }, hasReward: false },
         () => 'requested-only' as const,
       )
       .exhaustive();
@@ -114,8 +123,14 @@ export const InviteRedemptionPolicy = {
    */
   rewardStart(premiumAccess: PremiumAccess) {
     return match({ source: premiumAccess.source, hasBankedDays: premiumAccess.bankedDays > 0 })
-      .with({ source: 'STORE', hasBankedDays: true }, () => 'after-subscription' as const)
-      .with({ source: 'GRANT', hasBankedDays: true }, () => 'after-current-reward' as const)
+      .with(
+        { source: PREMIUM_SOURCE.STORE, hasBankedDays: true },
+        () => 'after-subscription' as const,
+      )
+      .with(
+        { source: PREMIUM_SOURCE.GRANT, hasBankedDays: true },
+        () => 'after-current-reward' as const,
+      )
       .otherwise(() => 'now' as const);
   },
 

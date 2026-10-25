@@ -455,6 +455,7 @@ function InviteProgressMessage() {
     .with('monthly-cap-reached', () => (
       <Text size="b4" shade={7}>
         {t('pawPrintBoard.progress.monthlyCapReached', {
+          windowDays: InvitePolicy.premiumCapWindowDays(),
           days: InvitePolicy.monthlyPremiumCapDays(),
         })}
       </Text>

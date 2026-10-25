@@ -1,3 +1,4 @@
+import { PREMIUM_SOURCE } from '@aido/api';
 import { invalidatePremiumAiQueries } from '@src/features/ai/queries/ai-cache';
 import { invalidateMemoResourceLimit } from '@src/features/memo/queries/memo-cache';
 import { invalidateNudgeLimit } from '@src/features/nudge/queries/nudge-cache';
@@ -63,12 +64,12 @@ export async function syncMeUntilStorePremium(
   { delays = STORE_PREMIUM_SYNC_DELAYS, wait = delay }: SyncStorePremiumOptions = {},
 ) {
   for (const ms of delays) {
-    if (getCachedMe(queryClient)?.premiumAccess.source === 'STORE') {
+    if (getCachedMe(queryClient)?.premiumAccess.source === PREMIUM_SOURCE.STORE) {
       return true;
     }
     await wait(ms);
     await queryClient.refetchQueries({ queryKey: USER_QUERY_KEYS.me(), exact: true });
   }
 
-  return getCachedMe(queryClient)?.premiumAccess.source === 'STORE';
+  return getCachedMe(queryClient)?.premiumAccess.source === PREMIUM_SOURCE.STORE;
 }

@@ -171,6 +171,7 @@ function InviteRewardNotice() {
       </NoticeRow>
       <NoticeRow>
         {t('myInvite.notice.cap', {
+          windowDays: InvitePolicy.premiumCapWindowDays(),
           monthly: InvitePolicy.monthlyPremiumCapDays(),
           total: InvitePolicy.totalPremiumCapDays(),
         })}

@@ -1,3 +1,4 @@
+import { PREMIUM_SOURCE } from '@aido/api';
 import type { User } from '@src/features/user/domains/user.model';
 import { match, P } from 'ts-pattern';
 
@@ -154,7 +155,7 @@ export function toSubscriptionReceiptViewModel(
 
   return match({ role: user.role, source: access.source })
     .with({ role: 'ADMIN' }, () => toAdminReceipt(access))
-    .with({ source: 'GRANT' }, () => toRewardReceipt(access, context))
-    .with({ source: P.union('STORE', null) }, () => toPaidReceipt(access, context))
+    .with({ source: PREMIUM_SOURCE.GRANT }, () => toRewardReceipt(access, context))
+    .with({ source: P.union(PREMIUM_SOURCE.STORE, null) }, () => toPaidReceipt(access, context))
     .exhaustive();
 }

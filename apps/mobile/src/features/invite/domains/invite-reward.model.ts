@@ -3,19 +3,20 @@ import {
   INVITER_REWARD_MILESTONES,
   inviteRewardSchema,
   REWARD_TYPE,
+  REWARD_TYPE_UNKNOWN,
 } from '@aido/api';
 import { sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
 const UnknownInviteRewardSchema = z.object({
-  rewardType: z.literal('UNKNOWN'),
+  rewardType: z.literal(REWARD_TYPE_UNKNOWN),
   quantity: z.number(),
 });
 
 // 구버전 앱이 새 보상 종류를 받아도 깨지지 않게 UNKNOWN으로 흡수한다
 export const InviteRewardSchema = z
   .union([inviteRewardSchema, UnknownInviteRewardSchema])
-  .catch({ rewardType: 'UNKNOWN', quantity: 0 });
+  .catch({ rewardType: REWARD_TYPE_UNKNOWN, quantity: 0 });
 
 export type InviteReward = z.output<typeof InviteRewardSchema>;
 

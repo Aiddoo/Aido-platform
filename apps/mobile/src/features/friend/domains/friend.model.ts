@@ -1,4 +1,9 @@
-import { FOLLOW_LIMITS } from '@aido/api';
+import {
+  FOLLOW_LIMITS,
+  type GetFollowsQuery,
+  USER_SEARCH_QUERY_LENGTH,
+  userTagParamSchema,
+} from '@aido/api';
 import { friendLimitErrorDetailsSchema } from '@aido/api/errors';
 import { z } from 'zod';
 
@@ -35,24 +40,18 @@ export type SearchedUser = z.infer<typeof searchedUserSchema>;
 
 const sendRequestResultSchema = z.object({ autoAccepted: z.boolean() });
 export type SendRequestResult = z.infer<typeof sendRequestResultSchema>;
-const paginationParamsSchema = z.object({
-  cursor: z.string().optional(),
-  limit: z.number().optional(),
-});
-export type PaginationParams = z.infer<typeof paginationParamsSchema>;
+/** 친구·요청 목록 페이지 입력. 생략하면 서버 기본값(limit 20)을 쓴다 */
+export type PaginationParams = Partial<GetFollowsQuery>;
 const friendSearchInputSchema = z.object({ query: z.string() });
 type FriendSearchInput = z.infer<typeof friendSearchInputSchema>;
 
-/** 검색어 최소 길이 (서버 searchUsersQuerySchema q.min(2)와 동일) */
-export const SEARCH_MIN_QUERY_LENGTH = 2;
-
-/** userTag: 8자리 영문 대문자·숫자만 허용 (@aido/api userTagParamSchema와 동일) */
+/** userTag: 서버 경로 검증(userTagParamSchema)과 같은 규칙 */
 export function isValidTag(tag: string): boolean {
-  return /^[A-Z0-9]{8}$/.test(tag.trim());
+  return userTagParamSchema.shape.userTag.safeParse(tag.trim()).success;
 }
 
 export function isValidSearchQuery(query: string): boolean {
-  return query.trim().length >= SEARCH_MIN_QUERY_LENGTH;
+  return query.trim().length >= USER_SEARCH_QUERY_LENGTH.MIN;
 }
 
 export function hasValidUserTag(user: Pick<SearchedUser, 'userTag'>): boolean {

@@ -1,4 +1,9 @@
-import { INVITE_QUALIFICATION, invitedFriendResponseSchema } from '@aido/api';
+import {
+  INVITE_QUALIFICATION,
+  invitedFriendResponseSchema,
+  REDEMPTION_STATUS,
+  REDEMPTION_STATUS_UNKNOWN,
+} from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -18,7 +23,7 @@ export function orderByJoinedAtDesc(friend: InvitedFriend) {
 
 // 발자국을 기다리는 친구가 먼저 보이게 한다. orderByJoinedAtDesc와 함께 쓴다
 export function orderByWaitingFirst(friend: InvitedFriend) {
-  return friend.status === 'JOINED' ? 0 : 1;
+  return friend.status === REDEMPTION_STATUS.JOINED ? 0 : 1;
 }
 
 export function calculateActiveDaysLeft(activeDays: number, requiredDays: number) {
@@ -63,10 +68,10 @@ export const InvitedFriendPolicy = {
   /** 목록 행 칩: 발자국을 찍었는지, 기다리는 중인지, 보상에서 빠졌는지 */
   pawPrintState(friend: InvitedFriend) {
     return match(friend.status)
-      .with('QUALIFIED', 'REWARDED', () => 'stamped' as const)
-      .with('JOINED', () => 'waiting' as const)
-      .with('REJECTED', () => 'excluded' as const)
-      .with('UNKNOWN', () => 'unknown' as const)
+      .with(REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REWARDED, () => 'stamped' as const)
+      .with(REDEMPTION_STATUS.JOINED, () => 'waiting' as const)
+      .with(REDEMPTION_STATUS.REJECTED, () => 'excluded' as const)
+      .with(REDEMPTION_STATUS_UNKNOWN, () => 'unknown' as const)
       .exhaustive();
   },
 };
