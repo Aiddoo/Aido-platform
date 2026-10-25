@@ -46,6 +46,7 @@
     "start": "Start"
   },
   "aiReview": {
+    "titleLabel": "To-do title",
     "analyzing": "Analyzing your memo...",
     "limitTitle": "You've used all your AI credits this month",
     "parseFailed": "Parsing failed",

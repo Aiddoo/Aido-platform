@@ -45,6 +45,7 @@
     "start": "시작하기"
   },
   "aiReview": {
+    "titleLabel": "할 일 제목",
     "analyzing": "메모를 분석하고 있어요...",
     "limitTitle": "이번 달 AI 사용 횟수를 모두 사용했어요",
     "parseFailed": "파싱에 실패했어요",

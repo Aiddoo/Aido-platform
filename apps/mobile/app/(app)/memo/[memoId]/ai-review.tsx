@@ -1,8 +1,9 @@
 import { AI_PARSE_LIMITS } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
-import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { MemoTodoEditor } from '@src/features/memo/components/memo-todo-editor';
+import { memoReviewFormSchema } from '@src/features/memo/domains/memo-review-form.schema';
 import {
   memoScreenParamsSchema,
   useMemoScreenParams,
@@ -25,14 +26,13 @@ import { impactFeedback } from '@src/shared/utils/haptics';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { FormProvider, useFieldArray, useForm, useFormState } from 'react-hook-form';
 import { ActivityIndicator } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
-type TodoWithId = ParsedMemoTodo & { _key: string };
-
-/** 키보드 위에 붙는 생성 버튼(56)과 여백만큼 더 올려 고치는 제목이 버튼에 가리지 않게 한다 */
-const FOCUSED_TITLE_BOTTOM_OFFSET = 72;
+/** 고치는 제목을 키보드 위 생성 버튼보다 이만큼 더 위에 둔다 */
+const FOCUSED_TITLE_GAP = 16;
 
 function AiReviewScreen() {
   const { t } = useTranslation('memo');
@@ -43,11 +43,17 @@ function AiReviewScreen() {
   const navigate = useSingleTap(router.navigate);
   const parsedResult = getParsedMemo(queryClient, { memoId });
 
-  const nextId = useRef(0);
-  const [todos, setTodos] = useState<TodoWithId[]>(
-    () => parsedResult?.todos.map((todo) => ({ ...todo, _key: `todo-${nextId.current++}` })) ?? [],
-  );
+  const formMethods = useForm({
+    resolver: zodResolver(memoReviewFormSchema),
+    defaultValues: { todos: parsedResult?.todos ?? [] },
+    mode: 'onChange',
+  });
+  const { control, handleSubmit } = formMethods;
+  const { fields, remove } = useFieldArray({ control, name: 'todos' });
+  const { isValid } = useFormState({ control });
   const convertMutation = useMutation(useConvertMemoToTodosMutationOptions());
+  // 글꼴 크기에 따라 달라지는 실제 버튼 높이만큼 올려 큰 글꼴·작은 화면에서도 제목이 버튼에 가리지 않게 한다
+  const [submitButtonHeight, setSubmitButtonHeight] = useState(0);
 
   useEffect(() => {
     if (!parsedResult) {
@@ -55,20 +61,12 @@ function AiReviewScreen() {
     }
   }, [parsedResult, goBack]);
 
-  const updateTodo = (index: number, updates: Partial<ParsedMemoTodo>) => {
-    setTodos((prev) => prev.map((todo, i) => (i === index ? { ...todo, ...updates } : todo)));
-  };
-
   const handleRemoveTodo = (index: number) => {
     impactFeedback(ImpactFeedbackStyle.Light);
-    setTodos((prev) => prev.filter((_, i) => i !== index));
+    remove(index);
   };
 
-  const handleConfirm = () => {
-    if (todos.length === 0) {
-      return;
-    }
-
+  const handleConfirm = handleSubmit(({ todos }) => {
     convertMutation.mutate(
       {
         memoId,
@@ -81,13 +79,13 @@ function AiReviewScreen() {
         },
       },
     );
-  };
+  });
 
   if (!parsedResult) {
     return null;
   }
 
-  if (todos.length === 0) {
+  if (fields.length === 0) {
     return (
       <Result
         title={t('aiReview.noTodosTitle')}
@@ -97,11 +95,11 @@ function AiReviewScreen() {
   }
 
   return (
-    <>
+    <FormProvider {...formMethods}>
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 16 }}
-        bottomOffset={FOCUSED_TITLE_BOTTOM_OFFSET}
+        bottomOffset={submitButtonHeight + FOCUSED_TITLE_GAP}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
@@ -113,24 +111,20 @@ function AiReviewScreen() {
             })}
           </Text>
         )}
-        {todos.map((todo, index) => (
-          <MemoTodoEditor
-            key={todo._key}
-            todo={todo}
-            onChange={(updates) => updateTodo(index, updates)}
-            onRemove={() => handleRemoveTodo(index)}
-          />
+        {fields.map((field, index) => (
+          <MemoTodoEditor key={field.id} index={index} onRemove={() => handleRemoveTodo(index)} />
         ))}
       </KeyboardAwareScrollView>
 
       <KeyboardAdaptiveButton
-        onPress={handleConfirm}
-        isDisabled={todos.length === 0}
+        onLayout={(event) => setSubmitButtonHeight(event.nativeEvent.layout.height)}
+        onPress={() => handleConfirm()}
+        isDisabled={!isValid}
         isLoading={convertMutation.isPending}
       >
-        {t('aiReview.createCount', { count: todos.length })}
+        {t('aiReview.createCount', { count: fields.length })}
       </KeyboardAdaptiveButton>
-    </>
+    </FormProvider>
   );
 }
 
