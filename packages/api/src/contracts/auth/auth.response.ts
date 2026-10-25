@@ -136,17 +136,17 @@ export const currentUserSchema = z
       .nullable()
       .optional()
       .describe(
-        "프리미엄 출처 (STORE: 스토어 구독, GRANT: 초대 등 보상 기간, 프리미엄이 아니면 null, 구버전 서버는 생략)",
+        "프리미엄 출처입니다. STORE는 스토어 구독(RevenueCat 프로모션 포함), GRANT는 초대 등 서버가 준 보상 기간, 둘 다 없으면 null입니다. ADMIN은 role로 모든 기능이 무제한이고 이 필드는 스토어·보상 기간만 반영합니다. 구버전 서버는 생략합니다.",
       ),
     premiumEndsAt: nullableDatetimeSchema
       .optional()
       .describe(
-        "프리미엄 전체가 끝나는 시각입니다 (ISO 8601 UTC). 지금 기간 뒤에 쌓아 둔 보상 일수를 이어 붙인 끝이며, 자동 갱신 중인 구독 뒤의 보상은 갱신 유예(3시간)가 끝난 뒤부터 잇습니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
+        "프리미엄 전체가 끝나는 시각입니다 (ISO 8601 UTC). 쌓아 둔 보상 일수까지 이어 붙인 끝입니다. STORE에 쌓아 둔 보상이 없으면 스토어 만료 시각, 있으면 스토어가 끝나는 시각(취소했으면 만료 시각, 자동 갱신 중이면 만료 뒤 유예 3시간)부터 쌓아 둔 일수를 더한 시각입니다. GRANT면 진행 중인 보상 기간 끝에 쌓아 둔 일수를 더한 시각입니다. 지금 기간만의 끝은 premiumPeriodEndsAt을 씁니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
       ),
     premiumPeriodEndsAt: nullableDatetimeSchema
       .optional()
       .describe(
-        "지금 출처의 기간이 끝나는 시각입니다 (ISO 8601 UTC). STORE면 스토어 구독 만료 시각(자동 갱신이면 다음 결제 시각), GRANT면 진행 중인 보상 기간의 끝입니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
+        "지금 출처의 기간만 끝나는 시각입니다 (ISO 8601 UTC). 쌓아 둔 보상은 넣지 않습니다. STORE면 스토어 구독 만료 시각(자동 갱신이면 다음 결제 예정 시각), GRANT면 진행 중인 보상 기간의 끝입니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
       ),
     willRenew: z
       .boolean()
