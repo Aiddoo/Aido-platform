@@ -30,6 +30,8 @@ import type { ErrorDefinition } from "./types.js";
  * - WEATHER (1900-1999): 날씨
  * - MEMO    (2000-2099): 메모
  * - INVITE  (2100-2199): 친구 초대
+ * - BLOCK   (2200-2249): 사용자 차단
+ * - REPORT  (2250-2299): 사용자 신고
  */
 export const ErrorCode = {
   // =========================================================================
@@ -302,6 +304,30 @@ export const ErrorCode = {
   INVITE_2105: "INVITE_2105",
   /** 친구 자리가 꽉 차서 친구를 맺을 수 없어요 */
   INVITE_2106: "INVITE_2106",
+
+  // =========================================================================
+  // 사용자 차단 (BLOCK_2200-2249)
+  // =========================================================================
+  /** 자기 자신은 차단할 수 없습니다 */
+  BLOCK_2201: "BLOCK_2201",
+  /** 차단할 사용자를 찾을 수 없습니다 */
+  BLOCK_2202: "BLOCK_2202",
+  /** 차단한 사용자입니다 */
+  BLOCK_2203: "BLOCK_2203",
+  /** 차단 관계라 이 사용자와 상호작용할 수 없습니다 */
+  BLOCK_2204: "BLOCK_2204",
+
+  // =========================================================================
+  // 사용자 신고 (REPORT_2250-2299)
+  // =========================================================================
+  /** 자기 자신은 신고할 수 없습니다 */
+  REPORT_2251: "REPORT_2251",
+  /** 신고할 사용자를 찾을 수 없습니다 */
+  REPORT_2252: "REPORT_2252",
+  /** 신고 대상이 올바르지 않습니다 */
+  REPORT_2253: "REPORT_2253",
+  /** 오늘 신고할 수 있는 횟수를 모두 사용했습니다 */
+  REPORT_2254: "REPORT_2254",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1369,5 +1395,64 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     description:
       "초대한 사람과 초대받은 사람 모두 친구 수 한도에 도달해 친구 요청도 보낼 수 없습니다.",
     httpStatus: HttpStatus.FORBIDDEN,
+  },
+
+  // =========================================================================
+  // 사용자 차단 (BLOCK_2200-2249)
+  // =========================================================================
+  [ErrorCode.BLOCK_2201]: {
+    code: "BLOCK_2201",
+    message: "자기 자신은 차단할 수 없습니다.",
+    description: "차단하는 사용자와 차단 대상이 같습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.BLOCK_2202]: {
+    code: "BLOCK_2202",
+    message: "차단할 사용자를 찾을 수 없습니다.",
+    description: "차단 대상 사용자가 없거나 탈퇴했습니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.BLOCK_2203]: {
+    code: "BLOCK_2203",
+    message: "차단한 사용자입니다. 차단을 해제한 뒤 다시 시도해주세요.",
+    description:
+      "요청한 사용자가 대상을 차단한 상태입니다. 차단을 해제해야 친구 요청을 보낼 수 있습니다. 차단당한 쪽에는 이 코드를 보내지 않습니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.BLOCK_2204]: {
+    code: "BLOCK_2204",
+    message: "이 사용자와는 상호작용할 수 없습니다.",
+    description:
+      "두 사용자 중 한 명이 다른 사람을 차단해 답글·좋아요 같은 상호작용을 막았습니다. 누가 차단했는지는 알리지 않습니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+
+  // =========================================================================
+  // 사용자 신고 (REPORT_2250-2299)
+  // =========================================================================
+  [ErrorCode.REPORT_2251]: {
+    code: "REPORT_2251",
+    message: "자기 자신은 신고할 수 없습니다.",
+    description: "신고한 사용자와 신고 대상 사용자가 같습니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.REPORT_2252]: {
+    code: "REPORT_2252",
+    message: "신고할 사용자를 찾을 수 없습니다.",
+    description: "신고 대상 사용자가 없거나 탈퇴했습니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.REPORT_2253]: {
+    code: "REPORT_2253",
+    message: "신고 대상이 올바르지 않습니다.",
+    description:
+      "신고 대상 종류와 콘텐츠 ID 형식이 맞지 않습니다. 할 일·콕·응원은 양의 정수, 댓글은 CUID, 프로필은 ID 없이 보냅니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.REPORT_2254]: {
+    code: "REPORT_2254",
+    message: "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
+    description: "최근 24시간 동안 접수한 신고 수가 한도에 도달했습니다.",
+    httpStatus: HttpStatus.TOO_MANY_REQUESTS,
   },
 };

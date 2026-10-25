@@ -44,6 +44,12 @@ export const todoCommentSchema = z
       .describe("댓글 작성자 (삭제되어 작성자를 표시하지 않으면 null)"),
     content: z.string().nullable().describe("댓글 내용 (삭제된 댓글이면 null)"),
     isDeleted: z.boolean().describe("댓글 삭제 여부"),
+    isAuthorBlocked: z
+      .boolean()
+      .optional()
+      .describe(
+        "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+      ),
     isEdited: z.boolean().describe("댓글 수정 여부"),
     likeCount: z.number().int().nonnegative().describe("활성 좋아요 수"),
     /** 직계 답글 수 (자손 총합이 아니다) */
