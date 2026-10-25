@@ -1,5 +1,6 @@
 {
   "ios": {
+    "CFBundleDisplayName": "Aido",
     "NSMicrophoneUsageDescription": "Aido uses the microphone so you can add to-dos by voice.",
     "NSSpeechRecognitionUsageDescription": "Aido turns what you say into text so you can add to-dos by voice. Your voice may be processed by Apple speech recognition.",
     "NSPhotoLibraryAddUsageDescription": "Aido saves images you share to your photo library.",
@@ -12,6 +13,7 @@
     }
   },
   "android": {
+    "app_name": "Aido",
     "widget_aidotodaysummary_label": "Today's progress",
     "widget_aidotodaysummary_description": "See today's to-do progress and your streak at a glance",
     "widget_aidotodaylist_label": "Today's to-dos",

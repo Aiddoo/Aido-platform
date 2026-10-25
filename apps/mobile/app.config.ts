@@ -164,7 +164,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: ICON,
     userInterfaceStyle: 'automatic',
 
-    // iOS 권한 다이얼로그 등 네이티브 문구 다국어 (InfoPlist.strings)
+    // 홈 화면 앱 이름(iOS CFBundleDisplayName, Android app_name)과 iOS 권한 다이얼로그 문구 다국어 (InfoPlist.strings)
     locales: {
       ko: './native-locales/ko.json',
       en: './native-locales/en.json',

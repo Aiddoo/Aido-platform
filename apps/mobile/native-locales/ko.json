@@ -1,5 +1,6 @@
 {
   "ios": {
+    "CFBundleDisplayName": "아이두",
     "NSMicrophoneUsageDescription": "말로 할 일을 입력할 때 마이크를 써요.",
     "NSSpeechRecognitionUsageDescription": "말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.",
     "NSPhotoLibraryAddUsageDescription": "공유한 이미지를 사진 보관함에 저장할 때 써요.",
@@ -12,6 +13,7 @@
     }
   },
   "android": {
+    "app_name": "아이두",
     "widget_aidotodaysummary_label": "오늘 진행률",
     "widget_aidotodaysummary_description": "오늘 할 일 진행률과 연속 달성 기록을 한눈에 확인해요",
     "widget_aidotodaylist_label": "오늘 할 일",
