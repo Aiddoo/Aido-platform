@@ -7,6 +7,7 @@ import {
   inviteCodeParamSchema,
   inviteRewardSchema,
   inviterRewardMilestoneSchema,
+  invitedFriendResponseSchema,
   redeemInviteResponseSchema,
   type RewardAmount,
 } from "../src/index.js";
@@ -175,5 +176,33 @@ describe("getInvitedFriendsQuerySchema", () => {
 
     // Then
     expect(result.success).toBe(false);
+  });
+});
+
+describe("invitedFriendResponseSchema", () => {
+  const friend = {
+    userId: "clz7x5p8k0005qz0z8z8z8z8z",
+    name: null,
+    userTag: "JOHN2026",
+    profileImage: null,
+    status: "REJECTED",
+    activeDayCount: 1,
+    joinedAt: "2026-11-02T10:30:00.000Z",
+    qualifiedAt: null,
+  };
+
+  it.each([
+    { name: "구버전 서버처럼 사유를 생략한", rejectionReason: undefined, expected: true },
+    { name: "기한이 지나 제외된", rejectionReason: "EXPIRED", expected: true },
+    { name: "모르는 사유가 온", rejectionReason: "UNKNOWN", expected: false },
+  ])("$name 항목의 허용 여부는 $expected다", ({ rejectionReason, expected }) => {
+    // Given
+    const response = { ...friend, rejectionReason };
+
+    // When
+    const result = invitedFriendResponseSchema.safeParse(response);
+
+    // Then
+    expect(result.success).toBe(expected);
   });
 });

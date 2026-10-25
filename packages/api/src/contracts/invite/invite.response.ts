@@ -6,6 +6,7 @@ import {
   inviteCodeFormatSchema,
   inviteFriendshipSchema,
   inviteRewardSchema,
+  redemptionRejectionReasonSchema,
   redemptionStatusSchema,
 } from "./invite.common.js";
 
@@ -133,6 +134,10 @@ export const invitedFriendResponseSchema = z
       .describe("할 일을 완료한 서로 다른 날짜 수 (초대받은 사람 시간대 기준, 음이 아닌 정수)"),
     joinedAt: datetimeSchema.describe("초대 수락 시각 (ISO 8601 UTC)"),
     qualifiedAt: nullableDatetimeSchema.describe("사용 시작 시각 (ISO 8601 UTC, 아직이면 null)"),
+    rejectionReason: redemptionRejectionReasonSchema
+      .nullable()
+      .optional()
+      .describe("REJECTED일 때만 보상 제외 사유, 그 밖의 상태는 null (구버전 서버는 생략)"),
   })
   .meta({
     example: {
@@ -153,7 +158,7 @@ export const invitedFriendsListResponseSchema = z
   .object({
     items: z
       .array(invitedFriendResponseSchema)
-      .describe("초대한 친구 목록 (joinedAt 내림차순, 같으면 userId 내림차순)"),
+      .describe("초대한 친구 목록 (joinedAt 내림차순, 같으면 수락 기록 순서의 역순)"),
     totalCount: z.number().int().nonnegative().describe("전체 초대한 친구 수 (음이 아닌 정수)"),
     hasMore: z.boolean().describe("다음 페이지 존재 여부"),
   })

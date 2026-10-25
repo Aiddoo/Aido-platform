@@ -4,6 +4,7 @@ import {
   INVITE_CODE,
   INVITE_CODE_PATTERN,
   INVITE_FRIENDSHIP,
+  REDEMPTION_REJECTION_REASON,
   REDEMPTION_STATUS,
   REWARD_TYPE,
 } from "../../vocabulary/invite.constants.js";
@@ -26,6 +27,12 @@ export const inviteCodeSchema = z
   .describe("초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)");
 
 export type InviteCode = z.output<typeof inviteCodeSchema>;
+
+export const redemptionRejectionReasonSchema = z
+  .enum(REDEMPTION_REJECTION_REASON)
+  .describe(
+    "보상 제외 사유 (EXPIRED: 기한 안에 사용을 시작하지 않음, INVITER_MONTHLY_CAP: 초대한 사람 월 상한)",
+  );
 
 export const redemptionStatusSchema = z
   .enum(REDEMPTION_STATUS)
