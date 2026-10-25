@@ -33,6 +33,7 @@ function normalizeV1(
       })),
     }),
     noAction: false,
+    omittedTodoCount: 0,
     warnings: [],
   };
 }

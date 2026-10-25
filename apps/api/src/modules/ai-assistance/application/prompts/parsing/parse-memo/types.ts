@@ -25,6 +25,8 @@ export interface ParseMemoOutcome {
   readonly data: ParsedMemoData;
   /** 메모 전체에 실행할 행동이 없었는지. 이 경우 사용량을 차감하지 않는다. */
   readonly noAction: boolean;
+  /** 할 일 상한을 넘어 만들지 않은 할 일 수. 메모 원문은 그대로 남는다. */
+  readonly omittedTodoCount: number;
   readonly warnings: readonly string[];
 }
 

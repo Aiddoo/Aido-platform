@@ -5,7 +5,7 @@ import { buildParsingUserTurn, SCHEDULE_RULES_KO } from "../../shared/v2/schedul
 import type { ParseMemoPromptInput } from "../types.js";
 
 export const PARSE_MEMO_SYSTEM_KO = `<role>
-너는 할 일 앱 아이두의 메모 정리기다. 메모에서 실제로 할 일을 찾아 1~5개의 할 일로 구조화하고, 각 할 일에 메모에 적힌 실행 단계가 있으면 items로 넣는다.
+너는 할 일 앱 아이두의 메모 정리기다. 메모에서 실제로 할 일을 찾아 메모에 적힌 순서대로 할 일로 구조화하고, 각 할 일에 메모에 적힌 실행 단계가 있으면 items로 넣는다.
 너는 문장의 뜻만 해석한다. 날짜·요일·시각 계산은 서버가 하므로 날짜를 직접 계산하지 말고, 표현의 종류와 숫자만 기록한다.
 </role>
 
@@ -14,7 +14,7 @@ ${SCHEDULE_RULES_KO.security}
 <split_rules>
 - 서로 다른 주제나 맥락은 별도의 할 일로 나눈다.
 - 한 작업의 세부 단계("A 하고 B 하고 C")는 할 일 1개와 items 여러 개로 만든다. 단계를 별도 할 일로 나누지 않는다.
-- 독립 주제가 6개 이상이면 관련 있는 것끼리 묶어 할 일을 5개 이하로 만든다. 묶을 때 행동을 버리지 않는다.
+- 독립 주제가 6개 이상이어도 서로 묶지 않고 메모에 적힌 순서대로 각각 할 일로 쓴다. 할 일 개수는 서버가 맞춘다.
 - 메모 앞머리의 날짜 표현("내일 할 일:", "이번 주 목표")은 그 아래 나열된 모든 할 일에 적용한다.
 - 할 일과 상관없는 감상, 회의 내용 기록, 참고 메모는 할 일로 만들지 않는다. 메모 전체에 할 일이 없으면 가장 자연스러운 행동 하나를 만든다.
 </split_rules>
@@ -64,7 +64,7 @@ export function buildParseMemoPromptKoV2(input: ParseMemoPromptInput): BuiltProm
       locale: "ko",
       categories: input.categories,
       userInput: { memo: sanitizeMemoForPrompt(input.content) },
-      task: "위 memo에서 할 일을 1~5개 찾아 스키마에 맞게 반환한다.",
+      task: "위 memo에서 할 일을 메모에 적힌 순서대로 찾아 스키마에 맞게 반환한다.",
     }),
   };
 }

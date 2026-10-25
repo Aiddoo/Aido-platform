@@ -15,7 +15,6 @@ import type { TodoDraft } from "../../../domain/types/parsing/todo-draft.types.j
 const TITLE_MAX_LENGTH = 200;
 const MEMO_MAX_TODOS = 5;
 const MEMO_MAX_ITEMS = 5;
-const MERGED_ITEM_SEPARATOR = " · ";
 
 /** 모델 대상 명령만 있는 입력에 앱 언어로 보여 줄 제목 */
 export const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
@@ -26,7 +25,7 @@ export const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
 export type NormalizationWarning =
   | "TITLE_FALLBACK"
   | "TODOS_TRUNCATED"
-  | "ITEMS_MERGED"
+  | "ITEMS_TRUNCATED"
   | "INVALID_DATE"
   | "INVALID_TIME"
   | "END_BEFORE_START"
@@ -103,14 +102,19 @@ export function normalizeTodoDraft(
   };
 }
 
-/** 메모 draft: 앞의 5개 할 일만 입력 순서대로 두고, 항목은 5개로 맞추며, 카테고리를 보정한다. */
+/** 메모 draft: 할 일은 합치지 않고 입력 순서대로 앞의 5개만 두며, 만들지 않은 할 일 수를 함께 돌려준다. */
 export function normalizeMemoDraft(
   todos: readonly (TodoDraft & { readonly items: readonly { readonly title: string }[] })[],
   context: DraftNormalizeContext & {
     readonly fallbackTitle: string;
     readonly defaultCategoryId: number;
   },
-): { data: ParsedMemoData; noAction: boolean; warnings: NormalizationWarning[] } {
+): {
+  data: ParsedMemoData;
+  noAction: boolean;
+  omittedTodoCount: number;
+  warnings: NormalizationWarning[];
+} {
   const warnings: NormalizationWarning[] = [];
   const tasks = todos.filter((todo) => todo.intent === "TASK");
   if (tasks.length > MEMO_MAX_TODOS) warnings.push("TODOS_TRUNCATED");
@@ -125,14 +129,19 @@ export function normalizeMemoDraft(
       draft.items.map((item) => cleanTitle(item.title)),
       normalized.todo.title,
     );
-    if (items.merged) warnings.push("ITEMS_MERGED");
+    if (items.truncated) warnings.push("ITEMS_TRUNCATED");
     return {
       ...normalized.todo,
       categoryId: normalized.todo.categoryId ?? context.defaultCategoryId,
       items: items.titles.map((itemTitle) => ({ title: itemTitle })),
     };
   });
-  return { data: parsedMemoDataSchema.parse({ todos: parsed }), noAction, warnings };
+  return {
+    data: parsedMemoDataSchema.parse({ todos: parsed }),
+    noAction,
+    omittedTodoCount: tasks.length - kept.length,
+    warnings,
+  };
 }
 
 function noActionDraft(): TodoDraft {
@@ -145,14 +154,11 @@ function noActionDraft(): TodoDraft {
   };
 }
 
-/** 빈 항목·제목 반복을 빼고, 5개를 넘으면 5번째부터 하나로 잇는다. */
+/** 빈 항목·제목 반복을 빼고 입력 순서대로 앞의 5개만 둔다. */
 function normalizeItems(
   titles: readonly string[],
   todoTitle: string,
-): { titles: string[]; merged: boolean } {
+): { titles: string[]; truncated: boolean } {
   const usable = titles.filter((title) => title !== "" && title !== todoTitle);
-  if (usable.length <= MEMO_MAX_ITEMS) return { titles: usable, merged: false };
-  const head = usable.slice(0, MEMO_MAX_ITEMS - 1);
-  const tail = cleanTitle(usable.slice(MEMO_MAX_ITEMS - 1).join(MERGED_ITEM_SEPARATOR));
-  return { titles: [...head, tail], merged: true };
+  return { titles: usable.slice(0, MEMO_MAX_ITEMS), truncated: usable.length > MEMO_MAX_ITEMS };
 }

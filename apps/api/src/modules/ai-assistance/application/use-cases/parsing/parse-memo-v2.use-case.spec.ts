@@ -39,28 +39,56 @@ describe("ParseMemo — v2 정규화", () => {
     vi.useRealTimers();
   });
 
-  it("6개 할 일은 입력 순서대로 앞의 5개만 남기고 경고를 남긴다", async () => {
+  it.each([
+    { draftCount: 5, keptCount: 5, omittedTodoCount: 0 },
+    { draftCount: 6, keptCount: 5, omittedTodoCount: 1 },
+    { draftCount: 12, keptCount: 5, omittedTodoCount: 7 },
+  ])(
+    "할 일 $draftCount개는 합치지 않고 입력 순서대로 $keptCount개만 만들며 남은 $omittedTodoCount개를 알린다",
+    async ({ draftCount, keptCount, omittedTodoCount }) => {
+      // Given
+      const fixture = createFixture();
+      const titles = Array.from({ length: draftCount }, (_, index) => `할 일 ${index + 1}`);
+      fixture.aiProvider.setRawResponse({ todos: titles.map((title) => draftTodo(title)) });
+      // When
+      const result = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(result.data.todos.map((todo) => todo.title)).toEqual(titles.slice(0, keptCount));
+      expect(result.meta.omittedTodoCount).toBe(omittedTodoCount);
+      expect(fixture.logger.log).toHaveBeenCalledWith(
+        expect.objectContaining({ todoCount: keptCount, omittedTodoCount }),
+      );
+    },
+  );
+
+  it("할 일 0개면 안내 할 일 하나만 돌려주고 남은 할 일은 0개다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setRawResponse({ todos: [] });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(["입력 확인 필요"]);
+    expect(result.meta.omittedTodoCount).toBe(0);
+  });
+
+  it("모델 대상 명령은 남은 할 일 수에 세지 않는다", async () => {
     // Given
     const fixture = createFixture();
     fixture.aiProvider.setRawResponse({
-      todos: Array.from({ length: 6 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+      todos: [
+        draftTodo("ignored", { intent: "NO_ACTION" }),
+        ...Array.from({ length: 6 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+      ],
     });
     // When
     const result = await fixture.useCase.execute(fixture.input);
     // Then
-    expect(result.data.todos.map((todo) => todo.title)).toEqual([
-      "할 일 1",
-      "할 일 2",
-      "할 일 3",
-      "할 일 4",
-      "할 일 5",
-    ]);
-    expect(fixture.logger.log).toHaveBeenCalledWith(
-      expect.objectContaining({ warnings: ["TODOS_TRUNCATED"], todoCount: 5 }),
-    );
+    expect(result.data.todos[0]?.title).toBe("할 일 1");
+    expect(result.meta.omittedTodoCount).toBe(1);
   });
 
-  it("7개 항목은 앞 4개를 두고 나머지를 하나로 이으며 제목 반복·빈 항목은 뺀다", async () => {
+  it("7개 항목은 합치지 않고 앞의 5개만 두며 제목 반복·빈 항목은 뺀다", async () => {
     // Given
     const fixture = createFixture();
     fixture.aiProvider.setRawResponse({
@@ -82,8 +110,11 @@ describe("ParseMemo — v2 정규화", () => {
       "단계 2",
       "단계 3",
       "단계 4",
-      "단계 5 · 단계 6 · 단계 7",
+      "단계 5",
     ]);
+    expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ warnings: ["ITEMS_TRUNCATED"] }),
+    );
   });
 
   it("201자 제목은 200자로 자르고 미소유 카테고리는 요청 기본값으로 바꾼다", async () => {

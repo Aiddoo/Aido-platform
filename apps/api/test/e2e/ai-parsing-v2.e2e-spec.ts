@@ -99,7 +99,7 @@ describe("AI 파싱 v2 E2E", () => {
     expect(await usage()).toBe(0);
   });
 
-  it("메모 draft는 할 일 5개·항목 5개로 맞추고 미소유 카테고리를 기본값으로 바꾼다", async () => {
+  it("메모 draft는 합치지 않고 할 일·항목을 앞의 5개까지 만들고 남은 할 일 수와 기본 카테고리를 돌려준다", async () => {
     // Given
     const draft = (title: string, items: string[] = []) => ({
       intent: "TASK",
@@ -127,18 +127,27 @@ describe("AI 파싱 v2 E2E", () => {
     // Then
     expect(response.status).toBe(200);
     const { todos } = response.body.data.data;
-    expect(todos).toHaveLength(5);
+    expect(todos.map((todo: { title: string }) => todo.title)).toEqual([
+      "발표 준비",
+      "할 일 2",
+      "할 일 3",
+      "할 일 4",
+      "할 일 5",
+    ]);
     expect(todos[0].items.map((item: { title: string }) => item.title)).toEqual([
       "a",
       "b",
       "c",
       "d",
-      "e · f",
+      "e",
     ]);
     expect(new Set(todos.map((todo: { categoryId: number }) => todo.categoryId))).toEqual(
       new Set([1]),
     );
-    expect(response.body.data.meta.promptVersion).toBe("parse-memo@v2");
+    expect(response.body.data.meta).toMatchObject({
+      promptVersion: "parse-memo@v2",
+      omittedTodoCount: 1,
+    });
     expect(await usage()).toBe(1);
   });
 });

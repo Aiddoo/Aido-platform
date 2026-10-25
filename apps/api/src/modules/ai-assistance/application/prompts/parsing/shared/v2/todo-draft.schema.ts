@@ -97,7 +97,7 @@ export const memoDraftSchema = z.object({
           .describe("Explicit sub-steps only; [] for a single action."),
       }),
     )
-    .describe("1-5 independent to-dos."),
+    .describe("Independent to-dos in memo order. Never group them."),
 });
 
 export type MemoDraft = z.infer<typeof memoDraftSchema>;

@@ -61,6 +61,14 @@ export const parseMemoMetaSchema = z.object({
     .string()
     .optional()
     .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@v2"). 구 서버 응답에는 없을 수 있다'),
+  omittedTodoCount: z
+    .number()
+    .int()
+    .nonnegative()
+    .optional()
+    .describe(
+      "할 일을 5개까지만 만들어 생략한 할 일 수입니다. 메모 원문은 그대로 남습니다. 구 서버 응답에는 없을 수 있습니다",
+    ),
 });
 
 export type ParseMemoMeta = z.infer<typeof parseMemoMetaSchema>;

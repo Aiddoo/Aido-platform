@@ -6132,6 +6132,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "description": "사용된 AI 모델명",
               "type": "string",
             },
+            "omittedTodoCount": {
+              "description": "할 일을 5개까지만 만들어 생략한 할 일 수입니다. 메모 원문은 그대로 남습니다. 구 서버 응답에는 없을 수 있습니다",
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer",
+            },
             "processingTimeMs": {
               "description": "AI 처리 시간 (밀리초)",
               "maximum": 9007199254740991,
@@ -14804,11 +14810,11 @@ curl https://api.aido.com/health
 | \`items\` | array | 서브투두 목록 (0-5개) |
 
 ## 📊 메타데이터 (\`meta\`)
-\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`)을 반환합니다.
+\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`), \`omittedTodoCount\`(5개를 넘어 만들지 않은 할 일 수)를 반환합니다.
 
 ## 🧠 AI 파싱 규칙
-- **별개 맥락/주제** → 별도 Todo로 분리 (최대 5개, 모델이 더 만들면 입력 순서대로 앞의 5개만 남깁니다)
-- **서브투두가 6개 이상** → 앞의 4개를 두고 나머지는 5번째 항목 하나로 이어 붙입니다
+- **별개 맥락/주제** → 별도 Todo로 분리합니다. 할 일은 합치지 않고 입력 순서대로 앞의 5개까지 만들며, 나머지 수는 \`meta.omittedTodoCount\`로 알립니다. 메모 원문은 그대로 남습니다
+- **서브투두가 6개 이상** → 합치지 않고 입력 순서대로 앞의 5개만 남깁니다
 - **날짜·시각** → parse-todo와 같은 규칙으로 서버가 사용자 시간대 기준으로 계산합니다
 - **모델 대상 명령만 있는 메모** → "입력 확인 필요" 할 일 1개로 응답하며 사용량을 차감하지 않습니다
 - **하나의 큰 작업 + 세부 단계** → 1개 Todo + 여러 items (서브투두)

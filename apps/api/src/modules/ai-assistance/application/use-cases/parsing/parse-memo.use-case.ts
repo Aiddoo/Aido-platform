@@ -24,10 +24,15 @@ import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
+/** parse-todo 메타에 상한을 넘어 만들지 않은 할 일 수를 더한다. */
+export interface ParseMemoMeta extends ParseTodoMeta {
+  omittedTodoCount: number;
+}
+
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
 export interface ParseMemoResult {
   data: ParsedMemoData;
-  meta: ParseTodoMeta;
+  meta: ParseMemoMeta;
 }
 
 /**
@@ -52,8 +57,8 @@ type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
 /**
  * 메모 → 다중 투두 파싱 use-case.
  *
- * parse-todo와 동일한 가용성/사용량/에러 규약을 따르되, 최대 5개 todo로 잘라내고
- * 미지 카테고리는 요청 기본 categoryId로 대체한다.
+ * parse-todo와 동일한 가용성/사용량/에러 규약을 따르되, 할 일은 합치지 않고 앞의 5개만 만들며
+ * 나머지 수를 meta.omittedTodoCount로 알린다. 미지 카테고리는 요청 기본 categoryId로 대체한다.
  */
 interface ParseMemoDependencies {
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
@@ -138,7 +143,7 @@ export class ParseMemo {
           defaultCategoryId: categoryId,
         },
       );
-      const { data } = value;
+      const { data, omittedTodoCount } = value;
       const charge = !value.noAction;
 
       this.#dependencies.logger.log({
@@ -147,11 +152,18 @@ export class ParseMemo {
           meta,
         ),
         todoCount: data.todos.length,
+        omittedTodoCount,
         itemCount: sumBy(data.todos, (todo) => todo.items.length),
         warnings: value.warnings,
       });
       return {
-        result: { data, meta: toParseMeta(meta, definition.promptVersion, Date.now() - startTime) },
+        result: {
+          data,
+          meta: {
+            ...toParseMeta(meta, definition.promptVersion, Date.now() - startTime),
+            omittedTodoCount,
+          },
+        },
         charge,
       };
     } catch (error) {
