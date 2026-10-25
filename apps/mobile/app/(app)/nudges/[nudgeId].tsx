@@ -4,7 +4,7 @@ import {
   blockUserConfirmHref,
   userReportSheetHref,
 } from '@src/features/moderation/utils/navigation/moderation-href';
-import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
+import { ThanksSummaryRow } from '@src/features/nudge/components/nudge-interactions/thanks-summary-row';
 import {
   type NudgeInteraction,
   NudgeInteractionPolicy,
@@ -140,7 +140,16 @@ function NudgeDetailScreen() {
                     {t('interaction.completedThanksHint')}
                   </Text>
                 )}
-                {status !== 'THANKED' && <NudgeThanksButton onPress={handleOpenThanksSheet} />}
+                {status !== 'THANKED' && (
+                  <QueryErrorBoundary resetKeys={[nudge.todoId]} fallback={() => null}>
+                    <Suspense fallback={<ThanksSummaryRow.Loading />}>
+                      <ThanksSummaryRow
+                        todoId={nudge.todoId}
+                        onThanksPress={handleOpenThanksSheet}
+                      />
+                    </Suspense>
+                  </QueryErrorBoundary>
+                )}
               </VStack>
             ))
             .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)

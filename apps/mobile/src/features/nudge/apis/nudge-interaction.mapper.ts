@@ -45,4 +45,6 @@ export const toNudgeThanksPreview = (dto: NudgeThanksPreviewResponse): NudgeThan
     name: recipient.name ?? recipient.userTag,
     profileImage: recipient.profileImage,
   })),
+  thankedRecipientCount: dto.thankedRecipientCount ?? 0,
+  lastThankedAt: dto.lastThankedAt == null ? null : new Date(dto.lastThankedAt),
 });

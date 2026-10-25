@@ -39,7 +39,29 @@ describe('감사 미리보기 페이지 변환', () => {
     // When
     const preview = toNudgeThanksPreview(dto);
     // Then
-    expect(preview).toMatchObject({ totalRecipients: 1, nextCursor: null, hasNext: false });
+    expect(preview).toMatchObject({
+      totalRecipients: 1,
+      nextCursor: null,
+      hasNext: false,
+      thankedRecipientCount: 0,
+      lastThankedAt: null,
+    });
+  });
+
+  test('감사한 친구 수와 마지막 감사 시각을 보존하고 시각은 Date로 변환한다', () => {
+    // Given
+    const dto = {
+      todoId: 1,
+      throughNudgeId: null,
+      recipients: [],
+      thankedRecipientCount: 3,
+      lastThankedAt: '2026-10-26T06:12:00.000Z',
+    };
+    // When
+    const preview = toNudgeThanksPreview(dto);
+    // Then
+    expect(preview.thankedRecipientCount).toBe(3);
+    expect(preview.lastThankedAt).toEqual(new Date('2026-10-26T06:12:00.000Z'));
   });
 
   test('페이지 메타데이터가 있으면 전체 인원과 다음 커서를 보존한다', () => {
