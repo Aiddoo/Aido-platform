@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { datetimeSchema, nullableDatetimeSchema } from "../../common/datetime.js";
 import { ACCOUNT_PROVIDERS, USER_ROLE, USER_STATUS } from "../../vocabulary/auth.constants.js";
+import { PREMIUM_SOURCE } from "../../vocabulary/subscription.constants.js";
 import { deviceTypeSchema, oauthProviderSchema } from "./auth.request.js";
 
 export const userStatusSchema = z.enum(USER_STATUS).describe("사용자 계정 상태");
@@ -110,6 +111,10 @@ export const subscriptionStatusSchema = z
 
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
+export const premiumSourceSchema = z
+  .enum(PREMIUM_SOURCE)
+  .describe("프리미엄 출처 (STORE: 스토어 구독, GRANT: 서버가 지급한 보상 기간)");
+
 export const currentUserSchema = z
   .object({
     userId: z.cuid().describe("사용자 고유 ID"),
@@ -127,6 +132,23 @@ export const currentUserSchema = z
     providers: z
       .array(accountProviderSchema)
       .describe('연결된 로그인 제공자 목록 (예: ["CREDENTIAL", "KAKAO"])'),
+    premiumSource: premiumSourceSchema
+      .nullable()
+      .optional()
+      .describe(
+        "프리미엄 출처 (STORE: 스토어 구독, GRANT: 초대 등 보상 기간, 프리미엄이 아니면 null, 구버전 서버는 생략)",
+      ),
+    premiumEndsAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "프리미엄이 끝나는 시각 (ISO 8601 UTC, 스토어 구독과 보상 기간 중 늦은 쪽, 없으면 null, 구버전 서버는 생략)",
+      ),
+    willRenew: z
+      .boolean()
+      .optional()
+      .describe(
+        "스토어 구독이 자동 갱신되는지 여부 (보상 기간만 있으면 false, 구버전 서버는 생략)",
+      ),
   })
   .describe("현재 사용자 정보")
   .meta({
@@ -144,6 +166,9 @@ export const currentUserSchema = z
       profileImage: "https://example.com/profiles/matthew.jpg",
       createdAt: "2026-01-01T09:00:00.000Z",
       providers: ["CREDENTIAL"],
+      premiumSource: null,
+      premiumEndsAt: null,
+      willRenew: false,
     },
   });
 

@@ -27,6 +27,9 @@ import type { ErrorDefinition } from "./types.js";
  * - SUBSCRIPTION (1600-1699): 구독
  * - PREFERENCE (1700-1799): 설정
  * - ACHIEVEMENT (1800-1899): 주간 달성
+ * - WEATHER (1900-1999): 날씨
+ * - MEMO    (2000-2099): 메모
+ * - INVITE  (2100-2199): 친구 초대
  */
 export const ErrorCode = {
   // =========================================================================
@@ -283,6 +286,22 @@ export const ErrorCode = {
   MEMO_2001: "MEMO_2001",
   MEMO_2002: "MEMO_2002",
   MEMO_2003: "MEMO_2003",
+
+  // =========================================================================
+  // 친구 초대 (INVITE_2100-2199)
+  // =========================================================================
+  /** 초대 코드를 찾을 수 없어요 */
+  INVITE_2101: "INVITE_2101",
+  /** 초대 링크가 바뀌었어요 */
+  INVITE_2102: "INVITE_2102",
+  /** 내 초대 코드는 쓸 수 없어요 */
+  INVITE_2103: "INVITE_2103",
+  /** 이미 초대를 수락했어요 */
+  INVITE_2104: "INVITE_2104",
+  /** 지금은 친구 초대를 쓸 수 없어요 */
+  INVITE_2105: "INVITE_2105",
+  /** 친구 자리가 꽉 차서 친구를 맺을 수 없어요 */
+  INVITE_2106: "INVITE_2106",
 } as const;
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -1307,6 +1326,48 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     code: "MEMO_2003",
     message: "메모 개수가 최대 한도에 도달했습니다.",
     description: "사용자당 최대 메모 개수를 초과했습니다. 기존 메모를 정리해주세요.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+
+  // =========================================================================
+  // 친구 초대 (INVITE_2100-2199)
+  // =========================================================================
+  [ErrorCode.INVITE_2101]: {
+    code: "INVITE_2101",
+    message: "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+    description: "형식은 맞지만 발급된 적 없는 초대 코드입니다.",
+    httpStatus: HttpStatus.NOT_FOUND,
+  },
+  [ErrorCode.INVITE_2102]: {
+    code: "INVITE_2102",
+    message: "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+    description:
+      "초대한 사람이 링크를 새로 만들어 폐기된 초대 코드입니다. 폐기된 코드는 다시 발급되지 않습니다.",
+    httpStatus: HttpStatus.GONE,
+  },
+  [ErrorCode.INVITE_2103]: {
+    code: "INVITE_2103",
+    message: "내 초대 코드는 쓸 수 없어요.",
+    description: "초대한 사람과 초대받은 사람이 같은 사용자입니다.",
+    httpStatus: HttpStatus.BAD_REQUEST,
+  },
+  [ErrorCode.INVITE_2104]: {
+    code: "INVITE_2104",
+    message: "이미 다른 초대를 수락했어요.",
+    description: "초대받은 사람은 한 번만 초대를 수락할 수 있습니다(inviteeId UNIQUE).",
+    httpStatus: HttpStatus.CONFLICT,
+  },
+  [ErrorCode.INVITE_2105]: {
+    code: "INVITE_2105",
+    message: "지금은 친구 초대를 쓸 수 없어요.",
+    description: "INVITE_ENABLED 플래그가 꺼져 있어 초대 쓰기 기능을 막았습니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
+  },
+  [ErrorCode.INVITE_2106]: {
+    code: "INVITE_2106",
+    message: "친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
+    description:
+      "초대한 사람과 초대받은 사람 모두 친구 수 한도에 도달해 친구 요청도 보낼 수 없습니다.",
     httpStatus: HttpStatus.FORBIDDEN,
   },
 };

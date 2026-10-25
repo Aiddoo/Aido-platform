@@ -8,6 +8,7 @@ export * from "./contracts/cheer/index.js";
 export * from "./contracts/daily-completion/index.js";
 export * from "./contracts/follow/index.js";
 export * from "./contracts/inquiry/index.js";
+export * from "./contracts/invite/index.js";
 export * from "./contracts/memo/index.js";
 export * from "./contracts/notification/index.js";
 export * from "./contracts/nudge/index.js";
