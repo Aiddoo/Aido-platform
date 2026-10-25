@@ -31,10 +31,7 @@ jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => mockQueryClient,
 }));
 
-jest.mock('expo-haptics', () => ({
-  notificationAsync: jest.fn(),
-  NotificationFeedbackType: { Error: 'error' },
-}));
+jest.mock('@src/shared/utils/haptics');
 
 jest.mock('../hooks/use-store-review-prompt', () => ({
   useStoreReviewPrompt: () => ({

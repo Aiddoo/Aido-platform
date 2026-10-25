@@ -1,6 +1,5 @@
 import type { TodoCommentSort } from '@aido/api';
-import { useRouteSearchParams } from '@src/shared/providers/route-search-params-provider';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 
 import {
@@ -25,7 +24,7 @@ export interface TodoCommentRouteUpdates {
 export type UseTodoCommentRouteResult = readonly [TodoCommentRoute, TodoCommentRouteUpdates];
 
 export function useTodoCommentRoute(): UseTodoCommentRouteResult {
-  const { sort, comment, intent, returnTo } = useRouteSearchParams();
+  const { sort, comment, intent, returnTo } = useLocalSearchParams();
   const commentRoute = useMemo(
     () => parseTodoCommentRoute({ sort, comment, intent, returnTo }),
     [comment, intent, returnTo, sort],

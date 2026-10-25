@@ -7,6 +7,7 @@ import { TimeoutError as KyTimeoutError } from 'ky';
 import { z } from 'zod';
 
 import { toServerErrorCode } from './server-error-code';
+import { TOKEN_REFRESHER_LOG_EVENT } from './token-refresher-log-events';
 
 const refreshEnvelopeSchema = z.object({ data: refreshTokensSchema });
 
@@ -57,7 +58,7 @@ export const createTokenRefresher = ({
       refreshToken = await tokenStore.readRefreshToken();
     } catch (error) {
       // 키체인 접근 실패(기기 잠김 등)는 "토큰 없음"이 아니다. 세션을 끝내면 안 된다.
-      logger.warn('[TokenRefresher] 토큰 읽기 실패 (세션 보존)', { error: errorMessageOf(error) });
+      logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_READ_FAILED, { error: errorMessageOf(error) });
       throw new NetworkError();
     }
 
@@ -70,7 +71,7 @@ export const createTokenRefresher = ({
       response = await requestRefresh(refreshToken);
     } catch (error) {
       // 네트워크/타임아웃 — 서버는 회전하지 않았으므로 보유 토큰은 여전히 유효하다.
-      logger.warn('[TokenRefresher] 일시적 갱신 실패 (토큰 보존)', {
+      logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, {
         error: errorMessageOf(error),
       });
       throw error instanceof KyTimeoutError ? new TimeoutError() : new NetworkError();
@@ -91,7 +92,9 @@ export const createTokenRefresher = ({
         await tokenStore.save({ accessToken, refreshToken: nextRefreshToken });
       } catch (error) {
         // 저장 실패. 서버는 회전했지만 보유 토큰은 grace(10초) 안에서 아직 통한다.
-        logger.warn('[TokenRefresher] 새 토큰 저장 실패', { error: errorMessageOf(error) });
+        logger.warn(TOKEN_REFRESHER_LOG_EVENT.TOKEN_PERSIST_FAILED, {
+          error: errorMessageOf(error),
+        });
         throw new NetworkError();
       }
       return { kind: 'refreshed', accessToken };
@@ -107,7 +110,7 @@ export const createTokenRefresher = ({
     }
 
     // 429/기타 4xx/5xx — 토큰은 아직 유효할 수 있으므로 보존하고 재시도 대상으로 던진다.
-    logger.warn('[TokenRefresher] 일시적 갱신 실패 (토큰 보존)', { status: response.status });
+    logger.warn(TOKEN_REFRESHER_LOG_EVENT.TRANSIENT_REFRESH_FAILED, { status: response.status });
     throw new ServerError(response.status);
   };
 

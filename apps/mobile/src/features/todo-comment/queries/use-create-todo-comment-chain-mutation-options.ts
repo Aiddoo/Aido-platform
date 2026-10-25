@@ -7,7 +7,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { TODO_COMMENT_MUTATION_KEYS } from '../constants/todo-comment-mutation-keys';
 import { useTodoCommentMutationErrorHandler } from '../hooks/use-todo-comment-mutation-error-handler';
-import { invalidateTodoCommentQueries } from './todo-comment-query-invalidation';
+import { invalidateTodoCommentQueries } from './todo-comment-cache';
 
 type CreateTodoCommentChainMutationParams = CreateTodoCommentChainInput;
 

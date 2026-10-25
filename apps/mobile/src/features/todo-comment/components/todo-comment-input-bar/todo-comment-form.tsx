@@ -29,6 +29,7 @@ import {
 } from 'react-hook-form';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { KeyboardController } from 'react-native-keyboard-controller';
+import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment-input';
 import {
@@ -114,7 +115,7 @@ export function TodoCommentForm({
       setFocus,
       initialFieldIndex: (restoredCommentDraft?.items.length ?? 1) - 1,
     });
-  const showsAppendAction = !isEditing && TodoCommentDraftPolicy.hasCapacity(fields.length);
+  const canAppendField = !isEditing && TodoCommentDraftPolicy.hasCapacity(fields.length);
   const formMaxHeight = getCommentFormMaxHeight(viewportHeight);
 
   const handleFormSubmit = handleSubmit(({ items }) =>
@@ -128,10 +129,10 @@ export function TodoCommentForm({
         style={[{ maxHeight: formMaxHeight }, style]}
         keyboardShouldPersistTaps="always"
         nestedScrollEnabled
-        showsVerticalScrollIndicator={fields.length > 2 || target !== null}
+        showsVerticalScrollIndicator={fields.length > 2 || target != null}
       >
         <VStack gap={8}>
-          {target !== null && (
+          {target != null && (
             <CommentTargetPreview
               target={target}
               isEditing={isEditing}
@@ -148,7 +149,7 @@ export function TodoCommentForm({
                 <CommentFormFields.Field
                   key={field.id}
                   author={author}
-                  connectsToNext={fieldLayout.connectsToNext}
+                  isConnectedToNext={fieldLayout.isConnectedToNext}
                   input={
                     <CommentFormField
                       name={`items.${index}.content`}
@@ -162,7 +163,7 @@ export function TodoCommentForm({
                     />
                   }
                   removeAction={
-                    fieldLayout.showsRemoveAction && (
+                    fieldLayout.shouldShowRemoveAction ? (
                       <TextButton
                         size="xsmall"
                         className={TEXT_ACTION_TOUCH_TARGET}
@@ -172,11 +173,10 @@ export function TodoCommentForm({
                       >
                         {t('form.remove')}
                       </TextButton>
-                    )
+                    ) : undefined
                   }
                   appendAction={
-                    fieldLayout.showsSubmissionActions &&
-                    showsAppendAction && (
+                    fieldLayout.shouldShowSubmissionActions && canAppendField ? (
                       <AppendCommentButton
                         isSubmitting={isSubmitting}
                         onPress={() => {
@@ -185,16 +185,16 @@ export function TodoCommentForm({
                           focusFieldAfterLayout(nextFieldIndex);
                         }}
                       />
-                    )
+                    ) : undefined
                   }
                   submitAction={
-                    fieldLayout.showsSubmissionActions && (
+                    fieldLayout.shouldShowSubmissionActions ? (
                       <CommentSubmitButton
                         isEditing={isEditing}
                         isSubmitting={isSubmitting}
                         onSubmit={handleFormSubmit}
                       />
-                    )
+                    ) : undefined
                   }
                 />
               );
@@ -259,7 +259,7 @@ function useTodoCommentFormSubmission(
       try {
         if (session.type === 'edit') {
           const [content] = contents;
-          if (content === undefined) {
+          if (content == null) {
             return;
           }
 
@@ -276,7 +276,7 @@ function useTodoCommentFormSubmission(
         }
 
         const [firstContent, ...remainingContents] = contents;
-        if (firstContent === undefined) {
+        if (firstContent == null) {
           return;
         }
 
@@ -345,7 +345,7 @@ function CommentFormField({
           onBlur={onBlur}
           onFocus={onFocus}
           isDisabled={isSubmitting}
-          isInvalid={error !== undefined}
+          isInvalid={error != null}
           variant="plain"
           textSize="b3"
           preserveErrorSpace={false}
@@ -354,15 +354,11 @@ function CommentFormField({
             byType: { too_big: 'comment.tooLong' },
           })}
           growsWithContent
-          placeholder={
-            index > 0
-              ? t('form.chainPlaceholder')
-              : isEditing
-                ? t('input.editPlaceholder')
-                : session.type === 'reply'
-                  ? t('input.replyPlaceholder')
-                  : t('input.placeholder')
-          }
+          placeholder={match({ isChain: index > 0, isEditing, sessionType: session.type })
+            .with({ isChain: true }, () => t('form.chainPlaceholder'))
+            .with({ isEditing: true }, () => t('input.editPlaceholder'))
+            .with({ sessionType: 'reply' }, () => t('input.replyPlaceholder'))
+            .otherwise(() => t('input.placeholder'))}
           accessibilityLabel={t('form.inputLabel', { index: index + 1, count: fieldCount })}
           className="min-h-11 max-h-28"
         />
@@ -444,7 +440,7 @@ function useCommentFormFieldFocus({
   const pendingFocusFrameRef = useRef<number | null>(null);
 
   const cancelPendingFocus = useCallback(() => {
-    if (pendingFocusFrameRef.current !== null) {
+    if (pendingFocusFrameRef.current != null) {
       cancelAnimationFrame(pendingFocusFrameRef.current);
       pendingFocusFrameRef.current = null;
     }
@@ -533,26 +529,22 @@ function CommentTargetPreview({
   );
 }
 
-interface CommentFormFieldsProps extends Omit<ComponentProps<typeof VStack>, 'children' | 'gap'> {
+interface CommentFormFieldsProps {
   children: ReactNode;
 }
 
-interface CommentFormFieldRowProps extends Omit<ComponentProps<typeof Box>, 'children'> {
+interface CommentFormFieldRowProps {
   author: TodoCommentAuthor;
   input: ReactNode;
-  connectsToNext: boolean;
+  isConnectedToNext: boolean;
   removeAction?: ReactNode;
   appendAction?: ReactNode;
   submitAction?: ReactNode;
 }
 
-function CommentFormFields({ children, className, ...stackProps }: CommentFormFieldsProps) {
+function CommentFormFields({ children }: CommentFormFieldsProps) {
   return (
-    <VStack
-      {...stackProps}
-      gap={8}
-      className={cn('min-w-0 rounded-3xl bg-gray-2 px-3 py-3', className)}
-    >
+    <VStack gap={8} className="min-w-0 rounded-3xl bg-gray-2 px-3 py-3">
       {children}
     </VStack>
   );
@@ -561,18 +553,16 @@ function CommentFormFields({ children, className, ...stackProps }: CommentFormFi
 CommentFormFields.Field = function Field({
   author,
   input,
-  connectsToNext,
+  isConnectedToNext,
   removeAction,
   appendAction,
   submitAction,
-  className,
-  ...boxProps
 }: CommentFormFieldRowProps) {
-  const showsSubmissionActions = appendAction !== undefined || submitAction !== undefined;
+  const shouldShowSubmissionActions = appendAction != null || submitAction != null;
 
   return (
-    <Box {...boxProps} className={cn('relative min-w-0', className)}>
-      {connectsToNext && (
+    <Box className="relative min-w-0">
+      {isConnectedToNext && (
         <Box
           testID="todo-comment-form-connector"
           pointerEvents="none"
@@ -592,10 +582,10 @@ CommentFormFields.Field = function Field({
             <Box flex={1} className="min-w-0">
               {input}
             </Box>
-            {removeAction !== undefined && <Box className="shrink-0">{removeAction}</Box>}
+            {removeAction != null && <Box className="shrink-0">{removeAction}</Box>}
           </HStack>
 
-          {showsSubmissionActions && (
+          {shouldShowSubmissionActions && (
             <HStack
               testID="todo-comment-form-actions"
               gap={4}
@@ -606,7 +596,7 @@ CommentFormFields.Field = function Field({
               <Box flex={1} className="min-w-0">
                 {appendAction}
               </Box>
-              {submitAction !== undefined && <Box className="shrink-0">{submitAction}</Box>}
+              {submitAction != null && <Box className="shrink-0">{submitAction}</Box>}
             </HStack>
           )}
         </VStack>

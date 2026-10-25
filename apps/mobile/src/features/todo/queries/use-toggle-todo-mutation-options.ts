@@ -4,8 +4,8 @@ import { recordTodoCompletionForActivation } from '@src/features/activation/quer
 import { invalidateNudgeInteractions } from '@src/features/nudge/queries/nudge-cache';
 import { useTrack } from '@src/shared/analytics';
 import { unwrap } from '@src/shared/errors/result';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import type { TodoListResult } from '../domains/todo.model';
@@ -66,7 +66,7 @@ export const useToggleTodoMutationOptions = () => {
       const activationEvent = recordTodoCompletionForActivation({
         queryClient,
         service: activationService,
-        completed: variables.body.completed,
+        isCompleted: variables.body.completed,
       });
       if (activationEvent) {
         trackEvent('activation_completed', activationEvent);
@@ -76,7 +76,7 @@ export const useToggleTodoMutationOptions = () => {
       }
     },
     onError: (_error, variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       const previousCompleted = context?.completed;
       if (context && previousCompleted != null) {

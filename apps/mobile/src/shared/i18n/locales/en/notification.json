@@ -37,6 +37,15 @@
     "premiumDescription": "Subscribe to unlock AI reports and suggestions",
     "loadError": "Could not load notifications"
   },
+  "directions": {
+    "received": "Received",
+    "sent": "Sent nudges"
+  },
+  "sentNudges": {
+    "empty": "No nudges sent yet",
+    "loadError": "Could not load sent nudges",
+    "disabled": "Nudge replies are on their way"
+  },
   "settings": {
     "timeFormat24": "24-hour time",
     "on": "On",

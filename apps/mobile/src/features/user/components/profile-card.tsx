@@ -1,10 +1,10 @@
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
-import { useClipboard } from '@src/shared/hooks/use-clipboard';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowRightIcon, CopyIcon, H4, HStack, Text, VStack } from '@src/shared/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { setStringAsync } from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Chip, PressableFeedback, SkeletonGroup } from 'heroui-native';
 import { Pressable } from 'react-native';
@@ -21,12 +21,14 @@ export function ProfileCard() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const toast = useAppToast();
   const { t } = useTranslation('user');
-  const { copyToClipboard } = useClipboard();
 
   const handleCopyUserTag = async () => {
-    const result = await copyToClipboard(user.userTag);
+    const copied = await setStringAsync(user.userTag).then(
+      () => true,
+      () => false,
+    );
 
-    if (result.success) {
+    if (copied) {
       toast.success(t('profile.tagCopied'), { description: t('profile.tagCopiedDescription') });
     }
   };
@@ -54,8 +56,8 @@ export function ProfileCard() {
             </Text>
             <Pressable
               hitSlop={8}
-              onPress={(e) => {
-                e.stopPropagation();
+              onPress={(event) => {
+                event.stopPropagation();
                 handleCopyUserTag();
               }}
               className="p-1"
@@ -78,17 +80,17 @@ export function ProfileCard() {
 
 const USER_TIER_CONFIG = {
   ADMIN: {
-    labelKey: 'user:profile.badges.admin',
+    labelKey: 'profile.badges.admin',
     color: 'warning',
     className: 'self-center shrink-0',
   },
   PREMIUM: {
-    labelKey: 'user:profile.badges.premium',
+    labelKey: 'profile.badges.premium',
     color: 'accent',
     className: 'self-center shrink-0',
   },
   BASIC: {
-    labelKey: 'user:profile.badges.basic',
+    labelKey: 'profile.badges.basic',
     color: 'default',
     className: 'self-center shrink-0 bg-gray-3',
   },
@@ -97,7 +99,7 @@ const USER_TIER_CONFIG = {
 function UserTierChip({ tier }: { tier: UserTier }) {
   const { t } = useTranslation('user');
   const { labelKey, color, className } = USER_TIER_CONFIG[tier];
-  const label = t(labelKey.replace('user:', '') as 'profile.badges.admin');
+  const label = t(labelKey);
 
   return (
     <Chip size="sm" variant="soft" color={color} className={className}>

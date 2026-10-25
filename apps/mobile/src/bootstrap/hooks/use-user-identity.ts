@@ -37,7 +37,7 @@ export const useUserIdentity = (): void => {
 
   const meId = me?.id;
   useEffect(() => {
-    if (isAuthenticated && meId !== undefined) {
+    if (isAuthenticated && meId != null) {
       draftService.removeAllExceptOwner(meId);
     }
   }, [isAuthenticated, meId, draftService]);

@@ -5,8 +5,8 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { cancelTodoListQuery, removeTodoFromList, restoreTodo, snapshotTodo } from './todo-cache';
@@ -39,7 +39,7 @@ export const useDeleteTodoMutationOptions = () => {
       trackEvent('todo_deleted', { todo_id: todoId });
     },
     onError: (error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (context?.snapshot) {
         restoreTodo(queryClient, context.snapshot);

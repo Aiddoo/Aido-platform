@@ -1,0 +1,15 @@
+appId: com.aido.mobile
+name: 메모 탭과 작성 화면이 열린다
+---
+- openLink: aido-dev://memo
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.12.1-memo-tab
+- openLink: aido-dev://memo/create
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.12.1-memo-create
+- tapOn:
+    point: '50%, 12%'

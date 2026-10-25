@@ -1,7 +1,13 @@
+import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import {
+  useSubTodoScreenParams,
+  useTodoSheetDateParam,
+} from '@src/features/todo/hooks/use-todo-sheet-params';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useRetainedValue } from '@src/shared/hooks/use-retained-value';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ArrowUpIcon,
   BottomSheetInput,
@@ -11,152 +17,249 @@ import {
   KeyboardBottomSheet,
   MicIcon,
   PauseIcon,
+  QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  Result,
   Text,
   TrashIcon,
+  useSheetRoute,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { Popover, PressableFeedback, Spinner } from 'heroui-native';
-import type { ComponentRef } from 'react';
-import { useRef, useState } from 'react';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { Popover, PressableFeedback, Skeleton, Spinner } from 'heroui-native';
+import type { ComponentProps, ComponentRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import type { TextInput } from 'react-native';
 import { Keyboard } from 'react-native';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 
-interface BaseProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
+import type { SubTodo } from '../domains/sub-todo.model';
+import type { Todo } from '../domains/todo.model';
+import { useGetTodosByDateQueryOptions } from '../queries/get-todos-by-date-query-options';
+import { useAddSubTodoMutationOptions } from '../queries/use-add-sub-todo-mutation-options';
+import { useDeleteSubTodoMutationOptions } from '../queries/use-delete-sub-todo-mutation-options';
+import { useUpdateSubTodoMutationOptions } from '../queries/use-update-sub-todo-mutation-options';
+import { TODO_SHEET_FALLBACK_HREF } from '../utils/navigation/todo-sheet-href';
+import { findSheetSubTodo, findSheetTodo } from '../utils/view-models/todo-sheet-target.view-model';
+
+type AddSubTodoBottomSheetProps = Omit<
+  ComponentProps<typeof KeyboardBottomSheet>,
+  'children' | 'isOpen' | 'onOpenChange'
+> & {
+  mode: 'create' | 'edit';
+};
+
+export function AddSubTodoBottomSheet({ mode, ...props }: AddSubTodoBottomSheetProps) {
+  const sheet = useSheetRoute(TODO_SHEET_FALLBACK_HREF);
+
+  return (
+    <KeyboardBottomSheet {...props} isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange}>
+      <QueryErrorBoundary fallback={AddSubTodoBottomSheet.Error}>
+        <Suspense fallback={<AddSubTodoBottomSheet.Loading />}>
+          {match(mode)
+            .with('create', () => <AddSubTodoBottomSheet.Create onClose={() => sheet.close()} />)
+            .with('edit', () => <AddSubTodoBottomSheet.Edit onClose={() => sheet.close()} />)
+            .exhaustive()}
+        </Suspense>
+      </QueryErrorBoundary>
+    </KeyboardBottomSheet>
+  );
+}
+
+interface SheetContentProps {
   onClose: () => void;
 }
 
-interface CreateProps extends BaseProps {
-  mode: 'create';
-  onSubmit: (value: string) => Promise<unknown> | void;
+AddSubTodoBottomSheet.Create = function Create({ onClose }: SheetContentProps) {
+  const { todoId } = useTodoScreenParams();
+  const [date] = useTodoSheetDateParam();
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+
+  useEffect(() => {
+    if (todo == null) {
+      onClose();
+    }
+  }, [todo, onClose]);
+
+  if (todo == null) {
+    return null;
+  }
+
+  return <SubTodoForm todo={todo} subTodo={null} onClose={onClose} />;
+};
+
+AddSubTodoBottomSheet.Edit = function Edit({ onClose }: SheetContentProps) {
+  const { todoId } = useTodoScreenParams();
+  const { subTodoId } = useSubTodoScreenParams();
+  const [date] = useTodoSheetDateParam();
+  const { data: todosByDate } = useSuspenseQuery(useGetTodosByDateQueryOptions({ date }));
+  const todo = useRetainedValue(findSheetTodo(todosByDate.todos, todoId));
+  const subTodo = useRetainedValue(findSheetSubTodo(todo, subTodoId));
+
+  useEffect(() => {
+    if (todo == null || subTodo == null) {
+      onClose();
+    }
+  }, [todo, subTodo, onClose]);
+
+  if (todo == null || subTodo == null) {
+    return null;
+  }
+
+  return <SubTodoForm todo={todo} subTodo={subTodo} onClose={onClose} />;
+};
+
+AddSubTodoBottomSheet.Loading = function Loading() {
+  return (
+    <VStack gap={12}>
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <Box className="h-px bg-gray-2" />
+      <Skeleton className="h-9 w-24 self-end rounded-4xl" />
+    </VStack>
+  );
+};
+
+AddSubTodoBottomSheet.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+  return (
+    <Result
+      title={t('errorBoundary.title')}
+      button={<Result.Button onPress={reset}>{t('errorBoundary.retry')}</Result.Button>}
+    />
+  );
+};
+
+interface SubTodoFormProps {
+  todo: Todo;
+  subTodo: SubTodo | null;
+  onClose: () => void;
 }
 
-interface EditProps extends BaseProps {
-  mode: 'edit';
-  initialValue: string;
-  onSubmit: (value: string) => Promise<unknown> | void;
-  onDelete: () => Promise<unknown> | void;
-}
-
-type AddSubTodoBottomSheetProps = CreateProps | EditProps;
-
-export const AddSubTodoBottomSheet = (props: AddSubTodoBottomSheetProps) => {
+function SubTodoForm({ todo, subTodo, onClose }: SubTodoFormProps) {
+  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
-  const { isOpen, onOpenChange, onClose } = props;
+  const { color: spinnerColor } = useResolveClassNames('text-white');
 
-  const defaultValue = match(props)
-    .with({ mode: 'edit' }, ({ initialValue }) => initialValue)
-    .with({ mode: 'create' }, () => '')
-    .exhaustive();
-
-  const [value, setValue] = useState(defaultValue);
+  const [value, setValue] = useState(subTodo?.title ?? '');
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
 
-  // 보내는 동안의 상태는 이 시트가 스스로 안다 — 오버레이는 열릴 때의 화면을 스냅샷으로
-  // 들고 있어서, 밖에서 넘긴 진행 중 플래그는 갱신되지 않고 얼어붙는다.
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const isBusy = isSubmitting || isDeleting;
+  const addSubTodo = useMutation(useAddSubTodoMutationOptions());
+  const updateSubTodo = useMutation(useUpdateSubTodoMutationOptions());
+  const deleteSubTodo = useMutation(useDeleteSubTodoMutationOptions());
+  const isSubmitting = addSubTodo.isPending || updateSubTodo.isPending;
+  const isBusy = isSubmitting || deleteSubTodo.isPending;
 
   const isSubmitDisabled = !value.trim() || isBusy;
 
   const handleSubmit = async () => {
-    const trimmed = value.trim();
-    if (!trimmed || isBusy) {
+    const title = value.trim();
+    if (!title || isBusy) {
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      await props.onSubmit(trimmed);
-      if (props.mode === 'create') {
-        setValue('');
-      }
-    } finally {
-      setIsSubmitting(false);
+    const saved = await (
+      subTodo == null
+        ? addSubTodo.mutateAsync({ todoId: todo.id, title, startDate: todo.startDate })
+        : updateSubTodo.mutateAsync({
+            todoId: todo.id,
+            subTodoId: subTodo.id,
+            title,
+            startDate: todo.startDate,
+          })
+    ).catch(() => null);
+
+    if (saved == null) {
+      return;
     }
+
+    if (subTodo == null) {
+      setValue('');
+    }
+    onClose();
   };
 
-  const handleDelete = async (onDelete: () => Promise<unknown> | void) => {
+  const handleDelete = async (target: SubTodo) => {
     if (isBusy) {
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      await onDelete();
-    } finally {
-      setIsDeleting(false);
+    const removed = await deleteSubTodo
+      .mutateAsync({ todoId: todo.id, subTodoId: target.id, startDate: todo.startDate })
+      .catch(() => null);
+
+    if (removed != null) {
+      onClose();
     }
   };
 
   return (
-    <KeyboardBottomSheet isOpen={isOpen} onOpenChange={onOpenChange}>
-      <VStack gap={12}>
-        <BottomSheetInput
-          ref={inputRef}
-          testID="sub-todo-input"
-          autoFocus
-          placeholder={tGlobal('todo:subTodo.placeholder')}
-          value={value}
-          onChange={setValue}
-          maxLength={200}
-          size="medium"
-          renderErrorMessage={false}
-          returnKeyType="done"
-          onSubmitEditing={isSubmitDisabled ? onClose : handleSubmit}
-        />
+    <VStack gap={12}>
+      <BottomSheetInput
+        ref={inputRef}
+        testID="sub-todo-input"
+        autoFocus
+        placeholder={t('subTodo.placeholder')}
+        value={value}
+        onChange={setValue}
+        maxLength={200}
+        size="medium"
+        renderErrorMessage={false}
+        returnKeyType="done"
+        onSubmitEditing={isSubmitDisabled ? onClose : handleSubmit}
+      />
 
-        <Box className="h-px bg-gray-2" />
+      <Box className="h-px bg-gray-2" />
 
-        <HStack gap={8} align="center">
-          {props.mode === 'edit' && (
-            <PressableFeedback
-              testID="sub-todo-delete"
-              onPress={() => handleDelete(props.onDelete)}
-              isDisabled={isBusy}
-              className="size-9 items-center justify-center rounded-full bg-error/10"
-            >
-              <TrashIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-error"
-              />
-            </PressableFeedback>
-          )}
-
-          <Box className="flex-1" />
-
-          <SpeechTooltip />
-          <SpeechButton onResult={setValue} />
+      <HStack gap={8} align="center">
+        {subTodo != null && (
           <PressableFeedback
-            testID="sub-todo-submit"
-            isDisabled={isSubmitDisabled}
-            onPress={handleSubmit}
-            style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
-            className={cn(
-              'items-center justify-center rounded-4xl',
-              isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
-            )}
+            testID="sub-todo-delete"
+            onPress={() => handleDelete(subTodo)}
+            isDisabled={isBusy}
+            className="size-9 items-center justify-center rounded-full bg-error/10"
           >
-            {isSubmitting ? (
-              <Spinner size="sm" color="white" />
-            ) : (
-              <ArrowUpIcon
-                width={fontScaledSize(18)}
-                height={fontScaledSize(18)}
-                colorClassName="text-white"
-              />
-            )}
+            <TrashIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-error"
+            />
           </PressableFeedback>
-        </HStack>
-      </VStack>
-    </KeyboardBottomSheet>
+        )}
+
+        <Box className="flex-1" />
+
+        <SpeechTooltip />
+        <SpeechButton onResult={setValue} />
+        <PressableFeedback
+          testID="sub-todo-submit"
+          isDisabled={isSubmitDisabled}
+          onPress={handleSubmit}
+          style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
+          className={cn(
+            'items-center justify-center rounded-4xl',
+            isSubmitDisabled ? 'bg-gray-3' : 'bg-main',
+          )}
+        >
+          {isSubmitting ? (
+            <Spinner
+              size="sm"
+              color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+            />
+          ) : (
+            <ArrowUpIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-white"
+            />
+          )}
+        </PressableFeedback>
+      </HStack>
+    </VStack>
   );
-};
+}
 
 function SpeechTooltip() {
   const fontScaledSize = useFontScaledSize();

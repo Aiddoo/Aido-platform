@@ -43,11 +43,11 @@ export function useFeatureDiscoveryFeed() {
   );
   const hasSeen = identity ? stateService.isSeen(identity) : true;
   const canAutoOpen = FeatureDiscoveryPolicy.canAutoOpen({
-    authStatus: weather.needsIntroduction ? 'loading' : status,
+    authStatus: weather.shouldIntroduce ? 'loading' : status,
     config,
     user,
     appVersion,
-    hasBundledCampaign: campaign !== null,
+    hasBundledCampaign: campaign != null,
     hasSeen,
   });
 
@@ -78,8 +78,8 @@ export function useFeatureDiscoveryFeed() {
 
   const isReentryVisible =
     config?.enabled === true &&
-    identity !== null &&
-    campaign !== null &&
+    identity != null &&
+    campaign != null &&
     stateService.isReentryVisible(identity);
 
   const openFromReentry = useCallback(() => {

@@ -23,7 +23,7 @@ export const toNudgeInteraction = (dto: NudgeInteractionResponse): NudgeInteract
   isTodoCompleted: dto.todo?.completed ?? false,
   message: dto.message,
   replyKind: dto.replyKind,
-  thankedAt: dto.thankedAt === null ? null : new Date(dto.thankedAt),
+  thankedAt: dto.thankedAt == null ? null : new Date(dto.thankedAt),
   createdAt: new Date(dto.createdAt),
   isAvailable: dto.isAvailable,
 });

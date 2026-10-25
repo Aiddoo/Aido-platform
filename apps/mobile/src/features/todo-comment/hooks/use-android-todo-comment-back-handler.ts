@@ -20,7 +20,7 @@ export function useAndroidTodoCommentBackHandler({
       const handleHardwareBack = () => {
         const action = resolveHardwareBackAction({
           isHandledByComment: handleBack(),
-          canExit: onExit !== undefined,
+          canExit: onExit != null,
         });
 
         if (action === 'exit') {

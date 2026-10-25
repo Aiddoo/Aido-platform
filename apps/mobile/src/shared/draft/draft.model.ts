@@ -60,7 +60,7 @@ export function isDraftExpired(entry: DraftEntry, now: number, ttlMs: number = D
 
 /** 초안을 쓰기 시작한 뒤 서버 원본이 바뀌었으면 초안은 낡은 원본 위에서 쓴 글이다. */
 function isDraftOutdated(entry: DraftEntry, sourceUpdatedAt: number | undefined) {
-  if (sourceUpdatedAt === undefined || entry.sourceUpdatedAt === null) {
+  if (sourceUpdatedAt == null || entry.sourceUpdatedAt == null) {
     return false;
   }
 
@@ -78,7 +78,7 @@ export function resolveDraftRestore<TValue>(
   entry: DraftEntry | undefined,
   { schema, now, sourceUpdatedAt }: ResolveDraftRestoreInput<TValue>,
 ): DraftRestoreResult<TValue> {
-  if (entry === undefined) {
+  if (entry == null) {
     return { status: 'empty' };
   }
 

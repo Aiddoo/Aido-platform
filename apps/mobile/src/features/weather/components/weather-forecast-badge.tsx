@@ -2,11 +2,10 @@ import { ErrorCode } from '@aido/api/errors';
 import { isApiError } from '@src/shared/errors/api-error';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text } from '@src/shared/ui';
+import { HStack, Text, TextSkeleton } from '@src/shared/ui';
 import { WeatherClearIcon } from '@src/shared/ui/icon/icons';
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Skeleton } from 'heroui-native';
 import { Pressable } from 'react-native';
 
 import {
@@ -63,7 +62,7 @@ export function WeatherForecastBadge() {
           <WeatherForecastBadge.Loading />
         ) : forecast && session.status !== 'unsupported' ? (
           <Text size="b4" weight="semibold" shade={8}>
-            {temperature !== null && temperature !== undefined
+            {temperature != null
               ? `${temperature}°`
               : `${Math.round(forecast.temperatureMin)}°–${Math.round(forecast.temperatureMax)}°`}
           </Text>
@@ -78,5 +77,5 @@ export function WeatherForecastBadge() {
 }
 
 WeatherForecastBadge.Loading = function Loading() {
-  return <Skeleton className="h-4 w-8 rounded" />;
+  return <TextSkeleton size="b4" className="w-8" />;
 };

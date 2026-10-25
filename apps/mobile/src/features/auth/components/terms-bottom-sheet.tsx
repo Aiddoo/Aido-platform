@@ -1,40 +1,43 @@
-import type { RegisterInput } from '@aido/api';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
-import { isBusinessError } from '@src/shared/errors/result';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
-import { ArrowRightIcon, Button, HStack, Text, VStack } from '@src/shared/ui';
+import {
+  ArrowRightIcon,
+  Button,
+  HStack,
+  Text,
+  VStack,
+  SHEET_DETACHED_MARGIN,
+  useSheetLayout,
+} from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { useMutation } from '@tanstack/react-query';
 import { BottomSheet, Checkbox, ControlField, Label, Separator } from 'heroui-native';
 import type { ComponentProps } from 'react';
-import { useErrorBoundary } from 'react-error-boundary';
-import { useFormContext, useWatch } from 'react-hook-form';
+import { useFormContext, useFormState, useWatch } from 'react-hook-form';
 import { Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { SignUpFormData } from '../domains/sign-up-form.schema';
-import { useRegisterMutationOptions } from '../queries/use-register-mutation-options';
+import type { SignUpFormInput } from '../domains/sign-up-form.schema';
 
 interface TermsBottomSheetProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onNextStep: () => void;
+  /** 동의 확인 시 호출하는 회원가입 제출 함수. 폼과 mutation은 화면이 소유한다. */
+  onSubmit: () => Promise<unknown>;
 }
 
-export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBottomSheetProps) => {
-  const { showBoundary } = useErrorBoundary();
-
+export function TermsBottomSheet({ isOpen, onOpenChange, onSubmit }: TermsBottomSheetProps) {
   const { t } = useTranslation(['auth', 'common']);
-  const { control, handleSubmit, setValue } = useFormContext<SignUpFormData>();
+  const { control, setValue } = useFormContext<SignUpFormInput>();
+  const { isSubmitting } = useFormState({ control });
   const insets = useSafeAreaInsets();
+  const sheetLayout = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN, isFullWindowHost: true });
   const openUrl = useOpenUrl();
 
   const [termsAgreed, privacyAgreed, marketingAgreed, marketingPushAgreed] = useWatch({
     control,
     name: ['termsAgreed', 'privacyAgreed', 'marketingAgreed', 'marketingPushAgreed'],
   });
-  const register = useMutation(useRegisterMutationOptions());
   const isAllAgreed = termsAgreed && privacyAgreed && marketingAgreed && marketingPushAgreed;
   const isRequiredAgreed = termsAgreed && privacyAgreed;
 
@@ -45,37 +48,9 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
     setValue('marketingPushAgreed', isSelected, { shouldDirty: true });
   };
 
-  const onSubmit = async (data: SignUpFormData) => {
-    if (!data.termsAgreed || !data.privacyAgreed) {
-      return;
-    }
-
-    try {
-      const validatedData: RegisterInput = {
-        email: data.email,
-        password: data.password,
-        passwordConfirm: data.passwordConfirm,
-        name: data.name,
-        termsAgreed: true,
-        privacyAgreed: true,
-        marketingAgreed: data.marketingAgreed,
-        marketingPushAgreed: data.marketingPushAgreed,
-      };
-
-      await register.mutateAsync(validatedData, {
-        onSuccess: () => {
-          onOpenChange(false);
-          onNextStep();
-        },
-        onError: () => {
-          onOpenChange(false);
-        },
-      });
-    } catch (error) {
-      if (!isBusinessError(error)) {
-        showBoundary(error);
-      }
-    }
+  const handleConfirm = async () => {
+    await onSubmit();
+    onOpenChange(false);
   };
 
   return (
@@ -87,7 +62,8 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
           enableDynamicSizing
           detached
           bottomInset={insets.bottom || 16}
-          style={{ marginLeft: insets.left + 16, marginRight: insets.right + 16 }}
+          topInset={sheetLayout.topInset}
+          style={{ marginLeft: sheetLayout.margins.left, marginRight: sheetLayout.margins.right }}
           backgroundClassName="rounded-[32px]"
         >
           <VStack gap={32}>
@@ -151,8 +127,8 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
 
             <Button
               color="dark"
-              onPress={() => handleSubmit(onSubmit)()}
-              isLoading={register.isPending}
+              onPress={handleConfirm}
+              isLoading={isSubmitting}
               isDisabled={!isRequiredAgreed}
             >
               {t('common:actions.confirm')}
@@ -162,7 +138,7 @@ export const TermsBottomSheet = ({ isOpen, onOpenChange, onNextStep }: TermsBott
       </BottomSheet.Portal>
     </BottomSheet>
   );
-};
+}
 
 interface TermsAgreementItemProps extends Omit<ComponentProps<typeof ControlField>, 'children'> {
   label: string;

@@ -20,7 +20,7 @@ export function getPreviousTodoCommentPageParam({
   previousCursor,
   hasPrevious,
 }: TodoCommentCursorPagination): TodoCommentCursorPageParam | undefined {
-  return hasPrevious && previousCursor !== null
+  return hasPrevious && previousCursor != null
     ? { direction: 'before', cursor: previousCursor }
     : undefined;
 }
@@ -29,7 +29,7 @@ export function getNextTodoCommentPageParam({
   nextCursor,
   hasNext,
 }: TodoCommentCursorPagination): TodoCommentCursorPageParam | undefined {
-  return hasNext && nextCursor !== null ? { direction: 'after', cursor: nextCursor } : undefined;
+  return hasNext && nextCursor != null ? { direction: 'after', cursor: nextCursor } : undefined;
 }
 
 export function toTodoCommentOverviewQuery(
@@ -64,5 +64,5 @@ export function toTodoCommentConversationQuery(
     return { ...common, after: pageParam.cursor };
   }
 
-  return focusCommentId === undefined ? common : { ...common, focusCommentId };
+  return focusCommentId == null ? common : { ...common, focusCommentId };
 }

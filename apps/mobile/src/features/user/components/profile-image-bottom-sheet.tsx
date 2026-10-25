@@ -1,7 +1,15 @@
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { AppIconPicker } from '@src/features/app-icon/components/app-icon-picker';
 import { useTranslation } from '@src/shared/i18n';
-import { Button, HStack, Spacing, Text, VStack } from '@src/shared/ui';
+import {
+  Button,
+  HStack,
+  Spacing,
+  Text,
+  VStack,
+  SHEET_DETACHED_MARGIN,
+  useSheetLayout,
+} from '@src/shared/ui';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { BottomSheet } from 'heroui-native';
 import { useEffect, useState } from 'react';
@@ -23,6 +31,7 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
   const updateProfileMutation = useMutation(useUpdateProfileMutationOptions());
 
   const insets = useSafeAreaInsets();
+  const sheetLayout = useSheetLayout({ minMargin: SHEET_DETACHED_MARGIN, isFullWindowHost: true });
   const [selectedIcon, setSelectedIcon] = useState<string | null>(user.profileImage);
 
   useEffect(() => {
@@ -51,7 +60,8 @@ export function ProfileImageBottomSheet({ isOpen, onOpenChange }: ProfileImageBo
           contentContainerClassName="h-full"
           detached
           bottomInset={insets.bottom || 16}
-          style={{ marginLeft: insets.left + 16, marginRight: insets.right + 16 }}
+          topInset={sheetLayout.topInset}
+          style={{ marginLeft: sheetLayout.margins.left, marginRight: sheetLayout.margins.right }}
           backgroundClassName="rounded-[32px]"
         >
           <BottomSheetScrollView showsVerticalScrollIndicator={false}>

@@ -8,7 +8,7 @@ name: 화면 전환이 완료된 한글 라이트 UI를 캡처한다
     timeout: 15000
 - tapOn: 라이트 모드
 # When: 라이트 모드의 각 기능 화면을 연다
-- openLink: aido-dev://nudges?direction=received
+- openLink: aido-dev://notifications?category=SOCIAL
 - extendedWaitUntil:
     visible: 알림
     timeout: 15000

@@ -2,9 +2,9 @@ import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
+import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Box,
   Button,
   DocsIcon,
   Flex,
@@ -12,18 +12,15 @@ import {
   InfoIcon,
   ListRow,
   MenuIcon,
-  Result,
   Text,
+  TextSkeleton,
   useOverlay,
-  VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { range } from 'es-toolkit';
 import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { ActivityIndicator, RefreshControl } from 'react-native';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -31,51 +28,97 @@ import Animated, {
   FadeOutRight,
   LinearTransition,
 } from 'react-native-reanimated';
+import ReorderableList, { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
+import { useResolveClassNames } from 'uniwind';
 
-import { useDraggableFriendReorderList } from '../hooks/use-draggable-friend-reorder-list';
 import { useFriendListEditMode } from '../hooks/use-friend-list-edit-mode';
 import { useGetFriendsInfiniteQueryOptions } from '../queries/get-friends-infinite-query-options';
 import { useRemoveFriendMutationOptions } from '../queries/use-remove-friend-mutation-options';
 import { useReorderFriendMutationOptions } from '../queries/use-reorder-friend-mutation-options';
 import type { FriendUserViewModel } from '../utils/view-models/friend-user.view-model';
 import { FriendDeleteConfirmDialog } from './friend-delete-confirm-dialog';
+import { UserList } from './user-list';
 
 export function FriendList() {
-  const fontScaledSize = useFontScaledSize();
-  const { t } = useTranslation(['friend', 'common']);
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-    isFetchingNextPage,
-    refetch,
-    dataUpdatedAt,
-  } = useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
-
-  const removeMutation = useMutation(useRemoveFriendMutationOptions());
+  const { t } = useTranslation('friend');
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch, dataUpdatedAt } =
+    useSuspenseInfiniteQuery(useGetFriendsInfiniteQueryOptions());
   const reorderMutation = useMutation(useReorderFriendMutationOptions());
+  const [refreshing, onRefresh] = useRefresh(refetch);
+  const { color: refreshTint } = useResolveClassNames('text-main');
 
-  const overlay = useOverlay();
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
-  const [isEditMode] = useFriendListEditMode();
-
-  const allFriends = data.pages.flatMap((page) => page.items);
+  const friends = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
-  const { items: draggableFriends, onDragEnd } = useDraggableFriendReorderList({
-    items: allFriends,
+  const reorderableList = useReorderableList({
+    items: friends,
     updatedAt: dataUpdatedAt,
     isPending: reorderMutation.isPending,
-    onReorder: ({ movedFollowId, targetFollowId, position }) => {
+    getItemId: (friend) => friend.followId,
+    onReorder: ({ instruction: { movedId, targetId: targetFollowId, position } }) => {
       reorderMutation.mutate({
-        followId: movedFollowId,
+        followId: movedId,
         input: { targetFollowId, position },
       });
     },
   });
 
-  const openDeleteConfirmDialog = (id: string) => {
+  return (
+    <ReorderableList
+      {...reorderableList}
+      shouldUpdateActiveItem
+      keyExtractor={(item) => item.followId}
+      ListHeaderComponent={
+        <HStack py={12} align="center" justify="between">
+          <Text size="b4" shade={6}>
+            {t('list.friendCount', { count: totalCount })}
+          </Text>
+          <EditModeGuideTooltip />
+        </HStack>
+      }
+      renderItem={({ item }) => <FriendList.Item friend={item} />}
+      ListEmptyComponent={<FriendList.Empty />}
+      ListFooterComponent={
+        isFetchingNextPage ? (
+          <Flex py={16} align="center">
+            <ActivityIndicator />
+          </Flex>
+        ) : undefined
+      }
+      onEndReached={() => {
+        if (hasNextPage) {
+          return fetchNextPage({ cancelRefetch: false });
+        }
+      }}
+      onEndReachedThreshold={0.5}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={refreshTint}
+          colors={refreshTint == null ? undefined : [refreshTint]}
+        />
+      }
+      style={{ flex: 1 }}
+      contentContainerStyle={{ flexGrow: 1 }}
+    />
+  );
+}
+
+interface FriendListItemProps {
+  friend: FriendUserViewModel;
+}
+
+FriendList.Item = function Item({ friend }: FriendListItemProps) {
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
+  const fontScaledSize = useFontScaledSize();
+  const { t } = useTranslation('common');
+  const [isEditMode] = useFriendListEditMode();
+  const removeMutation = useMutation(useRemoveFriendMutationOptions());
+  const overlay = useOverlay();
+
+  const openDeleteConfirmDialog = () => {
     overlay.open(({ isOpen, close, exit }) => {
       const closeDialog = () => {
         close();
@@ -92,7 +135,7 @@ export function FriendList() {
           onCancel={closeDialog}
           onConfirm={() => {
             closeDialog();
-            removeMutation.mutate(id);
+            removeMutation.mutate(friend.id);
           }}
         />
       );
@@ -100,145 +143,92 @@ export function FriendList() {
   };
 
   return (
-    <DraggableFlatList
-      data={draggableFriends}
-      keyExtractor={(item) => item.followId}
-      activationDistance={10}
-      ListHeaderComponent={
-        <HStack py={12} align="center" justify="between">
-          <Text size="b4" shade={6}>
-            {t('list.friendCount', { count: totalCount })}
-          </Text>
-          <EditModeGuideTooltip />
-        </HStack>
-      }
-      renderItem={({
-        item,
-        drag,
-        isActive,
-      }: {
-        item: FriendUserViewModel;
-        drag: () => void;
-        isActive: boolean;
-      }) => {
-        const isProcessing = removeMutation.isPending && removeMutation.variables === item.id;
-        const displayName = item.displayName;
-
-        return (
-          <ScaleDecorator activeScale={isEditMode ? 1.015 : 1}>
-            <PressableFeedback
-              onLongPress={isEditMode && !reorderMutation.isPending ? drag : undefined}
-              isDisabled={isActive}
-              className={cn(isActive && 'bg-gray-1 rounded-xl')}
-            >
-              <Animated.View layout={LinearTransition.duration(ANIMATION.duration.normal)}>
-                <HStack align="center">
-                  {isEditMode && (
-                    <Animated.View
-                      entering={FadeInLeft.duration(ANIMATION.duration.normal)}
-                      exiting={FadeOutLeft.duration(ANIMATION.duration.fast)}
-                      className="pr-3 justify-center"
-                    >
-                      <MenuIcon
-                        width={fontScaledSize(18)}
-                        height={fontScaledSize(18)}
-                        colorClassName="text-gray-5"
-                      />
-                    </Animated.View>
-                  )}
-                  <Animated.View
-                    className="flex-1"
-                    layout={LinearTransition.duration(ANIMATION.duration.normal)}
+    <PressableFeedback
+      onLongPress={isEditMode ? drag : undefined}
+      isDisabled={isActive}
+      className={cn(isActive && 'bg-gray-1 rounded-xl')}
+    >
+      <HStack align="center">
+        {isEditMode && (
+          <Animated.View
+            entering={FadeInLeft.duration(ANIMATION.duration.normal)}
+            exiting={FadeOutLeft.duration(ANIMATION.duration.fast)}
+            className="pr-3 justify-center"
+          >
+            <MenuIcon
+              width={fontScaledSize(18)}
+              height={fontScaledSize(18)}
+              colorClassName="text-gray-5"
+            />
+          </Animated.View>
+        )}
+        <Animated.View
+          className="flex-1"
+          layout={LinearTransition.duration(ANIMATION.duration.normal)}
+        >
+          <ListRow
+            left={
+              <UserAvatar
+                alt={friend.displayName}
+                className="size-10"
+                profileImage={friend.profileImage}
+              />
+            }
+            contents={<ListRow.Texts type="1RowTypeA" top={friend.displayName} />}
+            right={
+              isEditMode && !isActive ? (
+                <Animated.View
+                  entering={FadeInRight.duration(ANIMATION.duration.normal)}
+                  exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
+                >
+                  <Button
+                    variant="weak"
+                    color="danger"
+                    size="small"
+                    display="inline"
+                    onPress={openDeleteConfirmDialog}
+                    isDisabled={removeMutation.isPending}
                   >
-                    <ListRow
-                      horizontalPadding="none"
-                      left={
-                        <UserAvatar
-                          alt={displayName}
-                          className="size-10"
-                          profileImage={item.profileImage}
-                        />
-                      }
-                      contents={<ListRow.Texts type="1RowTypeA" top={displayName} />}
-                      right={
-                        isEditMode && !isActive ? (
-                          <Animated.View
-                            entering={FadeInRight.duration(ANIMATION.duration.normal)}
-                            exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
-                          >
-                            <Button
-                              variant="weak"
-                              color="danger"
-                              size="small"
-                              display="inline"
-                              onPress={() => openDeleteConfirmDialog(item.id)}
-                              isDisabled={isProcessing}
-                            >
-                              {t('common:actions.delete')}
-                            </Button>
-                          </Animated.View>
-                        ) : null
-                      }
-                    />
-                  </Animated.View>
-                </HStack>
-              </Animated.View>
-            </PressableFeedback>
-          </ScaleDecorator>
-        );
-      }}
-      onDragEnd={onDragEnd}
-      ListEmptyComponent={
-        <Flex flex={1} justify="center" align="center">
-          <Result
-            icon={<DocsIcon width={72} height={72} />}
-            title={t('list.emptyTitle')}
-            description={t('list.emptyDescription')}
+                    {t('actions.delete')}
+                  </Button>
+                </Animated.View>
+              ) : null
+            }
           />
-        </Flex>
-      }
-      ListFooterComponent={
-        isFetchingNextPage ? (
-          <Flex py={16} align="center">
-            <ActivityIndicator />
-          </Flex>
-        ) : undefined
-      }
-      onEndReached={() => {
-        if (hasNextPage && !isFetching) {
-          return fetchNextPage({ cancelRefetch: false });
-        }
-      }}
-      onEndReachedThreshold={0.5}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          tintColor="#FF6B43"
-          colors={['#FF6B43']}
-        />
-      }
-      containerStyle={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1 }}
-    />
+        </Animated.View>
+      </HStack>
+    </PressableFeedback>
   );
-}
+};
 
 FriendList.Loading = function Loading() {
+  const fontScaledSize = useFontScaledSize();
+  const infoIconSize = fontScaledSize(16);
   return (
-    <ScrollView className="flex-1">
-      <Box py={12}>
-        <Skeleton className="w-12 h-4" />
-      </Box>
-      <VStack>
-        {range(3).map((i) => (
-          <HStack key={i} align="center" className="py-2" gap={12}>
-            <Skeleton className="w-10 h-10 rounded-full" />
-            <Skeleton className="flex-1 h-5" />
-          </HStack>
-        ))}
-      </VStack>
-    </ScrollView>
+    <UserList.Loading
+      ListHeaderComponent={
+        <HStack py={12} align="center" justify="between">
+          <TextSkeleton size="b4" className="w-16" />
+          <Skeleton
+            className="rounded-full"
+            style={{ width: infoIconSize, height: infoIconSize }}
+          />
+        </HStack>
+      }
+    />
+  );
+};
+
+FriendList.Error = UserList.Error;
+
+FriendList.Empty = function Empty() {
+  const { t } = useTranslation('friend');
+  return (
+    <UserList.Empty
+      icon={<DocsIcon width={72} height={72} />}
+      title={t('list.emptyTitle')}
+      description={t('list.emptyDescription')}
+    />
   );
 };
 

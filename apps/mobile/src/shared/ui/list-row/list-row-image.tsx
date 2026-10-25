@@ -1,5 +1,7 @@
 import type { ImageProps } from 'react-native';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
+
+import { Box } from '../box';
 
 export interface ListRowImageProps extends Omit<ImageProps, 'style'> {
   size?: 'small' | 'medium' | 'large';
@@ -8,9 +10,9 @@ export interface ListRowImageProps extends Omit<ImageProps, 'style'> {
 
 export const ListRowImage = ({ size = 'medium', rounded = true, ...props }: ListRowImageProps) => {
   return (
-    <View style={[styles.container, styles[size], rounded && styles.rounded]} className="bg-gray-3">
+    <Box style={[styles.container, styles[size], rounded && styles.rounded]} className="bg-gray-3">
       <Image style={styles.image} resizeMode="cover" {...props} />
-    </View>
+    </Box>
   );
 };
 

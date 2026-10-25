@@ -93,13 +93,13 @@ function shouldRegisterPushAutomatically({
     return false;
   }
   const isDeferredCohort =
-    config === undefined
+    config == null
       ? user.createdAt.getTime() >= new Date(FEATURE_DISCOVERY_CAMPAIGN_LAUNCHED_AT).getTime()
       : isNewUserCohort(config, user);
   if (!isDeferredCohort) {
     return true;
   }
-  return progress.activatedAt !== null || progress.pushRegistrationUnlockedAt !== null;
+  return progress.activatedAt != null || progress.pushRegistrationUnlockedAt != null;
 }
 
 function daysSinceSignup(user: ActivationUser, now: Date): number {

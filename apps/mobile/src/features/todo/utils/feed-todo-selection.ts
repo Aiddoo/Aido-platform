@@ -22,13 +22,13 @@ export function resolveFeedTodoSelection(
   todoId: number | undefined,
 ): FeedTodoSelectionNavigation {
   if (windowSizeClass === 'compact') {
-    return todoId === undefined ? { type: 'none' } : { type: 'push', todoId };
+    return todoId == null ? { type: 'none' } : { type: 'push', todoId };
   }
 
   return {
     type: 'setParams',
     params: {
-      todoId: todoId === undefined ? undefined : String(todoId),
+      todoId: todoId == null ? undefined : String(todoId),
       comment: undefined,
       intent: undefined,
       returnTo: undefined,

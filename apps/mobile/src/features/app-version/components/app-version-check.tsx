@@ -24,7 +24,7 @@ export function AppVersionCheck() {
     const result = await query.refetch();
     if (result.isError || !result.data || !installation) {
       if (result.error) {
-        errorReporter.captureException(result.error, { feature: 'app-version' });
+        errorReporter.captureException(result.error, { feature: 'app_version' });
       }
       toast.error(undefined, { fallback: t('checkFailed') });
       return;
@@ -40,7 +40,7 @@ export function AppVersionCheck() {
       try {
         await service.openStoreListing();
       } catch (error) {
-        errorReporter.captureException(toError(error), { feature: 'app-version' });
+        errorReporter.captureException(toError(error), { feature: 'app_version' });
         toast.error(undefined, { fallback: t('storeOpenFailed') });
       }
       return;

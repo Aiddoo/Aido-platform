@@ -10,14 +10,6 @@
     "retry": "다시 시도",
     "goBack": "뒤로 가기"
   },
-  "dateFormats": {
-    "fullDate": "YYYY년 M월 D일",
-    "monthDay": "M월 D일",
-    "dayOfMonth": "D일",
-    "yearMonth": "YYYY년 M월",
-    "monthLabel": "M월",
-    "shortDate": "YYYY.M.D"
-  },
   "daysOfWeek": {
     "MON": "월",
     "TUE": "화",

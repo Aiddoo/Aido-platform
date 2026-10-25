@@ -3,6 +3,7 @@ import { toError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { mutationOptions } from '@tanstack/react-query';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import {
   isNotificationError,
   isNotPhysicalDeviceError,
@@ -37,14 +38,14 @@ export const useRegisterPushTokenMutationOptions = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
     onError: (error) => {
       if (isNotPhysicalDeviceError(error)) {
-        logger.info('[PushNotification] Skipping: not a physical device');
+        logger.info(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_SKIPPED_NOT_DEVICE);
         return;
       }
       if (isPermissionDeniedError(error)) {
-        logger.info('[PushNotification] Permission denied by user');
+        logger.info(NOTIFICATION_LOG_EVENT.PUSH_PERMISSION_DENIED);
         return;
       }
-      logger.error('[PushNotification] Failed to register after retries', toError(error));
+      logger.error(NOTIFICATION_LOG_EVENT.PUSH_REGISTRATION_FAILED, toError(error));
     },
   });
 };

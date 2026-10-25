@@ -1,3 +1,4 @@
+import { feedSearchParamsSchema } from '@src/features/todo/utils/feed-search-params';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import {
@@ -29,7 +30,7 @@ export function useWidgetAppEntry() {
   });
   const segments = useSegments();
   const pathname = usePathname();
-  const parameters = useGlobalSearchParams<{ date?: string; action?: string }>();
+  const parameters = feedSearchParamsSchema.parse(useGlobalSearchParams());
   const url = useLinkingURL();
   const pendingCommand = useSyncExternalStore(
     widgetNavigationRepository.subscribe,

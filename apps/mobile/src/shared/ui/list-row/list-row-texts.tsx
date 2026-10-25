@@ -1,4 +1,4 @@
-import { Text, type TextProps } from '@src/shared/ui/text';
+import { Text, TextSkeleton, type TextProps, type TextSkeletonProps } from '@src/shared/ui/text';
 import { VStack } from '@src/shared/ui/v-stack';
 import type { ReactNode } from 'react';
 
@@ -34,7 +34,7 @@ export type ListRowTextsProps =
   | ListRowTexts2RowTypeA
   | ListRowTexts3RowTypeA;
 
-export const ListRowTexts = (props: ListRowTextsProps) => {
+export function ListRowTexts(props: ListRowTextsProps) {
   const { type, top, topProps } = props;
 
   return (
@@ -54,6 +54,28 @@ export const ListRowTexts = (props: ListRowTextsProps) => {
           </Text>
         </>
       )}
+    </VStack>
+  );
+}
+
+export interface ListRowTextsLoadingProps {
+  type: ListRowTextsProps['type'];
+  topProps?: TextSkeletonProps;
+  middleProps?: TextSkeletonProps;
+  bottomProps?: TextSkeletonProps;
+}
+
+ListRowTexts.Loading = function Loading({
+  type,
+  topProps,
+  middleProps,
+  bottomProps,
+}: ListRowTextsLoadingProps) {
+  return (
+    <VStack gap={2} align="start">
+      <TextSkeleton size="b2" className="w-24" {...topProps} />
+      {type === '3RowTypeA' && <TextSkeleton size="b3" className="w-32" {...middleProps} />}
+      {type !== '1RowTypeA' && <TextSkeleton size="e1" className="w-16" {...bottomProps} />}
     </VStack>
   );
 };

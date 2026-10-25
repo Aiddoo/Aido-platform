@@ -12,7 +12,7 @@ import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/fe
 import { FriendService } from '@src/features/friend/apis/friend.service';
 import { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
 import { MemoService } from '@src/features/memo/apis/memo.service';
-import { DeviceIdRepositoryImpl } from '@src/features/notification/apis/device-id.repository.impl';
+import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
 import { PushTokenService } from '@src/features/notification/apis/push-token.service';
@@ -29,6 +29,7 @@ import { SubTodoService } from '@src/features/todo/apis/sub-todo.service';
 import { TodoCategoryService } from '@src/features/todo/apis/todo-category.service';
 import { TodoService } from '@src/features/todo/apis/todo.service';
 import { UserService } from '@src/features/user/apis/user.service';
+import { createWeatherLocationStateRepository } from '@src/features/weather/apis/weather-location-state.repository';
 import { WeatherLocationStateService } from '@src/features/weather/apis/weather-location-state.service';
 import { WeatherService } from '@src/features/weather/apis/weather.service';
 import { createWidgetNavigationRepository } from '@src/features/widget/apis/widget-navigation.repository';
@@ -74,7 +75,7 @@ interface DIProviderProps extends PropsWithChildren {
   draftStorageBootstrap: DraftStorageBootstrap;
 }
 
-export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps) => {
+export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps) {
   const [di] = useState<DIContainer>(() => {
     const storage = new SecureStorage();
     const tokenStore = createSecureTokenStore(storage);
@@ -171,7 +172,7 @@ export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps)
     const todoCategoryService = new TodoCategoryService(authHttpClient);
 
     // Notification
-    const deviceIdRepository = new DeviceIdRepositoryImpl();
+    const deviceIdRepository = new DeviceIdRepository();
     const deviceIdService = new DeviceIdService(deviceIdRepository);
     const pushTokenService = new PushTokenService();
     const notificationService = new NotificationService(
@@ -241,7 +242,9 @@ export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps)
       revenueCatSdkManager,
       subscriptionService,
       weatherService,
-      weatherLocationStateService: new WeatherLocationStateService(mmkvSyncStorage),
+      weatherLocationStateService: new WeatherLocationStateService(
+        createWeatherLocationStateRepository(mmkvSyncStorage),
+      ),
       locationGateway: expoLocationGateway,
       widgetSyncService,
       widgetNavigationRepository,
@@ -249,4 +252,4 @@ export const DIProvider = ({ children, draftStorageBootstrap }: DIProviderProps)
   });
 
   return <DIContext.Provider value={di}>{children}</DIContext.Provider>;
-};
+}

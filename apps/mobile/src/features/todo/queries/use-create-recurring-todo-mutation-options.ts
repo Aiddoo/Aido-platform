@@ -2,17 +2,16 @@ import type { CreateRecurringTodoInput } from '@aido/api';
 import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useTodoService } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { invalidateTodos } from './todo-cache';
 
 export interface CreateRecurringTodoParams {
   input: CreateRecurringTodoInput;
@@ -33,8 +32,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
     },
     onSuccess: (_data, { input, source }) => {
       recordTodoCreatedForActivation({ queryClient, service: activationService });
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      invalidateTodos(queryClient);
       toast.success(t('todo:toast.recurringAdded'));
       trackEvent('todo_created', {
         source,
@@ -50,7 +48,7 @@ export const useCreateRecurringTodoMutationOptions = () => {
       }
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0813)) {
         toast.error(t('todo:toast.recurringCategoryLimit'));

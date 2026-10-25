@@ -1,4 +1,3 @@
-import type { DayOfWeek } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
@@ -12,7 +11,7 @@ import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
 import { useToday } from '@src/shared/hooks/use-today';
-import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useTranslation } from '@src/shared/i18n';
 import {
   ActionChip,
   useActionChipIconSize,
@@ -47,6 +46,7 @@ import { FormProvider, useForm, useFormContext, useFormState, useWatch } from 'r
 import type { TextInput } from 'react-native';
 import { ActivityIndicator, Keyboard, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
+import { useResolveClassNames } from 'uniwind';
 import type { z } from 'zod';
 
 import { type AddTodoFormInput, addTodoFormSchema } from '../domains/add-todo-form.schema';
@@ -56,7 +56,7 @@ import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutatio
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
 import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
-import { CategorySelectInput } from './category-select-bottom-sheet';
+import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
 import {
   type RepeatPickerCloseResult,
@@ -68,6 +68,8 @@ interface AddTodoBottomSheetBaseProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onClose: () => void;
+  /** 닫기 애니메이션 없이 바로 다른 화면으로 떠날 때(구독 화면 이동). 없으면 onClose. */
+  onExit?: () => void;
 }
 
 interface AddTodoBottomSheetCreateProps extends AddTodoBottomSheetBaseProps {
@@ -105,12 +107,8 @@ type AddTodoBottomSheetProps =
   | AddTodoBottomSheetConvertMemoProps;
 type AddTodoFormValues = z.input<typeof addTodoFormSchema>;
 
-export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
-  const fontScaledSize = useFontScaledSize();
-  const { showBoundary } = useErrorBoundary();
-  const { isOpen, onOpenChange, onClose } = props;
-
-  const defaultValues: AddTodoFormValues = match(props)
+function toDefaultFormValues(props: AddTodoBottomSheetProps): AddTodoFormValues {
+  return match(props)
     .with({ mode: 'edit' }, ({ todo }) => toTodoEditFormValues(todo))
     .with({ mode: 'create' }, ({ selectedDate, categoryId, initialValues }) => ({
       title: initialValues?.title ?? '',
@@ -139,6 +137,16 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       source: 'manual' as const,
     }))
     .exhaustive();
+}
+
+export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
+  const { t } = useTranslation('todo');
+  const fontScaledSize = useFontScaledSize();
+  const { color: spinnerColor } = useResolveClassNames('text-white');
+  const { showBoundary } = useErrorBoundary();
+  const { isOpen, onOpenChange, onClose, onExit = onClose } = props;
+
+  const defaultValues = toDefaultFormValues(props);
 
   const methods = useForm({
     resolver: zodResolver(addTodoFormSchema),
@@ -178,7 +186,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
 
   const { isSubmitting } = useFormState({ control: methods.control });
 
-  const onSubmit = methods.handleSubmit(async (data: AddTodoFormInput) => {
+  const handleSubmitTodo = methods.handleSubmit(async (values: AddTodoFormInput) => {
     try {
       await match(props)
         .with({ mode: 'edit' }, async ({ todo }) => {
@@ -186,12 +194,12 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             {
               todoId: todo.id,
               input: {
-                title: data.title,
-                startDate: formatDate(data.startDate),
-                endDate: data.endDate ? formatDate(data.endDate) : null,
-                scheduledTime: data.isAllDay ? null : (data.scheduledTime ?? null),
-                isAllDay: data.isAllDay,
-                visibility: data.visibility,
+                title: values.title,
+                startDate: formatDate(values.startDate),
+                endDate: values.endDate ? formatDate(values.endDate) : null,
+                scheduledTime: values.isAllDay ? null : (values.scheduledTime ?? null),
+                isAllDay: values.isAllDay,
+                visibility: values.visibility,
               },
             },
             { onSuccess: onClose },
@@ -201,7 +209,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
           await convertMemoMutation.mutateAsync(
             {
               memoId: convertProps.memoId,
-              input: toMemoConversionInput(data),
+              input: toMemoConversionInput(values),
               source: 'manual',
             },
             {
@@ -213,42 +221,42 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
           );
         })
         .with({ mode: 'create' }, async (createProps) => {
-          const onMutationSuccess = () => {
+          const handleMutationSuccess = () => {
             onClose();
             createProps.onSuccess?.();
           };
 
-          if (data.isRecurring) {
+          if (values.isRecurring) {
             await createRecurringMutation.mutateAsync(
               {
                 input: {
-                  title: data.title,
-                  startDate: formatDate(data.startDate),
-                  endDate: formatDate(data.repeatEndDate ?? data.startDate),
-                  daysOfWeek: data.daysOfWeek,
-                  scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-                  isAllDay: data.isAllDay,
-                  visibility: data.visibility,
-                  categoryId: data.categoryId,
+                  title: values.title,
+                  startDate: formatDate(values.startDate),
+                  endDate: formatDate(values.repeatEndDate ?? values.startDate),
+                  daysOfWeek: values.daysOfWeek,
+                  scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
+                  isAllDay: values.isAllDay,
+                  visibility: values.visibility,
+                  categoryId: values.categoryId,
                 },
-                source: data.source,
+                source: values.source,
               },
-              { onSuccess: onMutationSuccess },
+              { onSuccess: handleMutationSuccess },
             );
           } else {
             await createMutation.mutateAsync(
               {
                 input: {
-                  title: data.title,
-                  startDate: formatDate(data.startDate),
-                  scheduledTime: data.isAllDay ? undefined : data.scheduledTime,
-                  isAllDay: data.isAllDay,
-                  visibility: data.visibility,
-                  categoryId: data.categoryId,
+                  title: values.title,
+                  startDate: formatDate(values.startDate),
+                  scheduledTime: values.isAllDay ? undefined : values.scheduledTime,
+                  isAllDay: values.isAllDay,
+                  visibility: values.visibility,
+                  categoryId: values.categoryId,
                 },
-                source: data.source,
+                source: values.source,
               },
-              { onSuccess: onMutationSuccess },
+              { onSuccess: handleMutationSuccess },
             );
           }
         })
@@ -263,13 +271,13 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
   const title = useWatch({ control: methods.control, name: 'title' });
   const isSubmitDisabled = !title?.trim() || isSubmitting;
 
-  const openDatePicker = () => {
+  const handleDateChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: Date | null = null;
     overlay.open<Date | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close(null)}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
           if (pickerResult) {
@@ -290,13 +298,13 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     ));
   };
 
-  const openTimePicker = () => {
+  const handleTimeChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: TodoTimeValue | null = null;
     overlay.open<TodoTimeValue | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close(null)}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
           if (pickerResult) {
@@ -324,13 +332,13 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     ));
   };
 
-  const openRepeatPicker = () => {
+  const handleRepeatChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: RepeatPickerCloseResult | null = null;
     overlay.open<RepeatPickerCloseResult | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close({ type: 'cancel' })}
+        onOpenChange={() => close({ type: 'cancel' })}
         onExit={() => {
           exit();
           match(pickerResult)
@@ -364,13 +372,13 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
     ));
   };
 
-  const openCategoryPicker = () => {
+  const handleCategoryChipPress = () => {
     Keyboard.dismiss();
     let pickerResult: number | null = null;
     overlay.open<number | null>(({ isOpen, close, exit }) => (
       <ModalBottomSheet
         isOpen={isOpen}
-        onClose={() => close(null)}
+        onOpenChange={() => close(null)}
         onExit={() => {
           exit();
           if (pickerResult != null) {
@@ -386,7 +394,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               pickerResult = categoryId;
               close(categoryId);
             }}
-            submitLabel={tGlobal('todo:add.submit')}
+            submitLabel={t('add.submit')}
           />
         </Suspense>
       </ModalBottomSheet>
@@ -408,14 +416,14 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               <BottomSheetInput
                 ref={todoInputRef}
                 autoFocus
-                placeholder={tGlobal('todo:add.placeholder')}
+                placeholder={t('add.placeholder')}
                 value={value}
                 onChange={onChange}
                 maxLength={200}
                 size="medium"
                 renderErrorMessage={false}
                 returnKeyType="done"
-                onSubmitEditing={() => (isSubmitDisabled ? onClose() : onSubmit())}
+                onSubmitEditing={() => (isSubmitDisabled ? onClose() : handleSubmitTodo())}
               />
             )}
           </FormField>
@@ -426,21 +434,21 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
             keyboardShouldPersistTaps="always"
             contentContainerClassName="gap-2"
           >
-            <DateChip onPress={openDatePicker} />
-            <TimeChip onPress={openTimePicker} />
-            <RepeatChip onPress={openRepeatPicker} />
+            <DateChip onPress={handleDateChipPress} />
+            <TimeChip onPress={handleTimeChipPress} />
+            <RepeatChip onPress={handleRepeatChipPress} />
             <VisibilityChip />
-            <CategoryChip onPress={openCategoryPicker} />
+            <CategoryChip onPress={handleCategoryChipPress} />
           </ScrollView>
 
           <Box className="h-px bg-gray-2" />
 
           <HStack gap={8} align="center" justify="end">
             <AiFeatureTooltip />
-            <AiParseButton onClose={onClose} />
+            <AiParseButton onExit={onExit} />
             <PressableFeedback
               isDisabled={isSubmitDisabled}
-              onPress={() => onSubmit()}
+              onPress={() => handleSubmitTodo()}
               style={{ width: fontScaledSize(36), height: fontScaledSize(36) }}
               className={cn(
                 'items-center justify-center rounded-4xl',
@@ -448,7 +456,10 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
               )}
             >
               {isSubmitting ? (
-                <Spinner size="sm" color="white" />
+                <Spinner
+                  size="sm"
+                  color={typeof spinnerColor === 'string' ? spinnerColor : undefined}
+                />
               ) : (
                 <ArrowUpIcon
                   width={fontScaledSize(18)}
@@ -462,20 +473,7 @@ export const AddTodoBottomSheet = (props: AddTodoBottomSheetProps) => {
       </KeyboardBottomSheet>
     </FormProvider>
   );
-};
-
-// --- constants ---
-
-const DEFAULT_CATEGORY_COLOR = '#999';
-
-// --- helpers ---
-
-const formatRepeatLabel = (days: DayOfWeek[]): string => {
-  if (days.length === 7) {
-    return tGlobal('todo:chip.daily');
-  }
-  return tGlobal('todo:chip.weeklyDays', { days: formatDaysOfWeek(days) });
-};
+}
 
 // --- chip components ---
 
@@ -533,7 +531,11 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
   });
   const { t } = useTranslation('todo');
   const isActive = isRecurring && (daysOfWeek?.length ?? 0) > 0;
-  const label = isActive ? formatRepeatLabel(daysOfWeek ?? []) : t('chip.repeat');
+  const days = daysOfWeek ?? [];
+  const label = match({ isActive, isEveryDay: days.length === 7 })
+    .with({ isActive: false }, () => t('chip.repeat'))
+    .with({ isEveryDay: true }, () => t('chip.daily'))
+    .otherwise(() => t('chip.weeklyDays', { days: formatDaysOfWeek(days) }));
 
   return (
     <ActionChip
@@ -552,6 +554,7 @@ const RepeatChip = ({ onPress }: { onPress: () => void }) => {
 };
 
 const VisibilityChip = () => {
+  const { t } = useTranslation('todo');
   const actionChipIconSize = useActionChipIconSize();
   const { control } = useFormContext<AddTodoFormValues>();
   return (
@@ -575,7 +578,7 @@ const VisibilityChip = () => {
                 />
               )
             }
-            label={isPrivate ? tGlobal('todo:chip.private') : tGlobal('todo:chip.public')}
+            label={isPrivate ? t('chip.private') : t('chip.public')}
             onPress={() => onChange(isPrivate ? 'PUBLIC' : 'PRIVATE')}
           />
         );
@@ -587,18 +590,18 @@ const VisibilityChip = () => {
 const CategoryChip = ({ onPress }: { onPress: () => void }) => {
   const { t } = useTranslation('todo');
   const categoryId = useWatch<AddTodoFormValues, 'categoryId'>({ name: 'categoryId' });
-  const { data } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
+  const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const category = useMemo(
-    () => data.categories.find((c) => c.id === categoryId),
-    [data.categories, categoryId],
+    () => categoriesResult.categories.find((c) => c.id === categoryId),
+    [categoriesResult.categories, categoryId],
   );
 
   return (
     <ActionChip
       icon={
         <Box
-          className="size-2 rounded-full"
-          style={{ backgroundColor: category?.color ?? DEFAULT_CATEGORY_COLOR }}
+          className={cn('size-2 rounded-full', !category && 'bg-gray-5')}
+          style={category && { backgroundColor: category.color }}
         />
       }
       label={category?.name ?? t('chip.category')}
@@ -610,13 +613,13 @@ const CategoryChip = ({ onPress }: { onPress: () => void }) => {
 const AiFeatureTooltip = () => {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('todo');
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   return (
-    <Popover isOpen={tooltipOpen} onOpenChange={setTooltipOpen}>
+    <Popover isOpen={isTooltipOpen} onOpenChange={setIsTooltipOpen}>
       <Popover.Trigger asChild>
         <PressableFeedback
-          onPress={() => setTooltipOpen(true)}
+          onPress={() => setIsTooltipOpen(true)}
           className="items-center justify-center"
         >
           <HStack gap={4} align="center">
@@ -663,10 +666,11 @@ const AiFeatureTooltip = () => {
 };
 
 interface AiParseButtonProps {
-  onClose: () => void;
+  onExit: () => void;
 }
 
-const AiParseButton = ({ onClose }: AiParseButtonProps) => {
+const AiParseButton = ({ onExit }: AiParseButtonProps) => {
+  const { t } = useTranslation('todo');
   const fontScaledSize = useFontScaledSize();
   const methods = useFormContext<AddTodoFormInput>();
   const { trackEvent } = useTrack();
@@ -689,18 +693,18 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
       { text: currentTitle.trim(), categoryId: currentCategoryId },
       {
         onSuccess: (result) => {
-          const { data } = result;
+          const { data: parsedTodo } = result;
           methods.reset(
             (prev) => ({
               ...prev,
-              title: data.title,
-              startDate: data.startDate,
-              endDate: data.endDate,
-              scheduledTime: data.scheduledTime,
-              isAllDay: data.scheduledTime ? false : data.isAllDay,
-              isRecurring: data.isRecurring,
-              daysOfWeek: data.recurrence?.daysOfWeek ?? [],
-              repeatEndDate: data.recurrence?.endDate ?? null,
+              title: parsedTodo.title,
+              startDate: parsedTodo.startDate,
+              endDate: parsedTodo.endDate,
+              scheduledTime: parsedTodo.scheduledTime,
+              isAllDay: parsedTodo.scheduledTime ? false : parsedTodo.isAllDay,
+              isRecurring: parsedTodo.isRecurring,
+              daysOfWeek: parsedTodo.recurrence?.daysOfWeek ?? [],
+              repeatEndDate: parsedTodo.recurrence?.endDate ?? null,
               source: 'ai',
             }),
             { keepDirtyValues: true },
@@ -727,8 +731,8 @@ const AiParseButton = ({ onClose }: AiParseButtonProps) => {
     if (isAiLimitReached) {
       trackEvent('premium_gate_shown', { feature: 'ai_parse' });
       premiumDialog.open({
-        description: tGlobal('todo:premium.unlimitedParse'),
-        onConfirm: onClose,
+        description: t('premium.unlimitedParse'),
+        onConfirm: onExit,
       });
       return;
     }

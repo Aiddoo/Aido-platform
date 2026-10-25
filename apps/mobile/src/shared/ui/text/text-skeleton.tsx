@@ -1,0 +1,28 @@
+import { useFontScale } from '@src/shared/providers/font-scale-provider';
+import { cn } from '@src/shared/utils/cn';
+import { Skeleton } from 'heroui-native';
+import { useResolveClassNames } from 'uniwind';
+
+import { Box } from '../box';
+import type { TextSize } from './text.types';
+import { TEXT_SIZE_CLASSES } from './text.variants';
+
+export interface TextSkeletonProps {
+  size?: TextSize;
+  className?: string;
+  color?: string;
+}
+
+export function TextSkeleton({ size = 'b3', className, color }: TextSkeletonProps) {
+  const { resolveSize } = useFontScale();
+  const { fontSize, lineHeight } = useResolveClassNames(TEXT_SIZE_CLASSES[resolveSize(size)]);
+
+  return (
+    <Box className={cn('justify-center', className)} style={{ height: lineHeight }}>
+      <Skeleton
+        className="rounded"
+        style={color == null ? { height: fontSize } : { height: fontSize, backgroundColor: color }}
+      />
+    </Box>
+  );
+}

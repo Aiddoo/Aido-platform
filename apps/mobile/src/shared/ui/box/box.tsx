@@ -44,7 +44,7 @@ export function Box({
       marginLeft: ml,
       marginRight: mr,
     } satisfies ViewStyle,
-    (value) => value === undefined,
+    (value) => value == null,
   );
 
   return (

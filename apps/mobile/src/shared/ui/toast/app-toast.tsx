@@ -1,7 +1,7 @@
 import { PressableFeedback, Toast } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { View } from 'react-native';
 
+import { Box } from '../box';
 import { ToastErrorIcon, ToastSuccessIcon, ToastWarningIcon } from '../icon/icons';
 import { Text } from '../text/text';
 
@@ -32,22 +32,22 @@ const variantIconMap: Record<AppToastVariant, ReactNode | null> = {
   danger: <ToastErrorIcon width={ICON_SIZE} height={ICON_SIZE} />,
 };
 
-export const AppToast = ({
+export function AppToast({
   label,
   description,
   variant = 'default',
   icon,
   action,
   toastProps,
-}: AppToastProps) => {
+}: AppToastProps) {
   const resolvedIcon = icon ?? variantIconMap[variant];
 
   return (
     <Toast {...toastProps} className="bg-transparent p-0">
-      <View className="bg-gray-8/80 dark:bg-gray-3/80 rounded-4xl flex-row items-center gap-3 px-4 py-4">
-        {resolvedIcon && <View className="shrink-0">{resolvedIcon}</View>}
+      <Box className="bg-gray-8/80 dark:bg-gray-3/80 rounded-4xl flex-row items-center gap-3 px-4 py-4">
+        {resolvedIcon && <Box className="shrink-0">{resolvedIcon}</Box>}
 
-        <View className="flex-1">
+        <Box className="flex-1">
           <Text size="b2" weight="medium" className="text-white dark:text-gray-9">
             {label}
           </Text>
@@ -56,7 +56,7 @@ export const AppToast = ({
               {description}
             </Text>
           )}
-        </View>
+        </Box>
 
         {action && (
           <PressableFeedback
@@ -71,7 +71,7 @@ export const AppToast = ({
             </Text>
           </PressableFeedback>
         )}
-      </View>
+      </Box>
     </Toast>
   );
-};
+}

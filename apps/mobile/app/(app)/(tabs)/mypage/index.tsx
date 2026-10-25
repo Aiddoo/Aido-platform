@@ -1,6 +1,7 @@
 import { AppVersionCheck } from '@src/features/app-version/components/app-version-check';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/queries/use-logout-mutation-options';
+import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { MyPageMenu } from '@src/features/user/components/mypage-menu/mypage-menu';
 import { ProfileCard } from '@src/features/user/components/profile-card';
 import { UserPolicy } from '@src/features/user/domains/user.model';
@@ -27,6 +28,7 @@ function MyPageScreen() {
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
+      <NotificationBell.Toolbar />
       <ScrollView className="px-4 flex-1" contentContainerStyle={{ paddingBottom: 16 }}>
         <StyledSafeAreaView edges={['left', 'right']}>
           <H3>{t('mypage.header')}</H3>

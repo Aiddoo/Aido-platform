@@ -10,17 +10,22 @@ export function useWeatherIntroduction() {
   const stable = useStableFeedForeground();
   const overlay = useOverlay();
   const { t } = useTranslation(['weather', 'common']);
-  const claimed = useRef(false);
+  const hasClaimed = useRef(false);
 
   useEffect(() => {
-    if (!stable || session.status === 'checking' || !session.needsIntroduction || claimed.current) {
+    if (
+      !stable ||
+      session.status === 'checking' ||
+      !session.shouldIntroduce ||
+      hasClaimed.current
+    ) {
       return;
     }
     const task = requestIdleCallback(() => {
-      if (claimed.current) {
+      if (hasClaimed.current) {
         return;
       }
-      claimed.current = true;
+      hasClaimed.current = true;
       overlay
         .open<boolean>(({ isOpen, close, exit }) => (
           <ConfirmDialog

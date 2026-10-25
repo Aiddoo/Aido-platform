@@ -1,3 +1,5 @@
+import { NOTIFICATION_TYPE, type NotificationContext, type NotificationType } from '@aido/api';
+
 import { createNotificationListResponseDto } from '../../__tests__/notification.factories';
 import { toNotification } from '../../apis/notification.mapper';
 import { resolveNotificationDestination } from './notification-destination';
@@ -110,14 +112,14 @@ describe('resolveNotificationDestination', () => {
       }),
     ).toEqual({
       kind: 'route',
-      href: { pathname: '/feed/friend/[friendId]', params: { friendId: 'friend-1' } },
+      href: { pathname: '/feed', params: { friendId: 'friend-1' } },
     });
   });
 
   test('피드 알림은 별도 routing 없이 이동한다', () => {
     expect(resolveNotificationDestination({ type: 'STREAK_AT_RISK' })).toEqual({
       kind: 'route',
-      href: '/feed',
+      href: { pathname: '/feed', params: {} },
     });
   });
 });
@@ -147,7 +149,7 @@ describe('콕과 오늘의 알림 이동', () => {
     expect(destination).toEqual({
       kind: 'route',
       href: {
-        pathname: '/feed/friend/[friendId]',
+        pathname: '/feed',
         params: { friendId: 'friend', date: 'today' },
       },
     });
@@ -216,5 +218,69 @@ describe('콕과 오늘의 알림 이동', () => {
     const destination = resolveNotificationDestination(source);
     // Then
     expect(destination).toEqual({ kind: 'none' });
+  });
+});
+
+describe('알림 타입별 목적지', () => {
+  const today = '2026-10-25';
+  const todayFeed = { kind: 'route', href: { pathname: '/feed', params: { date: 'today' } } };
+  const friendFeed = {
+    kind: 'route',
+    href: { pathname: '/feed', params: { friendId: 'friend-1', date: 'today' } },
+  };
+  const nudgeDetail = {
+    kind: 'route',
+    href: { pathname: '/nudges/[nudgeId]', params: { nudgeId: 7 } },
+  };
+  const todoDetail = {
+    kind: 'route',
+    href: { pathname: '/todo/[todoId]', params: { todoId: 42 } },
+  };
+  const none = { kind: 'none' };
+
+  const cases: [NotificationType, NotificationContext, unknown][] = [
+    [
+      'FOLLOW_NEW',
+      {},
+      { kind: 'route', href: { pathname: '/friends', params: { view: 'receiver' } } },
+    ],
+    ['FOLLOW_ACCEPTED', { friendId: 'friend-1' }, friendFeed],
+    ['NUDGE_RECEIVED', { nudgeId: 7, todoId: 42 }, nudgeDetail],
+    ['NUDGE_RECEIVED', { todoId: 42 }, todoDetail],
+    ['NUDGE_RECEIVED', { friendId: 'friend-1', nudgeId: 7 }, friendFeed],
+    ['NUDGE_RECEIVED', {}, todayFeed],
+    ['NUDGE_REPLIED', { nudgeId: 7 }, nudgeDetail],
+    ['NUDGE_REPLIED', {}, { kind: 'route', href: '/notifications' }],
+    ['NUDGE_THANKED', { nudgeId: 7 }, nudgeDetail],
+    ['CHEER_RECEIVED', { friendId: 'friend-1' }, friendFeed],
+    ['DAILY_COMPLETE', {}, todayFeed],
+    ['FRIEND_COMPLETED', { friendId: 'friend-1' }, friendFeed],
+    ['TODO_REMINDER', { todoId: 42 }, todoDetail],
+    ['TODO_REMINDER', {}, todayFeed],
+    ['TODO_SHARED', { todoId: 42 }, todoDetail],
+    ['MORNING_REMINDER', {}, todayFeed],
+    ['EVENING_REMINDER', {}, todayFeed],
+    ['WEEKLY_ACHIEVEMENT', {}, { kind: 'route', href: '/achievements' }],
+    ['WEEKLY_REPORT', {}, { kind: 'route', href: '/reports' }],
+    ['MONTHLY_REPORT', {}, { kind: 'route', href: '/reports' }],
+    ['AI_SUGGESTION', {}, { kind: 'route', href: '/suggestions' }],
+    ['SYSTEM_NOTICE', {}, none],
+    ['ADMIN_BROADCAST', {}, none],
+    ['ADMIN_TARGETED', {}, none],
+    ['WINBACK', {}, todayFeed],
+    ['SOCIAL_DIGEST', {}, todayFeed],
+    ['NUDGE_SUGGEST', { friendId: 'friend-1' }, friendFeed],
+    ['LUNCH_NUDGE', {}, todayFeed],
+    ['STREAK_AT_RISK', {}, todayFeed],
+    ['WEATHER_MORNING', {}, { kind: 'route', href: '/weather' }],
+    ['WEATHER_EVENING', {}, { kind: 'route', href: '/weather' }],
+  ];
+
+  test('모든 알림 타입의 목적지를 검증한다', () => {
+    expect(new Set(cases.map(([type]) => type))).toEqual(new Set(Object.values(NOTIFICATION_TYPE)));
+  });
+
+  test.each(cases)('%s %o', (type, context, expected) => {
+    expect(resolveNotificationDestination({ type, context }, { today })).toEqual(expected);
   });
 });

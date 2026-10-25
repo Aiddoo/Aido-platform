@@ -13,7 +13,7 @@ export interface DraftRepository {
 }
 
 function parseDraftEntry(raw: string | undefined): DraftEntry | undefined {
-  if (raw === undefined) {
+  if (raw == null) {
     return undefined;
   }
 

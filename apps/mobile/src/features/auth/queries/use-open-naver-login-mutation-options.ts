@@ -1,7 +1,7 @@
 import { useAuthService } from '@src/bootstrap/providers/di-context';
 import { unwrap } from '@src/shared/errors/result';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 export const useOpenNaverLoginMutationOptions = () => {
   const authService = useAuthService();
@@ -12,7 +12,7 @@ export const useOpenNaverLoginMutationOptions = () => {
       return unwrap(result);
     },
     onError: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
     },
   });
 };

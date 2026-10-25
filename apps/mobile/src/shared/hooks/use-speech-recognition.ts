@@ -1,4 +1,5 @@
 import { i18n, tDynamic } from '@src/shared/i18n';
+import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import type { ExpoSpeechRecognitionErrorCode } from 'expo-speech-recognition';
 import { ExpoSpeechRecognitionModule } from 'expo-speech-recognition';
 import { useCallback } from 'react';
@@ -58,7 +59,7 @@ export const useSpeechRecognition = (
   options: UseSpeechRecognitionOptions = {},
 ): UseSpeechRecognitionReturn => {
   const {
-    lang = i18n.language === 'en' ? 'en-US' : 'ko-KR',
+    lang = toResolvedLanguage(i18n.language) === 'en' ? 'en-US' : 'ko-KR',
     interimResults = true,
     continuous = false,
     onResult,

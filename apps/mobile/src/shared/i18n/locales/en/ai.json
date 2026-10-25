@@ -25,11 +25,6 @@
       "aiSummary": "AI Summary",
       "aiTips": "AI Tips"
     },
-    "hour": {
-      "am": "{{hour}} AM",
-      "pm": "{{hour}} PM",
-      "h24": "{{hour}}:00"
-    },
     "dday": {
       "today": "Arrived today!",
       "inDays_one": "In {{count}} day",

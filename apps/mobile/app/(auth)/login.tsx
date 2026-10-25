@@ -1,4 +1,5 @@
 import appIconImage from '@assets/images/icon.png';
+import type { OAuthStartProvider } from '@src/features/auth/domains/oauth.model';
 import { useExchangeCodeMutationOptions } from '@src/features/auth/queries/use-exchange-code-mutation-options';
 import { useOpenAppleLoginMutationOptions } from '@src/features/auth/queries/use-open-apple-login-mutation-options';
 import { useOpenGoogleLoginMutationOptions } from '@src/features/auth/queries/use-open-google-login-mutation-options';
@@ -35,45 +36,19 @@ function LoginScreen() {
   const exchangeCodeMutation = useMutation(useExchangeCodeMutationOptions());
 
   const kakaoLoginMutation = useMutation(useOpenKakaoLoginMutationOptions());
-
-  const handleKakaoLogin = () => {
-    kakaoLoginMutation.mutate(undefined, {
-      onSuccess: (code) => {
-        if (code) {
-          // exchangeCode 성공 시 AuthProvider가 status를 'authenticated'로 변경하고
-          // Stack.Protected가 자동으로 (app) 그룹으로 라우팅 처리
-          exchangeCodeMutation.mutate({ code, provider: 'kakao' });
-        }
-      },
-    });
-  };
-
   const naverLoginMutation = useMutation(useOpenNaverLoginMutationOptions());
-  const handleNaverLogin = () => {
-    naverLoginMutation.mutate(undefined, {
-      onSuccess: (code) => {
-        if (code) {
-          exchangeCodeMutation.mutate({ code, provider: 'naver' });
-        }
-      },
-    });
-  };
-
   const googleLoginMutation = useMutation(useOpenGoogleLoginMutationOptions());
-  const handleGoogleLogin = () => {
-    googleLoginMutation.mutate(undefined, {
-      onSuccess: (code) => {
-        if (code) {
-          exchangeCodeMutation.mutate({ code, provider: 'google' });
-        }
-      },
-    });
-  };
+
+  // 교환에 성공하면 AuthProvider가 인증 상태로 바꾸고 Stack.Protected가 (app)으로 보낸다.
+  const exchangeCodeOf = (provider: OAuthStartProvider) => ({
+    onSuccess: (code: string | null) => {
+      if (code) {
+        exchangeCodeMutation.mutate({ code, provider });
+      }
+    },
+  });
 
   const appleLoginMutation = useMutation(useOpenAppleLoginMutationOptions());
-  const handleAppleLogin = () => {
-    appleLoginMutation.mutate(undefined);
-  };
 
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -82,7 +57,7 @@ function LoginScreen() {
     <StyledSafeAreaView className="flex-1 bg-white mb-2">
       <ReadableContent flex={1} px={16}>
         <VStack flex={1} align="center" justify="center" gap={8}>
-          <Avatar alt="Aido logo" size="lg" className="rounded-xl">
+          <Avatar alt={t('login.logoAlt')} size="lg" className="rounded-xl">
             <Avatar.Image source={appIconImage} />
           </Avatar>
           <VStack align="center">
@@ -104,7 +79,7 @@ function LoginScreen() {
                 />
               }
               label={t('login.continueWith', { provider: t('providers.APPLE') })}
-              onPress={handleAppleLogin}
+              onPress={() => appleLoginMutation.mutate()}
               isLoading={appleLoginMutation.isPending}
               className="bg-apple-button dark:bg-apple-button-dark"
               labelClassName="text-white dark:text-black"
@@ -113,7 +88,7 @@ function LoginScreen() {
           <SocialLoginButton
             icon={<KakaoIcon width={20} height={20} />}
             label={t('login.continueWith', { provider: t('providers.KAKAO') })}
-            onPress={handleKakaoLogin}
+            onPress={() => kakaoLoginMutation.mutate(undefined, exchangeCodeOf('kakao'))}
             isLoading={kakaoLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-kakao"
             labelClassName="dark:text-gray-1"
@@ -121,7 +96,7 @@ function LoginScreen() {
           <SocialLoginButton
             icon={<GoogleIcon width={20} height={20} />}
             label={t('login.continueWith', { provider: t('providers.GOOGLE') })}
-            onPress={handleGoogleLogin}
+            onPress={() => googleLoginMutation.mutate(undefined, exchangeCodeOf('google'))}
             isLoading={googleLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-white border border-gray-3 dark:border-gray-2 dark:bg-gray-2"
             labelClassName="dark:text-gray-9"
@@ -129,7 +104,7 @@ function LoginScreen() {
           <SocialLoginButton
             icon={<NaverIcon width={16} height={16} colorClassName="text-white" />}
             label={t('login.continueWith', { provider: t('providers.NAVER') })}
-            onPress={handleNaverLogin}
+            onPress={() => naverLoginMutation.mutate(undefined, exchangeCodeOf('naver'))}
             isLoading={naverLoginMutation.isPending || exchangeCodeMutation.isPending}
             className="bg-naver"
             labelClassName="text-white dark:text-gray-9"

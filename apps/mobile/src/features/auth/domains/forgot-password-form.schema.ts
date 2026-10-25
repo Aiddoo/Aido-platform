@@ -1,22 +1,9 @@
-import { emailSchema, passwordSchema, VERIFICATION_CODE } from '@aido/api';
-import { t } from '@src/shared/i18n';
-import { z } from 'zod';
+import { resetPasswordSchema, verifyEmailSchema } from '@aido/api';
+import type { z } from 'zod';
 
-export const forgotPasswordFormSchema = z
-  .object({
-    email: emailSchema,
-    code: z
-      .string()
-      .length(VERIFICATION_CODE.LENGTH, {
-        error: () => t('auth:forms.codeLength', { length: VERIFICATION_CODE.LENGTH }),
-      })
-      .regex(/^\d+$/, { error: () => t('auth:forms.codeDigitsOnly') }),
-    newPassword: passwordSchema,
-    newPasswordConfirm: z.string(),
-  })
-  .refine((data) => data.newPassword === data.newPasswordConfirm, {
-    error: () => t('auth:forms.passwordMismatch'),
-    path: ['newPasswordConfirm'],
-  });
+/** 비밀번호 재설정 폼. 인증 코드는 이메일 인증과 같은 숫자 규칙으로 좁힌다. */
+export const forgotPasswordFormSchema = resetPasswordSchema.safeExtend({
+  code: verifyEmailSchema.shape.code,
+});
 
-export type ForgotPasswordFormData = z.infer<typeof forgotPasswordFormSchema>;
+export type ForgotPasswordFormInput = z.input<typeof forgotPasswordFormSchema>;

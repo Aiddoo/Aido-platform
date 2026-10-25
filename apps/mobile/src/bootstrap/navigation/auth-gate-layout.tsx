@@ -6,7 +6,7 @@ import { useTheme } from '@src/shared/providers/theme-provider';
 import { Stack } from 'expo-router';
 import { useResolveClassNames } from 'uniwind';
 
-export const AuthGateLayout = () => {
+export function AuthGateLayout() {
   const { status } = useAuth();
   const { resolvedTheme } = useTheme();
   useScreenTracking();
@@ -46,4 +46,4 @@ export const AuthGateLayout = () => {
       </Stack.Protected>
     </Stack>
   );
-};
+}

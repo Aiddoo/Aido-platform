@@ -13,19 +13,19 @@ import {
 } from '../utils/view-models/friend-user.view-model';
 import { getFriendsInfiniteQueryOptions } from './get-friends-infinite-query-options';
 
-type FriendsData = InfiniteData<Page<FriendUser>, string | undefined>;
+type FriendPages = InfiniteData<Page<FriendUser>, string | undefined>;
 
 export function selectFriend(
-  data: FriendsData,
+  friendPages: FriendPages,
   { friendId, fallbackName }: { friendId: string; fallbackName: string },
 ): FriendUserViewModel | null {
-  const friend = findFriendById(data.pages, friendId);
+  const friend = findFriendById(friendPages.pages, friendId);
   return friend ? toFriendUserViewModel(friend, fallbackName) : null;
 }
 
 export function getFriendQueryOptions(
   service: FriendService,
-  { select }: { select: (data: FriendsData) => FriendUserViewModel | null },
+  { select }: { select: (friendPages: FriendPages) => FriendUserViewModel | null },
 ) {
   return infiniteQueryOptions({ ...getFriendsInfiniteQueryOptions(service), select });
 }
@@ -34,7 +34,7 @@ export function useGetFriendQueryOptions({ friendId }: { friendId: string }) {
   const { t } = useTranslation('friend');
   const fallbackName = t('fallbackName');
   const select = useCallback(
-    (data: FriendsData) => selectFriend(data, { friendId, fallbackName }),
+    (friendPages: FriendPages) => selectFriend(friendPages, { friendId, fallbackName }),
     [friendId, fallbackName],
   );
 

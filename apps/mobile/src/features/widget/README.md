@@ -21,17 +21,3 @@ Expo SDK 58의 `expo-widgets`로 양 플랫폼을 구현한다.
 iOS identity·App Group·snapshot v1은 유지한다. Android의 이전 component 이름은 SDK receiver로
 연결하고, 이전 snapshot은 read-only native adapter로 이관한다. 기존 widget ID와 배치를 유지한다.
 SDK의 cold launch 누락은 버전 고정된 최소 Glance patch로 보완한다.
-
-## 1.10.0 migration evidence
-
-| Measure                          | 1.9.0                                                  | 1.10.0                                                                 |
-| -------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------- |
-| Non-test TypeScript source files | 22                                                     | 14                                                                     |
-| Non-test TypeScript source lines | 1,685                                                  | 1,033                                                                  |
-| Android widget implementation    | Separate headless renderer, MMKV snapshot, WorkManager | Expo Widgets registry, shared snapshot props, platform renderer        |
-| Android layouts                  | Legacy provider placements                             | Existing component/ID preserved; summary 2×2, list 4×2, large list 4×4 |
-| iOS widget identity              | `AidoTodayList`, existing App Group                    | Preserved                                                              |
-| Tap while app is closed          | JavaScript headless interaction                        | Native Glance activity launch                                          |
-| Logout synchronization           | Independent writes                                     | Serialized writes; obsolete queued snapshots skipped                   |
-
-Counts compare the tracked 1.9.0 revision with the migration worktree and exclude tests, documentation, native plugins, and vendor patches. They measure source size, not frame performance. Android compatibility adds 274 production lines across one plugin and two Kotlin adapters. An actual 1.8.0 → 1.10.0 APK upgrade preserved three registered widgets, matched the shared mapper output, left the old MMKV files unchanged, and passed 50 concurrent migration/account-write races. See the platform guide for the reproducible native harness and remaining OEM/release checks.

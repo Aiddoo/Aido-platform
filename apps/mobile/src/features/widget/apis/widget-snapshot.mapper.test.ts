@@ -32,6 +32,16 @@ describe('toWidgetSnapshot', () => {
       '2026-07-13',
     ]);
     expect(snapshot.weekDays?.[0]?.weekdayLabel).toBe('일');
+    expect(snapshot.weekDays?.map((day) => day.dayLabel)).toEqual([
+      '12',
+      '13',
+      '14',
+      '15',
+      '16',
+      '17',
+      '18',
+    ]);
+    expect(snapshot.strings.weekRangeLabel).toBe('07.12 – 07.18');
     expect(snapshot.weekDays?.[3]?.hasTodos).toBe(true);
   });
 

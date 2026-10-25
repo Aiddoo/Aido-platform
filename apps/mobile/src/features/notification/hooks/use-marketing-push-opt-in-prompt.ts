@@ -15,7 +15,7 @@ import { useMarketingPushConsentSheet } from './use-marketing-push-consent-sheet
 
 interface MarketingPushOptInPrompt {
   /** 배너를 노출할지 여부 */
-  visible: boolean;
+  isVisible: boolean;
   /** 동의 시트를 연다 (탭) */
   open: () => void;
   /** 배너를 닫고 쿨다운을 기록한다 (닫기 버튼) */
@@ -39,7 +39,8 @@ export function useMarketingPushOptInPrompt(
   const [dismissed, setDismissed] = useState(false);
   const today = useToday();
 
-  const visible = !dismissed && MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
+  const isVisible =
+    !dismissed && MarketingPushPromptPolicy.shouldPrompt(consent, promptState, today);
 
   const dismiss = () => {
     recordMarketingPushPrompt(storage, new Date());
@@ -54,5 +55,5 @@ export function useMarketingPushOptInPrompt(
     });
   };
 
-  return { visible, open, dismiss };
+  return { isVisible, open, dismiss };
 }

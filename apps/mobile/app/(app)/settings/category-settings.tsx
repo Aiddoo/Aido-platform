@@ -1,6 +1,7 @@
-import { CategoryCreateBottomSheet } from '@src/features/todo/components/category-create-bottom-sheet';
 import { CategoryList } from '@src/features/todo/components/category-list';
+import { todoCategoryCreateSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   H3,
@@ -9,7 +10,6 @@ import {
   QueryErrorBoundary,
   StyledSafeAreaView,
   Text,
-  useOverlay,
   VStack,
 } from '@src/shared/ui';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -40,24 +40,8 @@ function useView() {
 function TodoCategorySettingsScreen() {
   const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('settings');
-  const createOverlay = useOverlay();
+  const push = useSingleTap(router.push);
   const [view, setView] = useView();
-
-  const handleCreateCategory = () => {
-    createOverlay.open(({ isOpen, close, exit }) => (
-      <CategoryCreateBottomSheet
-        isOpen={isOpen}
-        onClose={close}
-        onExit={exit}
-        onOpenChange={(open) => {
-          if (!open) {
-            close();
-            exit();
-          }
-        }}
-      />
-    ));
-  };
 
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['left', 'right', 'bottom']}>
@@ -82,7 +66,7 @@ function TodoCategorySettingsScreen() {
             </Tabs.List>
           </Tabs>
 
-          <PressableFeedback onPress={handleCreateCategory}>
+          <PressableFeedback onPress={() => push(todoCategoryCreateSheetHref())}>
             <HStack align="center" gap={4}>
               <PlusIcon
                 width={fontScaledSize(18)}

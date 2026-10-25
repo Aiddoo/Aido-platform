@@ -7,7 +7,7 @@ name: 받은 콕·답장·할 일 이동·감사 시트의 한글 라이트 화�
     visible: 라이트 모드
     timeout: 15000
 - tapOn: 라이트 모드
-- openLink: aido-dev://nudges?direction=received
+- openLink: aido-dev://notifications?category=SOCIAL
 - extendedWaitUntil:
     visible: 알림
     timeout: 15000

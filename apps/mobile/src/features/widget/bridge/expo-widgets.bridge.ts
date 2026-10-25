@@ -2,7 +2,7 @@ import { formatDate } from '@src/shared/utils/date';
 import Constants from 'expo-constants';
 
 import { toWidgetProps } from '../apis/widget-props.mapper';
-import { aidoWidgets } from '../components/widgets';
+import { AIDO_WIDGETS } from '../components/widgets';
 import { type WidgetSnapshot, WidgetSnapshotPolicy } from '../domains/widget-snapshot.model';
 import type { WidgetBridge } from './widget-bridge';
 
@@ -33,7 +33,7 @@ export function createExpoWidgetsBridge(): WidgetBridge {
               { date: nextLocalMidnight(now), props: toWidgetProps(snapshot, 'stale', appScheme) },
             ];
 
-      for (const { widget } of aidoWidgets) {
+      for (const { widget } of AIDO_WIDGETS) {
         widget.updateTimeline(entries);
       }
     },

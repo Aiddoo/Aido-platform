@@ -5,16 +5,16 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 
-export function getMemoQueryOptions(service: MemoService, { id }: { id: number }) {
+export function getMemoQueryOptions(service: MemoService, { memoId }: { memoId: number }) {
   return queryOptions({
-    queryKey: MEMO_QUERY_KEYS.detail({ memoId: id }),
+    queryKey: MEMO_QUERY_KEYS.detail({ memoId }),
     queryFn: async ({ signal }) => {
-      const result = await service.getMemo(id, signal);
+      const result = await service.getMemo(memoId, signal);
       return unwrap(result);
     },
   });
 }
 
-export function useGetMemoQueryOptions({ id }: { id: number }) {
-  return getMemoQueryOptions(useMemoService(), { id });
+export function useGetMemoQueryOptions({ memoId }: { memoId: number }) {
+  return getMemoQueryOptions(useMemoService(), { memoId });
 }

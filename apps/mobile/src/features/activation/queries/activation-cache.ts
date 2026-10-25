@@ -1,5 +1,5 @@
-import { FEATURE_DISCOVERY_QUERY_KEYS } from '@src/features/feature-discovery/constants/feature-discovery-query-keys';
 import type { FeatureDiscoveryConfig } from '@src/features/feature-discovery/domains/feature-discovery.model';
+import { getCachedFeatureDiscoveryConfig } from '@src/features/feature-discovery/queries/feature-discovery-cache';
 import type { User } from '@src/features/user/domains/user.model';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import type { GrowthEventMap } from '@src/shared/analytics';
@@ -16,12 +16,12 @@ interface ActivationMutationBridgeInput {
 }
 
 interface TodoCompletionBridgeInput extends ActivationMutationBridgeInput {
-  completed: boolean;
+  isCompleted: boolean;
 }
 
 function getContext(queryClient: QueryClient) {
   return {
-    config: queryClient.getQueryData<FeatureDiscoveryConfig>(FEATURE_DISCOVERY_QUERY_KEYS.config()),
+    config: getCachedFeatureDiscoveryConfig(queryClient),
     user: getCachedMe(queryClient),
   };
 }
@@ -60,11 +60,11 @@ export function recordTodoCreatedForActivation({
 export function recordTodoCompletionForActivation({
   queryClient,
   service,
-  completed,
+  isCompleted,
   now = new Date(),
 }: TodoCompletionBridgeInput): GrowthEventMap['activation_completed'] | null {
   const { config, user } = getContext(queryClient);
-  const result = service.recordTodoCompletion({ config, user, completed, now });
+  const result = service.recordTodoCompletion({ config, user, isCompleted, now });
   if (result.progress) {
     updateProgressCache(queryClient, config, user, result.progress);
   }
@@ -81,5 +81,5 @@ export function unlockPushRegistrationForActivation({
   if (progress) {
     updateProgressCache(queryClient, config, user, progress);
   }
-  return progress !== null && progress.pushRegistrationUnlockedAt !== null;
+  return progress != null && progress.pushRegistrationUnlockedAt != null;
 }

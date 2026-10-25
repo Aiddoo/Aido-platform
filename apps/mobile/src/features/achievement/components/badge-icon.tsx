@@ -1,6 +1,6 @@
 import { Image } from 'react-native';
 
-import type { BadgeType } from '../utils/view-models/weekly-achievement.view-model';
+import type { BadgeType } from '../domains/achievement.model';
 
 const BADGE_IMAGE: Record<BadgeType, number> = {
   perfect: require('@assets/images/badge_perfect.webp'),

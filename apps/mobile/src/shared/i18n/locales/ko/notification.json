@@ -37,6 +37,15 @@
     "premiumDescription": "구독하면 AI 리포트와 제안을 확인할 수 있어요",
     "loadError": "알림을 불러오지 못했어요"
   },
+  "directions": {
+    "received": "받은 알림",
+    "sent": "보낸 콕"
+  },
+  "sentNudges": {
+    "empty": "아직 보낸 콕이 없어요",
+    "loadError": "보낸 콕을 불러오지 못했어요",
+    "disabled": "콕 주고받기를 준비 중이에요"
+  },
   "settings": {
     "timeFormat24": "24시간제",
     "on": "켜짐",

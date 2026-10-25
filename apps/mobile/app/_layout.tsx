@@ -1,9 +1,8 @@
-import * as Sentry from '@sentry/react-native';
 import { useAppFonts } from '@src/bootstrap/hooks/use-app-fonts';
 import { useDraftStorageBootstrap } from '@src/bootstrap/hooks/use-draft-storage-bootstrap';
 import { AuthGateLayout } from '@src/bootstrap/navigation/auth-gate-layout';
 import { AppProviders } from '@src/bootstrap/providers/app-providers';
-import { initSentry } from '@src/shared/infra/observability/sentry';
+import { initSentry, wrapRootComponent } from '@src/shared/infra/observability/sentry';
 
 import '../global.css';
 import '@src/shared/i18n/init';
@@ -14,10 +13,10 @@ initSentry();
 
 SplashScreen.preventAutoHideAsync();
 
-const AppBootstrapLayout = () => {
+function AppBootstrapLayout() {
   const fontsLoaded = useAppFonts();
   const draftStorageBootstrap = useDraftStorageBootstrap();
-  const isReady = fontsLoaded && draftStorageBootstrap !== undefined;
+  const isReady = fontsLoaded && draftStorageBootstrap != null;
 
   useEffect(() => {
     if (isReady) {
@@ -34,6 +33,6 @@ const AppBootstrapLayout = () => {
       <AuthGateLayout />
     </AppProviders>
   );
-};
+}
 
-export default Sentry.wrap(AppBootstrapLayout);
+export default wrapRootComponent(AppBootstrapLayout);

@@ -1,14 +1,10 @@
-import { useNavigation, useRoute } from 'expo-router';
-import type { NavigationProp, RouteProp } from 'expo-router/react-navigation';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback } from 'react';
+import { z } from 'zod';
 
-type RouteParams = {
-  isEditing?: boolean;
-};
-
-type FriendsRouteParams = {
-  friends: RouteParams;
-};
+const friendListEditSearchSchema = z.object({
+  isEditing: z.stringbool().catch(false),
+});
 
 /**
  * 친구 목록 편집 모드 상태를 관리하는 훅.
@@ -19,18 +15,12 @@ type FriendsRouteParams = {
  *
  * @returns `[isEditMode, setIsEditMode]` — useState와 동일한 튜플 형태
  */
-export const useFriendListEditMode = () => {
-  const route = useRoute<RouteProp<FriendsRouteParams, 'friends'>>();
-  const navigation = useNavigation<NavigationProp<FriendsRouteParams>>();
+export function useFriendListEditMode(): readonly [boolean, (isEditMode: boolean) => void] {
+  const { isEditing } = friendListEditSearchSchema.parse(useLocalSearchParams());
 
-  const isEditMode = route.params?.isEditing ?? false;
+  const setIsEditMode = useCallback((value: boolean) => {
+    router.setParams({ isEditing: value ? 'true' : undefined });
+  }, []);
 
-  const setIsEditMode = useCallback(
-    (value: boolean) => {
-      navigation.setParams({ isEditing: value });
-    },
-    [navigation],
-  );
-
-  return [isEditMode, setIsEditMode] as const;
-};
+  return [isEditing, setIsEditMode] as const;
+}

@@ -1,9 +1,14 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, MoreIcon, PlusIcon, Text, VStack } from '@src/shared/ui';
+import { HStack, MoreIcon, PlusIcon, Text } from '@src/shared/ui';
+import { noop } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+import type { AccessibilityActionEvent } from 'react-native';
+import { useIsActive, useReorderableDrag } from 'react-native-reorderable-list';
+import { match } from 'ts-pattern';
 
-import { TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
+import { SubTodoIndent } from '../sub-todo-indent';
+import { TODO_ROW_ACCESSIBILITY_ACTION, TodoCheckbox, TodoLabel, TodoRow } from '../todo-row';
 
 interface SubTodoListProps {
   children: ReactNode;
@@ -14,7 +19,7 @@ interface SubTodoListProps {
 export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoListProps) {
   const { t } = useTranslation('todo');
   return (
-    <VStack className="ml-8 pl-4 border-l border-gray-2" gap={0}>
+    <SubTodoIndent>
       {children}
 
       {!isAddDisabled && (
@@ -27,7 +32,7 @@ export function SubTodoList({ children, onAddPress, isAddDisabled }: SubTodoList
           </HStack>
         </PressableFeedback>
       )}
-    </VStack>
+    </SubTodoIndent>
   );
 }
 
@@ -36,9 +41,6 @@ interface SubTodoListItemProps extends Omit<ComponentProps<typeof TodoCheckbox>,
   isSelected: boolean;
   onSelectedChange: (checked: boolean) => void;
   onMorePress: () => void;
-  drag?: () => void;
-  isActive?: boolean;
-  isDragDisabled?: boolean;
 }
 
 SubTodoList.Item = function Item({
@@ -46,13 +48,28 @@ SubTodoList.Item = function Item({
   isSelected,
   onSelectedChange,
   onMorePress,
-  drag: itemDrag,
-  isActive: itemIsActive,
-  isDragDisabled,
   ...checkboxProps
 }: SubTodoListItemProps) {
+  const { t } = useTranslation('todo');
+  const drag = useReorderableDrag();
+  const isActive = useIsActive();
+
+  const handleAccessibilityAction = (event: AccessibilityActionEvent) =>
+    match(event.nativeEvent.actionName)
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted, () => onSelectedChange(!isSelected))
+      .with(TODO_ROW_ACCESSIBILITY_ACTION.more, onMorePress)
+      .otherwise(noop);
+
   return (
     <TodoRow
+      accessibilityActions={[
+        {
+          name: TODO_ROW_ACCESSIBILITY_ACTION.toggleCompleted,
+          label: t(isSelected ? 'actions.uncomplete' : 'actions.complete'),
+        },
+        { name: TODO_ROW_ACCESSIBILITY_ACTION.more, label: t('actions.more') },
+      ]}
+      onAccessibilityAction={handleAccessibilityAction}
       left={
         <TodoCheckbox
           {...checkboxProps}
@@ -62,12 +79,17 @@ SubTodoList.Item = function Item({
       }
       top={<TodoLabel isChecked={isSelected}>{label}</TodoLabel>}
       right={
-        <PressableFeedback onPress={onMorePress} hitSlop={8}>
+        <PressableFeedback
+          onPress={onMorePress}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t('actions.more')}
+        >
           <MoreIcon width={20} height={20} colorClassName="text-gray-5" />
         </PressableFeedback>
       }
-      onLongPress={isDragDisabled ? undefined : itemDrag}
-      isActive={itemIsActive}
+      onLongPress={drag}
+      isActive={isActive}
     />
   );
 };

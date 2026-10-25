@@ -4,11 +4,11 @@ import type { ComponentProps } from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export const HeroUIProvider = ({
+export function HeroUIProvider({
   children,
   config,
   ...props
-}: ComponentProps<typeof HeroUINativeProvider>) => {
+}: ComponentProps<typeof HeroUINativeProvider>) {
   const toastConfig = typeof config?.toast === 'object' ? config.toast : undefined;
   const { top: safeAreaTop } = useSafeAreaInsets();
 
@@ -37,4 +37,4 @@ export const HeroUIProvider = ({
       {children}
     </HeroUINativeProvider>
   );
-};
+}

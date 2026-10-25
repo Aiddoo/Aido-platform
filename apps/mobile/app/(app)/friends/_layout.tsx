@@ -1,67 +1,23 @@
-import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { ArrowLeftIcon, SearchIcon, ScreenTitleBar } from '@src/shared/ui';
-import { getScaledFontSize } from '@src/shared/utils/font-scale';
-import { Stack, router } from 'expo-router';
-import { Pressable, View } from 'react-native';
-import { useResolveClassNames } from 'uniwind';
+import { useStackBackToolbar, useStackScreenOptions } from '@src/shared/ui';
+import { Stack } from 'expo-router';
 
-const FriendsLayout = () => {
-  const goBack = useSingleTap(router.back);
-  const push = useSingleTap(router.push);
-
-  const headerBg = useResolveClassNames('bg-white');
-  const titleColor = useResolveClassNames('text-gray-9');
-  const { fontScale } = useFontScale();
-  const { t } = useTranslation(['friend', 'common']);
+export default function FriendsLayout() {
+  const screenOptions = useStackScreenOptions({ background: 'bg-white', fillContent: true });
+  const backToolbar = useStackBackToolbar();
+  const { t } = useTranslation('friend');
 
   return (
-    <Stack
-      screenOptions={{
-        header: (props) => <ScreenTitleBar.StackHeader {...props} />,
-        headerShown: true,
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: headerBg.backgroundColor as string },
-        contentStyle: { backgroundColor: headerBg.backgroundColor as string },
-        headerTitleStyle: {
-          fontSize: getScaledFontSize(fontScale),
-          fontWeight: '600',
-          color: titleColor.color as string,
-        },
-        headerTitleAlign: 'center',
-        headerLeft: () => (
-          <View className="justify-center items-center">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common:actions.goBack')}
-              onPress={() => goBack()}
-              hitSlop={8}
-              className="p-2"
-            >
-              <ArrowLeftIcon width={20} height={20} colorClassName="text-gray-9" />
-            </Pressable>
-          </View>
-        ),
-      }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: t('screenTitle'),
-          headerRight: () => (
-            <View className="justify-center items-center">
-              <Pressable onPress={() => push('/friends/search')} hitSlop={8} className="p-2">
-                <SearchIcon width={20} height={20} colorClassName="text-gray-9" />
-              </Pressable>
-            </View>
-          ),
-        }}
-      />
-      <Stack.Screen name="search" options={{ title: t('search.title') }} />
-      <Stack.Screen name="add" options={{ title: '' }} />
+    <Stack screenOptions={screenOptions}>
+      <Stack.Screen name="index" options={{ title: t('screenTitle') }}>
+        {backToolbar}
+      </Stack.Screen>
+      <Stack.Screen name="search" options={{ title: t('search.title') }}>
+        {backToolbar}
+      </Stack.Screen>
+      <Stack.Screen name="add" options={{ title: '' }}>
+        {backToolbar}
+      </Stack.Screen>
     </Stack>
   );
-};
-
-export default FriendsLayout;
+}

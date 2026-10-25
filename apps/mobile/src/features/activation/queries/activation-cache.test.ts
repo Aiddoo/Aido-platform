@@ -88,13 +88,13 @@ describe('activation mutation bridge', () => {
     const first = recordTodoCompletionForActivation({
       queryClient,
       service,
-      completed: true,
+      isCompleted: true,
       now: new Date('2026-08-03T00:00:00.000Z'),
     });
     const duplicate = recordTodoCompletionForActivation({
       queryClient,
       service,
-      completed: true,
+      isCompleted: true,
       now: new Date('2026-08-04T00:00:00.000Z'),
     });
 

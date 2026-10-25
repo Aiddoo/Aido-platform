@@ -28,7 +28,6 @@
     "monthly": "Monthly",
     "perYear": "/year",
     "perMonth": "/month",
-    "current": "Current plan",
     "discount": "{{percent}}% off",
     "monthlyEquivalent": "About {{price}}/month"
   },

@@ -9,12 +9,14 @@ import {
   Spacing,
   StyledSafeAreaView,
   Text,
+  TextSkeleton,
   VStack,
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback, Separator, Skeleton, SkeletonGroup } from 'heroui-native';
-import { Suspense } from 'react';
+import { times } from 'es-toolkit/compat';
+import { PressableFeedback, Separator } from 'heroui-native';
+import { Fragment, Suspense } from 'react';
 import { ScrollView } from 'react-native';
 
 function TermsSettingsScreen() {
@@ -85,25 +87,21 @@ function TermsSettingsScreen() {
 TermsSettingsScreen.Loading = function Loading() {
   return (
     <VStack p={16} gap={8} className="bg-white rounded-2xl">
-      <SkeletonGroup isLoading isSkeletonOnly>
-        <VStack gap={4} className="py-2">
-          <Skeleton className="h-5 w-28 rounded" />
-          <VStack gap={2}>
-            <Skeleton className="h-4 w-40 rounded" />
-            <Skeleton className="h-4 w-24 rounded" />
-          </VStack>
-        </VStack>
-
-        <Separator className="bg-gray-2" />
-
-        <VStack gap={4} className="py-2">
-          <Skeleton className="h-5 w-32 rounded" />
-          <VStack gap={2}>
-            <Skeleton className="h-4 w-40 rounded" />
-            <Skeleton className="h-4 w-24 rounded" />
-          </VStack>
-        </VStack>
-      </SkeletonGroup>
+      {times(2, (index) => (
+        <Fragment key={index}>
+          {index > 0 && <Separator className="bg-gray-2" />}
+          <HStack justify="between" align="center">
+            <VStack gap={4}>
+              <TextSkeleton size="b2" className="w-28" />
+              <VStack gap={2}>
+                <TextSkeleton size="b3" className="w-40" />
+                <TextSkeleton size="b3" className="w-24" />
+              </VStack>
+            </VStack>
+            <ArrowRightIcon width={16} height={16} colorClassName="text-gray-3" />
+          </HStack>
+        </Fragment>
+      ))}
     </VStack>
   );
 };

@@ -1,28 +1,24 @@
 import { getDateSectionKey } from '@src/shared/utils/date';
 import { groupBy } from 'es-toolkit';
 
-import type { Notification } from '../../domains/notification.model';
-
 type DateSectionKey = ReturnType<typeof getDateSectionKey>;
-export type NotificationListItem =
+export type DateSectionedListItem<TEntry> =
   | { type: 'header'; section: DateSectionKey }
-  | { type: 'item'; notification: Notification };
+  | { type: 'item'; entry: TEntry };
 
-export function toNotificationListItems(
-  notifications: readonly Notification[],
+export function toDateSectionedListItems<TEntry extends { createdAt: Date }>(
+  entries: readonly TEntry[],
   referenceDate: Date,
-): NotificationListItem[] {
-  const sections = groupBy(notifications, (notification) =>
-    getDateSectionKey(notification.createdAt, referenceDate),
-  );
-  return Object.values(sections).flatMap((items): NotificationListItem[] => {
-    const first = items[0];
-    if (first === undefined) {
+): DateSectionedListItem<TEntry>[] {
+  const sections = groupBy(entries, (entry) => getDateSectionKey(entry.createdAt, referenceDate));
+  return Object.values(sections).flatMap((sectionEntries): DateSectionedListItem<TEntry>[] => {
+    const first = sectionEntries[0];
+    if (first == null) {
       return [];
     }
     return [
       { type: 'header', section: getDateSectionKey(first.createdAt, referenceDate) },
-      ...items.map((notification) => ({ type: 'item' as const, notification })),
+      ...sectionEntries.map((entry) => ({ type: 'item' as const, entry })),
     ];
   });
 }

@@ -8,6 +8,7 @@ import { debounce } from 'es-toolkit';
 import type * as Notifications from 'expo-notifications';
 import { useCallback, useEffect, useMemo } from 'react';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 
 interface UseForegroundNotificationSyncOptions {
@@ -37,7 +38,7 @@ export function useForegroundNotificationSync({
         }
 
         Promise.all(tasks).catch((error) =>
-          logger.error('[Notification] Handler failed', toError(error)),
+          logger.error(NOTIFICATION_LOG_EVENT.FOREGROUND_HANDLER_FAILED, toError(error)),
         );
       }, 1000),
     [logger, notificationService, queryClient],

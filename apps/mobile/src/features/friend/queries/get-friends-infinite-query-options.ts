@@ -28,12 +28,12 @@ export function getFriendsInfiniteQueryOptions(friendService: FriendService) {
 }
 
 export function selectFriendUserViewModels(
-  data: InfiniteData<Page<FriendUser>, string | undefined>,
+  friendPages: InfiniteData<Page<FriendUser>, string | undefined>,
   fallbackName: string,
 ) {
   return {
-    ...data,
-    pages: data.pages.map((page) => ({
+    ...friendPages,
+    pages: friendPages.pages.map((page) => ({
       ...page,
       items: page.items.map((friend) => toFriendUserViewModel(friend, fallbackName)),
     })),
@@ -44,8 +44,8 @@ export function useGetFriendsInfiniteQueryOptions() {
   const { t } = useTranslation('friend');
   const fallbackName = t('fallbackName');
   const select = useCallback(
-    (data: InfiniteData<Page<FriendUser>, string | undefined>) =>
-      selectFriendUserViewModels(data, fallbackName),
+    (friendPages: InfiniteData<Page<FriendUser>, string | undefined>) =>
+      selectFriendUserViewModels(friendPages, fallbackName),
     [fallbackName],
   );
 

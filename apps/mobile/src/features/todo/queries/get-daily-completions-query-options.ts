@@ -21,7 +21,7 @@ export function getDailyCompletionsQueryOptions(
 ) {
   return queryOptions({
     queryKey:
-      userId === undefined
+      userId == null
         ? TODO_QUERY_KEYS.completionsByRange({ startDate, endDate })
         : [...TODO_QUERY_KEYS.completionsByRange({ startDate, endDate }), { userId }],
     queryFn: async ({ signal }) => {

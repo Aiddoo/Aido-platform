@@ -1,6 +1,6 @@
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
-import { Box, Button, DocsIcon, Result, Text } from '@src/shared/ui';
+import { Box, Button, DocsIcon, Text, TextSkeleton } from '@src/shared/ui';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
 
@@ -10,68 +10,76 @@ import { useCancelRequestMutationOptions } from '../queries/use-cancel-request-m
 import { UserList } from './user-list';
 
 export function SentRequestList() {
-  const { t } = useTranslation(['friend', 'common']);
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, refetch } =
+  const { t } = useTranslation('friend');
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, refetch } =
     useSuspenseInfiniteQuery(useGetSentRequestsQueryOptions());
-  const cancelMutation = useMutation(useCancelRequestMutationOptions());
-  const [isRefreshing, handleRefresh] = useRefresh(refetch);
+  const [refreshing, onRefresh] = useRefresh(refetch);
 
-  const allRequests = data.pages.flatMap((page) => page.items);
+  const requests = data.pages.flatMap((page) => page.items);
   const totalCount = data.pages[0]?.totalCount ?? 0;
 
   return (
     <UserList
-      data={allRequests}
+      data={requests}
       keyExtractor={(item) => item.id}
-      header={
+      renderItem={({ item }) => <SentRequestList.Item request={item} />}
+      ListHeaderComponent={
         <Box py={12}>
           <Text size="b4" shade={6}>
             {t('list.requestCount', { count: totalCount })}
           </Text>
         </Box>
       }
-      renderItem={(item: FriendRequest) => {
-        const isProcessing = cancelMutation.isPending && cancelMutation.variables === item.id;
-
-        return (
-          <UserList.Item
-            displayName={item.name ?? item.userTag}
-            profileImage={item.profileImage}
-            action={
-              <Button
-                variant="weak"
-                color="danger"
-                size="small"
-                display="inline"
-                onPress={() => cancelMutation.mutate(item.id)}
-                isDisabled={isProcessing}
-              >
-                {t('common:actions.cancel')}
-              </Button>
-            }
-          />
-        );
-      }}
-      emptyContent={
-        <Result icon={<DocsIcon width={72} height={72} />} title={t('list.emptySent')} />
-      }
+      ListEmptyComponent={<SentRequestList.Empty />}
       hasNextPage={hasNextPage}
-      isFetching={isFetching}
       isFetchingNextPage={isFetchingNextPage}
-      onEndReached={() => fetchNextPage({ cancelRefetch: false })}
-      refresh={{ isRefreshing, onRefresh: handleRefresh }}
+      fetchNextPage={fetchNextPage}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
     />
   );
 }
 
-SentRequestList.Loading = function Loading() {
+SentRequestList.Item = function Item({ request }: { request: FriendRequest }) {
+  const { t } = useTranslation('common');
+  const cancel = useMutation(useCancelRequestMutationOptions());
+
   return (
-    <UserList.Loading
-      header={
-        <Box py={12}>
-          <Skeleton className="w-16 h-4" />
-        </Box>
+    <UserList.Item
+      displayName={request.name ?? request.userTag}
+      profileImage={request.profileImage}
+      right={
+        <Button
+          variant="weak"
+          color="danger"
+          size="small"
+          display="inline"
+          onPress={() => cancel.mutate(request.id)}
+          isDisabled={cancel.isPending}
+        >
+          {t('actions.cancel')}
+        </Button>
       }
     />
   );
+};
+
+SentRequestList.Loading = function Loading() {
+  return (
+    <UserList.Loading
+      ListHeaderComponent={
+        <Box py={12}>
+          <TextSkeleton size="b4" className="w-16" />
+        </Box>
+      }
+      right={<Skeleton className="h-8 w-12 rounded-xl" />}
+    />
+  );
+};
+
+SentRequestList.Error = UserList.Error;
+
+SentRequestList.Empty = function Empty() {
+  const { t } = useTranslation('friend');
+  return <UserList.Empty icon={<DocsIcon width={72} height={72} />} title={t('list.emptySent')} />;
 };

@@ -31,11 +31,11 @@ interface LanguageProviderProps extends PropsWithChildren {
   deviceLanguage?: () => string | null;
 }
 
-export const LanguageProvider = ({
+export function LanguageProvider({
   children,
   syncStorage = mmkvSyncStorage,
   deviceLanguage = getDeviceLanguage,
-}: LanguageProviderProps) => {
+}: LanguageProviderProps) {
   const [languageMode, setLanguageModeState] = useState<LanguageMode>(() =>
     readLanguageMode(syncStorage),
   );
@@ -67,7 +67,7 @@ export const LanguageProvider = ({
   );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
-};
+}
 
 // Provider 없이도 안전하게 동작해야 함 (테스트, 부분 렌더 환경)
 const DEFAULT_CONTEXT: LanguageContextValue = {

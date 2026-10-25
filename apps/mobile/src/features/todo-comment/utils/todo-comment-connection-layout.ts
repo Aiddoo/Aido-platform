@@ -61,11 +61,11 @@ export function getTodoCommentConnectionLayout(
   const avatarUpperGapY = avatarTop - TODO_COMMENT_CONNECTION_GEOMETRY.avatarGap;
   const avatarLowerGapY = avatarTop + avatarSize + TODO_COMMENT_CONNECTION_GEOMETRY.avatarGap;
   const incomingFromX =
-    connection.incomingBranch === null ? null : toLaneX(connection.incomingBranch.fromDepth);
+    connection.incomingBranch == null ? null : toLaneX(connection.incomingBranch.fromDepth);
   const incomingTargetX =
-    connection.incomingBranch === null ? null : toLaneX(connection.incomingBranch.toDepth);
+    connection.incomingBranch == null ? null : toLaneX(connection.incomingBranch.toDepth);
   const hasVisibleIncomingBranch =
-    incomingFromX !== null && incomingTargetX !== null && incomingFromX !== incomingTargetX;
+    incomingFromX != null && incomingTargetX != null && incomingFromX !== incomingTargetX;
 
   const upperLanes = uniqueNumbers(connection.upperLaneDepths.map(toLaneX))
     .filter((x) => !hasVisibleIncomingBranch || x !== incomingFromX)
@@ -82,7 +82,7 @@ export function getTodoCommentConnectionLayout(
   }));
 
   const branchEndX = avatarLeft - TODO_COMMENT_CONNECTION_GEOMETRY.avatarGap;
-  const branchWidth = incomingFromX === null ? 0 : branchEndX - incomingFromX;
+  const branchWidth = incomingFromX == null ? 0 : branchEndX - incomingFromX;
   const incomingBranch =
     !hasVisibleIncomingBranch || incomingFromX === null || branchWidth <= 0
       ? null

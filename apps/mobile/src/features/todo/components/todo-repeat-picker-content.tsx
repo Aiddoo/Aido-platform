@@ -4,7 +4,9 @@ import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, Button, HStack, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
+  formatDaysOfWeek,
   formatMonthDay,
+  getDayOfWeekLabel,
   getMonthHeaderText,
   isAfterDay,
   isBeforeDay,
@@ -13,14 +15,165 @@ import {
 } from '@src/shared/utils/date';
 import { PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
+import { ScrollView } from 'react-native';
 
+import { ALL_DAYS_OF_WEEK } from '../constants/day-of-week';
 import { useDatePicker } from '../hooks/use-date-picker';
-import { useRepeatSetting } from '../hooks/use-repeat-setting';
+import { type RepeatSetting, useRepeatSetting } from '../hooks/use-repeat-setting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { getDayOfWeekFromDate, hasSelectedDayInRange } from '../utils/day-of-week';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
-import { DayOfWeekSelector } from './todo-date-picker-content';
+
+interface DayOfWeekSelectorProps {
+  repeatSetting: RepeatSetting;
+}
+
+type RepeatSummaryKey =
+  | 'picker.repeatDaily'
+  | 'picker.repeatWeekdays'
+  | 'picker.repeatWeekends'
+  | 'picker.repeatWeekly';
+
+const getRepeatSummaryKey = ({
+  isAllSelected,
+  isWeekdaysSelected,
+  isWeekendsSelected,
+}: {
+  isAllSelected: boolean;
+  isWeekdaysSelected: boolean;
+  isWeekendsSelected: boolean;
+}): RepeatSummaryKey => {
+  if (isAllSelected) {
+    return 'picker.repeatDaily';
+  }
+  if (isWeekdaysSelected) {
+    return 'picker.repeatWeekdays';
+  }
+  if (isWeekendsSelected) {
+    return 'picker.repeatWeekends';
+  }
+  return 'picker.repeatWeekly';
+};
+
+interface PresetChipProps {
+  label: string;
+  isSelected: boolean;
+  onPress: () => void;
+}
+
+function PresetChip({ label, isSelected, onPress }: PresetChipProps) {
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      className={cn(
+        'h-8 items-center justify-center rounded-4xl px-3',
+        isSelected ? 'bg-main' : 'bg-gray-2',
+      )}
+    >
+      <Text
+        size="b4"
+        weight="medium"
+        className={isSelected ? 'text-white' : undefined}
+        shade={isSelected ? undefined : 7}
+      >
+        {label}
+      </Text>
+    </PressableFeedback>
+  );
+}
+
+interface DayOfWeekChipProps {
+  day: DayOfWeek;
+  isSelected: boolean;
+  onPress: () => void;
+}
+
+function DayOfWeekChip({ day, isSelected, onPress }: DayOfWeekChipProps) {
+  return (
+    <PressableFeedback
+      onPress={onPress}
+      className={cn(
+        'size-8 items-center justify-center rounded-4xl',
+        isSelected ? 'bg-main' : 'bg-gray-2',
+      )}
+    >
+      <Text
+        size="b4"
+        weight="medium"
+        className={isSelected ? 'text-white' : undefined}
+        shade={isSelected ? undefined : 7}
+      >
+        {getDayOfWeekLabel(day)}
+      </Text>
+    </PressableFeedback>
+  );
+}
+
+function DayOfWeekSelector({ repeatSetting }: DayOfWeekSelectorProps) {
+  const { t } = useTranslation('todo');
+  const {
+    selectedDays,
+    toggleDay,
+    toggleAllDays,
+    toggleWeekdays,
+    toggleWeekends,
+    isAllDaysSelected,
+    isWeekdaysSelected,
+    isWeekendsSelected,
+  } = repeatSetting;
+
+  return (
+    <VStack gap={12}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-1.5 px-4"
+      >
+        <PresetChip
+          label={t('picker.presetDaily')}
+          isSelected={isAllDaysSelected}
+          onPress={toggleAllDays}
+        />
+        <PresetChip
+          label={t('picker.presetWeekdays')}
+          isSelected={isWeekdaysSelected}
+          onPress={toggleWeekdays}
+        />
+        <PresetChip
+          label={t('picker.presetWeekends')}
+          isSelected={isWeekendsSelected}
+          onPress={toggleWeekends}
+        />
+        {ALL_DAYS_OF_WEEK.map((day) => (
+          <DayOfWeekChip
+            key={day}
+            day={day}
+            isSelected={selectedDays.includes(day)}
+            onPress={() => toggleDay(day)}
+          />
+        ))}
+      </ScrollView>
+      {selectedDays.length > 0 ? (
+        <Text size="b3" tone="brand" align="right" className="px-4">
+          *{' '}
+          {t(
+            getRepeatSummaryKey({
+              isAllSelected: isAllDaysSelected,
+              isWeekdaysSelected,
+              isWeekendsSelected,
+            }),
+            { days: formatDaysOfWeek(selectedDays) },
+          )}
+        </Text>
+      ) : (
+        <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
+          * {t('picker.selectDays')}
+        </Text>
+      )}
+    </VStack>
+  );
+}
 
 interface RepeatInput {
   daysOfWeek: DayOfWeek[];
@@ -50,10 +203,6 @@ const getInitialSelectedDays = (startDate: Date, daysOfWeek: DayOfWeek[]): DayOf
   return dayOfWeek ? [dayOfWeek] : [];
 };
 
-const getDefaultEndDate = (repeatEndDate: Date | null): Date | null => {
-  return repeatEndDate;
-};
-
 export const TodoRepeatPickerContent = ({
   startDate: initialStartDate,
   repeat,
@@ -65,15 +214,15 @@ export const TodoRepeatPickerContent = ({
   const repeatSetting = useRepeatSetting({
     isEnabled: true,
     selectedDays: getInitialSelectedDays(initialStartDate, repeat.daysOfWeek),
-    endDate: getDefaultEndDate(repeat.repeatEndDate),
+    endDate: repeat.repeatEndDate,
   });
 
   const hasExistingRepeat = repeat.daysOfWeek.length > 0;
-  const hasCompleteRange = repeatSetting.endDate !== null;
+  const hasCompleteRange = repeatSetting.endDate != null;
 
   const isConfirmDisabled =
     repeatSetting.selectedDays.length === 0 ||
-    repeatSetting.endDate === null ||
+    repeatSetting.endDate == null ||
     !hasSelectedDayInRange(startDate, repeatSetting.endDate, repeatSetting.selectedDays);
 
   const handleConfirm = () => {
@@ -235,12 +384,12 @@ const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDate
   const dayOfMonth = date.getDate();
   const isDisabled = isBeforeDay(date, today);
   const isStart = isSameDay(date, startDate);
-  const isEnd = endDate !== null && isSameDay(date, endDate);
+  const isEnd = endDate != null && isSameDay(date, endDate);
   const isSelected = isStart || isEnd;
   const dayStyle = getDatePickerDayStyle({ date, isSelected, today });
-  const highlightToday = !isDisabled && isTodayHighlighted({ date, isSelected, today });
+  const shouldHighlightToday = !isDisabled && isTodayHighlighted({ date, isSelected, today });
 
-  const hasDistinctRange = endDate !== null && !isSameDay(startDate, endDate);
+  const hasDistinctRange = endDate != null && !isSameDay(startDate, endDate);
   const isInRange = hasDistinctRange && isAfterDay(date, startDate) && isBeforeDay(date, endDate);
   const isRangeStart = hasDistinctRange && isStart;
   const isRangeEnd = hasDistinctRange && isEnd;
@@ -261,7 +410,7 @@ const RepeatDateCell = ({ date, today, startDate, endDate, onPress }: RepeatDate
         className={cn(
           'z-10 size-8 items-center justify-center rounded-[16px]',
           isSelected && 'bg-main',
-          highlightToday && 'bg-main/10 dark:bg-main/20',
+          shouldHighlightToday && 'bg-main/10 dark:bg-main/20',
         )}
       >
         <Text

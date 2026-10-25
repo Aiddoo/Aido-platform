@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
 import type { WidgetSnapshotContext, WidgetTranslateFn } from '../apis/widget-snapshot.mapper';
+import type { WidgetSyncService } from '../apis/widget-sync.service';
 
 export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolving';
 
@@ -26,6 +27,34 @@ function buildContext(
     weekCompletions,
     userId,
   };
+}
+
+interface LatestWidgetSnapshot {
+  authState: WidgetSyncAuthState;
+  userId?: string;
+  date: string;
+  data?: Parameters<WidgetSyncService['syncSummary']>[0];
+  completions?: Record<string, NonNullable<WidgetSnapshotContext['weekCompletions']>[number]>;
+}
+
+function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSnapshot): void {
+  if (latest.authState === 'unauthenticated') {
+    widgetSyncService.syncLoggedOut(latest.date, buildContext());
+    return;
+  }
+  if (
+    latest.authState === 'authenticated' &&
+    latest.userId != null &&
+    latest.data?.date === latest.date
+  ) {
+    widgetSyncService.syncSummary(
+      latest.data,
+      buildContext(
+        latest.completions ? Object.values(latest.completions) : undefined,
+        latest.userId,
+      ),
+    );
+  }
 }
 
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
@@ -55,16 +84,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   });
 
   useEffect(() => {
-    if (authState === 'unauthenticated') {
-      widgetSyncService.syncLoggedOut(date, buildContext());
-      return;
-    }
-    if (authState === 'authenticated' && userId != null && data?.date === date) {
-      widgetSyncService.syncSummary(
-        data,
-        buildContext(completions ? Object.values(completions) : undefined, userId),
-      );
-    }
+    syncLatest(widgetSyncService, { authState, userId, date, data, completions });
   }, [
     authState,
     data,
@@ -76,31 +96,14 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     widgetSyncService,
   ]);
 
-  const latestRef = useRef({ data, completions, authState, userId, date });
+  const latestRef = useRef<LatestWidgetSnapshot>({ data, completions, authState, userId, date });
   useEffect(() => {
     latestRef.current = { data, completions, authState, userId, date };
   }, [data, completions, authState, userId, date]);
 
   useEffect(() => {
     const handleLanguageChanged = () => {
-      const latest = latestRef.current;
-      if (latest.authState === 'unauthenticated') {
-        widgetSyncService.syncLoggedOut(latest.date, buildContext());
-        return;
-      }
-      if (
-        latest.authState === 'authenticated' &&
-        latest.userId != null &&
-        latest.data?.date === latest.date
-      ) {
-        widgetSyncService.syncSummary(
-          latest.data,
-          buildContext(
-            latest.completions ? Object.values(latest.completions) : undefined,
-            latest.userId,
-          ),
-        );
-      }
+      syncLatest(widgetSyncService, latestRef.current);
     };
 
     i18n.on('languageChanged', handleLanguageChanged);

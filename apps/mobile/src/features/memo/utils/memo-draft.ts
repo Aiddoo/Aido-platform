@@ -13,7 +13,7 @@ export function createMemoDraftKey({ userId, memoId }: CreateMemoDraftKeyInput) 
   return createDraftKey({
     ownerId: userId,
     scope: 'memo',
-    target: memoId === undefined ? ['create'] : ['edit', memoId],
+    target: memoId == null ? ['create'] : ['edit', memoId],
     schema: memoDraftSchema,
   });
 }

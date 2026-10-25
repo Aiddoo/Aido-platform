@@ -5,7 +5,7 @@ import { Text } from '../text/text';
 import type { ButtonProps } from './button.types';
 import { buttonVariants, highlightVariants } from './button.variants';
 
-const textSizeMap = {
+const TEXT_SIZE_MAP = {
   small: 'e1',
   medium: 'b4',
   large: 'b4',
@@ -49,7 +49,7 @@ export function Button({
     }
     if (isTextChild) {
       return (
-        <Text size={textSizeMap[size]} weight="semibold" className={textColor}>
+        <Text size={TEXT_SIZE_MAP[size]} weight="semibold" className={textColor}>
           {children}
         </Text>
       );

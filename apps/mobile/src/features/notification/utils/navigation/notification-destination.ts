@@ -6,6 +6,7 @@ import {
   type NotificationType,
   todoCommentIdSchema,
 } from '@aido/api';
+import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 import { z } from 'zod';
@@ -90,7 +91,7 @@ export function resolveNotificationDestination(
   }
 
   const routing = parseNotificationRouting(source);
-  return routing === null ? NO_DESTINATION : toRouteDestination(routing, today);
+  return routing == null ? NO_DESTINATION : toRouteDestination(routing, today);
 }
 
 function parseNotificationRouting(
@@ -109,16 +110,14 @@ function parseNotificationRouting(
 }
 
 function toExternalDestination(kind: 'browser' | 'webview', url?: string): NotificationDestination {
-  return url !== undefined && /^https?:\/\//.test(url) ? { kind, url } : NO_DESTINATION;
+  return url != null && /^https?:\/\//.test(url) ? { kind, url } : NO_DESTINATION;
 }
 
 function toRouteDestination(
   routing: ResolvedNotificationRoute,
   today?: string,
 ): NotificationDestination {
-  const feedHref = today
-    ? { pathname: '/feed' as const, params: { date: 'today' } }
-    : ('/feed' as const);
+  const feedDate = today ? 'today' : undefined;
   return match(routing)
     .with({ type: 'NUDGE_RECEIVED', nudgeId: P.number, todoId: P.number }, ({ nudgeId }) => ({
       kind: 'route' as const,
@@ -141,14 +140,11 @@ function toRouteDestination(
     }))
     .with({ type: 'NUDGE_RECEIVED', friendId: P.string }, ({ friendId }) => ({
       kind: 'route' as const,
-      href: {
-        pathname: '/feed/friend/[friendId]' as const,
-        params: { friendId, ...(today && { date: 'today' }) },
-      },
+      href: createFeedHref({ friendId, date: feedDate }),
     }))
     .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER') }, () => ({
       kind: 'route' as const,
-      href: feedHref,
+      href: createFeedHref({ date: feedDate }),
     }))
     .with({ type: P.union('WEATHER_MORNING', 'WEATHER_EVENING') }, () => ({
       kind: 'route' as const,
@@ -171,10 +167,7 @@ function toRouteDestination(
       },
       ({ friendId }) => ({
         kind: 'route' as const,
-        href: {
-          pathname: '/feed/friend/[friendId]' as const,
-          params: { friendId, ...(today && { date: 'today' }) },
-        },
+        href: createFeedHref({ friendId, date: feedDate }),
       }),
     )
     .with({ type: 'FOLLOW_NEW' }, () => ({
@@ -193,6 +186,9 @@ function toRouteDestination(
       kind: 'route' as const,
       href: '/suggestions' as const,
     }))
-    .with({ type: 'FEED' }, () => ({ kind: 'route' as const, href: feedHref }))
+    .with({ type: 'FEED' }, () => ({
+      kind: 'route' as const,
+      href: createFeedHref({ date: feedDate }),
+    }))
     .exhaustive();
 }

@@ -93,6 +93,19 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 `ErrorReporterContext`(`feature`·`errorCode`·`method`·`endpoint`·`statusCode`)가 Sentry tags로 변환된다(`severity` 제외).
 저카디널리티 값만 태그로 — 검색(`errorCode:AUTH_0104`)·필터·그룹핑용.
 
+`feature`는 `core/ports/error-reporter.ts`의 `ErrorReporterFeature` union이며 snake_case 값만 쓴다(`app_icon`, `todo_nudge`). 새 값은 union에 먼저 추가한다.
+
+---
+
+## Logger — 이벤트 키 규칙
+
+- `logger.info/warn/error/debug`의 message는 자유 문자열(`'[Notification] ...'`) 대신 **기능별 `*_LOG_EVENT` 상수**를 쓴다. 서버의 `*-log.events.ts`와 같은 방식이다.
+- 위치는 기능 `constants/<feature>-log-events.ts`(공용 인프라는 해당 모듈 옆), 형태는 `export const X_LOG_EVENT = { KEY: 'feature.subject.outcome' } as const`.
+- 키 형식은 `<feature>.<subject>.<outcome>`(소문자·하이픈, 예 `notification.badge-sync.failed`). 레벨(`warn`/`error`)은 호출부가 정한다.
+- 가변 정보는 message가 아닌 `context`로 넘긴다. 포트(`Logger`)는 `message: string`을 유지하므로 어댑터·테스트 계약은 그대로다.
+- **PII 금지**: 토큰·이메일·좌표·알림 제목/본문·할 일 내용은 context에 넣지 않는다. 에러는 `error`/`message`만 남긴다.
+- 어댑터(`console-*`, `firebase-analytics`)와 `env.ts`의 개발용 진단 외에는 `console.*`을 직접 쓰지 않는다.
+
 ---
 
 ## 핵심 원칙 — 이벤트 남발 금지
@@ -109,7 +122,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 포트                      | `core/ports/{error-reporter,severity,breadcrumb,analytics,telemetry-event}.ts`                                                                  |
 | Sentry 어댑터             | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                  |
-| Sentry init               | `shared/infra/observability/sentry.ts` (앱 루트 `initSentry()`)                                                                                 |
+| Sentry init/wrap          | `shared/infra/observability/sentry.ts` (앱 루트 `initSentry()`·`wrapRootComponent()`)                                                           |
 | Analytics 카탈로그/파사드 | `shared/analytics/events/*.events.ts`, `track.ts`, `use-track.ts`                                                                               |
 | DI 배선                   | `bootstrap/providers/di-provider.tsx`                                                                                                           |
 | 계측 지점                 | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/providers/auth-provider.tsx`(session) |

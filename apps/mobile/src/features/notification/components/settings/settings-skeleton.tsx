@@ -1,61 +1,38 @@
-import { HStack, VStack } from '@src/shared/ui';
-import { range } from 'es-toolkit';
-import { Separator, Skeleton, SkeletonGroup } from 'heroui-native';
-import { View } from 'react-native';
+import { ArrowRightIcon, HStack, TextSkeleton, VStack } from '@src/shared/ui';
+import { Skeleton } from 'heroui-native';
 
-import { SettingsCard } from './settings-card';
-
-export function ToggleSkeleton() {
+export function ToggleSkeleton({ hasDescription = false }: { hasDescription?: boolean }) {
   return (
-    <SkeletonGroup isLoading isSkeletonOnly>
-      <HStack justify="between" align="center" className="py-2">
-        <VStack flex={1} gap={2}>
-          <Skeleton className="h-5 w-24 rounded" />
-          <Skeleton className="h-4 w-48 rounded" />
-        </VStack>
-        <Skeleton className="h-8 w-14 rounded-full" />
-      </HStack>
-    </SkeletonGroup>
+    <HStack align="center" gap={12}>
+      <VStack flex={1}>
+        <TextSkeleton size="b2" className="w-24" />
+        {hasDescription && <TextSkeleton size="b3" className="w-48" />}
+      </VStack>
+      <Skeleton className="h-6 w-12 rounded-full" />
+    </HStack>
   );
 }
 
-export function GroupSkeleton({ rows }: { rows: number }) {
+export function TimeRowSkeleton() {
   return (
-    <VStack gap={8}>
-      <SkeletonGroup isLoading isSkeletonOnly>
-        <VStack gap={2} className="px-2">
-          <Skeleton className="h-5 w-24 rounded" />
-          <Skeleton className="h-4 w-52 rounded" />
-        </VStack>
-      </SkeletonGroup>
-
-      <SettingsCard>
-        <SkeletonGroup isLoading isSkeletonOnly>
-          {range(rows).map((i) => (
-            <View key={i}>
-              {i > 0 && <Separator className="bg-gray-2" />}
-              <HStack justify="between" align="center" className="py-2">
-                <VStack flex={1} gap={2}>
-                  <Skeleton className="h-5 w-28 rounded" />
-                  <Skeleton className="h-4 w-44 rounded" />
-                </VStack>
-                <Skeleton className="h-5 w-16 rounded" />
-              </HStack>
-            </View>
-          ))}
-        </SkeletonGroup>
-      </SettingsCard>
-    </VStack>
+    <HStack justify="between" align="center" gap={20}>
+      <VStack flex={1}>
+        <TextSkeleton size="b2" className="w-28" />
+        <TextSkeleton size="b3" className="w-44" />
+      </VStack>
+      <ArrowRightIcon colorClassName="text-gray-3" />
+    </HStack>
   );
 }
 
 export function NavigationSkeleton() {
   return (
-    <SkeletonGroup isLoading isSkeletonOnly>
-      <HStack justify="between" align="center" className="py-2">
-        <Skeleton className="h-5 w-24 rounded" />
-        <Skeleton className="h-5 w-12 rounded" />
+    <HStack justify="between" align="center" gap={20} className="py-2">
+      <TextSkeleton size="b2" className="w-24" />
+      <HStack gap={8} align="center">
+        <TextSkeleton size="b2" className="w-12" />
+        <ArrowRightIcon colorClassName="text-gray-3" />
       </HStack>
-    </SkeletonGroup>
+    </HStack>
   );
 }

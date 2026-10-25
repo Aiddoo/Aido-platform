@@ -1,9 +1,10 @@
 import { SettingsCard } from '@src/features/notification/components/settings/settings-card';
-import { GroupSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
+import { TimeRowSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import {
   type ClockTime,
   SettingsTimeInput,
 } from '@src/features/notification/components/settings/settings-time-input';
+import { SETTINGS_TIME_RANGE } from '@src/features/notification/constants/settings-time-range';
 import {
   type Preference,
   PreferencePolicy,
@@ -36,7 +37,7 @@ export default function ReminderSettingsScreen() {
         <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={20} />
           <QueryErrorBoundary>
-            <Suspense fallback={<GroupSkeleton rows={2} />}>
+            <Suspense fallback={<ReminderSettingsLoading />}>
               <VStack gap={24}>
                 <SettingsCard>
                   <ReminderTimeInput
@@ -60,9 +61,21 @@ export default function ReminderSettingsScreen() {
   );
 }
 
+function ReminderSettingsLoading() {
+  return (
+    <VStack gap={24}>
+      <SettingsCard>
+        <TimeRowSkeleton />
+        <Separator className="bg-gray-2" />
+        <TimeRowSkeleton />
+      </SettingsCard>
+    </VStack>
+  );
+}
+
 const REMINDER_TIME = {
   morning: {
-    range: { minimumTime: { hour: 0, minute: 0 }, maximumTime: { hour: 11, minute: 59 } },
+    range: SETTINGS_TIME_RANGE.morning,
     read: (preference: Preference): ClockTime => ({
       hour: preference.morningReminderHour,
       minute: preference.morningReminderMinute,
@@ -73,7 +86,7 @@ const REMINDER_TIME = {
     }),
   },
   evening: {
-    range: { minimumTime: { hour: 12, minute: 0 }, maximumTime: { hour: 23, minute: 59 } },
+    range: SETTINGS_TIME_RANGE.evening,
     read: (preference: Preference): ClockTime => ({
       hour: preference.eveningReminderHour,
       minute: preference.eveningReminderMinute,

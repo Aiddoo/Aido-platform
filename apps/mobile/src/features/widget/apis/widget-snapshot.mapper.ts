@@ -1,7 +1,7 @@
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { getCalendarWeek } from '@src/shared/utils/calendar-week';
 import { formatDate, getWeekDates, getWeekStart, toDate } from '@src/shared/utils/date';
-import { formatDateLabel, type DateFormatContext } from '@src/shared/utils/date-format';
+import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/utils/date-format';
 import { keyBy } from 'es-toolkit';
 
 import type { WidgetSnapshot, WidgetSnapshotStrings } from '../domains/widget-snapshot.model';
@@ -120,15 +120,17 @@ export function toWidgetSnapshot(
 
 function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContext) {
   const completions = keyBy(context.weekCompletions ?? [], (completion) => completion.date);
-  const locale: DateFormatContext['locale'] = context.locale === 'ko' ? 'ko-KR' : 'en-US';
-  const weekdayFormatter = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' });
+  const dateFormatContext: DateFormatContext = {
+    locale: context.locale === 'ko' ? 'ko-KR' : 'en-US',
+    timeZone: 'UTC',
+  };
   const days = getWeekDates(getWeekStart(toDate(summary.date))).map((day) => {
     const date = formatDate(day);
     const completion = completions[date];
     return {
       date,
-      weekdayLabel: weekdayFormatter.format(new Date(`${date}T12:00:00.000Z`)),
-      dayLabel: String(day.getDate()),
+      weekdayLabel: formatDateKeyLabel(date, 'weekday', dateFormatContext),
+      dayLabel: formatDateKeyLabel(date, 'dayNumber', dateFormatContext),
       isComplete:
         date === summary.date
           ? summary.isComplete && summary.totalTodos > 0
@@ -137,14 +139,16 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
     };
   });
   const week = getCalendarWeek(toDate(summary.date));
-  const referenceDate = new Date(`${formatDate(week.start)}T12:00:00.000Z`);
-  const dateFormatContext = { locale, timeZone: 'UTC' };
+  const weekStartKey = formatDate(week.start);
+  const weekEndKey = formatDate(week.end);
   const title = context.t('widget:calendar.weekTitle', {
-    month: formatDateLabel(referenceDate, 'month', dateFormatContext),
+    month: formatDateKeyLabel(weekStartKey, 'month', dateFormatContext),
     week: week.weekOfMonth,
   });
-  const rangeLabel = days.map((day) => day.date.slice(5).replace('-', '.'));
-  return { days, title, rangeLabel: `${rangeLabel[0]} – ${rangeLabel[6]}` };
+  const rangeLabel = [weekStartKey, weekEndKey]
+    .map((dateKey) => formatDateKeyLabel(dateKey, 'dottedMonthDay', dateFormatContext))
+    .join(' – ');
+  return { days, title, rangeLabel };
 }
 
 /** 비로그인 상태 스냅샷 (로그아웃/세션 종료 시 기록) */

@@ -206,10 +206,9 @@ export class AuthService {
   };
 
   #generateNonce = async (): Promise<{ nonce: string; hashedNonce: string }> => {
-    const nonce = Crypto.getRandomBytes(32).reduce(
-      (acc, byte) => acc + byte.toString(16).padStart(2, '0'),
-      '',
-    );
+    const nonce = Array.from(Crypto.getRandomBytes(32), (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
     const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, nonce);
     return { nonce, hashedNonce };
   };

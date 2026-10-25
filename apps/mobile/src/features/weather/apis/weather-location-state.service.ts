@@ -1,16 +1,14 @@
-import type { SyncStorage } from '@src/core/ports/sync-storage';
-
-const INTRODUCTION_KEY = 'aido_weather_location_introduction_v1';
+import type { WeatherLocationStateRepository } from './weather-location-state.repository';
 
 export class WeatherLocationStateService {
-  readonly #storage: SyncStorage;
+  readonly #repository: WeatherLocationStateRepository;
 
-  constructor(storage: SyncStorage) {
-    this.#storage = storage;
+  constructor(repository: WeatherLocationStateRepository) {
+    this.#repository = repository;
   }
 
-  hasSeenIntroduction = (): boolean => this.#storage.getString(INTRODUCTION_KEY) === 'seen';
+  hasSeenIntroduction = (): boolean => this.#repository.hasSeenIntroduction();
   markIntroductionSeen = (): void => {
-    this.#storage.set(INTRODUCTION_KEY, 'seen');
+    this.#repository.markIntroductionSeen();
   };
 }

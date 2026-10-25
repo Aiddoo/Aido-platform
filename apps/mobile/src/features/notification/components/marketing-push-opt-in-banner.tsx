@@ -12,9 +12,9 @@ import { useMarketingPushOptInPrompt } from '../hooks/use-marketing-push-opt-in-
  */
 export function MarketingPushOptInBanner() {
   const { t } = useTranslation('notification');
-  const { visible, open, dismiss } = useMarketingPushOptInPrompt();
+  const { isVisible, open, dismiss } = useMarketingPushOptInPrompt();
 
-  if (!visible) {
+  if (!isVisible) {
     return null;
   }
 

@@ -6,28 +6,27 @@ import type { NotificationListResult } from '../domains/notification.model';
 export type NotificationCacheSnapshot = Array<[readonly unknown[], unknown]>;
 
 function markPagesRead(
-  data: InfiniteData<NotificationListResult> | undefined,
+  cachedPages: InfiniteData<NotificationListResult> | undefined,
   notificationId?: number,
   shouldDecrement = true,
   removeReadItems = false,
 ): InfiniteData<NotificationListResult> | undefined {
-  if (!data?.pages) {
-    return data;
+  if (!cachedPages?.pages) {
+    return cachedPages;
   }
   return {
-    ...data,
-    pages: data.pages.map((page) => ({
+    ...cachedPages,
+    pages: cachedPages.pages.map((page) => ({
       ...page,
       unreadCount:
-        notificationId === undefined
+        notificationId == null
           ? 0
           : shouldDecrement
             ? Math.max(0, page.unreadCount - 1)
             : page.unreadCount,
       notifications: page.notifications
         .map((notification) =>
-          (notificationId === undefined || notification.id === notificationId) &&
-          !notification.isRead
+          (notificationId == null || notification.id === notificationId) && !notification.isRead
             ? { ...notification, isRead: true, readAt: new Date() }
             : notification,
         )
@@ -37,11 +36,11 @@ function markPagesRead(
 }
 
 function containsUnreadNotification(
-  data: InfiniteData<NotificationListResult> | undefined,
+  cachedPages: InfiniteData<NotificationListResult> | undefined,
   notificationId: number,
 ): boolean {
   return (
-    data?.pages.some((page) =>
+    cachedPages?.pages.some((page) =>
       page.notifications.some(
         (notification) => notification.id === notificationId && !notification.isRead,
       ),
@@ -53,7 +52,7 @@ function isUnreadOnlyQuery(queryKey: readonly unknown[]): boolean {
   const filters = queryKey[NOTIFICATION_QUERY_KEYS.lists().length];
   return (
     typeof filters === 'object' &&
-    filters !== null &&
+    filters != null &&
     'unreadOnly' in filters &&
     filters.unreadOnly === true
   );
@@ -73,18 +72,20 @@ export async function optimisticallyMarkNotificationsRead(
     queryKey: NOTIFICATION_QUERY_KEYS.lists(),
   });
   const shouldDecrement =
-    notificationId === undefined ||
-    listEntries.some(([_queryKey, data]) => containsUnreadNotification(data, notificationId));
+    notificationId == null ||
+    listEntries.some(([_queryKey, cachedPages]) =>
+      containsUnreadNotification(cachedPages, notificationId),
+    );
 
   notifyManager.batch(() => {
-    for (const [queryKey, data] of listEntries) {
+    for (const [queryKey, cachedPages] of listEntries) {
       queryClient.setQueryData(
         queryKey,
-        markPagesRead(data, notificationId, shouldDecrement, isUnreadOnlyQuery(queryKey)),
+        markPagesRead(cachedPages, notificationId, shouldDecrement, isUnreadOnlyQuery(queryKey)),
       );
     }
     queryClient.setQueryData<number>(NOTIFICATION_QUERY_KEYS.unreadCount(), (old = 0) =>
-      notificationId === undefined ? 0 : shouldDecrement ? Math.max(0, old - 1) : old,
+      notificationId == null ? 0 : shouldDecrement ? Math.max(0, old - 1) : old,
     );
   });
   return snapshot;
@@ -94,8 +95,8 @@ export function restoreNotificationCache(
   queryClient: QueryClient,
   snapshot: NotificationCacheSnapshot,
 ): void {
-  for (const [queryKey, data] of snapshot) {
-    queryClient.setQueryData(queryKey, data);
+  for (const [queryKey, cachedPages] of snapshot) {
+    queryClient.setQueryData(queryKey, cachedPages);
   }
 }
 

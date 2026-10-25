@@ -2,21 +2,21 @@ import { convertMemoToTodosSchema, type ConvertMemoToTodosInput } from '@aido/ap
 import type { AddTodoFormInput } from '@src/features/todo/domains/add-todo-form.schema';
 import { formatDate } from '@src/shared/utils/date';
 
-export function toMemoConversionInput(data: AddTodoFormInput): ConvertMemoToTodosInput {
+export function toMemoConversionInput(formValues: AddTodoFormInput): ConvertMemoToTodosInput {
   return convertMemoToTodosSchema.parse({
     todos: [
       {
-        title: data.title,
-        categoryId: data.categoryId,
-        startDate: formatDate(data.startDate),
-        endDate: data.endDate ? formatDate(data.endDate) : undefined,
-        scheduledTime: data.isAllDay ? undefined : (data.scheduledTime ?? undefined),
-        isAllDay: data.isAllDay,
-        visibility: data.visibility,
-        isRecurring: data.isRecurring,
+        title: formValues.title,
+        categoryId: formValues.categoryId,
+        startDate: formatDate(formValues.startDate),
+        endDate: formValues.endDate ? formatDate(formValues.endDate) : undefined,
+        scheduledTime: formValues.isAllDay ? undefined : (formValues.scheduledTime ?? undefined),
+        isAllDay: formValues.isAllDay,
+        visibility: formValues.visibility,
+        isRecurring: formValues.isRecurring,
         recurrence:
-          data.isRecurring && data.repeatEndDate
-            ? { daysOfWeek: data.daysOfWeek, endDate: formatDate(data.repeatEndDate) }
+          formValues.isRecurring && formValues.repeatEndDate
+            ? { daysOfWeek: formValues.daysOfWeek, endDate: formatDate(formValues.repeatEndDate) }
             : undefined,
       },
     ],

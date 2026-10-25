@@ -1,6 +1,8 @@
-import type { ViewProps } from 'react-native';
+import type { ComponentRef, Ref } from 'react';
+import type { View, ViewProps } from 'react-native';
 
 export interface BoxProps extends ViewProps {
+  ref?: Ref<ComponentRef<typeof View>>;
   flex?: number;
   gap?: number;
   p?: number;

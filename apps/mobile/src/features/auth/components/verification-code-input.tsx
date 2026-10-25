@@ -1,5 +1,5 @@
 import { VERIFICATION_CODE } from '@aido/api';
-import { range } from 'es-toolkit';
+import { times } from 'es-toolkit/compat';
 import { InputOTP } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
@@ -23,20 +23,20 @@ export function VerificationCodeInput({
       {isSeparated ? (
         <>
           <InputOTP.Group>
-            {range(half).map((index) => (
+            {times(half, (index) => (
               <InputOTP.Slot key={index} index={index} />
             ))}
           </InputOTP.Group>
           <InputOTP.Separator />
           <InputOTP.Group>
-            {range(VERIFICATION_CODE.LENGTH - half).map((offset) => (
+            {times(VERIFICATION_CODE.LENGTH - half, (offset) => (
               <InputOTP.Slot key={half + offset} index={half + offset} />
             ))}
           </InputOTP.Group>
         </>
       ) : (
         <InputOTP.Group>
-          {range(VERIFICATION_CODE.LENGTH).map((index) => (
+          {times(VERIFICATION_CODE.LENGTH, (index) => (
             <InputOTP.Slot key={index} index={index} />
           ))}
         </InputOTP.Group>

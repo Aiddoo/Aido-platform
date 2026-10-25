@@ -8,8 +8,8 @@ export const useGridColumns = () => useContext(GridContext);
 
 export function Grid({ columns = 1, rowGap, columnGap, style, ...props }: GridProps) {
   const gapStyle = {
-    ...(rowGap !== undefined && { rowGap }),
-    ...(columnGap !== undefined && { columnGap }),
+    ...(rowGap != null && { rowGap }),
+    ...(columnGap != null && { columnGap }),
   };
 
   return (

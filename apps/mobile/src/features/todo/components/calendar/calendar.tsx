@@ -1,6 +1,8 @@
 import { useFeedDate } from '@src/features/todo/hooks/use-feed-date';
+import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
+import { cn } from '@src/shared/utils/cn';
 import {
   addMonths,
   addWeeks,
@@ -19,7 +21,7 @@ import {
   withDayOfWeek,
 } from '@src/shared/utils/date';
 import { range } from 'es-toolkit';
-import { PressableFeedback, Skeleton } from 'heroui-native';
+import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -27,12 +29,15 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   useWindowDimensions,
-  View,
 } from 'react-native';
 import { match } from 'ts-pattern';
 
 import type { DailyCompletionSummary } from '../../domains/todo.model';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
+import {
+  clampCalendarPage,
+  shiftCalendarDate,
+} from '../../utils/view-models/calendar-paging.view-model';
 import { useCalendarContext } from '../providers/calendar-provider';
 import { CalendarDateCell } from './calendar-date-cell';
 import { CalendarNavigation } from './calendar-navigation';
@@ -40,7 +45,6 @@ import { CalendarViewModeToggle } from './calendar-view-mode-toggle';
 import { CalendarWeekdayHeader } from './calendar-weekday-header';
 
 const EMPTY_COMPLETIONS: CompletionsByDate = {};
-const WEEKDAY_INDICES = [0, 1, 2, 3, 4, 5, 6] as const;
 const DATE_CELL_HEIGHT = 56;
 const MONTH_WEEKS = 6;
 const TOTAL_PAGES = 521;
@@ -55,6 +59,7 @@ interface CalendarProps {
 export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarProps) {
   const { t } = useTranslation('common');
   const [selectedDate, setSelectedDate] = useFeedDate();
+  const today = useToday();
   const { viewMode } = useCalendarContext();
 
   const pagerHeight = match(viewMode)
@@ -62,21 +67,8 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
     .with('month', () => MONTH_WEEKS * DATE_CELL_HEIGHT)
     .exhaustive();
 
-  const handlePrevious = () => {
-    const newDate = match(viewMode)
-      .with('week', () => addWeeks(getWeekStart(selectedDate), -1))
-      .with('month', () => addMonths(getMonthStart(selectedDate), -1))
-      .exhaustive();
-    setSelectedDate(newDate);
-  };
-
-  const handleNext = () => {
-    const newDate = match(viewMode)
-      .with('week', () => addWeeks(getWeekStart(selectedDate), 1))
-      .with('month', () => addMonths(getMonthStart(selectedDate), 1))
-      .exhaustive();
-    setSelectedDate(newDate);
-  };
+  const handlePrevious = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, -1));
+  const handleNext = () => setSelectedDate(shiftCalendarDate(viewMode, selectedDate, 1));
 
   return (
     <VStack className="bg-background" gap={8}>
@@ -84,7 +76,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
         <HStack gap={8} align="center">
           <CalendarHeaderText displayDate={selectedDate} />
           <PressableFeedback
-            onPress={() => setSelectedDate(new Date())}
+            onPress={() => setSelectedDate(today)}
             className="px-2 py-0.5 bg-gray-2 rounded-full"
           >
             <Text size="e1" weight="medium" shade={7}>
@@ -131,36 +123,6 @@ function CalendarHeaderText({ displayDate }: CalendarHeaderTextProps) {
   );
 }
 
-Calendar.Loading = function Loading() {
-  return (
-    <VStack className="bg-background" gap={8}>
-      <HStack className="px-4 py-2" justify="between" align="center">
-        <Skeleton className="h-6 w-24" />
-        <HStack gap={8}>
-          <Skeleton className="h-8 w-12 rounded-full" />
-          <Skeleton className="h-8 w-12 rounded-full" />
-        </HStack>
-      </HStack>
-
-      <HStack px={8}>
-        {WEEKDAY_INDICES.map((dayIndex) => (
-          <Box key={`weekday-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
-            <Skeleton className="size-4" />
-          </Box>
-        ))}
-      </HStack>
-
-      <HStack px={8}>
-        {WEEKDAY_INDICES.map((dayIndex) => (
-          <Box key={`date-skeleton-${dayIndex}`} className="flex-1 items-center py-2">
-            <Skeleton className="size-8 overflow-hidden rounded-2xl" />
-          </Box>
-        ))}
-      </HStack>
-    </VStack>
-  );
-};
-
 interface CalendarWeekPagerProps {
   completions: CompletionsByDate;
 }
@@ -174,10 +136,11 @@ function CalendarWeekPager({ completions }: CalendarWeekPagerProps) {
     [],
   );
 
-  const pageOfWeek = useCallback((week: Date) => {
-    const page = diffWeeks(week, baseWeekRef.current) + CENTER_PAGE;
-    return Math.max(0, Math.min(TOTAL_PAGES - 1, page));
-  }, []);
+  const pageOfWeek = useCallback(
+    (week: Date) =>
+      clampCalendarPage(diffWeeks(week, baseWeekRef.current) + CENTER_PAGE, TOTAL_PAGES),
+    [],
+  );
 
   const handleChange = (page: number) => {
     const week = weekAtPage(page);
@@ -204,10 +167,11 @@ function CalendarMonthPager({ completions }: CalendarMonthPagerProps) {
     [],
   );
 
-  const pageOfMonth = useCallback((month: Date) => {
-    const page = diffMonths(month, baseMonthRef.current) + CENTER_PAGE;
-    return Math.max(0, Math.min(TOTAL_PAGES - 1, page));
-  }, []);
+  const pageOfMonth = useCallback(
+    (month: Date) =>
+      clampCalendarPage(diffMonths(month, baseMonthRef.current) + CENTER_PAGE, TOTAL_PAGES),
+    [],
+  );
 
   const handleChange = (page: number) => {
     const month = monthAtPage(page);
@@ -237,16 +201,16 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   const currentPageRef = useRef(CENTER_PAGE);
 
   const handleScrollEnd = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const page = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const page = Math.round(event.nativeEvent.contentOffset.x / pageWidth);
       currentPageRef.current = page;
       onChange(page);
     },
     [pageWidth, onChange],
   );
 
-  const handleLayout = useCallback((e: LayoutChangeEvent) => {
-    setMeasuredPageWidth(e.nativeEvent.layout.width);
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    setMeasuredPageWidth(event.nativeEvent.layout.width);
   }, []);
 
   useEffect(() => {
@@ -278,9 +242,7 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   );
 
   const renderItem = useCallback(
-    ({ item: page }: { item: number }) => (
-      <View style={{ width: pageWidth }}>{children(page)}</View>
-    ),
+    ({ item: page }: { item: number }) => <Box style={{ width: pageWidth }}>{children(page)}</Box>,
     [pageWidth, children],
   );
 
@@ -393,9 +355,14 @@ interface CategoryIndicatorProps {
 }
 
 function CategoryIndicator({ colors }: CategoryIndicatorProps) {
+  const [firstColor] = colors;
+
   if (colors.length <= 1) {
     return (
-      <Box style={{ backgroundColor: colors[0] ?? '#9CA3AF' }} className="size-1.5 rounded-2xl" />
+      <Box
+        className={cn('size-1.5 rounded-2xl', !firstColor && 'bg-gray-5')}
+        style={firstColor ? { backgroundColor: firstColor } : undefined}
+      />
     );
   }
 
@@ -408,15 +375,6 @@ function CategoryIndicator({ colors }: CategoryIndicatorProps) {
   );
 }
 
-Calendar.MarkerLoading = function MarkerLoading() {
-  const { t } = useTranslation('todo');
-  return (
-    <HStack px={16} py={4} align="center" gap={8} accessibilityLabel={t('calendar.loading')}>
-      <Skeleton className="h-3 w-24 rounded" />
-      <Skeleton className="h-3 w-12 rounded" />
-    </HStack>
-  );
-};
 Calendar.Error = function ErrorState({ onRetry }: { onRetry: () => void }) {
   const { t } = useTranslation(['todo', 'common']);
   return (

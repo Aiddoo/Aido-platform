@@ -1,19 +1,18 @@
-const formatter = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Asia/Seoul',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  hourCycle: 'h23',
-});
+import { formatDateKey, getZonedHour } from '@src/shared/utils/date-format';
 
-export function createWeatherClock(now: Date) {
-  const parts = formatter.formatToParts(now);
-  const get = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value;
+/** 기상청 예보 시각은 한국 표준시 기준이다. */
+const KMA_TIME_ZONE = 'Asia/Seoul';
+
+export interface WeatherClock {
+  date: string;
+  hour: number;
+  deviceHour: number;
+}
+
+export function createWeatherClock(now: Date): WeatherClock {
   return {
-    date: `${get('year')}-${get('month')}-${get('day')}`,
-    hour: Number(get('hour')),
+    date: formatDateKey(now, KMA_TIME_ZONE),
+    hour: getZonedHour(now, KMA_TIME_ZONE),
     deviceHour: now.getHours(),
   };
 }

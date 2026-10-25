@@ -20,12 +20,11 @@ export function usePrepareTodoCommentConversation(commentId: string) {
   return useCallback(async () => {
     const cachedData = queryClient.getQueryData<ConversationPages>(queryOptions.queryKey);
     const cachedState = queryClient.getQueryState<ConversationPages>(queryOptions.queryKey);
-    const initialWindow =
-      cachedData === undefined ? undefined : toInitialConversationWindow(cachedData);
+    const initialWindow = cachedData == null ? undefined : toInitialConversationWindow(cachedData);
 
     if (initialWindow === null) {
       queryClient.removeQueries({ queryKey: queryOptions.queryKey, exact: true });
-    } else if (initialWindow !== undefined && initialWindow !== cachedData) {
+    } else if (initialWindow != null && initialWindow !== cachedData) {
       queryClient.setQueryData<ConversationPages>(queryOptions.queryKey, initialWindow, {
         updatedAt: cachedState?.dataUpdatedAt,
       });

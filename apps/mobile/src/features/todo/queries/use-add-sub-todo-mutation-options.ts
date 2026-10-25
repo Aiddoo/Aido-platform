@@ -5,8 +5,8 @@ import { isApiError } from '@src/shared/errors/api-error';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { SubTodoPolicy } from '../domains/sub-todo.model';
@@ -53,7 +53,7 @@ export const useAddSubTodoMutationOptions = () => {
       trackEvent('todo_item_added', { todo_id: todoId });
     },
     onError: (error, _variables, context) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.TODO_0821)) {
         toast.error(error.message);

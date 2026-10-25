@@ -25,7 +25,7 @@ export function getActivationProgressQueryOptions(
         })
       : ACTIVATION_QUERY_KEYS.inactive(),
     queryFn: () => service.getProgress(config, user),
-    enabled: identity !== null,
+    enabled: identity != null,
     staleTime: Number.POSITIVE_INFINITY,
   });
 }

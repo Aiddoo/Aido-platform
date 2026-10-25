@@ -1,15 +1,14 @@
 import type { ChangeTodoCategoryInput } from '@aido/api';
 import { useTodoCategoryService } from '@src/bootstrap/providers/di-context';
-import { TODO_CATEGORY_QUERY_KEYS } from '@src/features/todo/constants/todo-category-query-keys';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
-import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
+import { invalidateTodos } from './todo-cache';
 
 interface ChangeTodoCategoryMutationParams {
   todoId: number;
@@ -28,13 +27,12 @@ export const useChangeTodoCategoryMutationOptions = () => {
       return unwrap(result);
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: TODO_QUERY_KEYS.all });
-      queryClient.invalidateQueries({ queryKey: TODO_CATEGORY_QUERY_KEYS.all });
+      invalidateTodos(queryClient);
       toast.success(t('todo:toast.categoryChanged'));
       trackEvent('todo_edited', { todo_id: variables.todoId, field: 'categoryId' });
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(error)) {
         toast.error(error.message);

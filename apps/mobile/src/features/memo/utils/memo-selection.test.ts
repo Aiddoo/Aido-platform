@@ -9,17 +9,17 @@ describe('resolveMemoSelection', () => {
     expect(resolveMemoSelection('compact', undefined)).toEqual({ type: 'none' });
   });
 
-  it('medium 이상에서는 메모 탭 URL의 id를 바꾼다', () => {
+  it('medium 이상에서는 메모 탭 URL의 memoId를 바꾼다', () => {
     expect(resolveMemoSelection('medium', 3)).toEqual({
       type: 'setParams',
-      params: { id: '3' },
+      params: { memoId: '3' },
     });
   });
 
-  it('medium 이상에서 선택 해제는 id를 지운다', () => {
+  it('medium 이상에서 선택 해제는 memoId를 지운다', () => {
     expect(resolveMemoSelection('expanded', undefined)).toEqual({
       type: 'setParams',
-      params: { id: undefined },
+      params: { memoId: undefined },
     });
   });
 });

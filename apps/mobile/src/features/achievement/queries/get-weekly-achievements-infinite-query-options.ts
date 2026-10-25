@@ -5,17 +5,13 @@ import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 
 import { ACHIEVEMENT_QUERY_KEYS } from '../constants/achievement-query-keys';
 import type { WeeklyAchievementsResult } from '../domains/achievement.model';
-import { toWeeklyAchievementViewModel } from '../utils/view-models/weekly-achievement.view-model';
 
-function selectWeeklyAchievementViewModels(
-  data: InfiniteData<WeeklyAchievementsResult, number | undefined>,
+function selectWeeklyAchievements(
+  infinitePages: InfiniteData<WeeklyAchievementsResult, number | undefined>,
 ) {
   return {
-    ...data,
-    pages: data.pages.map((page) => ({
-      ...page,
-      items: page.items.map(toWeeklyAchievementViewModel),
-    })),
+    items: infinitePages.pages.flatMap((page) => page.items),
+    summary: infinitePages.pages[0]?.summary,
   };
 }
 
@@ -40,9 +36,9 @@ export function getWeeklyAchievementsInfiniteQueryOptions(
       if (!lastPage.hasNext) {
         return undefined;
       }
-      return lastPage.nextCursor ?? undefined;
+      return lastPage.nextCursor;
     },
-    select: selectWeeklyAchievementViewModels,
+    select: selectWeeklyAchievements,
   });
 }
 

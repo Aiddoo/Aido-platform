@@ -54,7 +54,7 @@ const isMessageTooLong = (message?: string | null): boolean => {
 };
 
 const isLimitReached = (limitInfo: NudgeLimitInfo): boolean => {
-  return limitInfo.remainingToday !== null && limitInfo.remainingToday <= 0;
+  return limitInfo.remainingToday != null && limitInfo.remainingToday <= 0;
 };
 
 const getBannerState = (limitInfo: NudgeLimitInfo): NudgeBannerState => {
@@ -62,7 +62,7 @@ const getBannerState = (limitInfo: NudgeLimitInfo): NudgeBannerState => {
     return { type: 'limitReached' };
   }
 
-  if (limitInfo.isUnlimited || limitInfo.usedToday === 0 || limitInfo.remainingToday === null) {
+  if (limitInfo.isUnlimited || limitInfo.usedToday === 0 || limitInfo.remainingToday == null) {
     return { type: 'available' };
   }
 

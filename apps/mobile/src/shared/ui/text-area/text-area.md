@@ -35,18 +35,18 @@ import { TextArea } from '@src/shared/ui/text-area';
 
 ## Props
 
-| Prop                 | 타입                            | 기본값     | 설명                                                                                  |
-| -------------------- | ------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
-| `variant`            | `'filled' \| 'line' \| 'plain'` | `'filled'` | 입력 필드 스타일                                                                      |
-| `label`              | `string`                        | -          | 라벨 텍스트                                                                           |
-| `isDisabled`         | `boolean`                       | `false`    | 비활성화 상태                                                                         |
-| `isInvalid`          | `boolean`                       | `false`    | 에러 상태                                                                             |
-| `errorMessage`       | `string`                        | -          | 에러 메시지 (하단 좌측)                                                               |
-| `preserveErrorSpace` | `boolean`                       | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
-| `textSize`           | `TextSize`                      | -          | 앱 글꼴 크기 설정을 따르는 입력 글자 토큰입니다.                                      |
-| `growsWithContent`   | `boolean`                       | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
-| `className`          | `string`                        | -          | 컨테이너 추가 스타일                                                                  |
-| `...TextInputProps`  | -                               | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장)                      |
+| Prop                 | 타입                                      | 기본값     | 설명                                                                                  |
+| -------------------- | ----------------------------------------- | ---------- | ------------------------------------------------------------------------------------- |
+| `variant`            | `'filled' \| 'line' \| 'plain' \| 'bare'` | `'filled'` | 입력 필드 스타일                                                                      |
+| `label`              | `string`                                  | -          | 라벨 텍스트                                                                           |
+| `isDisabled`         | `boolean`                                 | `false`    | 비활성화 상태                                                                         |
+| `isInvalid`          | `boolean`                                 | `false`    | 에러 상태                                                                             |
+| `errorMessage`       | `string`                                  | -          | 에러 메시지 (하단 좌측)                                                               |
+| `preserveErrorSpace` | `boolean`                                 | `true`     | 오류가 없어도 안내 문구 높이를 유지합니다.                                            |
+| `textSize`           | `TextSize`                                | -          | 앱 글꼴 크기 설정을 따르는 입력 글자 토큰입니다.                                      |
+| `growsWithContent`   | `boolean`                                 | `false`    | 내용과 입력 표면 padding에 맞춰 자랍니다. `className`의 min/max 높이 안에서 멈춥니다. |
+| `className`          | `string`                                  | -          | 컨테이너 추가 스타일                                                                  |
+| `...TextInputProps`  | -                                         | -          | `TextInput` 기본 props (`multiline`, `textAlignVertical`은 내장)                      |
 
 ## 스타일 (variant)
 
@@ -72,6 +72,15 @@ import { TextArea } from '@src/shared/ui/text-area';
 
 ```tsx
 <TextArea variant="plain" />
+```
+
+### bare
+
+여백·배경·테두리 없이 남은 높이를 모두 채우는 전체 화면 편집기 스타일입니다. 메모 작성·상세처럼
+화면 자체가 입력 표면일 때 `preserveErrorSpace={false}`와 함께 씁니다.
+
+```tsx
+<TextArea variant="bare" preserveErrorSpace={false} value={value} onChange={onChange} />
 ```
 
 ## 내용에 맞춰 높이 확장

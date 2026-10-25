@@ -1,15 +1,19 @@
-import { verifyEmailSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { EmailVerificationCodeStep } from '@src/features/auth/components/email-verification-code-step';
 import { SignUpPasswordForm } from '@src/features/auth/components/sign-up-password-form';
 import { SignUpUserInfoForm } from '@src/features/auth/components/sign-up-user-info-form';
-import { SignUpVerificationForm } from '@src/features/auth/components/sign-up-verification-form';
 import { signUpFormSchema } from '@src/features/auth/domains/sign-up-form.schema';
-import { useStepper } from '@src/shared/hooks/use-stepper';
+import { useRegisterMutationOptions } from '@src/features/auth/queries/use-register-mutation-options';
+import { useResendVerificationMutationOptions } from '@src/features/auth/queries/use-resend-verification-mutation-options';
+import { useVerifyEmailMutationOptions } from '@src/features/auth/queries/use-verify-email-mutation-options';
+import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
-import { QueryErrorBoundary, ReadableContent } from '@src/shared/ui';
+import { QueryErrorBoundary, ReadableContent, Box } from '@src/shared/ui';
+import { useMutation } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import { useState } from 'react';
+import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useForm } from 'react-hook-form';
-import { View } from 'react-native';
 import { match } from 'ts-pattern';
 
 const SIGN_UP_STEPS = ['userInfo', 'password', 'verification'] as const;
@@ -23,7 +27,7 @@ const SIGN_UP_STEP_TITLE_KEYS = {
 
 function SignUpScreen() {
   const { t } = useTranslation(['auth']);
-  const { step, setStep } = useStepper<typeof SIGN_UP_STEPS>(SIGN_UP_STEPS);
+  const [step, setStep] = useState<SignUpStep>('userInfo');
 
   const form = useForm({
     resolver: zodResolver(signUpFormSchema),
@@ -40,18 +44,28 @@ function SignUpScreen() {
     mode: 'onTouched',
   });
 
-  const verificationForm = useForm({
-    resolver: zodResolver(verifyEmailSchema),
-    defaultValues: { email: '', code: '' },
+  const { showBoundary } = useErrorBoundary();
+  const register = useMutation(useRegisterMutationOptions());
+  const verify = useMutation(useVerifyEmailMutationOptions());
+  const resend = useMutation(useResendVerificationMutationOptions());
+
+  const submitRegister = form.handleSubmit(async ({ termsAgreed, privacyAgreed, ...input }) => {
+    if (!termsAgreed || !privacyAgreed) {
+      return;
+    }
+
+    try {
+      await register.mutateAsync({ ...input, termsAgreed, privacyAgreed });
+      setStep('verification');
+    } catch (error) {
+      if (!isBusinessError(error)) {
+        showBoundary(error);
+      }
+    }
   });
 
-  const enterVerification = () => {
-    verificationForm.reset({ email: form.getValues('email'), code: '' });
-    setStep('verification');
-  };
-
   return (
-    <View className="flex-1 bg-background">
+    <Box className="flex-1 bg-background">
       <Stack.Screen options={{ title: t(SIGN_UP_STEP_TITLE_KEYS[step]) }} />
 
       <ReadableContent flex={1}>
@@ -63,17 +77,22 @@ function SignUpScreen() {
           ))
           .with('password', () => (
             <FormProvider {...form}>
-              <SignUpPasswordForm onNextStep={enterVerification} />
+              <SignUpPasswordForm onSubmit={submitRegister} />
             </FormProvider>
           ))
-          .with('verification', () => (
-            <FormProvider {...verificationForm}>
-              <SignUpVerificationForm />
-            </FormProvider>
-          ))
+          .with('verification', () => {
+            const email = form.getValues('email');
+            return (
+              <EmailVerificationCodeStep
+                email={email}
+                onComplete={(code) => verify.mutateAsync({ email, code })}
+                onResend={() => resend.mutateAsync({ email })}
+              />
+            );
+          })
           .exhaustive()}
       </ReadableContent>
-    </View>
+    </Box>
   );
 }
 

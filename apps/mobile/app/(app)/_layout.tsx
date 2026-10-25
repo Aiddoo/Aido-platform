@@ -3,16 +3,31 @@ import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { WeatherSessionProvider } from '@src/features/weather/components/providers/weather-session-provider';
 import { classifyBoundaryError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Result, StyledSafeAreaView } from '@src/shared/ui';
+import { HStack, Result, SHEET_ROUTE_SCREEN_OPTIONS, StyledSafeAreaView } from '@src/shared/ui';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { useResolveClassNames } from 'uniwind';
+
+const SHEET_ROUTES = [
+  'todo/new',
+  'todo/[todoId]/actions',
+  'todo/[todoId]/edit',
+  'todo/[todoId]/date',
+  'todo/[todoId]/time',
+  'todo/[todoId]/category',
+  'todo/[todoId]/thanks',
+  'todo/[todoId]/sub-todos/new',
+  'todo/[todoId]/sub-todos/[subTodoId]/actions',
+  'todo/[todoId]/sub-todos/[subTodoId]/edit',
+  'todo-categories/new',
+  'todo-categories/[categoryId]/edit',
+] as const;
 
 export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-const AppLayout = () => {
+function AppLayout() {
   const { backgroundColor } = useResolveClassNames('bg-white');
 
   return (
@@ -39,10 +54,13 @@ const AppLayout = () => {
           name="memo"
           options={{ animation: 'fade_from_bottom', animationDuration: 200 }}
         />
+        {SHEET_ROUTES.map((name) => (
+          <Stack.Screen key={name} name={name} options={SHEET_ROUTE_SCREEN_OPTIONS} />
+        ))}
       </Stack>
     </WeatherSessionProvider>
   );
-};
+}
 
 export default AppLayout;
 

@@ -1,103 +1,107 @@
 import '@src/shared/i18n/init';
+import type { ErrorReporter } from '@src/core/ports/error-reporter';
+import {
+  createMockAnalytics,
+  createMockHttpClient,
+  createPendingResponse,
+} from '@src/shared/__tests__';
 import { renderUi } from '@src/shared/__tests__/render-ui';
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { ok } from '@src/shared/errors/result';
+import { LocalDateProvider } from '@src/shared/providers/local-date-provider';
+import { QueryClient } from '@tanstack/react-query';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { useLocalSearchParams } from 'expo-router';
 
+import { createParentTodo, createSubTodo } from '../__tests__/sub-todo.factories';
+import { SubTodoService } from '../apis/sub-todo.service';
+import { TodoService } from '../apis/todo.service';
+import { TODO_QUERY_KEYS } from '../constants/todo-query-keys';
 import { AddSubTodoBottomSheet } from './add-sub-todo-bottom-sheet';
-
-function createDeferred() {
-  let settle: () => void = () => undefined;
-  const promise = new Promise<void>((resolve) => {
-    settle = resolve;
-  });
-
-  return { promise, settle: () => settle() };
-}
 
 const submitButton = () => screen.getByTestId('sub-todo-submit');
 const deleteButton = () => screen.getByTestId('sub-todo-delete');
 
-/**
- * 진행 중 플래그를 밖에서 받던 시절, 이 시트는 오버레이로만 열려서 그 값이 열릴 때의
- * false에 얼어붙었다. 수정 모드는 보낸 뒤에도 입력을 비우지 않으므로 버튼이 계속 열려 있어
- * 연타하면 같은 PATCH가 여러 번 나갔다.
- */
+function createMockErrorReporter(): jest.Mocked<ErrorReporter> {
+  return {
+    captureException: jest.fn(),
+    captureMessage: jest.fn(),
+    addBreadcrumb: jest.fn(),
+    setUserId: jest.fn(),
+  };
+}
+
+async function renderEditSheet() {
+  const httpClient = createMockHttpClient();
+  const pendingPatch = createPendingResponse(ok(undefined));
+  const pendingDelete = createPendingResponse(ok(undefined));
+  httpClient.patch.mockReturnValue(pendingPatch.response);
+  httpClient.delete.mockReturnValue(pendingDelete.response);
+
+  const todo = createParentTodo({ subTodos: [createSubTodo({ title: '장 보기' })] });
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
+      mutations: { retry: false, gcTime: 0 },
+    },
+  });
+  queryClient.setQueryData(TODO_QUERY_KEYS.listByDate({ date: todo.startDate }), {
+    todos: [todo],
+    hasNext: false,
+    nextCursor: null,
+  });
+
+  jest
+    .mocked(useLocalSearchParams)
+    .mockReturnValue({ todoId: String(todo.id), subTodoId: '1', date: todo.startDate });
+
+  await renderUi(
+    <LocalDateProvider>
+      <AddSubTodoBottomSheet mode="edit" />
+    </LocalDateProvider>,
+    {
+      di: {
+        subTodoService: new SubTodoService(httpClient),
+        todoService: new TodoService(httpClient),
+        analytics: createMockAnalytics(),
+        errorReporter: createMockErrorReporter(),
+      },
+      queryClient,
+    },
+  );
+
+  return {
+    httpClient,
+    settleRequests: () => {
+      pendingPatch.settle();
+      pendingDelete.settle();
+    },
+  };
+}
+
 describe('AddSubTodoBottomSheet 수정 모드', () => {
   it('보내는 동안 전송과 삭제가 모두 잠긴다', async () => {
-    const deferred = createDeferred();
-    await renderUi(
-      <AddSubTodoBottomSheet
-        mode="edit"
-        initialValue="장 보기"
-        isOpen
-        onOpenChange={jest.fn()}
-        onClose={jest.fn()}
-        onSubmit={() => deferred.promise}
-        onDelete={jest.fn()}
-      />,
-    );
+    const { httpClient, settleRequests } = await renderEditSheet();
 
-    // 끝나지 않은 채로 둔다 — 그 사이의 잠금이 이 테스트의 대상이다.
-    const pressing = fireEvent.press(submitButton());
+    fireEvent.press(submitButton()).catch(() => undefined);
 
     await waitFor(() => {
       expect(submitButton()).toBeDisabled();
     });
     expect(deleteButton()).toBeDisabled();
-
-    await act(async () => {
-      deferred.settle();
-      await pressing;
-    });
-
-    await waitFor(() => {
-      expect(submitButton()).toBeEnabled();
-    });
+    expect(httpClient.patch).toHaveBeenCalledTimes(1);
+    settleRequests();
   });
 
   it('지우는 동안에도 전송이 함께 잠긴다', async () => {
-    const deferred = createDeferred();
-    await renderUi(
-      <AddSubTodoBottomSheet
-        mode="edit"
-        initialValue="장 보기"
-        isOpen
-        onOpenChange={jest.fn()}
-        onClose={jest.fn()}
-        onSubmit={jest.fn()}
-        onDelete={() => deferred.promise}
-      />,
-    );
+    const { httpClient, settleRequests } = await renderEditSheet();
 
-    const pressing = fireEvent.press(deleteButton());
+    fireEvent.press(deleteButton()).catch(() => undefined);
 
     await waitFor(() => {
       expect(deleteButton()).toBeDisabled();
     });
     expect(submitButton()).toBeDisabled();
-
-    await act(async () => {
-      deferred.settle();
-      await pressing;
-    });
-  });
-
-  it('보낸 뒤에도 수정 모드는 쓰던 값을 지우지 않는다', async () => {
-    const onSubmit = jest.fn();
-    await renderUi(
-      <AddSubTodoBottomSheet
-        mode="edit"
-        initialValue="장 보기"
-        isOpen
-        onOpenChange={jest.fn()}
-        onClose={jest.fn()}
-        onSubmit={onSubmit}
-        onDelete={jest.fn()}
-      />,
-    );
-
-    await fireEvent.press(submitButton());
-
-    expect(onSubmit).toHaveBeenCalledWith('장 보기');
-    expect(screen.getByTestId('sub-todo-input')).toHaveProp('value', '장 보기');
+    expect(httpClient.delete).toHaveBeenCalledTimes(1);
+    settleRequests();
   });
 });

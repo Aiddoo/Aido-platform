@@ -1,23 +1,18 @@
-import type { DayOfWeek } from '@aido/api';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { ArrowLeftIcon, ArrowRightIcon, Box, HStack, ListRow, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import {
-  formatDaysOfWeek,
-  getDayOfWeekLabel,
   getMonthHeaderText,
   getWeekdayLabels,
+  getNextDay,
   isSameDay,
   isSameMonth,
+  startOfDay,
 } from '@src/shared/utils/date';
-import dayjs from 'dayjs';
 import { PressableFeedback } from 'heroui-native';
-import { useMemo } from 'react';
-import { ScrollView } from 'react-native';
 
 import { type DatePicker, useDatePicker } from '../hooks/use-date-picker';
-import type { RepeatSetting } from '../hooks/use-repeat-setting';
 import { DAY_TYPE_TONE, getDatePickerDayStyle, isTodayHighlighted } from '../utils/calendar-day';
 import { CalendarWeekdayHeader } from './calendar/calendar-weekday-header';
 import { PickerHeader } from './picker-header';
@@ -47,69 +42,75 @@ export function TodoDatePickerContent({ value, onChange, onCancel }: TodoDatePic
   );
 }
 
-interface QuickDateOption {
-  labelKey: 'picker.today' | 'picker.tomorrow';
-  date: Date;
-}
-
-const getQuickDateOptions = (): QuickDateOption[] => {
-  const today = dayjs();
-  const tomorrow = today.add(1, 'day');
-  return [
-    { labelKey: 'picker.today', date: today.toDate() },
-    { labelKey: 'picker.tomorrow', date: tomorrow.toDate() },
-  ];
-};
-
 interface QuickDateOptionsProps {
   picker: DatePicker;
   onSelect: (date: Date) => void;
 }
 
-const QuickDateOptions = ({ picker, onSelect }: QuickDateOptionsProps) => {
+function QuickDateOptions({ picker, onSelect }: QuickDateOptionsProps) {
   const { t } = useTranslation('todo');
-  const { date: pickerDate } = picker;
-  const options = useMemo(() => getQuickDateOptions(), []);
-  const weekdayLabels = getWeekdayLabels();
+  const today = useToday();
+  const todayStart = startOfDay(today);
+  const tomorrowStart = getNextDay(todayStart);
 
   return (
     <VStack gap={4}>
-      {options.map((option) => {
-        const isSelected = isSameDay(pickerDate, option.date);
-        const tone = isSelected ? 'brand' : 'neutral';
-        return (
-          <PressableFeedback
-            key={option.labelKey}
-            onPress={() => onSelect(option.date)}
-            className={cn('rounded-lg', isSelected && 'bg-main/5')}
-          >
-            <ListRow
-              contents={
-                <ListRow.Texts
-                  type="1RowTypeA"
-                  top={t(option.labelKey)}
-                  topProps={{
-                    size: 'b2',
-                    weight: 'medium',
-                    tone,
-                    shade: isSelected ? undefined : 8,
-                  }}
-                />
-              }
-              right={
-                <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
-                  {weekdayLabels[option.date.getDay()]}
-                </Text>
-              }
-              horizontalPadding="medium"
-              verticalPadding="medium"
-            />
-          </PressableFeedback>
-        );
-      })}
+      <QuickDateRow
+        label={t('picker.today')}
+        date={todayStart}
+        isSelected={isSameDay(picker.date, todayStart)}
+        onSelect={onSelect}
+      />
+      <QuickDateRow
+        label={t('picker.tomorrow')}
+        date={tomorrowStart}
+        isSelected={isSameDay(picker.date, tomorrowStart)}
+        onSelect={onSelect}
+      />
     </VStack>
   );
-};
+}
+
+interface QuickDateRowProps {
+  label: string;
+  date: Date;
+  isSelected: boolean;
+  onSelect: (date: Date) => void;
+}
+
+function QuickDateRow({ label, date, isSelected, onSelect }: QuickDateRowProps) {
+  const weekdayLabels = getWeekdayLabels();
+  const tone = isSelected ? 'brand' : 'neutral';
+
+  return (
+    <PressableFeedback
+      onPress={() => onSelect(date)}
+      className={cn('rounded-lg', isSelected && 'bg-main/5')}
+    >
+      <ListRow
+        contents={
+          <ListRow.Texts
+            type="1RowTypeA"
+            top={label}
+            topProps={{
+              size: 'b2',
+              weight: 'medium',
+              tone,
+              shade: isSelected ? undefined : 8,
+            }}
+          />
+        }
+        right={
+          <Text size="b2" tone={tone} shade={isSelected ? undefined : 6}>
+            {weekdayLabels[date.getDay()]}
+          </Text>
+        }
+        horizontalPadding="medium"
+        verticalPadding="medium"
+      />
+    </PressableFeedback>
+  );
+}
 
 interface DatePickerCalendarProps {
   picker: DatePicker;
@@ -193,143 +194,5 @@ const DatePickerDateCell = ({ date, startDate, onPress }: DatePickerDateCellProp
         </Text>
       </Box>
     </PressableFeedback>
-  );
-};
-
-const DAY_KEYS: DayOfWeek[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-
-interface DayOfWeekSelectorProps {
-  repeatSetting: RepeatSetting;
-}
-
-type RepeatSummaryKey =
-  | 'picker.repeatDaily'
-  | 'picker.repeatWeekdays'
-  | 'picker.repeatWeekends'
-  | 'picker.repeatWeekly';
-
-const getRepeatSummaryKey = ({
-  isAllSelected,
-  isWeekdaysSelected,
-  isWeekendsSelected,
-}: {
-  isAllSelected: boolean;
-  isWeekdaysSelected: boolean;
-  isWeekendsSelected: boolean;
-}): RepeatSummaryKey => {
-  if (isAllSelected) {
-    return 'picker.repeatDaily';
-  }
-  if (isWeekdaysSelected) {
-    return 'picker.repeatWeekdays';
-  }
-  if (isWeekendsSelected) {
-    return 'picker.repeatWeekends';
-  }
-  return 'picker.repeatWeekly';
-};
-
-interface PresetChipProps {
-  label: string;
-  isSelected: boolean;
-  onPress: () => void;
-}
-
-const PresetChip = ({ label, isSelected, onPress }: PresetChipProps) => (
-  <PressableFeedback
-    onPress={onPress}
-    className={cn(
-      'h-8 items-center justify-center rounded-4xl px-3',
-      isSelected ? 'bg-main' : 'bg-gray-2',
-    )}
-  >
-    <Text
-      size="b4"
-      weight="medium"
-      className={isSelected ? 'text-white' : undefined}
-      shade={isSelected ? undefined : 7}
-    >
-      {label}
-    </Text>
-  </PressableFeedback>
-);
-
-export const DayOfWeekSelector = ({ repeatSetting }: DayOfWeekSelectorProps) => {
-  const { t } = useTranslation('todo');
-  const {
-    selectedDays,
-    toggleDay,
-    toggleAllDays,
-    toggleWeekdays,
-    toggleWeekends,
-    isAllDaysSelected,
-    isWeekdaysSelected,
-    isWeekendsSelected,
-  } = repeatSetting;
-
-  return (
-    <VStack gap={12}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-1.5 px-4"
-      >
-        <PresetChip
-          label={t('picker.presetDaily')}
-          isSelected={isAllDaysSelected}
-          onPress={toggleAllDays}
-        />
-        <PresetChip
-          label={t('picker.presetWeekdays')}
-          isSelected={isWeekdaysSelected}
-          onPress={toggleWeekdays}
-        />
-        <PresetChip
-          label={t('picker.presetWeekends')}
-          isSelected={isWeekendsSelected}
-          onPress={toggleWeekends}
-        />
-        {DAY_KEYS.map((key) => {
-          const label = getDayOfWeekLabel(key);
-          const isSelected = selectedDays.includes(key);
-          return (
-            <PressableFeedback
-              key={key}
-              onPress={() => toggleDay(key)}
-              className={cn(
-                'size-8 items-center justify-center rounded-4xl',
-                isSelected ? 'bg-main' : 'bg-gray-2',
-              )}
-            >
-              <Text
-                size="b4"
-                weight="medium"
-                className={isSelected ? 'text-white' : undefined}
-                shade={isSelected ? undefined : 7}
-              >
-                {label}
-              </Text>
-            </PressableFeedback>
-          );
-        })}
-      </ScrollView>
-      {selectedDays.length > 0 ? (
-        <Text size="b3" tone="brand" align="right" className="px-4">
-          *{' '}
-          {t(
-            getRepeatSummaryKey({
-              isAllSelected: isAllDaysSelected,
-              isWeekdaysSelected,
-              isWeekendsSelected,
-            }),
-            { days: formatDaysOfWeek(selectedDays) },
-          )}
-        </Text>
-      ) : (
-        <Text size="b3" tone="neutral" shade={5} align="right" className="px-4">
-          * {t('picker.selectDays')}
-        </Text>
-      )}
-    </VStack>
   );
 };

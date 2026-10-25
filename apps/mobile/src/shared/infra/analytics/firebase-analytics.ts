@@ -7,6 +7,8 @@ import {
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
 import type { Logger } from '@src/core/ports/logger';
 
+import { FIREBASE_ANALYTICS_LOG_EVENT } from './firebase-analytics-log-events';
+
 /**
  * Firebase Analytics 어댑터.
  *
@@ -17,35 +19,39 @@ import type { Logger } from '@src/core/ports/logger';
 export const createFirebaseAnalytics = (logger: Logger): Analytics => {
   const firebaseAnalytics = getAnalytics();
 
-  const warn = (label: string, error: unknown, extra?: Record<string, unknown>) => {
-    logger.warn(`[FirebaseAnalytics] ${label} failed`, {
+  const warn = (logEvent: string, error: unknown, extra?: Record<string, unknown>) => {
+    logger.warn(logEvent, {
       ...extra,
       error: error instanceof Error ? error.message : String(error),
     });
   };
 
   const invokeAsync = (
-    label: string,
+    logEvent: string,
     operation: () => Promise<unknown>,
     extra?: Record<string, unknown>,
   ): void => {
     try {
       operation().catch((error) => {
-        warn(label, error, extra);
+        warn(logEvent, error, extra);
       });
     } catch (error) {
       // RNFirebase의 인자 검증은 Promise를 만들기 전에 동기 예외를 던질 수 있다.
-      warn(label, error, extra);
+      warn(logEvent, error, extra);
     }
   };
 
   return {
     trackEvent(eventName: string, params?: AnalyticsEventParams): void {
-      invokeAsync('trackEvent', () => firebaseAnalytics.logEvent(eventName, params), { eventName });
+      invokeAsync(
+        FIREBASE_ANALYTICS_LOG_EVENT.TRACK_EVENT_FAILED,
+        () => firebaseAnalytics.logEvent(eventName, params),
+        { eventName },
+      );
     },
     trackScreenView(screenName: string, params?: AnalyticsEventParams): void {
       invokeAsync(
-        'trackScreenView',
+        FIREBASE_ANALYTICS_LOG_EVENT.TRACK_SCREEN_VIEW_FAILED,
         () =>
           firebaseAnalytics.logEvent('screen_view', {
             screen_name: screenName,
@@ -56,19 +62,23 @@ export const createFirebaseAnalytics = (logger: Logger): Analytics => {
       );
     },
     setUserId(userId: string | null): void {
-      invokeAsync('setUserId', () => setUserId(firebaseAnalytics, userId));
+      invokeAsync(FIREBASE_ANALYTICS_LOG_EVENT.SET_USER_ID_FAILED, () =>
+        setUserId(firebaseAnalytics, userId),
+      );
     },
     setUserProperties(properties: Record<string, string | number | boolean>): void {
       for (const [key, value] of Object.entries(properties)) {
         invokeAsync(
-          'setUserProperty',
+          FIREBASE_ANALYTICS_LOG_EVENT.SET_USER_PROPERTY_FAILED,
           () => setUserProperty(firebaseAnalytics, key, String(value)),
           { key },
         );
       }
     },
     resetData(): void {
-      invokeAsync('resetData', () => resetAnalyticsData(firebaseAnalytics));
+      invokeAsync(FIREBASE_ANALYTICS_LOG_EVENT.RESET_DATA_FAILED, () =>
+        resetAnalyticsData(firebaseAnalytics),
+      );
     },
   };
 };

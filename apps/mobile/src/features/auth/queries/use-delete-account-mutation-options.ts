@@ -12,8 +12,10 @@ import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
 import { t } from '@src/shared/i18n';
+import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+
+import { AUTH_LOG_EVENT } from '../constants/auth-log-events';
 
 export const useDeleteAccountMutationOptions = () => {
   const authService = useAuthService();
@@ -29,25 +31,25 @@ export const useDeleteAccountMutationOptions = () => {
       try {
         const unregisterResult = await notificationService.unregisterPushToken();
         if (!unregisterResult.ok) {
-          logger.warn('[PushNotification] Unregister skipped', {
+          logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_SKIPPED, {
             error: unregisterResult.error,
           });
         }
       } catch (error) {
-        logger.warn('[PushNotification] Unregister error', { error });
+        logger.warn(AUTH_LOG_EVENT.PUSH_UNREGISTER_FAILED, { error });
       }
 
       const result = await authService.deleteAccount(input);
       return unwrap(result);
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notifySuccess();
       toast.success(t('auth:toasts.accountDeleted'));
       trackEvent('auth_account_deleted');
       analytics.resetData();
     },
     onError: (error) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.USER_0602)) {
         toast.error(t('auth:toasts.passwordMismatch'));

@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import { ENV } from '@src/shared/config/env';
+import type { ComponentType } from 'react';
 
 /**
  * Sentry 초기화(앱 루트에서 1회).
@@ -31,3 +32,7 @@ export const initSentry = (): void => {
     ],
   });
 };
+
+export const wrapRootComponent = <Props extends Record<string, unknown>>(
+  RootComponent: ComponentType<Props>,
+): ComponentType<Props> => Sentry.wrap(RootComponent);

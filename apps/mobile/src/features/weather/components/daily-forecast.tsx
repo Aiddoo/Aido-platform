@@ -1,10 +1,9 @@
 import { useTranslation } from '@src/shared/i18n';
-import { HStack, Text, VStack } from '@src/shared/ui';
+import { HStack, Text, VStack, Box } from '@src/shared/ui';
 import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { maxBy, minBy } from 'es-toolkit';
-import { View } from 'react-native';
 import Svg, { Defs, Rect, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 
 import {
@@ -128,11 +127,11 @@ function TemperatureBar({
   const palette = useTimePalette();
 
   return (
-    <View
+    <Box
       className="flex-1 h-1 rounded-full overflow-hidden"
       style={{ backgroundColor: palette.glass }}
     >
-      <View
+      <Box
         className="absolute h-1 rounded-full overflow-hidden"
         style={{ left: `${left}%`, right: `${right}%` }}
       >
@@ -145,7 +144,7 @@ function TemperatureBar({
           </Defs>
           <Rect width="100%" height={4} rx={2} fill={`url(#tempBar-${id})`} />
         </Svg>
-      </View>
-    </View>
+      </Box>
+    </Box>
   );
 }

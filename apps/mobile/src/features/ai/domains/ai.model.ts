@@ -8,6 +8,8 @@ import {
 } from '@aido/api';
 import { z } from 'zod';
 
+export type ReportType = z.infer<typeof reportTypeSchema>;
+
 export const aiReportModelSchema = aiReportSchema.extend({ generatedAt: z.date() });
 export type AiReport = z.infer<typeof aiReportModelSchema>;
 

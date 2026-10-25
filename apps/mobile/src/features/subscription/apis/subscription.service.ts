@@ -3,6 +3,7 @@ import { err, ok, type Result } from '@src/shared/errors/result';
 import { t } from '@src/shared/i18n';
 import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 
+import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
 import type { SubscriptionOffering } from '../domains/subscription.model';
 import type { RevenueCatSdkManager } from './revenuecat-sdk-manager';
@@ -39,7 +40,7 @@ export class SubscriptionService {
       this.#packageMap = result.packageMap;
       return ok(result.offering);
     } catch (error) {
-      this.#logger.warn('[SubscriptionService] GetOfferings failed', {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.OFFERINGS_FETCH_FAILED, {
         error: error instanceof Error ? error.message : String(error),
       });
       const message = error instanceof Error ? error.message : undefined;

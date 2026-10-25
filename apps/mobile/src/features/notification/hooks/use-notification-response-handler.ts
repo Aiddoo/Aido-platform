@@ -6,6 +6,7 @@ import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
+import { NOTIFICATION_LOG_EVENT } from '../constants/notification-log-events';
 import { NOTIFICATION_QUERY_KEYS } from '../constants/notification-query-keys';
 import { optimisticallyMarkNotificationsRead } from '../queries/notification-cache';
 import { resolveNotificationDestination } from '../utils/navigation/notification-destination';
@@ -39,7 +40,7 @@ export function useNotificationResponseHandler() {
         try {
           trackEvent('marketing_push_opted_out', { source: 'push_action' });
         } catch (error) {
-          logger.warn('[Notification] Opt-out analytics failed', { error });
+          logger.warn(NOTIFICATION_LOG_EVENT.OPT_OUT_ANALYTICS_FAILED, { error });
         }
         return 'handled';
       }
@@ -75,7 +76,7 @@ export function useNotificationResponseHandler() {
           trackEvent('badge_opened_from_notification');
         }
       } catch (error) {
-        logger.warn('[Notification] Open analytics failed', { error });
+        logger.warn(NOTIFICATION_LOG_EVENT.OPEN_ANALYTICS_FAILED, { error });
       }
 
       if (data.notificationId > 0 && isCurrentSession()) {
@@ -83,7 +84,7 @@ export function useNotificationResponseHandler() {
           canApply: isCurrentSession,
         })
           .then(() => (isCurrentSession() ? notificationService.syncBadgeCount() : undefined))
-          .catch((error) => logger.warn('[Notification] Local read sync failed', { error }));
+          .catch((error) => logger.warn(NOTIFICATION_LOG_EVENT.LOCAL_READ_SYNC_FAILED, { error }));
         notificationService
           .markOpened(data.notificationId)
           .then(unwrap)
@@ -92,7 +93,7 @@ export function useNotificationResponseHandler() {
               ? queryClient.invalidateQueries({ queryKey: NOTIFICATION_QUERY_KEYS.all })
               : undefined,
           )
-          .catch((error) => logger.warn('[Notification] Open recording failed', { error }));
+          .catch((error) => logger.warn(NOTIFICATION_LOG_EVENT.OPEN_RECORDING_FAILED, { error }));
       }
       return 'handled';
     },

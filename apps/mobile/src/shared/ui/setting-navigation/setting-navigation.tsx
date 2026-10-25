@@ -52,7 +52,7 @@ SettingNavigation.Item = function Item({
         contents={<ListRow.Texts type="1RowTypeA" top={label} topProps={{ shade: 8 }} />}
         right={right ?? <ArrowRightIcon colorClassName="text-gray-6" />}
         horizontalPadding="medium"
-        disabled={isDisabled}
+        isDisabled={isDisabled}
         className="min-h-11"
       />
     </PressableFeedback>

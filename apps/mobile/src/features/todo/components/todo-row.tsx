@@ -1,7 +1,21 @@
-import { Box, HStack, Text, VStack } from '@src/shared/ui';
+import {
+  Box,
+  HStack,
+  ICON_COUNT_BUTTON_ICON_SIZE,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { Checkbox, PressableFeedback } from 'heroui-native';
+import { Checkbox, PressableFeedback, Skeleton } from 'heroui-native';
 import type { ComponentProps, ReactNode } from 'react';
+
+/** 행 안쪽 컨트롤을 스크린리더 동작으로 제공할 때 쓰는 이름. */
+export const TODO_ROW_ACCESSIBILITY_ACTION = {
+  toggleCompleted: 'toggleCompleted',
+  comments: 'comments',
+  more: 'more',
+} as const;
 
 interface TodoRowProps extends Omit<ComponentProps<typeof PressableFeedback>, 'children'> {
   left?: ReactNode;
@@ -56,6 +70,23 @@ export function TodoRow({
   );
 }
 
+TodoRow.Loading = function Loading() {
+  return (
+    <TodoRow
+      left={<Skeleton className="size-5 rounded-md" />}
+      top={<TextSkeleton size="b3" className="w-3/4" />}
+      right={
+        <Box className="px-2 py-1.5">
+          <Skeleton
+            className="rounded-full"
+            style={{ width: ICON_COUNT_BUTTON_ICON_SIZE, height: ICON_COUNT_BUTTON_ICON_SIZE }}
+          />
+        </Box>
+      }
+    />
+  );
+};
+
 type TodoCheckboxProps = ComponentProps<typeof Checkbox>;
 
 export function TodoCheckbox({
@@ -71,7 +102,7 @@ export function TodoCheckbox({
       className={cn('size-5 rounded-md border border-main shadow-none', className)}
       isSelected={isSelected}
       onSelectedChange={onSelectedChange}
-      isDisabled={isDisabled || onSelectedChange === undefined}
+      isDisabled={isDisabled || onSelectedChange == null}
     />
   );
 }

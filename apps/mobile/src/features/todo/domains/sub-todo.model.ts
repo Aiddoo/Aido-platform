@@ -19,10 +19,10 @@ function isMaxSubTodosReached(stats: SubTodoStats): boolean {
   return stats.total >= TODO_ITEM_LIMITS.MAX_PER_TODO;
 }
 
-function statsAfterToggle(stats: SubTodoStats, completed: boolean): SubTodoStats {
+function statsAfterToggle(stats: SubTodoStats, isCompleted: boolean): SubTodoStats {
   return {
     total: stats.total,
-    completed: completed ? stats.completed + 1 : stats.completed - 1,
+    completed: isCompleted ? stats.completed + 1 : stats.completed - 1,
   };
 }
 
@@ -50,9 +50,9 @@ export function canAddSubTodo(parentTodo: { subTodoStats: SubTodoStats }): boole
 
 export function getStatsAfterSubTodoToggle(
   parentTodo: { subTodoStats: SubTodoStats },
-  completed: boolean,
+  isCompleted: boolean,
 ): SubTodoStats {
-  return statsAfterToggle(parentTodo.subTodoStats, completed);
+  return statsAfterToggle(parentTodo.subTodoStats, isCompleted);
 }
 
 export function getStatsAfterSubTodoAdd(parentTodo: { subTodoStats: SubTodoStats }): SubTodoStats {

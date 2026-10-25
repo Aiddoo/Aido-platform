@@ -2,8 +2,8 @@ import type { ReorderFriendInput } from '@aido/api';
 import { useFriendService } from '@src/bootstrap/providers/di-context';
 import { useTrack } from '@src/shared/analytics/use-track';
 import { unwrap } from '@src/shared/errors/result';
+import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 
@@ -27,7 +27,7 @@ export const useReorderFriendMutationOptions = () => {
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
     onError: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notifyError();
       queryClient.invalidateQueries({ queryKey: FRIEND_QUERY_KEYS.friends() });
     },
   });

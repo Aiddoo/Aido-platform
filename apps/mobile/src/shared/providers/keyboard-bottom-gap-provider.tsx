@@ -7,8 +7,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import { type LayoutChangeEvent, useWindowDimensions, View } from 'react-native';
+import { type LayoutChangeEvent, useWindowDimensions, type View } from 'react-native';
 
+import { Box } from '../ui/box';
 import { getDistanceToWindowBottom } from '../utils/distance-to-window-bottom';
 
 const KeyboardBottomGapContext = createContext(0);
@@ -33,9 +34,9 @@ export function KeyboardBottomGapProvider({ children }: PropsWithChildren) {
   );
 
   return (
-    <View ref={containerRef} style={{ flex: 1 }} onLayout={measureGap}>
+    <Box ref={containerRef} flex={1} onLayout={measureGap}>
       <KeyboardBottomGapContext value={keyboardBottomGap}>{children}</KeyboardBottomGapContext>
-    </View>
+    </Box>
   );
 }
 

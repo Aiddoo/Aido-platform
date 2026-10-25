@@ -2,63 +2,89 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { useTrack } from '@src/shared/analytics';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useShareView } from '@src/shared/hooks/use-share-view';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
+import { useToday } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
-import { H4, HStack, ShareIcon, Spacing, Text, VStack, DashedDivider } from '@src/shared/ui';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { PressableFeedback } from 'heroui-native';
+import {
+  Button,
+  DashedDivider,
+  H4,
+  HStack,
+  Result,
+  ShareIcon,
+  Spacing,
+  Text,
+  VStack,
+  type QueryErrorFallbackProps,
+  Box,
+} from '@src/shared/ui';
+import {
+  usePrefetchQuery,
+  useSuspenseInfiniteQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
+import { times } from 'es-toolkit/compat';
+import { router } from 'expo-router';
+import { PressableFeedback, Skeleton } from 'heroui-native';
 import { useEffect, useRef } from 'react';
-import { View } from 'react-native';
+import { Image } from 'react-native';
 import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
-import type { AchievementSummary } from '../domains/achievement.model';
-import type {
-  BadgeType,
-  WeeklyAchievementViewModel,
-} from '../utils/view-models/weekly-achievement.view-model';
+import { ACHIEVEMENT_BADGE_NAME_KEYS } from '../constants/achievement-badge-labels';
+import { AchievementPolicy } from '../domains/achievement.model';
+import { useGetWeeklyAchievementsInfiniteQueryOptions } from '../queries/get-weekly-achievements-infinite-query-options';
 import { BadgeIcon } from './badge-icon';
 import { Certificate } from './certificate';
 
-const BADGE_NAME_KEYS = {
-  perfect: 'achievement:badgeNames.perfect',
-  almost: 'achievement:badgeNames.almost',
-  completed: 'achievement:badgeNames.completed',
-} as const satisfies Record<BadgeType, string>;
+const CERTIFICATE_LINE_COUNT = 4;
 
-interface AchievementSummaryCardProps {
-  latest: WeeklyAchievementViewModel;
-  summary: AchievementSummary;
-}
-
-export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCardProps) {
-  const fontScaledSize = useFontScaledSize();
+export function AchievementSummaryCard() {
+  const today = useToday();
+  usePrefetchQuery(useGetMeQueryOptions());
+  const { data: weeklyAchievements } = useSuspenseInfiniteQuery(
+    useGetWeeklyAchievementsInfiniteQueryOptions({ year: today.getFullYear() }),
+  );
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const fontScaledSize = useFontScaledSize();
   const { t } = useTranslation('achievement');
   const { trackEvent } = useTrack();
   const viewShotRef = useRef<ViewShotRef>(null);
   const { shareCapture, isSharing } = useShareView(viewShotRef);
-  const badgeName = tGlobal(BADGE_NAME_KEYS[latest.badgeType]);
+  const latest = weeklyAchievements.items[0];
+  const latestBadgeType = latest == null ? null : AchievementPolicy.badgeType(latest);
+  const latestCompletionRate = latest?.completionRate;
+  const latestWeekLabel = latest?.weekLabel;
+
+  useEffect(() => {
+    if (latestBadgeType == null || latestCompletionRate == null || latestWeekLabel == null) {
+      return;
+    }
+    trackEvent('badge_summary_viewed', {
+      badge_type: latestBadgeType,
+      completion_rate: latestCompletionRate,
+      week_label: latestWeekLabel,
+    });
+  }, [trackEvent, latestBadgeType, latestCompletionRate, latestWeekLabel]);
+
+  if (latest == null || latestBadgeType == null || weeklyAchievements.summary == null) {
+    return <AchievementSummaryCard.Empty />;
+  }
+
+  const { summary } = weeklyAchievements;
 
   const handleShare = async () => {
     trackEvent('badge_share_attempted', {
-      badge_type: latest.badgeType,
+      badge_type: latestBadgeType,
       year: latest.year,
       week: latest.week,
     });
     await shareCapture();
   };
 
-  useEffect(() => {
-    trackEvent('badge_summary_viewed', {
-      badge_type: latest.badgeType,
-      completion_rate: latest.completionRate,
-      week_label: latest.weekLabel,
-    });
-  }, [trackEvent, latest.badgeType, latest.completionRate, latest.weekLabel]);
-
   return (
-    <View>
+    <Box>
       <ViewShot ref={viewShotRef} options={{ format: 'png', quality: 1 }}>
-        <Certificate subtitle={badgeName}>
+        <Certificate subtitle={tGlobal(ACHIEVEMENT_BADGE_NAME_KEYS[latestBadgeType])}>
           <Spacing size={12} />
 
           <Certificate.Ornament />
@@ -69,7 +95,7 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
             <Text size="e1" shade={5}>
               {t('card.nameLabel')}
             </Text>
-            <View className="border-b border-gray-3 pb-1 px-8">
+            <Box className="border-b border-gray-3 pb-1 px-8">
               <H4
                 weight="bold"
                 align="center"
@@ -78,7 +104,7 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
               >
                 {user.name}
               </H4>
-            </View>
+            </Box>
           </VStack>
 
           <Spacing size={16} />
@@ -101,23 +127,21 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
 
           <Spacing size={20} />
 
-          {/* 점선 구분선 */}
           <DashedDivider />
 
           <Spacing size={14} />
 
           <HStack align="center" gap={12}>
-            <BadgeIcon type={latest.badgeType} size="large" />
-
-            <StatItem
+            <BadgeIcon type={latestBadgeType} size="large" />
+            <Stat
               label={t('card.statPerfect')}
               value={t('card.perfectCount', { count: summary.perfectWeeks })}
             />
-            <StatItem
+            <Stat
               label={t('card.statStreak')}
               value={t('card.streakWeeks', { count: summary.currentStreak })}
             />
-            <StatItem label={t('card.statAverage')} value={`${summary.averageRate}%`} />
+            <Stat label={t('card.statAverage')} value={`${summary.averageRate}%`} />
           </HStack>
         </Certificate>
       </ViewShot>
@@ -138,16 +162,123 @@ export function AchievementSummaryCard({ latest, summary }: AchievementSummaryCa
           colorClassName="text-gray-6"
         />
       </PressableFeedback>
-    </View>
+    </Box>
   );
 }
 
-interface StatItemProps {
+AchievementSummaryCard.Empty = function Empty() {
+  const { t } = useTranslation('achievement');
+  const { trackEvent } = useTrack();
+  const push = useSingleTap(router.push);
+
+  return (
+    <Certificate>
+      <Spacing size={12} />
+
+      <Certificate.Ornament />
+
+      <Spacing size={16} />
+
+      <VStack align="center">
+        <Image
+          source={require('@assets/images/badge_empty.webp')}
+          style={{ width: 80, height: 80 }}
+          resizeMode="contain"
+        />
+      </VStack>
+
+      <Spacing size={16} />
+
+      <Text
+        size="b3"
+        shade={7}
+        align="center"
+        weight="medium"
+        lineBreakStrategyIOS="hangul-word"
+        textBreakStrategy="highQuality"
+      >
+        {t('list.emptyTitle')}
+      </Text>
+
+      <Spacing size={20} />
+
+      <DashedDivider />
+
+      <Spacing size={14} />
+
+      <Button
+        size="medium"
+        variant="weak"
+        display="block"
+        onPress={() => {
+          trackEvent('badge_empty_cta_tapped');
+          push('/feed');
+        }}
+      >
+        {t('list.startNow')}
+      </Button>
+    </Certificate>
+  );
+};
+
+AchievementSummaryCard.Loading = function Loading() {
+  const fontScaledSize = useFontScaledSize();
+
+  return (
+    <Certificate>
+      <Spacing size={12} />
+
+      <Certificate.Ornament />
+
+      <Spacing size={16} />
+
+      <VStack align="center" gap={4}>
+        <Skeleton className="w-10 rounded" style={{ height: fontScaledSize(17) }} />
+        <Skeleton className="w-32 rounded" style={{ height: fontScaledSize(28) }} />
+      </VStack>
+
+      <Spacing size={16} />
+
+      <VStack align="center">
+        {times(CERTIFICATE_LINE_COUNT, (index) => (
+          <Skeleton key={index} className="w-full rounded" style={{ height: fontScaledSize(20) }} />
+        ))}
+      </VStack>
+
+      <Spacing size={20} />
+
+      <DashedDivider />
+
+      <Spacing size={14} />
+
+      <HStack align="center" gap={12}>
+        <Skeleton className="size-20 rounded-full" />
+        <Skeleton className="flex-1 rounded" style={{ height: fontScaledSize(40) }} />
+      </HStack>
+    </Certificate>
+  );
+};
+
+AchievementSummaryCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('common');
+
+  return (
+    <Certificate>
+      <Spacing size={16} />
+      <Result
+        title={t('errorBoundary.title')}
+        button={<Result.Button onPress={reset}>{t('actions.retry')}</Result.Button>}
+      />
+    </Certificate>
+  );
+};
+
+interface StatProps {
   label: string;
   value: string;
 }
 
-function StatItem({ label, value }: StatItemProps) {
+function Stat({ label, value }: StatProps) {
   return (
     <VStack align="center" gap={1} className="flex-1">
       <Text size="e1" shade={5}>

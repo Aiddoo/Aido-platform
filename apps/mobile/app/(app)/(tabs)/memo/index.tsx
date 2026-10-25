@@ -1,14 +1,16 @@
-import { MemoDetailPane } from '@src/features/memo/components/memo-detail-pane/memo-detail-pane';
+import { SelectedMemoDetailPane } from '@src/features/memo/components/memo-detail-pane/selected-memo-detail-pane';
 import { MemoList } from '@src/features/memo/components/memo-list';
-import { MEMO_QUERY_KEYS } from '@src/features/memo/constants/memo-query-keys';
 import { MemoPolicy } from '@src/features/memo/domains/memo.model';
 import { useSelectedMemo } from '@src/features/memo/hooks/use-selected-memo';
 import { useGetMemoResourceLimitQueryOptions } from '@src/features/memo/queries/get-memo-resource-limit-query-options';
+import { invalidateMemos } from '@src/features/memo/queries/memo-cache';
+import { memoDetailHref } from '@src/features/memo/utils/navigation/memo-href';
+import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useCompactDetailHandoff } from '@src/shared/hooks/use-compact-detail-handoff';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
 import {
   AdaptivePane,
@@ -26,7 +28,7 @@ import { cn } from '@src/shared/utils/cn';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
-import { Suspense, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useCallback, useRef } from 'react';
 import { RefreshControl } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 
@@ -37,11 +39,9 @@ export default function MemoScreen() {
 
   const progress = useSharedValue(0);
 
-  const [refreshing, onRefresh] = useRefresh(() =>
-    Promise.all([queryClient.invalidateQueries({ queryKey: MEMO_QUERY_KEYS.all })]),
-  );
+  const [isRefreshing, handleRefresh] = useRefresh(() => invalidateMemos(queryClient));
 
-  const onScroll = useAnimatedScrollHandler({
+  const handleScroll = useAnimatedScrollHandler({
     onScroll: ({ contentOffset: { y }, contentSize, layoutMeasurement }) => {
       const scrollable = contentSize.height - layoutMeasurement.height;
       progress.value = scrollable > 0 ? Math.min(Math.max(y / scrollable, 0), 1) : 0;
@@ -52,16 +52,12 @@ export default function MemoScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  const windowSizeClass = useWindowSizeClass();
   const [selectedMemoId] = useSelectedMemo();
 
-  useEffect(() => {
-    if (windowSizeClass !== 'compact' || selectedMemoId === undefined) {
-      return;
-    }
-    router.setParams({ id: undefined });
-    router.push({ pathname: '/memo/[id]', params: { id: selectedMemoId } });
-  }, [windowSizeClass, selectedMemoId]);
+  useCompactDetailHandoff(selectedMemoId, (memoId) => {
+    router.setParams({ memoId: undefined });
+    router.push(memoDetailHref(memoId));
+  });
 
   const memoListPane = (
     <Box className="flex-1">
@@ -70,7 +66,7 @@ export default function MemoScreen() {
           <Box flex={1}>
             <H3 shade={7}>{t('tab.addMemo')}</H3>
           </Box>
-          <QueryErrorBoundary fallback={MemoCreateButton.Error}>
+          <QueryErrorBoundary fallback={(props) => <MemoCreateButton.Error {...props} />}>
             <Suspense fallback={<MemoCreateButton.Loading />}>
               <MemoCreateButton />
             </Suspense>
@@ -87,8 +83,8 @@ export default function MemoScreen() {
         }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
-        onScroll={onScroll}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        onScroll={handleScroll}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}
       >
         <StyledSafeAreaView edges={['left', 'right']} className="grow">
           <Box px={12} style={{ flexGrow: 1 }}>
@@ -110,16 +106,10 @@ export default function MemoScreen() {
   );
 
   return (
-    <AdaptivePane
-      primary={memoListPane}
-      secondary={
-        selectedMemoId === undefined ? (
-          <MemoDetailPane.Empty />
-        ) : (
-          <MemoDetailPane key={selectedMemoId} presentation="pane" />
-        )
-      }
-    />
+    <>
+      <NotificationBell.Toolbar />
+      <AdaptivePane primary={memoListPane} secondary={<SelectedMemoDetailPane />} />
+    </>
   );
 }
 
@@ -151,7 +141,7 @@ function MemoCreateButton() {
         canCreate ? 'bg-main' : 'bg-gray-4',
       )}
     >
-      <PlusIcon width={24} height={24} color="white" />
+      <PlusIcon width={24} height={24} colorClassName="text-white dark:text-gray-9" />
     </PressableFeedback>
   );
 }

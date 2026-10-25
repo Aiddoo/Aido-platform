@@ -1,0 +1,29 @@
+appId: com.aido.mobile
+name: 친구 피드가 같은 피드 화면에서 열리고 내 피드로 돌아온다
+---
+# Given: 오늘 피드
+- openLink: aido-dev://feed?date=today
+- extendedWaitUntil:
+    visible: '${QA_FRIEND_NAME} 프로필.*|${QA_FRIEND_NAME} profile.*'
+    timeout: 20000
+# When: 친구 아바타를 누른다
+- tapOn: '${QA_FRIEND_NAME} 프로필.*|${QA_FRIEND_NAME} profile.*'
+- waitForAnimationToEnd:
+    timeout: 5000
+# Then: 내 할 일 대신 친구 피드가 보이고 오류가 없다
+- assertNotVisible: ${QA_TODO_TITLE}
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.12.1-friend-feed
+# When: 내 아바타를 누른다
+- tapOn: '나 프로필.*|Me profile.*'
+# Then: 내 할 일이 다시 보인다
+- extendedWaitUntil:
+    visible: ${QA_TODO_TITLE}
+    timeout: 10000
+# Given: 친구 피드 딥링크
+- openLink: aido-dev://feed?friendId=${QA_FRIEND_ID}&date=today
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertNotVisible: ${QA_TODO_TITLE}
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- openLink: aido-dev://feed?date=today

@@ -9,14 +9,12 @@ import {
   withTodoCommentLikeResult,
 } from '../utils/todo-comment-cache-transforms';
 import {
+  cancelTodoCommentQueries,
+  invalidateTodoCommentQueries,
   optimisticallyUpdateTodoCommentCaches,
   restoreTodoCommentCaches,
   updateTodoCommentCaches,
 } from './todo-comment-cache';
-import {
-  cancelTodoCommentQueries,
-  invalidateTodoCommentQueries,
-} from './todo-comment-query-invalidation';
 
 interface SetTodoCommentLikeMutationParams {
   commentId: string;
@@ -47,7 +45,7 @@ export function useSetTodoCommentLikeMutationOptions({ todoId }: { todoId: numbe
       return { snapshot };
     },
     onError: (error, _params, context) => {
-      if (context !== undefined) {
+      if (context != null) {
         restoreTodoCommentCaches({ queryClient, snapshot: context.snapshot });
       }
       handleMutationError(error, 'like');
