@@ -52,8 +52,15 @@ export interface SubscriptionRepositoryPort {
   findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
   findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
   findUserById(userId: string): Promise<SubscriptionUser | null>;
-  /** 삭제되지 않은 사용자의 스토어 구독 행을 한 번에 읽는다. */
+  /** 삭제되지 않았고 다른 사용자에게 옮겨 가지 않은 스토어 구독 행을 한 번에 읽는다. */
   findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]>;
+  /**
+   * 이 체인의 이벤트가 온 사용자를 행의 소유자로 정한다. 다른 사용자 행이었거나 이전 표시가 있으면
+   * 옮기고 true를 반환한다.
+   */
+  claimChain(revenueCatId: string, userId: string): Promise<boolean>;
+  /** TRANSFER로 떠난 사용자의 남은 행에 이전 표시를 남기고 표시한 행 수를 반환한다. */
+  markTransferredAway(userId: string, transferredAt: Date): Promise<number>;
   create(data: CreateSubscriptionData): Promise<void>;
   updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
   updateUserSubscriptionStatus(

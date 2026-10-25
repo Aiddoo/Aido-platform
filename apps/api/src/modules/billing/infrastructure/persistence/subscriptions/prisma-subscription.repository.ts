@@ -89,7 +89,7 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
     return decodeRecord(
       "Subscription",
       await this.client.orm.public.Subscription.where((row) =>
-        and(row.userId.eq(userId), row.deletedAt.isNull()),
+        and(row.userId.eq(userId), row.deletedAt.isNull(), row.transferredAt.isNull()),
       )
         .select("revenueCatId", "status", "expiresAt")
         .all(),
@@ -125,6 +125,22 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
         reason: `Subscription not found: ${revenueCatId}`,
       });
     }
+  }
+
+  async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
+    const claimed = await this.client.orm.public.Subscription.where((row) =>
+      and(
+        row.revenueCatId.eq(varchar(revenueCatId, 255)),
+        or(row.userId.neq(userId), row.transferredAt.isNotNull()),
+      ),
+    ).updateAndCount(encodePatch("Subscription", { userId, transferredAt: null }));
+    return claimed > 0;
+  }
+
+  async markTransferredAway(userId: string, transferredAt: Date): Promise<number> {
+    return this.client.orm.public.Subscription.where((row) =>
+      and(row.userId.eq(userId), row.deletedAt.isNull(), row.transferredAt.isNull()),
+    ).updateAndCount(encodePatch("Subscription", { transferredAt }));
   }
 
   /**

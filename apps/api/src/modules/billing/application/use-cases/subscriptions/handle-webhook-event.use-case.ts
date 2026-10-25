@@ -1,5 +1,6 @@
 import { type RevenueCatWebhookPayload, revenueCatWebhookPayloadSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
+import { uniq } from "es-toolkit";
 import { match } from "ts-pattern";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -235,6 +236,7 @@ export class HandleWebhookEvent {
           revenueCatUserId: event.app_user_id,
         });
       }
+      await this.#markTransferredAway(user, event.transferred_from ?? []);
       return baseEventPayload(user, event);
     }
 
@@ -269,6 +271,9 @@ export class HandleWebhookEvent {
       );
     }
 
+    // 체인의 이벤트가 다른 사용자로 오면 구매가 옮겨 간 것이다. 행의 소유자를 이벤트 사용자로 맞춰
+    // 프리미엄 판단이 User projection 대신 행 자체를 믿을 수 있게 한다
+    await subscriptionRepository.claimChain(transactionId, user.id);
     const transition = this.#planTransition(
       user,
       event,
@@ -281,6 +286,25 @@ export class HandleWebhookEvent {
     await subscriptionRepository.updateStatus(transactionId, subscription.persistenceState);
     await this.#projectUser(user.id, transactionId, transition.userState);
     return transition.payload;
+  }
+
+  /**
+   * TRANSFER로 구매를 넘겨준 사용자의 남은 행에 이전 표시를 남긴다. TRANSFER에는 체인 ID가 없어
+   * 그 사용자의 행 전체를 표시하고, 같은 체인의 이벤트가 다시 그 사용자로 오면 claimChain이 되돌린다.
+   * 이전 소유자의 사용자 잠금은 잡지 않는다. 두 웹훅이 서로의 사용자를 반대 순서로 잠그는 교착을
+   * 피하려는 것이고, 그 사용자의 projection은 다음 지급·정리·자기 이벤트가 표시를 반영해 다시 계산한다.
+   */
+  async #markTransferredAway(
+    user: SubscriptionUser,
+    transferredFrom: readonly string[],
+  ): Promise<void> {
+    const { subscriptionRepository } = this.#dependencies;
+    const transferredAt = now();
+    for (const appUserId of uniq(transferredFrom)) {
+      const previousOwner = await subscriptionRepository.findUserByAppUserId(appUserId);
+      if (previousOwner === null || previousOwner.id === user.id) continue;
+      await subscriptionRepository.markTransferredAway(previousOwner.id, transferredAt);
+    }
   }
 
   // 스토어 상태가 바뀌면 보상 기간을 함께 보고 User의 구독 projection을 다시 계산한다

@@ -1,3 +1,4 @@
+import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 import {
   createSubscriptionFixture,
@@ -337,6 +338,70 @@ describe("HandleWebhookEvent", () => {
     expect(fixture.notifier.events).toHaveLength(1);
   });
 
+  it("TRANSFER는 구매를 넘겨준 사용자의 남은 행에 이전 표시를 남겨 그 사용자의 프리미엄 판단에서 뺀다", async () => {
+    // Given
+    givenSubscription();
+    const receiverId = "transfer-receiver";
+    fixture.subscriptionRepository.users.set(receiverId, {
+      id: receiverId,
+      email: "receiver@example.com",
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+      revenueCatUserId: null,
+      profile: null,
+    });
+    const body = SubscriptionEventBuilder.transfer()
+      .withAppUserId(receiverId)
+      .withTransferredFrom([fixture.user.revenueCatUserId ?? fixture.user.id])
+      .withEventId("transfer-event")
+      .build();
+    // When
+    await useCase.execute({ body });
+    // Then
+    expect(fixture.subscriptionRepository.transferredAt.get(SUBSCRIPTION_TRANSACTION_ID)).toEqual(
+      SUBSCRIPTION_TIME,
+    );
+    expect(await fixture.subscriptionRepository.findStoreEntitlements(fixture.user.id)).toEqual([]);
+  });
+
+  it("다른 사용자로 온 체인 이벤트는 행의 소유자를 그 사용자로 옮기고 프리미엄을 다시 계산한다", async () => {
+    // Given
+    givenSubscription();
+    const receiverId = "chain-receiver";
+    fixture.subscriptionRepository.users.set(receiverId, {
+      id: receiverId,
+      email: "receiver@example.com",
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+      revenueCatUserId: null,
+      profile: null,
+    });
+    fixture.subscriptionRepository.transferredAt.set(
+      SUBSCRIPTION_TRANSACTION_ID,
+      SUBSCRIPTION_TIME,
+    );
+    const renewedUntil = new Date("2026-04-10T12:00:00.000Z");
+    const body = payloadFor(SubscriptionEventBuilder.renewal()).event;
+    // When
+    await useCase.execute({
+      body: {
+        event: { ...body, app_user_id: receiverId, expiration_at_ms: renewedUntil.getTime() },
+      },
+    });
+    // Then
+    expect(
+      fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
+    ).toMatchObject({ userId: receiverId, expiresAt: renewedUntil });
+    expect(fixture.subscriptionRepository.transferredAt.has(SUBSCRIPTION_TRANSACTION_ID)).toBe(
+      false,
+    );
+    expect(fixture.subscriptionRepository.users.get(receiverId)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: renewedUntil,
+    });
+    expect(await fixture.subscriptionRepository.findStoreEntitlements(fixture.user.id)).toEqual([]);
+  });
+
   it.each([
     SubscriptionEventBuilder.test,
     SubscriptionEventBuilder.subscriberAlias,
@@ -570,7 +635,12 @@ describe("HandleWebhookEvent", () => {
       status: "ACTIVE",
       expiry: SUBSCRIPTION_EXPIRY,
     },
-    { name: "이미 만료된 ACTIVE 체인", owner: null, status: "ACTIVE", expiry: SUBSCRIPTION_TIME },
+    {
+      name: "갱신 유예 시간까지 지난 ACTIVE 체인",
+      owner: null,
+      status: "ACTIVE",
+      expiry: new Date(SUBSCRIPTION_TIME.getTime() - STORE_RENEWAL_GRACE_MS),
+    },
     { name: "환불된 EXPIRED 체인", owner: null, status: "EXPIRED", expiry: SUBSCRIPTION_EXPIRY },
     {
       name: "만료 경계의 일반 CANCELLED 체인",
@@ -612,7 +682,7 @@ describe("HandleWebhookEvent", () => {
     { status: "FREE", builder: SubscriptionEventBuilder.expiration },
     { status: "CANCELLED", builder: SubscriptionEventBuilder.refundCancellation },
   ] satisfies Array<{ status: "FREE" | "CANCELLED"; builder: () => SubscriptionEventBuilder }>)(
-    "기존 $status 사용자는 다른 미래 체인이 있어도 자동 재활성화하지 않는다",
+    "기존 $status 사용자는 다른 사용자에게 옮겨 간 미래 체인으로 자동 재활성화하지 않는다",
     async ({ status, builder }) => {
       // Given
       fixture = createSubscriptionFixture({
@@ -627,6 +697,7 @@ describe("HandleWebhookEvent", () => {
         "other-chain",
         createSubscriptionRecord(fixture.user.id, { id: 2, revenueCatId: "other-chain" }),
       );
+      fixture.subscriptionRepository.transferredAt.set("other-chain", SUBSCRIPTION_TIME);
       // When
       await useCase.execute({ body: payloadFor(builder()) });
       // Then
@@ -647,6 +718,7 @@ describe("HandleWebhookEvent", () => {
       "other-chain",
       createSubscriptionRecord(fixture.user.id, { id: 2, revenueCatId: "other-chain" }),
     );
+    fixture.subscriptionRepository.transferredAt.set("other-chain", SUBSCRIPTION_TIME);
     fixture.userMutationLock.lockById = async (userId) => {
       await fixture.subscriptionRepository.updateUserSubscriptionStatus(userId, {
         subscriptionStatus: "FREE",

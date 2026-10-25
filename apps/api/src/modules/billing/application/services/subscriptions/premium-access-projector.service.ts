@@ -3,7 +3,7 @@ import {
   type PremiumAccess,
   PremiumAccessPolicy,
   type PremiumEntitlements,
-  selectTrustedStoreSubscriptions,
+  applyStoreEventChain,
   type StoreEventChainState,
 } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 import type { PremiumGrantRepositoryPort } from "../../ports/subscriptions/premium-grant.repository.port.js";
@@ -38,7 +38,7 @@ interface LoadedPremiumEntitlements {
 interface PremiumAccessProjectorDependencies {
   readonly subscriptionRepository: Pick<
     SubscriptionRepositoryPort,
-    "findUserById" | "findStoreEntitlements" | "updateUserSubscriptionStatus"
+    "findStoreEntitlements" | "updateUserSubscriptionStatus"
   >;
   readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findOpenByUserId" | "saveAll">;
 }
@@ -58,17 +58,14 @@ export class PremiumAccessProjector {
     userId: string,
     options: LoadPremiumEntitlementsOptions = {},
   ): Promise<LoadedPremiumEntitlements> {
-    const [user, storeSubscriptions, premiumGrants] = await Promise.all([
-      this.#dependencies.subscriptionRepository.findUserById(userId),
+    // 신뢰 여부는 행 자체(이전 표시)로 정한다. 보상 기간이 바꾸는 User projection에 기대지 않는다
+    const [storeSubscriptions, premiumGrants] = await Promise.all([
       this.#dependencies.subscriptionRepository.findStoreEntitlements(userId),
       this.#dependencies.premiumGrantRepository.findOpenByUserId(userId),
     ]);
     return {
       entitlements: {
-        storeSubscriptions: selectTrustedStoreSubscriptions(storeSubscriptions, {
-          userStatus: user?.subscriptionStatus ?? null,
-          eventChain: options.eventChain,
-        }),
+        storeSubscriptions: applyStoreEventChain(storeSubscriptions, options.eventChain),
         premiumGrants,
       },
       premiumGrants,
@@ -81,13 +78,18 @@ export class PremiumAccessProjector {
     const plan = PremiumAccessPolicy.planReconciliation(entitlements, input.now);
     const grantsById = new Map(premiumGrants.map((grant) => [grant.id, grant]));
     const changed = new Set<PremiumGrant>();
-    for (const grantId of plan.endedGrantIds) {
+    for (const grantId of plan.rebankedGrantIds) {
       const grant = grantsById.get(grantId);
-      if (grant?.end(input.now)) changed.add(grant);
+      if (grant?.rebank(input.now)) changed.add(grant);
     }
+    // 정리가 밀려 시작과 동시에 끝나는 기간이 있으므로 시작을 먼저 적용한다
     for (const activation of plan.activations) {
       const grant = grantsById.get(activation.grantId);
       if (grant?.activate(activation.startsAt)) changed.add(grant);
+    }
+    for (const grantId of plan.endedGrantIds) {
+      const grant = grantsById.get(grantId);
+      if (grant?.end(input.now)) changed.add(grant);
     }
     await this.#dependencies.premiumGrantRepository.saveAll([...changed]);
 

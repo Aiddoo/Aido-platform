@@ -22,6 +22,7 @@ import { decodeRecord, encodeCreate } from "#api/platform/database/database-reco
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/database-values";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
+import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
 import { UserFixture } from "#test/fixtures/index";
 import { withDatabaseTransaction } from "#test/setup/database-context";
@@ -493,10 +494,11 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
       status: "FREE",
       expiresAt: distantExpiry,
     });
+    // 자동 갱신 구독은 갱신 웹훅을 기다리는 유예 시간이 끝나는 순간부터 제외한다
     await givenOtherSubscription({
       revenueCatId: "expired-boundary-other",
       status: "ACTIVE",
-      expiresAt: at,
+      expiresAt: new Date(at.getTime() - STORE_RENEWAL_GRACE_MS),
     });
     const foreignUser = UserFixture.create({
       id: createEntityId(),
@@ -538,7 +540,7 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
   });
 
   it.each(["FREE", "CANCELLED"] as const)(
-    "기존 %s 사용자에게 다른 활성 체인이 있어도 자동으로 권한을 되살리지 않는다",
+    "기존 %s 사용자의 다른 활성 체인이 다른 사용자에게 옮겨 갔으면 권한을 되살리지 않는다",
     async (subscriptionStatus) => {
       // Given
       await repository.updateUserSubscriptionStatus(userId, {
@@ -546,6 +548,8 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         subscriptionExpiresAt: nextExpiry,
       });
       await givenOtherSubscription();
+      await repository.markTransferredAway(userId, at);
+      await repository.claimChain(transactionId, userId);
       // When
       await useCase.execute({ body: expiration("no-automatic-reactivation") });
       // Then

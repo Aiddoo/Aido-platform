@@ -28,6 +28,9 @@ export const revenueCatEventSchema = z.looseObject({
   currency: z.string().optional(),
   price_in_purchased_currency: z.number().optional(),
   country_code: z.string().optional(),
+  /** TRANSFER에서 구매를 넘겨준·넘겨받은 app_user_id 목록 */
+  transferred_from: z.array(z.string()).optional(),
+  transferred_to: z.array(z.string()).optional(),
 });
 
 export type RevenueCatEvent = z.infer<typeof revenueCatEventSchema>;

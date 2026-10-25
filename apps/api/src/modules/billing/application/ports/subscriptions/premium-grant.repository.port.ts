@@ -13,6 +13,8 @@ export interface FindPremiumGrantEndingNoticesParams {
   readonly now: Date;
   /** 이 시각 이전에 끝나는 마지막 보상 기간만 안내한다. */
   readonly endsBefore: Date;
+  /** 같은 실행에서 이미 본 후보 다음부터 읽는다(endsAt, id 순 keyset). */
+  readonly after?: { readonly endsAt: Date; readonly grantId: string };
   readonly limit: number;
 }
 
@@ -30,7 +32,10 @@ export interface PremiumGrantRepositoryPort {
   /** 같은 sourceKey가 이미 있으면 저장하지 않고 false를 반환한다. */
   create(plan: PremiumGrantCreationPlan): Promise<boolean>;
   saveAll(grants: readonly PremiumGrant[]): Promise<void>;
-  /** 끝난 ACTIVE 기간이나 스토어가 끝난 뒤 남은 BANKED 기간이 있는 사용자를 userId 순으로 읽는다. */
+  /**
+   * 정리할 것이 있는 사용자를 userId 순으로 읽는다. 끝난 ACTIVE 기간, 스토어도 진행 중인 기간도 없는
+   * BANKED 기간, 스토어가 유효한데 아직 시작하지 않은 ACTIVE 기간이 대상이다.
+   */
   findUserIdsToReconcile(params: FindPremiumGrantUsersToReconcileParams): Promise<string[]>;
   /** 스토어 구독도 다음 기간도 없는 마지막 기간을 SKIP LOCKED로 잠그고 반환한다. 활성 UoW가 필요하다. */
   lockEndingNotices(

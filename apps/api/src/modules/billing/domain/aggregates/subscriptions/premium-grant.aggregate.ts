@@ -1,4 +1,6 @@
-import { AggregateRoot } from "#api/shared/domain/index";
+import { ErrorCode } from "@aido/api/errors";
+
+import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
 import {
   isPremiumGrantEnded,
@@ -42,6 +44,9 @@ export type PremiumGrantPersistenceState = Pick<
   "status" | "startsAt" | "endsAt"
 >;
 
+/** PremiumGrant.sourceKey VARCHAR(128) */
+export const PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH = 128;
+
 function copyDate(value: Date | null): Date | null {
   return value === null ? null : new Date(value);
 }
@@ -52,6 +57,22 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
   }
 
   static planCreation(input: PremiumGrantCreationInput): PremiumGrantCreationPlan {
+    // 0일·음수 기간은 바로 끝나는 ACTIVE 기간을 만들고, 긴 sourceKey는 DB 오류로 늦게 드러난다
+    if (!Number.isInteger(input.durationDays) || input.durationDays <= 0) {
+      throw new DomainException(ErrorCode.SYS_0002, {
+        field: "durationDays",
+        durationDays: input.durationDays,
+      });
+    }
+    if (
+      input.sourceKey.length === 0 ||
+      input.sourceKey.length > PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH
+    ) {
+      throw new DomainException(ErrorCode.SYS_0002, {
+        field: "sourceKey",
+        length: input.sourceKey.length,
+      });
+    }
     const base = {
       userId: input.userId,
       source: input.source,
@@ -115,6 +136,21 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
     this.props.status = "ACTIVE";
     this.props.startsAt = new Date(startsAt);
     this.props.endsAt = premiumGrantEndsAt(startsAt, this.props.durationDays);
+    return true;
+  }
+
+  /** 아직 시작하지 않은 ACTIVE 기간을 다시 쌓아 둔다. 이미 시작했거나 BANKED면 false다. */
+  rebank(at: Date): boolean {
+    if (
+      this.props.status !== "ACTIVE" ||
+      this.props.startsAt === null ||
+      this.props.startsAt.getTime() <= at.getTime()
+    ) {
+      return false;
+    }
+    this.props.status = "BANKED";
+    this.props.startsAt = null;
+    this.props.endsAt = null;
     return true;
   }
 

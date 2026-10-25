@@ -37,45 +37,49 @@ export class PremiumGranter implements PremiumGranterPort {
   }
 
   async grant(input: GrantPremiumInput): Promise<GrantPremiumResult> {
-    const result = await this.#dependencies.unitOfWork.run(
-      async (): Promise<GrantPremiumResult> => {
-        if (!(await this.#dependencies.userMutationLock.lockById(input.userId))) {
-          return { status: "user-missing" };
-        }
-
-        const at = now();
-        const { entitlements } = await this.#dependencies.premiumAccessProjector.loadEntitlements(
-          input.userId,
-        );
-        const created = await this.#dependencies.premiumGrantRepository.create(
-          PremiumGrant.planCreation({
-            userId: input.userId,
-            source: input.source,
-            sourceKey: input.sourceKey,
-            durationDays: input.durationDays,
-            start: PremiumAccessPolicy.planNewGrantStart(entitlements, at),
-          }),
-        );
-        if (!created) {
-          return { status: "duplicate" };
-        }
-
-        await this.#dependencies.premiumAccessProjector.project({ userId: input.userId, now: at });
-        // 커밋된 뒤에만 구독·프로필 캐시를 비운다
-        this.#dependencies.afterCommitTasks.register(() =>
-          this.#dependencies.cache.invalidate(input.userId),
-        );
-        return { status: "granted" };
-      },
-    );
-
-    this.#dependencies.logger.log({
-      event: BillingLogEvent.PREMIUM_GRANT_RECORDED,
-      userId: input.userId,
-      source: input.source,
-      durationDays: input.durationDays,
-      reason: result.status,
+    return this.#dependencies.unitOfWork.run(async (): Promise<GrantPremiumResult> => {
+      const result = await this.#record(input);
+      // 호출자 UoW에 Required로 참여하므로 바깥이 rollback되면 기록되지 않은 지급을 로그에 남기지 않는다
+      this.#dependencies.afterCommitTasks.register(async () => {
+        this.#dependencies.logger.log({
+          event: BillingLogEvent.PREMIUM_GRANT_RECORDED,
+          userId: input.userId,
+          source: input.source,
+          durationDays: input.durationDays,
+          reason: result.status,
+        });
+      });
+      return result;
     });
-    return result;
+  }
+
+  async #record(input: GrantPremiumInput): Promise<GrantPremiumResult> {
+    if (!(await this.#dependencies.userMutationLock.lockById(input.userId))) {
+      return { status: "user-missing" };
+    }
+
+    const at = now();
+    const { entitlements } = await this.#dependencies.premiumAccessProjector.loadEntitlements(
+      input.userId,
+    );
+    const created = await this.#dependencies.premiumGrantRepository.create(
+      PremiumGrant.planCreation({
+        userId: input.userId,
+        source: input.source,
+        sourceKey: input.sourceKey,
+        durationDays: input.durationDays,
+        start: PremiumAccessPolicy.planNewGrantStart(entitlements, at),
+      }),
+    );
+    if (!created) {
+      return { status: "duplicate" };
+    }
+
+    await this.#dependencies.premiumAccessProjector.project({ userId: input.userId, now: at });
+    // 커밋된 뒤에만 구독·프로필 캐시를 비운다
+    this.#dependencies.afterCommitTasks.register(() =>
+      this.#dependencies.cache.invalidate(input.userId),
+    );
+    return { status: "granted" };
   }
 }

@@ -113,6 +113,12 @@ export class SubscriptionEventBuilder {
   // Chaining Methods
   // =========================================================================
 
+  /** TRANSFER에서 구매를 넘겨준 app_user_id 목록 */
+  withTransferredFrom(appUserIds: string[]): this {
+    this.event.transferred_from = [...appUserIds];
+    return this;
+  }
+
   withAppUserId(appUserId: string): this {
     this.event.app_user_id = appUserId;
     return this;
