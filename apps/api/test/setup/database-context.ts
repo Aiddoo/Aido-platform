@@ -6,6 +6,7 @@ import { Pool, type PoolConfig } from "pg";
 import { mock } from "vitest-mock-extended";
 
 import { type DatabaseService, contract } from "#api/platform/database/database.service";
+import { createPostgresPoolConfig } from "#api/platform/database/postgres-pool";
 import {
   Prisma8TransactionalAdapter,
   bindDatabaseTransaction,
@@ -15,12 +16,15 @@ import type { UnitOfWorkPort } from "#api/shared/application/ports/unit-of-work.
 
 import type { TestDatabaseClient } from "./test-database.js";
 
-/** Tests own their pool, including single-connection sessions used in lock tests. */
+/**
+ * Tests own their pool, including single-connection sessions used in lock tests.
+ * 앱 풀과 같은 세션 설정(TimeZone=UTC)을 써서 프로세스·서버 TZ가 다른 CI에서도 같은 SQL 결과를 본다.
+ */
 export function createTestClient(
   connectionString: string,
-  options: PoolConfig = {},
+  options: Omit<PoolConfig, "connectionString"> = {},
 ): TestDatabaseClient {
-  const pool = new Pool({ ...options, connectionString });
+  const pool = new Pool({ ...createPostgresPoolConfig(connectionString), ...options });
   const client = postgres({
     contract,
     pg: pool,
