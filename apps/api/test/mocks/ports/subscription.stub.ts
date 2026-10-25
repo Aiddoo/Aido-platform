@@ -2,6 +2,7 @@ import type { RevenueCatWebhookPayload } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { pickBy } from "es-toolkit";
 
+import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
 import type { SubscriptionCachePort } from "#api/modules/billing/application/ports/subscriptions/subscription-cache.port";
 import type { SubscriptionEventNotifierPort } from "#api/modules/billing/application/ports/subscriptions/subscription-event-notifier.port";
 import type {
@@ -19,9 +20,15 @@ import type {
 } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
 import type { SubscriptionEventPayload } from "#api/modules/billing/application/types/subscriptions/subscription-event.payload";
 import {
+  PremiumGrant,
+  type PremiumGrantCreationPlan,
+  type PremiumGrantProps,
+} from "#api/modules/billing/domain/aggregates/subscriptions/premium-grant.aggregate";
+import {
   Subscription,
   type SubscriptionProps,
 } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
+import type { StoreSubscriptionEntitlement } from "#api/modules/billing/domain/policies/subscriptions/premium-access.policy";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
@@ -40,20 +47,14 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     return user ? this.#copyUser(user) : null;
   }
 
-  async findOtherEntitlementExpiry(
-    userId: string,
-    excludedRevenueCatId: string,
-    at: Date,
-  ): Promise<Date | null> {
-    let latestExpiry: Date | null = null;
-    for (const record of this.subscriptions.values()) {
-      if (record.userId !== userId || record.revenueCatId === excludedRevenueCatId) continue;
-      if (record.status !== "ACTIVE" && record.status !== "CANCELLED") continue;
-      if (record.expiresAt.getTime() <= at.getTime()) continue;
-      if (latestExpiry === null || record.expiresAt.getTime() > latestExpiry.getTime())
-        latestExpiry = record.expiresAt;
-    }
-    return latestExpiry === null ? null : new Date(latestExpiry);
+  async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
+    return [...this.subscriptions.values()]
+      .filter((record) => record.userId === userId)
+      .map((record) => ({
+        revenueCatId: record.revenueCatId,
+        status: record.status,
+        expiresAt: new Date(record.expiresAt),
+      }));
   }
 
   async findByRevenueCatId(revenueCatId: string): Promise<Subscription | null> {
@@ -163,5 +164,37 @@ export class StubSubscriptionUserMutationLock implements SubscriptionUserMutatio
   async lockById(userId: string): Promise<boolean> {
     this.lockedUserIds.push(userId);
     return this.repository.users.has(userId);
+  }
+}
+
+/** 사용자 한 명의 보상 기간 상태만 다루는 저장소 대역. 집합 SQL 동작은 실제 PG에서 확인한다. */
+export class StubPremiumGrantRepository implements Pick<
+  PremiumGrantRepositoryPort,
+  "findOpenByUserId" | "create" | "saveAll"
+> {
+  readonly grants = new Map<string, PremiumGrantProps>();
+
+  async findOpenByUserId(userId: string): Promise<PremiumGrant[]> {
+    return [...this.grants.values()]
+      .filter(
+        (grant) =>
+          grant.userId === userId && (grant.status === "BANKED" || grant.status === "ACTIVE"),
+      )
+      .map((grant) => PremiumGrant.reconstitute(grant));
+  }
+
+  async create(plan: PremiumGrantCreationPlan): Promise<boolean> {
+    if ([...this.grants.values()].some((grant) => grant.sourceKey === plan.sourceKey)) return false;
+    const id = `grant-${this.grants.size + 1}`;
+    this.grants.set(id, { ...plan, id, endingNotifiedAt: null, createdAt: new Date() });
+    return true;
+  }
+
+  async saveAll(grants: readonly PremiumGrant[]): Promise<void> {
+    for (const grant of grants) {
+      const current = this.grants.get(grant.id);
+      if (current === undefined) continue;
+      this.grants.set(grant.id, { ...current, ...grant.toPersistence() });
+    }
   }
 }

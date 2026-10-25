@@ -7,6 +7,7 @@ import {
   SUBSCRIPTION_TRANSACTION_ID,
 } from "#test/fixtures/subscription.fixture";
 
+import type { PremiumGrantProps } from "../../../domain/aggregates/subscriptions/premium-grant.aggregate.js";
 import { HandleWebhookEvent } from "./handle-webhook-event.use-case.js";
 
 describe("HandleWebhookEvent", () => {
@@ -477,14 +478,14 @@ describe("HandleWebhookEvent", () => {
       builder: SubscriptionEventBuilder.expiration,
       otherStatus: "ACTIVE",
       otherExpiry: new Date("2026-04-10T12:00:00.000Z"),
-      expectedExpiry: SUBSCRIPTION_EXPIRY,
+      expectedExpiry: new Date("2026-04-10T12:00:00.000Z"),
     },
     {
       name: "과거 체인 환불·다른 일반 CANCELLED 체인",
       builder: SubscriptionEventBuilder.refundCancellation,
       otherStatus: "CANCELLED",
       otherExpiry: new Date("2026-04-10T12:00:00.000Z"),
-      expectedExpiry: SUBSCRIPTION_EXPIRY,
+      expectedExpiry: new Date("2026-04-10T12:00:00.000Z"),
     },
     {
       name: "과거 체인 일반 취소·짧은 ACTIVE 체인",
@@ -507,7 +508,7 @@ describe("HandleWebhookEvent", () => {
     otherExpiry: Date;
     expectedExpiry: Date;
   }>)(
-    "$name 처리 후 현재 유효 접근만 유지하고 사용자 만료를 과도하게 늘리지 않는다",
+    "$name 처리 후 가장 늦게 끝나는 유효 체인까지 접근을 유지한다",
     async ({ builder, otherStatus, otherExpiry, expectedExpiry }) => {
       // Given
       const oldExpiry = new Date(SUBSCRIPTION_TIME.getTime() - 60_001);
@@ -748,5 +749,99 @@ describe("HandleWebhookEvent", () => {
     expect(fixture.cache.profiles.has(fixture.user.id)).toBe(true);
     expect(fixture.webhookLock.heldKeys.size).toBe(0);
     expect(JSON.stringify(fixture.logger.error.mock.calls)).not.toContain("민감한 DB 원문");
+  });
+
+  describe("프리미엄 보상 기간과 함께 판단", () => {
+    function givenGrant(overrides: Partial<PremiumGrantProps>) {
+      fixture.premiumGrantRepository.grants.set(overrides.id ?? "grant-1", {
+        id: "grant-1",
+        userId: fixture.user.id,
+        source: "INVITE",
+        sourceKey: "invite:grant-1",
+        durationDays: 7,
+        status: "ACTIVE",
+        startsAt: SUBSCRIPTION_TIME,
+        endsAt: new Date("2026-02-17T12:00:00.000Z"),
+        endingNotifiedAt: null,
+        createdAt: SUBSCRIPTION_TIME,
+        ...overrides,
+      });
+    }
+
+    it("보상 기간이 진행 중이면 스토어 만료 웹훅이 와도 보상 종료까지 프리미엄을 유지한다", async () => {
+      // Given
+      givenSubscription();
+      givenGrant({});
+      const body = payloadFor(SubscriptionEventBuilder.expiration());
+
+      // When
+      await useCase.execute({ body });
+
+      // Then
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: new Date("2026-02-17T12:00:00.000Z"),
+      });
+    });
+
+    it("환불로 스토어 구독이 끝나면 쌓아 둔 보상 기간을 지금부터 시작한다", async () => {
+      // Given
+      givenSubscription();
+      givenGrant({ status: "BANKED", startsAt: null, endsAt: null });
+      const body = payloadFor(SubscriptionEventBuilder.refundCancellation());
+
+      // When
+      await useCase.execute({ body });
+
+      // Then
+      expect(fixture.premiumGrantRepository.grants.get("grant-1")).toMatchObject({
+        status: "ACTIVE",
+        startsAt: SUBSCRIPTION_TIME,
+        endsAt: new Date("2026-02-17T12:00:00.000Z"),
+      });
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: new Date("2026-02-17T12:00:00.000Z"),
+      });
+    });
+
+    it("보상 기간 중 구매해도 사용자 만료를 더 이른 스토어 만료로 덮어쓰지 않는다", async () => {
+      // Given
+      givenGrant({ endsAt: new Date("2026-03-20T12:00:00.000Z") });
+      const body = payloadFor(SubscriptionEventBuilder.initialPurchase());
+
+      // When
+      await useCase.execute({ body });
+
+      // Then
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: new Date("2026-03-20T12:00:00.000Z"),
+      });
+    });
+  });
+
+  it.each([
+    {
+      name: "store",
+      configure: (builder: SubscriptionEventBuilder) => builder.withStore("PROMOTIONAL"),
+    },
+    {
+      name: "period_type",
+      configure: (builder: SubscriptionEventBuilder) => builder.withPeriodType("PROMOTIONAL"),
+    },
+  ])("프로모션 구매($name)는 매출 구독 행과 관리자 알림을 만들지 않는다", async ({ configure }) => {
+    // Given
+    const body = payloadFor(configure(SubscriptionEventBuilder.initialPurchase()));
+
+    // When
+    await useCase.execute({ body });
+
+    // Then
+    expect(fixture.subscriptionRepository.subscriptions.size).toBe(0);
+    expect(fixture.notifier.events).toEqual([]);
+    expect(fixture.subscriptionRepository.users.get(fixture.user.id)?.subscriptionStatus).toBe(
+      "FREE",
+    );
   });
 });

@@ -23,6 +23,7 @@ import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery
 import { PUSH_DELIVERY_OUTBOX_REPOSITORY } from "./application/ports/delivery/push-delivery-outbox.repository.port.js";
 import { PUSH_DISPATCH_STAGING } from "./application/ports/delivery/push-dispatch-staging.repository.port.js";
 import { PUSH_PROVIDER } from "./application/ports/delivery/push-provider.port.js";
+import { PUSH_QUIET_HOURS_READER } from "./application/ports/delivery/push-quiet-hours.reader.port.js";
 import {
   PUSH_RATE_LIMITER,
   type PushRateLimiterPort,
@@ -33,6 +34,7 @@ import { USER_NOTIFICATION_SETTINGS } from "./application/ports/delivery/user-no
 import { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 import { NotificationHistoryReader } from "./application/readers/delivery/notification-history.reader.js";
 import { NotificationAccountCleanup } from "./application/services/delivery/notification-account-cleanup.js";
+import { PushQuietHoursReader } from "./application/services/delivery/push-quiet-hours.reader.js";
 import { CachedActivePushTokenReaderAdapter } from "./infrastructure/adapters/delivery/cached-active-push-token-reader.adapter.js";
 import { CachedNotificationRecipientPreferenceAdapter } from "./infrastructure/adapters/delivery/cached-notification-recipient-preference.adapter.js";
 import { NotificationCacheAdapter } from "./infrastructure/adapters/delivery/notification-cache.adapter.js";
@@ -69,6 +71,7 @@ import {
   publishPushDeliveryOutboxProvider,
   pushDeliveryAfterCommitPublisherProvider,
   pushDeliveryEligibilityServiceProvider,
+  pushQuietHoursReaderProvider,
   pushNotificationDeliveryServiceProvider,
   pushNotificationPayloadFactoryProvider,
   reconcilePushReceiptsProvider,
@@ -182,6 +185,8 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     // application 전달 정책 + durable outbox/queue 경계
     pushDeliveryAfterCommitPublisherProvider,
     pushDeliveryEligibilityServiceProvider,
+    pushQuietHoursReaderProvider,
+    { provide: PUSH_QUIET_HOURS_READER, useExisting: PushQuietHoursReader },
     pushNotificationDeliveryServiceProvider,
     pushNotificationPayloadFactoryProvider,
     deliverPushNotificationsProvider,
@@ -224,6 +229,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     NotificationPublisher,
     NotificationHistoryReader,
     NOTIFICATION_RECIPIENT_LOCALE_READER,
+    PUSH_QUIET_HOURS_READER,
     NotificationAccountCleanup,
     NotificationQueueModule,
     PUSH_PROVIDER,

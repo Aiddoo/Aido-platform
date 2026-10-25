@@ -2,6 +2,7 @@ import type {
   Subscription,
   SubscriptionStatusValue,
 } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
+import type { StoreSubscriptionEntitlement } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 
 export const SUBSCRIPTION_REPOSITORY = Symbol("SUBSCRIPTION_REPOSITORY");
 
@@ -51,11 +52,8 @@ export interface SubscriptionRepositoryPort {
   findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
   findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
   findUserById(userId: string): Promise<SubscriptionUser | null>;
-  findOtherEntitlementExpiry(
-    userId: string,
-    excludedRevenueCatId: string,
-    at: Date,
-  ): Promise<Date | null>;
+  /** 삭제되지 않은 사용자의 스토어 구독 행을 한 번에 읽는다. */
+  findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]>;
   create(data: CreateSubscriptionData): Promise<void>;
   updateStatus(revenueCatId: string, data: UpdateSubscriptionStatusData): Promise<void>;
   updateUserSubscriptionStatus(

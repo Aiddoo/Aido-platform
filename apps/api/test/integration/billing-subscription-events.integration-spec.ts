@@ -1,4 +1,5 @@
 import type { RevenueCatWebhookPayload } from "@aido/api";
+import { sortBy } from "es-toolkit";
 import sql from "sql-template-tag";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
@@ -511,7 +512,6 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     const body = expiration("exclude-ineligible-chains");
     body.event.expiration_at_ms = distantExpiry.getTime();
     // When
-    expect(await repository.findOtherEntitlementExpiry(userId, transactionId, at)).toBeNull();
     await useCase.execute({ body });
     // Then
     expect(await snapshot()).toMatchObject({
@@ -522,15 +522,19 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
     expect(failures).toEqual([]);
   });
 
-  it("유효한 다른 체인이 여러 개면 가장 늦은 만료일 하나를 ORM으로 조회한다", async () => {
+  it("스토어 엔타이틀먼트 조회는 한 사용자의 체인 전체를 한 번에 읽는다", async () => {
     // Given
     const shorterExpiry = new Date("2027-01-05T12:00:00.000Z");
     await givenOtherSubscription({ revenueCatId: "shorter-other", expiresAt: shorterExpiry });
     await givenOtherSubscription({ status: "CANCELLED", expiresAt: nextExpiry });
     // When
-    const expiry = await repository.findOtherEntitlementExpiry(userId, transactionId, at);
+    const entitlements = await repository.findStoreEntitlements(userId);
     // Then
-    expect(expiry).toEqual(nextExpiry);
+    expect(sortBy(entitlements, [(entitlement) => entitlement.revenueCatId])).toEqual([
+      { revenueCatId: transactionId, status: "ACTIVE", expiresAt: previousExpiry },
+      { revenueCatId: "other-subscription-chain", status: "CANCELLED", expiresAt: nextExpiry },
+      { revenueCatId: "shorter-other", status: "ACTIVE", expiresAt: shorterExpiry },
+    ]);
   });
 
   it.each(["FREE", "CANCELLED"] as const)(

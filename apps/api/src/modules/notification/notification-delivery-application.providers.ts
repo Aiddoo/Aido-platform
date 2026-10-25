@@ -31,6 +31,7 @@ import { PushDeliveryAfterCommitPublisher } from "./application/services/deliver
 import { PushDeliveryEligibilityService } from "./application/services/delivery/push-delivery-eligibility.service.js";
 import { PushNotificationDeliveryService } from "./application/services/delivery/push-notification-delivery.service.js";
 import { PushNotificationPayloadFactory } from "./application/services/delivery/push-notification-payload.factory.js";
+import { PushQuietHoursReader } from "./application/services/delivery/push-quiet-hours.reader.js";
 import { DeliverPushNotifications } from "./application/use-cases/delivery/deliver-push-notifications.use-case.js";
 import { FinalizeBatchNotification } from "./application/use-cases/delivery/finalize-batch-notification.use-case.js";
 import { GetNotifications } from "./application/use-cases/delivery/get-notifications.use-case.js";
@@ -87,6 +88,14 @@ export const pushDeliveryAfterCommitPublisherProvider: FactoryProvider<PushDeliv
         logger: new Logger(PushDeliveryAfterCommitPublisher.name),
       }),
   };
+
+export const pushQuietHoursReaderProvider: FactoryProvider<PushQuietHoursReader> = {
+  provide: PushQuietHoursReader,
+  inject: [USER_NOTIFICATION_SETTINGS],
+  useFactory: (
+    userSettings: ConstructorParameters<typeof PushQuietHoursReader>[0]["userSettings"],
+  ) => new PushQuietHoursReader({ userSettings }),
+};
 
 export const pushDeliveryEligibilityServiceProvider: FactoryProvider<PushDeliveryEligibilityService> =
   {

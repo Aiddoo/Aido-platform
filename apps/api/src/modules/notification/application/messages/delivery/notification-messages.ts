@@ -27,6 +27,7 @@ export {
   createMilestoneNotificationMessage,
   createMonthlyReportNotificationMessage,
   createOnboardingNotificationMessage,
+  createPremiumGrantEndingNotificationMessage,
   createWeeklyReportNotificationMessage,
   createWinbackNotificationMessage,
 } from "./system-notification-message.js";

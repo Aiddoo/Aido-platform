@@ -1,10 +1,12 @@
 import { mock } from "vitest-mock-extended";
 
 import type { SubscriptionUser } from "#api/modules/billing/application/ports/subscriptions/subscription.repository.port";
+import { PremiumAccessProjector } from "#api/modules/billing/application/services/subscriptions/premium-access-projector.service";
 import type { SubscriptionProps } from "#api/modules/billing/domain/aggregates/subscriptions/subscription.aggregate";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import {
+  StubPremiumGrantRepository,
   StubSubscriptionCache,
   StubSubscriptionNotifier,
   StubSubscriptionReceiptRepository,
@@ -78,6 +80,7 @@ export function createSubscriptionFixture(
       createSubscriptionRecord(user.id, input.subscription),
     );
   }
+  const premiumGrantRepository = new StubPremiumGrantRepository();
   const cache = new StubSubscriptionCache();
   cache.profiles.set(user.id, { subscriptionStatus: input.existing ? "ACTIVE" : "FREE" });
   cache.entitlements.set(user.id, { status: input.existing ? "ACTIVE" : "FREE" });
@@ -89,6 +92,11 @@ export function createSubscriptionFixture(
     cache,
     notifier: new StubSubscriptionNotifier(),
     webhookLock: new StubSubscriptionWebhookLock(),
+    premiumGrantRepository,
+    premiumAccessProjector: new PremiumAccessProjector({
+      subscriptionRepository,
+      premiumGrantRepository,
+    }),
     unitOfWork: createUnitOfWorkMock(),
     logger: mock<ApplicationLogger>(),
   };

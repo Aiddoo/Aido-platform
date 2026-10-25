@@ -466,6 +466,9 @@ export const SYSTEM_TEMPLATES = {
   BILLING_ISSUE: {
     copy: staticCopy("결제 정보 확인이 필요해요", "구독을 이어가려면 결제 수단을 확인해 주세요."),
   },
+  PREMIUM_GRANT_ENDING: {
+    copy: staticCopy("내일 프리미엄이 끝나요", "구독하면 끊김 없이 이어져요."),
+  },
   ONBOARDING_DAY0: {
     copy: staticCopy("첫 할 일을 함께 적어볼까? 🌱", "지금 떠오르는 작은 일 하나면 충분해"),
   },

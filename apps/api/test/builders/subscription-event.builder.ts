@@ -128,6 +128,11 @@ export class SubscriptionEventBuilder {
     return this;
   }
 
+  withPeriodType(periodType: string): this {
+    this.event.period_type = periodType;
+    return this;
+  }
+
   withTransactionId(transactionId: string): this {
     this.event.transaction_id = transactionId;
     return this;

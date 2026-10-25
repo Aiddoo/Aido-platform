@@ -480,6 +480,9 @@ export const SYSTEM_TEMPLATES = {
   BILLING_ISSUE: {
     copy: staticCopy("Check your payment details", "Update payment to keep your plan active."),
   },
+  PREMIUM_GRANT_ENDING: {
+    copy: staticCopy("Your Premium ends tomorrow", "Subscribe to keep Premium going."),
+  },
   ONBOARDING_DAY0: {
     copy: staticCopy("Let’s make your first to-do 🌱", "One small thing is enough to start"),
   },

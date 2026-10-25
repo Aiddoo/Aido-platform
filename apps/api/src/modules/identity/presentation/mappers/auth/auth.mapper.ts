@@ -102,6 +102,9 @@ export abstract class AuthMapper {
       profileImage: resolveProfileImage(result.profileImage, appVersion),
       createdAt: result.createdAt,
       providers: result.providers,
+      premiumSource: result.premiumSource,
+      premiumEndsAt: result.premiumEndsAt,
+      willRenew: result.willRenew,
     };
   }
 

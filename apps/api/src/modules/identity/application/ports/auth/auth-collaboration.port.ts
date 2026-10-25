@@ -1,4 +1,5 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api";
+import type { PremiumSource } from "@aido/api/vocabulary";
 
 import type { AccountProvider, UserStatus } from "../../../domain/types/auth/auth.types.js";
 
@@ -21,6 +22,10 @@ export interface AuthCachedUserProfile {
   profileImage: string | null;
   createdAt: string;
   providers: AccountProvider[];
+  /** 1.13.0 이전 캐시에는 없다. 없으면 응답에서도 생략한다. */
+  premiumSource?: PremiumSource | null;
+  premiumEndsAt?: string | null;
+  willRenew?: boolean;
 }
 
 export interface AuthCachedSession {

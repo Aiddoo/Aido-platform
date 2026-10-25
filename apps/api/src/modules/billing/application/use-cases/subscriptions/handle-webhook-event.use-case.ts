@@ -13,7 +13,6 @@ import {
   isRefundCancellation,
   resolveCancellationUserStatus,
 } from "../../../domain/services/subscriptions/cancellation-user-status.js";
-import { resolveNegativeSubscriptionProjection } from "../../../domain/services/subscriptions/negative-subscription-projection.policy.js";
 import { TransactionId } from "../../../domain/value-objects/subscriptions/transaction-id.vo.js";
 import { BillingLogEvent } from "../../observability/subscriptions/billing-log.events.js";
 import type { SubscriptionCachePort } from "../../ports/subscriptions/subscription-cache.port.js";
@@ -26,6 +25,7 @@ import type {
   SubscriptionUser,
   UpdateUserSubscriptionStatusData,
 } from "../../ports/subscriptions/subscription.repository.port.js";
+import type { PremiumAccessProjector } from "../../services/subscriptions/premium-access-projector.service.js";
 import type { SubscriptionEventPayload } from "../../types/subscriptions/subscription-event.payload.js";
 import { baseEventPayload } from "./subscription-event-payload.mapper.js";
 import {
@@ -49,8 +49,12 @@ interface HandleWebhookEventDependencies {
   readonly cache: SubscriptionCachePort;
   readonly notifier: SubscriptionEventNotifierPort;
   readonly webhookLock: SubscriptionWebhookLockPort;
+  readonly premiumAccessProjector: Pick<PremiumAccessProjector, "project">;
   readonly logger: ApplicationLogger;
 }
+
+// RevenueCat 프로모션 엔타이틀먼트는 결제가 아니라 매출 구독 행을 만들지 않는다
+const PROMOTIONAL = "PROMOTIONAL";
 
 interface SubscriptionTransition {
   readonly userState: UpdateUserSubscriptionStatusData;
@@ -124,6 +128,15 @@ export class HandleWebhookEvent {
           event: BillingLogEvent.WEBHOOK_IGNORED,
           eventType: event.type,
           userId: user.id,
+        });
+        return;
+      }
+      if (this.#isPromotionalPurchase(event)) {
+        this.#dependencies.logger.log({
+          event: BillingLogEvent.WEBHOOK_IGNORED,
+          eventType: event.type,
+          userId: user.id,
+          reason: "promotional",
         });
         return;
       }
@@ -202,6 +215,11 @@ export class HandleWebhookEvent {
       .otherwise(() => false);
   }
 
+  #isPromotionalPurchase(event: RevenueCatEvent): boolean {
+    const isPurchase = event.type === "INITIAL_PURCHASE" || event.type === "NON_RENEWING_PURCHASE";
+    return isPurchase && (event.store === PROMOTIONAL || event.period_type === PROMOTIONAL);
+  }
+
   async #applyEvent(
     user: SubscriptionUser,
     event: RevenueCatEvent,
@@ -261,47 +279,26 @@ export class HandleWebhookEvent {
     );
     if (transition === null) return null;
     await subscriptionRepository.updateStatus(transactionId, subscription.persistenceState);
-    const userState = await this.#resolveUserProjection(
-      user.id,
-      transactionId,
-      transition.userState,
-    );
-    if (userState !== null) {
-      await subscriptionRepository.updateUserSubscriptionStatus(user.id, userState);
-    }
+    await this.#projectUser(user.id, transactionId, transition.userState);
     return transition.payload;
   }
 
-  async #resolveUserProjection(
+  // 스토어 상태가 바뀌면 보상 기간을 함께 보고 User의 구독 projection을 다시 계산한다
+  async #projectUser(
     userId: string,
-    transactionId: string,
-    requestedState: UpdateUserSubscriptionStatusData,
-  ): Promise<UpdateUserSubscriptionStatusData | null> {
-    if (
-      requestedState.subscriptionStatus !== "FREE" &&
-      requestedState.subscriptionStatus !== "CANCELLED"
-    ) {
-      return requestedState;
-    }
-
-    const { subscriptionRepository } = this.#dependencies;
-    const user = await subscriptionRepository.findUserById(userId);
-    if (user === null) return requestedState;
-    const at = now();
-    const otherExpiresAt = await subscriptionRepository.findOtherEntitlementExpiry(
+    eventChainId: string,
+    requested: UpdateUserSubscriptionStatusData,
+  ): Promise<void> {
+    await this.#dependencies.premiumAccessProjector.project({
       userId,
-      transactionId,
-      at,
-    );
-    const projection = resolveNegativeSubscriptionProjection({
-      currentStatus: user.subscriptionStatus,
-      currentExpiresAt: user.subscriptionExpiresAt,
-      otherExpiresAt,
-      at,
+      now: now(),
+      eventChain: {
+        revenueCatId: eventChainId,
+        status: requested.subscriptionStatus,
+        expiresAt: requested.subscriptionExpiresAt,
+      },
+      fallback: requested,
     });
-    if (projection === null) return requestedState;
-    if (projection.expiresAt.getTime() === user.subscriptionExpiresAt?.getTime()) return null;
-    return { subscriptionStatus: projection.status, subscriptionExpiresAt: projection.expiresAt };
   }
 
   async #createSubscription(
@@ -332,7 +329,7 @@ export class HandleWebhookEvent {
       expiresAt,
       ...(eventId !== undefined && { lastProcessedEventId: eventId }),
     });
-    await subscriptionRepository.updateUserSubscriptionStatus(user.id, {
+    await this.#projectUser(user.id, transactionId, {
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: expiresAt,
     });

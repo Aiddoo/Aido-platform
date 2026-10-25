@@ -1,5 +1,6 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { PREMIUM_ACCESS_READER } from "#api/modules/billing/billing-subscriptions.public";
 import { OAUTH_IDENTITY_PROVIDER_REGISTRY } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
@@ -65,14 +66,16 @@ import { VerifyEmail } from "./application/use-cases/auth/verify-email.use-case.
 
 export const getCurrentUserProvider: FactoryProvider<GetCurrentUser> = {
   provide: GetCurrentUser,
-  inject: [AUTH_USER_REPOSITORY, AUTH_CACHE],
+  inject: [AUTH_USER_REPOSITORY, AUTH_CACHE, PREMIUM_ACCESS_READER],
   useFactory: (
     userRepository: ConstructorParameters<typeof GetCurrentUser>[0]["userRepository"],
     cacheService: ConstructorParameters<typeof GetCurrentUser>[0]["cacheService"],
+    premiumAccessReader: ConstructorParameters<typeof GetCurrentUser>[0]["premiumAccessReader"],
   ) =>
     new GetCurrentUser({
       userRepository,
       cacheService,
+      premiumAccessReader,
     }),
 };
 

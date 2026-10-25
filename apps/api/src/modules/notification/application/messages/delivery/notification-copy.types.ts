@@ -127,6 +127,7 @@ export interface SystemCopyVariablesByKey {
   readonly MONTHLY_REPORT: undefined;
   readonly AI_SUGGESTION: undefined;
   readonly BILLING_ISSUE: undefined;
+  readonly PREMIUM_GRANT_ENDING: undefined;
   readonly ONBOARDING_DAY0: undefined;
   readonly ONBOARDING_DAY1: undefined;
   readonly ONBOARDING_DAY2: undefined;

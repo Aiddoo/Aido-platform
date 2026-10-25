@@ -1,4 +1,5 @@
 import type { SubscriptionStatus, UserRole } from "@aido/api";
+import type { PremiumSource } from "@aido/api/vocabulary";
 
 import type {
   AccountProvider,
@@ -77,6 +78,9 @@ export interface CurrentUserResult {
   profileImage: string | null;
   createdAt: string;
   providers: AccountProvider[];
+  premiumSource?: PremiumSource | null;
+  premiumEndsAt?: string | null;
+  willRenew?: boolean;
 }
 
 /**

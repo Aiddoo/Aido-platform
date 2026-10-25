@@ -1,5 +1,6 @@
 import { ErrorCode } from "@aido/api/errors";
 
+import type { PremiumAccessReaderPort } from "#api/modules/billing/billing-subscriptions.public";
 import type { CurrentUserResult } from "#api/modules/identity/application/types/auth/index";
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
@@ -15,6 +16,7 @@ export interface GetCurrentUserInput {
 interface GetCurrentUserDependencies {
   readonly userRepository: Pick<AuthUserRepositoryPort, "findByIdWithProfile">;
   readonly cacheService: Pick<AuthCachePort, "wrapUserProfile">;
+  readonly premiumAccessReader: Pick<PremiumAccessReaderPort, "getPremiumAccess">;
 }
 
 export class GetCurrentUser {
@@ -29,10 +31,14 @@ export class GetCurrentUser {
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(
       userId,
       async () => {
-        const user = await this.#dependencies.userRepository.findByIdWithProfile(userId);
+        const [user, premiumAccess] = await Promise.all([
+          this.#dependencies.userRepository.findByIdWithProfile(userId),
+          this.#dependencies.premiumAccessReader.getPremiumAccess(userId),
+        ]);
         if (user === null) {
           return undefined;
         }
+
         return {
           id: user.id,
           email: user.email,
@@ -46,6 +52,9 @@ export class GetCurrentUser {
           profileImage: user.profile?.profileImage ?? null,
           createdAt: toISOString(user.createdAt),
           providers: user.accounts.map((a) => a.provider),
+          premiumSource: premiumAccess.source,
+          premiumEndsAt: toISOStringOrNull(premiumAccess.endsAt),
+          willRenew: premiumAccess.willRenew,
         };
       },
     );
@@ -68,6 +77,9 @@ export class GetCurrentUser {
       profileImage: cachedProfile.profileImage,
       createdAt: cachedProfile.createdAt,
       providers: cachedProfile.providers,
+      premiumSource: cachedProfile.premiumSource,
+      premiumEndsAt: cachedProfile.premiumEndsAt,
+      willRenew: cachedProfile.willRenew,
     };
   }
 }

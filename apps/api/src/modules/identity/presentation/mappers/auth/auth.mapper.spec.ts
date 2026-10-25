@@ -170,6 +170,9 @@ describe("AuthMapper — 인증 매퍼", () => {
         profileImage: "https://example.com/img.jpg",
         createdAt: "2024-01-01T00:00:00.000Z",
         providers: ["CREDENTIAL", "KAKAO"],
+        premiumSource: "GRANT",
+        premiumEndsAt: "2024-01-08T00:00:00.000Z",
+        willRenew: false,
       };
 
       // When
@@ -177,7 +180,7 @@ describe("AuthMapper — 인증 매퍼", () => {
 
       // Then
       expect(response).toEqual(result);
-      expect(Object.keys(response)).toHaveLength(13);
+      expect(Object.keys(response)).toHaveLength(16);
     });
   });
 

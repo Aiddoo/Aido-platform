@@ -20,6 +20,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     const useCase = new GetCurrentUser({
       userRepository: fixture.userRepository,
       cacheService: fixture.cacheService,
+      premiumAccessReader: fixture.premiumAccessReader,
     });
     return { ...fixture, useCase };
   }
@@ -67,5 +68,28 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       details: { userId: fixture.user.id },
     });
     expect(fixture.cacheService.profiles.size).toBe(0);
+  });
+
+  it("보상 기간만 있는 사용자는 출처 GRANT와 종료 시각, 자동 갱신 아님을 함께 반환한다", async () => {
+    // Given
+    const fixture = given();
+    fixture.premiumAccessReader.accesses.set(fixture.user.id, {
+      source: "GRANT",
+      endsAt: new Date("2026-11-08T00:00:00.000Z"),
+      willRenew: false,
+    });
+
+    // When
+    const result = await fixture.useCase.execute({
+      userId: fixture.user.id,
+      sessionId: "session-1",
+    });
+
+    // Then
+    expect(result).toMatchObject({
+      premiumSource: "GRANT",
+      premiumEndsAt: "2026-11-08T00:00:00.000Z",
+      willRenew: false,
+    });
   });
 });
