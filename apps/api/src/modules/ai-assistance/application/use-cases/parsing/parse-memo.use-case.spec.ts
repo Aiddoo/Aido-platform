@@ -167,7 +167,9 @@ describe("ParseMemo", () => {
     vi.spyOn(fixture.aiProvider, "generateStructured").mockResolvedValueOnce({
       output: { todos: [todo] },
       model: "fixture:model",
-      usage: { input: 150, output: 50 },
+      finishReason: "stop",
+      latencyMs: 0,
+      usage: { input: 150, output: 50, reasoning: 0 },
     });
     // When
     const execution = fixture.useCase.execute({ ...fixture.input, content: "PRIVATE_MEMO" });
@@ -175,14 +177,17 @@ describe("ParseMemo", () => {
     await expect(execution).rejects.toMatchObject({ errorCode: ErrorCode.AI_1302 });
     expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
-    expect(fixture.logger.error).toHaveBeenCalledWith({
-      event: "ai.parsing.output.invalid",
-      userId: fixture.userId,
-      errorKind: "INVALID_OUTPUT",
-      statusCode: undefined,
-      errorCode: ErrorCode.AI_1302,
-      validationIssues: [{ path: ["todos", 0, "items"], code: "too_big" }],
-    });
+    expect(fixture.logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "ai.generation.failed",
+        task: "parse-memo",
+        userId: fixture.userId,
+        errorKind: "INVALID_OUTPUT",
+        errorCode: ErrorCode.AI_1302,
+        quotaCharged: false,
+        validationIssues: [{ path: ["todos", 0, "items"], code: "too_big" }],
+      }),
+    );
     const logged = JSON.stringify(fixture.logger.error.mock.calls);
     expect(logged).not.toContain("PRIVATE_");
     expect(logged).not.toContain("message");
@@ -206,7 +211,13 @@ describe("ParseMemo", () => {
     expect(result.data.todos[0]?.items).toHaveLength(5);
     expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
     expect(fixture.logger.log).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.parsing.memo.completed", todoCount: 1, itemCount: 5 }),
+      expect.objectContaining({
+        event: "ai.generation.completed",
+        task: "parse-memo",
+        quotaCharged: true,
+        todoCount: 1,
+        itemCount: 5,
+      }),
     );
     expect(fixture.logger.error).not.toHaveBeenCalled();
   });
@@ -222,7 +233,7 @@ describe("ParseMemo", () => {
     expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
     expect(fixture.logger.log).not.toHaveBeenCalled();
     expect(fixture.logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "ai.parsing.provider.failed", errorKind: "RATE_LIMITED" }),
+      expect.objectContaining({ event: "ai.generation.failed", errorKind: "RATE_LIMITED" }),
     );
   });
 });

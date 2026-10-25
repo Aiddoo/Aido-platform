@@ -3,6 +3,7 @@ import { mock } from "vitest-mock-extended";
 import type { AiQuotaState } from "#api/modules/access/application/ports/quotas/ai-quota.repository.port";
 import { AiQuotaService } from "#api/modules/access/application/services/quotas/ai-quota.service";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { TEST_AI_TASK_SETTINGS } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
   StubAiQuotaRepository,
@@ -44,5 +45,6 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
     categoryReader,
     aiProvider,
     localePreferenceReader,
+    settings: TEST_AI_TASK_SETTINGS,
   };
 }

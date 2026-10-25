@@ -32,7 +32,7 @@ export class FakeAiProvider implements AiProvider {
   private _shouldFail = false;
   private _failureError: Error | null = null;
   private _delayMs = 0;
-  private _tokenUsage: TokenUsage = { input: 150, output: 50 };
+  private _tokenUsage: TokenUsage = { input: 150, output: 50, reasoning: 0 };
 
   constructor(options?: FakeAiProviderOptions) {
     if (options?.defaultResponse) {
@@ -72,6 +72,8 @@ export class FakeAiProvider implements AiProvider {
     return {
       output: options.schema.parse(response),
       model: "fake:test-model",
+      finishReason: "stop",
+      latencyMs: 0,
       usage: { ...this._tokenUsage },
     };
   }
@@ -153,7 +155,7 @@ export class FakeAiProvider implements AiProvider {
     this._shouldFail = false;
     this._failureError = null;
     this._delayMs = this._initialDelayMs;
-    this._tokenUsage = { input: 150, output: 50 };
+    this._tokenUsage = { input: 150, output: 50, reasoning: 0 };
     return this;
   }
 

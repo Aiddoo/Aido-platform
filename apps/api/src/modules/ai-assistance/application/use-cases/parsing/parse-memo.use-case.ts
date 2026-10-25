@@ -1,5 +1,4 @@
-import type { LlmParsedMemoResult, ParsedMemoData } from "@aido/api";
-import { parsedMemoDataSchema } from "@aido/api";
+import type { ParsedMemoData } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import { sumBy } from "es-toolkit";
 import { ZodError } from "zod";
@@ -9,15 +8,21 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import {
+  generationCompletedLog,
+  generationFailedLog,
+} from "../../observability/parsing/ai-generation-log.events.js";
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import { type AiProvider } from "../../ports/parsing/ai-provider.port.js";
+import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
+import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
-import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
+import { parseMemoPrompts } from "../../prompts/parsing/parse-memo/index.js";
+import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
-import type { ParseTodoMeta } from "./parse-todo.use-case.js";
+import { type ParseTodoMeta, toParseMeta } from "./parse-todo.use-case.js";
 
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
 export interface ParseMemoResult {
@@ -55,6 +60,7 @@ interface ParseMemoDependencies {
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
+  readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -90,63 +96,61 @@ export class ParseMemo {
 
   async #parse(input: ResolvedParseMemoInput, startTime: number): Promise<ParseMemoResult> {
     const { content, userId, timezone, categoryId, locale } = input;
+    const definition = parseMemoPrompts.v1[locale];
+    const at = now();
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const categoryIds = new Set(userCategories.map((category) => category.id));
-
-    const { build, schema } = aiPromptCatalog[locale].parseMemo;
-    const { system, prompt } = build(
+    const { system, prompt } = definition.build({
       content,
       timezone,
-      now(),
-      userCategories.map((category) => ({ id: category.id, name: category.name })),
-    );
+      now: at,
+      categories: userCategories.map(({ id, name }) => ({ id, name })),
+    });
+    const logBase = {
+      task: "parse-memo",
+      promptVersion: definition.promptVersion,
+      userId,
+    } as const;
 
     try {
-      const result = await this.#dependencies.aiProvider.generateStructured<LlmParsedMemoResult>({
-        system,
-        prompt,
-        schema,
-        maxOutputTokens: 800,
-      });
-
-      const data = parsedMemoDataSchema.parse({
-        todos: result.output.todos.slice(0, 5).map((todo) => ({
-          ...todo,
-          categoryId: categoryIds.has(todo.categoryId) ? todo.categoryId : categoryId,
-        })),
-      });
-      const processingTimeMs = Date.now() - startTime;
+      const { value, meta } = await definition.output.generate(
+        this.#dependencies.aiProvider,
+        {
+          task: "parse-memo",
+          promptVersion: definition.promptVersion,
+          system,
+          prompt,
+          policy: resolveGenerationPolicy("parse-memo", this.#dependencies.settings),
+        },
+        {
+          content,
+          timezone,
+          now: at,
+          locale,
+          ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
+          defaultCategoryId: categoryId,
+        },
+      );
+      const { data } = value;
 
       this.#dependencies.logger.log({
-        event: AiParsingLogEvent.MEMO_COMPLETED,
-        userId,
-        model: result.model,
-        processingTimeMs,
-        tokenUsage: result.usage,
+        ...generationCompletedLog({ ...logBase, outcome: "SUCCESS", quotaCharged: true }, meta),
         todoCount: data.todos.length,
         itemCount: sumBy(data.todos, (todo) => todo.items.length),
       });
-
-      return {
-        data,
-        meta: {
-          model: result.model,
-          processingTimeMs,
-          tokenUsage: result.usage,
-        },
-      };
+      return { data, meta: toParseMeta(meta, Date.now() - startTime) };
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({
-        event:
-          failure.errorCode === ErrorCode.AI_1302
-            ? AiParsingLogEvent.OUTPUT_INVALID
-            : AiParsingLogEvent.PROVIDER_FAILED,
-        userId,
-        errorKind: failure.kind,
-        statusCode: failure.statusCode,
-        errorCode: failure.errorCode,
+        ...generationFailedLog({
+          ...logBase,
+          outcome: "FAILED",
+          errorKind: failure.kind,
+          statusCode: failure.statusCode,
+          errorCode: failure.errorCode,
+          latencyMs: Date.now() - startTime,
+          quotaCharged: false,
+        }),
         ...(error instanceof ZodError && {
           validationIssues: error.issues.map(({ path, code }) => ({ path, code })),
         }),

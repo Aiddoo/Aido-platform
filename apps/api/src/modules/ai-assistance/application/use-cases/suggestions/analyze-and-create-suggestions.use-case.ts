@@ -12,15 +12,15 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { resolveSuggestedCategoryId } from "../../../domain/services/suggestions/category-resolver.js";
 import {
-  applyTypeCap,
-  dedupeByTitlePrefixAndDays,
-  filterWeakPatterns,
-  groundPatternCandidates,
-  normalizeStarterSuggestions,
-} from "../../../domain/services/suggestions/pattern-filter.js";
+  generationCompletedLog,
+  generationFailedLog,
+} from "../../observability/parsing/ai-generation-log.events.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
+import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
+import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
-import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
+import { suggestionPrompts } from "../../prompts/suggestions/suggestion/index.js";
+import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import type { SuggestionContextBuilder } from "../../services/suggestions/suggestion-context.builder.js";
 
 /**
@@ -38,9 +38,10 @@ interface AnalyzeAndCreateSuggestionsDependencies {
   readonly aiProvider: Pick<AiProvider, "generateStructured">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly contextBuilder: Pick<SuggestionContextBuilder, "build">;
-  readonly logger: Pick<ApplicationLogger, "debug" | "log">;
+  readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
   readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly settings: AiTaskSettings;
 }
 
 export class AnalyzeAndCreateSuggestions {
@@ -81,41 +82,44 @@ export class AnalyzeAndCreateSuggestions {
     }
 
     // 2. AI 제안 생성 — 비용과 채우기용 제안을 줄이기 위해 항상 1회만 호출
-    const { build, schema, starterReason, repeatReason } = aiPromptCatalog[locale].suggestion;
-    const { system, prompt } = build(context, AI_SUGGESTION_LIMITS.MIN_REPEAT_OCCURRENCES);
-
-    const result = await this.#dependencies.aiProvider.generateStructured({
-      system,
-      prompt,
-      schema,
-      maxOutputTokens: 1500,
-    });
-
-    const isStarter = context.todos.length < AI_SUGGESTION_LIMITS.MIN_OCCURRENCES;
-    const excludedTitles = context.suggestionHistory.map((history) => history.title);
-    let patterns = isStarter
-      ? normalizeStarterSuggestions(result.output.patterns, context)
-          .map(({ pattern, recordedActivity }) => ({
-            ...pattern,
-            reason: starterReason(context.todos.length, recordedActivity, pattern.daysOfWeek),
-          }))
-          .filter((pattern) => !excludedTitles.includes(pattern.title))
-      : groundPatternCandidates(
-          filterWeakPatterns(result.output.patterns, context),
-          context,
-          excludedTitles,
-        ).map(({ pattern, recordedActivity }) => ({
-          ...pattern,
-          reason:
-            recordedActivity === null
-              ? pattern.reason
-              : repeatReason(recordedActivity, pattern.daysOfWeek),
-        }));
-
-    if (!isStarter) {
-      patterns = applyTypeCap(patterns);
-    }
-    patterns = dedupeByTitlePrefixAndDays(patterns);
+    const definition = suggestionPrompts.v1[locale];
+    const { system, prompt } = definition.build({ context });
+    const logBase = {
+      task: "suggestion",
+      promptVersion: definition.promptVersion,
+      userId,
+      quotaCharged: false,
+    } as const;
+    const startedAt = Date.now();
+    const generation = await definition.output
+      .generate(
+        this.#dependencies.aiProvider,
+        {
+          task: "suggestion",
+          promptVersion: definition.promptVersion,
+          system,
+          prompt,
+          policy: resolveGenerationPolicy("suggestion", this.#dependencies.settings),
+        },
+        { context },
+      )
+      .catch((error: unknown) => {
+        // 잡 재시도 의미는 유지하고, 원인 종류만 남긴다.
+        this.#dependencies.logger.warn(
+          generationFailedLog({
+            ...logBase,
+            outcome: "FAILED",
+            errorKind: error instanceof AiProviderError ? error.kind : "INVALID_OUTPUT",
+            statusCode: error instanceof AiProviderError ? error.statusCode : undefined,
+            latencyMs: Date.now() - startedAt,
+          }),
+        );
+        throw error;
+      });
+    this.#dependencies.logger.log(
+      generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, generation.meta),
+    );
+    const patterns = generation.value;
 
     if (patterns.length === 0) {
       this.#dependencies.logger.debug({

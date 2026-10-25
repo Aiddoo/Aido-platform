@@ -278,10 +278,15 @@ describe("GenerateReport", () => {
         promptVersion: null,
         aiSummary: "2026년 11주차에는 할 일 4개 중 3개를 완료해 달성률 75%였어요.",
       });
-      expect(f.logger.error).toHaveBeenCalledWith({
-        event: "ai.report.provider.failed",
-        errorKind: "RATE_LIMITED",
-      });
+      expect(f.logger.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: "ai.generation.failed",
+          task: "report",
+          outcome: "FALLBACK",
+          errorKind: "RATE_LIMITED",
+          quotaCharged: false,
+        }),
+      );
     }));
 
   it("재시도로 회복되지 않는 출력 오류는 첫 시도에서도 폴백을 저장한다", () =>

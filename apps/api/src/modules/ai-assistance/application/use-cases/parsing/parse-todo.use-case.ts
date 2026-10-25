@@ -6,20 +6,33 @@ import { now } from "#api/shared/domain/date/utils/core";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
+import {
+  generationCompletedLog,
+  generationFailedLog,
+} from "../../observability/parsing/ai-generation-log.events.js";
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import { type AiProvider, type TokenUsage } from "../../ports/parsing/ai-provider.port.js";
+import type { AiProvider } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
+import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
-import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
+import { parseTodoPrompts } from "../../prompts/parsing/parse-todo/index.js";
+import type { GenerationMeta } from "../../prompts/structured-output.js";
+import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
+
+/** 공개 응답의 토큰 사용량 (사고 토큰은 로그에만 남긴다). */
+export interface ParseTokenUsage {
+  input: number;
+  output: number;
+}
 
 /** 파싱 메타데이터 (모델·처리시간·토큰). */
 export interface ParseTodoMeta {
   model: string;
   processingTimeMs: number;
-  tokenUsage: TokenUsage;
+  tokenUsage: ParseTokenUsage;
 }
 
 /** 자연어 → 단건 투두 파싱 결과. */
@@ -50,7 +63,7 @@ type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
 /**
  * 자연어 → 단건 투두 파싱 use-case.
  *
- * 가용성 확인 → 사용량 원자적 차감 → 프롬프트 조립 → AI 생성 → 카테고리 정합.
+ * 가용성 확인 → 사용량 원자적 차감 → 프롬프트 조립 → AI 생성 → 정규화.
  * AI 호출 실패 시 사용량을 보상 감소하고, 공급자 오류 종류에 따라
  * 요청 과다(AI_1310)/호출 실패(AI_1301)/파싱 실패(AI_1302)를 구분해 던진다.
  */
@@ -59,6 +72,7 @@ interface ParseTodoDependencies {
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
   readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
+  readonly settings: AiTaskSettings;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -94,64 +108,70 @@ export class ParseTodo {
 
   async #parse(input: ResolvedParseTodoInput, startTime: number): Promise<ParseTodoResult> {
     const { text, userId, timezone, categoryId, locale } = input;
+    const definition = parseTodoPrompts.v1[locale];
+    const at = now();
 
-    const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
-    const categoryIds = new Set(userCategories.map((category) => category.id));
-
-    const { build, schema } = aiPromptCatalog[locale].parseTodo;
-    const { system, prompt } = build(
+    // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
+    const userCategories =
+      categoryId === undefined ? await this.#dependencies.categoryReader.findByUserId(userId) : [];
+    const { system, prompt } = definition.build({
       text,
       timezone,
-      now(),
-      userCategories.map((category) => ({ id: category.id, name: category.name })),
-    );
+      now: at,
+      categories: userCategories.map(({ id, name }) => ({ id, name })),
+    });
+    const logBase = {
+      task: "parse-todo",
+      promptVersion: definition.promptVersion,
+      userId,
+    } as const;
 
     try {
-      const result = await this.#dependencies.aiProvider.generateStructured({
-        system,
-        prompt,
-        schema,
-        maxOutputTokens: 200,
-      });
-
-      const processingTimeMs = Date.now() - startTime;
-
-      this.#dependencies.logger.log({
-        event: AiParsingLogEvent.TODO_COMPLETED,
-        userId,
-        model: result.model,
-        processingTimeMs,
-        tokenUsage: result.usage,
-      });
-
-      const inferredCategoryId = categoryIds.has(result.output.categoryId ?? 0)
-        ? result.output.categoryId
-        : undefined;
-
-      return {
-        data: {
-          ...result.output,
-          categoryId: categoryId ?? inferredCategoryId,
+      const { value, meta } = await definition.output.generate(
+        this.#dependencies.aiProvider,
+        {
+          task: "parse-todo",
+          promptVersion: definition.promptVersion,
+          system,
+          prompt,
+          policy: resolveGenerationPolicy("parse-todo", this.#dependencies.settings),
         },
-        meta: {
-          model: result.model,
-          processingTimeMs,
-          tokenUsage: result.usage,
+        {
+          text,
+          timezone,
+          now: at,
+          locale,
+          ownedCategoryIds: new Set(userCategories.map((category) => category.id)),
+          requestedCategoryId: categoryId,
         },
-      };
+      );
+
+      this.#dependencies.logger.log(
+        generationCompletedLog({ ...logBase, outcome: "SUCCESS", quotaCharged: true }, meta),
+      );
+      return { data: value.data, meta: toParseMeta(meta, Date.now() - startTime) };
     } catch (error) {
       const failure = describeParsingFailure(error);
-      this.#dependencies.logger.error({
-        event:
-          failure.errorCode === ErrorCode.AI_1302
-            ? AiParsingLogEvent.OUTPUT_INVALID
-            : AiParsingLogEvent.PROVIDER_FAILED,
-        userId,
-        errorKind: failure.kind,
-        statusCode: failure.statusCode,
-        errorCode: failure.errorCode,
-      });
+      this.#dependencies.logger.error(
+        generationFailedLog({
+          ...logBase,
+          outcome: "FAILED",
+          errorKind: failure.kind,
+          statusCode: failure.statusCode,
+          errorCode: failure.errorCode,
+          latencyMs: Date.now() - startTime,
+          quotaCharged: false,
+        }),
+      );
       throw new ApplicationException(failure.errorCode);
     }
   }
+}
+
+export function toParseMeta(meta: GenerationMeta, processingTimeMs: number): ParseTodoMeta {
+  return {
+    model: meta.model,
+    processingTimeMs,
+    tokenUsage: { input: meta.usage.input, output: meta.usage.output },
+  };
 }

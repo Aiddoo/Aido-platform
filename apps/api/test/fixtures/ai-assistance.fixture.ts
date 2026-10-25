@@ -11,6 +11,7 @@ import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
+import { TEST_AI_TASK_SETTINGS } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
   StubAiGenerationAccess,
@@ -96,6 +97,7 @@ export function createAiAssistanceFixture() {
     logger,
     entitlementReader: access,
     userMutationLock: access,
+    settings: TEST_AI_TASK_SETTINGS,
   });
   const generateReport = new GenerateReport({
     aiReportRepository: reportRepository,
@@ -105,6 +107,7 @@ export function createAiAssistanceFixture() {
     entitlementReader: access,
     unitOfWork,
     userMutationLock: access,
+    settings: TEST_AI_TASK_SETTINGS,
   });
   return {
     userId,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { type AiConfig, aiSchema } from "./ai.schema.js";
 import {
   type AppVersionConfig,
   appVersionSchema,
@@ -26,6 +27,7 @@ import { type SecurityConfig, securitySchema } from "./security.schema.js";
 import { type WebhookConfig, webhookSchema } from "./webhook.schema.js";
 
 // 스키마 재export
+export * from "./ai.schema.js";
 export * from "./app.schema.js";
 export * from "./app-version.schema.js";
 export * from "./cache.schema.js";
@@ -61,6 +63,7 @@ export const envSchema = z
     ...pushSchema.shape,
     ...retentionSchema.shape,
     ...externalSchema.shape,
+    ...aiSchema.shape,
     ...webhookSchema.shape,
     ...featureDiscoverySchema.shape,
     ...inviteSchema.shape,
@@ -85,6 +88,7 @@ export type EnvConfig = AppConfig &
   PushConfig &
   RetentionConfig &
   ExternalConfig &
+  AiConfig &
   WebhookConfig &
   FeatureDiscoveryConfig &
   InviteConfig;

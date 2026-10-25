@@ -1,7 +1,5 @@
 import type { DayOfWeek } from "@aido/api/vocabulary";
 
-import type { SupportedLocale } from "#api/shared/domain/locale";
-
 export interface ReportStats {
   readonly totalTodos: number;
   readonly completedTodos: number;
@@ -62,15 +60,6 @@ export interface AggregateParams {
 /**
  * AI 리포트 생성 파라미터
  */
-export interface GenerateReportParams {
-  /** 생성 언어 (기본 ko — 기존 유저 하위 호환) */
-  readonly locale?: SupportedLocale;
-  readonly aggregatedData: AggregatedReportData;
-  readonly type: ReportType;
-  readonly periodLabel: string;
-  readonly prevTips: string[] | null;
-}
-
 /** 저장된 요약·팁의 출처. AI 실패로 저장한 폴백과 활동 없음 템플릿을 구분해 재생성·분석에 쓴다. */
 export type ReportContentSource = "AI" | "FALLBACK" | "TEMPLATE";
 

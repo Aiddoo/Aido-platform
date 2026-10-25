@@ -156,6 +156,47 @@ describe("ParseTodo", () => {
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
+  it("작업 정책과 프롬프트 버전을 공급자에 넘기고 원문 없이 생성 결과를 기록한다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setTokenUsage({ reasoning: 12 });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, text: "PRIVATE_TODO_TEXT" });
+    // Then
+    expect(fixture.aiProvider.getLastOptions()).toMatchObject({
+      task: "parse-todo",
+      promptVersion: "parse-todo@v1",
+      policy: { thinking: "low", maxOutputTokens: 1024, timeoutMs: 12_000, maxRetries: 1 },
+    });
+    expect(fixture.logger.log).toHaveBeenCalledWith({
+      event: "ai.generation.completed",
+      task: "parse-todo",
+      promptVersion: "parse-todo@v1",
+      model: "fake:test-model",
+      latencyMs: 0,
+      inputTokens: 150,
+      outputTokens: 50,
+      reasoningTokens: 12,
+      finishReason: "stop",
+      outcome: "SUCCESS",
+      quotaCharged: true,
+      userId: fixture.userId,
+    });
+    expect(JSON.stringify(fixture.logger.log.mock.calls)).not.toContain("PRIVATE_TODO_TEXT");
+  });
+
+  it("카테고리를 고른 요청은 카테고리 목록을 읽거나 프롬프트에 넣지 않는다", async () => {
+    // Given
+    const fixture = createFixture();
+    const read = vi.spyOn(fixture.categoryReader, "findByUserId");
+    // When
+    const result = await fixture.useCase.execute({ ...fixture.input, categoryId: 3 });
+    // Then
+    expect(read).not.toHaveBeenCalled();
+    expect(fixture.aiProvider.getLastPrompt()).not.toContain("업무");
+    expect(result.data.categoryId).toBe(3);
+  });
+
   it("X-Timezone이 없으면 저장된 사용자 시간대로 프롬프트를 만든다", async () => {
     // Given
     const fixture = createFixture();

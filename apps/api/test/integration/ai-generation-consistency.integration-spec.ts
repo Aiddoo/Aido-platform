@@ -29,6 +29,7 @@ import { createEntityId, varchar } from "#api/platform/database/database-values"
 import type { User } from "#api/platform/database/database.types";
 import { databaseSqlState } from "#api/platform/database/prisma-error.util";
 import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai-response.fixture";
+import { TEST_AI_TASK_SETTINGS } from "#test/fixtures/ai-task-settings.fixture";
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
@@ -147,6 +148,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
+      settings: TEST_AI_TASK_SETTINGS,
     });
     const report = new GenerateReport({
       aiReportRepository: reports,
@@ -156,6 +158,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       unitOfWork: fixture.uow,
       userMutationLock,
       logger,
+      settings: TEST_AI_TASK_SETTINGS,
     });
     const notifications: { userId: string }[] = [];
     const reportProcessor = new ReportGenerationProcessor(report);

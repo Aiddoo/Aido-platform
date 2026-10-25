@@ -3,6 +3,8 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import {
   AI_PROVIDER,
+  AI_TASK_SETTINGS,
+  type AiTaskSettingsMap,
   USER_LOCALE_PREFERENCE_READER,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
@@ -44,6 +46,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
     SuggestionContextBuilder,
     ENTITLEMENT_READER,
     USER_MUTATION_LOCK,
+    AI_TASK_SETTINGS,
   ],
   useFactory: (
     repository: ConstructorParameters<typeof AnalyzeAndCreateSuggestions>[0]["repository"],
@@ -56,6 +59,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
     userMutationLock: ConstructorParameters<
       typeof AnalyzeAndCreateSuggestions
     >[0]["userMutationLock"],
+    settings: AiTaskSettingsMap,
   ) =>
     new AnalyzeAndCreateSuggestions({
       repository,
@@ -64,6 +68,7 @@ export const analyzeAndCreateSuggestionsProvider: FactoryProvider<AnalyzeAndCrea
       contextBuilder,
       entitlementReader,
       userMutationLock,
+      settings: settings.suggestion,
       logger: new Logger(AnalyzeAndCreateSuggestions.name),
     }),
 };

@@ -17,24 +17,25 @@ import { assembleAggregatedData } from "../../../domain/services/reports/report-
 import type {
   AggregatedReportData,
   AggregateParams,
-  GenerateReportParams,
   ReportContent,
   ReportType,
 } from "../../../domain/types/reports/ai-report.types.js";
+import {
+  generationCompletedLog,
+  generationFailedLog,
+} from "../../observability/parsing/ai-generation-log.events.js";
 import { AiReportLogEvent } from "../../observability/reports/ai-report-log.events.js";
+import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../../ports/reports/todo-stats.reader.port.js";
-import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
-import { REPORT_PROMPT_VERSION } from "../../prompts/reports/report/v1/prompt.ko.js";
+import { reportPrompts, type ReportPromptInput } from "../../prompts/reports/report/index.js";
 import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 import { computePeriodLabel } from "../../read-models/reports/report-period-label.js";
+import { resolveGenerationPolicy } from "../../services/parsing/ai-generation-policy.js";
 import {
   buildFallbackContent,
   buildNoActivityContent,
 } from "../../services/reports/report-fallback.js";
-
-/** AI 리포트 생성 기본 설정 */
-const REPORT_AI_MAX_TOKENS = 800;
 
 /** 잡 재시도로 회복될 수 있는 공급자 오류 */
 const TRANSIENT_PROVIDER_ERRORS: ReadonlySet<string> = new Set([
@@ -51,6 +52,9 @@ interface ReportWindow {
   endDate: Date;
   prevStartDate: Date;
   prevEndDate: Date;
+  /** 사용자 로컬 기간 첫날·마지막 날 (YYYY-MM-DD) */
+  periodStart: string;
+  periodEnd: string;
 }
 
 /**
@@ -67,6 +71,7 @@ interface GenerateReportDependencies {
   readonly entitlementReader: Pick<EntitlementReaderPort, "hasPremiumAccessInTx">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
+  readonly settings: AiTaskSettings;
 }
 
 export class GenerateReport {
@@ -121,12 +126,7 @@ export class GenerateReport {
       userId,
       timezone,
       type,
-      year: window.year,
-      period: window.period,
-      startDate: window.startDate,
-      endDate: window.endDate,
-      prevStartDate: window.prevStartDate,
-      prevEndDate: window.prevEndDate,
+      window,
       periodLabel: computePeriodLabel(type, window.year, window.period, locale),
       locale,
       isFinalAttempt,
@@ -150,6 +150,8 @@ export class GenerateReport {
       endDate: parseLocalDateTime(lastWeekEnd.format("YYYY-MM-DD"), "00:00", timezone),
       prevStartDate: parseLocalDateTime(prevWeekStart.format("YYYY-MM-DD"), "00:00", timezone),
       prevEndDate: parseLocalDateTime(prevWeekEnd.format("YYYY-MM-DD"), "00:00", timezone),
+      periodStart: lastWeekStart.format("YYYY-MM-DD"),
+      periodEnd: lastWeekEnd.subtract(1, "day").format("YYYY-MM-DD"),
     };
   }
 
@@ -167,6 +169,8 @@ export class GenerateReport {
       endDate: parseLocalDateTime(lastMonthEnd.format("YYYY-MM-DD"), "00:00", timezone),
       prevStartDate: parseLocalDateTime(prevMonthStart.format("YYYY-MM-DD"), "00:00", timezone),
       prevEndDate: parseLocalDateTime(prevMonthEnd.format("YYYY-MM-DD"), "00:00", timezone),
+      periodStart: lastMonthStart.format("YYYY-MM-DD"),
+      periodEnd: lastMonthEnd.subtract(1, "day").format("YYYY-MM-DD"),
     };
   }
 
@@ -178,29 +182,12 @@ export class GenerateReport {
     timezone: string;
     locale: SupportedLocale;
     type: ReportType;
-    year: number;
-    period: number;
-    startDate: Date;
-    endDate: Date;
-    prevStartDate: Date;
-    prevEndDate: Date;
+    window: ReportWindow;
     periodLabel: string;
     isFinalAttempt: boolean;
   }): Promise<AiReportDto | null> {
-    const {
-      userId,
-      timezone,
-      type,
-      year,
-      period,
-      startDate,
-      endDate,
-      prevStartDate,
-      prevEndDate,
-      periodLabel,
-      locale,
-      isFinalAttempt,
-    } = params;
+    const { userId, timezone, type, window, periodLabel, locale, isFinalAttempt } = params;
+    const { year, period, startDate, endDate, prevStartDate, prevEndDate } = window;
 
     const [aggregatedData, prevReport] = await Promise.all([
       this.#aggregate({
@@ -214,11 +201,19 @@ export class GenerateReport {
       this.#dependencies.aiReportRepository.findLatest(userId, type),
     ]);
 
-    const prevTips = prevReport === null ? null : [...prevReport.aiTips];
+    // 다른 언어로 쓰인 지난 팁은 반복 판단 근거가 되지 못하고 언어를 섞게 한다.
+    const prevTips =
+      prevReport === null || prevReport.snapshot.locale !== locale ? null : prevReport.aiTips;
 
     const content = await this.#generateContent(
-      { aggregatedData, type, periodLabel, prevTips, locale },
-      isFinalAttempt,
+      {
+        data: aggregatedData,
+        type,
+        periodLabel,
+        prevTips,
+        period: { start: window.periodStart, end: window.periodEnd },
+      },
+      { userId, locale, isFinalAttempt },
     );
 
     // 외부 공급자 호출 뒤에만 transaction을 시작한다.
@@ -289,58 +284,58 @@ export class GenerateReport {
    * AI 일시 오류는 마지막 시도 전까지 다시 던지고, 그 밖의 실패만 폴백으로 저장한다.
    */
   async #generateContent(
-    params: GenerateReportParams,
-    isFinalAttempt: boolean,
+    input: ReportPromptInput,
+    options: { userId: string; locale: SupportedLocale; isFinalAttempt: boolean },
   ): Promise<ReportContent> {
-    const { aggregatedData, periodLabel, type, locale = "ko" } = params;
-
-    if (!aggregatedData.hasActivity) return buildNoActivityContent(periodLabel, locale);
+    const { userId, locale, isFinalAttempt } = options;
+    if (!input.data.hasActivity) return buildNoActivityContent(input.periodLabel, locale);
 
     if (!this.#dependencies.aiProvider.isAvailable()) {
       this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
-      return buildFallbackContent(aggregatedData, periodLabel, locale);
+      return buildFallbackContent(input.data, input.periodLabel, locale);
     }
 
+    const definition = reportPrompts.v1[locale];
+    const logBase = {
+      task: "report",
+      promptVersion: definition.promptVersion,
+      userId,
+      quotaCharged: false,
+    } as const;
+    const startedAt = Date.now();
     try {
-      const { build, schema } = aiPromptCatalog[locale].report;
-      const { system, prompt } = build(aggregatedData, periodLabel, type, {
-        prevTips: params.prevTips,
-      });
-
-      const result = await this.#dependencies.aiProvider.generateStructured({
-        system,
-        prompt,
-        schema,
-        maxOutputTokens: REPORT_AI_MAX_TOKENS,
-      });
-
-      this.#dependencies.logger.log({
-        event: AiReportLogEvent.GENERATION_COMPLETED,
-        model: result.model,
-        promptVersion: REPORT_PROMPT_VERSION,
-        tokenUsage: result.usage,
-      });
-
-      return {
-        aiSummary: result.output.summary,
-        aiTips: result.output.tips,
-        contentSource: "AI",
-        promptVersion: REPORT_PROMPT_VERSION,
-      };
+      const { system, prompt } = definition.build(input);
+      const { value, meta } = await definition.output.generate(
+        this.#dependencies.aiProvider,
+        {
+          task: "report",
+          promptVersion: definition.promptVersion,
+          system,
+          prompt,
+          policy: resolveGenerationPolicy("report", this.#dependencies.settings),
+        },
+        null,
+      );
+      this.#dependencies.logger.log(
+        generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),
+      );
+      return { ...value, contentSource: "AI", promptVersion: definition.promptVersion };
     } catch (error) {
       const errorKind = error instanceof AiProviderError ? error.kind : "INVALID_OUTPUT";
-      if (!isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(errorKind)) {
-        this.#dependencies.logger.warn({
-          event: AiReportLogEvent.PROVIDER_RETRYING,
-          errorKind,
-        });
+      const retrying = !isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(errorKind);
+      const failedLog = generationFailedLog({
+        ...logBase,
+        outcome: retrying ? "RETRYING" : "FALLBACK",
+        errorKind,
+        statusCode: error instanceof AiProviderError ? error.statusCode : undefined,
+        latencyMs: Date.now() - startedAt,
+      });
+      if (retrying) {
+        this.#dependencies.logger.warn(failedLog);
         throw error;
       }
-      this.#dependencies.logger.error({
-        event: AiReportLogEvent.PROVIDER_FAILED,
-        errorKind,
-      });
-      return buildFallbackContent(aggregatedData, periodLabel, locale);
+      this.#dependencies.logger.error(failedLog);
+      return buildFallbackContent(input.data, input.periodLabel, locale);
     }
   }
 }

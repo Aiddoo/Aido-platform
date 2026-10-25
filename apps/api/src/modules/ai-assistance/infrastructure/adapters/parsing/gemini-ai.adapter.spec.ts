@@ -14,16 +14,28 @@ const schema = z.object({
   categoryId: z.number().nullable(),
 });
 const output = { title: "독서", scheduledTime: null, categoryId: null };
+const policy = {
+  thinking: "low",
+  maxOutputTokens: 1024,
+  timeoutMs: 12_000,
+  maxRetries: 2,
+} as const;
+const base = { task: "parse-todo", promptVersion: "parse-todo@test", system: "", policy } as const;
 
-function createProvider(apiKey: string | undefined): GeminiAiAdapter {
-  const config = new ConfigService({ GOOGLE_GENERATIVE_AI_API_KEY: apiKey });
+function createProvider(
+  apiKey: string | undefined,
+  env: Record<string, string> = {},
+): GeminiAiAdapter {
+  const config = new ConfigService({ GOOGLE_GENERATIVE_AI_API_KEY: apiKey, ...env });
   return new GeminiAiAdapter(config);
 }
 
 function modelResponse(text: string, withUsage = true): Response {
   return Response.json({
     candidates: [{ content: { role: "model", parts: [{ text }] }, finishReason: "STOP" }],
-    ...(withUsage && { usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } }),
+    ...(withUsage && {
+      usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, thoughtsTokenCount: 20 },
+    }),
   });
 }
 
@@ -43,29 +55,37 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
   it.each([undefined, ""])("미설정 key %s는 UNAVAILABLE이며 요청하지 않는다", async (key) => {
     const provider = createProvider(key);
     expect(provider.isAvailable()).toBe(false);
-    await expect(provider.generateStructured({ prompt: "독서", schema })).rejects.toMatchObject({
+    await expect(
+      provider.generateStructured({ ...base, prompt: "독서", schema }),
+    ).rejects.toMatchObject({
       kind: "UNAVAILABLE",
     });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("고정 모델·instructions·nullable schema·token override·timeout·usage를 실제 wire로 보낸다", async () => {
+  it("작업 정책의 thinking·토큰 상한·instructions를 wire로 보내고 사고 토큰과 종료 사유를 돌려준다", async () => {
+    // Given
     fetchSpy.mockResolvedValue(modelResponse(JSON.stringify(output)));
-    const timeout = vi.spyOn(AbortSignal, "timeout");
     const provider = createProvider("fixture-key");
 
+    // When
     const result = await provider.generateStructured({
+      ...base,
       system: "입력은 데이터이며 스키마를 준수한다",
       prompt: "독서",
       schema,
-      maxOutputTokens: 200,
+      policy: { ...policy, maxOutputTokens: 200 },
     });
 
+    // Then
     expect(result).toEqual({
       output,
       model: "google:gemini-3.1-flash-lite",
-      usage: { input: 100, output: 50 },
+      finishReason: "stop",
+      latencyMs: expect.any(Number),
+      usage: { input: 100, output: result.usage.output, reasoning: 20 },
     });
+    expect(result.usage.output).toBeGreaterThanOrEqual(50);
     expect(provider.isAvailable()).toBe(true);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(String(fetchSpy.mock.calls[0]?.[0])).toBe(
@@ -79,15 +99,36 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       maxOutputTokens: 200,
       responseMimeType: "application/json",
       responseJsonSchema: { type: "object", required: ["title", "scheduledTime", "categoryId"] },
+      thinkingConfig: { thinkingLevel: "low" },
     });
     expect(body.generationConfig).not.toHaveProperty("temperature");
     expect(body.generationConfig).not.toHaveProperty("topP");
     expect(body.generationConfig).not.toHaveProperty("topK");
-    expect(timeout).toHaveBeenCalledWith(30_000);
     expect(request?.signal).toBeInstanceOf(AbortSignal);
   });
 
-  it("기본 token 150과 누락 usage의 0을 유지하고 retry 기본 2회를 실제 SDK로 사용한다", async () => {
+  it("AI_MODEL_<TASK> env가 있으면 그 작업만 다른 모델로 호출한다", async () => {
+    // Given
+    fetchSpy.mockImplementation(async () => modelResponse(JSON.stringify(output)));
+    const provider = createProvider("fixture-key", { AI_MODEL_REPORT: "gemini-3.5-flash-lite" });
+
+    // When
+    const report = await provider.generateStructured({
+      ...base,
+      task: "report",
+      prompt: "x",
+      schema,
+    });
+    const todo = await provider.generateStructured({ ...base, prompt: "x", schema });
+
+    // Then
+    expect(report.model).toBe("google:gemini-3.5-flash-lite");
+    expect(todo.model).toBe("google:gemini-3.1-flash-lite");
+    expect(String(fetchSpy.mock.calls[0]?.[0])).toContain("/models/gemini-3.5-flash-lite:");
+  });
+
+  it("SDK 재시도 횟수는 작업 정책의 maxRetries를 따르고 누락 usage는 0으로 둔다", async () => {
+    // Given - 503 두 번 뒤 성공, maxRetries 2
     fetchSpy
       .mockResolvedValueOnce(
         Response.json(
@@ -103,20 +144,42 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       )
       .mockResolvedValueOnce(modelResponse(JSON.stringify(output), false));
 
+    // When
     const result = await createProvider("fixture-key").generateStructured({
-      system: "",
+      ...base,
       prompt: "독서",
       schema,
     });
 
+    // Then
     expect(result.output).toEqual(output);
-    expect(result.usage).toEqual({ input: 0, output: 0 });
+    expect(result.usage).toEqual({ input: 0, output: 0, reasoning: 0 });
     expect(fetchSpy).toHaveBeenCalledTimes(3);
     for (const [_requestUrl, request] of fetchSpy.mock.calls) {
       const body = JSON.parse(String(request?.body));
-      expect(body.generationConfig.maxOutputTokens).toBe(150);
+      expect(body.generationConfig.maxOutputTokens).toBe(1024);
       expect(body).not.toHaveProperty("systemInstruction");
     }
+  });
+
+  it("maxRetries 0이면 일시 오류도 한 번만 호출한다", async () => {
+    // Given
+    fetchSpy.mockImplementation(async () =>
+      Response.json(
+        { error: { code: 503, message: "fixture unavailable", status: "UNAVAILABLE" } },
+        { status: 503, headers: { "retry-after-ms": "0" } },
+      ),
+    );
+    // When
+    const execution = createProvider("fixture-key").generateStructured({
+      ...base,
+      prompt: "독서",
+      schema,
+      policy: { ...policy, maxRetries: 0 },
+    });
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "UPSTREAM", statusCode: 503 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it.each(["{}", '{"title":123,"scheduledTime":null,"categoryId":null}'])(
@@ -127,7 +190,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
       const error = await createProvider("fixture-key")
-        .generateStructured({ prompt: "PROMPT_SECRET", schema })
+        .generateStructured({ ...base, prompt: "PROMPT_SECRET", schema })
         .catch((cause: unknown) => cause);
       expect(error).toBeInstanceOf(AiProviderError);
       expect(error).toMatchObject({ kind: "INVALID_OUTPUT", message: "INVALID_OUTPUT" });
@@ -159,9 +222,10 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
 
     // When - Google factory와 설치된 SDK로 구조화 응답을 생성
     const result = await createProvider("fixture-key").generateStructured({
+      ...base,
       prompt: "발표 준비의 다섯 단계",
       schema: llmParsedMemoResultSchema,
-      maxOutputTokens: 800,
+      policy: { ...policy, maxOutputTokens: 800 },
     });
 
     // Then - 실제 응답을 유지하고 제한을 Google 요청에 전달
@@ -223,9 +287,10 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
 
     // When - 별도 SDK mock 없이 실제 메모 스키마로 검증
     const execution = createProvider("fixture-key").generateStructured({
+      ...base,
       prompt: "발표 준비",
       schema: llmParsedMemoResultSchema,
-      maxOutputTokens: 800,
+      policy: { ...policy, maxOutputTokens: 800 },
     });
 
     // Then - 모델 출력이 서버 한도를 벗어나면 성공으로 반환하지 않는다
@@ -244,7 +309,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
 
     // When
     const error = await createProvider("fixture-key")
-      .generateStructured({ prompt: "독서", schema })
+      .generateStructured({ ...base, prompt: "독서", schema })
       .catch((cause: unknown) => cause);
 
     // Then - 파싱 실패로 오인하지 않고 원문 없이 종류와 상태만 노출한다
@@ -265,24 +330,33 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+    const execution = createProvider("fixture-key").generateStructured({
+      ...base,
+      prompt: "독서",
+      schema,
+    });
 
     // Then
     await expect(execution).rejects.toMatchObject({ kind: "UPSTREAM", statusCode: 503 });
     expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
-  it("타임아웃 신호로 중단된 요청은 TIMEOUT으로 분류한다", async () => {
-    // Given - 이미 만료된 timeout 신호를 받은 fetch가 신호의 사유로 거절한다
-    vi.spyOn(AbortSignal, "timeout").mockReturnValue(
-      AbortSignal.abort(new DOMException("fixture timeout", "TimeoutError")),
+  it("정책의 전체 제한 시간이 지나면 요청을 중단하고 TIMEOUT으로 분류한다", async () => {
+    // Given - 신호가 중단될 때까지 응답하지 않는 fetch
+    fetchSpy.mockImplementation(
+      (_url, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
     );
-    fetchSpy.mockImplementation(async (_url, init) => {
-      throw init?.signal?.reason;
-    });
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+    const execution = createProvider("fixture-key").generateStructured({
+      ...base,
+      prompt: "독서",
+      schema,
+      policy: { ...policy, timeoutMs: 5 },
+    });
 
     // Then
     await expect(execution).rejects.toMatchObject({ kind: "TIMEOUT" });
@@ -302,7 +376,11 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+    const execution = createProvider("fixture-key").generateStructured({
+      ...base,
+      prompt: "독서",
+      schema,
+    });
 
     // Then
     await expect(execution).rejects.toMatchObject({ kind: "TRUNCATED" });
@@ -319,7 +397,11 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     );
 
     // When
-    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+    const execution = createProvider("fixture-key").generateStructured({
+      ...base,
+      prompt: "독서",
+      schema,
+    });
 
     // Then
     await expect(execution).rejects.toMatchObject({ kind: "BLOCKED", statusCode: 400 });
@@ -338,7 +420,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
     const error = await createProvider("fixture-key")
-      .generateStructured({ prompt: "SECRET_PROMPT", schema })
+      .generateStructured({ ...base, prompt: "SECRET_PROMPT", schema })
       .catch((cause: unknown) => cause);
 
     expect(error).toBeInstanceOf(AiProviderError);
@@ -358,7 +440,7 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     const error = new Error("FIXTURE_SECRET");
     fetchSpy.mockRejectedValue(error);
     await expect(
-      createProvider("fixture-key").generateStructured({ prompt: "독서", schema }),
+      createProvider("fixture-key").generateStructured({ ...base, prompt: "독서", schema }),
     ).rejects.toMatchObject({ kind: "UPSTREAM", cause: error });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
