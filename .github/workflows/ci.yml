@@ -258,9 +258,10 @@ jobs:
         if: needs.gate.outputs.api == 'true' || needs.gate.outputs.mobile == 'true'
         run: pnpm turbo run typecheck ${{ needs.gate.outputs.mobile != 'true' && '--filter=@aido/server' || needs.gate.outputs.api != 'true' && '--filter=@aido/mobile' || '' }}
 
-      - name: Mobile conventions
-        if: needs.gate.outputs.mobile == 'true'
-        run: pnpm --filter @aido/mobile check:conventions
+      # 컨벤션 검사는 apps/api·packages의 규칙도 맡으므로 서버·공유 계약만 바뀐 PR에서도 실행한다.
+      # API 범위는 모바일 의존성이 없으므로 pnpm 스크립트(실행 전 설치) 대신 node로 직접 실행한다.
+      - name: Conventions
+        run: node apps/mobile/scripts/check-mobile-conventions.mjs
 
   test-unit:
     name: Test - Mobile & Contracts

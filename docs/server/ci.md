@@ -34,7 +34,7 @@ Git tree 증거는 파일과 검증 범위에 관한 근거다. 새로운 runner
 | Job                | 역할                                                                                                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | CI Scope           | 공식 Octokit pagination으로 누적 변경 범위 계산·동일 tree 검증 증거 확인                                                                                                     |
-| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck                                                                                           |
+| Lint & Type Check  | Oxc lint/format 한 번, `pnpm audit --prod --audit-level high`, 영향 범위 typecheck, 모든 범위의 컨벤션 검사(API 범위는 서버 패키지의 typescript로 실행)                      |
 | Verify API         | API unit+coverage 한 번→PostgreSQL Integration→HTTP/released-client E2E→API 의존성 closure build                                                                             |
 | Build & Push Image | main의 API 영향 변경이며 직접 검증 또는 신뢰된 재사용 증거가 있을 때 ARM64 API/migrate 두 이미지를 같은 SHA로 빌드해 Trivy(HIGH/CRITICAL, 미수정 제외) 검사를 통과한 뒤 발행 |
 

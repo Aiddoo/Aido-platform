@@ -1,13 +1,31 @@
 #!/usr/bin/env node
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
-
 const MOBILE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REPOSITORY_ROOT = resolve(MOBILE_ROOT, '../..');
+
+/**
+ * 서버만 바뀐 CI는 모바일 의존성을 설치하지 않는다(`install-scope: api`).
+ * 같은 lockfile의 typescript를 서버 패키지에서 찾아 서버·공유 계약만 바뀐 PR에서도 이 검사가 돈다.
+ */
+function loadTypeScript() {
+  for (const packageJson of ['apps/mobile/package.json', 'apps/api/package.json']) {
+    try {
+      return createRequire(resolve(REPOSITORY_ROOT, packageJson))('typescript');
+    } catch {
+      // 이 패키지의 의존성이 설치되지 않은 범위다. 다음 패키지에서 찾는다.
+    }
+  }
+  throw new Error(
+    'typescript를 찾을 수 없습니다. pnpm install로 모바일 또는 서버 의존성을 설치하세요.',
+  );
+}
+
+const ts = loadTypeScript();
 const TODO_COMMENT_ROOT = 'apps/mobile/src/features/todo-comment';
 const TODO_COMMENT_COMPONENT_ROOT = `${TODO_COMMENT_ROOT}/components`;
 const TODO_COMMENT_TEST_ROOTS = [
