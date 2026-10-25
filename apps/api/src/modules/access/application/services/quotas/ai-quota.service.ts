@@ -10,6 +10,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import { AiQuotaUsage } from "../../../domain/aggregates/quotas/ai-quota-usage.aggregate.js";
 import {
   Feature,
+  resolveEffectiveSubscriptionStatus,
   resolveFeatureLimit,
 } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 import { getNextAiQuotaResetAt } from "../../../domain/policies/quotas/ai-quota-period.policy.js";
@@ -28,6 +29,14 @@ interface AiQuotaServiceDependencies {
   readonly logger: ApplicationLogger;
 }
 
+function aiParseLimit(state: AiQuotaState, at: Date): number | null {
+  return resolveFeatureLimit(
+    state.role,
+    resolveEffectiveSubscriptionStatus(state.subscriptionStatus, state.accessDeadline, at),
+    Feature.AI_PARSE,
+  );
+}
+
 export class AiQuotaService implements AiQuotaPort {
   readonly #dependencies: AiQuotaServiceDependencies;
 
@@ -41,7 +50,7 @@ export class AiQuotaService implements AiQuotaPort {
     const usage = AiQuotaUsage.reconstitute({ userId, count: state.count, resetAt: state.resetAt });
     return {
       used: usage.usedAt(at),
-      limit: resolveFeatureLimit(state.role, state.subscriptionStatus, Feature.AI_PARSE),
+      limit: aiParseLimit(state, at),
       resetsAt: toISOString(getNextAiQuotaResetAt(at)),
     };
   }
@@ -57,10 +66,8 @@ export class AiQuotaService implements AiQuotaPort {
         count: state.count,
         resetAt: state.resetAt,
       });
-      const decision = usage.reserve({
-        at: now(),
-        limit: resolveFeatureLimit(state.role, state.subscriptionStatus, Feature.AI_PARSE),
-      });
+      const at = now();
+      const decision = usage.reserve({ at, limit: aiParseLimit(state, at) });
       if (decision.status === "exceeded") {
         throw new ApplicationException(ErrorCode.AI_1303, {
           used: decision.used,

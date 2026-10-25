@@ -231,4 +231,42 @@ describe("EntitlementService", () => {
     fixture.database.users.delete(fixture.userId);
     expect(await fixture.service.hasPremiumAccessInTx(fixture.userId)).toBe(false);
   });
+
+  describe("보상 기간 종료 경계", () => {
+    const ENDS_AT = new Date("2028-03-04T00:00:00.000Z");
+    afterEach(() => vi.useRealTimers());
+
+    it("캐시가 남아 있어도 끝나는 시각부터는 정리 작업 전이라도 프리미엄이 아니다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2028-03-03T23:59:59.999Z"));
+      const fixture = createEntitlementFixture({
+        subscriptionStatus: "ACTIVE",
+        accessDeadline: ENDS_AT,
+      });
+      const before = await fixture.service.hasPremiumAccess(fixture.userId);
+
+      // When
+      vi.setSystemTime(ENDS_AT);
+      const cached = await fixture.service.hasPremiumAccess(fixture.userId);
+      const fresh = await fixture.service.hasPremiumAccessInTx(fixture.userId);
+      const limit = await fixture.service.getFeatureLimit(fixture.userId, Feature.AI_PARSE);
+
+      // Then
+      expect([before, cached, fresh]).toEqual([true, false, false]);
+      expect(limit).toMatchObject({ subscriptionStatus: "EXPIRED" });
+    });
+
+    it("기한이 없는 1.13.0 이전 캐시는 기존처럼 상태를 그대로 쓴다", async () => {
+      // Given
+      const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
+      fixture.cache.snapshots.set(fixture.userId, { status: "ACTIVE", isAdmin: false });
+
+      // When
+      const premium = await fixture.service.hasPremiumAccess(fixture.userId);
+
+      // Then
+      expect(premium).toBe(true);
+    });
+  });
 });

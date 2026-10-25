@@ -21,6 +21,7 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
   repository.users.set(user.id, {
     role: "USER",
     subscriptionStatus: "FREE",
+    accessDeadline: null,
     count: 0,
     resetAt: new Date(AI_QUOTA_TIME),
     ...input,

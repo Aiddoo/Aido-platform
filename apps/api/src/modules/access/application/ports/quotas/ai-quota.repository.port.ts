@@ -6,6 +6,8 @@ export interface AiQuotaState extends AiQuotaUsageSnapshot {
   readonly resetAt: Date;
   readonly role: string;
   readonly subscriptionStatus: string;
+  /** ACTIVE projection이 끝나는 시각. 엔타이틀먼트 판단과 같은 기준이다. */
+  readonly accessDeadline: Date | null;
 }
 
 export interface AiQuotaRepositoryPort {

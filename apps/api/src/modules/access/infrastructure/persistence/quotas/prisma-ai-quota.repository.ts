@@ -11,6 +11,7 @@ import type {
   AiQuotaRepositoryPort,
   AiQuotaState,
 } from "../../../application/ports/quotas/ai-quota.repository.port.js";
+import { resolvePremiumAccessDeadline } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 
 @Injectable()
 export class PrismaAiQuotaRepository implements AiQuotaRepositoryPort {
@@ -20,7 +21,18 @@ export class PrismaAiQuotaRepository implements AiQuotaRepositoryPort {
     const row = decodeRecord(
       "User",
       await this.txHost.tx.orm.public.User.where((row) => row.id.eq(userId))
-        .select("role", "subscriptionStatus", "aiUsageCount", "aiUsageResetAt")
+        .select(
+          "role",
+          "subscriptionStatus",
+          "subscriptionExpiresAt",
+          "aiUsageCount",
+          "aiUsageResetAt",
+        )
+        .include("subscriptions", (related) =>
+          related
+            .where({ status: "ACTIVE", deletedAt: null, transferredAt: null })
+            .select("expiresAt"),
+        )
         .first(),
     );
     return row === null
@@ -28,6 +40,10 @@ export class PrismaAiQuotaRepository implements AiQuotaRepositoryPort {
       : {
           role: row.role,
           subscriptionStatus: row.subscriptionStatus,
+          accessDeadline: resolvePremiumAccessDeadline({
+            subscriptionExpiresAt: row.subscriptionExpiresAt,
+            renewingStoreExpiresAt: row.subscriptions.map((subscription) => subscription.expiresAt),
+          }),
           count: row.aiUsageCount,
           resetAt: row.aiUsageResetAt,
         };
