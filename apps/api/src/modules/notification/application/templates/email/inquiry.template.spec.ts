@@ -22,8 +22,8 @@ describe("문의 이메일 템플릿", () => {
     const html = getInquiryHtml(data);
 
     // Then
-    expect(subject).toBe("[Aido 문의접수] [결제·구독]");
-    expect(text).toContain("[Aido 문의접수] [결제·구독] user@example.com");
+    expect(subject).toBe("[아이두 문의접수] [결제·구독]");
+    expect(text).toContain("[아이두 문의접수] [결제·구독] user@example.com");
     expect(text).toContain("- 카테고리: 결제·구독");
     expect(html).toContain("결제·구독");
   });
