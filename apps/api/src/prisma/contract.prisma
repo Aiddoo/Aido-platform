@@ -608,6 +608,7 @@ namespace public {
     createdAt            TimestampString(3)                @default(now())
     updatedAt            temporal.timestampString(precision: 3, onCreate: now, onUpdate: now)
     lastProcessedEventId VarChar(255)?
+    transferredAt        TimestampString(3)?
     user                 User                        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "Subscription_userId_fkey")
 
     @@index([deletedAt], map: "Subscription_deletedAt_idx")

@@ -752,6 +752,66 @@
     ]
   },
   {
+    "id": "column.public.Subscription.transferredAt",
+    "label": "Add column \"transferredAt\" to \"Subscription\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "transferredAt",
+        "table": "Subscription"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"transferredAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Subscription",
+          "transferredAt"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"transferredAt\" on \"Subscription\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"transferredAt\"",
+        "sql": "ALTER TABLE \"public\".\"Subscription\" ADD COLUMN \"transferredAt\" timestamp(3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"transferredAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "Subscription",
+          "transferredAt"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"transferredAt\" on \"Subscription\""
+        }
+      },
+      {
+        "description": "verify column \"transferredAt\" has type \"timestamp(3) without time zone\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "Subscription",
+          "transferredAt",
+          "timestamp(3) without time zone"
+        ]
+      }
+    ]
+  },
+  {
     "id": "unique.Invite.Invite_code_key",
     "label": "Add unique constraint on \"Invite\" (code)",
     "operationClass": "additive",
