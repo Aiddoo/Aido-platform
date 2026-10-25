@@ -5,15 +5,7 @@ import DateTimePicker, {
 import { PickerHeader } from '@src/features/todo/components/picker-header';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLanguage } from '@src/shared/providers/language-provider';
-import {
-  ArrowRightIcon,
-  Box,
-  HStack,
-  KeyboardBottomSheet,
-  Text,
-  useOverlay,
-  VStack,
-} from '@src/shared/ui';
+import { ArrowRightIcon, BottomSheet, Box, HStack, Text, useOverlay, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatTimeOfDay } from '@src/shared/utils/date-format';
 import { getPickerLocale, timeToDate, type TimeFormat } from '@src/shared/utils/time';
@@ -165,7 +157,7 @@ export function SettingsTimeInput({
       };
 
       return (
-        <KeyboardBottomSheet
+        <BottomSheet
           isOpen={isOpen}
           onOpenChange={(open) => {
             if (!open) {
@@ -196,7 +188,7 @@ export function SettingsTimeInput({
               />
             </Box>
           </VStack>
-        </KeyboardBottomSheet>
+        </BottomSheet>
       );
     });
   };
