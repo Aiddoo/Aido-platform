@@ -115,6 +115,7 @@ describe("PremiumAccessPolicy", () => {
         source: "STORE",
         endsAt: new Date("2028-03-04T00:00:00.000Z"),
         willRenew: false,
+        bankedDays: 0,
       });
     });
 
@@ -135,6 +136,7 @@ describe("PremiumAccessPolicy", () => {
         source: "GRANT",
         endsAt: new Date("2028-03-01T00:00:00.000Z"),
         willRenew: false,
+        bankedDays: 0,
       });
     });
 
@@ -149,7 +151,24 @@ describe("PremiumAccessPolicy", () => {
       const access = PremiumAccessPolicy.resolve(entitlements, NOW);
 
       // Then
-      expect(access).toEqual({ source: null, endsAt: null, willRenew: false });
+      expect(access).toEqual({ source: null, endsAt: null, willRenew: false, bankedDays: 7 });
+    });
+
+    it("스토어 구독 중 쌓아 둔 보상 일수를 합쳐 함께 보여 준다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store()],
+        premiumGrants: [
+          grant({ id: "grant-1", status: "BANKED", endsAt: null }),
+          grant({ id: "grant-2", status: "BANKED", durationDays: 14, endsAt: null }),
+        ],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({ source: "STORE", willRenew: true, bankedDays: 21 });
     });
   });
 

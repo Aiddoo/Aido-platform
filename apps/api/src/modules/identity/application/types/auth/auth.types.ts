@@ -81,6 +81,7 @@ export interface CurrentUserResult {
   premiumSource?: PremiumSource | null;
   premiumEndsAt?: string | null;
   willRenew?: boolean;
+  bankedPremiumDays?: number;
 }
 
 /**

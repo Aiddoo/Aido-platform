@@ -297,7 +297,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(await context.testDatabase.getClient().orm.public.Subscription.all()).toEqual([]);
   });
 
-  it("/me는 보상 기간 출처·종료 시각·자동 갱신 여부를 optional 필드로 함께 반환한다", async () => {
+  it("/me는 보상 기간 출처·종료 시각·자동 갱신 여부·대기 중인 보상 일수를 optional 필드로 함께 반환한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("premium-grant-me@test.com", "Test1234!");
     const before = await request(context.app.getHttpServer())
@@ -320,6 +320,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       premiumSource: null,
       premiumEndsAt: null,
       willRenew: false,
+      bankedPremiumDays: 0,
     });
     expect(currentUserSchema.parse(after.body.data)).toMatchObject({
       subscriptionStatus: "ACTIVE",
@@ -327,6 +328,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       premiumSource: "GRANT",
       premiumEndsAt: "2027-01-11T12:00:00.000Z",
       willRenew: false,
+      bankedPremiumDays: 0,
     });
   });
 });

@@ -77,6 +77,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       source: "GRANT",
       endsAt: new Date("2026-11-08T00:00:00.000Z"),
       willRenew: false,
+      bankedDays: 0,
     });
 
     // When
@@ -90,6 +91,27 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       premiumSource: "GRANT",
       premiumEndsAt: "2026-11-08T00:00:00.000Z",
       willRenew: false,
+      bankedPremiumDays: 0,
     });
+  });
+
+  it("스토어 구독 중 쌓인 보상이 있으면 대기 중인 일수를 함께 반환한다", async () => {
+    // Given
+    const fixture = given();
+    fixture.premiumAccessReader.accesses.set(fixture.user.id, {
+      source: "STORE",
+      endsAt: new Date("2026-12-01T00:00:00.000Z"),
+      willRenew: true,
+      bankedDays: 14,
+    });
+
+    // When
+    const result = await fixture.useCase.execute({
+      userId: fixture.user.id,
+      sessionId: "session-1",
+    });
+
+    // Then
+    expect(result).toMatchObject({ premiumSource: "STORE", bankedPremiumDays: 14 });
   });
 });

@@ -1,5 +1,5 @@
 import type { PremiumSource } from "@aido/api/vocabulary";
-import { maxBy, sortBy } from "es-toolkit";
+import { maxBy, sortBy, sumBy } from "es-toolkit";
 
 import { addDays, addMilliseconds } from "#api/shared/domain/date/utils/arithmetic";
 
@@ -40,6 +40,8 @@ export interface PremiumAccess {
   readonly source: PremiumSource | null;
   readonly endsAt: Date | null;
   readonly willRenew: boolean;
+  /** 스토어 구독이 끝나면 이어서 시작할, 쌓아 둔 보상 일수 합계 */
+  readonly bankedDays: number;
 }
 
 export type PremiumGrantStart =
@@ -145,8 +147,12 @@ export const PremiumAccessPolicy = {
       isPremiumGrantActive(grant, now) && grant.endsAt != null ? [grant.endsAt] : [],
     );
     const endsAt = maxBy([...storeEndsAt, ...grantEndsAt], (date) => date.getTime()) ?? null;
+    const bankedDays = sumBy(
+      entitlements.premiumGrants.filter((grant) => grant.status === "BANKED"),
+      (grant) => grant.durationDays,
+    );
     if (endsAt === null) {
-      return { source: null, endsAt: null, willRenew: false };
+      return { source: null, endsAt: null, willRenew: false, bankedDays };
     }
     return {
       source: storeEndsAt.length > 0 ? "STORE" : "GRANT",
@@ -154,6 +160,7 @@ export const PremiumAccessPolicy = {
       willRenew: entitlements.storeSubscriptions.some((subscription) =>
         isStoreSubscriptionRenewing(subscription, now),
       ),
+      bankedDays,
     };
   },
 

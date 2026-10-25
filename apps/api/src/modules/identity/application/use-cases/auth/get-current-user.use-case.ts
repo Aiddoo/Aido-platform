@@ -55,6 +55,7 @@ export class GetCurrentUser {
           premiumSource: premiumAccess.source,
           premiumEndsAt: toISOStringOrNull(premiumAccess.endsAt),
           willRenew: premiumAccess.willRenew,
+          bankedPremiumDays: premiumAccess.bankedDays,
         };
       },
     );
@@ -80,6 +81,7 @@ export class GetCurrentUser {
       premiumSource: cachedProfile.premiumSource,
       premiumEndsAt: cachedProfile.premiumEndsAt,
       willRenew: cachedProfile.willRenew,
+      bankedPremiumDays: cachedProfile.bankedPremiumDays,
     };
   }
 }

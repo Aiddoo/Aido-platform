@@ -173,6 +173,7 @@ describe("AuthMapper — 인증 매퍼", () => {
         premiumSource: "GRANT",
         premiumEndsAt: "2024-01-08T00:00:00.000Z",
         willRenew: false,
+        bankedPremiumDays: 0,
       };
 
       // When
@@ -180,7 +181,7 @@ describe("AuthMapper — 인증 매퍼", () => {
 
       // Then
       expect(response).toEqual(result);
-      expect(Object.keys(response)).toHaveLength(16);
+      expect(Object.keys(response)).toHaveLength(17);
     });
   });
 

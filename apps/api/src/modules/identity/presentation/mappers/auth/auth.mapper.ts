@@ -105,6 +105,7 @@ export abstract class AuthMapper {
       premiumSource: result.premiumSource,
       premiumEndsAt: result.premiumEndsAt,
       willRenew: result.willRenew,
+      bankedPremiumDays: result.bankedPremiumDays,
     };
   }
 

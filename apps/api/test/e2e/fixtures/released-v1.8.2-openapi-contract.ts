@@ -36,10 +36,10 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: zod 4.6 업그레이드로 cuid pattern과 union 쿼리 스키마의 JSON Schema 표현만 달라졌다. 라우트·필드·상태 코드는 같다. */
 	preZod46SchemasFingerprint: "8bfc508f3e32e9c95b0b980d8faa8834c835059231832b9ff64fd9599aa6574c",
 	preZod46PathsFingerprint: "1630f3af64c5944476f7ebdae1517f65dc51cf5b79d031014a13f10a23b79996",
-	/** 1.13.0: /me(CurrentUserDto)에 optional premiumSource·premiumEndsAt·willRenew만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	/** 1.13.0: /me(CurrentUserDto)에 optional premiumSource·premiumEndsAt·willRenew·bankedPremiumDays만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	prePremiumAccessSchemasFingerprint:
 		"0180b22ee884dfb5c5f5d7313ca7f42c1b7d4f41e7aa097ff77f29175b98e64c",
-	schemasFingerprint: "7a8df5b4997ebb5a44ba041e1b6ef135ae09dd2b26e4d60c0c58f256a3933357",
+	schemasFingerprint: "9710da08a09c0a5fabafa2c57440a5866071b17073c22898cddfed95231574d4",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	pathsFingerprint: "9dff8baee88ca0c0f180b0d1905baab0285b835752e08cd703f75287b214a70f",
 } as const;

@@ -2882,6 +2882,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
     "CurrentUserDto": {
       "description": "현재 사용자 정보",
       "example": {
+        "bankedPremiumDays": 0,
         "createdAt": "2026-01-01T09:00:00.000Z",
         "email": "dydals3440@gmail.com",
         "emailVerifiedAt": "2026-01-15T10:30:00.000Z",
@@ -2902,6 +2903,12 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "willRenew": false,
       },
       "properties": {
+        "bankedPremiumDays": {
+          "description": "스토어 구독 중이라 아직 시작하지 않은 보상 일수 합계 (구독이 끝나면 이어서 시작, 없으면 0, 구버전 서버는 생략)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
         "createdAt": {
           "description": "가입 일시",
           "format": "date-time",
