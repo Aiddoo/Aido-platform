@@ -51,4 +51,27 @@ describe("PushQuietHoursReader", () => {
     // Then
     expect([...quiet].sort()).toEqual(["legacyUtc", "missing", "seoul"]);
   });
+
+  it.each([
+    // 2028-03-12 서머타임 시작(PST→PDT): 08:00 PDT = 15:00Z
+    { at: "2028-03-12T14:59:59.999Z", quiet: true },
+    { at: "2028-03-12T15:00:00.000Z", quiet: false },
+    // 전날은 PST라 08:00 = 16:00Z
+    { at: "2028-03-11T15:59:59.999Z", quiet: true },
+    { at: "2028-03-11T16:00:00.000Z", quiet: false },
+    // 2028-11-05 서머타임 종료(PDT→PST): 08:00 PST = 16:00Z, 21:00 PST = 다음 날 05:00Z
+    { at: "2028-11-05T15:59:59.999Z", quiet: true },
+    { at: "2028-11-05T16:00:00.000Z", quiet: false },
+    { at: "2028-11-06T04:59:59.999Z", quiet: false },
+    { at: "2028-11-06T05:00:00.000Z", quiet: true },
+  ])("로스앤젤레스 서머타임 전환일 $at의 야간 여부는 $quiet다", async ({ at, quiet }) => {
+    // Given
+    const reader = createReader({ losAngeles: "America/Los_Angeles" });
+
+    // When
+    const result = await reader.findUsersInQuietHours(["losAngeles"], new Date(at));
+
+    // Then
+    expect(result.has("losAngeles")).toBe(quiet);
+  });
 });

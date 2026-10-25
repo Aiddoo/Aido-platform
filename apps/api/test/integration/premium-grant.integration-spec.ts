@@ -1,6 +1,6 @@
 import { and } from "@prisma/orm-postgres/orm-client";
 
-import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
+import { ENTITLEMENT_READER, Resource } from "#api/modules/access/access-entitlement.public";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { PREMIUM_GRANT_REPOSITORY } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
 import type { PremiumGrantRepositoryPort } from "#api/modules/billing/application/ports/subscriptions/premium-grant.repository.port";
@@ -15,7 +15,7 @@ import {
   type PremiumAccessReaderPort,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
-import { decodeRecord, encodeCreate } from "#api/platform/database/database-records";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/database-values";
 import { STORE_RENEWAL_GRACE_MS } from "#api/shared/domain/store-renewal-grace";
 import { SubscriptionEventBuilder } from "#test/builders/index";
@@ -648,6 +648,78 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     expect(await grantsOf(userId)).toEqual([
       { sourceKey: "invite:legacy-future", status: "BANKED", startsAt: null, endsAt: null },
     ]);
+  });
+
+  async function roleOf(target: string) {
+    return (
+      await client.orm.public.User.where((row) => row.id.eq(target))
+        .select("role")
+        .first()
+    )?.role;
+  }
+
+  it("ADMIN도 보상 기간을 기록하고 종료 안내를 받지만 role과 무제한 한도는 그대로다", async () => {
+    // Given
+    await client.orm.public.User.where((row) => row.id.eq(userId)).updateAndCount(
+      encodePatch("User", { role: "ADMIN" }),
+    );
+    const notify = context.module.get(NotifyEndingPremiumGrants);
+    const sweep = context.module.get(SweepPremiumGrants);
+
+    // When
+    const granted = await granter.grant({
+      userId,
+      source: "INVITE",
+      sourceKey: "invite:admin",
+      durationDays: 1,
+    });
+    const notified = await notify.execute({ now: new Date("2028-02-26T06:00:00.000Z") });
+    const endedAt = new Date("2028-02-27T04:00:00.000Z");
+    vi.setSystemTime(endedAt);
+    await sweep.execute({ now: endedAt });
+
+    // Then
+    expect(granted.status).toBe("granted");
+    expect(notified.notifiedCount).toBe(1);
+    expect(await grantsOf(userId)).toEqual([
+      expect.objectContaining({ sourceKey: "invite:admin", status: "ENDED" }),
+    ]);
+    expect(await roleOf(userId)).toBe("ADMIN");
+    expect(await userProjection()).toEqual({
+      subscriptionStatus: "FREE",
+      subscriptionExpiresAt: null,
+    });
+    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
+    expect((await entitlement.getResourceLimitInTx(userId, Resource.FRIEND)).maxCount).toBeNull();
+  });
+
+  it.each([
+    { name: "EXPIRATION", builder: SubscriptionEventBuilder.expiration },
+    { name: "CANCELLATION", builder: SubscriptionEventBuilder.cancellation },
+    { name: "환불 CANCELLATION", builder: SubscriptionEventBuilder.refundCancellation },
+  ])("ADMIN의 스토어 $name 웹훅은 role을 바꾸지 않는다", async ({ builder }) => {
+    // Given
+    await client.orm.public.User.where((row) => row.id.eq(userId)).updateAndCount(
+      encodePatch("User", { role: "ADMIN" }),
+    );
+    await givenStoreSubscription();
+    await granter.grant({
+      userId,
+      source: "INVITE",
+      sourceKey: "invite:admin-store",
+      durationDays: 7,
+    });
+    vi.setSystemTime(STORE_EXPIRY);
+
+    // When
+    await context.module
+      .get(HandleWebhookEvent)
+      .execute({ body: storeEvent(builder(), "admin-store") });
+    await context.module.get(SweepPremiumGrants).execute({ now: STORE_EXPIRY });
+
+    // Then
+    expect(await roleOf(userId)).toBe("ADMIN");
+    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
   });
 
   it("종료 안내 후보는 endsAt·id keyset으로 앞 묶음 다음부터 읽는다", async () => {

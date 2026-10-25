@@ -14,6 +14,10 @@ import {
   AI_QUOTA_REPOSITORY,
   type AiQuotaRepositoryPort,
 } from "#api/modules/access/application/ports/quotas/ai-quota.repository.port";
+import {
+  PREMIUM_GRANTER,
+  type PremiumGranterPort,
+} from "#api/modules/billing/billing-subscriptions.public";
 import { encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { sqlStatement } from "#api/platform/database/database-sql";
 import { createEntityId } from "#api/platform/database/database-values";
@@ -202,6 +206,31 @@ describe("AI quota 한도·기간·트랜잭션 (실제 PostgreSQL)", () => {
       expect((await repository.findQuotaState(userId))?.count).toBe(5);
     },
   );
+
+  it("보상 기간만 있는 사용자는 AI 파싱이 무제한이고 보상이 끝나는 시각부터 sweep 전에도 월 5회로 돌아간다", async () => {
+    // Given
+    await client.orm.public.User.where({ id: userId }).updateAndCount(
+      encodePatch("User", { aiUsageCount: 5 }),
+    );
+    await context.module
+      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .grant({ userId, source: "INVITE", sourceKey: "invite:ai-quota", durationDays: 7 });
+    const grantEndsAt = new Date(newMonthAt.getTime() + 7 * 24 * 60 * 60 * 1_000);
+    vi.setSystemTime(new Date(grantEndsAt.getTime() - 1));
+    const limitDuringGrant = (await entitlement.getFeatureLimit(userId, Feature.AI_PARSE))
+      .dailyLimit;
+    // When
+    const duringGrant = await quota.reserve(userId);
+    vi.setSystemTime(grantEndsAt);
+    const afterGrant = quota.reserve(userId);
+    // Then
+    expect(limitDuringGrant).toBeNull();
+    expect(duringGrant).toBeDefined();
+    await expect(afterGrant).rejects.toMatchObject({
+      errorCode: ErrorCode.AI_1303,
+      details: { limit: 5 },
+    });
+  });
 
   it("새 달의 사용량 조회는 0과 KST 다음 리셋을 반환하고 저장된 카운터는 변경하지 않는다", async () => {
     // Given
