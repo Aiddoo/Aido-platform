@@ -59,6 +59,7 @@ const routingSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal(NOTIFICATION_TYPE.WEEKLY_REPORT) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.MONTHLY_REPORT) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.AI_SUGGESTION) }),
+  z.object({ type: z.literal(NOTIFICATION_TYPE.PREMIUM_GRANT_ENDING) }),
   z.object({ type: z.literal('FEED') }),
 ]);
 
@@ -185,6 +186,10 @@ function toRouteDestination(
     .with({ type: 'AI_SUGGESTION' }, () => ({
       kind: 'route' as const,
       href: '/suggestions' as const,
+    }))
+    .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
+      kind: 'route' as const,
+      href: '/settings/subscription' as const,
     }))
     .with({ type: 'FEED' }, () => ({
       kind: 'route' as const,

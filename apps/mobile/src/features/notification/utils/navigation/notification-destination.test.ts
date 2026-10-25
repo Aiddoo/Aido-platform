@@ -274,6 +274,10 @@ describe('알림 타입별 목적지', () => {
     ['STREAK_AT_RISK', {}, todayFeed],
     ['WEATHER_MORNING', {}, { kind: 'route', href: '/weather' }],
     ['WEATHER_EVENING', {}, { kind: 'route', href: '/weather' }],
+    // 내 초대 화면이 생기기 전까지는 이동하지 않는다
+    ['INVITE_JOINED', {}, none],
+    ['INVITE_REWARDED', {}, none],
+    ['PREMIUM_GRANT_ENDING', {}, { kind: 'route', href: '/settings/subscription' }],
   ];
 
   test('모든 알림 타입의 목적지를 검증한다', () => {
