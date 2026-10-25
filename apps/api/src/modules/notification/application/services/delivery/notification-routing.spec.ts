@@ -15,6 +15,20 @@ describe("toNotificationRouting", () => {
     ).toEqual({
       commentId: COMMENT_ID,
       activityKind: "COMMENT",
+      senderId: "sender-1",
+    });
+  });
+
+  it("응원 알림은 보낸 사람을 routing에 싣고, 모양이 다른 보낸 사람 값은 버린다", () => {
+    expect(
+      toNotificationRouting({
+        senderId: "cmsender0000000000000001",
+        senderName: "지윤",
+        message: "힘내",
+      }),
+    ).toEqual({ senderId: "cmsender0000000000000001", senderName: "지윤" });
+    expect(toNotificationRouting({ commentId: COMMENT_ID, senderName: 42 })).toEqual({
+      commentId: COMMENT_ID,
     });
   });
 

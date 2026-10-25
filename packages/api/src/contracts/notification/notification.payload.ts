@@ -86,8 +86,25 @@ export type TodoCommentNotificationRouting = z.infer<typeof todoCommentNotificat
 /**
  * 기존 알림과 구버전 클라이언트를 위한 읽기 계약.
  * 예전 payload는 필드 일부만 가질 수 있으므로 optional shape을 유지한다.
+ * 보낸 사람은 응원처럼 친구가 보낸 알림에서 신고·차단 확인 문구에 이름을 보여 주는 데 쓴다(1.13.0+).
  */
-export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.partial();
+export const notificationRoutingSchema = todoCommentNotificationRoutingSchema.partial().extend({
+  // 다른 알림의 metadata에도 같은 이름의 값이 있을 수 있어, 모양이 달라도 댓글 routing을 깨지 않고 버린다
+  senderId: z
+    .string()
+    .min(1)
+    .max(64)
+    .optional()
+    .catch(undefined)
+    .describe("알림을 보낸 사용자 ID (응원 알림)"),
+  senderName: z
+    .string()
+    .min(1)
+    .max(100)
+    .optional()
+    .catch(undefined)
+    .describe("알림을 보낸 사용자 표시 이름 (응원 알림)"),
+});
 
 export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 
