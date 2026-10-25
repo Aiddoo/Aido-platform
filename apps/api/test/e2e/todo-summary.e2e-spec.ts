@@ -1,3 +1,4 @@
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 /**
  * 오늘의 할 일 요약 E2E 테스트 (홈 위젯용 GET /todos/summary)
@@ -184,6 +185,83 @@ describe("오늘의 할 일 요약 E2E", () => {
         true,
         true,
       ]);
+    });
+
+    it("date로 내일을 요청하면 내일 할 일 기준 요약을 반환한다", async () => {
+      // Given - 오늘만 있는 할 일 1개와 내일만 있는 할 일 2개
+      const user = await ctx.helpers.createVerifiedUser("todo-summary-tomorrow@test.com", password);
+      const categoryId = await ctx.helpers.getDefaultCategoryId(user.accessToken);
+      const today = todayInTimezone(timezone);
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      const prisma = ctx.testDatabase.getClient();
+      await prisma.orm.public.Todo.createAndCount(
+        [
+          { title: "오늘 할 일", startDate: today, endDate: today, sortOrder: 0 },
+          { title: "내일 할 일 1", startDate: tomorrow, endDate: tomorrow, sortOrder: 1 },
+          { title: "내일 할 일 2", startDate: tomorrow, endDate: tomorrow, sortOrder: 2 },
+        ].map((todo) =>
+          encodeCreate("Todo", { ...todo, userId: user.userId, categoryId, completed: false }),
+        ),
+      );
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/todos/summary")
+        .query({ date: toDateString(tomorrow) })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", timezone);
+
+      // Then
+      expect(response.status).toBe(200);
+      expect(response.body.data).toMatchObject({
+        date: toDateString(tomorrow),
+        totalTodos: 2,
+        completedTodos: 0,
+      });
+      expect(response.body.data.topTodos.map((todo: { title: string }) => todo.title)).toEqual([
+        "내일 할 일 1",
+        "내일 할 일 2",
+      ]);
+    });
+
+    it.each([
+      { name: "어제", offsetDays: -1 },
+      { name: "모레", offsetDays: 2 },
+    ])("date로 $name를 요청하면 400 SYS_0002를 반환한다", async ({ offsetDays }) => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser(
+        `todo-summary-range-${offsetDays}@test.com`,
+        password,
+      );
+      const outOfRange = new Date(
+        todayInTimezone(timezone).getTime() + offsetDays * 24 * 60 * 60 * 1000,
+      );
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/todos/summary")
+        .query({ date: toDateString(outOfRange) })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", timezone);
+
+      // Then
+      expect(response.status).toBe(400);
+      expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
+    });
+
+    it("윤년이 아닌 해의 2월 29일처럼 없는 날짜는 400을 반환한다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("todo-summary-invalid@test.com", password);
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .get("/v1/todos/summary")
+        .query({ date: "2027-02-29" })
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-Timezone", timezone);
+
+      // Then
+      expect(response.status).toBe(400);
     });
 
     it("인증 없이 호출하면 401을 반환한다", async () => {

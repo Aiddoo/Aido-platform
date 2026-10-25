@@ -40,5 +40,6 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	prePremiumAccessSchemasFingerprint:
 		"0180b22ee884dfb5c5f5d7313ca7f42c1b7d4f41e7aa097ff77f29175b98e64c",
 	schemasFingerprint: "7a8df5b4997ebb5a44ba041e1b6ef135ae09dd2b26e4d60c0c58f256a3933357",
-	pathsFingerprint: "dbd292400174ee0cd55f6679b006be195dae5e39fbc1f7dde0e275e13d5bc184",
+	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
+	pathsFingerprint: "9dff8baee88ca0c0f180b0d1905baab0285b835752e08cd703f75287b214a70f",
 } as const;

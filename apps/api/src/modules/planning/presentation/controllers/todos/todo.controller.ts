@@ -71,6 +71,7 @@ import {
   TodoResourceLimitQueryDto,
   TodoResourceLimitResponseDto,
   TodoResponseDto,
+  TodoSummaryQueryDto,
   TodoSummaryResponseDto,
   ToggleTodoCompleteDto,
   UpdateTodoDto,
@@ -143,8 +144,12 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
     description: `오늘 할 일 진행률과 현재 스트릭, 상위 할 일 목록을 한 번에 조회합니다.
 홈 화면 위젯 스냅샷 갱신용 경량 엔드포인트입니다.
 
+**쿼리**
+- \`date\` (선택): 요약할 날짜 (YYYY-MM-DD). \`X-Timezone\` 기준 오늘 또는 내일만 허용하며,
+  그 외 날짜는 \`SYS_0002\`(400)입니다. 생략하면 오늘입니다. 위젯이 자정 이후 표시할 내일 요약을 미리 받습니다.
+
 **응답 필드**
-- \`date\`: 조회 기준 날짜 (YYYY-MM-DD, \`X-Timezone\` 헤더 기준 로컬 "오늘")
+- \`date\`: 조회 기준 날짜 (YYYY-MM-DD, 요청한 \`date\` 또는 \`X-Timezone\` 헤더 기준 로컬 "오늘")
 - \`totalTodos\` / \`completedTodos\`: 오늘 전체/완료 할 일 개수
 - \`completionRate\`: 완료율 (0-100, round(완료/전체 × 100), 할 일 없으면 0)
 - \`isComplete\`: 100% 달성 여부 (할 일이 1개 이상이고 전부 완료)
@@ -152,15 +157,18 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`topTodos\`: 오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개)`,
   })
   @ApiSuccessResponse({ type: TodoSummaryResponseDto })
+  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getSummary(
     @CurrentUser() user: CurrentUserPayload,
     @Timezone() timezone: string,
+    @Query({ schema: TodoSummaryQueryDto }) query: TodoSummaryQueryDto,
   ): Promise<TodoSummaryResponseDto> {
-    // 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"의 UTC midnight으로 변환해 전달
+    // 컨트롤러가 타임존 파싱을 소유: 로컬 "오늘"과 요청 날짜를 UTC midnight으로 변환해 전달
     return this.getTodoSummaryUseCase.execute({
       userId: user.userId,
       today: todayInTimezone(timezone),
+      requestedDate: query.date == null ? undefined : parseDateOnly(query.date),
     });
   }
 
