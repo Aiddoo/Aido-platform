@@ -168,6 +168,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error: {
           code: exception.errorCode,
           message: exception.message || definition.message,
+          // undefined는 비공개로 숨긴 상세, null은 담아 보낸 값이라 구분한다
           ...(details !== undefined && { details }),
         },
         timestamp: Date.now(),

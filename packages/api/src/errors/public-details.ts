@@ -24,7 +24,7 @@ const PUBLIC_ERROR_DETAILS: Partial<Record<ErrorCodeType, z.ZodType>> = {
 /** 공개 상세가 정해진 코드면 그 스키마로 거른 값을, 아니면 undefined를 반환한다. */
 export function toPublicErrorDetails(code: ErrorCodeType, details: unknown): unknown {
   const schema = PUBLIC_ERROR_DETAILS[code];
-  if (schema === undefined) return undefined;
+  if (schema == null) return undefined;
   const parsed = schema.safeParse(details);
   return parsed.success ? parsed.data : undefined;
 }

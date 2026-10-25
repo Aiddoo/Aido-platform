@@ -99,7 +99,7 @@ export class GrantInviteRewards {
     }
 
     const rewarded = await this.#markRewardedIfComplete(input.redemptionId, capturedAt);
-    if (rewarded !== null) {
+    if (rewarded != null) {
       await this.#notify(input.redemptionId, rewarded);
     }
 
@@ -188,9 +188,9 @@ export class GrantInviteRewards {
     return this.#dependencies.unitOfWork.run(async () => {
       const redemption =
         await this.#dependencies.inviteRedemptionRepository.findByIdForUpdate(redemptionId);
-      if (redemption === null) return null;
+      if (redemption == null) return null;
       const { inviterId } = redemption;
-      if (redemption.status !== "QUALIFIED" || inviterId === null) return null;
+      if (redemption.status !== "QUALIFIED" || inviterId == null) return null;
 
       const grants = await this.#dependencies.rewardGrantRepository.findBySource(
         "INVITE_REDEMPTION",

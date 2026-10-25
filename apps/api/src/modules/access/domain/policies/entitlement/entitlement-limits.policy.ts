@@ -78,7 +78,7 @@ export function resolveResourceLimit(
   bonus: number,
 ): number | null {
   const limit = resolveLimit(role, subscriptionStatus, RESOURCE_LIMITS[resource]);
-  return limit === null ? null : limit + bonus;
+  return limit == null ? null : limit + bonus;
 }
 
 export function hasPremiumEntitlement(role: string, subscriptionStatus: string): boolean {

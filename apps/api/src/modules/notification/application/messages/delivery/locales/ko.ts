@@ -258,7 +258,7 @@ export const SOCIAL_TEMPLATES = {
       const rewards = [
         premiumDays > 0 ? `프리미엄 ${premiumDays}일` : null,
         friendSlots > 0 ? `친구 자리 ${friendSlots}개` : null,
-      ].filter((reward) => reward !== null);
+      ].filter((reward) => reward != null);
       return copy("발자국이 찍혔어 🐾", `${attachJosa(rewards.join("과 "), "을/를")} 받았어`);
     },
   },

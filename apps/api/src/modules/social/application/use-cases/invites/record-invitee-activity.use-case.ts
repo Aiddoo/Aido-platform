@@ -73,7 +73,7 @@ export class RecordInviteeActivity {
           input.inviteeId,
         );
       if (
-        redemption === null ||
+        redemption == null ||
         !redemption.recordActiveDay(
           localActivityDate(input.occurredAt, redemption.timezone),
           input.occurredAt,
@@ -81,7 +81,7 @@ export class RecordInviteeActivity {
       ) {
         return { status: "skipped" } as const;
       }
-      if (!InviteQualificationPolicy.isQualified(redemption) || redemption.inviterId === null) {
+      if (!InviteQualificationPolicy.isQualified(redemption) || redemption.inviterId == null) {
         await this.#dependencies.inviteRedemptionRepository.save(redemption);
         return { status: "recorded" } as const;
       }

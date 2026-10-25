@@ -990,7 +990,7 @@ describe("알림 E2E", () => {
           const call = request(ctx.app.getHttpServer())
             .get(path)
             .set("Authorization", `Bearer ${user.accessToken}`);
-          return (version === undefined ? call : call.set("X-App-Version", version)).expect(200);
+          return (version == null ? call : call.set("X-App-Version", version)).expect(200);
         };
 
         // When

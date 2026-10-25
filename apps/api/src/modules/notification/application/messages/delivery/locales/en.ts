@@ -247,7 +247,7 @@ export const SOCIAL_TEMPLATES = {
       const rewards = [
         premiumDays > 0 ? `${countLabel(premiumDays, "day")} of Premium` : null,
         friendSlots > 0 ? countLabel(friendSlots, "more friend slot") : null,
-      ].filter((reward) => reward !== null);
+      ].filter((reward) => reward != null);
       return copy("You got a paw print 🐾", `You got ${rewards.join(" and ")}`);
     },
   },
