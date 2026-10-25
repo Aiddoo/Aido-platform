@@ -81,4 +81,51 @@ describe('toParsedTodoResult', () => {
     );
     expect(result.data.startDate.getHours()).toBe(0);
   });
+
+  test.each([
+    { name: '윤일', startDate: '2028-02-29', endDate: '2028-03-01', until: '2028-03-28' },
+    { name: '평년 2월 말', startDate: '2027-02-28', endDate: '2027-03-01', until: '2027-03-28' },
+    {
+      name: '53주차(12-28~01-03)',
+      startDate: '2026-12-28',
+      endDate: '2027-01-03',
+      until: '2027-01-29',
+    },
+    { name: '연말·연초', startDate: '2026-12-31', endDate: '2027-01-01', until: '2027-01-28' },
+    {
+      name: 'LA 봄 서머타임 전환일',
+      startDate: '2028-03-12',
+      endDate: '2028-03-13',
+      until: '2028-04-09',
+    },
+    {
+      name: 'LA 가을 서머타임 전환일',
+      startDate: '2028-11-05',
+      endDate: '2028-11-06',
+      until: '2028-12-03',
+    },
+  ])(
+    '$name 날짜 문자열은 어느 기기 시간대에서도 같은 로컬 달력 날짜와 자정으로 읽힌다',
+    ({ startDate, endDate, until }) => {
+      // Given
+      const dto = createParseTodoResponseDto({
+        data: {
+          ...createParseTodoResponseDto().data,
+          startDate,
+          endDate,
+          isRecurring: true,
+          recurrence: { daysOfWeek: ['MON'], endDate: until },
+        },
+      });
+
+      // When
+      const { data } = toParsedTodoResult(dto);
+
+      // Then
+      expect(formatDate(data.startDate)).toBe(startDate);
+      expect(data.endDate == null ? null : formatDate(data.endDate)).toBe(endDate);
+      expect(data.recurrence == null ? null : formatDate(data.recurrence.endDate)).toBe(until);
+      expect([data.startDate.getHours(), data.startDate.getMinutes()]).toEqual([0, 0]);
+    },
+  );
 });
