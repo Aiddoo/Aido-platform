@@ -161,6 +161,7 @@ describe('공지 알림의 앱 경로', () => {
     ['/friends', '/friends'],
     ['/friends/invite', { pathname: '/friends/invite' }],
     ['/settings/subscription', '/settings/subscription'],
+    ['/settings/notifications', '/settings/notifications'],
   ])('리텐션·운영 공지의 DEEP_LINK %s를 그 화면으로 연다', (url, href) => {
     expect(
       resolveNotificationDestination(

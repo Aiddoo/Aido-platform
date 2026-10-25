@@ -123,10 +123,17 @@ function toNoticeDestination(url: string | undefined, today?: string): Notificat
   return match(url)
     .with('/feed', () => ({ kind: 'route' as const, href: createFeedHref({ date: feedDate }) }))
     .with('/friends/invite', () => ({ kind: 'route' as const, href: myInviteHref() }))
-    .with('/achievements', '/weather', '/friends', '/settings/subscription', (href) => ({
-      kind: 'route' as const,
-      href,
-    }))
+    .with(
+      '/achievements',
+      '/weather',
+      '/friends',
+      '/settings/subscription',
+      '/settings/notifications',
+      (href) => ({
+        kind: 'route' as const,
+        href,
+      }),
+    )
     .otherwise(() => NO_DESTINATION);
 }
 
