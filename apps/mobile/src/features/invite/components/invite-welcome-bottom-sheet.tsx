@@ -1,5 +1,4 @@
 import catHiImage from '@assets/images/ido_cat_hi.webp';
-import { useFriendScreenParams } from '@src/features/friend/hooks/use-friend-screen-params';
 import { useGetNotificationPermissionQueryOptions } from '@src/features/notification/queries/get-notification-permission-query-options';
 import { useRegisterPushTokenMutationOptions } from '@src/features/notification/queries/use-register-push-token-mutation-options';
 import { createFeedAddTodoHref, createFeedHref } from '@src/features/todo/utils/feed-route';
@@ -37,6 +36,7 @@ import Animated, {
 import { match } from 'ts-pattern';
 
 import { type RedemptionResult, InviteRedemptionPolicy } from '../domains/invite-redemption.model';
+import { useInviteWelcomeParams } from '../hooks/use-invite-welcome-params';
 import { getRedemptionResultQueryOptions } from '../queries/get-redemption-result-query-options';
 
 type InviteWelcomeBottomSheetProps = Omit<
@@ -46,11 +46,11 @@ type InviteWelcomeBottomSheetProps = Omit<
 
 /** 초대를 수락한 뒤 누구와 친구가 됐는지, 무엇을 받았는지 보여 주고 첫 할 일로 이끈다 */
 export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
-  const { friendId } = useFriendScreenParams();
+  const { friendId } = useInviteWelcomeParams();
   const sheet = useSheetRoute(createFeedHref());
   const { data: result } = useQuery(getRedemptionResultQueryOptions({ inviterId: friendId }));
 
-  // 수락 응답 없이 열리면(앱을 다시 켠 뒤 등) 보여 줄 내용이 없어 바로 닫는다
+  // 수락 응답 없이 열리면(앱을 다시 켠 뒤, 형식이 틀린 링크 등) 보여 줄 내용이 없어 바로 닫는다
   useEffect(() => {
     if (result == null) {
       sheet.exit({ type: 'replace', href: createFeedHref() });

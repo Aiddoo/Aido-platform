@@ -104,7 +104,8 @@ export const InviteRedemptionPolicy = {
 
   /**
    * 받은 보상 프리미엄이 언제 시작하는지. 수락 뒤 다시 불러온 내 정보(서버가 이어 붙인 결과)로만 판단한다.
-   * 스토어 구독이나 다른 보상 기간이 진행 중이면 그 뒤로 이어진다.
+   * 스토어 구독이나 다른 보상 기간이 진행 중이면 서버가 쌓아 둔 일수(bankedPremiumDays)로 보내고,
+   * 그 기간이 끝난 뒤 이어진다.
    */
   rewardStart(premiumAccess: PremiumAccess) {
     return match({ source: premiumAccess.source, hasBankedDays: premiumAccess.bankedDays > 0 })

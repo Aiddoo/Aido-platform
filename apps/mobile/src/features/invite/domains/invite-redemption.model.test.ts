@@ -1,4 +1,5 @@
-import { createPremiumAccess } from '@src/features/subscription/__tests__/premium-access.factories';
+import { PREMIUM_ME_EXAMPLES } from '@src/features/subscription/__tests__/premium-access.factories';
+import { toUser } from '@src/features/user/apis/user.mapper';
 
 import { createPendingRedemption, createRedemptionResult } from '../__tests__/invite.factories';
 import { isWithinDays, InviteRedemptionPolicy } from './invite-redemption.model';
@@ -176,26 +177,25 @@ describe('InviteRedemptionPolicy', () => {
 
 describe('InviteRedemptionPolicy.rewardStart', () => {
   it.each([
-    ['무료였으면 보상이 바로 시작해', { source: 'GRANT', bankedDays: 0 }, 'now'],
+    ['D. 무료였다가 보상을 받았으면 바로', PREMIUM_ME_EXAMPLES.newRewardAfterEnded, 'now'],
     [
-      '스토어 구독 중이면 구독이 끝난 뒤로',
-      { source: 'STORE', bankedDays: 7 },
+      'C. 자동 갱신 구독 중이면 구독이 끝난 뒤로',
+      PREMIUM_ME_EXAMPLES.rewardDuringRenewingSubscription,
       'after-subscription',
     ],
     [
-      '다른 보상 기간 중이면 그 보상 뒤로',
-      { source: 'GRANT', bankedDays: 7 },
-      'after-current-reward',
+      'E. 취소한 구독이 남아 있어도 구독이 끝난 뒤로',
+      PREMIUM_ME_EXAMPLES.cancelledWithBanked,
+      'after-subscription',
     ],
     [
-      '자동 갱신 구독이어도 이어 붙인 보상이 없으면 바로',
-      { source: 'STORE', bankedDays: 0 },
-      'now',
+      'B. 다른 보상 기간 중이면 그 보상 뒤로',
+      PREMIUM_ME_EXAMPLES.rewardDuringReward,
+      'after-current-reward',
     ],
-    ['내 정보에 프리미엄이 아직 없으면 바로', { source: null, bankedDays: 0 }, 'now'],
-  ] as const)('%s %s를 반환한다', (_case, overrides, expected) => {
-    // Given 수락 뒤 다시 불러온 내 정보
-    const premiumAccess = createPremiumAccess(overrides);
+  ] as const)('%s 시작한다', (_case, me, expected) => {
+    // Given 수락 뒤 다시 불러온 내 정보(서버 /me 그대로)
+    const { premiumAccess } = toUser(me);
 
     // When
     const result = InviteRedemptionPolicy.rewardStart(premiumAccess);

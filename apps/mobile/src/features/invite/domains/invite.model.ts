@@ -194,11 +194,6 @@ export const InvitePolicy = {
       .exhaustive();
   },
 
-  /** 내 링크를 연 경우. 공개 미리보기에는 초대한 사람 식별자가 없어 내 초대 코드와 비교한다(서버도 INVITE_2103으로 막는다) */
-  isOwnCode(myInvite: Invite, inviteCode: InviteCode) {
-    return myInvite.code === inviteCode;
-  },
-
   /** 화면에 보여 줄 링크. 스킴을 빼서 짧게 읽힌다(복사·공유는 전체 링크를 쓴다) */
   displayLink(myInvite: Invite) {
     return toDisplayLink(myInvite.link);

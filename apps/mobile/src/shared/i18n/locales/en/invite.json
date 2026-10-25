@@ -34,9 +34,7 @@
     "existingAccountNote": "You already use Aido, so you'll become friends right away. Premium rewards go to friends who just joined",
     "redeemWithReward_one": "Become friends and get {{count}} day of Premium",
     "redeemWithReward_other": "Become friends and get {{count}} days of Premium",
-    "connect": "Become friends with {{name}}",
-    "ownInviteNote": "This is your own invite link. Send it to a friend to cheer each other on",
-    "openMyInvite": "Go to my invites"
+    "connect": "Become friends with {{name}}"
   },
   "result": {
     "notFound": {

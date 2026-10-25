@@ -30,9 +30,7 @@
     "unnamedInviter": "친구",
     "existingAccountNote": "이미 아이두를 쓰고 있어서 바로 친구가 돼요. 프리미엄 보상은 새로 가입한 친구에게 드려요",
     "redeemWithReward": "친구 되고 프리미엄 {{count}}일 받기",
-    "connect": "{{name}}님과 친구 맺기",
-    "ownInviteNote": "내 초대 링크예요. 친구에게 보내면 서로의 할 일을 응원할 수 있어요",
-    "openMyInvite": "내 초대 화면으로 가기"
+    "connect": "{{name}}님과 친구 맺기"
   },
   "result": {
     "notFound": {
@@ -149,7 +147,7 @@
     "rewardTitle": "프리미엄 {{count}}일을 받았어요",
     "rewardDescription": "{{count}}일 동안 모든 기능을 쓸 수 있어요",
     "rewardAfterSubscription": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요",
-    "rewardAfterCurrentReward": "지금 받고 있는 보상이 끝나면 {{count}}일이 이어서 시작돼요",
+    "rewardAfterCurrentReward": "지금 쓰고 있는 보상 프리미엄이 끝나면 이번 {{count}}일이 이어서 시작돼요",
     "notificationContext": "친구가 할 일을 끝내면 알려드릴게요",
     "notificationButton": "알림 받기",
     "notificationOn": "친구 소식 알림을 켰어요",

@@ -182,22 +182,6 @@ describe('summarizeInvalidCharacters', () => {
   });
 });
 
-describe('InvitePolicy.isOwnCode', () => {
-  it.each([
-    ['K7M2QX', true],
-    ['B7M2QX', false],
-  ] as const)('내 코드 K7M2QX로 %s를 열면 %s를 반환한다', (inviteCode, expected) => {
-    // Given
-    const myInvite = createInvite({ code: 'K7M2QX' });
-
-    // When
-    const result = InvitePolicy.isOwnCode(myInvite, inviteCode);
-
-    // Then
-    expect(result).toBe(expected);
-  });
-});
-
 describe('calculateRemainingInvites', () => {
   it('목표보다 적게 모았으면 남은 인원을 반환한다', () => {
     // When

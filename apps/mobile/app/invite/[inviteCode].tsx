@@ -4,12 +4,10 @@ import { InvitePreviewCard } from '@src/features/invite/components/invite-previe
 import { InvitePreviewPolicy } from '@src/features/invite/domains/invite-preview.model';
 import { InviteRedemptionPolicy } from '@src/features/invite/domains/invite-redemption.model';
 import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
-import { type InviteCode, InvitePolicy } from '@src/features/invite/domains/invite.model';
+import type { InviteCode } from '@src/features/invite/domains/invite.model';
 import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-route-params';
 import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
-import { useGetInviteQueryOptions } from '@src/features/invite/queries/get-invite-query-options';
 import { useRedeemInviteMutationOptions } from '@src/features/invite/queries/use-redeem-invite-mutation-options';
-import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -244,12 +242,10 @@ function InviteCardActions() {
 function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
   const { t } = useTranslation('invite');
   const inviteService = useInviteService();
-  const [{ data: preview }, { data: me }, { data: myInvite }] = useSuspenseQueries({
-    queries: [
-      useGetInvitePreviewQueryOptions({ inviteCode }),
-      useGetMeQueryOptions(),
-      useGetInviteQueryOptions(),
-    ],
+  // 내 초대 정보(GET /v1/invites/me)는 처음 부르면 내 코드를 만들어 여기서 읽지 않는다.
+  // 내 링크를 열었으면 서버가 INVITE_2103으로 막고 수락 오류 처리가 내 초대 화면으로 보낸다
+  const [{ data: preview }, { data: me }] = useSuspenseQueries({
+    queries: [useGetInvitePreviewQueryOptions({ inviteCode }), useGetMeQueryOptions()],
   });
   const redeem = useMutation(useRedeemInviteMutationOptions());
   const inviterName = InvitePreviewPolicy.inviterName(preview, t('card.unnamedInviter'));
@@ -259,31 +255,6 @@ function InviteRedeemActions({ inviteCode }: { inviteCode: InviteCode }) {
   useEffect(() => {
     inviteService.clearPendingRedemption();
   }, [inviteService]);
-
-  // 내 링크를 연 경우 수락 요청을 보내지 않고 내 초대 화면으로 안내한다
-  if (InvitePolicy.isOwnCode(myInvite, inviteCode)) {
-    return (
-      <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
-        <ReadableContent px={20} pt={12} pb={12} gap={12}>
-          <Box className="rounded-2xl bg-white px-4 py-3">
-            <Text size="b4" shade={7} align="center">
-              {t('card.ownInviteNote')}
-            </Text>
-          </Box>
-
-          <Button
-            testID="invite-card-open-my-invite"
-            onPress={() => {
-              inviteService.clearPendingRedemption();
-              router.replace(myInviteHref());
-            }}
-          >
-            {t('card.openMyInvite')}
-          </Button>
-        </ReadableContent>
-      </StyledSafeAreaView>
-    );
-  }
 
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
