@@ -42,9 +42,10 @@ import {
 } from '@src/shared/ui';
 import { formatFullDate } from '@src/shared/utils/date';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import * as Linking from 'expo-linking';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useState } from 'react';
-import { Image, type ImageSourcePropType, Linking, ScrollView } from 'react-native';
+import { Image, type ImageSourcePropType, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function SubscriptionScreen() {
