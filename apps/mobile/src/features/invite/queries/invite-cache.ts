@@ -38,6 +38,11 @@ export function storeRedemptionResult(queryClient: QueryClient, result: Redempti
   );
 }
 
+/** 서버가 초대가 꺼졌다고 답하면 진입점이 숨도록 사용 가능 여부를 다시 받는다 */
+export function invalidateInviteAvailability(queryClient: QueryClient) {
+  return queryClient.invalidateQueries({ queryKey: INVITE_QUERY_KEYS.availability() });
+}
+
 /** 진입점을 hook 밖(mutation 오류 처리 등)에서 정할 때 이미 받은 사용 가능 여부를 읽는다 */
 export function getCachedInviteAvailability(queryClient: QueryClient) {
   return queryClient.getQueryData<boolean>(INVITE_QUERY_KEYS.availability()) ?? false;

@@ -27,8 +27,8 @@ import { QueryErrorBoundary } from '@src/shared/ui';
 
 ## 오류 보고
 
-`classifyBoundaryError` 결과에 따라 보고 강도를 나눕니다. 인증 전환 401은 warning 메시지, 예상된 404는
-breadcrumb, 그 밖은 `captureException`입니다.
+`classifyBoundaryError` 결과에 따라 보고 강도를 나눕니다. 인증 전환 401은 warning 메시지, 예상된 404와
+기능이 꺼진 코드(`INVITE_2105`)는 breadcrumb, 그 밖은 `captureException`입니다.
 
 ## 파일 구조
 

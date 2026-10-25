@@ -4,6 +4,7 @@ import {
   Button,
   CopyIcon,
   HStack,
+  PauseIcon,
   type QueryErrorFallbackProps,
   Result,
   Text,
@@ -13,13 +14,16 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQueries } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Skeleton } from 'heroui-native';
-import type { ComponentProps } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 
 import { createInviteShareContent } from '../domains/invite-share.model';
+import { isInviteDisabledError } from '../domains/invite.error';
 import { InvitePolicy } from '../domains/invite.model';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
+import { invalidateInviteAvailability } from '../queries/invite-cache';
 import { useRotateInviteCodeMutationOptions } from '../queries/use-rotate-invite-code-mutation-options';
 import { useShareInviteMutationOptions } from '../queries/use-share-invite-mutation-options';
 
@@ -122,14 +126,38 @@ InviteLinkCard.Loading = function Loading() {
   );
 };
 
-InviteLinkCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+InviteLinkCard.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return <InviteLinkCard.Unavailable />;
+  }
 
   return (
     <InviteLinkCardFrame className="min-h-[136px] justify-center">
       <Result
         title={t('result.loadFailed.title')}
         button={<Result.Button onPress={reset}>{t('result.retry')}</Result.Button>}
+      />
+    </InviteLinkCardFrame>
+  );
+};
+
+/** 초대가 꺼져 있다. 다시 시도해도 같으니 안내만 하고, 진입점이 숨도록 사용 가능 여부를 다시 받는다 */
+InviteLinkCard.Unavailable = function Unavailable() {
+  const { t } = useTranslation('invite');
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    invalidateInviteAvailability(queryClient).catch(noop);
+  }, [queryClient]);
+
+  return (
+    <InviteLinkCardFrame className="min-h-[136px] justify-center">
+      <Result
+        icon={<PauseIcon width={40} height={40} colorClassName="text-main" />}
+        title={t('myInvite.unavailable.title')}
+        description={t('myInvite.unavailable.description')}
       />
     </InviteLinkCardFrame>
   );

@@ -17,6 +17,7 @@ import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
 import type { ComponentProps } from 'react';
 
+import { isInviteDisabledError } from '../domains/invite.error';
 import { useGetInvitedFriendSummaryInfiniteQueryOptions } from '../queries/get-invited-friends-infinite-query-options';
 import { invitedFriendsHref } from '../utils/navigation/invite-href';
 import { InvitedFriendRow } from './invited-friend-row';
@@ -72,8 +73,12 @@ InvitedFriendSummary.Loading = function Loading() {
   );
 };
 
-InvitedFriendSummary.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+InvitedFriendSummary.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return <InvitedFriendSummary.Unavailable />;
+  }
 
   return (
     <InvitedFriendSummaryFrame className="min-h-[200px] justify-center">
@@ -81,6 +86,16 @@ InvitedFriendSummary.Error = function ErrorState({ reset }: QueryErrorFallbackPr
         title={t('result.loadFailed.title')}
         button={<Result.Button onPress={reset}>{t('result.retry')}</Result.Button>}
       />
+    </InvitedFriendSummaryFrame>
+  );
+};
+
+InvitedFriendSummary.Unavailable = function Unavailable() {
+  const { t } = useTranslation('invite');
+
+  return (
+    <InvitedFriendSummaryFrame className="min-h-[200px] justify-center">
+      <Result title={t('friendList.unavailable')} />
     </InvitedFriendSummaryFrame>
   );
 };

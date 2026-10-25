@@ -26,6 +26,10 @@ export const InviteErrors = {
 
 export const isInviteError = (error: unknown): error is InviteError => error instanceof InviteError;
 
+/** 서버 플래그로 친구 초대가 꺼져 있다(INVITE_2105). 재시도 대신 쓸 수 없음 안내를 보인다 */
+export const isInviteDisabledError = (error: unknown) =>
+  isApiError(error) && error.hasCode(ErrorCode.INVITE_2105);
+
 /** 초대 수락이 실패한 이유. 분석 이벤트 invite_redeem_failed.reason이 이 값을 그대로 쓴다 */
 export type RedeemFailureReason =
   | 'invalid_code'

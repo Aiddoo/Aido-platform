@@ -21,6 +21,7 @@ import { noop } from 'es-toolkit';
 import type { ComponentProps, ReactNode } from 'react';
 
 import { createInviteShareContent, type InviteShareChannel } from '../domains/invite-share.model';
+import { isInviteDisabledError } from '../domains/invite.error';
 import { useCopiedFeedback } from '../hooks/use-copied-feedback';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
 import { useShareInviteMutationOptions } from '../queries/use-share-invite-mutation-options';
@@ -61,8 +62,12 @@ InviteShareActions.Loading = function Loading() {
 };
 
 /** 버튼 자리를 그대로 두고 다시 불러오기만 받는다 */
-InviteShareActions.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
+InviteShareActions.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return <InviteShareActions.Unavailable />;
+  }
 
   return (
     <VStack gap={10}>
@@ -74,6 +79,11 @@ InviteShareActions.Error = function ErrorState({ reset }: QueryErrorFallbackProp
       </Box>
     </VStack>
   );
+};
+
+/** 초대가 꺼져 있으면 버튼 자리만 비활성으로 남긴다. 안내는 링크 카드가 한다 */
+InviteShareActions.Unavailable = function Unavailable() {
+  return <InviteShareButtons isDisabled isCopied={false} onShare={noop} />;
 };
 
 interface InviteShareButtonsProps extends ComponentProps<typeof VStack> {

@@ -78,6 +78,10 @@
       "qualification_other": "You get a paw print when your friend completes to-dos on {{count}} different days within {{days}} days of joining",
       "cap": "You can get up to {{monthly}} days of Premium in any 30 days, {{total}} days in total",
       "subscription": "If you're subscribed, your reward Premium starts after your subscription ends"
+    },
+    "unavailable": {
+      "title": "Invites aren't available right now",
+      "description": "Please try again later.\nRewards you've received stay with you"
     }
   },
   "pawPrintBoard": {
@@ -102,7 +106,8 @@
     "firstHint": "Your first paw print lands here once a friend completes to-dos on {{activeDays}} different days",
     "complete": "You filled board {{boardNumber}}! A new board opens next time",
     "rewardsSummary_one": "Premium {{count}} day · Friend slots {{slots}}",
-    "rewardsSummary_other": "Premium {{count}} days · Friend slots {{slots}}"
+    "rewardsSummary_other": "Premium {{count}} days · Friend slots {{slots}}",
+    "unavailable": "You can keep collecting paw prints when invites are back"
   },
   "friendList": {
     "title": "Invited friends",
@@ -126,7 +131,8 @@
     },
     "seeAll": "See all {{count}}",
     "emptyWaitingTitle": "No friends waiting for a paw print",
-    "emptyWaitingDescription": "Friends show up here while they work toward a paw print"
+    "emptyWaitingDescription": "Friends show up here while they work toward a paw print",
+    "unavailable": "You'll see the friends you invited when invites are back"
   },
   "share": {
     "kakao": "Invite via KakaoTalk",

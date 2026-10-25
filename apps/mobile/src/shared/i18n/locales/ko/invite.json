@@ -73,6 +73,10 @@
       "qualification": "친구가 가입하고 {{days}}일 안에 할 일을 끝낸 날이 {{count}}일이 되면 발자국이 찍혀요",
       "cap": "프리미엄은 최근 30일 동안 {{monthly}}일, 모두 합쳐 {{total}}일까지 받을 수 있어요",
       "subscription": "구독 중이면 받은 프리미엄은 구독이 끝난 뒤 시작돼요"
+    },
+    "unavailable": {
+      "title": "지금은 친구 초대를 쓸 수 없어요",
+      "description": "잠시 후 다시 열어주세요.\n이미 받은 보상은 그대로 남아 있어요"
     }
   },
   "pawPrintBoard": {
@@ -93,7 +97,8 @@
     "header": "{{boardNumber}}번째 판 · 지금까지 발자국 {{total}}개",
     "firstHint": "첫 친구가 할 일을 끝낸 날이 {{activeDays}}일이 되면 여기에 발자국이 찍혀요",
     "complete": "{{boardNumber}}번째 판을 다 채웠어요! 다음엔 새 판이 열려요",
-    "rewardsSummary": "프리미엄 {{count}}일 · 친구 자리 {{slots}}개"
+    "rewardsSummary": "프리미엄 {{count}}일 · 친구 자리 {{slots}}개",
+    "unavailable": "초대가 다시 열리면 발자국을 이어서 모을 수 있어요"
   },
   "friendList": {
     "title": "초대한 친구",
@@ -115,7 +120,8 @@
     },
     "seeAll": "전체 보기 {{count}}명",
     "emptyWaitingTitle": "발자국을 기다리는 친구가 없어요",
-    "emptyWaitingDescription": "가입했지만 아직 발자국이 찍히지 않은 친구가 여기에 보여요"
+    "emptyWaitingDescription": "가입했지만 아직 발자국이 찍히지 않은 친구가 여기에 보여요",
+    "unavailable": "초대가 다시 열리면 초대한 친구를 볼 수 있어요"
   },
   "share": {
     "kakao": "카카오톡으로 초대하기",
