@@ -162,6 +162,11 @@ export const currentUserSchema = z
       .describe(
         "아직 시작하지 않고 쌓아 둔 보상 일수 합계입니다. 지금 기간(스토어 구독이나 진행 중인 보상 기간)이 끝나면 받은 순서대로 이어서 시작합니다. 없으면 0이고 구버전 서버는 생략합니다.",
       ),
+    premiumGrantEndedAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "마지막 보상 기간이 끝난 시각입니다 (ISO 8601 UTC). 지금 프리미엄이 아니고 최근 7일 안에 끝났을 때만 값이 있고, 그 밖에는 null입니다. 구버전 서버는 생략합니다.",
+      ),
   })
   .describe("현재 사용자 정보")
   .meta({
@@ -184,6 +189,7 @@ export const currentUserSchema = z
       premiumPeriodEndsAt: null,
       willRenew: false,
       bankedPremiumDays: 0,
+      premiumGrantEndedAt: null,
     },
   });
 

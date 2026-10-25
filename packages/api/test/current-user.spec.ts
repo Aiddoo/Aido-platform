@@ -71,4 +71,23 @@ describe("currentUserSchema", () => {
       expect(result.success).toBe(expected);
     },
   );
+
+  it("프리미엄이 끝난 사용자의 최근 보상 종료 시각을 읽는다", () => {
+    // Given
+    const response = {
+      ...currentUser,
+      subscriptionStatus: "FREE",
+      premiumSource: null,
+      premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
+      bankedPremiumDays: 0,
+      premiumGrantEndedAt: "2026-12-01T00:00:00.000Z",
+    };
+
+    // When
+    const result = currentUserSchema.safeParse(response);
+
+    // Then
+    expect(result.success).toBe(true);
+  });
 });
