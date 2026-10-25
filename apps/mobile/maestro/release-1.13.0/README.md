@@ -63,7 +63,7 @@ pnpm --filter mobile maestro:release-1.13.0:flag-off # 아래 '기능 플래그 
 | failure               | `failure-code-format`            | 형식 오류, 고쳐서 재제출                | 같은 화면 오류 + `다시 확인`, 포커스 유지, 재제출 성공    | (클라이언트)            |
 | failure               | `failure-code-not-found`         | 없는 코드                               | `초대 코드를 찾을 수 없어요`, `코드 직접 입력하기`        | INVITE_2101             |
 | failure               | `failure-link-rotated`           | 링크 재발급 후 이전 링크                | `초대 링크가 바뀌었어요`, 새 링크는 정상                  | INVITE_2102             |
-| failure               | `failure-self-invite`            | 내 링크                                 | `내 초대 링크예요`, 수락 버튼 없음                        | INVITE_2103             |
+| failure               | `failure-self-invite`            | 내 링크로 수락                          | 서버가 막고 `내 초대 코드` 화면으로 이동                  | INVITE_2103             |
 | failure               | `failure-already-friends`        | 이미 친구, 새 링크로 재수락             | 환영 시트 없이 A 피드, 두 번째 보상 없음                  | ALREADY_FRIENDS         |
 | failure               | `failure-after-unfriend`         | 친구 끊고 같은 초대자 링크              | 친구만 맺은 시트 또는 이미 수락 안내, 보상 없음           | CONNECTED / INVITE_2104 |
 | failure               | `failure-pending-resume`         | 로그인 취소, 앱 재시작, B 로그인        | 환영 시트가 이어짐                                        | -                       |
@@ -95,7 +95,7 @@ iOS는 Maestro `back`이 동작하지 않아 왼쪽 위 영역을 탭한다. 비
 `invite-code-input`, `invite-code-submit`, `invite-code-error`, `invite-code-paste`, `my-invite-code`,
 `my-invite-rotate`, `invite-share-kakao`, `invite-share-copy-link`, `invite-share-system`, `invitees-see-all`,
 `invitees-tab-all`, `invitees-tab-waiting`, `invite-card-signup`, `invite-card-login`, `invite-card-redeem`,
-`invite-card-open-my-invite`, `invite-result-enter-code`, `invite-result-retry`, `invite-welcome-sheet`,
+`invite-result-enter-code`, `invite-result-retry`, `invite-welcome-sheet`,
 `invite-welcome-later`, `friends-empty-invite`, `mypage-invite-card`, `feature-guide-open`,
 `feature-discovery-invite-cta`, `friend-delete`, `friend-delete-confirm`.
 친구 목록의 편집 버튼은 헤더 툴바 버튼이라 testID를 받지 않아 접근성 라벨(`list.edit`: `편집`/`Edit`)로 누른다.

@@ -70,7 +70,7 @@ onFlowStart:
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 78_날씨
-# 무료: 페이월(개발 빌드에 RevenueCat 키가 없으면 '구독을 준비 중이에요'), 프리미엄: 스토어 구독 + 쌓아 둔 보상
+# 무료: 페이월(개발 빌드에 RevenueCat 키가 없으면 '요금제를 불러오지 못했어요'), 프리미엄: 스토어 구독 + 쌓아 둔 보상
 - runFlow:
     file: subflows/open.yaml
     env:
