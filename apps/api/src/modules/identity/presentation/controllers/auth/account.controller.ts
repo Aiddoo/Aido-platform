@@ -12,7 +12,7 @@ import {
   Patch,
   Req,
 } from "@nestjs/common";
-import { ApiHeader, ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiHeader, ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { Request } from "express";
 
@@ -46,6 +46,7 @@ import {
   DeleteAccountResponseDto,
   LinkedAccountsResponseDto,
   MessageResponseDto,
+  UnlinkAccountDto,
   UpdateProfileDto,
   UpdateProfileResponseDto,
 } from "../../schemas/auth/index.js";
@@ -205,23 +206,21 @@ export class AccountController {
 | \`USER_0603\` | 404 | 연결된 계정을 찾을 수 없습니다 |
 		`,
   })
-  @ApiParam({
-    name: "provider",
-    description: "연결 해제할 소셜 로그인 제공자",
-    enum: ["APPLE", "GOOGLE", "KAKAO", "NAVER"],
-    example: "GOOGLE",
-  })
   @ApiSuccessResponse({ type: MessageResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.USER_0610)
   @ApiNotFoundError(ErrorCode.USER_0603)
   async unlinkAccount(
     @CurrentUser() user: CurrentUserPayload,
-    @Param("provider") provider: "APPLE" | "GOOGLE" | "KAKAO" | "NAVER",
+    @Param({ schema: UnlinkAccountDto }) params: UnlinkAccountDto,
     @Req() req: Request,
   ) {
     const metadata = extractMetadata(req);
-    return this.unlinkOAuthAccountUseCase.execute({ userId: user.userId, provider, metadata });
+    return this.unlinkOAuthAccountUseCase.execute({
+      userId: user.userId,
+      provider: params.provider,
+      metadata,
+    });
   }
 
   @Delete("account")

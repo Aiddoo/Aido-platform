@@ -20084,13 +20084,13 @@ NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
           "name": "provider",
           "required": true,
           "schema": {
+            "description": "연결 해제할 소셜 로그인 제공자",
             "enum": [
               "APPLE",
               "GOOGLE",
               "KAKAO",
               "NAVER",
             ],
-            "example": "GOOGLE",
             "type": "string",
           },
         },
@@ -20127,12 +20127,42 @@ NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "USER_0610": {
+                  "summary": "마지막 로그인 수단은 해제할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "USER_0610",
+                      "details": null,
+                      "message": "마지막 로그인 수단은 해제할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
-                        "example": "USER_0610",
+                        "enum": [
+                          "SYS_0002",
+                          "USER_0610",
+                        ],
+                        "example": "SYS_0002",
                         "type": "string",
                       },
                       "details": {
@@ -20141,7 +20171,7 @@ NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "마지막 로그인 수단은 해제할 수 없습니다.",
+                        "example": "잘못된 파라미터입니다.",
                         "type": "string",
                       },
                     },
@@ -20169,7 +20199,9 @@ NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
               },
             },
           },
-          "description": "마지막 로그인 수단은 해제할 수 없습니다.",
+          "description": "SYS_0002: 잘못된 파라미터입니다.
+
+USER_0610: 마지막 로그인 수단은 해제할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -23809,12 +23841,14 @@ VERIFY_0752: 인증 코드가 만료되었습니다.",
       "operationId": "revokeSession",
       "parameters": [
         {
-          "description": "종료할 세션 ID (UUID)",
+          "description": "해제할 세션 ID (CUID 25자, 예: clz7x5p8k0002qz0z8z8z8z8z)",
           "in": "path",
           "name": "sessionId",
           "required": true,
           "schema": {
-            "example": "550e8400-e29b-41d4-a716-446655440000",
+            "description": "해제할 세션 ID (CUID 25자, 예: clz7x5p8k0002qz0z8z8z8z8z)",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
             "type": "string",
           },
         },
@@ -23852,11 +23886,48 @@ VERIFY_0752: 인증 코드가 만료되었습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -24646,12 +24717,14 @@ SYS_0002: 잘못된 파라미터입니다.",
       "operationId": "getCheerCooldownInfo",
       "parameters": [
         {
-          "description": "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+          "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
           "in": "path",
           "name": "userId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
             "type": "string",
           },
         },
@@ -24689,11 +24762,48 @@ SYS_0002: 잘못된 파라미터입니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -33222,11 +33332,14 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
       "operationId": "unregisterPushToken",
       "parameters": [
         {
-          "description": "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제",
+          "description": "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제 (최대 100자)",
           "in": "query",
           "name": "deviceId",
           "required": false,
           "schema": {
+            "description": "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제 (최대 100자)",
+            "maxLength": 100,
+            "minLength": 1,
             "type": "string",
           },
         },
@@ -33264,11 +33377,48 @@ MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -34513,12 +34663,14 @@ SYS_0002: 잘못된 파라미터입니다.",
       "operationId": "getNudgeCooldownInfo",
       "parameters": [
         {
-          "description": "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+          "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
           "in": "path",
           "name": "userId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
             "type": "string",
           },
         },
@@ -34556,11 +34708,48 @@ SYS_0002: 잘못된 파라미터입니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -35651,12 +35840,14 @@ SYS_0002: 잘못된 파라미터입니다.",
       "operationId": "getRemindNudgeCooldownInfo",
       "parameters": [
         {
-          "description": "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+          "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
           "in": "path",
           "name": "userId",
           "required": true,
           "schema": {
-            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
             "type": "string",
           },
         },
@@ -35694,11 +35885,48 @@ SYS_0002: 잘못된 파라미터입니다.",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ErrorResponseSchema",
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
               },
             },
           },
-          "description": "잘못된 요청입니다",
+          "description": "잘못된 파라미터입니다.",
         },
         "401": {
           "content": {

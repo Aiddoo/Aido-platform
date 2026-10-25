@@ -12,13 +12,14 @@ import {
   Post,
   Query,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiParam, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
   CurrentUser,
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
+import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiBadRequestError,
   ApiConflictError,
@@ -215,11 +216,6 @@ export class CheerController {
   }
 
   @Get("cooldown/:userId")
-  @ApiParam({
-    name: "userId",
-    description: "쿨다운 상태를 확인할 친구의 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
-    example: "clz7x5p8k0005qz0z8z8z8z8z",
-  })
   @ApiDoc({
     summary: "특정 친구에 대한 쿨다운 상태 조회",
     operationId: "getCheerCooldownInfo",
@@ -231,15 +227,15 @@ export class CheerController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getCooldownInfo(
     @CurrentUser() user: CurrentUserPayload,
-    @Param("userId") targetUserId: string,
+    @Param({ schema: UserIdParamDto }) params: UserIdParamDto,
   ): Promise<CheerCooldownResponseDto> {
     const cooldownInfo = await this.getCheerCooldownUseCase.execute({
       senderId: user.userId,
-      receiverId: targetUserId,
+      receiverId: params.userId,
     });
 
     return {
-      userId: targetUserId,
+      userId: params.userId,
       canCheer: !cooldownInfo.isActive,
       remainingSeconds: cooldownInfo.remainingSeconds,
       cooldownEndsAt: toISOStringOrNull(cooldownInfo.canCheerAt ?? null),

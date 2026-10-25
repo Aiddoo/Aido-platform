@@ -1,4 +1,5 @@
 import { notificationInboxResponseSchema, notificationListResponseSchema } from "@aido/api";
+import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import {
@@ -321,6 +322,21 @@ describe("알림 E2E", () => {
         // Then - 토큰 해제 성공 검증
         expect(response.body.success).toBe(true);
         expect(response.body.data.registered).toBe(false);
+      });
+
+      it("100자를 넘는 deviceId는 400 SYS_0002를 반환한다", async () => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser("notif-del-invalid@test.com", password);
+
+        // When
+        const response = await request(ctx.app.getHttpServer())
+          .delete("/v1/notifications/token")
+          .query({ deviceId: "d".repeat(101) })
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .expect(400);
+
+        // Then
+        expect(response.body.error.code).toBe(ErrorCode.SYS_0002);
       });
 
       it("모든 토큰을 해제한다 (deviceId 미지정)", async () => {

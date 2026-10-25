@@ -77,22 +77,18 @@ function contractFingerprint(value: unknown): string {
 }
 
 /**
- * Zod schema 없이 원시 path·query 값을 받는 엔드포인트. 입력 검증 실패 400(SYS_0002)이 나가지 않는다.
+ * Zod schema 없이 원시 query 값을 받는 엔드포인트. 입력 검증 실패 400(SYS_0002)이 나가지 않는다.
+ * 배포된 브라우저 OAuth 흐름(start → 공급자 → web-callback)은 공급자가 붙이는 query를 그대로 받아
+ * 오류를 앱 딥링크로 돌려보내므로 400 응답으로 바꾸지 않는다.
  * 새 엔드포인트는 `@Param/@Query/@Body({ schema })`로 검증하고 이 목록에 더하지 않는다.
  */
 const RAW_INPUT_OPERATIONS = [
-  "DELETE /v1/auth/linked-accounts/{provider}",
-  "DELETE /v1/auth/sessions/{sessionId}",
-  "DELETE /v1/notifications/token",
   "GET /v1/auth/google/start",
   "GET /v1/auth/google/web-callback",
   "GET /v1/auth/kakao/start",
   "GET /v1/auth/kakao/web-callback",
   "GET /v1/auth/naver/start",
   "GET /v1/auth/naver/web-callback",
-  "GET /v1/cheers/cooldown/{userId}",
-  "GET /v1/nudges/cooldown/{userId}",
-  "GET /v1/nudges/remind/cooldown/{userId}",
 ];
 
 const errorResponseCodeSchema = z.object({

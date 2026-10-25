@@ -116,7 +116,7 @@ describe("SessionController — 세션 컨트롤러", () => {
       revokeSessionUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - revokeSession을 호출하면
-      const result = await controller.revokeSession(mockUser, sessionId, mockRequest);
+      const result = await controller.revokeSession(mockUser, { sessionId }, mockRequest);
 
       // Then - 서비스에 userId, sessionId, metadata를 전달하고 결과를 반환해야 한다
       expect(revokeSessionUseCase.execute).toHaveBeenCalledWith({

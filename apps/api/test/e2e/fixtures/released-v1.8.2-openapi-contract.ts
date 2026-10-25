@@ -65,6 +65,9 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: Zod로 path·query·body를 검증하는 엔드포인트의 400에 입력 검증 실패 SYS_0002를 자동으로 선언했다. 공통 400(ErrorResponseSchema $ref)은 SYS_0002 오류 schema로, 특정 400 코드만 있던 응답은 그 코드와 SYS_0002의 enum으로 바뀐다. 여러 코드 enum은 코드 순으로 정렬한다. 전역 검증 pipe가 이미 보내던 코드라 실제 응답·상태 코드는 같다. */
 	preValidationErrorCodePathsFingerprint:
 		"1245a17bd4c360e974a16ada61f8fbaaab3444fef779d9338c7b4950b56bf078",
-	pathsFingerprint:
+	/** 1.13.0: 원시 값을 받던 path·query를 @aido/api schema로 검증한다. DELETE /auth/sessions/{sessionId}(CUID), DELETE /auth/linked-accounts/{provider}(APPLE·GOOGLE·KAKAO·NAVER), DELETE /notifications/token?deviceId(1-100자), cheers·nudges·nudges/remind cooldown/{userId}(CUID). 배포 앱은 대문자 provider, 등록한 기기 ID, 친구의 CUID만 보내 같은 응답을 받고, 형식이 틀린 입력만 404·500 대신 400 SYS_0002가 된다. */
+	preRawInputValidationPathsFingerprint:
 		"cc6523a7d1fd2b7620b6fa168fe3096797a55195e05f68bbfe51c70e66598185",
+	pathsFingerprint:
+		"733aed3fa3ebd0c70664d1461ed6dad9b072ce6aa936f28915b389e98ebf9987",
 } as const;

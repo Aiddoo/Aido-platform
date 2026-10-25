@@ -175,7 +175,7 @@ describe("AccountController — 계정 컨트롤러", () => {
       unlinkOAuthAccountUseCase.execute.mockResolvedValue(serviceResult);
 
       // When - unlinkAccount를 호출하면
-      const result = await controller.unlinkAccount(mockUser, provider, mockRequest);
+      const result = await controller.unlinkAccount(mockUser, { provider }, mockRequest);
 
       // Then - 서비스에 userId, provider, metadata를 전달하고 결과를 반환해야 한다
       expect(unlinkOAuthAccountUseCase.execute).toHaveBeenCalledWith({

@@ -52,6 +52,7 @@ import {
   RegisterPushTokenDto,
   RegisterTokenResponseDto,
   UnreadCountResponseDto,
+  UnregisterPushTokenQueryDto,
 } from "../../schemas/delivery/index.js";
 
 @ApiTags(SWAGGER_TAGS.NOTIFICATIONS)
@@ -151,17 +152,13 @@ export class NotificationController {
 **쿼리 파라미터**
 - \`deviceId\` (선택): 특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제`,
   })
-  @ApiQuery({
-    name: "deviceId",
-    required: false,
-    description: "특정 기기의 토큰만 해제. 미지정 시 모든 토큰 해제",
-  })
   @ApiSuccessResponse({ type: RegisterTokenResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async unregisterToken(
     @CurrentUser() user: CurrentUserPayload,
-    @Query("deviceId") deviceId?: string,
+    @Query({ schema: UnregisterPushTokenQueryDto }) query: UnregisterPushTokenQueryDto,
   ): Promise<RegisterTokenResponseDto> {
+    const { deviceId } = query;
     this.#logger.debug(`푸시 토큰 해제: userId=${user.userId}, deviceId=${deviceId ?? "all"}`);
 
     await this.unregisterPushTokenUseCase.execute(user.userId, deviceId);

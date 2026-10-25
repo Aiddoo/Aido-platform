@@ -41,7 +41,10 @@ export const RefreshTokenDto = refreshTokenSchema.meta({ id: "RefreshTokenDto" }
 export type RefreshTokenDto = z.infer<typeof RefreshTokenDto>;
 export const ExchangeCodeDto = exchangeCodeSchema.meta({ id: "ExchangeCodeDto" });
 export type ExchangeCodeDto = z.infer<typeof ExchangeCodeDto>;
-export const RevokeSessionDto = revokeSessionSchema.meta({ id: "RevokeSessionDto" });
+export const RevokeSessionDto = revokeSessionSchema.meta({
+  id: "RevokeSessionDto",
+  apiParameter: true,
+});
 export type RevokeSessionDto = z.infer<typeof RevokeSessionDto>;
 export const UpdateProfileDto = updateProfileSchema.meta({ id: "UpdateProfileDto" });
 export type UpdateProfileDto = z.infer<typeof UpdateProfileDto>;
@@ -64,7 +67,10 @@ export const NaverMobileCallbackDto = naverMobileCallbackSchema.meta({
 export type NaverMobileCallbackDto = z.infer<typeof NaverMobileCallbackDto>;
 export const LinkSocialAccountDto = linkSocialAccountSchema.meta({ id: "LinkSocialAccountDto" });
 export type LinkSocialAccountDto = z.infer<typeof LinkSocialAccountDto>;
-export const UnlinkAccountDto = unlinkAccountSchema.meta({ id: "UnlinkAccountDto" });
+export const UnlinkAccountDto = unlinkAccountSchema.meta({
+  id: "UnlinkAccountDto",
+  apiParameter: true,
+});
 export type UnlinkAccountDto = z.infer<typeof UnlinkAccountDto>;
 export const DeleteAccountDto = deleteAccountSchema.meta({ id: "DeleteAccountDto" });
 export type DeleteAccountDto = z.infer<typeof DeleteAccountDto>;
