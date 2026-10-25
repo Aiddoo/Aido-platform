@@ -205,7 +205,7 @@ describe("ParseMemo — v2 정규화", () => {
       scheduledTime: "15:00",
       isAllDay: false,
     });
-    expect(result.meta.promptVersion).toBe("parse-memo@v2");
+    expect(result.meta.promptVersion).toBe("parse-memo@v2.1");
   });
 
   it("모든 할 일이 모델 대상 명령이면 안내 할 일 하나만 돌려주고 사용량을 차감하지 않는다", async () => {

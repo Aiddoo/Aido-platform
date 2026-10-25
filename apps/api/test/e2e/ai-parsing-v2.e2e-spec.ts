@@ -69,7 +69,7 @@ describe("AI 파싱 v2 E2E", () => {
     });
     expect(response.body.data.meta).toMatchObject({
       model: "fake:test-model",
-      promptVersion: "parse-todo@v2",
+      promptVersion: "parse-todo@v2.1",
       tokenUsage: { input: 150, output: 50 },
     });
     expect(response.body.data.meta.tokenUsage).not.toHaveProperty("reasoning");
@@ -145,7 +145,7 @@ describe("AI 파싱 v2 E2E", () => {
       new Set([1]),
     );
     expect(response.body.data.meta).toMatchObject({
-      promptVersion: "parse-memo@v2",
+      promptVersion: "parse-memo@v2.1",
       omittedTodoCount: 1,
     });
     expect(await usage()).toBe(1);

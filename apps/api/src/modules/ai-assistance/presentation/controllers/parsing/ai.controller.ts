@@ -264,7 +264,7 @@ if (confirmed) {
    *     "model": "google:gemini-3.1-flash-lite",
    *     "processingTimeMs": 350,
    *     "tokenUsage": { "input": 450, "output": 280 },
-   *     "promptVersion": "parse-memo@v2",
+   *     "promptVersion": "parse-memo@v2.1",
    *     "omittedTodoCount": 0
    *   }
    * }

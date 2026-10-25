@@ -54,8 +54,8 @@ describe("ParseTodo — v2 표현 해석 + 서버 일정 계산", () => {
       recurrence: null,
       categoryId: 7,
     });
-    expect(result.meta.promptVersion).toBe("parse-todo@v2");
-    expect(fixture.aiProvider.getLastOptions()?.promptVersion).toBe("parse-todo@v2");
+    expect(result.meta.promptVersion).toBe("parse-todo@v2.1");
+    expect(fixture.aiProvider.getLastOptions()?.promptVersion).toBe("parse-todo@v2.1");
     expect((await fixture.quota.read(fixture.userId)).used).toBe(1);
   });
 

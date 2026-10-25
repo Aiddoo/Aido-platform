@@ -11,7 +11,7 @@ import type {
 import { buildParseMemoPromptEnV2 } from "./prompt.en.js";
 import { buildParseMemoPromptKoV2 } from "./prompt.ko.js";
 
-export const PARSE_MEMO_PROMPT_VERSION_V2 = "parse-memo@v2";
+export const PARSE_MEMO_PROMPT_VERSION_V2 = "parse-memo@v2.1";
 
 function normalizeV2(draft: MemoDraft, context: ParseMemoNormalizeContext): ParseMemoOutcome {
   return normalizeMemoDraft(draft, { ...context, fallbackTitle: context.content });

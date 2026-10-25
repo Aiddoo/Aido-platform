@@ -12,7 +12,7 @@ import type {
 import { buildParseTodoPromptEnV2 } from "./prompt.en.js";
 import { buildParseTodoPromptKoV2 } from "./prompt.ko.js";
 
-export const PARSE_TODO_PROMPT_VERSION_V2 = "parse-todo@v2";
+export const PARSE_TODO_PROMPT_VERSION_V2 = "parse-todo@v2.1";
 
 function normalizeV2(draft: TodoDraft, context: ParseTodoNormalizeContext): ParseTodoOutcome {
   const { todo, intent, warnings } = normalizeTodoDraft(draft, {

@@ -53,7 +53,11 @@ export const timeRefSchema = z.object({
   partOfDay: z
     .enum(["DAWN", "MORNING", "NOON", "AFTERNOON", "EVENING", "NIGHT", "MIDNIGHT"])
     .optional(),
-  relativeMinutes: z.number().int().optional().describe("'in 2 hours' = 120."),
+  relativeMinutes: z
+    .number()
+    .int()
+    .optional()
+    .describe("Only for time from now, 1 or more ('in 2 hours' = 120). Omit otherwise."),
 });
 
 export const repeatRefSchema = z.object({
@@ -93,7 +97,9 @@ export const memoDraftSchema = z.object({
     .number()
     .int()
     .optional()
-    .describe("Real tasks (intent TASK) in the whole memo, including ones not written in todos."),
+    .describe(
+      "Actionable tasks in the whole memo, including ones not written in todos. Excludes reflections, headings, and sub-steps.",
+    ),
   todos: z
     .array(
       todoDraftSchema.extend({

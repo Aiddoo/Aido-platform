@@ -15,10 +15,11 @@ export const SCHEDULE_RULES_KO = {
 </security>`,
   date: `<date_rules>
 - date는 할 일을 시작하는 날의 표현이다. 날짜 표현이 없으면 {"kind":"NONE"}이다.
-- 오늘, 지금, 당장, 바로 → TODAY.
+- 오늘, 지금, 당장, 바로 → TODAY. "오늘 아침", "오늘 밤"처럼 오늘을 말하면 때와 함께여도 TODAY다.
 - 내일 → OFFSET_DAYS amount 1. 모레·이틀 후 → 2. 글피·사흘 후 → 3. "N일 후" → N.
-- "N주 후" → OFFSET_WEEKS N. "다음 달", "N달 후" → OFFSET_MONTHS N.
+- OFFSET_WEEKS는 "N주 후", "N주 뒤"처럼 주 수와 후/뒤를 함께 말할 때만 쓴다. "다음 달", "N달 후" → OFFSET_MONTHS N.
 - 요일 → WEEKDAY와 weekday. 요일만 말하면 weekOffset을 생략한다. "이번 주" → 0, "다음 주" → 1, "다다음 주" → 2.
+- "다음 주 월요일"처럼 주와 요일을 함께 말하면 반드시 WEEKDAY와 weekOffset이다. 메모·목록의 한 줄이어도 같다: "- 다음 주 월요일 오전 10시 회의" → {"kind":"WEEKDAY","weekday":"MON","weekOffset":1}.
 - "M월 D일" → CALENDAR_DATE month M, day D. 연도는 말했을 때만 year에 쓴다. "N일", "이번 달 N일" → CALENDAR_DATE day N이고 month는 생략한다.
 - 월초 → MONTH_START, 월말 → MONTH_END, 연초 → YEAR_START, 연말 → YEAR_END. amount는 0이 이번, 1이 다음이다.
 - endDate는 끝을 나타내는 표현이 있을 때만 쓴다: "~까지", "A부터 B까지", "N일 동안". "금요일까지 보고서"는 date가 NONE이고 endDate가 금요일이다.
@@ -27,8 +28,8 @@ export const SCHEDULE_RULES_KO = {
 - 시각 표현이 없으면 time은 null이다(종일 일정).
 - 말한 숫자를 그대로 hour에 쓴다. "오후 3시" → hour 3, meridiem PM. "15시" → hour 15, meridiem NONE. "3시 반" → minute 30.
 - 새벽·오전·아침 → AM. 오후·저녁·밤 → PM. 오전/오후 단서가 없으면 meridiem은 NONE이며 추측하지 않는다.
-- 숫자 시각 없이 때만 말하면 hour를 생략하고 partOfDay만 쓴다: 새벽 DAWN, 아침 MORNING, 점심·정오 NOON, 오후 AFTERNOON, 저녁 EVENING, 밤 NIGHT, 자정 MIDNIGHT.
-- "N시간 후", "N분 뒤" → relativeMinutes(분 단위).
+- 숫자 시각 없이 때만 말하면 hour·minute·relativeMinutes를 쓰지 않고 partOfDay만 쓴다: 새벽 DAWN, 아침 MORNING, 점심·정오 NOON, 오후 AFTERNOON, 저녁 EVENING, 밤 NIGHT, 자정 MIDNIGHT. "아침"이라고 hour 8처럼 시각을 지어내지 않는다. 기본 시각은 서버가 정한다.
+- relativeMinutes는 "N시간 후", "N분 뒤"처럼 지금부터 지날 시간을 말할 때만 1 이상의 분으로 쓴다. 0을 쓰거나 partOfDay·hour와 함께 쓰지 않는다.
 </time_rules>`,
   repeat: `<repeat_rules>
 - 반복이 없으면 pattern은 NONE이다.
@@ -52,10 +53,11 @@ export const SCHEDULE_RULES_EN = {
 </security>`,
   date: `<date_rules>
 - date is the expression for the day the to-do starts. With no date expression, use {"kind":"NONE"}.
-- today, now, right away, asap → TODAY.
+- today, now, right away, asap → TODAY. "this morning", "this afternoon", "tonight" also mean today → TODAY with the part of day.
 - tomorrow → OFFSET_DAYS amount 1. the day after tomorrow → 2. "in N days" → N.
-- "in N weeks" → OFFSET_WEEKS N. "next month", "in N months" → OFFSET_MONTHS N.
+- Use OFFSET_WEEKS only for "in N weeks" / "N weeks from now". "next month", "in N months" → OFFSET_MONTHS N.
 - A weekday → WEEKDAY with weekday. A bare weekday ("Friday", "on Friday", "this Friday") omits weekOffset. "next Friday" → weekOffset 1. "Friday after next" → weekOffset 2.
+- "next Monday" or "Monday next week" is always WEEKDAY with weekOffset 1, never OFFSET_WEEKS, also inside a memo or list line: "- team meeting next Monday 10am" → {"kind":"WEEKDAY","weekday":"MON","weekOffset":1}.
 - "March 5", "5 March" → CALENDAR_DATE month 3, day 5. Set year only when it is stated. "the 5th" → CALENDAR_DATE day 5 with month omitted.
 - start of the month → MONTH_START, end of the month → MONTH_END, start/end of the year → YEAR_START/YEAR_END. amount 0 means this one, 1 means the next one.
 - Use endDate only for an end expression: "by X", "until X", "from A to B", "for N days". "Report by Friday" has date NONE and endDate Friday.
@@ -64,8 +66,8 @@ export const SCHEDULE_RULES_EN = {
 - With no time expression, time is null (all-day).
 - Put the number exactly as said in hour. "3pm" → hour 3, meridiem PM. "15:00" → hour 15, meridiem NONE. "half past 3" or "3:30" → minute 30.
 - am/morning → AM. pm/afternoon/evening/tonight → PM. Without an AM/PM cue, meridiem is NONE; do not guess.
-- With only a part of day and no clock time, omit hour and set partOfDay: early morning DAWN, morning MORNING, noon/lunch NOON, afternoon AFTERNOON, evening EVENING, tonight/night NIGHT, midnight MIDNIGHT.
-- "in N hours", "in N minutes" → relativeMinutes (in minutes).
+- With only a part of day and no clock time, set only partOfDay and omit hour, minute, and relativeMinutes: early morning DAWN, morning MORNING, noon/lunch NOON, afternoon AFTERNOON, evening EVENING, tonight/night NIGHT, midnight MIDNIGHT. Never invent a clock time such as hour 8 for "morning"; the server picks the default.
+- Use relativeMinutes only for time from now ("in N hours", "in N minutes"), as minutes of 1 or more. Never write 0 and never combine it with partOfDay or hour.
 </time_rules>`,
   repeat: `<repeat_rules>
 - Without repetition, pattern is NONE.
