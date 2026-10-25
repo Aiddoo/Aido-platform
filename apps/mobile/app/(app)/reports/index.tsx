@@ -1,4 +1,5 @@
 import { reportTypeSchema } from '@aido/api';
+import { AiQueryErrorFallback } from '@src/features/ai/components/ai-query-error-fallback';
 import { ReportCard } from '@src/features/ai/components/report-card';
 import { ReportStatusBanner } from '@src/features/ai/components/report-status-banner';
 import { REPORT_TYPE_LABEL_KEYS } from '@src/features/ai/constants/report-type';
@@ -107,7 +108,10 @@ function ReportsScreen() {
           <Box className="px-4 pb-4">
             {match(isPremium)
               .with(true, () => (
-                <QueryErrorBoundary resetKeys={[reportType]}>
+                <QueryErrorBoundary
+                  resetKeys={[reportType]}
+                  fallback={(props) => <AiQueryErrorFallback {...props} />}
+                >
                   <Suspense fallback={<ReportCard.Loading />}>
                     <ReportList />
                   </Suspense>

@@ -49,6 +49,20 @@ import { ModalBottomSheet } from '@src/shared/ui/bottom-sheet';
 </ModalBottomSheet>;
 ```
 
+내용은 시트 안에서 스크롤된다. 글자 크기를 키우거나 작은 화면에서 내용이 넘쳐도 주 동작 버튼이 밀려나지 않게
+`footer`에 두면 스크롤 영역 아래에 고정된다. 시트 안에 세로 스크롤 컨테이너를 또 두지 않는다.
+
+```tsx
+<ModalBottomSheet
+  isOpen={isOpen}
+  onOpenChange={handleOpenChange}
+  onExit={handleExit}
+  footer={<Button onPress={handleConfirm}>확인</Button>}
+>
+  {/* 긴 안내 */}
+</ModalBottomSheet>
+```
+
 ### 시트 route (`SheetRouteScreen`, `useSheetRoute`)
 
 할 일·하위 항목·카테고리·제안처럼 대상이 있는 시트는 Overlay 대신 Expo Router route로 띄운다.
@@ -102,6 +116,7 @@ const sheet = useSheetRoute('/feed');
 | `onOpenChange` | `(isOpen: boolean) => void` | -      | 닫기 시작(backdrop tap, swipe, 뒤로가기) 시 `false`로 호출 |
 | `onExit`       | `() => void`                | -      | 닫기 애니메이션 완료 후 호출 → 컴포넌트 언마운트 트리거    |
 | `children`     | `ReactNode`                 | -      | 시트 내용                                                  |
+| `footer`       | `ReactNode`                 | -      | 스크롤 영역 아래에 고정되는 영역 (주 동작 버튼, 선택)      |
 
 ## 파일 구조
 

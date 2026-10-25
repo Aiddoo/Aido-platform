@@ -7,9 +7,9 @@ import { isApiError } from './api-error';
  *
  * - `auth-transition`: 세션이 끝난 뒤 도착한 401. 라우트 게이트가 곧 로그인 화면으로 바꾸므로
  *   화면·리포트 없이 조용히 넘긴다.
- * - `expected-state`: 404 ApiError 또는 기능이 꺼진 4xx(`FEATURE_UNAVAILABLE_CODES`). 대상이 없거나
- *   아직 등록되지 않았거나 지금 쓸 수 없는 상태로, fallback이 안내 화면을 그린다.
- *   장애가 아니므로 예외 리포트 대신 breadcrumb만 남긴다.
+ * - `expected-state`: 404 ApiError, 기능이 꺼진 4xx(`FEATURE_UNAVAILABLE_CODES`) 또는 AI 데이터 제공
+ *   동의 없음(AI_1311). 대상이 없거나 아직 등록되지 않았거나 지금 쓸 수 없거나 사용자가 아직 답하지 않은
+ *   상태로, fallback이 안내 화면을 그린다. 장애가 아니므로 예외 리포트 대신 breadcrumb만 남긴다.
  * - `error`: 진짜 장애(5xx·네트워크·파싱 등). 에러 화면 + 리포트.
  */
 export type BoundaryErrorKind = 'auth-transition' | 'expected-state' | 'error';
@@ -31,7 +31,12 @@ export const classifyBoundaryError = (error: unknown): BoundaryErrorKind => {
     return 'auth-transition';
   }
 
-  if (isApiError(error) && (error.status === 404 || FEATURE_UNAVAILABLE_CODES.has(error.code))) {
+  if (
+    isApiError(error) &&
+    (error.status === 404 ||
+      FEATURE_UNAVAILABLE_CODES.has(error.code) ||
+      error.hasCode(ErrorCode.AI_1311))
+  ) {
     return 'expected-state';
   }
 

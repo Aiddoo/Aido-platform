@@ -6,6 +6,7 @@ import { unwrap } from '@src/shared/errors/result';
 import { queryOptions } from '@tanstack/react-query';
 
 import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
+import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
 
 export function getSuggestionsQueryOptions(aiService: AiService) {
   return queryOptions({
@@ -14,8 +15,11 @@ export function getSuggestionsQueryOptions(aiService: AiService) {
       const result = await aiService.getSuggestions(signal);
       return unwrap(result);
     },
+    // 프리미엄 전용·동의 없음은 장애가 아니라 진입 카드가 안내로 바꿔 보인다
     throwOnError: (error, query) =>
-      query.state.data === undefined && !isSuggestionsPremiumRequiredError(error),
+      query.state.data == null &&
+      !isSuggestionsPremiumRequiredError(error) &&
+      !isAiDataSharingConsentRequiredError(error),
   });
 }
 

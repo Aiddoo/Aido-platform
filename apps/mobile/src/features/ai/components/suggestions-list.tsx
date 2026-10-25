@@ -24,12 +24,14 @@ import { router } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Image } from 'react-native';
 
+import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
 import {
   isSuggestionsPremiumRequiredError,
   useGetSuggestionsQueryOptions,
 } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
 import { suggestionCategorySheetHref } from '../utils/navigation/suggestion-sheet-href';
+import { AiConsentRequiredResult } from './ai-consent-required-result';
 
 const SUGGESTION_LOADING_COUNT = 2;
 
@@ -301,6 +303,16 @@ SuggestionsList.Error = function ErrorState({ error, reset }: QueryErrorFallback
 
   if (isSuggestionsPremiumRequiredError(error)) {
     return <SuggestionsList.PremiumPreview />;
+  }
+
+  if (isAiDataSharingConsentRequiredError(error)) {
+    return (
+      <ScallopedContainer>
+        <Box className="px-5 py-6">
+          <AiConsentRequiredResult reset={reset} />
+        </Box>
+      </ScallopedContainer>
+    );
   }
 
   return (

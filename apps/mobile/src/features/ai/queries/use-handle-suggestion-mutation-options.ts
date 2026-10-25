@@ -2,6 +2,7 @@ import { ErrorCode } from '@aido/api/errors';
 import { useActivationService, useAiService, useLogger } from '@src/bootstrap/providers/di-context';
 import { recordTodoCreatedForActivation } from '@src/features/activation/queries/activation-cache';
 import type { AiSuggestionActionInput } from '@src/features/ai/domains/ai.model';
+import { markAiDataSharingConsentRequired } from '@src/features/auth/queries/auth-cache';
 import { invalidateTodos } from '@src/features/todo/queries/todo-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, toError } from '@src/shared/errors';
@@ -14,6 +15,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { AI_LOG_EVENT } from '../constants/ai-log-events';
 import { AI_QUERY_KEYS } from '../constants/ai-query-keys';
+import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
 
 interface HandleSuggestionParams {
   suggestionId: number;
@@ -50,6 +52,13 @@ export const useHandleSuggestionMutationOptions = () => {
       );
     },
     onError: (error) => {
+      // 그사이 동의가 사라졌다. 남은 목록을 비워 다시 불러오면 제안 화면이 동의 안내로 바뀐다
+      if (isAiDataSharingConsentRequiredError(error)) {
+        markAiDataSharingConsentRequired(queryClient);
+        queryClient.resetQueries({ queryKey: AI_QUERY_KEYS.suggestions() });
+        return;
+      }
+
       notifyError();
 
       if (isApiError(error) && error.hasCode(ErrorCode.AI_1309)) {

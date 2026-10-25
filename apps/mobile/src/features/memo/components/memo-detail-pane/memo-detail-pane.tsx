@@ -1,5 +1,6 @@
 import { updateMemoSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { getParsedMemo } from '@src/features/ai/queries/ai-cache';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { AddTodoBottomSheet } from '@src/features/todo/components/add-todo-bottom-sheet';
@@ -373,14 +374,18 @@ function useAiParseAction() {
   const categoriesQuery = useQuery(useGetTodoCategoriesQueryOptions());
   const aiUsageQuery = useQuery(useGetAiUsageQueryOptions());
   const hasCategory = categoriesQuery.data?.categories[0] != null;
+  const aiConsent = useAiDataSharingConsentGate();
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (getParsedMemo(queryClient, { memoId })) {
       push(memoAiReviewHref(memoId));
       return;
     }
+    if (!(await aiConsent.ensureAgreed())) {
+      return;
+    }
 
-    overlay.open(({ isOpen, close, exit }) => {
+    await overlay.open(({ isOpen, close, exit }) => {
       const handleOpenChange = (open: boolean) => {
         if (!open) {
           close();
@@ -404,6 +409,12 @@ function useAiParseAction() {
         </QueryErrorBoundary>
       );
     });
+
+    // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 확인 창이 닫히고 동의 캐시가 미응답이 된다.
+    // 확인 창은 Portal이라 그 위에 시트를 띄울 수 없어, 창이 닫힌 뒤 동의부터 다시 시작한다
+    if (aiConsent.isAgreementRequired()) {
+      await handlePress();
+    }
   };
 
   return {

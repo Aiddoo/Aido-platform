@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AiUsagePolicy } from '@src/features/ai/domains/ai-usage.model';
+import { isAiDataSharingConsentRequiredError } from '@src/features/ai/domains/ai.error';
+import { useAiDataSharingConsentGate } from '@src/features/ai/hooks/use-ai-data-sharing-consent-gate';
 import { useGetAiUsageQueryOptions } from '@src/features/ai/queries/get-ai-usage-query-options';
 import { useParseTodoMutationOptions } from '@src/features/ai/queries/use-parse-todo-mutation-options';
 import { useConvertMemoToTodosMutationOptions } from '@src/features/memo/queries/use-convert-memo-to-todos-mutation-options';
@@ -682,17 +684,21 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
   const isAiLimitReached = aiUsage != null && AiUsagePolicy.isLimitReached(aiUsage);
 
   const parseMutation = useMutation(useParseTodoMutationOptions());
+  const aiConsent = useAiDataSharingConsentGate();
 
-  const handleRecognitionEnd = () => {
-    const currentTitle = methods.getValues('title');
-    const currentCategoryId = methods.getValues('categoryId');
-    if (!currentTitle?.trim()) {
-      return;
-    }
-
+  const parseTitle = (text: string, categoryId?: number) => {
     parseMutation.mutate(
-      { text: currentTitle.trim(), categoryId: currentCategoryId },
+      { text, categoryId },
       {
+        // 다른 기기에서 동의를 철회했다면 여기서 다시 묻고, 동의하면 받아 적은 문장 그대로 정리한다
+        onError: async (error) => {
+          if (!isAiDataSharingConsentRequiredError(error)) {
+            return;
+          }
+          if (await aiConsent.requestAgreement()) {
+            parseTitle(text, categoryId);
+          }
+        },
         onSuccess: (result) => {
           const { data: parsedTodo } = result;
           methods.reset(
@@ -715,6 +721,14 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
     );
   };
 
+  const handleRecognitionEnd = () => {
+    const currentTitle = methods.getValues('title');
+    if (!currentTitle?.trim()) {
+      return;
+    }
+    parseTitle(currentTitle.trim(), methods.getValues('categoryId'));
+  };
+
   const { isRecognizing, start, stop } = useSpeechRecognition({
     onResult: (text) => {
       methods.setValue('title', text);
@@ -723,7 +737,7 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
     onError: toast.error,
   });
 
-  const handlePress = () => {
+  const handlePress = async () => {
     if (isRecognizing) {
       stop();
       return;
@@ -738,7 +752,11 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
       return;
     }
 
+    // 동의 시트가 키보드에 가리지 않게 먼저 내린다. 동의하지 않으면 직접 입력을 이어간다
     Keyboard.dismiss();
+    if (!(await aiConsent.ensureAgreed())) {
+      return;
+    }
     start();
   };
 
