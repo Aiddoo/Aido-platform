@@ -24,6 +24,7 @@ import {
   memo,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -34,9 +35,17 @@ import {
   type ColorValue,
   RefreshControl,
   type ScrollViewProps,
+  StyleSheet,
 } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
-import { type SharedValue, useReducedMotion } from 'react-native-reanimated';
+import Animated, {
+  type SharedValue,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import { useResolveClassNames } from 'uniwind';
 
 import type {
@@ -49,6 +58,7 @@ import { useGetTodoCommentConversationQueryOptions } from '../../queries/get-tod
 import { invalidateTodoCommentConversations } from '../../queries/todo-comment-cache';
 import {
   canFetchPreviousComments,
+  FOCUSED_COMMENT_CLEARANCE,
   getCommentFocusRevealOffset,
   getConversationThreadId,
   getFocusedCommentKeyboardLiftBehavior,
@@ -75,6 +85,8 @@ import { TodoCommentKeyboardScrollView } from '../todo-comment-keyboard-scroll-v
 import { TodoCommentMessage } from '../todo-comment-message';
 
 const maintainVisibleContentPosition = { disabled: false } as const;
+// 첫 위치부터 focus 위 여백을 둬 mount 직후 reveal 보정이 목록을 한 번 더 움직이지 않게 한다.
+const initialScrollIndexParams = { viewOffset: -FOCUSED_COMMENT_CLEARANCE } as const;
 const keyExtractor = (row: TodoCommentConversationRowViewModel) => row.comment.id;
 const renderRow = ({ item }: { item: TodoCommentConversationRowViewModel }) => (
   <ConversationRow row={item} />
@@ -518,6 +530,7 @@ function TodoCommentConversationWindow({
         renderItem={renderRow}
         renderScrollComponent={renderConversationKeyboardScrollView}
         initialScrollIndex={initialScrollIndex}
+        initialScrollIndexParams={initialScrollIndexParams}
         onLoad={handleListLoad}
         onViewableItemsChanged={handleViewableItemsChanged}
         onCommitLayoutEffect={handleCommitLayout}
@@ -651,14 +664,46 @@ function ConversationCommentRow({ comment, connection, isFocused }: Conversation
       px={ROW_HORIZONTAL_PADDING}
       gap={MESSAGE_GAP}
       align="stretch"
-      className={isFocused ? 'bg-main/10' : undefined}
       accessibilityState={{ selected: isFocused }}
     >
+      {isFocused && <FocusedCommentHighlight key={comment.id} />}
       <ConversationThreadRail author={comment.author} avatarSize="md" connection={connection} />
       <Box flex={1} py={TODO_COMMENT_CONNECTION_GEOMETRY.rowVerticalPadding} className="min-w-0">
         <TodoCommentMessage comment={comment} isFocused={isFocused} />
       </Box>
     </HStack>
+  );
+}
+
+const FOCUSED_COMMENT_HIGHLIGHT = { holdMs: 1200, fadeMs: 900 } as const;
+
+/**
+ * 알림이나 목록에서 고른 댓글을 잠깐 강조한 뒤 천천히 지운다. 행 높이와 배치에 관여하지 않는 overlay라
+ * 사라져도 layout이 움직이지 않는다. 동작 줄이기에서는 깜빡이지 않고 강조를 그대로 둔다.
+ */
+function FocusedCommentHighlight() {
+  const prefersReducedMotion = useReducedMotion();
+  const opacity = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+    opacity.value = withDelay(
+      FOCUSED_COMMENT_HIGHLIGHT.holdMs,
+      withTiming(0, { duration: FOCUSED_COMMENT_HIGHLIGHT.fadeMs }),
+    );
+  }, [opacity, prefersReducedMotion]);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      className="bg-main/10"
+      style={[StyleSheet.absoluteFill, animatedStyle]}
+    />
   );
 }
 

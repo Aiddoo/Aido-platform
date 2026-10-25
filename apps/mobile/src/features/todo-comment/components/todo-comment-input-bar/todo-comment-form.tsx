@@ -39,6 +39,7 @@ import {
 import type { TodoCommentAuthor, TodoComment } from '../../domains/todo-comment.model';
 import { TodoCommentDraftPolicy } from '../../domains/todo-comment.model';
 import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
+import { usePrepareTodoCommentConversation } from '../../hooks/use-prepare-todo-comment-conversation';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
 import { useCreateTodoCommentChainMutationOptions } from '../../queries/use-create-todo-comment-chain-mutation-options';
 import { useUpdateTodoCommentMutationOptions } from '../../queries/use-update-todo-comment-mutation-options';
@@ -219,6 +220,7 @@ function useTodoCommentFormSubmission(
   const { todoId } = useTodoScreenParams();
   const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const cancelPendingTransition = useCancelTodoCommentScreenTransition();
+  const prepareConversation = usePrepareTodoCommentConversation();
   const isSubmitting = useIsTodoCommentSubmitting();
   const updateComment = useMutation(useUpdateTodoCommentMutationOptions({ todoId }));
   const createCommentChain = useMutation(useCreateTodoCommentChainMutationOptions({ todoId }));
@@ -237,11 +239,14 @@ function useTodoCommentFormSubmission(
     updateCommentRoute.cancelForm();
   }, [cancelPendingTransition, dismissKeyboard, onFinish, updateCommentRoute]);
 
-  const complete = useCallback(() => {
-    cancelPendingTransition();
-    dismissKeyboard();
-    updateCommentRoute.completeForm();
-  }, [cancelPendingTransition, dismissKeyboard, updateCommentRoute]);
+  const complete = useCallback(
+    (focusCommentId?: string) => {
+      cancelPendingTransition();
+      dismissKeyboard();
+      updateCommentRoute.completeForm(focusCommentId);
+    },
+    [cancelPendingTransition, dismissKeyboard, updateCommentRoute],
+  );
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -290,12 +295,27 @@ function useTodoCommentFormSubmission(
         });
         preparedSubmissionRef.current = submission;
 
-        await createCommentChain.mutateAsync(submission.input);
+        const chain = await createCommentChain.mutateAsync(submission.input);
         preparedSubmissionRef.current = null;
         onFinish();
 
-        if (isMountedRef.current) {
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        const postedReply = session.type === 'reply' ? chain.comments.at(-1) : undefined;
+        if (postedReply == null) {
           complete();
+          return;
+        }
+
+        // 새 답글을 focus한 대화 window를 먼저 확정하고 URL을 바꿔 목록이 skeleton 없이 그 답글로 이동한다.
+        const hasPreparedReply = await prepareConversation(postedReply.id).then(
+          () => true,
+          () => false,
+        );
+        if (isMountedRef.current) {
+          complete(hasPreparedReply ? postedReply.id : undefined);
         }
       } catch (error) {
         if (isApiError(error) && error.status >= 400 && error.status < 500) {
@@ -305,7 +325,7 @@ function useTodoCommentFormSubmission(
         isSubmittingRef.current = false;
       }
     },
-    [complete, createCommentChain, onFinish, session, todoId, updateComment],
+    [complete, createCommentChain, onFinish, prepareConversation, session, todoId, updateComment],
   );
 
   return { isSubmitting, cancel, submit };
