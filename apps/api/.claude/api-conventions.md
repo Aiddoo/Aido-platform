@@ -23,7 +23,7 @@ SOLID를 새 Base class나 계층을 만드는 이유로 사용하지 않는다.
 - 파일·폴더는 kebab-case, 클래스·타입은 PascalCase, 변수·필드는 camelCase다. ESM 상대 import는 `.js`, 별칭은 `#api/*`/`#test/*`를 사용한다.
 - 순수 Application은 생성자 객체로 의존성을 받고 `readonly #dependencies`에 보관한다. 입력의 재할당 없는 속성도 readonly로 표현한다. 가변 Domain 상태를 기계적으로 readonly로 만들지는 않는다.
 - 의존성 타입은 전체 공급자 API보다 실제 사용하는 `Pick`이 명확할 수 있다. 단일 메서드 Port는 그 자체로 최소 계약일 수 있으므로 Pick을 반복할 필요는 없다.
-- 비교·null/undefined·기본값은 [공통 nullish 규칙](../../../docs/conventions/nullish.md)을 따른다: 값 비교는 `===`, "없음"은 `== null`, 엄격한 null/undefined 비교는 PATCH처럼 뜻이 다를 때만, 기본값은 `??`다. boolean은 `!flag`로 검사할 수 있지만 `0`·`false`·빈 문자열을 입력 누락으로 바꾸지 않는다.
+- 비교·null/undefined·기본값은 [공통 nullish 규칙](../../../docs/conventions/nullish.md)을 따른다: 값 비교는 `===`, "없음"은 `== null`, 엄격한 null/undefined 비교는 PATCH처럼 뜻이 다를 때만 `// nullish-strict: <이유>`와 함께 쓰고(`check:conventions`가 검사), 기본값은 `??`다. boolean은 `!flag`로 검사할 수 있지만 `0`·`false`·빈 문자열을 입력 누락으로 바꾸지 않는다.
 - PATCH의 `undefined`는 미제공, 허용된 `null`은 초기화다. 초기화 가능한 필드에 `input.field ?? existing.field`를 쓰지 않는다.
 - Repository의 조회 실패, cache miss 등은 각 Port의 기존 null/undefined 계약을 따른다. 값을 확인하지 않고 cast/non-null assertion으로 넘기지 않는다.
 - snapshot의 Date/배열/중첩 가변 값은 필요한 깊이만큼 방어적으로 복사한다. `readonly`만으로 외부 mutation이 차단되지는 않는다.
@@ -55,7 +55,7 @@ UseCase는 `<Verb><Object>` 이름과 `execute` 진입점을 사용한다. 한 e
 ```ts
 async execute(input: GetMemoInput): Promise<GetMemoResult> {
   const memo = await this.#dependencies.repository.findByIdAndUserId(input.memoId, input.userId);
-  if (memo === null) {
+  if (memo == null) {
     throw new ApplicationException(ErrorCode.MEMO_2001, {
       memoId: input.memoId,
     });

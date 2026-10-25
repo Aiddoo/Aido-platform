@@ -311,3 +311,66 @@ test('다른 피처를 상대경로로 import하면 거부하고 절대경로는
     },
   );
 });
+
+test('서버·모바일·공용 패키지의 엄격한 null·undefined 비교를 거부한다', () => {
+  withFixture(
+    {
+      'apps/api/src/modules/memo/get-memo.use-case.ts': `
+        if (memo === null) { throw new Error('없음'); }
+      `,
+      'apps/mobile/app/(app)/memo.tsx': `
+        const hasMemo = memo !== undefined;
+      `,
+      'packages/api/src/contracts/memo.ts': `
+        export const isEmpty = (value) => null === value;
+      `,
+      'apps/api/test/e2e/memo.e2e-spec.ts': `
+        if (memo === null) { throw new Error('테스트 디렉터리는 검사하지 않는다'); }
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 3);
+      assert.match(errors.join('\n'), /get-memo\.use-case\.ts/u);
+      assert.match(errors.join('\n'), /memo\.tsx/u);
+      assert.match(errors.join('\n'), /packages\/api\/src\/contracts\/memo\.ts/u);
+    },
+  );
+});
+
+test('== null 판단과 이유를 남긴 엄격한 비교는 통과한다', () => {
+  withFixture(
+    {
+      'apps/api/src/modules/todo/update-todo.ts': `
+        if (memo == null) { return; }
+        const status = todo.status === 'DONE';
+        // nullish-strict: PATCH라 undefined는 유지, null은 비우기다
+        if (input.memo === undefined) { keep(); }
+        const patch = {
+          // nullish-strict: PATCH라 undefined는 유지, null은 비우기다
+          ...(input.name !== undefined && { name: input.name }),
+          ...(input.image !== undefined && { image: input.image }),
+        };
+        const cached = map.get(key); if (cached !== undefined) { use(cached); } // nullish-strict: 저장된 null과 미존재를 구분한다
+      `,
+    },
+    (errors) => {
+      assert.deepEqual(errors, []);
+    },
+  );
+});
+
+test('허용 표시는 바로 위 문장에만 적용된다', () => {
+  withFixture(
+    {
+      'apps/mobile/src/features/todo/utils/todo-memo.ts': `
+        // nullish-strict: PATCH라 undefined는 유지, null은 비우기다
+        const isOmitted = input.memo === undefined;
+        const isEmpty = input.memo === null;
+      `,
+    },
+    (errors) => {
+      assert.equal(errors.length, 1);
+      assert.match(errors[0], /todo-memo\.ts:4:/u);
+    },
+  );
+});

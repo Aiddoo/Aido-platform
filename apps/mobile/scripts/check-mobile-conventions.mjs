@@ -73,6 +73,13 @@ const QUERY_HOOK_NAMES = new Set([
   'useSuspenseQuery',
 ]);
 
+const STRICT_NULLISH_ROOTS = ['apps/api/src', 'apps/mobile/src', 'apps/mobile/app'];
+const STRICT_NULLISH_ALLOW_MARKER = 'nullish-strict:';
+const STRICT_EQUALITY_OPERATORS = new Set([
+  ts.SyntaxKind.EqualsEqualsEqualsToken,
+  ts.SyntaxKind.ExclamationEqualsEqualsToken,
+]);
+
 function getSourceFiles(root, relativeDirectory) {
   const directory = resolve(root, relativeDirectory);
   if (!existsSync(directory)) {
@@ -445,6 +452,82 @@ function checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors) {
   }
 }
 
+function getPackageSourceRoots(repositoryRoot) {
+  const packagesDirectory = resolve(repositoryRoot, 'packages');
+  if (!existsSync(packagesDirectory)) {
+    return [];
+  }
+  return readdirSync(packagesDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `packages/${entry.name}/src`);
+}
+
+function isNullishLiteral(node) {
+  return (
+    node.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(node) && node.text === 'undefined')
+  );
+}
+
+function isCommentLine(line) {
+  const trimmed = line.trim();
+  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
+}
+
+function getEnclosingStatement(node) {
+  let current = node;
+  while (
+    current.parent !== undefined &&
+    !ts.isSourceFile(current.parent) &&
+    !ts.isBlock(current.parent) &&
+    !ts.isModuleBlock(current.parent) &&
+    !ts.isCaseClause(current.parent) &&
+    !ts.isDefaultClause(current.parent) &&
+    !ts.isClassElement(current)
+  ) {
+    current = current.parent;
+  }
+  return current;
+}
+
+/**
+ * 허용 표시는 비교가 있는 문장 바로 위 주석부터 비교가 있는 줄 사이에 둔다.
+ * 문장 하나 안의 여러 PATCH 필드는 그 위 표시 하나로 설명할 수 있다.
+ */
+function hasStrictNullishAllowComment(sourceFile, lines, node, comparisonLine) {
+  const statement = getEnclosingStatement(node);
+  let firstLine = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile)).line;
+  while (firstLine > 0 && isCommentLine(lines[firstLine - 1])) {
+    firstLine -= 1;
+  }
+  return lines
+    .slice(firstLine, comparisonLine + 1)
+    .some((line) => line.includes(STRICT_NULLISH_ALLOW_MARKER));
+}
+
+function checkStrictNullishComparisons(sourceFile, repositoryRoot, errors) {
+  const lines = sourceFile.text.split('\n');
+
+  function visit(node) {
+    if (
+      ts.isBinaryExpression(node) &&
+      STRICT_EQUALITY_OPERATORS.has(node.operatorToken.kind) &&
+      (isNullishLiteral(node.left) || isNullishLiteral(node.right))
+    ) {
+      const { line } = sourceFile.getLineAndCharacterOfPosition(
+        node.operatorToken.getStart(sourceFile),
+      );
+      if (!hasStrictNullishAllowComment(sourceFile, lines, node, line)) {
+        errors.push(
+          `${getLocation(sourceFile, node.operatorToken, repositoryRoot)} "없음" 판단은 == null / != null로 쓰세요. null과 undefined의 뜻이 달라 엄격하게 비교해야 하면 비교가 있는 문장 바로 위나 같은 줄에 // ${STRICT_NULLISH_ALLOW_MARKER} <이유>를 남기세요. (docs/conventions/nullish.md)`,
+        );
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+}
+
 export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   const errors = [];
 
@@ -495,6 +578,21 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
     );
     checkTodoCheckboxProps(sourceFile, repositoryRoot, errors);
     checkCrossFeatureRelativeImports(sourceFile, repositoryRoot, errors);
+  }
+
+  const nullishRoots = [...STRICT_NULLISH_ROOTS, ...getPackageSourceRoots(repositoryRoot)];
+  for (const file of nullishRoots.flatMap((root) => getSourceFiles(repositoryRoot, root))) {
+    if (file.endsWith('.d.ts') || file.includes('/generated/')) {
+      continue;
+    }
+    const sourceFile = ts.createSourceFile(
+      file,
+      readFileSync(file, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+      file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+    checkStrictNullishComparisons(sourceFile, repositoryRoot, errors);
   }
 
   return errors;
