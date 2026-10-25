@@ -1,9 +1,8 @@
 {
   "ios": {
     "NSMicrophoneUsageDescription": "말로 할 일을 입력할 때 마이크를 써요.",
-    "NSFaceIDUsageDescription": "Aido이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.",
     "NSSpeechRecognitionUsageDescription": "말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.",
-    "NSPhotoLibraryUsageDescription": "Aido이(가) 이미지를 불러오기 위해 사진 라이브러리에 접근하려고 합니다.",
+    "NSPhotoLibraryAddUsageDescription": "공유한 이미지를 사진 보관함에 저장할 때 써요.",
     "NSLocationWhenInUseUsageDescription": "현재 위치의 날씨를 보여줄 때 위치를 써요."
   }
 }

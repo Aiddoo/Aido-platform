@@ -1,9 +1,8 @@
 {
   "ios": {
     "NSMicrophoneUsageDescription": "Aido uses the microphone so you can add to-dos by voice.",
-    "NSFaceIDUsageDescription": "Aido uses Face ID to unlock the app.",
     "NSSpeechRecognitionUsageDescription": "Aido turns what you say into text so you can add to-dos by voice. Your voice may be processed by Apple speech recognition.",
-    "NSPhotoLibraryUsageDescription": "Aido needs photo library access to load images.",
+    "NSPhotoLibraryAddUsageDescription": "Aido saves images you share to your photo library.",
     "NSLocationWhenInUseUsageDescription": "Aido uses your location to show the weather where you are."
   }
 }

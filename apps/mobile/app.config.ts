@@ -189,12 +189,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
         // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
         NSMicrophoneUsageDescription: '말로 할 일을 입력할 때 마이크를 써요.',
-        NSFaceIDUsageDescription:
-          '$(PRODUCT_NAME)이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         NSSpeechRecognitionUsageDescription:
           '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.',
-        NSPhotoLibraryUsageDescription:
-          '$(PRODUCT_NAME)이(가) 이미지를 불러오기 위해 사진 라이브러리에 접근하려고 합니다.',
+        // 공유 시트의 "이미지 저장"이 사진 보관함에 추가할 때만 쓴다. 사진을 읽지 않으므로 추가 권한만 둔다.
+        NSPhotoLibraryAddUsageDescription: '공유한 이미지를 사진 보관함에 저장할 때 써요.',
         ...(isDevelopment && {
           NSAppTransportSecurity: {
             NSAllowsArbitraryLoads: true,
@@ -246,14 +244,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             ]
           : []),
       ],
-      permissions: [
-        'RECORD_AUDIO',
-        'VIBRATE',
-        'RECEIVE_BOOT_COMPLETED',
-        'USE_BIOMETRIC',
-        'USE_FINGERPRINT',
-        'POST_NOTIFICATIONS',
-      ],
+      permissions: ['RECORD_AUDIO', 'VIBRATE', 'RECEIVE_BOOT_COMPLETED', 'POST_NOTIFICATIONS'],
       // 광고 SDK가 없어 광고 ID를 쓰지 않는다. Firebase Analytics(play-services-measurement-api)가
       // 병합하는 광고 ID 권한을 빼서 Play Console 광고 ID 신고를 "아니요"로 유지한다.
       blockedPermissions: [
@@ -375,15 +366,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           color: BRAND_COLOR,
           // TODO: 알림음 파일 추가 시 설정
           // sounds: ["./assets/sounds/notification.wav"],
-        },
-      ],
-
-      [
-        'expo-local-authentication',
-        {
-          faceIDPermission:
-            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
-            '${PRODUCT_NAME}이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         },
       ],
 

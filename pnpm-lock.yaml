@@ -294,9 +294,6 @@ catalogs:
     expo-linking:
       specifier: ~58.0.14
       version: 58.0.14
-    expo-local-authentication:
-      specifier: ~58.0.2
-      version: 58.0.2
     expo-localization:
       specifier: ~58.0.5
       version: 58.0.5
@@ -833,9 +830,6 @@ importers:
       expo-linking:
         specifier: catalog:expo58
         version: 58.0.14(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
-      expo-local-authentication:
-        specifier: catalog:expo58
-        version: 58.0.2(expo@58.0.19)
       expo-localization:
         specifier: catalog:expo58
         version: 58.0.5(expo@58.0.19)(react@19.3.0)
@@ -7852,11 +7846,6 @@ packages:
       expo: '*'
       react: '*'
       react-native: '*'
-
-  expo-local-authentication@58.0.2:
-    resolution: {integrity: sha512-WLnlZUOWa2CqoJVgcaASv7utsAi3JEaJsltXxJcbuaR8gdvQC49Cax42YZdcAT3k3YJO+fUg9sem2ZcUYnsmMw==}
-    peerDependencies:
-      expo: '*'
 
   expo-localization@58.0.5:
     resolution: {integrity: sha512-2wyZl/5wn95l38AAtdaUAq2VMJWbGbgQQDEuIEkkemmsA/BZ8gS21Nq+7I2X9hDfL5Z+4hlyLVdPtDIH0vvt1A==}
@@ -19261,11 +19250,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
-
-  expo-local-authentication@58.0.2(expo@58.0.19):
-    dependencies:
-      expo: 58.0.19(e60e3504b6302d23d34cf5e9e3a33e80)
-      invariant: 2.2.4
 
   expo-localization@58.0.5(expo@58.0.19)(react@19.3.0):
     dependencies:
