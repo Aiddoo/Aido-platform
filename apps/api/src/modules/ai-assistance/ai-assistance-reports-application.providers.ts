@@ -2,6 +2,7 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import {
+  AI_CLIENT_APP_VERSION_READER,
   AI_DATA_SHARING_CONSENT_DECISION_READER,
   AI_PROVIDER,
   AI_TASK_SETTINGS,
@@ -25,6 +26,7 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
     TODO_STATS_READER,
     AI_PROVIDER,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
+    AI_CLIENT_APP_VERSION_READER,
     ENTITLEMENT_READER,
     USER_MUTATION_LOCK,
     UNIT_OF_WORK,
@@ -35,6 +37,7 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
     todoStatsReader: ConstructorParameters<typeof GenerateReport>[0]["todoStatsReader"],
     aiProvider: ConstructorParameters<typeof GenerateReport>[0]["aiProvider"],
     aiDataSharingConsent: ConstructorParameters<typeof GenerateReport>[0]["aiDataSharingConsent"],
+    clientAppVersion: ConstructorParameters<typeof GenerateReport>[0]["clientAppVersion"],
     entitlementReader: ConstructorParameters<typeof GenerateReport>[0]["entitlementReader"],
     userMutationLock: ConstructorParameters<typeof GenerateReport>[0]["userMutationLock"],
     unitOfWork: ConstructorParameters<typeof GenerateReport>[0]["unitOfWork"],
@@ -45,6 +48,7 @@ export const generateReportProvider: FactoryProvider<GenerateReport> = {
       todoStatsReader,
       aiProvider,
       aiDataSharingConsent,
+      clientAppVersion,
       entitlementReader,
       userMutationLock,
       unitOfWork,

@@ -13,5 +13,12 @@ export {
   AI_DATA_SHARING_CONSENT_DECISION_READER,
   type AiDataSharingConsentDecisionReaderPort,
 } from "./application/ports/parsing/ai-data-sharing-consent.reader.port.js";
-export { canProcessScheduledAi } from "./domain/policies/parsing/ai-data-sharing-consent.policy.js";
+export {
+  AI_CLIENT_APP_VERSION_READER,
+  type AiClientAppVersionReaderPort,
+} from "./application/ports/parsing/client-app-version.reader.port.js";
+export {
+  canRunScheduledAi,
+  type ScheduledAiConsentReaders,
+} from "./application/services/parsing/scheduled-ai-consent.js";
 export { AiDataSharingConsentGuard } from "./infrastructure/guards/parsing/ai-data-sharing-consent.guard.js";

@@ -1,6 +1,10 @@
 export type { CreateNotificationData } from "./application/ports/delivery/notification-data.js";
 export { NotificationPublisher } from "./application/publishers/delivery/notification.publisher.js";
 export {
+  CLIENT_APP_VERSION_READER,
+  type ClientAppVersionReaderPort,
+} from "./application/ports/delivery/client-app-version.reader.port.js";
+export {
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
 } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";

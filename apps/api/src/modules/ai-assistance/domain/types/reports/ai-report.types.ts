@@ -64,7 +64,7 @@ export interface AggregateParams {
  * 저장된 요약·팁의 출처. AI 실패로 저장한 폴백, 활동 없음 템플릿, 사용자가 AI 데이터 처리를
  * 거부해 AI 없이 만든 요약을 구분해 재생성·분석에 쓴다.
  */
-export type ReportContentSource = "AI" | "FALLBACK" | "TEMPLATE" | "CONSENT_DECLINED";
+export type ReportContentSource = "AI" | "FALLBACK" | "TEMPLATE" | "NO_AI_CONSENT";
 
 /**
  * AI가 생성한 리포트 콘텐츠

@@ -134,6 +134,23 @@ describe("AI 데이터 처리 동의 E2E", () => {
     expect(legacy.body.error.code).toBe("AI_1311");
   });
 
+  it("이미 만든 리포트·제안을 보는 요청은 새 데이터를 보내지 않으므로 동의를 묻지 않는다", async () => {
+    // When - 1.13.0 앱, 아직 답하지 않은 사용자
+    const responses = await Promise.all(
+      ["/v1/ai/reports?type=WEEKLY", "/v1/ai/suggestions"].map((path) =>
+        request(ctx.app.getHttpServer())
+          .get(path)
+          .set("Authorization", `Bearer ${user.accessToken}`)
+          .set("X-App-Version", "1.13.0"),
+      ),
+    );
+
+    // Then - 프리미엄 여부 등 다른 이유로 거절될 수는 있어도 동의 때문에 막지 않는다
+    for (const response of responses) {
+      expect(response.body.error?.code).not.toBe("AI_1311");
+    }
+  });
+
   it("현재가 아닌 안내 버전으로 답하면 400으로 거부한다", async () => {
     // When
     const response = await request(ctx.app.getHttpServer())

@@ -5,6 +5,10 @@ import {
   AI_DATA_SHARING_CONSENT_READER,
   IdentitySettingsModule,
 } from "#api/modules/identity/identity-settings.public";
+import {
+  CLIENT_APP_VERSION_READER,
+  NotificationDeliveryModule,
+} from "#api/modules/notification/notification-delivery.public";
 
 import { PlanningCategoriesModule } from "../planning/planning-categories.public.js";
 import { AI_PROVIDERS } from "./ai-assistance-parsing.providers.js";
@@ -12,6 +16,7 @@ import { AI_DATA_SHARING_CONSENT_DECISION_READER } from "./application/ports/par
 import { AI_PROVIDER } from "./application/ports/parsing/ai-provider.port.js";
 import { AI_QUOTA } from "./application/ports/parsing/ai-quota.port.js";
 import { AI_TASK_SETTINGS } from "./application/ports/parsing/ai-task-settings.port.js";
+import { AI_CLIENT_APP_VERSION_READER } from "./application/ports/parsing/client-app-version.reader.port.js";
 import { USER_CATEGORY_READER } from "./application/ports/parsing/user-category-reader.port.js";
 import { USER_LOCALE_PREFERENCE_READER } from "./application/ports/parsing/user-locale-preference.reader.port.js";
 import { GeminiAiAdapter } from "./infrastructure/adapters/parsing/gemini-ai.adapter.js";
@@ -23,7 +28,12 @@ import { AiUsageGuard } from "./infrastructure/guards/parsing/ai-usage.guard.js"
 import { AiController } from "./presentation/controllers/parsing/ai.controller.js";
 
 @Module({
-  imports: [AccessModule, IdentitySettingsModule, PlanningCategoriesModule],
+  imports: [
+    AccessModule,
+    IdentitySettingsModule,
+    NotificationDeliveryModule,
+    PlanningCategoriesModule,
+  ],
   controllers: [AiController],
   providers: [
     AiUsageGuard,
@@ -32,6 +42,7 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
       provide: AI_DATA_SHARING_CONSENT_DECISION_READER,
       useExisting: AI_DATA_SHARING_CONSENT_READER,
     },
+    { provide: AI_CLIENT_APP_VERSION_READER, useExisting: CLIENT_APP_VERSION_READER },
     { provide: AI_PROVIDER, useClass: GeminiAiAdapter },
     { provide: AI_QUOTA, useExisting: ACCESS_AI_QUOTA },
     { provide: USER_CATEGORY_READER, useClass: TodoCategoryReaderAdapter },
@@ -44,6 +55,7 @@ import { AiController } from "./presentation/controllers/parsing/ai.controller.j
     USER_LOCALE_PREFERENCE_READER,
     AI_TASK_SETTINGS,
     AI_DATA_SHARING_CONSENT_DECISION_READER,
+    AI_CLIENT_APP_VERSION_READER,
     AiDataSharingConsentGuard,
   ],
 })

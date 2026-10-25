@@ -63,6 +63,23 @@ describe("AnalyzeAndCreateSuggestions", () => {
       expect(f.repository.rows.get(1)?.status).toBe("PENDING");
     }));
 
+  it("1.13.0 이상 앱을 쓰는 사용자는 동의해야 반복 제안을 분석한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 같은 반복 기록, 1.13.0 앱
+      const undecided = usePatternResponse(createAiAssistanceFixture());
+      undecided.clientAppVersion.latestAppVersion = "1.13.0";
+      const agreed = usePatternResponse(createAiAssistanceFixture());
+      agreed.clientAppVersion.latestAppVersion = "1.13.0";
+      agreed.aiDataSharingConsent.decision = "AGREED";
+      // When
+      const skipped = await undecided.analyze.execute(undecided.userId, "Asia/Seoul");
+      await agreed.analyze.execute(agreed.userId, "Asia/Seoul");
+      // Then
+      expect(skipped).toBe(0);
+      expect(undecided.aiProvider.getCallCount()).toBe(0);
+      expect(agreed.aiProvider.getCallCount()).toBe(1);
+    }));
+
   it("기록이 없으면 기존 pending을 보존하고 AI와 쓰기를 모두 생략한다", () =>
     withAiAssistanceTime(async () => {
       // Given - 기록 없는 사용자에게 기존 pending이 있음

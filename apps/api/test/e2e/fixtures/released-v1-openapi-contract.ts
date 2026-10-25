@@ -310,9 +310,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: 차단·신고 추가로 POST /follows/{userTag} 403의 error.code를 BLOCK_2203(차단한 사용자)·FOLLOW_0909(친구 한도) enum으로 선언했다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
 	preFriendSafetyPathsFingerprint:
 		"91b4fe4e03952e2bb9867293b3fd1946baed7640bcda5c95f2a4e42d94bbca2a",
-	/** 1.13.0: AI 파싱·리포트·제안 라우트에 선택 x-app-version 헤더와 403 AI_1311만 추가. 헤더가 없거나 1.13.0 미만이면 동의 없이도 기존처럼 처리한다. */
+	/** 1.13.0: AI 할 일·메모 정리 라우트에만 선택 x-app-version 헤더와 403 AI_1311을 추가. 리포트·제안 조회·처리는 그대로다. 헤더가 없거나 1.13.0 미만이면 동의 없이도 기존처럼 처리한다. */
 	preAiDataSharingConsentPathsFingerprint:
 		"7c517f2efce3afa4832d61055fb28954d8d108c5c5426848532aa4e02f154506",
 	pathsFingerprint:
-		"dfbd221612d68e3cb75077b0c8c37c6371f728cfba6618616339d9cd9c587268",
+		"5a0384f8da8af27e97e2607f372d505cae3bffb6be2dc66658af6886adace8a9",
 } as const;

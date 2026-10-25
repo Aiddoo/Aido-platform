@@ -9,7 +9,7 @@ import {
   AI_DATA_SHARING_CONSENT_DECISION_READER,
   type AiDataSharingConsentDecisionReaderPort,
 } from "../../../application/ports/parsing/ai-data-sharing-consent.reader.port.js";
-import { canProcessRequestedAi } from "../../../domain/policies/parsing/ai-data-sharing-consent.policy.js";
+import { canShareWithAi } from "../../../domain/policies/parsing/ai-data-sharing-consent.policy.js";
 
 interface AuthenticatedRequest extends Request {
   user?: CurrentUserPayload;
@@ -36,7 +36,7 @@ export class AiDataSharingConsentGuard implements CanActivate {
     const appVersionHeader = request.headers["x-app-version"];
     const appVersion = typeof appVersionHeader === "string" ? appVersionHeader : undefined;
     const decision = await this.consentReader.findAiDataSharingDecision(user.userId);
-    if (!canProcessRequestedAi(decision, appVersion)) {
+    if (!canShareWithAi(decision, appVersion)) {
       throw new ApplicationException(ErrorCode.AI_1311, { decision });
     }
     return true;

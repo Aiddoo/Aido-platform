@@ -1,17 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  UseGuards,
-} from "@nestjs/common";
-import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
-import { AiDataSharingConsentGuard } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -229,13 +219,6 @@ export class AiSuggestionController {
   @ApiSuccessResponse({ type: SuggestionListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.AI_1309)
-  @ApiForbiddenError(ErrorCode.AI_1311)
-  @UseGuards(AiDataSharingConsentGuard)
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
-  })
   async getPendingSuggestions(
     @CurrentUser() user: CurrentUserPayload,
   ): Promise<SuggestionListResponseDto> {
@@ -273,13 +256,6 @@ export class AiSuggestionController {
   @ApiSuccessResponse({ type: SuggestionActionResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiForbiddenError(ErrorCode.AI_1309)
-  @ApiForbiddenError(ErrorCode.AI_1311)
-  @UseGuards(AiDataSharingConsentGuard)
-  @ApiHeader({
-    name: "x-app-version",
-    required: false,
-    description: "설치된 앱 버전. 1.13.0 이상이면 AI 데이터 처리 동의가 있어야 처리합니다.",
-  })
   @ApiNotFoundError(ErrorCode.AI_1305)
   async handleSuggestion(
     @CurrentUser() user: CurrentUserPayload,

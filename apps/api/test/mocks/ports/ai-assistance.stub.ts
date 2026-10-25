@@ -2,6 +2,7 @@ import type { AiDataSharingDecision } from "@aido/api/vocabulary";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import type { AiDataSharingConsentDecisionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/ai-data-sharing-consent.reader.port";
+import type { AiClientAppVersionReaderPort } from "#api/modules/ai-assistance/application/ports/parsing/client-app-version.reader.port";
 import type {
   AiReportRepositoryPort,
   CreateAiReportInput,
@@ -240,5 +241,14 @@ export class StubAiDataSharingConsent implements AiDataSharingConsentDecisionRea
 
   async findAiDataSharingDecision(): Promise<AiDataSharingDecision> {
     return this.decision;
+  }
+}
+
+/** 예약 작업이 읽는 사용자의 앱 버전. 기본은 버전을 알 수 없는 사용자(오래된 앱과 같게 처리)다 */
+export class StubAiClientAppVersion implements AiClientAppVersionReaderPort {
+  latestAppVersion: string | null = null;
+
+  async findLatestAppVersion(): Promise<string | null> {
+    return this.latestAppVersion;
   }
 }

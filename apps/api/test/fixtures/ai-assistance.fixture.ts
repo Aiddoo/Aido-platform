@@ -18,6 +18,7 @@ import {
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
   StubAiDataSharingConsent,
+  StubAiClientAppVersion,
   StubAiGenerationAccess,
   StubAiGenerationUnitOfWork,
   StubAiReportRepository,
@@ -87,6 +88,7 @@ export function createAiAssistanceFixture() {
   const reportReader = new StubAiWeeklyReportReader();
   const aiProvider = new GatedFakeAiProvider();
   const aiDataSharingConsent = new StubAiDataSharingConsent();
+  const clientAppVersion = new StubAiClientAppVersion();
   const logger = mock<ApplicationLogger>();
   const contextBuilder = new SuggestionContextBuilder({
     repository,
@@ -98,6 +100,7 @@ export function createAiAssistanceFixture() {
     repository,
     aiProvider,
     aiDataSharingConsent,
+    clientAppVersion,
     unitOfWork,
     contextBuilder,
     logger,
@@ -110,6 +113,7 @@ export function createAiAssistanceFixture() {
     repository,
     aiProvider,
     aiDataSharingConsent,
+    clientAppVersion,
     unitOfWork,
     contextBuilder,
     logger,
@@ -122,6 +126,7 @@ export function createAiAssistanceFixture() {
     todoStatsReader,
     aiProvider,
     aiDataSharingConsent,
+    clientAppVersion,
     logger,
     entitlementReader: access,
     unitOfWork,
@@ -139,6 +144,7 @@ export function createAiAssistanceFixture() {
     reportReader,
     aiProvider,
     aiDataSharingConsent,
+    clientAppVersion,
     logger,
     contextBuilder,
     analyze,

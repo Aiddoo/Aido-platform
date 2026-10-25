@@ -393,9 +393,38 @@ describe("GenerateReport", () => {
       // Then - 공급자를 부르지 않고 출처를 구분해 저장
       expect(f.aiProvider.getCallCount()).toBe(0);
       expect(f.reportRepository.saved[0]).toMatchObject({
-        contentSource: "CONSENT_DECLINED",
+        contentSource: "NO_AI_CONSENT",
         promptVersion: null,
       });
+    }));
+
+  it("1.13.0 이상 앱을 쓰는 사용자가 아직 답하지 않았으면 AI 없이 기록 통계로 요약한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given - 동의 화면이 있는 앱을 쓰지만 아직 답하지 않음
+      const f = useReportActivity(createAiAssistanceFixture());
+      f.clientAppVersion.latestAppVersion = "1.13.0";
+      // When
+      await f.generateReport.execute({ userId: f.userId, timezone: "Asia/Seoul", type: "WEEKLY" });
+      // Then
+      expect(f.aiProvider.getCallCount()).toBe(0);
+      expect(f.reportRepository.saved[0]).toMatchObject({ contentSource: "NO_AI_CONSENT" });
+    }));
+
+  it("동의 화면이 없는 1.12 앱 사용자는 답하지 않았어도 기존처럼 AI로 요약한다", () =>
+    withAiAssistanceTime(async () => {
+      // Given
+      const f = useReportResponse(createAiAssistanceFixture(), "ko");
+      f.clientAppVersion.latestAppVersion = "1.12.1";
+      // When
+      await f.generateReport.execute({
+        userId: f.userId,
+        timezone: "Asia/Seoul",
+        type: "WEEKLY",
+        locale: "ko",
+      });
+      // Then
+      expect(f.aiProvider.getCallCount()).toBe(1);
+      expect(f.reportRepository.saved[0]).toMatchObject({ contentSource: "AI" });
     }));
 
   it("활동이 없는 기간은 LLM을 부르지 않고 템플릿을 저장한다", () =>

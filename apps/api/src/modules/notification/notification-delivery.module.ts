@@ -7,6 +7,7 @@ import { DatabaseService } from "#api/platform/database/database.service";
 import { REDIS_COMMAND_CLIENT } from "#api/platform/redis/redis.constants";
 
 import { ACTIVE_PUSH_TOKEN_READER } from "./application/ports/delivery/active-push-token.reader.port.js";
+import { CLIENT_APP_VERSION_READER } from "./application/ports/delivery/client-app-version.reader.port.js";
 import { MARKETING_PUSH_OPT_OUT_TOKEN } from "./application/ports/delivery/marketing-push-opt-out-token.port.js";
 import { NOTIFICATION_CACHE } from "./application/ports/delivery/notification-cache.port.js";
 import {
@@ -45,6 +46,7 @@ import { NotificationQueueModule } from "./infrastructure/jobs/delivery/notifica
 import { NotificationQueueProcessor } from "./infrastructure/jobs/delivery/notification-queue.processor.js";
 import { PushDeliveryQueueProcessor } from "./infrastructure/jobs/delivery/push-delivery-queue.processor.js";
 import { PushDeliveryQueueService } from "./infrastructure/jobs/delivery/push-delivery-queue.service.js";
+import { PrismaClientAppVersionReader } from "./infrastructure/persistence/delivery/prisma-client-app-version.reader.js";
 import { PrismaNotificationReader } from "./infrastructure/persistence/delivery/prisma-notification.reader.js";
 import { PrismaNotificationRepository } from "./infrastructure/persistence/delivery/prisma-notification.repository.js";
 import { PrismaPushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository.js";
@@ -182,6 +184,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
       provide: NOTIFICATION_RECIPIENT_LOCALE_READER,
       useExisting: CachedNotificationRecipientPreferenceAdapter,
     },
+    { provide: CLIENT_APP_VERSION_READER, useClass: PrismaClientAppVersionReader },
     // application 전달 정책 + durable outbox/queue 경계
     pushDeliveryAfterCommitPublisherProvider,
     pushDeliveryEligibilityServiceProvider,
@@ -229,6 +232,7 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     NotificationPublisher,
     NotificationHistoryReader,
     NOTIFICATION_RECIPIENT_LOCALE_READER,
+    CLIENT_APP_VERSION_READER,
     PUSH_QUIET_HOURS_READER,
     NotificationAccountCleanup,
     NotificationQueueModule,

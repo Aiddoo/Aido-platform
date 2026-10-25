@@ -24,6 +24,7 @@ import { SuggestionAnalysisProcessor } from "#api/modules/ai-assistance/infrastr
 import { AiDataSharingConsentReader } from "#api/modules/identity/application/services/settings/ai-data-sharing-consent-reader.service";
 import { UserRepository } from "#api/modules/identity/infrastructure/persistence/auth/user.repository";
 import { UserConsentRepository } from "#api/modules/identity/infrastructure/persistence/settings/user-consent.repository";
+import { PrismaClientAppVersionReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-client-app-version.reader";
 import { InMemoryCacheAdapter } from "#api/platform/cache/adapters/in-memory-cache.adapter";
 import { CacheService } from "#api/platform/cache/cache.service";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -152,6 +153,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       repository,
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
+      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
       contextBuilder,
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
@@ -165,6 +167,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       todoStatsReader: new PrismaTodoStatsReader(fixture.txHost, service),
       aiProvider: provider,
       aiDataSharingConsent: consentReader,
+      clientAppVersion: new PrismaClientAppVersionReader(fixture.txHost),
       entitlementReader: entitlement,
       unitOfWork: fixture.uow,
       userMutationLock,

@@ -3,9 +3,9 @@ import dayjs from "dayjs";
 
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import {
-  type AiDataSharingConsentDecisionReaderPort,
   type AiProvider,
-  canProcessScheduledAi,
+  canRunScheduledAi,
+  type ScheduledAiConsentReaders,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import type { UserMutationLockPort } from "#api/modules/identity/identity-user-access.public";
 import type { GridInput } from "#api/modules/weather/weather-forecast.public";
@@ -40,10 +40,8 @@ interface AnalyzeAndCreateSuggestionsDependencies {
     "deletePending" | "deleteExpired" | "createMany"
   >;
   readonly aiProvider: Pick<AiProvider, "generateStructured" | "isAvailable">;
-  readonly aiDataSharingConsent: Pick<
-    AiDataSharingConsentDecisionReaderPort,
-    "findAiDataSharingDecision"
-  >;
+  readonly aiDataSharingConsent: ScheduledAiConsentReaders["aiDataSharingConsent"];
+  readonly clientAppVersion: ScheduledAiConsentReaders["clientAppVersion"];
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly contextBuilder: Pick<SuggestionContextBuilder, "build">;
   readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
@@ -81,13 +79,11 @@ export class AnalyzeAndCreateSuggestions {
       });
       return 0;
     }
-    const consentDecision =
-      await this.#dependencies.aiDataSharingConsent.findAiDataSharingDecision(userId);
-    if (!canProcessScheduledAi(consentDecision)) {
+    if (!(await canRunScheduledAi(this.#dependencies, userId))) {
       this.#dependencies.logger.debug({
         event: AiSuggestionLogEvent.SKIPPED,
         userId,
-        reason: "ai-consent-declined",
+        reason: "no-ai-consent",
       });
       return 0;
     }
