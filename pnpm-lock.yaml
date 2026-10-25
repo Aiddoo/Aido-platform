@@ -738,11 +738,11 @@ importers:
         specifier: catalog:expo58
         version: 9.2.1(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
       '@react-native-firebase/analytics':
-        specifier: 26.4.0
-        version: 26.4.0(@react-native-firebase/app@26.4.0(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3))(expo@58.0.19)
+        specifier: 26.4.1
+        version: 26.4.1(@react-native-firebase/app@26.4.1(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3))(expo@58.0.19)
       '@react-native-firebase/app':
-        specifier: 26.4.0
-        version: 26.4.0(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
+        specifier: 26.4.1
+        version: 26.4.1(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
       '@sentry/react-native':
         specifier: catalog:expo58
         version: 8.28.0(patch_hash=c8c08839911538497445c08fa07cf21352139f5080772cc7e7858fe2376daa9b)(2f0374c30f6caf9e0637ac5ef62ff787)
@@ -4672,17 +4672,17 @@ packages:
       react-native-windows:
         optional: true
 
-  '@react-native-firebase/analytics@26.4.0':
-    resolution: {integrity: sha512-moClYdlCnHTlgJzsK3VJENzhIga6vubK/SqE5NgzlCsjTC60Cs2jcm3phuZXgRL+LggMzz7lu+WirFNpQLk4Hg==}
+  '@react-native-firebase/analytics@26.4.1':
+    resolution: {integrity: sha512-CRtnycBqVnPBpTbUROX0sZaD8D4OyUZwp3UkmlCECyalAnmGVlYJOA21Vuj0SN9KYf4Q2NiIwJV25nWW6oSSjg==}
     peerDependencies:
-      '@react-native-firebase/app': 26.4.0
+      '@react-native-firebase/app': 26.4.1
       expo: '>=47.0.0'
     peerDependenciesMeta:
       expo:
         optional: true
 
-  '@react-native-firebase/app@26.4.0':
-    resolution: {integrity: sha512-lqs9vgPcniEw5a+NPRjGNXCQKwuGdVJoSB0iW0HvExR7aGEON/VZYOtSfElBCj3zTwQSiN732zREmqmKrW7Ixw==}
+  '@react-native-firebase/app@26.4.1':
+    resolution: {integrity: sha512-j9mMAldt0BpFhMCh4T8SB+n8qmpkNHHNuuIlIiFEPzCrADGZQsamMMwEq1GSFk17/F85D8jR64dpTzeLt9GW7A==}
     peerDependencies:
       expo: '>=47.0.0'
       react: '*'
@@ -15983,14 +15983,14 @@ snapshots:
     optionalDependencies:
       expo: 58.0.19(e60e3504b6302d23d34cf5e9e3a33e80)
 
-  '@react-native-firebase/analytics@26.4.0(@react-native-firebase/app@26.4.0(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3))(expo@58.0.19)':
+  '@react-native-firebase/analytics@26.4.1(@react-native-firebase/app@26.4.1(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3))(expo@58.0.19)':
     dependencies:
-      '@react-native-firebase/app': 26.4.0(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
+      '@react-native-firebase/app': 26.4.1(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)
       superstruct: 2.0.2
     optionalDependencies:
       expo: 58.0.19(e60e3504b6302d23d34cf5e9e3a33e80)
 
-  '@react-native-firebase/app@26.4.0(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)':
+  '@react-native-firebase/app@26.4.1(expo@58.0.19)(react-native@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(supports-color@8.1.1)(typescript@6.0.3)':
     dependencies:
       '@expo/config-plugins': 58.0.10(supports-color@8.1.1)(typescript@6.0.3)
       firebase: 12.17.1
