@@ -69,8 +69,21 @@ export function resolveFriendLimit(details: Record<string, unknown> | undefined)
   return parsed.success ? parsed.data.limit : FOLLOW_LIMITS.FREE_MAX_FRIENDS;
 }
 
+export type FriendLimitDialog = { type: 'invite'; limit: number } | { type: 'subscribe' };
+
+/** 친구 한도(FOLLOW_0909)에서 초대를 쓸 수 있으면 구독 대신 친구 초대로 자리를 늘리는 길을 먼저 보인다 */
+export function resolveFriendLimitDialog(
+  details: Record<string, unknown> | undefined,
+  isInviteAvailable: boolean,
+): FriendLimitDialog {
+  return isInviteAvailable
+    ? { type: 'invite', limit: resolveFriendLimit(details) }
+    : { type: 'subscribe' };
+}
+
 export const FriendPolicy = {
   isValidTag: hasValidUserTag,
   isValidSearchQuery: hasValidSearchQuery,
   friendLimit: resolveFriendLimit,
+  friendLimitDialog: resolveFriendLimitDialog,
 } as const;

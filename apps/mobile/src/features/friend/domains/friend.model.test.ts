@@ -1,4 +1,4 @@
-import { resolveFriendLimit, FriendPolicy } from './friend.model';
+import { resolveFriendLimit, resolveFriendLimitDialog, FriendPolicy } from './friend.model';
 
 describe('친구 검색 정책', () => {
   test.each([
@@ -47,5 +47,31 @@ describe('resolveFriendLimit', () => {
 
     // Then FOLLOW_LIMITS.FREE_MAX_FRIENDS
     expect(result).toBe(5);
+  });
+});
+
+describe('resolveFriendLimitDialog', () => {
+  it('초대를 쓸 수 있으면 서버가 알려 준 한도로 초대 안내를 반환한다', () => {
+    // When
+    const result = resolveFriendLimitDialog({ current: 6, limit: 6 }, true);
+
+    // Then
+    expect(result).toEqual({ type: 'invite', limit: 6 });
+  });
+
+  it('초대를 쓸 수 있는데 한도가 없으면 무료 기본 한도로 초대 안내를 반환한다', () => {
+    // When
+    const result = resolveFriendLimitDialog(undefined, true);
+
+    // Then
+    expect(result).toEqual({ type: 'invite', limit: 5 });
+  });
+
+  it('초대를 쓸 수 없으면 구독 안내를 반환한다', () => {
+    // When
+    const result = resolveFriendLimitDialog({ current: 6, limit: 6 }, false);
+
+    // Then
+    expect(result).toEqual({ type: 'subscribe' });
   });
 });

@@ -12,6 +12,7 @@ import { t } from '@src/shared/i18n';
 import { usePremiumDialog } from '@src/shared/ui';
 import { notifyError } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
+import { match } from 'ts-pattern';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { isFriendError } from '../domains/friend.error';
@@ -52,21 +53,25 @@ export const useSendRequestByTagMutationOptions = () => {
 
       if (isApiError(err) && err.hasCode(ErrorCode.FOLLOW_0909)) {
         trackEvent('premium_gate_shown', { feature: 'friend_limit' });
-        // 초대를 쓸 수 있으면 구독 대신 친구 초대로 자리를 늘리는 길을 먼저 보여 준다
         premiumDialog.open(
-          getCachedInviteAvailability(queryClient)
-            ? {
-                title: t('friend:premium.friendLimitTitle'),
-                description: t('invite:entry.friendLimitDescription', {
-                  limit: FriendPolicy.friendLimit(err.details),
-                  activeDays: InvitedFriendPolicy.requiredActiveDays(),
-                }),
-                alternativeAction: {
-                  label: t('invite:entry.growFriendSlots'),
-                  onPress: () => openMyInvite('friend_limit_dialog'),
-                },
-              }
-            : { description: t('friend:premium.unlimitedFriends') },
+          match(
+            FriendPolicy.friendLimitDialog(err.details, getCachedInviteAvailability(queryClient)),
+          )
+            .with({ type: 'invite' }, ({ limit }) => ({
+              title: t('friend:premium.friendLimitTitle'),
+              description: t('invite:entry.friendLimitDescription', {
+                limit,
+                activeDays: InvitedFriendPolicy.requiredActiveDays(),
+              }),
+              alternativeAction: {
+                label: t('invite:entry.growFriendSlots'),
+                onPress: () => openMyInvite('friend_limit_dialog'),
+              },
+            }))
+            .with({ type: 'subscribe' }, () => ({
+              description: t('friend:premium.unlimitedFriends'),
+            }))
+            .exhaustive(),
         );
         return;
       }
