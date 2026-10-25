@@ -96,6 +96,8 @@ function CurrentPasswordStep({ onNext }: CurrentPasswordStepProps) {
                 placeholder={t('changePassword.currentPlaceholder')}
                 value={value}
                 onChange={onChange}
+                textContentType="password"
+                autoComplete="password"
                 autoFocus
                 submitBehavior="submit"
                 returnKeyType="next"

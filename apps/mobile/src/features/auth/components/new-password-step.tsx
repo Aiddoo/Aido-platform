@@ -90,6 +90,8 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
                     placeholder={t('forgotPassword.newPasswordConfirmPlaceholder')}
                     value={value}
                     onChange={onChange}
+                    textContentType="newPassword"
+                    autoComplete="new-password"
                     returnKeyType="done"
                     isInvalid={!!error}
                     errorMessage={resolveValidationMessage(error, {
@@ -116,6 +118,8 @@ export function NewPasswordStep({ onSubmit, nextLabel, submitLabel }: NewPasswor
                   placeholder={t('forgotPassword.newPasswordPlaceholder')}
                   value={value}
                   onChange={onChange}
+                  textContentType="newPassword"
+                  autoComplete="new-password"
                   autoFocus={step === 'newPassword'}
                   submitBehavior="submit"
                   returnKeyType="next"
