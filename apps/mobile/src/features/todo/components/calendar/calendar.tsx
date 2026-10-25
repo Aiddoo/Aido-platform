@@ -36,6 +36,7 @@ import type { DailyCompletionSummary } from '../../domains/todo.model';
 import type { CompletionsByDate } from '../../queries/get-daily-completions-query-options';
 import {
   clampCalendarPage,
+  getCalendarPageAtOffset,
   shiftCalendarDate,
 } from '../../utils/view-models/calendar-paging.view-model';
 import { useCalendarContext } from '../providers/calendar-provider';
@@ -200,14 +201,14 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
   const flatListRef = useRef<FlatList<number>>(null);
   const currentPageRef = useRef(CENTER_PAGE);
 
-  // 상태의 pageWidth는 측정 전 창 너비일 수 있으므로 페이지는 네이티브가 보고한 뷰포트 너비로 계산한다.
   const handleScrollEnd = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const { contentOffset, layoutMeasurement } = event.nativeEvent;
-      const page = clampCalendarPage(
-        Math.round(contentOffset.x / layoutMeasurement.width),
-        data.length,
-      );
+      const page = getCalendarPageAtOffset({
+        offsetX: contentOffset.x,
+        viewportWidth: layoutMeasurement.width,
+        totalPages: data.length,
+      });
       if (page === currentPageRef.current) {
         return;
       }
@@ -253,7 +254,6 @@ function CalendarPager({ data, value, onChange, children }: CalendarPagerProps) 
           콘텐츠가 줄어들 때 네이티브가 마지막 페이지(+260주)로 잘라 내 몇 년 뒤 날짜가 선택된다. */}
       <FlatList
         key={pageWidth}
-        testID="calendar-pager"
         ref={flatListRef}
         horizontal
         pagingEnabled
