@@ -1,7 +1,9 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, TextButton, VStack, DashedDivider, Box } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
+import { formatDateKeyRange } from '@src/shared/utils/date-format';
 import { formatPercent } from '@src/shared/utils/format';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
@@ -23,6 +25,7 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
   const push = useSingleTap(router.push);
 
   const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
   const reportId = isSample ? SAMPLE_REPORT_IDS[report.type] : String(report.id);
 
   return (
@@ -45,9 +48,18 @@ export function ReportCard({ report, isSample, isLast = false }: ReportCardProps
               </Chip>
             </HStack>
 
-            <Text size="b4" shade={7}>
-              {report.periodLabel}
-            </Text>
+            <VStack align="end">
+              <Text size="b4" shade={7}>
+                {report.periodLabel}
+              </Text>
+              <Text size="e1" shade={7} className="tabular-nums">
+                {formatDateKeyRange(
+                  report.dateRange.startDate,
+                  report.dateRange.endDate,
+                  dateFormatContext,
+                )}
+              </Text>
+            </VStack>
           </HStack>
 
           <HStack gap={20}>
