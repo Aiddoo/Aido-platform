@@ -36,7 +36,7 @@ describe("AnalyzeAndCreateSuggestions — v2 후보 선택형", () => {
       });
       expect(f.aiProvider.getLastOptions()).toMatchObject({
         task: "suggestion",
-        promptVersion: "suggestion@v2",
+        promptVersion: "suggestion@v2.1",
       });
     }));
 

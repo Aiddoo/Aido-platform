@@ -21,7 +21,7 @@ import type { SuggestionNormalizeContext, SuggestionPromptDefinition } from "../
 import { buildSuggestionPromptEnV2 } from "./prompt.en.js";
 import { buildSuggestionPromptKoV2 } from "./prompt.ko.js";
 
-export const SUGGESTION_PROMPT_VERSION_V2 = "suggestion@v2";
+export const SUGGESTION_PROMPT_VERSION_V2 = "suggestion@v2.1";
 
 const REASON_MAX_LENGTH = 200;
 

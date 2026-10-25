@@ -139,4 +139,45 @@ describe("suggestionConfidence·isReasonGrounded", () => {
     expect(isReasonGrounded("7시에 4번 기록했어요.", run)).toBe(true);
     expect(isReasonGrounded("10번 연속 성공했어요.", run)).toBe(false);
   });
+
+  it("제목에 적힌 분량은 사용자 기록이라 사유에 다시 써도 근거로 본다", () => {
+    // Given - 후보 제목 "러닝 5km"
+    if (run == null) throw new Error("candidate missing");
+    // When / Then
+    expect(isReasonGrounded("월요일마다 러닝 5km를 3번 모두 끝냈어요.", run)).toBe(true);
+    expect(isReasonGrounded("월요일마다 러닝 9km를 3번 끝냈어요.", run)).toBe(false);
+  });
+
+  it("제목의 숫자라도 단위가 다르게 쓰이면 근거 밖 수치로 본다", () => {
+    // Given - 제목 "책 읽기 10분"에서 "10주 연속"을 지어냄
+    const reading = buildSuggestionCandidates([
+      todo("책 읽기 10분", "2026-10-05"),
+      todo("책 읽기 10분", "2026-10-12"),
+    ])[0];
+    if (reading == null) throw new Error("candidate missing");
+    // When / Then
+    expect(isReasonGrounded("책 읽기 10분을 2번 모두 끝냈어요.", reading)).toBe(true);
+    expect(isReasonGrounded("10주 연속으로 읽었어요.", reading)).toBe(false);
+  });
+
+  it("기록된 요일 수와 카테고리 이름의 숫자는 근거로 본다", () => {
+    // Given - 월·수·금 각 2번씩 6번 끝낸 후보, 카테고리 "PT 12회권"
+    const candidate = {
+      id: "a1",
+      title: "스쿼트",
+      occurrences: 6,
+      completed: 6,
+      days: [
+        { day: "MON", total: 2, completed: 2 },
+        { day: "WED", total: 2, completed: 2 },
+        { day: "FRI", total: 2, completed: 2 },
+      ],
+      recordedTime: null,
+      categoryName: "PT 12회권",
+    } as const;
+    // When / Then
+    expect(isReasonGrounded("주 3일 월·수·금에 6번 모두 끝냈어요.", candidate)).toBe(true);
+    expect(isReasonGrounded("PT 12회권 일정에 맞춰 6번 끝냈어요.", candidate)).toBe(true);
+    expect(isReasonGrounded("주 4일 운동했어요.", candidate)).toBe(false);
+  });
 });
