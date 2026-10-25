@@ -33,7 +33,7 @@ export class PreviewInvite {
     const found = await this.#dependencies.inviteRepository.findByCodeWithInviter(
       InviteCode.of(input.code),
     );
-    if (found === null) {
+    if (found == null) {
       throw new ApplicationException(ErrorCode.INVITE_2101);
     }
     if (!found.invite.isActive()) {

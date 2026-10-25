@@ -30,7 +30,7 @@ describe("친구 초대 환경 설정", () => {
       ...requiredEnvironment,
       NODE_ENV: "production",
       INVITE_ENABLED: "true",
-      ...(secret !== undefined && { INVITE_CLAIM_HASH_SECRET: secret }),
+      ...(secret != null && { INVITE_CLAIM_HASH_SECRET: secret }),
     };
 
     // When

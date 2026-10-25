@@ -50,7 +50,7 @@ export class GetMyInvite {
     return this.#dependencies.unitOfWork.run(async () => {
       await this.#dependencies.mutationLock.acquire([MutationLockKeys.invite(inviterId)]);
       const existing = await this.#dependencies.inviteRepository.findActiveByInviterId(inviterId);
-      if (existing !== null) {
+      if (existing != null) {
         return existing;
       }
 

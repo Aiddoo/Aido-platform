@@ -12,7 +12,7 @@ export const ThrottleByUser = (): MethodDecorator & ClassDecorator =>
 
 function authenticatedUserId(request: Record<string, unknown>): string | null {
   const { user } = request;
-  if (typeof user !== "object" || user === null || !("userId" in user)) return null;
+  if (typeof user !== "object" || user == null || !("userId" in user)) return null;
   return typeof user.userId === "string" ? user.userId : null;
 }
 
@@ -28,7 +28,7 @@ export class UserAwareThrottlerGuard extends ThrottlerGuard {
       ...requestProps,
       getTracker: async (request, context) => {
         const userId = authenticatedUserId(request);
-        return userId === null ? ipTracker(request, context) : `user:${userId}`;
+        return userId == null ? ipTracker(request, context) : `user:${userId}`;
       },
     });
   }
