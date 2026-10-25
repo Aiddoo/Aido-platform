@@ -3,7 +3,7 @@
  *   GOOGLE_GENERATIVE_AI_API_KEY=… pnpm --filter @aido/server ai:eval [추가 jsonl 경로…]
  * 선택 env:
  *   AI_MODEL_PARSE_TODO  모델 ID (기본 gemini-3.1-flash-lite)
- *   AI_EVAL_THINKING     minimal | low | medium (기본 low)
+ *   AI_EVAL_THINKING     minimal | low | medium (기본: 운영 설정 AI_THINKING_PARSE_TODO, 없으면 minimal)
  *   AI_EVAL_ONLY         쉼표로 구분한 case id만 실행
  *   AI_EVAL_REPORT       case별 결과 JSON을 쓸 경로(원문·키는 담지 않는다)
  *   AI_EVAL_DELAY_MS     호출 사이 대기(기본 500, 분당 호출 상한 보호)
@@ -25,6 +25,7 @@ import { todoDraftSchema } from "../../src/modules/ai-assistance/application/pro
 import { resolveGenerationPolicy } from "../../src/modules/ai-assistance/application/services/parsing/ai-generation-policy.js";
 import { normalizeTodoDraft } from "../../src/modules/ai-assistance/application/services/parsing/todo-draft.normalizer.js";
 import { GeminiAiAdapter } from "../../src/modules/ai-assistance/infrastructure/adapters/parsing/gemini-ai.adapter.js";
+import { readAiTaskSettings } from "../../src/modules/ai-assistance/infrastructure/config/parsing/ai-task-config.js";
 import {
   loadParseTodoGoldenCases,
   type ParseTodoGoldenCase,
@@ -66,9 +67,8 @@ function loadExtraCases(paths: readonly string[]): ParseTodoGoldenCase[] {
   );
 }
 
-function readThinking(value: string | undefined): AiThinking {
-  const level = AI_THINKING_LEVELS.find((candidate) => candidate === value);
-  return level ?? "low";
+function readThinking(value: string | undefined): AiThinking | undefined {
+  return AI_THINKING_LEVELS.find((candidate) => candidate === value);
 }
 
 const same = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
@@ -80,7 +80,8 @@ async function main(): Promise<number> {
     console.log("GOOGLE_GENERATIVE_AI_API_KEY가 없어 live eval을 건너뜁니다.");
     return 0;
   }
-  const thinking = readThinking(process.env.AI_EVAL_THINKING);
+  const thinking =
+    readThinking(process.env.AI_EVAL_THINKING) ?? readAiTaskSettings(config)["parse-todo"].thinking;
   const only = new Set(
     (process.env.AI_EVAL_ONLY ?? "")
       .split(",")

@@ -9,7 +9,8 @@ type BasePolicy = Omit<AiGenerationPolicy, "thinking">;
  */
 const BASE_POLICIES: Readonly<Record<AiTaskId, BasePolicy>> = {
   "parse-todo": { maxOutputTokens: 1024, timeoutMs: 12_000, maxRetries: 1 },
-  "parse-memo": { maxOutputTokens: 4096, timeoutMs: 25_000, maxRetries: 1 },
+  // 2026-10-26 live eval에서 긴 메모(할 일 12개)의 사고+출력이 최대 3,067 토큰이었다. 여유를 두 배로 둔다.
+  "parse-memo": { maxOutputTokens: 6144, timeoutMs: 25_000, maxRetries: 1 },
   // 리포트·제안은 잡 재시도가 따로 있어 SDK 재시도는 짧게 유지한다.
   report: { maxOutputTokens: 2048, timeoutMs: 60_000, maxRetries: 2 },
   suggestion: { maxOutputTokens: 2048, timeoutMs: 60_000, maxRetries: 2 },

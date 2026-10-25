@@ -3,7 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { readAiModelIds, readAiTaskSettings } from "./ai-task-config.js";
 
 describe("AI 작업 설정", () => {
-  it("env가 없으면 모든 작업에 기본 모델과 low thinking을 쓴다", () => {
+  it("env가 없으면 모든 작업에 기본 모델을 쓰고 parse-todo만 minimal, 나머지는 low thinking이다", () => {
     // Given
     const config = new ConfigService({});
     // When
@@ -11,7 +11,19 @@ describe("AI 작업 설정", () => {
     const settings = readAiTaskSettings(config);
     // Then
     expect(Object.values(models)).toEqual(Array(4).fill("gemini-3.1-flash-lite"));
+    expect(settings["parse-todo"]).toEqual({ promptVersion: "v2", thinking: "minimal" });
+    expect(settings["parse-memo"].thinking).toBe("low");
     expect(settings.report).toEqual({ promptVersion: "v2", thinking: "low" });
+    expect(settings.suggestion.thinking).toBe("low");
+  });
+
+  it("AI_THINKING_PARSE_TODO=low로 parse-todo의 minimal 기본값을 되돌릴 수 있다", () => {
+    // Given
+    const config = new ConfigService({ AI_THINKING_PARSE_TODO: "low" });
+    // When
+    const settings = readAiTaskSettings(config);
+    // Then
+    expect(settings["parse-todo"].thinking).toBe("low");
   });
 
   it("작업별 env는 해당 작업의 모델과 thinking만 바꾼다", () => {
