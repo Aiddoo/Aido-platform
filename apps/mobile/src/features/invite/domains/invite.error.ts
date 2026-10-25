@@ -39,6 +39,7 @@ export type RedeemFailureReason =
   | 'already_redeemed'
   | 'disabled'
   | 'friend_limit'
+  | 'blocked'
   | 'unknown';
 
 export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
@@ -58,6 +59,7 @@ export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
     .with(ErrorCode.INVITE_2104, () => 'already_redeemed' as const)
     .with(ErrorCode.INVITE_2105, () => 'disabled' as const)
     .with(ErrorCode.INVITE_2106, () => 'friend_limit' as const)
+    .with(ErrorCode.BLOCK_2204, () => 'blocked' as const)
     .otherwise(() => 'unknown' as const);
 }
 
@@ -67,7 +69,7 @@ export function toRedeemFailureReason(error: unknown): RedeemFailureReason {
  */
 export function isTerminalRedeemFailure(reason: RedeemFailureReason) {
   return match(reason)
-    .with('invalid_code', 'not_found', 'rotated', 'self', 'already_redeemed', () => true)
+    .with('invalid_code', 'not_found', 'rotated', 'self', 'already_redeemed', 'blocked', () => true)
     .with('disabled', 'friend_limit', 'unknown', () => false)
     .exhaustive();
 }

@@ -18,6 +18,7 @@ import { InviteService } from '@src/features/invite/apis/invite.service';
 import { createPawPrintCelebrationRepository } from '@src/features/invite/apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '@src/features/invite/apis/pending-redemption.repository';
 import { MemoService } from '@src/features/memo/apis/memo.service';
+import { ModerationService } from '@src/features/moderation/apis/moderation.service';
 import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
 import { NotificationService } from '@src/features/notification/apis/notification.service';
@@ -193,6 +194,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
 
     // Memo
     const memoService = new MemoService(authHttpClient);
+    const moderationService = new ModerationService(authHttpClient);
 
     // Todo
     const subTodoService = new SubTodoService(authHttpClient);
@@ -263,6 +265,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       inviteShareService,
       inquiryService,
       memoService,
+      moderationService,
       subTodoService,
       todoService,
       todoCommentService,

@@ -157,5 +157,13 @@
   "INVITE_2103": "This is your own invite code",
   "INVITE_2104": "You've already accepted another invite",
   "INVITE_2105": "Invites aren't available right now",
-  "INVITE_2106": "Your friend slots are full, so you can't add this friend"
+  "INVITE_2106": "Your friend slots are full, so you can't add this friend",
+  "BLOCK_2201": "You can't block yourself",
+  "BLOCK_2202": "We couldn't find this user",
+  "BLOCK_2203": "You blocked this user. Unblock them and try again",
+  "BLOCK_2204": "You can't do this with this user",
+  "REPORT_2251": "You can't report yourself",
+  "REPORT_2252": "We couldn't find this user",
+  "REPORT_2253": "This can't be reported",
+  "REPORT_2254": "You've reached today's report limit. For urgent issues, contact us"
 }

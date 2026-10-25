@@ -78,6 +78,7 @@ export function useRedeemInviteMutationOptions() {
           'already_redeemed',
           'disabled',
           'friend_limit',
+          'blocked',
           'unknown',
           () => undefined,
         )

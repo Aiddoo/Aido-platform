@@ -180,7 +180,7 @@ function CommentActionMenu({
   const deleteComment = useMutation(useDeleteTodoCommentMutationOptions({ todoId }));
   const [isOpen, setIsOpen] = useState(false);
 
-  if (!TodoCommentPolicy.canManage(comment)) {
+  if (!TodoCommentPolicy.canEdit(comment) && !TodoCommentPolicy.canDelete(comment)) {
     return null;
   }
 

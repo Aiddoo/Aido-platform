@@ -10,6 +10,7 @@ import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
 import enInvite from './locales/en/invite.json';
 import enMemo from './locales/en/memo.json';
+import enModeration from './locales/en/moderation.json';
 import enNotification from './locales/en/notification.json';
 import enSettings from './locales/en/settings.json';
 import enStoreReview from './locales/en/store-review.json';
@@ -32,6 +33,7 @@ import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
 import koInvite from './locales/ko/invite.json';
 import koMemo from './locales/ko/memo.json';
+import koModeration from './locales/ko/moderation.json';
 import koNotification from './locales/ko/notification.json';
 import koSettings from './locales/ko/settings.json';
 import koStoreReview from './locales/ko/store-review.json';
@@ -54,6 +56,7 @@ export const resources = {
     todoComment: koTodoComment,
     auth: koAuth,
     memo: koMemo,
+    moderation: koModeration,
     friend: koFriend,
     invite: koInvite,
     notification: koNotification,
@@ -78,6 +81,7 @@ export const resources = {
     todoComment: enTodoComment,
     auth: enAuth,
     memo: enMemo,
+    moderation: enModeration,
     friend: enFriend,
     invite: enInvite,
     notification: enNotification,

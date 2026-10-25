@@ -19,6 +19,7 @@ import type { InquiryService } from '@src/features/inquiry/apis/inquiry.service'
 import type { InviteShareService } from '@src/features/invite/apis/invite-share.service';
 import type { InviteService } from '@src/features/invite/apis/invite.service';
 import type { MemoService } from '@src/features/memo/apis/memo.service';
+import type { ModerationService } from '@src/features/moderation/apis/moderation.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
 import type { PreferenceService } from '@src/features/preference/apis/preference.service';
@@ -73,6 +74,7 @@ export interface DIContainer {
   featureDiscoveryStateService: FeatureDiscoveryStateService;
   inquiryService: InquiryService;
   memoService: MemoService;
+  moderationService: ModerationService;
   subTodoService: SubTodoService;
   todoService: TodoService;
   todoCommentService: TodoCommentService;
@@ -138,6 +140,7 @@ export const useFeatureDiscoveryService = () => useDI().featureDiscoveryService;
 export const useFeatureDiscoveryStateService = () => useDI().featureDiscoveryStateService;
 export const useInquiryService = () => useDI().inquiryService;
 export const useMemoService = () => useDI().memoService;
+export const useModerationService = () => useDI().moderationService;
 export const useSubTodoService = () => useDI().subTodoService;
 export const useTodoService = () => useDI().todoService;
 export const useTodoCommentService = () => useDI().todoCommentService;

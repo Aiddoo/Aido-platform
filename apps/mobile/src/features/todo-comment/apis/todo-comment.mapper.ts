@@ -28,11 +28,17 @@ export const toTodoComment = (dto: TodoCommentDTO): TodoComment => ({
   author: dto.author,
   content: dto.content,
   isDeleted: dto.isDeleted,
+  // 1.13.0 이전 서버는 차단·신고 필드를 보내지 않으므로 할 수 없는 것으로 읽는다
+  isAuthorBlocked: dto.isAuthorBlocked ?? false,
   isEdited: dto.isEdited,
   likeCount: dto.likeCount,
   replyCount: dto.replyCount,
   replyTo: dto.replyTo,
-  viewer: dto.viewer,
+  viewer: {
+    ...dto.viewer,
+    canReport: dto.viewer.canReport ?? false,
+    canBlock: dto.viewer.canBlock ?? false,
+  },
   createdAt: new Date(dto.createdAt),
   editedAt: dto.editedAt ? new Date(dto.editedAt) : null,
 });

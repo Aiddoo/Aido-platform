@@ -32,7 +32,14 @@ describe('TodoCommentPolicy', () => {
       // Given
       const allowed = createTodoComment();
       const denied = createTodoComment({
-        viewer: { isLiked: false, canEdit: false, canDelete: false, canReply: false },
+        viewer: {
+          isLiked: false,
+          canEdit: false,
+          canDelete: false,
+          canReply: false,
+          canReport: false,
+          canBlock: false,
+        },
       });
 
       // When
@@ -60,7 +67,14 @@ describe('TodoCommentPolicy', () => {
     test('서버가 준 허가를 각각 따른다', () => {
       // Given - 삭제만 열린 댓글
       const deletableOnly = createTodoComment({
-        viewer: { isLiked: false, canEdit: false, canDelete: true, canReply: true },
+        viewer: {
+          isLiked: false,
+          canEdit: false,
+          canDelete: true,
+          canReply: true,
+          canReport: false,
+          canBlock: false,
+        },
       });
 
       // When & Then
@@ -78,29 +92,34 @@ describe('TodoCommentPolicy', () => {
     });
   });
 
-  describe('canManage', () => {
-    test('수정·삭제 중 하나라도 열려 있으면 관리할 수 있다', () => {
+  describe('hasActions', () => {
+    test('수정·삭제·신고·차단 중 하나라도 열려 있으면 메뉴를 보인다', () => {
       // Given
       const mine = createTodoComment();
-      const deletableOnly = createTodoComment({
-        viewer: { isLiked: false, canEdit: false, canDelete: true, canReply: true },
-      });
-      const others = createTodoComment({
-        viewer: { isLiked: false, canEdit: false, canDelete: false, canReply: true },
+      const others = createTodoCommentReply(createTodoComment());
+      const readOnly = createTodoComment({
+        viewer: {
+          isLiked: false,
+          canEdit: false,
+          canDelete: false,
+          canReply: true,
+          canReport: false,
+          canBlock: false,
+        },
       });
 
       // When & Then
-      expect(TodoCommentPolicy.canManage(mine)).toBe(true);
-      expect(TodoCommentPolicy.canManage(deletableOnly)).toBe(true);
-      expect(TodoCommentPolicy.canManage(others)).toBe(false);
+      expect(TodoCommentPolicy.hasActions(mine)).toBe(true);
+      expect(TodoCommentPolicy.hasActions(others)).toBe(true);
+      expect(TodoCommentPolicy.hasActions(readOnly)).toBe(false);
     });
 
-    test('삭제된 댓글은 관리할 수 없다', () => {
+    test('삭제되거나 차단으로 가린 댓글은 메뉴를 보이지 않는다', () => {
       // Given
-      const comment = createTodoComment({ isDeleted: true });
+      const hidden = createTodoComment({ isDeleted: true, isAuthorBlocked: true, author: null });
 
       // When
-      const result = TodoCommentPolicy.canManage(comment);
+      const result = TodoCommentPolicy.hasActions(hidden);
 
       // Then
       expect(result).toBe(false);

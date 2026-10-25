@@ -1,4 +1,10 @@
-import type { InviteFriendship, RedeemOutcome, ReplyToNudgeInput } from '@aido/api';
+import type {
+  InviteFriendship,
+  RedeemOutcome,
+  ReplyToNudgeInput,
+  UserReportReason,
+  UserReportTargetType,
+} from '@aido/api';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
 import type { InviteLinkSource } from '@src/features/invite/domains/invite-redemption.model';
 import type { RedeemFailureReason } from '@src/features/invite/domains/invite.error';
@@ -114,6 +120,13 @@ export interface FriendEventMap {
   friend_request_rejected: undefined;
   friend_removed: undefined;
   friend_reordered: undefined;
+}
+
+/** 차단·신고. 상대 사용자 id·신고 상세는 넣지 않는다 */
+export interface ModerationEventMap {
+  user_blocked: undefined;
+  user_unblocked: undefined;
+  content_reported: { target_type: UserReportTargetType; reason: UserReportReason };
 }
 
 export interface NudgeEventMap {
@@ -290,6 +303,7 @@ export type AppEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
   FriendEventMap &
+  ModerationEventMap &
   InviteEventMap &
   NudgeEventMap &
   GrowthEventMap &
