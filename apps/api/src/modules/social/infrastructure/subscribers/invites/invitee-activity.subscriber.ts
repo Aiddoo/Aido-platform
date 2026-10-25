@@ -23,7 +23,6 @@ export class InviteeActivitySubscriber {
     try {
       await this.recordInviteeActivity.execute({
         inviteeId: event.userId,
-        timezone: event.timezone,
         occurredAt: now(),
       });
     } catch (error) {

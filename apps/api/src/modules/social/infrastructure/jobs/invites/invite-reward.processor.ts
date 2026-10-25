@@ -47,7 +47,11 @@ export class InviteRewardProcessor implements OnModuleInit {
         continue;
       }
       try {
-        await this.grantInviteRewards.execute(parsed.data);
+        // 큐 재시도는 정비 작업의 하루 단위 재시도 예산을 쓰지 않게 첫 실행만 센다
+        await this.grantInviteRewards.execute({
+          redemptionId: parsed.data.redemptionId,
+          countsAttempt: job.attempt === 1,
+        });
       } catch (error) {
         this.#logger.error({
           event: SocialInviteLogEvent.REWARD_JOB_FAILED,

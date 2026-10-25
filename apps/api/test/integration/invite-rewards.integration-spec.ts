@@ -4,6 +4,7 @@ import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.publi
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { Resource } from "#api/modules/access/access-entitlement.public";
 import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
+import { TodoToggledEvent } from "#api/modules/planning/planning-todos.public";
 import {
   INVITE_NOTIFIER,
   type InviteNotifierPort,
@@ -26,6 +27,8 @@ import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/g
 import { GrantInviteRewards } from "#api/modules/social/application/use-cases/invites/grant-invite-rewards.use-case";
 import { RecordInviteeActivity } from "#api/modules/social/application/use-cases/invites/record-invitee-activity.use-case";
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
+import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/domain/types/invites/reward-grant.types";
+import { InviteeActivitySubscriber } from "#api/modules/social/infrastructure/subscribers/invites/invitee-activity.subscriber";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { createEntityId } from "#api/platform/database/database-values";
 import { UNIT_OF_WORK, type UnitOfWorkPort } from "#api/shared/application/ports/index";
@@ -108,6 +111,58 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     return { inviterId, inviteeId, redemptionId: result.redemptionId };
   }
 
+  function grantRewardsWith(overrides: {
+    readonly failing?: () => boolean;
+    readonly isEnabled?: boolean;
+    readonly exhausted?: string[];
+  }) {
+    const appliers = context.module.get<RewardApplierRegistry>(REWARD_APPLIERS);
+    return new GrantInviteRewards({
+      rewardGrantRepository: context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY),
+      inviteRedemptionRepository: context.module.get<InviteRedemptionRepositoryPort>(
+        INVITE_REDEMPTION_REPOSITORY,
+      ),
+      rewardAppliers: {
+        ...appliers,
+        PREMIUM_DAYS: {
+          async apply(grant) {
+            if (overrides.failing?.() === true) throw new Error("billing unavailable");
+            await appliers.PREMIUM_DAYS.apply(grant);
+          },
+        },
+      },
+      notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
+      alert: {
+        reportRetryExhausted: (failure) => {
+          overrides.exhausted?.push(failure.grantId);
+        },
+      },
+      inviteConfig: { isEnabled: overrides.isEnabled ?? true },
+      unitOfWork: context.module.get<UnitOfWorkPort>(UNIT_OF_WORK),
+      logger: new Logger("GrantInviteRewardsTest"),
+    });
+  }
+
+  async function qualified(inviterTag: string, inviteeTag: string) {
+    const ids = await redeemed(inviterTag, inviteeTag);
+    await grantInviteRewards.execute({ redemptionId: ids.redemptionId, countsAttempt: true });
+    await recordActivity.execute({
+      inviteeId: ids.inviteeId,
+      occurredAt: new Date("2028-02-28T03:00:00.000Z"),
+    });
+    await recordActivity.execute({
+      inviteeId: ids.inviteeId,
+      occurredAt: new Date("2028-02-29T03:00:00.000Z"),
+    });
+    return ids;
+  }
+
+  async function rewardedNotices() {
+    return client.orm.public.Notification.where((row) => row._type.eq("INVITE_REWARDED"))
+      .select("userId", "body")
+      .all();
+  }
+
   async function premiumGrantsOf(userId: string) {
     return decodeRecord(
       "PremiumGrant",
@@ -123,10 +178,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
     // When
     const results = await Promise.all([
-      grantInviteRewards.execute({ redemptionId }),
-      grantInviteRewards.execute({ redemptionId }),
+      grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
+      grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
     ]);
-    const rerun = await grantInviteRewards.execute({ redemptionId });
+    const rerun = await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
     // Then
     expect(results.map((result) => result.appliedCount).sort()).toEqual([0, 1]);
@@ -141,17 +196,15 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const { inviterId, inviteeId, redemptionId } = await redeemed("QUALINVR", "QUALINVE");
     await recordActivity.execute({
       inviteeId,
-      timezone: "Asia/Seoul",
       occurredAt: new Date("2028-02-28T14:59:00.000Z"),
     });
 
     // When
     const qualified = await recordActivity.execute({
       inviteeId,
-      timezone: "Asia/Seoul",
       occurredAt: new Date("2028-02-28T15:01:00.000Z"),
     });
-    await grantInviteRewards.execute({ redemptionId });
+    await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
     // Then
     expect(qualified).toMatchObject({ status: "qualified", redemptionId, grantCount: 2 });
@@ -204,18 +257,20 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         },
       },
       notifier: context.module.get<InviteNotifierPort>(INVITE_NOTIFIER),
+      alert: { reportRetryExhausted: () => {} },
+      inviteConfig: { isEnabled: true },
       unitOfWork: context.module.get<UnitOfWorkPort>(UNIT_OF_WORK),
       logger: new Logger("GrantInviteRewardsTest"),
     });
 
     // When
-    const failed = flaky.execute({ redemptionId });
+    const failed = flaky.execute({ redemptionId, countsAttempt: true });
     await expect(failed).rejects.toMatchObject({ name: "InviteRewardGrantFailedError" });
     const afterFailure = await client.orm.public.RewardGrant.where({ recipientId: inviteeId })
       .select("status", "attempts", "lastErrorCode")
       .all();
     shouldFail = false;
-    const retried = await flaky.execute({ redemptionId });
+    const retried = await flaky.execute({ redemptionId, countsAttempt: true });
 
     // Then
     expect(afterFailure).toEqual([
@@ -257,17 +312,15 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     );
     await recordActivity.execute({
       inviteeId,
-      timezone: "Asia/Seoul",
       occurredAt: new Date("2028-02-28T03:00:00.000Z"),
     });
 
     // When
     const qualified = await recordActivity.execute({
       inviteeId,
-      timezone: "Asia/Seoul",
       occurredAt: new Date("2028-02-29T03:00:00.000Z"),
     });
-    await grantInviteRewards.execute({ redemptionId });
+    await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
     // Then
     expect(qualified).toMatchObject({ status: "qualified", redemptionId, grantCount: 1 });
@@ -297,7 +350,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // When
     await Promise.all(
       scenarios.flatMap(({ inviteeId, redemptionId }) => [
-        grantInviteRewards.execute({ redemptionId }),
+        grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
         webhook.execute({
           body: SubscriptionEventBuilder.initialPurchase()
             .withAppUserId(inviteeId)
@@ -359,5 +412,153 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
         { id: fresh.redemptionId, status: "JOINED", rejectionReason: null },
       ]),
     );
+  });
+
+  it("시간대를 서울에서 키리티마티로 바꿔 같은 날 두 번 완료해도 수락 때 고정한 날짜로만 센다", async () => {
+    // Given
+    const { inviteeId, redemptionId } = await redeemed("TZINVITR", "TZINVITE");
+    const subscriber = context.module.get(InviteeActivitySubscriber);
+    // KST 2028-02-28 23:00. 키리티마티(UTC+14)로는 이미 3월 1일이다
+    vi.setSystemTime(new Date("2028-02-28T14:00:00.000Z"));
+    await subscriber.handle(new TodoToggledEvent(1, inviteeId, true, "Asia/Seoul"));
+
+    // When
+    vi.setSystemTime(new Date("2028-02-28T14:01:00.000Z"));
+    await subscriber.handle(new TodoToggledEvent(1, inviteeId, true, "Pacific/Kiritimati"));
+
+    // Then
+    const redemption = await client.orm.public.InviteRedemption.where({ id: redemptionId })
+      .select("status")
+      .include("activeDays", (day) => day.count())
+      .first();
+    expect(redemption).toEqual({ status: "JOINED", activeDays: 1 });
+  });
+
+  it("같은 기기로 이미 보상을 받은 수락은 사용 시작해도 초대한 사람 보상을 만들지 않는다", async () => {
+    // Given
+    const inviterId = await createUser("DUPINVTR");
+    const firstId = await createUser("DUPINVE1");
+    const secondId = await createUser("DUPINVE2");
+    const { code } = await getMyInvite.execute({ inviterId });
+    await redeemInvite.execute({
+      inviteeId: firstId,
+      code,
+      installationId: "same-device",
+      timezone: "Asia/Seoul",
+    });
+    const second = await redeemInvite.execute({
+      inviteeId: secondId,
+      code,
+      installationId: "same-device",
+      timezone: "Asia/Seoul",
+    });
+    await recordActivity.execute({
+      inviteeId: secondId,
+      occurredAt: new Date("2028-02-28T03:00:00.000Z"),
+    });
+
+    // When
+    const result = await recordActivity.execute({
+      inviteeId: secondId,
+      occurredAt: new Date("2028-02-29T03:00:00.000Z"),
+    });
+
+    // Then
+    expect(second).toMatchObject({ outcome: "REDEEMED", rewards: [] });
+    expect(result).toMatchObject({ status: "qualified", grantCount: 0 });
+    expect(
+      await client.orm.public.RewardGrant.where({ recipientId: inviterId }).select("id").all(),
+    ).toEqual([]);
+  });
+
+  it("기능이 꺼진 동안은 사용 시작과 원장만 남기고 지급하지 않다가 다시 켜면 정비 작업이 적용한다", async () => {
+    // Given
+    const { inviterId, redemptionId } = await qualified("OFFINVTR", "OFFINVTE");
+    const disabled = grantRewardsWith({ isEnabled: false });
+    const disabledResult = await disabled.execute({ redemptionId, countsAttempt: true });
+    const pending = await client.orm.public.RewardGrant.where({ recipientId: inviterId })
+      .select("status", "attempts")
+      .all();
+
+    // When
+    const maintenance = await context.module.get(ExpireStaleRedemptions).execute({
+      now: new Date("2028-03-01T00:00:00.000Z"),
+      runDate: "2028-03-01",
+    });
+    await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
+
+    // Then
+    expect(disabledResult).toEqual({ appliedCount: 0, failedCount: 0 });
+    expect(pending).toEqual([
+      { status: "PENDING", attempts: 0 },
+      { status: "PENDING", attempts: 0 },
+    ]);
+    expect(maintenance.retriedCount).toBe(1);
+    expect(
+      (
+        await client.orm.public.RewardGrant.where({ recipientId: inviterId }).select("status").all()
+      ).map((grant) => grant.status),
+    ).toEqual(["APPLIED", "APPLIED"]);
+  });
+
+  it("지급이 두 번에 나뉘어 적용돼도 보상 완료로 바뀔 때 합계로 한 번만 알린다", async () => {
+    // Given
+    const { inviterId, redemptionId } = await qualified("ONCEINVR", "ONCEINVE");
+    let isBillingDown = true;
+    const flaky = grantRewardsWith({ failing: () => isBillingDown });
+    await expect(flaky.execute({ redemptionId, countsAttempt: true })).rejects.toMatchObject({
+      name: "InviteRewardGrantFailedError",
+    });
+    const afterFirst = await rewardedNotices();
+
+    // When
+    isBillingDown = false;
+    await flaky.execute({ redemptionId, countsAttempt: false });
+    await flaky.execute({ redemptionId, countsAttempt: true });
+
+    // Then
+    expect(afterFirst).toEqual([]);
+    expect(await rewardedNotices()).toEqual([
+      { userId: inviterId, body: "프리미엄 7일과 친구 자리 1개를 받았어" },
+    ]);
+  });
+
+  it("큐 재시도는 시도 횟수를 늘리지 않고 마지막 정비 재시도가 실패하면 한 번 알린다", async () => {
+    // Given
+    const { inviterId, redemptionId } = await qualified("CAPATTMR", "CAPATTME");
+    const exhausted: string[] = [];
+    const failing = grantRewardsWith({ failing: () => true, exhausted });
+    await expect(failing.execute({ redemptionId, countsAttempt: true })).rejects.toThrow();
+    await expect(failing.execute({ redemptionId, countsAttempt: false })).rejects.toThrow();
+    const afterQueueRetry = await client.orm.public.RewardGrant.where({
+      recipientId: inviterId,
+      rewardType: "PREMIUM_DAYS",
+    })
+      .select("attempts")
+      .first();
+    await client.orm.public.RewardGrant.where({
+      recipientId: inviterId,
+      rewardType: "PREMIUM_DAYS",
+    }).updateAndCount(encodePatch("RewardGrant", { attempts: 4 }));
+
+    // When
+    await expect(failing.execute({ redemptionId, countsAttempt: true })).rejects.toThrow();
+    const retryable = await context.module
+      .get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY)
+      .findRetryableSourceIds({
+        maxAttempts: INVITE_REWARD_MAX_ATTEMPTS,
+        createdBefore: new Date("2028-03-10T00:00:00.000Z"),
+        limit: 10,
+      });
+    const totals = await context.module
+      .get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY)
+      .summarizeInviterRewards(inviterId, new Date("2028-02-01T00:00:00.000Z"));
+
+    // Then
+    expect(afterQueueRetry).toEqual({ attempts: 1 });
+    expect(exhausted).toHaveLength(1);
+    expect(retryable).not.toContain(redemptionId);
+    // 재시도를 다 쓴 프리미엄은 받지 못한 보상이라 상한 집계에서 빠진다
+    expect(totals.find((total) => total.rewardType === "PREMIUM_DAYS")).toBeUndefined();
   });
 });

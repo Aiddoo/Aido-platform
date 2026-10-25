@@ -1,12 +1,12 @@
 import { REWARD_TYPE } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { all, and } from "@prisma/orm-postgres/orm-client";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 import { sumBy } from "es-toolkit";
 import sql from "sql-template-tag";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
-import { sqlStatement } from "#api/platform/database/database-sql";
+import { decodeSqlRows, sqlRowSpec, sqlStatement } from "#api/platform/database/database-sql";
 import { databaseTimestamp, varchar } from "#api/platform/database/database-values";
 import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8-transactional.adapter";
 
@@ -16,10 +16,13 @@ import type {
   RewardGrantRepositoryPort,
 } from "../../../application/ports/invites/reward-grant.repository.port.js";
 import type { InviterRewardTotal } from "../../../domain/policies/invites/invite-reward.policy.js";
-import type {
-  RewardGrantPlan,
-  RewardSourceType,
+import {
+  INVITE_REWARD_MAX_ATTEMPTS,
+  type RewardGrantPlan,
+  type RewardSourceType,
 } from "../../../domain/types/invites/reward-grant.types.js";
+
+const ATTEMPTS_ROW = sqlRowSpec({ attempts: "pg/int4@1" });
 
 @Injectable()
 export class PrismaRewardGrantRepository implements RewardGrantRepositoryPort {
@@ -111,23 +114,35 @@ export class PrismaRewardGrantRepository implements RewardGrantRepositoryPort {
     return updated === 1;
   }
 
-  async markFailed(grantId: string, errorCode: string, failedAt: Date): Promise<void> {
-    // ORM update 입력은 리터럴만 받아 attempts + 1 원자 증가를 raw SQL로 둔다
-    await this.client.execute(
-      sqlStatement(
-        this.client,
-        sql`
-          UPDATE "RewardGrant"
-          SET "status" = 'FAILED',
-              "attempts" = "attempts" + 1,
-              "lastErrorCode" = ${errorCode.slice(0, 100)},
-              "updatedAt" = ${failedAt}
-          WHERE "id" = ${grantId} AND "status" <> 'APPLIED'
-        `,
-      )
-        .affectedCount()
-        .build(),
+  async markFailed(
+    grantId: string,
+    failure: {
+      readonly errorCode: string;
+      readonly failedAt: Date;
+      readonly countsAttempt: boolean;
+    },
+  ): Promise<number | null> {
+    // ORM update 입력은 리터럴만 받아 attempts 원자 증가를 raw SQL로 둔다
+    const [row] = decodeSqlRows(
+      ATTEMPTS_ROW,
+      await this.client.query(
+        sqlStatement(
+          this.client,
+          sql`
+            UPDATE "RewardGrant"
+            SET "status" = 'FAILED',
+                "attempts" = "attempts" + ${failure.countsAttempt ? 1 : 0},
+                "lastErrorCode" = ${failure.errorCode.slice(0, 100)},
+                "updatedAt" = ${failure.failedAt}
+            WHERE "id" = ${grantId} AND "status" <> 'APPLIED'
+            RETURNING "attempts" AS "attempts"
+          `,
+        )
+          .returnsRow(ATTEMPTS_ROW)
+          .build(),
+      ),
     );
+    return row?.attempts ?? null;
   }
 
   async findRetryableSourceIds(params: FindRetryableRewardSourcesParams): Promise<string[]> {
@@ -162,6 +177,8 @@ export class PrismaRewardGrantRepository implements RewardGrantRepositoryPort {
         grant.recipientId.eq(inviterId),
         grant.sourceType.eq("INVITE_REDEMPTION"),
         ownRedemptionId == null ? all() : grant.sourceId.neq(varchar(ownRedemptionId, 64)),
+        // 자동 재시도를 다 쓴 FAILED는 받지 못한 보상이라 상한을 차지하지 않는다
+        or(grant.status.neq("FAILED"), grant.attempts.lt(INVITE_REWARD_MAX_ATTEMPTS)),
       ),
     );
   }

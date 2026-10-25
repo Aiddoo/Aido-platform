@@ -7,6 +7,7 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 import { CLAIM_HASHER } from "./application/ports/invites/claim-hasher.port.js";
 import { INVITE_NOTIFIER } from "./application/ports/invites/invite-notifier.port.js";
 import { INVITE_REDEMPTION_REPOSITORY } from "./application/ports/invites/invite-redemption.repository.port.js";
+import { INVITE_REWARD_ALERT } from "./application/ports/invites/invite-reward-alert.port.js";
 import { INVITE_REWARD_SCHEDULER } from "./application/ports/invites/invite-reward.scheduler.port.js";
 import { INVITE_CONFIG } from "./application/ports/invites/invite.config.port.js";
 import { INVITE_REPOSITORY } from "./application/ports/invites/invite.repository.port.js";
@@ -161,6 +162,7 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_GRANT_REPOSITORY,
     INVITE_REWARD_SCHEDULER,
+    INVITE_CONFIG,
     MUTATION_LOCK,
     UNIT_OF_WORK,
   ],
@@ -172,6 +174,7 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
       typeof RecordInviteeActivity
     >[0]["rewardGrantRepository"],
     rewardScheduler: ConstructorParameters<typeof RecordInviteeActivity>[0]["rewardScheduler"],
+    inviteConfig: ConstructorParameters<typeof RecordInviteeActivity>[0]["inviteConfig"],
     mutationLock: ConstructorParameters<typeof RecordInviteeActivity>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof RecordInviteeActivity>[0]["unitOfWork"],
   ) =>
@@ -179,6 +182,7 @@ export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivit
       inviteRedemptionRepository,
       rewardGrantRepository,
       rewardScheduler,
+      inviteConfig,
       mutationLock,
       unitOfWork,
       logger: new Logger(RecordInviteeActivity.name),
@@ -192,6 +196,8 @@ export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_APPLIERS,
     INVITE_NOTIFIER,
+    INVITE_REWARD_ALERT,
+    INVITE_CONFIG,
     UNIT_OF_WORK,
   ],
   useFactory: (
@@ -203,6 +209,8 @@ export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
     >[0]["inviteRedemptionRepository"],
     rewardAppliers: ConstructorParameters<typeof GrantInviteRewards>[0]["rewardAppliers"],
     notifier: ConstructorParameters<typeof GrantInviteRewards>[0]["notifier"],
+    alert: ConstructorParameters<typeof GrantInviteRewards>[0]["alert"],
+    inviteConfig: ConstructorParameters<typeof GrantInviteRewards>[0]["inviteConfig"],
     unitOfWork: ConstructorParameters<typeof GrantInviteRewards>[0]["unitOfWork"],
   ) =>
     new GrantInviteRewards({
@@ -210,6 +218,8 @@ export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
       inviteRedemptionRepository,
       rewardAppliers,
       notifier,
+      alert,
+      inviteConfig,
       unitOfWork,
       logger: new Logger(GrantInviteRewards.name),
     }),
@@ -221,6 +231,7 @@ export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedempti
     INVITE_REDEMPTION_REPOSITORY,
     REWARD_GRANT_REPOSITORY,
     INVITE_REWARD_SCHEDULER,
+    INVITE_CONFIG,
     UNIT_OF_WORK,
   ],
   useFactory: (
@@ -231,12 +242,14 @@ export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedempti
       typeof ExpireStaleRedemptions
     >[0]["rewardGrantRepository"],
     rewardScheduler: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["rewardScheduler"],
+    inviteConfig: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["inviteConfig"],
     unitOfWork: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["unitOfWork"],
   ) =>
     new ExpireStaleRedemptions({
       inviteRedemptionRepository,
       rewardGrantRepository,
       rewardScheduler,
+      inviteConfig,
       unitOfWork,
       logger: new Logger(ExpireStaleRedemptions.name),
     }),

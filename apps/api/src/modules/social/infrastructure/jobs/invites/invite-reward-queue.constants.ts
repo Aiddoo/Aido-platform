@@ -13,8 +13,9 @@ export const INVITE_REWARD_QUEUE = "invite-reward.v1";
 export const inviteRewardJobDataSchema = z.object({ redemptionId: z.string().min(1) });
 export type InviteRewardJobData = z.infer<typeof inviteRewardJobDataSchema>;
 
+// 큐 재시도는 짧은 장애만 넘기고(30초·60초) 긴 장애는 하루 한 번 정비 재시도가 이어 받는다
 export const INVITE_REWARD_JOB_OPTIONS = {
-  retryLimit: 4,
+  retryLimit: 2,
   retryDelaySeconds: 30,
   retryBackoff: true,
   expireInSeconds: 5 * 60,

@@ -10,6 +10,12 @@ export function rewardGrantSourceKey(rewardGrantId: string): string {
   return `reward-grant:${rewardGrantId}`;
 }
 
+/**
+ * 이 횟수만큼 실패한 지급은 자동으로 다시 시도하지 않는다. 큐 재시도는 세지 않고 지급 작업의
+ * 첫 실행(수락·사용 시작·하루 한 번 정비 재시도)마다 한 번 센다. 그래서 첫 실행과 정비 재시도 4일이다.
+ */
+export const INVITE_REWARD_MAX_ATTEMPTS = 5;
+
 /** 지급 원장에 PENDING으로 남길 한 건. (출처, 받는 사람, 종류)마다 한 번만 저장된다. */
 export interface RewardGrantPlan {
   readonly recipientId: string;

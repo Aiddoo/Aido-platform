@@ -18,11 +18,11 @@ import {
 import { SocialInviteLogEvent } from "../../observability/invites/social-invite-log.events.js";
 import type { InviteRedemptionRepositoryPort } from "../../ports/invites/invite-redemption.repository.port.js";
 import type { InviteRewardSchedulerPort } from "../../ports/invites/invite-reward.scheduler.port.js";
+import type { InviteConfigPort } from "../../ports/invites/invite.config.port.js";
 import type { RewardGrantRepositoryPort } from "../../ports/invites/reward-grant.repository.port.js";
 
 export interface RecordInviteeActivityInput {
   readonly inviteeId: string;
-  readonly timezone: string;
   readonly occurredAt: Date;
 }
 
@@ -41,12 +41,17 @@ interface RecordInviteeActivityDependencies {
     "summarizeInviterRewards" | "createPending"
   >;
   readonly rewardScheduler: InviteRewardSchedulerPort;
+  readonly inviteConfig: InviteConfigPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
 }
 
-/** 초대받은 사람이 할 일을 마친 날짜를 모아 사용 시작을 판정하고 초대한 사람 보상을 남긴다. */
+/**
+ * 초대받은 사람이 할 일을 마친 날짜를 모아 사용 시작을 판정하고 초대한 사람 보상을 남긴다.
+ * 날짜는 수락할 때 고정한 시간대로만 센다. 요청마다 오는 시간대를 믿으면 시간대만 바꿔 같은 날
+ * 두 번 셀 수 있다.
+ */
 export class RecordInviteeActivity {
   readonly #dependencies: RecordInviteeActivityDependencies;
 
@@ -62,13 +67,18 @@ export class RecordInviteeActivity {
       return { status: "skipped" };
     }
 
-    const localDate = localActivityDate(input.occurredAt, input.timezone);
     const result = await this.#dependencies.unitOfWork.run(async () => {
       const redemption =
         await this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(
           input.inviteeId,
         );
-      if (redemption === null || !redemption.recordActiveDay(localDate, input.occurredAt)) {
+      if (
+        redemption === null ||
+        !redemption.recordActiveDay(
+          localActivityDate(input.occurredAt, redemption.timezone),
+          input.occurredAt,
+        )
+      ) {
         return { status: "skipped" } as const;
       }
       if (!InviteQualificationPolicy.isQualified(redemption) || redemption.inviterId === null) {
@@ -105,17 +115,23 @@ export class RecordInviteeActivity {
       this.#dependencies.inviteRedemptionRepository.summarizeByInviterId(inviterId),
     ]);
 
-    // 상한에 닿아도 사용 시작은 인정하고 지급할 보상만 줄인다
-    const plans = InviteRewardPolicy.planInviterRewards(redemption, {
-      inviterId,
-      summary: InviteRewardPolicy.summarize(rewardTotals),
-      priorQualifiedCount: qualifiedRedemptionCount(summary),
-    });
+    // 상한에 닿아도 사용 시작은 인정하고 지급할 보상만 줄인다. 같은 기기·신원 재사용으로 초대받은
+    // 사람 보상을 막은 수락은 초대한 사람 보상도 계획하지 않는다
+    const plans = redemption.inviterRewardEligible
+      ? InviteRewardPolicy.planInviterRewards(redemption, {
+          inviterId,
+          summary: InviteRewardPolicy.summarize(rewardTotals),
+          priorQualifiedCount: qualifiedRedemptionCount(summary),
+        })
+      : [];
 
     redemption.qualify(at);
     await this.#dependencies.inviteRedemptionRepository.save(redemption);
     const grantCount = await this.#dependencies.rewardGrantRepository.createPending(plans);
-    await this.#dependencies.rewardScheduler.schedule(redemption.id, { kind: "qualified" });
+    // 꺼져 있으면 원장만 PENDING으로 남긴다. 다시 켜면 정비 작업이 골라 적용하므로 보상을 잃지 않는다
+    if (this.#dependencies.inviteConfig.isEnabled) {
+      await this.#dependencies.rewardScheduler.schedule(redemption.id, { kind: "qualified" });
+    }
     return { status: "qualified", redemptionId: redemption.id, grantCount };
   }
 }

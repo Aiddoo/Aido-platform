@@ -2,11 +2,12 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { subtractMinutes } from "#api/shared/domain/date/utils/arithmetic";
 
+import { INVITE_REWARD_MAX_ATTEMPTS } from "../../../domain/types/invites/reward-grant.types.js";
 import { SocialInviteLogEvent } from "../../observability/invites/social-invite-log.events.js";
 import type { InviteRedemptionRepositoryPort } from "../../ports/invites/invite-redemption.repository.port.js";
 import type { InviteRewardSchedulerPort } from "../../ports/invites/invite-reward.scheduler.port.js";
+import type { InviteConfigPort } from "../../ports/invites/invite.config.port.js";
 import type { RewardGrantRepositoryPort } from "../../ports/invites/reward-grant.repository.port.js";
-import { INVITE_REWARD_MAX_ATTEMPTS } from "./grant-invite-rewards.use-case.js";
 
 const INVITE_MAINTENANCE = {
   BATCH_SIZE: 500,
@@ -31,6 +32,7 @@ interface ExpireStaleRedemptionsDependencies {
   readonly inviteRedemptionRepository: Pick<InviteRedemptionRepositoryPort, "expireJoinedBefore">;
   readonly rewardGrantRepository: Pick<RewardGrantRepositoryPort, "findRetryableSourceIds">;
   readonly rewardScheduler: Pick<InviteRewardSchedulerPort, "scheduleMany">;
+  readonly inviteConfig: InviteConfigPort;
   readonly unitOfWork: UnitOfWorkPort;
   readonly logger: ApplicationLogger;
 }
@@ -45,7 +47,8 @@ export class ExpireStaleRedemptions {
 
   async execute(input: ExpireStaleRedemptionsInput): Promise<ExpireStaleRedemptionsResult> {
     const expiredCount = await this.#expire(input.now);
-    const retriedCount = await this.#retry(input);
+    // 꺼져 있는 동안은 지급하지 않고 원장을 남긴다. 다시 켠 뒤 첫 실행이 PENDING·FAILED를 이어 받는다
+    const retriedCount = this.#dependencies.inviteConfig.isEnabled ? await this.#retry(input) : 0;
 
     this.#dependencies.logger.log({
       event: SocialInviteLogEvent.MAINTENANCE_COMPLETED,

@@ -1,8 +1,9 @@
 import { Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
-import dayjs from "dayjs";
 
 import { runInBackground } from "#api/platform/bullmq/non-blocking-init";
 import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
+import { now } from "#api/shared/domain/date/utils/core";
+import { dayWindowInTimezone, toLocalTimeString } from "#api/shared/domain/date/utils/timezone";
 
 import { SocialInviteLogEvent } from "../../../application/observability/invites/social-invite-log.events.js";
 import {
@@ -40,10 +41,12 @@ export class InviteMaintenanceJob implements OnModuleInit {
   }
 
   async #catchUpIfNeeded(): Promise<void> {
-    const currentTime = dayjs().tz(INVITE_MAINTENANCE_SCHEDULE.timezone);
-    if (currentTime.hour() < INVITE_MAINTENANCE_SCHEDULE.catchUpHour) return;
+    // 프로세서와 같은 공용 날짜 유틸로 실행 날짜를 정해 catch-up 키와 재시도 날짜가 어긋나지 않게 한다
+    const at = now();
+    const { timezone, catchUpHour } = INVITE_MAINTENANCE_SCHEDULE;
+    if (Number(toLocalTimeString(at, timezone).slice(0, 2)) < catchUpHour) return;
 
-    const localDate = currentTime.format("YYYY-MM-DD");
+    const { localDate } = dayWindowInTimezone(at, timezone);
     await this.runtime.enqueue(
       INVITE_MAINTENANCE_QUEUE,
       { name: INVITE_MAINTENANCE_JOB_NAME, data: {} },
