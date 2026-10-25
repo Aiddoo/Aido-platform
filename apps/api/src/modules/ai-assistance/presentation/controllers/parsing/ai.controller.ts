@@ -17,6 +17,7 @@ import {
   ApiUnprocessableError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { GetAiUsage } from "../../../application/use-cases/parsing/get-ai-usage.use-case.js";
 import { ParseMemo } from "../../../application/use-cases/parsing/parse-memo.use-case.js";
@@ -72,7 +73,7 @@ export class AiController {
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -177,22 +178,23 @@ if (confirmed) {
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",
-    description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+    description:
+      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
     required: false,
     example: "ko",
   })
   async parseTodo(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseTodoRequestDto }) dto: ParseTodoRequestDto,
-    @Timezone() tz: string,
-    @Locale() locale: "ko" | "en" | undefined,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
+    @Locale() locale: SupportedLocale | undefined,
   ): Promise<ParseTodoResponseDto> {
     const result = await this.parseTodoUseCase.execute({
       text: dto.text,
       userId: user.userId,
       timezone: tz,
       categoryId: dto.categoryId,
-      locale: locale ?? "ko",
+      locale,
     });
 
     return {
@@ -263,7 +265,7 @@ if (confirmed) {
   @ApiHeader({
     name: "X-Timezone",
     required: false,
-    description: "사용자 타임존 (IANA, 기본값: UTC)",
+    description: "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
     example: "Asia/Seoul",
   })
   @ApiDoc({
@@ -324,22 +326,23 @@ if (confirmed) {
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",
-    description: '파싱 결과 언어 ("ko" | "en", 미전송 시 ko)',
+    description:
+      '파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.',
     required: false,
     example: "ko",
   })
   async parseMemo(
     @CurrentUser() user: CurrentUserPayload,
     @Body({ schema: ParseMemoRequestDto }) dto: ParseMemoRequestDto,
-    @Timezone() tz: string,
-    @Locale() locale: "ko" | "en" | undefined,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
+    @Locale() locale: SupportedLocale | undefined,
   ): Promise<ParseMemoResponseDto> {
     const result = await this.parseMemoUseCase.execute({
       content: dto.content,
       userId: user.userId,
       timezone: tz,
       categoryId: dto.categoryId,
-      locale: locale ?? "ko",
+      locale,
     });
 
     return {

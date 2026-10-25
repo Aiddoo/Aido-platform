@@ -14108,7 +14108,7 @@ curl https://api.aido.com/health
       "operationId": "parseMemoToTodos",
       "parameters": [
         {
-          "description": "파싱 결과 언어 ("ko" | "en", 미전송 시 ko)",
+          "description": "파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.",
           "in": "header",
           "name": "Accept-Language",
           "required": false,
@@ -14118,7 +14118,7 @@ curl https://api.aido.com/health
           },
         },
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
           "in": "header",
           "name": "X-Timezone",
           "required": false,
@@ -14524,7 +14524,7 @@ if (confirmed) {
       "operationId": "parseNaturalLanguageTodo",
       "parameters": [
         {
-          "description": "파싱 결과 언어 ("ko" | "en", 미전송 시 ko)",
+          "description": "파싱 결과 언어 ("ko" | "en"). 미전송 시 저장된 사용자 언어를 사용하고, 없으면 ko입니다.",
           "in": "header",
           "name": "Accept-Language",
           "required": false,
@@ -14534,7 +14534,7 @@ if (confirmed) {
           },
         },
         {
-          "description": "사용자 타임존 (IANA, 기본값: UTC)",
+          "description": "사용자 타임존 (IANA). 미전송 시 저장된 사용자 타임존을 사용합니다.",
           "in": "header",
           "name": "X-Timezone",
           "required": false,

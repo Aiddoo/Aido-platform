@@ -10,8 +10,10 @@ import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.ev
 import { type AiProvider, type TokenUsage } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
+import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 
 /** 파싱 메타데이터 (모델·처리시간·토큰). */
 export interface ParseTodoMeta {
@@ -33,10 +35,17 @@ export interface ParseTodoResult {
 export interface ParseTodoInput {
   text: string;
   userId: string;
-  timezone: string;
+  /** X-Timezone 헤더. 없으면 저장된 사용자 시간대를 쓴다. */
+  timezone: string | undefined;
   categoryId: number | undefined;
-  locale: SupportedLocale;
+  /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
+  locale: SupportedLocale | undefined;
 }
+
+type ResolvedParseTodoInput = Omit<ParseTodoInput, "timezone" | "locale"> & {
+  readonly timezone: string;
+  readonly locale: SupportedLocale;
+};
 
 /**
  * 자연어 → 단건 투두 파싱 use-case.
@@ -49,6 +58,7 @@ interface ParseTodoDependencies {
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
+  readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -68,16 +78,21 @@ export class ParseTodo {
       throw new ApplicationException(ErrorCode.AI_1301);
     }
 
+    const { timezone, locale } = await resolveRequestLocale(
+      this.#dependencies.localePreferenceReader,
+      userId,
+      input,
+    );
     const reservation = await this.#dependencies.quota.reserve(userId);
     try {
-      return await this.#parse(input, startTime);
+      return await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
       await this.#dependencies.quota.release(reservation);
       throw error;
     }
   }
 
-  async #parse(input: ParseTodoInput, startTime: number): Promise<ParseTodoResult> {
+  async #parse(input: ResolvedParseTodoInput, startTime: number): Promise<ParseTodoResult> {
     const { text, userId, timezone, categoryId, locale } = input;
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);

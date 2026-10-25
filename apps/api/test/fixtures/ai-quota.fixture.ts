@@ -8,6 +8,7 @@ import {
   StubAiQuotaRepository,
   StubAiQuotaUserMutationLock,
   StubAiUserCategoryReader,
+  StubUserLocalePreferenceReader,
 } from "#test/mocks/ports/ai-quota.stub";
 import { createUnitOfWorkMock } from "#test/mocks/ports/unit-of-work.mock";
 
@@ -31,6 +32,7 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
   const categoryReader = new StubAiUserCategoryReader();
   categoryReader.categories.set(user.id, [{ id: 7, name: "업무" }]);
   const aiProvider = new FakeAiProvider();
+  const localePreferenceReader = new StubUserLocalePreferenceReader();
   return {
     userId: user.id,
     repository,
@@ -40,5 +42,6 @@ export function createAiQuotaFixture(input: Partial<AiQuotaState> = {}) {
     quota,
     categoryReader,
     aiProvider,
+    localePreferenceReader,
   };
 }

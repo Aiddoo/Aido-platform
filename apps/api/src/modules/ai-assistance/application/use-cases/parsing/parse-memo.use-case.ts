@@ -13,8 +13,10 @@ import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.ev
 import { type AiProvider } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
+import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
 import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
+import { resolveRequestLocale } from "../../services/parsing/resolve-request-locale.js";
 import type { ParseTodoMeta } from "./parse-todo.use-case.js";
 
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
@@ -30,10 +32,17 @@ export interface ParseMemoResult {
 export interface ParseMemoInput {
   content: string;
   userId: string;
-  timezone: string;
+  /** X-Timezone 헤더. 없으면 저장된 사용자 시간대를 쓴다. */
+  timezone: string | undefined;
   categoryId: number;
-  locale: SupportedLocale;
+  /** Accept-Language 헤더. 없으면 저장된 사용자 언어를 쓴다. */
+  locale: SupportedLocale | undefined;
 }
+
+type ResolvedParseMemoInput = Omit<ParseMemoInput, "timezone" | "locale"> & {
+  readonly timezone: string;
+  readonly locale: SupportedLocale;
+};
 
 /**
  * 메모 → 다중 투두 파싱 use-case.
@@ -45,6 +54,7 @@ interface ParseMemoDependencies {
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
   readonly categoryReader: Pick<UserCategoryReaderPort, "findByUserId">;
   readonly quota: Pick<AiQuotaPort, "reserve" | "release">;
+  readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
   readonly logger: Pick<ApplicationLogger, "log" | "warn" | "error">;
 }
 
@@ -64,16 +74,21 @@ export class ParseMemo {
       throw new ApplicationException(ErrorCode.AI_1301);
     }
 
+    const { timezone, locale } = await resolveRequestLocale(
+      this.#dependencies.localePreferenceReader,
+      userId,
+      input,
+    );
     const reservation = await this.#dependencies.quota.reserve(userId);
     try {
-      return await this.#parse(input, startTime);
+      return await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
       await this.#dependencies.quota.release(reservation);
       throw error;
     }
   }
 
-  async #parse(input: ParseMemoInput, startTime: number): Promise<ParseMemoResult> {
+  async #parse(input: ResolvedParseMemoInput, startTime: number): Promise<ParseMemoResult> {
     const { content, userId, timezone, categoryId, locale } = input;
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);

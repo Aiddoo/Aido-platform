@@ -32,6 +32,7 @@ import { createDetectedPattern, createReportAiResponse } from "#test/fixtures/ai
 import { TodoFixture } from "#test/fixtures/todo.fixture";
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
+import { StubUserLocalePreferenceReader } from "#test/mocks/ports/ai-quota.stub";
 import {
   createDatabaseTransactionFixture,
   createTestClient,
@@ -513,6 +514,7 @@ describe("AI 유료 실행·저장·수락 정합성 (실제 PostgreSQL)", () =>
       logger: new Logger("AiActionIntegration"),
       unitOfWork: fixture.uow,
       userMutationLock,
+      localePreferenceReader: new StubUserLocalePreferenceReader(),
     });
   }
 

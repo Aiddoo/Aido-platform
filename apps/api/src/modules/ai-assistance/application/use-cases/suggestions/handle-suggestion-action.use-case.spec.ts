@@ -34,6 +34,9 @@ function createSuggestion(overrides?: Partial<SuggestionProps>): Suggestion {
 
 describe("HandleSuggestionAction", () => {
   let useCase: HandleSuggestionAction;
+  let localePreferenceReader: Mocked<
+    ConstructorParameters<typeof HandleSuggestionAction>[0]["localePreferenceReader"]
+  >;
   let repo: Mocked<ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"]>;
   let creator: Mocked<
     ConstructorParameters<typeof HandleSuggestionAction>[0]["recurringTodoCreator"]
@@ -52,6 +55,7 @@ describe("HandleSuggestionAction", () => {
     repo = handleSuggestionActionDependencies.repository;
     creator = handleSuggestionActionDependencies.recurringTodoCreator;
     entitlement = handleSuggestionActionDependencies.entitlementReader;
+    localePreferenceReader = handleSuggestionActionDependencies.localePreferenceReader;
 
     entitlement.hasPremiumAccessInTx.mockResolvedValue(true);
     handleSuggestionActionDependencies.userMutationLock.lockById.mockResolvedValue(true);
@@ -197,5 +201,83 @@ describe("HandleSuggestionAction", () => {
     await expect(execution).rejects.toBe(failure);
     expect(repo.updateStatus).toHaveBeenCalledTimes(1);
     expect(repo.updateStatus).toHaveBeenCalledWith(1, "ACCEPTED");
+  });
+
+  describe("수락 기본 기간", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it.each([
+      {
+        name: "KST 새벽 수락은 한국 날짜 오늘부터 시작한다",
+        at: "2026-10-27T16:30:00.000Z",
+        timezone: "Asia/Seoul",
+        startDate: "2026-10-28",
+        endDate: "2026-11-25",
+      },
+      {
+        name: "미주 저녁 수락은 현지 날짜 오늘부터 시작한다",
+        at: "2026-10-28T02:00:00.000Z",
+        timezone: "America/Los_Angeles",
+        startDate: "2026-10-27",
+        endDate: "2026-11-24",
+      },
+      {
+        name: "윤일 직전 현지 자정 직후에도 현지 날짜를 쓴다",
+        at: "2028-02-28T15:05:00.000Z",
+        timezone: "Asia/Seoul",
+        startDate: "2028-02-29",
+        endDate: "2028-03-28",
+      },
+    ])("$name", async ({ at, timezone, startDate, endDate }) => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(at));
+      repo.findByIdAndUserId.mockResolvedValue(
+        createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
+      );
+      repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
+      creator.createRecurring.mockResolvedValue({ count: 4 });
+      // When
+      await useCase.execute({
+        userId: mockUserId,
+        suggestionId: 1,
+        action: "accept",
+        categoryId: 5,
+        timezone,
+      });
+      // Then
+      expect(creator.createRecurring).toHaveBeenCalledWith(
+        expect.objectContaining({ startDate, endDate }),
+        timezone,
+      );
+      expect(localePreferenceReader.read).not.toHaveBeenCalled();
+    });
+
+    it("X-Timezone이 없으면 저장된 사용자 시간대로 계산한다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-10-27T16:30:00.000Z"));
+      localePreferenceReader.read.mockResolvedValue({ timezone: "Asia/Seoul", locale: "ko" });
+      repo.findByIdAndUserId.mockResolvedValue(
+        createSuggestion({ expiresAt: new Date("2030-01-01T00:00:00.000Z") }),
+      );
+      repo.updateStatus.mockResolvedValue(createSuggestion({ status: "ACCEPTED" }));
+      creator.createRecurring.mockResolvedValue({ count: 4 });
+      // When
+      await useCase.execute({
+        userId: mockUserId,
+        suggestionId: 1,
+        action: "accept",
+        categoryId: 5,
+        timezone: undefined,
+      });
+      // Then
+      expect(creator.createRecurring).toHaveBeenCalledWith(
+        expect.objectContaining({ startDate: "2026-10-28" }),
+        "Asia/Seoul",
+      );
+    });
   });
 });

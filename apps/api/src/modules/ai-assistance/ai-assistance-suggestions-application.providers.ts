@@ -1,7 +1,10 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import {
+  AI_PROVIDER,
+  USER_LOCALE_PREFERENCE_READER,
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
 import { WEATHER_FORECAST_READER } from "#api/modules/weather/weather-forecast.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
@@ -87,6 +90,7 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
     ENTITLEMENT_READER,
     UNIT_OF_WORK,
     USER_MUTATION_LOCK,
+    USER_LOCALE_PREFERENCE_READER,
   ],
   useFactory: (
     repository: ConstructorParameters<typeof HandleSuggestionAction>[0]["repository"],
@@ -96,6 +100,9 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
     entitlementReader: ConstructorParameters<typeof HandleSuggestionAction>[0]["entitlementReader"],
     unitOfWork: ConstructorParameters<typeof HandleSuggestionAction>[0]["unitOfWork"],
     userMutationLock: ConstructorParameters<typeof HandleSuggestionAction>[0]["userMutationLock"],
+    localePreferenceReader: ConstructorParameters<
+      typeof HandleSuggestionAction
+    >[0]["localePreferenceReader"],
   ) =>
     new HandleSuggestionAction({
       repository,
@@ -103,6 +110,7 @@ export const handleSuggestionActionProvider: FactoryProvider<HandleSuggestionAct
       entitlementReader,
       unitOfWork,
       userMutationLock,
+      localePreferenceReader,
       logger: new Logger(HandleSuggestionAction.name),
     }),
 };

@@ -9,10 +9,12 @@ import type { ApplicationLogger } from "#api/shared/application/ports/applicatio
 import type { UnitOfWorkPort } from "#api/shared/application/ports/index";
 import { now } from "#api/shared/domain/date/utils/core";
 import { toDateString } from "#api/shared/domain/date/utils/format";
+import { startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { Suggestion } from "../../../domain/aggregates/suggestions/suggestion.aggregate.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
+import type { UserLocalePreferenceReaderPort } from "../../ports/parsing/user-locale-preference.reader.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
 import { type RecurringTodoCreatorPort } from "../../ports/suggestions/recurring-todo-creator.port.js";
 
@@ -23,7 +25,8 @@ export interface HandleSuggestionActionInput {
   readonly categoryId?: number;
   readonly startDate?: string;
   readonly endDate?: string;
-  readonly timezone: string;
+  /** X-Timezone 헤더. 없으면 저장된 사용자 시간대를 쓴다. */
+  readonly timezone: string | undefined;
 }
 
 /** 제안 수락/거절 결과 read model */
@@ -46,6 +49,7 @@ interface HandleSuggestionActionDependencies {
   readonly logger: Pick<ApplicationLogger, "log" | "warn">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly userMutationLock: Pick<UserMutationLockPort, "lockById">;
+  readonly localePreferenceReader: Pick<UserLocalePreferenceReaderPort, "read">;
 }
 
 export class HandleSuggestionAction {
@@ -56,6 +60,9 @@ export class HandleSuggestionAction {
   }
 
   async execute(input: HandleSuggestionActionInput): Promise<SuggestionActionResult> {
+    const timezone =
+      input.timezone ??
+      (await this.#dependencies.localePreferenceReader.read(input.userId)).timezone;
     const result = await this.#dependencies.unitOfWork.run(async () => {
       if (!(await this.#dependencies.userMutationLock.lockById(input.userId))) {
         throw new ApplicationException(ErrorCode.AI_1309);
@@ -93,13 +100,12 @@ export class HandleSuggestionAction {
           reason: "제안의 요일 데이터가 유효하지 않습니다",
         });
       }
-      const currentDate = dayjs.utc(at);
-      const startDate = input.startDate ?? toDateString(currentDate.toDate());
+      // 반복은 사용자 로컬 "오늘"부터 시작해야 KST 새벽·미주 저녁 수락이 하루 밀리지 않는다.
+      const localToday = dayjs.utc(startOfDayInTimezone(at, timezone));
+      const startDate = input.startDate ?? toDateString(localToday.toDate());
       const endDate =
         input.endDate ??
-        toDateString(
-          currentDate.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate(),
-        );
+        toDateString(localToday.add(AI_SUGGESTION_LIMITS.DEFAULT_RECURRING_WEEKS, "week").toDate());
       const updated = await this.#dependencies.repository.updateStatus(
         input.suggestionId,
         suggestion.status,
@@ -115,7 +121,7 @@ export class HandleSuggestionAction {
           daysOfWeek: days.data,
           scheduledTime: suggestion.scheduledTime,
         },
-        input.timezone,
+        timezone,
       );
       return {
         message: "제안이 수락되어 반복 할 일이 생성되었습니다.",

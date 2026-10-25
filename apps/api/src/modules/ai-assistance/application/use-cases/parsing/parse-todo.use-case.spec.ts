@@ -156,6 +156,33 @@ describe("ParseTodo", () => {
     expect(fixture.aiProvider.getCallCount()).toBe(0);
   });
 
+  it("X-Timezone이 없으면 저장된 사용자 시간대로 프롬프트를 만든다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.localePreferenceReader.preferences.set(fixture.userId, {
+      timezone: "Asia/Seoul",
+      locale: "ko",
+    });
+    // When
+    await fixture.useCase.execute({ ...fixture.input, timezone: undefined });
+    // Then
+    expect(fixture.aiProvider.getLastPrompt()).toContain("Asia/Seoul");
+    expect(fixture.localePreferenceReader.readCount).toBe(1);
+  });
+
+  it("저장된 설정 조회 실패는 사용량을 예약하기 전에 전파한다", async () => {
+    // Given
+    const fixture = createFixture();
+    const failure = new Error("preference unavailable");
+    vi.spyOn(fixture.localePreferenceReader, "read").mockRejectedValueOnce(failure);
+    // When
+    const execution = fixture.useCase.execute({ ...fixture.input, locale: undefined });
+    // Then
+    await expect(execution).rejects.toBe(failure);
+    expect((await fixture.quota.read(fixture.userId)).used).toBe(0);
+    expect(fixture.aiProvider.getCallCount()).toBe(0);
+  });
+
   it("prompt 생성 실패도 provider 호출 전에 예약 사용량을 보상한다", async () => {
     // Given
     const fixture = createFixture();
