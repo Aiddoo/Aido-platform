@@ -92,9 +92,9 @@ export function AiParseConfirmDialog({ isOpen, memoId, onOpenChange }: AiParseCo
           push(memoAiReviewHref(memoId));
         },
         onError: (error) => {
+          // 한도 소진 안내는 mutation 공통 프리미엄 다이얼로그가 맡고, 확인 창만 닫는다.
           if (isApiError(error) && error.hasCode(ErrorCode.AI_1303)) {
             close();
-            replace('/settings/subscription');
           }
         },
       },
