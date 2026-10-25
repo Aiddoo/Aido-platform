@@ -13,6 +13,7 @@ import { FriendCalendar } from '@src/features/todo/components/calendar/friend-ca
 import { MyCalendar } from '@src/features/todo/components/calendar/my-calendar';
 import { FeedListPane } from '@src/features/todo/components/feed-list-pane';
 import { FeedTodoDetailPane } from '@src/features/todo/components/feed-todo-detail-pane';
+import { FriendStrip } from '@src/features/todo/components/friend-strip';
 import { FriendTodoList } from '@src/features/todo/components/friend-todo-list';
 import { CalendarProvider } from '@src/features/todo/components/providers/calendar-provider';
 import { FeedDateProvider } from '@src/features/todo/components/providers/feed-date-provider';
@@ -56,6 +57,13 @@ export default function FeedScreen() {
         <AdaptivePane
           primary={
             <FeedListPane>
+              <StyledSafeAreaView edges={['left', 'right']}>
+                <QueryErrorBoundary fallback={FriendStrip.Error}>
+                  <Suspense fallback={<FriendStrip.Loading />}>
+                    <FriendStrip />
+                  </Suspense>
+                </QueryErrorBoundary>
+              </StyledSafeAreaView>
               {match(friendId)
                 .with(P.string, (id) => <FriendFeed key={id} />)
                 .with(undefined, () => <MyFeed />)

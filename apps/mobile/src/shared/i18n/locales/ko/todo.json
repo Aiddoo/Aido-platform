@@ -143,14 +143,23 @@
     "loadFailed": "캘린더 표시를 업데이트하지 못했어요"
   },
   "feed": {
-    "me": "나",
-    "avatarAlt": "{{name}} 프로필",
     "loading": "불러오는 중...",
     "suggestionsLoading": "제안을 불러오는 중...",
     "routineSuggestion": "딱 맞는 루틴을 제안해드려요 !",
     "suggestionsArrived": "{{name}}님, {{count}}개의 맞춤 제안이 도착했어요 !",
     "preparing": "이번 주 제안을 준비 중이에요",
     "suggestionsRetry": "맞춤 제안을 불러오지 못했어요. 눌러서 다시 확인해 주세요"
+  },
+  "friendStrip": {
+    "me": "나",
+    "meLabel": "내 할 일 보기",
+    "friendLabel": "{{name}}님의 할 일 보기",
+    "findFriends": "친구 찾기",
+    "loadMoreFailed": "다시 시도",
+    "loadMoreFailedLabel": "친구를 더 불러오지 못했어요. 다시 시도",
+    "emptyInvite": "초대하기",
+    "emptyInviteHint": "친구를 초대하면 서로의 할 일을 보고 응원할 수 있어요",
+    "emptySearchHint": "친구를 찾아 서로의 할 일을 보고 응원해 보세요"
   },
   "activation": {
     "title": "첫 할 일을 만들고 완료해 보세요",

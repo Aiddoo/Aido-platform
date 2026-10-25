@@ -149,6 +149,7 @@ export type FeatureKey = (typeof FEATURE_KEYS)[number];
 /** 친구 초대로 들어온 곳. 누른 순간 invite_entry_tapped로 남긴다 */
 export type InviteEntrySource =
   | 'friends_empty'
+  | 'friend_strip_empty'
   | 'friend_limit_dialog'
   | 'mypage_card'
   | 'activation_checklist'

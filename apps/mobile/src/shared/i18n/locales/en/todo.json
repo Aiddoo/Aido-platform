@@ -147,8 +147,6 @@
     "loadFailed": "Couldn’t update calendar markers"
   },
   "feed": {
-    "me": "Me",
-    "avatarAlt": "{{name}}'s profile",
     "loading": "Loading...",
     "suggestionsLoading": "Loading suggestions...",
     "routineSuggestion": "We'll suggest routines just for you!",
@@ -156,6 +154,17 @@
     "suggestionsArrived_other": "{{name}}, {{count}} personalized suggestions just arrived!",
     "preparing": "We're preparing this week's suggestions",
     "suggestionsRetry": "Couldn’t load your suggestions. Tap to try again."
+  },
+  "friendStrip": {
+    "me": "Me",
+    "meLabel": "View my to-dos",
+    "friendLabel": "View {{name}}'s to-dos",
+    "findFriends": "Find friends",
+    "loadMoreFailed": "Retry",
+    "loadMoreFailedLabel": "Couldn't load more friends. Retry",
+    "emptyInvite": "Invite",
+    "emptyInviteHint": "Invite friends to see and cheer on each other's to-dos",
+    "emptySearchHint": "Find friends to see and cheer on each other's to-dos"
   },
   "activation": {
     "title": "Create and complete your first to-do",
