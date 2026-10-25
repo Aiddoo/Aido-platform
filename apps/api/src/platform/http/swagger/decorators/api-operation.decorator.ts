@@ -1,9 +1,12 @@
+import { ErrorCode, Errors } from "@aido/api/errors";
 import { applyDecorators, HttpStatus } from "@nestjs/common";
+import { ROUTE_ARGS_METADATA } from "@nestjs/common/constants.js";
 import { ApiOperation, ApiResponse, type ApiResponseOptions, DECORATORS } from "@nestjs/swagger";
 
 import { SWAGGER_DESCRIPTION } from "../constants/swagger.constant.js";
 import type { ApiDocOptions } from "../interfaces/swagger.interface.js";
 import { ErrorResponseSchema } from "../schemas/response.schema.js";
+import { documentErrors } from "./api-error.decorator.js";
 
 /**
  * 엔드포인트가 같은 상태를 아직 선언하지 않았을 때만 응답을 더한다.
@@ -29,11 +32,42 @@ function ApiResponseIfUndeclared(options: ApiResponseOptions & { status: HttpSta
   };
 }
 
+/** `@Body/@Query/@Param({ schema })`처럼 Zod schema로 검증하는 입력이 있는지 */
+function hasSchemaValidatedInput(target: object, key: string | symbol): boolean {
+  const routeArgs: unknown = Reflect.getMetadata(ROUTE_ARGS_METADATA, target.constructor, key);
+  if (typeof routeArgs !== "object" || routeArgs == null) {
+    return false;
+  }
+  return Object.values(routeArgs).some(
+    (arg: unknown) =>
+      typeof arg === "object" && arg != null && "schema" in arg && arg.schema != null,
+  );
+}
+
+/**
+ * 입력 검증 실패는 전역 StandardSchemaValidationPipe가 400 SYS_0002로 보낸다.
+ * 검증하는 입력이 있으면 엔드포인트가 선언한 400 코드에 SYS_0002를 더한다.
+ * 파라미터 데코레이터가 메서드 데코레이터보다 먼저 적용되므로 이 시점에 입력 메타데이터가 있다.
+ */
+function ApiValidationErrorResponse(): MethodDecorator {
+  const documentValidationError = documentErrors(HttpStatus.BAD_REQUEST, [
+    { code: ErrorCode.SYS_0002, message: Errors[ErrorCode.SYS_0002].message },
+  ]);
+
+  return (target, key, descriptor) => {
+    if (!hasSchemaValidatedInput(target, key)) {
+      return descriptor;
+    }
+    return documentValidationError(target, key, descriptor);
+  };
+}
+
 /**
  * API 문서화를 위한 통합 데코레이터
  *
  * 기능:
  * - ApiOperation (summary, description, deprecated) 설정
+ * - Zod로 검증하는 입력이 있으면 400에 SYS_0002 추가
  * - 공통 에러 응답 (400, 500) 자동 추가 (옵션)
  *
  * @example
@@ -53,6 +87,7 @@ export function ApiDoc(options: ApiDocOptions): MethodDecorator {
       operationId,
       deprecated,
     }),
+    ApiValidationErrorResponse(),
   ];
 
   if (includeCommonErrors) {

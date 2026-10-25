@@ -1,20 +1,31 @@
-import { type ErrorCodeType, Errors } from "@aido/api/errors";
-import { applyDecorators, HttpStatus } from "@nestjs/common";
-import { ApiResponse } from "@nestjs/swagger";
+import { ErrorCode, type ErrorCodeType, Errors } from "@aido/api/errors";
+import { HttpStatus } from "@nestjs/common";
+import { DECORATORS } from "@nestjs/swagger";
 
 import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface.js";
 
-/**
- * 에러 응답 스키마 생성 (에러 코드, 메시지 포함)
- */
-function createErrorSchema(
-  errorCode: ErrorCodeType,
-  message: string,
-  codeSchema: { type: "string"; example: ErrorCodeType; enum?: ErrorCodeType[] } = {
-    type: "string",
-    example: errorCode,
-  },
-) {
+interface DocumentedError {
+  readonly code: ErrorCodeType;
+  readonly message: string;
+}
+
+/** examples는 문서 스냅샷에 그대로 남으므로 생성 시각 대신 고정 epoch을 쓴다. */
+const EXAMPLE_TIMESTAMP = 1_700_000_000_000;
+
+/** 핸들러별·상태별로 문서화한 오류. 데코레이터 순서와 상관없이 한 상태의 코드를 모두 모은다. */
+const documentedErrors = new WeakMap<object, Map<number, DocumentedError[]>>();
+
+function messageOf(errorCode: ErrorCodeType, fallback: string): string {
+  return Errors[errorCode]?.message ?? fallback;
+}
+
+function createErrorSchema(errors: readonly [DocumentedError, ...DocumentedError[]]) {
+  const [first] = errors;
+  const code =
+    errors.length === 1
+      ? { type: "string", example: first.code }
+      : { type: "string", example: first.code, enum: errors.map((error) => error.code) };
+
   return {
     type: "object",
     properties: {
@@ -22,8 +33,8 @@ function createErrorSchema(
       error: {
         type: "object",
         properties: {
-          code: codeSchema,
-          message: { type: "string", example: message },
+          code,
+          message: { type: "string", example: first.message },
           details: { type: "object", nullable: true, example: null },
         },
         required: ["code", "message"],
@@ -32,6 +43,85 @@ function createErrorSchema(
     },
     required: ["success", "error", "timestamp"],
   };
+}
+
+function createErrorResponse(errors: readonly [DocumentedError, ...DocumentedError[]]) {
+  const [first] = errors;
+  if (errors.length === 1) {
+    return { description: first.message, schema: createErrorSchema(errors) };
+  }
+
+  return {
+    description: errors.map((error) => `${error.code}: ${error.message}`).join("\n\n"),
+    schema: createErrorSchema(errors),
+    examples: Object.fromEntries(
+      errors.map((error) => [
+        error.code,
+        {
+          summary: error.message,
+          value: {
+            success: false,
+            error: { code: error.code, message: error.message, details: null },
+            timestamp: EXAMPLE_TIMESTAMP,
+          },
+        },
+      ]),
+    ),
+  };
+}
+
+/**
+ * 상태별 오류 코드를 모아 그 상태의 응답 하나로 다시 쓴다.
+ *
+ * Swagger의 ApiResponse는 같은 상태를 `{ ...이전, ...나중 }`으로 합쳐 schema는 마지막 것만,
+ * 설명은 이어 붙여 남긴다. 그래서 응답을 합치지 않고 지금까지 모은 코드 전체로 교체한다.
+ * 코드가 하나면 `error.code` example, 둘 이상이면 enum과 코드별 examples로 선언한다.
+ */
+export function documentErrors(
+  status: HttpStatus,
+  errors: readonly DocumentedError[],
+): MethodDecorator {
+  return (_target, _key, descriptor) => {
+    const handler: unknown = descriptor.value;
+    if (typeof handler !== "function") {
+      return descriptor;
+    }
+
+    const byStatus = documentedErrors.get(handler) ?? new Map<number, DocumentedError[]>();
+    const previous = byStatus.get(status) ?? [];
+    const merged = [
+      ...previous,
+      ...errors.filter((error) => !previous.some((known) => known.code === error.code)),
+    ];
+    byStatus.set(status, merged);
+    documentedErrors.set(handler, byStatus);
+
+    const [first, ...rest] = merged;
+    if (first == null) {
+      return descriptor;
+    }
+    const responses: unknown = Reflect.getMetadata(DECORATORS.API_RESPONSE, handler);
+    Reflect.defineMetadata(
+      DECORATORS.API_RESPONSE,
+      {
+        ...(typeof responses === "object" && responses != null ? responses : {}),
+        [status]: createErrorResponse([first, ...rest]),
+      },
+      handler,
+    );
+    return descriptor;
+  };
+}
+
+function documentErrorCode(
+  status: HttpStatus,
+  errorCode: ErrorCodeType,
+  fallback: string,
+  description?: string,
+): MethodDecorator {
+  return documentErrors(status, [
+    { code: errorCode, message: description ?? messageOf(errorCode, fallback) },
+  ]);
 }
 
 /**
@@ -49,18 +139,9 @@ function createErrorSchema(
  */
 export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecorator {
   const { errorCode, description } = options;
+  const status = Errors[errorCode]?.httpStatus ?? HttpStatus.BAD_REQUEST;
 
-  const errorDef = Errors[errorCode];
-  const httpStatus = errorDef?.httpStatus ?? HttpStatus.BAD_REQUEST;
-  const message = description ?? errorDef?.message ?? "Unknown error";
-
-  return applyDecorators(
-    ApiResponse({
-      status: httpStatus,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(status, errorCode, "Unknown error", description);
 }
 
 /**
@@ -74,15 +155,7 @@ export function ApiErrorResponse(options: ApiErrorResponseOptions): MethodDecora
  * ```
  */
 export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Not found";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.NOT_FOUND,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.NOT_FOUND, errorCode, "Not found");
 }
 
 /**
@@ -96,15 +169,10 @@ export function ApiNotFoundError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator {
-  const code = errorCode ?? ("AUTH_0107" as ErrorCodeType);
-  const message = Errors[code]?.message ?? "인증이 필요합니다.";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.UNAUTHORIZED,
-      description: message,
-      schema: createErrorSchema(code, message),
-    }),
+  return documentErrorCode(
+    HttpStatus.UNAUTHORIZED,
+    errorCode ?? ErrorCode.AUTH_0107,
+    "인증이 필요합니다.",
   );
 }
 
@@ -119,15 +187,7 @@ export function ApiUnauthorizedError(errorCode?: ErrorCodeType): MethodDecorator
  * ```
  */
 export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "접근 권한이 없습니다.";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.FORBIDDEN,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.FORBIDDEN, errorCode, "접근 권한이 없습니다.");
 }
 
 /**
@@ -141,15 +201,7 @@ export function ApiForbiddenError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Conflict";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.CONFLICT,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.CONFLICT, errorCode, "Conflict");
 }
 
 /**
@@ -163,15 +215,7 @@ export function ApiConflictError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Unprocessable";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.UNPROCESSABLE_ENTITY,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.UNPROCESSABLE_ENTITY, errorCode, "Unprocessable");
 }
 
 /**
@@ -185,15 +229,7 @@ export function ApiUnprocessableError(errorCode: ErrorCodeType): MethodDecorator
  * ```
  */
 export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Bad request";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.BAD_REQUEST,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.BAD_REQUEST, errorCode, "Bad request");
 }
 
 /**
@@ -207,15 +243,7 @@ export function ApiBadRequestError(errorCode: ErrorCodeType): MethodDecorator {
  * ```
  */
 export function ApiServiceUnavailableError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Service unavailable";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.SERVICE_UNAVAILABLE,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.SERVICE_UNAVAILABLE, errorCode, "Service unavailable");
 }
 
 /**
@@ -232,14 +260,11 @@ export function ApiTooManyRequestsError(
   errorCode: ErrorCodeType,
   description?: string,
 ): MethodDecorator {
-  const message = description ?? Errors[errorCode]?.message ?? "Too many requests";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.TOO_MANY_REQUESTS,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
+  return documentErrorCode(
+    HttpStatus.TOO_MANY_REQUESTS,
+    errorCode,
+    "Too many requests",
+    description,
   );
 }
 
@@ -254,26 +279,13 @@ export function ApiTooManyRequestsError(
  * ```
  */
 export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
-  const message = Errors[errorCode]?.message ?? "Gone";
-
-  return applyDecorators(
-    ApiResponse({
-      status: HttpStatus.GONE,
-      description: message,
-      schema: createErrorSchema(errorCode, message),
-    }),
-  );
+  return documentErrorCode(HttpStatus.GONE, errorCode, "Gone");
 }
-
-/** examples는 문서 스냅샷에 그대로 남으므로 생성 시각 대신 고정 epoch을 쓴다. */
-const EXAMPLE_TIMESTAMP = 1_700_000_000_000;
 
 /**
  * 한 HTTP 상태에 오류 코드가 둘 이상일 때 쓰는 데코레이터
  *
- * Swagger는 상태 코드마다 응답을 하나만 남기므로 같은 상태의 단일 코드 데코레이터를
- * 겹쳐 쓰면 마지막 것만 문서에 남습니다. 이 데코레이터는 `error.code`를 enum으로,
- * 코드별 메시지를 examples로 한 응답에 함께 선언합니다.
+ * 같은 상태의 단일 코드 데코레이터를 겹쳐 써도 코드가 모이지만, 한 줄로 읽히도록 함께 선언한다.
  *
  * @example
  * ```typescript
@@ -286,33 +298,8 @@ export function ApiErrorCodesResponse(
   status: HttpStatus,
   errorCodes: readonly [ErrorCodeType, ErrorCodeType, ...ErrorCodeType[]],
 ): MethodDecorator {
-  const [firstCode] = errorCodes;
-  const messageOf = (errorCode: ErrorCodeType) => Errors[errorCode]?.message ?? errorCode;
-
-  return applyDecorators(
-    ApiResponse({
-      status,
-      description: errorCodes
-        .map((errorCode) => `${errorCode}: ${messageOf(errorCode)}`)
-        .join("\n\n"),
-      schema: createErrorSchema(firstCode, messageOf(firstCode), {
-        type: "string",
-        example: firstCode,
-        enum: [...errorCodes],
-      }),
-      examples: Object.fromEntries(
-        errorCodes.map((errorCode) => [
-          errorCode,
-          {
-            summary: messageOf(errorCode),
-            value: {
-              success: false,
-              error: { code: errorCode, message: messageOf(errorCode), details: null },
-              timestamp: EXAMPLE_TIMESTAMP,
-            },
-          },
-        ]),
-      ),
-    }),
+  return documentErrors(
+    status,
+    errorCodes.map((errorCode) => ({ code: errorCode, message: messageOf(errorCode, errorCode) })),
   );
 }

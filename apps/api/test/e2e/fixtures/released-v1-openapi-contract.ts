@@ -298,6 +298,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: 같은 상태 코드의 오류 데코레이터가 겹쳐 하나만 남던 응답(oauth link 401·409, auth 401, todo·todo-category·memo·nudge·follow·admin의 400·404·409)을 error.code enum으로 모두 선언했다. 서버가 보내는 코드·응답 shape·상태 코드는 같고 문서만 빠진 코드를 채웠다. */
 	preAllErrorCodesPathsFingerprint:
 		"2b9f3e37c745c5f235a0dd952e738b5a64c9f5ffc29246412e5aca24c8f00b71",
-	pathsFingerprint:
+	/** 1.13.0: Zod로 path·query·body를 검증하는 엔드포인트의 400에 입력 검증 실패 SYS_0002를 자동으로 선언했다. 공통 400(ErrorResponseSchema $ref)은 SYS_0002 오류 schema로, 특정 400 코드만 있던 응답은 그 코드와 SYS_0002의 enum으로 바뀐다. 전역 검증 pipe가 이미 보내던 코드라 실제 응답·상태 코드는 같다. */
+	preValidationErrorCodePathsFingerprint:
 		"5a93deaf2d8ffae218c9f896e01878cb8bcc0378e24f4e234ef5894a9f3a884b",
+	pathsFingerprint:
+		"86874dc411d01ca4104c856ad54a689477e511d9fe9b8a703d60c5ecfaf41538",
 } as const;

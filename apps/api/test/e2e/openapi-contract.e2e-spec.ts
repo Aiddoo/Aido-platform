@@ -76,6 +76,25 @@ function contractFingerprint(value: unknown): string {
     .digest("hex");
 }
 
+/**
+ * Zod schema 없이 원시 path·query 값을 받는 엔드포인트. 입력 검증 실패 400(SYS_0002)이 나가지 않는다.
+ * 새 엔드포인트는 `@Param/@Query/@Body({ schema })`로 검증하고 이 목록에 더하지 않는다.
+ */
+const RAW_INPUT_OPERATIONS = [
+  "DELETE /v1/auth/linked-accounts/{provider}",
+  "DELETE /v1/auth/sessions/{sessionId}",
+  "DELETE /v1/notifications/token",
+  "GET /v1/auth/google/start",
+  "GET /v1/auth/google/web-callback",
+  "GET /v1/auth/kakao/start",
+  "GET /v1/auth/kakao/web-callback",
+  "GET /v1/auth/naver/start",
+  "GET /v1/auth/naver/web-callback",
+  "GET /v1/cheers/cooldown/{userId}",
+  "GET /v1/nudges/cooldown/{userId}",
+  "GET /v1/nudges/remind/cooldown/{userId}",
+];
+
 const errorResponseCodeSchema = z.object({
   content: z.object({
     "application/json": z.object({
@@ -257,6 +276,49 @@ describe("OpenAPI 계약 (e2e)", () => {
         400: [ErrorCode.TODO_CATEGORY_0854, ErrorCode.TODO_CATEGORY_0855, ErrorCode.SYS_0002],
       },
     });
+  });
+
+  it("요청 path·query·body를 검증하는 모든 엔드포인트는 400에 검증 실패 SYS_0002를 선언한다", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+    const operationSchema = z.object({
+      parameters: z.array(z.object({ in: z.string() })).optional(),
+      requestBody: z.unknown().optional(),
+      responses: z.record(z.string(), z.unknown()),
+    });
+
+    // When - 입력이 있는데 400에 SYS_0002가 없는 operation
+    const missing = Object.entries(document.paths).flatMap(([route, pathItem]) =>
+      Object.entries(pathItem).flatMap(([method, operation]) => {
+        const parsed = operationSchema.safeParse(operation);
+        if (!parsed.success) {
+          return [];
+        }
+        const { parameters = [], requestBody, responses } = parsed.data;
+        const hasInput =
+          requestBody != null ||
+          parameters.some((parameter) => parameter.in === "path" || parameter.in === "query");
+        const operationName = `${method.toUpperCase()} ${route}`;
+        if (!hasInput || RAW_INPUT_OPERATIONS.includes(operationName)) {
+          return [];
+        }
+        const badRequest = errorResponseCodeSchema.safeParse(responses["400"]);
+        const codes = badRequest.success
+          ? (badRequest.data.content["application/json"].schema.properties.error.properties.code
+              .enum ?? [
+              badRequest.data.content["application/json"].schema.properties.error.properties.code
+                .example,
+            ])
+          : [];
+        return codes.includes(ErrorCode.SYS_0002) ? [] : [operationName];
+      }),
+    );
+
+    // Then
+    expect(missing).toEqual([]);
   });
 
   it("오류 응답 schema는 content 안에만 둔다 (공통 응답이 선언한 응답을 덮지 않는다)", () => {
