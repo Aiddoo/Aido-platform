@@ -1,4 +1,4 @@
-import { INVITE_LINK_BASE_URL } from "@aido/api/vocabulary";
+import { INVITE_LINK_BASE_URL, REDEEM_OUTCOME } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
@@ -48,19 +48,19 @@ export const InviteMapper = {
   toRedeemDto(result: RedeemInviteResult): RedeemInviteResponseDto {
     return match(result)
       .returnType<RedeemInviteResponseDto>()
-      .with({ outcome: "REDEEMED" }, (redeemed) => ({
-        outcome: "REDEEMED",
+      .with({ outcome: REDEEM_OUTCOME.REDEEMED }, (redeemed) => ({
+        outcome: REDEEM_OUTCOME.REDEEMED,
         inviter: redeemed.inviter,
         friendship: redeemed.friendship,
         rewards: [...redeemed.rewards],
       }))
-      .with({ outcome: "CONNECTED" }, (connected) => ({
-        outcome: "CONNECTED",
+      .with({ outcome: REDEEM_OUTCOME.CONNECTED }, (connected) => ({
+        outcome: REDEEM_OUTCOME.CONNECTED,
         inviter: connected.inviter,
         friendship: connected.friendship,
       }))
-      .with({ outcome: "ALREADY_FRIENDS" }, (unchanged) => ({
-        outcome: "ALREADY_FRIENDS",
+      .with({ outcome: REDEEM_OUTCOME.ALREADY_FRIENDS }, (unchanged) => ({
+        outcome: REDEEM_OUTCOME.ALREADY_FRIENDS,
         inviter: unchanged.inviter,
       }))
       .exhaustive();

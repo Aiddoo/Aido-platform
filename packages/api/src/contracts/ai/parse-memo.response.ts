@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateSchema, nullableDateSchema } from "../../common/datetime.js";
+import { AI_PARSE_LIMITS } from "../../vocabulary/ai.constants.js";
 import { dayOfWeekSchema } from "../todo/todo.common.js";
 import { tokenUsageSchema } from "./ai-usage.response.js";
 
@@ -42,13 +43,21 @@ export const parsedMemoTodoSchema = z.object({
     .default(null)
     .describe("반복 설정 (비반복 일정은 null)"),
   categoryId: z.number().int().positive().describe("카테고리 ID"),
-  items: z.array(parsedMemoTodoItemSchema).max(5).default([]).describe("서브투두 목록 (0-5개)"),
+  items: z
+    .array(parsedMemoTodoItemSchema)
+    .max(AI_PARSE_LIMITS.MEMO_MAX_ITEMS)
+    .default([])
+    .describe(`서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개)`),
 });
 
 export type ParsedMemoTodo = z.infer<typeof parsedMemoTodoSchema>;
 
 export const parsedMemoDataSchema = z.object({
-  todos: z.array(parsedMemoTodoSchema).min(1).max(5).describe("파싱된 할 일 목록 (1-5개)"),
+  todos: z
+    .array(parsedMemoTodoSchema)
+    .min(1)
+    .max(AI_PARSE_LIMITS.MEMO_MAX_TODOS)
+    .describe(`파싱된 할 일 목록 (1-${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개)`),
 });
 
 export type ParsedMemoData = z.infer<typeof parsedMemoDataSchema>;
@@ -67,7 +76,7 @@ export const parseMemoMetaSchema = z.object({
     .nonnegative()
     .optional()
     .describe(
-      "할 일을 5개까지만 만들어 생략한 할 일 수입니다. 메모 원문은 그대로 남습니다. 구 서버 응답에는 없을 수 있습니다",
+      `할 일을 ${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개까지만 만들어 생략한 할 일 수입니다. 메모 원문은 그대로 남습니다. 구 서버 응답에는 없을 수 있습니다`,
     ),
 });
 

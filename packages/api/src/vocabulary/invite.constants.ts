@@ -18,6 +18,8 @@ export const INVITE_QUALIFICATION = {
 export const INVITE_REWARD_CAPS = {
   PREMIUM_DAYS_PER_30_DAYS: 30,
   PREMIUM_DAYS_TOTAL: 90,
+  /** PREMIUM_DAYS_PER_30_DAYS를 세는 rolling 기간(일). UTC 시각 기준이다. */
+  WINDOW_DAYS: 30,
 } as const;
 
 export const REWARD_TYPE = {
@@ -26,6 +28,9 @@ export const REWARD_TYPE = {
 } as const;
 
 export type RewardType = (typeof REWARD_TYPE)[keyof typeof REWARD_TYPE];
+
+/** 앱이 모르는 새 보상 종류를 받았을 때 읽는 값. 서버는 보내지 않는다. */
+export const REWARD_TYPE_UNKNOWN = "UNKNOWN";
 
 export const INVITEE_REWARDS = [{ rewardType: REWARD_TYPE.PREMIUM_DAYS, quantity: 7 }] as const;
 

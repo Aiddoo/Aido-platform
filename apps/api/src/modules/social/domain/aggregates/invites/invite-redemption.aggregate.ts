@@ -1,6 +1,7 @@
 import {
   INVITE_QUALIFICATION,
   REDEMPTION_REJECTION_REASON,
+  REDEMPTION_STATUS,
   type RedemptionRejectionReason,
 } from "@aido/api/vocabulary";
 
@@ -45,7 +46,7 @@ export interface InviteRedemptionCreationPlan {
   readonly inviteId: string;
   readonly inviterId: string;
   readonly inviteeId: string;
-  readonly status: "JOINED";
+  readonly status: typeof REDEMPTION_STATUS.JOINED;
   readonly timezone: string;
   readonly inviterRewardEligible: boolean;
   readonly joinedAt: Date;
@@ -76,7 +77,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       inviteId: input.inviteId,
       inviterId: input.inviterId,
       inviteeId: input.inviteeId,
-      status: "JOINED",
+      status: REDEMPTION_STATUS.JOINED,
       timezone: input.timezone,
       inviterRewardEligible: input.inviterRewardEligible,
       joinedAt: new Date(input.joinedAt),
@@ -162,7 +163,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
 
   /** 사용 시작 전, 만료 전의 새 날짜만 기록한다. 같은 날짜를 다시 기록하면 false다. */
   recordActiveDay(localDate: string, at: Date): boolean {
-    if (!this.props.status.is("JOINED") || this.isExpiredAt(at)) {
+    if (!this.props.status.is(REDEMPTION_STATUS.JOINED) || this.isExpiredAt(at)) {
       return false;
     }
     if (this.props.activeDays.has(localDate)) {
@@ -174,13 +175,13 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
   }
 
   qualify(qualifiedAt: Date): boolean {
-    if (!this.#transitionTo("QUALIFIED")) return false;
+    if (!this.#transitionTo(REDEMPTION_STATUS.QUALIFIED)) return false;
     this.props.qualifiedAt = new Date(qualifiedAt);
     return true;
   }
 
   markRewarded(rewardedAt: Date): boolean {
-    if (!this.#transitionTo("REWARDED")) return false;
+    if (!this.#transitionTo(REDEMPTION_STATUS.REWARDED)) return false;
     this.props.rewardedAt = new Date(rewardedAt);
     return true;
   }
@@ -201,7 +202,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
   }
 
   #reject(reason: RedemptionRejectionReason, rejectedAt: Date): boolean {
-    if (!this.#transitionTo("REJECTED")) return false;
+    if (!this.#transitionTo(REDEMPTION_STATUS.REJECTED)) return false;
     this.props.rejectionReason = reason;
     this.props.rejectedAt = new Date(rejectedAt);
     return true;

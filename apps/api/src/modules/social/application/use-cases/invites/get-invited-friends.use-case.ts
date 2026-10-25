@@ -1,4 +1,4 @@
-import type { RedemptionStatus } from "@aido/api/vocabulary";
+import { REDEMPTION_STATUS, type RedemptionStatus } from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type {
@@ -67,9 +67,9 @@ function countOf(summary: InviteRedemptionSummary, status: RedemptionStatus | un
     );
   }
   return match(status)
-    .with("JOINED", () => summary.joinedCount)
-    .with("QUALIFIED", () => summary.qualifiedCount)
-    .with("REWARDED", () => summary.rewardedCount)
-    .with("REJECTED", () => summary.rejectedCount)
+    .with(REDEMPTION_STATUS.JOINED, () => summary.joinedCount)
+    .with(REDEMPTION_STATUS.QUALIFIED, () => summary.qualifiedCount)
+    .with(REDEMPTION_STATUS.REWARDED, () => summary.rewardedCount)
+    .with(REDEMPTION_STATUS.REJECTED, () => summary.rejectedCount)
     .exhaustive();
 }

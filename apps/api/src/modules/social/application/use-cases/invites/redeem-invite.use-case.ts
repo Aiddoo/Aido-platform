@@ -1,6 +1,11 @@
 import type { RewardAmount } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
-import { type InviteFriendship, REWARD_TYPE } from "@aido/api/vocabulary";
+import {
+  INVITE_FRIENDSHIP,
+  type InviteFriendship,
+  REDEEM_OUTCOME,
+  REWARD_TYPE,
+} from "@aido/api/vocabulary";
 import { match } from "ts-pattern";
 
 import type { PremiumGranterPort } from "#api/modules/billing/billing-subscriptions.public";
@@ -58,7 +63,7 @@ export interface RedeemInviteInput {
 
 export type RedeemInviteResult =
   | {
-      readonly outcome: "REDEEMED";
+      readonly outcome: typeof REDEEM_OUTCOME.REDEEMED;
       readonly inviter: InviterProfile;
       readonly friendship: InviteFriendship;
       readonly rewards: readonly RewardAmount[];
@@ -67,11 +72,14 @@ export type RedeemInviteResult =
       readonly isReplay: boolean;
     }
   | {
-      readonly outcome: "CONNECTED";
+      readonly outcome: typeof REDEEM_OUTCOME.CONNECTED;
       readonly inviter: InviterProfile;
       readonly friendship: InviteFriendship;
     }
-  | { readonly outcome: "ALREADY_FRIENDS"; readonly inviter: InviterProfile };
+  | {
+      readonly outcome: typeof REDEEM_OUTCOME.ALREADY_FRIENDS;
+      readonly inviter: InviterProfile;
+    };
 
 interface RedeemInviteDependencies {
   readonly inviteRepository: Pick<InviteRepositoryPort, "findByCodeWithInviter">;
@@ -155,7 +163,7 @@ export class RedeemInvite {
       inviteeId: input.inviteeId,
       inviterId: result.inviter.userId,
       outcome: result.outcome,
-      rewardCount: result.outcome === "REDEEMED" ? result.rewards.length : 0,
+      rewardCount: result.outcome === REDEEM_OUTCOME.REDEEMED ? result.rewards.length : 0,
     });
     return result;
   }
@@ -223,15 +231,15 @@ export class RedeemInvite {
       })
       .with({ kind: "replay" }, () => this.#replay(context))
       .with({ kind: "already-friends" }, (): RedeemInviteResult => ({
-        outcome: "ALREADY_FRIENDS",
+        outcome: REDEEM_OUTCOME.ALREADY_FRIENDS,
         inviter,
       }))
       .with({ kind: "connect" }, async (): Promise<RedeemInviteResult> => {
         const established = await this.#establish(identity.userId, invite.inviterId, true);
-        if (established === "ALREADY_FRIENDS") {
-          return { outcome: "ALREADY_FRIENDS", inviter };
+        if (established === REDEEM_OUTCOME.ALREADY_FRIENDS) {
+          return { outcome: REDEEM_OUTCOME.ALREADY_FRIENDS, inviter };
         }
-        return { outcome: "CONNECTED", inviter, friendship: established };
+        return { outcome: REDEEM_OUTCOME.CONNECTED, inviter, friendship: established };
       })
       .with({ kind: "redeem" }, async ({ rewardEligible }): Promise<RedeemInviteResult> => {
         // 동시에 같은 기기로 수락하면 기기 해시 INSERT에서 한 번만 이긴다. 수락 행이 충돌하면
@@ -276,9 +284,12 @@ export class RedeemInvite {
         // 수락·보상은 이미 기록했으므로 그 사이 친구가 됐어도 REDEEMED로 답해 replay와 맞춘다
         const established = await this.#establish(identity.userId, invite.inviterId, false);
         return {
-          outcome: "REDEEMED",
+          outcome: REDEEM_OUTCOME.REDEEMED,
           inviter,
-          friendship: established === "ALREADY_FRIENDS" ? "FRIENDS" : established,
+          friendship:
+            established === REDEEM_OUTCOME.ALREADY_FRIENDS
+              ? INVITE_FRIENDSHIP.FRIENDS
+              : established,
           rewards,
           redemptionId: redemption.id,
           isReplay: false,
@@ -347,9 +358,10 @@ export class RedeemInvite {
       false,
     );
     return {
-      outcome: "REDEEMED",
+      outcome: REDEEM_OUTCOME.REDEEMED,
       inviter: context.inviter,
-      friendship: established === "ALREADY_FRIENDS" ? "FRIENDS" : established,
+      friendship:
+        established === REDEEM_OUTCOME.ALREADY_FRIENDS ? INVITE_FRIENDSHIP.FRIENDS : established,
       rewards: grants
         .filter((grant) => grant.recipientId === context.identity.userId)
         .map((grant) => ({ rewardType: grant.rewardType, quantity: grant.quantity })),
@@ -375,7 +387,11 @@ export class RedeemInvite {
   }
 
   async #notifyJoined(result: RedeemInviteResult, identity: InviteeIdentity): Promise<void> {
-    if (result.outcome !== "REDEEMED" || result.isReplay || result.friendship !== "FRIENDS") {
+    if (
+      result.outcome !== REDEEM_OUTCOME.REDEEMED ||
+      result.isReplay ||
+      result.friendship !== INVITE_FRIENDSHIP.FRIENDS
+    ) {
       return;
     }
     try {

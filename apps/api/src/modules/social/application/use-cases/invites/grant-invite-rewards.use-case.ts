@@ -1,4 +1,4 @@
-import { REWARD_TYPE, type RewardType } from "@aido/api/vocabulary";
+import { REDEMPTION_STATUS, REWARD_TYPE, type RewardType } from "@aido/api/vocabulary";
 import { sumBy } from "es-toolkit";
 
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -190,7 +190,7 @@ export class GrantInviteRewards {
         await this.#dependencies.inviteRedemptionRepository.findByIdForUpdate(redemptionId);
       if (redemption == null) return null;
       const { inviterId } = redemption;
-      if (redemption.status !== "QUALIFIED" || inviterId == null) return null;
+      if (redemption.status !== REDEMPTION_STATUS.QUALIFIED || inviterId == null) return null;
 
       const grants = await this.#dependencies.rewardGrantRepository.findBySource(
         "INVITE_REDEMPTION",

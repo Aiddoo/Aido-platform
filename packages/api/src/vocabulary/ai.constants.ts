@@ -3,6 +3,10 @@ export const AI_PARSE_LIMITS = {
   FREE_MONTHLY_LIMIT: 5,
   /** parse-todo 입력 최대 길이. 요청 검증과 프롬프트 입력이 같은 값을 쓴다. */
   TODO_TEXT_MAX_LENGTH: 500,
+  /** parse-memo가 만드는 할 일 최대 수. 넘친 수는 meta.omittedTodoCount로 알린다. */
+  MEMO_MAX_TODOS: 5,
+  /** parse-memo 할 일 하나의 서브투두 최대 수 */
+  MEMO_MAX_ITEMS: 5,
 } as const;
 
 export const SUBSCRIPTION_AI_PARSE_LIMITS = {

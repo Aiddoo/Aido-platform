@@ -49,3 +49,9 @@ export const PREMIUM_SOURCE = {
 } as const;
 
 export type PremiumSource = (typeof PREMIUM_SOURCE)[keyof typeof PREMIUM_SOURCE];
+
+/** 보상 기간이 끝나기 며칠 전에 안내할지. 서버 PREMIUM_GRANT_ENDING 푸시와 앱 안내가 같은 값을 쓴다. */
+export const PREMIUM_GRANT_ENDING_NOTICE_DAYS = 1;
+
+/** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간(일). 지나면 /me의 premiumGrantEndedAt이 null이다. */
+export const PREMIUM_GRANT_ENDED_WINDOW_DAYS = 7;

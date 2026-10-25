@@ -1,4 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
+import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
@@ -301,14 +302,14 @@ if (confirmed) {
 | \`isRecurring\` | boolean | 반복 일정 여부 |
 | \`recurrence\` | object \\| null | 반복 설정 |
 | \`categoryId\` | number | 카테고리 ID (요청에서 주입) |
-| \`items\` | array | 서브투두 목록 (0-5개) |
+| \`items\` | array | 서브투두 목록 (0-${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개) |
 
 ## 📊 메타데이터 (\`meta\`)
-\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`), \`omittedTodoCount\`(5개를 넘어 만들지 않은 할 일 수)를 반환합니다.
+\`model\`, \`processingTimeMs\`, \`tokenUsage\`와 선택 필드 \`promptVersion\`(예: \`parse-memo@v2\`), \`omittedTodoCount\`(${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개를 넘어 만들지 않은 할 일 수)를 반환합니다.
 
 ## 🧠 AI 파싱 규칙
-- **별개 맥락/주제** → 별도 Todo로 분리합니다. 할 일은 합치지 않고 입력 순서대로 앞의 5개까지 만들며, 나머지 수는 \`meta.omittedTodoCount\`로 알립니다. 메모 원문은 그대로 남습니다
-- **서브투두가 6개 이상** → 합치지 않고 입력 순서대로 앞의 5개만 남깁니다
+- **별개 맥락/주제** → 별도 Todo로 분리합니다. 할 일은 합치지 않고 입력 순서대로 앞의 ${AI_PARSE_LIMITS.MEMO_MAX_TODOS}개까지 만들며, 나머지 수는 \`meta.omittedTodoCount\`로 알립니다. 메모 원문은 그대로 남습니다
+- **서브투두가 ${AI_PARSE_LIMITS.MEMO_MAX_ITEMS + 1}개 이상** → 합치지 않고 입력 순서대로 앞의 ${AI_PARSE_LIMITS.MEMO_MAX_ITEMS}개만 남깁니다
 - **날짜·시각** → parse-todo와 같은 규칙으로 서버가 사용자 시간대 기준으로 계산합니다
 - **모델 대상 명령만 있는 메모** → "입력 확인 필요" 할 일 1개로 응답하며 사용량을 차감하지 않습니다
 - **하나의 큰 작업 + 세부 단계** → 1개 Todo + 여러 items (서브투두)

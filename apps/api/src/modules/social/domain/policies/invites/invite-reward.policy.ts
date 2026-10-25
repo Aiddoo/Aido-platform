@@ -13,9 +13,6 @@ import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 import type { InviteRedemption } from "../../aggregates/invites/invite-redemption.aggregate.js";
 import type { RewardGrantPlan } from "../../types/invites/reward-grant.types.js";
 
-/** 월 상한(PREMIUM_DAYS_PER_30_DAYS)을 세는 rolling 기간. UTC 시각 기준이다. */
-const INVITE_REWARD_CAP_WINDOW_DAYS = 30;
-
 /** 초대한 사람으로 받은 보상의 종류별 합계. 저장소가 집계 한 번으로 만든다. */
 export interface InviterRewardTotal {
   readonly rewardType: RewardType;
@@ -87,7 +84,7 @@ export function qualifiedRedemptionCount(counts: {
 
 /** 이 시각보다 뒤에 기록된 지급이 최근 30일 상한에 들어간다. */
 export function rewardCapWindowStart(now: Date): Date {
-  return subtractDays(INVITE_REWARD_CAP_WINDOW_DAYS, now);
+  return subtractDays(INVITE_REWARD_CAPS.WINDOW_DAYS, now);
 }
 
 /** 월 상한과 누적 상한 중 남은 쪽만큼만 더 지급할 수 있다. */

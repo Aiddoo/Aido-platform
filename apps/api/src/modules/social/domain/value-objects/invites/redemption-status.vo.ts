@@ -12,8 +12,8 @@ export type { RedemptionStatusValue };
 const ALLOWED_TRANSITIONS: Readonly<
   Record<RedemptionStatusValue, readonly RedemptionStatusValue[]>
 > = {
-  JOINED: ["QUALIFIED", "REJECTED"],
-  QUALIFIED: ["REWARDED"],
+  JOINED: [REDEMPTION_STATUS.QUALIFIED, REDEMPTION_STATUS.REJECTED],
+  QUALIFIED: [REDEMPTION_STATUS.REWARDED],
   REWARDED: [],
   REJECTED: [],
 };

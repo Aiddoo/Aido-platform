@@ -4,6 +4,7 @@ import {
   type ParsedTodoData,
   parsedTodoDataSchema,
 } from "@aido/api";
+import { AI_PARSE_LIMITS } from "@aido/api/vocabulary";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
@@ -11,10 +12,8 @@ import { truncateGraphemes } from "#api/shared/domain/utils/grapheme.util";
 import { resolveTodoSchedule } from "../../../domain/services/parsing/resolve-todo-schedule.js";
 import type { TodoDraft } from "../../../domain/types/parsing/todo-draft.types.js";
 
-/** 공개 계약의 제목·항목 상한 */
+/** 공개 계약의 제목 상한 */
 const TITLE_MAX_LENGTH = 200;
-const MEMO_MAX_TODOS = 5;
-const MEMO_MAX_ITEMS = 5;
 
 /** 모델 대상 명령만 있는 입력에 앱 언어로 보여 줄 제목 */
 export const NO_ACTION_TITLE: Readonly<Record<SupportedLocale, string>> = {
@@ -131,10 +130,10 @@ export function normalizeMemoDraft(
 } {
   const warnings: NormalizationWarning[] = [];
   const tasks = memo.todos.filter((todo) => todo.intent === "TASK");
-  const kept = tasks.slice(0, MEMO_MAX_TODOS);
+  const kept = tasks.slice(0, AI_PARSE_LIMITS.MEMO_MAX_TODOS);
   const noAction = kept.length === 0;
   const totalTaskCount = noAction ? 0 : Math.max(tasks.length, memo.totalTaskCount ?? 0);
-  if (totalTaskCount > MEMO_MAX_TODOS) warnings.push("TODOS_TRUNCATED");
+  if (totalTaskCount > AI_PARSE_LIMITS.MEMO_MAX_TODOS) warnings.push("TODOS_TRUNCATED");
   const drafts = noAction ? [{ ...noActionDraft(), items: [] }] : kept;
 
   const parsed = drafts.map((draft) => {
@@ -175,5 +174,8 @@ function normalizeItems(
   todoTitle: string,
 ): { titles: string[]; truncated: boolean } {
   const usable = titles.filter((title) => title !== "" && title !== todoTitle);
-  return { titles: usable.slice(0, MEMO_MAX_ITEMS), truncated: usable.length > MEMO_MAX_ITEMS };
+  return {
+    titles: usable.slice(0, AI_PARSE_LIMITS.MEMO_MAX_ITEMS),
+    truncated: usable.length > AI_PARSE_LIMITS.MEMO_MAX_ITEMS,
+  };
 }

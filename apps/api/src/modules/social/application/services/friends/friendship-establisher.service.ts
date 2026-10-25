@@ -1,3 +1,5 @@
+import { INVITE_FRIENDSHIP, REDEEM_OUTCOME } from "@aido/api/vocabulary";
+
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { Resource } from "#api/modules/access/access-entitlement.public";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
@@ -69,7 +71,7 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
         this.#dependencies.followRepository.findByFollowerAndFollowing(targetUserId, requesterId),
       ]);
       if (forward?.isAccepted() && reverse?.isAccepted()) {
-        return "ALREADY_FRIENDS";
+        return REDEEM_OUTCOME.ALREADY_FRIENDS;
       }
 
       const [isRequesterFull, isTargetFull] = await Promise.all([
@@ -81,14 +83,14 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
       }
       if (isTargetFull) {
         await this.#request(forward, requesterId, targetUserId);
-        return "REQUESTED";
+        return INVITE_FRIENDSHIP.REQUESTED;
       }
 
       await this.#connect(forward, reverse, requesterId, targetUserId);
       this.#dependencies.afterCommitTasks.register(() =>
         this.#afterConnected(requesterId, targetUserId, input.shouldNotifyFriends),
       );
-      return "FRIENDS";
+      return INVITE_FRIENDSHIP.FRIENDS;
     });
   }
 
