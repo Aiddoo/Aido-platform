@@ -111,6 +111,7 @@ export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps
         <StyledTextInput
           value={todo.title}
           onChangeText={(text) => onChange({ title: text })}
+          returnKeyType="done"
           className="text-b1 font-semibold text-gray-9"
           allowFontScaling={false}
         />

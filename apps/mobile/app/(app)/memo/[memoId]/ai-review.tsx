@@ -13,7 +13,7 @@ import { isApiError } from '@src/shared/errors';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
-  Button,
+  KeyboardAdaptiveButton,
   QueryErrorBoundary,
   Result,
   StyledSafeAreaView,
@@ -26,9 +26,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImpactFeedbackStyle } from 'expo-haptics';
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 
 type TodoWithId = ParsedMemoTodo & { _key: string };
+
+/** 키보드 위에 붙는 생성 버튼(56)과 여백만큼 더 올려 고치는 제목이 버튼에 가리지 않게 한다 */
+const FOCUSED_TITLE_BOTTOM_OFFSET = 72;
 
 function AiReviewScreen() {
   const { t } = useTranslation('memo');
@@ -94,9 +98,12 @@ function AiReviewScreen() {
 
   return (
     <>
-      <ScrollView
-        className="flex-1"
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, gap: 16 }}
+        bottomOffset={FOCUSED_TITLE_BOTTOM_OFFSET}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {parsedResult.omittedTodoCount > 0 && (
           <Text size="b3" shade={6}>
@@ -114,17 +121,15 @@ function AiReviewScreen() {
             onRemove={() => handleRemoveTodo(index)}
           />
         ))}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
-      <StyledSafeAreaView edges={{ bottom: 'maximum' }} className="px-4 pb-4">
-        <Button
-          onPress={handleConfirm}
-          isDisabled={todos.length === 0}
-          isLoading={convertMutation.isPending}
-        >
-          {t('aiReview.createCount', { count: todos.length })}
-        </Button>
-      </StyledSafeAreaView>
+      <KeyboardAdaptiveButton
+        onPress={handleConfirm}
+        isDisabled={todos.length === 0}
+        isLoading={convertMutation.isPending}
+      >
+        {t('aiReview.createCount', { count: todos.length })}
+      </KeyboardAdaptiveButton>
     </>
   );
 }
