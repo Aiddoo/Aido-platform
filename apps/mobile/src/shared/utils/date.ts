@@ -79,12 +79,24 @@ export const getWeekdayLabels = (): string[] =>
     t(`common:daysOfWeek.${day}`),
   );
 
-/** 달력 주 헤더 (ko: "10월 3주차", en: "Week 3 of Oct"). 주가 시작한 달 기준이다. */
-export const formatWeekOfMonthLabel = (dateKey: string, context: DateFormatContext): string => {
+/**
+ * 달력 주 헤더. 주가 시작한 달 기준이며, 올해가 아니면 연도를 붙인다.
+ * (ko: "10월 3주차" / "2031년 10월 3주차", en: "Week 3 of Oct" / "Week 3 of Oct 2031")
+ */
+export const formatWeekOfMonthLabel = (
+  dateKey: string,
+  todayDateKey: string,
+  context: DateFormatContext,
+): string => {
   const week = getCalendarWeekOfDateKey(dateKey);
+  const isCurrentYear = week.startDateKey.slice(0, 4) === todayDateKey.slice(0, 4);
   return t('common:calendar.weekHeader', {
     lng: toCatalogLanguage(context),
-    month: formatDateKeyLabel(week.startDateKey, 'month', context),
+    month: formatDateKeyLabel(
+      week.startDateKey,
+      isCurrentYear ? 'month' : 'yearShortMonth',
+      context,
+    ),
     week: week.weekOfMonth,
   });
 };

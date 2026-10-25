@@ -1,6 +1,6 @@
 import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -109,10 +109,11 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
 function CalendarHeaderText() {
   const { viewMode } = useCalendarContext();
   const selectedDateKey = useFeedDateKey();
+  const todayDateKey = useTodayKey();
   const dateFormatContext = useDateFormatContext();
 
   const headerText = match(viewMode)
-    .with('week', () => formatWeekOfMonthLabel(selectedDateKey, dateFormatContext))
+    .with('week', () => formatWeekOfMonthLabel(selectedDateKey, todayDateKey, dateFormatContext))
     .with('month', () => formatDateKeyLabel(selectedDateKey, 'yearMonth', dateFormatContext))
     .exhaustive();
 

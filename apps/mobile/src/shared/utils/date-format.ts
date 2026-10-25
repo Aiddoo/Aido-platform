@@ -26,6 +26,7 @@ type DateLabel =
   | 'dottedMonthDay'
   | 'dayNumber'
   | 'yearMonth'
+  | 'yearShortMonth'
   | 'month'
   | 'weekday';
 
@@ -36,6 +37,7 @@ const DATE_OPTIONS: Record<DateLabel, Intl.DateTimeFormatOptions> = {
   dottedMonthDay: { month: '2-digit', day: '2-digit' },
   dayNumber: { day: 'numeric' },
   yearMonth: { year: 'numeric', month: 'long' },
+  yearShortMonth: { year: 'numeric', month: 'short' },
   month: { month: 'short' },
   weekday: { weekday: 'short' },
 };

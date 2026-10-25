@@ -253,6 +253,7 @@ describe('getDayOfWeekLabel', () => {
 describe('로케일 인지 포맷 (i18n)', () => {
   const KO_SEOUL = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
   const EN_SEOUL = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
+  const TODAY_DATE_KEY = '2026-10-26';
 
   it('요일 라벨은 앱 언어를 따른다', async () => {
     expect(getWeekdayLabels()).toEqual(['일', '월', '화', '수', '목', '금', '토']);
@@ -269,12 +270,26 @@ describe('로케일 인지 포맷 (i18n)', () => {
     const dateKey = '2026-07-07';
 
     // When
-    const korean = formatWeekOfMonthLabel(dateKey, KO_SEOUL);
-    const english = formatWeekOfMonthLabel(dateKey, EN_SEOUL);
+    const korean = formatWeekOfMonthLabel(dateKey, TODAY_DATE_KEY, KO_SEOUL);
+    const english = formatWeekOfMonthLabel(dateKey, TODAY_DATE_KEY, EN_SEOUL);
 
     // Then
     expect(korean).toBe('7월 1주차');
     expect(english).toBe('Week 1 of Jul');
+  });
+
+  it.each([
+    ['2031-10-20', '2026-10-26', '2031년 10월 3주차', 'Week 3 of Oct 2031'],
+    ['2028-02-29', '2026-10-26', '2028년 2월 4주차', 'Week 4 of Feb 2028'],
+    ['2027-01-01', '2026-10-26', '12월 4주차', 'Week 4 of Dec'],
+    ['2027-01-01', '2027-01-01', '2026년 12월 4주차', 'Week 4 of Dec 2026'],
+    ['2027-01-03', '2026-12-31', '2027년 1월 1주차', 'Week 1 of Jan 2027'],
+  ])('%s 주 헤더는 오늘이 %s이면 %s / %s다', (dateKey, todayDateKey, korean, english) => {
+    // Given: 올해가 아닌 주는 연도를 보여 몇 년 뒤로 튄 날짜를 알아챌 수 있어야 한다
+
+    // When / Then: 주가 시작한 달의 연도로 판단한다
+    expect(formatWeekOfMonthLabel(dateKey, todayDateKey, KO_SEOUL)).toBe(korean);
+    expect(formatWeekOfMonthLabel(dateKey, todayDateKey, EN_SEOUL)).toBe(english);
   });
 
   it('상대 시간을 context의 언어와 복수형에 맞춰 포맷한다', () => {
