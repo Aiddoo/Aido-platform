@@ -1,0 +1,21 @@
+# 1.13.0 전체 화면 캡처 워크스페이스. docs: reference/workspace-configuration.md
+# capture.sh가 기기·계정·테마·언어마다 이 폴더를 한 번씩 돌린다. 직접 실행은 README 참고.
+#   태그: free | premium (계정별 화면), logged-out, account-switch(다른 계정으로 다시 로그인), consumes-newbie
+flows:
+  - '[0-9]*.yaml'
+executionOrder:
+  # 10번 흐름이 로그인해 두면 뒤 흐름은 그 상태를 이어 쓴다. 다른 계정으로 바꾸는 흐름은 맨 뒤에 둔다
+  continueOnFailure: true
+  flowsOrder:
+    - 01-logged-out
+    - 10-home
+    - 13-todo
+    - 20-memo
+    - 30-ai
+    - 40-friends
+    - 50-invite
+    - 60-notifications
+    - 70-mypage
+    - 80-grant
+    - 85-invite-redeem
+    - 90-empty

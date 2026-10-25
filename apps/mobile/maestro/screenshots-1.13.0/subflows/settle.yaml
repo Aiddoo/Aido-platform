@@ -1,0 +1,22 @@
+appId: com.aido.mobile
+name: 화면을 가리는 안내를 닫고 애니메이션이 멈출 때까지 기다린다
+---
+# 자동으로 뜨는 기능 소개 시트는 70번 흐름에서 직접 열어 찍으므로 여기서는 닫는다
+- runFlow:
+    when:
+      visible: '기능 가이드 닫기|Close feature guide'
+    commands:
+      - tapOn: '기능 가이드 닫기|Close feature guide'
+# 스토어 리뷰 안내는 실제 사용 이틀이 필요해 자동 캡처하지 않는다. 우연히 뜨면 닫는다
+- runFlow:
+    when:
+      visible: 'Aido가 도움이 되고 있나요\?|Is Aido helping you\?'
+    commands:
+      - tapOn: '다음에|Maybe later'
+- runFlow:
+    when:
+      visible: '지금 안 함|Not Now'
+    commands:
+      - tapOn: '지금 안 함|Not Now'
+- waitForAnimationToEnd:
+    timeout: 5000

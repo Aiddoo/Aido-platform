@@ -1,0 +1,41 @@
+appId: com.aido.mobile
+name: 메모 목록·상세와 AI 메모 분석
+tags:
+  - free premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: memo
+- extendedWaitUntil:
+    visible: '.*(디자인 리뷰|Design review).*'
+    timeout: 20000
+- takeScreenshot: 20_메모_목록
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: memo/${MAESTRO_SHOT_MEMO_ID}
+- takeScreenshot: 21_메모_상세
+- tapOn: '할 일로 변환|Convert to to-do'
+- waitForAnimationToEnd:
+    timeout: 3000
+# 무료 계정은 이번 달 AI 횟수를 다 쓴 상태라 한도 안내가, 프리미엄은 시작 확인이 뜬다
+- takeScreenshot: 22_메모_AI_시작_안내
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'premium'}
+    commands:
+      # 실제 AI(parse-memo, 로컬 API의 Gemini)로 메모를 할 일로 나눈다. 결과는 저장하지 않는다
+      - tapOn: '시작하기|Start'
+      - extendedWaitUntil:
+          visible: '.*(개 할 일 생성|Create \d+ to-do).*'
+          timeout: 60000
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 23_메모_AI_분석_결과

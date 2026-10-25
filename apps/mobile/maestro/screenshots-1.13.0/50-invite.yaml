@@ -1,0 +1,54 @@
+appId: com.aido.mobile
+name: 내 초대·발자국 판·초대한 친구·코드 입력
+tags:
+  - free premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: friends/invite
+- extendedWaitUntil:
+    visible:
+      id: my-invite-code
+    timeout: 20000
+- takeScreenshot: 50_내_초대
+- scrollUntilVisible:
+    element: '발자국 모으기|Collect paw prints'
+    direction: DOWN
+    timeout: 10000
+- scroll
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 51_발자국_판
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'premium'}
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: invitees-see-all
+          direction: DOWN
+          timeout: 10000
+      - tapOn:
+          id: invitees-see-all
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 52_초대한_친구_전체
+      - tapOn:
+          id: invitees-tab-waiting
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 53_초대한_친구_대기
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: invite
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 54_초대_코드_입력

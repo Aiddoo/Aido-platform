@@ -1,0 +1,1190 @@
+{
+  "ko": {
+    "timezone": "Asia/Seoul",
+    "timeFormat": "TWELVE_HOUR",
+    "owners": {
+      "premium": {
+        "name": "민지",
+        "email": "minji.kim@demo.aido.kr",
+        "icon": "orange_tabby"
+      },
+      "free": {
+        "name": "민지",
+        "email": "kim.minji@demo.aido.kr",
+        "icon": "orange_tabby"
+      },
+      "grant": {
+        "name": "서연",
+        "email": "seoyeon.lee@demo.aido.kr",
+        "icon": "siamese"
+      },
+      "newbie": {
+        "name": "지우",
+        "email": "jiwoo.han@demo.aido.kr",
+        "icon": "default"
+      }
+    },
+    "categories": [
+      {
+        "key": "work",
+        "name": "업무",
+        "color": "#339AF0",
+        "free": true
+      },
+      {
+        "key": "fitness",
+        "name": "운동",
+        "color": "#51CF66",
+        "free": true
+      },
+      {
+        "key": "life",
+        "name": "생활",
+        "color": "#FF922B",
+        "free": true
+      },
+      {
+        "key": "growth",
+        "name": "자기계발",
+        "color": "#7950F2",
+        "free": false
+      },
+      {
+        "key": "dubu",
+        "name": "두부",
+        "color": "#F06595",
+        "free": false
+      }
+    ],
+    "routines": [
+      {
+        "title": "필라테스",
+        "category": "fitness",
+        "days": ["TUE", "THU"],
+        "time": "07:00",
+        "free": true
+      },
+      {
+        "title": "영어 회화 스터디",
+        "category": "growth",
+        "days": ["MON", "WED"],
+        "time": "21:00",
+        "free": false
+      },
+      {
+        "title": "주간 회의 자료 준비",
+        "category": "work",
+        "days": ["MON"],
+        "time": "10:00",
+        "free": true
+      },
+      {
+        "title": "디자인 리뷰",
+        "category": "work",
+        "days": ["WED"],
+        "time": "15:00",
+        "free": false
+      },
+      {
+        "title": "한강 러닝 5km",
+        "category": "fitness",
+        "days": ["SAT"],
+        "time": "08:30",
+        "free": true
+      },
+      {
+        "title": "두부 화장실 모래 갈기",
+        "category": "dubu",
+        "days": ["WED", "SUN"],
+        "time": null,
+        "free": false
+      },
+      {
+        "title": "일주일 회고 쓰기",
+        "category": "growth",
+        "days": ["SUN"],
+        "time": "22:00",
+        "free": false
+      },
+      {
+        "title": "주말 장보기",
+        "category": "life",
+        "days": ["SAT"],
+        "time": "11:00",
+        "free": true
+      }
+    ],
+    "weekdayFillers": [
+      {
+        "title": "메일함 정리하고 답장하기",
+        "category": "work",
+        "time": "09:30"
+      },
+      {
+        "title": "점심 먹고 20분 산책",
+        "category": "fitness",
+        "time": "12:40"
+      },
+      {
+        "title": "Q4 시안 피드백 정리",
+        "category": "work",
+        "time": "14:00"
+      },
+      {
+        "title": "비타민 챙겨 먹기",
+        "category": "life",
+        "time": null
+      },
+      {
+        "title": "고객 인터뷰 노트 정리",
+        "category": "work",
+        "time": "16:30"
+      },
+      {
+        "title": "스트레칭 10분",
+        "category": "fitness",
+        "time": "23:00"
+      }
+    ],
+    "weekendFillers": [
+      {
+        "title": "빨래 돌리고 이불 정리",
+        "category": "life",
+        "time": null
+      },
+      {
+        "title": "동네 카페에서 책 읽기",
+        "category": "growth",
+        "time": "15:00"
+      },
+      {
+        "title": "냉장고 정리",
+        "category": "life",
+        "time": "19:00"
+      },
+      {
+        "title": "두부 발톱 깎아주기",
+        "category": "dubu",
+        "time": "20:30"
+      }
+    ],
+    "oneOffs": [
+      {
+        "offset": 0,
+        "title": "두부 병원 예약 전화하기",
+        "category": "dubu",
+        "time": "10:30",
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": 0,
+        "title": "세탁소에 맡긴 코트 찾기",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": 0,
+        "title": "서연이 생일 선물 고르기",
+        "category": "life",
+        "time": "14:00",
+        "done": false,
+        "free": true,
+        "detail": true
+      },
+      {
+        "offset": 0,
+        "title": "제주 여행 짐 리스트 만들기",
+        "category": "life",
+        "time": "17:00",
+        "done": false,
+        "free": false,
+        "items": [
+          {
+            "title": "충전기랑 보조배터리",
+            "done": true
+          },
+          {
+            "title": "선크림, 선글라스",
+            "done": true
+          },
+          {
+            "title": "필름 카메라 챙기기",
+            "done": false
+          },
+          {
+            "title": "두부 펫시터 연락",
+            "done": false
+          }
+        ]
+      },
+      {
+        "offset": 1,
+        "title": "두부 정기 검진",
+        "category": "dubu",
+        "time": "10:30",
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": 1,
+        "title": "분기 OKR 초안 공유",
+        "category": "work",
+        "time": "16:00",
+        "done": false,
+        "free": true
+      },
+      {
+        "offset": 2,
+        "title": "치과 정기검진",
+        "category": "life",
+        "time": "18:30",
+        "done": false,
+        "free": true
+      },
+      {
+        "offset": 3,
+        "title": "제주 숙소 예약 확정",
+        "category": "life",
+        "time": null,
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": 4,
+        "title": "팀 점심 회식",
+        "category": "work",
+        "time": "12:00",
+        "done": false,
+        "free": true
+      },
+      {
+        "offset": 5,
+        "title": "비행기 온라인 체크인",
+        "category": "life",
+        "time": "20:00",
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": -1,
+        "title": "에어컨 필터 청소",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": -2,
+        "title": "고객사 미팅 자료 검토",
+        "category": "work",
+        "time": "14:00",
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": -3,
+        "title": "건강검진 결과 확인하기",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": -4,
+        "title": "엄마랑 통화하기",
+        "category": "life",
+        "time": "20:30",
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": -6,
+        "title": "국립현대미술관 전시 예매",
+        "category": "growth",
+        "time": null,
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": -9,
+        "title": "노트북 업데이트 백업",
+        "category": "work",
+        "time": "21:00",
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": -12,
+        "title": "두부 예방접종",
+        "category": "dubu",
+        "time": "11:00",
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": -16,
+        "title": "지훈이 집들이 선물 사기",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": false
+      }
+    ],
+    "memos": [
+      {
+        "pinned": true,
+        "free": true,
+        "ai": true,
+        "content": "11월 디자인 리뷰 후속\n- 온보딩 2단계 카피 다시 쓰기 (금요일까지)\n- 다크모드 대비 이슈 정리해서 지훈님께 전달\n- 다음 주 화요일 오후 3시 후속 리뷰 잡기\n- 아이콘 시안 3종 비교표 만들기"
+      },
+      {
+        "pinned": false,
+        "free": false,
+        "content": "제주 여행 준비 (11/7~11/9)\n- 렌터카 예약 확인\n- 두부 펫시터 연락하기\n- 우도 배편 시간 찾아보기\n- 목요일 저녁 비행기 온라인 체크인"
+      },
+      {
+        "pinned": false,
+        "free": true,
+        "content": "두부 병원에서 물어볼 것\n- 사료 바꿔도 되는지\n- 발톱 깎는 주기\n- 다음 예방접종 날짜"
+      },
+      {
+        "pinned": false,
+        "free": false,
+        "content": "읽고 싶은 책\n불편한 편의점 2 / 도둑맞은 집중력 / 작별하지 않는다"
+      },
+      {
+        "pinned": false,
+        "free": false,
+        "content": "서연이 생일 선물 후보\n향초, 무드등, 필름 카메라 스트랩. 예산은 5만 원 안쪽"
+      }
+    ],
+    "aiPrompts": [
+      "오늘 밤 9시 반에 두부 간식 주문하기",
+      "내일 저녁 7시에 지훈이랑 성수에서 저녁 약속",
+      "다음 주 수요일 오전 11시 두부 미용 예약",
+      "매주 금요일 밤 9시에 가계부 정리"
+    ],
+    "friends": [
+      {
+        "key": "seoyeon",
+        "name": "서연",
+        "icon": "siamese",
+        "account": "grant",
+        "invite": "rewarded",
+        "joinedDaysAgo": 7,
+        "freeFriend": false,
+        "todos": [
+          {
+            "title": "새 집 커튼 달기",
+            "time": null,
+            "done": true
+          },
+          {
+            "title": "팀 주간 보고서 제출",
+            "time": "17:00",
+            "done": false
+          },
+          {
+            "title": "요가 30분",
+            "time": "21:00",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "jihoon",
+        "name": "지훈",
+        "icon": "black_cat",
+        "invite": "rewarded",
+        "joinedDaysAgo": 20,
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "헬스 하체 루틴",
+            "time": "07:30",
+            "done": true
+          },
+          {
+            "title": "사이드 프로젝트 배포",
+            "time": "15:00",
+            "done": false
+          },
+          {
+            "title": "부모님께 안부 전화",
+            "time": "20:00",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "haneul",
+        "name": "하늘",
+        "icon": "scottish_fold",
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "토익 LC 2회분 풀기",
+            "time": "09:00",
+            "done": true
+          },
+          {
+            "title": "도서관 책 반납",
+            "time": null,
+            "done": true
+          },
+          {
+            "title": "카페 알바",
+            "time": "18:00",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "yujin",
+        "name": "유진",
+        "icon": "cream_cat",
+        "freeFriend": true,
+        "allDone": true,
+        "todos": [
+          {
+            "title": "아침 요가 클래스",
+            "time": "08:00",
+            "done": true
+          },
+          {
+            "title": "블로그 글 마무리",
+            "time": "13:00",
+            "done": true
+          },
+          {
+            "title": "주말 장보기",
+            "time": null,
+            "done": true
+          }
+        ]
+      },
+      {
+        "key": "doyoon",
+        "name": "도윤",
+        "icon": "russian_blue",
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "코드 리뷰 3건",
+            "time": "10:00",
+            "done": true
+          },
+          {
+            "title": "러닝 5km",
+            "time": "19:30",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "sua",
+        "name": "수아",
+        "icon": "tuxedo_cat",
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "포트폴리오 수정",
+            "time": "11:00",
+            "done": false
+          },
+          {
+            "title": "드로잉 연습 1시간",
+            "time": "16:00",
+            "done": true
+          },
+          {
+            "title": "식물 물 주기",
+            "time": null,
+            "done": true
+          }
+        ]
+      },
+      {
+        "key": "harin",
+        "name": "하린",
+        "icon": "white_cat",
+        "invite": "waiting",
+        "joinedDaysAgo": 2,
+        "freeFriend": false,
+        "todos": [
+          {
+            "title": "물 2L 마시기",
+            "time": null,
+            "done": true
+          },
+          {
+            "title": "자기 전 일기 쓰기",
+            "time": "23:00",
+            "done": false
+          }
+        ]
+      }
+    ],
+    "stranger": {
+      "key": "taeo",
+      "name": "태오",
+      "icon": "scottish_fold"
+    },
+    "nudge": {
+      "from": "jihoon",
+      "todo": "서연이 생일 선물 고르기",
+      "message": "선물 고르면 나한테도 보여줘! 화이팅 🙌"
+    },
+    "cheer": {
+      "from": "sua",
+      "message": "이번 주 필라테스 개근 멋지다 👏"
+    },
+    "sentNudge": {
+      "to": "haneul",
+      "todo": "카페 알바",
+      "message": "오늘도 알바 화이팅!"
+    },
+    "copy": {
+      "nudgeWithMessageTitle": "{name}의 응원과 한마디가 도착했어",
+      "nudgeWithMessageBody": "‘{todo}’ · {message}",
+      "cheerTitle": "{name}의 응원이 왔어",
+      "friendCompletedTitle": "{name}의 오늘 할 일 모두 완료 ✨",
+      "friendCompletedBody": "친구에게 응원 한마디를 보내봐",
+      "followAcceptedTitle": "{name}와 친구가 됐어 🎉",
+      "followAcceptedBody": "서로의 하루에 작은 힘이 되어보자",
+      "inviteJoinedTitle": "{name}가 내 초대로 친구가 됐어 🐾",
+      "inviteJoinedBody": "서로의 하루를 응원해봐",
+      "inviteRewardedTitle": "발자국이 찍혔어 🐾",
+      "inviteRewardedBody": "프리미엄 7일과 친구 자리 1개를 받았어",
+      "weeklyReportTitle": "지난주 기록을 돌아볼까? 📊",
+      "weeklyReportBody": "리포트에서 지난주 흐름을 살펴봐",
+      "monthlyReportTitle": "지난달 기록을 돌아볼까? 📈",
+      "monthlyReportBody": "리포트에서 지난달 흐름을 살펴봐",
+      "suggestionTitle": "할 일 제안이 도착했어 ✨",
+      "suggestionBody": "내 계획에 맞는 제안인지 살펴봐",
+      "grantEndingTitle": "내일 프리미엄이 끝나요",
+      "grantEndingBody": "구독하면 끊김 없이 이어져요."
+    },
+    "fallback": {
+      "weeklySummary": "지난주에는 계획한 할 일의 대부분을 해냈어요. 화·목 아침 필라테스를 한 번도 거르지 않았고, 업무 할 일은 오후 2~4시에 가장 많이 끝냈어요.",
+      "monthlySummary": "지난달은 운동 루틴이 자리를 잡은 한 달이었어요. 주말에는 생활 할 일이 늘어나 완료율이 조금 낮았지만, 평일 업무 완료율은 꾸준히 높았어요.",
+      "tips": [
+        "수요일 저녁 영어 스터디 전에 30분 쉬는 시간을 넣어 보세요.",
+        "주말 할 일은 오전에 하나만 먼저 끝내면 완료율이 올라가요."
+      ],
+      "suggestions": [
+        {
+          "title": "아침 스트레칭 10분",
+          "days": ["MON", "TUE", "WED", "THU", "FRI"],
+          "time": "07:30",
+          "category": "fitness",
+          "reason": "평일 아침마다 운동 할 일을 끝낸 기록이 있어요"
+        },
+        {
+          "title": "두부 장난감 놀이 15분",
+          "days": ["TUE", "FRI"],
+          "time": "21:30",
+          "category": "dubu",
+          "reason": "저녁에 두부 할 일을 꾸준히 챙겼어요"
+        }
+      ]
+    }
+  },
+  "en": {
+    "timezone": "Asia/Seoul",
+    "timeFormat": "TWELVE_HOUR",
+    "owners": {
+      "premium": {
+        "name": "Mina",
+        "email": "mina.park@demo.aido.kr",
+        "icon": "orange_tabby"
+      },
+      "free": {
+        "name": "Mina",
+        "email": "park.mina@demo.aido.kr",
+        "icon": "orange_tabby"
+      },
+      "grant": {
+        "name": "Grace",
+        "email": "grace.kim@demo.aido.kr",
+        "icon": "siamese"
+      },
+      "newbie": {
+        "name": "Lucas",
+        "email": "lucas.cho@demo.aido.kr",
+        "icon": "default"
+      }
+    },
+    "categories": [
+      {
+        "key": "work",
+        "name": "Work",
+        "color": "#339AF0",
+        "free": true
+      },
+      {
+        "key": "fitness",
+        "name": "Fitness",
+        "color": "#51CF66",
+        "free": true
+      },
+      {
+        "key": "life",
+        "name": "Life",
+        "color": "#FF922B",
+        "free": true
+      },
+      {
+        "key": "growth",
+        "name": "Learning",
+        "color": "#7950F2",
+        "free": false
+      },
+      {
+        "key": "dubu",
+        "name": "Mochi",
+        "color": "#F06595",
+        "free": false
+      }
+    ],
+    "routines": [
+      {
+        "title": "Pilates class",
+        "category": "fitness",
+        "days": ["TUE", "THU"],
+        "time": "07:00",
+        "free": true
+      },
+      {
+        "title": "Spanish study group",
+        "category": "growth",
+        "days": ["MON", "WED"],
+        "time": "21:00",
+        "free": false
+      },
+      {
+        "title": "Prep weekly meeting deck",
+        "category": "work",
+        "days": ["MON"],
+        "time": "10:00",
+        "free": true
+      },
+      {
+        "title": "Design review",
+        "category": "work",
+        "days": ["WED"],
+        "time": "15:00",
+        "free": false
+      },
+      {
+        "title": "5K run by the river",
+        "category": "fitness",
+        "days": ["SAT"],
+        "time": "08:30",
+        "free": true
+      },
+      {
+        "title": "Change Mochi's litter",
+        "category": "dubu",
+        "days": ["WED", "SUN"],
+        "time": null,
+        "free": false
+      },
+      {
+        "title": "Write weekly review",
+        "category": "growth",
+        "days": ["SUN"],
+        "time": "22:00",
+        "free": false
+      },
+      {
+        "title": "Weekend groceries",
+        "category": "life",
+        "days": ["SAT"],
+        "time": "11:00",
+        "free": true
+      }
+    ],
+    "weekdayFillers": [
+      {
+        "title": "Clear inbox and reply",
+        "category": "work",
+        "time": "09:30"
+      },
+      {
+        "title": "20-min walk after lunch",
+        "category": "fitness",
+        "time": "12:40"
+      },
+      {
+        "title": "Sort Q4 mockup feedback",
+        "category": "work",
+        "time": "14:00"
+      },
+      {
+        "title": "Take vitamins",
+        "category": "life",
+        "time": null
+      },
+      {
+        "title": "Clean up interview notes",
+        "category": "work",
+        "time": "16:30"
+      },
+      {
+        "title": "10-min stretch",
+        "category": "fitness",
+        "time": "23:00"
+      }
+    ],
+    "weekendFillers": [
+      {
+        "title": "Laundry and fresh sheets",
+        "category": "life",
+        "time": null
+      },
+      {
+        "title": "Read at the corner café",
+        "category": "growth",
+        "time": "15:00"
+      },
+      {
+        "title": "Clean out the fridge",
+        "category": "life",
+        "time": "19:00"
+      },
+      {
+        "title": "Trim Mochi's claws",
+        "category": "dubu",
+        "time": "20:30"
+      }
+    ],
+    "oneOffs": [
+      {
+        "offset": 0,
+        "title": "Call the vet for Mochi",
+        "category": "dubu",
+        "time": "10:30",
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": 0,
+        "title": "Pick up coat from the cleaners",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": 0,
+        "title": "Pick a birthday gift for Grace",
+        "category": "life",
+        "time": "14:00",
+        "done": false,
+        "free": true,
+        "detail": true
+      },
+      {
+        "offset": 0,
+        "title": "Packing list for Jeju trip",
+        "category": "life",
+        "time": "17:00",
+        "done": false,
+        "free": false,
+        "items": [
+          {
+            "title": "Chargers and power bank",
+            "done": true
+          },
+          {
+            "title": "Sunscreen and sunglasses",
+            "done": true
+          },
+          {
+            "title": "Film camera",
+            "done": false
+          },
+          {
+            "title": "Text Mochi's pet sitter",
+            "done": false
+          }
+        ]
+      },
+      {
+        "offset": 1,
+        "title": "Mochi's checkup",
+        "category": "dubu",
+        "time": "10:30",
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": 1,
+        "title": "Share Q4 OKR draft",
+        "category": "work",
+        "time": "16:00",
+        "done": false,
+        "free": true
+      },
+      {
+        "offset": 2,
+        "title": "Dentist appointment",
+        "category": "life",
+        "time": "18:30",
+        "done": false,
+        "free": true
+      },
+      {
+        "offset": 3,
+        "title": "Confirm Jeju hotel",
+        "category": "life",
+        "time": null,
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": 4,
+        "title": "Team lunch",
+        "category": "work",
+        "time": "12:00",
+        "done": false,
+        "free": true
+      },
+      {
+        "offset": 5,
+        "title": "Online flight check-in",
+        "category": "life",
+        "time": "20:00",
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": -1,
+        "title": "Clean the AC filter",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": -2,
+        "title": "Review client meeting notes",
+        "category": "work",
+        "time": "14:00",
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": -3,
+        "title": "Check health screening results",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": -4,
+        "title": "Call Mom",
+        "category": "life",
+        "time": "20:30",
+        "done": true,
+        "free": true
+      },
+      {
+        "offset": -6,
+        "title": "Book museum tickets",
+        "category": "growth",
+        "time": null,
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": -9,
+        "title": "Back up the laptop",
+        "category": "work",
+        "time": "21:00",
+        "done": false,
+        "free": false
+      },
+      {
+        "offset": -12,
+        "title": "Mochi's vaccination",
+        "category": "dubu",
+        "time": "11:00",
+        "done": true,
+        "free": false
+      },
+      {
+        "offset": -16,
+        "title": "Housewarming gift for Jake",
+        "category": "life",
+        "time": null,
+        "done": true,
+        "free": false
+      }
+    ],
+    "memos": [
+      {
+        "pinned": true,
+        "free": true,
+        "ai": true,
+        "content": "Design review follow-ups\n- Rewrite onboarding step 2 copy by Friday\n- Send the dark mode contrast notes to Jake\n- Book a follow-up review next Tuesday at 3 PM\n- Compare the three icon options side by side"
+      },
+      {
+        "pinned": false,
+        "free": false,
+        "content": "Jeju trip (Nov 7-9)\n- Confirm rental car\n- Text Mochi's pet sitter\n- Check ferry times to Udo\n- Online check-in Thursday night"
+      },
+      {
+        "pinned": false,
+        "free": true,
+        "content": "Questions for Mochi's vet\n- OK to switch food?\n- How often to trim claws\n- Next vaccination date"
+      },
+      {
+        "pinned": false,
+        "free": false,
+        "content": "Books to read\nTomorrow, and Tomorrow, and Tomorrow / Stolen Focus / The Midnight Library"
+      },
+      {
+        "pinned": false,
+        "free": false,
+        "content": "Gift ideas for Grace\nScented candle, mood lamp, film camera strap. Keep it under $40"
+      }
+    ],
+    "aiPrompts": [
+      "Order treats for Mochi tonight at 9:30",
+      "Dinner with Jake in Seongsu tomorrow at 7 pm",
+      "Mochi's grooming next Wednesday at 11 am",
+      "Budget review every Friday at 9 pm"
+    ],
+    "friends": [
+      {
+        "key": "grace",
+        "name": "Grace",
+        "icon": "siamese",
+        "account": "grant",
+        "invite": "rewarded",
+        "joinedDaysAgo": 7,
+        "freeFriend": false,
+        "todos": [
+          {
+            "title": "Hang the new curtains",
+            "time": null,
+            "done": true
+          },
+          {
+            "title": "Send weekly team report",
+            "time": "17:00",
+            "done": false
+          },
+          {
+            "title": "30-min yoga",
+            "time": "21:00",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "jake",
+        "name": "Jake",
+        "icon": "black_cat",
+        "invite": "rewarded",
+        "joinedDaysAgo": 20,
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "Leg day at the gym",
+            "time": "07:30",
+            "done": true
+          },
+          {
+            "title": "Ship side project",
+            "time": "15:00",
+            "done": false
+          },
+          {
+            "title": "Call my parents",
+            "time": "20:00",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "olivia",
+        "name": "Olivia",
+        "icon": "scottish_fold",
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "Two IELTS listening sets",
+            "time": "09:00",
+            "done": true
+          },
+          {
+            "title": "Return library books",
+            "time": null,
+            "done": true
+          },
+          {
+            "title": "Café shift",
+            "time": "18:00",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "chloe",
+        "name": "Chloe",
+        "icon": "cream_cat",
+        "freeFriend": true,
+        "allDone": true,
+        "todos": [
+          {
+            "title": "Morning yoga class",
+            "time": "08:00",
+            "done": true
+          },
+          {
+            "title": "Finish blog post",
+            "time": "13:00",
+            "done": true
+          },
+          {
+            "title": "Weekend groceries",
+            "time": null,
+            "done": true
+          }
+        ]
+      },
+      {
+        "key": "ethan",
+        "name": "Ethan",
+        "icon": "russian_blue",
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "Review 3 pull requests",
+            "time": "10:00",
+            "done": true
+          },
+          {
+            "title": "5K run",
+            "time": "19:30",
+            "done": false
+          }
+        ]
+      },
+      {
+        "key": "ryan",
+        "name": "Ryan",
+        "icon": "tuxedo_cat",
+        "freeFriend": true,
+        "todos": [
+          {
+            "title": "Update portfolio",
+            "time": "11:00",
+            "done": false
+          },
+          {
+            "title": "Sketch for an hour",
+            "time": "16:00",
+            "done": true
+          },
+          {
+            "title": "Water the plants",
+            "time": null,
+            "done": true
+          }
+        ]
+      },
+      {
+        "key": "lily",
+        "name": "Lily",
+        "icon": "white_cat",
+        "invite": "waiting",
+        "joinedDaysAgo": 2,
+        "freeFriend": false,
+        "todos": [
+          {
+            "title": "Drink 2L of water",
+            "time": null,
+            "done": true
+          },
+          {
+            "title": "Journal before bed",
+            "time": "23:00",
+            "done": false
+          }
+        ]
+      }
+    ],
+    "stranger": {
+      "key": "noah",
+      "name": "Noah",
+      "icon": "scottish_fold"
+    },
+    "nudge": {
+      "from": "jake",
+      "todo": "Pick a birthday gift for Grace",
+      "message": "Show me what you pick! 🙌"
+    },
+    "cheer": {
+      "from": "ryan",
+      "message": "Perfect Pilates week, nice! 👏"
+    },
+    "sentNudge": {
+      "to": "olivia",
+      "todo": "Café shift",
+      "message": "Have a good shift!"
+    },
+    "copy": {
+      "nudgeWithMessageTitle": "A nudge and note from {name}",
+      "nudgeWithMessageBody": "‘{todo}’ · {message}",
+      "cheerTitle": "A cheer from {name}",
+      "friendCompletedTitle": "{name} finished today’s plans ✨",
+      "friendCompletedBody": "Every to-do is checked off",
+      "followAcceptedTitle": "You’re friends with {name} 🎉",
+      "followAcceptedBody": "A little support for each other’s day",
+      "inviteJoinedTitle": "{name} accepted your invite 🐾",
+      "inviteJoinedBody": "You’re now friends. Cheer each other on",
+      "inviteRewardedTitle": "You got a paw print 🐾",
+      "inviteRewardedBody": "You got 7 days of Premium and 1 more friend slot",
+      "weeklyReportTitle": "Review last week’s record? 📊",
+      "weeklyReportBody": "Explore last week in Reports",
+      "monthlyReportTitle": "Review last month’s record? 📈",
+      "monthlyReportBody": "Explore last month in Reports",
+      "suggestionTitle": "A to-do suggestion is here ✨",
+      "suggestionBody": "See if it fits your plans",
+      "grantEndingTitle": "Your Premium ends tomorrow",
+      "grantEndingBody": "Subscribe to keep Premium going."
+    },
+    "fallback": {
+      "weeklySummary": "You finished most of what you planned last week. You never missed Tuesday or Thursday Pilates, and most work to-dos got done between 2 and 4 PM.",
+      "monthlySummary": "Last month your workout routine really settled in. Weekends had more life errands and a slightly lower rate, but weekday work stayed consistently strong.",
+      "tips": [
+        "Add a 30-minute break before Wednesday's study group.",
+        "Finish one weekend to-do in the morning to keep the momentum."
+      ],
+      "suggestions": [
+        {
+          "title": "10-min morning stretch",
+          "days": ["MON", "TUE", "WED", "THU", "FRI"],
+          "time": "07:30",
+          "category": "fitness",
+          "reason": "You often finish a workout to-do on weekday mornings"
+        },
+        {
+          "title": "Play time with Mochi",
+          "days": ["TUE", "FRI"],
+          "time": "21:30",
+          "category": "dubu",
+          "reason": "You keep up Mochi to-dos in the evening"
+        }
+      ]
+    }
+  }
+}

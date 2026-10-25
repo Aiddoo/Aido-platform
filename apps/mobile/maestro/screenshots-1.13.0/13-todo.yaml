@@ -1,0 +1,56 @@
+appId: com.aido.mobile
+name: 할 일 상세·추가·반복 편집 시트
+tags:
+  - free premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: todo/${MAESTRO_SHOT_TODO_ID}?date=${MAESTRO_SHOT_TODAY}
+- extendedWaitUntil:
+    visible:
+      id: todo-detail
+    timeout: 20000
+- takeScreenshot: 13_할일_상세_콕
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'premium'}
+    commands:
+      - runFlow:
+          file: subflows/open.yaml
+          env:
+            ROUTE: todo/${MAESTRO_SHOT_CHECKLIST_TODO_ID}?date=${MAESTRO_SHOT_TODAY}
+      - extendedWaitUntil:
+          visible: '.*(필름 카메라|Film camera).*'
+          timeout: 20000
+      - takeScreenshot: 14_할일_체크리스트
+# 시트 route: iOS에서 두 번째 시트는 접근성 트리가 비어 보일 수 있어(1.12.1 README) 문구 대신 시간으로 기다린다
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: todo/new?date=${MAESTRO_SHOT_TODAY}
+- takeScreenshot: 15_할일_추가_시트
+- runFlow:
+    when:
+      visible: 'AI로 할 일 만들기|Create a to-do with AI'
+    commands:
+      - tapOn: 'AI로 할 일 만들기|Create a to-do with AI'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 16_AI_음성_입력_안내
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: todo/${MAESTRO_SHOT_RECURRING_TODO_ID}/edit?date=${MAESTRO_SHOT_RECURRING_DATE}
+- takeScreenshot: 17_반복_할일_편집
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: settings/category-settings
+- takeScreenshot: 18_카테고리_설정

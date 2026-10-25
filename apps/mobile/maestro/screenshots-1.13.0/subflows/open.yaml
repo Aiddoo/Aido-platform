@@ -1,0 +1,8 @@
+appId: com.aido.mobile
+name: 딥링크로 화면을 연다
+# 사용: runFlow { file: subflows/open.yaml, env: { ROUTE: 'settings/profile' } }
+---
+- openLink: ${QA_SCHEME || 'aido-dev'}://${ROUTE}
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow: settle.yaml

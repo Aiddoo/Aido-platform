@@ -1,0 +1,49 @@
+appId: com.aido.mobile
+name: AI 리포트와 반복 제안
+tags:
+  - free premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: reports
+- extendedWaitUntil:
+    visible: '.*(AI 리포트|AI Reports|나만의 리포트).*'
+    timeout: 20000
+- takeScreenshot: 30_AI_리포트_목록
+- runFlow:
+    when:
+      true: ${MAESTRO_SHOT_ROLE == 'premium'}
+    commands:
+      - runFlow:
+          file: subflows/open.yaml
+          env:
+            ROUTE: reports/${MAESTRO_SHOT_WEEKLY_REPORT_ID}
+      - extendedWaitUntil:
+          visible: '.*(AI 요약|AI summary|AI Summary).*'
+          timeout: 20000
+      - takeScreenshot: 31_AI_리포트_주간
+      - scroll
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: 32_AI_리포트_주간_패턴
+      - runFlow:
+          file: subflows/open.yaml
+          env:
+            ROUTE: reports/${MAESTRO_SHOT_MONTHLY_REPORT_ID}
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - takeScreenshot: 33_AI_리포트_월간
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: suggestions
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 34_AI_반복_제안

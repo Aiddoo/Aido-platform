@@ -1,0 +1,19 @@
+appId: com.aido.mobile
+name: 알림함
+tags:
+  - free premium
+env:
+  QA_SCHEME: ${QA_SCHEME || 'aido-dev'}
+onFlowStart:
+  - runScript: ../release-1.13.0/scripts/lib.js
+  - runScript: scripts/screens-setup.js
+---
+- runFlow: subflows/resume.yaml
+- runFlow:
+    file: subflows/open.yaml
+    env:
+      ROUTE: notifications
+- extendedWaitUntil:
+    visible: '.*(응원|cheer|nudge|콕).*'
+    timeout: 20000
+- takeScreenshot: 60_알림함
