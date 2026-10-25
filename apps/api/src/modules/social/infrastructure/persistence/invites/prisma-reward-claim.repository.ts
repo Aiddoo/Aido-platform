@@ -25,7 +25,7 @@ export class PrismaRewardClaimRepository implements RewardClaimRepositoryPort {
     )
       .select("claimHash")
       .first();
-    return row !== null;
+    return row != null;
   }
 
   async claimAll(claims: readonly RewardClaim[], claimedAt: Date): Promise<boolean> {

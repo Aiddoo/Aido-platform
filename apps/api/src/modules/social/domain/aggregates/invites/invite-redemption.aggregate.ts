@@ -97,9 +97,9 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       activeDays: new Set(props.activeDays),
       addedActiveDays: [],
       joinedAt: new Date(props.joinedAt),
-      qualifiedAt: props.qualifiedAt === null ? null : new Date(props.qualifiedAt),
-      rewardedAt: props.rewardedAt === null ? null : new Date(props.rewardedAt),
-      rejectedAt: props.rejectedAt === null ? null : new Date(props.rejectedAt),
+      qualifiedAt: props.qualifiedAt == null ? null : new Date(props.qualifiedAt),
+      rewardedAt: props.rewardedAt == null ? null : new Date(props.rewardedAt),
+      rejectedAt: props.rejectedAt == null ? null : new Date(props.rejectedAt),
       expiresAt: new Date(props.expiresAt),
     });
   }
@@ -145,11 +145,11 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
   }
 
   get qualifiedAt(): Date | null {
-    return this.props.qualifiedAt === null ? null : new Date(this.props.qualifiedAt);
+    return this.props.qualifiedAt == null ? null : new Date(this.props.qualifiedAt);
   }
 
   get rewardedAt(): Date | null {
-    return this.props.rewardedAt === null ? null : new Date(this.props.rewardedAt);
+    return this.props.rewardedAt == null ? null : new Date(this.props.rewardedAt);
   }
 
   get expiresAt(): Date {
@@ -195,7 +195,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       rejectionReason: this.props.rejectionReason,
       qualifiedAt: this.qualifiedAt,
       rewardedAt: this.rewardedAt,
-      rejectedAt: this.props.rejectedAt === null ? null : new Date(this.props.rejectedAt),
+      rejectedAt: this.props.rejectedAt == null ? null : new Date(this.props.rejectedAt),
       addedActiveDays: [...this.props.addedActiveDays],
     };
   }
@@ -209,7 +209,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
 
   #transitionTo(next: RedemptionStatusValue): boolean {
     const status = this.props.status.transitionTo(next);
-    if (status === null) return false;
+    if (status == null) return false;
     this.props.status = status;
     return true;
   }

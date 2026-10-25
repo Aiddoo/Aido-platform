@@ -42,7 +42,7 @@ export class PrismaInviteRepository implements InviteRepositoryPort {
         .select(...INVITE_COLUMNS)
         .first(),
     );
-    return row === null ? null : Invite.reconstitute(row);
+    return row == null ? null : Invite.reconstitute(row);
   }
 
   async findByCodeWithInviter(code: InviteCode): Promise<InviteWithInviter | null> {
@@ -57,7 +57,7 @@ export class PrismaInviteRepository implements InviteRepositoryPort {
         )
         .first(),
     );
-    if (row === null) return null;
+    if (row == null) return null;
     const inviter = requireRecord(row.inviter);
     return {
       invite: Invite.reconstitute(row),
@@ -85,7 +85,7 @@ export class PrismaInviteRepository implements InviteRepositoryPort {
           conflictOn: ["code"],
         }),
       );
-      if (row !== undefined) return Invite.reconstitute(row);
+      if (row != null) return Invite.reconstitute(row);
     }
     throw new ApplicationException(ErrorCode.SYS_0001, {
       detail: "Invite code collision retries exhausted",

@@ -143,7 +143,7 @@ export class PrismaRewardGrantRepository implements RewardGrantRepositoryPort {
       and(
         grant.recipientId.eq(inviterId),
         grant.sourceType.eq("INVITE_REDEMPTION"),
-        ownRedemptionId === null ? all() : grant.sourceId.neq(varchar(ownRedemptionId, 64)),
+        ownRedemptionId == null ? all() : grant.sourceId.neq(varchar(ownRedemptionId, 64)),
       ),
     );
   }

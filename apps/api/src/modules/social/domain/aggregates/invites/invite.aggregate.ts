@@ -47,7 +47,7 @@ export class Invite extends AggregateRoot<InviteProps> {
       code: props.code,
       status: props.status,
       createdAt: new Date(props.createdAt),
-      revokedAt: props.revokedAt === null ? null : new Date(props.revokedAt),
+      revokedAt: props.revokedAt == null ? null : new Date(props.revokedAt),
     });
   }
 
@@ -72,7 +72,7 @@ export class Invite extends AggregateRoot<InviteProps> {
   }
 
   get revokedAt(): Date | null {
-    return this.props.revokedAt === null ? null : new Date(this.props.revokedAt);
+    return this.props.revokedAt == null ? null : new Date(this.props.revokedAt);
   }
 
   isActive(): boolean {

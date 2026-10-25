@@ -77,7 +77,7 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
         }),
       ),
     );
-    if (overrides.name !== undefined) {
+    if (overrides.name != null) {
       await client.orm.public.UserProfile.create(
         encodeCreate("UserProfile", {
           userId: id,
@@ -100,7 +100,7 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
         joinedAt,
       }),
     );
-    if (redemption === null) throw new Error("초대 수락 행이 필요합니다");
+    if (redemption == null) throw new Error("초대 수락 행이 필요합니다");
     return redemption;
   }
 

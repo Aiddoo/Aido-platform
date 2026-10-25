@@ -55,7 +55,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         .include("accounts", (account) => account.select("provider", "providerAccountId"))
         .first(),
     );
-    if (user === null) return null;
+    if (user == null) return null;
     return {
       userId: user.id,
       createdAt: user.createdAt,
@@ -73,7 +73,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
     )
       .select("id")
       .first();
-    return row !== null;
+    return row != null;
   }
 
   async create(plan: InviteRedemptionCreationPlan): Promise<InviteRedemption | null> {
@@ -84,7 +84,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         { onConflict: "skip", conflictOn: ["inviteeId"] },
       ),
     );
-    if (row === undefined) return null;
+    if (row == null) return null;
     return InviteRedemption.reconstitute({ ...row, activeDays: [] });
   }
 
@@ -95,7 +95,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
     })
       .select("id")
       .first();
-    return row !== null;
+    return row != null;
   }
 
   async findByInviteeIdForUpdate(inviteeId: string): Promise<InviteRedemption | null> {
@@ -103,7 +103,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
       .select("id")
       .forUpdate()
       .first();
-    return locked === null ? null : this.#findById(locked.id);
+    return locked == null ? null : this.#findById(locked.id);
   }
 
   async findByIdForUpdate(redemptionId: string): Promise<InviteRedemption | null> {
@@ -111,7 +111,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
       .select("id")
       .forUpdate()
       .first();
-    return locked === null ? null : this.#findById(locked.id);
+    return locked == null ? null : this.#findById(locked.id);
   }
 
   async save(redemption: InviteRedemption): Promise<void> {
@@ -166,7 +166,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
       })
         .select("joinedAt", "id")
         .first();
-      if (anchor === null) return [];
+      if (anchor == null) return [];
       // cursor는 (joinedAt, id) 비교를 OR로 풀어 쓰므로 joinedAt 상한을 따로 걸어 인덱스 범위로 시작한다
       page = page.where((row) => row.joinedAt.lte(anchor.joinedAt)).cursor(anchor);
     }
@@ -219,7 +219,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         .include("activeDays", (day) => day.select("localDate"))
         .first(),
     );
-    if (row === null) return null;
+    if (row == null) return null;
     return InviteRedemption.reconstitute({
       ...row,
       activeDays: row.activeDays.map((day) => databaseDate(day.localDate)),
