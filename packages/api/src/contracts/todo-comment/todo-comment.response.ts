@@ -132,7 +132,7 @@ export const todoConversationConnectionSchema = z
       .nullable()
       .describe("답글이면 부모 lane에서 아바타로 이어지는 branch, root면 null"),
   })
-  .superRefine((connection, context) => {
+  .check(({ value: connection, issues }) => {
     const expectedBranch =
       connection.visualDepth === 0
         ? null
@@ -144,24 +144,27 @@ export const todoConversationConnectionSchema = z
         (connection.incomingBranch?.fromDepth !== expectedBranch.fromDepth ||
           connection.incomingBranch.toDepth !== expectedBranch.toDepth))
     ) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: connection,
         path: ["incomingBranch"],
         message: "incoming branch는 visualDepth의 직계 부모 lane과 일치해야 합니다.",
       });
     }
 
     if (connection.upperLaneDepths.some((depth) => depth >= connection.visualDepth)) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: connection,
         path: ["upperLaneDepths"],
         message: "상단 lane은 현재 visualDepth보다 앞선 조상 depth만 담아야 합니다.",
       });
     }
 
     if (connection.lowerLaneDepths.some((depth) => depth > connection.visualDepth)) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: connection,
         path: ["lowerLaneDepths"],
         message: "하단 lane은 현재 visualDepth보다 깊을 수 없습니다.",
       });

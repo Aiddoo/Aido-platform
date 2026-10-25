@@ -17,10 +17,11 @@ export const growthSummaryQuerySchema = z
     cohortFrom: z.iso.date().optional().describe("가입 cohort 시작 현지 날짜 (YYYY-MM-DD)"),
     cohortTo: z.iso.date().optional().describe("가입 cohort 종료 현지 날짜 (YYYY-MM-DD)"),
   })
-  .superRefine((data, context) => {
+  .check(({ value: data, issues }) => {
     if (Boolean(data.cohortFrom) !== Boolean(data.cohortTo)) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: data,
         path: data.cohortFrom ? ["cohortTo"] : ["cohortFrom"],
         message: "cohort 시작일과 종료일을 함께 입력해주세요",
       });
@@ -32,8 +33,9 @@ export const growthSummaryQuerySchema = z
     const inclusiveDays =
       (Date.parse(data.cohortTo) - Date.parse(data.cohortFrom)) / MILLISECONDS_PER_DAY + 1;
     if (inclusiveDays < 1) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: data,
         path: ["cohortTo"],
         message: "cohort 종료일은 시작일보다 빠를 수 없습니다",
       });
@@ -41,8 +43,9 @@ export const growthSummaryQuerySchema = z
     }
 
     if (inclusiveDays > MAX_GROWTH_QUERY_DAYS) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: data,
         path: ["cohortTo"],
         message: `조회 기간은 최대 ${MAX_GROWTH_QUERY_DAYS}일입니다`,
       });

@@ -61,13 +61,14 @@ export const createTodoCommentChainSchema = z
       )
       .describe(`이어 쓸 댓글 목록 (1~${TODO_COMMENT_LIMITS.CHAIN_MAX_SIZE}개)`),
   })
-  .superRefine((value, context) => {
+  .check(({ value, issues }) => {
     const seen = new Set<string>();
 
     value.items.forEach((item, index) => {
       if (seen.has(item.clientRequestId)) {
-        context.addIssue({
+        issues.push({
           code: "custom",
+          input: value,
           message: "댓글 요청 ID는 한 요청 안에서 중복될 수 없습니다.",
           path: ["items", index, "clientRequestId"],
         });
@@ -117,10 +118,11 @@ export const getTodoCommentOverviewQuerySchema = z
     after: todoCommentCursorSchema.optional(),
     size: todoCommentPageSizeSchema,
   })
-  .superRefine((value, context) => {
+  .check(({ value, issues }) => {
     if (value.before !== undefined && value.after !== undefined) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: value,
         message: "댓글 개요 위치는 before, after 중 하나만 지정할 수 있습니다.",
         path: ["before"],
       });
@@ -140,14 +142,15 @@ export const getTodoConversationQuerySchema = z
     after: todoCommentCursorSchema.optional(),
     size: todoCommentPageSizeSchema,
   })
-  .superRefine((value, context) => {
+  .check(({ value, issues }) => {
     const positions = [value.focusCommentId, value.before, value.after].filter(
       (position) => position !== undefined,
     );
 
     if (positions.length > 1) {
-      context.addIssue({
+      issues.push({
         code: "custom",
+        input: value,
         message: "대화 위치는 focusCommentId, before, after 중 하나만 지정할 수 있습니다.",
         path: ["focusCommentId"],
       });
