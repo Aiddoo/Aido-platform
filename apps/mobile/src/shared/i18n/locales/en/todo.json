@@ -175,6 +175,8 @@
   "detail": {
     "emptyTitle": "No to-do selected",
     "selectPrompt": "Select a to-do to see its details and comments here",
+    "unavailableTitle": "This to-do is no longer available",
+    "unavailableDescription": "It may have been deleted, or your friendship may have changed",
     "title": "To-do",
     "open": "Comments",
     "pageTitle": "To-do details",

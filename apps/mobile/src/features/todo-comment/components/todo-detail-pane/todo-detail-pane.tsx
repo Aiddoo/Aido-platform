@@ -1,6 +1,8 @@
 import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
+import { isApiError } from '@src/shared/errors';
 import { useTranslation } from '@src/shared/i18n';
 import { KeyboardBottomGapProvider } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import {
@@ -11,6 +13,7 @@ import {
   StyledSafeAreaView,
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
+import { useQuery } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useCallback, type ReactNode } from 'react';
@@ -65,8 +68,26 @@ TodoDetailPane.Empty = function Empty() {
   );
 };
 
+/** 지워졌거나 더는 볼 수 없는 할 일(친구 끊김·차단 등). 알림·위젯이 예전 할 일을 열 때 보인다. */
+TodoDetailPane.Unavailable = function Unavailable() {
+  const { t } = useTranslation('todo');
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 bg-background px-8">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('detail.unavailableTitle')}
+        description={t('detail.unavailableDescription')}
+      />
+    </StyledSafeAreaView>
+  );
+};
+
 function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const { todoId } = useTodoScreenParams();
+  // 서버는 지운 할 일과 볼 권한이 없는 할 일을 모두 404로 답한다. 본문·댓글 대신 안내 하나만 보인다
+  const { error: todoDetailsError } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
+  const isTodoUnavailable = isApiError(todoDetailsError) && todoDetailsError.status === 404;
   const [_selectedTodoId, setSelectedTodoId] = useFeedSelectedTodo();
   const [commentRoute] = useTodoCommentRoute();
   const isPane = presentation === 'pane';
@@ -117,48 +138,52 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
 
       <Separator />
 
-      <KeyboardGestureArea
-        style={styles.keyboardGestureArea}
-        textInputNativeID={TODO_COMMENT_INPUT_NATIVE_ID}
-      >
-        <Box flex={1}>
-          <QueryErrorBoundary
-            resetKeys={[todoId, commentRoute.view, commentRoute.sort, selectedCommentId]}
-            fallback={(props) => (
-              <TodoCommentListError {...props} extraContentPadding={commentListExtraPadding}>
-                {listHeader}
-              </TodoCommentListError>
-            )}
-          >
-            {match(commentRoute.view)
-              .with('overview', () => (
-                <TodoCommentOverviewList
-                  extraContentPadding={commentListExtraPadding}
-                  ListHeaderComponent={listHeader}
-                />
-              ))
-              .with('conversation', () => (
-                <Suspense
-                  fallback={
-                    <Box flex={1}>
-                      <TodoCommentConversationList.Loading />
-                    </Box>
-                  }
-                >
-                  <TodoCommentConversationList
+      {isTodoUnavailable ? (
+        <TodoDetailPane.Unavailable />
+      ) : (
+        <KeyboardGestureArea
+          style={styles.keyboardGestureArea}
+          textInputNativeID={TODO_COMMENT_INPUT_NATIVE_ID}
+        >
+          <Box flex={1}>
+            <QueryErrorBoundary
+              resetKeys={[todoId, commentRoute.view, commentRoute.sort, selectedCommentId]}
+              fallback={(props) => (
+                <TodoCommentListError {...props} extraContentPadding={commentListExtraPadding}>
+                  {listHeader}
+                </TodoCommentListError>
+              )}
+            >
+              {match(commentRoute.view)
+                .with('overview', () => (
+                  <TodoCommentOverviewList
                     extraContentPadding={commentListExtraPadding}
                     ListHeaderComponent={listHeader}
                   />
-                </Suspense>
-              ))
-              .exhaustive()}
-          </QueryErrorBoundary>
+                ))
+                .with('conversation', () => (
+                  <Suspense
+                    fallback={
+                      <Box flex={1}>
+                        <TodoCommentConversationList.Loading />
+                      </Box>
+                    }
+                  >
+                    <TodoCommentConversationList
+                      extraContentPadding={commentListExtraPadding}
+                      ListHeaderComponent={listHeader}
+                    />
+                  </Suspense>
+                ))
+                .exhaustive()}
+            </QueryErrorBoundary>
 
-          <QueryErrorBoundary resetKeys={[todoId, activeFormType, selectedCommentId]}>
-            <TodoCommentInputBar extraContentPadding={commentListExtraPadding} />
-          </QueryErrorBoundary>
-        </Box>
-      </KeyboardGestureArea>
+            <QueryErrorBoundary resetKeys={[todoId, activeFormType, selectedCommentId]}>
+              <TodoCommentInputBar extraContentPadding={commentListExtraPadding} />
+            </QueryErrorBoundary>
+          </Box>
+        </KeyboardGestureArea>
+      )}
     </>
   );
 

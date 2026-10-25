@@ -170,6 +170,8 @@
   "detail": {
     "emptyTitle": "선택한 할 일이 없어요",
     "selectPrompt": "할 일을 선택하면 상세와 댓글이 여기에 보여요",
+    "unavailableTitle": "지금은 볼 수 없는 할 일이에요",
+    "unavailableDescription": "할 일이 지워졌거나 친구 관계가 바뀌었을 수 있어요",
     "title": "할 일",
     "open": "댓글",
     "pageTitle": "할 일 상세",
