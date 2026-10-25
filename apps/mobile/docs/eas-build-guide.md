@@ -59,6 +59,10 @@ brew install cocoapods
 
 ---
 
+### 네이티브 의존성 메모
+
+- `@react-native-kakao/share`(2.4.11)의 podspec은 `RNCKakaoCore`와 `RNCKakaoSocial`을, `RNCKakaoSocial`은 `RNCKakaoUser`를 요구한다. share의 `peerDependencies`에는 core만 있어서 `@react-native-kakao/social`과 `@react-native-kakao/user`를 같은 버전(2.4.11, `pnpm-workspace.yaml` catalog)으로 직접 둔다. 빠지면 `pod install`이 `Unable to find a specification for 'RNCKakaoSocial'`로 실패한다.
+
 ## 스토어 제출 방법 비교
 
 ### 1. EAS Submit

@@ -18,6 +18,10 @@ export function isPremiumDaysReward(reward: InviteReward) {
   return reward.rewardType === REWARD_TYPE.PREMIUM_DAYS;
 }
 
+function isFriendSlotReward(reward: InviteReward) {
+  return reward.rewardType === REWARD_TYPE.FRIEND_SLOT;
+}
+
 export function calculateRewardQuantity(
   rewards: readonly InviteReward[],
   isTarget: (reward: InviteReward) => boolean,
@@ -28,6 +32,10 @@ export function calculateRewardQuantity(
 export const InviteRewardPolicy = {
   premiumDays(rewards: readonly InviteReward[]) {
     return calculateRewardQuantity(rewards, isPremiumDaysReward);
+  },
+
+  friendSlots(rewards: readonly InviteReward[]) {
+    return calculateRewardQuantity(rewards, isFriendSlotReward);
   },
 
   /** 초대받은 사람이 가입하면 받는 프리미엄 일수(초대 카드 영수증) */

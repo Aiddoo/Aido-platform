@@ -3,27 +3,33 @@ import { ParseError } from '@src/shared/errors/infra-error';
 
 import {
   createInviteApiError,
+  createInvitedFriendDto,
   createInvitePreviewDto,
+  createInviteDto,
   createPendingRedemption,
   INVALID_DTO,
 } from '../__tests__/invite.factories';
 import { isInviteError } from '../domains/invite.error';
 import { createInstallReferrerRepository } from './install-referrer.repository';
 import { InviteService } from './invite.service';
+import { createPawPrintCelebrationRepository } from './paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from './pending-redemption.repository';
 
 function createService({ referrer = null }: { referrer?: string | null } = {}) {
   const publicHttpClient = createMockHttpClient();
+  const authHttpClient = createMockHttpClient();
   const storage = createMemorySyncStorage();
   const readReferrer = jest.fn().mockResolvedValue(referrer);
   const pendingRedemptionRepository = createPendingRedemptionRepository(storage);
   const service = new InviteService({
     publicHttpClient,
+    authHttpClient,
     pendingRedemptionRepository,
     installReferrerRepository: createInstallReferrerRepository(storage, { read: readReferrer }),
+    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
   });
 
-  return { service, publicHttpClient, pendingRedemptionRepository, readReferrer };
+  return { service, publicHttpClient, authHttpClient, pendingRedemptionRepository, readReferrer };
 }
 
 describe('InviteService', () => {
@@ -96,6 +102,91 @@ describe('InviteService', () => {
         signal: undefined,
       });
       expect(result).toEqual({ ok: true, value: false });
+    });
+  });
+
+  describe('getInvite', () => {
+    it('발급 시각을 Date로 바꾼 내 초대 요약을 반환한다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      authHttpClient.get.mockResolvedValue({ ok: true, value: createInviteDto() });
+
+      // When
+      const result = await service.getInvite();
+
+      // Then
+      expect(authHttpClient.get).toHaveBeenCalledWith('v1/invites/me', { signal: undefined });
+      expect(result.ok && result.value.createdAt).toEqual(new Date('2026-11-01T09:00:00.000Z'));
+    });
+
+    it('모르는 보상 종류가 오면 UNKNOWN으로 바꿔 반환한다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      authHttpClient.get.mockResolvedValue({
+        ok: true,
+        value: {
+          ...createInviteDto(),
+          rewardsEarned: [
+            { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+            { rewardType: 'BADGE', quantity: 1 },
+          ],
+        },
+      });
+
+      // When
+      const result = await service.getInvite();
+
+      // Then
+      expect(result.ok && result.value.rewardsEarned).toEqual([
+        { rewardType: 'PREMIUM_DAYS', quantity: 7 },
+        { rewardType: 'UNKNOWN', quantity: 0 },
+      ]);
+    });
+
+    it('서버가 4xx로 답하면 Result.err로 그대로 반환한다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      const apiError = createInviteApiError({ code: 'INVITE_2105', status: 403 });
+      authHttpClient.get.mockResolvedValue({ ok: false, error: apiError });
+
+      // When
+      const result = await service.getInvite();
+
+      // Then
+      expect(result).toEqual({ ok: false, error: apiError });
+    });
+
+    it('응답 형식이 계약과 다르면 ParseError를 던진다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      authHttpClient.get.mockResolvedValue({ ok: true, value: INVALID_DTO });
+
+      // When & Then
+      await expect(service.getInvite()).rejects.toBeInstanceOf(ParseError);
+    });
+  });
+
+  describe('getInvitedFriends', () => {
+    it('cursor로 다음 페이지를 불러와 날짜를 Date로 바꾼 목록을 반환한다', async () => {
+      // Given
+      const { service, authHttpClient } = createService();
+      authHttpClient.get.mockResolvedValue({
+        ok: true,
+        value: { items: [createInvitedFriendDto()], totalCount: 3, hasMore: true },
+      });
+
+      // When
+      const result = await service.getInvitedFriends({ cursor: 'clz7x5p8k0004qz0z8z8z8z8z' });
+
+      // Then
+      expect(authHttpClient.get).toHaveBeenCalledWith('v1/invites/me/invitees', {
+        signal: undefined,
+        params: { cursor: 'clz7x5p8k0004qz0z8z8z8z8z', limit: undefined, status: undefined },
+      });
+      expect(result.ok && result.value.items[0]?.joinedAt).toEqual(
+        new Date('2026-11-02T10:30:00.000Z'),
+      );
+      expect(result.ok && result.value.hasMore).toBe(true);
     });
   });
 

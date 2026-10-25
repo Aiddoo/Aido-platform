@@ -54,5 +54,90 @@
   },
   "errors": {
     "invalidCode": "Invite codes are 6 characters (letters and numbers)"
+  },
+  "myInvite": {
+    "title": "Invite friends",
+    "heroChip": "{{days}} days of Premium for both of you",
+    "heroTitle": "Invite a friend and\ncheer each other on",
+    "codeLabel": "My invite code",
+    "copy": "Copy",
+    "copyLink": "Copy invite link",
+    "rotate": {
+      "button": "Make a new link",
+      "title": "Make a new link?",
+      "description": "Your current link will stop working",
+      "confirm": "Make a new link"
+    },
+    "notice": {
+      "qualification_one": "You get a paw print when your friend completes to-dos on {{count}} day within {{days}} days of joining",
+      "qualification_other": "You get a paw print when your friend completes to-dos on {{count}} different days within {{days}} days of joining",
+      "cap": "You can get up to {{monthly}} days of Premium in any 30 days, {{total}} days in total",
+      "subscription": "If you're subscribed, your reward Premium starts after your subscription ends"
+    }
+  },
+  "pawPrintBoard": {
+    "title": "Collect paw prints",
+    "rewardRule_one": "When a friend completes to-dos on {{activeDays}} different days, you get a paw print, {{days}} days of Premium, and {{slots}} friend slot",
+    "rewardRule_other": "When a friend completes to-dos on {{activeDays}} different days, you get a paw print, {{days}} days of Premium, and {{slots}} friend slots",
+    "cellLabel": "Paw print {{number}}, {{state}}",
+    "state": {
+      "stamped": "added",
+      "waiting": "almost there",
+      "empty": "empty",
+      "milestone": "fish reward"
+    },
+    "progress": {
+      "notStarted": "Invite your first friend. You'll be friends as soon as they join",
+      "monthlyCapReached": "You've reached the {{days}}-day Premium limit for the last 30 days. You can keep collecting paw prints and friend slots",
+      "next_one": "{{count}} more friend to your next reward",
+      "next_other": "{{count}} more friends to your next reward"
+    },
+    "header_one": "Board {{boardNumber}} · {{total}} paw print so far",
+    "header_other": "Board {{boardNumber}} · {{total}} paw prints so far",
+    "firstHint": "Your first paw print lands here once a friend completes to-dos on {{activeDays}} different days",
+    "complete": "You filled board {{boardNumber}}! A new board opens next time",
+    "rewardsSummary_one": "Premium {{count}} day · Friend slots {{slots}}",
+    "rewardsSummary_other": "Premium {{count}} days · Friend slots {{slots}}"
+  },
+  "friendList": {
+    "title": "Invited friends",
+    "stamped": "Left a paw print on {{date}}",
+    "waiting": "Finished to-dos on {{done}} of {{required}} days",
+    "excluded": "This one didn't get a paw print",
+    "excludedExpired": "{{days}} days passed after joining, so no paw print this time",
+    "excludedMonthlyCap": "The reward limit was reached, so no paw print this time",
+    "joined": "Joined on {{date}}",
+    "chipDone": "Added",
+    "chipDoneLabel": "Paw print added",
+    "chipWaiting_one": "{{count}} more day",
+    "chipWaiting_other": "{{count}} more days",
+    "chipWaitingLabel_one": "One more day to get a paw print",
+    "chipWaitingLabel_other": "{{count}} more days to get a paw print",
+    "emptyTitle": "No invited friends yet",
+    "emptyDescription": "Friends you invite will show up here",
+    "tab": {
+      "all": "All {{count}}",
+      "waiting": "Waiting {{count}}"
+    },
+    "seeAll": "See all {{count}}",
+    "emptyWaitingTitle": "No friends waiting for a paw print",
+    "emptyWaitingDescription": "Friends show up here while they work toward a paw print"
+  },
+  "share": {
+    "kakao": "Invite via KakaoTalk",
+    "copyLink": "Copy link",
+    "system": "Share",
+    "toolbarLabel": "Share invite link",
+    "kakaoTitle": "{{name}} invited you to Aido",
+    "kakaoDescription": "Join to become friends and get {{days}} days of Premium",
+    "kakaoButton": "Accept invite",
+    "message_one": "Let's do our to-dos together on Aido! Join and get {{count}} day of Premium.",
+    "message_other": "Let's do our to-dos together on Aido! Join and get {{count}} days of Premium.",
+    "dialogTitle": "Send invite link"
+  },
+  "toast": {
+    "linkCopied": "Link copied",
+    "rotated": "New invite link created",
+    "shareFailed": "Couldn't share. Please try again later"
   }
 }

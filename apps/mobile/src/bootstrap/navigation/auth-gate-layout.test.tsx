@@ -2,6 +2,7 @@ import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
 import type * as InstallReferrerRepositoryModule from '@src/features/invite/apis/install-referrer.repository';
 import type * as InviteServiceModule from '@src/features/invite/apis/invite.service';
+import type * as PawPrintCelebrationRepositoryModule from '@src/features/invite/apis/paw-print-celebration.repository';
 import type * as PendingRedemptionRepositoryModule from '@src/features/invite/apis/pending-redemption.repository';
 import type * as SharedTestUtils from '@src/shared/__tests__';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -26,6 +27,9 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
   const { createPendingRedemptionRepository } = jest.requireActual<
     typeof PendingRedemptionRepositoryModule
   >('@src/features/invite/apis/pending-redemption.repository');
+  const { createPawPrintCelebrationRepository } = jest.requireActual<
+    typeof PawPrintCelebrationRepositoryModule
+  >('@src/features/invite/apis/paw-print-celebration.repository');
   const { createInstallReferrerRepository } = jest.requireActual<
     typeof InstallReferrerRepositoryModule
   >('@src/features/invite/apis/install-referrer.repository');
@@ -39,10 +43,12 @@ jest.mock('@src/bootstrap/providers/di-context', () => {
   const storage = createMemorySyncStorage();
   const inviteService = new InviteService({
     publicHttpClient: createMockHttpClient(),
+    authHttpClient: createMockHttpClient(),
     pendingRedemptionRepository: createPendingRedemptionRepository(storage),
     installReferrerRepository: createInstallReferrerRepository(storage, {
       read: async () => null,
     }),
+    pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
   });
   const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
   return {

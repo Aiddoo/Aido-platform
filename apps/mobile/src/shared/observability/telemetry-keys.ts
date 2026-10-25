@@ -46,6 +46,7 @@ export const BREADCRUMB_CATEGORIES = [
   'lifecycle',
   'ui',
   'widget',
+  'invite',
 ] as const;
 export type BreadcrumbCategory = (typeof BREADCRUMB_CATEGORIES)[number];
 

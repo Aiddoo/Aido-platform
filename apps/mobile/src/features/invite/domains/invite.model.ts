@@ -1,5 +1,17 @@
-import { INVITE_CODE, inviteCodeSchema, normalizeInviteCode } from '@aido/api';
-import type { z } from 'zod';
+import {
+  INVITE_CODE,
+  inviteCodeSchema,
+  normalizeInviteCode,
+  INVITE_REWARD_CAPS,
+  INVITER_REWARD_MILESTONES,
+  type InviterRewardMilestone,
+  inviteMilestoneSchema,
+  myInviteResponseSchema,
+} from '@aido/api';
+import { match } from 'ts-pattern';
+import { z } from 'zod';
+
+import { InviteRewardPolicy, InviteRewardSchema } from './invite-reward.model';
 
 // 서버와 같은 정규화(공백·하이픈 제거, 대문자) 뒤 6자 검증
 export const InviteCodeSchema = inviteCodeSchema;
@@ -89,5 +101,101 @@ export const InviteCodePolicy = {
 
   invalidCharacterSummary(raw: string) {
     return summarizeInvalidCharacters(findInvalidCharacters(raw));
+  },
+};
+
+const InviteMilestoneSchema = inviteMilestoneSchema.extend({
+  rewards: z.array(InviteRewardSchema),
+});
+
+export const InviteSchema = myInviteResponseSchema.extend({
+  nextMilestone: InviteMilestoneSchema.nullable(),
+  rewardsEarned: z.array(InviteRewardSchema),
+  createdAt: z.coerce.date(),
+});
+
+export type Invite = z.output<typeof InviteSchema>;
+
+export function calculateRemainingInvites(qualifiedCount: number, targetCount: number) {
+  return Math.max(targetCount - qualifiedCount, 0);
+}
+
+// 반복하지 않는 단계(3·5·10명 등)만 발자국 판에 생선 칸으로 미리 보여 준다
+export function findOneTimeMilestoneCounts(milestones: readonly InviterRewardMilestone[]) {
+  return milestones
+    .filter((milestone) => milestone.repeatEvery == null)
+    .map((milestone) => milestone.qualifiedCount);
+}
+
+export function hasReachedPremiumCap(grantedDays: number, capDays: number) {
+  return grantedDays >= capDays;
+}
+
+export function toDisplayLink(link: string) {
+  return link.replace(/^https?:\/\//, '');
+}
+
+export const InvitePolicy = {
+  nextMilestone(myInvite: Invite) {
+    return myInvite.nextMilestone;
+  },
+
+  remainingToNextMilestone(myInvite: Invite) {
+    const next = this.nextMilestone(myInvite);
+    return next == null
+      ? null
+      : calculateRemainingInvites(myInvite.qualifiedCount, next.qualifiedCount);
+  },
+
+  /** 다음 발자국에서 받는 프리미엄 일수(없으면 0) */
+  nextPremiumDays(myInvite: Invite) {
+    return InviteRewardPolicy.premiumDays(this.nextMilestone(myInvite)?.rewards ?? []);
+  },
+
+  nextFriendSlots(myInvite: Invite) {
+    return InviteRewardPolicy.friendSlots(this.nextMilestone(myInvite)?.rewards ?? []);
+  },
+
+  earnedPremiumDays(myInvite: Invite) {
+    return InviteRewardPolicy.premiumDays(myInvite.rewardsEarned);
+  },
+
+  earnedFriendSlots(myInvite: Invite) {
+    return InviteRewardPolicy.friendSlots(myInvite.rewardsEarned);
+  },
+
+  /** 최근 30일 동안 초대로 받을 수 있는 프리미엄 일수 */
+  monthlyPremiumCapDays() {
+    return INVITE_REWARD_CAPS.PREMIUM_DAYS_PER_30_DAYS;
+  },
+
+  /** 지금까지 초대로 받을 수 있는 프리미엄 일수 */
+  totalPremiumCapDays() {
+    return INVITE_REWARD_CAPS.PREMIUM_DAYS_TOTAL;
+  },
+
+  isMonthlyCapReached(myInvite: Invite) {
+    return hasReachedPremiumCap(myInvite.premiumDaysInWindow, this.monthlyPremiumCapDays());
+  },
+
+  milestoneQualifiedCounts() {
+    return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
+  },
+
+  /** 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다) */
+  progress(myInvite: Invite) {
+    return match({
+      isMonthlyCapReached: this.isMonthlyCapReached(myInvite),
+      hasPawPrint: myInvite.qualifiedCount > 0,
+    })
+      .with({ isMonthlyCapReached: true }, () => 'monthly-cap-reached' as const)
+      .with({ hasPawPrint: false }, () => 'not-started' as const)
+      .with({ hasPawPrint: true }, () => 'in-progress' as const)
+      .exhaustive();
+  },
+
+  /** 화면에 보여 줄 링크. 스킴을 빼서 짧게 읽힌다(복사·공유는 전체 링크를 쓴다) */
+  displayLink(myInvite: Invite) {
+    return toDisplayLink(myInvite.link);
   },
 };

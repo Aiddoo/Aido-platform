@@ -1,3 +1,4 @@
+import { createInvite } from '../__tests__/invite.factories';
 import {
   classifyInvalidCharacter,
   findInvalidCharacters,
@@ -5,6 +6,10 @@ import {
   parseInviteCode,
   summarizeInvalidCharacters,
   toInviteCodeDraft,
+  calculateRemainingInvites,
+  findOneTimeMilestoneCounts,
+  hasReachedPremiumCap,
+  InvitePolicy,
 } from './invite.model';
 
 describe('toInviteCodeDraft', () => {
@@ -173,6 +178,156 @@ describe('summarizeInvalidCharacters', () => {
       kind: 'unused',
       listedCharacters: ['A', 'E', 'U'],
       uniqueCount: 6,
+    });
+  });
+});
+
+describe('calculateRemainingInvites', () => {
+  it('목표보다 적게 모았으면 남은 인원을 반환한다', () => {
+    // When
+    const result = calculateRemainingInvites(1, 3);
+
+    // Then 3 - 1 = 2
+    expect(result).toBe(2);
+  });
+
+  it('목표를 넘겼으면 0을 반환한다', () => {
+    // When
+    const result = calculateRemainingInvites(4, 3);
+
+    // Then max(3 - 4, 0) = 0
+    expect(result).toBe(0);
+  });
+});
+
+describe('hasReachedPremiumCap', () => {
+  it.each([
+    [29, false],
+    [30, true],
+    [31, true],
+  ])('받은 일수가 %i일이고 상한이 30일이면 %s를 반환한다', (grantedDays, expected) => {
+    // When
+    const result = hasReachedPremiumCap(grantedDays, 30);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
+describe('findOneTimeMilestoneCounts', () => {
+  it('반복하지 않는 단계의 인원만 반환한다', () => {
+    // When
+    const result = findOneTimeMilestoneCounts([
+      { qualifiedCount: 1, repeatEvery: 1, rewards: [] },
+      { qualifiedCount: 3, repeatEvery: null, rewards: [] },
+      { qualifiedCount: 5, repeatEvery: null, rewards: [] },
+    ]);
+
+    // Then
+    expect(result).toEqual([3, 5]);
+  });
+});
+
+describe('InvitePolicy', () => {
+  describe('remainingToNextMilestone', () => {
+    it('다음 단계가 없으면 null을 반환한다', () => {
+      // Given
+      const myInvite = createInvite({ nextMilestone: null });
+
+      // When
+      const result = InvitePolicy.remainingToNextMilestone(myInvite);
+
+      // Then
+      expect(result).toBeNull();
+    });
+
+    it('다음 단계까지 남은 인원을 반환한다', () => {
+      // Given
+      const myInvite = createInvite({
+        qualifiedCount: 2,
+        nextMilestone: { qualifiedCount: 3, rewards: [] },
+      });
+
+      // When
+      const result = InvitePolicy.remainingToNextMilestone(myInvite);
+
+      // Then 3 - 2 = 1
+      expect(result).toBe(1);
+    });
+  });
+
+  describe('nextPremiumDays', () => {
+    it('다음 단계 보상의 프리미엄 일수를 반환한다', () => {
+      // Given
+      const myInvite = createInvite();
+
+      // When
+      const result = InvitePolicy.nextPremiumDays(myInvite);
+
+      // Then
+      expect(result).toBe(7);
+    });
+
+    it('다음 단계가 없으면 0을 반환한다', () => {
+      // Given
+      const myInvite = createInvite({ nextMilestone: null });
+
+      // When
+      const result = InvitePolicy.nextPremiumDays(myInvite);
+
+      // Then
+      expect(result).toBe(0);
+    });
+  });
+
+  describe('isMonthlyCapReached', () => {
+    it.each([
+      [29, false],
+      [30, true],
+    ])('최근 30일 동안 %i일을 받았으면 %s를 반환한다', (premiumDaysInWindow, expected) => {
+      // Given
+      const myInvite = createInvite({ premiumDaysInWindow });
+
+      // When
+      const result = InvitePolicy.isMonthlyCapReached(myInvite);
+
+      // Then
+      expect(result).toBe(expected);
+    });
+  });
+
+  describe('progress', () => {
+    it('발자국이 없으면 not-started를 반환한다', () => {
+      // Given
+      const myInvite = createInvite({ qualifiedCount: 0, waitingCount: 1 });
+
+      // When
+      const result = InvitePolicy.progress(myInvite);
+
+      // Then
+      expect(result).toBe('not-started');
+    });
+
+    it('발자국이 있으면 in-progress를 반환한다', () => {
+      // Given
+      const myInvite = createInvite({ qualifiedCount: 1, premiumDaysInWindow: 7 });
+
+      // When
+      const result = InvitePolicy.progress(myInvite);
+
+      // Then
+      expect(result).toBe('in-progress');
+    });
+
+    it('월 상한에 닿으면 발자국 수와 관계없이 monthly-cap-reached를 반환한다', () => {
+      // Given
+      const myInvite = createInvite({ qualifiedCount: 5, premiumDaysInWindow: 30 });
+
+      // When
+      const result = InvitePolicy.progress(myInvite);
+
+      // Then
+      expect(result).toBe('monthly-cap-reached');
     });
   });
 });

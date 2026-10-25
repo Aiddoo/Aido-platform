@@ -16,6 +16,7 @@ import type { FeatureDiscoveryStateService } from '@src/features/feature-discove
 import type { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
 import type { FriendService } from '@src/features/friend/apis/friend.service';
 import type { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
+import type { InviteShareService } from '@src/features/invite/apis/invite-share.service';
 import type { InviteService } from '@src/features/invite/apis/invite.service';
 import type { MemoService } from '@src/features/memo/apis/memo.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
@@ -67,6 +68,7 @@ export interface DIContainer {
   appIconService: AppIconService;
   friendService: FriendService;
   inviteService: InviteService;
+  inviteShareService: InviteShareService;
   featureDiscoveryService: FeatureDiscoveryService;
   featureDiscoveryStateService: FeatureDiscoveryStateService;
   inquiryService: InquiryService;
@@ -131,6 +133,7 @@ export const useActivationService = () => useDI().activationService;
 export const useAppVersionService = () => useDI().appVersionService;
 export const useFriendService = () => useDI().friendService;
 export const useInviteService = () => useDI().inviteService;
+export const useInviteShareService = () => useDI().inviteShareService;
 export const useFeatureDiscoveryService = () => useDI().featureDiscoveryService;
 export const useFeatureDiscoveryStateService = () => useDI().featureDiscoveryStateService;
 export const useInquiryService = () => useDI().inquiryService;

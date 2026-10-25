@@ -12,7 +12,9 @@ import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/fe
 import { FriendService } from '@src/features/friend/apis/friend.service';
 import { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
 import { createInstallReferrerRepository } from '@src/features/invite/apis/install-referrer.repository';
+import { InviteShareService } from '@src/features/invite/apis/invite-share.service';
 import { InviteService } from '@src/features/invite/apis/invite.service';
+import { createPawPrintCelebrationRepository } from '@src/features/invite/apis/paw-print-celebration.repository';
 import { createPendingRedemptionRepository } from '@src/features/invite/apis/pending-redemption.repository';
 import { MemoService } from '@src/features/memo/apis/memo.service';
 import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
@@ -55,6 +57,7 @@ import { KyJsonFetcher } from '@src/shared/infra/http/ky-json-fetcher';
 import { createPublicClient } from '@src/shared/infra/http/public-client';
 import { requestRefreshTokens } from '@src/shared/infra/http/refresh-tokens-request';
 import { createTokenRefresher } from '@src/shared/infra/http/token-refresher';
+import { createKakaoShareClient } from '@src/shared/infra/kakao/kakao-share.client';
 import { expoLocationGateway } from '@src/shared/infra/location/expo-location.gateway';
 import {
   createCompositeLogger,
@@ -66,6 +69,7 @@ import {
   createEnvironmentAnalytics,
   createEnvironmentErrorReporter,
 } from '@src/shared/infra/observability-env';
+import { rnSystemShareGateway } from '@src/shared/infra/share/rn-system-share.gateway';
 import type { DraftStorageBootstrap } from '@src/shared/infra/storage/mmkv-draft-storage';
 import { mmkvSyncStorage } from '@src/shared/infra/storage/mmkv-storage';
 import { SecureStorage } from '@src/shared/infra/storage/secure-storage';
@@ -165,11 +169,19 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
     // Invite
     const inviteService = new InviteService({
       publicHttpClient,
+      authHttpClient,
       pendingRedemptionRepository: createPendingRedemptionRepository(mmkvSyncStorage),
       installReferrerRepository: createInstallReferrerRepository(
         mmkvSyncStorage,
         expoInstallReferrerGateway,
       ),
+      pawPrintCelebrationRepository: createPawPrintCelebrationRepository(mmkvSyncStorage),
+    });
+    const inviteShareService = new InviteShareService({
+      kakaoShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),
+      systemShare: rnSystemShareGateway,
+      clipboard: expoClipboardGateway,
+      errorReporter,
     });
 
     // Inquiry
@@ -244,6 +256,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       featureDiscoveryService,
       featureDiscoveryStateService,
       inviteService,
+      inviteShareService,
       inquiryService,
       memoService,
       subTodoService,
