@@ -370,3 +370,83 @@ describe("resolveTodoSchedule — 결정 규칙과 경계", () => {
     });
   });
 });
+
+describe("resolveTodoSchedule — 모델이 흔들린 표현에서도 예측 가능한 결과", () => {
+  it("때와 함께 온 relativeMinutes 0은 '지금'이 아니라 말한 날짜와 때로 계산한다", () => {
+    // Given - 서울 수 10:00에 "내일 아침 치과 예약 전화"를 모델이 relativeMinutes 0과 함께 냄
+    const input = draft({
+      date: { kind: "OFFSET_DAYS", amount: 1 },
+      time: { partOfDay: "MORNING", relativeMinutes: 0 },
+    });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-29", scheduledTime: "09:00" });
+  });
+
+  it("relativeMinutes 0만 있으면 지금 시각을 만들지 않고 종일로 둔다", () => {
+    // Given
+    const input = draft({ time: { relativeMinutes: 0 } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-28", scheduledTime: null, isAllDay: true });
+  });
+
+  it("다른 날을 말한 표현과 함께 온 상대 시각은 무시하고 말한 날짜를 지킨다", () => {
+    // Given - "내일"과 120분 뒤가 함께 오면 오늘 12:00이 아니라 내일이다
+    const input = draft({
+      date: { kind: "OFFSET_DAYS", amount: 1 },
+      time: { relativeMinutes: 120 },
+    });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-29", isAllDay: true });
+  });
+
+  it("오늘을 말한 상대 시각은 그대로 지금부터 계산한다", () => {
+    // Given - "오늘 2시간 뒤"
+    const input = draft({ date: { kind: "TODAY" }, time: { relativeMinutes: 120 } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-28", scheduledTime: "12:00" });
+  });
+
+  it("날짜 없이 말한 때가 오늘 이미 지났으면 내일 그 때로 넘긴다", () => {
+    // Given - 서울 10:00에 "아침에 영양제 먹기"
+    const input = draft({ time: { partOfDay: "MORNING" } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-29", scheduledTime: "09:00" });
+  });
+
+  it("'오늘 아침'이 이미 지났으면 오늘로 두고 지난 기본 시각을 넣지 않는다", () => {
+    // Given - 서울 10:00에 "오늘 아침 영양제 먹기"
+    const input = draft({ date: { kind: "TODAY" }, time: { partOfDay: "MORNING" } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-28", scheduledTime: null, isAllDay: true });
+  });
+
+  it("'오늘 저녁'처럼 아직 오지 않은 때는 오늘 기본 시각을 넣는다", () => {
+    // Given
+    const input = draft({ date: { kind: "TODAY" }, time: { partOfDay: "EVENING" } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-28", scheduledTime: "19:00" });
+  });
+
+  it("오늘 지난 시각을 숫자로 말하면 사용자가 말한 그대로 둔다", () => {
+    // Given - 서울 10:00에 "오늘 오전 9시 약 먹기"
+    const input = draft({ date: { kind: "TODAY" }, time: { hour: 9, minute: 0, meridiem: "AM" } });
+    // When
+    const result = resolveTodoSchedule(input, SEOUL);
+    // Then
+    expect(result).toMatchObject({ startDate: "2026-10-28", scheduledTime: "09:00" });
+  });
+});

@@ -10,10 +10,10 @@ describe("ParseTodo golden — fake model이 draft를 내면 공개 응답이 �
     vi.useRealTimers();
   });
 
-  it("golden은 ko 16건·en 10건이다", () => {
+  it("golden은 ko 19건·en 11건이다", () => {
     // Given / When / Then
-    expect(cases.filter((golden) => golden.locale === "ko")).toHaveLength(16);
-    expect(cases.filter((golden) => golden.locale === "en")).toHaveLength(10);
+    expect(cases.filter((golden) => golden.locale === "ko")).toHaveLength(19);
+    expect(cases.filter((golden) => golden.locale === "en")).toHaveLength(11);
   });
 
   it.each(cases)("$id $input", async (golden) => {

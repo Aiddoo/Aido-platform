@@ -68,19 +68,28 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
   let startDay = recurrenceBase?.start ?? resolvedDate.day;
   let scheduledMinutes: number | null = null;
 
+  const isRelative = draft.time != null && isRelativeTime(draft.time, draft.date);
   const time =
-    draft.time == null ? null : resolveTime(draft.time, startDay, nowMinutes, today, clock);
+    draft.time == null
+      ? null
+      : resolveTime(draft.time, isRelative, startDay, nowMinutes, today, clock);
   if (time === "INVALID") {
     warnings.push("INVALID_TIME");
   } else if (time != null) {
     scheduledMinutes = time.minutes;
     // 반복 일정의 시작일은 시각과 무관하게 반복 규칙이 정한다.
     if (!isRecurringDraft) {
-      const isRelative = draft.time?.relativeMinutes != null;
-      // 날짜를 말하지 않은 단발 일정의 시각이 이미 지났으면 내일로 넘긴다.
-      const passedToday =
-        !isRelative && !dateExplicit && time.day.isSame(today) && time.minutes <= nowMinutes;
-      startDay = passedToday ? today.add(1, "day") : time.day;
+      const passedToday = !isRelative && time.day.isSame(today) && time.minutes <= nowMinutes;
+      if (passedToday && !dateExplicit) {
+        // 날짜를 말하지 않은 단발 일정의 시각이 이미 지났으면 내일로 넘긴다.
+        startDay = today.add(1, "day");
+      } else if (passedToday && draft.time?.hour == null) {
+        // "오늘 아침"처럼 오늘을 말했는데 그 때가 지났으면 날짜는 지키고 지난 기본 시각을 만들지 않는다.
+        startDay = today;
+        scheduledMinutes = null;
+      } else {
+        startDay = time.day;
+      }
     }
   }
 
@@ -180,14 +189,27 @@ function resolveCalendarDate(ref: DateRef, today: CalendarDay): DayResolution {
   return next == null ? { day: today, warning: "INVALID_DATE" } : { day: next };
 }
 
+/**
+ * "N분 뒤"는 지금부터의 경과 시간이라 1분 이상이고 날짜를 말하지 않았거나 오늘일 때만 쓴다.
+ * 0·음수, 또는 "내일"처럼 다른 날을 말한 표현과 함께 온 값은 무시하고 날짜·때를 따른다.
+ */
+function isRelativeTime(ref: TimeRef, date: DateRef): boolean {
+  return (
+    ref.relativeMinutes != null &&
+    ref.relativeMinutes > 0 &&
+    (date.kind === "NONE" || date.kind === "TODAY")
+  );
+}
+
 function resolveTime(
   ref: TimeRef,
+  isRelative: boolean,
   targetDay: CalendarDay,
   nowMinutes: number,
   today: CalendarDay,
   clock: ScheduleClock,
 ): TimeResolution | "INVALID" | null {
-  if (ref.relativeMinutes != null) {
+  if (isRelative && ref.relativeMinutes != null) {
     // 벽시계 분에 더하면 DST 전환 구간에서 한 시간이 어긋나므로 실제 순간에 더한 뒤 현지로 바꾼다.
     const target = dayjs(clock.now).add(ref.relativeMinutes, "minute").tz(clock.timeZone);
     return {
