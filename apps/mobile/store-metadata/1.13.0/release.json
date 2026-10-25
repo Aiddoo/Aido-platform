@@ -3,7 +3,7 @@
   "releaseVersion": "1.13.0",
   "patchNotes": {
     "ko": [
-      "친구에게 초대 링크를 보낼 수 있어요. 초대받은 친구는 바로 프리미엄 7일을 받고, 초대한 나도 친구가 이틀 동안 할 일을 완료하면 프리미엄 7일을 받아요.",
+      "친구에게 초대 링크를 보낼 수 있어요. 새로 가입한 친구는 바로 프리미엄 7일을 받고, 초대한 나도 친구가 가입하고 14일 안에 할 일을 끝낸 날이 이틀이 되면 프리미엄 7일과 친구 자리 1개를 받아요.",
       "카카오톡으로 초대 링크를 바로 보낼 수 있어요.",
       "‘발자국 모으기’에서 초대한 친구와 받은 혜택을 한눈에 볼 수 있어요.",
       "구독 화면에서 초대 보상으로 받은 프리미엄 기간과 끝나는 날짜를 확인할 수 있어요.",
@@ -12,12 +12,12 @@
       "앱의 안정성과 보안을 함께 다듬었어요."
     ],
     "en": [
-      "Invite friends with a link. They get 7 days of Premium right away, and you get 7 days once they complete to-dos on two different days.",
-      "Share your invite link straight to KakaoTalk.",
-      "Track invited friends and rewards in Collect paw prints.",
-      "See your reward Premium period and end date on the subscription screen.",
-      "After midnight, the home widget shows the new day's to-dos right away.",
-      "Language and time zone changes apply without a restart.",
+      "Invite friends with a link. New friends get 7 days of Premium. You get 7 days and 1 friend slot when your friend completes to-dos on two different days within 14 days of joining.",
+      "Share invite links on KakaoTalk.",
+      "Track invited friends and rewards in “Collect paw prints.”",
+      "See your reward Premium end date on the Subscription screen.",
+      "Home screen widget shows the new day's to-dos after midnight.",
+      "Language and time zone changes apply instantly.",
       "Stability and security improvements."
     ]
   }
