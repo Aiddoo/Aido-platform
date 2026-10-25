@@ -22,7 +22,7 @@ export function useOpenSubscriptionInquiry() {
         diagnosticCode,
         installation: appVersionService.getInstallation(),
       });
-      router.push(createInquiryHref({ category: INQUIRY_CATEGORY.BUG_REPORT, content }));
+      router.push(createInquiryHref({ category: INQUIRY_CATEGORY.PAYMENT, content }));
     },
     [appVersionService],
   );
