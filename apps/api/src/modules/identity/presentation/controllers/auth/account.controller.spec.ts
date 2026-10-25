@@ -26,6 +26,7 @@ import {
 } from "#api/modules/identity/application/use-cases/auth/queries.public";
 import type { CurrentUserPayload } from "#api/modules/identity/presentation/decorators/auth/index";
 import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/auth.mapper";
+import { mockOf } from "#test/mocks/typed-mock";
 
 import type { DeleteAccountDto, UpdateProfileDto } from "../../schemas/auth/index.js";
 import { AccountController } from "./account.controller.js";
@@ -45,14 +46,14 @@ describe("AccountController — 계정 컨트롤러", () => {
     role: "USER",
   };
 
-  const mockRequest = {
+  const mockRequest = mockOf<Request>({
     ip: "127.0.0.1",
     headers: {
       "user-agent": "TestAgent/1.0",
       "x-device-name": "iPhone 15",
       "x-device-type": "mobile",
     },
-  } as unknown as Request;
+  });
 
   beforeEach(async () => {
     const { unit, unitRef } = await TestBed.solitary(AccountController).compile();

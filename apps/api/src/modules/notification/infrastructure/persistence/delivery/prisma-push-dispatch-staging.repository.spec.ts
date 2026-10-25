@@ -1,4 +1,4 @@
-import { createMockTransactionHost, nativeRows, projectedResult } from "#test/mocks/database.mock";
+import { createMockTransactionHost, nativeRows } from "#test/mocks/database.mock";
 import { createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
 import { PrismaPushDispatchStagingRepository } from "./prisma-push-dispatch-staging.repository.js";
@@ -20,7 +20,7 @@ describe("PrismaPushDispatchStagingRepository", () => {
 
   it("dispatch insert 결과를 같은 호출에서 전용 outbox로 staging한다", async () => {
     db.orm.public.PushDispatch.createAll.mockReturnValue(
-      projectedResult(nativeRows([{ id: 51, notificationId: 21 }])),
+      nativeRows([{ id: 51, notificationId: 21 }]),
     );
     db.orm.public.PushDispatchOutbox.createAndCount.mockResolvedValue(1);
 
@@ -43,7 +43,7 @@ describe("PrismaPushDispatchStagingRepository", () => {
 
   it("DB가 partial 결과를 반환하면 outbox insert 전에 명시적으로 실패한다", async () => {
     db.orm.public.PushDispatch.createAll.mockReturnValue(
-      projectedResult(nativeRows([{ id: 51, notificationId: 21 }])),
+      nativeRows([{ id: 51, notificationId: 21 }]),
     );
 
     await expect(

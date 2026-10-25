@@ -21,7 +21,6 @@ import {
   databaseFixture,
   databaseWriteExpectation,
   nativeRows,
-  projectedResult,
 } from "#test/mocks/database.mock";
 import { asMock, createMockDatabaseContext, type MockDatabaseContext } from "#test/mocks/index";
 
@@ -398,9 +397,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
         { event: "PASSWORD_CHANGED", _count: { event: 5 } },
       ];
       asMock(db.orm.public.SecurityLog.groupBy("event").aggregate).mockResolvedValue(
-        projectedResult(
-          groupByResult.map((value) => ({ event: value.event, count: value._count.event })),
-        ),
+        groupByResult.map((value) => ({ event: value.event, count: value._count.event })),
       );
 
       // When
@@ -429,9 +426,7 @@ describe("SecurityLogRepository — 보안 로그 리포지토리", () => {
         { event: "LOGIN_SUCCESS", _count: { event: 50 } },
       ];
       asMock(db.orm.public.SecurityLog.groupBy("event").aggregate).mockResolvedValue(
-        projectedResult(
-          groupByResult.map((value) => ({ event: value.event, count: value._count.event })),
-        ),
+        groupByResult.map((value) => ({ event: value.event, count: value._count.event })),
       );
 
       // When

@@ -64,7 +64,7 @@ export class FollowBuilder {
       id: `follow-${crypto.randomUUID().slice(0, 8)}`,
       followerId,
       followingId,
-      status: "PENDING" as FollowStatus,
+      status: "PENDING",
       sortOrder: 0,
       createdAt: now,
       updatedAt: now,

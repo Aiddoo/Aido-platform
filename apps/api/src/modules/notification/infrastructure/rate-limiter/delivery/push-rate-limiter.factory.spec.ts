@@ -1,4 +1,5 @@
 import type { Redis } from "ioredis";
+import { mock } from "vitest-mock-extended";
 
 import type { DatabaseService } from "#api/platform/database/database.service";
 
@@ -8,7 +9,7 @@ import { createPushRateLimiter } from "./push-rate-limiter.factory.js";
 import { RedisPushRateLimiter } from "./redis-push-rate-limiter.js";
 
 describe("createPushRateLimiter", () => {
-  const database = {} as DatabaseService;
+  const database = mock<DatabaseService>();
 
   it("PostgreSQL을 기본 운영 구현으로 생성한다", () => {
     expect(createPushRateLimiter({ backend: "postgres", database })).toBeInstanceOf(
@@ -17,7 +18,7 @@ describe("createPushRateLimiter", () => {
   });
 
   it("Redis/Valkey 호환 command client가 있을 때 Redis 구현을 생성한다", () => {
-    const redis = {} as Redis;
+    const redis = mock<Redis>();
     expect(createPushRateLimiter({ backend: "redis", database, redis })).toBeInstanceOf(
       RedisPushRateLimiter,
     );

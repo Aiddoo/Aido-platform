@@ -118,7 +118,10 @@ describe("할 일 리소스 제한 E2E", () => {
           .first(),
       );
       expect(firstTodo).toBeDefined();
-      const firstTodoId = firstTodo?.id as number;
+      if (firstTodo == null) {
+        throw new Error("첫 Todo가 있어야 한다");
+      }
+      const firstTodoId = firstTodo.id;
 
       // When - 1개 완료 후 새 Todo 생성
       await request(ctx.app.getHttpServer())

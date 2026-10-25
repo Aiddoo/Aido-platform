@@ -53,15 +53,12 @@ export interface PgBossClient {
   insert(name: string, jobs: JobInsert[], options: InsertOptions): Promise<string[] | null>;
   schedule(name: string, cron: string, data: object, options: ScheduleOptions): Promise<void>;
   unschedule(name: string, key?: string): Promise<void>;
-  findJobs<T extends JobData>(
-    name: string,
-    options?: FindJobsOptions,
-  ): Promise<JobWithMetadata<T>[]>;
+  findJobs(name: string, options?: FindJobsOptions): Promise<JobWithMetadata<JobData>[]>;
   cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown>;
-  work<T extends JobData>(
+  work(
     name: string,
     options: WorkOptions & { includeMetadata: true },
-    handler: (jobs: JobWithMetadata<T>[]) => Promise<unknown>,
+    handler: (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
   ): Promise<string>;
   getQueues(names?: string[]): Promise<QueueResult[]>;
 }
@@ -121,21 +118,18 @@ export class LazyPgBossClient implements PgBossClient {
     await (await this.ensureStarted()).unschedule(name, key);
   }
 
-  async findJobs<T extends JobData>(
-    name: string,
-    options?: FindJobsOptions,
-  ): Promise<JobWithMetadata<T>[]> {
-    return (await this.ensureStarted()).findJobs<T>(name, options);
+  async findJobs(name: string, options?: FindJobsOptions): Promise<JobWithMetadata<JobData>[]> {
+    return (await this.ensureStarted()).findJobs(name, options);
   }
 
   async cancel(name: string, ids: string[], options?: { db?: Db }): Promise<unknown> {
     return (await this.ensureStarted()).cancel(name, ids, options);
   }
 
-  async work<T extends JobData>(
+  async work(
     name: string,
     options: WorkOptions & { includeMetadata: true },
-    handler: (jobs: JobWithMetadata<T>[]) => Promise<unknown>,
+    handler: (jobs: JobWithMetadata<JobData>[]) => Promise<unknown>,
   ): Promise<string> {
     return (await this.ensureStarted()).work(name, options, handler);
   }
@@ -332,7 +326,7 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     options: WorkJobOptions,
   ): Promise<void> {
     await this.ensureQueue(queue, options.queuePolicy);
-    await this.boss.work<JobData>(
+    await this.boss.work(
       queue,
       {
         includeMetadata: true,

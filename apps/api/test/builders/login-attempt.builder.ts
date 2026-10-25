@@ -19,7 +19,7 @@ export class LoginAttemptBuilder {
     this.data = {
       id: idCounter++,
       email,
-      provider: "CREDENTIAL" as AccountProvider,
+      provider: "CREDENTIAL",
       ipAddress: "127.0.0.1",
       userAgent: "Mozilla/5.0 (Test Browser)",
       success: true,

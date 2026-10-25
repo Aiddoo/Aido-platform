@@ -60,13 +60,13 @@ function stableContract(value: unknown, parentKey?: string): unknown {
     return value;
   }
 
-  const record = value as Record<string, unknown>;
+  const children = new Map<string, unknown>(Object.entries(value));
   const isJsonSchemaPropertiesMap = parentKey === "properties";
   return Object.fromEntries(
-    Object.keys(record)
+    [...children.keys()]
       .filter((key) => isJsonSchemaPropertiesMap || !DOCUMENTATION_ONLY_FIELDS.has(key))
       .sort()
-      .map((key) => [key, stableContract(record[key], key)]),
+      .map((key) => [key, stableContract(children.get(key), key)]),
   );
 }
 
@@ -348,7 +348,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       const document = SwaggerModule.createDocument(ctx.app, config, {
         standardSchemaConverter: convertStandardSchema,
       });
-      const currentSchemas = (document.components?.schemas ?? {}) as Record<string, unknown>;
+      const currentSchemas: Record<string, unknown> = document.components?.schemas ?? {};
       const currentPaths = Object.fromEntries(
         Object.entries(document.paths).map(([route, contract]) => [
           route === "/health" ? route : route.replace(/^\/v1/, ""),
