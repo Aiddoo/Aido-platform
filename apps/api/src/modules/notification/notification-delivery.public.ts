@@ -13,6 +13,7 @@ export { SCHEDULER_CAMPAIGN_KEY } from "./domain/services/reminders/notification
 export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./domain/services/delivery/transactional-notification-campaign.js";
 export {
   createAiSuggestionNotificationMessage,
+  createInviteJoinedNotificationMessage,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,
   createPremiumGrantEndingNotificationMessage,

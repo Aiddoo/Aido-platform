@@ -155,6 +155,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       rotate: document.paths["/v1/invites/me/rotate"]?.post,
       invitees: document.paths["/v1/invites/me/invitees"]?.get,
       preview: document.paths["/v1/invites/{code}"]?.get,
+      redeem: document.paths["/v1/invites/{code}/redeem"]?.post,
     };
 
     // Then
@@ -164,6 +165,7 @@ describe("OpenAPI 계약 (e2e)", () => {
       "rotateInviteCode",
       "getInvitedFriends",
       "getInvitePreview",
+      "redeemInvite",
     ]);
     expect(operations.preview?.security).toBeUndefined();
     expect(operations.myInvite?.security).toEqual([{ bearer: [] }]);
@@ -173,6 +175,9 @@ describe("OpenAPI 계약 (e2e)", () => {
     expect(Object.keys(operations.preview?.responses ?? {})).not.toContain("401");
     expect(Object.keys(operations.rotate?.responses ?? {})).toEqual(
       expect.arrayContaining(["200", "401", "403", "429"]),
+    );
+    expect(Object.keys(operations.redeem?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "400", "401", "403", "404", "409", "410", "429"]),
     );
   });
 

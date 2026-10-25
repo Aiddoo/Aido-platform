@@ -7,4 +7,5 @@ export const SocialFriendLogEvent = {
   REORDERED: "social.friend.reordered",
   SEARCHED: "social.friend.searched",
   MILESTONE_CHECK_FAILED: "social.friend.milestone.check.failed",
+  FRIENDSHIP_ESTABLISHED: "social.friend.established",
 } as const;

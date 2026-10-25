@@ -29,8 +29,8 @@ export class PrismaRewardClaimRepository implements RewardClaimRepositoryPort {
   }
 
   async claimAll(claims: readonly RewardClaim[], claimedAt: Date): Promise<boolean> {
-    if (claims.length === 0) return true;
-    const inserted = await this.client.orm.public.RewardClaim.createAndCount(
+    if (claims.length === 0) return false;
+    const inserted = await this.client.orm.public.RewardClaim.createAll(
       claims.map((claim) =>
         encodeCreate("RewardClaim", {
           claimHash: claim.claimHash,
@@ -40,6 +40,14 @@ export class PrismaRewardClaimRepository implements RewardClaimRepositoryPort {
       ),
       { onConflict: "skip", conflictOn: ["claimHash"] },
     );
-    return inserted === claims.length;
+    if (inserted.length === claims.length) return true;
+    // 일부만 충돌하면 보상 없이 나머지 신원만 소모되므로 이 트랜잭션에서 넣은 행을 되돌린다.
+    // 아직 커밋 전이라 다른 트랜잭션은 이 행을 보지 못한다
+    if (inserted.length > 0) {
+      await this.client.orm.public.RewardClaim.where((claim) =>
+        claim.claimHash.in(inserted.map((row) => row.claimHash)),
+      ).deleteAndCount();
+    }
+    return false;
   }
 }

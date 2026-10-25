@@ -126,6 +126,25 @@ export function createFollowAcceptedNotificationMessage({
   });
 }
 
+export interface InviteJoinedNotificationInput extends LocalizedVariantInput {
+  readonly inviteeName: string;
+}
+
+export function createInviteJoinedNotificationMessage({
+  inviteeName,
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: InviteJoinedNotificationInput): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_JOINED,
+    variables: {
+      inviteeName: createNotificationLabelPreview({ label: inviteeName, locale }),
+    },
+    variantContext,
+    templateKey: "invite.joined",
+  });
+}
+
 export function createNudgeReceivedNotificationMessage({
   senderName,
   todoTitle,

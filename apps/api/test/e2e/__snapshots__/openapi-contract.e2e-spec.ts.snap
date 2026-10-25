@@ -6940,6 +6940,279 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "RedeemInviteDto": {
+      "example": {
+        "installationId": "6F9619FF-8B86-D011-B42D-00C04FC964FF",
+      },
+      "properties": {
+        "installationId": {
+          "description": "앱 설치 식별자 (iOS IDFV 또는 Android ID, 최대 128자, 같은 기기 중복 보상 방지용)",
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string",
+        },
+      },
+      "type": "object",
+    },
+    "RedeemInviteResponseDto": {
+      "description": "초대 수락 결과 (outcome 판별 유니온)",
+      "example": {
+        "friendship": "FRIENDS",
+        "inviter": {
+          "name": "매튜",
+          "profileImage": "orange_tabby",
+          "userId": "clz7x5p8k0001qz0z8z8z8z8z",
+          "userTag": "MATT2025",
+        },
+        "outcome": "REDEEMED",
+        "rewards": [
+          {
+            "quantity": 7,
+            "rewardType": "PREMIUM_DAYS",
+          },
+        ],
+      },
+      "oneOf": [
+        {
+          "description": "신규 사용자가 초대를 수락함",
+          "properties": {
+            "friendship": {
+              "description": "초대 뒤 친구 상태 (FRIENDS: 친구가 됨, REQUESTED: 친구 요청만 보냄)",
+              "enum": [
+                "FRIENDS",
+                "REQUESTED",
+              ],
+              "type": "string",
+            },
+            "inviter": {
+              "description": "초대한 사람 요약 (환영 화면과 친구 화면 이동용)",
+              "properties": {
+                "name": {
+                  "description": "사용자 이름 (미설정 시 null)",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "profileImage": {
+                  "description": "프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "userId": {
+                  "description": "초대한 사람 사용자 ID (CUID 25자)",
+                  "format": "cuid",
+                  "pattern": "^[cC][0-9a-z]{6,}$",
+                  "type": "string",
+                },
+                "userTag": {
+                  "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                  "maxLength": 8,
+                  "minLength": 8,
+                  "type": "string",
+                },
+              },
+              "required": [
+                "name",
+                "profileImage",
+                "userId",
+                "userTag",
+              ],
+              "type": "object",
+            },
+            "outcome": {
+              "enum": [
+                "REDEEMED",
+              ],
+              "type": "string",
+            },
+            "rewards": {
+              "description": "초대받은 사람이 받은 보상 (같은 기기·같은 신원으로 이미 받았으면 빈 배열)",
+              "items": {
+                "description": "보상 (rewardType 판별 유니온)",
+                "example": {
+                  "quantity": 7,
+                  "rewardType": "PREMIUM_DAYS",
+                },
+                "oneOf": [
+                  {
+                    "properties": {
+                      "quantity": {
+                        "description": "프리미엄 일수 (양의 정수)",
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "rewardType": {
+                        "enum": [
+                          "PREMIUM_DAYS",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "rewardType",
+                      "quantity",
+                    ],
+                    "type": "object",
+                  },
+                  {
+                    "properties": {
+                      "quantity": {
+                        "description": "늘어나는 친구 자리 수 (양의 정수)",
+                        "exclusiveMinimum": true,
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer",
+                      },
+                      "rewardType": {
+                        "enum": [
+                          "FRIEND_SLOT",
+                        ],
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "rewardType",
+                      "quantity",
+                    ],
+                    "type": "object",
+                  },
+                ],
+              },
+              "type": "array",
+            },
+          },
+          "required": [
+            "outcome",
+            "inviter",
+            "friendship",
+            "rewards",
+          ],
+          "type": "object",
+        },
+        {
+          "description": "기존 사용자가 보상 없이 친구를 맺음",
+          "properties": {
+            "friendship": {
+              "description": "초대 뒤 친구 상태 (FRIENDS: 친구가 됨, REQUESTED: 친구 요청만 보냄)",
+              "enum": [
+                "FRIENDS",
+                "REQUESTED",
+              ],
+              "type": "string",
+            },
+            "inviter": {
+              "description": "초대한 사람 요약 (환영 화면과 친구 화면 이동용)",
+              "properties": {
+                "name": {
+                  "description": "사용자 이름 (미설정 시 null)",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "profileImage": {
+                  "description": "프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "userId": {
+                  "description": "초대한 사람 사용자 ID (CUID 25자)",
+                  "format": "cuid",
+                  "pattern": "^[cC][0-9a-z]{6,}$",
+                  "type": "string",
+                },
+                "userTag": {
+                  "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                  "maxLength": 8,
+                  "minLength": 8,
+                  "type": "string",
+                },
+              },
+              "required": [
+                "name",
+                "profileImage",
+                "userId",
+                "userTag",
+              ],
+              "type": "object",
+            },
+            "outcome": {
+              "enum": [
+                "CONNECTED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "outcome",
+            "inviter",
+            "friendship",
+          ],
+          "type": "object",
+        },
+        {
+          "description": "이미 친구라서 바뀐 것이 없음",
+          "properties": {
+            "inviter": {
+              "description": "초대한 사람 요약 (환영 화면과 친구 화면 이동용)",
+              "properties": {
+                "name": {
+                  "description": "사용자 이름 (미설정 시 null)",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "profileImage": {
+                  "description": "프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)",
+                  "type": [
+                    "string",
+                    "null",
+                  ],
+                },
+                "userId": {
+                  "description": "초대한 사람 사용자 ID (CUID 25자)",
+                  "format": "cuid",
+                  "pattern": "^[cC][0-9a-z]{6,}$",
+                  "type": "string",
+                },
+                "userTag": {
+                  "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                  "maxLength": 8,
+                  "minLength": 8,
+                  "type": "string",
+                },
+              },
+              "required": [
+                "name",
+                "profileImage",
+                "userId",
+                "userTag",
+              ],
+              "type": "object",
+            },
+            "outcome": {
+              "enum": [
+                "ALREADY_FRIENDS",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "outcome",
+            "inviter",
+          ],
+          "type": "object",
+        },
+      ],
+    },
     "RefreshTokensDto": {
       "description": "토큰 갱신 응답",
       "example": {
@@ -27297,6 +27570,425 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
         },
       },
       "summary": "초대 미리보기",
+      "tags": [
+        "Invites",
+      ],
+    },
+  },
+  "/v1/invites/{code}/redeem": {
+    "post": {
+      "description": "초대한 사람과 친구를 맺습니다. 결과는 outcome으로 구분합니다.
+
+- REDEEMED: 가입 7일 안의 새 사용자. 같은 기기·같은 신원으로 처음이면 보상을 받습니다.
+- CONNECTED: 기존 사용자. 보상 없이 친구를 맺습니다.
+- ALREADY_FRIENDS: 이미 친구라 바뀐 것이 없습니다.
+
+초대한 사람의 친구 자리가 꽉 차 있으면 friendship은 REQUESTED입니다. 다시 요청해도 수락 기록은 한 번만 남습니다. 사용 시작을 세는 날짜는 수락할 때의 X-Timezone으로 고정합니다. 사용자마다 분당 10회까지입니다. 기능이 꺼져 있으면 INVITE_2105입니다.",
+      "operationId": "redeemInvite",
+      "parameters": [
+        {
+          "description": "초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)",
+          "in": "path",
+          "name": "code",
+          "required": true,
+          "schema": {
+            "description": "초대 코드 (공백·하이픈 제거와 대문자 변환 뒤 6자 검증, 예: k7m2-qx → K7M2QX)",
+            "type": "string",
+          },
+        },
+      ],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RedeemInviteDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/RedeemInviteResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "내 초대 코드는 쓸 수 없어요.
+
+잘못된 요청입니다",
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "example": "INVITE_2103",
+                    "type": "string",
+                  },
+                  "details": {
+                    "example": null,
+                    "nullable": true,
+                    "type": "object",
+                  },
+                  "message": {
+                    "example": "내 초대 코드는 쓸 수 없어요.",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "code",
+                  "message",
+                ],
+                "type": "object",
+              },
+              "success": {
+                "example": false,
+                "type": "boolean",
+              },
+              "timestamp": {
+                "example": 1700000000000,
+                "type": "number",
+              },
+            },
+            "required": [
+              "success",
+              "error",
+              "timestamp",
+            ],
+            "type": "object",
+          },
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "403": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "INVITE_2105",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "지금은 친구 초대를 쓸 수 없어요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "친구 자리가 꽉 차서 친구를 맺을 수 없어요.
+
+지금은 친구 초대를 쓸 수 없어요.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "INVITE_2101",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+        },
+        "409": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "INVITE_2104",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "이미 다른 초대를 수락했어요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "이미 다른 초대를 수락했어요.",
+        },
+        "410": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "INVITE_2102",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "초대 링크가 바뀌었어요. 친구에게 새 링크를 받아 주세요.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0001",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "초대 수락",
       "tags": [
         "Invites",
       ],

@@ -2,6 +2,7 @@ import { createNotificationLabelPreview } from "./notification-copy.renderer.js"
 import {
   createBillingIssueNotificationMessage,
   createEveningReminderNotificationMessage,
+  createInviteJoinedNotificationMessage,
   createMorningReminderNotificationMessage,
   createNudgeReceivedNotificationMessage,
   createOnboardingNotificationMessage,
@@ -208,6 +209,23 @@ describe("알림 문구 생성", () => {
       });
 
       expect(`${message.title} ${message.body}`).toContain(text);
+    },
+  );
+
+  it.each([
+    { inviteeName: "매튜", expected: "매튜가 내 초대로 친구가 됐어 🐾" },
+    { inviteeName: "존", expected: "존이 내 초대로 친구가 됐어 🐾" },
+  ])(
+    "초대 수락 알림은 다른 소셜 알림처럼 반말로 이름에 조사를 붙인다 ($inviteeName)",
+    ({ inviteeName, expected }) => {
+      // Given
+      const input = { inviteeName, locale: "ko" as const, variantContext: VARIANT_CONTEXT };
+
+      // When
+      const message = createInviteJoinedNotificationMessage(input);
+
+      // Then
+      expect(message).toMatchObject({ title: expected, body: "서로의 하루를 응원해봐" });
     },
   );
 

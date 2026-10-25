@@ -50,6 +50,10 @@ export class FollowReader implements FollowReaderPort {
     );
   }
 
+  isCurrentMutualFriend(userId: string, targetUserId: string): Promise<boolean> {
+    return this.#dependencies.followRepository.isMutualFriend(userId, targetUserId);
+  }
+
   /** 권한을 판단하는 쓰기 경로는 캐시 대신 현재 친구 관계를 조회한다. */
   getCurrentMutualFriendIds(userId: string): Promise<string[]> {
     return this.#dependencies.followRepository.getMutualFriendIds(userId);

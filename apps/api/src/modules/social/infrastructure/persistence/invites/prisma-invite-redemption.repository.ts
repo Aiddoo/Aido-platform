@@ -51,13 +51,15 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
     const user = decodeRecord(
       "User",
       await this.client.orm.public.User.where((row) => row.id.eq(inviteeId))
-        .select("id", "createdAt", "email", "emailVerifiedAt")
+        .select("id", "userTag", "createdAt", "email", "emailVerifiedAt")
+        .include("profile", (profile) => profile.select("name"))
         .include("accounts", (account) => account.select("provider", "providerAccountId"))
         .first(),
     );
     if (user == null) return null;
     return {
       userId: user.id,
+      displayName: user.profile?.name ?? user.userTag,
       createdAt: user.createdAt,
       verifiedEmail: user.emailVerifiedAt == null ? null : user.email,
       providerAccounts: user.accounts.map((account) => ({
@@ -65,15 +67,6 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         providerAccountId: account.providerAccountId,
       })),
     };
-  }
-
-  async existsByInviteeId(inviteeId: string): Promise<boolean> {
-    const row = await this.client.orm.public.InviteRedemption.where((redemption) =>
-      redemption.inviteeId.eq(inviteeId),
-    )
-      .select("id")
-      .first();
-    return row != null;
   }
 
   async create(plan: InviteRedemptionCreationPlan): Promise<InviteRedemption | null> {

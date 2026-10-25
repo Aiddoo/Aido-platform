@@ -3,6 +3,7 @@ import {
   invitedFriendsListResponseSchema,
   invitePreviewResponseSchema,
   myInviteResponseSchema,
+  redeemInviteResponseSchema,
 } from "@aido/api";
 import type { RedemptionRejectionReason, RedemptionStatus } from "@aido/api/vocabulary";
 import type { z } from "zod";
@@ -36,3 +37,8 @@ export type InvitedFriendsListResponseDto = Omit<InvitedFriendsListResponse, "it
     readonly rejectionReason: RedemptionRejectionReason | null;
   })[];
 };
+
+export const RedeemInviteResponseDto = redeemInviteResponseSchema.meta({
+  id: "RedeemInviteResponseDto",
+});
+export type RedeemInviteResponseDto = z.infer<typeof RedeemInviteResponseDto>;

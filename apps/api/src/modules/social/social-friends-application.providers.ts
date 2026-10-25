@@ -2,13 +2,18 @@ import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
 import { PaginationService } from "#api/shared/application/pagination/index";
-import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
+import {
+  AFTER_COMMIT_TASK_REGISTRY,
+  MUTATION_LOCK,
+  UNIT_OF_WORK,
+} from "#api/shared/application/ports/index";
 
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FOLLOW_NOTIFIER } from "./application/ports/friends/follow-notifier.port.js";
 import { FOLLOW_REPOSITORY } from "./application/ports/friends/follow.repository.port.js";
 import { FollowReader } from "./application/services/friends/follow.reader.js";
 import { FriendshipEffects } from "./application/services/friends/friendship-effects.service.js";
+import { FriendshipEstablisher } from "./application/services/friends/friendship-establisher.service.js";
 import { AcceptFriendRequest } from "./application/use-cases/friends/accept-friend-request.use-case.js";
 import { GetFriendResourceLimit } from "./application/use-cases/friends/get-friend-resource-limit.use-case.js";
 import { GetFriends } from "./application/use-cases/friends/get-friends.use-case.js";
@@ -47,6 +52,38 @@ export const friendshipEffectsProvider: FactoryProvider<FriendshipEffects> = {
       cache,
       notifier,
       logger: new Logger(FriendshipEffects.name),
+    }),
+};
+
+export const friendshipEstablisherProvider: FactoryProvider<FriendshipEstablisher> = {
+  provide: FriendshipEstablisher,
+  inject: [
+    FOLLOW_REPOSITORY,
+    ENTITLEMENT_READER,
+    FOLLOW_NOTIFIER,
+    FriendshipEffects,
+    MUTATION_LOCK,
+    UNIT_OF_WORK,
+    AFTER_COMMIT_TASK_REGISTRY,
+  ],
+  useFactory: (
+    followRepository: ConstructorParameters<typeof FriendshipEstablisher>[0]["followRepository"],
+    entitlementReader: ConstructorParameters<typeof FriendshipEstablisher>[0]["entitlementReader"],
+    notifier: ConstructorParameters<typeof FriendshipEstablisher>[0]["notifier"],
+    effects: ConstructorParameters<typeof FriendshipEstablisher>[0]["effects"],
+    mutationLock: ConstructorParameters<typeof FriendshipEstablisher>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof FriendshipEstablisher>[0]["unitOfWork"],
+    afterCommitTasks: ConstructorParameters<typeof FriendshipEstablisher>[0]["afterCommitTasks"],
+  ) =>
+    new FriendshipEstablisher({
+      followRepository,
+      entitlementReader,
+      notifier,
+      effects,
+      mutationLock,
+      unitOfWork,
+      afterCommitTasks,
+      logger: new Logger(FriendshipEstablisher.name),
     }),
 };
 

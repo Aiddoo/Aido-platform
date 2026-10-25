@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 
@@ -8,7 +8,10 @@ import {
   type CurrentUserPayload,
   Public,
 } from "#api/modules/identity/identity-auth-http.public";
+import { Timezone } from "#api/platform/http/decorators/index";
 import {
+  ApiBadRequestError,
+  ApiConflictError,
   ApiDoc,
   ApiForbiddenError,
   ApiGoneError,
@@ -24,6 +27,7 @@ import { GetInviteAvailability } from "../../../application/use-cases/invites/ge
 import { GetInvitedFriends } from "../../../application/use-cases/invites/get-invited-friends.use-case.js";
 import { GetMyInvite } from "../../../application/use-cases/invites/get-my-invite.use-case.js";
 import { PreviewInvite } from "../../../application/use-cases/invites/preview-invite.use-case.js";
+import { RedeemInvite } from "../../../application/use-cases/invites/redeem-invite.use-case.js";
 import { RotateInviteCode } from "../../../application/use-cases/invites/rotate-invite-code.use-case.js";
 import { InviteMapper } from "../../mappers/invites/invite.mapper.js";
 import {
@@ -33,6 +37,8 @@ import {
   InvitedFriendsListResponseDto,
   InvitePreviewResponseDto,
   MyInviteResponseDto,
+  RedeemInviteDto,
+  RedeemInviteResponseDto,
 } from "../../schemas/invites/index.js";
 
 const THROTTLED_DESCRIPTION = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
@@ -47,6 +53,7 @@ export class InviteController {
     private readonly rotateInviteCodeUseCase: RotateInviteCode,
     private readonly getInvitedFriendsUseCase: GetInvitedFriends,
     private readonly previewInviteUseCase: PreviewInvite,
+    private readonly redeemInviteUseCase: RedeemInvite,
   ) {}
 
   @Get("availability")
@@ -141,5 +148,45 @@ export class InviteController {
   ): Promise<InvitePreviewResponseDto> {
     const inviter = await this.previewInviteUseCase.execute({ code: params.code });
     return InviteMapper.toPreviewDto(inviter);
+  }
+
+  @Post(":code/redeem")
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ThrottleByUser()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @ApiDoc({
+    summary: "초대 수락",
+    operationId: "redeemInvite",
+    description: `초대한 사람과 친구를 맺습니다. 결과는 outcome으로 구분합니다.
+
+- REDEEMED: 가입 7일 안의 새 사용자. 같은 기기·같은 신원으로 처음이면 보상을 받습니다.
+- CONNECTED: 기존 사용자. 보상 없이 친구를 맺습니다.
+- ALREADY_FRIENDS: 이미 친구라 바뀐 것이 없습니다.
+
+초대한 사람의 친구 자리가 꽉 차 있으면 friendship은 REQUESTED입니다. 다시 요청해도 수락 기록은 한 번만 남습니다. 사용 시작을 세는 날짜는 수락할 때의 X-Timezone으로 고정합니다. 사용자마다 분당 10회까지입니다. 기능이 꺼져 있으면 INVITE_2105입니다.`,
+  })
+  @ApiSuccessResponse({ type: RedeemInviteResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiNotFoundError(ErrorCode.INVITE_2101)
+  @ApiGoneError(ErrorCode.INVITE_2102)
+  @ApiBadRequestError(ErrorCode.INVITE_2103)
+  @ApiConflictError(ErrorCode.INVITE_2104)
+  @ApiForbiddenError(ErrorCode.INVITE_2105)
+  @ApiForbiddenError(ErrorCode.INVITE_2106)
+  @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
+  async redeem(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param({ schema: InviteCodeParamDto }) params: InviteCodeParamDto,
+    @Body({ schema: RedeemInviteDto }) body: RedeemInviteDto,
+    @Timezone() timezone: string,
+  ): Promise<RedeemInviteResponseDto> {
+    const result = await this.redeemInviteUseCase.execute({
+      inviteeId: user.userId,
+      code: params.code,
+      installationId: body.installationId,
+      timezone,
+    });
+    return InviteMapper.toRedeemDto(result);
   }
 }

@@ -246,6 +246,13 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("친구가 한 명 더 생겼어", `${senderName}에게 가볍게 인사해봐 🐾`),
     ],
   },
+  INVITE_JOINED: {
+    copy: ({ inviteeName }) =>
+      copy(
+        `${attachJosa(inviteeName, "이/가")} 내 초대로 친구가 됐어 🐾`,
+        "서로의 하루를 응원해봐",
+      ),
+  },
   NUDGE_RECEIVED: {
     variants: [
       ({ senderName, todoTitle }) =>

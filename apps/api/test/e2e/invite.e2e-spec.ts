@@ -232,6 +232,10 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
         request(ctx.app.getHttpServer()).post("/v1/invites/me/rotate").set("Authorization", auth),
         request(ctx.app.getHttpServer()).get("/v1/invites/me/invitees").set("Authorization", auth),
         request(ctx.app.getHttpServer()).get("/v1/invites/K7M2QX"),
+        request(ctx.app.getHttpServer())
+          .post("/v1/invites/K7M2QX/redeem")
+          .set("Authorization", auth)
+          .send({}),
       ]);
       const availability = await request(ctx.app.getHttpServer())
         .get("/v1/invites/availability")

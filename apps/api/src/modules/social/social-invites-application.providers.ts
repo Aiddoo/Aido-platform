@@ -1,16 +1,21 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
+import { FOLLOW_READER, FRIENDSHIP_ESTABLISHER } from "#api/modules/social/social-friends.public";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
+import { CLAIM_HASHER } from "./application/ports/invites/claim-hasher.port.js";
+import { INVITE_NOTIFIER } from "./application/ports/invites/invite-notifier.port.js";
 import { INVITE_REDEMPTION_REPOSITORY } from "./application/ports/invites/invite-redemption.repository.port.js";
 import { INVITE_CONFIG } from "./application/ports/invites/invite.config.port.js";
 import { INVITE_REPOSITORY } from "./application/ports/invites/invite.repository.port.js";
+import { REWARD_CLAIM_REPOSITORY } from "./application/ports/invites/reward-claim.repository.port.js";
 import { REWARD_GRANT_REPOSITORY } from "./application/ports/invites/reward-grant.repository.port.js";
 import { MyInviteReader } from "./application/services/invites/my-invite.reader.js";
 import { GetInviteAvailability } from "./application/use-cases/invites/get-invite-availability.use-case.js";
 import { GetInvitedFriends } from "./application/use-cases/invites/get-invited-friends.use-case.js";
 import { GetMyInvite } from "./application/use-cases/invites/get-my-invite.use-case.js";
 import { PreviewInvite } from "./application/use-cases/invites/preview-invite.use-case.js";
+import { RedeemInvite } from "./application/use-cases/invites/redeem-invite.use-case.js";
 import { RotateInviteCode } from "./application/use-cases/invites/rotate-invite-code.use-case.js";
 
 export const myInviteReaderProvider: FactoryProvider<MyInviteReader> = {
@@ -90,4 +95,50 @@ export const getInvitedFriendsProvider: FactoryProvider<GetInvitedFriends> = {
     >[0]["inviteRedemptionRepository"],
     inviteConfig: ConstructorParameters<typeof GetInvitedFriends>[0]["inviteConfig"],
   ) => new GetInvitedFriends({ inviteRedemptionRepository, inviteConfig }),
+};
+
+export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
+  provide: RedeemInvite,
+  inject: [
+    INVITE_REPOSITORY,
+    INVITE_REDEMPTION_REPOSITORY,
+    REWARD_CLAIM_REPOSITORY,
+    REWARD_GRANT_REPOSITORY,
+    FOLLOW_READER,
+    FRIENDSHIP_ESTABLISHER,
+    CLAIM_HASHER,
+    INVITE_NOTIFIER,
+    INVITE_CONFIG,
+    MUTATION_LOCK,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    inviteRepository: ConstructorParameters<typeof RedeemInvite>[0]["inviteRepository"],
+    inviteRedemptionRepository: ConstructorParameters<
+      typeof RedeemInvite
+    >[0]["inviteRedemptionRepository"],
+    rewardClaimRepository: ConstructorParameters<typeof RedeemInvite>[0]["rewardClaimRepository"],
+    rewardGrantRepository: ConstructorParameters<typeof RedeemInvite>[0]["rewardGrantRepository"],
+    followReader: ConstructorParameters<typeof RedeemInvite>[0]["followReader"],
+    friendshipEstablisher: ConstructorParameters<typeof RedeemInvite>[0]["friendshipEstablisher"],
+    claimHasher: ConstructorParameters<typeof RedeemInvite>[0]["claimHasher"],
+    notifier: ConstructorParameters<typeof RedeemInvite>[0]["notifier"],
+    inviteConfig: ConstructorParameters<typeof RedeemInvite>[0]["inviteConfig"],
+    mutationLock: ConstructorParameters<typeof RedeemInvite>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof RedeemInvite>[0]["unitOfWork"],
+  ) =>
+    new RedeemInvite({
+      inviteRepository,
+      inviteRedemptionRepository,
+      rewardClaimRepository,
+      rewardGrantRepository,
+      followReader,
+      friendshipEstablisher,
+      claimHasher,
+      notifier,
+      inviteConfig,
+      mutationLock,
+      unitOfWork,
+      logger: new Logger(RedeemInvite.name),
+    }),
 };

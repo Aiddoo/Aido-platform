@@ -1,6 +1,7 @@
 import type { InviterRewardMilestone, RewardAmount } from "@aido/api";
 import {
   INVITE_REWARD_CAPS,
+  INVITEE_REWARDS,
   INVITER_REWARD_MILESTONES,
   REWARD_TYPE,
   type RewardType,
@@ -8,6 +9,9 @@ import {
 import { sumBy } from "es-toolkit";
 
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
+
+import type { InviteRedemption } from "../../aggregates/invites/invite-redemption.aggregate.js";
+import type { RewardGrantPlan } from "../../types/invites/reward-grant.types.js";
 
 /** 월 상한(PREMIUM_DAYS_PER_30_DAYS)을 세는 rolling 기간. UTC 시각 기준이다. */
 const INVITE_REWARD_CAP_WINDOW_DAYS = 30;
@@ -108,6 +112,26 @@ function sumRewards(rewards: readonly RewardAmount[]): RewardAmount[] {
 }
 
 export const InviteRewardPolicy = {
+  /** 초대받은 사람 보상. 같은 기기·같은 신원으로 받은 적이 있으면 받지 않는다. */
+  planInviteeRewards(
+    redemption: InviteRedemption,
+    isRewardClaimed: boolean,
+  ): { readonly rewards: readonly RewardAmount[]; readonly plans: readonly RewardGrantPlan[] } {
+    if (!isRewardClaimed) {
+      return { rewards: [], plans: [] };
+    }
+    return {
+      rewards: INVITEE_REWARDS,
+      plans: INVITEE_REWARDS.map((reward) => ({
+        recipientId: redemption.inviteeId,
+        sourceType: "INVITE_REDEMPTION",
+        sourceId: redemption.id,
+        rewardType: reward.rewardType,
+        quantity: reward.quantity,
+      })),
+    };
+  },
+
   summarize(totals: readonly InviterRewardTotal[]): InviterRewardSummary {
     const premium = totals.filter((total) => total.rewardType === REWARD_TYPE.PREMIUM_DAYS);
     return {

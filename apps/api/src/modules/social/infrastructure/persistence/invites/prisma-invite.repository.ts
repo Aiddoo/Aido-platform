@@ -52,13 +52,15 @@ export class PrismaInviteRepository implements InviteRepositoryPort {
         .select(...INVITE_COLUMNS)
         .include("inviter", (user) =>
           user
-            .select("id", "userTag")
+            .select("id", "userTag", "deletedAt")
             .include("profile", (profile) => profile.select("name", "profileImage")),
         )
         .first(),
     );
     if (row == null) return null;
     const inviter = requireRecord(row.inviter);
+    // 탈퇴 대기 중인 사람의 초대는 없는 코드와 같게 다뤄 계정 상태를 드러내지 않는다
+    if (inviter.deletedAt !== null) return null;
     return {
       invite: Invite.reconstitute(row),
       inviter: {

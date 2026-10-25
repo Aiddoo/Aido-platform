@@ -1,14 +1,17 @@
 import { INVITE_LINK_BASE_URL } from "@aido/api/vocabulary";
+import { match } from "ts-pattern";
 
 import { toISOString, toISOStringOrNull } from "#api/shared/domain/date/utils/format";
 
 import type { InviterProfile } from "../../../application/ports/invites/invite.repository.port.js";
 import type { MyInviteView } from "../../../application/read-models/invites/my-invite.read-model.js";
 import type { InvitedFriendsPage } from "../../../application/use-cases/invites/get-invited-friends.use-case.js";
+import type { RedeemInviteResult } from "../../../application/use-cases/invites/redeem-invite.use-case.js";
 import type {
   InvitedFriendsListResponseDto,
   InvitePreviewResponseDto,
   MyInviteResponseDto,
+  RedeemInviteResponseDto,
 } from "../../schemas/invites/index.js";
 
 function toInviteLink(code: string): string {
@@ -40,6 +43,27 @@ export const InviteMapper = {
     return {
       inviter: { name: inviter.name, profileImage: inviter.profileImage },
     };
+  },
+
+  toRedeemDto(result: RedeemInviteResult): RedeemInviteResponseDto {
+    return match(result)
+      .returnType<RedeemInviteResponseDto>()
+      .with({ outcome: "REDEEMED" }, (redeemed) => ({
+        outcome: "REDEEMED",
+        inviter: redeemed.inviter,
+        friendship: redeemed.friendship,
+        rewards: [...redeemed.rewards],
+      }))
+      .with({ outcome: "CONNECTED" }, (connected) => ({
+        outcome: "CONNECTED",
+        inviter: connected.inviter,
+        friendship: connected.friendship,
+      }))
+      .with({ outcome: "ALREADY_FRIENDS" }, (unchanged) => ({
+        outcome: "ALREADY_FRIENDS",
+        inviter: unchanged.inviter,
+      }))
+      .exhaustive();
   },
 
   toInvitedFriendsDto(page: InvitedFriendsPage): InvitedFriendsListResponseDto {

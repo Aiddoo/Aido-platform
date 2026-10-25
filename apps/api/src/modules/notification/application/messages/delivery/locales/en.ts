@@ -238,6 +238,10 @@ export const SOCIAL_TEMPLATES = {
       ({ senderName }) => copy("One more friend in Aido", `Say hello to ${senderName} 🐾`),
     ],
   },
+  INVITE_JOINED: {
+    copy: ({ inviteeName }) =>
+      copy(`${inviteeName} accepted your invite 🐾`, "You’re now friends. Cheer each other on"),
+  },
   NUDGE_RECEIVED: {
     variants: [
       ({ senderName, todoTitle }) =>
