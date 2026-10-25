@@ -603,14 +603,24 @@ TodoCommentConversationList.Error = function ErrorFallback({ reset }: QueryError
   );
 };
 
+/**
+ * focus 대화는 고른 댓글의 thread를 읽으므로 비어 있다면 그 댓글이 삭제됐거나 볼 수 없게 된 경우다.
+ * 알림으로 들어온 사용자가 "첫 댓글을 남겨보세요"를 보지 않게 댓글 목록으로 돌아가는 길을 준다.
+ */
 TodoCommentConversationList.Empty = function Empty() {
   const { t } = useTranslation('todoComment');
+  const [_commentRoute, updateCommentRoute] = useTodoCommentRoute();
   return (
     <Box py={48}>
       <Result
         icon={<ChatBubbleIcon width={72} height={72} colorClassName="text-gray-4" />}
-        title={t('list.emptyTitle')}
-        description={t('list.emptyDescription')}
+        title={t('list.missingTitle')}
+        description={t('list.missingDescription')}
+        button={
+          <Result.Button onPress={updateCommentRoute.showOverview}>
+            {t('list.showAllComments')}
+          </Result.Button>
+        }
       />
     </Box>
   );
