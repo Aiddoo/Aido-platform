@@ -9,6 +9,7 @@
   },
   "toast": {
     "purchaseSuccess": "You're subscribed!",
+    "purchaseSyncPending": "It may take a moment for your payment to show up",
     "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",

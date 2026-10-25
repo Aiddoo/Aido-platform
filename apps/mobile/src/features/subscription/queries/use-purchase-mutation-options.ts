@@ -12,6 +12,7 @@ import { match } from 'ts-pattern';
 import { PremiumAccessPolicy } from '../domains/premium-access.model';
 import { useOpenSubscriptionInquiry } from '../hooks/use-open-subscription-inquiry';
 import { toSubscriptionActionFailure } from '../utils/view-models/subscription-failure.view-model';
+import { syncMeUntilStorePremium } from './subscription-cache';
 
 export const usePurchaseMutationOptions = () => {
   const subscriptionService = useSubscriptionService();
@@ -23,17 +24,23 @@ export const usePurchaseMutationOptions = () => {
   const queryClient = useQueryClient();
 
   return mutationOptions({
+    // 결제 전 출처를 기억해 둔다. 반영된 뒤에는 STORE라 보상 기간 중 결제였는지 알 수 없다
+    onMutate: () => ({ previousAccess: getCachedMe(queryClient)?.premiumAccess }),
+    // 서버가 결제를 반영할 때까지 기다리는 동안에도 결제 중으로 두어 버튼을 잠근다
     mutationFn: async (identifier: string) => {
-      const result = await subscriptionService.purchase(identifier);
-      return unwrap(result);
+      const hasStoreEntitlement = unwrap(await subscriptionService.purchase(identifier));
+      return hasStoreEntitlement && (await syncMeUntilStorePremium(queryClient));
     },
-    onSuccess: (_data, identifier) => {
+    onSuccess: (isReflected, identifier, context) => {
       trackEvent('subscription_started', { product_id: identifier });
-      // 캐시 동기화는 RevenueCatProvider의 CustomerInfo 리스너가 전담
       notifySuccess();
+      if (!isReflected) {
+        toast.toast(t('subscription:toast.purchaseSyncPending'));
+        return;
+      }
       toast.success(
         t(
-          `subscription:toast.${PremiumAccessPolicy.purchaseSuccessMessage(getCachedMe(queryClient)?.premiumAccess)}`,
+          `subscription:toast.${PremiumAccessPolicy.purchaseSuccessMessage(context.previousAccess)}`,
         ),
       );
     },

@@ -9,6 +9,7 @@
   },
   "toast": {
     "purchaseSuccess": "구독이 완료되었어요!",
+    "purchaseSyncPending": "결제가 반영되기까지 잠시 걸릴 수 있어요",
     "paymentPending": "결제 승인 대기 중이에요. 승인 후 자동으로 반영돼요.",
     "restoreSuccess": "구매가 복원되었어요!",
     "restoreEmpty": "복원할 구매 내역이 없어요",

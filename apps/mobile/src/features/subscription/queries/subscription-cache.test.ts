@@ -7,7 +7,7 @@ import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
 import { createTestQueryClient } from '@src/shared/__tests__/render-ui';
 import type { QueryClient } from '@tanstack/react-query';
 
-import { watchPremiumEntitlementChanges } from './subscription-cache';
+import { syncMeUntilStorePremium, watchPremiumEntitlementChanges } from './subscription-cache';
 
 const DEPENDENT_KEYS = [
   NUDGE_QUERY_KEYS.limit(),
@@ -100,5 +100,74 @@ describe('watchPremiumEntitlementChanges', () => {
 
     // Then
     expect(invalidatedDependentKeys(queryClient)).toEqual([]);
+  });
+});
+
+describe('syncMeUntilStorePremium', () => {
+  const STORE_ME = toUser(
+    createCurrentUserDto({
+      subscriptionStatus: 'ACTIVE',
+      subscriptionExpiresAt: '2026-11-12T05:30:00.000Z',
+      premiumSource: 'STORE',
+      premiumEndsAt: '2026-11-12T05:30:00.000Z',
+      willRenew: true,
+      bankedPremiumDays: 0,
+    }),
+  );
+  const DELAYS = [500, 1_000, 1_500];
+  let queryClient: QueryClient;
+  const wait = jest.fn(async (_ms: number) => {});
+
+  beforeEach(() => {
+    queryClient = createTestQueryClient();
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+  });
+
+  /** 서버가 /me를 차례로 이렇게 답한다 */
+  async function serveMe(...responses: (typeof FREE_ME)[]) {
+    const fetchMe = jest.fn(async () => responses.shift() ?? FREE_ME);
+    await queryClient.prefetchQuery({ queryKey: USER_QUERY_KEYS.me(), queryFn: fetchMe });
+    return fetchMe;
+  }
+
+  it('웹훅이 반영돼 내 정보가 STORE가 되면 그때 멈추고 true를 반환한다', async () => {
+    // Given 첫 응답과 첫 재요청은 아직 무료, 두 번째 재요청에서 반영된다
+    const fetchMe = await serveMe(FREE_ME, FREE_ME, STORE_ME);
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+
+    // Then
+    expect(isReflected).toBe(true);
+    expect(fetchMe).toHaveBeenCalledTimes(3);
+    expect(wait.mock.calls).toEqual([[500], [1_000]]);
+  });
+
+  it('정해 둔 간격을 다 써도 반영되지 않으면 더 기다리지 않고 false를 반환한다', async () => {
+    // Given
+    const fetchMe = await serveMe(FREE_ME);
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+
+    // Then
+    expect(isReflected).toBe(false);
+    expect(fetchMe).toHaveBeenCalledTimes(1 + DELAYS.length);
+  });
+
+  it('이미 STORE면 다시 불러오지 않는다', async () => {
+    // Given
+    const fetchMe = await serveMe(STORE_ME);
+
+    // When
+    const isReflected = await syncMeUntilStorePremium(queryClient, { delays: DELAYS, wait });
+
+    // Then
+    expect(isReflected).toBe(true);
+    expect(fetchMe).toHaveBeenCalledTimes(1);
+    expect(wait).not.toHaveBeenCalled();
   });
 });
