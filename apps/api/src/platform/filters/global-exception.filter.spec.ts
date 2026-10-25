@@ -279,6 +279,36 @@ describe("GlobalExceptionFilter — 전역 예외 필터", () => {
       expect(jsonArg?.error.details).toBe("unexpected error");
     });
 
+    it("production 환경에서도 친구 한도 초과는 공개 상세(current·limit)만 싣는다", () => {
+      // Given
+      filter = createFilter(false);
+      const exception = new ApplicationException(ErrorCode.FOLLOW_0909, {
+        current: 6,
+        limit: 6,
+        userId: "user-123",
+      });
+
+      // When
+      filter.catch(exception, mockHost as never);
+
+      // Then
+      const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+      expect(jsonArg?.error.details).toEqual({ current: 6, limit: 6 });
+    });
+
+    it("production 환경에서 공개 상세가 없는 업무 오류의 details는 싣지 않는다", () => {
+      // Given
+      filter = createFilter(false);
+      const exception = new ApplicationException(ErrorCode.USER_0601, { userId: "user-123" });
+
+      // When
+      filter.catch(exception, mockHost as never);
+
+      // Then
+      const jsonArg = mockResponse.json.mock.calls[0]?.[0];
+      expect(jsonArg?.error).not.toHaveProperty("details");
+    });
+
     it("production 환경에서 알 수 없는 에러의 details가 포함되지 않는다", () => {
       // Given
       filter = createFilter(false);

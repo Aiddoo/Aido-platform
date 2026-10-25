@@ -1,5 +1,5 @@
 import type { RestErrorResponse } from "@aido/api";
-import { ErrorCode, Errors } from "@aido/api/errors";
+import { ErrorCode, Errors, toPublicErrorDetails } from "@aido/api/errors";
 import {
   type ArgumentsHost,
   Catch,
@@ -157,6 +157,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     errorResponse: RestErrorResponse;
   } {
     const definition = Errors[exception.errorCode];
+    // 운영에서는 앱이 계약으로 쓰는 코드의 검증된 상세만 내보낸다
+    const details = this.configService.isDevelopment
+      ? exception.details
+      : toPublicErrorDetails(exception.errorCode, exception.details);
     return {
       statusCode: definition.httpStatus,
       errorResponse: {
@@ -164,7 +168,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         error: {
           code: exception.errorCode,
           message: exception.message || definition.message,
-          ...(this.configService.isDevelopment && { details: exception.details }),
+          ...(details !== undefined && { details }),
         },
         timestamp: Date.now(),
       },

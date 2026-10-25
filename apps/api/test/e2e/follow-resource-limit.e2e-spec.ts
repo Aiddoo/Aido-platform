@@ -8,7 +8,7 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 
 import type { VerifiedUser } from "./helpers/e2e-helpers.js";
@@ -64,6 +64,10 @@ describe("팔로우 리소스 제한 E2E", () => {
       // Then - 403 에러와 FOLLOW_0909 코드 반환
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe("FOLLOW_0909");
+      expect(response.body.error.details).toMatchObject({
+        current: FREE_LIMIT,
+        limit: FREE_LIMIT,
+      });
 
       // When - 리소스 제한 조회
       const limitResponse = await request(ctx.app.getHttpServer())
@@ -74,6 +78,43 @@ describe("팔로우 리소스 제한 E2E", () => {
       // Then - 현재 친구 수와 한도가 FREE_LIMIT과 일치
       expect(limitResponse.body.data.friendCount).toBe(FREE_LIMIT);
       expect(limitResponse.body.data.maxCount).toBe(FREE_LIMIT);
+    });
+  });
+
+  describe("초대 보상 친구 자리", () => {
+    it("친구 자리 보너스만큼 한도가 늘고, 넘으면 FOLLOW_0909 details에 보너스를 더한 한도를 싣는다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("follow-limit-bonus@test.com", password);
+      await ctx.testDatabase.getClient().orm.public.ResourceBonus.create(
+        encodeCreate("ResourceBonus", {
+          userId: user.userId,
+          resource: "FRIEND",
+          quantity: 1,
+          sourceKey: "invite:follow-limit-bonus",
+        }),
+      );
+      const friends: VerifiedUser[] = [];
+      for (let i = 0; i < FREE_LIMIT + 2; i++) {
+        friends.push(
+          await ctx.helpers.createVerifiedUser(`follow-bonus-friend-${i}@test.com`, password),
+        );
+      }
+      for (const friend of friends.slice(0, FREE_LIMIT + 1)) {
+        await ctx.helpers.createFriendship(user, friend);
+      }
+
+      // When
+      const response = await request(ctx.app.getHttpServer())
+        .post(`/v1/follows/${friends[FREE_LIMIT + 1]?.userTag}`)
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(403);
+
+      // Then
+      expect(response.body.error.code).toBe("FOLLOW_0909");
+      expect(response.body.error.details).toEqual({
+        current: FREE_LIMIT + 1,
+        limit: FREE_LIMIT + 1,
+      });
     });
   });
 
