@@ -1,0 +1,43 @@
+appId: com.aido.mobile
+name: 초대 코드를 정한다(QA_INVITE_CODE가 있으면 그 값, 없으면 초대자 계정에서 읽는다)
+---
+# 결과는 ${output.inviteCode}. 호출부 env에 QA_INVITE_CODE(빈 값 가능), QA_SCHEME,
+# QA_INVITER_EMAIL, QA_INVITER_PASSWORD가 있어야 한다.
+- runFlow:
+    when:
+      true: ${QA_INVITE_CODE != ''}
+    commands:
+      - evalScript: ${output.inviteCode = QA_INVITE_CODE}
+- runFlow:
+    when:
+      true: ${QA_INVITE_CODE == ''}
+    commands:
+      # 초대자 계정으로 로그인해 내 초대 화면의 코드를 읽는다
+      - runFlow:
+          file: sign-in.yaml
+          env:
+            QA_EMAIL: ${QA_INVITER_EMAIL}
+            QA_PASSWORD: ${QA_INVITER_PASSWORD}
+      - openLink: ${QA_SCHEME}://friends/invite
+      - extendedWaitUntil:
+          visible: '내 초대 코드|My invite code'
+          timeout: 20000
+      # 코드 글자(INVITE_CODE.ALPHABET 6자)만 정확히 맞는 요소에서 복사한다
+      - copyTextFrom:
+          text: '[2-9BCDFGHJKMNPQRSTVWXZ]{6}'
+      - evalScript: ${output.inviteCode = maestro.copiedText.trim()}
+      - assertTrue: ${output.inviteCode.length == 6}
+      # 초대자 계정에서 로그아웃(마이페이지 → 로그아웃 → 확인)
+      - openLink: ${QA_SCHEME}://mypage
+      - scrollUntilVisible:
+          element: '로그아웃|Sign Out'
+      - tapOn: '로그아웃|Sign Out'
+      - extendedWaitUntil:
+          visible: '정말 로그아웃 하시겠습니까\?|Are you sure you want to sign out\?'
+          timeout: 5000
+      - tapOn:
+          text: '로그아웃|Sign Out'
+          index: 1
+      - extendedWaitUntil:
+          visible: '회원가입|Sign up|이메일로 로그인|Sign in with email'
+          timeout: 15000

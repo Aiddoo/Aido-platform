@@ -32,6 +32,8 @@
     "ios": "expo run:ios",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
+    "maestro:release-1.13.0": "bash maestro/release-1.13.0/run.sh full",
+    "maestro:release-1.13.0:smoke": "bash maestro/release-1.13.0/run.sh smoke",
     "native:prebuild": "expo prebuild --clean",
     "submit:production": "eas submit --profile production --platform all --latest",
     "submit:production:android": "eas submit --profile production --platform android --latest",

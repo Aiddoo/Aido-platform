@@ -1,0 +1,55 @@
+appId: com.aido.mobile
+name: 내 초대 화면의 공유 동작, 발자국 판, 초대한 친구 목록이 보인다
+tags:
+  - smoke
+  - full
+env:
+  QA_SCHEME: aido-dev
+  QA_INVITE_CODE: ''
+---
+# Given: 초대자 계정(초대한 친구가 1명 이상이면 목록까지 확인된다)
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      QA_EMAIL: ${QA_INVITER_EMAIL}
+      QA_PASSWORD: ${QA_INVITER_PASSWORD}
+- openLink: ${QA_SCHEME}://friends/invite
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 20000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+# Then: 공유 동작 세 가지가 보인다(카카오톡 공유 자체는 자동화하지 않는다)
+- scrollUntilVisible:
+    element: '카카오톡으로 초대하기|Invite via KakaoTalk'
+- assertVisible: '링크 복사|Copy link'
+- assertVisible: '다른 앱으로 공유|Share'
+- takeScreenshot: 1.13.0-my-invite-share-actions
+# When: 링크 복사를 누른다
+- tapOn: '링크 복사|Copy link'
+# Then: 복사 안내 토스트가 보인다
+- extendedWaitUntil:
+    visible: '링크를 복사했어요|Link copied'
+    timeout: 5000
+# 발자국 판
+- scrollUntilVisible:
+    element: '발자국 모으기|Collect paw prints'
+- assertVisible: '.*번째 판 · 지금까지 발자국.*|Board .* paw prints? so far|첫 발자국을 남겨보세요.*|Get your first paw print.*'
+- takeScreenshot: 1.13.0-my-invite-paw-board
+# 초대한 친구 요약 → 전체 보기
+- scrollUntilVisible:
+    element: '전체 보기.*|See all.*'
+- tapOn: '전체 보기.*|See all.*'
+# Then: 전체 목록이 열리고 탭을 오간다
+- extendedWaitUntil:
+    visible: '전체 [0-9]+|All [0-9]+'
+    timeout: 10000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invitees-all
+- tapOn: '발자국 대기 [0-9]+|Waiting [0-9]+'
+- extendedWaitUntil:
+    visible: '발자국 대기 [0-9]+|Waiting [0-9]+'
+    timeout: 5000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invitees-waiting
+- tapOn: '전체 [0-9]+|All [0-9]+'
+- assertVisible: '전체 [0-9]+|All [0-9]+'

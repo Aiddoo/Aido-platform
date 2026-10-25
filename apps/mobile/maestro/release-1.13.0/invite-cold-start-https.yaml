@@ -1,0 +1,24 @@
+appId: com.aido.mobile
+name: https 초대 링크(aido.kr/i)가 앱의 초대 카드로 열린다
+tags:
+  - production-build
+env:
+  QA_SCHEME: aido
+  QA_INVITE_CODE: ''
+---
+# 주의: aido.kr AASA/assetlinks에는 운영 앱만 등록돼 있다(app.config.ts).
+# dev/preview 빌드에서는 브라우저가 열려 실패하므로 운영 빌드에서만 실행한다.
+# iOS 시뮬레이터에서 Maestro openLink가 universal link를 앱으로 넘기지 못하면 직접 연다:
+#   xcrun simctl openurl booted https://aido.kr/i/<CODE>
+# 같은 카드는 invite-cold-start-logged-out.yaml(aido-dev://invite/<CODE>)이 개발 빌드에서 검증한다.
+- runFlow: subflows/resolve-invite-code.yaml
+- launchApp:
+    clearState: true
+    stopApp: true
+- openLink: https://aido.kr/i/${output.inviteCode}
+- extendedWaitUntil:
+    visible: '${QA_INVITER_NAME}님이 아이두에.*|${QA_INVITER_NAME} invited you.*'
+    timeout: 20000
+- assertVisible: '가입하고 친구 되기|Join and become friends'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invite-card-https

@@ -1,0 +1,37 @@
+appId: com.aido.mobile
+name: 로그아웃 상태 초대 링크가 초대 카드, 로그인, 보상 적용, 환영 시트로 이어진다
+tags:
+  - smoke
+  - full
+env:
+  QA_SCHEME: aido-dev
+  QA_INVITE_CODE: ''
+---
+- runFlow: subflows/resolve-invite-code.yaml
+# Given: 로그아웃 상태의 콜드 스타트(앱 데이터 초기화). 링크는 개발 빌드의 커스텀 스킴으로 연다
+- launchApp:
+    clearState: true
+    stopApp: true
+- openLink: ${QA_SCHEME}://invite/${output.inviteCode}
+# Then: 로그인 화면이 아니라 초대 카드가 먼저 보인다
+- extendedWaitUntil:
+    visible: '${QA_INVITER_NAME}님이 아이두에.*|${QA_INVITER_NAME} invited you.*'
+    timeout: 20000
+- assertVisible: '가입하고 친구 되기|Join and become friends'
+- assertVisible: '이미 계정이 있어요.*|I have an account.*'
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invite-card-logged-out
+# When: 아직 초대자와 친구가 아닌 초대받는 계정으로 로그인한다
+- tapOn: '이미 계정이 있어요.*|I have an account.*'
+- runFlow:
+    file: login.yaml
+    env:
+      QA_EMAIL: ${QA_INVITEE_EMAIL}
+      QA_PASSWORD: ${QA_INVITEE_PASSWORD}
+# Then: 보류한 초대가 이어서 적용되고 환영 시트가 열린다
+- extendedWaitUntil:
+    visible: '${QA_INVITER_NAME}님과 친구가 됐어요|You.re now friends with ${QA_INVITER_NAME}|${QA_INVITER_NAME}님에게 친구 요청을 보냈어요|Friend request sent to ${QA_INVITER_NAME}'
+    timeout: 30000
+- assertNotVisible: '.*문제가 발생했어요.*|.*Something went wrong.*'
+- takeScreenshot: 1.13.0-invite-welcome-sheet
+- tapOn: '나중에 할게요|Maybe later'

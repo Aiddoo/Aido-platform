@@ -1,0 +1,52 @@
+appId: com.aido.mobile
+name: 친구 빈 상태, 마이페이지, 기능 안내 카드에서 초대 화면으로 들어간다
+tags:
+  - full
+env:
+  QA_SCHEME: aido-dev
+---
+# Given: 친구가 아직 없는 초대받는 계정(cold-start 흐름보다 먼저 실행한다)
+- runFlow:
+    file: subflows/sign-in.yaml
+    env:
+      QA_EMAIL: ${QA_INVITEE_EMAIL}
+      QA_PASSWORD: ${QA_INVITEE_PASSWORD}
+# 1) 친구 빈 상태 CTA
+- openLink: ${QA_SCHEME}://friends
+- extendedWaitUntil:
+    visible: '아직 친구가 없어요|No friends yet'
+    timeout: 20000
+- assertVisible: '초대 코드가 있나요\?|Have an invite code\?'
+- takeScreenshot: 1.13.0-entry-friends-empty
+- tapOn: '친구 초대하기|Invite a friend'
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 15000
+- tapOn:
+    point: '50%, 12%'
+# 2) 마이페이지 초대 카드
+- openLink: ${QA_SCHEME}://mypage
+- extendedWaitUntil:
+    visible: '친구 초대 · 발자국.*|Invites · .* paw prints?'
+    timeout: 20000
+- takeScreenshot: 1.13.0-entry-mypage
+- tapOn: '친구 초대 · 발자국.*|Invites · .* paw prints?'
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 15000
+- tapOn:
+    point: '50%, 12%'
+# 3) 기능 안내 카드 (마이페이지의 기능 가이드 항목)
+- openLink: ${QA_SCHEME}://mypage
+- extendedWaitUntil:
+    visible: 'Aido 기능 가이드 열기|Open Aido feature guide'
+    timeout: 20000
+- tapOn: 'Aido 기능 가이드 열기|Open Aido feature guide'
+- extendedWaitUntil:
+    visible: '친구를 초대하고.*|Invite friends and.*'
+    timeout: 10000
+- takeScreenshot: 1.13.0-entry-feature-discovery
+- tapOn: '친구 초대 화면으로 이동|Go to invite friends'
+- extendedWaitUntil:
+    visible: '내 초대 코드|My invite code'
+    timeout: 15000
