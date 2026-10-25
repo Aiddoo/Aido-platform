@@ -47,4 +47,28 @@ describe("currentUserSchema", () => {
       expect(result.success).toBe(expected);
     },
   );
+
+  it.each([
+    { premiumPeriodEndsAt: "2026-12-01T00:00:00.000Z", expected: true },
+    { premiumPeriodEndsAt: null, expected: true },
+    { premiumPeriodEndsAt: "2026-12-01", expected: false },
+  ])(
+    "지금 기간 끝 $premiumPeriodEndsAt의 허용 여부는 $expected다",
+    ({ premiumPeriodEndsAt, expected }) => {
+      // Given
+      const response = {
+        ...currentUser,
+        premiumSource: "GRANT",
+        premiumEndsAt: "2026-12-08T00:00:00.000Z",
+        premiumPeriodEndsAt,
+        bankedPremiumDays: 7,
+      };
+
+      // When
+      const result = currentUserSchema.safeParse(response);
+
+      // Then
+      expect(result.success).toBe(expected);
+    },
+  );
 });

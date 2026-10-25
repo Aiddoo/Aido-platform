@@ -141,13 +141,18 @@ export const currentUserSchema = z
     premiumEndsAt: nullableDatetimeSchema
       .optional()
       .describe(
-        "프리미엄이 끝나는 시각 (ISO 8601 UTC, 스토어 구독과 보상 기간 중 늦은 쪽, 없으면 null, 구버전 서버는 생략)",
+        "프리미엄 전체가 끝나는 시각입니다 (ISO 8601 UTC). 지금 기간 뒤에 쌓아 둔 보상 일수를 이어 붙인 끝이며, 자동 갱신 중인 구독 뒤의 보상은 갱신 유예(3시간)가 끝난 뒤부터 잇습니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
+      ),
+    premiumPeriodEndsAt: nullableDatetimeSchema
+      .optional()
+      .describe(
+        "지금 출처의 기간이 끝나는 시각입니다 (ISO 8601 UTC). STORE면 스토어 구독 만료 시각(자동 갱신이면 다음 결제 시각), GRANT면 진행 중인 보상 기간의 끝입니다. 프리미엄이 아니면 null이고 구버전 서버는 생략합니다.",
       ),
     willRenew: z
       .boolean()
       .optional()
       .describe(
-        "스토어 구독이 자동 갱신되는지 여부 (보상 기간만 있으면 false, 구버전 서버는 생략)",
+        "스토어 구독이 자동 갱신되는지 여부입니다. 취소했지만 만료 전인 구독과 보상 기간만 있으면 false이고 구버전 서버는 생략합니다.",
       ),
     bankedPremiumDays: z
       .number()
@@ -155,7 +160,7 @@ export const currentUserSchema = z
       .nonnegative()
       .optional()
       .describe(
-        "스토어 구독 중이라 아직 시작하지 않은 보상 일수 합계 (구독이 끝나면 이어서 시작, 없으면 0, 구버전 서버는 생략)",
+        "아직 시작하지 않고 쌓아 둔 보상 일수 합계입니다. 지금 기간(스토어 구독이나 진행 중인 보상 기간)이 끝나면 받은 순서대로 이어서 시작합니다. 없으면 0이고 구버전 서버는 생략합니다.",
       ),
   })
   .describe("현재 사용자 정보")
@@ -176,6 +181,7 @@ export const currentUserSchema = z
       providers: ["CREDENTIAL"],
       premiumSource: null,
       premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
       willRenew: false,
       bankedPremiumDays: 0,
     },
