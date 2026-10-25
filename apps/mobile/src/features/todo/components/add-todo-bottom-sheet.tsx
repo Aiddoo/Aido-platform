@@ -38,6 +38,7 @@ import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { noop } from 'es-toolkit';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
 import type { ComponentRef } from 'react';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
@@ -353,7 +354,7 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
               methods.setValue('repeatEndDate', value.repeatEndDate);
               methods.setValue('startDate', value.startDate);
             })
-            .otherwise(() => {});
+            .otherwise(noop);
           focusTodoInput();
         }}
       >

@@ -8,6 +8,7 @@ import {
   resolveLanguage,
   writeLanguageMode,
 } from '@src/shared/preferences/language.preference';
+import { noop } from 'es-toolkit';
 import {
   createContext,
   type PropsWithChildren,
@@ -73,7 +74,7 @@ export function LanguageProvider({
 const DEFAULT_CONTEXT: LanguageContextValue = {
   languageMode: 'system',
   resolvedLanguage: 'ko',
-  setLanguageMode: () => {},
+  setLanguageMode: noop,
 };
 
 export const useLanguage = (): LanguageContextValue => {
