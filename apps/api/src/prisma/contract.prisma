@@ -746,6 +746,8 @@ namespace public {
     agreedTermsVersion    VarChar(20)?
     marketingAgreedAt     TimestampString(3)?
     marketingPushAgreedAt TimestampString(3)?
+    aiDataSharingAgreedAt TimestampString(3)?
+    aiDataSharingVersion  VarChar(20)?
     user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserConsent_userId_fkey")
 
     @@unique([userId], map: "UserConsent_userId_key")
