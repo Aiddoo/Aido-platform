@@ -46,6 +46,8 @@
   },
   "menu": {
     "report": "신고하기",
-    "more": "더 보기"
+    "more": "더 보기",
+    "moreFor": "{{name}}님 메뉴 더 보기",
+    "reportCheer": "응원 메시지 신고하기"
   }
 }

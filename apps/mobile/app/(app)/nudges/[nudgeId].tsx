@@ -1,4 +1,9 @@
 import type { NudgeReplyKind } from '@aido/api';
+import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import {
+  blockUserConfirmHref,
+  userReportSheetHref,
+} from '@src/features/moderation/utils/navigation/moderation-href';
 import { NudgeThanksButton } from '@src/features/nudge/components/nudge-interactions/nudge-thanks-button';
 import {
   type NudgeInteraction,
@@ -26,6 +31,7 @@ import {
   HStack,
   PawIcon,
   QueryErrorBoundary,
+  STACK_MORE_ICON,
   Result,
   StyledSafeAreaView,
   Text,
@@ -36,7 +42,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatRelativeTime } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Skeleton } from 'heroui-native';
 import { Suspense, type ComponentProps } from 'react';
 import { ScrollView } from 'react-native';
@@ -60,93 +66,96 @@ function NudgeDetailScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
-      <VStack gap={24}>
-        <HStack gap={12} align="center">
-          <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
-          <VStack flex={1} gap={4}>
-            <Text size="b3" weight="semibold">
-              {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
-            </Text>
-            <Text size="e1" shade={5}>
-              {formatRelativeTime(nudge.createdAt, new Date())}
-            </Text>
-          </VStack>
-        </HStack>
-
-        <VStack gap={8}>
-          <Text size="t3" weight="bold">
-            {t('interaction.encouragementTitle')}
-          </Text>
-          {nudge.message != null && (
-            <Text size="b3" shade={6}>
-              {nudge.message}
-            </Text>
-          )}
-        </VStack>
-
-        <Button
-          variant="weak"
-          color="dark"
-          isDisabled={nudge.todoTitle == null}
-          className="p-4"
-          onPress={handleOpenTodo}
-        >
-          <HStack align="center" gap={12} className="w-full">
-            <PawIcon width={28} height={28} colorClassName="text-main" />
+    <>
+      {isReceived && <NudgeModerationToolbar nudge={nudge} />}
+      <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }}>
+        <VStack gap={24}>
+          <HStack gap={12} align="center">
+            <UserAvatar alt={friendName} className="size-12" profileImage={profileImage} />
             <VStack flex={1} gap={4}>
-              <Text size="b3" weight="semibold" maxLines={3}>
-                {nudge.todoTitle ?? t('interaction.unavailableTodo')}
+              <Text size="b3" weight="semibold">
+                {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
               </Text>
               <Text size="e1" shade={5}>
-                {t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.openTodo')}
+                {formatRelativeTime(nudge.createdAt, new Date())}
               </Text>
             </VStack>
-            <ArrowRightIcon width={18} height={18} colorClassName="text-gray-5" />
           </HStack>
-        </Button>
 
-        {match({
-          status,
-          isReceived,
-          isTodoCompleted: nudge.isTodoCompleted,
-          canReply: NudgeInteractionPolicy.isReplyable(nudge, me.id),
-        })
-          .with({ status: 'UNAVAILABLE' }, () => (
-            <Result
-              title={t('interaction.unavailable')}
-              description={t('interaction.unavailableDescription')}
-            />
-          ))
-          .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
-            <NudgeDetailScreen.ReplyPanel nudge={nudge} />
-          ))
-          .with({ isReceived: true, isTodoCompleted: true }, () => (
-            <VStack gap={12}>
-              {status === 'THANKED' ? (
-                <NudgeDetailScreen.ThanksStatus />
-              ) : (
-                <Text size="b3" shade={6}>
-                  {t('interaction.completedThanksHint')}
-                </Text>
-              )}
-              {status !== 'THANKED' && <NudgeThanksButton onPress={handleOpenThanksSheet} />}
-            </VStack>
-          ))
-          .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
-          .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
-            <Text size="b3" shade={6}>
-              {match(nudge)
-                .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
-                  t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
-                )
-                .with({ isTodoCompleted: true }, () => t('interaction.completed'))
-                .otherwise(() => t('interaction.waiting'))}
+          <VStack gap={8}>
+            <Text size="t3" weight="bold">
+              {t('interaction.encouragementTitle')}
             </Text>
-          ))
-          .exhaustive()}
-      </VStack>
-    </ScrollView>
+            {nudge.message != null && (
+              <Text size="b3" shade={6}>
+                {nudge.message}
+              </Text>
+            )}
+          </VStack>
+
+          <Button
+            variant="weak"
+            color="dark"
+            isDisabled={nudge.todoTitle == null}
+            className="p-4"
+            onPress={handleOpenTodo}
+          >
+            <HStack align="center" gap={12} className="w-full">
+              <PawIcon width={28} height={28} colorClassName="text-main" />
+              <VStack flex={1} gap={4}>
+                <Text size="b3" weight="semibold" maxLines={3}>
+                  {nudge.todoTitle ?? t('interaction.unavailableTodo')}
+                </Text>
+                <Text size="e1" shade={5}>
+                  {t(nudge.isTodoCompleted ? 'interaction.completed' : 'interaction.openTodo')}
+                </Text>
+              </VStack>
+              <ArrowRightIcon width={18} height={18} colorClassName="text-gray-5" />
+            </HStack>
+          </Button>
+
+          {match({
+            status,
+            isReceived,
+            isTodoCompleted: nudge.isTodoCompleted,
+            canReply: NudgeInteractionPolicy.isReplyable(nudge, me.id),
+          })
+            .with({ status: 'UNAVAILABLE' }, () => (
+              <Result
+                title={t('interaction.unavailable')}
+                description={t('interaction.unavailableDescription')}
+              />
+            ))
+            .with({ isReceived: true, isTodoCompleted: false, canReply: true }, () => (
+              <NudgeDetailScreen.ReplyPanel nudge={nudge} />
+            ))
+            .with({ isReceived: true, isTodoCompleted: true }, () => (
+              <VStack gap={12}>
+                {status === 'THANKED' ? (
+                  <NudgeDetailScreen.ThanksStatus />
+                ) : (
+                  <Text size="b3" shade={6}>
+                    {t('interaction.completedThanksHint')}
+                  </Text>
+                )}
+                {status !== 'THANKED' && <NudgeThanksButton onPress={handleOpenThanksSheet} />}
+              </VStack>
+            ))
+            .with({ status: 'THANKED' }, () => <NudgeDetailScreen.ThanksStatus />)
+            .with({ status: P.union('WAITING', 'REPLIED', 'COMPLETED', 'THANKED') }, () => (
+              <Text size="b3" shade={6}>
+                {match(nudge)
+                  .with({ replyKind: P.nonNullable }, ({ replyKind }) =>
+                    t('interaction.replyStatus', { reply: t(getNudgeReplyLabelKey(replyKind)) }),
+                  )
+                  .with({ isTodoCompleted: true }, () => t('interaction.completed'))
+                  .otherwise(() => t('interaction.waiting'))}
+              </Text>
+            ))
+            .exhaustive()}
+        </VStack>
+      </ScrollView>
+    </>
   );
 }
 
@@ -308,5 +317,41 @@ export default function NudgeDetailRoute() {
         </VStack>
       )}
     </StyledSafeAreaView>
+  );
+}
+
+/** 받은 콕 찌르기의 ⋯ 메뉴. 보낸 사람의 메시지를 신고하거나 보낸 사람을 차단한다 */
+function NudgeModerationToolbar({ nudge }: { nudge: NudgeInteraction }) {
+  const { t } = useTranslation('moderation');
+  const push = useSingleTap(router.push);
+
+  return (
+    <Stack.Toolbar placement="right">
+      <Stack.Toolbar.Menu icon={STACK_MORE_ICON} accessibilityLabel={t('menu.more')}>
+        <Stack.Toolbar.MenuAction
+          onPress={() =>
+            push(
+              userReportSheetHref({
+                target: UserReportPolicy.nudgeMessageTarget({
+                  nudgeId: nudge.id,
+                  senderId: nudge.senderId,
+                }),
+                displayName: nudge.senderName,
+              }),
+            )
+          }
+        >
+          {t('menu.report')}
+        </Stack.Toolbar.MenuAction>
+        <Stack.Toolbar.MenuAction
+          destructive
+          onPress={() =>
+            push(blockUserConfirmHref({ userId: nudge.senderId, displayName: nudge.senderName }))
+          }
+        >
+          {t('block.action')}
+        </Stack.Toolbar.MenuAction>
+      </Stack.Toolbar.Menu>
+    </Stack.Toolbar>
   );
 }

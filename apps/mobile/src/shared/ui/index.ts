@@ -136,7 +136,12 @@ export { ScreenTitleBar, type ScreenTitleBarProps } from './screen-title-bar';
 export { ScrollProgressWidget } from './scroll-progress-widget';
 export { SettingNavigation } from './setting-navigation';
 export { Spacing, type SpacingProps } from './spacing';
-export { STACK_BACK_ICON, useStackBackToolbar, useStackScreenOptions } from './stack-header';
+export {
+  STACK_BACK_ICON,
+  STACK_MORE_ICON,
+  useStackBackToolbar,
+  useStackScreenOptions,
+} from './stack-header';
 export {
   H1,
   type H1Props,

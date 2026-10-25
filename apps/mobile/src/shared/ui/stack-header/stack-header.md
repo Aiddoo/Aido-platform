@@ -44,6 +44,8 @@ const backToolbar = useStackBackToolbar({ fallbackHref: '/feed' });
 ## 화면별 버튼
 
 데이터나 폼 상태에 따라 바뀌는 버튼은 화면 컴포넌트에서 `Stack.Toolbar`를 렌더합니다. 화면에서 렌더한
+오른쪽 ⋯ 메뉴는 `STACK_MORE_ICON`을 `Stack.Toolbar.Menu`의 `icon`으로 씁니다.
+
 툴바는 레이아웃 옵션보다 우선합니다. 뒤로가기를 가로채야 하는 화면(저장 후 나가기 등)은 `STACK_BACK_ICON`으로
 왼쪽 버튼을 직접 둡니다. 조건부로 보일 버튼은 렌더 여부 대신 `hidden`으로 감춥니다.
 

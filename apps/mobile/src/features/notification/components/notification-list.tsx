@@ -1,6 +1,8 @@
 import type { NotificationCategory } from '@aido/api';
 import { FlashList } from '@shopify/flash-list';
 import { useLogger } from '@src/bootstrap/providers/di-context';
+import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import { userReportSheetHref } from '@src/features/moderation/utils/navigation/moderation-href';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
@@ -18,6 +20,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
 import { useCallback } from 'react';
 import { RefreshControl } from 'react-native';
@@ -136,7 +139,21 @@ interface NotificationItemProps {
 
 NotificationList.Item = function Item({ notification }: NotificationItemProps) {
   const handlePress = useSingleTap(useNotificationPress(notification));
-  const { t } = useTranslation('notification');
+  const push = useSingleTap(router.push);
+  const { t } = useTranslation(['notification', 'moderation']);
+  const receivedCheer = NotificationPolicy.findReceivedCheer(notification);
+
+  // 받은 응원은 길게 눌러(스크린리더는 동작 메뉴로) 메시지를 신고한다
+  const handleReportCheer =
+    receivedCheer == null
+      ? undefined
+      : () =>
+          push(
+            userReportSheetHref({
+              target: UserReportPolicy.cheerMessageTarget(receivedCheer),
+              displayName: t('moderation:fallbackName'),
+            }),
+          );
 
   return (
     <NotificationListRow
@@ -146,6 +163,17 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
       createdAt={notification.createdAt}
       isUnread={!notification.isRead}
       onPress={handlePress}
+      onLongPress={handleReportCheer}
+      accessibilityActions={
+        handleReportCheer == null
+          ? undefined
+          : [{ name: 'report', label: t('moderation:menu.reportCheer') }]
+      }
+      onAccessibilityAction={(event) => {
+        if (event.nativeEvent.actionName === 'report') {
+          handleReportCheer?.();
+        }
+      }}
     />
   );
 };

@@ -26,6 +26,30 @@ export function toCommentReportTarget({
   return { targetUserId: authorId, targetType: 'COMMENT', targetId: commentId };
 }
 
+export function toProfileReportTarget({ userId }: { userId: string }): UserReportTarget {
+  return { targetUserId: userId, targetType: 'PROFILE' };
+}
+
+export function toNudgeMessageReportTarget({
+  nudgeId,
+  senderId,
+}: {
+  nudgeId: number;
+  senderId: string;
+}): UserReportTarget {
+  return { targetUserId: senderId, targetType: 'NUDGE_MESSAGE', targetId: String(nudgeId) };
+}
+
+export function toCheerMessageReportTarget({
+  cheerId,
+  senderId,
+}: {
+  cheerId: number;
+  senderId: string;
+}): UserReportTarget {
+  return { targetUserId: senderId, targetType: 'CHEER_MESSAGE', targetId: String(cheerId) };
+}
+
 /** 공백만 적은 상세 내용은 보내지 않아 서버가 상세 없이 접수한다 */
 export function toCreateUserReportInput(
   target: UserReportTarget,
@@ -42,5 +66,8 @@ export function toCreateUserReportInput(
 export const UserReportPolicy = {
   todoTarget: toTodoReportTarget,
   commentTarget: toCommentReportTarget,
+  profileTarget: toProfileReportTarget,
+  nudgeMessageTarget: toNudgeMessageReportTarget,
+  cheerMessageTarget: toCheerMessageReportTarget,
   toRequest: toCreateUserReportInput,
 } as const;

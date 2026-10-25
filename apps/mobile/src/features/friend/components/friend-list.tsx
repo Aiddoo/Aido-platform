@@ -2,6 +2,12 @@ import catHiImage from '@assets/images/ido_cat_hi.webp';
 import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
 import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
 import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
+import type { BlockTarget } from '@src/features/moderation/domains/user-block.model';
+import { UserReportPolicy } from '@src/features/moderation/domains/user-report.model';
+import {
+  blockUserConfirmHref,
+  userReportSheetHref,
+} from '@src/features/moderation/utils/navigation/moderation-href';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
@@ -17,6 +23,7 @@ import {
   InfoIcon,
   ListRow,
   MenuIcon,
+  MoreIcon,
   Result,
   Text,
   TextButton,
@@ -27,7 +34,7 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
+import { Menu, Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
 import { ActivityIndicator, Image, RefreshControl } from 'react-native';
 import Animated, {
@@ -185,7 +192,9 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
             }
             contents={<ListRow.Texts type="1RowTypeA" top={friend.displayName} />}
             right={
-              isEditMode && !isActive ? (
+              !isEditMode ? (
+                <FriendModerationMenu userId={friend.id} displayName={friend.displayName} />
+              ) : !isActive ? (
                 <Animated.View
                   entering={FadeInRight.duration(ANIMATION.duration.normal)}
                   exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
@@ -210,6 +219,58 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
     </PressableFeedback>
   );
 };
+
+/** 친구 행의 ⋯ 메뉴. 편집 중이 아닐 때 프로필을 신고하거나 친구를 차단한다 */
+function FriendModerationMenu({ userId, displayName }: BlockTarget) {
+  const { t } = useTranslation('moderation');
+  const push = useSingleTap(router.push);
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Menu isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Menu.Trigger asChild>
+        <PressableFeedback
+          hitSlop={8}
+          className="size-11 items-center justify-center rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel={t('menu.moreFor', { name: displayName })}
+          accessibilityState={{ expanded: isOpen }}
+        >
+          <MoreIcon width={18} height={18} colorClassName="text-gray-6" />
+        </PressableFeedback>
+      </Menu.Trigger>
+      <Menu.Portal disableFullWindowOverlay={false}>
+        <Menu.Overlay />
+        <Menu.Content
+          presentation="popover"
+          placement="bottom"
+          align="end"
+          width={180}
+          className="rounded-2xl border border-gray-2 bg-gray-1"
+        >
+          <Menu.Item
+            onPress={() =>
+              push(
+                userReportSheetHref({
+                  target: UserReportPolicy.profileTarget({ userId }),
+                  displayName,
+                }),
+              )
+            }
+          >
+            <Menu.ItemTitle>{t('menu.report')}</Menu.ItemTitle>
+          </Menu.Item>
+          <Menu.Item
+            variant="danger"
+            onPress={() => push(blockUserConfirmHref({ userId, displayName }))}
+          >
+            <Menu.ItemTitle>{t('block.action')}</Menu.ItemTitle>
+          </Menu.Item>
+        </Menu.Content>
+      </Menu.Portal>
+    </Menu>
+  );
+}
 
 FriendList.Loading = function Loading() {
   const fontScaledSize = useFontScaledSize();

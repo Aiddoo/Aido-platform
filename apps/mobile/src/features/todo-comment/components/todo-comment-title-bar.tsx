@@ -1,10 +1,15 @@
-import MoreHoriz from '@expo/material-symbols/more_horiz.xml';
 import { useTodoModerationActions } from '@src/features/moderation/hooks/use-todo-moderation-actions';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
-import { MoreIcon, ScreenTitleBar, STACK_BACK_ICON, useStackScreenOptions } from '@src/shared/ui';
+import {
+  MoreIcon,
+  ScreenTitleBar,
+  STACK_BACK_ICON,
+  STACK_MORE_ICON,
+  useStackScreenOptions,
+} from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Menu, PressableFeedback } from 'heroui-native';
@@ -14,9 +19,6 @@ import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 import { useTodoCommentRoute } from '../hooks/use-todo-comment-route';
 
 const SUBTITLE_LAYOUT_PLACEHOLDER = ' ';
-
-/** 헤더 ⋯ 아이콘. iOS는 SF Symbol, Android는 Material Symbol을 쓴다. */
-const MORE_ICON = process.env.EXPO_OS === 'ios' ? 'ellipsis' : MoreHoriz;
 
 interface TodoCommentTitleBarProps {
   /** 라우트를 pop하지 않는 pane에서 댓글 개요의 뒤로가기가 상세를 닫을 때 쓴다. */
@@ -68,7 +70,7 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
       <Stack.Toolbar placement="right">
         <Stack.Toolbar.Menu
           hidden={!moderation.isAvailable}
-          icon={MORE_ICON}
+          icon={STACK_MORE_ICON}
           accessibilityLabel={t('moderation:menu.more')}
         >
           <Stack.Toolbar.MenuAction onPress={moderation.report}>

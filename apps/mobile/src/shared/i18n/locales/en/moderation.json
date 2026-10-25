@@ -46,6 +46,8 @@
   },
   "menu": {
     "report": "Report",
-    "more": "More"
+    "more": "More",
+    "moreFor": "More options for {{name}}",
+    "reportCheer": "Report cheer message"
   }
 }

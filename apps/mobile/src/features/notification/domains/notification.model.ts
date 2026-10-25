@@ -1,4 +1,5 @@
 import {
+  NOTIFICATION_TYPE,
   notificationActionTypeSchema,
   notificationActivityKindSchema,
   notificationTypeSchema,
@@ -56,6 +57,23 @@ export function isAiFeature(notification: Notification) {
   return AI_FEATURE_TYPES.has(notification.type);
 }
 
+/** 받은 응원 알림이면 신고할 응원과 보낸 친구. 응원 ID가 없는 이전 알림은 신고할 대상을 알 수 없어 null */
+export function findReceivedCheer(
+  notification: Notification,
+): { cheerId: number; senderId: string } | null {
+  const cheerId = notification.context?.cheerId;
+  const senderId = notification.context?.friendId;
+  if (
+    notification.type !== NOTIFICATION_TYPE.CHEER_RECEIVED ||
+    cheerId == null ||
+    senderId == null
+  ) {
+    return null;
+  }
+  return { cheerId, senderId };
+}
+
 export const NotificationPolicy = {
   isAiFeature,
+  findReceivedCheer,
 } as const;
