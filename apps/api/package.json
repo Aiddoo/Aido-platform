@@ -32,7 +32,6 @@
     "start:prod": "NODE_ENV=production node ./dist/src/bootstrap.js",
     "test": "vitest run --project unit",
     "test:cov": "vitest run --project unit --coverage",
-    "test:coverage": "pnpm test:cov",
     "test:e2e": "vitest run --project e2e",
     "test:e2e:diagnose": "vitest run --project e2e --no-file-parallelism --reporter=verbose",
     "test:integration": "vitest run --project integration",

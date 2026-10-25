@@ -39,7 +39,6 @@
     "test": "jest",
     "test:conventions": "node --test scripts/check-mobile-conventions.test.mjs",
     "test:native-config": "node --test scripts/firebase-initialization.test.mjs scripts/widget-gallery-locales.test.mjs scripts/kakao-compile-sdk.test.mjs",
-    "test:coverage": "jest --coverage",
     "typecheck": "tsc --noEmit",
     "update:preview": "eas update --branch preview",
     "update:production": "eas update --branch production",

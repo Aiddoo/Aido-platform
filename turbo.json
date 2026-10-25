@@ -13,8 +13,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": ["dist/**", "build/**"],
-      "env": ["APP_ENV", "EXPO_PUBLIC_*"]
+      "outputs": ["dist/**"]
     },
     "dev": {
       "cache": false,
@@ -85,10 +84,6 @@
     "typecheck": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$"],
-      "outputs": []
-    },
-    "check": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/.oxlintrc.json", "$TURBO_ROOT$/.oxfmtrc.json"],
       "outputs": []
     },
     "clean": {
