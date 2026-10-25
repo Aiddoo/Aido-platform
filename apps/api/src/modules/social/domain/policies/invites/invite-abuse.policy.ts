@@ -77,10 +77,10 @@ export const InviteAbusePolicy = {
     return match({
       isSelf: invite.isIssuedBy(context.inviteeId),
       // 응답을 못 받고 다시 누른 같은 초대는 처음 결과를 다시 돌려준다
-      isRetry: previousRedemption !== null && previousRedemption.inviterId === invite.inviterId,
+      isRetry: previousRedemption != null && previousRedemption.inviterId === invite.inviterId,
       isRevoked: !invite.isActive(),
       areAlreadyFriends: context.areAlreadyFriends,
-      hasRedeemedOther: previousRedemption !== null,
+      hasRedeemedOther: previousRedemption != null,
       isNewInvitee: isWithinRedeemWindow(context.inviteeJoinedAt, context.now),
     })
       .returnType<InviteRedeemDecision>()

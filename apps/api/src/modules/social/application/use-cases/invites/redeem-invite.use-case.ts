@@ -109,7 +109,7 @@ export class RedeemInvite {
     const identity = await this.#dependencies.inviteRedemptionRepository.findInviteeIdentity(
       input.inviteeId,
     );
-    if (identity === null) {
+    if (identity == null) {
       throw new ApplicationException(ErrorCode.USER_0601, { userId: input.inviteeId });
     }
     const claims = this.#claimsOf(identity, input.installationId);
@@ -117,7 +117,7 @@ export class RedeemInvite {
 
     const result = await this.#dependencies.unitOfWork.run(async () => {
       const candidate = await this.#dependencies.inviteRepository.findByCodeWithInviter(code);
-      if (candidate === null) {
+      if (candidate == null) {
         throw new ApplicationException(ErrorCode.INVITE_2101);
       }
 
@@ -130,7 +130,7 @@ export class RedeemInvite {
       ]);
       // 잠금을 기다리는 동안 재발급됐을 수 있어 최신 상태로 다시 읽는다
       const found = await this.#dependencies.inviteRepository.findByCodeWithInviter(code);
-      if (found === null) {
+      if (found == null) {
         throw new ApplicationException(ErrorCode.INVITE_2101);
       }
       const { invite, inviter } = found;
@@ -188,7 +188,7 @@ export class RedeemInvite {
       inviteeId: identity.userId,
       inviteeJoinedAt: identity.createdAt,
       areAlreadyFriends,
-      previousRedemption: previous === null ? null : { inviterId: previous.inviterId },
+      previousRedemption: previous == null ? null : { inviterId: previous.inviterId },
       hasClaimedReward,
       now: capturedAt,
     });
@@ -251,7 +251,7 @@ export class RedeemInvite {
             joinedAt: context.capturedAt,
           }),
         );
-        if (redemption === null) {
+        if (redemption == null) {
           throw new ApplicationException(ErrorCode.INVITE_2104);
         }
         const { rewards, plans } = InviteRewardPolicy.planInviteeRewards(
@@ -319,7 +319,7 @@ export class RedeemInvite {
     readonly identity: InviteeIdentity;
     readonly previous: InviteRedemption | null;
   }): Promise<RedeemInviteResult> {
-    if (context.previous === null) {
+    if (context.previous == null) {
       throw new ApplicationException(ErrorCode.INVITE_2104);
     }
     const grants = await this.#dependencies.rewardGrantRepository.findBySource(

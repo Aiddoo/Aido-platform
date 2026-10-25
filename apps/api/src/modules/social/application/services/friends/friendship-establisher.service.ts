@@ -105,7 +105,7 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
     requesterId: string,
     targetUserId: string,
   ): Promise<void> {
-    if (forward !== null) {
+    if (forward != null) {
       return;
     }
 
@@ -145,7 +145,7 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
     followingId: string,
     sortOrder: number,
   ): Promise<void> {
-    if (existing === null) {
+    if (existing == null) {
       await this.#dependencies.followRepository.create({
         followerId,
         followingId,

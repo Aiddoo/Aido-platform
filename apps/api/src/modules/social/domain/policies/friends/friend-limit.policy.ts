@@ -3,5 +3,5 @@
  * 이미 한도만큼 친구가 있으면 더 맺을 수 없다.
  */
 export function hasReachedFriendLimit(maxCount: number | null, friendCount: number): boolean {
-  return maxCount !== null && friendCount >= maxCount;
+  return maxCount != null && friendCount >= maxCount;
 }

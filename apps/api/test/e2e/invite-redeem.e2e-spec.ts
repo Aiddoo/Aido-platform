@@ -51,7 +51,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     return request(ctx.app.getHttpServer())
       .post(`/v1/invites/${code}/redeem`)
       .set("Authorization", `Bearer ${invitee.accessToken}`)
-      .send(installationId === undefined ? {} : { installationId });
+      .send(installationId == null ? {} : { installationId });
   }
 
   async function rewardGrantsOf(userId: string) {
