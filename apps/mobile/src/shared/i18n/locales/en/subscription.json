@@ -1,37 +1,4 @@
 {
-  "status": {
-    "premiumTitle": "Aido Premium",
-    "active": {
-      "label": "Subscribed",
-      "description": "You're enjoying all premium features"
-    },
-    "cancelled": {
-      "label": "Canceled",
-      "description": "Your subscription has been canceled"
-    },
-    "expired": {
-      "label": "Expired",
-      "description": "Your subscription has expired"
-    },
-    "free": {
-      "label": "Free",
-      "description": "You're on the free plan"
-    },
-    "cancelledUntil": "Your subscription has been canceled. You can keep using it until {{date}}",
-    "nextBillingDate": "Next billing date",
-    "expiresAt": "Expires on",
-    "statusLabel": "Subscription status",
-    "autoRenewal": "Auto-renews",
-    "grantPeriod": "Access period",
-    "grantUntil": "Until {{date}}",
-    "daysLeft": "Time left",
-    "daysLeftValue_one": "{{count}} day",
-    "daysLeftValue_other": "{{count}} days",
-    "autoRenewalLabel": "Auto-renewal",
-    "noAutoRenewal": "None",
-    "bankedNotice_one": "When your subscription ends, {{count}} day of reward Premium starts",
-    "bankedNotice_other": "When your subscription ends, {{count}} days of reward Premium start"
-  },
   "plan": {
     "annual": "Annual",
     "monthly": "Monthly",
@@ -46,7 +13,9 @@
     "purchaseFailed": "Subscription failed",
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",
-    "restoreFailed": "Failed to restore purchases"
+    "restoreFailed": "Failed to restore purchases",
+    "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
+    "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
   },
   "errors": {
     "notConfigured": "RevenueCat isn't initialized",
@@ -95,12 +64,9 @@
     "future": "All future premium features"
   },
   "subscriber": {
-    "title": "Premium active",
-    "description": "You're enjoying all premium features",
     "benefitsTitle": "Your benefits",
     "manageButton": "Manage subscription (store settings)",
     "restoreButton": "Restore purchases",
-    "grantTitle": "Premium from your invite reward",
     "subscribeAfterGrantButton": "Subscribe to keep Premium"
   },
   "paywall": {
@@ -122,5 +88,44 @@
     "badgeToday": "Today",
     "tomorrow": "Your Premium ends tomorrow. Subscribe to keep it going",
     "today": "Your Premium ends today. Subscribe to keep it going"
+  },
+  "receipt": {
+    "paid": {
+      "title": "Premium active",
+      "description": "You're enjoying all premium features"
+    },
+    "reward": {
+      "title": "Premium from an invite reward",
+      "description": "You got Premium through a friend invite"
+    },
+    "admin": {
+      "title": "Admin account",
+      "description": "All features unlocked"
+    },
+    "rows": {
+      "account": "Account",
+      "accountAdmin": "Admin",
+      "rewardRecord": "Invite reward record",
+      "until": "Until {{date}}",
+      "nextBillingDate": "Next billing date",
+      "subscriptionEndsOn": "Subscription ends",
+      "subscriptionStatus": "Subscription status",
+      "autoRenewalOn": "Auto-renews",
+      "autoRenewalOff": "Auto-renew off",
+      "rewardPeriod": "Access period",
+      "bankedReward": "Reward up next",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "daysUntil_one": "{{count}} day · until {{date}}",
+      "daysUntil_other": "{{count}} days · until {{date}}",
+      "overallPeriod": "Total period",
+      "daysLeft": "Time left"
+    },
+    "footnote": {
+      "returnsToFreePlan": "After {{date}}, you'll go back to the free plan",
+      "rewardStartsAfterSubscription_one": "When your subscription ends, your {{count}} reward day starts",
+      "rewardStartsAfterSubscription_other": "When your subscription ends, your {{count}} reward days start",
+      "manageAutoRenewalInStore": "You can change auto-renew in your store settings"
+    }
   }
 }

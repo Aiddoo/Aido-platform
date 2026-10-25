@@ -178,3 +178,21 @@ describe('getZonedHour', () => {
     expect(getZonedHour(new Date('2026-10-01T14:30:00Z'), 'Asia/Seoul')).toBe(23);
   });
 });
+
+describe('formatDateLabel monthDay 윤일 경계', () => {
+  // 2028-02-29T15:00Z = 서울 3월 1일 00:00, LA 2월 29일 07:00
+  const LEAP_DAY_BOUNDARY = new Date('2028-02-29T15:00:00Z');
+
+  it.each([
+    ['ko-KR', 'Asia/Seoul', '3월 1일'],
+    ['ko-KR', 'America/Los_Angeles', '2월 29일'],
+    ['en-US', 'Asia/Seoul', 'Mar 1'],
+    ['en-US', 'America/Los_Angeles', 'Feb 29'],
+  ] as const)('%s·%s에서는 %s로 표시한다', (locale, timeZone, expected) => {
+    // When
+    const result = formatDateLabel(LEAP_DAY_BOUNDARY, 'monthDay', { locale, timeZone });
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});

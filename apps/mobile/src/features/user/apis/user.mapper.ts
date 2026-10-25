@@ -16,6 +16,8 @@ export const toUser = (dto: CurrentUser): User => ({
   premiumAccess: {
     source: dto.premiumSource ?? null,
     endsAt: dto.premiumEndsAt == null ? null : new Date(dto.premiumEndsAt),
+    // 서버가 지금 기간의 끝을 따로 보내기 전까지는 전체 끝과 같다
+    periodEndsAt: dto.premiumEndsAt == null ? null : new Date(dto.premiumEndsAt),
     willRenew: dto.willRenew ?? false,
     bankedDays: dto.bankedPremiumDays ?? 0,
   },

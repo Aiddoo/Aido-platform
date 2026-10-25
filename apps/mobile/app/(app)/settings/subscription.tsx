@@ -4,22 +4,18 @@ import benefitNotificationImage from '@assets/images/subscription/benefit-notifi
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
-import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
-import {
-  isActiveSubscription,
-  SubscriptionPolicy,
-} from '@src/features/subscription/domains/subscription.model';
+import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
 import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-subscription-view-param';
 import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
 import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
+import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/view-models/subscription-receipt.view-model';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { LEGAL_URLS } from '@src/shared/constants/legal-urls';
 import { STORE_URLS } from '@src/shared/constants/store-urls';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
-import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Barcode,
   Button,
@@ -56,19 +52,17 @@ import { match } from 'ts-pattern';
 function SubscriptionScreen() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
   const sdkManager = useRevenueCatSdkManager();
+  const receipt = useSubscriptionReceipt();
   const [view] = useSubscriptionViewParam();
 
   // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다
   return match({
     isPremium: UserPolicy.isPremiumUser(user),
-    canSubscribeAfterGrant: PremiumAccessPolicy.canSubscribeAfterGrant(
-      user.premiumAccess,
-      sdkManager.isConfigured(),
-    ),
+    canSubscribe: receipt.primaryAction === 'subscribe',
     isStoreConfigured: sdkManager.isConfigured(),
     view,
   })
-    .with({ canSubscribeAfterGrant: true, view: 'plans' }, () => <PaywallPane />)
+    .with({ canSubscribe: true, view: 'plans' }, () => <PaywallPane />)
     .with({ isPremium: true }, () => <SubscriberPane />)
     .with({ isStoreConfigured: false }, () => <StoreUnavailablePane />)
     .with({ isPremium: false, isStoreConfigured: true }, () => <PaywallPane />)
@@ -77,13 +71,8 @@ function SubscriptionScreen() {
 
 function SubscriberPane() {
   const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const sdkManager = useRevenueCatSdkManager();
+  const { primaryAction } = useSubscriptionReceipt();
   const restore = useMutation(useRestoreMutationOptions());
-  const canSubscribeAfterGrant = PremiumAccessPolicy.canSubscribeAfterGrant(
-    user.premiumAccess,
-    sdkManager.isConfigured(),
-  );
 
   const handleManageSubscription = () => {
     if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
@@ -104,23 +93,25 @@ function SubscriberPane() {
           </Suspense>
         </QueryErrorBoundary>
 
-        <BankedPremiumNotice />
-
         <Spacing size={16} />
 
-        {canSubscribeAfterGrant ? (
-          <Button
-            onPress={() =>
-              router.push({ pathname: '/settings/subscription', params: { view: 'plans' } })
-            }
-          >
-            {t('subscriber.subscribeAfterGrantButton')}
-          </Button>
-        ) : (
-          <Button onPress={handleManageSubscription} variant="weak" color="dark">
-            {t('subscriber.manageButton')}
-          </Button>
-        )}
+        {match(primaryAction)
+          .with('subscribe', () => (
+            <Button
+              onPress={() =>
+                router.push({ pathname: '/settings/subscription', params: { view: 'plans' } })
+              }
+            >
+              {t('subscriber.subscribeAfterGrantButton')}
+            </Button>
+          ))
+          .with('manage', () => (
+            <Button onPress={handleManageSubscription} variant="weak" color="dark">
+              {t('subscriber.manageButton')}
+            </Button>
+          ))
+          .with(null, () => null)
+          .exhaustive()}
 
         <Spacing size={16} />
 
@@ -161,6 +152,7 @@ function PaywallPane() {
   });
   const purchase = useMutation(usePurchaseMutationOptions());
   const restore = useMutation(useRestoreMutationOptions());
+  const [view] = useSubscriptionViewParam();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
   const defaultPlan =
     offering?.plans.find((plan) => plan.planType === 'annual') ?? offering?.plans[0];
@@ -171,7 +163,14 @@ function PaywallPane() {
     if (!selectedPlan || purchase.isPending) {
       return;
     }
-    purchase.mutate(selectedPlan.identifier);
+    purchase.mutate(selectedPlan.identifier, {
+      // 보상 영수증에서 요금제로 들어왔으면 영수증으로 돌아가 결제한 영수증으로 바뀌는 것을 보여 준다
+      onSuccess: () => {
+        if (view === 'plans' && router.canGoBack()) {
+          router.back();
+        }
+      },
+    });
   };
 
   if (offering == null) {
@@ -276,8 +275,9 @@ SubscriptionScreen.Loading = function Loading() {
 
 function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isGrantOnly = PremiumAccessPolicy.isGrantOnly(user.premiumAccess);
+  const { variant, rows, footnote } = useSubscriptionReceipt();
+  // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
+  const formatReceiptDate = variant === 'paid' ? formatFullDate : formatMonthDay;
 
   return (
     <ScallopedContainer>
@@ -287,18 +287,38 @@ function SubscriptionReceipt() {
 
           <VStack gap={2} className="flex-1">
             <Text size="t3" weight="bold" tone="brand">
-              {isGrantOnly ? t('subscriber.grantTitle') : t('subscriber.title')}
+              {t(`receipt.${variant}.title`)}
             </Text>
 
             <Text size="b4" shade={6}>
-              {t('subscriber.description')}
+              {t(`receipt.${variant}.description`)}
             </Text>
           </VStack>
         </HStack>
 
         <Spacing size={24} />
 
-        {isGrantOnly ? <GrantPeriodDetails /> : <StoreSubscriptionDetails />}
+        <VStack>
+          {rows.map((row) => (
+            <ReceiptDetailRow key={row.type} row={row} formatDate={formatReceiptDate} />
+          ))}
+        </VStack>
+
+        {footnote != null && (
+          <Text size="e1" shade={6} lineBreakStrategyIOS="hangul-word" className="mt-2">
+            {match(footnote)
+              .with({ type: 'returnsToFreePlan' }, ({ date }) =>
+                t('receipt.footnote.returnsToFreePlan', { date: formatReceiptDate(date) }),
+              )
+              .with({ type: 'rewardStartsAfterSubscription' }, ({ days }) =>
+                t('receipt.footnote.rewardStartsAfterSubscription', { count: days }),
+              )
+              .with({ type: 'manageAutoRenewalInStore' }, () =>
+                t('receipt.footnote.manageAutoRenewalInStore'),
+              )
+              .exhaustive()}
+          </Text>
+        )}
       </Box>
 
       <DashedDivider className="my-5 mx-5" />
@@ -328,75 +348,73 @@ function SubscriptionReceipt() {
   );
 }
 
-/** 초대 보상처럼 서버가 준 기간만 있을 때: 끝나는 날, 남은 일수, 자동 갱신 없음 */
-function GrantPeriodDetails() {
-  const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  // 날짜가 바뀌면 provider가 다시 그리고, 시각 비교는 그리는 순간의 현재 시각으로 한다
-  const { currentTimeZone } = useLocalDate();
-  const { endsAt } = user.premiumAccess;
-  const daysLeft = PremiumAccessPolicy.daysLeft(user.premiumAccess, new Date(), currentTimeZone);
-
-  if (endsAt == null || daysLeft == null) {
-    return null;
-  }
-
-  return (
-    <VStack>
-      <ReceiptDetailRow
-        label={t('status.grantPeriod')}
-        value={t('status.grantUntil', { date: formatMonthDay(endsAt) })}
-      />
-      <ReceiptDetailRow
-        label={t('status.daysLeft')}
-        value={t('status.daysLeftValue', { count: daysLeft })}
-      />
-      <ReceiptDetailRow label={t('status.autoRenewalLabel')} value={t('status.noAutoRenewal')} />
-    </VStack>
-  );
-}
-
-function StoreSubscriptionDetails() {
-  const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const isActive = isActiveSubscription(user.subscriptionStatus);
-
-  if (!SubscriptionPolicy.isExpirationRelevant(user) || user.subscriptionExpiresAt == null) {
-    return null;
-  }
-
-  return (
-    <VStack>
-      <ReceiptDetailRow
-        label={isActive ? t('status.nextBillingDate') : t('status.expiresAt')}
-        value={formatFullDate(user.subscriptionExpiresAt)}
-      />
-
-      {isActive && (
-        <ListRow
-          verticalPadding="small"
-          contents={
-            <Text size="b4" shade={6}>
-              {t('status.statusLabel')}
-            </Text>
-          }
-          right={
-            <Text size="b4" weight="semibold" tone="brand">
-              {t('status.autoRenewal')}
-            </Text>
-          }
-        />
-      )}
-    </VStack>
-  );
-}
-
 interface ReceiptDetailRowProps {
-  label: string;
-  value: string;
+  row: SubscriptionReceiptRow;
+  formatDate: (date: Date) => string;
 }
 
-function ReceiptDetailRow({ label, value }: ReceiptDetailRowProps) {
+type ReceiptValueTone = 'default' | 'brand' | 'muted';
+
+function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
+  const { t } = useTranslation('subscription');
+  const { label, value, tone } = match<
+    SubscriptionReceiptRow,
+    { label: string; value: string; tone: ReceiptValueTone }
+  >(row)
+    .with({ type: 'account' }, () => ({
+      label: t('receipt.rows.account'),
+      value: t('receipt.rows.accountAdmin'),
+      tone: 'default',
+    }))
+    .with({ type: 'rewardRecord' }, ({ endsAt }) => ({
+      label: t('receipt.rows.rewardRecord'),
+      value: t('receipt.rows.until', { date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'nextBillingDate' }, ({ date }) => ({
+      label: t('receipt.rows.nextBillingDate'),
+      value: formatDate(date),
+      tone: 'default',
+    }))
+    .with({ type: 'subscriptionEndsOn' }, ({ date }) => ({
+      label: t('receipt.rows.subscriptionEndsOn'),
+      value: formatDate(date),
+      tone: 'default',
+    }))
+    .with({ type: 'autoRenewal' }, ({ willRenew }) => ({
+      label: t('receipt.rows.subscriptionStatus'),
+      value: willRenew ? t('receipt.rows.autoRenewalOn') : t('receipt.rows.autoRenewalOff'),
+      tone: willRenew ? 'brand' : 'muted',
+    }))
+    .with({ type: 'rewardPeriod' }, ({ endsAt }) => ({
+      label: t('receipt.rows.rewardPeriod'),
+      value: t('receipt.rows.until', { date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'bankedReward' }, ({ days, endsAt }) => ({
+      label: t('receipt.rows.bankedReward'),
+      value:
+        endsAt == null
+          ? t('receipt.rows.days', { count: days })
+          : t('receipt.rows.daysUntil', { count: days, date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'overallPeriod' }, ({ endsAt }) => ({
+      label: t('receipt.rows.overallPeriod'),
+      value: t('receipt.rows.until', { date: formatDate(endsAt) }),
+      tone: 'default',
+    }))
+    .with({ type: 'daysLeft' }, ({ days, endingNotice }) => ({
+      label: t('receipt.rows.daysLeft'),
+      value: match(endingNotice)
+        .with('today', () => t('endingNotice.badgeToday'))
+        .with('tomorrow', () => t('endingNotice.badgeTomorrow'))
+        .with(null, () => t('receipt.rows.days', { count: days }))
+        .exhaustive(),
+      tone: endingNotice == null ? 'default' : 'brand',
+    }))
+    .exhaustive();
+
   return (
     <ListRow
       verticalPadding="small"
@@ -406,7 +424,13 @@ function ReceiptDetailRow({ label, value }: ReceiptDetailRowProps) {
         </Text>
       }
       right={
-        <Text size="b4" weight="semibold" shade={8} className="tabular-nums">
+        <Text
+          size="b4"
+          weight="semibold"
+          tone={tone === 'brand' ? 'brand' : 'neutral'}
+          shade={tone === 'muted' ? 6 : 8}
+          className="tabular-nums"
+        >
           {value}
         </Text>
       }
@@ -414,19 +438,14 @@ function ReceiptDetailRow({ label, value }: ReceiptDetailRowProps) {
   );
 }
 
-/** 자동 갱신 없이 끝나는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
+/** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
 function PremiumEndingNotice() {
   const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-  const { currentTimeZone } = useLocalDate();
-  const access = user.premiumAccess;
-  const now = new Date();
+  const { endingNotice } = useSubscriptionReceipt();
 
-  if (!PremiumAccessPolicy.isEndingSoon(access, now, currentTimeZone)) {
+  if (endingNotice == null) {
     return null;
   }
-
-  const endsToday = PremiumAccessPolicy.isEndingToday(access, now, currentTimeZone);
 
   return (
     <>
@@ -438,35 +457,16 @@ function PremiumEndingNotice() {
       >
         <Box className="rounded-full bg-main px-2 py-0.5">
           <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
-            {endsToday ? t('endingNotice.badgeToday') : t('endingNotice.badgeTomorrow')}
+            {endingNotice === 'today'
+              ? t('endingNotice.badgeToday')
+              : t('endingNotice.badgeTomorrow')}
           </Text>
         </Box>
         <Text size="b4" weight="semibold" tone="brand" className="flex-1">
-          {endsToday ? t('endingNotice.today') : t('endingNotice.tomorrow')}
+          {endingNotice === 'today' ? t('endingNotice.today') : t('endingNotice.tomorrow')}
         </Text>
       </HStack>
       <Spacing size={12} />
-    </>
-  );
-}
-
-/** 구독 중에 받은 보상은 구독이 끝난 뒤 이어서 시작한다는 것을 알린다 */
-function BankedPremiumNotice() {
-  const { t } = useTranslation('subscription');
-  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
-
-  if (!PremiumAccessPolicy.hasBankedDays(user.premiumAccess)) {
-    return null;
-  }
-
-  return (
-    <>
-      <Spacing size={12} />
-      <Box className="rounded-2xl bg-gray-2 px-3.5 py-3">
-        <Text size="b4" shade={7}>
-          {t('status.bankedNotice', { count: user.premiumAccess.bankedDays })}
-        </Text>
-      </Box>
     </>
   );
 }

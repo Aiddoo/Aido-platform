@@ -54,6 +54,7 @@ describe('toUser', () => {
     expect(result.premiumAccess).toEqual({
       source: 'GRANT',
       endsAt: new Date('2026-11-01T05:30:00.000Z'),
+      periodEndsAt: new Date('2026-11-01T05:30:00.000Z'),
       willRenew: false,
       bankedDays: 7,
     });
@@ -70,6 +71,7 @@ describe('toUser', () => {
     expect(result.premiumAccess).toEqual({
       source: null,
       endsAt: null,
+      periodEndsAt: null,
       willRenew: false,
       bankedDays: 0,
     });

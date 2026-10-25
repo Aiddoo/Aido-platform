@@ -66,6 +66,43 @@ describe('calculateDaysLeft', () => {
   });
 });
 
+describe('calculateDaysLeft 달력 경계', () => {
+  it.each([
+    // 2028-03-12 02:00 PST → 03:00 PDT (23시간인 날)
+    ['LA 서머타임 시작일을 지나', LOS_ANGELES, '2028-03-11T20:00:00Z', '2028-03-13T19:00:00Z', 2],
+    // 2028-11-05 02:00 PDT → 01:00 PST (25시간인 날)
+    ['LA 서머타임 종료일을 지나', LOS_ANGELES, '2028-11-04T19:00:00Z', '2028-11-06T20:00:00Z', 2],
+    // 2028-02-29T15:00Z = 서울 3월 1일 00:00, LA 2월 29일 07:00
+    [
+      '서울에서 2월 28일 정오에 3월 1일 자정까지',
+      SEOUL,
+      '2028-02-28T03:00:00Z',
+      '2028-02-29T15:00:00Z',
+      2,
+    ],
+    [
+      'LA에서 2월 28일 정오에 2월 29일 아침까지',
+      LOS_ANGELES,
+      '2028-02-28T20:00:00Z',
+      '2028-02-29T15:00:00Z',
+      1,
+    ],
+    [
+      'LA에서 2월 29일 밤에 3월 1일까지',
+      LOS_ANGELES,
+      '2028-03-01T07:00:00Z',
+      '2028-03-01T20:00:00Z',
+      1,
+    ],
+  ] as const)('%s 남은 달력 일수를 반환한다', (_case, timeZone, now, endsAt, expected) => {
+    // When
+    const result = calculateDaysLeft(new Date(endsAt), new Date(now), timeZone);
+
+    // Then
+    expect(result).toBe(expected);
+  });
+});
+
 describe('PremiumAccessPolicy', () => {
   describe('isGrantOnly', () => {
     it.each([
@@ -100,27 +137,6 @@ describe('PremiumAccessPolicy', () => {
     });
   });
 
-  describe('canSubscribeAfterGrant', () => {
-    it.each([
-      ['GRANT', true, true],
-      ['GRANT', false, false],
-      ['STORE', true, false],
-      [null, true, false],
-    ] as const)(
-      '출처가 %s이고 스토어 설정이 %s면 %s를 반환한다',
-      (source, isStoreConfigured, expected) => {
-        // Given
-        const access = createPremiumAccess({ source });
-
-        // When
-        const result = PremiumAccessPolicy.canSubscribeAfterGrant(access, isStoreConfigured);
-
-        // Then
-        expect(result).toBe(expected);
-      },
-    );
-  });
-
   describe('daysLeft', () => {
     it('끝나는 시각이 없으면 null을 반환한다', () => {
       // Given
@@ -145,97 +161,148 @@ describe('PremiumAccessPolicy', () => {
     });
   });
 
-  describe('isEndingSoon', () => {
-    it('자동 갱신되지 않고 내일 끝나면 true를 반환한다', () => {
-      // Given
+  describe('endingNotice', () => {
+    it.each([
+      ['내일 끝나면 tomorrow', '2026-10-31T01:00:00Z', 'tomorrow'],
+      ['끝나는 날 아침이면 today', '2026-10-31T23:00:00Z', 'today'],
+      ['끝나기 1ms 전이면 today', '2026-11-01T05:29:59.999Z', 'today'],
+      ['끝나는 시각과 같으면 null', '2026-11-01T05:30:00.000Z', null],
+      ['끝나고 1ms 뒤면 null', '2026-11-01T05:30:00.001Z', null],
+      ['이틀 남았으면 null', '2026-10-30T01:00:00Z', null],
+    ] as const)('자동 갱신 없이 %s을 반환한다', (_case, now, expected) => {
+      // Given 11월 1일 14:30 KST에 끝나는 보상 기간
       const access = createPremiumAccess();
 
       // When
-      const result = PremiumAccessPolicy.isEndingSoon(
-        access,
-        new Date('2026-10-31T01:00:00Z'),
-        SEOUL,
-      );
+      const result = PremiumAccessPolicy.endingNotice(access, new Date(now), SEOUL);
 
       // Then
-      expect(result).toBe(true);
+      expect(result).toBe(expected);
     });
 
-    it('이틀 남았으면 false를 반환한다', () => {
-      // Given
-      const access = createPremiumAccess();
-
-      // When
-      const result = PremiumAccessPolicy.isEndingSoon(
-        access,
-        new Date('2026-10-30T01:00:00Z'),
-        SEOUL,
-      );
-
-      // Then
-      expect(result).toBe(false);
-    });
-
-    it('자동 갱신되면 내일 끝나도 false를 반환한다', () => {
+    it('자동 갱신되면 내일 끝나도 null을 반환한다', () => {
       // Given
       const access = createPremiumAccess({ source: 'STORE', willRenew: true });
 
       // When
-      const result = PremiumAccessPolicy.isEndingSoon(
+      const result = PremiumAccessPolicy.endingNotice(
         access,
         new Date('2026-10-31T01:00:00Z'),
         SEOUL,
       );
 
       // Then
-      expect(result).toBe(false);
+      expect(result).toBeNull();
     });
 
-    it('이미 끝났으면 false를 반환한다', () => {
-      // Given
-      const access = createPremiumAccess();
+    it('구독을 취소했어도 이어서 받을 보상이 남았으면 null을 반환한다', () => {
+      // Given 스토어 구독이 내일 끝나지만 보상 7일이 이어진다
+      const access = createPremiumAccess({ source: 'STORE', willRenew: false, bankedDays: 7 });
 
       // When
-      const result = PremiumAccessPolicy.isEndingSoon(
+      const result = PremiumAccessPolicy.endingNotice(
         access,
-        new Date('2026-11-01T05:30:00Z'),
+        new Date('2026-10-31T01:00:00Z'),
         SEOUL,
       );
 
       // Then
-      expect(result).toBe(false);
+      expect(result).toBeNull();
+    });
+
+    it.each([
+      // 2028-02-29T15:00Z = 3월 1일 00:00 KST = 2월 29일 07:00 PST
+      [SEOUL, '2028-02-29T14:00:00Z', 'tomorrow'],
+      [LOS_ANGELES, '2028-02-29T14:00:00Z', 'today'],
+    ] as const)(
+      '윤년 2월 29일 경계에서 %s 기준 %s에는 %s를 반환한다',
+      (timeZone, now, expected) => {
+        // Given
+        const access = createPremiumAccess({
+          endsAt: new Date('2028-02-29T15:00:00Z'),
+          periodEndsAt: new Date('2028-02-29T15:00:00Z'),
+        });
+
+        // When
+        const result = PremiumAccessPolicy.endingNotice(access, new Date(now), timeZone);
+
+        // Then
+        expect(result).toBe(expected);
+      },
+    );
+  });
+
+  describe('purchaseSuccessMessage', () => {
+    it.each([
+      ['GRANT', 'purchaseSuccessWithReward'],
+      ['STORE', 'purchaseSuccess'],
+      [null, 'purchaseSuccess'],
+    ] as const)('구매 전 출처가 %s면 %s를 반환한다', (source, expected) => {
+      // Given
+      const access = createPremiumAccess({ source });
+
+      // When
+      const result = PremiumAccessPolicy.purchaseSuccessMessage(access);
+
+      // Then
+      expect(result).toBe(expected);
+    });
+
+    it('내 정보를 아직 불러오지 않았으면 purchaseSuccess를 반환한다', () => {
+      // When
+      const result = PremiumAccessPolicy.purchaseSuccessMessage(undefined);
+
+      // Then
+      expect(result).toBe('purchaseSuccess');
     });
   });
 
-  describe('isEndingToday', () => {
-    it('끝나는 날 아침이면 true를 반환한다', () => {
+  describe('restoreEmptyMessage', () => {
+    it.each([
+      ['GRANT', 'restoreEmptyWithReward'],
+      ['STORE', 'restoreEmpty'],
+      [null, 'restoreEmpty'],
+    ] as const)('출처가 %s면 %s를 반환한다', (source, expected) => {
       // Given
-      const access = createPremiumAccess();
+      const access = createPremiumAccess({ source });
 
       // When
-      const result = PremiumAccessPolicy.isEndingToday(
-        access,
-        new Date('2026-10-31T23:00:00Z'), // 11월 1일 08:00 KST
-        SEOUL,
-      );
+      const result = PremiumAccessPolicy.restoreEmptyMessage(access);
 
       // Then
-      expect(result).toBe(true);
+      expect(result).toBe(expected);
     });
+  });
 
-    it('하루 전이면 false를 반환한다', () => {
+  describe('hasChanged', () => {
+    it('같은 시각을 새 Date로 받았으면 false를 반환한다', () => {
       // Given
-      const access = createPremiumAccess();
+      const previous = createPremiumAccess();
+      const next = createPremiumAccess({ endsAt: new Date('2026-11-01T05:30:00Z') });
 
       // When
-      const result = PremiumAccessPolicy.isEndingToday(
-        access,
-        new Date('2026-10-31T01:00:00Z'),
-        SEOUL,
-      );
+      const result = PremiumAccessPolicy.hasChanged(previous, next);
 
       // Then
       expect(result).toBe(false);
+    });
+
+    it.each([
+      ['출처', { source: null }],
+      ['전체 끝', { endsAt: new Date('2026-11-08T05:30:00Z') }],
+      ['지금 기간의 끝', { periodEndsAt: new Date('2026-11-08T05:30:00Z') }],
+      ['자동 갱신', { willRenew: true }],
+      ['이어서 받을 보상', { bankedDays: 7 }],
+    ] as const)('%s가 바뀌면 true를 반환한다', (_field, overrides) => {
+      // Given
+      const previous = createPremiumAccess();
+      const next = createPremiumAccess(overrides);
+
+      // When
+      const result = PremiumAccessPolicy.hasChanged(previous, next);
+
+      // Then
+      expect(result).toBe(true);
     });
   });
 });

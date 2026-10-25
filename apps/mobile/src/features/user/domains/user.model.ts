@@ -1,5 +1,8 @@
 import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api';
-import { PremiumAccessSchema } from '@src/features/subscription/domains/premium-access.model';
+import {
+  PremiumAccessPolicy,
+  PremiumAccessSchema,
+} from '@src/features/subscription/domains/premium-access.model';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
@@ -47,8 +50,21 @@ export function getUserTier(user: Pick<User, 'role' | 'subscriptionStatus'>): Us
   return 'BASIC';
 }
 
+// 역할·구독 상태·프리미엄 기간 중 하나라도 바뀌면 서버가 주는 한도·사용량도 달라진다
+export function hasEntitlementChanged(
+  previous: Pick<User, 'role' | 'subscriptionStatus' | 'premiumAccess'>,
+  next: Pick<User, 'role' | 'subscriptionStatus' | 'premiumAccess'>,
+): boolean {
+  return (
+    previous.role !== next.role ||
+    previous.subscriptionStatus !== next.subscriptionStatus ||
+    PremiumAccessPolicy.hasChanged(previous.premiumAccess, next.premiumAccess)
+  );
+}
+
 export const UserPolicy = {
   isPremiumUser,
   hasCredential,
   tier: getUserTier,
+  hasEntitlementChanged,
 } as const;

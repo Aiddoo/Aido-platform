@@ -1,35 +1,4 @@
 {
-  "status": {
-    "premiumTitle": "Aido 프리미엄",
-    "active": {
-      "label": "구독 중",
-      "description": "모든 프리미엄 기능을 이용 중이에요"
-    },
-    "cancelled": {
-      "label": "취소됨",
-      "description": "구독이 취소되었어요"
-    },
-    "expired": {
-      "label": "만료됨",
-      "description": "구독이 만료되었어요"
-    },
-    "free": {
-      "label": "무료",
-      "description": "무료 플랜을 이용 중이에요"
-    },
-    "cancelledUntil": "구독이 취소되었어요. {{date}}까지 이용할 수 있어요",
-    "nextBillingDate": "다음 결제일",
-    "expiresAt": "만료일",
-    "statusLabel": "구독 상태",
-    "autoRenewal": "자동 갱신",
-    "grantPeriod": "이용 기간",
-    "grantUntil": "{{date}}까지",
-    "daysLeft": "남은 기간",
-    "daysLeftValue": "{{count}}일",
-    "autoRenewalLabel": "자동 갱신",
-    "noAutoRenewal": "없음",
-    "bankedNotice": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요"
-  },
   "plan": {
     "annual": "연간 구독",
     "monthly": "월간 구독",
@@ -44,7 +13,9 @@
     "purchaseFailed": "구독에 실패했어요",
     "restoreSuccess": "구매가 복원되었어요!",
     "restoreEmpty": "복원할 구매 내역이 없어요",
-    "restoreFailed": "구매 복원에 실패했어요"
+    "restoreFailed": "구매 복원에 실패했어요",
+    "purchaseSuccessWithReward": "구독을 시작했어요. 남은 초대 보상은 구독이 끝나면 이어져요",
+    "restoreEmptyWithReward": "복원할 구매가 없어요. 초대 보상은 그대로 유지돼요"
   },
   "errors": {
     "notConfigured": "RevenueCat이 초기화되지 않았어요",
@@ -93,12 +64,9 @@
     "future": "향후 출시되는 모든 프리미엄 기능"
   },
   "subscriber": {
-    "title": "프리미엄 이용 중",
-    "description": "모든 프리미엄 기능을 이용하고 있어요",
     "benefitsTitle": "이용 중인 혜택",
     "manageButton": "구독 관리 (스토어 설정)",
     "restoreButton": "이전 구매 복원",
-    "grantTitle": "초대 보상으로 프리미엄을 쓰고 있어요",
     "subscribeAfterGrantButton": "구독하고 계속 쓰기"
   },
   "paywall": {
@@ -120,5 +88,41 @@
     "badgeToday": "오늘",
     "tomorrow": "내일 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
     "today": "오늘 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요"
+  },
+  "receipt": {
+    "paid": {
+      "title": "프리미엄 이용 중",
+      "description": "모든 프리미엄 기능을 이용하고 있어요"
+    },
+    "reward": {
+      "title": "초대 보상으로 프리미엄 이용 중",
+      "description": "친구 초대로 받은 프리미엄이에요"
+    },
+    "admin": {
+      "title": "관리자 계정",
+      "description": "모든 기능을 쓸 수 있어요"
+    },
+    "rows": {
+      "account": "계정",
+      "accountAdmin": "관리자",
+      "rewardRecord": "초대 보상 기록",
+      "until": "{{date}}까지",
+      "nextBillingDate": "다음 결제일",
+      "subscriptionEndsOn": "구독 종료일",
+      "subscriptionStatus": "구독 상태",
+      "autoRenewalOn": "자동 갱신",
+      "autoRenewalOff": "자동 갱신 꺼짐",
+      "rewardPeriod": "이용 기간",
+      "bankedReward": "이어서 받을 보상",
+      "days": "{{count}}일",
+      "daysUntil": "{{count}}일 · {{date}}까지",
+      "overallPeriod": "전체 이용",
+      "daysLeft": "남은 기간"
+    },
+    "footnote": {
+      "returnsToFreePlan": "{{date}}이 지나면 무료 플랜으로 돌아가요",
+      "rewardStartsAfterSubscription": "구독이 끝나면 보상 {{count}}일이 이어서 시작돼요",
+      "manageAutoRenewalInStore": "자동 갱신은 스토어 설정에서 바꿀 수 있어요"
+    }
   }
 }
