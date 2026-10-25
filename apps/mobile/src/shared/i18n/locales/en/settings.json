@@ -41,7 +41,15 @@
     "marketing": "Marketing Emails",
     "marketingDescription": "Receive events and promotional updates",
     "marketingPush": "Promotional push notifications",
-    "marketingPushDescription": "Receive recommendations and return reminders by push"
+    "marketingPushDescription": "Receive recommendations and return reminders by push",
+    "aiDataSharing": {
+      "label": "AI data sharing",
+      "description": "Sends what you type to Google Gemini to organize it into to-dos",
+      "agreedOn": "Agreed on {{date}}",
+      "withdrawTitle": "Withdraw consent?",
+      "withdrawDescription": "You won't be able to use AI to organize to-dos, reports, or suggestions. Existing to-dos stay.",
+      "withdrawConfirm": "Withdraw"
+    }
   },
   "categorySettings": {
     "header": "Edit your categories\nor change their order",

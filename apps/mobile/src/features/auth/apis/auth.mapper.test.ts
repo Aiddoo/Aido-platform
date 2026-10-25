@@ -128,6 +128,33 @@ describe('toConsent', () => {
     // Then
     expect(result.agreedTermsVersion).toBe('2.0.0');
   });
+
+  test('AI 데이터 제공 동의 상태와 동의 시각을 옮긴다', () => {
+    // Given
+    const dto = createConsentDto({
+      aiDataSharingDecision: 'AGREED',
+      aiDataSharingAgreedAt: '2026-10-26T09:00:00.000Z',
+    });
+
+    // When
+    const result = toConsent(dto);
+
+    // Then
+    expect(result.aiDataSharingDecision).toBe('AGREED');
+    expect(result.aiDataSharingAgreedAt?.toISOString()).toBe('2026-10-26T09:00:00.000Z');
+  });
+
+  test('AI 동의 필드가 없는 이전 서버 응답은 답하지 않은 것으로 본다', () => {
+    // Given
+    const dto = createConsentDto();
+
+    // When
+    const result = toConsent(dto);
+
+    // Then
+    expect(result.aiDataSharingDecision).toBe('UNDECIDED');
+    expect(result.aiDataSharingAgreedAt).toBeNull();
+  });
 });
 
 describe('toRegisterResult', () => {

@@ -1,4 +1,4 @@
-import { PASSWORD_RULES } from '@aido/api';
+import { aiDataSharingDecisionSchema, PASSWORD_RULES } from '@aido/api';
 import { z } from 'zod';
 
 export const authTokensSchema = z.object({
@@ -17,8 +17,16 @@ export const consentSchema = z.object({
   agreedTermsVersion: z.string().nullable(),
   marketingAgreedAt: z.coerce.date().nullable(),
   marketingPushAgreedAt: z.coerce.date().nullable(),
+  aiDataSharingDecision: aiDataSharingDecisionSchema,
+  aiDataSharingAgreedAt: z.coerce.date().nullable(),
 });
 export type Consent = z.infer<typeof consentSchema>;
+
+export const ConsentPolicy = {
+  /** 지금 안내 버전에 동의했을 때만 AI에 내용을 보낸다. 안내가 바뀌면 서버가 UNDECIDED로 돌려준다 */
+  hasAgreedToAiDataSharing: (consent: Consent): boolean =>
+    consent.aiDataSharingDecision === 'AGREED',
+} as const;
 
 export const registerResultSchema = z.object({
   message: z.string(),
@@ -43,6 +51,14 @@ export const updateMarketingPushConsentResultSchema = z.object({
 });
 export type UpdateMarketingPushConsentResult = z.infer<
   typeof updateMarketingPushConsentResultSchema
+>;
+
+export const updateAiDataSharingConsentResultSchema = consentSchema.pick({
+  aiDataSharingDecision: true,
+  aiDataSharingAgreedAt: true,
+});
+export type UpdateAiDataSharingConsentResult = z.infer<
+  typeof updateAiDataSharingConsentResultSchema
 >;
 
 export const deleteAccountResultSchema = z.object({

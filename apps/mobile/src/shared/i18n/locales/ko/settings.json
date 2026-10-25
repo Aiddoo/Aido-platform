@@ -41,7 +41,15 @@
     "marketing": "마케팅 수신 동의",
     "marketingDescription": "이벤트 및 프로모션 정보를 받습니다",
     "marketingPush": "광고성 앱 푸시 수신 동의",
-    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받습니다"
+    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받습니다",
+    "aiDataSharing": {
+      "label": "AI 기능 데이터 제공",
+      "description": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",
+      "agreedOn": "{{date}} 동의",
+      "withdrawTitle": "동의를 철회할까요?",
+      "withdrawDescription": "AI로 할 일 정리·리포트·제안을 쓸 수 없어요. 이미 만든 할 일은 그대로 남아요.",
+      "withdrawConfirm": "철회하기"
+    }
   },
   "categorySettings": {
     "header": "카테고리를 편집하거나\n순서를 바꿀 수 있어요",
