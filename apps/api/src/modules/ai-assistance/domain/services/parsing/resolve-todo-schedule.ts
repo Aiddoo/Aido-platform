@@ -20,7 +20,6 @@ export interface ScheduleClock {
 
 /** 반복 종료를 말하지 않은 반복 일정의 기본 기간 */
 const DEFAULT_RECURRENCE_WEEKS = 4;
-const MINUTES_PER_DAY = 24 * 60;
 const HALF_DAY_MINUTES = 12 * 60;
 
 /** 때만 말한 경우의 기본 시각(분). 자정은 대상 날짜 다음 날 00:00으로 따로 다룬다. */
@@ -69,7 +68,8 @@ export function resolveTodoSchedule(draft: ScheduleDraft, clock: ScheduleClock):
   let startDay = recurrenceBase?.start ?? resolvedDate.day;
   let scheduledMinutes: number | null = null;
 
-  const time = draft.time === null ? null : resolveTime(draft.time, startDay, nowMinutes, today);
+  const time =
+    draft.time === null ? null : resolveTime(draft.time, startDay, nowMinutes, today, clock);
   if (time === "INVALID") {
     warnings.push("INVALID_TIME");
   } else if (time !== null) {
@@ -185,11 +185,15 @@ function resolveTime(
   targetDay: CalendarDay,
   nowMinutes: number,
   today: CalendarDay,
+  clock: ScheduleClock,
 ): TimeResolution | "INVALID" | null {
   if (ref.relativeMinutes !== undefined) {
-    const total = nowMinutes + ref.relativeMinutes;
-    const dayShift = Math.floor(total / MINUTES_PER_DAY);
-    return { day: today.add(dayShift, "day"), minutes: total - dayShift * MINUTES_PER_DAY };
+    // 벽시계 분에 더하면 DST 전환 구간에서 한 시간이 어긋나므로 실제 순간에 더한 뒤 현지로 바꾼다.
+    const target = dayjs(clock.now).add(ref.relativeMinutes, "minute").tz(clock.timeZone);
+    return {
+      day: dayjs.utc(target.format("YYYY-MM-DD")),
+      minutes: target.hour() * 60 + target.minute(),
+    };
   }
   if (ref.hour === undefined) {
     if (ref.partOfDay === undefined) return null;
