@@ -27,6 +27,15 @@ const SCHEME = 'aido';
 
 const BRAND_COLOR = '#FF6B43';
 
+// 초대 링크 https://aido.kr/i/{inviteCode} (AASA·assetlinks는 랜딩이 /i/* 만 연다)
+const INVITE_LINK_HOST = 'aido.kr';
+const INVITE_LINK_PATH_PREFIX = '/i/';
+
+// 카카오 Android SDK는 Maven Central이 아닌 카카오 저장소에 있다
+const KAKAO_MAVEN_REPOSITORY = 'https://devrepo.kakao.com/nexus/content/groups/public/';
+// 카카오톡 공유가 카카오톡 설치 여부를 확인할 때 쓰는 스킴
+const KAKAO_QUERY_SCHEMES = ['kakaokompassauth', 'kakaolink', 'kakaoplus'];
+
 // Assets
 const ICON = './assets/images/icon.png';
 const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
@@ -132,6 +141,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   });
 
   const envConfig = getEnvironmentConfig(env);
+  // 키가 없는 로컬 빌드는 카카오 공유 없이(OS 공유로) 동작한다
+  const kakaoNativeAppKey = process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY;
 
   // 홈 위젯 데이터 공유용 App Group — 번들 id를 따라 환경별로 분리된다
   // (development는 프로덕션 번들 id를 공유 중이므로 그룹도 공유 — 라인 87 TODO 복원 시 함께 분리됨)
@@ -164,6 +175,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: true,
       bundleIdentifier: envConfig.bundleIdentifier,
       usesAppleSignIn: true,
+      // 운영 앱만 aido.kr AASA에 등록돼 있다
+      ...(isProduction && { associatedDomains: [`applinks:${INVITE_LINK_HOST}`] }),
       googleServicesFile: './GoogleService-Info.plist',
       config: {
         // false: HTTPS만 사용, 커스텀 암호화 없음 (App Store 제출 시 수출 규정 질문 스킵)
@@ -171,6 +184,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
       infoPlist: {
         UIViewControllerBasedStatusBarAppearance: true,
+        ...(kakaoNativeAppKey && { LSApplicationQueriesSchemes: KAKAO_QUERY_SCHEMES }),
         CFBundleAllowMixedLocalizations: true,
         // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
         NSMicrophoneUsageDescription:
@@ -218,6 +232,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ],
           category: ['BROWSABLE', 'DEFAULT'],
         },
+        // 초대 링크 App Links. OAuth 콜백 필터와 분리해 기존 auth 경로는 그대로 둔다
+        ...(isProduction
+          ? [
+              {
+                action: 'VIEW',
+                autoVerify: true,
+                data: [
+                  { scheme: 'https', host: INVITE_LINK_HOST, pathPrefix: INVITE_LINK_PATH_PREFIX },
+                ],
+                category: ['BROWSABLE', 'DEFAULT'],
+              },
+            ]
+          : []),
       ],
       permissions: [
         'RECORD_AUDIO',
@@ -283,9 +310,23 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             extraProguardRules:
               '-keep class * extends androidx.work.InputMerger { public <init>(); }',
             ...(isDevelopment && { usesCleartextTraffic: true }),
+            extraMavenRepos: [KAKAO_MAVEN_REPOSITORY],
           },
         },
       ],
+      ...(kakaoNativeAppKey
+        ? [
+            [
+              '@react-native-kakao/core',
+              {
+                nativeAppKey: kakaoNativeAppKey,
+                // 카카오톡 공유 메시지 버튼(kakao{KEY}://kakaolink)이 앱을 열게 한다
+                android: { forwardKakaoLinkIntentFilterToMainActivity: true },
+                ios: {},
+              },
+            ] satisfies [string, Record<string, unknown>],
+          ]
+        : []),
 
       'expo-router',
 
@@ -474,6 +515,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       revenueCatGoogleApiKey: process.env.REVENUECAT_GOOGLE_API_KEY,
       revenueCatTestApiKey: process.env.REVENUECAT_TEST_API_KEY,
       sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      kakaoNativeAppKey,
       // dev에서 Sentry 전송을 강제로 켜는 플래그(테스트 버튼 검증용). 평소 미설정 → dev는 전송 안 함.
       sentryDebug: process.env.EXPO_PUBLIC_SENTRY_DEBUG === 'true',
     },

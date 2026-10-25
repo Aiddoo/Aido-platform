@@ -1,0 +1,52 @@
+{
+  "codeEntry": {
+    "title": "Enter invite code",
+    "headline": "Enter the invite code\nyour friend sent you",
+    "description": "It's 6 characters (letters and numbers). You can paste it too",
+    "inputLabel": "Invite code",
+    "paste": "Paste copied code",
+    "submit": "Continue",
+    "retry": "Check again",
+    "unsupportedCharacter": "This code has a character invite codes don't use. Codes use only some numbers and capital letters"
+  },
+  "card": {
+    "inviterAvatar": "{{name}}'s cat profile",
+    "title": "{{name}} invited you\nto Aido",
+    "subtitle": "Become friends and cheer on each other's to-dos",
+    "receipt": {
+      "title_one": "Get {{count}} day of Premium when you join",
+      "title_other": "Get {{count}} days of Premium when you join",
+      "description": "Make to-dos with AI and add friends as much as you like",
+      "benefitFriend": "You'll be friends with {{name}} right away",
+      "benefitAi": "Unlimited AI to-dos",
+      "benefitFriends": "Unlimited friends and nudges",
+      "codeLabel": "Invite code"
+    },
+    "signUp": "Join and become friends",
+    "login": "I have an account · Log in",
+    "unnamedInviter": "Your friend"
+  },
+  "result": {
+    "notFound": {
+      "title": "We couldn't find this invite code",
+      "description": "Check the code again or ask your friend for a new link"
+    },
+    "rotated": {
+      "title": "This invite link has changed",
+      "description": "Your friend made a new link.\nAsk for the new one and open it again"
+    },
+    "disabled": {
+      "title": "Invites aren't available right now",
+      "description": "Please try again later.\nYour link will still work"
+    },
+    "loadFailed": {
+      "title": "Couldn't load the invite",
+      "description": "Check your connection and try again"
+    },
+    "enterCode": "Enter code instead",
+    "retry": "Try again"
+  },
+  "errors": {
+    "invalidCode": "Invite codes are 6 characters (letters and numbers)"
+  }
+}

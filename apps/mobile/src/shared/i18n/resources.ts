@@ -8,6 +8,7 @@ import enErrors from './locales/en/errors.json';
 import enFeatureDiscovery from './locales/en/feature-discovery.json';
 import enFriend from './locales/en/friend.json';
 import enInquiry from './locales/en/inquiry.json';
+import enInvite from './locales/en/invite.json';
 import enMemo from './locales/en/memo.json';
 import enNotification from './locales/en/notification.json';
 import enSettings from './locales/en/settings.json';
@@ -29,6 +30,7 @@ import koErrors from './locales/ko/errors.json';
 import koFeatureDiscovery from './locales/ko/feature-discovery.json';
 import koFriend from './locales/ko/friend.json';
 import koInquiry from './locales/ko/inquiry.json';
+import koInvite from './locales/ko/invite.json';
 import koMemo from './locales/ko/memo.json';
 import koNotification from './locales/ko/notification.json';
 import koSettings from './locales/ko/settings.json';
@@ -53,6 +55,7 @@ export const resources = {
     auth: koAuth,
     memo: koMemo,
     friend: koFriend,
+    invite: koInvite,
     notification: koNotification,
     user: koUser,
     subscription: koSubscription,
@@ -76,6 +79,7 @@ export const resources = {
     auth: enAuth,
     memo: enMemo,
     friend: enFriend,
+    invite: enInvite,
     notification: enNotification,
     user: enUser,
     subscription: enSubscription,

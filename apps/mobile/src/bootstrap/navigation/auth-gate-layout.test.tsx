@@ -1,5 +1,9 @@
 import { useAuth } from '@src/bootstrap/providers/auth-provider';
 import { useErrorReporter } from '@src/bootstrap/providers/di-context';
+import type * as InstallReferrerRepositoryModule from '@src/features/invite/apis/install-referrer.repository';
+import type * as InviteServiceModule from '@src/features/invite/apis/invite.service';
+import type * as PendingRedemptionRepositoryModule from '@src/features/invite/apis/pending-redemption.repository';
+import type * as SharedTestUtils from '@src/shared/__tests__';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as ExpoLinking from 'expo-linking';
 import { router, Stack } from 'expo-router';
@@ -14,15 +18,38 @@ jest.mock('@src/bootstrap/providers/auth-provider', () => ({ useAuth: jest.fn() 
 jest.mock('@src/shared/hooks/use-screen-tracking', () => ({ useScreenTracking: jest.fn() }));
 jest.mock('@src/bootstrap/hooks/use-user-identity', () => ({ useUserIdentity: jest.fn() }));
 jest.mock('@src/bootstrap/providers/di-context', () => {
+  const { createMemorySyncStorage, createMockHttpClient } =
+    jest.requireActual<typeof SharedTestUtils>('@src/shared/__tests__');
+  const { InviteService } = jest.requireActual<typeof InviteServiceModule>(
+    '@src/features/invite/apis/invite.service',
+  );
+  const { createPendingRedemptionRepository } = jest.requireActual<
+    typeof PendingRedemptionRepositoryModule
+  >('@src/features/invite/apis/pending-redemption.repository');
+  const { createInstallReferrerRepository } = jest.requireActual<
+    typeof InstallReferrerRepositoryModule
+  >('@src/features/invite/apis/install-referrer.repository');
   const errorReporter = { addBreadcrumb: jest.fn(), captureException: jest.fn() };
   const repository = {
     subscribe: () => () => {},
     getPendingCommand: () => null,
     clearIfCurrent: () => false,
   };
+  // 초대 진입 훅은 실제 서비스에 빈 저장소와 referrer 없는 gateway를 주입해 그대로 돈다
+  const storage = createMemorySyncStorage();
+  const inviteService = new InviteService({
+    publicHttpClient: createMockHttpClient(),
+    pendingRedemptionRepository: createPendingRedemptionRepository(storage),
+    installReferrerRepository: createInstallReferrerRepository(storage, {
+      read: async () => null,
+    }),
+  });
+  const logger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
   return {
     useErrorReporter: () => errorReporter,
     useWidgetNavigationRepository: () => repository,
+    useInviteService: () => inviteService,
+    useLogger: () => logger,
   };
 });
 jest.mock('@src/features/user/queries/get-me-query-options', () => ({
@@ -102,6 +129,7 @@ async function renderAuthRoutes(initialStatus: AuthState['status'], initialUrl =
       _layout: AuthGateLayout,
       index: RootIndex,
       loading: LoadingScreen,
+      'invite/index': () => <Text>Invite</Text>,
       '(auth)/_layout': () => <Stack screenOptions={{ animation: 'none' }} />,
       '(auth)/login': LoginScreen,
       '(app)/_layout': {

@@ -1,4 +1,5 @@
 import type { Analytics } from '@src/core/ports/analytics';
+import type { ClipboardGateway } from '@src/core/ports/clipboard';
 import type { ErrorReporter } from '@src/core/ports/error-reporter';
 import type { LocationGateway } from '@src/core/ports/location-gateway';
 import type { Logger } from '@src/core/ports/logger';
@@ -15,6 +16,7 @@ import type { FeatureDiscoveryStateService } from '@src/features/feature-discove
 import type { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
 import type { FriendService } from '@src/features/friend/apis/friend.service';
 import type { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
+import type { InviteService } from '@src/features/invite/apis/invite.service';
 import type { MemoService } from '@src/features/memo/apis/memo.service';
 import type { NotificationService } from '@src/features/notification/apis/notification.service';
 import type { TodoNudgeService } from '@src/features/nudge/apis/todo-nudge.service';
@@ -41,6 +43,7 @@ export interface DIContainer {
   // Infrastructure
   storage: Storage;
   locationGateway: LocationGateway;
+  clipboard: ClipboardGateway;
   logger: Logger;
   analytics: Analytics;
   errorReporter: ErrorReporter;
@@ -63,6 +66,7 @@ export interface DIContainer {
   appVersionService: AppVersionService;
   appIconService: AppIconService;
   friendService: FriendService;
+  inviteService: InviteService;
   featureDiscoveryService: FeatureDiscoveryService;
   featureDiscoveryStateService: FeatureDiscoveryStateService;
   inquiryService: InquiryService;
@@ -110,6 +114,7 @@ export const useDI = (): DIContainer => {
 
 // Infrastructure Hooks
 export const useLocationGateway = () => useDI().locationGateway;
+export const useClipboard = () => useDI().clipboard;
 export const useTokenStore = () => useDI().tokenStore;
 export const useFeatureAttribution = () => useDI().featureAttribution;
 export const useLogger = () => useDI().logger;
@@ -125,6 +130,7 @@ export const usePreferenceService = () => useDI().preferenceService;
 export const useActivationService = () => useDI().activationService;
 export const useAppVersionService = () => useDI().appVersionService;
 export const useFriendService = () => useDI().friendService;
+export const useInviteService = () => useDI().inviteService;
 export const useFeatureDiscoveryService = () => useDI().featureDiscoveryService;
 export const useFeatureDiscoveryStateService = () => useDI().featureDiscoveryStateService;
 export const useInquiryService = () => useDI().inquiryService;

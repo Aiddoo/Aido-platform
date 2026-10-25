@@ -1,0 +1,51 @@
+{
+  "codeEntry": {
+    "title": "초대 코드 입력",
+    "headline": "친구에게 받은\n초대 코드를 입력해주세요",
+    "description": "영문과 숫자 6자리예요. 붙여넣어도 돼요",
+    "inputLabel": "초대 코드",
+    "paste": "복사한 코드 붙여넣기",
+    "submit": "확인",
+    "retry": "다시 확인",
+    "unsupportedCharacter": "초대 코드에 쓰지 않는 글자가 있어요. 숫자와 영문 대문자 일부만 쓸 수 있어요"
+  },
+  "card": {
+    "inviterAvatar": "{{name}}님의 고양이 프로필",
+    "title": "{{name}}님이\n아이두에 초대했어요",
+    "subtitle": "친구가 되면 서로의 할 일을 응원할 수 있어요",
+    "receipt": {
+      "title": "가입하면 프리미엄 {{count}}일",
+      "description": "AI 할 일 만들기와 친구 추가를 마음껏 누려보세요",
+      "benefitFriend": "{{name}}님과 바로 친구가 돼요",
+      "benefitAi": "AI 할 일 만들기 무제한",
+      "benefitFriends": "친구 추가·콕 찌르기 무제한",
+      "codeLabel": "초대 코드"
+    },
+    "signUp": "가입하고 친구 되기",
+    "login": "이미 계정이 있어요 · 로그인",
+    "unnamedInviter": "친구"
+  },
+  "result": {
+    "notFound": {
+      "title": "초대 코드를 찾을 수 없어요",
+      "description": "코드를 다시 확인하거나 친구에게 새 링크를 받아주세요"
+    },
+    "rotated": {
+      "title": "초대 링크가 바뀌었어요",
+      "description": "친구가 링크를 새로 만들었어요.\n새 링크를 받아 다시 열어주세요"
+    },
+    "disabled": {
+      "title": "지금은 초대를 받을 수 없어요",
+      "description": "잠시 후 다시 열어주세요.\n링크는 그대로 쓸 수 있어요"
+    },
+    "loadFailed": {
+      "title": "초대 정보를 불러오지 못했어요",
+      "description": "인터넷 연결을 확인하고 다시 시도해주세요"
+    },
+    "enterCode": "코드 직접 입력하기",
+    "retry": "다시 시도"
+  },
+  "errors": {
+    "invalidCode": "초대 코드는 영문과 숫자 6자리예요"
+  }
+}

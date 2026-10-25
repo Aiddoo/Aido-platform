@@ -11,6 +11,9 @@ import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/ap
 import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
 import { FriendService } from '@src/features/friend/apis/friend.service';
 import { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
+import { createInstallReferrerRepository } from '@src/features/invite/apis/install-referrer.repository';
+import { InviteService } from '@src/features/invite/apis/invite.service';
+import { createPendingRedemptionRepository } from '@src/features/invite/apis/pending-redemption.repository';
 import { MemoService } from '@src/features/memo/apis/memo.service';
 import { DeviceIdRepository } from '@src/features/notification/apis/device-id.repository';
 import { DeviceIdService } from '@src/features/notification/apis/device-id.service';
@@ -43,6 +46,8 @@ import { toError } from '@src/shared/errors';
 import { expoAppIconGateway } from '@src/shared/infra/app-icon/expo-app-icon.gateway';
 import { expoAppStoreGateway } from '@src/shared/infra/app-store/expo-app-store.gateway';
 import { expoApplicationMetadataGateway } from '@src/shared/infra/application/expo-application-metadata.gateway';
+import { expoInstallReferrerGateway } from '@src/shared/infra/application/expo-install-referrer.gateway';
+import { expoClipboardGateway } from '@src/shared/infra/clipboard/expo-clipboard.gateway';
 import { setGlobalErrorReporter } from '@src/shared/infra/error-reporter';
 import { createAuthClient } from '@src/shared/infra/http/auth-client';
 import { KyHttpClient } from '@src/shared/infra/http/ky-client';
@@ -157,6 +162,16 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       featureDiscoveryStateRepository,
     );
 
+    // Invite
+    const inviteService = new InviteService({
+      publicHttpClient,
+      pendingRedemptionRepository: createPendingRedemptionRepository(mmkvSyncStorage),
+      installReferrerRepository: createInstallReferrerRepository(
+        mmkvSyncStorage,
+        expoInstallReferrerGateway,
+      ),
+    });
+
     // Inquiry
     const inquiryService = new InquiryService(authHttpClient);
 
@@ -228,6 +243,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       friendService,
       featureDiscoveryService,
       featureDiscoveryStateService,
+      inviteService,
       inquiryService,
       memoService,
       subTodoService,
@@ -246,6 +262,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
         createWeatherLocationStateRepository(mmkvSyncStorage),
       ),
       locationGateway: expoLocationGateway,
+      clipboard: expoClipboardGateway,
       widgetSyncService,
       widgetNavigationRepository,
     };
