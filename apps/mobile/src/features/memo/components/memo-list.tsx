@@ -4,6 +4,7 @@ import { useTranslation } from '@src/shared/i18n';
 import {
   DocsIcon,
   Button,
+  Flex,
   HStack,
   PinFilledIcon,
   Result,
@@ -128,21 +129,25 @@ MemoList.Loading = function Loading() {
 MemoList.Empty = function Empty() {
   const { t } = useTranslation('memo');
   return (
-    <Result
-      icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
-      title={t('list.emptyTitle')}
-      description={t('list.emptyDescription')}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        icon={<DocsIcon width={72} height={72} colorClassName="text-gray-4" />}
+        title={t('list.emptyTitle')}
+        description={t('list.emptyDescription')}
+      />
+    </Flex>
   );
 };
 
 MemoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['memo', 'common']);
   return (
-    <Result
-      title={t('memo:list.loadFailed')}
-      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        title={t('memo:list.loadFailed')}
+        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+      />
+    </Flex>
   );
 };
 

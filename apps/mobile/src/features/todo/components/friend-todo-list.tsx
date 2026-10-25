@@ -21,6 +21,7 @@ import {
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   PawIcon,
+  Flex,
   Result,
   Text,
   VStack,
@@ -206,10 +207,12 @@ FriendTodoList.Loading = function Loading() {
 FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <Result
-      title={t('todo:list.loadError')}
-      button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        title={t('todo:list.loadError')}
+        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
+      />
+    </Flex>
   );
 };
 
@@ -220,11 +223,13 @@ FriendTodoList.Empty = function Empty() {
   const today = useToday();
   const isToday = isSameDay(date, today);
   return (
-    <Result
-      icon={<DocsIcon width={72} height={72} />}
-      title={t('friendTodo.emptyTitle')}
-      description={isToday ? t('friendTodo.emptyDescription') : undefined}
-      button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        icon={<DocsIcon width={72} height={72} />}
+        title={t('friendTodo.emptyTitle')}
+        description={isToday ? t('friendTodo.emptyDescription') : undefined}
+        button={isToday && friend != null ? <RemindNudgeButton friend={friend} /> : undefined}
+      />
+    </Flex>
   );
 };

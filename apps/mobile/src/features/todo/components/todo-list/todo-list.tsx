@@ -10,6 +10,7 @@ import {
   Box,
   HStack,
   PlusIcon,
+  Flex,
   Result,
   Text,
   type QueryErrorFallbackProps,
@@ -109,10 +110,12 @@ TodoList.Loading = function Loading() {
 TodoList.Error = function ErrorFallback({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
-    <Result
-      title={t('list.loadError')}
-      button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
-    />
+    <Flex flex={1} justify="center" align="center">
+      <Result
+        title={t('list.loadError')}
+        button={<Result.Button onPress={reset}>{t('common:errorBoundary.retry')}</Result.Button>}
+      />
+    </Flex>
   );
 };
 
