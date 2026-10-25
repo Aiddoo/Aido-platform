@@ -960,5 +960,61 @@ describe("알림 E2E", () => {
       ]);
       expect(updatedInbox.unreadCount).toBe(3);
     });
+
+    it.each([
+      { name: "버전 헤더 없음", version: undefined, visible: ["FOLLOW_NEW"] },
+      { name: "1.12.1", version: "1.12.1", visible: ["FOLLOW_NEW"] },
+      {
+        name: "1.13.0",
+        version: "1.13.0",
+        visible: ["FOLLOW_NEW", "INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"],
+      },
+    ])(
+      "$name 앱의 알림함·안 읽은 수는 버전 헤더로 초대·보상 알림을 거르고 구 목록 API는 항상 숨긴다",
+      async ({ version, visible }) => {
+        // Given
+        const user = await ctx.helpers.createVerifiedUser(
+          `notif-gate-${version ?? "none"}@test.com`,
+          password,
+        );
+        await ctx.testDatabase
+          .getClient()
+          .orm.public.Notification.createAndCount(
+            (
+              ["FOLLOW_NEW", "INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"] as const
+            ).map((type) =>
+              encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
+            ),
+          );
+        const get = (path: string) => {
+          const call = request(ctx.app.getHttpServer())
+            .get(path)
+            .set("Authorization", `Bearer ${user.accessToken}`);
+          return (version === undefined ? call : call.set("X-App-Version", version)).expect(200);
+        };
+
+        // When
+        const [inbox, list, unread] = await Promise.all([
+          get("/v1/notifications/inbox"),
+          get("/v1/notifications"),
+          get("/v1/notifications/inbox/unread-count"),
+        ]);
+
+        // Then
+        expect(
+          notificationInboxResponseSchema
+            .parse(inbox.body.data)
+            .notifications.map((item) => item.type)
+            .sort(),
+        ).toEqual(visible);
+        // 구 목록 API는 1.12.1 이하 앱만 쓰므로 헤더와 관계없이 새 알림 종류를 내보내지 않는다
+        expect(
+          notificationListResponseSchema
+            .parse(list.body.data)
+            .notifications.map((item) => item.type),
+        ).toEqual(["FOLLOW_NEW"]);
+        expect(unread.body.data.unreadCount).toBe(visible.length);
+      },
+    );
   });
 });
