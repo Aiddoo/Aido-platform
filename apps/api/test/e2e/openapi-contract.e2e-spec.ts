@@ -215,6 +215,9 @@ describe("OpenAPI 계약 (e2e)", () => {
     const redeemResponses = document.paths["/v1/invites/{code}/redeem"]?.post?.responses ?? {};
     const parseTodoResponses = document.paths["/v1/ai/parse-todo"]?.post?.responses ?? {};
     const parseMemoResponses = document.paths["/v1/ai/parse-memo"]?.post?.responses ?? {};
+    const linkResponses = document.paths["/v1/auth/link"]?.post?.responses ?? {};
+    const deleteCategoryResponses =
+      document.paths["/v1/todo-categories/{id}"]?.delete?.responses ?? {};
 
     // When
     const declared = {
@@ -227,6 +230,8 @@ describe("OpenAPI 계약 (e2e)", () => {
       },
       parseTodo: { 429: declaredErrorCodes(parseTodoResponses["429"]) },
       parseMemo: { 429: declaredErrorCodes(parseMemoResponses["429"]) },
+      linkSocialAccount: { 409: declaredErrorCodes(linkResponses["409"]) },
+      deleteTodoCategory: { 400: declaredErrorCodes(deleteCategoryResponses["400"]) },
     };
 
     // Then - 한 상태에 하나만 남기던 데코레이터 중첩으로 코드가 빠지면 안 된다
@@ -240,7 +245,41 @@ describe("OpenAPI 계약 (e2e)", () => {
       },
       parseTodo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
       parseMemo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
+      linkSocialAccount: {
+        409: [
+          ErrorCode.KAKAO_0306,
+          ErrorCode.APPLE_0355,
+          ErrorCode.GOOGLE_0405,
+          ErrorCode.NAVER_0455,
+        ],
+      },
+      deleteTodoCategory: {
+        400: [ErrorCode.TODO_CATEGORY_0854, ErrorCode.TODO_CATEGORY_0855, ErrorCode.SYS_0002],
+      },
     });
+  });
+
+  it("오류 응답 schema는 content 안에만 둔다 (공통 응답이 선언한 응답을 덮지 않는다)", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+
+    // When - content 밖 response.schema로 떠 있는 응답
+    const strayResponses = Object.entries(document.paths).flatMap(([route, pathItem]) =>
+      Object.entries(pathItem).flatMap(([method, operation]) =>
+        Object.entries(
+          z.object({ responses: z.record(z.string(), z.unknown()) }).safeParse(operation).data
+            ?.responses ?? {},
+        )
+          .filter(([, response]) => z.object({ schema: z.unknown() }).safeParse(response).success)
+          .map(([status]) => `${method.toUpperCase()} ${route} ${status}`),
+      ),
+    );
+
+    // Then
+    expect(strayResponses).toEqual([]);
   });
 
   it.each(RELEASED_OPENAPI_CONTRACTS)(

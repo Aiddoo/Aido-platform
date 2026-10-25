@@ -14400,11 +14400,41 @@ curl https://api.aido.com/health
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "ADMIN_1403": {
+                  "summary": "유효하지 않은 필터 조건입니다.",
+                  "value": {
+                    "error": {
+                      "code": "ADMIN_1403",
+                      "details": null,
+                      "message": "유효하지 않은 필터 조건입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "SYS_0002",
+                          "ADMIN_1403",
+                        ],
                         "example": "SYS_0002",
                         "type": "string",
                       },
@@ -14442,9 +14472,9 @@ curl https://api.aido.com/health
               },
             },
           },
-          "description": "유효하지 않은 필터 조건입니다.
+          "description": "SYS_0002: 잘못된 파라미터입니다.
 
-잘못된 파라미터입니다.",
+ADMIN_1403: 유효하지 않은 필터 조건입니다.",
         },
         "403": {
           "content": {
@@ -18900,11 +18930,41 @@ provider에 따라 필수 토큰이 다릅니다:
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "AUTH_0107": {
+                  "summary": "인증이 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AUTH_0107",
+                      "details": null,
+                      "message": "인증이 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SOCIAL_0202": {
+                  "summary": "소셜 인증 토큰이 유효하지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "SOCIAL_0202",
+                      "details": null,
+                      "message": "소셜 인증 토큰이 유효하지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AUTH_0107",
+                          "SOCIAL_0202",
+                        ],
                         "example": "AUTH_0107",
                         "type": "string",
                       },
@@ -18942,18 +19002,74 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "소셜 인증 토큰이 유효하지 않습니다.
+          "description": "AUTH_0107: 인증이 필요합니다.
 
-인증이 필요합니다.",
+SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
         },
         "409": {
           "content": {
             "application/json": {
+              "examples": {
+                "APPLE_0355": {
+                  "summary": "이미 다른 계정에 연동된 애플 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "APPLE_0355",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 애플 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "GOOGLE_0405": {
+                  "summary": "이미 다른 계정에 연동된 구글 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "GOOGLE_0405",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 구글 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "KAKAO_0306": {
+                  "summary": "이미 다른 계정에 연동된 카카오 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "KAKAO_0306",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 카카오 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NAVER_0455": {
+                  "summary": "이미 다른 계정에 연동된 네이버 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "NAVER_0455",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 네이버 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "KAKAO_0306",
+                          "APPLE_0355",
+                          "GOOGLE_0405",
+                          "NAVER_0455",
+                        ],
                         "example": "KAKAO_0306",
                         "type": "string",
                       },
@@ -18991,13 +19107,13 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "이미 다른 계정에 연동된 네이버 계정입니다.
+          "description": "KAKAO_0306: 이미 다른 계정에 연동된 카카오 계정입니다.
 
-이미 다른 계정에 연동된 구글 계정입니다.
+APPLE_0355: 이미 다른 계정에 연동된 애플 계정입니다.
 
-이미 다른 계정에 연동된 애플 계정입니다.
+GOOGLE_0405: 이미 다른 계정에 연동된 구글 계정입니다.
 
-이미 다른 계정에 연동된 카카오 계정입니다.",
+NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
         },
         "500": {
           "content": {
@@ -19112,11 +19228,41 @@ provider에 따라 필수 토큰이 다릅니다:
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "AUTH_0107": {
+                  "summary": "인증이 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AUTH_0107",
+                      "details": null,
+                      "message": "인증이 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SOCIAL_0202": {
+                  "summary": "소셜 인증 토큰이 유효하지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "SOCIAL_0202",
+                      "details": null,
+                      "message": "소셜 인증 토큰이 유효하지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AUTH_0107",
+                          "SOCIAL_0202",
+                        ],
                         "example": "AUTH_0107",
                         "type": "string",
                       },
@@ -19154,18 +19300,74 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "소셜 인증 토큰이 유효하지 않습니다.
+          "description": "AUTH_0107: 인증이 필요합니다.
 
-인증이 필요합니다.",
+SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
         },
         "409": {
           "content": {
             "application/json": {
+              "examples": {
+                "APPLE_0355": {
+                  "summary": "이미 다른 계정에 연동된 애플 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "APPLE_0355",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 애플 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "GOOGLE_0405": {
+                  "summary": "이미 다른 계정에 연동된 구글 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "GOOGLE_0405",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 구글 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "KAKAO_0306": {
+                  "summary": "이미 다른 계정에 연동된 카카오 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "KAKAO_0306",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 카카오 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NAVER_0455": {
+                  "summary": "이미 다른 계정에 연동된 네이버 계정입니다.",
+                  "value": {
+                    "error": {
+                      "code": "NAVER_0455",
+                      "details": null,
+                      "message": "이미 다른 계정에 연동된 네이버 계정입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "KAKAO_0306",
+                          "APPLE_0355",
+                          "GOOGLE_0405",
+                          "NAVER_0455",
+                        ],
                         "example": "KAKAO_0306",
                         "type": "string",
                       },
@@ -19203,13 +19405,13 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "이미 다른 계정에 연동된 네이버 계정입니다.
+          "description": "KAKAO_0306: 이미 다른 계정에 연동된 카카오 계정입니다.
 
-이미 다른 계정에 연동된 구글 계정입니다.
+APPLE_0355: 이미 다른 계정에 연동된 애플 계정입니다.
 
-이미 다른 계정에 연동된 애플 계정입니다.
+GOOGLE_0405: 이미 다른 계정에 연동된 구글 계정입니다.
 
-이미 다른 계정에 연동된 카카오 계정입니다.",
+NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
         },
         "500": {
           "content": {
@@ -19706,11 +19908,41 @@ provider에 따라 필수 토큰이 다릅니다:
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "USER_0602": {
+                  "summary": "이메일 또는 비밀번호가 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "USER_0602",
+                      "details": null,
+                      "message": "이메일 또는 비밀번호가 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "USER_0608": {
+                  "summary": "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "USER_0608",
+                      "details": null,
+                      "message": "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "USER_0602",
+                          "USER_0608",
+                        ],
                         "example": "USER_0602",
                         "type": "string",
                       },
@@ -19748,9 +19980,9 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.
+          "description": "USER_0602: 이메일 또는 비밀번호가 올바르지 않습니다.
 
-이메일 또는 비밀번호가 올바르지 않습니다.",
+USER_0608: 이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.",
         },
         "403": {
           "content": {
@@ -20735,11 +20967,41 @@ provider에 따라 필수 토큰이 다릅니다:
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "AUTH_0107": {
+                  "summary": "인증이 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AUTH_0107",
+                      "details": null,
+                      "message": "인증이 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "USER_0602": {
+                  "summary": "이메일 또는 비밀번호가 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "USER_0602",
+                      "details": null,
+                      "message": "이메일 또는 비밀번호가 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AUTH_0107",
+                          "USER_0602",
+                        ],
                         "example": "AUTH_0107",
                         "type": "string",
                       },
@@ -20777,9 +21039,9 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "이메일 또는 비밀번호가 올바르지 않습니다.
+          "description": "AUTH_0107: 인증이 필요합니다.
 
-인증이 필요합니다.",
+USER_0602: 이메일 또는 비밀번호가 올바르지 않습니다.",
         },
         "500": {
           "content": {
@@ -20884,11 +21146,41 @@ provider에 따라 필수 토큰이 다릅니다:
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "AUTH_0107": {
+                  "summary": "인증이 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "AUTH_0107",
+                      "details": null,
+                      "message": "인증이 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "VERIFY_0751": {
+                  "summary": "인증 코드가 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "VERIFY_0751",
+                      "details": null,
+                      "message": "인증 코드가 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AUTH_0107",
+                          "VERIFY_0751",
+                        ],
                         "example": "AUTH_0107",
                         "type": "string",
                       },
@@ -20926,9 +21218,9 @@ provider에 따라 필수 토큰이 다릅니다:
               },
             },
           },
-          "description": "인증 코드가 올바르지 않습니다.
+          "description": "AUTH_0107: 인증이 필요합니다.
 
-인증이 필요합니다.",
+VERIFY_0751: 인증 코드가 올바르지 않습니다.",
         },
         "409": {
           "content": {
@@ -21842,11 +22134,41 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "AUTH_0104": {
+                  "summary": "유효하지 않은 리프레시 토큰입니다.",
+                  "value": {
+                    "error": {
+                      "code": "AUTH_0104",
+                      "details": null,
+                      "message": "유효하지 않은 리프레시 토큰입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SESSION_0704": {
+                  "summary": "보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "SESSION_0704",
+                      "details": null,
+                      "message": "보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AUTH_0104",
+                          "SESSION_0704",
+                        ],
                         "example": "AUTH_0104",
                         "type": "string",
                       },
@@ -21884,9 +22206,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
               },
             },
           },
-          "description": "보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.
+          "description": "AUTH_0104: 유효하지 않은 리프레시 토큰입니다.
 
-유효하지 않은 리프레시 토큰입니다.",
+SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다시 로그인해주세요.",
         },
         "500": {
           "content": {
@@ -22345,11 +22667,41 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "VERIFY_0751": {
+                  "summary": "인증 코드가 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "VERIFY_0751",
+                      "details": null,
+                      "message": "인증 코드가 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "VERIFY_0752": {
+                  "summary": "인증 코드가 만료되었습니다.",
+                  "value": {
+                    "error": {
+                      "code": "VERIFY_0752",
+                      "details": null,
+                      "message": "인증 코드가 만료되었습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "VERIFY_0751",
+                          "VERIFY_0752",
+                        ],
                         "example": "VERIFY_0751",
                         "type": "string",
                       },
@@ -22387,9 +22739,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
               },
             },
           },
-          "description": "인증 코드가 만료되었습니다.
+          "description": "VERIFY_0751: 인증 코드가 올바르지 않습니다.
 
-인증 코드가 올바르지 않습니다.",
+VERIFY_0752: 인증 코드가 만료되었습니다.",
         },
         "410": {
           "content": {
@@ -22916,11 +23268,41 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
         "401": {
           "content": {
             "application/json": {
+              "examples": {
+                "EMAIL_0504": {
+                  "summary": "인증 코드가 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "EMAIL_0504",
+                      "details": null,
+                      "message": "인증 코드가 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "EMAIL_0505": {
+                  "summary": "인증 코드가 만료되었습니다.",
+                  "value": {
+                    "error": {
+                      "code": "EMAIL_0505",
+                      "details": null,
+                      "message": "인증 코드가 만료되었습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "EMAIL_0504",
+                          "EMAIL_0505",
+                        ],
                         "example": "EMAIL_0504",
                         "type": "string",
                       },
@@ -22958,9 +23340,9 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
               },
             },
           },
-          "description": "인증 코드가 만료되었습니다.
+          "description": "EMAIL_0504: 인증 코드가 올바르지 않습니다.
 
-인증 코드가 올바르지 않습니다.",
+EMAIL_0505: 인증 코드가 만료되었습니다.",
         },
         "404": {
           "content": {
@@ -26430,11 +26812,41 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
         "409": {
           "content": {
             "application/json": {
+              "examples": {
+                "FOLLOW_0901": {
+                  "summary": "이미 친구 요청을 보냈습니다.",
+                  "value": {
+                    "error": {
+                      "code": "FOLLOW_0901",
+                      "details": null,
+                      "message": "이미 친구 요청을 보냈습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "FOLLOW_0902": {
+                  "summary": "이미 친구 관계입니다.",
+                  "value": {
+                    "error": {
+                      "code": "FOLLOW_0902",
+                      "details": null,
+                      "message": "이미 친구 관계입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "FOLLOW_0901",
+                          "FOLLOW_0902",
+                        ],
                         "example": "FOLLOW_0901",
                         "type": "string",
                       },
@@ -26472,9 +26884,9 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "이미 친구 관계입니다.
+          "description": "FOLLOW_0901: 이미 친구 요청을 보냈습니다.
 
-이미 친구 요청을 보냈습니다.",
+FOLLOW_0902: 이미 친구 관계입니다.",
         },
         "500": {
           "content": {
@@ -29375,11 +29787,41 @@ USER_0601: 사용자를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "MEMO_2001": {
+                  "summary": "메모를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "MEMO_2001",
+                      "details": null,
+                      "message": "메모를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_CATEGORY_0851": {
+                  "summary": "카테고리를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0851",
+                      "details": null,
+                      "message": "카테고리를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "MEMO_2001",
+                          "TODO_CATEGORY_0851",
+                        ],
                         "example": "MEMO_2001",
                         "type": "string",
                       },
@@ -29417,9 +29859,9 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "카테고리를 찾을 수 없습니다.
+          "description": "MEMO_2001: 메모를 찾을 수 없습니다.
 
-메모를 찾을 수 없습니다.",
+TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -29672,11 +30114,41 @@ USER_0601: 사용자를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "MEMO_2001": {
+                  "summary": "메모를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "MEMO_2001",
+                      "details": null,
+                      "message": "메모를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_CATEGORY_0851": {
+                  "summary": "카테고리를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0851",
+                      "details": null,
+                      "message": "카테고리를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "MEMO_2001",
+                          "TODO_CATEGORY_0851",
+                        ],
                         "example": "MEMO_2001",
                         "type": "string",
                       },
@@ -29714,9 +30186,9 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "카테고리를 찾을 수 없습니다.
+          "description": "MEMO_2001: 메모를 찾을 수 없습니다.
 
-메모를 찾을 수 없습니다.",
+TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -30082,11 +30554,41 @@ USER_0601: 사용자를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "MEMO_2001": {
+                  "summary": "메모를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "MEMO_2001",
+                      "details": null,
+                      "message": "메모를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "MEMO_2002": {
+                  "summary": "이동할 위치의 메모를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "MEMO_2002",
+                      "details": null,
+                      "message": "이동할 위치의 메모를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "MEMO_2001",
+                          "MEMO_2002",
+                        ],
                         "example": "MEMO_2001",
                         "type": "string",
                       },
@@ -30124,9 +30626,9 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "이동할 위치의 메모를 찾을 수 없습니다.
+          "description": "MEMO_2001: 메모를 찾을 수 없습니다.
 
-메모를 찾을 수 없습니다.",
+MEMO_2002: 이동할 위치의 메모를 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -31807,11 +32309,41 @@ USER_0601: 사용자를 찾을 수 없습니다.",
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1104": {
+                  "summary": "자신에게 콕 찌를 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1104",
+                      "details": null,
+                      "message": "자신에게 콕 찌를 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NUDGE_1106": {
+                  "summary": "오늘의 할 일에만 콕 찌를 수 있습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1106",
+                      "details": null,
+                      "message": "오늘의 할 일에만 콕 찌를 수 있습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "NUDGE_1104",
+                          "NUDGE_1106",
+                        ],
                         "example": "NUDGE_1104",
                         "type": "string",
                       },
@@ -31849,9 +32381,9 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "오늘의 할 일에만 콕 찌를 수 있습니다.
+          "description": "NUDGE_1104: 자신에게 콕 찌를 수 없습니다.
 
-자신에게 콕 찌를 수 없습니다.",
+NUDGE_1106: 오늘의 할 일에만 콕 찌를 수 있습니다.",
         },
         "401": {
           "content": {
@@ -32921,11 +33453,41 @@ USER_0601: 사용자를 찾을 수 없습니다.",
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1104": {
+                  "summary": "자신에게 콕 찌를 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1104",
+                      "details": null,
+                      "message": "자신에게 콕 찌를 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NUDGE_1107": {
+                  "summary": "친구가 이미 오늘 할일을 만들었습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1107",
+                      "details": null,
+                      "message": "친구가 이미 오늘 할일을 만들었습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "NUDGE_1104",
+                          "NUDGE_1107",
+                        ],
                         "example": "NUDGE_1104",
                         "type": "string",
                       },
@@ -32963,9 +33525,9 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "친구가 이미 오늘 할일을 만들었습니다.
+          "description": "NUDGE_1104: 자신에게 콕 찌를 수 없습니다.
 
-자신에게 콕 찌를 수 없습니다.",
+NUDGE_1107: 친구가 이미 오늘 할일을 만들었습니다.",
         },
         "401": {
           "content": {
@@ -33570,11 +34132,41 @@ USER_0601: 사용자를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1105": {
+                  "summary": "Nudge를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1105",
+                      "details": null,
+                      "message": "Nudge를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "NUDGE_1105",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -33612,9 +34204,9 @@ USER_0601: 사용자를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "Nudge를 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+NUDGE_1105: Nudge를 찾을 수 없습니다.",
         },
         "409": {
           "content": {
@@ -33810,11 +34402,41 @@ Todo를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1105": {
+                  "summary": "Nudge를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1105",
+                      "details": null,
+                      "message": "Nudge를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "NUDGE_1105",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -33852,18 +34474,48 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "Nudge를 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+NUDGE_1105: Nudge를 찾을 수 없습니다.",
         },
         "409": {
           "content": {
             "application/json": {
+              "examples": {
+                "NUDGE_1109": {
+                  "summary": "지금은 이 콕에 답장할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1109",
+                      "details": null,
+                      "message": "지금은 이 콕에 답장할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "NUDGE_1110": {
+                  "summary": "할 일을 완료한 뒤 감사를 전해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "NUDGE_1110",
+                      "details": null,
+                      "message": "할 일을 완료한 뒤 감사를 전해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "NUDGE_1109",
+                          "NUDGE_1110",
+                        ],
                         "example": "NUDGE_1109",
                         "type": "string",
                       },
@@ -33901,9 +34553,9 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "할 일을 완료한 뒤 감사를 전해주세요.
+          "description": "NUDGE_1109: 지금은 이 콕에 답장할 수 없습니다.
 
-지금은 이 콕에 답장할 수 없습니다.",
+NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
         },
         "500": {
           "content": {
@@ -35128,11 +35780,54 @@ DELETE /todo-categories/3?moveToCategoryId=1
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_CATEGORY_0854": {
+                  "summary": "최소 1개의 카테고리가 필요합니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0854",
+                      "details": null,
+                      "message": "최소 1개의 카테고리가 필요합니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_CATEGORY_0855": {
+                  "summary": "카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0855",
+                      "details": null,
+                      "message": "카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_CATEGORY_0854",
+                          "TODO_CATEGORY_0855",
+                          "SYS_0002",
+                        ],
                         "example": "TODO_CATEGORY_0854",
                         "type": "string",
                       },
@@ -35170,11 +35865,11 @@ DELETE /todo-categories/3?moveToCategoryId=1
               },
             },
           },
-          "description": "잘못된 파라미터입니다.
+          "description": "TODO_CATEGORY_0854: 최소 1개의 카테고리가 필요합니다.
 
-카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.
+TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.
 
-최소 1개의 카테고리가 필요합니다.",
+SYS_0002: 잘못된 파라미터입니다.",
         },
         "401": {
           "content": {
@@ -36880,11 +37575,41 @@ DELETE /todo-categories/3?moveToCategoryId=1
         "400": {
           "content": {
             "application/json": {
+              "examples": {
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0812": {
+                  "summary": "반복 할 일 생성 한도를 초과했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0812",
+                      "details": null,
+                      "message": "반복 할 일 생성 한도를 초과했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "SYS_0002",
+                          "TODO_0812",
+                        ],
                         "example": "SYS_0002",
                         "type": "string",
                       },
@@ -36922,9 +37647,9 @@ DELETE /todo-categories/3?moveToCategoryId=1
               },
             },
           },
-          "description": "반복 할 일 생성 한도를 초과했습니다.
+          "description": "SYS_0002: 잘못된 파라미터입니다.
 
-잘못된 파라미터입니다.",
+TODO_0812: 반복 할 일 생성 한도를 초과했습니다.",
         },
         "401": {
           "content": {
@@ -37922,11 +38647,41 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_CATEGORY_0851": {
+                  "summary": "카테고리를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0851",
+                      "details": null,
+                      "message": "카테고리를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_CATEGORY_0851",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -37964,9 +38719,9 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
               },
             },
           },
-          "description": "카테고리를 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -38147,11 +38902,41 @@ Todo를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_CATEGORY_0851": {
+                  "summary": "카테고리를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_CATEGORY_0851",
+                      "details": null,
+                      "message": "카테고리를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_CATEGORY_0851",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -38189,9 +38974,9 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "카테고리를 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+TODO_CATEGORY_0851: 카테고리를 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -38919,11 +39704,41 @@ Todo를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0822": {
+                  "summary": "하위 항목을 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0822",
+                      "details": null,
+                      "message": "하위 항목을 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_0822",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -38961,9 +39776,9 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "하위 항목을 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+TODO_0822: 하위 항목을 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -39124,11 +39939,41 @@ Todo를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0822": {
+                  "summary": "하위 항목을 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0822",
+                      "details": null,
+                      "message": "하위 항목을 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_0822",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -39166,9 +40011,9 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "하위 항목을 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+TODO_0822: 하위 항목을 찾을 수 없습니다.",
         },
         "500": {
           "content": {
@@ -39383,11 +40228,41 @@ Todo를 찾을 수 없습니다.",
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "TODO_0801": {
+                  "summary": "Todo를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0801",
+                      "details": null,
+                      "message": "Todo를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "TODO_0822": {
+                  "summary": "하위 항목을 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "TODO_0822",
+                      "details": null,
+                      "message": "하위 항목을 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "TODO_0801",
+                          "TODO_0822",
+                        ],
                         "example": "TODO_0801",
                         "type": "string",
                       },
@@ -39425,9 +40300,9 @@ Todo를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "하위 항목을 찾을 수 없습니다.
+          "description": "TODO_0801: Todo를 찾을 수 없습니다.
 
-Todo를 찾을 수 없습니다.",
+TODO_0822: 하위 항목을 찾을 수 없습니다.",
         },
         "500": {
           "content": {

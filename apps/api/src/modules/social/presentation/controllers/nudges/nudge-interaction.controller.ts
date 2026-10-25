@@ -1,5 +1,15 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Body, Controller, Get, Header, Headers, Param, Put, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Headers,
+  Param,
+  Put,
+  Query,
+  HttpStatus,
+} from "@nestjs/common";
 import { ApiBearerAuth, ApiHeader, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -9,6 +19,7 @@ import {
 import {
   ApiConflictError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiNotFoundError,
   ApiSuccessResponse,
   ApiUnauthorizedError,
@@ -137,8 +148,7 @@ export class NudgeInteractionController {
   @ApiDoc({ summary: "감사를 받을 친구 미리보기", operationId: "getNudgeThanksPreview" })
   @ApiSuccessResponse({ type: NudgeThanksPreviewResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.NUDGE_1105)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.NUDGE_1105])
   @ApiConflictError(ErrorCode.NUDGE_1110)
   async getThanksPreview(
     @CurrentUser() user: CurrentUserPayload,
@@ -163,10 +173,8 @@ export class NudgeInteractionController {
   })
   @ApiSuccessResponse({ type: SendNudgeThanksResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.NUDGE_1105)
-  @ApiConflictError(ErrorCode.NUDGE_1109)
-  @ApiConflictError(ErrorCode.NUDGE_1110)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.NUDGE_1105])
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.NUDGE_1109, ErrorCode.NUDGE_1110])
   sendThanks(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: NudgeTodoIdParamDto }) params: NudgeTodoIdParamDto,

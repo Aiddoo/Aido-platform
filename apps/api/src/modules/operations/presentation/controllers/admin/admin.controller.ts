@@ -1,5 +1,5 @@
 import { ErrorCode } from "@aido/api/errors";
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Post, HttpStatus } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 
 import {
@@ -11,6 +11,7 @@ import {
   ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   SWAGGER_TAGS,
@@ -54,8 +55,7 @@ export class AdminController {
 - \`SUBSCRIBERS\`: 유료 구독 사용자`,
   })
   @ApiCreatedResponse({ type: BroadcastResultDto })
-  @ApiBadRequestError(ErrorCode.SYS_0002)
-  @ApiBadRequestError(ErrorCode.ADMIN_1403)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.SYS_0002, ErrorCode.ADMIN_1403])
   @ApiForbiddenError(ErrorCode.ADMIN_1401)
   @ApiNotFoundError(ErrorCode.ADMIN_1402)
   async broadcastNotification(

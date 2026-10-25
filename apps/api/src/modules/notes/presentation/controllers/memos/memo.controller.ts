@@ -23,6 +23,7 @@ import {
   ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -221,8 +222,7 @@ export class MemoController {
   })
   @ApiSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiNotFoundError(ErrorCode.MEMO_2002)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.MEMO_2002])
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async reorder(
     @CurrentUser() user: CurrentUserPayload,
@@ -284,8 +284,7 @@ export class MemoController {
   })
   @ApiCreatedResponse({ type: ConvertMemoToTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async convertToTodo(
@@ -343,8 +342,7 @@ export class MemoController {
   })
   @ApiCreatedResponse({ type: ConvertMemoToTodosResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.MEMO_2001)
-  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async convertToTodos(

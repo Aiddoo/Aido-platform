@@ -22,9 +22,9 @@ import {
 import { UserIdParamDto } from "#api/platform/http/dtos/index";
 import {
   ApiBadRequestError,
-  ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -107,8 +107,7 @@ export class FollowController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.FOLLOW_0904)
   @ApiNotFoundError(ErrorCode.FOLLOW_0905)
-  @ApiConflictError(ErrorCode.FOLLOW_0901)
-  @ApiConflictError(ErrorCode.FOLLOW_0902)
+  @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.FOLLOW_0901, ErrorCode.FOLLOW_0902])
   @ApiForbiddenError(ErrorCode.FOLLOW_0909)
   async sendRequest(
     @CurrentUser() user: CurrentUserPayload,

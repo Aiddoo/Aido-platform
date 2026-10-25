@@ -24,6 +24,7 @@ import {
   ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -281,8 +282,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
-  @ApiBadRequestError(ErrorCode.TODO_0812)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.SYS_0002, ErrorCode.TODO_0812])
   @ApiForbiddenError(ErrorCode.TODO_0813)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   async createRecurring(
@@ -560,8 +560,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_CATEGORY_0851])
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async update(
     @CurrentUser() user: CurrentUserPayload,
@@ -681,8 +680,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_CATEGORY_0851])
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateCategory(
     @CurrentUser() user: CurrentUserPayload,
@@ -922,8 +920,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.TODO_0822)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0822])
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async reorderItems(
     @CurrentUser() user: CurrentUserPayload,
@@ -976,8 +973,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.TODO_0822)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0822])
   @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateItem(
     @CurrentUser() user: CurrentUserPayload,
@@ -1025,8 +1021,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiNotFoundError(ErrorCode.TODO_0822)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0822])
   async deleteItem(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,

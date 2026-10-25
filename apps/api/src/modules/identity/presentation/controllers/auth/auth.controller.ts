@@ -40,6 +40,7 @@ import { AuthMapper } from "#api/modules/identity/presentation/mappers/auth/auth
 import {
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiErrorResponse,
   ApiSuccessResponse,
   ApiUnauthorizedError,
@@ -150,8 +151,7 @@ export class AuthController {
   })
   @ApiSuccessResponse({ type: AuthTokensDto })
   @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0502 })
-  @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0504 })
-  @ApiErrorResponse({ errorCode: ErrorCode.EMAIL_0505 })
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.EMAIL_0504, ErrorCode.EMAIL_0505])
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0604 })
   async verifyEmail(
     @Body({ schema: VerifyEmailDto }) dto: VerifyEmailDto,
@@ -240,11 +240,10 @@ export class AuthController {
 		`,
   })
   @ApiSuccessResponse({ type: AuthTokensDto })
-  @ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.USER_0602, ErrorCode.USER_0608])
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0605 })
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0607 })
-  @ApiErrorResponse({ errorCode: ErrorCode.USER_0608 })
   async login(
     @Body({ schema: LoginDto }) dto: LoginDto,
     @Req() req: Request,
@@ -347,8 +346,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		`,
   })
   @ApiSuccessResponse({ type: RefreshTokensDto })
-  @ApiErrorResponse({ errorCode: ErrorCode.AUTH_0104 })
-  @ApiErrorResponse({ errorCode: ErrorCode.SESSION_0704 })
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0104, ErrorCode.SESSION_0704])
   async refresh(@Req() req: Request) {
     const payload = req.user as RefreshTokenPayload;
     const result = await this.refreshTokensUseCase.execute({
@@ -434,8 +432,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
-  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
-  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0752 })
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.VERIFY_0751, ErrorCode.VERIFY_0752])
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0606 })
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
@@ -522,9 +519,8 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0107, ErrorCode.VERIFY_0751])
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0614 })
-  @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0751 })
   @ApiErrorResponse({ errorCode: ErrorCode.VERIFY_0754 })
   async setPassword(
     @CurrentUser() user: CurrentUserPayload,
@@ -572,8 +568,7 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
 		`,
   })
   @ApiSuccessResponse({ type: MessageResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorResponse({ errorCode: ErrorCode.USER_0602 })
+  @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0107, ErrorCode.USER_0602])
   @ApiErrorResponse({ errorCode: ErrorCode.USER_0613 })
   async changePassword(
     @CurrentUser() user: CurrentUserPayload,

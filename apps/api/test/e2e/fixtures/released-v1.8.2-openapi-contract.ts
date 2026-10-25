@@ -59,6 +59,9 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: ApiDoc 공통 400·500이 엔드포인트가 선언한 오류 응답을 덮어 content는 ErrorResponseSchema $ref, 선언한 schema는 content 밖에 떠 있던 문서 결함을 고쳤다. 선언한 상태는 그 오류 코드의 inline schema(같은 success·error·timestamp envelope)로 문서화된다. 실제 응답·상태 코드는 같다. */
 	preApiDocCommonErrorsPathsFingerprint:
 		"53e916fb7cfc09aa3c8e1d380f08825aa74cec11787f0868bb4c34d5e02d790f",
-	pathsFingerprint:
+	/** 1.13.0: 같은 상태 코드의 오류 데코레이터가 겹쳐 하나만 남던 응답(oauth link 401·409, auth 401, todo·todo-category·memo·nudge·follow·admin의 400·404·409)을 error.code enum으로 모두 선언했다. 서버가 보내는 코드·응답 shape·상태 코드는 같고 문서만 빠진 코드를 채웠다. */
+	preAllErrorCodesPathsFingerprint:
 		"8ab2faa843e1a82bea6d6c1c8f30bd29b94d2addcd0d9757b506ed28ec1cd3a2",
+	pathsFingerprint:
+		"1245a17bd4c360e974a16ada61f8fbaaab3444fef779d9338c7b4950b56bf078",
 } as const;

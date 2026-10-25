@@ -22,6 +22,7 @@ import {
   ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -299,9 +300,11 @@ DELETE /todo-categories/3?moveToCategoryId=1
   @ApiSuccessResponse({ type: DeleteTodoCategoryResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
-  @ApiBadRequestError(ErrorCode.TODO_CATEGORY_0854)
-  @ApiBadRequestError(ErrorCode.TODO_CATEGORY_0855)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [
+    ErrorCode.TODO_CATEGORY_0854,
+    ErrorCode.TODO_CATEGORY_0855,
+    ErrorCode.SYS_0002,
+  ])
   async delete(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoCategoryIdParamDto }) params: TodoCategoryIdParamDto,

@@ -20,10 +20,10 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
-  ApiBadRequestError,
   ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiNotFoundError,
   ApiSuccessResponse,
@@ -95,8 +95,7 @@ export class NudgeController {
   })
   @ApiCreatedResponse({ type: CreateNudgeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.NUDGE_1104)
-  @ApiBadRequestError(ErrorCode.NUDGE_1106)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.NUDGE_1104, ErrorCode.NUDGE_1106])
   @ApiForbiddenError(ErrorCode.NUDGE_1103)
   @ApiNotFoundError(ErrorCode.TODO_0801)
   @ApiConflictError(ErrorCode.NUDGE_1101)
@@ -278,8 +277,7 @@ export class NudgeController {
   })
   @ApiCreatedResponse({ type: CreateRemindNudgeResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.NUDGE_1104)
-  @ApiBadRequestError(ErrorCode.NUDGE_1107)
+  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.NUDGE_1104, ErrorCode.NUDGE_1107])
   @ApiForbiddenError(ErrorCode.NUDGE_1103)
   @ApiTooManyRequestsError(ErrorCode.NUDGE_1108)
   async sendRemindNudge(
