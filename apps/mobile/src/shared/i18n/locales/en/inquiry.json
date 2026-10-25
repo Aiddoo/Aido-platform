@@ -2,6 +2,7 @@
   "category": {
     "bugReport": "Bug Report",
     "featureRequest": "Feature Request",
+    "payment": "Payment & subscription",
     "other": "Other"
   },
   "form": {

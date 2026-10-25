@@ -39,7 +39,10 @@ export const RELEASED_V1_8_2_OPENAPI_CONTRACT = {
 	/** 1.13.0: /me(CurrentUserDto)에 optional premiumSource·premiumEndsAt·premiumPeriodEndsAt·willRenew·bankedPremiumDays·premiumGrantEndedAt만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	prePremiumAccessSchemasFingerprint:
 		"0180b22ee884dfb5c5f5d7313ca7f42c1b7d4f41e7aa097ff77f29175b98e64c",
-	schemasFingerprint: "38740b25738bb2ccfb703aadde140d0a1b4ba71325ea7bf595065acf4491a0a4",
+	/** 1.13.0: 문의 요청 category enum에 PAYMENT(결제·구독)만 추가. 구버전 앱은 기존 값만 보내고 서버는 그 값을 그대로 받는다. */
+	prePaymentInquirySchemasFingerprint:
+		"38740b25738bb2ccfb703aadde140d0a1b4ba71325ea7bf595065acf4491a0a4",
+	schemasFingerprint: "8250cd1e76f0475e64fc024cd146199bbe0625dd1f0c43c71d08e1a710b3bf1e",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	pathsFingerprint: "9dff8baee88ca0c0f180b0d1905baab0285b835752e08cd703f75287b214a70f",
 } as const;

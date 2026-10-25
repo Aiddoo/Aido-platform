@@ -5,6 +5,7 @@ import type { InquirySubmission } from "../../read-models/inquiries/inquiry-subm
 const CATEGORY_LABELS: Record<InquiryCategory, string> = {
   BUG_REPORT: "버그 신고",
   FEATURE_REQUEST: "기능 요청",
+  PAYMENT: "결제·구독",
   OTHER: "기타",
 };
 

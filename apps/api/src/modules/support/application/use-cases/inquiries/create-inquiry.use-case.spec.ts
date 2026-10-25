@@ -41,6 +41,7 @@ describe("CreateInquiry — 문의 접수", () => {
     const cases: readonly [CreateInquiryInput["category"], string][] = [
       ["BUG_REPORT", "버그 신고"],
       ["FEATURE_REQUEST", "기능 요청"],
+      ["PAYMENT", "결제·구독"],
       ["OTHER", "기타"],
     ];
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -59,8 +60,8 @@ describe("CreateInquiry — 문의 접수", () => {
           submittedAt: "2026-10-08 00:00 (KST)",
         });
       }
-      expect(mailer.attempts).toHaveLength(3);
-      expect(logger.log).toHaveBeenCalledTimes(3);
+      expect(mailer.attempts).toHaveLength(4);
+      expect(logger.log).toHaveBeenCalledTimes(4);
       expect(logger.log).toHaveBeenCalledWith({
         event: "support.inquiry.submitted",
         userId: "user-123",
