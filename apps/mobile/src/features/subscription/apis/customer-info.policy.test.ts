@@ -31,3 +31,19 @@ describe('CustomerInfoPolicy.hasStoreEntitlement', () => {
     expect(result).toBe(false);
   });
 });
+
+describe('CustomerInfoPolicy.findStoreProductId', () => {
+  it('그 스토어에서 결제한 활성 구독의 상품 id를 찾고, 없으면 null이다', () => {
+    const entitlements = {
+      active: {
+        promo: { store: 'PROMOTIONAL' as const, productIdentifier: 'rc_promo_premium' },
+        premium: { store: 'PLAY_STORE' as const, productIdentifier: 'premium_monthly' },
+      },
+    };
+
+    expect(CustomerInfoPolicy.findStoreProductId(entitlements, 'PLAY_STORE')).toBe(
+      'premium_monthly',
+    );
+    expect(CustomerInfoPolicy.findStoreProductId(entitlements, 'APP_STORE')).toBeNull();
+  });
+});

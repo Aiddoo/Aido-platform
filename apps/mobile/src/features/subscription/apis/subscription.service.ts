@@ -73,6 +73,25 @@ export class SubscriptionService {
     }
   };
 
+  /** 그 스토어에서 결제한 활성 구독의 상품 id. 알 수 없으면 null이고 호출부는 구독 목록을 연다. */
+  getActiveStoreProductId = async (
+    store: Parameters<typeof CustomerInfoPolicy.findStoreProductId>[1],
+  ): Promise<string | null> => {
+    if (!this.#sdkManager.isConfigured()) {
+      return null;
+    }
+
+    try {
+      const customerInfo = await Purchases.getCustomerInfo();
+      return CustomerInfoPolicy.findStoreProductId(customerInfo.entitlements, store);
+    } catch (error) {
+      this.#logger.warn(SUBSCRIPTION_LOG_EVENT.CUSTOMER_INFO_FETCH_FAILED, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+  };
+
   restorePurchases = async (): Promise<Result<boolean, SubscriptionError>> => {
     if (!this.#sdkManager.isConfigured()) {
       return err(SubscriptionErrors.storeUnavailable());

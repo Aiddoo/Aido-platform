@@ -8,6 +8,7 @@ import { SubscriptionPlanInput } from '@src/features/subscription/components/sub
 import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
 import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
 import { useOpenSubscriptionInquiry } from '@src/features/subscription/hooks/use-open-subscription-inquiry';
+import { useOpenSubscriptionManagement } from '@src/features/subscription/hooks/use-open-subscription-management';
 import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
 import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-subscription-view-param';
 import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
@@ -25,7 +26,6 @@ import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/vi
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { legalUrl } from '@src/shared/constants/legal-urls';
-import { STORE_URLS } from '@src/shared/constants/store-urls';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
@@ -59,7 +59,6 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
-import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
@@ -124,12 +123,7 @@ function SubscriberPane() {
   const { t } = useTranslation('subscription');
   const { primaryAction } = useSubscriptionReceipt();
   const restore = useMutation(useRestoreMutationOptions());
-
-  const handleManageSubscription = () => {
-    if (STORE_URLS.SUBSCRIPTION_MANAGEMENT) {
-      return Linking.openURL(STORE_URLS.SUBSCRIPTION_MANAGEMENT);
-    }
-  };
+  const openSubscriptionManagement = useOpenSubscriptionManagement();
 
   return (
     <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
@@ -153,7 +147,7 @@ function SubscriberPane() {
             </Button>
           ))
           .with('manage', () => (
-            <Button onPress={handleManageSubscription} variant="weak" color="dark">
+            <Button onPress={openSubscriptionManagement} variant="weak" color="dark">
               {t('subscriber.manageButton')}
             </Button>
           ))

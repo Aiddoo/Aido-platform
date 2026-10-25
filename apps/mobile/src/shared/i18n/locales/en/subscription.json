@@ -63,6 +63,7 @@
   "subscriber": {
     "benefitsTitle": "Your benefits",
     "manageButton": "Manage subscription (store settings)",
+    "manageOpenFailed": "Couldn't open subscription management. Check Subscriptions in the store app",
     "restoreButton": "Restore purchases",
     "subscribeAfterGrantButton": "Subscribe to keep Premium"
   },
