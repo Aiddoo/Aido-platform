@@ -14,7 +14,13 @@ export const notificationSchema = z
     id: z.number().int().positive().describe("알림 ID (양의 정수)"),
     userId: z.string().describe("사용자 ID (CUID 25자)"),
     type: notificationTypeSchema
-      .exclude(["NUDGE_REPLIED", "NUDGE_THANKED"])
+      .exclude([
+        "NUDGE_REPLIED",
+        "NUDGE_THANKED",
+        "INVITE_JOINED",
+        "INVITE_REWARDED",
+        "PREMIUM_GRANT_ENDING",
+      ])
       .describe("알림 타입 (FOLLOW_NEW | FOLLOW_ACCEPTED | NUDGE_RECEIVED | CHEER_RECEIVED 등)"),
     title: notificationTitleSchema,
     body: notificationBodySchema,

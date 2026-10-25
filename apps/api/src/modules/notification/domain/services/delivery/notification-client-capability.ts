@@ -1,7 +1,10 @@
 import { isSemanticVersionAtLeast } from "@aido/api";
 import { NOTIFICATION_TYPE } from "@aido/api/vocabulary";
 
-import type { NotificationType } from "../../types/delivery/notification-type.js";
+import {
+  isPersistedNotificationType,
+  type NotificationType,
+} from "../../types/delivery/notification-type.js";
 
 export type NotificationInboxScope = "legacy" | "all";
 
@@ -26,7 +29,7 @@ export function visibleNotificationTypes(
   if (supportsNudgeInteractions(appVersion)) {
     return types ? [...types] : undefined;
   }
-  return (types ?? Object.values(NOTIFICATION_TYPE)).filter(
+  return (types ?? Object.values(NOTIFICATION_TYPE).filter(isPersistedNotificationType)).filter(
     (type) => !isNudgeInteractionNotification(type),
   );
 }
