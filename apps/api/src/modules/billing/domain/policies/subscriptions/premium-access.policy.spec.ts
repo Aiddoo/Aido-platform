@@ -1,5 +1,7 @@
 import {
+  isPremiumGrantActive,
   isStoreEntitlementValid,
+  isStoreSubscriptionRenewing,
   PremiumAccessPolicy,
   type PremiumGrantTerm,
   premiumGrantEndingNoticeUntil,
@@ -677,5 +679,21 @@ describe("PremiumAccessPolicy", () => {
         expect(plan.endedGrantIds).toEqual(ended);
       },
     );
+  });
+
+  describe("isPremiumGrantActive / isStoreSubscriptionRenewing", () => {
+    it("끝나는 시각과 같으면 진행 중이 아니고, 취소한 구독은 남아 있어도 갱신되지 않는다", () => {
+      // Given
+      const endingNow = grant({ endsAt: NOW });
+      const cancelled = store({ status: "CANCELLED" });
+
+      // When
+      const isActive = isPremiumGrantActive(endingNow, NOW);
+      const isRenewing = isStoreSubscriptionRenewing(cancelled, NOW);
+
+      // Then
+      expect([isActive, isRenewing]).toEqual([false, false]);
+      expect(isStoreSubscriptionRenewing(store(), NOW)).toBe(true);
+    });
   });
 });

@@ -242,6 +242,15 @@ export const SOCIAL_TEMPLATES = {
     copy: ({ inviteeName }) =>
       copy(`${inviteeName} accepted your invite 🐾`, "You’re now friends. Cheer each other on"),
   },
+  INVITE_REWARDED: {
+    copy: ({ premiumDays, friendSlots }) => {
+      const rewards = [
+        premiumDays > 0 ? `${countLabel(premiumDays, "day")} of Premium` : null,
+        friendSlots > 0 ? countLabel(friendSlots, "more friend slot") : null,
+      ].filter((reward) => reward !== null);
+      return copy("You got a paw print 🐾", `You got ${rewards.join(" and ")}`);
+    },
+  },
   NUDGE_RECEIVED: {
     variants: [
       ({ senderName, todoTitle }) =>

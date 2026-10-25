@@ -35,6 +35,7 @@ import type {
   InviteeIdentity,
   InviteRedemptionRepositoryPort,
 } from "../../ports/invites/invite-redemption.repository.port.js";
+import type { InviteRewardSchedulerPort } from "../../ports/invites/invite-reward.scheduler.port.js";
 import type { InviteConfigPort } from "../../ports/invites/invite.config.port.js";
 import type {
   InviteRepositoryPort,
@@ -88,6 +89,7 @@ interface RedeemInviteDependencies {
   readonly friendshipEstablisher: FriendshipEstablisherPort;
   readonly claimHasher: ClaimHasherPort;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteJoined">;
+  readonly rewardScheduler: Pick<InviteRewardSchedulerPort, "schedule">;
   readonly inviteConfig: InviteConfigPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -258,8 +260,18 @@ export class RedeemInvite {
           redemption,
           isRewardClaimed,
         );
-        await this.#dependencies.rewardGrantRepository.createPending(plans);
-        await this.#applyInviteePremiumNow(redemption.id, identity.userId, context.capturedAt);
+        if (plans.length > 0) {
+          await this.#dependencies.rewardGrantRepository.createPending(plans);
+          const pendingCount = await this.#applyInviteePremiumNow(
+            redemption.id,
+            identity.userId,
+            context.capturedAt,
+          );
+          // 바로 적용하지 않은 지급이 남으면 원장과 같은 트랜잭션에 작업을 넣어 커밋되면 반드시 처리된다
+          if (pendingCount > 0) {
+            await this.#dependencies.rewardScheduler.schedule(redemption.id, { kind: "redeemed" });
+          }
+        }
 
         // 수락·보상은 이미 기록했으므로 그 사이 친구가 됐어도 REDEEMED로 답해 replay와 맞춘다
         const established = await this.#establish(identity.userId, invite.inviterId, false);
@@ -279,19 +291,21 @@ export class RedeemInvite {
    * 수락 화면이 "프리미엄 7일을 받았어요"를 바로 보여 주므로 초대받은 사람의 프리미엄 일수는 같은
    * 트랜잭션에서 보상 기간으로 바꾸고 원장을 APPLIED로 남긴다. 친구 한도 잠금 뒤에 사용자 행을 잠가
    * 웹훅·sweep·지급 작업(사용자 잠금만 잡는다)과 순서가 엇갈리지 않는다. 같은 출처 키라 지급 작업이
-   * 다시 골라도 한 번만 반영된다.
+   * 다시 골라도 한 번만 반영된다. 바로 적용하지 않고 남긴 지급 수를 반환한다.
    */
   async #applyInviteePremiumNow(
     redemptionId: string,
     inviteeId: string,
     appliedAt: Date,
-  ): Promise<void> {
+  ): Promise<number> {
     const grants = await this.#dependencies.rewardGrantRepository.findBySource(
       "INVITE_REDEMPTION",
       redemptionId,
     );
+    let pendingCount = 0;
     for (const grant of grants) {
       if (grant.recipientId !== inviteeId || grant.rewardType !== REWARD_TYPE.PREMIUM_DAYS) {
+        if (grant.status !== "APPLIED") pendingCount += 1;
         continue;
       }
       if (!(await this.#dependencies.rewardGrantRepository.markApplied(grant.id, appliedAt))) {
@@ -307,6 +321,7 @@ export class RedeemInvite {
         throw new ApplicationException(ErrorCode.USER_0601, { userId: inviteeId });
       }
     }
+    return pendingCount;
   }
 
   /**

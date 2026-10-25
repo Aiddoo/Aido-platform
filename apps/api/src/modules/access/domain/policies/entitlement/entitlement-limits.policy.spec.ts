@@ -1,5 +1,6 @@
 import {
   SUBSCRIPTION_AI_PARSE_LIMITS,
+  SUBSCRIPTION_FOLLOW_LIMITS,
   SUBSCRIPTION_TODO_CATEGORY_LIMITS,
 } from "@aido/api/vocabulary";
 
@@ -12,6 +13,7 @@ import {
   resolveFeatureLimit,
   resolvePremiumAccessDeadline,
   resolveResourceLimit,
+  toSubscriptionStatus,
 } from "./entitlement-limits.policy.js";
 
 describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () => {
@@ -28,8 +30,8 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
 
   it("ACTIVE 카테고리도 명시된 최대 보유량이 있으며 ADMIN만 무제한이다", () => {
     // Given / When
-    const activeLimit = resolveResourceLimit("USER", "ACTIVE", Resource.CATEGORY);
-    const adminLimit = resolveResourceLimit("ADMIN", "FREE", Resource.CATEGORY);
+    const activeLimit = resolveResourceLimit("USER", "ACTIVE", Resource.CATEGORY, 0);
+    const adminLimit = resolveResourceLimit("ADMIN", "FREE", Resource.CATEGORY, 0);
     // Then
     expect(activeLimit).toBe(SUBSCRIPTION_TODO_CATEGORY_LIMITS.ACTIVE);
     expect(adminLimit).toBeNull();
@@ -107,5 +109,32 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
       expect(deadline).toBeNull();
       expect(statuses).toEqual(["ACTIVE", "FREE"]);
     });
+  });
+
+  it("친구 자리 보너스는 무료 한도에 더하고 무제한에는 더하지 않는다", () => {
+    // Given
+    const bonus = 2;
+
+    // When
+    const freeLimit = resolveResourceLimit("USER", "FREE", Resource.FRIEND, bonus);
+    const adminLimit = resolveResourceLimit("ADMIN", "FREE", Resource.FRIEND, bonus);
+
+    // Then
+    expect(freeLimit).toBe(SUBSCRIPTION_FOLLOW_LIMITS.FREE + bonus);
+    expect(adminLimit).toBeNull();
+  });
+
+  it.each([
+    { value: "CANCELLED", expected: "CANCELLED" },
+    { value: "TRIAL", expected: "FREE" },
+  ])("저장된 구독 상태 $value는 $expected로 읽는다", ({ value, expected }) => {
+    // Given
+    const stored = value;
+
+    // When
+    const status = toSubscriptionStatus(stored);
+
+    // Then
+    expect(status).toBe(expected);
   });
 });

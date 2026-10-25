@@ -10,6 +10,7 @@ import { createEntitlementFixture } from "#test/fixtures/entitlement.fixture";
 
 import {
   Feature,
+  NO_RESOURCE_BONUSES,
   Resource,
 } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 
@@ -260,7 +261,11 @@ describe("EntitlementService", () => {
     it("기한이 없는 1.13.0 이전 캐시는 기존처럼 상태를 그대로 쓴다", async () => {
       // Given
       const fixture = createEntitlementFixture({ subscriptionStatus: "FREE" });
-      fixture.cache.snapshots.set(fixture.userId, { status: "ACTIVE", isAdmin: false });
+      fixture.cache.snapshots.set(fixture.userId, {
+        status: "ACTIVE",
+        isAdmin: false,
+        resourceBonuses: NO_RESOURCE_BONUSES,
+      });
 
       // When
       const premium = await fixture.service.hasPremiumAccess(fixture.userId);

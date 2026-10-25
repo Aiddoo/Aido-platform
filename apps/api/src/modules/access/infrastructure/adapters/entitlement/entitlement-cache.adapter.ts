@@ -18,8 +18,11 @@ export class EntitlementCacheAdapter
 {
   constructor(private readonly cacheService: CacheService) {}
 
-  invalidateSubscription(userId: string): Promise<void> {
-    return this.cacheService.del(EntitlementCacheKey.subscription(userId));
+  async invalidateSubscription(userId: string): Promise<void> {
+    await Promise.all([
+      this.cacheService.del(EntitlementCacheKey.subscription(userId)),
+      this.cacheService.del(EntitlementCacheKey.legacySubscription(userId)),
+    ]);
   }
 
   wrapSubscription(

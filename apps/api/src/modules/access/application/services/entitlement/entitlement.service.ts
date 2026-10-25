@@ -3,11 +3,13 @@ import { now } from "#api/shared/domain/date/utils/core";
 import {
   calculateRemainingLimit,
   hasPremiumEntitlement,
+  NO_RESOURCE_BONUSES,
   resolveEffectiveSubscriptionStatus,
   resolveFeatureLimit,
   resolveResourceLimit,
   type Feature,
   type Resource,
+  type ResourceBonuses,
 } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 import type { EntitlementCachePort } from "../../ports/entitlement/entitlement-cache.port.js";
 import type {
@@ -29,6 +31,7 @@ interface EntitlementServiceDependencies {
 interface ResolvedUserState {
   readonly role: string;
   readonly subscriptionStatus: string;
+  readonly resourceBonuses: ResourceBonuses;
 }
 
 export class EntitlementService implements EntitlementReaderPort {
@@ -78,16 +81,23 @@ export class EntitlementService implements EntitlementReaderPort {
 
   #resourceLimit(user: ResolvedUserState, resource: Resource): ResourceEntitlement {
     return {
-      maxCount: resolveResourceLimit(user.role, user.subscriptionStatus, resource),
+      maxCount: resolveResourceLimit(
+        user.role,
+        user.subscriptionStatus,
+        resource,
+        user.resourceBonuses[resource],
+      ),
       isAdmin: user.role === "ADMIN",
       subscriptionStatus: user.subscriptionStatus,
     };
   }
 
   async #freshUserState(userId: string): Promise<ResolvedUserState> {
-    const user: EntitlementUserState = (await this.#dependencies.database.findUserState(
-      userId,
-    )) ?? {
+    const [found, resourceBonuses] = await Promise.all([
+      this.#dependencies.database.findUserState(userId),
+      this.#dependencies.database.findResourceBonuses(userId),
+    ]);
+    const user: EntitlementUserState = found ?? {
       role: "USER",
       subscriptionStatus: "FREE",
       accessDeadline: null,
@@ -99,16 +109,21 @@ export class EntitlementService implements EntitlementReaderPort {
         user.accessDeadline,
         now(),
       ),
+      resourceBonuses,
     };
   }
 
   async #cachedUserState(userId: string): Promise<ResolvedUserState> {
     const cached = await this.#dependencies.cacheService.wrapSubscription(userId, async () => {
-      const user = await this.#dependencies.database.findUserState(userId);
+      const [user, resourceBonuses] = await Promise.all([
+        this.#dependencies.database.findUserState(userId),
+        this.#dependencies.database.findResourceBonuses(userId),
+      ]);
       return {
         status: user?.subscriptionStatus ?? null,
         isAdmin: user?.role === "ADMIN",
         accessDeadlineMs: user?.accessDeadline?.getTime() ?? null,
+        resourceBonuses,
       };
     });
     const deadlineMs = cached?.accessDeadlineMs;
@@ -119,6 +134,7 @@ export class EntitlementService implements EntitlementReaderPort {
         deadlineMs == null ? null : new Date(deadlineMs),
         now(),
       ),
+      resourceBonuses: cached?.resourceBonuses ?? NO_RESOURCE_BONUSES,
     };
   }
 }

@@ -82,6 +82,7 @@ function renderCatalog(catalog: LocaleCatalog): NotificationCopy[] {
     ...render(social.FOLLOW_NEW, { senderName: longName }),
     ...render(social.FOLLOW_ACCEPTED, { senderName: longName }),
     ...render(social.INVITE_JOINED, { inviteeName: longName }),
+    ...render(social.INVITE_REWARDED, { premiumDays: 9999, friendSlots: 9999 }),
     ...render(social.NUDGE_RECEIVED, { senderName: longName, todoTitle }),
     ...render(social.NUDGE_RECEIVED_WITH_MESSAGE, {
       senderName: longName,

@@ -7,15 +7,20 @@ import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index
 import { CLAIM_HASHER } from "./application/ports/invites/claim-hasher.port.js";
 import { INVITE_NOTIFIER } from "./application/ports/invites/invite-notifier.port.js";
 import { INVITE_REDEMPTION_REPOSITORY } from "./application/ports/invites/invite-redemption.repository.port.js";
+import { INVITE_REWARD_SCHEDULER } from "./application/ports/invites/invite-reward.scheduler.port.js";
 import { INVITE_CONFIG } from "./application/ports/invites/invite.config.port.js";
 import { INVITE_REPOSITORY } from "./application/ports/invites/invite.repository.port.js";
+import { REWARD_APPLIERS } from "./application/ports/invites/reward-applier.port.js";
 import { REWARD_CLAIM_REPOSITORY } from "./application/ports/invites/reward-claim.repository.port.js";
 import { REWARD_GRANT_REPOSITORY } from "./application/ports/invites/reward-grant.repository.port.js";
 import { MyInviteReader } from "./application/services/invites/my-invite.reader.js";
+import { ExpireStaleRedemptions } from "./application/use-cases/invites/expire-stale-redemptions.use-case.js";
 import { GetInviteAvailability } from "./application/use-cases/invites/get-invite-availability.use-case.js";
 import { GetInvitedFriends } from "./application/use-cases/invites/get-invited-friends.use-case.js";
 import { GetMyInvite } from "./application/use-cases/invites/get-my-invite.use-case.js";
+import { GrantInviteRewards } from "./application/use-cases/invites/grant-invite-rewards.use-case.js";
 import { PreviewInvite } from "./application/use-cases/invites/preview-invite.use-case.js";
+import { RecordInviteeActivity } from "./application/use-cases/invites/record-invitee-activity.use-case.js";
 import { RedeemInvite } from "./application/use-cases/invites/redeem-invite.use-case.js";
 import { RotateInviteCode } from "./application/use-cases/invites/rotate-invite-code.use-case.js";
 
@@ -109,6 +114,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     FRIENDSHIP_ESTABLISHER,
     CLAIM_HASHER,
     INVITE_NOTIFIER,
+    INVITE_REWARD_SCHEDULER,
     INVITE_CONFIG,
     MUTATION_LOCK,
     UNIT_OF_WORK,
@@ -125,6 +131,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     friendshipEstablisher: ConstructorParameters<typeof RedeemInvite>[0]["friendshipEstablisher"],
     claimHasher: ConstructorParameters<typeof RedeemInvite>[0]["claimHasher"],
     notifier: ConstructorParameters<typeof RedeemInvite>[0]["notifier"],
+    rewardScheduler: ConstructorParameters<typeof RedeemInvite>[0]["rewardScheduler"],
     inviteConfig: ConstructorParameters<typeof RedeemInvite>[0]["inviteConfig"],
     mutationLock: ConstructorParameters<typeof RedeemInvite>[0]["mutationLock"],
     unitOfWork: ConstructorParameters<typeof RedeemInvite>[0]["unitOfWork"],
@@ -139,10 +146,98 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
       friendshipEstablisher,
       claimHasher,
       notifier,
+      rewardScheduler,
       inviteConfig,
       mutationLock,
       unitOfWork,
       premiumGranter,
       logger: new Logger(RedeemInvite.name),
+    }),
+};
+
+export const recordInviteeActivityProvider: FactoryProvider<RecordInviteeActivity> = {
+  provide: RecordInviteeActivity,
+  inject: [
+    INVITE_REDEMPTION_REPOSITORY,
+    REWARD_GRANT_REPOSITORY,
+    INVITE_REWARD_SCHEDULER,
+    MUTATION_LOCK,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    inviteRedemptionRepository: ConstructorParameters<
+      typeof RecordInviteeActivity
+    >[0]["inviteRedemptionRepository"],
+    rewardGrantRepository: ConstructorParameters<
+      typeof RecordInviteeActivity
+    >[0]["rewardGrantRepository"],
+    rewardScheduler: ConstructorParameters<typeof RecordInviteeActivity>[0]["rewardScheduler"],
+    mutationLock: ConstructorParameters<typeof RecordInviteeActivity>[0]["mutationLock"],
+    unitOfWork: ConstructorParameters<typeof RecordInviteeActivity>[0]["unitOfWork"],
+  ) =>
+    new RecordInviteeActivity({
+      inviteRedemptionRepository,
+      rewardGrantRepository,
+      rewardScheduler,
+      mutationLock,
+      unitOfWork,
+      logger: new Logger(RecordInviteeActivity.name),
+    }),
+};
+
+export const grantInviteRewardsProvider: FactoryProvider<GrantInviteRewards> = {
+  provide: GrantInviteRewards,
+  inject: [
+    REWARD_GRANT_REPOSITORY,
+    INVITE_REDEMPTION_REPOSITORY,
+    REWARD_APPLIERS,
+    INVITE_NOTIFIER,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    rewardGrantRepository: ConstructorParameters<
+      typeof GrantInviteRewards
+    >[0]["rewardGrantRepository"],
+    inviteRedemptionRepository: ConstructorParameters<
+      typeof GrantInviteRewards
+    >[0]["inviteRedemptionRepository"],
+    rewardAppliers: ConstructorParameters<typeof GrantInviteRewards>[0]["rewardAppliers"],
+    notifier: ConstructorParameters<typeof GrantInviteRewards>[0]["notifier"],
+    unitOfWork: ConstructorParameters<typeof GrantInviteRewards>[0]["unitOfWork"],
+  ) =>
+    new GrantInviteRewards({
+      rewardGrantRepository,
+      inviteRedemptionRepository,
+      rewardAppliers,
+      notifier,
+      unitOfWork,
+      logger: new Logger(GrantInviteRewards.name),
+    }),
+};
+
+export const expireStaleRedemptionsProvider: FactoryProvider<ExpireStaleRedemptions> = {
+  provide: ExpireStaleRedemptions,
+  inject: [
+    INVITE_REDEMPTION_REPOSITORY,
+    REWARD_GRANT_REPOSITORY,
+    INVITE_REWARD_SCHEDULER,
+    UNIT_OF_WORK,
+  ],
+  useFactory: (
+    inviteRedemptionRepository: ConstructorParameters<
+      typeof ExpireStaleRedemptions
+    >[0]["inviteRedemptionRepository"],
+    rewardGrantRepository: ConstructorParameters<
+      typeof ExpireStaleRedemptions
+    >[0]["rewardGrantRepository"],
+    rewardScheduler: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["rewardScheduler"],
+    unitOfWork: ConstructorParameters<typeof ExpireStaleRedemptions>[0]["unitOfWork"],
+  ) =>
+    new ExpireStaleRedemptions({
+      inviteRedemptionRepository,
+      rewardGrantRepository,
+      rewardScheduler,
+      unitOfWork,
+      logger: new Logger(ExpireStaleRedemptions.name),
     }),
 };

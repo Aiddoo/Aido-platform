@@ -2,6 +2,7 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import {
   createInviteJoinedNotificationMessage,
+  createInviteRewardedNotificationMessage,
   NotificationPublisher,
   NOTIFICATION_RECIPIENT_LOCALE_READER,
   type NotificationRecipientLocaleReaderPort,
@@ -11,6 +12,7 @@ import {
 import type {
   InviteJoinedNotification,
   InviteNotifierPort,
+  InviteRewardedNotification,
 } from "../../../application/ports/invites/invite-notifier.port.js";
 
 @Injectable()
@@ -35,6 +37,29 @@ export class InviteNotifierAdapter implements InviteNotifierPort {
     await this.notificationPublisher.publish({
       userId: notification.inviterId,
       type: "INVITE_JOINED",
+      title: message.title,
+      body: message.body,
+      metadata: { redemptionId: notification.redemptionId },
+      campaignKey,
+      variantId: message.variantId,
+    });
+  }
+
+  async notifyInviteRewarded(notification: InviteRewardedNotification): Promise<void> {
+    const campaignKey = TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY.INVITE_REWARDED;
+    const message = createInviteRewardedNotificationMessage({
+      premiumDays: notification.premiumDays,
+      friendSlots: notification.friendSlots,
+      locale: await this.localeReader.getLocale(notification.recipientId),
+      variantContext: {
+        campaignKey,
+        recipientId: notification.recipientId,
+        occurrenceKey: notification.redemptionId,
+      },
+    });
+    await this.notificationPublisher.publish({
+      userId: notification.recipientId,
+      type: "INVITE_REWARDED",
       title: message.title,
       body: message.body,
       metadata: { redemptionId: notification.redemptionId },

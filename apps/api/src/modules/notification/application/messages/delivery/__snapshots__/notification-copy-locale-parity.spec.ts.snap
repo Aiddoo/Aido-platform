@@ -116,6 +116,10 @@ exports[`푸시 카탈로그 locale 계약 > 기존 알림의 문구 선택 키�
       0,
     ],
     [
+      "INVITE_REWARDED",
+      0,
+    ],
+    [
       "NUDGE_RECEIVED",
       3,
     ],

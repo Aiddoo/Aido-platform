@@ -1,11 +1,14 @@
 import type { InviterRewardMilestone } from "@aido/api";
 
+import { InviteRedemption } from "../../aggregates/invites/invite-redemption.aggregate.js";
 import {
+  capRewards,
   InviteRewardPolicy,
   isMilestoneReachedAt,
   nextMilestoneQualifiedCount,
   remainingPremiumDays,
   rewardCapWindowStart,
+  rewardsAtQualifiedCount,
 } from "./invite-reward.policy.js";
 
 const MILESTONES = [
@@ -139,6 +142,115 @@ describe("InviteRewardPolicy", () => {
 
       // Then
       expect(remaining).toBe(expected);
+    });
+  });
+
+  describe("planInviterRewards", () => {
+    const redemption = InviteRedemption.reconstitute({
+      id: "redemption-9",
+      inviteId: "invite-1",
+      inviterId: "inviter-1",
+      inviteeId: "invitee-9",
+      status: "JOINED",
+      rejectionReason: null,
+      timezone: "Asia/Seoul",
+      inviterRewardEligible: true,
+      activeDays: ["2028-03-14", "2028-03-15"],
+      joinedAt: new Date("2028-03-10T00:00:00.000Z"),
+      qualifiedAt: null,
+      rewardedAt: null,
+      rejectedAt: null,
+      expiresAt: new Date("2028-03-24T00:00:00.000Z"),
+    });
+
+    function plan(premiumDaysInWindow: number, totalPremiumDays: number) {
+      return InviteRewardPolicy.planInviterRewards(redemption, {
+        inviterId: "inviter-1",
+        summary: { premiumDaysInWindow, totalPremiumDays, rewardsEarned: [] },
+        priorQualifiedCount: 4,
+      });
+    }
+
+    it("최근 30일에 28일을 받았으면 남은 2일과 친구 자리를 계획한다", () => {
+      // Given
+      const premiumDaysInWindow = 28;
+
+      // When
+      const plans = plan(premiumDaysInWindow, 28);
+
+      // Then
+      expect(plans).toEqual([
+        {
+          recipientId: "inviter-1",
+          sourceType: "INVITE_REDEMPTION",
+          sourceId: "redemption-9",
+          rewardType: "PREMIUM_DAYS",
+          quantity: 2,
+        },
+        {
+          recipientId: "inviter-1",
+          sourceType: "INVITE_REDEMPTION",
+          sourceId: "redemption-9",
+          rewardType: "FRIEND_SLOT",
+          quantity: 1,
+        },
+      ]);
+    });
+
+    it.each([
+      { name: "최근 30일 30일을 모두 받은", inWindow: 30, total: 30 },
+      { name: "누적 90일을 모두 받은", inWindow: 0, total: 90 },
+    ])("$name 초대한 사람에게는 프리미엄 없이 친구 자리만 계획한다", ({ inWindow, total }) => {
+      // Given
+      const summary = { inWindow, total };
+
+      // When
+      const plans = plan(summary.inWindow, summary.total);
+
+      // Then
+      expect(plans.map((item) => [item.rewardType, item.quantity])).toEqual([["FRIEND_SLOT", 1]]);
+    });
+  });
+
+  describe("capRewards", () => {
+    it.each([
+      {
+        remaining: 7,
+        expected: [
+          { rewardType: "PREMIUM_DAYS", quantity: 7 },
+          { rewardType: "FRIEND_SLOT", quantity: 1 },
+        ],
+      },
+      {
+        remaining: 3,
+        expected: [
+          { rewardType: "PREMIUM_DAYS", quantity: 3 },
+          { rewardType: "FRIEND_SLOT", quantity: 1 },
+        ],
+      },
+      { remaining: 0, expected: [{ rewardType: "FRIEND_SLOT", quantity: 1 }] },
+    ])("남은 프리미엄 $remaining일이면 프리미엄만 그만큼 줄인다", ({ remaining, expected }) => {
+      // Given
+      const rewards = MILESTONES[0].rewards;
+
+      // When
+      const capped = capRewards(rewards, remaining);
+
+      // Then
+      expect(capped).toEqual(expected);
+    });
+  });
+
+  describe("rewardsAtQualifiedCount", () => {
+    it("같은 지점에 도달한 단계가 없으면 빈 보상이다", () => {
+      // Given
+      const milestones = [MILESTONES[1]];
+
+      // When
+      const rewards = rewardsAtQualifiedCount(milestones, 2);
+
+      // Then
+      expect(rewards).toEqual([]);
     });
   });
 });

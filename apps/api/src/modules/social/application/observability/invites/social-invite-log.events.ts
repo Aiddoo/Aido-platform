@@ -3,4 +3,13 @@ export const SocialInviteLogEvent = {
   ROTATED: "social.invite.rotated",
   REDEEMED: "social.invite.redeemed",
   JOINED_NOTIFICATION_FAILED: "social.invite.joined-notification.failed",
+  QUALIFIED: "social.invite.qualified",
+  REWARDS_GRANTED: "social.invite.rewards.granted",
+  REWARD_APPLY_FAILED: "social.invite.reward.apply.failed",
+  REWARDED_NOTIFICATION_FAILED: "social.invite.rewarded-notification.failed",
+  MAINTENANCE_COMPLETED: "social.invite.maintenance.completed",
+  ACTIVITY_RECORD_FAILED: "social.invite.activity.record.failed",
+  REWARD_JOB_FAILED: "social.invite.reward.job.failed",
+  MAINTENANCE_SCHEDULER_REGISTERED: "social.invite.maintenance.scheduler.registered",
+  MAINTENANCE_CATCH_UP_DISPATCHED: "social.invite.maintenance.catch-up.dispatched",
 } as const;

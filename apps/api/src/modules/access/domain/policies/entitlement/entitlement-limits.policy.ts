@@ -21,9 +21,16 @@ export const Resource = { CATEGORY: "CATEGORY", FRIEND: "FRIEND" } satisfies Rec
   Resource
 >;
 
-type SubscriptionLimits = Readonly<
-  Record<keyof typeof SUBSCRIPTION_AI_PARSE_LIMITS, number | null>
->;
+export type SubscriptionStatusValue = keyof typeof SUBSCRIPTION_AI_PARSE_LIMITS;
+
+/** 보너스 자리를 줄 수 있는 리소스. 저장소 ResourceType과 같은 값이다. */
+export type BonusResource = Extract<Resource, "FRIEND">;
+
+/** 초대 보상 등으로 늘어난 리소스 자리 수 */
+export type ResourceBonuses = Readonly<Record<Resource, number>>;
+export const NO_RESOURCE_BONUSES: ResourceBonuses = { CATEGORY: 0, FRIEND: 0 };
+
+type SubscriptionLimits = Readonly<Record<SubscriptionStatusValue, number | null>>;
 const FEATURE_LIMITS: Readonly<Record<Feature, SubscriptionLimits>> = {
   CHEER: SUBSCRIPTION_CHEER_LIMITS,
   NUDGE: SUBSCRIPTION_NUDGE_LIMITS,
@@ -34,15 +41,25 @@ const RESOURCE_LIMITS: Readonly<Record<Resource, SubscriptionLimits>> = {
   FRIEND: SUBSCRIPTION_FOLLOW_LIMITS,
 };
 
+/** 저장소의 모르는 상태 문자열은 무료로 본다. */
+export function toSubscriptionStatus(value: string): SubscriptionStatusValue {
+  return match(value)
+    .with("FREE", "ACTIVE", "EXPIRED", "CANCELLED", (status) => status)
+    .otherwise(() => "FREE");
+}
+
 function resolveLimit(
   role: string,
   subscriptionStatus: string,
   limits: SubscriptionLimits,
 ): number | null {
   if (role === "ADMIN") return null;
-  return match(subscriptionStatus)
-    .with("FREE", "ACTIVE", "EXPIRED", "CANCELLED", (status) => limits[status])
-    .otherwise(() => limits.FREE);
+  return match(toSubscriptionStatus(subscriptionStatus))
+    .with("FREE", () => limits.FREE)
+    .with("ACTIVE", () => limits.ACTIVE)
+    .with("EXPIRED", () => limits.EXPIRED)
+    .with("CANCELLED", () => limits.CANCELLED)
+    .exhaustive();
 }
 
 export function resolveFeatureLimit(
@@ -53,12 +70,15 @@ export function resolveFeatureLimit(
   return resolveLimit(role, subscriptionStatus, FEATURE_LIMITS[feature]);
 }
 
+/** 무제한(null)은 그대로 두고 한도가 있으면 보너스 자리를 더한다. */
 export function resolveResourceLimit(
   role: string,
   subscriptionStatus: string,
   resource: Resource,
+  bonus: number,
 ): number | null {
-  return resolveLimit(role, subscriptionStatus, RESOURCE_LIMITS[resource]);
+  const limit = resolveLimit(role, subscriptionStatus, RESOURCE_LIMITS[resource]);
+  return limit === null ? null : limit + bonus;
 }
 
 export function hasPremiumEntitlement(role: string, subscriptionStatus: string): boolean {

@@ -145,6 +145,25 @@ export function createInviteJoinedNotificationMessage({
   });
 }
 
+export interface InviteRewardedNotificationInput extends LocalizedVariantInput {
+  readonly premiumDays: number;
+  readonly friendSlots: number;
+}
+
+export function createInviteRewardedNotificationMessage({
+  premiumDays,
+  friendSlots,
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: InviteRewardedNotificationInput): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_REWARDED,
+    variables: { premiumDays, friendSlots },
+    variantContext,
+    templateKey: "invite.rewarded",
+  });
+}
+
 export function createNudgeReceivedNotificationMessage({
   senderName,
   todoTitle,

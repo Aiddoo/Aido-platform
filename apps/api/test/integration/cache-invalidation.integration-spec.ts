@@ -380,7 +380,7 @@ describe("캐시 무효화 통합 테스트 (Memory adapter)", () => {
       expect(IdentityCacheKey.session("sess_123")).toBe("aido:v1:auth:session:sess_123");
       expect(IdentityCacheKey.userProfile(userId)).toBe(`aido:v1:auth:user-profile:${userId}`);
       expect(EntitlementCacheKey.subscription(userId)).toBe(
-        `aido:v1:subscription:status:${userId}`,
+        `aido:v1:subscription:status:v2:${userId}`,
       );
       expect(FollowCacheKey.mutual(userId, targetId)).toBe(
         `aido:v1:follow:mutual:${userId}:${targetId}`,

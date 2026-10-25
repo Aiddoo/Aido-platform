@@ -253,6 +253,15 @@ export const SOCIAL_TEMPLATES = {
         "서로의 하루를 응원해봐",
       ),
   },
+  INVITE_REWARDED: {
+    copy: ({ premiumDays, friendSlots }) => {
+      const rewards = [
+        premiumDays > 0 ? `프리미엄 ${premiumDays}일` : null,
+        friendSlots > 0 ? `친구 자리 ${friendSlots}개` : null,
+      ].filter((reward) => reward !== null);
+      return copy("발자국이 찍혔어 🐾", `${attachJosa(rewards.join("과 "), "을/를")} 받았어`);
+    },
+  },
   NUDGE_RECEIVED: {
     variants: [
       ({ senderName, todoTitle }) =>

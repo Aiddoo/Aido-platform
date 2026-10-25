@@ -53,36 +53,39 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 
 `목적`이 `참여`인 항목만 광고성 푸시 동의와 참여 유도 일일 한도를 적용한다. `서비스`와 `거래`는 일반 시간당 한도와 야간 설정을 적용한다.
 
-| 타입                   | 발생 조건/생성 주체                        | 목적         | 기본 이동                              |
-| ---------------------- | ------------------------------------------ | ------------ | -------------------------------------- |
-| `FOLLOW_NEW`           | 친구 신청 수신                             | 거래         | 친구 신청 목록                         |
-| `FOLLOW_ACCEPTED`      | 친구 신청 수락                             | 거래         | 친구 피드, ID가 없으면 친구 목록       |
-| `NUDGE_RECEIVED`       | 친구의 콕 또는 할 일 생성 리마인드 콕      | 거래         | 친구 피드                              |
-| `CHEER_RECEIVED`       | 친구 응원 수신                             | 거래         | 친구 피드                              |
-| `DAILY_COMPLETE`       | 오늘 할 일 전체 완료                       | 거래         | 피드                                   |
-| `FRIEND_COMPLETED`     | 친구의 오늘 할 일 전체 완료                | 거래         | 친구 피드                              |
-| `TODO_REMINDER`        | -60분/-10분/정시 지연 잡                   | 서비스       | 피드 (`todoId` 유지)                   |
-| `TODO_SHARED`          | 할 일 공유                                 | 거래         | 피드 (`todoId` 유지)                   |
-| `MORNING_REMINDER`     | 아침 자동 스케줄                           | 서비스       | 피드                                   |
-| `EVENING_REMINDER`     | 저녁 자동 스케줄                           | 서비스       | 피드                                   |
-| `WEEKLY_ACHIEVEMENT`   | 무료 사용자 주간 성취                      | 서비스       | 성취 화면                              |
-| `WEEKLY_REPORT`        | 프리미엄·관리자 주간 리포트                | 서비스       | 리포트 화면                            |
-| `MONTHLY_REPORT`       | 프리미엄·관리자 월간 리포트                | 서비스       | 리포트 화면                            |
-| `AI_SUGGESTION`        | 기록 기반 할 일 제안                       | 참여         | 제안 화면                              |
-| `SYSTEM_NOTICE`        | 온보딩, 결제, 운영 공지                    | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
-| `ADMIN_BROADCAST`      | 관리자 전체·조건 발송                      | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
-| `ADMIN_TARGETED`       | 관리자 특정 사용자 발송                    | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
-| `WINBACK`              | 비활성 단계 도달                           | 참여         | 피드                                   |
-| `SOCIAL_DIGEST`        | 친구 완료 활동 요약                        | 참여         | 피드                                   |
-| `NUDGE_SUGGEST`        | 비활성 맞팔 친구 감지                      | 참여         | 친구 피드, ID가 없으면 피드            |
-| `LUNCH_NUDGE`          | 점심까지 완료 0개                          | 참여         | 피드                                   |
-| `STREAK_AT_RISK`       | 스트릭 3일 이상 + 오늘 미완료              | 참여         | 피드                                   |
-| `WEATHER_MORNING`      | 오늘 날씨 또는 위치 설정 안내              | 서비스       | 피드                                   |
-| `WEATHER_EVENING`      | 내일 날씨 또는 위치 설정 안내              | 서비스       | 피드                                   |
-| `PREMIUM_GRANT_ENDING` | 보상 기간 종료 24시간 전 (1.13.0+)         | 참여         | 구독 화면                              |
-| `INVITE_JOINED`        | 초대받은 사람이 수락해 친구가 됨 (1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
+| 타입                   | 발생 조건/생성 주체                                                                      | 목적         | 기본 이동                              |
+| ---------------------- | ---------------------------------------------------------------------------------------- | ------------ | -------------------------------------- |
+| `FOLLOW_NEW`           | 친구 신청 수신                                                                           | 거래         | 친구 신청 목록                         |
+| `FOLLOW_ACCEPTED`      | 친구 신청 수락                                                                           | 거래         | 친구 피드, ID가 없으면 친구 목록       |
+| `NUDGE_RECEIVED`       | 친구의 콕 또는 할 일 생성 리마인드 콕                                                    | 거래         | 친구 피드                              |
+| `CHEER_RECEIVED`       | 친구 응원 수신                                                                           | 거래         | 친구 피드                              |
+| `DAILY_COMPLETE`       | 오늘 할 일 전체 완료                                                                     | 거래         | 피드                                   |
+| `FRIEND_COMPLETED`     | 친구의 오늘 할 일 전체 완료                                                              | 거래         | 친구 피드                              |
+| `TODO_REMINDER`        | -60분/-10분/정시 지연 잡                                                                 | 서비스       | 피드 (`todoId` 유지)                   |
+| `TODO_SHARED`          | 할 일 공유                                                                               | 거래         | 피드 (`todoId` 유지)                   |
+| `MORNING_REMINDER`     | 아침 자동 스케줄                                                                         | 서비스       | 피드                                   |
+| `EVENING_REMINDER`     | 저녁 자동 스케줄                                                                         | 서비스       | 피드                                   |
+| `WEEKLY_ACHIEVEMENT`   | 무료 사용자 주간 성취                                                                    | 서비스       | 성취 화면                              |
+| `WEEKLY_REPORT`        | 프리미엄·관리자 주간 리포트                                                              | 서비스       | 리포트 화면                            |
+| `MONTHLY_REPORT`       | 프리미엄·관리자 월간 리포트                                                              | 서비스       | 리포트 화면                            |
+| `AI_SUGGESTION`        | 기록 기반 할 일 제안                                                                     | 참여         | 제안 화면                              |
+| `SYSTEM_NOTICE`        | 온보딩, 결제, 운영 공지                                                                  | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
+| `ADMIN_BROADCAST`      | 관리자 전체·조건 발송                                                                    | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
+| `ADMIN_TARGETED`       | 관리자 특정 사용자 발송                                                                  | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
+| `WINBACK`              | 비활성 단계 도달                                                                         | 참여         | 피드                                   |
+| `SOCIAL_DIGEST`        | 친구 완료 활동 요약                                                                      | 참여         | 피드                                   |
+| `NUDGE_SUGGEST`        | 비활성 맞팔 친구 감지                                                                    | 참여         | 친구 피드, ID가 없으면 피드            |
+| `LUNCH_NUDGE`          | 점심까지 완료 0개                                                                        | 참여         | 피드                                   |
+| `STREAK_AT_RISK`       | 스트릭 3일 이상 + 오늘 미완료                                                            | 참여         | 피드                                   |
+| `WEATHER_MORNING`      | 오늘 날씨 또는 위치 설정 안내                                                            | 서비스       | 피드                                   |
+| `WEATHER_EVENING`      | 내일 날씨 또는 위치 설정 안내                                                            | 서비스       | 피드                                   |
+| `PREMIUM_GRANT_ENDING` | 보상 기간 종료 24시간 전 (1.13.0+)                                                       | 참여         | 구독 화면                              |
+| `INVITE_JOINED`        | 초대받은 사람이 수락해 친구가 됨 (1.13.0+)                                               | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
+| `INVITE_REWARDED`      | 초대한 사람의 발자국 보상 적용 (수락 1건에 1회, 프리미엄·친구 자리를 함께 적음, 1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
 
 `BROWSER`, `WEBVIEW`, `NONE` action은 표의 기본 이동보다 우선한다. `DEEP_LINK`에 URL이 있으면 해당 내부 경로를 우선한다.
+
+초대 알림의 중복 방지는 저장 원장이 소유한다. `INVITE_JOINED`는 `InviteRedemption.inviteeId` UNIQUE로 수락 1건에 한 번, `INVITE_REWARDED`는 초대한 사람의 `RewardGrant`를 APPLIED로 바꾼 실행만 보내므로 수락마다 한 번(초대받은 사람은 수락 응답에서 보상을 바로 보므로 보내지 않는다), `PREMIUM_GRANT_ENDING`은 같은 트랜잭션에서 `PremiumGrant.endingNotifiedAt`을 기록해 기간마다 한 번이다.
 
 ## 문구와 변형 선택
 

@@ -7,7 +7,11 @@ import type {
   EntitlementDatabasePort,
   EntitlementUserState,
 } from "../../../application/ports/entitlement/entitlement-state.port.js";
-import { resolvePremiumAccessDeadline } from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
+import {
+  NO_RESOURCE_BONUSES,
+  resolvePremiumAccessDeadline,
+  type ResourceBonuses,
+} from "../../../domain/policies/entitlement/entitlement-limits.policy.js";
 
 /** Authorization reads participate in the caller's CLS transaction. */
 @Injectable()
@@ -37,6 +41,17 @@ export class PrismaEntitlementReader implements EntitlementDatabasePort {
         subscriptionExpiresAt: user.subscriptionExpiresAt,
         renewingStoreExpiresAt: user.subscriptions.map((subscription) => subscription.expiresAt),
       }),
+    };
+  }
+
+  async findResourceBonuses(userId: string): Promise<ResourceBonuses> {
+    const groups = await this.txHost.tx.orm.public.ResourceBonus.where({ userId })
+      .groupBy("resource")
+      .aggregate((aggregate) => ({ quantity: aggregate.sum("quantity") }));
+    // DB ResourceType에는 아직 FRIEND만 있다
+    return {
+      ...NO_RESOURCE_BONUSES,
+      FRIEND: groups.find((group) => group.resource === "FRIEND")?.quantity ?? 0,
     };
   }
 }

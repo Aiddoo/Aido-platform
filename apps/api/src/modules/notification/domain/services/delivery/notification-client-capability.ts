@@ -4,7 +4,7 @@ import { NOTIFICATION_TYPE } from "@aido/api/vocabulary";
 import type { NotificationType } from "../../types/delivery/notification-type.js";
 
 /** 이 버전보다 낮은 앱은 해당 알림을 해석하지 못해 알림함과 푸시에서 뺀다. */
-export const NOTIFICATION_MIN_APP_VERSION = {
+const NOTIFICATION_MIN_APP_VERSION = {
   NUDGE_REPLIED: "1.11.0",
   NUDGE_THANKED: "1.11.0",
   INVITE_JOINED: "1.13.0",

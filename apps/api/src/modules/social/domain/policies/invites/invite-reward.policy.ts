@@ -111,7 +111,44 @@ function sumRewards(rewards: readonly RewardAmount[]): RewardAmount[] {
   });
 }
 
+/** 프리미엄 일수는 남은 상한만큼 줄이고, 다 쓴 종류는 뺀다. */
+export function capRewards(
+  rewards: readonly RewardAmount[],
+  remainingPremium: number,
+): RewardAmount[] {
+  return rewards.flatMap((reward) => {
+    const quantity =
+      reward.rewardType === REWARD_TYPE.PREMIUM_DAYS
+        ? Math.min(reward.quantity, remainingPremium)
+        : reward.quantity;
+    return quantity > 0 ? [{ rewardType: reward.rewardType, quantity }] : [];
+  });
+}
+
 export const InviteRewardPolicy = {
+  /**
+   * 이번 사용 시작으로 도달한 단계의 보상을 상한 안에서 만든다.
+   * 상한을 다 써도 사용 시작은 인정하고, 프리미엄만 남은 만큼 주거나 빼고 친구 자리는 그대로 준다.
+   */
+  planInviterRewards(
+    redemption: InviteRedemption,
+    context: {
+      readonly inviterId: string;
+      readonly summary: InviterRewardSummary;
+      readonly priorQualifiedCount: number;
+    },
+    milestones: readonly InviterRewardMilestone[] = INVITER_REWARD_MILESTONES,
+  ): RewardGrantPlan[] {
+    const rewards = rewardsAtQualifiedCount(milestones, context.priorQualifiedCount + 1);
+    return capRewards(rewards, remainingPremiumDays(context.summary)).map((reward) => ({
+      recipientId: context.inviterId,
+      sourceType: "INVITE_REDEMPTION",
+      sourceId: redemption.id,
+      rewardType: reward.rewardType,
+      quantity: reward.quantity,
+    }));
+  },
+
   /** 초대받은 사람 보상. 같은 기기·같은 신원으로 받은 적이 있으면 받지 않는다. */
   planInviteeRewards(
     redemption: InviteRedemption,
