@@ -57,12 +57,14 @@ export class AiReportController {
 | \`latestWeekly\` | object \\| null | 최근 주간 리포트 (없으면 null) |
 | \`latestMonthly\` | object \\| null | 최근 월간 리포트 (없으면 null) |
 
-## ⏰ 리포트 생성 스케줄 (KST 기준)
+## ⏰ 리포트 생성 스케줄 (사용자 시간대 기준)
+
+서버는 매시 5분에 실행하고, 사용자 시간대(저장된 설정)로 새 주·새 달이 시작된 직후(00:00~05:59)인 사용자만 생성합니다.
 
 | 타입 | 생성 시점 | 알림 발송 | 분석 대상 기간 |
 |------|----------|----------|--------------|
-| **주간** | 매주 **월요일 01:00 KST** | **월요일 08:00 KST** | 직전 주 월~일 (ISO week) |
-| **월간** | 매월 **1일 01:00 KST** | **1일 08:00 KST** | 전월 1일~말일 |
+| **주간** | 매주 **월요일 00:05~** (사용자 시간대) | **월요일 08:00** (사용자 시간대) | 직전 주 월~일 (ISO week) |
+| **월간** | 매월 **1일 00:05~** (사용자 시간대) | **1일 08:00** (사용자 시간대) | 전월 1일~말일 |
 
 **생성 조건**: \`subscriptionStatus = ACTIVE\` 또는 \`role = ADMIN\`
 - 할 일이 0개인 주/월도 리포트는 생성됩니다 (\`hasActivity: false\`, 격려 메시지 포함).
@@ -74,7 +76,7 @@ export class AiReportController {
 ### 중복 방지 (2중 방어)
 | 계층 | 메커니즘 | 효과 |
 |------|---------|------|
-| **1. BullMQ jobId** | \`report_{TYPE}_{userId}_{periodId}\` (7일 보관) | 같은 기간 동일 유저 중복 잡 방지 |
+| **1. Job 멱등 키** | \`report_{TYPE}_{userId}_{periodId}\` (사용자 시간대 기준 주·월, 7일 보관) | 같은 기간 동일 유저 중복 잡 방지 |
 | **2. DB 중복 체크** | \`exists(userId, type, year, period)\` | 같은 기간 리포트 중복 생성 방지 |
 
 ### 서버 재시작 시 동작
@@ -86,17 +88,19 @@ export class AiReportController {
 
 ### 프리미엄 가입 후 첫 리포트는 언제?
 \`\`\`
-2026-03-04 (수) 06:24 KST  → 프리미엄 가입
+2026-03-04 (수) 06:24 KST  → 프리미엄 가입 (시간대 Asia/Seoul)
 
 --- 주간 리포트 ---
-2026-03-09 (월) 01:00 KST  → 주간 리포트 생성 (BullMQ)
-                             → 03-03(월)~03-09(일) 데이터 분석
+2026-03-09 (월) 00:05 KST  → 주간 리포트 생성
+                             → 03-02(월)~03-08(일) 데이터 분석
 2026-03-09 (월) 08:00 KST  → 주간 리포트 알림 발송 (Scheduler Strategy)
 
 --- 월간 리포트 ---
-2026-04-01 (수) 01:00 KST  → 월간 리포트 생성 (BullMQ)
+2026-04-01 (수) 00:05 KST  → 월간 리포트 생성
                              → 3월 전체(03-01~03-31) 데이터 분석
 2026-04-01 (수) 08:00 KST  → 월간 리포트 알림 발송 (Scheduler Strategy)
+
+America/Los_Angeles 사용자는 같은 규칙을 LA 시각으로 적용합니다.
 \`\`\`
 
 > 프리미엄 가입 이전 데이터도 분석에 포함됩니다 (가입 시점이 아닌 기간 기준).
@@ -106,7 +110,7 @@ export class AiReportController {
 
 ### 폴링 전략
 - \`nextWeeklyAt\` / \`nextMonthlyAt\`를 기준으로 새 리포트 도착 시점을 예측할 수 있습니다.
-- **월요일 08:00 KST 이후** 호출하면 새 주간 리포트를 확인할 수 있습니다.
+- 리포트는 사용자 시간대 기준 월요일(월간은 1일) 새벽에 생성되며, **사용자 시간대 기준 08:00 이후** 호출하면 새 리포트를 확인할 수 있습니다.
 - \`latestWeekly\` / \`latestMonthly\`가 null이면 아직 리포트가 생성된 적 없는 것입니다.
 
 ### 비활동 리포트
@@ -118,7 +122,7 @@ export class AiReportController {
   @ApiForbiddenError(ErrorCode.AI_1308)
   async getStatus(
     @CurrentUser() user: CurrentUserPayload,
-    @Timezone() tz: string,
+    @Timezone({ preserveIfMissing: true }) tz: string | undefined,
   ): Promise<ReportStatusResponseDto> {
     const status = await this.getReportStatusUseCase.execute(user.userId, tz);
 
@@ -148,7 +152,7 @@ GET /ai/reports?limit=20              → 주간+월간 합쳐서 최근 20개
 \`\`\`
 
 프리미엄 가입 직후에는 아직 리포트가 없으므로 빈 배열이 반환됩니다.
-첫 주간 리포트는 가입 후 돌아오는 **월요일 08:00 KST** 이후, 첫 월간 리포트는 **다음 달 1일 08:00 KST** 이후 조회 가능합니다.`,
+첫 주간 리포트는 가입 후 돌아오는 **월요일 08:00**(사용자 시간대) 이후, 첫 월간 리포트는 **다음 달 1일 08:00**(사용자 시간대) 이후 조회 가능합니다.`,
   })
   @ApiSuccessResponse({ type: AiReportListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

@@ -1,7 +1,10 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.public";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import {
+  AI_PROVIDER,
+  USER_LOCALE_PREFERENCE_READER,
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import { USER_MUTATION_LOCK } from "#api/modules/identity/identity-user-access.public";
 import { UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
@@ -56,14 +59,18 @@ export const getReportByIdProvider: FactoryProvider<GetReportById> = {
 
 export const getReportStatusProvider: FactoryProvider<GetReportStatus> = {
   provide: GetReportStatus,
-  inject: [AI_REPORT_REPOSITORY, ENTITLEMENT_READER],
+  inject: [AI_REPORT_REPOSITORY, ENTITLEMENT_READER, USER_LOCALE_PREFERENCE_READER],
   useFactory: (
     aiReportRepository: ConstructorParameters<typeof GetReportStatus>[0]["aiReportRepository"],
     entitlementReader: ConstructorParameters<typeof GetReportStatus>[0]["entitlementReader"],
+    localePreferenceReader: ConstructorParameters<
+      typeof GetReportStatus
+    >[0]["localePreferenceReader"],
   ) =>
     new GetReportStatus({
       aiReportRepository,
       entitlementReader,
+      localePreferenceReader,
     }),
 };
 
