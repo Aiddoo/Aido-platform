@@ -1,4 +1,4 @@
-import appIconImage from '@assets/images/icon.png';
+import appIconImage from '@assets/images/profile-icons/app-default.webp';
 import type { OAuthStartProvider } from '@src/features/auth/domains/oauth.model';
 import { useExchangeCodeMutationOptions } from '@src/features/auth/queries/use-exchange-code-mutation-options';
 import { useOpenAppleLoginMutationOptions } from '@src/features/auth/queries/use-open-apple-login-mutation-options';

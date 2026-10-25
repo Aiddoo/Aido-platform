@@ -1,13 +1,13 @@
 import { PROFILE_ICON_KEYS } from '@aido/api';
-import black_cat from '@assets/premium-app-icons/black-cat.png';
-import cream_cat from '@assets/premium-app-icons/cream-cat.png';
-import defaultIcon from '@assets/premium-app-icons/default.png';
-import orange_tabby from '@assets/premium-app-icons/orange-tabby.png';
-import russian_blue from '@assets/premium-app-icons/russian-blue.png';
-import scottish_fold from '@assets/premium-app-icons/scottish-fold.png';
-import siamese from '@assets/premium-app-icons/siamese.png';
-import tuxedo_cat from '@assets/premium-app-icons/tuxedo-cat.png';
-import white_cat from '@assets/premium-app-icons/white-cat.png';
+import black_cat from '@assets/images/profile-icons/black-cat.webp';
+import cream_cat from '@assets/images/profile-icons/cream-cat.webp';
+import defaultIcon from '@assets/images/profile-icons/default.webp';
+import orange_tabby from '@assets/images/profile-icons/orange-tabby.webp';
+import russian_blue from '@assets/images/profile-icons/russian-blue.webp';
+import scottish_fold from '@assets/images/profile-icons/scottish-fold.webp';
+import siamese from '@assets/images/profile-icons/siamese.webp';
+import tuxedo_cat from '@assets/images/profile-icons/tuxedo-cat.webp';
+import white_cat from '@assets/images/profile-icons/white-cat.webp';
 import type { ImageSourcePropType } from 'react-native';
 
 import type { AppIconKey } from '../domains/app-icon.model';
