@@ -696,7 +696,7 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(result).toBe("mocked-value");
-        expect(mockAdapter.get).toHaveBeenCalledWith("any");
+        expect(mockAdapter.get).toHaveBeenCalledWith("any", expect.anything());
       } finally {
         await module.close();
       }
@@ -730,7 +730,7 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(result).toBe("wrapped-value");
-        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", factory, "5m");
+        expect(mockAdapter.wrap).toHaveBeenCalledWith("key", expect.anything(), factory, "5m");
       } finally {
         await module.close();
       }

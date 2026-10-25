@@ -718,12 +718,14 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       expect(cacheService.wrap).toHaveBeenNthCalledWith(
         1,
         `aido:v1:notification:unread-count:${mockUserId}:legacy`,
+        expect.anything(),
         expect.any(Function),
         120_000,
       );
       expect(cacheService.wrap).toHaveBeenNthCalledWith(
         2,
         `aido:v1:notification:unread-count:${mockUserId}`,
+        expect.anything(),
         expect.any(Function),
         120_000,
       );
