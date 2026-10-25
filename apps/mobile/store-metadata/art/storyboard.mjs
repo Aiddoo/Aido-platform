@@ -164,6 +164,7 @@ export const SLOTS = {
   widgets: {
     title: '홈 화면 위젯',
     // OS 홈 화면이라 maestro가 찍지 않는다. 같은 폴더에 직접 찍어 둔다(README '직접 찍는 화면').
+    // 휴대전화는 작은(2×2)+중간(4×2), 큰 화면은 중간+큰(4×4) 위젯을 할 일이 있는 오늘로 배치한다.
     capture: premium('W1_홈_화면_위젯', { manual: true }),
     ko: { tagline: '앱을 열지 않아도', headline: '오늘 할 일을\n홈 화면 위젯으로 봐요' },
     en: { tagline: 'Right on your Home Screen', headline: 'See today’s to-dos\nin a widget' },
@@ -203,7 +204,8 @@ export const SLOTS = {
   },
   'large-widgets': {
     title: '위젯(자정 갱신)',
-    capture: premium('W1_홈_화면_위젯', { manual: true }),
+    // 기본 세트는 라이트 위젯이라 큰 화면 CPP에서는 다크 모드 위젯을 보여준다(iOS timeline이라 자정 정각에 바뀐다).
+    capture: premium('W1_홈_화면_위젯', { manual: true, theme: '다크' }),
     ko: { tagline: '자정이면 위젯도 새날', headline: '자정이 지나면\n위젯이 바로 바뀌어요' },
     en: {
       tagline: 'Widgets update at midnight',
@@ -288,27 +290,28 @@ export const SLOTS = {
   },
 };
 
+// 위젯은 앱을 열지 않고 매일 보는 기능이라, 핵심 흐름(AI 입력 → 초대 → 친구) 바로 다음 4번째에 둔다.
 const MAIN_IPHONE = [
   'ai',
   'invite',
   'friends',
+  'widgets',
   'subtasks',
   'options',
   'suggestions',
   'report',
   'reminders',
-  'widgets',
   'memo',
 ];
 const MAIN_PLAY = [
   'ai',
   'invite',
   'friends',
+  'widgets',
   'subtasks',
   'suggestions',
   'report',
   'reminders',
-  'widgets',
 ];
 const CPP_INVITE = ['invite-card', 'invite-accept', 'paw-board', 'friends-feed', 'ai-short'];
 
@@ -329,6 +332,7 @@ export const SETS = [
       'ai',
       'invite',
       'large-feed',
+      'widgets',
       'large-memo',
       'report',
       'suggestions',
@@ -340,7 +344,7 @@ export const SETS = [
     id: 'main',
     label: '기본 스토어 등록정보(태블릿)',
     targets: ['play-tablet-7', 'play-tablet-10'],
-    slots: ['large-feed', 'ai', 'invite', 'large-memo', 'report', 'large-settings'],
+    slots: ['large-feed', 'ai', 'invite', 'widgets', 'large-memo', 'report', 'large-settings'],
   },
   {
     id: 'cpp-invite',

@@ -40,7 +40,12 @@ pnpm --filter @aido/mobile test:store-art
 
 캡처 계획에 아직 없는 것(2026-10-26 기준): `iPad Pro 13` 기기(ko·en), `iPhone Duo`·`Android 폰`·`Android 폴드 펼침`의 `en`,
 그리고 OS 홈 화면이라 자동으로 못 찍는 `W1_홈_화면_위젯.png`(기기별 ko·en, 같은 폴더에 직접 저장).
-`captures` 명령이 장면별로 빠진 파일을 보여줘요. 캡처 비율이 틀과 3% 넘게 다르면 잘라내지 않고 여백을 둬요.
+`captures` 명령이 장면별로 빠진 파일을 보여줘요.
+
+`W1_홈_화면_위젯.png` 찍는 법: 프리미엄 데모 계정으로 오늘 할 일(일부 완료)을 채운 뒤 앱을 한 번 열어 위젯을 갱신하고,
+다른 앱 아이콘·위젯이 없는 홈 화면 페이지에 둬요. 휴대전화(iPhone 17 Pro·Duo 접힘·Android 폰)는 작은+중간(Android 2×2+4×2),
+큰 화면(Duo 펼침·iPad·Android 폴드 펼침)은 중간+큰(Android 4×2+4×4) 위젯이에요. 기기 언어를 ko·en으로 바꿔 각각 찍고,
+`라이트/`는 기본 세트, `다크/`는 큰 화면 CPP의 `large-widgets`가 써요. iOS 상태 막대는 `xcrun simctl status_bar … override --time 9:41`로 맞춰요. 캡처 비율이 틀과 3% 넘게 다르면 잘라내지 않고 여백을 둬요.
 
 ## 규칙
 
