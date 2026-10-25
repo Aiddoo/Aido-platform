@@ -29,7 +29,7 @@ describe("PrismaSchedulerReader — 기존 사용자 무영향 격리", () => {
 
   function reader(enabled: boolean): PrismaSchedulerReader {
     const cache = mock<CacheService>();
-    cache.wrap.mockImplementation((_key, loader) => loader());
+    cache.wrap.mockImplementation((_key, _schema, loader) => loader());
     const config = mock<TypedConfigService>();
     Object.defineProperty(config, "retentionOnboardingV2", {
       value: { enabled, treatmentPercent: 50 },

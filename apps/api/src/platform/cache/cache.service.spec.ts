@@ -2,6 +2,7 @@ import { TestBed } from "@suites/unit";
 import type { Mocked } from "vitest";
 import { vi } from "vitest";
 import { mock } from "vitest-mock-extended";
+import { z } from "zod";
 
 import { CacheService } from "./cache.service.js";
 import { CACHE_SERVICE, type ICacheService, type TtlValue } from "./interfaces/cache.interface.js";
@@ -32,10 +33,10 @@ describe("CacheService — 캐시 서비스", () => {
       mockCacheAdapter.get.mockResolvedValue(expectedValue);
 
       // When
-      const result = await service.get(key);
+      const result = await service.get(key, z.unknown());
 
       // Then
-      expect(mockCacheAdapter.get).toHaveBeenCalledWith(key);
+      expect(mockCacheAdapter.get).toHaveBeenCalledWith(key, expect.anything());
       expect(result).toBe(expectedValue);
     });
 
@@ -109,10 +110,10 @@ describe("CacheService — 캐시 서비스", () => {
       mockCacheAdapter.wrap.mockResolvedValue("value");
 
       // When
-      const result = await service.wrap(key, factory, ttl);
+      const result = await service.wrap(key, z.unknown(), factory, ttl);
 
       // Then
-      expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(key, factory, ttl);
+      expect(mockCacheAdapter.wrap).toHaveBeenCalledWith(key, expect.anything(), factory, ttl);
       expect(result).toBe("value");
     });
 
@@ -123,10 +124,10 @@ describe("CacheService — 캐시 서비스", () => {
       mockCacheAdapter.mget.mockResolvedValue(expectedValues);
 
       // When
-      const result = await service.mget(keys);
+      const result = await service.mget(keys, z.unknown());
 
       // Then
-      expect(mockCacheAdapter.mget).toHaveBeenCalledWith(keys);
+      expect(mockCacheAdapter.mget).toHaveBeenCalledWith(keys, expect.anything());
       expect(result).toEqual(expectedValues);
     });
 
@@ -193,9 +194,9 @@ describe("CacheService — 캐시 서비스", () => {
 
       // When
       const operations = [
-        service.get("key1"),
+        service.get("key1", z.unknown()),
         service.set("key2", "value"),
-        service.get("key3"),
+        service.get("key3", z.unknown()),
         service.del("key4"),
       ];
       await Promise.all(operations);
@@ -211,10 +212,13 @@ describe("CacheService — 캐시 서비스", () => {
       const specialUserId = "user_with-special.chars@domain.com";
 
       // When
-      await service.get(cacheKey("test", "value", specialUserId));
+      await service.get(cacheKey("test", "value", specialUserId), z.unknown());
 
       // Then
-      expect(mockCacheAdapter.get).toHaveBeenCalledWith(cacheKey("test", "value", specialUserId));
+      expect(mockCacheAdapter.get).toHaveBeenCalledWith(
+        cacheKey("test", "value", specialUserId),
+        expect.anything(),
+      );
     });
   });
 });

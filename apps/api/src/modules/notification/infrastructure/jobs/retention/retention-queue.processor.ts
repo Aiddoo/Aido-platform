@@ -1,16 +1,12 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { fromLegacyJob, type NamedJob } from "#api/platform/jobs/named-job";
-import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { DispatchRetentionPush } from "../../../application/use-cases/retention/dispatch-retention-push.use-case.js";
 import { ProcessRetentionStages } from "../../../application/use-cases/retention/process-retention-stages.use-case.js";
 import { RecoverFailedRetentionDelivery } from "../../../application/use-cases/retention/recover-failed-retention-delivery.use-case.js";
 import { RelayRetentionOutbox } from "../../../application/use-cases/retention/relay-retention-outbox.use-case.js";
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 import {
   RETENTION_LEGACY_QUEUE,
   RETENTION_DEAD_LETTER_QUEUE,
@@ -18,16 +14,10 @@ import {
   RETENTION_JOB_POLICY,
   RETENTION_QUEUE,
   RETENTION_WORKER_POLICY,
-  type RetentionJobMap,
   RetentionJobName,
   RetentionDeadLetterJobSchema,
   RetentionRuntimeJobSchema,
 } from "./retention-queue.constants.js";
-
-type RetentionJob = NamedJob<RetentionJobMap>;
-type RetentionJobLike = { readonly name: string; readonly data: JobData };
-
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 
 @Injectable()
 export class RetentionQueueProcessor implements OnModuleInit {
@@ -45,24 +35,24 @@ export class RetentionQueueProcessor implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (!this.runtime) return;
-    await this.runtime.work<RetentionJob>(
+    await this.runtime.work(
       RETENTION_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.process(job.id, job.attempt, job.data);
       },
       RETENTION_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       RETENTION_LEGACY_QUEUE,
       async (jobs) => {
         for (const job of jobs) {
-          const legacy = fromLegacyJob<RetentionJobMap>(job);
+          const legacy = { name: job.name, data: job.data };
           await this.process(job.id, job.attempt, legacy);
         }
       },
       RETENTION_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       RETENTION_DEAD_LETTER_QUEUE,
       async (jobs) => {
         for (const job of jobs) {
@@ -77,7 +67,7 @@ export class RetentionQueueProcessor implements OnModuleInit {
   async process(
     processingJobId: string,
     processingJobAttempt: number,
-    untrustedJob: RetentionJobLike,
+    untrustedJob: unknown,
   ): Promise<void> {
     const parsedJob = RetentionRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {

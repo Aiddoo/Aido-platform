@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 import type { Logger } from "@nestjs/common";
 import type { HttpClient } from "@nestjs/http-client";
+import { z } from "zod";
 
 import type {
   ExchangedToken,
@@ -12,6 +13,8 @@ import type {
 } from "#api/modules/identity/application/ports/auth/oauth-identity-provider.port";
 import { readJson } from "#api/platform/http/read-json";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
+
+const NAVER_TOKEN_RESPONSE_SCHEMA = z.object({ access_token: z.string() });
 
 interface OAuthConfig {
   clientId: string | undefined;
@@ -105,14 +108,13 @@ export class NaverOAuthProvider implements OAuthIdentityProvider {
       throw new ApplicationException(ErrorCode.USER_0602);
     }
 
-    const tokenData = await readJson<{
-      access_token: string;
-      token_type: string;
-      refresh_token?: string;
-      expires_in: number;
-    }>(tokenResponse);
+    const tokenData = await readJson(tokenResponse, NAVER_TOKEN_RESPONSE_SCHEMA);
+    if (!tokenData.success) {
+      this.#logger.error("Naver token exchange returned an unexpected body");
+      throw new ApplicationException(ErrorCode.USER_0602);
+    }
 
-    return { token: tokenData.access_token };
+    return { token: tokenData.data.access_token };
   }
 
   async verifyToken(accessToken: string): Promise<VerifiedProfile> {

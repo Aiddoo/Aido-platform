@@ -27,6 +27,7 @@ import type {
   EnqueueJobRequest,
   JobCancellationResult,
   JobData,
+  JobEnvelope,
   JobRetryPolicy,
   JobRuntimeHealth,
   JobRuntimePort,
@@ -325,20 +326,13 @@ export class PgBossJobRuntimeAdapter implements JobRuntimePort {
     return result.affected > 0 ? { status: "cancelled" } : { status: "missing" };
   }
 
-  async work<T extends JobData>(
+  async work(
     queue: string,
-    handler: (
-      jobs: readonly {
-        readonly id: string;
-        readonly name: string;
-        readonly data: Readonly<T>;
-        readonly attempt: number;
-      }[],
-    ) => Promise<void>,
+    handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void> {
     await this.ensureQueue(queue, options.queuePolicy);
-    await this.boss.work<T>(
+    await this.boss.work<JobData>(
       queue,
       {
         includeMetadata: true,

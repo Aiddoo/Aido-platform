@@ -1,11 +1,6 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { fromLegacyJob, type NamedJob } from "#api/platform/jobs/named-job";
-import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { DispatchDailySignupSummary } from "../../../application/use-cases/notifications/dispatch-daily-signup-summary.use-case.js";
 import { SendAdminNotification } from "../../../application/use-cases/notifications/send-admin-notification.use-case.js";
@@ -14,8 +9,6 @@ import {
   ADMIN_NOTIFICATION_LEGACY_QUEUE,
   ADMIN_NOTIFICATION_QUEUE,
   ADMIN_NOTIFICATION_WORKER_POLICY,
-  type AdminNotificationJobData,
-  type AdminNotificationJobMap,
   AdminNotificationJobName,
   AdminNotificationRuntimeJobSchema,
 } from "./admin-notification-queue.constants.js";
@@ -27,11 +20,6 @@ import {
  * - send-notification: Discord 웹훅 발송 → SendAdminNotification
  *
  */
-type AdminNotificationJob = NamedJob<AdminNotificationJobMap>;
-interface AdminNotificationJobLike {
-  readonly name: string;
-  readonly data: AdminNotificationJobData;
-}
 
 @Injectable()
 export class AdminNotificationProcessor implements OnModuleInit {
@@ -77,25 +65,25 @@ export class AdminNotificationProcessor implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (!this.runtime) return;
-    await this.runtime.work<AdminNotificationJob>(
+    await this.runtime.work(
       ADMIN_NOTIFICATION_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.process(job.data);
       },
       ADMIN_NOTIFICATION_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       ADMIN_NOTIFICATION_LEGACY_QUEUE,
       async (jobs) => {
         for (const job of jobs) {
-          await this.process(fromLegacyJob<AdminNotificationJobMap>(job));
+          await this.process({ name: job.name, data: job.data });
         }
       },
       ADMIN_NOTIFICATION_WORKER_POLICY,
     );
   }
 
-  async process(untrustedJob: AdminNotificationJobLike): Promise<void> {
+  async process(untrustedJob: unknown): Promise<void> {
     const parsedJob = AdminNotificationRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({

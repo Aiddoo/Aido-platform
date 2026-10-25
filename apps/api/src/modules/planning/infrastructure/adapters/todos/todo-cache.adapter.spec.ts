@@ -146,8 +146,8 @@ describe("TodoCacheAdapter — 친구 Todo generation 캐시", () => {
     const pageReadStarted = createDeferred();
     const releasePageRead = createDeferred();
     const originalGet = cacheService.get.bind(cacheService);
-    vi.spyOn(cacheService, "get").mockImplementation(async (key) => {
-      const value = await originalGet(key);
+    vi.spyOn(cacheService, "get").mockImplementation(async (key, schema) => {
+      const value = await originalGet(key, schema);
       if (key === pageKey) {
         pageReadStarted.resolve();
         await releasePageRead.promise;

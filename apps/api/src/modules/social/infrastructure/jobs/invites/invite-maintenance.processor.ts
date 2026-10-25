@@ -10,7 +10,6 @@ import {
   INVITE_MAINTENANCE_JOB_OPTIONS,
   INVITE_MAINTENANCE_QUEUE,
   INVITE_MAINTENANCE_SCHEDULE,
-  type InviteMaintenanceJobData,
 } from "./invite-reward-queue.constants.js";
 
 @Injectable()
@@ -22,15 +21,11 @@ export class InviteMaintenanceProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.runtime.work<InviteMaintenanceJobData>(
-      INVITE_MAINTENANCE_QUEUE,
-      async () => this.process(),
-      {
-        teamSize: 1,
-        pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-        queuePolicy: INVITE_MAINTENANCE_JOB_OPTIONS,
-      },
-    );
+    await this.runtime.work(INVITE_MAINTENANCE_QUEUE, async () => this.process(), {
+      teamSize: 1,
+      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+      queuePolicy: INVITE_MAINTENANCE_JOB_OPTIONS,
+    });
   }
 
   async process(): Promise<void> {

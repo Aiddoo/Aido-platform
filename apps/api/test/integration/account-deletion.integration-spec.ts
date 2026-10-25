@@ -194,7 +194,7 @@ describe("회원 탈퇴 통합 테스트 (실제 DB)", () => {
           provide: CacheService,
           useFactory: () => {
             const cache = createMockCacheService();
-            cache.wrap.mockImplementation((_key, factory) => factory());
+            cache.wrap.mockImplementation((_key, _schema, factory) => factory());
             return cache;
           },
         },

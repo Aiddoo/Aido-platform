@@ -2,7 +2,12 @@ import { Injectable, Logger } from "@nestjs/common";
 import type { Redis } from "ioredis";
 
 import { RedisErrorLogSampler } from "../../redis/redis-error-log-sampler.js";
-import type { CacheStats, ICacheService, TtlValue } from "../interfaces/cache.interface.js";
+import type {
+  CacheStats,
+  CacheValueSchema,
+  ICacheService,
+  TtlValue,
+} from "../interfaces/cache.interface.js";
 import { parseTtl } from "../interfaces/cache.interface.js";
 
 /**
@@ -49,20 +54,10 @@ export class RedisCacheAdapter implements ICacheService {
     this.#logger.log("RedisCacheAdapter initialized");
   }
 
-  async get<T>(key: string): Promise<T | undefined> {
+  async get<T>(key: string, schema: CacheValueSchema<T>): Promise<T | undefined> {
     return this.#failOpen(
       "GET",
-      async () => {
-        const data = await this.#redis.get(this.#keyPrefix + key);
-
-        if (data === null) {
-          this.#stats.misses++;
-          return undefined;
-        }
-
-        this.#stats.hits++;
-        return JSON.parse(data) as T;
-      },
+      async () => this.#decode(key, await this.#redis.get(this.#keyPrefix + key), schema),
       undefined,
     );
   }
@@ -155,9 +150,14 @@ export class RedisCacheAdapter implements ICacheService {
     };
   }
 
-  async wrap<T>(key: string, factory: () => Promise<T>, ttl?: TtlValue): Promise<T> {
+  async wrap<T>(
+    key: string,
+    schema: CacheValueSchema<T>,
+    factory: () => Promise<T>,
+    ttl?: TtlValue,
+  ): Promise<T> {
     // get/set이 fail-open이므로 Redis 장애 시 자동으로 factory 직행 (DB 폴백)
-    const cached = await this.get<T>(key);
+    const cached = await this.get(key, schema);
     if (cached !== undefined) {
       return cached;
     }
@@ -169,7 +169,7 @@ export class RedisCacheAdapter implements ICacheService {
     const fullKey = this.#keyPrefix + key;
     const existing = this.#inflight.get(fullKey);
     if (existing) {
-      return existing as Promise<T>;
+      return existing.then((value) => schema.parse(value));
     }
 
     const promise = factory()
@@ -187,7 +187,7 @@ export class RedisCacheAdapter implements ICacheService {
     return promise;
   }
 
-  async mget<T>(keys: string[]): Promise<(T | undefined)[]> {
+  async mget<T>(keys: string[], schema: CacheValueSchema<T>): Promise<(T | undefined)[]> {
     if (keys.length === 0) return [];
 
     return this.#failOpen(
@@ -196,14 +196,7 @@ export class RedisCacheAdapter implements ICacheService {
         const prefixedKeys = keys.map((k) => this.#keyPrefix + k);
         const values = await this.#redis.mget(...prefixedKeys);
 
-        return values.map((data) => {
-          if (data === null) {
-            this.#stats.misses++;
-            return undefined;
-          }
-          this.#stats.hits++;
-          return JSON.parse(data) as T;
-        });
+        return keys.map((key, index) => this.#decode(key, values[index] ?? null, schema));
       },
       keys.map(() => undefined),
     );
@@ -252,6 +245,24 @@ export class RedisCacheAdapter implements ICacheService {
       },
       false,
     );
+  }
+
+  /** 저장된 JSON을 소비처 스키마로 복원한다. 형태가 다르면 미스로 센다. */
+  #decode<T>(key: string, data: string | null, schema: CacheValueSchema<T>): T | undefined {
+    if (data == null) {
+      this.#stats.misses++;
+      return undefined;
+    }
+
+    const parsed = schema.safeParse(JSON.parse(data));
+    if (!parsed.success) {
+      this.#stats.misses++;
+      this.#logger.debug(`INVALID ${key}`);
+      return undefined;
+    }
+
+    this.#stats.hits++;
+    return parsed.data;
   }
 
   /**

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { Queue } from "bullmq";
 import { Redis } from "ioredis";
 import { GenericContainer, type StartedTestContainer, Wait } from "testcontainers";
+import { z } from "zod";
 
 import { RedisCacheAdapter } from "#api/platform/cache/adapters/redis-cache.adapter";
 import {
@@ -21,10 +22,6 @@ const CONNECTION_TIMEOUT_MS = 10_000;
 const JOB_TIMEOUT_MS = 20_000;
 // CI 결과가 floating major tag의 새 Redis patch 배포에 따라 바뀌지 않게 고정한다.
 const REDIS_IMAGE = "redis:8.10.1-alpine";
-
-interface CompatibilityJobData {
-  readonly compatibilityCheck: string;
-}
 
 describe("Redis 런타임 호환성 통합 테스트 (실제 Redis)", () => {
   let harness: RedisRuntimeHarness | undefined;
@@ -47,7 +44,7 @@ describe("Redis 런타임 호환성 통합 테스트 (실제 Redis)", () => {
 
     // When
     await cache.set(cacheKey, value);
-    const cached = await cache.get<typeof value>(cacheKey);
+    const cached = await cache.get(cacheKey, z.unknown());
 
     // Then
     expect(cached).toEqual(value);
@@ -59,9 +56,9 @@ describe("Redis 런타임 호환성 통합 테스트 (실제 Redis)", () => {
     const jobRuntime = redisRuntime.jobRuntime;
     const runId = redisRuntime.uniqueName("run");
     const queueName = redisRuntime.uniqueName("redis-runtime-compatibility");
-    const processedJobs: JobEnvelope<CompatibilityJobData>[] = [];
+    const processedJobs: JobEnvelope[] = [];
 
-    await jobRuntime.work<CompatibilityJobData>(
+    await jobRuntime.work(
       queueName,
       async (jobs) => {
         processedJobs.push(...jobs);

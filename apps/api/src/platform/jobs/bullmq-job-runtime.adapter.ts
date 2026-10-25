@@ -9,6 +9,7 @@ import type {
   EnqueueJobRequest,
   JobCancellationResult,
   JobData,
+  JobEnvelope,
   JobRuntimeHealth,
   JobRuntimePort,
   JobRetryPolicy,
@@ -320,16 +321,9 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
     return { status: "cancelled" };
   }
 
-  async work<T extends JobData>(
+  async work(
     queueName: string,
-    handler: (
-      jobs: readonly {
-        readonly id: string;
-        readonly name: string;
-        readonly data: Readonly<T>;
-        readonly attempt: number;
-      }[],
-    ) => Promise<void>,
+    handler: (jobs: readonly JobEnvelope[]) => Promise<void>,
     options: WorkJobOptions,
   ): Promise<void> {
     if (this.workers.has(queueName)) {
@@ -344,7 +338,7 @@ export class BullMqJobRuntimeAdapter implements JobRuntimePort {
           {
             id: job.id ?? "unknown",
             name: job.name,
-            data: payload.data as T,
+            data: payload.data,
             attempt: job.attemptsMade + 1,
           },
         ]);

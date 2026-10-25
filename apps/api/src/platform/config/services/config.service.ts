@@ -266,7 +266,7 @@ export class TypedConfigService {
 
   get cache() {
     return {
-      type: this.get("CACHE_TYPE") as "memory" | "redis",
+      type: this.get("CACHE_TYPE"),
       defaultTtlMs: this.get("CACHE_DEFAULT_TTL_MS"),
       maxItems: this.get("CACHE_MAX_ITEMS"),
       cleanupIntervalMs: this.get("CACHE_CLEANUP_INTERVAL_MS"),

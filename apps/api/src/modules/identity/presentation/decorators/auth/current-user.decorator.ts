@@ -3,6 +3,8 @@ import type { Request } from "express";
 
 import type { CurrentUserPayload } from "#api/modules/identity/infrastructure/strategies/auth/jwt.strategy";
 
+import { authenticatedUserSchema } from "./authenticated-user.schema.js";
+
 /**
  * JWT 토큰에서 추출된 현재 사용자 정보를 주입하는 데코레이터
  *
@@ -23,13 +25,13 @@ import type { CurrentUserPayload } from "#api/modules/identity/infrastructure/st
 export const CurrentUser = createParamDecorator(
   (data: keyof CurrentUserPayload | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest<Request>();
-    const user = request.user as CurrentUserPayload | undefined;
+    const parsedUser = authenticatedUserSchema.safeParse(request.user);
 
-    if (!user) {
+    if (!parsedUser.success) {
       return undefined;
     }
 
-    return data ? user[data] : user;
+    return data ? parsedUser.data[data] : parsedUser.data;
   },
 );
 

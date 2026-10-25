@@ -125,5 +125,5 @@ export function validateEnv(config: Record<string, unknown>): EnvConfig {
     }
   }
 
-  return validatedConfig as EnvConfig;
+  return validatedConfig;
 }

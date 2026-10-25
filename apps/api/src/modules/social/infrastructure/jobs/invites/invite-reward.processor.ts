@@ -12,7 +12,6 @@ import {
   INVITE_REWARD_QUEUE,
   INVITE_REWARD_WORKER_OPTIONS,
   inviteRewardJobDataSchema,
-  type InviteRewardJobData,
 } from "./invite-reward-queue.constants.js";
 
 @Injectable()
@@ -27,14 +26,14 @@ export class InviteRewardProcessor implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     // 등록과 종료는 JobRuntime 수명주기가 소유한다
-    await this.runtime.work<InviteRewardJobData>(
+    await this.runtime.work(
       INVITE_REWARD_QUEUE,
       (jobs) => this.process(jobs),
       INVITE_REWARD_WORKER_OPTIONS,
     );
   }
 
-  async process(jobs: readonly JobEnvelope<InviteRewardJobData>[]): Promise<void> {
+  async process(jobs: readonly JobEnvelope[]): Promise<void> {
     for (const job of jobs) {
       const parsed = inviteRewardJobDataSchema.safeParse(job.data);
       if (!parsed.success) {

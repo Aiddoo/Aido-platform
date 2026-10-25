@@ -17,6 +17,7 @@ import {
   databaseSqlState,
   isRecordNotFoundError,
 } from "#api/platform/database/prisma-error.util";
+import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { HttpLogEvent, httpRequestPath } from "#api/platform/logging/http-log";
 import { SENTRY_EXTRA, SENTRY_TAG } from "#api/platform/observability/sentry-keys";
 import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
@@ -97,8 +98,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // 사용자 ID 추출 (Sentry 컨텍스트 + 로깅 공용)
-    const userId =
-      (request as Request & { user?: { userId?: string } }).user?.userId ?? "anonymous";
+    const userId = readRequestUserId(request) ?? "anonymous";
 
     const requestPath = httpRequestPath(request.url);
 

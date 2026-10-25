@@ -1,22 +1,9 @@
 import { Inject, Injectable, Logger, type OnModuleInit, Optional } from "@nestjs/common";
 
-import { fromLegacyJob, type NamedJob } from "#api/platform/jobs/named-job";
-import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/job-runtime.port";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/job-runtime.port";
 
 import { TimezoneAwareReminderOrchestrator } from "../../../application/services/reminders/timezone-aware-reminder.orchestrator.js";
-import {
-  TIMEZONE_REMINDER_LEGACY_QUEUE,
-  TIMEZONE_REMINDER_QUEUE,
-  TIMEZONE_REMINDER_WORKER_POLICY,
-  type TimezoneReminderJobMap,
-  TimezoneReminderJobName,
-  TimezoneReminderRuntimeJobSchema,
-} from "./timezone-reminder-queue.constants.js";
-
+import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
 /**
  * 타임존 리마인더 BullMQ Processor (진입 어댑터).
  *
@@ -28,13 +15,13 @@ import {
  * 오케스트레이터를 생성자 주입하므로(무버스·무setter) DIP를 지키며,
  * 판별 유니온으로 job.data를 캐스트 없이 좁힌다.
  */
-type TimezoneReminderJob = NamedJob<TimezoneReminderJobMap>;
-type TimezoneReminderJobLike = {
-  readonly name: string;
-  readonly data: JobData;
-};
-
-import { NotificationProviderLogEvent } from "../../observability/delivery/notification-provider-log.events.js";
+import {
+  TIMEZONE_REMINDER_LEGACY_QUEUE,
+  TIMEZONE_REMINDER_QUEUE,
+  TIMEZONE_REMINDER_WORKER_POLICY,
+  TimezoneReminderJobName,
+  TimezoneReminderRuntimeJobSchema,
+} from "./timezone-reminder-queue.constants.js";
 
 @Injectable()
 export class TimezoneReminderProcessor implements OnModuleInit {
@@ -47,17 +34,17 @@ export class TimezoneReminderProcessor implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (!this.runtime) return;
-    await this.runtime.work<TimezoneReminderJob>(
+    await this.runtime.work(
       TIMEZONE_REMINDER_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.process(job.data);
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       TIMEZONE_REMINDER_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(fromLegacyJob<TimezoneReminderJobMap>(job));
+        for (const job of jobs) await this.process({ name: job.name, data: job.data });
       },
       TIMEZONE_REMINDER_WORKER_POLICY,
     );
@@ -75,7 +62,7 @@ export class TimezoneReminderProcessor implements OnModuleInit {
     this.#logger.error({ event: NotificationProviderLogEvent.JOB_FAILED, jobId: job?.id });
   }
 
-  async process(untrustedJob: TimezoneReminderJobLike): Promise<void> {
+  async process(untrustedJob: unknown): Promise<void> {
     const parsedJob = TimezoneReminderRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({ event: NotificationProviderLogEvent.JOB_INVALID });

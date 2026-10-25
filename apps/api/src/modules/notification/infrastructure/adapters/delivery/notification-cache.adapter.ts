@@ -1,4 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import {
   USER_SETTINGS_CACHE,
@@ -32,6 +33,7 @@ export class NotificationCacheAdapter implements NotificationCachePort {
   ): Promise<number> {
     return this.cacheService.wrap(
       NotificationCacheKey.unreadCount(userId, scope),
+      z.number(),
       factory,
       NOTIFICATION_CACHE_TTL_MS.UNREAD_COUNT,
     );

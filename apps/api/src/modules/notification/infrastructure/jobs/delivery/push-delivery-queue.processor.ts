@@ -1,10 +1,6 @@
 import { Inject, Injectable, type OnModuleInit, Optional } from "@nestjs/common";
 
-import {
-  JOB_RUNTIME,
-  type JobData,
-  type JobRuntimePort,
-} from "#api/shared/application/ports/index";
+import { JOB_RUNTIME, type JobRuntimePort } from "#api/shared/application/ports/index";
 
 import { DeliverPushNotifications } from "../../../application/use-cases/delivery/deliver-push-notifications.use-case.js";
 import { RecoverFailedPushDeliveries } from "../../../application/use-cases/delivery/recover-failed-push-deliveries.use-case.js";
@@ -38,14 +34,14 @@ export class PushDeliveryQueueProcessor implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     if (!this.runtime) return;
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       PUSH_DELIVERY_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.process(job.id, job.attempt, job.data);
       },
       PUSH_DELIVERY_WORKER_POLICY,
     );
-    await this.runtime.work<JobData>(
+    await this.runtime.work(
       PUSH_DELIVERY_DEAD_LETTER_QUEUE,
       async (jobs) => {
         for (const job of jobs) await this.processDeadLetter(job.data);

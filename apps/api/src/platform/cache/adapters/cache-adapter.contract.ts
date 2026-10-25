@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { ICacheService } from "../interfaces/cache.interface.js";
 
 /**
@@ -34,15 +36,38 @@ export function describeCacheAdapterContract(context: {
 
       // When
       await cache.set("contract:key", value);
-      const result = await cache.get<typeof value>("contract:key");
+      const result = await cache.get("contract:key", z.unknown());
 
       // Then
       expect(result).toEqual(value);
     });
 
+    it("스키마와 다른 값은 캐시 미스로 취급한다", async () => {
+      // Given - 이전 배포가 다른 모양으로 남긴 값
+      await cache.set("contract:key", { count: "3" });
+
+      // When
+      const result = await cache.get("contract:key", z.object({ count: z.number() }));
+
+      // Then
+      expect(result).toBeUndefined();
+    });
+
+    it("JSON 문자열이 된 날짜는 스키마로 Date를 복원한다", async () => {
+      // Given
+      const savedAt = new Date("2026-10-26T00:00:00.000Z");
+      await cache.set("contract:key", { savedAt });
+
+      // When
+      const result = await cache.get("contract:key", z.object({ savedAt: z.coerce.date() }));
+
+      // Then
+      expect(result).toEqual({ savedAt });
+    });
+
     it("존재하지 않는 키는 undefined를 반환한다", async () => {
       // When
-      const result = await cache.get("contract:missing");
+      const result = await cache.get("contract:missing", z.unknown());
 
       // Then
       expect(result).toBeUndefined();
@@ -56,7 +81,7 @@ export function describeCacheAdapterContract(context: {
       await cache.del("contract:key");
 
       // Then
-      expect(await cache.get("contract:key")).toBeUndefined();
+      expect(await cache.get("contract:key", z.unknown())).toBeUndefined();
     });
 
     it("has는 키 존재 여부를 반환한다", async () => {
@@ -103,7 +128,10 @@ export function describeCacheAdapterContract(context: {
       ]);
 
       // When
-      const result = await cache.mget<number>(["contract:a", "contract:missing", "contract:b"]);
+      const result = await cache.mget(
+        ["contract:a", "contract:missing", "contract:b"],
+        z.unknown(),
+      );
 
       // Then
       expect(result).toEqual([1, undefined, 2]);
@@ -114,8 +142,8 @@ export function describeCacheAdapterContract(context: {
       const factory = vi.fn().mockResolvedValue("fresh");
 
       // When
-      const first = await cache.wrap("contract:wrap", factory);
-      const second = await cache.wrap("contract:wrap", factory);
+      const first = await cache.wrap("contract:wrap", z.unknown(), factory);
+      const second = await cache.wrap("contract:wrap", z.unknown(), factory);
 
       // Then
       expect(first).toBe("fresh");
@@ -134,8 +162,8 @@ export function describeCacheAdapterContract(context: {
 
       // Then
       expect(deleted).toBe(2);
-      expect(await cache.get("contract:user:1")).toBeUndefined();
-      expect(await cache.get("contract:other")).toBe("c");
+      expect(await cache.get("contract:user:1", z.unknown())).toBeUndefined();
+      expect(await cache.get("contract:other", z.unknown())).toBe("c");
     });
   });
 }

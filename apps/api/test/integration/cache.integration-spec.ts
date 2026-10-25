@@ -12,6 +12,7 @@
 import { ConfigModule } from "@nestjs/config";
 import { Test, TestingModule } from "@nestjs/testing";
 import { vi } from "vitest";
+import { z } from "zod";
 
 import {
   EntitlementCacheKey,
@@ -109,14 +110,17 @@ describe("CacheModule 통합 테스트", () => {
         );
 
         // Then - 조회
-        const cached = await cacheService.get(IdentityCacheKey.session(sessionId));
+        const cached = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
         expect(cached).toEqual(session);
 
         // When - 무효화
         await cacheService.del(IdentityCacheKey.session(sessionId));
 
         // Then - 무효화 확인
-        const afterInvalidate = await cacheService.get(IdentityCacheKey.session(sessionId));
+        const afterInvalidate = await cacheService.get(
+          IdentityCacheKey.session(sessionId),
+          z.unknown(),
+        );
         expect(afterInvalidate).toBeUndefined();
       });
 
@@ -145,14 +149,14 @@ describe("CacheModule 통합 테스트", () => {
           await shortTtlService.set("test-key", "test-value");
 
           // When - 값이 설정됨을 확인
-          const beforeExpiry = await shortTtlService.get("test-key");
+          const beforeExpiry = await shortTtlService.get("test-key", z.unknown());
           expect(beforeExpiry).toBe("test-value");
 
           // When - 실제 대기 없이 TTL 이후로 시간 이동
           now.mockReturnValue(baseTime + 100);
 
           // Then
-          const afterExpiry = await shortTtlService.get("test-key");
+          const afterExpiry = await shortTtlService.get("test-key", z.unknown());
           expect(afterExpiry).toBeUndefined();
         } finally {
           now.mockRestore();
@@ -178,7 +182,7 @@ describe("CacheModule 통합 테스트", () => {
           profile,
           IDENTITY_CACHE_TTL_MS.USER_PROFILE,
         );
-        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId));
+        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
 
         // Then
         expect(cached).toEqual(profile);
@@ -203,7 +207,7 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.del(IdentityCacheKey.userProfile(userId));
 
         // Then
-        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId));
+        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
         expect(cached).toBeUndefined();
       });
     });
@@ -222,7 +226,10 @@ describe("CacheModule 통합 테스트", () => {
           subscription,
           ENTITLEMENT_CACHE_TTL_MS,
         );
-        const cached = await cacheService.get(EntitlementCacheKey.subscription(userId));
+        const cached = await cacheService.get(
+          EntitlementCacheKey.subscription(userId),
+          z.unknown(),
+        );
 
         // Then
         expect(cached).toEqual(subscription);
@@ -247,9 +254,15 @@ describe("CacheModule 통합 테스트", () => {
         );
 
         // Then
-        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_2"))).toBe(true);
-        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_3"))).toBe(false);
-        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_4"))).toBeUndefined();
+        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_2"), z.unknown())).toBe(
+          true,
+        );
+        expect(await cacheService.get(FollowCacheKey.mutual(userId, "user_3"), z.unknown())).toBe(
+          false,
+        );
+        expect(
+          await cacheService.get(FollowCacheKey.mutual(userId, "user_4"), z.unknown()),
+        ).toBeUndefined();
       });
 
       it("패턴으로 친구 관계를 일괄 무효화할 수 있다", async () => {
@@ -275,9 +288,15 @@ describe("CacheModule 통합 테스트", () => {
 
         // Then
         expect(count).toBe(2);
-        expect(await cacheService.get(FollowCacheKey.mutual("user_1", "user_2"))).toBeUndefined();
-        expect(await cacheService.get(FollowCacheKey.mutual("user_1", "user_3"))).toBeUndefined();
-        expect(await cacheService.get(FollowCacheKey.mutual("user_2", "user_3"))).toBe(true);
+        expect(
+          await cacheService.get(FollowCacheKey.mutual("user_1", "user_2"), z.unknown()),
+        ).toBeUndefined();
+        expect(
+          await cacheService.get(FollowCacheKey.mutual("user_1", "user_3"), z.unknown()),
+        ).toBeUndefined();
+        expect(await cacheService.get(FollowCacheKey.mutual("user_2", "user_3"), z.unknown())).toBe(
+          true,
+        );
       });
     });
 
@@ -306,11 +325,11 @@ describe("CacheModule 통합 테스트", () => {
 
         // When
         const results = await Promise.all([
-          cacheService.get("key_1"),
-          cacheService.get("key_2"),
+          cacheService.get("key_1", z.unknown()),
+          cacheService.get("key_2", z.unknown()),
           cacheService.set("key_4", "value_4"),
           cacheService.del("key_3"),
-          cacheService.get("key_5"),
+          cacheService.get("key_5", z.unknown()),
         ]);
 
         // Then
@@ -327,13 +346,13 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.set("key_2", "value_2");
 
         // When - 히트 3회
-        await cacheService.get("key_1");
-        await cacheService.get("key_2");
-        await cacheService.get("key_1");
+        await cacheService.get("key_1", z.unknown());
+        await cacheService.get("key_2", z.unknown());
+        await cacheService.get("key_1", z.unknown());
 
         // When - 미스 2회
-        await cacheService.get("non_existent_1");
-        await cacheService.get("non_existent_2");
+        await cacheService.get("non_existent_1", z.unknown());
+        await cacheService.get("non_existent_2", z.unknown());
 
         // Then
         const stats = cacheService.getStats();
@@ -361,8 +380,8 @@ describe("CacheModule 통합 테스트", () => {
         // Given
         await cacheService.set("key_1", "value_1");
         await cacheService.set("key_2", "value_2");
-        await cacheService.get("key_1");
-        await cacheService.get("non_existent");
+        await cacheService.get("key_1", z.unknown());
+        await cacheService.get("non_existent", z.unknown());
 
         // When
         await cacheService.reset();
@@ -372,8 +391,8 @@ describe("CacheModule 통합 테스트", () => {
         expect(stats.keys).toBe(0);
         expect(stats.hits).toBe(0);
         expect(stats.misses).toBe(0);
-        expect(await cacheService.get("key_1")).toBeUndefined();
-        expect(await cacheService.get("key_2")).toBeUndefined();
+        expect(await cacheService.get("key_1", z.unknown())).toBeUndefined();
+        expect(await cacheService.get("key_2", z.unknown())).toBeUndefined();
       });
     });
 
@@ -384,14 +403,14 @@ describe("CacheModule 통합 테스트", () => {
         const factory = vi.fn().mockResolvedValue("factory-value");
 
         // When
-        const result = await cacheService.wrap(key, factory);
+        const result = await cacheService.wrap(key, z.unknown(), factory);
 
         // Then
         expect(result).toBe("factory-value");
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시 히트 확인
-        const cachedResult = await cacheService.wrap(key, factory);
+        const cachedResult = await cacheService.wrap(key, z.unknown(), factory);
         expect(cachedResult).toBe("factory-value");
         expect(factory).toHaveBeenCalledTimes(1); // factory는 다시 호출되지 않음
       });
@@ -405,15 +424,15 @@ describe("CacheModule 통합 테스트", () => {
 
         try {
           // When
-          await cacheService.wrap(key, factory, "1s");
+          await cacheService.wrap(key, z.unknown(), factory, "1s");
 
           // Then - 즉시 조회
-          const beforeExpiry = await cacheService.get(key);
+          const beforeExpiry = await cacheService.get(key, z.unknown());
           expect(beforeExpiry).toBe("value");
 
           // TTL 만료 후로 시간 이동
           now.mockReturnValue(baseTime + 1100);
-          const afterExpiry = await cacheService.get(key);
+          const afterExpiry = await cacheService.get(key, z.unknown());
           expect(afterExpiry).toBeUndefined();
         } finally {
           now.mockRestore();
@@ -433,6 +452,7 @@ describe("CacheModule 통합 테스트", () => {
         // When
         const result = await cacheService.wrap(
           IdentityCacheKey.session(sessionId),
+          z.unknown(),
           factory,
           IDENTITY_CACHE_TTL_MS.SESSION,
         );
@@ -442,7 +462,7 @@ describe("CacheModule 통합 테스트", () => {
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.get(IdentityCacheKey.session(sessionId));
+        const cached = await cacheService.get(IdentityCacheKey.session(sessionId), z.unknown());
         expect(cached).toEqual(session);
       });
 
@@ -460,6 +480,7 @@ describe("CacheModule 통합 테스트", () => {
         // When
         const result = await cacheService.wrap(
           IdentityCacheKey.userProfile(userId),
+          z.unknown(),
           factory,
           IDENTITY_CACHE_TTL_MS.USER_PROFILE,
         );
@@ -469,7 +490,7 @@ describe("CacheModule 통합 테스트", () => {
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId));
+        const cached = await cacheService.get(IdentityCacheKey.userProfile(userId), z.unknown());
         expect(cached).toEqual(profile);
       });
 
@@ -482,6 +503,7 @@ describe("CacheModule 통합 테스트", () => {
         // When
         const result = await cacheService.wrap(
           FollowCacheKey.mutual(userId, targetUserId),
+          z.unknown(),
           factory,
           FOLLOW_CACHE_TTL_MS.MUTUAL,
         );
@@ -491,7 +513,10 @@ describe("CacheModule 통합 테스트", () => {
         expect(factory).toHaveBeenCalledTimes(1);
 
         // 캐시에서 직접 조회
-        const cached = await cacheService.get(FollowCacheKey.mutual(userId, targetUserId));
+        const cached = await cacheService.get(
+          FollowCacheKey.mutual(userId, targetUserId),
+          z.unknown(),
+        );
         expect(cached).toBe(true);
       });
     });
@@ -509,9 +534,9 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.mset(entries);
 
         // Then
-        expect(await cacheService.get("mset-1")).toBe("value-1");
-        expect(await cacheService.get("mset-2")).toBe("value-2");
-        expect(await cacheService.get("mset-3")).toBe("value-3");
+        expect(await cacheService.get("mset-1", z.unknown())).toBe("value-1");
+        expect(await cacheService.get("mset-2", z.unknown())).toBe("value-2");
+        expect(await cacheService.get("mset-3", z.unknown())).toBe("value-3");
       });
 
       it("mget으로 여러 키를 한 번에 조회한다", async () => {
@@ -520,7 +545,10 @@ describe("CacheModule 통합 테스트", () => {
         await cacheService.set("mget-2", "value-2");
 
         // When
-        const results = await cacheService.mget(["mget-1", "mget-2", "mget-nonexistent"]);
+        const results = await cacheService.mget(
+          ["mget-1", "mget-2", "mget-nonexistent"],
+          z.unknown(),
+        );
 
         // Then
         expect(results).toEqual(["value-1", "value-2", undefined]);
@@ -540,12 +568,12 @@ describe("CacheModule 통합 테스트", () => {
           await cacheService.mset(entries);
 
           // Then - 즉시 조회
-          const beforeExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"]);
+          const beforeExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"], z.unknown());
           expect(beforeExpiry).toEqual(["value-1", "value-2"]);
 
           // TTL 만료 후로 시간 이동
           now.mockReturnValue(baseTime + 1100);
-          const afterExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"]);
+          const afterExpiry = await cacheService.mget(["mset-ttl-1", "mset-ttl-2"], z.unknown());
           expect(afterExpiry).toEqual([undefined, undefined]);
         } finally {
           now.mockRestore();
@@ -631,7 +659,7 @@ describe("CacheModule 통합 테스트", () => {
       try {
         // When
         await service.set("key", "value");
-        const result = await service.get("key");
+        const result = await service.get("key", z.unknown());
 
         // Then
         expect(result).toBe("value");
@@ -664,7 +692,7 @@ describe("CacheModule 통합 테스트", () => {
 
       try {
         // When
-        const result = await service.get("any");
+        const result = await service.get("any", z.unknown());
 
         // Then
         expect(result).toBe("mocked-value");
@@ -698,7 +726,7 @@ describe("CacheModule 통합 테스트", () => {
       try {
         // When
         const factory = vi.fn();
-        const result = await service.wrap("key", factory, "5m");
+        const result = await service.wrap("key", z.unknown(), factory, "5m");
 
         // Then
         expect(result).toBe("wrapped-value");
@@ -726,7 +754,7 @@ describe("CacheModule 통합 테스트", () => {
       try {
         // When
         await service.set("key", "value");
-        const result = await service.get("key");
+        const result = await service.get("key", z.unknown());
 
         // Then
         expect(result).toBe("value");

@@ -1,4 +1,4 @@
-import { type CurrentUserPayload, isSemanticVersionAtLeast } from "@aido/api";
+import { isSemanticVersionAtLeast } from "@aido/api";
 import {
   type CallHandler,
   type ExecutionContext,
@@ -8,12 +8,14 @@ import {
   type NestInterceptor,
   type OnModuleDestroy,
 } from "@nestjs/common";
+import type { Request } from "express";
 import type { Observable } from "rxjs";
 
 import {
   AUTH_USER_ACTIVITY_WRITER,
   type AuthUserActivityWriterPort,
 } from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
+import { readRequestUserId } from "#api/platform/http/request-user-id";
 import { resolveTimezone, startOfDayInTimezone } from "#api/shared/domain/date/utils/timezone";
 
 /**
@@ -48,12 +50,12 @@ export class LastActiveInterceptor implements NestInterceptor, OnModuleDestroy {
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user as CurrentUserPayload | undefined;
+    const request = context.switchToHttp().getRequest<Request>();
+    const userId = readRequestUserId(request);
 
-    if (user?.userId) {
+    if (userId) {
       this.#touchLastActive(
-        user.userId,
+        userId,
         resolveTimezone(request.headers?.["x-timezone"]),
         toAppVersion(request.headers?.["x-app-version"]),
       );

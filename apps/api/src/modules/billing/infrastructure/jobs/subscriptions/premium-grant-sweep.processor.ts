@@ -10,7 +10,6 @@ import { SweepPremiumGrants } from "../../../application/use-cases/subscriptions
 import {
   PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
   PREMIUM_GRANT_SWEEP_QUEUE,
-  type PremiumGrantSweepJobData,
 } from "./premium-grant-sweep-queue.constants.js";
 
 @Injectable()
@@ -26,15 +25,11 @@ export class PremiumGrantSweepProcessor implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.runtime.work<PremiumGrantSweepJobData>(
-      PREMIUM_GRANT_SWEEP_QUEUE,
-      async () => this.process(),
-      {
-        teamSize: 1,
-        pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
-        queuePolicy: PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
-      },
-    );
+    await this.runtime.work(PREMIUM_GRANT_SWEEP_QUEUE, async () => this.process(), {
+      teamSize: 1,
+      pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
+      queuePolicy: PREMIUM_GRANT_SWEEP_JOB_OPTIONS,
+    });
   }
 
   async process(): Promise<void> {

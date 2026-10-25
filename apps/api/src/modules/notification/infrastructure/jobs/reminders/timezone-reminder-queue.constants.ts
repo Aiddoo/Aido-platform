@@ -78,15 +78,4 @@ export type TimezoneReminderJobData =
   | SweepRemindersJobData
   | SocialDigestJobData;
 
-/**
- * 잡 이름 → 페이로드 매핑.
- *
- * 프로세서의 `switch(job.name)`가 job.data를 캐스트 없이 좁히도록 하는 판별 키.
- */
-export interface TimezoneReminderJobMap {
-  "sweep-reminders": SweepRemindersJobData;
-  "reminder-hour-changed": ReminderHourChangedJobData;
-  "social-digest": SocialDigestJobData;
-}
-
 /** 이름으로 판별되는 잡 유니온 (프로세서 진입 타입) */

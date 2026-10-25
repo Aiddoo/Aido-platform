@@ -1,6 +1,7 @@
 import { Global, Module } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { mock } from "vitest-mock-extended";
+import { z } from "zod";
 
 import { PREFERENCE_ENTITLEMENT } from "#api/modules/identity/application/ports/settings/preference-entitlement.port";
 import { REMINDER_SCHEDULE_ENQUEUER } from "#api/modules/identity/application/ports/settings/reminder-schedule.enqueuer.port";
@@ -96,15 +97,20 @@ describe("TimezoneReminderQueueModule — 활성 timezone 캐시 capability", ()
         timezone: "Asia/Seoul",
       });
       const load = vi.fn(async () => ["Asia/Seoul"]);
-      const result = await fixture.cache.wrap(activeKey, load, REMINDER_CACHE_TTL_MS);
+      const result = await fixture.cache.wrap(
+        activeKey,
+        z.array(z.string()),
+        load,
+        REMINDER_CACHE_TTL_MS,
+      );
       // Then: 이전 목록을 반환하지 않고 관련 없는 캐시는 보존한다.
       expect(
         fixture.settings.preferenceRepository.records.get(fixture.settings.userId)?.timezone,
       ).toBe("Asia/Seoul");
       expect(result).toEqual(["Asia/Seoul"]);
       expect(load).toHaveBeenCalledTimes(1);
-      expect(await fixture.cache.get(activeKey)).toEqual(["Asia/Seoul"]);
-      expect(await fixture.cache.get(unrelatedKey)).toEqual({ pushEnabled: true });
+      expect(await fixture.cache.get(activeKey, z.unknown())).toEqual(["Asia/Seoul"]);
+      expect(await fixture.cache.get(unrelatedKey, z.unknown())).toEqual({ pushEnabled: true });
     } finally {
       await fixture.close();
     }

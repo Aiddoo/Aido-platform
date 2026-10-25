@@ -30,7 +30,7 @@ import {
   VerifyEmail,
 } from "#api/modules/identity/application/use-cases/auth/index";
 import { JwtRefreshGuard } from "#api/modules/identity/infrastructure/guards/auth/index";
-import type { RefreshTokenPayload } from "#api/modules/identity/infrastructure/strategies/auth/jwt-refresh.strategy";
+import { refreshTokenUserSchema } from "#api/modules/identity/presentation/decorators/auth/authenticated-user.schema";
 import {
   CurrentUser,
   type CurrentUserPayload,
@@ -46,6 +46,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import {
   AuthTokensDto,
@@ -348,7 +349,11 @@ Refresh Token으로 새 토큰 쌍을 발급받습니다. (Token Rotation 적용
   @ApiSuccessResponse({ type: RefreshTokensDto })
   @ApiErrorCodesResponse(HttpStatus.UNAUTHORIZED, [ErrorCode.AUTH_0104, ErrorCode.SESSION_0704])
   async refresh(@Req() req: Request) {
-    const payload = req.user as RefreshTokenPayload;
+    const parsedUser = refreshTokenUserSchema.safeParse(req.user);
+    if (!parsedUser.success) {
+      throw new ApplicationException(ErrorCode.AUTH_0104);
+    }
+    const payload = parsedUser.data;
     const result = await this.refreshTokensUseCase.execute({
       refreshToken: payload.refreshToken,
       verifiedPayload: {

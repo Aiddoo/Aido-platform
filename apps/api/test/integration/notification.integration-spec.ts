@@ -354,7 +354,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           useFactory: () => {
             const cache = createMockCacheService();
             cache.mget.mockImplementation(async (keys) => keys.map(() => undefined));
-            cache.wrap.mockImplementation((_key, factory) => factory());
+            cache.wrap.mockImplementation((_key, _schema, factory) => factory());
             return cache;
           },
         },
