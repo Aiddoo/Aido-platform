@@ -701,6 +701,134 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       ],
       "type": "object",
     },
+    "BlockUserResponseDto": {
+      "example": {
+        "blockedAt": "2026-10-26T09:00:00.000Z",
+        "blockedUserId": "clz7x5p8k0005qz0z8z8z8z8z",
+        "message": "사용자를 차단했습니다.",
+      },
+      "properties": {
+        "blockedAt": {
+          "description": "차단한 시각 (이미 차단한 사용자면 처음 차단한 시각)",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+          "type": "string",
+        },
+        "blockedUserId": {
+          "description": "차단한 사용자 ID (CUID 25자)",
+          "format": "cuid",
+          "pattern": "^[cC][0-9a-z]{6,}$",
+          "type": "string",
+        },
+        "message": {
+          "description": "결과 메시지",
+          "type": "string",
+        },
+      },
+      "required": [
+        "message",
+        "blockedUserId",
+        "blockedAt",
+      ],
+      "type": "object",
+    },
+    "BlockedUsersResponseDto": {
+      "example": {
+        "hasMore": false,
+        "items": [
+          {
+            "blockedAt": "2026-10-26T09:00:00.000Z",
+            "id": "clz7x5p8k0005qz0z8z8z8z8z",
+            "name": "존",
+            "profileImage": "orange_tabby",
+            "userTag": "JOHN2026",
+          },
+        ],
+        "nextCursor": null,
+        "totalCount": 1,
+      },
+      "properties": {
+        "hasMore": {
+          "description": "다음 페이지 존재 여부",
+          "type": "boolean",
+        },
+        "items": {
+          "description": "차단한 사용자 목록 (최근에 차단한 순)",
+          "items": {
+            "example": {
+              "blockedAt": "2026-10-26T09:00:00.000Z",
+              "id": "clz7x5p8k0005qz0z8z8z8z8z",
+              "name": "존",
+              "profileImage": "orange_tabby",
+              "userTag": "JOHN2026",
+            },
+            "properties": {
+              "blockedAt": {
+                "description": "차단한 시각 (ISO 8601 UTC)",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "id": {
+                "description": "차단한 사용자 ID (CUID 25자)",
+                "format": "cuid",
+                "pattern": "^[cC][0-9a-z]{6,}$",
+                "type": "string",
+              },
+              "name": {
+                "description": "사용자 이름 (미설정 시 null)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "profileImage": {
+                "description": "프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)",
+                "type": [
+                  "string",
+                  "null",
+                ],
+              },
+              "userTag": {
+                "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
+                "maxLength": 8,
+                "minLength": 8,
+                "type": "string",
+              },
+            },
+            "required": [
+              "id",
+              "userTag",
+              "name",
+              "profileImage",
+              "blockedAt",
+            ],
+            "type": "object",
+          },
+          "type": "array",
+        },
+        "nextCursor": {
+          "description": "다음 페이지 커서 (없으면 null)",
+          "format": "cuid",
+          "nullable": true,
+          "pattern": "^[cC][0-9a-z]{6,}$",
+          "type": "string",
+        },
+        "totalCount": {
+          "description": "차단한 전체 사용자 수 (탈퇴 중인 사용자 제외)",
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer",
+        },
+      },
+      "required": [
+        "items",
+        "totalCount",
+        "hasMore",
+        "nextCursor",
+      ],
+      "type": "object",
+    },
     "BroadcastNotificationDto": {
       "description": "전체/조건부 알림 브로드캐스트 요청",
       "example": {
@@ -2877,6 +3005,114 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       "required": [
         "message",
         "todo",
+      ],
+      "type": "object",
+    },
+    "CreateUserReportDto": {
+      "example": {
+        "detail": "댓글에서 계속 욕설을 해요.",
+        "reason": "HARASSMENT",
+        "targetId": "clz7x5p8k0099qz0z8z8z8z8z",
+        "targetType": "COMMENT",
+        "targetUserId": "clz7x5p8k0005qz0z8z8z8z8z",
+      },
+      "properties": {
+        "detail": {
+          "description": "신고 상세 내용 (선택, 최대 500자)",
+          "maxLength": 500,
+          "type": "string",
+        },
+        "reason": {
+          "description": "신고 사유 (SPAM: 스팸·광고 | HARASSMENT: 괴롭힘·혐오 | INAPPROPRIATE: 부적절한 내용 | IMPERSONATION: 사칭 | OTHER: 기타)",
+          "enum": [
+            "SPAM",
+            "HARASSMENT",
+            "INAPPROPRIATE",
+            "IMPERSONATION",
+            "OTHER",
+          ],
+          "type": "string",
+        },
+        "targetId": {
+          "description": "신고할 콘텐츠 ID (할 일·콕·응원은 숫자 ID 문자열, 댓글은 CUID). PROFILE이면 보내지 않습니다",
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string",
+        },
+        "targetType": {
+          "description": "신고 대상 종류 (PROFILE: 프로필·닉네임 | TODO: 할 일 | COMMENT: 댓글 | NUDGE_MESSAGE: 콕 찌르기 메시지 | CHEER_MESSAGE: 응원 메시지)",
+          "enum": [
+            "PROFILE",
+            "TODO",
+            "COMMENT",
+            "NUDGE_MESSAGE",
+            "CHEER_MESSAGE",
+          ],
+          "type": "string",
+        },
+        "targetUserId": {
+          "description": "신고할 콘텐츠를 만든 사용자 ID (CUID 25자)",
+          "format": "cuid",
+          "pattern": "^[cC][0-9a-z]{6,}$",
+          "type": "string",
+        },
+      },
+      "required": [
+        "targetUserId",
+        "targetType",
+        "reason",
+      ],
+      "type": "object",
+    },
+    "CreateUserReportResponseDto": {
+      "example": {
+        "message": "신고를 접수했습니다.",
+        "report": {
+          "createdAt": "2026-10-26T09:00:00.000Z",
+          "id": "clz7x5p8k0123qz0z8z8z8z8z",
+          "status": "OPEN",
+        },
+      },
+      "properties": {
+        "message": {
+          "description": "결과 메시지",
+          "type": "string",
+        },
+        "report": {
+          "description": "접수된 신고",
+          "properties": {
+            "createdAt": {
+              "description": "신고 접수 시각 (ISO 8601 UTC)",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+              "type": "string",
+            },
+            "id": {
+              "description": "신고 ID (CUID 25자)",
+              "format": "cuid",
+              "pattern": "^[cC][0-9a-z]{6,}$",
+              "type": "string",
+            },
+            "status": {
+              "description": "신고 처리 상태 (OPEN: 접수 | RESOLVED: 처리 완료)",
+              "enum": [
+                "OPEN",
+                "RESOLVED",
+              ],
+              "type": "string",
+            },
+          },
+          "required": [
+            "id",
+            "status",
+            "createdAt",
+          ],
+          "type": "object",
+        },
+      },
+      "required": [
+        "message",
+        "report",
       ],
       "type": "object",
     },
@@ -9912,6 +10148,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "pattern": "^[cC][0-9a-z]{6,}$",
                 "type": "string",
               },
+              "isAuthorBlocked": {
+                "description": "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+                "type": "boolean",
+              },
               "isDeleted": {
                 "description": "댓글 삭제 여부",
                 "type": "boolean",
@@ -10128,6 +10368,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               "pattern": "^[cC][0-9a-z]{6,}$",
               "type": "string",
             },
+            "isAuthorBlocked": {
+              "description": "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+              "type": "boolean",
+            },
             "isDeleted": {
               "description": "댓글 삭제 여부",
               "type": "boolean",
@@ -10318,6 +10562,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "pattern": "^[cC][0-9a-z]{6,}$",
                     "type": "string",
                   },
+                  "isAuthorBlocked": {
+                    "description": "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+                    "type": "boolean",
+                  },
                   "isDeleted": {
                     "description": "댓글 삭제 여부",
                     "type": "boolean",
@@ -10494,6 +10742,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "format": "cuid",
                     "pattern": "^[cC][0-9a-z]{6,}$",
                     "type": "string",
+                  },
+                  "isAuthorBlocked": {
+                    "description": "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+                    "type": "boolean",
                   },
                   "isDeleted": {
                     "description": "댓글 삭제 여부",
@@ -10829,6 +11081,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                         "pattern": "^[cC][0-9a-z]{6,}$",
                         "type": "string",
                       },
+                      "isAuthorBlocked": {
+                        "description": "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+                        "type": "boolean",
+                      },
                       "isDeleted": {
                         "description": "댓글 삭제 여부",
                         "type": "boolean",
@@ -11093,6 +11349,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                     "format": "cuid",
                     "pattern": "^[cC][0-9a-z]{6,}$",
                     "type": "string",
+                  },
+                  "isAuthorBlocked": {
+                    "description": "나와 작성자 사이에 차단이 있어 내용을 가렸는지 여부. 가린 댓글은 구 앱 호환을 위해 isDeleted도 true이고 author·content는 null입니다 (1.13.0+)",
+                    "type": "boolean",
                   },
                   "isDeleted": {
                     "description": "댓글 삭제 여부",
@@ -12375,6 +12635,21 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
       },
       "required": [
         "completed",
+      ],
+      "type": "object",
+    },
+    "UnblockUserResponseDto": {
+      "example": {
+        "message": "차단을 해제했습니다.",
+      },
+      "properties": {
+        "message": {
+          "description": "결과 메시지",
+          "type": "string",
+        },
+      },
+      "required": [
+        "message",
       ],
       "type": "object",
     },
@@ -24357,6 +24632,606 @@ EMAIL_0505: 인증 코드가 만료되었습니다.",
       ],
     },
   },
+  "/v1/blocks": {
+    "get": {
+      "description": "내가 차단한 사용자를 최근에 차단한 순서로 조회합니다. 탈퇴 중인 사용자는 제외합니다.
+
+**쿼리 파라미터**
+- \`cursor\`: 이전 응답의 \`nextCursor\`
+- \`limit\`: 페이지 크기 (1-50, 기본값: 20)",
+      "operationId": "getBlockedUsers",
+      "parameters": [
+        {
+          "description": "페이지네이션 커서. 이전 응답의 nextCursor (CUID 25자, 선택)",
+          "in": "query",
+          "name": "cursor",
+          "required": false,
+          "schema": {
+            "description": "페이지네이션 커서. 이전 응답의 nextCursor (CUID 25자, 선택)",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "페이지 크기 (1-50, 기본값: 20)",
+          "in": "query",
+          "name": "limit",
+          "required": false,
+          "schema": {
+            "description": "페이지 크기 (1-50, 기본값: 20)",
+            "pattern": "^\\d+$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "설치된 앱 버전. 미전송 시 기존 프로필 아이콘으로 응답합니다.",
+          "in": "header",
+          "name": "x-app-version",
+          "required": false,
+          "schema": {
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/BlockedUsersResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "차단한 사용자 목록",
+      "tags": [
+        "Blocks",
+      ],
+    },
+  },
+  "/v1/blocks/{userId}": {
+    "delete": {
+      "description": "차단을 해제합니다.
+
+끊긴 친구 관계는 되살아나지 않으며, 다시 친구가 되려면 친구 요청을 새로 보내야 합니다.
+차단하지 않은 사용자를 해제해도 성공합니다.",
+      "operationId": "unblockUser",
+      "parameters": [
+        {
+          "description": "대상 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+          "in": "path",
+          "name": "userId",
+          "required": true,
+          "schema": {
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/UnblockUserResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "SYS_0002",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "잘못된 파라미터입니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "차단 해제",
+      "tags": [
+        "Blocks",
+      ],
+    },
+    "post": {
+      "description": "사용자를 차단합니다.
+
+차단하면 두 사람의 친구 관계와 대기 중인 친구 요청이 모두 끊깁니다. 이후 서로 친구 요청·콕 찌르기·응원을 보낼 수 없고,
+서로의 콕·응원 기록과 댓글은 보이지 않습니다. 차단당한 사용자에게는 알리지 않습니다.
+
+이미 차단한 사용자를 다시 차단해도 성공하며, \`blockedAt\`은 처음 차단한 시각입니다.",
+      "operationId": "blockUser",
+      "parameters": [
+        {
+          "description": "대상 사용자 ID (CUID 25자, 예: clz7x5p8k0005qz0z8z8z8z8z)",
+          "in": "path",
+          "name": "userId",
+          "required": true,
+          "schema": {
+            "description": "사용자 ID (CUID 25자, 예: clz7x5p8k0001qz0z8z8z8z8z)",
+            "example": "clz7x5p8k0005qz0z8z8z8z8z",
+            "format": "cuid",
+            "pattern": "^[cC][0-9a-z]{6,}$",
+            "type": "string",
+          },
+        },
+      ],
+      "responses": {
+        "200": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/BlockUserResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "요청이 성공적으로 처리되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "BLOCK_2201": {
+                  "summary": "자기 자신은 차단할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "BLOCK_2201",
+                      "details": null,
+                      "message": "자기 자신은 차단할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "BLOCK_2201",
+                          "SYS_0002",
+                        ],
+                        "example": "BLOCK_2201",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "자기 자신은 차단할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "BLOCK_2201: 자기 자신은 차단할 수 없습니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "BLOCK_2202",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "차단할 사용자를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "차단할 사용자를 찾을 수 없습니다.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "사용자 차단",
+      "tags": [
+        "Blocks",
+      ],
+    },
+  },
   "/v1/cheers": {
     "post": {
       "description": "친구에게 응원 메시지를 보냅니다.
@@ -28063,7 +28938,9 @@ SYS_0002: 잘못된 파라미터입니다.",
     "post": {
       "description": "특정 사용자에게 친구 요청을 보냅니다.
 
-상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).",
+상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).
+
+내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).",
       "operationId": "sendFriendRequest",
       "parameters": [
         {
@@ -28236,12 +29113,42 @@ SYS_0002: 잘못된 파라미터입니다.",
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "BLOCK_2203": {
+                  "summary": "차단한 사용자입니다. 차단을 해제한 뒤 다시 시도해주세요.",
+                  "value": {
+                    "error": {
+                      "code": "BLOCK_2203",
+                      "details": null,
+                      "message": "차단한 사용자입니다. 차단을 해제한 뒤 다시 시도해주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "FOLLOW_0909": {
+                  "summary": "친구 수가 최대 한도에 도달했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "FOLLOW_0909",
+                      "details": null,
+                      "message": "친구 수가 최대 한도에 도달했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
-                        "example": "FOLLOW_0909",
+                        "enum": [
+                          "BLOCK_2203",
+                          "FOLLOW_0909",
+                        ],
+                        "example": "BLOCK_2203",
                         "type": "string",
                       },
                       "details": {
@@ -28250,7 +29157,7 @@ SYS_0002: 잘못된 파라미터입니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "친구 수가 최대 한도에 도달했습니다.",
+                        "example": "차단한 사용자입니다. 차단을 해제한 뒤 다시 시도해주세요.",
                         "type": "string",
                       },
                     },
@@ -28278,7 +29185,9 @@ SYS_0002: 잘못된 파라미터입니다.",
               },
             },
           },
-          "description": "친구 수가 최대 한도에 도달했습니다.",
+          "description": "BLOCK_2203: 차단한 사용자입니다. 차단을 해제한 뒤 다시 시도해주세요.
+
+FOLLOW_0909: 친구 수가 최대 한도에 도달했습니다.",
         },
         "404": {
           "content": {
@@ -37589,6 +38498,321 @@ NUDGE_1110: 할 일을 완료한 뒤 감사를 전해주세요.",
       "summary": "받은 콕에 답장",
       "tags": [
         "Nudges",
+      ],
+    },
+  },
+  "/v1/reports": {
+    "post": {
+      "description": "다른 사용자의 프로필이나 할 일·댓글·콕·응원 메시지를 신고합니다.
+
+**요청 필드**
+- \`targetUserId\` (필수): 신고할 콘텐츠를 만든 사용자 ID
+- \`targetType\` (필수): PROFILE / TODO / COMMENT / NUDGE_MESSAGE / CHEER_MESSAGE
+- \`targetId\`: 콘텐츠 ID. 할 일·콕·응원은 숫자 ID, 댓글은 CUID이며 PROFILE이면 보내지 않습니다
+- \`reason\` (필수): SPAM / HARASSMENT / INAPPROPRIATE / IMPERSONATION / OTHER
+- \`detail\` (선택): 상세 내용 (최대 500자)
+
+**처리 흐름**
+1. 신고를 저장하고 운영자에게 이메일로 알립니다. 이메일 발송에 실패해도 신고는 접수됩니다
+2. 같은 대상을 24시간 안에 다시 신고하면 새로 접수하지 않고 기존 신고를 돌려줍니다
+3. 최근 24시간 동안 20건을 넘게 신고하면 REPORT_2254로 거부합니다
+
+신고해도 상대에게는 알리지 않습니다. 상대를 더 보고 싶지 않다면 차단 API를 함께 사용합니다.",
+      "operationId": "createUserReport",
+      "parameters": [],
+      "requestBody": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/CreateUserReportDto",
+            },
+          },
+        },
+        "required": true,
+      },
+      "responses": {
+        "201": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "data": {
+                    "$ref": "#/components/schemas/CreateUserReportResponseDto",
+                  },
+                  "success": {
+                    "example": true,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "data",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "리소스가 성공적으로 생성되었습니다",
+        },
+        "400": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "REPORT_2251": {
+                  "summary": "자기 자신은 신고할 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "REPORT_2251",
+                      "details": null,
+                      "message": "자기 자신은 신고할 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "REPORT_2253": {
+                  "summary": "신고 대상이 올바르지 않습니다.",
+                  "value": {
+                    "error": {
+                      "code": "REPORT_2253",
+                      "details": null,
+                      "message": "신고 대상이 올바르지 않습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "SYS_0002": {
+                  "summary": "잘못된 파라미터입니다.",
+                  "value": {
+                    "error": {
+                      "code": "SYS_0002",
+                      "details": null,
+                      "message": "잘못된 파라미터입니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "enum": [
+                          "REPORT_2251",
+                          "REPORT_2253",
+                          "SYS_0002",
+                        ],
+                        "example": "REPORT_2251",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "자기 자신은 신고할 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "REPORT_2251: 자기 자신은 신고할 수 없습니다.
+
+REPORT_2253: 신고 대상이 올바르지 않습니다.
+
+SYS_0002: 잘못된 파라미터입니다.",
+        },
+        "401": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "AUTH_0107",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "인증이 필요합니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "인증이 필요합니다.",
+        },
+        "404": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "REPORT_2252",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "신고할 사용자를 찾을 수 없습니다.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "신고할 사용자를 찾을 수 없습니다.",
+        },
+        "429": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "error": {
+                    "properties": {
+                      "code": {
+                        "example": "REPORT_2254",
+                        "type": "string",
+                      },
+                      "details": {
+                        "example": null,
+                        "nullable": true,
+                        "type": "object",
+                      },
+                      "message": {
+                        "example": "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
+                        "type": "string",
+                      },
+                    },
+                    "required": [
+                      "code",
+                      "message",
+                    ],
+                    "type": "object",
+                  },
+                  "success": {
+                    "example": false,
+                    "type": "boolean",
+                  },
+                  "timestamp": {
+                    "example": 1700000000000,
+                    "type": "number",
+                  },
+                },
+                "required": [
+                  "success",
+                  "error",
+                  "timestamp",
+                ],
+                "type": "object",
+              },
+            },
+          },
+          "description": "오늘 신고할 수 있는 횟수를 모두 사용했습니다. 급한 신고는 고객센터로 문의해주세요.",
+        },
+        "500": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ErrorResponseSchema",
+              },
+            },
+          },
+          "description": "서버 내부 오류가 발생했습니다",
+        },
+      },
+      "security": [
+        {
+          "bearer": [],
+        },
+      ],
+      "summary": "사용자·콘텐츠 신고",
+      "tags": [
+        "Reports",
       ],
     },
   },

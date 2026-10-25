@@ -304,6 +304,9 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: 원시 값을 받던 path·query를 @aido/api schema로 검증한다. DELETE /auth/sessions/{sessionId}(CUID), DELETE /auth/linked-accounts/{provider}(APPLE·GOOGLE·KAKAO·NAVER), DELETE /notifications/token?deviceId(1-100자), cheers·nudges·nudges/remind cooldown/{userId}(CUID). 배포 앱은 대문자 provider, 등록한 기기 ID, 친구의 CUID만 보내 같은 응답을 받고, 형식이 틀린 입력만 404·500 대신 400 SYS_0002가 된다. */
 	preRawInputValidationPathsFingerprint:
 		"fabcdf859e45127d31cf8a9a4274561a1d4c83a60f4089cbf128b8f793cecc60",
-	pathsFingerprint:
+	/** 1.13.0: 차단·신고 추가로 POST /follows/{userTag} 403의 error.code를 BLOCK_2203(차단한 사용자)·FOLLOW_0909(친구 한도) enum으로 선언했다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
+	preFriendSafetyPathsFingerprint:
 		"91b4fe4e03952e2bb9867293b3fd1946baed7640bcda5c95f2a4e42d94bbca2a",
+	pathsFingerprint:
+		"7c517f2efce3afa4832d61055fb28954d8d108c5c5426848532aa4e02f154506",
 } as const;
