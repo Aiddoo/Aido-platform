@@ -268,8 +268,12 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.10.1: 선택 X-App-Version 헤더와 입력 아이콘 enum 3종만 추가. 구버전 응답은 기존 키로 매핑한다. */
 	preProfileIconsSchemasFingerprint: "7d54df326aea8812a463f4a7ea5e842fc333c6823276a14e29e58f8a8d3b992b",
 	preProfileIconsPathsFingerprint: "ea3b45b70f071294634c39a8523e2683112a02a87f17c1366f279ca7b46e6d8e",
-	schemasFingerprint:
+	/** 1.13.0: zod 4.6 업그레이드로 cuid pattern과 union 쿼리 스키마의 JSON Schema 표현만 달라졌다. 라우트·필드·상태 코드는 같다. */
+	preZod46SchemasFingerprint:
 		"661496b690bb1981dc09130a644d779d135f663e218db04b0dd8724d25eab20e",
+	preZod46PathsFingerprint: "12d563b0191e60a54f20cd08208334321e67f67831e3f77cf0d6add48b1f3b22",
+	schemasFingerprint:
+		"b6581fa057475468f18183df29e42adadba747271d19630de9a6fa81ca7ab6a7",
 	pathsFingerprint:
-		"12d563b0191e60a54f20cd08208334321e67f67831e3f77cf0d6add48b1f3b22",
+		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
 } as const;
