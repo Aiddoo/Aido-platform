@@ -1,6 +1,6 @@
 # 홈 화면 위젯 가이드 — Expo SDK 58
 
-**Version**: 3.1.0 · **Last Updated**: 2026-10-25 · **Owner**: Aido Mobile Team
+**Version**: 3.2.0 · **Last Updated**: 2026-10-26 · **Owner**: Aido Mobile Team
 
 iOS는 `expo-widgets`, Android는 `react-native-android-widget`의 공식 Expo config plugin과
 HeadlessJS API를 사용한다. 앱에서 Kotlin·Swift source나 dependency patch를 생성하지 않는다.
@@ -47,6 +47,20 @@ Android renderer·HeadlessJS·MMKV widget adapter가 들어가지 않도록 plat
 Android 공식 plugin은 기존 `${android.package}.widget` 아래 같은 세 provider 이름을 생성한다.
 기존 AppWidgetHost ID·배치·크기를 지우거나 위젯을 재등록하지 않는다. iOS `AidoTodayList` 이름,
 extension bundle identifier와 App Group도 유지한다.
+
+### 위젯 갤러리 이름·설명 다국어
+
+OS 위젯 갤러리의 이름·설명은 앱 i18n이 아니라 Expo `locales`(`native-locales/{ko,en}.json`)가 만든다.
+ko 기기는 한국어, 그 밖의 언어는 영어로 표시한다. 영어는 앱 카탈로그의 위젯 용어(`Today's to-dos`)를 따른다.
+
+- iOS: `expo-widgets`는 `configurationDisplayName("오늘 할 일")`처럼 한국어 원문을 `LocalizedStringKey`로
+  생성하고, 앱의 `Localizable.strings`를 위젯 확장 리소스에 넣는다. 키(원문)와 번역은 각 파일의
+  `ios["Localizable.strings"]`에 두고 `app.config.ts`의 `displayName`·`description`과 글자까지 같게 유지한다.
+  ko 파일에도 같은 키를 둬야 위젯 번들에 `ko.lproj`가 생겨 한국어 기기가 영어로 떨어지지 않는다.
+- Android: provider `android:label`은 `@string/widget_{name}_label`, `android:description`은 공식 plugin이
+  만드는 `@string/widget_{name}_description`이다. 번역은 각 파일의 `android` 항목(`values-b+{lang}`)이다.
+  `plugins/withAndroidFallbackLocaleStrings`가 finalized 단계에서 en 항목을 기본 `values/`에 써서
+  ko·en이 아닌 기기의 리소스 누락과 plugin의 `translatable="false"` 한국어 기본값을 함께 대체한다.
 
 기존 `widget-storage`의 `aido_widget_snapshot_v1` key를 그대로 쓴다. 값은 v2 JSON이며, 이미 저장된
 v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. 기존 Expo

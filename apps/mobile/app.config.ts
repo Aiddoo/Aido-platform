@@ -421,6 +421,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           bundleIdentifier: `${envConfig.bundleIdentifier}.ExpoWidgetsTarget`,
           groupIdentifier: appGroupIdentifier,
+          // displayName·description은 위젯 확장의 Localizable.strings 키다.
+          // 번역은 native-locales/{ko,en}.json의 ios["Localizable.strings"]에 둔다.
           widgets: [
             {
               name: 'AidoTodayList',
@@ -437,10 +439,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'react-native-android-widget',
         {
+          // label·description 문자열은 native-locales/{ko,en}.json의 android 항목이다.
+          // description 값은 values/의 기본값이 아래 fallback 플러그인(en)으로 교체된다.
           widgets: [
             {
               name: 'AidoTodaySummary',
-              label: '오늘 진행률',
+              label: '@string/widget_aidotodaysummary_label',
               description: '오늘 할 일 진행률과 연속 달성 기록을 한눈에 확인해요',
               minWidth: '110dp',
               minHeight: '110dp',
@@ -451,7 +455,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
             {
               name: 'AidoTodayList',
-              label: '오늘 할 일',
+              label: '@string/widget_aidotodaylist_label',
               description: '오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요',
               minWidth: '250dp',
               minHeight: '110dp',
@@ -462,7 +466,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             },
             {
               name: 'AidoTodayLarge',
-              label: '오늘 할 일 크게',
+              label: '@string/widget_aidotodaylarge_label',
               description: '한 주의 발자국과 오늘 할 일을 확인하고 바로 만들어요',
               minWidth: '250dp',
               minHeight: '250dp',
@@ -474,6 +478,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           ],
         },
       ],
+      // 기기 언어가 ko·en이 아니어도 위젯 이름을 찾도록 en 문자열을 Android 기본 values/에 둔다
+      ['./plugins/withAndroidFallbackLocaleStrings', { locale: 'en' }],
     ],
 
     // Experiments

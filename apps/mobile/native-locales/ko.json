@@ -3,6 +3,18 @@
     "NSMicrophoneUsageDescription": "말로 할 일을 입력할 때 마이크를 써요.",
     "NSSpeechRecognitionUsageDescription": "말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.",
     "NSPhotoLibraryAddUsageDescription": "공유한 이미지를 사진 보관함에 저장할 때 써요.",
-    "NSLocationWhenInUseUsageDescription": "현재 위치의 날씨를 보여줄 때 위치를 써요."
+    "NSLocationWhenInUseUsageDescription": "현재 위치의 날씨를 보여줄 때 위치를 써요.",
+    "Localizable.strings": {
+      "오늘 할 일": "오늘 할 일",
+      "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요"
+    }
+  },
+  "android": {
+    "widget_aidotodaysummary_label": "오늘 진행률",
+    "widget_aidotodaysummary_description": "오늘 할 일 진행률과 연속 달성 기록을 한눈에 확인해요",
+    "widget_aidotodaylist_label": "오늘 할 일",
+    "widget_aidotodaylist_description": "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요",
+    "widget_aidotodaylarge_label": "오늘 할 일 크게",
+    "widget_aidotodaylarge_description": "한 주의 발자국과 오늘 할 일을 확인하고 바로 만들어요"
   }
 }
