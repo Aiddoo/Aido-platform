@@ -1,5 +1,6 @@
 import type { PushNotificationData } from '@aido/api';
 import { useLogger, useNotificationService } from '@src/bootstrap/providers/di-context';
+import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError, unwrap } from '@src/shared/errors';
 import { useTodayKey } from '@src/shared/hooks/use-today';
@@ -64,7 +65,13 @@ export function useNotificationResponseHandler() {
         return 'discarded';
       }
 
-      await navigate(resolveNotificationDestination(data, { today, windowSizeClass }));
+      await navigate(
+        resolveNotificationDestination(data, {
+          today,
+          windowSizeClass,
+          viewerId: getCachedMe(queryClient)?.id,
+        }),
+      );
 
       try {
         trackEvent('push_notification_opened', {

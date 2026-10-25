@@ -400,3 +400,68 @@ describe('펼친 화면의 할 일 알림', () => {
     }
   });
 });
+
+describe('펼친 화면 할 일 알림의 목록 pane', () => {
+  const VIEWER = 'me';
+  const DATE = '2026-08-14';
+
+  test.each([
+    [
+      '친구 할 일 댓글은 그 친구의 그 날짜 피드',
+      { todoOwnerId: 'friend-1', todoDate: DATE, commentId: COMMENT_ID },
+      VIEWER,
+      { friendId: 'friend-1', date: DATE, todoId: 42, comment: COMMENT_ID },
+    ],
+    [
+      '내 할 일은 내 피드의 그 날짜',
+      { todoOwnerId: VIEWER, todoDate: DATE },
+      VIEWER,
+      { date: DATE, todoId: 42 },
+    ],
+    [
+      '나를 모르면 친구로 단정하지 않고 날짜만 맞춘다',
+      { todoOwnerId: 'friend-1', todoDate: DATE },
+      undefined,
+      { date: DATE, todoId: 42 },
+    ],
+    [
+      '형식이 틀린 날짜는 버리고 주인만 따른다',
+      { todoOwnerId: 'friend-1', todoDate: '08/14' },
+      VIEWER,
+      { friendId: 'friend-1', todoId: 42 },
+    ],
+    ['주인·날짜가 없는 예전 알림은 기존 동작', {}, VIEWER, { todoId: 42 }],
+  ])('%s', (_name, routing, viewerId, params) => {
+    expect(
+      resolveNotificationDestination(
+        { type: 'TODO_SHARED', context: { todoId: 42 }, routing },
+        { windowSizeClass: 'medium', viewerId },
+      ),
+    ).toEqual({ kind: 'route', href: { pathname: '/feed', params } });
+  });
+
+  test.each(['TODO_REMINDER', 'NUDGE_RECEIVED'] as const)(
+    '%s도 할 일 주인과 날짜로 목록 pane을 연다',
+    (type) => {
+      expect(
+        resolveNotificationDestination(
+          { type, context: { todoId: 42 }, routing: { todoOwnerId: VIEWER, todoDate: DATE } },
+          { windowSizeClass: 'expanded', viewerId: VIEWER },
+        ),
+      ).toEqual({ kind: 'route', href: { pathname: '/feed', params: { date: DATE, todoId: 42 } } });
+    },
+  );
+
+  test('접힌 화면은 주인·날짜가 있어도 할 일 상세 화면을 연다', () => {
+    expect(
+      resolveNotificationDestination(
+        {
+          type: 'TODO_SHARED',
+          context: { todoId: 42 },
+          routing: { todoOwnerId: 'friend-1', todoDate: DATE },
+        },
+        { windowSizeClass: 'compact', viewerId: VIEWER },
+      ),
+    ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
+  });
+});

@@ -214,7 +214,7 @@ function useNotificationPress(notification: Notification) {
         routing: notification.routing,
         action: notification.action,
       },
-      { today, windowSizeClass },
+      { today, windowSizeClass, viewerId: getCachedMe(queryClient)?.id },
     );
     trackEvent('notification_center_opened', {
       type: notification.type,
