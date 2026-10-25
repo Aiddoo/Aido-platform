@@ -247,10 +247,6 @@ export class TypedConfigService {
   // AI Config Helpers
   // ============================================
 
-  get aiDailyLimit(): number {
-    return this.get("AI_DAILY_LIMIT");
-  }
-
   get googleGenerativeAiApiKey(): string | undefined {
     return this.get("GOOGLE_GENERATIVE_AI_API_KEY");
   }
