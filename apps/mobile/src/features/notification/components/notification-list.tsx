@@ -8,8 +8,9 @@ import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
-import { useToday, useTodayKey } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
+import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
   Box,
   Button,
@@ -48,8 +49,8 @@ export function NotificationList({ category, unreadOnly, limit }: NotificationLi
   const query = useSuspenseInfiniteQuery(
     useGetNotificationsInfiniteQueryOptions({ category, unreadOnly, limit }),
   );
-  const today = useToday();
-  const listItems = toDateSectionedListItems(query.data, today);
+  const { currentLocalDateKey, currentTimeZone } = useLocalDate();
+  const listItems = toDateSectionedListItems(query.data, currentLocalDateKey, currentTimeZone);
   const [isRefreshing, handleRefresh] = useRefresh(query.refetch);
   const { color: refreshTint } = useResolveClassNames('text-main');
 

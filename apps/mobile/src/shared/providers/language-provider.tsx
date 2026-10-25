@@ -55,7 +55,7 @@ export function LanguageProvider({
   );
 
   // 단방향 동기화: resolvedLanguage(단일 소스)가 바뀔 때만 i18n에 반영한다.
-  // languageChanged 이벤트가 react-i18next 리렌더와 dayjs locale 동기화를 처리한다.
+  // languageChanged 이벤트가 react-i18next 리렌더를 처리한다.
   useEffect(() => {
     if (i18n.language !== resolvedLanguage) {
       i18n.changeLanguage(resolvedLanguage);

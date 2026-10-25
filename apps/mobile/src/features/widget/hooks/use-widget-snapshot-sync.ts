@@ -5,8 +5,8 @@ import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-op
 import { i18n } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
-import { getWeekRange } from '@src/shared/utils/date';
-import { getNextDateKey } from '@src/shared/utils/local-date-clock';
+import { getCalendarWeekOfDateKey } from '@src/shared/utils/calendar-week';
+import { addDaysToDateKey } from '@src/shared/utils/date-key';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
@@ -71,20 +71,15 @@ function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSn
 
 export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
   const widgetSyncService = useWidgetSyncService();
-  const {
-    currentLocalDate,
-    currentLocalDateKey: date,
-    currentTimeZone,
-    currentUtcOffsetMinutes,
-  } = useLocalDate();
-  const { rangeStart, rangeEnd } = getWeekRange(currentLocalDate);
+  const { currentLocalDateKey: date, currentTimeZone, currentUtcOffsetMinutes } = useLocalDate();
+  const { startDateKey: rangeStart, endDateKey: rangeEnd } = getCalendarWeekOfDateKey(date);
   const { data: user } = useQuery({
     ...useGetMeQueryOptions(),
     enabled: authState === 'authenticated',
     throwOnError: false,
   });
   const userId = user?.id;
-  const tomorrowDate = getNextDateKey(date);
+  const tomorrowDate = addDaysToDateKey(date, 1);
   const isUserDataEnabled = authState === 'authenticated' && userId != null;
   const todayQueryOptions = useGetTodoSummaryQueryOptions({ date, todayDate: date, userId });
   const tomorrowQueryOptions = useGetTodoSummaryQueryOptions({

@@ -1,6 +1,6 @@
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { formatRelativeTime, type getDateSectionKey } from '@src/shared/utils/date';
+import { type DateSectionKey, formatRelativeTime } from '@src/shared/utils/date';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
@@ -102,7 +102,7 @@ NotificationListRow.Loading = function Loading() {
 NotificationListRow.SectionHeader = function SectionHeader({
   section,
 }: {
-  section: ReturnType<typeof getDateSectionKey>;
+  section: DateSectionKey;
 }) {
   const { t } = useTranslation('common');
   return (

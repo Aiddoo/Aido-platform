@@ -1,6 +1,6 @@
+import { addDaysToDateKey } from './date-key';
 import {
   createLocalDateState,
-  getNextDateKey,
   getNextLocalMidnight,
   isSameLocalDateState,
   millisecondsUntilNextLocalMidnight,
@@ -137,7 +137,7 @@ describe('다음 로컬 자정 계산', () => {
     // Then
     expect(afterFebruary28.toISOString()).toBe('2028-02-28T15:00:00.000Z');
     expect(afterFebruary29.toISOString()).toBe('2028-02-29T15:00:00.000Z');
-    expect(getNextDateKey('2028-02-28')).toBe('2028-02-29');
-    expect(getNextDateKey('2028-02-29')).toBe('2028-03-01');
+    expect(addDaysToDateKey('2028-02-28', 1)).toBe('2028-02-29');
+    expect(addDaysToDateKey('2028-02-29', 1)).toBe('2028-03-01');
   });
 });

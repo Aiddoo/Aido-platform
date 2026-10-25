@@ -11,7 +11,7 @@
 ```
 src/shared/i18n/
 ├── index.ts           # i18n 싱글턴, t(비컴포넌트용), tDynamic(런타임 키), useTranslation re-export
-├── init.ts            # 폴리필 → 동기 init → languageChanged→dayjs.locale 동기화 (app/_layout.tsx에서 로드)
+├── init.ts            # 폴리필 → 동기 init (app/_layout.tsx에서 로드)
 ├── i18next.d.ts       # 타입 안전 — ko 카탈로그가 타입 소스, 키 오타는 typecheck에서 실패
 ├── resources.ts       # ko/en JSON 집계
 └── locales/{ko,en}/   # 네임스페이스별 카탈로그 (ko = 원문)
@@ -59,7 +59,7 @@ toast.error(t('friend:toast.sendFailed'));
   // 사용처: t(INQUIRY_CATEGORY_LABEL_KEYS[category])
   ```
 - **런타임 키**(에러 코드 등): `tDynamic('errors', code, fallback)` — 타입 검증 우회 전용
-- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/utils/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel, formatRelativeTime)로만 만든다. `date.ts`·`time.ts`의 wrapper는 앱 언어 context를 채워 위 헬퍼를 호출한다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고, 전역 locale은 init이 관리 (`dayjs.locale()` 직접 호출 금지). "오늘"은 `useToday()`로 읽어 인자로 넘긴다
+- **날짜/시간**: 사용자에게 보이는 날짜·시각은 `@src/shared/utils/date-format`의 Intl 헬퍼(formatDateLabel, formatDateKeyLabel, formatDateKeyRange, formatClockTime, formatTimeOfDay, formatHourLabel, formatRelativeTime)로만 만든다. `date.ts`·`time.ts`의 wrapper는 앱 언어 context를 채워 위 헬퍼를 호출한다 — 재구현·카탈로그 날짜 포맷 금지. dayjs는 날짜 계산과 YYYY-MM-DD key에만 쓰고 기본 locale(en)을 유지한다 — 표시 언어가 주 시작·요일 계산을 바꾸지 않도록 `dayjs.locale()`을 호출하지 않는다. 주는 `calendar-week.ts`의 일요일 시작 규칙 하나만 쓴다. "오늘"은 `useToday()`로 읽어 인자로 넘긴다
 
 ### 에러 메시지
 

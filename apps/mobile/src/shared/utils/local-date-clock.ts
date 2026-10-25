@@ -1,4 +1,5 @@
 import { formatDateKey } from './date-format';
+import { addDaysToDateKey } from './date-key';
 import { getDeviceTimezone } from './timezone';
 
 export type LocalDateState = {
@@ -9,7 +10,6 @@ export type LocalDateState = {
 };
 
 const MIDNIGHT_GRACE_MS = 100;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const WALL_CLOCK_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   year: 'numeric',
@@ -47,11 +47,6 @@ export function isSameLocalDateState(previous: LocalDateState, next: LocalDateSt
   );
 }
 
-/** YYYY-MM-DD 다음 달력 날짜 (윤년·월말 포함, 시간대 무관). */
-export function getNextDateKey(dateKey: string): string {
-  return formatDateKey(new Date(Date.parse(`${dateKey}T00:00:00Z`) + DAY_MS), 'UTC');
-}
-
 function getTimeZoneOffsetMs(instantMs: number, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-US', {
     ...WALL_CLOCK_FORMAT_OPTIONS,
@@ -77,7 +72,7 @@ function getTimeZoneOffsetMs(instantMs: number, timeZone: string): number {
  * 오프셋 후보 두 개 중 다음 날짜 key에 실제로 속하는 가장 이른 시각을 고른다.
  */
 export function getNextLocalMidnight(now: Date, timeZone: string): Date {
-  const nextDateKey = getNextDateKey(formatDateKey(now, timeZone));
+  const nextDateKey = addDaysToDateKey(formatDateKey(now, timeZone), 1);
   const wallMidnightMs = Date.parse(`${nextDateKey}T00:00:00Z`);
   const firstGuessMs = wallMidnightMs - getTimeZoneOffsetMs(wallMidnightMs, timeZone);
   const secondGuessMs = wallMidnightMs - getTimeZoneOffsetMs(firstGuessMs, timeZone);

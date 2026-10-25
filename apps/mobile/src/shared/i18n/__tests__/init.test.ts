@@ -33,16 +33,15 @@ describe('i18n init', () => {
     expect(result).toBe('OK');
   });
 
-  it('언어 변경 시 dayjs locale이 동기화된다', async () => {
+  it('언어를 바꿔도 날짜 계산용 dayjs locale은 바뀌지 않는다', async () => {
     // Given
     await i18n.changeLanguage('en');
-    expect(dayjs.locale()).toBe('en');
 
     // When
     await i18n.changeLanguage('ko');
 
-    // Then
-    expect(dayjs.locale()).toBe('ko');
+    // Then: 주 시작·요일 계산이 표시 언어를 따라가지 않는다
+    expect(dayjs.locale()).toBe('en');
   });
 
   it('en에 없는 키는 ko로 fallback한다', async () => {

@@ -2,21 +2,16 @@ import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
 import { i18n, t } from '@src/shared/i18n';
 import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import dayjs from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
-import weekOfYear from 'dayjs/plugin/weekOfYear';
 import { range } from 'es-toolkit';
 
-import { getCalendarWeek } from './calendar-week';
+import { getCalendarWeek, getCalendarWeekOfDateKey } from './calendar-week';
 import {
   formatDateLabel,
   formatRelativeTime as formatRelativeTimeLabel,
   type DateFormatContext,
 } from './date-format';
+import { addDaysToDateKey } from './date-key';
 import { getDeviceTimezone } from './timezone';
-
-dayjs.extend(weekOfYear);
-dayjs.extend(isoWeek);
-// dayjs 전역 locale은 i18n init(languageChanged 리스너)이 관리한다
 
 // Format
 export const formatDate = (date: Date | string | number): string => {
@@ -155,9 +150,9 @@ export const addMonths = (date: Date, months: number): Date => {
   return dayjs(date).add(months, 'month').toDate();
 };
 
-/** 두 날짜의 주 단위 차이 (date1 - date2, startOf('week') 기준으로 정규화) */
+/** 두 날짜의 주 단위 차이 (date1 - date2, 앱 달력 주의 시작으로 정규화) */
 export const diffWeeks = (date1: Date, date2: Date): number => {
-  return dayjs(date1).startOf('week').diff(dayjs(date2).startOf('week'), 'week');
+  return dayjs(getCalendarWeek(date1).start).diff(getCalendarWeek(date2).start, 'week');
 };
 
 /** 두 날짜의 월 단위 차이 (date1 - date2, startOf('month') 기준으로 정규화) */
@@ -181,16 +176,12 @@ export const getWeekDates = (weekStartDate: Date): Date[] => {
 
 export const getMonthWeeks = (displayDate: Date): Date[][] => {
   const display = dayjs(displayDate);
-  const monthStart = display.startOf('month');
-  const monthEnd = display.endOf('month');
-
-  const calendarStart = monthStart.startOf('week');
-  const calendarEnd = monthEnd.endOf('week');
+  const lastWeekStart = dayjs(getCalendarWeek(display.endOf('month').toDate()).start);
 
   const weeks: Date[][] = [];
-  let currentWeekStart = calendarStart;
+  let currentWeekStart = dayjs(getCalendarWeek(display.startOf('month').toDate()).start);
 
-  while (currentWeekStart.isBefore(calendarEnd) || currentWeekStart.isSame(calendarEnd, 'day')) {
+  while (!currentWeekStart.isAfter(lastWeekStart, 'day')) {
     weeks.push(getWeekDates(currentWeekStart.toDate()));
     currentWeekStart = currentWeekStart.add(1, 'week');
   }
@@ -212,36 +203,37 @@ export const todoOverlapsDate = (
 
 /** 캘린더 그리드 범위 (월간 뷰 - 앞뒤 패딩 주 포함) */
 export const getCalendarRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
-  const d = dayjs(displayDate);
+  const display = dayjs(displayDate);
   return {
-    rangeStart: d.startOf('month').startOf('week').format('YYYY-MM-DD'),
-    rangeEnd: d.endOf('month').endOf('week').format('YYYY-MM-DD'),
+    rangeStart: getCalendarWeekOfDateKey(display.startOf('month').format('YYYY-MM-DD'))
+      .startDateKey,
+    rangeEnd: getCalendarWeekOfDateKey(display.endOf('month').format('YYYY-MM-DD')).endDateKey,
   };
 };
 
 /** 주간 뷰 범위 */
 export const getWeekRange = (displayDate: Date): { rangeStart: string; rangeEnd: string } => {
-  const d = dayjs(displayDate);
-  return {
-    rangeStart: d.startOf('week').format('YYYY-MM-DD'),
-    rangeEnd: d.endOf('week').format('YYYY-MM-DD'),
-  };
+  const week = getCalendarWeekOfDateKey(formatDate(displayDate));
+  return { rangeStart: week.startDateKey, rangeEnd: week.endDateKey };
 };
 
-export const getDateSectionKey = (date: Date, referenceDate: Date) => {
-  const now = dayjs(referenceDate);
-  const target = dayjs(date);
+export type DateSectionKey = 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'earlier';
 
-  if (target.isSame(now, 'day')) {
+/** 목록 날짜 섹션. 두 날짜 key를 그대로 비교하며 주는 앱 달력 주(일요일 시작)다. */
+export const getDateSectionKey = (dateKey: string, todayDateKey: string): DateSectionKey => {
+  if (dateKey === todayDateKey) {
     return 'today';
   }
-  if (now.subtract(1, 'day').isSame(target, 'day')) {
+  if (dateKey === addDaysToDateKey(todayDateKey, -1)) {
     return 'yesterday';
   }
-  if (target.isSame(now, 'isoWeek')) {
+  if (
+    getCalendarWeekOfDateKey(dateKey).startDateKey ===
+    getCalendarWeekOfDateKey(todayDateKey).startDateKey
+  ) {
     return 'thisWeek';
   }
-  if (target.isSame(now, 'month')) {
+  if (dateKey.slice(0, 7) === todayDateKey.slice(0, 7)) {
     return 'thisMonth';
   }
   return 'earlier';

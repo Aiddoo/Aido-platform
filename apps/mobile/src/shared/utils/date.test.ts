@@ -7,11 +7,14 @@ import {
   formatDaysOfWeek,
   formatFullDate,
   formatRelativeTime,
+  getCalendarRange,
+  getDateSectionKey,
   getDayOfWeekLabel,
   getMonthHeaderText,
   getMonthWeeks,
   getWeekdayLabels,
   getWeekHeaderText,
+  getWeekRange,
 } from './date';
 
 afterEach(async () => {
@@ -109,6 +112,49 @@ describe('getMonthWeeks', () => {
 
     // Then
     expect(weeks).toHaveLength(6);
+  });
+});
+
+describe('표시 언어와 무관한 달력 범위', () => {
+  test.each(['ko', 'en'] as const)('%s에서도 주·월 범위는 일요일 시작이다', async (language) => {
+    // Given
+    await i18n.changeLanguage(language);
+    const monday = new Date(2026, 9, 26);
+
+    // When
+    const weekRange = getWeekRange(monday);
+    const monthRange = getCalendarRange(monday);
+    const [firstWeek] = getMonthWeeks(monday);
+
+    // Then
+    expect(weekRange).toEqual({ rangeStart: '2026-10-25', rangeEnd: '2026-10-31' });
+    expect(monthRange).toEqual({ rangeStart: '2026-09-27', rangeEnd: '2026-10-31' });
+    expect(firstWeek?.[0]).toEqual(new Date(2026, 8, 27));
+  });
+});
+
+describe('getDateSectionKey', () => {
+  test('이번 주는 달력과 같은 일요일 시작 주다', () => {
+    // Given: 일요일 오늘, ISO 주(월요일 시작)로는 같은 주였던 지난 수요일
+    const sundayDateKey = '2026-10-25';
+
+    // When
+    const section = getDateSectionKey('2026-10-21', sundayDateKey);
+
+    // Then
+    expect(section).toBe('thisMonth');
+    expect(getDateSectionKey('2026-10-26', '2026-10-31')).toBe('thisWeek');
+  });
+
+  test('연말을 넘는 주와 어제를 날짜 key로 판단한다', () => {
+    // Given: 2026-12-27(일)~2027-01-02(토) 주
+    const newYearDateKey = '2027-01-01';
+
+    // When / Then
+    expect(getDateSectionKey('2026-12-31', newYearDateKey)).toBe('yesterday');
+    expect(getDateSectionKey('2026-12-27', newYearDateKey)).toBe('thisWeek');
+    expect(getDateSectionKey('2026-12-26', newYearDateKey)).toBe('earlier');
+    expect(getDateSectionKey('2028-02-28', '2028-02-29')).toBe('yesterday');
   });
 });
 

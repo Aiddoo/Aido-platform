@@ -9,10 +9,10 @@ describe('알림 목록 날짜 섹션', () => {
     if (dto === undefined) {
       throw new Error('알림 fixture가 필요합니다');
     }
-    const notification = { ...toNotification(dto), createdAt: new Date(2026, 9, 4, 23, 59) };
+    const notification = { ...toNotification(dto), createdAt: new Date('2026-10-04T14:59:00Z') };
     // When
-    const before = toDateSectionedListItems([notification], new Date(2026, 9, 4, 23, 59));
-    const after = toDateSectionedListItems([notification], new Date(2026, 9, 5, 0, 0));
+    const before = toDateSectionedListItems([notification], '2026-10-04', 'Asia/Seoul');
+    const after = toDateSectionedListItems([notification], '2026-10-05', 'Asia/Seoul');
     // Then
     expect(before[0]).toEqual({ type: 'header', section: 'today' });
     expect(after[0]).toEqual({ type: 'header', section: 'yesterday' });
@@ -25,10 +25,10 @@ describe('알림 목록 날짜 섹션', () => {
     if (dto === undefined) {
       throw new Error('알림 fixture가 필요합니다');
     }
-    const first = { ...toNotification(dto), id: 2, createdAt: new Date(2026, 9, 4, 13) };
+    const first = { ...toNotification(dto), id: 2, createdAt: new Date('2026-10-04T04:00:00Z') };
     const second = { ...first, id: 1 };
     // When
-    const items = toDateSectionedListItems([first, second], new Date(2026, 9, 4));
+    const items = toDateSectionedListItems([first, second], '2026-10-04', 'Asia/Seoul');
     // Then
     expect(items).toEqual([
       { type: 'header', section: 'today' },
@@ -41,7 +41,7 @@ describe('알림 목록 날짜 섹션', () => {
     // Given
     const notifications: [] = [];
     // When
-    const items = toDateSectionedListItems(notifications, new Date(2026, 9, 4));
+    const items = toDateSectionedListItems(notifications, '2026-10-04', 'Asia/Seoul');
     // Then
     expect(items).toEqual([]);
   });
