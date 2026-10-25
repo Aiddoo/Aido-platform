@@ -78,6 +78,13 @@ const FEED_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
   NOTIFICATION_TYPE.STREAK_AT_RISK,
 ]);
 
+/** 종류만으로 갈 곳을 정할 수 없는 공지. 서버가 DEEP_LINK url에 고른 앱 경로를 따른다(리텐션 /feed·/achievements 등). */
+const NOTICE_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
+  NOTIFICATION_TYPE.SYSTEM_NOTICE,
+  NOTIFICATION_TYPE.ADMIN_BROADCAST,
+  NOTIFICATION_TYPE.ADMIN_TARGETED,
+]);
+
 const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
 export function resolveNotificationDestination(
@@ -94,8 +101,25 @@ export function resolveNotificationDestination(
     return toExternalDestination('webview', source.action.url);
   }
 
+  if (NOTICE_NOTIFICATION_TYPES.has(source.type)) {
+    return toNoticeDestination(source.action?.url, today);
+  }
+
   const routing = parseNotificationRouting(source);
   return routing == null ? NO_DESTINATION : toRouteDestination(routing, today);
+}
+
+/** 공지의 앱 경로는 아는 화면만 연다. 모르는 경로, 상세 id·프리미엄 확인이 필요한 경로는 이동하지 않는다. */
+function toNoticeDestination(url: string | undefined, today?: string): NotificationDestination {
+  const feedDate = today ? 'today' : undefined;
+  return match(url)
+    .with('/feed', () => ({ kind: 'route' as const, href: createFeedHref({ date: feedDate }) }))
+    .with('/friends/invite', () => ({ kind: 'route' as const, href: myInviteHref() }))
+    .with('/achievements', '/weather', '/friends', '/settings/subscription', (href) => ({
+      kind: 'route' as const,
+      href,
+    }))
+    .otherwise(() => NO_DESTINATION);
 }
 
 function parseNotificationRouting(

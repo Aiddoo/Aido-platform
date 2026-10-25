@@ -124,6 +124,48 @@ describe('resolveNotificationDestination', () => {
   });
 });
 
+describe('공지 알림의 앱 경로', () => {
+  test.each([
+    ['/feed', { pathname: '/feed', params: { date: 'today' } }],
+    ['/achievements', '/achievements'],
+    ['/weather', '/weather'],
+    ['/friends', '/friends'],
+    ['/friends/invite', { pathname: '/friends/invite' }],
+    ['/settings/subscription', '/settings/subscription'],
+  ])('리텐션·운영 공지의 DEEP_LINK %s를 그 화면으로 연다', (url, href) => {
+    expect(
+      resolveNotificationDestination(
+        { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
+        { today: '2026-10-26' },
+      ),
+    ).toEqual({ kind: 'route', href });
+  });
+
+  test.each(['ADMIN_BROADCAST', 'ADMIN_TARGETED'] as const)(
+    '%s 공지도 같은 경로 표를 따른다',
+    (type) => {
+      expect(
+        resolveNotificationDestination({
+          type,
+          action: { type: 'DEEP_LINK', url: '/achievements' },
+        }),
+      ).toEqual({ kind: 'route', href: '/achievements' });
+    },
+  );
+
+  test.each([
+    ['경로가 없는 공지', undefined],
+    ['모르는 경로', '/anything/the/server/says'],
+    ['상세 id가 필요한 경로', '/todo/42'],
+    ['쿼리가 붙은 경로', '/feed?friendId=friend-1'],
+    ['앱 스킴 URL', 'aido://feed'],
+  ])('%s(%s)는 이동하지 않는다', (_name, url) => {
+    expect(
+      resolveNotificationDestination({ type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } }),
+    ).toEqual({ kind: 'none' });
+  });
+});
+
 describe('콕과 오늘의 알림 이동', () => {
   test('할 일이 있는 콕은 콕 상세 화면으로 이동한다', () => {
     // Given
