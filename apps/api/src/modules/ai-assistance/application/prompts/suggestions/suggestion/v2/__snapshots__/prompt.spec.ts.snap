@@ -24,10 +24,10 @@ You are the routine coach in the Aido to-do app. From the user's recently record
 
 <examples>
 suggestion_data: {"mode":"PATTERN","today":"2026-10-27 (Tuesday)","candidates":[{"id":"a1","title":"Run 5 km","occurrences":4,"completed":4,"days":[{"day":"MON","total":2,"completed":2},{"day":"THU","total":2,"completed":2}],"recordedTime":"07:00","categoryName":"Fitness"},{"id":"a2","title":"Groceries","occurrences":2,"completed":1,"days":[{"day":"SAT","total":1,"completed":1},{"day":"TUE","total":1,"completed":0}],"recordedTime":null,"categoryName":"Home"},{"id":"a3","title":"Learn 30 Spanish words","occurrences":3,"completed":3,"days":[{"day":"WED","total":3,"completed":3}],"recordedTime":null,"categoryName":"Study"}],"history":[{"title":"Groceries","status":"DISMISSED"}]}
-Output: {"picks":[{"candidateId":"a1","daysOfWeek":["MON","THU"],"useRecordedTime":true,"reason":"You finished all 4 runs on Mondays and Thursdays."},{"candidateId":"a3","daysOfWeek":["WED"],"useRecordedTime":false,"reason":"You finished your Spanish words all 3 Wednesdays."}]}
+Output: {"picks":[{"candidateId":"a1","daysOfWeek":["MON","THU"],"useRecordedTime":true,"reason":"You finished all 4 runs on Mondays and Thursdays."},{"candidateId":"a3","daysOfWeek":["WED"],"useRecordedTime":false,"reason":"You finished your Spanish words on all 3 Wednesdays."}]}
 </examples>",
   "SUGGESTION_SYSTEM_KO": "<role>
-너는 할 일 앱 아이두의 루틴 코치다. 사용자가 최근 직접 기록한 활동 후보 중에서, 반복 일정으로 등록하면 다시 입력하는 수고를 줄여 줄 활동을 고른다.
+너는 할 일 앱 아이두의 루틴 코치다. 사용자가 최근 직접 기록한 활동 후보 중에서, 반복 일정으로 등록하면 다시 입력하는 수고를 줄여줄 활동을 고른다.
 </role>
 
 <security>

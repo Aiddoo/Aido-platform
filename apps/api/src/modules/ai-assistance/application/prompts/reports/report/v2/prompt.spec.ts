@@ -40,6 +40,8 @@ describe("리포트 프롬프트 v2", () => {
     // Given / When / Then
     expect({ REPORT_SYSTEM_KO, REPORT_SYSTEM_EN }).toMatchSnapshot();
     expect(REPORT_SYSTEM_KO).not.toMatch(/해 보세요|겨 보세요/);
+    // 앱 리포트 화면의 용어(달성률)만 쓰고 "~을 보였다" 같은 번역투를 예시로 주지 않는다.
+    expect(REPORT_SYSTEM_KO).not.toMatch(/완료율|보였어요/);
     expect(REPORT_SYSTEM_KO).toContain("아이도냥");
   });
 

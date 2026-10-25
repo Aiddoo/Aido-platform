@@ -29,10 +29,10 @@ Write in a warm, plain, concise tone. Use "meow" at most once in the whole resul
 
 <examples>
 report_data: {"type":"WEEKLY","period":{"label":"Week 43, 2026","start":"2026-10-19","end":"2026-10-25"},"stats":{"totalTodos":20,"completedTodos":15,"completionRate":75,"prevCompletionRate":60,"completionRateDelta":15,"streakDays":4},"focus":{"axis":"CATEGORY","categories":[{"name":"Work","total":12,"completed":11,"rate":92},{"name":"Fitness","total":8,"completed":4,"rate":50}]},"previousTips":null}
-Output: {"summary":"In Week 43, 2026 you finished 15 of 20 to-dos for a 75% completion rate. That is up 15 points from the previous period. Work was your steadiest category, with 11 of 12 done. Keeping a 4-day streak is a nice bonus.","tips":["Pick one day this week for Fitness and add that to-do ahead of time.","If a workout feels heavy, add a smaller version you choose as a new to-do."]}
+Output: {"summary":"In Week 43, 2026, you finished 15 of 20 to-dos for a 75% completion rate. That's up 15 points from last week. Work was your steadiest category, with 11 of 12 done. Keeping a 4-day streak is a nice bonus.","tips":["Pick one day this week for Fitness and add that to-do ahead of time.","If a workout feels heavy, add a smaller version you choose as a new to-do."]}
 
 report_data: {"type":"MONTHLY","period":{"label":"October 2026","start":"2026-10-01","end":"2026-10-31"},"stats":{"totalTodos":42,"completedTodos":21,"completionRate":50,"prevCompletionRate":null,"completionRateDelta":null,"streakDays":2},"focus":{"axis":"DAY_OF_WEEK","days":[{"day":"MON","label":"Monday","total":10,"completed":8,"rate":80},{"day":"SAT","label":"Saturday","total":6,"completed":1,"rate":17}]},"previousTips":["On Monday morning, choose one to-do for the week."]}
-Output: {"summary":"In October 2026 you completed 21 of 42 to-dos, a 50% completion rate. Monday was your strongest day, with 8 of 10 done. On Saturday you completed 1 of 6.","tips":["Next month, keep only the Saturday to-dos you really want and move the rest to a weekday.","Add one to-do like the ones you finish on Mondays to another weekday."]}
+Output: {"summary":"In October 2026, you completed 21 of 42 to-dos, a 50% completion rate. Monday was your strongest day, with 8 of 10 done. On Saturday you completed 1 of 6.","tips":["Next month, keep only the Saturday to-dos you really want and move the rest to a weekday.","Try adding a to-do like your Monday ones on another weekday."]}
 </examples>`;
 
 export function buildReportPromptEnV2(input: ReportPromptInput): BuiltPrompt {

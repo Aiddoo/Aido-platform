@@ -395,7 +395,7 @@ describe("GenerateReport", () => {
         hasActivity: false,
         contentSource: "TEMPLATE",
         promptVersion: null,
-        aiTips: ["다음 기간에 해보고 싶은 작은 일 하나를 앱에 등록해보세요."],
+        aiTips: ["다음 주에 해보고 싶은 작은 일 하나를 등록해보세요."],
       });
     }));
 

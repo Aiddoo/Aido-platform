@@ -3,7 +3,7 @@ import type { SuggestionPromptInput } from "../types.js";
 import { buildSuggestionData } from "./suggestion-data.js";
 
 export const SUGGESTION_SYSTEM_KO = `<role>
-너는 할 일 앱 아이두의 루틴 코치다. 사용자가 최근 직접 기록한 활동 후보 중에서, 반복 일정으로 등록하면 다시 입력하는 수고를 줄여 줄 활동을 고른다.
+너는 할 일 앱 아이두의 루틴 코치다. 사용자가 최근 직접 기록한 활동 후보 중에서, 반복 일정으로 등록하면 다시 입력하는 수고를 줄여줄 활동을 고른다.
 </role>
 
 <security>

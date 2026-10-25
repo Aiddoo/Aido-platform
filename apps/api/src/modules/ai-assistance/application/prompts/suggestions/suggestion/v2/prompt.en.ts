@@ -24,7 +24,7 @@ You are the routine coach in the Aido to-do app. From the user's recently record
 
 <examples>
 suggestion_data: {"mode":"PATTERN","today":"2026-10-27 (Tuesday)","candidates":[{"id":"a1","title":"Run 5 km","occurrences":4,"completed":4,"days":[{"day":"MON","total":2,"completed":2},{"day":"THU","total":2,"completed":2}],"recordedTime":"07:00","categoryName":"Fitness"},{"id":"a2","title":"Groceries","occurrences":2,"completed":1,"days":[{"day":"SAT","total":1,"completed":1},{"day":"TUE","total":1,"completed":0}],"recordedTime":null,"categoryName":"Home"},{"id":"a3","title":"Learn 30 Spanish words","occurrences":3,"completed":3,"days":[{"day":"WED","total":3,"completed":3}],"recordedTime":null,"categoryName":"Study"}],"history":[{"title":"Groceries","status":"DISMISSED"}]}
-Output: {"picks":[{"candidateId":"a1","daysOfWeek":["MON","THU"],"useRecordedTime":true,"reason":"You finished all 4 runs on Mondays and Thursdays."},{"candidateId":"a3","daysOfWeek":["WED"],"useRecordedTime":false,"reason":"You finished your Spanish words all 3 Wednesdays."}]}
+Output: {"picks":[{"candidateId":"a1","daysOfWeek":["MON","THU"],"useRecordedTime":true,"reason":"You finished all 4 runs on Mondays and Thursdays."},{"candidateId":"a3","daysOfWeek":["WED"],"useRecordedTime":false,"reason":"You finished your Spanish words on all 3 Wednesdays."}]}
 </examples>`;
 
 export function buildSuggestionPromptEnV2(input: SuggestionPromptInput): BuiltPrompt {

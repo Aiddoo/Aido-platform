@@ -288,11 +288,11 @@ export class GenerateReport {
     options: { userId: string; locale: SupportedLocale; isFinalAttempt: boolean },
   ): Promise<ReportContent> {
     const { userId, locale, isFinalAttempt } = options;
-    if (!input.data.hasActivity) return buildNoActivityContent(input.periodLabel, locale);
+    if (!input.data.hasActivity) return buildNoActivityContent(input, locale);
 
     if (!this.#dependencies.aiProvider.isAvailable()) {
       this.#dependencies.logger.warn({ event: AiReportLogEvent.PROVIDER_UNAVAILABLE });
-      return buildFallbackContent(input.data, input.periodLabel, locale);
+      return buildFallbackContent(input, locale);
     }
 
     const definition = reportPrompts[this.#dependencies.settings.promptVersion][locale];
@@ -335,7 +335,7 @@ export class GenerateReport {
         throw error;
       }
       this.#dependencies.logger.error(failedLog);
-      return buildFallbackContent(input.data, input.periodLabel, locale);
+      return buildFallbackContent(input, locale);
     }
   }
 }

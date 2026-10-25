@@ -29,10 +29,10 @@ export const REPORT_SYSTEM_KO = `<role>
 
 <examples>
 report_data: {"type":"WEEKLY","period":{"label":"2026년 43주차","start":"2026-10-19","end":"2026-10-25"},"stats":{"totalTodos":20,"completedTodos":15,"completionRate":75,"prevCompletionRate":60,"completionRateDelta":15,"streakDays":4},"focus":{"axis":"CATEGORY","categories":[{"name":"업무","total":12,"completed":11,"rate":92},{"name":"운동","total":8,"completed":4,"rate":50}]},"previousTips":null}
-출력: {"summary":"2026년 43주차에는 할 일 20개 중 15개를 끝내 달성률 75%를 기록했어요. 지난 기간보다 15%p 올랐어요. 업무는 12개 중 11개를 완료해 가장 안정적이었어요. 4일 연속으로 기록을 이어간 것도 좋은 흐름이에요.","tips":["운동은 이번 주에 하고 싶은 날 하루만 골라 미리 등록해보세요.","운동 분량이 부담되면 원하는 만큼 작게 정해 새 할 일로 등록해보세요."]}
+출력: {"summary":"2026년 43주차에는 할 일 20개 중 15개를 끝내 달성률 75%를 기록했어요. 지난주보다 15%p 올랐어요. 업무는 12개 중 11개를 완료해 가장 안정적이었어요. 4일 연속으로 기록을 이어간 것도 좋은 흐름이에요.","tips":["운동은 이번 주에 하고 싶은 날 하루만 골라 미리 등록해보세요.","운동 분량이 부담되면 원하는 만큼 작게 정해 새 할 일로 등록해보세요."]}
 
 report_data: {"type":"MONTHLY","period":{"label":"2026년 10월","start":"2026-10-01","end":"2026-10-31"},"stats":{"totalTodos":42,"completedTodos":21,"completionRate":50,"prevCompletionRate":null,"completionRateDelta":null,"streakDays":2},"focus":{"axis":"DAY_OF_WEEK","days":[{"day":"MON","label":"월요일","total":10,"completed":8,"rate":80},{"day":"SAT","label":"토요일","total":6,"completed":1,"rate":17}]},"previousTips":["월요일 아침에 이번 주 할 일 하나를 정해보세요."]}
-출력: {"summary":"2026년 10월에는 할 일 42개 중 21개를 완료해 달성률 50%였어요. 월요일에는 10개 중 8개를 끝내 가장 높은 완료율을 보였어요. 토요일에는 6개 중 1개를 완료했어요.","tips":["다음 달에는 토요일 할 일을 원하는 만큼만 남기고 나머지는 평일로 옮겨보세요.","월요일에 잘 끝낸 종류의 할 일을 다른 평일 하루에도 하나 등록해보세요."]}
+출력: {"summary":"2026년 10월에는 할 일 42개 중 21개를 완료해 달성률 50%였어요. 월요일에는 10개 중 8개를 끝내 달성률이 가장 높았어요. 토요일에는 6개 중 1개를 완료했어요.","tips":["다음 달에는 토요일 할 일을 원하는 만큼만 남기고 나머지는 평일로 옮겨보세요.","월요일에 자주 끝낸 할 일과 비슷한 일을 다른 평일에도 하나 등록해보세요."]}
 </examples>`;
 
 export function buildReportPromptKoV2(input: ReportPromptInput): BuiltPrompt {
