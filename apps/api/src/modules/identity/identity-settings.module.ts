@@ -4,6 +4,7 @@ import { AccessModule, ENTITLEMENT_READER } from "#api/modules/access/access-ent
 import { NotificationQueueModule } from "#api/modules/notification/notification-delivery-jobs.public";
 import { TimezoneReminderQueueModule } from "#api/modules/notification/notification-reminders-jobs.public";
 
+import { AI_DATA_SHARING_CONSENT_READER } from "./application/ports/settings/ai-data-sharing-consent.reader.port.js";
 import { PREFERENCE_ENTITLEMENT } from "./application/ports/settings/preference-entitlement.port.js";
 import { REMINDER_SCHEDULE_ENQUEUER } from "./application/ports/settings/reminder-schedule.enqueuer.port.js";
 import { STREAK_MILESTONE_NOTIFIER } from "./application/ports/settings/streak-milestone.notifier.port.js";
@@ -17,6 +18,7 @@ import {
   USER_STREAK_ACCESS,
 } from "./application/ports/settings/user-settings-access.port.js";
 import { USER_SETTINGS_CACHE } from "./application/ports/settings/user-settings-cache.port.js";
+import { AiDataSharingConsentReader } from "./application/services/settings/ai-data-sharing-consent-reader.service.js";
 import { UserPreferenceReader } from "./application/services/settings/user-preference-reader.service.js";
 import {
   userPreferenceReaderProvider,
@@ -29,6 +31,8 @@ import {
   onTodoToggledProvider,
   refreshPushTimezoneProvider,
   seedUserSettingsProvider,
+  aiDataSharingConsentReaderProvider,
+  updateAiDataSharingConsentProvider,
   updateMarketingConsentProvider,
   updateMarketingPushConsentProvider,
   updatePreferenceProvider,
@@ -58,6 +62,9 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
     getConsentProvider,
     updateMarketingConsentProvider,
     updateMarketingPushConsentProvider,
+    updateAiDataSharingConsentProvider,
+    aiDataSharingConsentReaderProvider,
+    { provide: AI_DATA_SHARING_CONSENT_READER, useExisting: AiDataSharingConsentReader },
     onTodoToggledProvider,
     seedUserSettingsProvider,
     upsertPushTimezoneProvider,
@@ -105,6 +112,7 @@ import { TimezoneSelfHealInterceptor } from "./presentation/interceptors/setting
     USER_SETTINGS_PROVISIONER,
     USER_STREAK_ACCESS,
     USER_NOTIFICATION_SETTINGS_ACCESS,
+    AI_DATA_SHARING_CONSENT_READER,
     TimezoneSelfHealInterceptor,
   ],
 })

@@ -17,11 +17,14 @@ import {
 
 import { GetConsent } from "../../../application/use-cases/settings/get-consent.use-case.js";
 import { GetPreference } from "../../../application/use-cases/settings/get-preference.use-case.js";
+import { UpdateAiDataSharingConsent } from "../../../application/use-cases/settings/update-ai-data-sharing-consent.use-case.js";
 import { UpdateMarketingConsent } from "../../../application/use-cases/settings/update-marketing-consent.use-case.js";
 import { UpdateMarketingPushConsent } from "../../../application/use-cases/settings/update-marketing-push-consent.use-case.js";
 import { UpdatePreference } from "../../../application/use-cases/settings/update-preference.use-case.js";
 import {
   ConsentResponseDto,
+  UpdateAiDataSharingConsentDto,
+  UpdateAiDataSharingConsentResponseDto,
   PreferenceResponseDto,
   UpdateMarketingConsentDto,
   UpdateMarketingConsentResponseDto,
@@ -41,6 +44,7 @@ export class SettingsController {
     private readonly getConsentUseCase: GetConsent,
     private readonly updateMarketingConsentUseCase: UpdateMarketingConsent,
     private readonly updateMarketingPushConsentUseCase: UpdateMarketingPushConsent,
+    private readonly updateAiDataSharingConsentUseCase: UpdateAiDataSharingConsent,
   ) {}
 
   @Get("preference")
@@ -128,7 +132,10 @@ export class SettingsController {
 | \`termsAgreedAt\` | string? | 서비스 이용약관 동의 시점 |
 | \`privacyAgreedAt\` | string? | 개인정보처리방침 동의 시점 |
 | \`agreedTermsVersion\` | string? | 동의한 약관 버전 |
-| \`marketingAgreedAt\` | string? | 마케팅 수신 동의 시점 (null = 미동의/철회) |`,
+| \`marketingAgreedAt\` | string? | 마케팅 수신 동의 시점 (null = 미동의/철회) |
+| \`aiDataSharingDecision\` | string? | AI 데이터 처리 동의 상태 (AGREED / DECLINED / UNDECIDED, 1.13.0+) |
+| \`aiDataSharingAgreedAt\` | string? | AI 데이터 처리 동의 시점 (null = 미동의/철회) |
+| \`aiDataSharingConsentVersion\` | string? | 마지막으로 답한 AI 데이터 처리 안내 버전 |`,
   })
   @ApiSuccessResponse({ type: ConsentResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -179,6 +186,36 @@ export class SettingsController {
     return this.updateMarketingPushConsentUseCase.execute({
       userId: user.userId,
       agreed: dto.agreed,
+    });
+  }
+
+  @Patch("consent/ai-data-sharing")
+  @HttpCode(HttpStatus.OK)
+  @ApiDoc({
+    summary: "AI 데이터 처리 동의 변경",
+    operationId: "updateAiDataSharingConsent",
+    description: `입력한 할 일·메모 텍스트와 리포트용 기록 통계를 Google Gemini로 보내 처리하는 데 동의하거나 거부·철회합니다.
+
+**요청 Body**
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| \`agreed\` | boolean | true=동의, false=거부·철회 |
+| \`version\` | string | 앱이 보여 준 안내 버전. 현재 버전만 받습니다 |
+
+거부·철회하면 AI 할 일 정리·메모 정리·반복 제안·리포트 AI 요약을 쓰지 않으며, 그 밖의 기능은 그대로 쓸 수 있습니다.
+1.13.0 이상 앱은 동의하지 않은 상태에서 AI 기능을 요청하면 \`AI_1311\`을 받습니다.`,
+  })
+  @ApiSuccessResponse({ type: UpdateAiDataSharingConsentResponseDto })
+  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
+  @ApiBadRequestError(ErrorCode.SYS_0002)
+  async updateAiDataSharingConsent(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body({ schema: UpdateAiDataSharingConsentDto }) dto: UpdateAiDataSharingConsentDto,
+  ): Promise<UpdateAiDataSharingConsentResponseDto> {
+    return this.updateAiDataSharingConsentUseCase.execute({
+      userId: user.userId,
+      agreed: dto.agreed,
+      version: dto.version,
     });
   }
 }

@@ -44,6 +44,8 @@ describe("UpdateMarketingConsent — 일반 마케팅 동의 변경", () => {
       agreedTermsVersion: null,
       marketingAgreedAt: SETTINGS_TIME,
       marketingPushAgreedAt: null,
+      aiDataSharingAgreedAt: null,
+      aiDataSharingVersion: null,
     });
   });
 });
