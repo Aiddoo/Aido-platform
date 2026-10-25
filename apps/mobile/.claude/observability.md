@@ -21,6 +21,8 @@
 ## Analytics — 제품 지표
 
 - 모든 이벤트는 `shared/observability/telemetry-keys.ts`의 `*EventMap`에 **먼저 정의**한다 → `AppEventMap`으로 합쳐짐. Analytics 이벤트·Sentry feature·태그 키·breadcrumb 카테고리는 이 한 파일이 단일 원본이다(`core/ports`는 타입만 import).
+- 맵은 기능별로 나눈다(`AuthEventMap`, `TodoEventMap`, `FriendEventMap`, `InviteEventMap`, `GrowthEventMap` …). 값의 출처가 도메인이면 도메인 타입을 import한다(예: `invite_link_opened.source` = `InviteLinkSource`, `invite_redeem_failed.reason` = `RedeemFailureReason`). 이벤트가 도메인 타입을 정의하지 않는다.
+- 친구 초대 퍼널: `invite_entry_tapped{entry}` → `invite_link_shared{channel}` → `invite_link_opened{source}`(시스템이 연 링크가 착지한 화면에서 `source+openedAt`당 한 번) → `invite_redeemed` / `invite_redeem_failed`. 진입점 귀속에 `campaign_id`를 빌려 쓰지 않는다(캠페인은 기능 소개 전용).
 - 전송은 `track(analytics, name, params)`(비-React) 또는 `useTrack().trackEvent(name, params)`(컴포넌트)만 사용.
 - **raw `analytics.trackEvent('문자열', …)` 직접호출 금지** — 이벤트명·payload가 컴파일 타임 검증되지 않는다.
 

@@ -1,5 +1,8 @@
 import '@src/shared/i18n/init';
-import { render, screen } from '@testing-library/react-native';
+import { createStubInviteService } from '@src/features/invite/__tests__/create-stub-invite-service';
+import { createMockAnalytics, createMockHttpClient } from '@src/shared/__tests__';
+import { renderUi } from '@src/shared/__tests__/render-ui';
+import { screen } from '@testing-library/react-native';
 
 import type { ActivationProgress } from '../domains/activation.model';
 import { useActivationChecklist } from '../hooks/use-activation-progress';
@@ -9,6 +12,19 @@ jest.mock('../hooks/use-activation-progress', () => ({ useActivationChecklist: j
 
 function givenChecklist(progress: ActivationProgress, isVisible = true) {
   jest.mocked(useActivationChecklist).mockReturnValue({ progress, isVisible });
+}
+
+// 초대 기능이 꺼진 상태(기존 두 단계)만 본다. 서버가 꺼짐을 돌려주는 실제 InviteService를 주입한다
+function renderChecklist() {
+  const publicHttpClient = createMockHttpClient();
+  publicHttpClient.get.mockResolvedValue({ ok: true, value: { enabled: false } });
+
+  return renderUi(<ActivationChecklist />, {
+    di: {
+      inviteService: createStubInviteService({ publicHttpClient }),
+      analytics: createMockAnalytics(),
+    },
+  });
 }
 
 jest.mock('@src/shared/ui', () => {
@@ -38,7 +54,7 @@ describe('ActivationChecklist', () => {
     givenChecklist({ todoCreatedAt: null, activatedAt: null, pushRegistrationUnlockedAt: null });
 
     // When
-    await render(<ActivationChecklist />);
+    await renderChecklist();
 
     // Then
     expect(screen.getByText('첫 할 일을 만들고 완료해 보세요')).toBeTruthy();
@@ -55,7 +71,7 @@ describe('ActivationChecklist', () => {
     });
 
     // When
-    await render(<ActivationChecklist />);
+    await renderChecklist();
 
     // Then
     expect(screen.getByLabelText('첫 할 일 만들기, 완료')).toBeTruthy();
@@ -70,7 +86,7 @@ describe('ActivationChecklist', () => {
     );
 
     // When
-    await render(<ActivationChecklist />);
+    await renderChecklist();
 
     // Then
     expect(screen.queryByText('첫 할 일을 만들고 완료해 보세요')).toBeNull();

@@ -1,6 +1,7 @@
 import { AppVersionCheck } from '@src/features/app-version/components/app-version-check';
 import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/queries/use-logout-mutation-options';
+import { InviteRewardCard } from '@src/features/invite/components/invite-reward-card';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { MyPageMenu } from '@src/features/user/components/mypage-menu/mypage-menu';
 import { ProfileCard } from '@src/features/user/components/profile-card';
@@ -38,6 +39,12 @@ function MyPageScreen() {
           <QueryErrorBoundary>
             <Suspense fallback={<ProfileCard.Loading />}>
               <ProfileCard />
+            </Suspense>
+          </QueryErrorBoundary>
+
+          <QueryErrorBoundary fallback={InviteRewardCard.Error}>
+            <Suspense fallback={<InviteRewardCard.Loading className="mt-3" />}>
+              <InviteRewardCard className="mt-3" />
             </Suspense>
           </QueryErrorBoundary>
 

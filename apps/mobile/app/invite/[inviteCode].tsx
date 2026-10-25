@@ -6,6 +6,7 @@ import { InviteRedemptionPolicy } from '@src/features/invite/domains/invite-rede
 import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
 import type { InviteCode } from '@src/features/invite/domains/invite.model';
 import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-route-params';
+import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
 import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
 import { useRedeemInviteMutationOptions } from '@src/features/invite/queries/use-redeem-invite-mutation-options';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
@@ -37,6 +38,8 @@ import { Suspense, useEffect } from 'react';
 import { ScrollView } from 'react-native';
 
 export default function InviteCardScreen() {
+  useTrackInviteLinkOpened();
+
   return (
     <Box flex={1} className="bg-gray-1">
       <QueryErrorBoundary fallback={InvitePreviewCard.Error}>

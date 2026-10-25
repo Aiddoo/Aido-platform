@@ -47,7 +47,7 @@ describe('FeatureDiscoveryReentryCard', () => {
     await render(<FeatureDiscoveryReentryCard onPress={onPress} />);
 
     // When
-    await fireEvent.press(screen.getByLabelText('Aido 기능 가이드 열기'));
+    await fireEvent.press(screen.getByLabelText('아이두 기능 가이드 열기'));
 
     // Then
     expect(onPress).toHaveBeenCalledTimes(1);

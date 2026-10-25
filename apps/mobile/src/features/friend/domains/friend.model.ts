@@ -1,3 +1,5 @@
+import { FOLLOW_LIMITS } from '@aido/api';
+import { friendLimitErrorDetailsSchema } from '@aido/api/errors';
 import { z } from 'zod';
 
 export const friendUserSchema = z.object({
@@ -61,7 +63,14 @@ export function hasValidSearchQuery(input: FriendSearchInput): boolean {
   return isValidSearchQuery(input.query);
 }
 
+/** 친구 한도에 닿았을 때 안내할 인원. 초대로 늘어난 자리는 서버가 FOLLOW_0909 details.limit으로 알려 준다 */
+export function resolveFriendLimit(details: Record<string, unknown> | undefined) {
+  const parsed = friendLimitErrorDetailsSchema.safeParse(details);
+  return parsed.success ? parsed.data.limit : FOLLOW_LIMITS.FREE_MAX_FRIENDS;
+}
+
 export const FriendPolicy = {
   isValidTag: hasValidUserTag,
   isValidSearchQuery: hasValidSearchQuery,
+  friendLimit: resolveFriendLimit,
 } as const;

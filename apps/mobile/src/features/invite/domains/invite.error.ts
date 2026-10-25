@@ -26,7 +26,7 @@ export const InviteErrors = {
 
 export const isInviteError = (error: unknown): error is InviteError => error instanceof InviteError;
 
-/** 초대 수락이 실패한 이유. 분석 이벤트 invite_redeem_failed.reason과 같은 값이다 */
+/** 초대 수락이 실패한 이유. 분석 이벤트 invite_redeem_failed.reason이 이 값을 그대로 쓴다 */
 export type RedeemFailureReason =
   | 'invalid_code'
   | 'not_found'

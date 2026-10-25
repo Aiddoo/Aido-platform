@@ -1,8 +1,13 @@
+import catHiImage from '@assets/images/ido_cat_hi.webp';
+import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
+import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
+import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { ANIMATION } from '@src/shared/constants/animation.constants';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Button,
@@ -12,15 +17,19 @@ import {
   InfoIcon,
   ListRow,
   MenuIcon,
+  Result,
   Text,
+  TextButton,
   TextSkeleton,
+  VStack,
   useOverlay,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { Popover, PressableFeedback, Skeleton } from 'heroui-native';
 import { useState } from 'react';
-import { ActivityIndicator, RefreshControl } from 'react-native';
+import { ActivityIndicator, Image, RefreshControl } from 'react-native';
 import Animated, {
   FadeInLeft,
   FadeInRight,
@@ -182,6 +191,7 @@ FriendList.Item = function Item({ friend }: FriendListItemProps) {
                   exiting={FadeOutRight.duration(ANIMATION.duration.fast)}
                 >
                   <Button
+                    testID="friend-delete"
                     variant="weak"
                     color="danger"
                     size="small"
@@ -222,7 +232,45 @@ FriendList.Loading = function Loading() {
 FriendList.Error = UserList.Error;
 
 FriendList.Empty = function Empty() {
-  const { t } = useTranslation('friend');
+  const { t } = useTranslation(['friend', 'invite']);
+  const push = useSingleTap(router.push);
+  const openMyInvite = useOpenMyInvite();
+  const isInviteAvailable = useInviteAvailability();
+
+  // 초대를 쓸 수 있으면 링크로 데려오는 길을 먼저, 태그 찾기를 다음으로 보여 준다
+  if (isInviteAvailable) {
+    return (
+      <UserList.Empty
+        icon={
+          <Image
+            source={catHiImage}
+            accessibilityIgnoresInvertColors
+            className="size-[120px]"
+            resizeMode="contain"
+          />
+        }
+        title={t('invite:entry.friendsEmptyTitle')}
+        description={t('invite:entry.friendsEmptyDescription', {
+          days: InviteRewardPolicy.welcomePremiumDays(),
+        })}
+        button={
+          <VStack align="center" gap={4}>
+            <Result.Button
+              testID="friends-empty-invite"
+              color="primary"
+              onPress={() => openMyInvite('friends_empty')}
+            >
+              {t('invite:entry.inviteFriends')}
+            </Result.Button>
+            <TextButton size="small" variant="underline" onPress={() => push('/friends/add')}>
+              {t('invite:entry.findByTag')}
+            </TextButton>
+          </VStack>
+        }
+      />
+    );
+  }
+
   return (
     <UserList.Empty
       icon={<DocsIcon width={72} height={72} />}

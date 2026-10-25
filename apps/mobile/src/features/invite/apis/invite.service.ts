@@ -22,6 +22,7 @@ import { type InviteCode, parseInviteCode } from '../domains/invite.model';
 import { type Invite, InviteSchema } from '../domains/invite.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
 import { parseInstallReferrerInviteCode } from '../utils/install-referrer';
+import type { AllDoneBannerRepository } from './all-done-banner.repository';
 import type { InstallReferrerRepository } from './install-referrer.repository';
 import { InvitedFriendsPageSchema, toInvitedFriendsPage, toInvitePreview } from './invite.mapper';
 import type { PawPrintCelebrationRepository } from './paw-print-celebration.repository';
@@ -37,6 +38,7 @@ interface InviteServiceDependencies {
   installReferrerRepository: InstallReferrerRepository;
   pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   installationIdGateway: InstallationIdGateway;
+  allDoneBannerRepository: AllDoneBannerRepository;
 }
 
 interface SavePendingRedemptionInput {
@@ -51,6 +53,7 @@ export class InviteService {
   readonly #installReferrerRepository: InstallReferrerRepository;
   readonly #pawPrintCelebrationRepository: PawPrintCelebrationRepository;
   readonly #installationIdGateway: InstallationIdGateway;
+  readonly #allDoneBannerRepository: AllDoneBannerRepository;
 
   constructor({
     publicHttpClient,
@@ -59,6 +62,7 @@ export class InviteService {
     installReferrerRepository,
     pawPrintCelebrationRepository,
     installationIdGateway,
+    allDoneBannerRepository,
   }: InviteServiceDependencies) {
     this.#publicHttpClient = publicHttpClient;
     this.#authHttpClient = authHttpClient;
@@ -66,6 +70,7 @@ export class InviteService {
     this.#installReferrerRepository = installReferrerRepository;
     this.#pawPrintCelebrationRepository = pawPrintCelebrationRepository;
     this.#installationIdGateway = installationIdGateway;
+    this.#allDoneBannerRepository = allDoneBannerRepository;
   }
 
   getAvailability = async (signal?: AbortSignal): Promise<Result<boolean, ApiError>> => {
@@ -170,6 +175,13 @@ export class InviteService {
     }
 
     return ok(toInvitedFriendsPage(parsed.data));
+  };
+
+  isAllDoneBannerDismissed = (userId: string, dateKey: string) =>
+    this.#allDoneBannerRepository.isDismissed(userId, dateKey);
+
+  dismissAllDoneBanner = (userId: string, dateKey: string) => {
+    this.#allDoneBannerRepository.dismiss(userId, dateKey);
   };
 
   getCelebratedPawPrintCount = (userId: string) =>

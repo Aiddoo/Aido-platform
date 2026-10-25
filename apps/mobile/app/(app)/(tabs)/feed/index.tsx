@@ -3,6 +3,7 @@ import { SuggestionEntry } from '@src/features/ai/components/suggestion-entry';
 import { FeatureDiscoveryReentryCard } from '@src/features/feature-discovery/components/feature-discovery-reentry-card';
 import { useFeatureDiscoveryFeed } from '@src/features/feature-discovery/hooks/use-feature-discovery-feed';
 import { useScreenFriend } from '@src/features/friend/hooks/use-screen-friend';
+import { InviteEntryBanner } from '@src/features/invite/components/invite-entry-banner';
 import { MarketingPushOptInBanner } from '@src/features/notification/components/marketing-push-opt-in-banner';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { PokeBanner } from '@src/features/nudge/components/poke-banner';
@@ -101,6 +102,8 @@ function MyFeed() {
         </Box>
 
         <Spacing size={20} />
+
+        <InviteEntryBanner className="mx-4 mb-5" />
 
         {featureDiscovery.isReentryVisible && (
           <>

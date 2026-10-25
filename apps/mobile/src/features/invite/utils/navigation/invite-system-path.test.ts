@@ -1,20 +1,24 @@
-import { resolveInviteSystemPath } from './invite-system-path';
+import { createInviteLinkOpenStamp, resolveInviteSystemPath } from './invite-system-path';
 
 const options = { appScheme: 'aido', kakaoScheme: 'kakao0000test' };
+const opened = { openedAt: 1000 };
 
 describe('resolveInviteSystemPath', () => {
   it.each([
-    ['https://aido.kr/i/K7M2QX', '/invite/K7M2QX?source=universal_link'],
-    ['https://aido.kr/i/k7m2qx/?utm_source=kakao', '/invite/K7M2QX?source=universal_link'],
-    ['/i/K7M2QX', '/invite/K7M2QX?source=universal_link'],
-    ['aido://invite/K7M2QX', '/invite/K7M2QX?source=app_scheme'],
-    ['aido://invite', '/invite?source=app_scheme'],
-    ['kakao0000test://kakaolink?inviteCode=K7M2QX', '/invite/K7M2QX?source=kakao'],
-    ['https://aido.kr/i/K7M2Q0', '/invite?source=universal_link'],
-    ['kakao0000test://kakaolink', '/invite?source=kakao'],
+    ['https://aido.kr/i/K7M2QX', '/invite/K7M2QX?source=universal_link&openedAt=1000'],
+    [
+      'https://aido.kr/i/k7m2qx/?utm_source=kakao',
+      '/invite/K7M2QX?source=universal_link&openedAt=1000',
+    ],
+    ['/i/K7M2QX', '/invite/K7M2QX?source=universal_link&openedAt=1000'],
+    ['aido://invite/K7M2QX', '/invite/K7M2QX?source=app_scheme&openedAt=1000'],
+    ['aido://invite', '/invite?source=app_scheme&openedAt=1000'],
+    ['kakao0000test://kakaolink?inviteCode=K7M2QX', '/invite/K7M2QX?source=kakao&openedAt=1000'],
+    ['https://aido.kr/i/K7M2Q0', '/invite?source=universal_link&openedAt=1000'],
+    ['kakao0000test://kakaolink', '/invite?source=kakao&openedAt=1000'],
   ])('초대 링크 %s를 열면 %s로 바꾼다', (path, expected) => {
     // When
-    const result = resolveInviteSystemPath(path, options);
+    const result = resolveInviteSystemPath(path, options, opened);
 
     // Then
     expect(result).toBe(expected);
@@ -31,7 +35,7 @@ describe('resolveInviteSystemPath', () => {
     ['초대가 아닌 웹 주소', 'https://aido.kr/terms'],
   ])('%s(%s)는 null을 반환해 그대로 통과시킨다', (_name, path) => {
     // When
-    const result = resolveInviteSystemPath(path, options);
+    const result = resolveInviteSystemPath(path, options, opened);
 
     // Then
     expect(result).toBeNull();
@@ -39,12 +43,42 @@ describe('resolveInviteSystemPath', () => {
 
   it('카카오 키가 없는 빌드는 카카오 링크를 통과시킨다', () => {
     // When
-    const result = resolveInviteSystemPath('kakao0000test://kakaolink?inviteCode=K7M2QX', {
-      appScheme: 'aido',
-      kakaoScheme: null,
-    });
+    const result = resolveInviteSystemPath(
+      'kakao0000test://kakaolink?inviteCode=K7M2QX',
+      { appScheme: 'aido', kakaoScheme: null },
+      opened,
+    );
 
     // Then
     expect(result).toBeNull();
+  });
+});
+
+describe('createInviteLinkOpenStamp', () => {
+  it('같은 URL이 1초 안에 다시 들어오면 앞의 열린 시각을 반환한다', () => {
+    // Given
+    const stamp = createInviteLinkOpenStamp();
+    stamp('https://aido.kr/i/K7M2QX', 1000);
+
+    // When
+    const result = stamp('https://aido.kr/i/K7M2QX', 1500);
+
+    // Then
+    expect(result).toBe(1000);
+  });
+
+  it.each([
+    ['1초가 지난 같은 URL', 'https://aido.kr/i/K7M2QX', 2000],
+    ['다른 URL', 'https://aido.kr/i/B7M2QX', 1500],
+  ])('%s은 새로 열린 것으로 보고 지금 시각을 반환한다', (_name, path, now) => {
+    // Given
+    const stamp = createInviteLinkOpenStamp();
+    stamp('https://aido.kr/i/K7M2QX', 1000);
+
+    // When
+    const result = stamp(path, now);
+
+    // Then
+    expect(result).toBe(now);
   });
 });

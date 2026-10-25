@@ -127,6 +127,10 @@ export function findOneTimeMilestoneCounts(milestones: readonly InviterRewardMil
     .map((milestone) => milestone.qualifiedCount);
 }
 
+function calculateInvitedCount(qualifiedCount: number, waitingCount: number) {
+  return qualifiedCount + waitingCount;
+}
+
 export function hasReachedPremiumCap(grantedDays: number, capDays: number) {
   return grantedDays >= capDays;
 }
@@ -180,6 +184,11 @@ export const InvitePolicy = {
 
   milestoneQualifiedCounts() {
     return findOneTimeMilestoneCounts(INVITER_REWARD_MILESTONES);
+  },
+
+  /** 가입까지 마친 초대 친구가 한 명이라도 있는지(시작 체크리스트 완료 기준) */
+  hasInvitedAnyone(invite: Invite) {
+    return calculateInvitedCount(invite.qualifiedCount, invite.waitingCount) > 0;
   },
 
   /** 발자국 판 아래 진행 안내가 어떤 상황을 말할지 정한다(문구는 화면이 고른다) */

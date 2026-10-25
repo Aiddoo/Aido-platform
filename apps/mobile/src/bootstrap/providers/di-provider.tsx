@@ -11,6 +11,7 @@ import { FeatureDiscoveryStateService } from '@src/features/feature-discovery/ap
 import { FeatureDiscoveryService } from '@src/features/feature-discovery/apis/feature-discovery.service';
 import { FriendService } from '@src/features/friend/apis/friend.service';
 import { InquiryService } from '@src/features/inquiry/apis/inquiry.service';
+import { createAllDoneBannerRepository } from '@src/features/invite/apis/all-done-banner.repository';
 import { createInstallReferrerRepository } from '@src/features/invite/apis/install-referrer.repository';
 import { InviteShareService } from '@src/features/invite/apis/invite-share.service';
 import { InviteService } from '@src/features/invite/apis/invite.service';
@@ -178,6 +179,7 @@ export function DIProvider({ children, draftStorageBootstrap }: DIProviderProps)
       ),
       pawPrintCelebrationRepository: createPawPrintCelebrationRepository(mmkvSyncStorage),
       installationIdGateway: expoInstallationIdGateway,
+      allDoneBannerRepository: createAllDoneBannerRepository(mmkvSyncStorage),
     });
     const inviteShareService = new InviteShareService({
       kakaoShare: createKakaoShareClient(ENV.KAKAO_NATIVE_APP_KEY),

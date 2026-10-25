@@ -6,9 +6,11 @@ import {
   parseInviteCode,
   toInviteCodeDraft,
 } from '@src/features/invite/domains/invite.model';
+import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
 import { useGetClipboardPresenceQueryOptions } from '@src/features/invite/queries/get-clipboard-presence-query-options';
 import { getInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
 import { inviteCardHref } from '@src/features/invite/utils/navigation/invite-href';
+import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -38,8 +40,10 @@ interface InviteCodeForm {
 }
 
 function InviteCodeEntryScreen() {
+  useTrackInviteLinkOpened();
   const { t } = useTranslation('invite');
   const { showBoundary } = useErrorBoundary();
+  const { trackEvent } = useTrack();
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const { control, handleSubmit, setValue, setError, clearErrors, formState } =
@@ -87,6 +91,7 @@ function InviteCodeEntryScreen() {
     try {
       // 미리보기를 미리 받아 두면 초대 카드가 다시 부르지 않고, 없는 코드는 이 화면에서 바로 알린다
       await queryClient.fetchQuery(getInvitePreviewQueryOptions(inviteService, { inviteCode }));
+      trackEvent('invite_link_opened', { source: 'code_entry' });
       router.replace(inviteCardHref(inviteCode, 'code_entry'));
     } catch (error) {
       // 4xx는 같은 화면에서 다시 입력하게 하고, 네트워크·서버 장애는 오류 경계가 맡는다

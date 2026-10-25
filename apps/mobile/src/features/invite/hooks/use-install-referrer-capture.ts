@@ -1,4 +1,5 @@
 import { useInviteService, useLogger } from '@src/bootstrap/providers/di-context';
+import { useTrack } from '@src/shared/analytics';
 import { toError } from '@src/shared/errors';
 import { useEffect } from 'react';
 
@@ -8,12 +9,20 @@ import { INVITE_LOG_EVENT } from '../constants/invite-log-events';
 export function useInstallReferrerCapture() {
   const inviteService = useInviteService();
   const logger = useLogger();
+  const { trackEvent } = useTrack();
 
   useEffect(() => {
-    inviteService.captureInstallReferrer(new Date()).catch((error: unknown) => {
-      logger.warn(INVITE_LOG_EVENT.INSTALL_REFERRER_READ_FAILED, {
-        error: toError(error).message,
+    inviteService
+      .captureInstallReferrer(new Date())
+      .then((pending) => {
+        if (pending != null) {
+          trackEvent('invite_link_opened', { source: pending.source });
+        }
+      })
+      .catch((error: unknown) => {
+        logger.warn(INVITE_LOG_EVENT.INSTALL_REFERRER_READ_FAILED, {
+          error: toError(error).message,
+        });
       });
-    });
-  }, [inviteService, logger]);
+  }, [inviteService, logger, trackEvent]);
 }

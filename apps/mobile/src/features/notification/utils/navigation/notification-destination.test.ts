@@ -274,9 +274,8 @@ describe('알림 타입별 목적지', () => {
     ['STREAK_AT_RISK', {}, todayFeed],
     ['WEATHER_MORNING', {}, { kind: 'route', href: '/weather' }],
     ['WEATHER_EVENING', {}, { kind: 'route', href: '/weather' }],
-    // 내 초대 화면이 생기기 전까지는 이동하지 않는다
-    ['INVITE_JOINED', {}, none],
-    ['INVITE_REWARDED', {}, none],
+    ['INVITE_JOINED', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
+    ['INVITE_REWARDED', {}, { kind: 'route', href: { pathname: '/friends/invite' } }],
     ['PREMIUM_GRANT_ENDING', {}, { kind: 'route', href: '/settings/subscription' }],
   ];
 

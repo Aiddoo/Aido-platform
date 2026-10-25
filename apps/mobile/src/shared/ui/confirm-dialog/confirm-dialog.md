@@ -4,6 +4,7 @@
 
 - `cancelButton` + `confirmButton`: 양쪽 버튼이 각각 `flex-1`로 균등 분할
 - `confirmButton`만: 버튼이 오른쪽 정렬
+- `secondaryButton`이 있으면: 확인 → 두 번째 행동 → 취소 순서로 전체 폭 세로 배치(친구 한도 안내의 초대·구독·닫기)
 
 ## 사용법
 
@@ -46,14 +47,15 @@ import { ConfirmDialog } from '@src/shared/ui/confirm-dialog';
 
 ## Props
 
-| Prop            | 타입                      | 기본값      | 설명                                           |
-| --------------- | ------------------------- | ----------- | ---------------------------------------------- |
-| `isOpen`        | `boolean`                 | —           | 다이얼로그 열림 상태                           |
-| `onOpenChange`  | `(open: boolean) => void` | —           | 열림 상태 변경 콜백                            |
-| `title`         | `ReactNode`               | —           | 제목 영역 (`ConfirmDialog.Title` 권장)         |
-| `description`   | `ReactNode`               | —           | 설명 영역 (`ConfirmDialog.Description` 권장)   |
-| `cancelButton`  | `ReactNode`               | `undefined` | 취소 버튼 (없으면 confirmButton 오른쪽 정렬)   |
-| `confirmButton` | `ReactNode`               | —           | 확인 버튼 (`ConfirmDialog.ConfirmButton` 권장) |
+| Prop              | 타입                      | 기본값      | 설명                                                |
+| ----------------- | ------------------------- | ----------- | --------------------------------------------------- |
+| `isOpen`          | `boolean`                 | —           | 다이얼로그 열림 상태                                |
+| `onOpenChange`    | `(open: boolean) => void` | —           | 열림 상태 변경 콜백                                 |
+| `title`           | `ReactNode`               | —           | 제목 영역 (`ConfirmDialog.Title` 권장)              |
+| `description`     | `ReactNode`               | —           | 설명 영역 (`ConfirmDialog.Description` 권장)        |
+| `cancelButton`    | `ReactNode`               | `undefined` | 취소 버튼 (없으면 confirmButton 오른쪽 정렬)        |
+| `confirmButton`   | `ReactNode`               | —           | 확인 버튼 (`ConfirmDialog.ConfirmButton` 권장)      |
+| `secondaryButton` | `ReactNode`               | `undefined` | 확인 아래 두 번째 행동. 있으면 버튼을 세로로 쌓는다 |
 
 ## 버튼 레이아웃
 

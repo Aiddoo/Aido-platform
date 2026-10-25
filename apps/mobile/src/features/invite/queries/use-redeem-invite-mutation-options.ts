@@ -1,5 +1,6 @@
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
+import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
@@ -23,12 +24,17 @@ export function useRedeemInviteMutationOptions() {
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
   const { error: showError } = useAppToast();
+  const { trackEvent } = useTrack();
 
   return mutationOptions({
     mutationFn: async (inviteCode: InviteCode) => unwrap(await inviteService.redeem(inviteCode)),
     // 내 정보를 다시 받을 때까지 기다린 뒤 넘어가야 환영 시트가 이어 붙은 보상 기간을 보인다(그동안 버튼은 isPending)
     onSuccess: async (result, inviteCode) => {
       inviteService.clearPendingRedemption();
+      trackEvent('invite_redeemed', {
+        outcome: result.outcome,
+        friendship: InviteRedemptionPolicy.friendship(result) ?? 'NONE',
+      });
       storeRedemptionResult(queryClient, result);
       await invalidateAfterRedeem(queryClient, { inviteCode }).catch(noop);
       notifySuccess();
@@ -53,10 +59,11 @@ export function useRedeemInviteMutationOptions() {
         return;
       }
 
+      const reason = toRedeemFailureReason(redeemError);
+      trackEvent('invite_redeem_failed', { reason });
       notifyError();
       showError(redeemError.message);
 
-      const reason = toRedeemFailureReason(redeemError);
       if (isTerminalRedeemFailure(reason)) {
         inviteService.clearPendingRedemption();
       }

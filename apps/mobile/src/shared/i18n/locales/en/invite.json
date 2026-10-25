@@ -147,7 +147,25 @@
   },
   "entry": {
     "haveInviteCode": "Have an invite code?",
-    "inviteCodeShort": "Invite code"
+    "inviteCodeShort": "Invite code",
+    "inviteFriends": "Invite a friend",
+    "findByTag": "Find by tag",
+    "friendsEmptyDescription": "Invite a friend with a single link.\nThey get {{days}} days of Premium as soon as they join",
+    "friendLimitDescription": "You can have up to {{limit}} friends right now.\nYou get one more friend slot for each invited friend who completes to-dos on {{activeDays}} different days",
+    "growFriendSlots": "Invite friends for more friend slots",
+    "mypageTitle_one": "Invites · {{count}} paw print",
+    "mypageTitle_other": "Invites · {{count}} paw prints",
+    "mypageStart": "Get your first paw print",
+    "mypageNext_one": "{{count}} more friend to your next reward",
+    "mypageNext_other": "{{count}} more friends to your next reward",
+    "mypageKeepGoing": "Keep cheering each other on",
+    "checklistStep": "Invite 1 friend",
+    "checklistReward": "{{days}} days of Premium",
+    "allDoneDescription": "Keep it going longer with a friend",
+    "allDoneDismiss": "Hide for today",
+    "friendsEmptyTitle": "Invite your first friend",
+    "allDoneTitlePrefix": "You finished",
+    "allDoneTitleHighlight": "everything today"
   },
   "welcome": {
     "friendsTitle": "You're now friends with {{name}}",

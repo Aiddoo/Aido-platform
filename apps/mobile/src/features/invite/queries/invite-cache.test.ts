@@ -5,7 +5,9 @@ import { QueryClient } from '@tanstack/react-query';
 import { createInvite, createRedemptionResult } from '../__tests__/invite.factories';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import {
+  getCachedInviteAvailability,
   invalidateAfterRedeem,
+  invalidateOnInviteNotification,
   replaceMyInvite,
   invalidateInvite,
   storeRedemptionResult,
@@ -76,6 +78,45 @@ describe('invite-cache', () => {
       expect(queryClient.getQueryData(INVITE_QUERY_KEYS.preview({ inviteCode: 'K7M2QX' }))).toBe(
         undefined,
       );
+    });
+  });
+
+  describe('invalidateOnInviteNotification', () => {
+    it('초대 요약·초대한 친구 목록, 친구 목록과 내 정보를 다시 불러오게 한다', async () => {
+      // Given
+      const invalidate = jest.spyOn(queryClient, 'invalidateQueries');
+
+      // When
+      await invalidateOnInviteNotification(queryClient);
+
+      // Then
+      expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
+        INVITE_QUERY_KEYS.invite(),
+        INVITE_QUERY_KEYS.inviteeLists(),
+        FRIEND_QUERY_KEYS.all,
+        USER_QUERY_KEYS.me(),
+      ]);
+    });
+  });
+
+  describe('getCachedInviteAvailability', () => {
+    it('아직 받지 못했으면 false를 반환한다', () => {
+      // When
+      const result = getCachedInviteAvailability(queryClient);
+
+      // Then
+      expect(result).toBe(false);
+    });
+
+    it('받은 사용 가능 여부를 반환한다', () => {
+      // Given
+      queryClient.setQueryData(INVITE_QUERY_KEYS.availability(), true);
+
+      // When
+      const result = getCachedInviteAvailability(queryClient);
+
+      // Then
+      expect(result).toBe(true);
     });
   });
 

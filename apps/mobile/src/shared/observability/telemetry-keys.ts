@@ -1,5 +1,7 @@
-import type { ReplyToNudgeInput } from '@aido/api';
+import type { InviteFriendship, RedeemOutcome, ReplyToNudgeInput } from '@aido/api';
 import type { SessionExpiredReason } from '@src/core/ports/telemetry-event';
+import type { InviteLinkSource } from '@src/features/invite/domains/invite-redemption.model';
+import type { RedeemFailureReason } from '@src/features/invite/domains/invite.error';
 
 // 관측 키의 단일 원본. Analytics 이벤트·Sentry feature/tag·breadcrumb 카테고리를 여기서만 정의한다.
 // 포트(core/ports)는 이 파일의 타입만 import한다.
@@ -12,6 +14,7 @@ export const SENTRY_FEATURES = [
   'auth_cold_start',
   'draft',
   'error_boundary',
+  'invite',
   'lifecycle',
   'subscription',
   'todo_comment',
@@ -126,9 +129,17 @@ export const FEATURE_KEYS = [
   'todo_reorder',
   'category_reorder',
   'todo_creation',
+  'friend_invite',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
+/** 친구 초대로 들어온 곳. 누른 순간 invite_entry_tapped로 남긴다 */
+export type InviteEntrySource =
+  | 'friends_empty'
+  | 'friend_limit_dialog'
+  | 'mypage_card'
+  | 'activation_checklist'
+  | 'all_done_banner';
 export type FeatureHubSource = 'auto' | 'feed_reentry' | 'mypage';
 export type FriendSearchLengthBucket = '2_3' | '4_7' | '8_plus';
 
@@ -180,6 +191,18 @@ export interface GrowthEventMap {
     campaign_id: string;
     days_since_signup: number;
   };
+}
+
+/**
+ * 친구 초대 퍼널. 사용자 id·초대 코드는 넣지 않는다.
+ * 사용 시작과 보상 지급은 서버 로그가 원천이다.
+ */
+export interface InviteEventMap {
+  invite_link_shared: { channel: 'kakao' | 'copy_link' | 'system' };
+  invite_entry_tapped: { entry: InviteEntrySource };
+  invite_link_opened: { source: InviteLinkSource };
+  invite_redeemed: { outcome: RedeemOutcome; friendship: InviteFriendship | 'NONE' };
+  invite_redeem_failed: { reason: RedeemFailureReason };
 }
 
 export type LocalDateChangeTrigger = 'midnight_timer' | 'foreground' | 'calendar_change';
@@ -267,6 +290,7 @@ export type AppEventMap = AuthEventMap &
   TodoEventMap &
   TodoCommentEventMap &
   FriendEventMap &
+  InviteEventMap &
   NudgeEventMap &
   GrowthEventMap &
   LifecycleEventMap &

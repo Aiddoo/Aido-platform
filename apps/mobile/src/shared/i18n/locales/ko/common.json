@@ -38,7 +38,8 @@
   "premiumDialog": {
     "title": "프리미엄 기능",
     "close": "닫기",
-    "subscribe": "구독하기"
+    "subscribe": "구독하기",
+    "subscribeUnlimited": "프리미엄으로 무제한 쓰기"
   },
   "errorBoundary": {
     "title": "오류가 발생했어요",

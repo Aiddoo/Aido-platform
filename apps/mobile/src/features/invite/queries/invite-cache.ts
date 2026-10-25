@@ -37,3 +37,17 @@ export function storeRedemptionResult(queryClient: QueryClient, result: Redempti
     result,
   );
 }
+
+/** 진입점을 hook 밖(mutation 오류 처리 등)에서 정할 때 이미 받은 사용 가능 여부를 읽는다 */
+export function getCachedInviteAvailability(queryClient: QueryClient) {
+  return queryClient.getQueryData<boolean>(INVITE_QUERY_KEYS.availability()) ?? false;
+}
+
+/** 친구가 가입했거나 발자국이 찍혔다는 알림을 받으면 초대 요약·목록, 친구 목록, 프리미엄을 함께 새로 고친다 */
+export async function invalidateOnInviteNotification(queryClient: QueryClient) {
+  await Promise.all([
+    invalidateInvite(queryClient),
+    invalidateFriends(queryClient),
+    invalidateMe(queryClient),
+  ]);
+}

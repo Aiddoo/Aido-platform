@@ -53,14 +53,18 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('../components/feature-discovery-bottom-sheet', () => ({
-  FeatureDiscoveryBottomSheet: ({ onCardCta }: { onCardCta: (cardId: 'memo_ai') => void }) => {
+  FeatureDiscoveryBottomSheet: ({
+    onCardCta,
+  }: {
+    onCardCta: (cardId: 'friend_invite') => void;
+  }) => {
     const React = require('react');
     const { Pressable, Text } = require('react-native');
     return React.createElement(
       Pressable,
       {
         accessibilityRole: 'button',
-        onPress: () => onCardCta('memo_ai'),
+        onPress: () => onCardCta('friend_invite'),
       },
       React.createElement(Text, null, '메모 기능으로 이동'),
     );
@@ -107,7 +111,7 @@ describe('useFeatureDiscoveryHub', () => {
 
     // Then
     expect(mockClose).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith('/memo/create');
+    expect(mockPush).toHaveBeenCalledWith('/friends/invite');
   });
 
   it('분석 전송 실패에도 허브를 열고 CTA에서 닫기와 이동을 계속한다', async () => {
@@ -141,7 +145,7 @@ describe('useFeatureDiscoveryHub', () => {
 
     // Then
     expect(mockClose).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith('/memo/create');
+    expect(mockPush).toHaveBeenCalledWith('/friends/invite');
   });
 
   it('계정 조회 전에는 허브를 열어 seen과 귀속이 누락되는 경합을 만들지 않는다', async () => {

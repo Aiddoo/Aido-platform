@@ -19,6 +19,7 @@ export function ConfirmDialog({
   description,
   cancelButton,
   confirmButton,
+  secondaryButton,
 }: ConfirmDialogProps) {
   const { fontScale } = useFontScale();
   const stackActions = fontScale === 'xlarge' && Boolean(cancelButton);
@@ -32,7 +33,13 @@ export function ConfirmDialog({
               {title}
               {description}
             </VStack>
-            {cancelButton && stackActions ? (
+            {secondaryButton != null ? (
+              <VStack gap={8} className="w-full">
+                <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
+                <Box className="w-full">{asFullWidthAction(secondaryButton)}</Box>
+                {cancelButton != null && <Box className="w-full">{cancelButton}</Box>}
+              </VStack>
+            ) : cancelButton && stackActions ? (
               <VStack gap={8} className="w-full">
                 <Box className="w-full">{asFullWidthAction(confirmButton)}</Box>
                 <Box className="w-full">{asFullWidthAction(cancelButton)}</Box>

@@ -1,5 +1,8 @@
 import { ErrorCode } from '@aido/api/errors';
 import { useFriendService } from '@src/bootstrap/providers/di-context';
+import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
+import { useOpenMyInvite } from '@src/features/invite/hooks/use-open-my-invite';
+import { getCachedInviteAvailability } from '@src/features/invite/queries/invite-cache';
 import { getCachedMe } from '@src/features/user/queries/user-cache';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
@@ -12,6 +15,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { FRIEND_QUERY_KEYS } from '../constants/friend-query-keys';
 import { isFriendError } from '../domains/friend.error';
+import { FriendPolicy } from '../domains/friend.model';
 import { patchSearchedUser } from './friend-cache';
 
 export const useSendRequestByTagMutationOptions = () => {
@@ -20,6 +24,7 @@ export const useSendRequestByTagMutationOptions = () => {
   const queryClient = useQueryClient();
   const toast = useAppToast();
   const premiumDialog = usePremiumDialog();
+  const openMyInvite = useOpenMyInvite();
 
   return mutationOptions({
     mutationFn: async (userTag: string) => {
@@ -47,9 +52,22 @@ export const useSendRequestByTagMutationOptions = () => {
 
       if (isApiError(err) && err.hasCode(ErrorCode.FOLLOW_0909)) {
         trackEvent('premium_gate_shown', { feature: 'friend_limit' });
-        premiumDialog.open({
-          description: t('friend:premium.unlimitedFriends'),
-        });
+        // 초대를 쓸 수 있으면 구독 대신 친구 초대로 자리를 늘리는 길을 먼저 보여 준다
+        premiumDialog.open(
+          getCachedInviteAvailability(queryClient)
+            ? {
+                title: t('friend:premium.friendLimitTitle'),
+                description: t('invite:entry.friendLimitDescription', {
+                  limit: FriendPolicy.friendLimit(err.details),
+                  activeDays: InvitedFriendPolicy.requiredActiveDays(),
+                }),
+                alternativeAction: {
+                  label: t('invite:entry.growFriendSlots'),
+                  onPress: () => openMyInvite('friend_limit_dialog'),
+                },
+              }
+            : { description: t('friend:premium.unlimitedFriends') },
+        );
         return;
       }
 

@@ -1,6 +1,7 @@
 import { userTagParamSchema } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSendRequestByTagMutationOptions } from '@src/features/friend/queries/use-send-request-by-tag-mutation-options';
+import { useGetInviteAvailabilityQueryOptions } from '@src/features/invite/queries/get-invite-availability-query-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
@@ -16,7 +17,7 @@ import {
   Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, usePrefetchQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useErrorBoundary } from 'react-error-boundary';
 import { FormProvider, useFormState, useForm } from 'react-hook-form';
@@ -32,6 +33,8 @@ function AddFriendScreen() {
 
   const { t } = useTranslation('friend');
   const sendRequestMutation = useMutation(useSendRequestByTagMutationOptions());
+  // 친구 한도 안내에 초대로 자리를 늘리는 길을 보여 줄지 미리 알아 둔다
+  usePrefetchQuery(useGetInviteAvailabilityQueryOptions());
 
   const formMethods = useForm({
     resolver: zodResolver(userTagParamSchema),

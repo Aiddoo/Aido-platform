@@ -41,7 +41,8 @@
   "premiumDialog": {
     "title": "Premium Feature",
     "close": "Close",
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "subscribeUnlimited": "Go unlimited with Premium"
   },
   "errorBoundary": {
     "title": "Something went wrong",

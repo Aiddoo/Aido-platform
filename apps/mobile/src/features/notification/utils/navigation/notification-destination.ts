@@ -6,6 +6,7 @@ import {
   type NotificationType,
   todoCommentIdSchema,
 } from '@aido/api';
+import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
@@ -60,6 +61,8 @@ const routingSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal(NOTIFICATION_TYPE.MONTHLY_REPORT) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.AI_SUGGESTION) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.PREMIUM_GRANT_ENDING) }),
+  z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_JOINED) }),
+  z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_REWARDED) }),
   z.object({ type: z.literal('FEED') }),
 ]);
 
@@ -186,6 +189,10 @@ function toRouteDestination(
     .with({ type: 'AI_SUGGESTION' }, () => ({
       kind: 'route' as const,
       href: '/suggestions' as const,
+    }))
+    .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED') }, () => ({
+      kind: 'route' as const,
+      href: myInviteHref(),
     }))
     .with({ type: 'PREMIUM_GRANT_ENDING' }, () => ({
       kind: 'route' as const,

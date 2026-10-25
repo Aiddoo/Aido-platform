@@ -13,7 +13,8 @@
     "requestFailed": "Couldn't send the friend request"
   },
   "premium": {
-    "unlimitedFriends": "Subscribe to Premium to add unlimited friends"
+    "unlimitedFriends": "Subscribe to Premium to add unlimited friends",
+    "friendLimitTitle": "Your friend slots are full"
   },
   "deleteDialog": {
     "title": "Remove this friend?",

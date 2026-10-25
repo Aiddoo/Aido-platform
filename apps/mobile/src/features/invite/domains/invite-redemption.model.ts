@@ -52,6 +52,11 @@ export const InviteRedemptionPolicy = {
     return result.inviter.name ?? unnamedLabel;
   },
 
+  /** 이미 친구였으면 친구 상태가 바뀌지 않아 null이다 */
+  friendship(result: RedemptionResult) {
+    return result.outcome === REDEEM_OUTCOME.ALREADY_FRIENDS ? null : result.friendship;
+  },
+
   /** 보상은 새로 가입해 수락한 경우(REDEEMED)에만 있다 */
   rewards(result: RedemptionResult) {
     return result.outcome === REDEEM_OUTCOME.REDEEMED ? result.rewards : [];
@@ -119,5 +124,3 @@ export const InviteRedemptionPolicy = {
     return isWithinDays(accountCreatedAt, now, INVITE_REDEEM_WINDOW_DAYS);
   },
 };
-
-export type WelcomeVariant = ReturnType<typeof InviteRedemptionPolicy.welcomeVariant>;

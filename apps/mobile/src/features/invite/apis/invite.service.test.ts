@@ -10,6 +10,7 @@ import {
   INVALID_DTO,
 } from '../__tests__/invite.factories';
 import { isInviteError } from '../domains/invite.error';
+import { createAllDoneBannerRepository } from './all-done-banner.repository';
 import { createInstallReferrerRepository } from './install-referrer.repository';
 import { InviteService } from './invite.service';
 import { createPawPrintCelebrationRepository } from './paw-print-celebration.repository';
@@ -28,6 +29,7 @@ function createService({ referrer = null }: { referrer?: string | null } = {}) {
     installReferrerRepository: createInstallReferrerRepository(storage, { read: readReferrer }),
     pawPrintCelebrationRepository: createPawPrintCelebrationRepository(storage),
     installationIdGateway: { get: () => Promise.resolve('6F9619FF-8B86-D011-B42D-00C04FC964FF') },
+    allDoneBannerRepository: createAllDoneBannerRepository(storage),
   });
 
   return { service, publicHttpClient, authHttpClient, pendingRedemptionRepository, readReferrer };
