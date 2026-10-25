@@ -2,6 +2,7 @@ import { useLogger } from '@src/bootstrap/providers/di-context';
 import { useCallback, useMemo } from 'react';
 import { KeyboardController } from 'react-native-keyboard-controller';
 
+import { useTodoCommentPresentation } from '../components/providers/todo-comment-presentation-provider';
 import { useCancelTodoCommentScreenTransition } from '../components/providers/todo-comment-screen-transition-provider';
 import { TODO_COMMENT_LOG_EVENT } from '../constants/todo-comment-log-events';
 import {
@@ -19,11 +20,12 @@ interface TodoCommentBack {
 export function useTodoCommentBack(): TodoCommentBack {
   const [commentRoute, updateCommentRoute] = useTodoCommentRoute();
   const logger = useLogger();
+  const presentation = useTodoCommentPresentation();
   const isSubmitting = useIsTodoCommentSubmitting();
   const cancelPendingTransition = useCancelTodoCommentScreenTransition();
   const result = useMemo(
-    () => getTodoCommentBackResult({ route: commentRoute, isSubmitting }),
-    [commentRoute, isSubmitting],
+    () => getTodoCommentBackResult({ route: commentRoute, isSubmitting, presentation }),
+    [commentRoute, isSubmitting, presentation],
   );
 
   const handleBack = useCallback(() => {

@@ -26,10 +26,19 @@ const TODO_COMMENT_UI_TEST_MODULE_PREFIXES = [
   'react-native',
 ];
 const TODO_ROUTE_ROOT = 'apps/mobile/app/(app)/todo/[todoId]';
+// 댓글은 개요(`/todo/[todoId]`)와 대화(`comments/[commentId].tsx`) 두 단계만 Stack에 쌓는다.
+// 대화 안의 focus·작성기는 같은 화면의 search로 바꾸므로 그 아래 route나 전용 layout을 두지 않는다.
 const FORBIDDEN_ROUTE_PATHS = [
   'apps/mobile/app/(app)/todo/[todoId]/_layout.tsx',
   'apps/mobile/app/(app)/todo/[todoId]/comment',
+  'apps/mobile/app/(app)/todo/[todoId]/comments/_layout.tsx',
+  'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]',
 ];
+// 대화 위에 뜨는 신고 시트는 댓글 단계가 아니라 moderation sheet route라 대화 아래에 둔다.
+const ALLOWED_TODO_COMMENT_ROUTE_FILES = new Set([
+  'apps/mobile/app/(app)/todo/[todoId]/comments/[commentId]/report.tsx',
+]);
+const TODO_COMMENT_NAVIGATION_OWNER = `${TODO_COMMENT_ROOT}/hooks/use-todo-comment-route.ts`;
 const ROUTE_IDENTIFIER_PROP_NAMES = new Set([
   'anchorCommentId',
   'commentId',
@@ -375,10 +384,11 @@ function checkFeatureSource(sourceFile, repositoryRoot, errors) {
       ts.isPropertyAccessExpression(node.expression) &&
       ts.isIdentifier(node.expression.expression) &&
       node.expression.expression.text === 'router' &&
-      node.expression.name.text === 'push'
+      node.expression.name.text === 'push' &&
+      relative(repositoryRoot, sourceFile.fileName) !== TODO_COMMENT_NAVIGATION_OWNER
     ) {
       errors.push(
-        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 답글은 새 화면을 push하지 않습니다. 같은 할 일 화면에서 작성 대상만 바꾸세요.`,
+        `${getLocation(sourceFile, node, repositoryRoot)} 댓글 화면은 직접 push하지 않습니다. 개요에서 대화로 가는 한 단계 push는 use-todo-comment-route의 전이 resolver만 소유합니다.`,
       );
     }
 
@@ -423,10 +433,12 @@ export function checkMobileConventions(repositoryRoot = REPOSITORY_ROOT) {
   for (const forbiddenPath of FORBIDDEN_ROUTE_PATHS) {
     const hasForbiddenRoute = forbiddenPath.endsWith('.tsx')
       ? existsSync(resolve(repositoryRoot, forbiddenPath))
-      : getSourceFiles(repositoryRoot, forbiddenPath).length > 0;
+      : getSourceFiles(repositoryRoot, forbiddenPath).some(
+          (file) => !ALLOWED_TODO_COMMENT_ROUTE_FILES.has(relative(repositoryRoot, file)),
+        );
     if (hasForbiddenRoute) {
       errors.push(
-        `${forbiddenPath} 댓글은 할 일 화면 하나에서 이어집니다. 댓글마다 Stack route를 만들지 마세요.`,
+        `${forbiddenPath} 댓글은 개요와 대화 두 화면에서 이어집니다. 댓글마다 Stack route를 만들지 마세요.`,
       );
     }
   }

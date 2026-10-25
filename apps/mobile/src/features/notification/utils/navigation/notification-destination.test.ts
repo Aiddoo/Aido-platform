@@ -11,9 +11,33 @@ import { resolveNotificationDestination } from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
 const COMPACT = { windowSizeClass: 'compact' } as const;
+// 대화 화면 아래에 그 할 일의 댓글 개요를 쌓아 뒤로가기가 개요로 올라간다.
+const COMMENT_THREAD_DESTINATION = {
+  kind: 'route',
+  href: {
+    pathname: '/todo/[todoId]/comments/[commentId]',
+    params: {
+      todoId: 42,
+      commentId: COMMENT_ID,
+      sort: 'LATEST',
+      intent: undefined,
+      returnTo: undefined,
+    },
+  },
+  parentHref: {
+    pathname: '/todo/[todoId]',
+    params: {
+      todoId: 42,
+      sort: 'LATEST',
+      comment: undefined,
+      intent: undefined,
+      returnTo: undefined,
+    },
+  },
+};
 
 describe('resolveNotificationDestination', () => {
-  test('댓글 routing은 할 일 대화 화면의 focus로 이동한다', () => {
+  test('댓글 routing은 댓글 개요 위에 쌓은 대화 화면의 focus로 이동한다', () => {
     expect(
       resolveNotificationDestination(
         {
@@ -24,13 +48,7 @@ describe('resolveNotificationDestination', () => {
         },
         COMPACT,
       ),
-    ).toEqual({
-      kind: 'route',
-      href: {
-        pathname: '/todo/[todoId]',
-        params: { todoId: 42, comment: COMMENT_ID },
-      },
-    });
+    ).toEqual(COMMENT_THREAD_DESTINATION);
   });
 
   test('알림 목록 metadata와 푸시 routing은 같은 댓글 목적지로 해석한다', () => {
@@ -69,13 +87,7 @@ describe('resolveNotificationDestination', () => {
     );
 
     expect(fromNotificationList).toEqual(fromPush);
-    expect(fromNotificationList).toEqual({
-      kind: 'route',
-      href: {
-        pathname: '/todo/[todoId]',
-        params: { todoId: 42, comment: COMMENT_ID },
-      },
-    });
+    expect(fromNotificationList).toEqual(COMMENT_THREAD_DESTINATION);
   });
 
   test('댓글이 없으면 할 일 상세로 이동한다', () => {

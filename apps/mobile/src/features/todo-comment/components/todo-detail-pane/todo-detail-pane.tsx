@@ -1,3 +1,4 @@
+import { useLogger } from '@src/bootstrap/providers/di-context';
 import { TodoDetailCard } from '@src/features/todo/components/todo-detail-card';
 import { useFeedSelectedTodo } from '@src/features/todo/hooks/use-feed-selected-todo';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
@@ -14,19 +15,22 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { Separator } from 'heroui-native';
 import { Suspense, useCallback, type ReactNode } from 'react';
 import { StyleSheet } from 'react-native';
-import { KeyboardGestureArea } from 'react-native-keyboard-controller';
+import { KeyboardController, KeyboardGestureArea } from 'react-native-keyboard-controller';
 import type { SharedValue } from 'react-native-reanimated';
 import { useSharedValue } from 'react-native-reanimated';
 import { match } from 'ts-pattern';
 
 import { TODO_COMMENT_INPUT_NATIVE_ID } from '../../constants/todo-comment-input';
+import { TODO_COMMENT_LOG_EVENT } from '../../constants/todo-comment-log-events';
 import { useAndroidTodoCommentBackHandler } from '../../hooks/use-android-todo-comment-back-handler';
-import { useIsTodoCommentSubmitting } from '../../hooks/use-is-todo-comment-submitting';
+import { useTodoCommentBack } from '../../hooks/use-todo-comment-back';
 import { useTodoCommentRoute } from '../../hooks/use-todo-comment-route';
+import type { TodoCommentPresentation } from '../../utils/navigation/todo-comment-route';
+import { TodoCommentPresentationProvider } from '../providers/todo-comment-presentation-provider';
 import { TodoCommentScreenTransitionProvider } from '../providers/todo-comment-screen-transition-provider';
 import { TodoCommentConversationList } from '../todo-comment-conversation-list/todo-comment-conversation-list';
 import { TodoCommentInputBar } from '../todo-comment-input-bar/todo-comment-input-bar';
@@ -41,16 +45,21 @@ const styles = StyleSheet.create({
 });
 
 interface TodoDetailPaneProps {
-  /** `screen`은 `/todo/[todoId]` 전체 화면, `pane`은 펼친 피드의 오른쪽 상세 영역이다. */
-  presentation: 'screen' | 'pane';
+  /**
+   * `screen`은 Stack 화면(`/todo/[todoId]` 댓글 개요, `/todo/[todoId]/comments/[commentId]` 대화),
+   * `pane`은 펼친 피드의 오른쪽 상세 영역이다.
+   */
+  presentation: TodoCommentPresentation;
 }
 
 /** 할 일 식별자는 route의 `todoId`를 읽는다. 상세 라우트는 pathname, 피드 pane은 같은 이름의 search param이다. */
 export function TodoDetailPane({ presentation }: TodoDetailPaneProps) {
   return (
-    <TodoCommentScreenTransitionProvider>
-      <TodoDetailContent presentation={presentation} />
-    </TodoCommentScreenTransitionProvider>
+    <TodoCommentPresentationProvider presentation={presentation}>
+      <TodoCommentScreenTransitionProvider>
+        <TodoDetailContent presentation={presentation} />
+      </TodoCommentScreenTransitionProvider>
+    </TodoCommentPresentationProvider>
   );
 }
 
@@ -93,13 +102,14 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
   const isPane = presentation === 'pane';
   const closePane = useCallback(() => setSelectedTodoId(undefined), [setSelectedTodoId]);
   useAndroidTodoCommentBackHandler({ onExit: isPane ? closePane : undefined });
+  useDismissKeyboardOnBlur();
   const commentListExtraPadding = useSharedValue(0);
-  const isCommentSubmitting = useIsTodoCommentSubmitting();
+  const { result: backResult } = useTodoCommentBack();
   const selectedCommentId =
     commentRoute.view === 'conversation' ? commentRoute.commentId : undefined;
   const activeFormType = commentRoute.form?.type;
-  const isNativeBackGestureEnabled =
-    commentRoute.view === 'overview' && commentRoute.form == null && !isCommentSubmitting;
+  // 뒤로가기가 Stack pop일 때만 swipe를 연다. 작성기 닫기 같은 화면 안 단계를 swipe가 건너뛰지 않는다.
+  const isNativeBackGestureEnabled = backResult.status === 'native';
 
   const listHeader = (
     <>
@@ -201,6 +211,25 @@ function TodoDetailContent({ presentation }: TodoDetailPaneProps) {
         {content}
       </StyledSafeAreaView>
     </>
+  );
+}
+
+/**
+ * 작성 중에 알림이나 다른 화면이 위에 쌓이면 가려진 작성기가 first responder로 남아 새 화면 위에 키보드가
+ * 떠 있다. 화면이 focus를 잃을 때 키보드를 내린다. 작성 내용은 초안 저장소에 남는다.
+ */
+function useDismissKeyboardOnBlur() {
+  const logger = useLogger();
+
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        KeyboardController.dismiss().catch((error) =>
+          logger.warn(TODO_COMMENT_LOG_EVENT.KEYBOARD_DISMISS_FAILED, { error }),
+        );
+      },
+      [logger],
+    ),
   );
 }
 

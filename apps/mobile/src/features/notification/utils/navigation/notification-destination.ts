@@ -1,6 +1,7 @@
 import {
   dateSchema,
   NOTIFICATION_TYPE,
+  TODO_COMMENT_SORT,
   type NotificationAction,
   type NotificationContext,
   type NotificationRouting,
@@ -8,6 +9,10 @@ import {
   todoCommentIdSchema,
 } from '@aido/api';
 import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
+import {
+  createTodoCommentScreenHrefs,
+  createTodoCommentThreadHref,
+} from '@src/features/todo-comment/utils/navigation/todo-comment-route';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { createTodoDetailHref } from '@src/features/todo/utils/navigation/todo-detail-href';
 import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
@@ -17,7 +22,12 @@ import { z } from 'zod';
 
 export type NotificationDestination =
   | { kind: 'none' }
-  | { kind: 'route'; href: Href }
+  | {
+      kind: 'route';
+      href: Href;
+      /** 목적지 아래에 먼저 쌓을 상위 화면. 댓글 대화에서 뒤로가면 그 할 일의 댓글 개요로 올라간다. */
+      parentHref?: Href;
+    }
   | { kind: 'browser'; url: string }
   | { kind: 'webview'; url: string };
 
@@ -213,14 +223,18 @@ function toRouteDestination(
       kind: 'route' as const,
       href: '/weather' as const,
     }))
-    .with({ type: 'TODO_SHARED', commentId: P.string }, (routing) => ({
-      kind: 'route' as const,
-      href: createTodoDetailHref(windowSizeClass, {
-        todoId: routing.todoId,
-        comment: routing.commentId,
-        ...toTodoFeed(routing),
-      }),
-    }))
+    .with({ type: 'TODO_SHARED', commentId: P.string }, (routing) =>
+      windowSizeClass === 'compact'
+        ? toCommentThreadDestination(routing.todoId, routing.commentId)
+        : {
+            kind: 'route' as const,
+            href: createTodoDetailHref(windowSizeClass, {
+              todoId: routing.todoId,
+              comment: routing.commentId,
+              ...toTodoFeed(routing),
+            }),
+          },
+    )
     .with({ type: 'TODO_SHARED' }, (routing) => ({
       kind: 'route' as const,
       href: createTodoDetailHref(windowSizeClass, {
@@ -271,6 +285,24 @@ function toRouteDestination(
 interface TodoTarget {
   todoOwnerId?: string;
   todoDate?: string;
+}
+
+/**
+ * 접힌 화면의 댓글 목적지. 대화 화면 아래에 그 할 일의 댓글 개요를 쌓아 뒤로가면 개요로 올라간다.
+ * 펼친 화면은 Stack이 없는 피드 상세 pane이 search로 대화를 연다.
+ */
+function toCommentThreadDestination(todoId: number, commentId: string) {
+  const route = {
+    sort: TODO_COMMENT_SORT.LATEST,
+    view: 'conversation' as const,
+    commentId,
+    form: null,
+  };
+  return {
+    kind: 'route' as const,
+    href: createTodoCommentThreadHref({ todoId, route }),
+    parentHref: createTodoCommentScreenHrefs({ todoId, route }).overviewHref,
+  };
 }
 
 /** 펼친 화면 목록 pane의 피드. 남의 할 일이면 그 친구 피드, 내 할 일이거나 나를 모르면 내 피드다. */

@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
 import { Menu, PressableFeedback } from 'heroui-native';
 import { useState } from 'react';
+import { match, P } from 'ts-pattern';
 
 import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 import { useTodoCommentRoute } from '../hooks/use-todo-comment-route';
@@ -125,11 +126,11 @@ interface StackHeaderTitleProps {
 
 function StackHeaderTitle({ title, subtitle }: StackHeaderTitleProps) {
   return (
-    <VStack align="center" gap={1}>
-      <Text size="b2" weight="bold">
+    <VStack align="center" gap={1} className="max-w-60">
+      <Text size="b2" weight="bold" numberOfLines={1}>
         {title}
       </Text>
-      <Text size="e1" shade={5}>
+      <Text size="e1" shade={5} numberOfLines={1}>
         {subtitle}
       </Text>
     </VStack>
@@ -206,7 +207,10 @@ function TodoModerationMenu() {
   );
 }
 
-/** 댓글 경로에 따라 제목·조회수와 댓글 안 뒤로가기(작성기 → 대화 → 개요)를 정한다. */
+/**
+ * 댓글 경로에 따라 제목·부제목과 댓글 안 뒤로가기(작성기 → 대화 → 개요)를 정한다.
+ * 개요는 조회수, 대화는 어느 할 일의 대화인지 알 수 있게 할 일 제목을 부제목으로 둔다.
+ */
 function useTodoCommentTitle() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
@@ -214,15 +218,20 @@ function useTodoCommentTitle() {
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { t } = useTranslation(['todo', 'todoComment']);
 
+  const isConversation = commentRoute.view === 'conversation';
+
   return {
-    title:
-      commentRoute.view === 'conversation'
-        ? t('todoComment:screen.replyTitle')
-        : t('todo:detail.pageTitle'),
-    subtitle:
-      detail != null
-        ? t('todo:detail.views', { count: detail.metrics.viewCount })
-        : SUBTITLE_LAYOUT_PLACEHOLDER,
+    title: isConversation ? t('todoComment:screen.threadTitle') : t('todo:detail.pageTitle'),
+    subtitle: match({ detail, isConversation })
+      .with({ detail: P.nullish }, () => SUBTITLE_LAYOUT_PLACEHOLDER)
+      .with(
+        { detail: P.nonNullable, isConversation: true },
+        ({ detail: loaded }) => loaded.todo.title,
+      )
+      .with({ detail: P.nonNullable, isConversation: false }, ({ detail: loaded }) =>
+        t('todo:detail.views', { count: loaded.metrics.viewCount }),
+      )
+      .exhaustive(),
     isBackDisabled: backResult.status === 'blocked',
     backAccessibilityLabel:
       backResult.status === 'navigate' ? t(`todoComment:${backResult.labelKey}`) : undefined,

@@ -12,7 +12,15 @@ export function useNotificationNavigation() {
   return useCallback(
     async (destination: NotificationDestination): Promise<void> => {
       await match(destination)
-        .with({ kind: 'route' }, ({ href }) => router.navigate(href))
+        .with({ kind: 'route' }, ({ href, parentHref }) => {
+          if (parentHref == null) {
+            router.navigate(href);
+            return;
+          }
+          // 상위 화면과 목적지를 같은 tick에 쌓아 전환 애니메이션은 목적지 한 번만 보인다.
+          router.navigate(parentHref);
+          router.push(href);
+        })
         .with({ kind: 'webview' }, ({ url }) => openUrl(url))
         .with({ kind: 'browser' }, ({ url }) => Linking.openURL(url))
         .with({ kind: 'none' }, () => {})

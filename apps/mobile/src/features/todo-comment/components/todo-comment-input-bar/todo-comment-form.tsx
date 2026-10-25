@@ -54,6 +54,7 @@ import {
   type PreparedTodoCommentSubmission,
 } from '../../utils/todo-comment-submission';
 import type { TodoCommentFormSession } from '../../utils/view-models/todo-comment-form.view-model';
+import { useHasEnteredTodoCommentScreen } from '../providers/todo-comment-presentation-provider';
 import { useCancelTodoCommentScreenTransition } from '../providers/todo-comment-screen-transition-provider';
 import { TodoCommentAuthorAvatar } from '../todo-comment-author-avatar';
 
@@ -437,6 +438,7 @@ function useCommentFormFieldFocus({
 }: CommentFormFieldFocusOptions) {
   const [mountedFieldIndex] = useState(initialFieldIndex);
   const [focusedFieldIndex, setFocusedFieldIndex] = useState(mountedFieldIndex);
+  const hasEnteredScreen = useHasEnteredTodoCommentScreen();
   const pendingFocusFrameRef = useRef<number | null>(null);
 
   const cancelPendingFocus = useCallback(() => {
@@ -459,9 +461,12 @@ function useCommentFormFieldFocus({
   );
 
   useEffect(() => {
+    if (!hasEnteredScreen) {
+      return;
+    }
     focusFieldAfterLayout(mountedFieldIndex);
     return cancelPendingFocus;
-  }, [cancelPendingFocus, focusFieldAfterLayout, mountedFieldIndex]);
+  }, [cancelPendingFocus, focusFieldAfterLayout, hasEnteredScreen, mountedFieldIndex]);
 
   const trackFocusedField = (index: number) => {
     cancelPendingFocus();

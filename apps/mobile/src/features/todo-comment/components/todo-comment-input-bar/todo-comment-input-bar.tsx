@@ -6,6 +6,7 @@ import { useTranslation } from '@src/shared/i18n';
 import { useKeyboardBottomGap } from '@src/shared/providers/keyboard-bottom-gap-provider';
 import { Box, HStack, Text, TextButton } from '@src/shared/ui';
 import { useInfiniteQuery, useSuspenseQueries } from '@tanstack/react-query';
+import { useIsFocused } from 'expo-router';
 import { PressableFeedback, Skeleton } from 'heroui-native';
 import { Suspense, useCallback, useEffect, useRef, type ComponentProps } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
@@ -38,11 +39,16 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
   const cancelTransition = useCancelTodoCommentScreenTransition();
   const insets = useSafeAreaInsets();
   const keyboardBottomGap = useKeyboardBottomGap();
-  const isKeyboardVisible = useKeyboardState((state) => state.isVisible);
+  // 가려진 화면의 작성 바는 위 화면의 키보드를 따라가지 않는다.
+  const isScreenFocused = useIsFocused();
+  const isKeyboardVisible = useKeyboardState((state) => state.isVisible) && isScreenFocused;
+  // 하단 여백은 이 화면의 작성기가 키보드를 연 동안만 줄인다. 대화에서 작성 중에 개요로 pop하면 키보드가
+  // 내려가기 전 한 frame 동안 개요 작성 바 높이가 바뀌어 개요 목록이 밀린다.
+  const isComposerKeyboardVisible = isKeyboardVisible && commentRoute.form != null;
   const layoutBaselineRef = useRef({ identity: '', contentHeight: 0 });
   const wasKeyboardVisibleRef = useRef(isKeyboardVisible);
   const layoutIdentity = getTodoCommentInputLayoutIdentity(commentRoute);
-  const bottomPadding = isKeyboardVisible ? 8 : (insets.bottom || DEFAULT_BOTTOM_INSET) + 4;
+  const bottomPadding = isComposerKeyboardVisible ? 8 : (insets.bottom || DEFAULT_BOTTOM_INSET) + 4;
 
   const setExtraContentPadding = useCallback(
     (padding: number) => {
@@ -92,7 +98,7 @@ export function TodoCommentInputBar({ extraContentPadding }: TodoCommentInputBar
   }, [extraContentPadding]);
 
   return (
-    <KeyboardStickyView offset={{ closed: 0, opened: keyboardBottomGap }}>
+    <KeyboardStickyView offset={{ closed: 0, opened: keyboardBottomGap }} enabled={isScreenFocused}>
       <Box
         px={12}
         pt={8}

@@ -1,6 +1,6 @@
 {
   "screen": {
-    "replyTitle": "Reply",
+    "threadTitle": "Thread",
     "backToOverview": "Back to comments",
     "backToThread": "Back to conversation",
     "closeForm": "Close comment form"

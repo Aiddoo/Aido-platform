@@ -1,6 +1,6 @@
 {
   "screen": {
-    "replyTitle": "답글 달기",
+    "threadTitle": "대화",
     "backToOverview": "댓글 목록으로 돌아가기",
     "backToThread": "대화로 돌아가기",
     "closeForm": "댓글 작성 닫기"
