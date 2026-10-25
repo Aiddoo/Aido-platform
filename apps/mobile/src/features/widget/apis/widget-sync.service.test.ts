@@ -41,11 +41,13 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When
-    await service.syncSummary(summary, context);
+    await service.syncSummary({ today: summary }, context);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'data', totalTodos: 3, completedTodos: 1 }),
+      expect.objectContaining({
+        days: [expect.objectContaining({ state: 'data', totalTodos: 3, completedTodos: 1 })],
+      }),
       null,
     );
     expect(errorReporter.captureException).not.toHaveBeenCalled();
@@ -59,7 +61,7 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, errorReporter);
 
     // When / Then
-    await expect(service.syncSummary(summary, context)).resolves.toBeUndefined();
+    await expect(service.syncSummary({ today: summary }, context)).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({ feature: 'widget', method: 'syncSummary' }),
@@ -77,7 +79,9 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'loggedOut', totalTodos: 0 }),
+      expect.objectContaining({
+        days: [expect.objectContaining({ state: 'loggedOut', totalTodos: 0 })],
+      }),
       null,
     );
   });
@@ -115,7 +119,7 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    const summaryWrite = service.syncSummary(summary, context);
+    const summaryWrite = service.syncSummary({ today: summary }, context);
     await writeStarted;
     const logoutWrite = service.syncLoggedOut(summary.date, context);
     finishWrite();
@@ -123,7 +127,7 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenLastCalledWith(
-      expect.objectContaining({ state: 'loggedOut' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
   });
@@ -135,14 +139,14 @@ describe('WidgetSyncService', () => {
 
     // When
     await Promise.all([
-      service.syncSummary(summary, context),
+      service.syncSummary({ today: summary }, context),
       service.syncLoggedOut(summary.date, context),
     ]);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'loggedOut' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
   });
@@ -153,8 +157,11 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    await service.syncSummary(summary, context);
-    await service.syncSummary(summary, { ...context, now: new Date('2026-07-12T09:01:00.000Z') });
+    await service.syncSummary({ today: summary }, context);
+    await service.syncSummary(
+      { today: summary },
+      { ...context, now: new Date('2026-07-12T09:01:00.000Z') },
+    );
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
@@ -167,9 +174,9 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    await service.syncSummary(summary, context);
+    await service.syncSummary({ today: summary }, context);
     // When
-    await service.syncSummary(summary, context);
+    await service.syncSummary({ today: summary }, context);
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
@@ -182,12 +189,15 @@ describe('WidgetSyncService', () => {
 
     // When / Then
     await expect(
-      service.syncSummary(summary, {
-        ...context,
-        t: () => {
-          throw new Error('translation failure');
+      service.syncSummary(
+        { today: summary },
+        {
+          ...context,
+          t: () => {
+            throw new Error('translation failure');
+          },
         },
-      }),
+      ),
     ).resolves.toBeUndefined();
     expect(errorReporter.captureException).toHaveBeenCalled();
   });
@@ -198,13 +208,13 @@ describe('WidgetSyncService', () => {
     const service = new WidgetSyncService(bridge, createMockErrorReporter());
 
     // When
-    await service.syncSummary(summary, { ...context, userId: 'previous-user' });
-    await service.syncSummary(summary, { ...context, userId: 'current-user' });
+    await service.syncSummary({ today: summary }, { ...context, userId: 'previous-user' });
+    await service.syncSummary({ today: summary }, { ...context, userId: 'current-user' });
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
     expect(bridge.writeSnapshot).toHaveBeenLastCalledWith(
-      expect.objectContaining({ state: 'data' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'data' })] }),
       'current-user',
     );
   });
@@ -219,7 +229,7 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledWith(
-      expect.objectContaining({ state: 'loggedOut' }),
+      expect.objectContaining({ days: [expect.objectContaining({ state: 'loggedOut' })] }),
       null,
     );
   });

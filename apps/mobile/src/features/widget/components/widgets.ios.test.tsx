@@ -100,15 +100,19 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
       if (!registration) {
         throw new Error('위젯 등록을 찾지 못했습니다');
       }
-      const snapshot = toWidgetSnapshot(
-        buildWidgetSummary({
-          topTodos: Array.from({ length: 8 }, (_, index) => ({
-            id: index + 1,
-            title: `QA 할 일 ${index + 1}`,
-            completed: false,
-            categoryColor: '#FF6B43',
-          })),
-        }),
+      const {
+        days: [snapshot],
+      } = toWidgetSnapshot(
+        {
+          today: buildWidgetSummary({
+            topTodos: Array.from({ length: 8 }, (_, index) => ({
+              id: index + 1,
+              title: `QA 할 일 ${index + 1}`,
+              completed: false,
+              categoryColor: '#FF6B43',
+            })),
+          }),
+        },
         buildWidgetSnapshotContext(),
       );
       const props = toWidgetProps(snapshot, 'data', 'aido-dev');

@@ -5,8 +5,8 @@ import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
 import {
   toLoggedOutWidgetSnapshot,
   toWidgetSnapshot,
+  type WidgetDaySummaries,
   type WidgetSnapshotContext,
-  type WidgetSummaryInput,
 } from './widget-snapshot.mapper';
 
 export class WidgetSyncService {
@@ -21,9 +21,9 @@ export class WidgetSyncService {
     this.#errorReporter = errorReporter;
   }
 
-  syncSummary(summary: WidgetSummaryInput, context: WidgetSnapshotContext): Promise<void> {
+  syncSummary(summaries: WidgetDaySummaries, context: WidgetSnapshotContext): Promise<void> {
     return this.#scheduleWrite(
-      () => toWidgetSnapshot(summary, context),
+      () => toWidgetSnapshot(summaries, context),
       'syncSummary',
       context.userId ?? null,
     );
@@ -62,7 +62,12 @@ export class WidgetSyncService {
         this.#errorReporter.addBreadcrumb({
           category: 'widget',
           message: 'widget snapshot synced',
-          data: { date: snapshot.date, state: snapshot.state, total: snapshot.totalTodos },
+          data: {
+            date: snapshot.days[0].date,
+            state: snapshot.days[0].state,
+            total: snapshot.days[0].totalTodos,
+            dayCount: snapshot.days.length,
+          },
         });
       } catch (error) {
         this.#report(error, method);

@@ -1,5 +1,5 @@
 import type { WidgetSnapshotContext, WidgetSummaryInput } from '../apis/widget-snapshot.mapper';
-import type { WidgetSnapshot } from '../domains/widget-snapshot.model';
+import type { WidgetDaySnapshot, WidgetSnapshot } from '../domains/widget-snapshot.model';
 
 /** t를 key(params) 형태로 에코해 굽기 로직을 검증할 수 있게 한다 */
 export const echoTranslate: WidgetSnapshotContext['t'] = (key, params) =>
@@ -34,12 +34,12 @@ export function buildWidgetSummary(
   };
 }
 
-export function buildWidgetSnapshot(overrides: Partial<WidgetSnapshot> = {}): WidgetSnapshot {
+export function buildWidgetDaySnapshot(
+  overrides: Partial<WidgetDaySnapshot> = {},
+): WidgetDaySnapshot {
   return {
-    version: 1,
     state: 'data',
     date: '2026-07-12',
-    updatedAtIso: '2026-07-12T09:00:00.000Z',
     totalTodos: 5,
     completedTodos: 3,
     completionRate: 60,
@@ -62,5 +62,21 @@ export function buildWidgetSnapshot(overrides: Partial<WidgetSnapshot> = {}): Wi
       staleCta: '앱을 열어 확인하기',
     },
     ...overrides,
+  };
+}
+
+/** 인자 하나가 day 하나다. 생략하면 2026-07-12 하루짜리 v2 snapshot을 만든다. */
+export function buildWidgetSnapshot(
+  todayOverrides: Partial<WidgetDaySnapshot> = {},
+  tomorrowOverrides?: Partial<WidgetDaySnapshot>,
+): WidgetSnapshot {
+  const today = buildWidgetDaySnapshot(todayOverrides);
+  return {
+    version: 2,
+    updatedAtIso: '2026-07-12T09:00:00.000Z',
+    days:
+      tomorrowOverrides == null
+        ? [today]
+        : [today, buildWidgetDaySnapshot({ date: '2026-07-13', ...tomorrowOverrides })],
   };
 }

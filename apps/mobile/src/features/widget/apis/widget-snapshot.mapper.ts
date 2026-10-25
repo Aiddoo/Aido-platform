@@ -4,7 +4,11 @@ import { formatDate, getWeekDates, getWeekStart, toDate } from '@src/shared/util
 import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/utils/date-format';
 import { keyBy } from 'es-toolkit';
 
-import type { WidgetSnapshot, WidgetSnapshotStrings } from '../domains/widget-snapshot.model';
+import type {
+  WidgetDaySnapshot,
+  WidgetSnapshot,
+  WidgetSnapshotStrings,
+} from '../domains/widget-snapshot.model';
 
 /**
  * 오늘의 할 일 요약 입력 (GET v1/todos/summary 도메인 모델과 구조 동일).
@@ -84,11 +88,30 @@ function bakeStrings(
   };
 }
 
-/** 요약 → 위젯 스냅샷 (순수함수 — I/O 없음) */
+export interface WidgetDaySummaries {
+  today: WidgetSummaryInput;
+  /** 자정 이후 표시할 잠정 요약. 받지 못했으면 생략하고 자정부터 stale을 표시한다. */
+  tomorrow?: WidgetSummaryInput;
+}
+
+/** 오늘·내일 요약 → 위젯 스냅샷 (순수함수 — I/O 없음) */
 export function toWidgetSnapshot(
-  summary: WidgetSummaryInput,
+  { today, tomorrow }: WidgetDaySummaries,
   context: WidgetSnapshotContext,
 ): WidgetSnapshot {
+  const todaySnapshot = toWidgetDaySnapshot(today, context);
+  return {
+    version: 2,
+    updatedAtIso: context.now.toISOString(),
+    days:
+      tomorrow == null ? [todaySnapshot] : [todaySnapshot, toWidgetDaySnapshot(tomorrow, context)],
+  };
+}
+
+function toWidgetDaySnapshot(
+  summary: WidgetSummaryInput,
+  context: WidgetSnapshotContext,
+): WidgetDaySnapshot {
   const topTodos = summary.topTodos.slice(0, TOP_TODOS_DISPLAY_LIMIT).map((todo) => ({
     id: todo.id,
     title: todo.title,
@@ -98,10 +121,8 @@ export function toWidgetSnapshot(
   const week = toWidgetWeek(summary, context);
 
   return {
-    version: 1,
     state: summary.totalTodos > 0 ? 'data' : 'empty',
     date: summary.date,
-    updatedAtIso: context.now.toISOString(),
     totalTodos: summary.totalTodos,
     completedTodos: summary.completedTodos,
     completionRate: summary.completionRate,
@@ -157,22 +178,26 @@ export function toLoggedOutWidgetSnapshot(
   context: WidgetSnapshotContext,
 ): WidgetSnapshot {
   return {
-    version: 1,
-    state: 'loggedOut',
-    date: localDate,
+    version: 2,
     updatedAtIso: context.now.toISOString(),
-    totalTodos: 0,
-    completedTodos: 0,
-    completionRate: 0,
-    isComplete: false,
-    currentStreak: 0,
-    topTodos: [],
-    locale: context.locale,
-    strings: bakeStrings(context.t, {
-      completedTodos: 0,
-      totalTodos: 0,
-      completionRate: 0,
-      currentStreak: 0,
-    }),
+    days: [
+      {
+        state: 'loggedOut',
+        date: localDate,
+        totalTodos: 0,
+        completedTodos: 0,
+        completionRate: 0,
+        isComplete: false,
+        currentStreak: 0,
+        topTodos: [],
+        locale: context.locale,
+        strings: bakeStrings(context.t, {
+          completedTodos: 0,
+          totalTodos: 0,
+          completionRate: 0,
+          currentStreak: 0,
+        }),
+      },
+    ],
   };
 }
