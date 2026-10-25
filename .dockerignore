@@ -12,6 +12,7 @@
 **/.cache/
 **/.next/
 **/.expo/
+**/*.tsbuildinfo
 
 # Mobile app (API 빌드에 불필요)
 apps/mobile/
@@ -23,29 +24,39 @@ docker-compose*.yml
 docker-compose*.yaml
 backups/
 
-# Environment
+# Environment (이미지에 시크릿·예제 파일을 넣지 않는다)
 **/.env*
 
-# IDE
+# IDE / 에디터 설정
 .idea/
 .vscode/
 .cursor/
+.zed/
 
-# AI tools
-.claude/
+# AI tools (.claude/worktrees는 매우 커질 수 있다)
+**/.claude/
+.serena/
+.continue/
+.mcp.json
 
 # Git
 .git/
 .gitignore
 
-# Documentation
-*.md
+# 빌드에 쓰이지 않는 루트 설정·문서
 **/*.md
 **/docs/
+LICENSE
+.easignore
+.turboignore
+.oxfmtrc.json
+.oxlintrc.json
+commitlint.config.ts
 myDocs/
-docs/
+my-docs/
+약관/
 
-# Tests
+# Tests (이미지에 불필요한 테스트·픽스처·산출물)
 **/coverage/
 **/*.spec.ts
 **/*.e2e-spec.ts
@@ -54,24 +65,21 @@ docs/
 **/*.test.tsx
 **/*.integration-spec.ts
 **/*.snap
-**/*.tsbuildinfo
 **/.jest-cache/
 **/.vitest/
-**/.claude/
-**/src/generated/
-**/prisma/generated/
-**/AGENTS.md
-**/CLAUDE.md
-
-# Local artifacts and tools
-.worktrees/
-.serena/
-.continue/
-.secrets/
-my-docs/
-**/.DS_Store
-**/Thumbs.db
-**/*.log
 **/test-results/
 **/playwright-report/
 **/junit.xml
+
+# Generated (이미지 안에서 contract:emit / db:generate로 다시 만든다)
+**/src/generated/
+**/prisma/generated/
+
+# Local artifacts
+.worktrees/
+.secrets/
+**/AGENTS.md
+**/CLAUDE.md
+**/.DS_Store
+**/Thumbs.db
+**/*.log
