@@ -35,12 +35,12 @@ describe("GetUnreadCount", () => {
     expect(result).toBe(5);
   });
 
-  it("1.11.0의 미읽음 수는 기존 앱과 분리된 캐시에서 모든 알림을 센다", async () => {
+  it("최신 앱의 미읽음 수는 기존 앱과 분리된 캐시에서 모든 알림을 센다", async () => {
     // Given
     notificationRepo.countUnread.mockResolvedValue(7);
 
     // When
-    const result = await useCase.execute(mockUserId, "1.11.0");
+    const result = await useCase.execute(mockUserId, "1.13.0");
 
     // Then
     expect(cache.wrapUnreadCount).toHaveBeenCalledWith(mockUserId, expect.any(Function), "all");

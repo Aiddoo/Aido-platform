@@ -1,3 +1,4 @@
+import { notificationInboxResponseSchema, notificationListResponseSchema } from "@aido/api";
 import request from "supertest";
 
 import {
@@ -911,6 +912,53 @@ describe("알림 E2E", () => {
         .expect(200);
 
       expect(response.body.data.optedOut).toBe(true);
+    });
+  });
+
+  describe("앱 버전별 새 알림 노출", () => {
+    it("1.12.1 이하 앱은 초대·보상 종료 알림을 받지 못하고 1.13.0부터 알림함에 보인다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("notif-invite@test.com", password);
+      await ctx.testDatabase
+        .getClient()
+        .orm.public.Notification.createAndCount(
+          (["FOLLOW_NEW", "INVITE_JOINED", "PREMIUM_GRANT_ENDING"] as const).map((type) =>
+            encodeCreate("Notification", { userId: user.userId, type, title: type, body: type }),
+          ),
+        );
+
+      // When
+      const released = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.12.1")
+        .expect(200);
+      const legacy = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .expect(200);
+      const updated = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.13.0")
+        .expect(200);
+
+      // Then
+      const releasedInbox = notificationInboxResponseSchema.parse(released.body.data);
+      expect(releasedInbox.notifications.map((item) => item.type)).toEqual(["FOLLOW_NEW"]);
+      expect(releasedInbox.unreadCount).toBe(1);
+      expect(
+        notificationListResponseSchema
+          .parse(legacy.body.data)
+          .notifications.map((item) => item.type),
+      ).toEqual(["FOLLOW_NEW"]);
+      const updatedInbox = notificationInboxResponseSchema.parse(updated.body.data);
+      expect(updatedInbox.notifications.map((item) => item.type).sort()).toEqual([
+        "FOLLOW_NEW",
+        "INVITE_JOINED",
+        "PREMIUM_GRANT_ENDING",
+      ]);
+      expect(updatedInbox.unreadCount).toBe(3);
     });
   });
 });

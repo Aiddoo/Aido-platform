@@ -65,14 +65,16 @@ describe("receipt token fingerprint additive migration (실제 PostgreSQL)", () 
           platform: "IOS",
         }),
       );
-      const notification = await previous.orm.public.Notification.create(
-        encodeCreate("Notification", {
+      // 현재 계약의 알림 enum은 직전 계약보다 넓어 직전 ORM에는 리터럴 타입으로 넘긴다
+      const notification = await previous.orm.public.Notification.create({
+        ...encodeCreate("Notification", {
           userId: user.id,
           type: "SYSTEM_NOTICE",
           title: "기존 알림",
           body: "기존 본문",
         }),
-      );
+        _type: "SYSTEM_NOTICE",
+      });
       const dispatch = await previous.orm.public.PushDispatch.create(
         encodeCreate("PushDispatch", {
           notificationId: notification.id,

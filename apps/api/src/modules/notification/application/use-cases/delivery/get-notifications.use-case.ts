@@ -5,10 +5,7 @@ import type { PaginationService } from "#api/shared/application/pagination/index
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import { visibleNotificationTypes } from "../../../domain/services/delivery/notification-client-capability.js";
-import {
-  isPersistedNotificationType,
-  type NotificationType,
-} from "../../../domain/types/delivery/notification-type.js";
+import type { NotificationType } from "../../../domain/types/delivery/notification-type.js";
 import { NotificationDeliveryLogEvent } from "../../observability/delivery/notification-delivery-log.events.js";
 import { type NotificationInboxReaderPort } from "../../ports/delivery/notification-inbox.reader.port.js";
 import type { NotificationRecord } from "../../read-models/delivery/notification.read-model.js";
@@ -55,7 +52,7 @@ export class GetNotifications {
 
     const types: NotificationType[] | undefined =
       input.category && input.category !== "ALL"
-        ? CATEGORY_TYPE_MAP[input.category].filter(isPersistedNotificationType)
+        ? [...CATEGORY_TYPE_MAP[input.category]]
         : undefined;
 
     const notifications = await this.#dependencies.notificationInboxReader.findNotificationsByUser({

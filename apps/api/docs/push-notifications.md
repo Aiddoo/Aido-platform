@@ -108,6 +108,8 @@ v1.0.0~v1.4.0이 요구한 푸시 data 필드 `notificationId`, `type`, `action`
 
 호환성 테스트는 Git 릴리스 이력의 실제 알림 타입 enum을 반영한 v1.0~~v1.1, v1.2~~v1.4 스키마와 현재 `pushNotificationDataSchema`로 같은 서버 payload를 각각 파싱한다. OpenAPI paths/components 스냅샷도 별도로 고정한다.
 
+새 알림 타입의 최소 앱 버전은 `notification-client-capability.ts`의 `NOTIFICATION_MIN_APP_VERSION` 한 곳에서 정한다(`NUDGE_REPLIED`·`NUDGE_THANKED` 1.11.0, `INVITE_JOINED`·`INVITE_REWARDED`·`PREMIUM_GRANT_ENDING` 1.13.0). 알림함 조회·미읽음 수·전체 읽음과 푸시 토큰 필터가 같은 함수를 쓰므로 그보다 낮은 `X-App-Version`(또는 헤더 없음)에는 해당 알림이 보이지 않고 그 버전 미만 기기로 푸시하지 않는다. 미읽음 수 캐시는 지원 단계(`legacy`·`since-1.11.0`·`all`)마다 나눈다.
+
 소셜 다이제스트 지연 잡은 직전 저녁 리마인더의 알림 생성 대상 사용자 CUID 목록을 함께 저장한다. 배포 전에 생성되어 대상 목록이 없는 구형 지연 잡은 타임존 전체로 확대 발송하지 않고 안전하게 건너뛴다.
 
 신규 저녁 기본값 19:00 마이그레이션은 DB column default만 바꾸며 기존 사용자의 저장된 커스텀 값은 갱신하지 않는다.

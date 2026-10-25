@@ -576,7 +576,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       },
     );
 
-    it("1.11.0의 전체 목록은 신규 답장·고마움 알림도 조회한다", async () => {
+    it("1.13.0의 전체 목록은 모든 알림 타입을 조회한다", async () => {
       // Given
       mockNotificationDb.all.mockReturnValue(nativeRows(databaseFixture("Notification", [])));
 
@@ -584,7 +584,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       await facade.getNotifications({
         userId: "user-1",
         category: "ALL",
-        appVersion: "1.11.0",
+        appVersion: "1.13.0",
       });
 
       // Then
@@ -697,7 +697,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       );
     });
 
-    it("1.11.0과 구버전의 읽지 않은 알림 수를 서로 다른 캐시 키로 조회한다", async () => {
+    it("1.13.0과 구버전의 읽지 않은 알림 수를 서로 다른 캐시 키로 조회한다", async () => {
       // Given
       asMock(mockNotificationDb.aggregate)
         .mockResolvedValueOnce({ count: 3 })
@@ -706,7 +706,7 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
 
       // When
       const releasedUnreadCount = await facade.getUnreadCount(mockUserId, "1.10.1");
-      const currentUnreadCount = await facade.getUnreadCount(mockUserId, "1.11.0");
+      const currentUnreadCount = await facade.getUnreadCount(mockUserId, "1.13.0");
 
       // Then
       expect(releasedUnreadCount).toBe(3);
@@ -837,13 +837,13 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
       );
     });
 
-    it("1.11.0은 신규 알림까지 전체 읽음 처리하고 두 버전의 캐시를 무효화한다", async () => {
+    it("1.13.0은 신규 알림까지 전체 읽음 처리하고 모든 버전 단계의 캐시를 무효화한다", async () => {
       // Given
       asMock(mockNotificationDb.updateAndCount).mockResolvedValue(7);
       const cacheService = module.get(CacheService);
 
       // When
-      const result = await facade.markAllAsRead(mockUserId, "1.11.0");
+      const result = await facade.markAllAsRead(mockUserId, "1.13.0");
 
       // Then
       expect(result.count).toBe(7);
@@ -855,12 +855,15 @@ describe("Notification 통합 테스트 (Mock DB)", () => {
           databaseWriteExpectation("Notification", { isRead: true, readAt: expect.any(String) }),
         ),
       );
-      expect(cacheService.del).toHaveBeenCalledTimes(2);
+      expect(cacheService.del).toHaveBeenCalledTimes(3);
       expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}`,
       );
       expect(cacheService.del).toHaveBeenCalledWith(
         `aido:v1:notification:unread-count:${mockUserId}:legacy`,
+      );
+      expect(cacheService.del).toHaveBeenCalledWith(
+        `aido:v1:notification:unread-count:${mockUserId}:since-1.11.0`,
       );
     });
   });

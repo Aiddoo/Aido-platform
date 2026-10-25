@@ -78,7 +78,12 @@ type GeneratedIdModel =
   | "RetentionExperimentAssignment"
   | "RetentionExperimentStage"
   | "RetentionPushOutbox"
-  | "RetentionExperimentResult";
+  | "RetentionExperimentResult"
+  | "Invite"
+  | "InviteRedemption"
+  | "RewardGrant"
+  | "PremiumGrant"
+  | "ResourceBonus";
 type OptionalId<M extends ModelName, Input> = M extends GeneratedIdModel
   ? Omit<Input, "id"> & { id?: string }
   : Input;
@@ -111,6 +116,11 @@ const generatedIdModels: ReadonlySet<ModelName> = new Set([
   "RetentionExperimentStage",
   "RetentionPushOutbox",
   "RetentionExperimentResult",
+  "Invite",
+  "InviteRedemption",
+  "RewardGrant",
+  "PremiumGrant",
+  "ResourceBonus",
 ]);
 
 export function decodeRecord<M extends ModelName, Row>(
@@ -161,7 +171,7 @@ function decodeRecordValue(model: string, row: unknown): unknown {
 export function encodeCreate<M extends ModelName>(
   model: M,
   input: DatabaseCreate<M>,
-): CreateInput<Contract, M, "public">;
+): ScalarCreate<M>;
 export function encodeCreate(model: ModelName, input: object): unknown {
   const values = encodeValues(model, input);
   if (generatedIdModels.has(model) && !("id" in values)) values.id = createEntityId();

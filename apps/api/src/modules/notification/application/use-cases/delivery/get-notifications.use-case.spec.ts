@@ -54,7 +54,7 @@ describe("GetNotifications", () => {
     ];
     notificationRepo.findNotificationsByUser.mockResolvedValue(notifications);
 
-    const result = await useCase.execute({ userId: mockUserId, size: 20, appVersion: "1.11.0" });
+    const result = await useCase.execute({ userId: mockUserId, size: 20, appVersion: "1.13.0" });
 
     expect(paginationService.normalizeCursorPagination).toHaveBeenCalledWith({
       cursor: undefined,
@@ -110,10 +110,10 @@ describe("GetNotifications", () => {
     );
   });
 
-  it("1.11.0의 전체 목록은 모든 알림 타입을 조회한다", async () => {
+  it("최신 앱의 전체 목록은 모든 알림 타입을 조회한다", async () => {
     notificationRepo.findNotificationsByUser.mockResolvedValue([]);
 
-    await useCase.execute({ userId: mockUserId, category: "ALL", appVersion: "1.11.0" });
+    await useCase.execute({ userId: mockUserId, category: "ALL", appVersion: "1.13.0" });
 
     expect(notificationRepo.findNotificationsByUser).toHaveBeenCalledWith(
       expect.objectContaining({ types: undefined }),
