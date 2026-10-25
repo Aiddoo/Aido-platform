@@ -44,7 +44,7 @@ export type PremiumGrantCreationPlan = Pick<
 };
 
 /** 진행 중에 끊은 기간의 남은 일수를 다시 쌓아 둔 기간의 출처 키. 끊긴 기간마다 하나뿐이다. */
-export function rebankedRemainderSourceKey(grantId: string): string {
+function rebankedRemainderSourceKey(grantId: string): string {
   return `rebank:${grantId}`;
 }
 

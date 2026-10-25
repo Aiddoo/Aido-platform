@@ -156,7 +156,7 @@ export function remainingPremiumGrantDays(grant: PremiumGrantTerm, now: Date): n
  * 스토어 구독이 보상 기간에 자리를 넘기는 시각. 자동 갱신 중이면 갱신 웹훅을 기다리는 유예까지,
  * 취소·만료했으면 만료 시각까지 스토어가 프리미엄을 맡는다.
  */
-export function storeHandoffAt(subscription: StoreEntitlement): Date {
+function storeHandoffAt(subscription: StoreEntitlement): Date {
   return subscription.status === "ACTIVE"
     ? storeRenewalGraceEndsAt(subscription.expiresAt)
     : new Date(subscription.expiresAt);

@@ -77,14 +77,6 @@ export class PrismaSubscriptionRepository implements SubscriptionRepositoryPort 
       .then((row) => decodeRecord("User", row));
   }
 
-  async findUserById(userId: string): Promise<SubscriptionUser | null> {
-    return this.client.orm.public.User.where((row) => row.id.eq(userId))
-      .select("id", "email", "subscriptionStatus", "subscriptionExpiresAt", "revenueCatUserId")
-      .include("profile", (related) => related.select("name"))
-      .first()
-      .then((row) => decodeRecord("User", row));
-  }
-
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
     return decodeRecord(
       "Subscription",

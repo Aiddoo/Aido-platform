@@ -42,11 +42,6 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
     return user ? this.#copyUser(user) : null;
   }
 
-  async findUserById(userId: string): Promise<SubscriptionUser | null> {
-    const user = this.users.get(userId);
-    return user ? this.#copyUser(user) : null;
-  }
-
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
     return [...this.subscriptions.values()]
       .filter((record) => record.userId === userId)

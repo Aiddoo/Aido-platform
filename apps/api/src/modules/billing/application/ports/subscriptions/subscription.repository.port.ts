@@ -51,7 +51,6 @@ export interface UpdateUserSubscriptionStatusData {
 export interface SubscriptionRepositoryPort {
   findByRevenueCatId(revenueCatId: string): Promise<Subscription | null>;
   findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null>;
-  findUserById(userId: string): Promise<SubscriptionUser | null>;
   /** 이 사용자가 소유한 삭제되지 않은 스토어 구독 행을 한 번에 읽는다. */
   findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]>;
   /** 이 체인의 이벤트가 온 사용자를 행의 소유자로 정한다. 다른 사용자 행이었으면 옮기고 true를 반환한다. */
