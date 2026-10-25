@@ -18,6 +18,7 @@ import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notifi
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
@@ -47,6 +48,7 @@ import { NotificationQueueProcessor } from "./infrastructure/jobs/delivery/notif
 import { PushDeliveryQueueProcessor } from "./infrastructure/jobs/delivery/push-delivery-queue.processor.js";
 import { PushDeliveryQueueService } from "./infrastructure/jobs/delivery/push-delivery-queue.service.js";
 import { PrismaClientAppVersionReader } from "./infrastructure/persistence/delivery/prisma-client-app-version.reader.js";
+import { PrismaNotificationTodoTargetReader } from "./infrastructure/persistence/delivery/prisma-notification-todo-target.reader.js";
 import { PrismaNotificationReader } from "./infrastructure/persistence/delivery/prisma-notification.reader.js";
 import { PrismaNotificationRepository } from "./infrastructure/persistence/delivery/prisma-notification.repository.js";
 import { PrismaPushDeliveryLifecycleRepository } from "./infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository.js";
@@ -131,6 +133,8 @@ import { NotificationController } from "./presentation/controllers/delivery/noti
     PrismaNotificationReader,
     { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
     { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+    PrismaNotificationTodoTargetReader,
+    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: PrismaNotificationTodoTargetReader },
     PrismaPushTokenRepository,
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
     PrismaPushReceiptRepository,

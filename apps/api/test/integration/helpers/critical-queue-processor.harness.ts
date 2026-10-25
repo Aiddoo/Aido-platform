@@ -25,6 +25,7 @@ import { NOTIFICATION_HISTORY_READER } from "#api/modules/notification/applicati
 import { NOTIFICATION_INBOX_READER } from "#api/modules/notification/application/ports/delivery/notification-inbox.reader.port";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-locale.reader.port";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "#api/modules/notification/application/ports/delivery/notification-recipient-preference.reader.port";
+import { NOTIFICATION_TODO_TARGET_READER } from "#api/modules/notification/application/ports/delivery/notification-todo-target.reader.port";
 import { NOTIFICATION_REPOSITORY } from "#api/modules/notification/application/ports/delivery/notification.repository.port";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "#api/modules/notification/application/ports/delivery/push-delivery-job-enqueuer.port";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "#api/modules/notification/application/ports/delivery/push-delivery-lifecycle.repository.port";
@@ -73,6 +74,7 @@ import { NotificationQueueProcessor } from "#api/modules/notification/infrastruc
 import { PushDeliveryQueueProcessor } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.processor";
 import { PushDeliveryQueueService } from "#api/modules/notification/infrastructure/jobs/delivery/push-delivery-queue.service";
 import { RetentionQueueProcessor } from "#api/modules/notification/infrastructure/jobs/retention/retention-queue.processor";
+import { PrismaNotificationTodoTargetReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification-todo-target.reader";
 import { PrismaNotificationReader } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.reader";
 import { PrismaNotificationRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-notification.repository";
 import { PrismaPushDeliveryLifecycleRepository } from "#api/modules/notification/infrastructure/persistence/delivery/prisma-push-delivery-lifecycle.repository";
@@ -274,6 +276,8 @@ function notificationProviders(pushProvider: FakePushProvider): Provider[] {
     PrismaNotificationReader,
     { provide: NOTIFICATION_INBOX_READER, useExisting: PrismaNotificationReader },
     { provide: NOTIFICATION_HISTORY_READER, useExisting: PrismaNotificationReader },
+    PrismaNotificationTodoTargetReader,
+    { provide: NOTIFICATION_TODO_TARGET_READER, useExisting: PrismaNotificationTodoTargetReader },
     PrismaPushTokenRepository,
     { provide: PUSH_TOKEN_REPOSITORY, useExisting: PrismaPushTokenRepository },
     PrismaPushReceiptRepository,

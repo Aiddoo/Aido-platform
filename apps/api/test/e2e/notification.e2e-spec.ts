@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { notificationInboxResponseSchema, notificationListResponseSchema } from "@aido/api";
 import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
@@ -1053,6 +1055,42 @@ describe("알림 E2E", () => {
       expect(notice).toMatchObject({
         type: "SYSTEM_NOTICE",
         action: { type: "DEEP_LINK", url: "/settings/subscription" },
+      });
+    });
+  });
+
+  describe("할 일 알림의 이동 재료", () => {
+    it("친구 할 일에 댓글을 받으면 알림함 metadata에 할 일 주인과 날짜를 싣는다", async () => {
+      // Given
+      const owner = await ctx.helpers.createVerifiedUser("notif-todo-owner@test.com", password);
+      const friend = await ctx.helpers.createVerifiedUser("notif-todo-friend@test.com", password);
+      await ctx.helpers.createFriendship(owner, friend);
+      const categoryId = await ctx.helpers.getDefaultCategoryId(owner.accessToken);
+      const todo = await request(ctx.app.getHttpServer())
+        .post("/v1/todos")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .send({ title: "친구 할 일", categoryId, startDate: "2026-08-14", visibility: "PUBLIC" })
+        .expect(201);
+      const todoId: number = todo.body.data.todo.id;
+
+      // When
+      await request(ctx.app.getHttpServer())
+        .post(`/v1/todos/${todoId}/comments`)
+        .set("Authorization", `Bearer ${friend.accessToken}`)
+        .send({ parentId: null, items: [{ clientRequestId: randomUUID(), content: "응원해" }] })
+        .expect(201);
+      const inbox = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${owner.accessToken}`)
+        .set("X-App-Version", "1.13.0")
+        .expect(200);
+
+      // Then
+      const [notification] = notificationInboxResponseSchema.parse(inbox.body.data).notifications;
+      expect(notification).toMatchObject({
+        type: "TODO_SHARED",
+        context: { todoId },
+        metadata: { todoOwnerId: owner.userId, todoDate: "2026-08-14" },
       });
     });
   });

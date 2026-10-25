@@ -40,4 +40,17 @@ describe("toNotificationRouting", () => {
       }),
     ).toBeUndefined();
   });
+
+  it("할 일 주인과 날짜를 싣고, 형식이 틀린 날짜는 그 필드만 버린다", () => {
+    expect(
+      toNotificationRouting({
+        commentId: COMMENT_ID,
+        todoOwnerId: "owner-1",
+        todoDate: "2026-10-27",
+      }),
+    ).toEqual({ commentId: COMMENT_ID, todoOwnerId: "owner-1", todoDate: "2026-10-27" });
+    expect(
+      toNotificationRouting({ commentId: COMMENT_ID, todoOwnerId: "owner-1", todoDate: "10/27" }),
+    ).toEqual({ commentId: COMMENT_ID, todoOwnerId: "owner-1" });
+  });
 });

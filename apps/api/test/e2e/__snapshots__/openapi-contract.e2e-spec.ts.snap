@@ -5284,7 +5284,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "metadata": {
                 "additionalProperties": {},
-                "description": "추가 메타데이터 (미설정 시 null)",
+                "description": "추가 메타데이터 (미설정 시 null). 이동 재료(commentId·threadRootId·activityKind, 할 일 알림의 todoOwnerId·todoDate)를 함께 싣는다",
                 "nullable": true,
                 "propertyNames": {
                   "type": "string",
@@ -5484,7 +5484,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               },
               "metadata": {
                 "additionalProperties": {},
-                "description": "추가 메타데이터 (미설정 시 null)",
+                "description": "추가 메타데이터 (미설정 시 null). 이동 재료(commentId·threadRootId·activityKind, 할 일 알림의 todoOwnerId·todoDate)를 함께 싣는다",
                 "nullable": true,
                 "propertyNames": {
                   "type": "string",

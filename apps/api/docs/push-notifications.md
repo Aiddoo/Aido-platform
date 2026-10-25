@@ -85,6 +85,8 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 
 `BROWSER`, `WEBVIEW`, `NONE` action은 표의 기본 이동보다 우선한다. `DEEP_LINK`에 URL이 있으면 해당 내부 경로를 우선한다.
 
+할 일이 대상인 알림(`todoId`가 있는 댓글·답글·좋아요 `TODO_SHARED`, `TODO_REMINDER`, 할 일 콕 `NUDGE_RECEIVED`)은 `NotificationPublisher`가 발행할 때 그 할 일의 주인과 시작일을 `metadata.todoOwnerId`·`metadata.todoDate`(YYYY-MM-DD)로 더한다. 알림함은 metadata로, push는 payload `routing`으로 같은 값을 받는다(`notificationRoutingSchema`, 1.13.0+). 앱은 펼친 화면에서 목록 pane을 그 사람(친구면 친구 피드)의 그 날짜로 열고 상세 pane에 할 일을 고른다. 할 일이 이미 지워졌으면 더하지 않고, 이전 알림·이전 앱은 지금처럼 동작한다. `context`는 배포된 DTO 모양이라 늘리지 않는다.
+
 공지(`SYSTEM_NOTICE`·`ADMIN_BROADCAST`·`ADMIN_TARGETED`)는 종류만으로 갈 곳을 정할 수 없어 `DEEP_LINK` url에 앱 경로를 싣는다. 경로는 `@aido/api/vocabulary`의 `NOTICE_DEEP_LINK_PATH`(`/feed`, `/achievements`, `/weather`, `/friends`, `/friends/invite`, `/settings/subscription`, `/settings/notifications`) 중에서만 고른다. 1.13.0 앱은 이 경로만 열고 모르는 경로·쿼리·상세 id 경로는 이동하지 않으며, 이전 앱은 url을 무시하고 지금처럼 앱만 연다. url은 추가 필드라 기존 payload·응답 모양은 바뀌지 않는다.
 
 | 공지         | url                                                                                           |

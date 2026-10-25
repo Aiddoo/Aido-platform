@@ -104,6 +104,7 @@ function buildNotificationTestApi(module: TestingModule) {
     sendNotification: module.get(SendNotification),
     sendNotificationWithDeduplication: module.get(SendNotificationWithDedup),
     sendBatchNotification: module.get(SendBatchNotification),
+    todoTargetReader: { findTodoTargets: () => Promise.resolve(new Map()) },
   });
   const getNotificationsUseCase = module.get(GetNotifications);
   const getUnreadCountUseCase = module.get(GetUnreadCount);

@@ -14,6 +14,7 @@ import { NOTIFICATION_HISTORY_READER } from "./application/ports/delivery/notifi
 import { NOTIFICATION_INBOX_READER } from "./application/ports/delivery/notification-inbox.reader.port.js";
 import { NOTIFICATION_RECIPIENT_LOCALE_READER } from "./application/ports/delivery/notification-recipient-locale.reader.port.js";
 import { NOTIFICATION_RECIPIENT_PREFERENCE_READER } from "./application/ports/delivery/notification-recipient-preference.reader.port.js";
+import { NOTIFICATION_TODO_TARGET_READER } from "./application/ports/delivery/notification-todo-target.reader.port.js";
 import { NOTIFICATION_REPOSITORY } from "./application/ports/delivery/notification.repository.port.js";
 import { PUSH_DELIVERY_JOB_ENQUEUER } from "./application/ports/delivery/push-delivery-job-enqueuer.port.js";
 import { PUSH_DELIVERY_LIFECYCLE_REPOSITORY } from "./application/ports/delivery/push-delivery-lifecycle.repository.port.js";
@@ -682,7 +683,12 @@ export const unregisterPushTokenProvider: FactoryProvider<UnregisterPushToken> =
 
 export const notificationPublisherProvider: FactoryProvider<NotificationPublisher> = {
   provide: NotificationPublisher,
-  inject: [SendNotification, SendNotificationWithDedup, SendBatchNotification],
+  inject: [
+    SendNotification,
+    SendNotificationWithDedup,
+    SendBatchNotification,
+    NOTIFICATION_TODO_TARGET_READER,
+  ],
   useFactory: (
     sendNotification: ConstructorParameters<typeof NotificationPublisher>[0]["sendNotification"],
     sendNotificationWithDeduplication: ConstructorParameters<
@@ -691,10 +697,12 @@ export const notificationPublisherProvider: FactoryProvider<NotificationPublishe
     sendBatchNotification: ConstructorParameters<
       typeof NotificationPublisher
     >[0]["sendBatchNotification"],
+    todoTargetReader: ConstructorParameters<typeof NotificationPublisher>[0]["todoTargetReader"],
   ) =>
     new NotificationPublisher({
       sendNotification,
       sendNotificationWithDeduplication,
       sendBatchNotification,
+      todoTargetReader,
     }),
 };
