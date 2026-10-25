@@ -187,12 +187,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ...(kakaoNativeAppKey && { LSApplicationQueriesSchemes: KAKAO_QUERY_SCHEMES }),
         CFBundleAllowMixedLocalizations: true,
         // CFBundleLocalizations는 expo-localization 플러그인(supportedLocales)이 설정
-        NSMicrophoneUsageDescription:
-          '$(PRODUCT_NAME)이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
+        // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
+        NSMicrophoneUsageDescription: '말로 할 일을 입력할 때 마이크를 써요.',
         NSFaceIDUsageDescription:
           '$(PRODUCT_NAME)이(가) 앱 잠금 해제를 위해 Face ID를 사용하려고 합니다.',
         NSSpeechRecognitionUsageDescription:
-          '$(PRODUCT_NAME)이(가) 음성 입력을 위해 음성 인식에 접근하려고 합니다.',
+          '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.',
         NSPhotoLibraryUsageDescription:
           '$(PRODUCT_NAME)이(가) 이미지를 불러오기 위해 사진 라이브러리에 접근하려고 합니다.',
         ...(isDevelopment && {
@@ -383,9 +383,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-location',
         {
-          locationWhenInUsePermission:
-            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
-            '${PRODUCT_NAME}이(가) 현재 위치 기반 날씨 정보를 제공하기 위해 위치에 접근하려고 합니다.',
+          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
+          locationWhenInUsePermission: '현재 위치의 날씨를 보여줄 때 위치를 써요.',
+          // 날씨는 대략적인 위치(Balanced)만 쓰므로 정확한 위치 임시 요청과 동작 감지 권한을 넣지 않는다.
+          locationFullAccuracyPermission: false,
+          motionUsagePermission: false,
           locationAlwaysAndWhenInUsePermission: false,
           locationAlwaysPermission: false,
           isIosBackgroundLocationEnabled: false,
@@ -401,12 +403,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         'expo-speech-recognition',
         {
-          microphonePermission:
-            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
-            '${PRODUCT_NAME}이(가) 음성 입력을 위해 마이크에 접근하려고 합니다.',
+          // 언어별 문구는 native-locales/{ko,en}.json이 덮어쓴다. 기본값은 ko와 같게 둔다.
+          microphonePermission: '말로 할 일을 입력할 때 마이크를 써요.',
           speechRecognitionPermission:
-            // iOS/Android 빌드 시스템이 런타임에 치환하는 플레이스홀더다.
-            '${PRODUCT_NAME}이(가) 음성을 텍스트로 변환하기 위해 음성 인식에 접근하려고 합니다.',
+            '말한 내용을 글자로 바꿔 할 일을 입력할 때 써요. 음성은 Apple 음성 인식으로 처리될 수 있어요.',
           androidSpeechServicePackages: [
             'com.google.android.googlequicksearchbox',
             'com.google.android.tts',
