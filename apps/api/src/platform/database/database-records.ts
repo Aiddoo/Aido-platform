@@ -72,6 +72,8 @@ type GeneratedIdModel =
   | "UserConsent"
   | "UserPreference"
   | "UserLocation"
+  | "UserBlock"
+  | "UserReport"
   | "TodoComment"
   | "Follow"
   | "DailyCompletion"
@@ -109,6 +111,8 @@ const generatedIdModels: ReadonlySet<ModelName> = new Set([
   "UserConsent",
   "UserPreference",
   "UserLocation",
+  "UserBlock",
+  "UserReport",
   "TodoComment",
   "Follow",
   "DailyCompletion",

@@ -60,6 +60,10 @@ namespace public {
     rewardGrants                   RewardGrant[]
     premiumGrants                  PremiumGrant[]
     resourceBonuses                ResourceBonus[]
+    initiatedBlocks             UserBlock[]                     @relation(name: "UserBlock_blockerId_fkey")
+    receivedBlocks              UserBlock[]                     @relation(name: "UserBlock_blockedId_fkey")
+    filedReports                UserReport[]                    @relation(name: "UserReport_reporterId_fkey")
+    receivedReports             UserReport[]                    @relation(name: "UserReport_targetUserId_fkey")
 
     @@index([deletedAt, createdAt], map: "User_deletedAt_createdAt_idx")
     @@index([deletedAt], map: "User_deletedAt_idx")
@@ -699,6 +703,38 @@ namespace public {
     @@unique([userId, localDate], map: "UserActivityDay_userId_localDate_key")
   }
 
+  model UserBlock {
+    id        String             @id(map: "UserBlock_pkey")
+    blockerId String
+    blockedId String
+    createdAt TimestampString(3) @default(now())
+    blocker   User               @relation(name: "UserBlock_blockerId_fkey", fields: [blockerId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserBlock_blockerId_fkey", index: false)
+    blocked   User               @relation(name: "UserBlock_blockedId_fkey", fields: [blockedId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserBlock_blockedId_fkey", index: false)
+
+    @@unique([blockerId, blockedId], map: "UserBlock_blockerId_blockedId_key")
+    @@index([blockedId, blockerId], map: "UserBlock_blockedId_blockerId_idx")
+    @@index([blockerId, createdAt, id], map: "UserBlock_blockerId_createdAt_id_idx")
+  }
+
+  model UserReport {
+    id           String                         @id(map: "UserReport_pkey")
+    reporterId   String
+    targetUserId String
+    targetType   pg.enum(UserReportTargetType)
+    targetId     VarChar(64)?
+    reason       pg.enum(UserReportReason)
+    detail       VarChar(500)?
+    status       pg.enum(UserReportStatus)      @default("OPEN")
+    createdAt    TimestampString(3)             @default(now())
+    reporter     User                           @relation(name: "UserReport_reporterId_fkey", fields: [reporterId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserReport_reporterId_fkey", index: false)
+    targetUser   User                           @relation(name: "UserReport_targetUserId_fkey", fields: [targetUserId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserReport_targetUserId_fkey", index: false)
+
+    @@index([reporterId, createdAt], map: "UserReport_reporterId_createdAt_idx")
+    @@index([reporterId, targetUserId, targetType, createdAt], map: "UserReport_reporterId_target_createdAt_idx")
+    @@index([targetUserId, createdAt], map: "UserReport_targetUserId_createdAt_idx")
+    @@index([status, createdAt], map: "UserReport_status_createdAt_idx")
+  }
+
   model UserConsent {
     id                    String        @id(map: "UserConsent_pkey")
     userId                String
@@ -1141,6 +1177,27 @@ namespace public {
   native_enum TodoVisibility {
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
+  }
+
+  native_enum UserReportReason {
+    SPAM = "SPAM"
+    HARASSMENT = "HARASSMENT"
+    INAPPROPRIATE = "INAPPROPRIATE"
+    IMPERSONATION = "IMPERSONATION"
+    OTHER = "OTHER"
+  }
+
+  native_enum UserReportStatus {
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+  }
+
+  native_enum UserReportTargetType {
+    PROFILE = "PROFILE"
+    TODO = "TODO"
+    COMMENT = "COMMENT"
+    NUDGE_MESSAGE = "NUDGE_MESSAGE"
+    CHEER_MESSAGE = "CHEER_MESSAGE"
   }
 
   native_enum UserRole {
