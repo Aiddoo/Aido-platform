@@ -10,8 +10,13 @@ const { getConfig } = require('expo/config');
 const projectRoot = path.resolve(import.meta.dirname, '..');
 const { exp } = getConfig(projectRoot, { skipSDKVersionRequirement: true });
 
-const readLocale = (language) =>
-  JSON.parse(readFileSync(path.join(projectRoot, exp.locales[language]), 'utf8'));
+// app.config는 홈 화면 이름을 환경별로 더하려고 locales를 파일 경로 대신 객체로 넘긴다
+const readLocale = (language) => {
+  const source = exp.locales[language];
+  return typeof source === 'string'
+    ? JSON.parse(readFileSync(path.join(projectRoot, source), 'utf8'))
+    : source;
+};
 const ko = readLocale('ko');
 const en = readLocale('en');
 const HANGUL = /[가-힣]/;

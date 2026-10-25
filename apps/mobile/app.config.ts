@@ -4,6 +4,8 @@ import path from 'node:path';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 import { match } from 'ts-pattern';
 
+import enNativeLocale from './native-locales/en.json';
+import koNativeLocale from './native-locales/ko.json';
 import { version } from './package.json';
 
 type AppEnvironment = 'development' | 'preview' | 'production';
@@ -24,6 +26,13 @@ const APP_NAME = 'Aido';
 const BUNDLE_IDENTIFIER = 'com.aido.mobile';
 const PACKAGE_NAME = 'com.aido.mobile';
 const SCHEME = 'aido';
+
+// 홈 화면 앱 이름 (iOS CFBundleDisplayName, Android app_name). 권한 안내 문구는 native-locales/*.json 한 벌을 모든 환경이 공유한다.
+const DISPLAY_NAMES: Record<AppEnvironment, { ko: string; en: string }> = {
+  production: { ko: '아이두', en: 'Aido' },
+  preview: { ko: '아이두 Preview', en: 'Aido Preview' },
+  development: { ko: '아이두 Dev', en: 'Aido Development' },
+};
 
 const BRAND_COLOR = '#FF6B43';
 
@@ -164,10 +173,16 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: ICON,
     userInterfaceStyle: 'automatic',
 
-    // 홈 화면 앱 이름(iOS CFBundleDisplayName, Android app_name)과 iOS 권한 다이얼로그 문구 다국어 (InfoPlist.strings)
+    // 홈 화면 앱 이름(iOS CFBundleDisplayName, Android app_name), iOS 권한 다이얼로그 문구(InfoPlist.strings)와 위젯 갤러리 이름·설명 다국어
     locales: {
-      ko: './native-locales/ko.json',
-      en: './native-locales/en.json',
+      ko: {
+        ios: { CFBundleDisplayName: DISPLAY_NAMES[env].ko, ...koNativeLocale.ios },
+        android: { app_name: DISPLAY_NAMES[env].ko, ...koNativeLocale.android },
+      },
+      en: {
+        ios: { CFBundleDisplayName: DISPLAY_NAMES[env].en, ...enNativeLocale.ios },
+        android: { app_name: DISPLAY_NAMES[env].en, ...enNativeLocale.android },
+      },
     },
 
     // iOS
