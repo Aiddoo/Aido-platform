@@ -81,6 +81,7 @@ tooling/*           공유 설정 (vitest, typescript) 및 migration CLI
 - **타입**: `strict: true`. `as`(`as const` 제외)·`any`·`!`·`@ts-ignore`/`@ts-expect-error` 금지, 타입은 Zod·props·상수 튜플에서 유도
 - **DTO**: `@aido/api`의 Zod 스키마 사용. 앱 내부 중복 정의 금지
 - **에러 코드**: `@aido/api/errors`의 `ErrorCode`를 사용. 하드코딩 문자열 금지
+- **비교·null/undefined**: 값 비교는 `===`, "없음"만 `== null`(Oxlint `eqeqeq`). 상세: [docs/conventions/nullish.md](docs/conventions/nullish.md)
 - **API 문서**: Swagger UI는 `http://localhost:8080/api/docs`
 - **AGENTS.md**: Claude/Codex 공통 지침의 단일 원본. 세션 컨텍스트에 포함되므로 _얇게 유지_. 상세는 `.claude/*.md`로 분리
 

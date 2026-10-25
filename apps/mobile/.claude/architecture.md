@@ -863,6 +863,8 @@ export const use{Feature}Service = () => useDI().{feature}Service;
 
 ## DO / DON'T
 
+비교·null/undefined·기본값은 [공통 nullish 규칙](../../../docs/conventions/nullish.md)을 따른다: 값 비교는 `===`, "없음"은 `== null`, 서버 DTO의 `null`은 모델에서도 `null`, 선택 props는 `?:`(undefined), 기본값은 `??`.
+
 ### DO
 
 ```typescript

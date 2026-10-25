@@ -26,7 +26,7 @@ Domain에 HTTP DTO나 transport serialization을 넣지 않는다. Application�
 ## 입력과 시간 의미
 
 - required/optional/nullable/default와 validation 메시지는 계약이다. 리팩터링 중 바꾸지 않는다.
-- PATCH undefined는 미제공, 허용된 null은 초기화다. false·0을 누락으로 처리하지 않는다.
+- PATCH undefined는 미제공, 허용된 null은 초기화다. false·0을 누락으로 처리하지 않는다. 응답 `.nullable()`·요청 `.optional()`·새 응답 필드의 형태는 [공통 nullish 규칙](../../../docs/conventions/nullish.md#4-계약-aidoapi-zod)에 있다.
 - 필수 scalar에 nullish fallback을 덧붙여 유효하지 않은 입력을 감추지 않는다.
 - `YYYY-MM-DD` calendar label과 instant ISO datetime·epoch milliseconds를 구분한다. process-local Date 파싱으로 사용자 날짜/요일을 이동시키지 않는다.
 - timezone·locale header/default와 지원 범위도 계약이다. 예를 들어 전역 좌표 VO가 생겼어도 기존 Weather HTTP의 한국 bbox·1901/1902·fallback 범위가 해외 지원으로 바뀐 것은 아니다.
