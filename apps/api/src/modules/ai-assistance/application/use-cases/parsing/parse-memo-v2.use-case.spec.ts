@@ -61,6 +61,59 @@ describe("ParseMemo — v2 정규화", () => {
     },
   );
 
+  it("12개 할 일 메모에서 모델이 앞의 8개와 전체 수 12를 주면 5개만 만들고 남은 7개를 알린다", async () => {
+    // Given
+    const fixture = createFixture();
+    const titles = Array.from({ length: 12 }, (_, index) => `할 일 ${index + 1}`);
+    fixture.aiProvider.setRawResponse({
+      totalTaskCount: 12,
+      todos: titles.slice(0, 8).map((title) => draftTodo(title)),
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(titles.slice(0, 5));
+    expect(result.meta.omittedTodoCount).toBe(7);
+    expect(fixture.logger.log).toHaveBeenCalledWith(
+      expect.objectContaining({ todoCount: 5, omittedTodoCount: 7 }),
+    );
+  });
+
+  it.each([
+    { case: "빠뜨리면", totalTaskCount: undefined },
+    { case: "실제로 쓴 것보다 적게 세면", totalTaskCount: 3 },
+    { case: "음수로 주면", totalTaskCount: -1 },
+  ])(
+    "모델이 전체 할 일 수를 $case 받은 할 일 수로 남은 개수를 계산한다",
+    async ({ totalTaskCount }) => {
+      // Given
+      const fixture = createFixture();
+      fixture.aiProvider.setRawResponse({
+        ...(totalTaskCount !== undefined && { totalTaskCount }),
+        todos: Array.from({ length: 8 }, (_, index) => draftTodo(`할 일 ${index + 1}`)),
+      });
+      // When
+      const result = await fixture.useCase.execute(fixture.input);
+      // Then
+      expect(result.data.todos).toHaveLength(5);
+      expect(result.meta.omittedTodoCount).toBe(3);
+    },
+  );
+
+  it("실제 할 일이 없으면 모델이 센 전체 수와 관계없이 남은 할 일은 0개다", async () => {
+    // Given
+    const fixture = createFixture();
+    fixture.aiProvider.setRawResponse({
+      totalTaskCount: 4,
+      todos: [draftTodo("ignored", { intent: "NO_ACTION" })],
+    });
+    // When
+    const result = await fixture.useCase.execute(fixture.input);
+    // Then
+    expect(result.data.todos.map((todo) => todo.title)).toEqual(["입력 확인 필요"]);
+    expect(result.meta.omittedTodoCount).toBe(0);
+  });
+
   it("할 일 0개면 안내 할 일 하나만 돌려주고 남은 할 일은 0개다", async () => {
     // Given
     const fixture = createFixture();

@@ -102,9 +102,21 @@ export function normalizeTodoDraft(
   };
 }
 
-/** 메모 draft: 할 일은 합치지 않고 입력 순서대로 앞의 5개만 두며, 만들지 않은 할 일 수를 함께 돌려준다. */
+/** 모델이 돌려준 메모 draft. totalTaskCount는 모델이 쓰지 않은 할 일까지 센 메모 전체 할 일 수다. */
+export interface MemoDraftInput {
+  readonly todos: readonly (TodoDraft & {
+    readonly items: readonly { readonly title: string }[];
+  })[];
+  readonly totalTaskCount?: number;
+}
+
+/**
+ * 메모 draft: 할 일은 합치지 않고 입력 순서대로 앞의 5개만 두며, 만들지 않은 할 일 수를 함께 돌려준다.
+ * 출력 토큰을 아끼려고 모델은 할 일을 8개까지만 쓰므로, 남은 수는 모델이 센 전체 수를 우선한다.
+ * 모델이 전체 수를 빠뜨리거나 실제로 쓴 것보다 적게 세면 받은 할 일 수로 계산한다.
+ */
 export function normalizeMemoDraft(
-  todos: readonly (TodoDraft & { readonly items: readonly { readonly title: string }[] })[],
+  memo: MemoDraftInput,
   context: DraftNormalizeContext & {
     readonly fallbackTitle: string;
     readonly defaultCategoryId: number;
@@ -116,10 +128,11 @@ export function normalizeMemoDraft(
   warnings: NormalizationWarning[];
 } {
   const warnings: NormalizationWarning[] = [];
-  const tasks = todos.filter((todo) => todo.intent === "TASK");
-  if (tasks.length > MEMO_MAX_TODOS) warnings.push("TODOS_TRUNCATED");
+  const tasks = memo.todos.filter((todo) => todo.intent === "TASK");
   const kept = tasks.slice(0, MEMO_MAX_TODOS);
   const noAction = kept.length === 0;
+  const totalTaskCount = noAction ? 0 : Math.max(tasks.length, memo.totalTaskCount ?? 0);
+  if (totalTaskCount > MEMO_MAX_TODOS) warnings.push("TODOS_TRUNCATED");
   const drafts = noAction ? [{ ...noActionDraft(), items: [] }] : kept;
 
   const parsed = drafts.map((draft) => {
@@ -139,7 +152,7 @@ export function normalizeMemoDraft(
   return {
     data: parsedMemoDataSchema.parse({ todos: parsed }),
     noAction,
-    omittedTodoCount: tasks.length - kept.length,
+    omittedTodoCount: totalTaskCount - kept.length,
     warnings,
   };
 }

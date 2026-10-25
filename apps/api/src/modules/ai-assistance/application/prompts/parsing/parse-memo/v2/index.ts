@@ -14,7 +14,7 @@ import { buildParseMemoPromptKoV2 } from "./prompt.ko.js";
 export const PARSE_MEMO_PROMPT_VERSION_V2 = "parse-memo@v2";
 
 function normalizeV2(draft: MemoDraft, context: ParseMemoNormalizeContext): ParseMemoOutcome {
-  return normalizeMemoDraft(draft.todos, { ...context, fallbackTitle: context.content });
+  return normalizeMemoDraft(draft, { ...context, fallbackTitle: context.content });
 }
 
 const outputV2 = structuredOutput(memoDraftSchema, normalizeV2);
