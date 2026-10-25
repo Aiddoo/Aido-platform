@@ -25,6 +25,7 @@ export interface AuthCachedUserProfile {
   /** 1.13.0 이전 캐시에는 없다. 없으면 응답에서도 생략한다. */
   premiumSource?: PremiumSource | null;
   premiumEndsAt?: string | null;
+  premiumPeriodEndsAt?: string | null;
   willRenew?: boolean;
   bankedPremiumDays?: number;
 }

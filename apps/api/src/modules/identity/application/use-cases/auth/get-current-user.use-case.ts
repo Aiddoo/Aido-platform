@@ -53,6 +53,7 @@ export class GetCurrentUser {
           providers: user.accounts.map((a) => a.provider),
           premiumSource: premiumAccess.source,
           premiumEndsAt: toISOStringOrNull(premiumAccess.endsAt),
+          premiumPeriodEndsAt: toISOStringOrNull(premiumAccess.periodEndsAt),
           willRenew: premiumAccess.willRenew,
           bankedPremiumDays: premiumAccess.bankedDays,
         };
@@ -79,6 +80,7 @@ export class GetCurrentUser {
       providers: cachedProfile.providers,
       premiumSource: cachedProfile.premiumSource,
       premiumEndsAt: cachedProfile.premiumEndsAt,
+      premiumPeriodEndsAt: cachedProfile.premiumPeriodEndsAt,
       willRenew: cachedProfile.willRenew,
       bankedPremiumDays: cachedProfile.bankedPremiumDays,
     };

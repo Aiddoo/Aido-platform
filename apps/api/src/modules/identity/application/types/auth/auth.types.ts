@@ -80,6 +80,7 @@ export interface CurrentUserResult {
   providers: AccountProvider[];
   premiumSource?: PremiumSource | null;
   premiumEndsAt?: string | null;
+  premiumPeriodEndsAt?: string | null;
   willRenew?: boolean;
   bankedPremiumDays?: number;
 }

@@ -297,7 +297,7 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
     expect(await context.testDatabase.getClient().orm.public.Subscription.all()).toEqual([]);
   });
 
-  it("/me는 보상 기간 출처·종료 시각·자동 갱신 여부·대기 중인 보상 일수를 optional 필드로 함께 반환한다", async () => {
+  it("/me는 보상 기간 출처·지금 기간 끝·전체 끝·자동 갱신 여부·대기 중인 보상 일수를 optional 필드로 함께 반환한다", async () => {
     // Given
     const user = await context.helpers.createVerifiedUser("premium-grant-me@test.com", "Test1234!");
     const before = await request(context.app.getHttpServer())
@@ -308,7 +308,15 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       .get<PremiumGranterPort>(PREMIUM_GRANTER)
       .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me", durationDays: 7 });
 
+    const afterFirst = await request(context.app.getHttpServer())
+      .get("/v1/auth/me")
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
+
     // When
+    await context.module
+      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:me-2", durationDays: 7 });
     const after = await request(context.app.getHttpServer())
       .get("/v1/auth/me")
       .set("Authorization", `Bearer ${user.accessToken}`)
@@ -319,16 +327,28 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       subscriptionStatus: "FREE",
       premiumSource: null,
       premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
       willRenew: false,
       bankedPremiumDays: 0,
     });
-    expect(currentUserSchema.parse(after.body.data)).toMatchObject({
+    expect(currentUserSchema.parse(afterFirst.body.data)).toMatchObject({
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: "2027-01-11T12:00:00.000Z",
       premiumSource: "GRANT",
       premiumEndsAt: "2027-01-11T12:00:00.000Z",
+      premiumPeriodEndsAt: "2027-01-11T12:00:00.000Z",
       willRenew: false,
       bankedPremiumDays: 0,
+    });
+    // 보상 기간 중 또 받은 보상은 지금 기간 뒤에 쌓여 전체 끝만 늘어난다
+    expect(currentUserSchema.parse(after.body.data)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: "2027-01-18T12:00:00.000Z",
+      premiumSource: "GRANT",
+      premiumEndsAt: "2027-01-18T12:00:00.000Z",
+      premiumPeriodEndsAt: "2027-01-11T12:00:00.000Z",
+      willRenew: false,
+      bankedPremiumDays: 7,
     });
   });
 });

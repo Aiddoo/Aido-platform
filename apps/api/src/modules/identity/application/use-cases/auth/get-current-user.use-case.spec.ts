@@ -92,6 +92,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     expect(result).toMatchObject({
       premiumSource: "GRANT",
       premiumEndsAt: "2026-11-08T00:00:00.000Z",
+      premiumPeriodEndsAt: "2026-11-08T00:00:00.000Z",
       willRenew: false,
       bankedPremiumDays: 0,
     });
@@ -115,6 +116,12 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     });
 
     // Then
-    expect(result).toMatchObject({ premiumSource: "STORE", bankedPremiumDays: 14 });
+    expect(result).toMatchObject({
+      premiumSource: "STORE",
+      premiumEndsAt: "2026-12-15T03:00:00.000Z",
+      premiumPeriodEndsAt: "2026-12-01T00:00:00.000Z",
+      willRenew: true,
+      bankedPremiumDays: 14,
+    });
   });
 });

@@ -171,9 +171,10 @@ describe("AuthMapper — 인증 매퍼", () => {
         createdAt: "2024-01-01T00:00:00.000Z",
         providers: ["CREDENTIAL", "KAKAO"],
         premiumSource: "GRANT",
-        premiumEndsAt: "2024-01-08T00:00:00.000Z",
+        premiumEndsAt: "2024-01-15T00:00:00.000Z",
+        premiumPeriodEndsAt: "2024-01-08T00:00:00.000Z",
         willRenew: false,
-        bankedPremiumDays: 0,
+        bankedPremiumDays: 7,
       };
 
       // When
@@ -181,7 +182,7 @@ describe("AuthMapper — 인증 매퍼", () => {
 
       // Then
       expect(response).toEqual(result);
-      expect(Object.keys(response)).toHaveLength(17);
+      expect(Object.keys(response)).toHaveLength(18);
     });
   });
 
