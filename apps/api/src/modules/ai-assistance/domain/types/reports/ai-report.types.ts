@@ -71,12 +71,21 @@ export interface GenerateReportParams {
   readonly prevTips: string[] | null;
 }
 
+/** 저장된 요약·팁의 출처. AI 실패로 저장한 폴백과 활동 없음 템플릿을 구분해 재생성·분석에 쓴다. */
+export type ReportContentSource = "AI" | "FALLBACK" | "TEMPLATE";
+
 /**
  * AI가 생성한 리포트 콘텐츠
  */
 export interface GeneratedReportContent {
   readonly aiSummary: string;
   readonly aiTips: string[];
+}
+
+/** 저장할 리포트 콘텐츠와 출처 */
+export interface ReportContent extends GeneratedReportContent {
+  readonly contentSource: ReportContentSource;
+  readonly promptVersion: string | null;
 }
 
 /** 날짜별 그룹 집계 행 (todo.groupBy by startDate) */

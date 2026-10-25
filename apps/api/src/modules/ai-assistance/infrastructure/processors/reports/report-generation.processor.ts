@@ -17,6 +17,7 @@ import {
   type AiReportJobMap,
   AiReportJobName,
   AiReportRuntimeJobSchema,
+  isFinalReportAttempt,
 } from "../../jobs/reports/ai-report-queue.js";
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 
@@ -42,14 +43,16 @@ export class ReportGenerationProcessor implements OnModuleInit {
     await this.runtime.work<AiReportJob>(
       AI_REPORT_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(job.data);
+        for (const job of jobs) await this.process(job.data, job.attempt);
       },
       AI_REPORT_WORKER_POLICY,
     );
     await this.runtime.work<JobData>(
       AI_REPORT_LEGACY_QUEUE,
       async (jobs) => {
-        for (const job of jobs) await this.process(fromLegacyJob<AiReportJobMap>(job));
+        for (const job of jobs) {
+          await this.process(fromLegacyJob<AiReportJobMap>(job), job.attempt);
+        }
       },
       AI_REPORT_WORKER_POLICY,
     );
@@ -76,7 +79,8 @@ export class ReportGenerationProcessor implements OnModuleInit {
     });
   }
 
-  async process(untrustedJob: AiReportJobLike): Promise<void> {
+  /** attempt는 1부터 센다. 생략하면 재시도 없는 단발 실행으로 보고 폴백까지 저장한다. */
+  async process(untrustedJob: AiReportJobLike, attempt = Number.POSITIVE_INFINITY): Promise<void> {
     const parsedJob = AiReportRuntimeJobSchema.safeParse(untrustedJob);
     if (!parsedJob.success) {
       this.#logger.warn({ event: AiJobLogEvent.INVALID, queueName: AI_REPORT_QUEUE });
@@ -103,6 +107,7 @@ export class ReportGenerationProcessor implements OnModuleInit {
       timezone,
       type: reportType,
       locale: reportLocale,
+      isFinalAttempt: isFinalReportAttempt(attempt),
     });
 
     if (report === null) {

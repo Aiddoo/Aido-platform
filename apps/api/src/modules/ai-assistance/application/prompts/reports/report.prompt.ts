@@ -16,6 +16,9 @@ import type {
 import { buildReportContext } from "./report-context.js";
 import { buildReportPromptEn } from "./report.prompt.en.js";
 
+/** 저장된 리포트가 어떤 지시문으로 만들어졌는지 남긴다. */
+export const REPORT_PROMPT_VERSION = "report@v1";
+
 export const reportAiResponseSchema = z.object({
   summary: z.string().describe("한국어 주간/월간 요약: 활동 있으면 4-6문장, 없으면 2-3문장"),
   tips: z.array(z.string()).min(1).max(3).describe("실천 가능한 팁 1-3개 (한국어)"),

@@ -1,44 +1,64 @@
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import type { GeneratedReportContent } from "../../../domain/types/reports/ai-report.types.js";
+import type {
+  AggregatedReportData,
+  ReportContent,
+} from "../../../domain/types/reports/ai-report.types.js";
 
-interface ReportFallbackTranslations {
-  readonly active: GeneratedReportContent;
-  readonly empty: GeneratedReportContent;
+interface ReportFallbackCopy {
+  readonly emptySummary: (label: string) => string;
+  readonly emptyTip: string;
+  readonly activeSummary: (label: string, data: AggregatedReportData) => string;
+  readonly activeTip: string;
 }
-const reportFallbackTranslations: Readonly<Record<SupportedLocale, ReportFallbackTranslations>> = {
+
+// 일반 조언 없이 서버 통계만 쓰고, 언어별 팁 개수를 같게 둔다.
+const reportFallbackCopy: Readonly<Record<SupportedLocale, ReportFallbackCopy>> = {
   ko: {
-    empty: {
-      aiSummary: "이번 기간에는 등록된 할 일이 없었어요. 다음에는 작은 목표부터 시작해보세요!",
-      aiTips: ["하루에 할 일 1개씩 등록하는 습관을 만들어보세요."],
-    },
-    active: {
-      aiSummary:
-        "이번 기간의 할 일 통계를 기반으로 리포트가 생성되었습니다. 자세한 통계는 위의 데이터를 확인해주세요.",
-      aiTips: [
-        "매일 같은 시간에 할 일을 정리하는 루틴을 만들어보세요.",
-        "큰 할 일은 작은 단위로 나누면 달성률이 올라요.",
-      ],
-    },
+    emptySummary: (label) =>
+      `${label}에는 등록된 할 일이 없었어요. 기록이 생기면 다음 리포트에서 흐름을 함께 볼 수 있어요.`,
+    emptyTip: "다음 기간에 해보고 싶은 작은 일 하나를 앱에 등록해보세요.",
+    activeSummary: (label, data) =>
+      `${label}에는 할 일 ${data.totalTodos}개 중 ${data.completedTodos}개를 완료해 달성률 ${data.completionRate}%였어요.`,
+    activeTip: "이번 기간에 가장 많이 완료한 카테고리의 할 일을 다음 기간에도 하나 등록해보세요.",
   },
   en: {
-    empty: {
-      aiSummary:
-        "No to-dos were registered this period. Next time, try starting with one small goal!",
-      aiTips: ["Try building the habit of adding just 1 to-do a day."],
-    },
-    active: {
-      aiSummary:
-        "This report was generated from your to-do stats for the period. Check the data above for details.",
-      aiTips: ["Keep up your current pace and check in on your progress regularly."],
-    },
+    emptySummary: (label) =>
+      `No to-dos were recorded in ${label}. Once you add some, the next report can show how things went.`,
+    emptyTip: "Add one small thing you'd like to do next period to the app.",
+    activeSummary: (label, data) =>
+      `In ${label} you completed ${data.completedTodos} of ${data.totalTodos} to-dos, a ${data.completionRate}% completion rate.`,
+    activeTip: "Add one to-do next period from the category you completed most this time.",
   },
 };
 
+/** 활동이 없는 기간은 LLM 없이 이 템플릿을 저장한다. */
+export function buildNoActivityContent(
+  periodLabel: string,
+  locale: SupportedLocale,
+): ReportContent {
+  const copy = reportFallbackCopy[locale];
+  return {
+    aiSummary: copy.emptySummary(periodLabel),
+    aiTips: [copy.emptyTip],
+    contentSource: "TEMPLATE",
+    promptVersion: null,
+  };
+}
+
+/** AI를 쓸 수 없거나 마지막 재시도까지 실패한 기간에 저장한다. */
 export function buildFallbackContent(
-  hasActivity: boolean,
-  locale: SupportedLocale = "ko",
-): GeneratedReportContent {
-  const content = reportFallbackTranslations[locale][hasActivity ? "active" : "empty"];
-  return { aiSummary: content.aiSummary, aiTips: [...content.aiTips] };
+  data: AggregatedReportData,
+  periodLabel: string,
+  locale: SupportedLocale,
+): ReportContent {
+  if (!data.hasActivity)
+    return { ...buildNoActivityContent(periodLabel, locale), contentSource: "FALLBACK" };
+  const copy = reportFallbackCopy[locale];
+  return {
+    aiSummary: copy.activeSummary(periodLabel, data),
+    aiTips: [copy.activeTip],
+    contentSource: "FALLBACK",
+    promptVersion: null,
+  };
 }

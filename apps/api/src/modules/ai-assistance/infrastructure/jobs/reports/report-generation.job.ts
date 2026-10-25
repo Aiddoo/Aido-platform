@@ -18,6 +18,7 @@ import type { ReportType } from "../../../domain/types/reports/ai-report.types.j
 import { AiJobLogEvent } from "../../observability/jobs/ai-job-log.events.js";
 import { ReportGenerationProcessor } from "../../processors/reports/report-generation.processor.js";
 import {
+  AI_REPORT_JOB_RETRY_POLICY,
   AI_REPORT_QUEUE,
   type AiReportGenerateData,
   AiReportJobName,
@@ -180,9 +181,7 @@ export class ReportGenerationJob implements OnModuleInit {
 
   #jobOptions() {
     return {
-      retryLimit: 2,
-      retryDelaySeconds: 5,
-      retryBackoff: true,
+      ...AI_REPORT_JOB_RETRY_POLICY,
       expireInSeconds: 10 * 60,
       retentionSeconds: 7 * 24 * 60 * 60,
       deleteAfterSeconds: 7 * 24 * 60 * 60,

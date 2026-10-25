@@ -17,10 +17,11 @@ import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases
  * - 인증 에러 (401)
  */
 import { CacheService } from "#api/platform/cache/cache.service";
-import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { DatabaseService } from "#api/platform/database/database.service";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 import { createReportAiResponse } from "#test/fixtures/ai-response.fixture";
+import { TodoFixture } from "#test/fixtures/todo.fixture";
 
 import { FakeAiProvider } from "../mocks/fake-ai.provider.js";
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -177,6 +178,26 @@ describe("AI 리포트 E2E", () => {
     });
   });
 
+  /** 서울 기준 지난 주(7일 전 같은 요일)에 할 일 하나를 기록한다. 활동이 없으면 LLM을 부르지 않는다. */
+  async function seedLastWeekTodo(userId: string) {
+    const client = ctx.testDatabase.getClient();
+    const category = decodeRecord(
+      "TodoCategory",
+      await client.orm.public.TodoCategory.create(
+        encodeCreate("TodoCategory", { userId, name: "업무", color: "#3B82F6", sortOrder: 99 }),
+      ),
+    );
+    const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const seoulDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" });
+    const { id: _id, ...row } = TodoFixture.create({
+      userId,
+      categoryId: category.id,
+      title: "주간 리포트 기록",
+      startDate: new Date(`${seoulDate.format(lastWeek)}T00:00:00Z`),
+    });
+    await client.orm.public.Todo.create(encodeCreate("Todo", row));
+  }
+
   it.each(["ko", "en"] as const)(
     "%s 리포트는 실제 생성·저장 후 소유자 HTTP에 같은 문구로 전달된다",
     async (locale) => {
@@ -184,6 +205,7 @@ describe("AI 리포트 E2E", () => {
       const user = await createPremiumUser(`ai-report-${locale}@example.com`, "Test1234!");
       const raw = createReportAiResponse(locale);
       fakeAiProvider.setRawResponse(raw);
+      await seedLastWeekTodo(user.userId);
       // When - 실제 생성 UseCase·PG 후 조회 endpoint
       const report = await ctx.module
         .get(GenerateReport)
@@ -202,7 +224,7 @@ describe("AI 리포트 E2E", () => {
         "AiReport",
         await ctx.testDatabase.getClient().orm.public.AiReport.where({ id: report!.id }).first(),
       );
-      expect(stored?.locale).toBe(locale);
+      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@v1" });
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
       const denied = await request(ctx.app.getHttpServer())
         .get(`/v1/ai/reports/${report!.id}`)

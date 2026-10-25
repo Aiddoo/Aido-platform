@@ -131,12 +131,23 @@ export function usePatternResponse(
   return fixture;
 }
 
+/** 리포트 기간에 할 일 4개 중 3개 완료 기록을 넣는다. 활동이 없으면 LLM을 부르지 않는다. */
+export function useReportActivity(fixture: ReturnType<typeof createAiAssistanceFixture>) {
+  const startDate = new Date("2026-03-10T00:00:00Z");
+  fixture.todoStatsReader.inputs = {
+    ...fixture.todoStatsReader.inputs,
+    dailyTotalGroups: [{ startDate, _count: { id: 4 } }],
+    dailyCompletedGroups: [{ startDate, _count: { id: 3 } }],
+  };
+  return fixture;
+}
+
 export function useReportResponse(
   fixture: ReturnType<typeof createAiAssistanceFixture>,
   locale: "ko" | "en" = "ko",
 ) {
   fixture.aiProvider.setRawResponse(createReportAiResponse(locale));
-  return fixture;
+  return useReportActivity(fixture);
 }
 
 export function seedPendingSuggestion(

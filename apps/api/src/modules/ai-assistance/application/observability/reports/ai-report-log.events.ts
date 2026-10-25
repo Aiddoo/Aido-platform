@@ -3,5 +3,6 @@ export const AiReportLogEvent = {
   GENERATION_COMPLETED: "ai.report.generation.completed",
   PROVIDER_UNAVAILABLE: "ai.report.provider.unavailable",
   PROVIDER_FAILED: "ai.report.provider.failed",
+  PROVIDER_RETRYING: "ai.report.provider.retrying",
   SAVED: "ai.report.saved",
 } as const;

@@ -23,6 +23,21 @@ export const AiReportJobName = {
   GENERATE: "generate-report",
 } as const;
 
+/**
+ * 리포트 생성 잡 재시도 정책. AI 일시 오류는 잡 재시도로 다시 생성하고,
+ * 마지막 시도에서만 폴백을 저장한다. 첫 시도 포함 총 retryLimit + 1회다.
+ */
+export const AI_REPORT_JOB_RETRY_POLICY = {
+  retryLimit: 3,
+  retryDelaySeconds: 30,
+  retryBackoff: true,
+} as const;
+
+/** 1부터 세는 시도 번호가 마지막 재시도인지 판단한다. */
+export function isFinalReportAttempt(attempt: number): boolean {
+  return attempt > AI_REPORT_JOB_RETRY_POLICY.retryLimit;
+}
+
 export const AI_REPORT_WORKER_POLICY = {
   teamSize: 5,
   pollingIntervalSeconds: JOB_POLLING_SECONDS.BACKGROUND,
