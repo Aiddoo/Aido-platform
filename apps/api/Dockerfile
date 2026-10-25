@@ -3,7 +3,7 @@ WORKDIR /app
 ENV COREPACK_HOME=/usr/local/share/corepack
 ENV pnpm_config_verify_deps_before_run=false
 COPY package.json ./
-RUN corepack enable && apk add --no-cache openssl
+RUN apk upgrade --no-cache && corepack enable && apk add --no-cache openssl
 
 FROM base AS pruner
 COPY . .
@@ -55,6 +55,7 @@ CMD ["pnpm", "db:deploy"]
 
 FROM node:24.22.1-alpine3.24 AS production
 WORKDIR /app
+RUN apk upgrade --no-cache
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nestjs
 COPY --from=builder --chown=nestjs:nodejs /app/production/ ./
 RUN mkdir -p /app/certs && chmod 0755 /app/certs

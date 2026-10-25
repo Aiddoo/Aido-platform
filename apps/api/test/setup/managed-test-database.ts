@@ -112,7 +112,7 @@ const defaultDependencies: StartManagedTestDatabaseDependencies = {
     if (env.AIDO_TEST_POSTGRES_URL !== undefined) {
       return startServiceDatabase(env.AIDO_TEST_POSTGRES_URL, databaseName);
     }
-    const container = await new PostgreSqlContainer("postgres:16-alpine")
+    const container = await new PostgreSqlContainer("postgres:16.15-alpine")
       .withDatabase(databaseName)
       .withUsername("test_user")
       .withPassword("test_password")
