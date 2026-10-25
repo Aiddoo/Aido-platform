@@ -13,6 +13,7 @@ export const SENTRY_FEATURES = [
   'draft',
   'error_boundary',
   'lifecycle',
+  'subscription',
   'todo_comment',
   'todo_nudge',
   'weather_location',

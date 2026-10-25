@@ -1,11 +1,7 @@
-import {
-  type CreateInquiryInput,
-  createInquirySchema,
-  INQUIRY_CATEGORY,
-  INQUIRY_CONTENT_LIMITS,
-} from '@aido/api';
+import { type CreateInquiryInput, createInquirySchema, INQUIRY_CONTENT_LIMITS } from '@aido/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/constants/inquiry-category-labels';
+import { useInquiryScreenParams } from '@src/features/inquiry/hooks/use-inquiry-screen-params';
 import { useCreateInquiryMutationOptions } from '@src/features/inquiry/queries/use-create-inquiry-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -38,6 +34,7 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 function InquiryScreen() {
   const { showBoundary } = useErrorBoundary();
+  const initialValues = useInquiryScreenParams();
 
   const { t } = useTranslation('inquiry');
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
@@ -62,7 +59,7 @@ function InquiryScreen() {
 
   const formMethods = useForm({
     resolver: zodResolver(createInquirySchema),
-    defaultValues: { category: INQUIRY_CATEGORY.BUG_REPORT, content: '' },
+    defaultValues: initialValues,
     mode: 'onChange',
   });
   const {

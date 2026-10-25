@@ -10,23 +10,19 @@
   "toast": {
     "purchaseSuccess": "You're subscribed!",
     "paymentPending": "Payment approval is pending. It will apply automatically once approved.",
-    "purchaseFailed": "Subscription failed",
     "restoreSuccess": "Purchases restored!",
     "restoreEmpty": "No purchases to restore",
-    "restoreFailed": "Failed to restore purchases",
     "purchaseSuccessWithReward": "Your subscription has started. Your remaining invite reward continues after it ends",
     "restoreEmptyWithReward": "No purchases to restore. Your invite reward stays as is"
   },
   "errors": {
-    "notConfigured": "RevenueCat isn't initialized",
-    "noOfferings": "No subscription products available",
-    "fetchOfferingsFailed": "Failed to load subscription products",
+    "storeUnavailable": "The store isn't available",
+    "offeringsUnavailable": "Couldn't load subscription products",
+    "network": "Couldn't connect to the store",
     "purchaseCancelled": "Purchase canceled",
-    "purchaseFailed": "Purchase failed",
     "paymentPending": "Payment approval is pending",
-    "restoreFailed": "Failed to restore purchases",
-    "offeringsInfoUnavailable": "Couldn't load subscription product info",
-    "offeringsInfoNotFound": "Subscription product info not found"
+    "purchaseFailed": "Purchase failed",
+    "restoreFailed": "Failed to restore purchases"
   },
   "benefits": {
     "aiParsing": {
@@ -75,8 +71,6 @@
     "futureIncluded": "All future premium features are included too",
     "moreBenefits": "More premium benefits",
     "subscribeButton": "Subscribe",
-    "unavailableTitle": "Subscriptions are coming soon",
-    "unavailableDescription": "The subscription service isn't available right now. Please try again later.",
     "termsPrefix": "By purchasing, you agree to the ",
     "termsLink": "Terms of Service",
     "termsAnd": " and ",
@@ -127,5 +121,25 @@
       "rewardStartsAfterSubscription_other": "When your subscription ends, your {{count}} reward days start",
       "manageAutoRenewalInStore": "You can change auto-renew in your store settings"
     }
+  },
+  "failure": {
+    "title": {
+      "receipt": "Couldn't load your subscription",
+      "plans": "Couldn't load plans",
+      "purchase": "Couldn't complete your payment",
+      "restore": "Couldn't load your purchases"
+    },
+    "description": {
+      "network": "Check your internet connection and try again",
+      "server": "Please try again in a moment. If it keeps happening, contact us",
+      "store": "Couldn't connect to the store. Please try again in a moment",
+      "purchase": "If you were charged but don't see Premium, contact us",
+      "restore": "Please try again in a moment. If it keeps happening, contact us"
+    },
+    "contactSupport": "Contact us"
+  },
+  "inquiryDraft": {
+    "withDevice": "{{subject}}\n(Error code: {{code}} / App {{appVersion}} / {{platform}})\n\n",
+    "withoutDevice": "{{subject}}\n(Error code: {{code}})\n\n"
   }
 }

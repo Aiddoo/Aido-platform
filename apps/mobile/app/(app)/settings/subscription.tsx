@@ -4,11 +4,17 @@ import benefitNotificationImage from '@assets/images/subscription/benefit-notifi
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
+import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
+import { useOpenSubscriptionInquiry } from '@src/features/subscription/hooks/use-open-subscription-inquiry';
 import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
 import { useSubscriptionViewParam } from '@src/features/subscription/hooks/use-subscription-view-param';
 import { useGetOfferingsQueryOptions } from '@src/features/subscription/queries/get-offerings-query-options';
 import { usePurchaseMutationOptions } from '@src/features/subscription/queries/use-purchase-mutation-options';
 import { useRestoreMutationOptions } from '@src/features/subscription/queries/use-restore-mutation-options';
+import {
+  type SubscriptionSupportFailure,
+  toSubscriptionLoadFailure,
+} from '@src/features/subscription/utils/view-models/subscription-failure.view-model';
 import type { SubscriptionReceiptRow } from '@src/features/subscription/utils/view-models/subscription-receipt.view-model';
 import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
@@ -29,6 +35,8 @@ import {
   ListRow,
   PersonIcon,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
+  ReadableContent,
   Result,
   Spacing,
   type StyledIconType,
@@ -41,12 +49,12 @@ import {
   Box,
 } from '@src/shared/ui';
 import { formatFullDate, formatMonthDay } from '@src/shared/utils/date';
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
-import { Suspense, useState } from 'react';
-import { Image, type ImageSourcePropType, ScrollView } from 'react-native';
+import { Suspense, useEffect, useState } from 'react';
+import { AccessibilityInfo, Image, type ImageSourcePropType, ScrollView } from 'react-native';
 import { match } from 'ts-pattern';
 
 function SubscriptionScreen() {
@@ -55,19 +63,47 @@ function SubscriptionScreen() {
   const receipt = useSubscriptionReceipt();
   const [view] = useSubscriptionViewParam();
 
-  // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다
+  // 보상 기간만 있으면 끝나기 전에 구독을 이어 붙일 수 있게 요금제를 보여 준다.
+  // 영수증은 서버의 내 정보로만 그려 스토어가 실패해도 이용 중인 사람은 영수증을 본다.
   return match({
     isPremium: UserPolicy.isPremiumUser(user),
     canSubscribe: receipt.primaryAction === 'subscribe',
     isStoreConfigured: sdkManager.isConfigured(),
     view,
   })
-    .with({ canSubscribe: true, view: 'plans' }, () => <PaywallPane />)
+    .with(
+      { canSubscribe: true, view: 'plans' },
+      { isPremium: false, isStoreConfigured: true },
+      () => (
+        <QueryErrorBoundary fallback={PaywallPane.Error}>
+          <Suspense fallback={<SubscriptionScreen.Loading />}>
+            <PaywallPane />
+          </Suspense>
+        </QueryErrorBoundary>
+      ),
+    )
     .with({ isPremium: true }, () => <SubscriberPane />)
     .with({ isStoreConfigured: false }, () => <StoreUnavailablePane />)
-    .with({ isPremium: false, isStoreConfigured: true }, () => <PaywallPane />)
     .exhaustive();
 }
+
+SubscriptionScreen.Loading = function Loading() {
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
+      <Spinner size="lg" color="default" />
+    </StyledSafeAreaView>
+  );
+};
+
+/** 내 정보를 불러오지 못하면 영수증도 요금제도 정할 수 없어 화면 전체에서 안내한다 */
+SubscriptionScreen.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
+  return (
+    <SubscriptionFailureResult
+      failure={toSubscriptionLoadFailure('receipt', error)}
+      onRetry={reset}
+    />
+  );
+};
 
 function SubscriberPane() {
   const { t } = useTranslation('subscription');
@@ -87,11 +123,7 @@ function SubscriberPane() {
 
         <PremiumEndingNotice />
 
-        <QueryErrorBoundary>
-          <Suspense fallback={<SubscriptionScreen.Loading />}>
-            <SubscriptionReceipt />
-          </Suspense>
-        </QueryErrorBoundary>
+        <SubscriptionReceipt />
 
         <Spacing size={16} />
 
@@ -130,34 +162,26 @@ function SubscriberPane() {
   );
 }
 
+/** 스토어 SDK를 쓸 수 없으면 다시 시도해도 같아 문의로만 안내한다 */
 function StoreUnavailablePane() {
-  const { t } = useTranslation('subscription');
-
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
-      <Result
-        icon={<DocsIcon width={72} height={72} />}
-        title={t('paywall.unavailableTitle')}
-        description={t('paywall.unavailableDescription')}
-      />
-    </StyledSafeAreaView>
+    <SubscriptionFailureResult
+      failure={toSubscriptionLoadFailure('plans', SubscriptionErrors.storeUnavailable())}
+    />
   );
 }
 
 function PaywallPane() {
   const { t } = useTranslation('subscription');
-  const { data: offering } = useQuery({
-    ...useGetOfferingsQueryOptions(),
-    throwOnError: (_error, query) => query.state.data == null,
-  });
+  const { data: offering } = useSuspenseQuery(useGetOfferingsQueryOptions());
   const purchase = useMutation(usePurchaseMutationOptions());
   const restore = useMutation(useRestoreMutationOptions());
   const [view] = useSubscriptionViewParam();
   const [chosenPlanId, setChosenPlanId] = useState<string>();
   const defaultPlan =
-    offering?.plans.find((plan) => plan.planType === 'annual') ?? offering?.plans[0];
+    offering.plans.find((plan) => plan.planType === 'annual') ?? offering.plans[0];
   const selectedPlanId = chosenPlanId ?? defaultPlan?.identifier;
-  const selectedPlan = offering?.plans.find((plan) => plan.identifier === selectedPlanId);
+  const selectedPlan = offering.plans.find((plan) => plan.identifier === selectedPlanId);
 
   const handlePurchase = () => {
     if (!selectedPlan || purchase.isPending) {
@@ -172,10 +196,6 @@ function PaywallPane() {
       },
     });
   };
-
-  if (offering == null) {
-    return <SubscriptionScreen.Loading />;
-  }
 
   return (
     <Box className="flex-1">
@@ -265,13 +285,58 @@ function PaywallPane() {
   );
 }
 
-SubscriptionScreen.Loading = function Loading() {
+/** 스토어에서 요금제를 받지 못해도 빈 화면 대신 다시 시도와 문의를 보여 준다 */
+PaywallPane.Error = function ErrorFallback({ error, reset }: QueryErrorFallbackProps) {
   return (
-    <StyledSafeAreaView edges={['left', 'right']} className="flex-1 items-center justify-center">
-      <Spinner size="lg" color="default" />
-    </StyledSafeAreaView>
+    <SubscriptionFailureResult
+      failure={toSubscriptionLoadFailure('plans', error)}
+      onRetry={reset}
+    />
   );
 };
+
+interface SubscriptionFailureResultProps {
+  failure: SubscriptionSupportFailure;
+  /** 다시 해도 결과가 같으면 넘기지 않는다 */
+  onRetry?: () => void;
+}
+
+/** 구독 실패 안내. 무엇이 실패했는지 → 할 일 → 다시 시도 → 문의하기 순서를 모든 실패에서 지킨다 */
+function SubscriptionFailureResult({ failure, onRetry }: SubscriptionFailureResultProps) {
+  const { t } = useTranslation(['subscription', 'common']);
+  const openInquiry = useOpenSubscriptionInquiry();
+  const title = t(failure.titleKey);
+  const description = t(failure.descriptionKey);
+
+  // 화면이 오류로 바뀐 것을 스크린 리더에도 알린다
+  useEffect(() => {
+    AccessibilityInfo.announceForAccessibilityWithOptions(`${title}. ${description}`, {
+      queue: true,
+    });
+  }, [title, description]);
+
+  return (
+    <StyledSafeAreaView edges={['left', 'right']} className="flex-1">
+      <ReadableContent className="flex-1 px-6" accessibilityRole="alert">
+        <Result
+          icon={<DocsIcon width={72} height={72} />}
+          title={title}
+          description={description}
+          button={
+            <VStack gap={12} align="center">
+              {onRetry != null && (
+                <Result.Button onPress={onRetry}>{t('common:actions.retry')}</Result.Button>
+              )}
+              <TextButton size="medium" variant="underline" onPress={() => openInquiry(failure)}>
+                {t('subscription:failure.contactSupport')}
+              </TextButton>
+            </VStack>
+          }
+        />
+      </ReadableContent>
+    </StyledSafeAreaView>
+  );
+}
 
 function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
@@ -598,7 +663,7 @@ function SubscriptionTerms() {
 export default function SubscriptionRoute() {
   return (
     <StyledSafeAreaView className="flex-1 bg-gray-1" edges={['bottom']}>
-      <QueryErrorBoundary>
+      <QueryErrorBoundary fallback={SubscriptionScreen.Error}>
         <Suspense fallback={<SubscriptionScreen.Loading />}>
           <SubscriptionScreen />
         </Suspense>

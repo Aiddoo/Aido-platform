@@ -10,23 +10,19 @@
   "toast": {
     "purchaseSuccess": "구독이 완료되었어요!",
     "paymentPending": "결제 승인 대기 중이에요. 승인 후 자동으로 반영돼요.",
-    "purchaseFailed": "구독에 실패했어요",
     "restoreSuccess": "구매가 복원되었어요!",
     "restoreEmpty": "복원할 구매 내역이 없어요",
-    "restoreFailed": "구매 복원에 실패했어요",
     "purchaseSuccessWithReward": "구독을 시작했어요. 남은 초대 보상은 구독이 끝나면 이어져요",
     "restoreEmptyWithReward": "복원할 구매가 없어요. 초대 보상은 그대로 유지돼요"
   },
   "errors": {
-    "notConfigured": "RevenueCat이 초기화되지 않았어요",
-    "noOfferings": "사용 가능한 구독 상품이 없어요",
-    "fetchOfferingsFailed": "구독 상품을 불러오는데 실패했어요",
+    "storeUnavailable": "스토어를 사용할 수 없어요",
+    "offeringsUnavailable": "구독 상품을 불러오지 못했어요",
+    "network": "스토어에 연결하지 못했어요",
     "purchaseCancelled": "구매가 취소되었어요",
-    "purchaseFailed": "구매에 실패했어요",
     "paymentPending": "결제 승인 대기 중이에요",
-    "restoreFailed": "구매 복원에 실패했어요",
-    "offeringsInfoUnavailable": "구독 상품 정보를 불러올 수 없어요",
-    "offeringsInfoNotFound": "구독 상품 정보를 찾을 수 없어요"
+    "purchaseFailed": "구매에 실패했어요",
+    "restoreFailed": "구매 복원에 실패했어요"
   },
   "benefits": {
     "aiParsing": {
@@ -75,8 +71,6 @@
     "futureIncluded": "향후 출시되는 모든 프리미엄 기능도 포함돼요",
     "moreBenefits": "더 많은 프리미엄 혜택",
     "subscribeButton": "구독하기",
-    "unavailableTitle": "구독을 준비 중이에요",
-    "unavailableDescription": "현재 구독 서비스를 이용할 수 없어요. 잠시 후 다시 시도해주세요.",
     "termsPrefix": "구매 시 ",
     "termsLink": "이용약관",
     "termsAnd": " 및 ",
@@ -124,5 +118,25 @@
       "rewardStartsAfterSubscription": "구독이 끝나면 보상 {{count}}일이 이어서 시작돼요",
       "manageAutoRenewalInStore": "자동 갱신은 스토어 설정에서 바꿀 수 있어요"
     }
+  },
+  "failure": {
+    "title": {
+      "receipt": "구독 정보를 불러오지 못했어요",
+      "plans": "요금제를 불러오지 못했어요",
+      "purchase": "결제를 마치지 못했어요",
+      "restore": "구매 내역을 불러오지 못했어요"
+    },
+    "description": {
+      "network": "인터넷 연결을 확인하고 다시 시도해주세요",
+      "server": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요",
+      "store": "스토어에 연결하지 못했어요. 잠시 후 다시 시도해주세요",
+      "purchase": "결제가 됐는데 프리미엄이 보이지 않으면 문의해주세요",
+      "restore": "잠시 후 다시 시도해주세요. 계속 안 되면 문의해주세요"
+    },
+    "contactSupport": "문의하기"
+  },
+  "inquiryDraft": {
+    "withDevice": "{{subject}}\n(오류 코드: {{code}} / 앱 {{appVersion}} / {{platform}})\n\n",
+    "withoutDevice": "{{subject}}\n(오류 코드: {{code}})\n\n"
   }
 }
