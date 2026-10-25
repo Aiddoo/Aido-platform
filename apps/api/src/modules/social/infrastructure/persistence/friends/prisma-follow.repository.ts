@@ -443,6 +443,11 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         WHERE u.id <> ${viewerId}
           AND u."deletedAt" IS NULL
           AND u.status = 'ACTIVE'
+          AND NOT EXISTS (
+            SELECT 1 FROM "UserBlock" b
+            WHERE (b."blockerId" = ${viewerId} AND b."blockedId" = u.id)
+               OR (b."blockerId" = u.id AND b."blockedId" = ${viewerId})
+          )
           AND (
             u."userTag" ILIKE '%' || ${upperTag} || '%'
             OR p.name ILIKE '%' || ${nfcQuery} || '%'
@@ -477,6 +482,8 @@ export class PrismaFollowRepository implements FollowRepositoryPort {
         user.id.neq(viewerId),
         user.deletedAt.isNull(),
         user.status.eq("ACTIVE"),
+        user.initiatedBlocks.none((block) => block.blockedId.eq(viewerId)),
+        user.receivedBlocks.none((block) => block.blockerId.eq(viewerId)),
         or(
           user.userTag.ilike(`%${upperTag}%`),
           user.profile.some((profile) => profile.name.ilike(`%${nfcQuery}%`)),

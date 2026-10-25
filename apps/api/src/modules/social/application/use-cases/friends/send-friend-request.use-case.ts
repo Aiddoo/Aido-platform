@@ -13,6 +13,7 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type { Friendship } from "../../../domain/aggregates/friends/friendship.aggregate.js";
 import { hasReachedFriendLimit } from "../../../domain/policies/friends/friend-limit.policy.js";
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
+import { type UserBlockReaderPort } from "../../ports/blocks/user-block-reader.port.js";
 import { type FollowNotifierPort } from "../../ports/friends/follow-notifier.port.js";
 import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
 import type { FriendshipEffects } from "../../services/friends/friendship-effects.service.js";
@@ -42,6 +43,7 @@ interface SendFriendRequestDependencies {
   readonly unitOfWork: UnitOfWorkPort;
   readonly mutationLock: MutationLockPort;
   readonly entitlementReader: Pick<EntitlementReaderPort, "getResourceLimitInTx">;
+  readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly effects: Pick<
     FriendshipEffects,
     "invalidateFriendshipCaches" | "notifyMutual" | "checkFirstFriendMilestone"
@@ -81,6 +83,15 @@ export class SendFriendRequest {
 
       const targetExists = await this.#dependencies.followRepository.userExists(targetUserId);
       if (!targetExists) {
+        throw new ApplicationException(ErrorCode.FOLLOW_0905, { targetUserId });
+      }
+      // 차단과 같은 쌍 잠금 아래에서 읽어 차단 직후 요청이 친구 관계를 되살리지 못하게 한다.
+      const blockRelation = await this.#dependencies.blockReader.findRelation(userId, targetUserId);
+      if (blockRelation.isBlocking) {
+        throw new ApplicationException(ErrorCode.BLOCK_2203, { targetUserId });
+      }
+      // 차단당한 사람에게는 차단 사실을 알리지 않도록 없는 사용자와 같은 오류로 답한다.
+      if (blockRelation.isBlockedBy) {
         throw new ApplicationException(ErrorCode.FOLLOW_0905, { targetUserId });
       }
       const existingFollow = await this.#dependencies.followRepository.findByFollowerAndFollowing(

@@ -29,6 +29,12 @@ export const SWAGGER_TAGS = {
   /** 알림 - 푸시 토큰 등록, 알림 목록 조회, 읽음 처리 */
   NOTIFICATIONS: "Notifications",
 
+  /** 차단 - 사용자 차단·해제, 차단 목록 */
+  BLOCKS: "Blocks",
+
+  /** 신고 - 사용자·콘텐츠 신고 접수 */
+  REPORTS: "Reports",
+
   /** 콕 찌르기 - 친구 할 일 콕 찌르기, 쿨다운/제한 관리 */
   NUDGES: "Nudges",
 
@@ -115,6 +121,12 @@ export const SWAGGER_TAG_DESCRIPTIONS: Record<SwaggerTag, string> = {
   [SWAGGER_TAGS.DAILY_COMPLETIONS]: "일일 할 일 완료율, 주간/월간 통계, 친구 달성 현황",
 
   [SWAGGER_TAGS.NOTIFICATIONS]: "푸시 토큰 등록/해제, 알림 목록 조회, 읽음 처리",
+
+  [SWAGGER_TAGS.BLOCKS]:
+    "사용자 차단·해제와 차단 목록. 차단하면 친구 관계와 요청이 끊기고, 서로의 콕·응원·댓글이 보이지 않으며, 상대에게는 알리지 않습니다",
+
+  [SWAGGER_TAGS.REPORTS]:
+    "프로필·할 일·댓글·콕·응원 메시지 신고 접수. 접수하면 운영자에게 이메일로 알리고 운영자가 확인해 조치합니다",
 
   [SWAGGER_TAGS.NUDGES]: "친구 할 일에 콕 찌르기. FREE: 3회/일, 동일 할 일 24시간 쿨다운",
 

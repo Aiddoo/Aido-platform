@@ -1,16 +1,16 @@
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
-import { type FollowCachePort } from "../../ports/friends/follow-cache.port.js";
 import { type FollowNotifierPort } from "../../ports/friends/follow-notifier.port.js";
 import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
+import {
+  type FriendshipCacheInvalidator,
+  invalidateFriendshipCaches,
+} from "./friendship-cache-invalidation.js";
 
 interface FriendshipEffectsDependencies {
   readonly followRepository: Pick<FollowRepositoryPort, "countMutualFriends">;
-  readonly cache: Pick<
-    FollowCachePort,
-    "invalidateMutualFriend" | "invalidateMutualFriendIds" | "invalidateFriendCount"
-  >;
+  readonly cache: FriendshipCacheInvalidator;
   readonly notifier: Pick<FollowNotifierPort, "notifyFollowMutual" | "notifyFirstFriendMilestone">;
   readonly logger: ApplicationLogger;
 }
@@ -22,14 +22,8 @@ export class FriendshipEffects {
     this.#dependencies = dependencies;
   }
 
-  async invalidateFriendshipCaches(userId: string, targetUserId: string): Promise<void> {
-    await Promise.all([
-      this.#dependencies.cache.invalidateMutualFriend(userId, targetUserId),
-      this.#dependencies.cache.invalidateMutualFriendIds(userId),
-      this.#dependencies.cache.invalidateMutualFriendIds(targetUserId),
-      this.#dependencies.cache.invalidateFriendCount(userId),
-      this.#dependencies.cache.invalidateFriendCount(targetUserId),
-    ]);
+  invalidateFriendshipCaches(userId: string, targetUserId: string): Promise<void> {
+    return invalidateFriendshipCaches(this.#dependencies.cache, userId, targetUserId);
   }
 
   notifyMutual(params: { userId: string; friendId: string; friendName: string }): void {

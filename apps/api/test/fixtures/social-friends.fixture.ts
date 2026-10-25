@@ -6,6 +6,7 @@ import type { UnitOfWorkPort, MutationLockPort } from "#api/shared/application/p
 import { UserFixture } from "#test/fixtures/user.fixture";
 import { FakeLogger } from "#test/mocks/fake-logger.service";
 import { StubEntitlementCache, StubEntitlementDatabase } from "#test/mocks/ports/entitlement.stub";
+import { StubUserBlockRepository } from "#test/mocks/ports/social-blocks.stub";
 import {
   StubFollowCache,
   StubFollowNotifier,
@@ -17,6 +18,7 @@ export const SOCIAL_TIME = new Date("2026-07-26T00:30:00.000Z");
 export function createSocialFriendFixture() {
   const followRepository = new StubFollowRepository();
   const cache = new StubFollowCache();
+  const userBlockRepository = new StubUserBlockRepository(followRepository);
   const notifier = new StubFollowNotifier();
   const database = new StubEntitlementDatabase();
   const entitlementReader = new EntitlementService({
@@ -64,6 +66,9 @@ export function createSocialFriendFixture() {
   return {
     followRepository,
     cache,
+    friendshipCache: cache,
+    userBlockRepository,
+    blockReader: userBlockRepository,
     notifier,
     database,
     entitlementReader,

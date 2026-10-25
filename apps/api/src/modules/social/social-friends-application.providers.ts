@@ -8,6 +8,7 @@ import {
   UNIT_OF_WORK,
 } from "#api/shared/application/ports/index";
 
+import { USER_BLOCK_READER } from "./application/ports/blocks/user-block-reader.port.js";
 import { FOLLOW_CACHE } from "./application/ports/friends/follow-cache.port.js";
 import { FOLLOW_NOTIFIER } from "./application/ports/friends/follow-notifier.port.js";
 import { FOLLOW_REPOSITORY } from "./application/ports/friends/follow.repository.port.js";
@@ -109,6 +110,7 @@ export const sendFriendRequestProvider: FactoryProvider<SendFriendRequest> = {
     UNIT_OF_WORK,
     MUTATION_LOCK,
     ENTITLEMENT_READER,
+    USER_BLOCK_READER,
     FriendshipEffects,
   ],
   useFactory: (
@@ -117,6 +119,7 @@ export const sendFriendRequestProvider: FactoryProvider<SendFriendRequest> = {
     unitOfWork: ConstructorParameters<typeof SendFriendRequest>[0]["unitOfWork"],
     mutationLock: ConstructorParameters<typeof SendFriendRequest>[0]["mutationLock"],
     entitlementReader: ConstructorParameters<typeof SendFriendRequest>[0]["entitlementReader"],
+    blockReader: ConstructorParameters<typeof SendFriendRequest>[0]["blockReader"],
     effects: ConstructorParameters<typeof SendFriendRequest>[0]["effects"],
   ) =>
     new SendFriendRequest({
@@ -125,6 +128,7 @@ export const sendFriendRequestProvider: FactoryProvider<SendFriendRequest> = {
       unitOfWork,
       mutationLock,
       entitlementReader,
+      blockReader,
       effects,
       logger: new Logger(SendFriendRequest.name),
     }),

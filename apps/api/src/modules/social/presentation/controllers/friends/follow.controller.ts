@@ -101,7 +101,9 @@ export class FollowController {
     operationId: "sendFriendRequest",
     description: `특정 사용자에게 친구 요청을 보냅니다.
 
-상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).`,
+상대방이 이미 나에게 친구 요청을 보낸 상태라면 자동으로 친구가 됩니다 (\`autoAccepted: true\`).
+
+내가 차단한 사용자에게는 보낼 수 없습니다(\`BLOCK_2203\`). 나를 차단한 사용자는 찾을 수 없는 사용자와 같게 응답합니다(\`FOLLOW_0905\`).`,
   })
   @ApiCreatedResponse({ type: SendFriendRequestResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -109,6 +111,7 @@ export class FollowController {
   @ApiNotFoundError(ErrorCode.FOLLOW_0905)
   @ApiErrorCodesResponse(HttpStatus.CONFLICT, [ErrorCode.FOLLOW_0901, ErrorCode.FOLLOW_0902])
   @ApiForbiddenError(ErrorCode.FOLLOW_0909)
+  @ApiForbiddenError(ErrorCode.BLOCK_2203)
   async sendRequest(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: UserTagParamDto }) params: UserTagParamDto,

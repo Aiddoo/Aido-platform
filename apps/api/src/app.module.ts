@@ -32,6 +32,7 @@ import { OperationsAdminModule } from "#api/modules/operations/operations-admin.
 import { OperationsNotificationsModule } from "#api/modules/operations/operations-notifications.public";
 import { PlanningCategoriesModule } from "#api/modules/planning/planning-categories.public";
 import { PlanningTodosModule } from "#api/modules/planning/planning-todos.public";
+import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
 import { SocialCheersModule } from "#api/modules/social/social-cheers.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { SocialInvitesModule } from "#api/modules/social/social-invites.public";
@@ -117,6 +118,7 @@ import { AppService } from "./app.service.js";
     AiAssistanceReportsModule,
     AiAssistanceSuggestionsModule,
     IdentityAuthModule,
+    SocialBlocksModule,
     SocialCheersModule,
     InsightsDailyCompletionsModule,
     SocialFriendsModule,
