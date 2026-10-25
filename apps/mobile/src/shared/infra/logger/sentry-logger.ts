@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import type { LogContext, Logger, LogLevel } from '@src/core/ports/logger';
+import { SENTRY_TAGS } from '@src/shared/observability/telemetry-keys';
 
 /**
  * Sentry 기반 Logger 어댑터.
@@ -43,7 +44,7 @@ export const createSentryLogger = (): Logger => {
       if (error) {
         // 커스텀 메시지·컨텍스트를 extra로 첨부 → Sentry 이슈 상세에서 바로 확인 가능.
         Sentry.captureException(error, {
-          tags: { source: 'logger' },
+          tags: { [SENTRY_TAGS.SOURCE]: 'logger' },
           extra: { loggerMessage: message, ...context },
         });
       }

@@ -84,6 +84,7 @@ export interface HttpClient {
 | `ErrorReporter`         | `SentryErrorReporter`(prod) / `ConsoleErrorReporter`(dev) | `shared/infra/error-reporter/`               |
 
 > 포트는 `core/ports/`에 정의, 벤더(`@sentry/*`·`@react-native-firebase/*`) 코드는 어댑터에만 격리. core/도메인/presentation은 벤더를 직접 import하지 않는다.
+> 예외로 `core/ports/`는 관측 키 타입을 위해 `shared/observability/telemetry-keys`를 `import type`으로만 참조할 수 있다.
 
 | 클라이언트                  | 용도                                 |
 | --------------------------- | ------------------------------------ |
@@ -100,8 +101,8 @@ export interface HttpClient {
 | **Firebase Analytics** | 제품 지표(이벤트/화면/유저 속성)                       | `Analytics` 포트 + 타입 카탈로그 `track()`/`useTrack()`                    |
 
 - **Crashlytics는 사용하지 않는다** (Sentry로 크래시까지 일원화, 2026-07 정리).
-- Breadcrumb 카테고리는 `BreadcrumbCategory` union(`http`·`navigation`·…)으로 고정 — 매직 문자열 금지.
-- Analytics 이벤트는 `AppEventMap`(`shared/analytics/events/*.events.ts`)에만 정의, raw `trackEvent` 직접호출 금지.
+- Breadcrumb 카테고리는 `BREADCRUMB_CATEGORIES`(`BreadcrumbCategory`, `http`·`navigation`·…)로 고정 — 매직 문자열 금지.
+- Analytics 이벤트는 `AppEventMap`(`shared/observability/telemetry-keys.ts`)에만 정의, raw `trackEvent` 직접호출 금지.
 
 ---
 

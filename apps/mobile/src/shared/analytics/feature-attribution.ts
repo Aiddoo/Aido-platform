@@ -1,8 +1,8 @@
 import type { Analytics } from '@src/core/ports/analytics';
 import type { SyncStorage } from '@src/core/ports/sync-storage';
+import { FEATURE_KEYS, type FeatureKey } from '@src/shared/observability/telemetry-keys';
 import { z } from 'zod';
 
-import { FEATURE_KEYS, type FeatureKey } from './events/growth.events';
 import { track } from './track';
 
 const DAY_MS = 24 * 60 * 60 * 1000;

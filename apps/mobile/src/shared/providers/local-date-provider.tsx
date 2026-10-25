@@ -1,7 +1,7 @@
 import { useAnalytics, useErrorReporter } from '@src/bootstrap/providers/di-context';
 import { track } from '@src/shared/analytics';
-import type { LocalDateChangeTrigger } from '@src/shared/analytics/events/lifecycle.events';
 import { toError } from '@src/shared/errors';
+import type { LocalDateChangeTrigger } from '@src/shared/observability/telemetry-keys';
 import {
   createLocalDateState,
   isSameLocalDateState,

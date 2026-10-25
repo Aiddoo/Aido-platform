@@ -1,11 +1,11 @@
-export type { AppEventMap } from './events';
 export type {
+  AppEventMap,
   FeatureHubSource,
   FeatureKey,
   FriendSearchLengthBucket,
   GrowthEventMap,
-} from './events/growth.events';
-export { FEATURE_KEYS, toFriendSearchLengthBucket } from './events/growth.events';
+} from '@src/shared/observability/telemetry-keys';
+export { FEATURE_KEYS, toFriendSearchLengthBucket } from '@src/shared/observability/telemetry-keys';
 export {
   createFeatureAttributionStore,
   FEATURE_ATTRIBUTION_TTL_MS,

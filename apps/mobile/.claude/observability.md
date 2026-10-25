@@ -20,12 +20,12 @@
 
 ## Analytics — 제품 지표
 
-- 모든 이벤트는 `shared/analytics/events/*.events.ts`의 `*EventMap`에 **먼저 정의**한다 → `AppEventMap`으로 합쳐짐.
+- 모든 이벤트는 `shared/observability/telemetry-keys.ts`의 `*EventMap`에 **먼저 정의**한다 → `AppEventMap`으로 합쳐짐. Analytics 이벤트·Sentry feature·태그 키·breadcrumb 카테고리는 이 한 파일이 단일 원본이다(`core/ports`는 타입만 import).
 - 전송은 `track(analytics, name, params)`(비-React) 또는 `useTrack().trackEvent(name, params)`(컴포넌트)만 사용.
 - **raw `analytics.trackEvent('문자열', …)` 직접호출 금지** — 이벤트명·payload가 컴파일 타임 검증되지 않는다.
 
 ```ts
-// 이벤트 정의 (auth.events.ts)
+// 이벤트 정의 (telemetry-keys.ts의 AuthEventMap)
 session_expired: {
   reason: SessionExpiredReason;
 }
@@ -53,7 +53,7 @@ errorReporter.captureMessage('session_expired', {
 
 ### 2) Breadcrumb — `addBreadcrumb`
 
-이벤트 **직전 행적**(자체 Issue 아님). `category`는 `BreadcrumbCategory` union으로 고정.
+이벤트 **직전 행적**(자체 Issue 아님). `category`는 `telemetry-keys.ts`의 `BREADCRUMB_CATEGORIES`(`BreadcrumbCategory`)로 고정.
 
 ```ts
 errorReporter.addBreadcrumb({
@@ -93,7 +93,7 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 `ErrorReporterContext`(`feature`·`errorCode`·`method`·`endpoint`·`statusCode`)가 Sentry tags로 변환된다(`severity` 제외).
 저카디널리티 값만 태그로 — 검색(`errorCode:AUTH_0104`)·필터·그룹핑용.
 
-`feature`는 `core/ports/error-reporter.ts`의 `ErrorReporterFeature` union이며 snake_case 값만 쓴다(`app_icon`, `todo_nudge`). 새 값은 union에 먼저 추가한다.
+`feature`는 `telemetry-keys.ts`의 `SENTRY_FEATURES`(`SentryFeature`)이며 snake_case 값만 쓴다(`app_icon`, `todo_nudge`). 새 값은 거기에 먼저 추가한다. 태그 키는 `SENTRY_TAGS`를 쓴다.
 
 ---
 
@@ -123,6 +123,6 @@ errorReporter.addBreadcrumb({ category: 'navigation', message: '화면 이동', 
 | 포트                      | `core/ports/{error-reporter,severity,breadcrumb,analytics,telemetry-event}.ts`                                                                  |
 | Sentry 어댑터             | `shared/infra/error-reporter/sentry-error-reporter.ts`, `shared/infra/logger/sentry-logger.ts`                                                  |
 | Sentry init/wrap          | `shared/infra/observability/sentry.ts` (앱 루트 `initSentry()`·`wrapRootComponent()`)                                                           |
-| Analytics 카탈로그/파사드 | `shared/analytics/events/*.events.ts`, `track.ts`, `use-track.ts`                                                                               |
+| Analytics 카탈로그/파사드 | `shared/observability/telemetry-keys.ts`, `shared/analytics/{track,use-track}.ts`                                                               |
 | DI 배선                   | `bootstrap/providers/di-provider.tsx`                                                                                                           |
 | 계측 지점                 | `shared/infra/http/error-handler.ts`(http), `shared/hooks/use-screen-tracking.ts`(navigation), `bootstrap/providers/auth-provider.tsx`(session) |

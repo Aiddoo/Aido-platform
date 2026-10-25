@@ -1,7 +1,7 @@
 import type { Analytics } from '@src/core/ports/analytics';
-import type { FeatureHubSource, FeatureKey } from '@src/shared/analytics/events/growth.events';
 import type { FeatureAttributionStore } from '@src/shared/analytics/feature-attribution';
 import { track } from '@src/shared/analytics/track';
+import type { FeatureHubSource, FeatureKey } from '@src/shared/observability/telemetry-keys';
 
 import type { FeatureDiscoveryCardId } from '../../domains/feature-discovery.registry';
 

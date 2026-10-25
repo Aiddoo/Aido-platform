@@ -1,4 +1,4 @@
-import { toFriendSearchLengthBucket } from './growth.events';
+import { toFriendSearchLengthBucket } from './telemetry-keys';
 
 describe('toFriendSearchLengthBucket', () => {
   it.each([

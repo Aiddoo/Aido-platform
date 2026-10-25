@@ -1,6 +1,5 @@
 import type { Analytics, AnalyticsEventParams } from '@src/core/ports/analytics';
-
-import type { AppEventMap } from './events';
+import type { AppEventMap } from '@src/shared/observability/telemetry-keys';
 
 /**
  * 타입 이벤트 카탈로그(`AppEventMap`) 기반 Analytics 파사드.
