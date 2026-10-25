@@ -1,6 +1,7 @@
 import { ErrorCode } from "@aido/api/errors";
 
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
 import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseMemo, type ParseMemoInput } from "./parse-memo.use-case.js";
@@ -22,7 +23,7 @@ function createTodo(title: string, categoryId: number) {
 function createFixture() {
   const fixture = createAiQuotaFixture();
   fixture.aiProvider.setRawResponse({ todos: [createTodo("팀 미팅", 7)] });
-  const useCase = new ParseMemo(fixture);
+  const useCase = new ParseMemo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
   const input: ParseMemoInput = {
     userId: fixture.userId,
     content: "내일 팀 미팅",
@@ -33,7 +34,7 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseMemo", () => {
+describe("ParseMemo — v1 롤백 경로", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(AI_QUOTA_TIME);

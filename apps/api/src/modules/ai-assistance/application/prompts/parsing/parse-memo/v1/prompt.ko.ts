@@ -8,16 +8,19 @@ import { encodeUntrustedJson, sanitizeMemoForPrompt } from "#api/shared/domain/p
 
 import { buildTimeContext, buildTimeRulesText } from "../../shared/v1/time-rules.js";
 
+/** @deprecated parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export interface ParseMemoPrompt {
   system: string;
   prompt: string;
 }
 
+/** @deprecated parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export interface CategoryInfo {
   id: number;
   name: string;
 }
 
+/** @deprecated parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildParseMemoPrompt(
   content: string,
   tz: string = "UTC",

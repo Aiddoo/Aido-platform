@@ -86,17 +86,24 @@ export class ParseMemo {
       input,
     );
     const reservation = await this.#dependencies.quota.reserve(userId);
+    let parsed: { readonly result: ParseMemoResult; readonly charge: boolean };
     try {
-      return await this.#parse({ ...input, timezone, locale }, startTime);
+      parsed = await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
       await this.#dependencies.quota.release(reservation);
       throw error;
     }
+    // 실행할 행동이 없던 메모는 사용량을 차감하지 않는다.
+    if (!parsed.charge) await this.#dependencies.quota.release(reservation);
+    return parsed.result;
   }
 
-  async #parse(input: ResolvedParseMemoInput, startTime: number): Promise<ParseMemoResult> {
+  async #parse(
+    input: ResolvedParseMemoInput,
+    startTime: number,
+  ): Promise<{ readonly result: ParseMemoResult; readonly charge: boolean }> {
     const { content, userId, timezone, categoryId, locale } = input;
-    const definition = parseMemoPrompts.v1[locale];
+    const definition = parseMemoPrompts[this.#dependencies.settings.promptVersion][locale];
     const at = now();
 
     const userCategories = await this.#dependencies.categoryReader.findByUserId(userId);
@@ -132,13 +139,21 @@ export class ParseMemo {
         },
       );
       const { data } = value;
+      const charge = !value.noAction;
 
       this.#dependencies.logger.log({
-        ...generationCompletedLog({ ...logBase, outcome: "SUCCESS", quotaCharged: true }, meta),
+        ...generationCompletedLog(
+          { ...logBase, outcome: charge ? "SUCCESS" : "NO_ACTION", quotaCharged: charge },
+          meta,
+        ),
         todoCount: data.todos.length,
         itemCount: sumBy(data.todos, (todo) => todo.items.length),
+        warnings: value.warnings,
       });
-      return { data, meta: toParseMeta(meta, Date.now() - startTime) };
+      return {
+        result: { data, meta: toParseMeta(meta, definition.promptVersion, Date.now() - startTime) },
+        charge,
+      };
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({

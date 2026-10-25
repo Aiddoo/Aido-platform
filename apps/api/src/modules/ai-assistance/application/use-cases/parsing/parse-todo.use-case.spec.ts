@@ -1,4 +1,5 @@
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
+import { TEST_AI_TASK_SETTINGS_V1 } from "#test/fixtures/ai-task-settings.fixture";
 
 import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
@@ -10,7 +11,7 @@ function createFixture() {
     startDate: "2026-04-12",
     categoryId: 7,
   });
-  const useCase = new ParseTodo(fixture);
+  const useCase = new ParseTodo({ ...fixture, settings: TEST_AI_TASK_SETTINGS_V1 });
   const input: ParseTodoInput = {
     userId: fixture.userId,
     text: "내일 팀 미팅",
@@ -21,7 +22,7 @@ function createFixture() {
   return { ...fixture, useCase, input };
 }
 
-describe("ParseTodo", () => {
+describe("ParseTodo — v1 롤백 경로", () => {
   it("필수 필드가 없는 실제 raw 응답은 AI_1302로 거절하고 quota를 보상한다", async () => {
     // Given - 정상 fixture 기본 응답과 별개인 원본 빈 객체
     const fixture = createFixture();
@@ -181,6 +182,7 @@ describe("ParseTodo", () => {
       outcome: "SUCCESS",
       quotaCharged: true,
       userId: fixture.userId,
+      warnings: [],
     });
     expect(JSON.stringify(fixture.logger.log.mock.calls)).not.toContain("PRIVATE_TODO_TEXT");
   });

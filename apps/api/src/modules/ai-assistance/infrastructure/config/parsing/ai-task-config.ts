@@ -39,7 +39,11 @@ export function readAiModelIds(config: Pick<ConfigService, "get">): Record<AiTas
 
 export function readAiTaskSettings(config: Pick<ConfigService, "get">): AiTaskSettingsMap {
   const env = readAiConfig(config);
-  const settings = (suffix: AiTaskEnvSuffix) => ({ thinking: env[`AI_THINKING_${suffix}`] });
+  const settings = (suffix: AiTaskEnvSuffix) => ({
+    // TODO: 1.13.0 이전 앱 사용자가 업데이트한 뒤(v2 안정화 확인 후) v1 프롬프트 폴더와 전환 env를 제거한다
+    promptVersion: env[`AI_PROMPT_VERSION_${suffix}`],
+    thinking: env[`AI_THINKING_${suffix}`],
+  });
   return {
     "parse-todo": settings(AI_TASK_ENV_SUFFIX["parse-todo"]),
     "parse-memo": settings(AI_TASK_ENV_SUFFIX["parse-memo"]),

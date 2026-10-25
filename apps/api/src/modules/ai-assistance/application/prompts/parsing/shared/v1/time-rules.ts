@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 
+/** @deprecated parse-todo·parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export interface TimeContext {
   datetime: string;
   fourWeeksLater: string;
@@ -13,6 +14,7 @@ export interface TimeContext {
   remainingDays: string[];
 }
 
+/** @deprecated parse-todo·parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildTimeContext(tz: string, now: Date, locale: "ko" | "en" = "ko"): TimeContext {
   const localNow = dayjs(now).tz(tz);
   const todayDayIdx = localNow.day();
@@ -32,6 +34,7 @@ export function buildTimeContext(tz: string, now: Date, locale: "ko" | "en" = "k
   };
 }
 
+/** @deprecated parse-todo·parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildTimeRulesText(ctx: TimeContext): string {
   return `현재 시각: ${ctx.datetime}
 
@@ -101,6 +104,7 @@ export function buildTimeRulesText(ctx: TimeContext): string {
 /**
  * buildTimeRulesText의 영어 버전 — 영어 자연어 시간 표현 해석 규칙.
  * 날짜 산식(ctx)은 한국어 버전과 동일하다.
+ * @deprecated parse-todo·parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다.
  */
 export function buildTimeRulesTextEn(ctx: TimeContext): string {
   return `Current time: ${ctx.datetime}

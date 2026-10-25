@@ -57,6 +57,10 @@ export const parseMemoMetaSchema = z.object({
   model: z.string().describe("사용된 AI 모델명"),
   processingTimeMs: z.number().int().nonnegative().describe("AI 처리 시간 (밀리초)"),
   tokenUsage: tokenUsageSchema.describe("AI 토큰 사용량 정보"),
+  promptVersion: z
+    .string()
+    .optional()
+    .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@v2"). 구 서버 응답에는 없을 수 있다'),
 });
 
 export type ParseMemoMeta = z.infer<typeof parseMemoMetaSchema>;

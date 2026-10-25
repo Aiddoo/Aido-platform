@@ -6,13 +6,17 @@ import {
   type EntitlementReaderPort,
   Feature,
 } from "#api/modules/access/access-entitlement.public";
-import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
+import {
+  AI_PROVIDER,
+  AI_TASK_SETTINGS,
+} from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import {
   AiProviderError,
   type GenerateStructuredOptions,
   type GenerateStructuredResult,
 } from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
+import { TEST_AI_TASK_SETTINGS_MAP_PARSING_V1 } from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
@@ -62,7 +66,13 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   beforeAll(async () => {
     provider = new DeferredAiProvider();
     context = await createE2eApp({
-      customizeBuilder: (builder) => builder.overrideProvider(AI_PROVIDER).useValue(provider),
+      // 이 파일의 응답 fixture는 v1 모양이라 파싱 v1 롤백 경로를 검증한다. v2는 ai-parsing-v2.e2e-spec이 맡는다.
+      customizeBuilder: (builder) =>
+        builder
+          .overrideProvider(AI_PROVIDER)
+          .useValue(provider)
+          .overrideProvider(AI_TASK_SETTINGS)
+          .useValue(TEST_AI_TASK_SETTINGS_MAP_PARSING_V1),
       additionalResetters: [() => provider.clear()],
     });
   });

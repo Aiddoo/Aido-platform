@@ -28,11 +28,18 @@ export interface ParseTokenUsage {
   output: number;
 }
 
-/** 파싱 메타데이터 (모델·처리시간·토큰). */
+/** 파싱 메타데이터 (모델·처리시간·토큰·프롬프트 버전). */
 export interface ParseTodoMeta {
   model: string;
   processingTimeMs: number;
   tokenUsage: ParseTokenUsage;
+  promptVersion: string;
+}
+
+/** 사용량을 유지할지 함께 돌려준다. 실행할 행동이 없던 입력은 차감하지 않는다. */
+interface ChargedResult<T> {
+  readonly result: T;
+  readonly charge: boolean;
 }
 
 /** 자연어 → 단건 투두 파싱 결과. */
@@ -98,17 +105,23 @@ export class ParseTodo {
       input,
     );
     const reservation = await this.#dependencies.quota.reserve(userId);
+    let parsed: ChargedResult<ParseTodoResult>;
     try {
-      return await this.#parse({ ...input, timezone, locale }, startTime);
+      parsed = await this.#parse({ ...input, timezone, locale }, startTime);
     } catch (error) {
       await this.#dependencies.quota.release(reservation);
       throw error;
     }
+    if (!parsed.charge) await this.#dependencies.quota.release(reservation);
+    return parsed.result;
   }
 
-  async #parse(input: ResolvedParseTodoInput, startTime: number): Promise<ParseTodoResult> {
+  async #parse(
+    input: ResolvedParseTodoInput,
+    startTime: number,
+  ): Promise<ChargedResult<ParseTodoResult>> {
     const { text, userId, timezone, categoryId, locale } = input;
-    const definition = parseTodoPrompts.v1[locale];
+    const definition = parseTodoPrompts[this.#dependencies.settings.promptVersion][locale];
     const at = now();
 
     // 사용자가 카테고리를 고른 요청은 목록을 보내지 않아 토큰을 아낀다.
@@ -146,10 +159,21 @@ export class ParseTodo {
         },
       );
 
-      this.#dependencies.logger.log(
-        generationCompletedLog({ ...logBase, outcome: "SUCCESS", quotaCharged: true }, meta),
-      );
-      return { data: value.data, meta: toParseMeta(meta, Date.now() - startTime) };
+      const charge = value.intent === "TASK";
+      this.#dependencies.logger.log({
+        ...generationCompletedLog(
+          { ...logBase, outcome: charge ? "SUCCESS" : "NO_ACTION", quotaCharged: charge },
+          meta,
+        ),
+        warnings: value.warnings,
+      });
+      return {
+        result: {
+          data: value.data,
+          meta: toParseMeta(meta, definition.promptVersion, Date.now() - startTime),
+        },
+        charge,
+      };
     } catch (error) {
       const failure = describeParsingFailure(error);
       this.#dependencies.logger.error(
@@ -168,10 +192,15 @@ export class ParseTodo {
   }
 }
 
-export function toParseMeta(meta: GenerationMeta, processingTimeMs: number): ParseTodoMeta {
+export function toParseMeta(
+  meta: GenerationMeta,
+  promptVersion: string,
+  processingTimeMs: number,
+): ParseTodoMeta {
   return {
     model: meta.model,
     processingTimeMs,
     tokenUsage: { input: meta.usage.input, output: meta.usage.output },
+    promptVersion,
   };
 }

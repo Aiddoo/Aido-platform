@@ -278,8 +278,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	/** 1.13.0: 문의 요청 category enum에 PAYMENT(결제·구독)만 추가. 구버전 앱은 기존 값만 보내고 서버는 그 값을 그대로 받는다. */
 	prePaymentInquirySchemasFingerprint:
 		"ae2f4dbfd3ce0a76907e35a7ad9011081862d306d24ca4313c6dfafb83c8b724",
-	schemasFingerprint:
+	preAiPromptVersionSchemasFingerprint:
 		"a09fce15d21a052da513d5296d013ef530cbdbec1eb027d3ad21cf088d872aa9",
+	/** 1.13.0: AI 파싱 응답 meta에 optional promptVersion만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	schemasFingerprint:
+		"b16122342ef5475cc9fb6ffbc7a3da96d27830a04d2ae42c284dea792e94dbe7",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	pathsFingerprint:
 		"232a008adbbdf9383aeff8f4c29179a123296b70629af0b2baa5b948c50b7f4a",

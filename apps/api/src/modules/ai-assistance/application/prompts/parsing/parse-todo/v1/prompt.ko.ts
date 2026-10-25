@@ -9,11 +9,13 @@ import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/promp
 import type { CategoryInfo } from "../../parse-memo/v1/prompt.ko.js";
 import { buildTimeContext, buildTimeRulesText } from "../../shared/v1/time-rules.js";
 
+/** @deprecated parse-todo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export interface ParseTodoPrompt {
   system: string;
   prompt: string;
 }
 
+/** @deprecated parse-todo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildParseTodoPrompt(
   text: string,
   tz: string = "UTC",

@@ -12,6 +12,7 @@ import type { CategoryInfo, ParseMemoPrompt } from "./prompt.ko.js";
 /**
  * buildParseMemoPrompt의 영어 버전 — en 로케일 사용자의 영어 메모용.
  * 구조·규칙·예시 골격은 한국어 버전과 동일하다.
+ * @deprecated parse-memo v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다.
  */
 export function buildParseMemoPromptEn(
   content: string,

@@ -46,6 +46,10 @@ export const parseTodoMetaSchema = z.object({
   model: z.string().describe("사용된 AI 모델명 (예: google:gemini-3.1-flash-lite)"),
   processingTimeMs: z.number().int().nonnegative().describe("AI 처리 시간 (밀리초, 0 이상)"),
   tokenUsage: tokenUsageSchema.describe("AI 토큰 사용량 정보"),
+  promptVersion: z
+    .string()
+    .optional()
+    .describe('응답을 만든 프롬프트 버전 (예: "parse-todo@v2"). 구 서버 응답에는 없을 수 있다'),
 });
 
 export type ParseTodoMeta = z.infer<typeof parseTodoMetaSchema>;
