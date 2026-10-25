@@ -48,7 +48,10 @@
       "agreedOn": "{{date}} 동의",
       "withdrawTitle": "동의를 철회할까요?",
       "withdrawDescription": "AI로 할 일 정리·리포트·제안을 쓸 수 없어요. 이미 만든 할 일은 그대로 남아요.",
-      "withdrawConfirm": "철회하기"
+      "withdrawConfirm": "철회하기",
+      "declinedStatus": "사용 안 함으로 설정했어요. 켜면 AI 기능을 다시 쓸 수 있어요.",
+      "undecidedStatus": "아직 선택하지 않았어요. AI 기능을 처음 쓸 때 물어봐요.",
+      "decline": "사용 안 함"
     }
   },
   "categorySettings": {

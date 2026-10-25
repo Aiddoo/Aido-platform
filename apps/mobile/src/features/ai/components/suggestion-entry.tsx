@@ -9,8 +9,6 @@ import { router } from 'expo-router';
 import { PressableFeedback } from 'heroui-native';
 import type { ComponentProps } from 'react';
 
-import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
-import { useAiDataSharingConsentGate } from '../hooks/use-ai-data-sharing-consent-gate';
 import {
   isSuggestionsPremiumRequiredError,
   useGetSuggestionsQueryOptions,
@@ -43,20 +41,6 @@ function PremiumSuggestionEntry({ name }: PremiumSuggestionEntryProps) {
 
   const { t } = useTranslation(['todo', 'ai']);
   const suggestionsQuery = useQuery(useGetSuggestionsQueryOptions());
-  const aiConsent = useAiDataSharingConsentGate();
-
-  if (isAiDataSharingConsentRequiredError(suggestionsQuery.error)) {
-    return (
-      <InfoCard
-        label={t('ai:consent.required.entry')}
-        onPress={async () => {
-          if (await aiConsent.requestAgreement()) {
-            await suggestionsQuery.refetch();
-          }
-        }}
-      />
-    );
-  }
 
   if (isSuggestionsPremiumRequiredError(suggestionsQuery.error)) {
     return (

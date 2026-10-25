@@ -16,7 +16,6 @@ import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { Spinner } from 'heroui-native';
 import { type ComponentProps, Suspense, useEffect } from 'react';
 
-import { isAiDataSharingConsentRequiredError } from '../domains/ai.error';
 import { useSuggestionScreenParams } from '../hooks/use-suggestion-screen-params';
 import { useGetSuggestionsQueryOptions } from '../queries/get-suggestions-query-options';
 import { useHandleSuggestionMutationOptions } from '../queries/use-handle-suggestion-mutation-options';
@@ -81,13 +80,7 @@ SuggestionCategoryBottomSheet.Content = function Content({
       onChange={async (categoryId) => {
         const accepted = await handleSuggestionMutation
           .mutateAsync({ suggestionId: suggestion.id, input: { action: 'accept', categoryId } })
-          .catch((error: unknown) => {
-            // 동의가 사라졌으면 시트를 닫아 제안 화면의 동의 안내로 돌아간다
-            if (isAiDataSharingConsentRequiredError(error)) {
-              onClose();
-            }
-            return null;
-          });
+          .catch(() => null);
 
         if (accepted) {
           onClose({ type: 'back-then-replace', href: SUGGESTION_ACCEPTED_HREF });

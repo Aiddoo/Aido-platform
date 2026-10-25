@@ -1,5 +1,4 @@
 import { ActivityReport } from '@src/features/ai/components/activity-report';
-import { AiQueryErrorFallback } from '@src/features/ai/components/ai-query-error-fallback';
 import { getSampleReport } from '@src/features/ai/constants/sample-reports';
 import {
   reportScreenParamsSchema,
@@ -65,10 +64,7 @@ function ReportDetailScreen() {
           </ScrollView>
         ))
         .with({ kind: 'saved' }, ({ id }) => (
-          <QueryErrorBoundary
-            resetKeys={[id]}
-            fallback={(props) => <AiQueryErrorFallback {...props} />}
-          >
+          <QueryErrorBoundary resetKeys={[id]}>
             <Suspense fallback={<ActivityReport.Loading />}>
               <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
                 <StyledSafeAreaView edges={['left', 'right']}>

@@ -137,11 +137,10 @@
     "later": "나중에",
     "agree": "동의하고 계속",
     "saveFailed": "동의 상태를 저장하지 못했어요. 다시 시도해주세요.",
-    "required": {
-      "title": "AI 기능을 쓰려면 동의가 필요해요",
-      "description": "리포트와 제안은 할 일 기록을 Google Gemini로 보내 만들어요.",
-      "action": "내용 확인하기",
-      "entry": "AI 제안을 받으려면 동의가 필요해요"
+    "notice": {
+      "reports": "AI 리포트를 받으려면 동의가 필요해요",
+      "suggestions": "AI 제안을 받으려면 동의가 필요해요",
+      "action": "내용 확인하기"
     }
   }
 }

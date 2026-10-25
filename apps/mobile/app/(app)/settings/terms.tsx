@@ -14,6 +14,7 @@ import {
   Spacing,
   StyledSafeAreaView,
   Text,
+  TextButton,
   TextSkeleton,
   useConfirmDialog,
   VStack,
@@ -25,6 +26,7 @@ import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { Fragment, Suspense } from 'react';
 import { ScrollView } from 'react-native';
+import { match, P } from 'ts-pattern';
 
 function TermsSettingsScreen() {
   const { t } = useTranslation('settings');
@@ -141,8 +143,8 @@ export default function TermsSettingsRoute() {
 }
 
 /**
- * AI 기능 데이터 제공 동의. 끌 때는 AI 기능이 꺼진다는 결과를 확인받고, 켤 때는 바로 저장한다.
- * 동의일은 지금 안내 버전에 동의했을 때만 보인다.
+ * AI 기능 데이터 제공 동의. 켜면 동의, 끄면 결과를 확인받고 철회한다.
+ * 아직 답하지 않은 사용자는 꺼진 채로 두고, 묻기 전에 미리 "사용 안 함"을 고를 수 있다.
  */
 function AiDataSharingConsentCard() {
   const { t } = useTranslation(['settings', 'common']);
@@ -176,17 +178,39 @@ function AiDataSharingConsentCard() {
         onSelectedChange={handleSelectedChange}
         isDisabled={updateConsent.isPending}
       />
-      {isAgreed && consent.aiDataSharingAgreedAt != null && (
-        <Text size="e1" shade={6}>
-          {t('settings:terms.aiDataSharing.agreedOn', {
-            date: formatDateLabel(
-              consent.aiDataSharingAgreedAt,
-              'numericDate',
-              getDateFormatContext(),
-            ),
-          })}
-        </Text>
-      )}
+      {match(consent)
+        .with(
+          { aiDataSharingDecision: 'AGREED', aiDataSharingAgreedAt: P.nonNullable },
+          ({ aiDataSharingAgreedAt }) => (
+            <Text size="e1" shade={6}>
+              {t('settings:terms.aiDataSharing.agreedOn', {
+                date: formatDateLabel(aiDataSharingAgreedAt, 'numericDate', getDateFormatContext()),
+              })}
+            </Text>
+          ),
+        )
+        .with({ aiDataSharingDecision: 'AGREED' }, () => null)
+        .with({ aiDataSharingDecision: 'DECLINED' }, () => (
+          <Text size="e1" shade={6}>
+            {t('settings:terms.aiDataSharing.declinedStatus')}
+          </Text>
+        ))
+        .with({ aiDataSharingDecision: 'UNDECIDED' }, () => (
+          <HStack gap={12} align="center">
+            <Text size="e1" shade={6} className="flex-1">
+              {t('settings:terms.aiDataSharing.undecidedStatus')}
+            </Text>
+            <TextButton
+              size="small"
+              variant="underline"
+              isDisabled={updateConsent.isPending}
+              onPress={() => updateConsent.mutate({ agreed: false })}
+            >
+              {t('settings:terms.aiDataSharing.decline')}
+            </TextButton>
+          </HStack>
+        ))
+        .exhaustive()}
     </SettingsCard>
   );
 }

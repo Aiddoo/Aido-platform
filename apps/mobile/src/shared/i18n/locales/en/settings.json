@@ -48,7 +48,10 @@
       "agreedOn": "Agreed on {{date}}",
       "withdrawTitle": "Withdraw consent?",
       "withdrawDescription": "You won't be able to use AI to organize to-dos, reports, or suggestions. Existing to-dos stay.",
-      "withdrawConfirm": "Withdraw"
+      "withdrawConfirm": "Withdraw",
+      "declinedStatus": "Turned off. Turn it on to use AI features again.",
+      "undecidedStatus": "Not chosen yet. We'll ask the first time you use an AI feature.",
+      "decline": "Don't use"
     }
   },
   "categorySettings": {

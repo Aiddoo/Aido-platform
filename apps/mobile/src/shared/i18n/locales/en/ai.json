@@ -142,11 +142,10 @@
     "later": "Not now",
     "agree": "Agree",
     "saveFailed": "Couldn't save your choice. Please try again.",
-    "required": {
-      "title": "Agree to use AI features",
-      "description": "Reports and suggestions are made by sending your to-do history to Google Gemini.",
-      "action": "Review details",
-      "entry": "Agree to get AI suggestions"
+    "notice": {
+      "reports": "Agree to get AI reports",
+      "suggestions": "Agree to get AI suggestions",
+      "action": "Review"
     }
   }
 }

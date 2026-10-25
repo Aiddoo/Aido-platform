@@ -41,22 +41,6 @@ describe('classifyBoundaryError', () => {
     expect(classifyBoundaryError(error)).toBe('expected-state');
   });
 
-  it('AI 데이터 제공 동의 없음(AI_1311)은 403이어도 expected-state로 분류한다 (fallback이 동의 안내를 그린다)', () => {
-    // Given
-    const error = new ApiError('AI_1311', '동의 필요', 403);
-
-    // When / Then
-    expect(classifyBoundaryError(error)).toBe('expected-state');
-  });
-
-  it('다른 403 ApiError는 error로 분류한다', () => {
-    // Given
-    const error = new ApiError('AI_1309', '프리미엄 전용', 403);
-
-    // When / Then
-    expect(classifyBoundaryError(error)).toBe('error');
-  });
-
   it('5xx·기타 인프라 에러는 error로 분류한다', () => {
     // Given
     const error = new ServerError(500);

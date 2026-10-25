@@ -685,16 +685,23 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
 
   const parseMutation = useMutation(useParseTodoMutationOptions());
   const aiConsent = useAiDataSharingConsentGate();
+  // 이번 녹음에서 동의 안내를 이미 띄웠는지. 한 번의 시도에서 안내를 두 번 띄우지 않는다
+  const hasAskedConsentRef = useRef(false);
 
   const parseTitle = (text: string, categoryId?: number) => {
     parseMutation.mutate(
       { text, categoryId },
       {
-        // 다른 기기에서 동의를 철회했다면 여기서 다시 묻고, 동의하면 받아 적은 문장 그대로 정리한다
+        // 서버에 동의가 없으면(다른 기기에서 철회 등) 한 번만 다시 묻고, 동의하면 받아 적은 문장 그대로 정리한다
         onError: async (error) => {
           if (!isAiDataSharingConsentRequiredError(error)) {
             return;
           }
+          if (hasAskedConsentRef.current) {
+            toast.error(error.message);
+            return;
+          }
+          hasAskedConsentRef.current = true;
           if (await aiConsent.requestAgreement()) {
             parseTitle(text, categoryId);
           }
@@ -754,7 +761,9 @@ const AiParseButton = ({ onExit }: AiParseButtonProps) => {
 
     // 동의 시트가 키보드에 가리지 않게 먼저 내린다. 동의하지 않으면 직접 입력을 이어간다
     Keyboard.dismiss();
-    if (!(await aiConsent.ensureAgreed())) {
+    const consent = await aiConsent.ensureAgreed();
+    hasAskedConsentRef.current = consent.wasAsked;
+    if (!consent.isAgreed) {
       return;
     }
     start();

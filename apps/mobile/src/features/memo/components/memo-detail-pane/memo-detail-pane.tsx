@@ -375,13 +375,16 @@ function useAiParseAction() {
   const aiUsageQuery = useQuery(useGetAiUsageQueryOptions());
   const hasCategory = categoriesQuery.data?.categories[0] != null;
   const aiConsent = useAiDataSharingConsentGate();
+  const toast = useAppToast();
+  const { t } = useTranslation('errors');
 
   const handlePress = async () => {
     if (getParsedMemo(queryClient, { memoId })) {
       push(memoAiReviewHref(memoId));
       return;
     }
-    if (!(await aiConsent.ensureAgreed())) {
+    const consent = await aiConsent.ensureAgreed();
+    if (!consent.isAgreed) {
       return;
     }
 
@@ -412,9 +415,15 @@ function useAiParseAction() {
 
     // 정리하는 사이 서버가 동의 없음(AI_1311)으로 거절하면 확인 창이 닫히고 동의 캐시가 미응답이 된다.
     // 확인 창은 Portal이라 그 위에 시트를 띄울 수 없어, 창이 닫힌 뒤 동의부터 다시 시작한다
-    if (aiConsent.isAgreementRequired()) {
-      await handlePress();
+    if (!aiConsent.isAgreementRequired()) {
+      return;
     }
+    // 이번 시도에서 이미 안내했다면 다시 띄우지 않고 이유만 알린다
+    if (consent.wasAsked) {
+      toast.error(t('AI_1311'));
+      return;
+    }
+    await handlePress();
   };
 
   return {
