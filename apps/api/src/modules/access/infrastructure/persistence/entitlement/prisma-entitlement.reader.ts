@@ -29,7 +29,7 @@ export class PrismaEntitlementReader implements EntitlementDatabasePort {
         )
         .first(),
     );
-    if (user === null) return null;
+    if (user == null) return null;
     return {
       role: user.role,
       subscriptionStatus: user.subscriptionStatus,

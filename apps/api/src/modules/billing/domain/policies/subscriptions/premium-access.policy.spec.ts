@@ -313,7 +313,7 @@ describe("PremiumAccessPolicy", () => {
         const access = PremiumAccessPolicy.resolve(entitlements, NOW);
 
         // Then
-        expect(access.recentGrantEndedAt).toEqual(expected === null ? null : new Date(expected));
+        expect(access.recentGrantEndedAt).toEqual(expected == null ? null : new Date(expected));
       },
     );
 

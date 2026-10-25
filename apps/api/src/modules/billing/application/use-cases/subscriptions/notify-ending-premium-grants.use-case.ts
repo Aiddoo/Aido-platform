@@ -78,7 +78,7 @@ export class NotifyEndingPremiumGrants {
       const candidates = await this.#dependencies.premiumGrantRepository.lockEndingNotices({
         now,
         endsBefore: premiumGrantEndingNoticeUntil(now),
-        ...(after !== undefined && { after: { endsAt: after.endsAt, grantId: after.grantId } }),
+        ...(after != null && { after: { endsAt: after.endsAt, grantId: after.grantId } }),
         limit: PREMIUM_GRANT_ENDING_NOTICE.BATCH_SIZE,
       });
       const quietUserIds = await this.#dependencies.notifier.findUsersInQuietHours(

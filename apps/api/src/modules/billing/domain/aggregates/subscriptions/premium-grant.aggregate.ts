@@ -58,7 +58,7 @@ export type PremiumGrantPersistenceState = Pick<
 export const PREMIUM_GRANT_SOURCE_KEY_MAX_LENGTH = 128;
 
 function copyDate(value: Date | null): Date | null {
-  return value === null ? null : new Date(value);
+  return value == null ? null : new Date(value);
 }
 
 export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
@@ -153,7 +153,7 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
   rebank(at: Date): boolean {
     if (
       this.props.status !== "ACTIVE" ||
-      this.props.startsAt === null ||
+      this.props.startsAt == null ||
       this.props.startsAt.getTime() <= at.getTime()
     ) {
       return false;
@@ -172,7 +172,7 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
   splitAt(at: Date): PremiumGrantCreationPlan | null {
     if (
       !isPremiumGrantActive(this, at) ||
-      this.props.startsAt === null ||
+      this.props.startsAt == null ||
       this.props.startsAt.getTime() > at.getTime()
     ) {
       return null;

@@ -100,7 +100,7 @@ export function applyStoreEventChain(
 ): StoreSubscriptionEntitlement[] {
   return subscriptions.flatMap((subscription) => {
     if (subscription.revenueCatId !== eventChain?.revenueCatId) return [subscription];
-    if (eventChain.expiresAt === null) return [];
+    if (eventChain.expiresAt == null) return [];
     return [
       {
         revenueCatId: subscription.revenueCatId,
@@ -225,8 +225,8 @@ function chainStartsAt(
   ]);
   const firstReceivedAt = banked[0]?.createdAt;
   if (
-    handoffAt === null ||
-    firstReceivedAt === undefined ||
+    handoffAt == null ||
+    firstReceivedAt == null ||
     handoffAt.getTime() < firstReceivedAt.getTime()
   ) {
     return new Date(now);
@@ -242,7 +242,7 @@ function recentGrantEndedAt(entitlements: PremiumEntitlements, now: Date): Date 
     ),
     ...(entitlements.lastEndedGrantAt == null ? [] : [entitlements.lastEndedGrantAt]),
   ]);
-  if (endedAt === null || endedAt.getTime() + RECENT_GRANT_ENDED_WINDOW_MS <= now.getTime()) {
+  if (endedAt == null || endedAt.getTime() + RECENT_GRANT_ENDED_WINDOW_MS <= now.getTime()) {
     return null;
   }
   return endedAt;
@@ -265,20 +265,20 @@ export const PremiumAccessPolicy = {
     const bankedDays = sumBy(banked, (grant) => grant.durationDays);
 
     const storeEndsAt = latestOf(validStores.map((subscription) => subscription.expiresAt));
-    if (storeEndsAt !== null) {
+    if (storeEndsAt != null) {
       // 예전에 스토어와 겹쳐 시작한 기간이 남아 있으면 그 끝까지 프리미엄이다
       const periodEndsAt = latestOf([
         storeEndsAt,
-        ...(activeGrantEndsAt === null ? [] : [activeGrantEndsAt]),
+        ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
       ]);
       const handoffAt = latestOf([
         ...validStores.map(storeHandoffAt),
-        ...(activeGrantEndsAt === null ? [] : [activeGrantEndsAt]),
+        ...(activeGrantEndsAt == null ? [] : [activeGrantEndsAt]),
       ]);
       return {
         source: "STORE",
         endsAt:
-          banked.length === 0 || handoffAt === null ? periodEndsAt : chainBanked(handoffAt, banked),
+          banked.length === 0 || handoffAt == null ? periodEndsAt : chainBanked(handoffAt, banked),
         periodEndsAt,
         willRenew: validStores.some((subscription) =>
           isStoreSubscriptionRenewing(subscription, now),
@@ -287,7 +287,7 @@ export const PremiumAccessPolicy = {
         recentGrantEndedAt: null,
       };
     }
-    if (activeGrantEndsAt === null) {
+    if (activeGrantEndsAt == null) {
       // 스토어가 막 끝나 아직 시작하지 않은 기간은 다음 정리가 시작한다
       return {
         source: null,

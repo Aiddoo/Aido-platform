@@ -285,7 +285,7 @@ export class HandleWebhookEvent {
     const { subscriptionRepository } = this.#dependencies;
     for (const appUserId of uniq(transferredFrom)) {
       const previousOwner = await subscriptionRepository.findUserByAppUserId(appUserId);
-      if (previousOwner === null || previousOwner.id === user.id) continue;
+      if (previousOwner == null || previousOwner.id === user.id) continue;
       await subscriptionRepository.takeOverChains(previousOwner.id, user.id);
     }
   }

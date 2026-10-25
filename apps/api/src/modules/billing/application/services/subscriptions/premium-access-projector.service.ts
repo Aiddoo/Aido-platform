@@ -92,7 +92,7 @@ export class PremiumAccessProjector {
     for (const grantId of plan.splitGrantIds) {
       const grant = grantsById.get(grantId);
       const remainder = grant?.splitAt(input.now) ?? null;
-      if (grant !== undefined && remainder !== null) {
+      if (grant != null && remainder != null) {
         changed.add(grant);
         remainders.push(remainder);
       }
@@ -117,7 +117,7 @@ export class PremiumAccessProjector {
       remainders.length === 0 ? loaded : await this.loadEntitlements(input.userId, input);
     const access = PremiumAccessPolicy.resolve(entitlements, input.now);
     const userState: UpdateUserSubscriptionStatusData =
-      access.endsAt === null
+      access.endsAt == null
         ? (input.fallback ?? { subscriptionStatus: "FREE", subscriptionExpiresAt: null })
         : { subscriptionStatus: "ACTIVE", subscriptionExpiresAt: access.endsAt };
     await this.#dependencies.subscriptionRepository.updateUserSubscriptionStatus(

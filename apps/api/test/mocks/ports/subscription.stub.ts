@@ -54,7 +54,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
 
   async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
     const record = this.subscriptions.get(revenueCatId);
-    if (record === undefined) return false;
+    if (record == null) return false;
     if (record.userId === userId) return false;
     this.subscriptions.set(revenueCatId, { ...record, userId });
     return true;
@@ -211,7 +211,7 @@ export class StubPremiumGrantRepository implements Pick<
   async saveAll(grants: readonly PremiumGrant[]): Promise<void> {
     for (const grant of grants) {
       const current = this.grants.get(grant.id);
-      if (current === undefined) continue;
+      if (current == null) continue;
       this.grants.set(grant.id, { ...current, ...grant.toPersistence() });
     }
   }

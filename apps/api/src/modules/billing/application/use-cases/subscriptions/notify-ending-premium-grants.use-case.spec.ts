@@ -36,7 +36,7 @@ function createNotify(candidates: readonly PremiumGrantEndingNotice[], quietUser
           .filter((candidate) => !notifiedGrantIds.has(candidate.grantId))
           .filter(
             (candidate) =>
-              after === undefined ||
+              after == null ||
               candidate.endsAt.getTime() > after.endsAt.getTime() ||
               (candidate.endsAt.getTime() === after.endsAt.getTime() &&
                 candidate.grantId > after.grantId),

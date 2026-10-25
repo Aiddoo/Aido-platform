@@ -15,7 +15,7 @@ export class StubEntitlementDatabase implements EntitlementDatabasePort {
   readonly users = new Map<string, StubEntitlementUserState>();
   async findUserState(userId: string): Promise<EntitlementUserState | null> {
     const user = this.users.get(userId);
-    if (user === undefined) return null;
+    if (user == null) return null;
     return {
       role: user.role,
       subscriptionStatus: user.subscriptionStatus,
