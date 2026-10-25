@@ -286,10 +286,12 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 		"b16122342ef5475cc9fb6ffbc7a3da96d27830a04d2ae42c284dea792e94dbe7",
 	schemasFingerprint:
 		"8e924ba837a2727c5c6198c3f34d09f8ac3158a88b2de4ec58fc299c8db2c7b4",
+	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
+	preTodoSummaryDatePathsFingerprint:
+		"d52736c33c48601fea6473ce56d311e6e49857b7571a532ee943bdc9e3900a1b",
 	/** 1.13.0: parse-todo·parse-memo 429 응답의 error.code를 AI_1303·AI_1310 enum으로 선언했다. 서버는 이미 공급자 요청 과다를 AI_1310(429)로 보내고 있었고 문서만 AI_1303 하나로 덮여 있었다. 응답 shape·상태 코드는 같고, 구버전 앱은 모르는 코드를 서버 message 토스트로 표시한다. */
 	preAiRateLimitCodesPathsFingerprint:
 		"232a008adbbdf9383aeff8f4c29179a123296b70629af0b2baa5b948c50b7f4a",
-	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	pathsFingerprint:
 		"58f3786d1627480a9402dbb9bcdbf4e456e375f3f66f566644def66dffe1b843",
 } as const;
