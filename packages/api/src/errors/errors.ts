@@ -240,6 +240,8 @@ export const ErrorCode = {
   AI_1308: "AI_1308",
   AI_1309: "AI_1309",
   AI_1310: "AI_1310",
+  /** AI 데이터 처리 동의가 필요합니다 */
+  AI_1311: "AI_1311",
 
   // =========================================================================
   // 관리자 (ADMIN_1400-1499)
@@ -1224,6 +1226,13 @@ export const Errors: Record<ErrorCodeType, ErrorDefinition> = {
     message: "AI 요청이 너무 많습니다.",
     description: "잠시 후 다시 시도해 주세요.",
     httpStatus: HttpStatus.TOO_MANY_REQUESTS,
+  },
+  [ErrorCode.AI_1311]: {
+    code: "AI_1311",
+    message: "AI 기능을 쓰려면 AI 데이터 처리 동의가 필요합니다.",
+    description:
+      "1.13.0 이상 앱에서 현재 안내 버전의 AI 데이터 처리(Google Gemini 전송)에 동의하지 않은 사용자의 AI 요청입니다. 앱은 이 코드를 받으면 동의 시트를 보여 줍니다. 1.13.0 미만 앱의 요청에는 반환하지 않습니다.",
+    httpStatus: HttpStatus.FORBIDDEN,
   },
 
   // =========================================================================
