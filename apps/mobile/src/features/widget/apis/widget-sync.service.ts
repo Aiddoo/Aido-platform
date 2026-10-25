@@ -26,6 +26,7 @@ export class WidgetSyncService {
       () => toWidgetSnapshot(summaries, context),
       'syncSummary',
       context.userId ?? null,
+      context.timeZone,
     );
   }
 
@@ -34,6 +35,7 @@ export class WidgetSyncService {
       () => toLoggedOutWidgetSnapshot(localDate, context),
       'syncLoggedOut',
       null,
+      context.timeZone,
     );
   }
 
@@ -41,6 +43,7 @@ export class WidgetSyncService {
     createSnapshot: () => WidgetSnapshot,
     method: string,
     userId: string | null,
+    timeZone: string,
   ): Promise<void> {
     const generation = ++this.#generation;
 
@@ -52,7 +55,12 @@ export class WidgetSyncService {
 
       try {
         const snapshot = createSnapshot();
-        const snapshotKey = JSON.stringify({ snapshot: { ...snapshot, updatedAtIso: '' }, userId });
+        // 시간대가 바뀌면 같은 내용이어도 iOS timeline의 자정 경계가 달라지므로 다시 쓴다.
+        const snapshotKey = JSON.stringify({
+          snapshot: { ...snapshot, updatedAtIso: '' },
+          userId,
+          timeZone,
+        });
         if (snapshotKey === this.#lastSnapshotKey) {
           return;
         }

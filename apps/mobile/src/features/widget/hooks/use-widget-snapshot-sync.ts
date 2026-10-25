@@ -22,6 +22,7 @@ export type WidgetSyncAuthState = 'authenticated' | 'unauthenticated' | 'resolvi
 const translate: WidgetTranslateFn = (key, params) => i18n.t(key, params);
 
 function buildContext(
+  timeZone: string,
   weekCompletions?: WidgetSnapshotContext['weekCompletions'],
   userId?: string,
 ): WidgetSnapshotContext {
@@ -29,6 +30,7 @@ function buildContext(
     t: translate,
     locale: toResolvedLanguage(i18n.language),
     now: new Date(),
+    timeZone,
     weekCompletions,
     userId,
   };
@@ -38,6 +40,7 @@ interface LatestWidgetSnapshot {
   authState: WidgetSyncAuthState;
   userId?: string;
   date: string;
+  timeZone: string;
   tomorrowDate: string;
   data?: WidgetSummaryInput;
   tomorrowData?: WidgetSummaryInput;
@@ -46,7 +49,7 @@ interface LatestWidgetSnapshot {
 
 function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSnapshot): void {
   if (latest.authState === 'unauthenticated') {
-    widgetSyncService.syncLoggedOut(latest.date, buildContext());
+    widgetSyncService.syncLoggedOut(latest.date, buildContext(latest.timeZone));
     return;
   }
   if (
@@ -62,6 +65,7 @@ function syncLatest(widgetSyncService: WidgetSyncService, latest: LatestWidgetSn
           latest.tomorrowData?.date === latest.tomorrowDate ? latest.tomorrowData : undefined,
       },
       buildContext(
+        latest.timeZone,
         latest.completions ? Object.values(latest.completions) : undefined,
         latest.userId,
       ),
@@ -104,6 +108,7 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
       authState,
       userId,
       date,
+      timeZone: currentTimeZone,
       tomorrowDate,
       data,
       tomorrowData,
@@ -129,11 +134,21 @@ export function useWidgetSnapshotSync(authState: WidgetSyncAuthState): void {
     authState,
     userId,
     date,
+    timeZone: currentTimeZone,
     tomorrowDate,
   });
   useEffect(() => {
-    latestRef.current = { data, tomorrowData, completions, authState, userId, date, tomorrowDate };
-  }, [data, tomorrowData, completions, authState, userId, date, tomorrowDate]);
+    latestRef.current = {
+      data,
+      tomorrowData,
+      completions,
+      authState,
+      userId,
+      date,
+      timeZone: currentTimeZone,
+      tomorrowDate,
+    };
+  }, [data, tomorrowData, completions, authState, userId, date, currentTimeZone, tomorrowDate]);
 
   useEffect(() => {
     const handleLanguageChanged = () => {

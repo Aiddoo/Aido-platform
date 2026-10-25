@@ -21,6 +21,7 @@ const context: WidgetSnapshotContext = {
   t: (key) => key,
   locale: 'ko',
   now: new Date('2026-07-12T09:00:00.000Z'),
+  timeZone: 'Asia/Seoul',
 };
 
 const summary: WidgetSummaryInput = {
@@ -165,6 +166,19 @@ describe('WidgetSyncService', () => {
 
     // Then
     expect(bridge.writeSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('표시 내용이 같아도 기기 시간대가 바뀌면 자정 경계를 다시 계산하도록 다시 쓴다', async () => {
+    // Given: 서울에서 같은 날짜의 요약을 이미 기록했다
+    const bridge = createMockBridge();
+    const service = new WidgetSyncService(bridge, createMockErrorReporter());
+    await service.syncSummary({ today: summary }, context);
+
+    // When: 같은 날짜 그대로 런던 시간대로 바뀐다
+    await service.syncSummary({ today: summary }, { ...context, timeZone: 'Europe/London' });
+
+    // Then: iOS timeline의 다음 자정이 새 시간대 기준이 되도록 다시 기록한다
+    expect(bridge.writeSnapshot).toHaveBeenCalledTimes(2);
   });
 
   it('기록에 실패한 같은 스냅샷은 다음 동기화에서 다시 시도한다', async () => {
