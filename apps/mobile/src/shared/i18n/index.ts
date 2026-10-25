@@ -1,6 +1,6 @@
 // import 순서와 무관하게 init이 선행되도록 사이드이펙트로 로드한다
 import './init';
-import i18n from 'i18next';
+import i18n, { type ParseKeys } from 'i18next';
 
 import type { Namespace } from './resources';
 
@@ -20,6 +20,14 @@ export const t = i18n.t.bind(i18n);
  * 키가 없으면 defaultValue를 반환하며, 타입 검증 대상이 아니다.
  */
 export const tDynamic = (namespace: Namespace, key: string, defaultValue = ''): string => {
-  const translate = i18n.t as (key: string, options: object) => string;
-  return translate(key, { ns: namespace, defaultValue });
+  if (!isTranslationKey(namespace, key)) {
+    return defaultValue;
+  }
+  return i18n.t(key, { ns: namespace });
 };
+
+/** 런타임 키가 해당 네임스페이스(폴백 언어 포함)에 있는지 확인한다. */
+const isTranslationKey = <TNamespace extends Namespace>(
+  namespace: TNamespace,
+  key: string,
+): key is ParseKeys<TNamespace> => i18n.exists(key, { ns: namespace });

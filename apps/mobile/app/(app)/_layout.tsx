@@ -42,7 +42,7 @@ function AppLayout() {
           headerShown: false,
           animation: 'slide_from_right',
           animationTypeForReplace: 'push',
-          contentStyle: { backgroundColor: backgroundColor as string },
+          contentStyle: { backgroundColor },
         }}
       >
         <Stack.Screen name="(tabs)" />

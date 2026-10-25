@@ -124,8 +124,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const isDevelopment = env === 'development';
   const isProduction = env === 'production';
 
-  const EAS_PROJECT_ID = (process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
-    config.extra?.eas?.projectId) as string | undefined;
+  const configuredProjectId: unknown = config.extra?.eas?.projectId;
+  const EAS_PROJECT_ID =
+    process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
+    (typeof configuredProjectId === 'string' ? configuredProjectId : undefined);
 
   restoreBase64File({
     envVar: process.env.GOOGLE_SERVICES_JSON,

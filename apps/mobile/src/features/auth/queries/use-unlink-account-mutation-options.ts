@@ -9,7 +9,7 @@ import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 
 import { getOAuthProviderLabel } from '../constants/auth-provider-labels';
 import { AUTH_QUERY_KEYS } from '../constants/auth-query-keys';
-import type { OAuthProvider, OAuthProviderSlug } from '../domains/oauth.model';
+import { type OAuthProvider, toOAuthProviderSlug } from '../domains/oauth.model';
 
 export const useUnlinkAccountMutationOptions = () => {
   const authService = useAuthService();
@@ -28,7 +28,7 @@ export const useUnlinkAccountMutationOptions = () => {
         t('auth:toasts.accountUnlinked', { provider: getOAuthProviderLabel(provider) }),
       );
       trackEvent('auth_social_unlinked', {
-        provider: provider.toLowerCase() as OAuthProviderSlug,
+        provider: toOAuthProviderSlug(provider),
       });
     },
     onError: (error) => {

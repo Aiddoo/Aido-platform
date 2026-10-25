@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-type DraftKeyId = string & { readonly brand: 'DraftKeyId' };
+const draftKeyIdSchema = z.string().brand<'DraftKeyId'>();
+
+type DraftKeyId = z.infer<typeof draftKeyIdSchema>;
 
 /** 초안 하나를 가리키는 키. `createDraftKey`로만 만들어 사용자 범위가 항상 포함된다. */
 export interface DraftKey<TValue> {
@@ -27,7 +29,7 @@ export function createDraftKey<TValue>({
     .map((segment) => encodeURIComponent(String(segment)))
     .join(DRAFT_KEY_SEPARATOR);
 
-  return { id: id as DraftKeyId, schema };
+  return { id: draftKeyIdSchema.parse(id), schema };
 }
 
 const DRAFT_KEY_SEPARATOR = ':';

@@ -1,6 +1,7 @@
 import type { Storage } from '@src/core/ports/storage';
 import type { AuthTokenPair, TokenStore } from '@src/core/ports/token-store';
 import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
+import { z } from 'zod';
 
 /**
  * SecureStore(키체인) 기반 TokenStore.
@@ -8,9 +9,9 @@ import { STORAGE_KEYS } from '@src/shared/constants/storage-keys';
  * 앱에서 `STORAGE_KEYS`의 토큰 키를 참조하는 유일한 모듈이다.
  */
 export const createSecureTokenStore = (storage: Storage): TokenStore => ({
-  readAccessToken: () => storage.get<string>(STORAGE_KEYS.ACCESS_TOKEN),
+  readAccessToken: () => storage.get(STORAGE_KEYS.ACCESS_TOKEN, z.string()),
 
-  readRefreshToken: () => storage.get<string>(STORAGE_KEYS.REFRESH_TOKEN),
+  readRefreshToken: () => storage.get(STORAGE_KEYS.REFRESH_TOKEN, z.string()),
 
   /**
    * 리프레시 토큰을 먼저 쓴다.

@@ -49,7 +49,7 @@ export function PokeBanner() {
 
   const bannerText = match(bannerState)
     .with({ type: 'limitReached' }, () => ({
-      title: t('nudge.limitSpentTitle') as React.ReactNode,
+      title: t('nudge.limitSpentTitle'),
       description: (
         <Text size="e1" shade={6}>
           {t('nudge.subscribeUnlimited')}

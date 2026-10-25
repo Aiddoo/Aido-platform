@@ -5,6 +5,8 @@ import { infiniteQueryOptions } from '@tanstack/react-query';
 
 import { MEMO_QUERY_KEYS } from '../constants/memo-query-keys';
 
+const FIRST_PAGE_CURSOR: number | null = null;
+
 export function getMemosInfiniteQueryOptions(service: MemoService) {
   return infiniteQueryOptions({
     queryKey: MEMO_QUERY_KEYS.list(),
@@ -18,7 +20,7 @@ export function getMemosInfiniteQueryOptions(service: MemoService) {
       );
       return unwrap(result);
     },
-    initialPageParam: null as number | null,
+    initialPageParam: FIRST_PAGE_CURSOR,
     getNextPageParam: (lastPage) =>
       lastPage.hasNext ? (lastPage.nextCursor ?? undefined) : undefined,
   });

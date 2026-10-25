@@ -26,11 +26,11 @@ const stringify = (value: unknown): string => {
 
 /** `{ message: '...' }` 형태에서 메시지를 꺼낸다. */
 const readMessage = (value: unknown): string | undefined => {
-  if (typeof value !== 'object' || value === null || !('message' in value)) {
+  if (typeof value !== 'object' || value == null || !('message' in value)) {
     return undefined;
   }
 
-  const { message } = value as { message: unknown };
+  const { message } = value;
   return typeof message === 'string' && message.length > 0 ? message : undefined;
 };
 

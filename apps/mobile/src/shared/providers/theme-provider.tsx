@@ -59,7 +59,8 @@ export function ThemeProvider({ children, syncStorage = mmkvSyncStorage }: Theme
       ...baseTheme,
       colors: {
         ...baseTheme.colors,
-        background: backgroundColor as string,
+        background:
+          typeof backgroundColor === 'string' ? backgroundColor : baseTheme.colors.background,
       },
     };
   }, [resolvedTheme, backgroundColor]);

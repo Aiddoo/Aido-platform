@@ -2,6 +2,7 @@ import type { Storage } from '@src/core/ports/storage';
 import type { EnumerableSyncStorage } from '@src/core/ports/sync-storage';
 import { getRandomBytes } from 'expo-crypto';
 import { createMMKV, deleteMMKV, existsMMKV } from 'react-native-mmkv';
+import { z } from 'zod';
 
 import {
   createDraftEncryptionKey,
@@ -31,7 +32,7 @@ export const disabledDraftStorage: EnumerableSyncStorage = {
 };
 
 async function resolveEncryptionKey(secureStorage: Storage) {
-  const storedKey = await secureStorage.get<string>(DRAFT_ENCRYPTION_KEY_STORAGE_KEY);
+  const storedKey = await secureStorage.get(DRAFT_ENCRYPTION_KEY_STORAGE_KEY, z.string());
   if (isDraftEncryptionKey(storedKey)) {
     return { key: storedKey, isNew: false };
   }
