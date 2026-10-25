@@ -40,6 +40,22 @@ export const NOTIFICATION_TYPE = {
 
 export type NotificationType = (typeof NOTIFICATION_TYPE)[keyof typeof NOTIFICATION_TYPE];
 
+/**
+ * 공지(SYSTEM_NOTICE·ADMIN_BROADCAST·ADMIN_TARGETED)의 DEEP_LINK url로 보낼 수 있는 앱 경로.
+ * 앱(1.13.0+)은 이 경로만 열고, 모르는 경로·쿼리·상세 id 경로는 이동하지 않는다. 이전 앱은 url을 무시한다.
+ */
+export const NOTICE_DEEP_LINK_PATH = {
+  FEED: "/feed",
+  ACHIEVEMENTS: "/achievements",
+  WEATHER: "/weather",
+  FRIENDS: "/friends",
+  FRIEND_INVITE: "/friends/invite",
+  SUBSCRIPTION: "/settings/subscription",
+  NOTIFICATION_SETTINGS: "/settings/notifications",
+} as const;
+
+export type NoticeDeepLinkPath = (typeof NOTICE_DEEP_LINK_PATH)[keyof typeof NOTICE_DEEP_LINK_PATH];
+
 export const NOTIFICATION_LIMITS = {
   MAX_FETCH_LIMIT: 50,
   DEFAULT_FETCH_LIMIT: 20,

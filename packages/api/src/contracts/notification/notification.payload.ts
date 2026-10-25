@@ -110,7 +110,12 @@ export type NotificationRouting = z.infer<typeof notificationRoutingSchema>;
 
 export const notificationActionSchema = z.object({
   type: notificationActionTypeSchema,
-  url: z.string().optional(),
+  url: z
+    .string()
+    .optional()
+    .describe(
+      "BROWSER·WEBVIEW는 열 http(s) 주소. DEEP_LINK는 선택이며, 공지(SYSTEM_NOTICE·ADMIN_*)는 앱 경로(/feed, /achievements, /weather, /friends, /friends/invite, /settings/subscription, /settings/notifications) 중 하나를 싣는다. 그 밖의 타입은 type·context로 이동한다.",
+    ),
 });
 
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
