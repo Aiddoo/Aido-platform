@@ -17,7 +17,7 @@ export const RELEASE_VERSION = '1.13.0';
 
 // 한도 출처: App Store Connect 도움말(platform-version-information, app-information),
 // Play Console 도움말(9859152, 9866151). keywords는 Apple 문서상 100바이트지만 App Store Connect는
-// 한글 100자를 받아 왔으므로 글자 수로 막고 바이트 초과는 경고로 남긴다.
+// 한글 100자를 받아 왔으므로(1.12.1 한국어 등록 정보) 글자 수로 막는다.
 export const STORES = {
   'app-store': {
     label: 'App Store',
@@ -134,11 +134,6 @@ export function keywordProblems(keywords, { name = '', subtitle = '' }) {
     if (titleWords.has(item.toLowerCase())) {
       problems.push(`이름·부제와 겹치는 키워드: ${item}`);
     }
-  }
-  if (byteCount(keywords) > 100) {
-    warnings.push(
-      `UTF-8 ${byteCount(keywords)}바이트(문서상 100바이트, App Store Connect는 글자 수 기준으로 받아 왔다)`,
-    );
   }
   return { problems, warnings };
 }

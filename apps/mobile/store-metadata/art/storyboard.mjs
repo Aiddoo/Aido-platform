@@ -411,12 +411,14 @@ export const CARD_COPY = {
     rows: ['아침 운동', '책 10쪽 읽기'],
     nudge: '콕',
     reward: '친구도 나도 프리미엄 7일',
+    condition: '조건 있음 · 앱에서 확인',
     board: '발자국 모으기',
   },
   en: {
     rows: ['Morning workout', 'Read 10 pages'],
     nudge: 'Nudge',
     reward: '7 days of Premium for both of you',
+    condition: 'Conditions apply',
     board: 'Collect paw prints',
   },
 };

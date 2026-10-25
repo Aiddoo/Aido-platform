@@ -40,7 +40,7 @@ App Store는 이름·부제·키워드를 함께 검색해요. 이름·부제에
 - `ko`: 기존 조합(할일관리·투두리스트·체크리스트·캘린더·리마인더·작심삼일·콕찌르기)을 유지하고, 두 글자 단어는
   검색어 형태를 살려 늘렸어요(습관→습관만들기, 루틴→루틴관리, 일정→일정관리, 위젯→홈위젯, 갓생→갓생살기).
   1.13.0 초대(친구초대·초대코드·초대링크)와 맞춤형 제품 페이지용 단어(AI할일·음성입력·자동일정·폴더블·친구피드)를 더했어요.
-  Apple 문서는 100바이트라고 하지만 App Store Connect는 한글 100자를 받아 왔어요. `store:check`는 글자 수로 막고 바이트는 경고만 해요.
+  Apple 문서는 100바이트라고 하지만 App Store Connect는 한글 100자를 받아 왔어요(1.12.1). `store:check`는 글자 수(100자)로 막아요.
 - `en-US`: 이름(Aido, AI, To-do, Planner)·부제(friends, done)에 없는 검색어 — `todo` 표기, `list`, `task`, `checklist`,
   `habit`, `routine`, `reminder`, `widget`, `social`과 맞춤형 제품 페이지용 `invite`, `voice`, `schedule`, `ipad`, `feed`.
 - `en-GB`: 한국 스토어(KOR)의 추가 언어이자 영국·호주 스토어 언어예요. `en-US`와 겹치지 않는 두 번째 조합을 둬요.

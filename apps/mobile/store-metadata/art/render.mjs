@@ -382,6 +382,9 @@ async function render({ out, captureRoot, preview, only, locales }) {
       if (report.fonts.length > 0) {
         errors.push(`${job.output}: 글꼴을 불러오지 못했어요 ${report.fonts.join(', ')}`);
       }
+      if (report.cardOverflow?.length > 0) {
+        errors.push(`${job.output}: 카드 밖으로 넘친 요소 ${report.cardOverflow.join(', ')}`);
+      }
       if (report.overflow) {
         errors.push(`${job.output}: 문구가 화면 밖으로 넘쳐요`);
       }

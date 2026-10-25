@@ -21,11 +21,11 @@ test('키워드는 공백·중복·이름과 겹치는 단어를 막는다', () 
   assert.match(keywordProblems('습관,루틴관리', {}).problems.join(), /3글자/u);
 });
 
-test('키워드가 100바이트를 넘으면 경고만 남긴다', () => {
+test('키워드 한도는 글자 수 기준이라 한글 100자 안이면 통과한다', () => {
   const result = keywordProblems(
     '할일관리,투두리스트,체크리스트,습관만들기,루틴관리,캘린더,일정관리,리마인더',
     {},
   );
   assert.deepEqual(result.problems, []);
-  assert.equal(result.warnings.length, 1);
+  assert.deepEqual(result.warnings, []);
 });
