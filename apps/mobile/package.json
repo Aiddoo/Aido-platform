@@ -53,7 +53,9 @@
     "generate:tab-icons": "node scripts/generate-tab-icons.mjs",
     "store:check": "node scripts/store-listing.mjs check",
     "store:export": "node scripts/store-listing.mjs export",
-    "test:store-listing": "node --test scripts/store-listing.test.mjs"
+    "test:store-listing": "node --test scripts/store-listing.test.mjs",
+    "store:art": "node store-metadata/art/render.mjs",
+    "test:store-art": "node --test store-metadata/art/render.test.mjs"
   },
   "dependencies": {
     "@aido/api": "workspace:*",

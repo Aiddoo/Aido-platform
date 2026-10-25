@@ -1,0 +1,556 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- 스토어 스크린샷 한 장. render.mjs가 window.renderJob(job)으로 문구·캡처·기기 틀을 넣고 출력 크기 그대로 캡처한다. -->
+    <style>
+      @font-face {
+        font-family: 'Wanted Sans';
+        font-weight: 500;
+        src: url(../../../assets/fonts/WantedSans-Medium.ttf);
+      }
+      @font-face {
+        font-family: 'Wanted Sans';
+        font-weight: 600;
+        src: url(../../../assets/fonts/WantedSans-SemiBold.ttf);
+      }
+      @font-face {
+        font-family: 'Wanted Sans';
+        font-weight: 700;
+        src: url(../../../assets/fonts/WantedSans-Bold.ttf);
+      }
+
+      /* 색은 hex만 쓴다(lib/contrast.mjs가 계산 색을 읽는다). */
+      :root {
+        --bg: #f7f7f7;
+        --ink: #1e1e1e;
+        --tagline: #c2410c; /* #f7f7f7 위 4.8:1 */
+        --em: #e8552b; /* 큰 글자 3.4:1 */
+        --note: #5c5c5c; /* 6.2:1 */
+        --brand: #ff6b43;
+        --rim: #ece5da;
+        --bezel: #111111;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        overflow: hidden;
+        background: var(--bg);
+      }
+      body {
+        position: relative;
+        font-family: 'Wanted Sans', sans-serif;
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+      .stage {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .copy {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        padding: 0.28em 0.8em;
+        border-radius: 999px;
+        background: var(--brand);
+        color: #ffffff;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      .tagline {
+        font-weight: 700;
+        color: var(--tagline);
+        letter-spacing: -0.01em;
+      }
+      .headline {
+        font-weight: 700;
+        line-height: 1.24;
+        letter-spacing: -0.035em;
+        white-space: pre;
+      }
+      .headline em {
+        font-style: normal;
+        color: var(--em);
+      }
+      .note {
+        color: var(--note);
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+      }
+
+      .devices {
+        position: relative;
+        flex: 1;
+        width: 100%;
+      }
+      .device {
+        position: absolute;
+      }
+      .device .rim {
+        position: absolute;
+        inset: 0;
+        background: var(--rim);
+        box-shadow: 0 30px 80px -30px rgb(60 40 20 / 0.35);
+      }
+      .device .bezel {
+        position: absolute;
+        background: var(--bezel);
+      }
+      .device .screen {
+        position: absolute;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      .device .screen img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        object-position: top center;
+      }
+      .device .screen img.contain {
+        object-fit: contain;
+        background: #ffffff;
+      }
+      .device .island {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #000000;
+        border-radius: 999px;
+      }
+      .device .crease {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 3%;
+        transform: translateX(-50%);
+        background: linear-gradient(90deg, transparent, rgb(0 0 0 / 0.06), transparent);
+        pointer-events: none;
+      }
+      .device.card .rim {
+        background: transparent;
+        box-shadow: none;
+      }
+      .device.card .screen {
+        box-shadow:
+          0 24px 70px -20px rgb(60 40 20 / 0.32),
+          0 0 0 1px rgb(0 0 0 / 0.05);
+      }
+
+      .placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6em;
+        background: repeating-linear-gradient(45deg, #fafafa 0 24px, #f0f0f0 24px 48px);
+        color: #555555;
+        text-align: center;
+        padding: 8%;
+      }
+      .placeholder b {
+        font-size: 1.15em;
+        color: #333333;
+      }
+
+      /* 초대 화면 임시 목업(미리보기 전용) */
+      .mock {
+        position: absolute;
+        inset: 0;
+        background: #ffffff;
+        padding: 18% 7% 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4%;
+      }
+      .mock .chip {
+        align-self: flex-start;
+        padding: 0.35em 0.9em;
+        border-radius: 999px;
+        background: #fff0eb;
+        color: #c2410c;
+        font-weight: 700;
+      }
+      .mock h2 {
+        font-weight: 700;
+        line-height: 1.3;
+        white-space: pre-line;
+      }
+      .mock .code {
+        border-radius: 1em;
+        background: #f5f5f5;
+        padding: 5% 6%;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+      }
+      .mock .share {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 3%;
+      }
+      .mock .share span {
+        border-radius: 0.8em;
+        background: #f5f5f5;
+        padding: 6% 0;
+        text-align: center;
+        font-weight: 600;
+      }
+      .mock .share span:first-child {
+        background: #fee500;
+      }
+      .mock .board {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 3%;
+        padding: 5%;
+        border-radius: 1em;
+        background: #fff7f3;
+      }
+      .stamp {
+        aspect-ratio: 1;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+      .stamp svg {
+        width: 55%;
+        height: 55%;
+      }
+      .stamp.on {
+        background: var(--brand);
+        color: #ffffff;
+      }
+      .stamp.wait {
+        border: 2px dashed var(--brand);
+        color: var(--brand);
+        opacity: 0.7;
+      }
+      .stamp.off {
+        background: #ffe9e1;
+        color: #ffffff;
+      }
+      .stamp.fish {
+        background: #e6f4ff;
+        color: #23a2ff;
+      }
+
+      .cat-peek {
+        position: absolute;
+        pointer-events: none;
+        filter: drop-shadow(0 14px 22px rgb(120 60 20 / 0.18));
+      }
+
+      .preview-mark {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0.5em 1.2em;
+        background: rgb(30 30 30 / 0.78);
+        color: #ffffff;
+        font-weight: 700;
+        border-bottom-left-radius: 1em;
+        letter-spacing: 0.02em;
+        z-index: 5;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <!-- apps/mobile/assets/icons/ic_paw.svg, ic_fish.svg -->
+        <path
+          id="paw"
+          d="M19.3629 7.76445C19.1461 7.24922 18.7859 6.87773 18.3211 6.69062L18.3148 6.68828C18.1033 6.60545 17.878 6.56305 17.6508 6.56328H17.6258C16.5617 6.5793 15.4754 7.48359 14.923 8.81367C14.518 9.78633 14.4715 10.8324 14.7988 11.6121C15.0152 12.1277 15.3762 12.4992 15.843 12.6863L15.848 12.6883C16.0596 12.7711 16.2849 12.8135 16.5121 12.8133C17.5863 12.8133 18.684 11.909 19.2465 10.5613C19.6465 9.58984 19.6906 8.54453 19.3629 7.76445ZM15.1113 13.5012C14.4977 13.1324 13.9176 12.7836 13.5387 12.157C12.4934 10.4227 11.8621 9.37578 10.207 9.37578C8.55195 9.37578 7.91914 10.4227 6.87148 12.157C6.4918 12.7844 5.91055 13.1336 5.29492 13.5039C4.58906 13.9281 3.85977 14.3664 3.54492 15.2289C3.4225 15.5398 3.36084 15.8713 3.36328 16.2055C3.36328 17.6098 4.45703 18.7523 5.80078 18.7523C6.49414 18.7523 7.23203 18.5121 8.01289 18.2578C8.76367 18.0133 9.53984 17.7605 10.2109 17.7605C10.882 17.7605 11.6562 18.0133 12.4043 18.2578C13.1836 18.5105 13.918 18.7508 14.6133 18.7508C15.9551 18.7508 17.0469 17.6082 17.0469 16.2039C17.048 15.8695 16.985 15.538 16.8613 15.2273C16.5465 14.3641 15.8168 13.9254 15.1113 13.5012ZM6.06641 8.00273C6.53125 8.58594 7.12109 8.90703 7.72734 8.90703C7.81011 8.90701 7.89275 8.90088 7.97461 8.88867C9.23906 8.70273 10.027 7.15977 9.76836 5.37305C9.66016 4.62188 9.37109 3.92227 8.95703 3.40352C8.49297 2.82148 7.90234 2.50078 7.29648 2.50078C7.21372 2.5008 7.13108 2.50694 7.04922 2.51914C5.78477 2.70508 4.99688 4.24805 5.25547 6.03477C5.36328 6.78477 5.65234 7.48359 6.06641 8.00273ZM12.4398 8.88867C12.5217 8.90088 12.6043 8.90701 12.6871 8.90703C13.2937 8.90703 13.8832 8.58594 14.348 8.00273C14.7617 7.48359 15.0492 6.78477 15.1586 6.03398C15.4172 4.24805 14.6293 2.70508 13.3648 2.51836C13.283 2.50616 13.2003 2.50002 13.1176 2.5C12.5117 2.50078 11.9211 2.82148 11.457 3.40352C11.043 3.92227 10.7539 4.62188 10.6461 5.37383C10.3875 7.15977 11.1754 8.70273 12.4398 8.88867ZM4.56602 12.6883L4.57148 12.6863C5.0375 12.4992 5.39805 12.1281 5.61406 11.6129C5.94141 10.8316 5.89531 9.78672 5.49102 8.81406C4.93125 7.46797 3.83398 6.56328 2.76094 6.56328C2.53371 6.56295 2.30844 6.60536 2.09688 6.68828L2.09141 6.69023C1.62656 6.87578 1.26602 7.24844 1.05 7.76367C0.722657 8.54492 0.768751 9.58984 1.17305 10.5625C1.73281 11.9086 2.83008 12.8133 3.90313 12.8133C4.12996 12.8135 4.35482 12.7711 4.56602 12.6883Z"
+          fill="currentColor"
+        />
+        <path
+          id="fish"
+          d="M9.73828 0C13.5125 6.56547e-06 17.1946 2.30511 18.5498 4.99414C19.8313 3.14895 22.2853 1.40268 23.417 1.40234C24.9865 1.40234 22.8867 4.76299 22.8867 7.08594C22.8867 9.40889 24.9866 12.6943 23.417 12.6943C22.2918 12.694 19.8597 11.0058 18.5723 9.19434C17.2364 11.8742 13.5343 14.1338 9.73828 14.1338C4.98784 14.1338 0.000215724 10.5979 0 7.12402C0 3.65006 4.98774 0 9.73828 0Z"
+          fill="currentColor"
+        />
+      </defs>
+    </svg>
+    <div class="stage" id="stage"></div>
+    <script>
+      // 기기별 화면 비율과 틀 두께(틀 너비 대비)
+      const FRAMES = {
+        iphone: { aspect: 1206 / 2622, rim: 0.012, bezel: 0.03, radius: 0.155, island: true },
+        'duo-closed': { aspect: 1398 / 2034, rim: 0.012, bezel: 0.03, radius: 0.13, island: true },
+        'duo-open': { aspect: 2007 / 2853, rim: 0.008, bezel: 0.022, radius: 0.075, crease: true },
+        ipad: { aspect: 2064 / 2752, rim: 0.007, bezel: 0.026, radius: 0.06 },
+        card: { aspect: 1080 / 2400, rim: 0, bezel: 0, radius: 0.07 },
+      };
+      const WIDTH_SHARE = {
+        iphone: 0.84,
+        'duo-closed': 0.84,
+        'duo-open': 0.86,
+        ipad: 0.82,
+        card: 0.8,
+      };
+
+      function el(tag, className, parent) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (parent) parent.append(node);
+        return node;
+      }
+
+      // "첫 줄\n[강조] 둘째 줄" → 줄바꿈과 <em>
+      function setRich(node, text) {
+        for (const [index, line] of text.split('\n').entries()) {
+          if (index > 0) node.append(document.createElement('br'));
+          for (const part of line.split(/(\[[^\]]+\])/)) {
+            if (!part) continue;
+            if (part.startsWith('[')) {
+              const em = el('em');
+              em.textContent = part.slice(1, -1);
+              node.append(em);
+            } else {
+              node.append(part);
+            }
+          }
+        }
+      }
+
+      function paw() {
+        return '<svg viewBox="0 0 20 20"><use href="#paw"/></svg>';
+      }
+      function fish() {
+        return '<svg viewBox="0 0 24 15"><use href="#fish"/></svg>';
+      }
+
+      function screenContent(screen, parent, unit) {
+        if (screen.src) {
+          const img = el('img', screen.fit === 'contain' ? 'contain' : '', parent);
+          img.src = screen.src;
+          return;
+        }
+        if (screen.mock === 'invite') {
+          const mock = el('div', 'mock', parent);
+          mock.style.fontSize = `${unit}px`;
+          const copy = screen.mockCopy;
+          mock.innerHTML = `
+      <span class="chip">${copy.chip}</span>
+      <h2 style="font-size:1.9em">${copy.title}</h2>
+      <div class="code" style="font-size:1.3em"><span>${copy.codeLabel}</span><span>K7P2QX</span></div>
+      <div class="share"><span>${copy.kakao}</span><span>${copy.copy}</span><span>${copy.share}</span></div>
+      <div class="board">
+        <span class="stamp on">${paw()}</span><span class="stamp on">${paw()}</span><span class="stamp wait">${paw()}</span>
+        <span class="stamp off">${paw()}</span><span class="stamp fish">${fish()}</span>
+        <span class="stamp off">${paw()}</span><span class="stamp off">${paw()}</span><span class="stamp off">${paw()}</span>
+        <span class="stamp off">${paw()}</span><span class="stamp fish">${fish()}</span>
+      </div>`;
+          return;
+        }
+        const box = el('div', 'placeholder', parent);
+        box.style.fontSize = `${unit}px`;
+        box.innerHTML = `<b>캡처 대기</b><span>${screen.label}</span>`;
+      }
+
+      // 틀 하나를 (left, top, width)에 그린다. 화면 비율은 기기 기준.
+      function drawDevice(container, kind, screen, left, top, width) {
+        const frame = FRAMES[kind];
+        const pad = width * (frame.rim + frame.bezel);
+        const screenWidth = width - 2 * pad;
+        const screenHeight = screenWidth / frame.aspect;
+        const outerHeight = screenHeight + 2 * pad;
+        const device = el('div', `device ${kind === 'card' ? 'card' : ''}`, container);
+        Object.assign(device.style, {
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${width}px`,
+          height: `${outerHeight}px`,
+        });
+        const radius = width * frame.radius;
+        const rim = el('div', 'rim', device);
+        rim.style.borderRadius = `${radius}px`;
+        if (frame.bezel > 0) {
+          const bezel = el('div', 'bezel', device);
+          const inset = width * frame.rim;
+          Object.assign(bezel.style, { inset: `${inset}px`, borderRadius: `${radius - inset}px` });
+        }
+        const screenNode = el('div', 'screen', device);
+        Object.assign(screenNode.style, {
+          left: `${pad}px`,
+          top: `${pad}px`,
+          width: `${screenWidth}px`,
+          height: `${screenHeight}px`,
+          borderRadius: `${Math.max(radius - pad, width * 0.03)}px`,
+        });
+        screenContent(screen, screenNode, screenWidth / 26);
+        if (frame.island) {
+          const island = el('div', 'island', device);
+          Object.assign(island.style, {
+            top: `${pad + screenWidth * 0.028}px`,
+            width: `${screenWidth * 0.29}px`,
+            height: `${screenWidth * 0.085}px`,
+          });
+        }
+        if (frame.crease) el('div', 'crease', screenNode);
+        return { device, outerHeight };
+      }
+
+      window.renderJob = async (job) => {
+        const { width, height } = job;
+        document.documentElement.style.width = `${width}px`;
+        document.documentElement.style.height = `${height}px`;
+        document.body.style.width = `${width}px`;
+        document.body.style.height = `${height}px`;
+        const unit = Math.sqrt(width * height) / Math.sqrt(1206 * 2622);
+        const stage = document.getElementById('stage');
+        stage.replaceChildren();
+        stage.style.paddingTop = `${190 * unit}px`;
+
+        const copy = el('div', 'copy', stage);
+        if (job.badge) {
+          const badge = el('span', 'badge', copy);
+          badge.style.fontSize = `${30 * unit}px`;
+          badge.style.marginBottom = `${26 * unit}px`;
+          badge.textContent = job.badge;
+        }
+        const tagline = el('p', 'tagline', copy);
+        tagline.dataset.contrast = 'normal';
+        tagline.style.fontSize = `${46 * unit}px`;
+        tagline.textContent = job.tagline;
+        const headline = el('h1', 'headline', copy);
+        headline.dataset.contrast = 'large';
+        headline.style.fontSize = `${90 * unit}px`;
+        headline.style.marginTop = `${30 * unit}px`;
+        setRich(headline, job.headline);
+        // 줄이 너비의 90%를 넘으면 글자를 줄인다.
+        await document.fonts.ready;
+        let size = 90 * unit;
+        while (headline.getBoundingClientRect().width > width * 0.9 && size > 56 * unit) {
+          size -= 2 * unit;
+          headline.style.fontSize = `${size}px`;
+        }
+        if (job.note) {
+          const note = el('p', 'note', copy);
+          note.dataset.contrast = 'normal';
+          note.style.fontSize = `${30 * unit}px`;
+          note.style.marginTop = `${22 * unit}px`;
+          note.textContent = job.note;
+        }
+
+        const devices = el('div', 'devices', stage);
+        const deviceShare = job.layout === 'duo-pair' ? 0.68 : WIDTH_SHARE[job.frame];
+        const catSize = width * deviceShare * 0.3;
+        devices.style.marginTop = `${78 * unit + (job.decor === 'cat-peek' ? catSize * 0.5 : 0)}px`;
+        await document.fonts.ready;
+        const box = devices.getBoundingClientRect();
+
+        if (job.layout === 'duo-pair') {
+          const openWidth = width * 0.68;
+          drawDevice(
+            devices,
+            'duo-open',
+            job.screen,
+            width - openWidth - width * 0.05,
+            0,
+            openWidth,
+          );
+          const closedWidth = width * 0.36;
+          drawDevice(
+            devices,
+            'duo-closed',
+            job.folded,
+            width * 0.06,
+            box.height * 0.18,
+            closedWidth,
+          );
+        } else {
+          const share = WIDTH_SHARE[job.frame];
+          const deviceWidth = width * share;
+          const { device } = drawDevice(
+            devices,
+            job.frame,
+            job.screen,
+            (width - deviceWidth) / 2,
+            0,
+            deviceWidth,
+          );
+          if (job.decor === 'cat-peek' && job.catSrc) {
+            const cat = el('img', 'cat-peek', devices);
+            cat.src = job.catSrc;
+            Object.assign(cat.style, {
+              width: `${catSize}px`,
+              left: `${(width + deviceWidth) / 2 - catSize * 1.05}px`,
+              top: `${-catSize * 0.62}px`,
+            });
+            device.style.zIndex = 1;
+            cat.style.zIndex = 0;
+          }
+        }
+
+        if (job.preview) {
+          const mark = el('div', 'preview-mark', document.body);
+          mark.style.fontSize = `${24 * unit}px`;
+          mark.textContent = job.preview;
+        }
+
+        await document.fonts.ready;
+        await Promise.all(
+          [...document.images].map((image) =>
+            image.complete
+              ? null
+              : new Promise((resolve) => {
+                  image.onload = resolve;
+                  image.onerror = resolve;
+                }),
+          ),
+        );
+        const broken = [...document.images]
+          .filter((image) => !image.naturalWidth)
+          .map((image) => image.src);
+        const background = getComputedStyle(document.body).backgroundColor;
+        const contrast = [...document.querySelectorAll('[data-contrast]')].flatMap((node) => {
+          const items = [
+            {
+              name: node.className,
+              color: getComputedStyle(node).color,
+              background,
+              level: node.dataset.contrast,
+            },
+          ];
+          for (const em of node.querySelectorAll('em')) {
+            items.push({
+              name: `${node.className} em`,
+              color: getComputedStyle(em).color,
+              background,
+              level: node.dataset.contrast,
+            });
+          }
+          return items;
+        });
+        const fonts = [...document.fonts]
+          .filter((font) => font.status === 'error')
+          .map((font) => font.family);
+        const overflow = [...document.querySelectorAll('.headline, .tagline, .note')].some(
+          (node) => node.getBoundingClientRect().width > width * 0.94,
+        );
+        return { contrast, broken, fonts, overflow };
+      };
+    </script>
+  </body>
+</html>
