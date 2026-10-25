@@ -38,6 +38,43 @@ describe('toUser', () => {
     expect(result.profileImage).toBeNull();
   });
 
+  test('보상 기간 프리미엄이면 출처·끝나는 시각·자동 갱신을 그대로 옮긴다', () => {
+    // Given
+    const dto = createCurrentUserDto({
+      premiumSource: 'GRANT',
+      premiumEndsAt: '2026-11-01T05:30:00.000Z',
+      willRenew: false,
+      bankedPremiumDays: 7,
+    });
+
+    // When
+    const result = toUser(dto);
+
+    // Then
+    expect(result.premiumAccess).toEqual({
+      source: 'GRANT',
+      endsAt: new Date('2026-11-01T05:30:00.000Z'),
+      willRenew: false,
+      bankedDays: 7,
+    });
+  });
+
+  test('구버전 서버가 프리미엄 출처를 보내지 않으면 출처 없음으로 본다', () => {
+    // Given
+    const dto = createCurrentUserDto();
+
+    // When
+    const result = toUser(dto);
+
+    // Then
+    expect(result.premiumAccess).toEqual({
+      source: null,
+      endsAt: null,
+      willRenew: false,
+      bankedDays: 0,
+    });
+  });
+
   test('providers 배열 매핑', () => {
     // Given
     const dto = createCurrentUserDto({ providers: ['CREDENTIAL', 'GOOGLE'] });

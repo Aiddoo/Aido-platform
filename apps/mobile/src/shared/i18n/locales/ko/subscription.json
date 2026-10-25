@@ -21,7 +21,14 @@
     "nextBillingDate": "다음 결제일",
     "expiresAt": "만료일",
     "statusLabel": "구독 상태",
-    "autoRenewal": "자동 갱신"
+    "autoRenewal": "자동 갱신",
+    "grantPeriod": "이용 기간",
+    "grantUntil": "{{date}}까지",
+    "daysLeft": "남은 기간",
+    "daysLeftValue": "{{count}}일",
+    "autoRenewalLabel": "자동 갱신",
+    "noAutoRenewal": "없음",
+    "bankedNotice": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요"
   },
   "plan": {
     "annual": "연간 구독",
@@ -90,7 +97,9 @@
     "description": "모든 프리미엄 기능을 이용하고 있어요",
     "benefitsTitle": "이용 중인 혜택",
     "manageButton": "구독 관리 (스토어 설정)",
-    "restoreButton": "이전 구매 복원"
+    "restoreButton": "이전 구매 복원",
+    "grantTitle": "초대 보상으로 프리미엄을 쓰고 있어요",
+    "subscribeAfterGrantButton": "구독하고 계속 쓰기"
   },
   "paywall": {
     "title": "프리미엄으로 업그레이드",
@@ -105,5 +114,11 @@
     "termsAnd": " 및 ",
     "privacyLink": "개인정보처리방침",
     "termsSuffix": "에 동의하게 됩니다."
+  },
+  "endingNotice": {
+    "badgeTomorrow": "D-1",
+    "badgeToday": "오늘",
+    "tomorrow": "내일 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
+    "today": "오늘 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요"
   }
 }

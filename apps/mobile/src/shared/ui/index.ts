@@ -1,6 +1,7 @@
 export { ActionChip, type ActionChipProps, useActionChipIconSize } from './action-chip';
 export { AdaptivePane, type AdaptivePaneProps } from './adaptive-pane';
 export { Avatar } from './avatar';
+export { Barcode, type BarcodeProps } from './barcode';
 export {
   BottomSheet,
   KeyboardBottomSheet,

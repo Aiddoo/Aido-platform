@@ -1,10 +1,10 @@
 import { invalidatePremiumAiQueries } from '@src/features/ai/queries/ai-cache';
 import { invalidateMemoResourceLimit } from '@src/features/memo/queries/memo-cache';
 import { invalidateNudgeLimit } from '@src/features/nudge/queries/nudge-cache';
+import { CustomerInfoPolicy } from '@src/features/subscription/apis/customer-info.policy';
 import { WEBHOOK_SYNC_DELAY } from '@src/features/subscription/constants/webhook-sync';
-import { USER_QUERY_KEYS } from '@src/features/user/constants/user-query-keys';
-import type { User } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { invalidateMe } from '@src/features/user/queries/user-cache';
 import { ENV } from '@src/shared/config/env';
 import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { debounce } from 'es-toolkit';
@@ -15,7 +15,7 @@ import { useAuth } from './auth-provider';
 import { useRevenueCatSdkManager } from './di-context';
 
 const invalidateSubscriptionQueries = (queryClient: QueryClient) => {
-  queryClient.invalidateQueries({ queryKey: USER_QUERY_KEYS.me() });
+  invalidateMe(queryClient);
   invalidateNudgeLimit(queryClient);
   invalidatePremiumAiQueries(queryClient);
   invalidateMemoResourceLimit(queryClient);
@@ -61,32 +61,19 @@ export function RevenueCatProvider({ children }: PropsWithChildren) {
     }
   }, [isAuthenticated, user, status, sdkManager]);
 
-  // CustomerInfo 변경 리스너 — 데이터 동기화의 단일 진입점
-  // 이 기기 구매/복원, 다른 기기 변경, 스토어 직접 취소 등 모든 변경을 여기서 처리
+  // CustomerInfo 변경 리스너 — 이 기기 구매/복원, 다른 기기 변경, 스토어 직접 취소를 모두 받는다.
+  // 프리미엄은 스토어 구독과 보상 기간을 합친 서버 값이 단일 원천이라 캐시에 쓰지 않고 다시 불러온다.
   const onCustomerInfoUpdated = useCallback(
     (info: CustomerInfo) => {
-      const hasActive = Object.keys(info.entitlements.active).length > 0;
-
-      // SDK 상태로 캐시 즉시 반영 (낙관적 업데이트)
-      queryClient.setQueryData<User>(USER_QUERY_KEYS.me(), (old) => {
-        if (!old) {
-          return old;
-        }
-        const nextStatus = hasActive ? ('ACTIVE' as const) : ('FREE' as const);
-        if (old.subscriptionStatus === nextStatus) {
-          return old;
-        }
-        return { ...old, subscriptionStatus: nextStatus };
-      });
-
-      if (hasActive) {
+      if (CustomerInfoPolicy.hasStoreEntitlement(info.entitlements)) {
         // 구독 활성화: 웹훅 처리 대기 후 서버 동기화
         syncServerAfterWebhook();
-      } else {
-        // 구독 비활성화 (취소/환불/만료): 즉시 서버 동기화
-        syncServerAfterWebhook.cancel();
-        invalidateSubscriptionQueries(queryClient);
+        return;
       }
+
+      // 구독 비활성화 (취소/환불/만료): 즉시 서버 동기화
+      syncServerAfterWebhook.cancel();
+      invalidateSubscriptionQueries(queryClient);
     },
     [queryClient, syncServerAfterWebhook],
   );

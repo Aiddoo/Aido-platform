@@ -21,7 +21,16 @@
     "nextBillingDate": "Next billing date",
     "expiresAt": "Expires on",
     "statusLabel": "Subscription status",
-    "autoRenewal": "Auto-renews"
+    "autoRenewal": "Auto-renews",
+    "grantPeriod": "Access period",
+    "grantUntil": "Until {{date}}",
+    "daysLeft": "Time left",
+    "daysLeftValue_one": "{{count}} day",
+    "daysLeftValue_other": "{{count}} days",
+    "autoRenewalLabel": "Auto-renewal",
+    "noAutoRenewal": "None",
+    "bankedNotice_one": "When your subscription ends, {{count}} day of reward Premium starts",
+    "bankedNotice_other": "When your subscription ends, {{count}} days of reward Premium start"
   },
   "plan": {
     "annual": "Annual",
@@ -90,7 +99,9 @@
     "description": "You're enjoying all premium features",
     "benefitsTitle": "Your benefits",
     "manageButton": "Manage subscription (store settings)",
-    "restoreButton": "Restore purchases"
+    "restoreButton": "Restore purchases",
+    "grantTitle": "Premium from your invite reward",
+    "subscribeAfterGrantButton": "Subscribe to keep Premium"
   },
   "paywall": {
     "title": "Upgrade to Premium",
@@ -105,5 +116,11 @@
     "termsAnd": " and ",
     "privacyLink": "Privacy Policy",
     "termsSuffix": "."
+  },
+  "endingNotice": {
+    "badgeTomorrow": "D-1",
+    "badgeToday": "Today",
+    "tomorrow": "Your Premium ends tomorrow. Subscribe to keep it going",
+    "today": "Your Premium ends today. Subscribe to keep it going"
   }
 }

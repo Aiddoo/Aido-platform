@@ -16,6 +16,7 @@ const createUser = (overrides: Partial<User> = {}): User => ({
   subscriptionStatus: 'FREE',
   subscriptionExpiresAt: null,
   providers: ['GOOGLE'],
+  premiumAccess: { source: null, endsAt: null, willRenew: false, bankedDays: 0 },
   createdAt: new Date('2026-07-01T00:00:00.000Z'),
   ...overrides,
 });

@@ -17,9 +17,9 @@ export const useRestoreMutationOptions = () => {
 
       return unwrap(result);
     },
-    onSuccess: (hasActive) => {
+    onSuccess: (hasRestoredStorePurchase) => {
       // 캐시 동기화는 RevenueCatProvider의 CustomerInfo 리스너가 전담
-      if (hasActive) {
+      if (hasRestoredStorePurchase) {
         trackEvent('subscription_restored');
         notifySuccess();
         success(t('subscription:toast.restoreSuccess'));

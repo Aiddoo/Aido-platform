@@ -1,4 +1,5 @@
 import { ACCOUNT_PROVIDERS, SUBSCRIPTION_STATUS, USER_ROLE } from '@aido/api';
+import { PremiumAccessSchema } from '@src/features/subscription/domains/premium-access.model';
 import { z } from 'zod';
 
 const accountProviderSchema = z.enum(ACCOUNT_PROVIDERS);
@@ -18,6 +19,7 @@ export const userSchema = z.object({
   subscriptionStatus: subscriptionStatusSchema,
   subscriptionExpiresAt: z.coerce.date().nullable(),
   providers: z.array(accountProviderSchema),
+  premiumAccess: PremiumAccessSchema,
   createdAt: z.coerce.date(),
 });
 export type User = z.infer<typeof userSchema>;

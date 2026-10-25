@@ -6,6 +6,7 @@ import Purchases, { type PurchasesPackage } from 'react-native-purchases';
 import { SUBSCRIPTION_LOG_EVENT } from '../constants/subscription-log-events';
 import { type SubscriptionError, SubscriptionErrors } from '../domains/subscription.error';
 import type { SubscriptionOffering } from '../domains/subscription.model';
+import { CustomerInfoPolicy } from './customer-info.policy';
 import type { RevenueCatSdkManager } from './revenuecat-sdk-manager';
 import { toSubscriptionOfferingWithPackages } from './subscription.mapper';
 
@@ -71,8 +72,7 @@ export class SubscriptionService {
 
     try {
       const { customerInfo } = await Purchases.purchasePackage(rcPackage);
-      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
-      return ok(hasActive);
+      return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo.entitlements));
     } catch (error) {
       return err(SubscriptionErrors.fromPurchaseError(error));
     }
@@ -85,8 +85,7 @@ export class SubscriptionService {
 
     try {
       const customerInfo = await Purchases.restorePurchases();
-      const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
-      return ok(hasActive);
+      return ok(CustomerInfoPolicy.hasStoreEntitlement(customerInfo.entitlements));
     } catch (error) {
       const message =
         error instanceof Error ? error.message : t('subscription:errors.restoreFailed');
