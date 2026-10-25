@@ -27,7 +27,9 @@ export const notificationSchema = z
     title: notificationTitleSchema,
     body: notificationBodySchema,
     isRead: z.boolean().describe("읽음 여부"),
-    metadata: notificationMetadataSchema.describe("추가 메타데이터 (미설정 시 null)"),
+    metadata: notificationMetadataSchema.describe(
+      "추가 메타데이터 (미설정 시 null). 이동 재료(commentId·threadRootId·activityKind, 할 일 알림의 todoOwnerId·todoDate)를 함께 싣는다",
+    ),
     context: notificationContextSchema.optional(),
     action: notificationActionSchema.optional(),
     createdAt: datetimeSchema.describe("생성 시각 (ISO 8601 UTC, 예: 2026-01-17T10:00:00.000Z)"),
