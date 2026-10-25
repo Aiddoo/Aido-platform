@@ -12,7 +12,9 @@
 
 import { createHash } from "node:crypto";
 
+import { ErrorCode } from "@aido/api/errors";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { z } from "zod";
 
 import { convertStandardSchema } from "#api/platform/http/swagger/standard-schema.converter";
 
@@ -72,6 +74,29 @@ function contractFingerprint(value: unknown): string {
   return createHash("sha256")
     .update(JSON.stringify(stableContract(value)))
     .digest("hex");
+}
+
+const errorResponseCodeSchema = z.object({
+  content: z.object({
+    "application/json": z.object({
+      schema: z.object({
+        properties: z.object({
+          error: z.object({
+            properties: z.object({
+              code: z.object({ enum: z.array(z.string()).optional(), example: z.string() }),
+            }),
+          }),
+        }),
+      }),
+    }),
+  }),
+});
+
+/** 응답에 선언된 오류 코드 목록. 단일 코드 응답은 example 하나, 여러 코드 응답은 enum 전체다. */
+function declaredErrorCodes(response: unknown): string[] {
+  const { schema } = errorResponseCodeSchema.parse(response).content["application/json"];
+  const code = schema.properties.error.properties.code;
+  return code.enum ?? [code.example];
 }
 
 function selectReleasedContract(
@@ -179,6 +204,41 @@ describe("OpenAPI 계약 (e2e)", () => {
     expect(Object.keys(operations.redeem?.responses ?? {})).toEqual(
       expect.arrayContaining(["200", "400", "401", "403", "404", "409", "410", "429"]),
     );
+  });
+
+  it("같은 상태 코드로 나가는 오류 코드를 모두 문서에 선언한다", () => {
+    // Given
+    const config = new DocumentBuilder().setTitle("Aido API").setVersion("1.0.0").build();
+    const document = SwaggerModule.createDocument(ctx.app, config, {
+      standardSchemaConverter: convertStandardSchema,
+    });
+    const redeemResponses = document.paths["/v1/invites/{code}/redeem"]?.post?.responses ?? {};
+    const parseTodoResponses = document.paths["/v1/ai/parse-todo"]?.post?.responses ?? {};
+    const parseMemoResponses = document.paths["/v1/ai/parse-memo"]?.post?.responses ?? {};
+
+    // When
+    const declared = {
+      redeem: {
+        403: declaredErrorCodes(redeemResponses["403"]),
+        404: declaredErrorCodes(redeemResponses["404"]),
+        409: declaredErrorCodes(redeemResponses["409"]),
+        410: declaredErrorCodes(redeemResponses["410"]),
+      },
+      parseTodo: { 429: declaredErrorCodes(parseTodoResponses["429"]) },
+      parseMemo: { 429: declaredErrorCodes(parseMemoResponses["429"]) },
+    };
+
+    // Then - 한 상태에 하나만 남기던 데코레이터 중첩으로 코드가 빠지면 안 된다
+    expect(declared).toEqual({
+      redeem: {
+        403: [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106],
+        404: [ErrorCode.INVITE_2101, ErrorCode.USER_0601],
+        409: [ErrorCode.INVITE_2104],
+        410: [ErrorCode.INVITE_2102],
+      },
+      parseTodo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
+      parseMemo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
+    });
   });
 
   it.each(RELEASED_OPENAPI_CONTRACTS)(

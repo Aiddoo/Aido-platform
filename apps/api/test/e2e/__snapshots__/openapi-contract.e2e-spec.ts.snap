@@ -15051,11 +15051,41 @@ curl https://api.aido.com/health
         "429": {
           "content": {
             "application/json": {
+              "examples": {
+                "AI_1303": {
+                  "summary": "월간 AI 사용 횟수를 초과했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1303",
+                      "details": null,
+                      "message": "월간 AI 사용 횟수를 초과했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1310": {
+                  "summary": "AI 요청이 너무 많습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1310",
+                      "details": null,
+                      "message": "AI 요청이 너무 많습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AI_1303",
+                          "AI_1310",
+                        ],
                         "example": "AI_1303",
                         "type": "string",
                       },
@@ -15093,7 +15123,9 @@ curl https://api.aido.com/health
               },
             },
           },
-          "description": "월간 AI 사용 횟수를 초과했습니다.",
+          "description": "AI_1303: 월간 AI 사용 횟수를 초과했습니다.
+
+AI_1310: AI 요청이 너무 많습니다.",
         },
         "500": {
           "content": {
@@ -15476,11 +15508,41 @@ if (confirmed) {
         "429": {
           "content": {
             "application/json": {
+              "examples": {
+                "AI_1303": {
+                  "summary": "월간 AI 사용 횟수를 초과했습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1303",
+                      "details": null,
+                      "message": "월간 AI 사용 횟수를 초과했습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "AI_1310": {
+                  "summary": "AI 요청이 너무 많습니다.",
+                  "value": {
+                    "error": {
+                      "code": "AI_1310",
+                      "details": null,
+                      "message": "AI 요청이 너무 많습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "AI_1303",
+                          "AI_1310",
+                        ],
                         "example": "AI_1303",
                         "type": "string",
                       },
@@ -15518,7 +15580,9 @@ if (confirmed) {
               },
             },
           },
-          "description": "월간 AI 사용 횟수를 초과했습니다.",
+          "description": "AI_1303: 월간 AI 사용 횟수를 초과했습니다.
+
+AI_1310: AI 요청이 너무 많습니다.",
         },
         "500": {
           "content": {
@@ -27771,11 +27835,41 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
         "403": {
           "content": {
             "application/json": {
+              "examples": {
+                "INVITE_2105": {
+                  "summary": "지금은 친구 초대를 쓸 수 없어요.",
+                  "value": {
+                    "error": {
+                      "code": "INVITE_2105",
+                      "details": null,
+                      "message": "지금은 친구 초대를 쓸 수 없어요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "INVITE_2106": {
+                  "summary": "친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
+                  "value": {
+                    "error": {
+                      "code": "INVITE_2106",
+                      "details": null,
+                      "message": "친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "INVITE_2105",
+                          "INVITE_2106",
+                        ],
                         "example": "INVITE_2105",
                         "type": "string",
                       },
@@ -27813,18 +27907,48 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "친구 자리가 꽉 차서 친구를 맺을 수 없어요.
+          "description": "INVITE_2105: 지금은 친구 초대를 쓸 수 없어요.
 
-지금은 친구 초대를 쓸 수 없어요.",
+INVITE_2106: 친구 자리가 꽉 차서 친구를 맺을 수 없어요.",
         },
         "404": {
           "content": {
             "application/json": {
+              "examples": {
+                "INVITE_2101": {
+                  "summary": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                  "value": {
+                    "error": {
+                      "code": "INVITE_2101",
+                      "details": null,
+                      "message": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+                "USER_0601": {
+                  "summary": "사용자를 찾을 수 없습니다.",
+                  "value": {
+                    "error": {
+                      "code": "USER_0601",
+                      "details": null,
+                      "message": "사용자를 찾을 수 없습니다.",
+                    },
+                    "success": false,
+                    "timestamp": 1700000000000,
+                  },
+                },
+              },
               "schema": {
                 "properties": {
                   "error": {
                     "properties": {
                       "code": {
+                        "enum": [
+                          "INVITE_2101",
+                          "USER_0601",
+                        ],
                         "example": "INVITE_2101",
                         "type": "string",
                       },
@@ -27862,7 +27986,9 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
               },
             },
           },
-          "description": "초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.",
+          "description": "INVITE_2101: 초대 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.
+
+USER_0601: 사용자를 찾을 수 없습니다.",
         },
         "409": {
           "content": {

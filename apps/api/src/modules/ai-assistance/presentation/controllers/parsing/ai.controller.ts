@@ -10,9 +10,9 @@ import { Locale, Timezone } from "#api/platform/http/decorators/index";
 import {
   ApiBadRequestError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiServiceUnavailableError,
   ApiSuccessResponse,
-  ApiTooManyRequestsError,
   ApiUnauthorizedError,
   ApiUnprocessableError,
   SWAGGER_TAGS,
@@ -183,7 +183,7 @@ if (confirmed) {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiUnprocessableError(ErrorCode.AI_1302)
-  @ApiTooManyRequestsError(ErrorCode.AI_1303)
+  @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",
@@ -339,7 +339,7 @@ if (confirmed) {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiUnprocessableError(ErrorCode.AI_1302)
-  @ApiTooManyRequestsError(ErrorCode.AI_1303)
+  @ApiErrorCodesResponse(HttpStatus.TOO_MANY_REQUESTS, [ErrorCode.AI_1303, ErrorCode.AI_1310])
   @ApiServiceUnavailableError(ErrorCode.AI_1301)
   @ApiHeader({
     name: "Accept-Language",

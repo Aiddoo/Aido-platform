@@ -13,6 +13,7 @@ import {
   ApiBadRequestError,
   ApiConflictError,
   ApiDoc,
+  ApiErrorCodesResponse,
   ApiForbiddenError,
   ApiGoneError,
   ApiNotFoundError,
@@ -168,12 +169,11 @@ export class InviteController {
   })
   @ApiSuccessResponse({ type: RedeemInviteResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiNotFoundError(ErrorCode.INVITE_2101)
+  @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.INVITE_2101, ErrorCode.USER_0601])
   @ApiGoneError(ErrorCode.INVITE_2102)
   @ApiBadRequestError(ErrorCode.INVITE_2103)
   @ApiConflictError(ErrorCode.INVITE_2104)
-  @ApiForbiddenError(ErrorCode.INVITE_2105)
-  @ApiForbiddenError(ErrorCode.INVITE_2106)
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async redeem(
     @CurrentUser() user: CurrentUserPayload,

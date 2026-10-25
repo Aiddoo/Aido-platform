@@ -7,7 +7,14 @@ import type { ApiErrorResponseOptions } from "../interfaces/swagger.interface.js
 /**
  * 에러 응답 스키마 생성 (에러 코드, 메시지 포함)
  */
-function createErrorSchema(errorCode: ErrorCodeType, message: string) {
+function createErrorSchema(
+  errorCode: ErrorCodeType,
+  message: string,
+  codeSchema: { type: "string"; example: ErrorCodeType; enum?: ErrorCodeType[] } = {
+    type: "string",
+    example: errorCode,
+  },
+) {
   return {
     type: "object",
     properties: {
@@ -15,7 +22,7 @@ function createErrorSchema(errorCode: ErrorCodeType, message: string) {
       error: {
         type: "object",
         properties: {
-          code: { type: "string", example: errorCode },
+          code: codeSchema,
           message: { type: "string", example: message },
           details: { type: "object", nullable: true, example: null },
         },
@@ -254,6 +261,58 @@ export function ApiGoneError(errorCode: ErrorCodeType): MethodDecorator {
       status: HttpStatus.GONE,
       description: message,
       schema: createErrorSchema(errorCode, message),
+    }),
+  );
+}
+
+/** examples는 문서 스냅샷에 그대로 남으므로 생성 시각 대신 고정 epoch을 쓴다. */
+const EXAMPLE_TIMESTAMP = 1_700_000_000_000;
+
+/**
+ * 한 HTTP 상태에 오류 코드가 둘 이상일 때 쓰는 데코레이터
+ *
+ * Swagger는 상태 코드마다 응답을 하나만 남기므로 같은 상태의 단일 코드 데코레이터를
+ * 겹쳐 쓰면 마지막 것만 문서에 남습니다. 이 데코레이터는 `error.code`를 enum으로,
+ * 코드별 메시지를 examples로 한 응답에 함께 선언합니다.
+ *
+ * @example
+ * ```typescript
+ * @Post(':code/redeem')
+ * @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106])
+ * redeem(@Param() params: InviteCodeParamDto) { ... }
+ * ```
+ */
+export function ApiErrorCodesResponse(
+  status: HttpStatus,
+  errorCodes: readonly [ErrorCodeType, ErrorCodeType, ...ErrorCodeType[]],
+): MethodDecorator {
+  const [firstCode] = errorCodes;
+  const messageOf = (errorCode: ErrorCodeType) => Errors[errorCode]?.message ?? errorCode;
+
+  return applyDecorators(
+    ApiResponse({
+      status,
+      description: errorCodes
+        .map((errorCode) => `${errorCode}: ${messageOf(errorCode)}`)
+        .join("\n\n"),
+      schema: createErrorSchema(firstCode, messageOf(firstCode), {
+        type: "string",
+        example: firstCode,
+        enum: [...errorCodes],
+      }),
+      examples: Object.fromEntries(
+        errorCodes.map((errorCode) => [
+          errorCode,
+          {
+            summary: messageOf(errorCode),
+            value: {
+              success: false,
+              error: { code: errorCode, message: messageOf(errorCode), details: null },
+              timestamp: EXAMPLE_TIMESTAMP,
+            },
+          },
+        ]),
+      ),
     }),
   );
 }
