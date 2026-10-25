@@ -254,6 +254,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         'USE_FINGERPRINT',
         'POST_NOTIFICATIONS',
       ],
+      // 광고 SDK가 없어 광고 ID를 쓰지 않는다. Firebase Analytics(play-services-measurement-api)가
+      // 병합하는 광고 ID 권한을 빼서 Play Console 광고 ID 신고를 "아니요"로 유지한다.
+      blockedPermissions: [
+        'com.google.android.gms.permission.AD_ID',
+        'android.permission.ACCESS_ADSERVICES_AD_ID',
+        'android.permission.ACCESS_ADSERVICES_ATTRIBUTION',
+      ],
       googleServicesFile: './google-services.json',
     },
 
