@@ -25,21 +25,22 @@ onFlowStart:
     id: invite-code-submit
 - assertNotVisible:
     id: invite-code-error
-# Case 2: 알파벳에 없는 글자(0)가 섞인 6자
+# Case 2: 헷갈려서 뺀 글자(0) 하나만 섞인 6자
 - tapOn:
     id: invite-code-input
 - eraseText: 10
-- inputText: AB0CDE
+- inputText: K7M2Q0
 - hideKeyboard
 - tapOn:
     id: invite-code-submit
-# Then: 같은 화면에 오류가 보이고 카드로 이동하지 않는다
+# Then: 같은 화면에 오류가 보이고, 문구가 틀린 글자를 짚으며, 카드로 이동하지 않는다
 - extendedWaitUntil:
-    label: 형식 오류 문구
-    visible: '0, O, 1, I, L은 초대 코드에 쓰지 않아요.*|Invite codes don.t use 0, O, 1, I, or L.*'
+    visible:
+      id: invite-code-error
     timeout: 10000
 - assertVisible:
-    id: invite-code-error
+    label: 틀린 글자를 짚는 형식 오류 문구
+    text: '(?s)‘0’ 글자는 초대 코드에 없어요.*|(?s)‘0’ isn.t used in invite codes.*'
 - assertVisible: '다시 확인|Check again'
 - assertNotVisible: '${output.a.name}.*'
 - takeScreenshot: 1.13.0-failure-code-format
