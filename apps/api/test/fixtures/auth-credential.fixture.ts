@@ -124,8 +124,10 @@ export function createAuthCredentialFixture(
 /** 사용자별 프리미엄 출처를 정해 두는 대역. 기본값은 프리미엄 아님이다. */
 export class StubPremiumAccessReader implements PremiumAccessReaderPort {
   readonly accesses = new Map<string, PremiumAccess>();
+  readonly requestedUserIds: string[] = [];
 
   async getPremiumAccess(userId: string): Promise<PremiumAccess> {
+    this.requestedUserIds.push(userId);
     return (
       this.accesses.get(userId) ?? { source: null, endsAt: null, willRenew: false, bankedDays: 0 }
     );

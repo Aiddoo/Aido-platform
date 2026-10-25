@@ -31,13 +31,12 @@ export class GetCurrentUser {
     const cachedProfile = await this.#dependencies.cacheService.wrapUserProfile(
       userId,
       async () => {
-        const [user, premiumAccess] = await Promise.all([
-          this.#dependencies.userRepository.findByIdWithProfile(userId),
-          this.#dependencies.premiumAccessReader.getPremiumAccess(userId),
-        ]);
+        const user = await this.#dependencies.userRepository.findByIdWithProfile(userId);
         if (user === null) {
           return undefined;
         }
+        // 없는 사용자에게 보상·구독 조회를 더 하지 않는다
+        const premiumAccess = await this.#dependencies.premiumAccessReader.getPremiumAccess(userId);
 
         return {
           id: user.id,

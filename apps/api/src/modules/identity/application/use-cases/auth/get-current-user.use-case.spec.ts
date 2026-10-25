@@ -57,7 +57,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     expect(fixture.userRepository.users.size).toBe(0);
   });
 
-  it("없는 사용자는 USER_0601이며 실패 결과를 프로필 캐시에 저장하지 않는다", async () => {
+  it("없는 사용자는 USER_0601이며 보상·구독을 조회하지 않고 실패 결과를 프로필 캐시에 저장하지 않는다", async () => {
     // Given
     const fixture = given({ empty: true });
     // When
@@ -68,6 +68,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       details: { userId: fixture.user.id },
     });
     expect(fixture.cacheService.profiles.size).toBe(0);
+    expect(fixture.premiumAccessReader.requestedUserIds).toEqual([]);
   });
 
   it("보상 기간만 있는 사용자는 출처 GRANT와 종료 시각, 자동 갱신 아님을 함께 반환한다", async () => {
