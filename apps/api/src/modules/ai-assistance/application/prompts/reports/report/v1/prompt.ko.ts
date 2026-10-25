@@ -1,5 +1,5 @@
-import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt.types.js";
-export type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt.types.js";
+import type { BuildReportPromptOptions, ReportPrompt } from "./types.js";
+export type { BuildReportPromptOptions, ReportPrompt } from "./types.js";
 import { z } from "zod";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
@@ -12,9 +12,9 @@ import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 import type {
   AggregatedReportData,
   ReportType,
-} from "../../../domain/types/reports/ai-report.types.js";
-import { buildReportContext } from "./report-context.js";
-import { buildReportPromptEn } from "./report.prompt.en.js";
+} from "../../../../../domain/types/reports/ai-report.types.js";
+import { buildReportContext } from "./context.js";
+import { buildReportPromptEn } from "./prompt.en.js";
 
 /** 저장된 리포트가 어떤 지시문으로 만들어졌는지 남긴다. */
 export const REPORT_PROMPT_VERSION = "report@v1";

@@ -6,9 +6,9 @@ import {
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
-import { collectRecordedActivities } from "../../../domain/services/suggestions/recorded-activity-evidence.js";
-import type { SuggestionContext } from "../../types/suggestions/suggestion-context.js";
-import type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
+import { collectRecordedActivities } from "../../../../../domain/services/suggestions/recorded-activity-evidence.js";
+import type { SuggestionContext } from "../../../../types/suggestions/suggestion-context.js";
+import type { SuggestionPrompt } from "./types.js";
 
 function buildPatternRulesEn(minOccurrences: number): string {
   return `<rules>

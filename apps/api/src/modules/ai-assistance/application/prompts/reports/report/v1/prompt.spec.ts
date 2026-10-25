@@ -1,10 +1,10 @@
-import type { AggregatedReportData } from "../../../domain/types/reports/ai-report.types.js";
+import type { AggregatedReportData } from "../../../../../domain/types/reports/ai-report.types.js";
 import {
   buildReportPrompt,
   getReportAiResponseSchema,
   reportAiResponseSchema,
   reportAiResponseSchemaEn,
-} from "./report.prompt.js";
+} from "./prompt.ko.js";
 
 const baseData: AggregatedReportData = {
   totalTodos: 20,

@@ -5,9 +5,9 @@ import type { SupportedLocale } from "#api/shared/domain/locale";
 import type {
   AggregatedReportData,
   ReportType,
-} from "../../../domain/types/reports/ai-report.types.js";
-import { suggestionContextTranslations } from "../../locale/suggestions/suggestion-context.locale.js";
-import type { BuildReportPromptOptions } from "./report.prompt.types.js";
+} from "../../../../../domain/types/reports/ai-report.types.js";
+import { suggestionContextTranslations } from "../../../../locale/suggestions/suggestion-context.locale.js";
+import type { BuildReportPromptOptions } from "./types.js";
 
 const REPORT_DAY_LABELS = {
   ko: (day: DayOfWeek) => `${suggestionContextTranslations.ko.days[day]}요일`,

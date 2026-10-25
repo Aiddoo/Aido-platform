@@ -6,9 +6,9 @@ import {
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import type { CategoryInfo } from "./parse-memo.prompt.js";
-import type { ParseTodoPrompt } from "./parse-todo.prompt.js";
-import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules.js";
+import type { CategoryInfo } from "../../parse-memo/v1/prompt.ko.js";
+import { buildTimeContext, buildTimeRulesTextEn } from "../../shared/v1/time-rules.js";
+import type { ParseTodoPrompt } from "./prompt.ko.js";
 
 /**
  * buildParseTodoPrompt의 영어 버전 — en 로케일 사용자의 영어 자연어 입력용.

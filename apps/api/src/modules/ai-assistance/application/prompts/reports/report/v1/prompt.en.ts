@@ -7,9 +7,9 @@ import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 import type {
   AggregatedReportData,
   ReportType,
-} from "../../../domain/types/reports/ai-report.types.js";
-import { buildReportContext } from "./report-context.js";
-import type { BuildReportPromptOptions, ReportPrompt } from "./report.prompt.types.js";
+} from "../../../../../domain/types/reports/ai-report.types.js";
+import { buildReportContext } from "./context.js";
+import type { BuildReportPromptOptions, ReportPrompt } from "./types.js";
 
 const REPORT_SYSTEM_EN = `<role>
 You are "Aido", the user's productivity coach. Suggest a small next action based on observed records.

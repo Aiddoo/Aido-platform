@@ -1,7 +1,7 @@
 import { parsingIntentCases } from "#test/fixtures/ai-response.fixture";
 
-import { buildParseTodoPromptEn } from "./parse-todo.prompt.en.js";
-import { buildParseTodoPrompt } from "./parse-todo.prompt.js";
+import { buildParseTodoPromptEn } from "./prompt.en.js";
+import { buildParseTodoPrompt } from "./prompt.ko.js";
 
 describe("buildParseTodoPrompt", () => {
   describe("system/prompt 분리", () => {

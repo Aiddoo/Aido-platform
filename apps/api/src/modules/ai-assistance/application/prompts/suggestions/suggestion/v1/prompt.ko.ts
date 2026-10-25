@@ -1,5 +1,5 @@
-import type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
-export type { SuggestionPrompt } from "./detect-patterns.prompt.types.js";
+import type { SuggestionPrompt } from "./types.js";
+export type { SuggestionPrompt } from "./types.js";
 import { dayOfWeekSchema } from "@aido/api";
 import { AI_SUGGESTION_LIMITS, type DayOfWeek } from "@aido/api/vocabulary";
 import { z } from "zod";
@@ -11,11 +11,11 @@ import {
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson } from "#api/shared/domain/prompt/sanitize";
 
-import { collectRecordedActivities } from "../../../domain/services/suggestions/recorded-activity-evidence.js";
-import type { RecordedActivityEvidence } from "../../../domain/types/suggestions/ai-suggestion.types.js";
-import { suggestionContextTranslations } from "../../locale/suggestions/suggestion-context.locale.js";
-import type { SuggestionContext } from "../../types/suggestions/suggestion-context.js";
-import { buildSuggestionPromptEn } from "./detect-patterns.prompt.en.js";
+import { collectRecordedActivities } from "../../../../../domain/services/suggestions/recorded-activity-evidence.js";
+import type { RecordedActivityEvidence } from "../../../../../domain/types/suggestions/ai-suggestion.types.js";
+import { suggestionContextTranslations } from "../../../../locale/suggestions/suggestion-context.locale.js";
+import type { SuggestionContext } from "../../../../types/suggestions/suggestion-context.js";
+import { buildSuggestionPromptEn } from "./prompt.en.js";
 
 export const detectedPatternsSchema = z.object({
   patterns: z.array(

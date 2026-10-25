@@ -6,8 +6,8 @@ import {
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeMemoForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import type { CategoryInfo, ParseMemoPrompt } from "./parse-memo.prompt.js";
-import { buildTimeContext, buildTimeRulesTextEn } from "./time-rules.js";
+import { buildTimeContext, buildTimeRulesTextEn } from "../../shared/v1/time-rules.js";
+import type { CategoryInfo, ParseMemoPrompt } from "./prompt.ko.js";
 
 /**
  * buildParseMemoPrompt의 영어 버전 — en 로케일 사용자의 영어 메모용.

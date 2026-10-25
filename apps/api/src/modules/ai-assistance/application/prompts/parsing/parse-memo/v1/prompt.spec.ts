@@ -2,8 +2,8 @@ import { parsedMemoTodoSchema } from "@aido/api";
 
 import { parsingIntentCases } from "#test/fixtures/ai-response.fixture";
 
-import { buildParseMemoPromptEn } from "./parse-memo.prompt.en.js";
-import { buildParseMemoPrompt } from "./parse-memo.prompt.js";
+import { buildParseMemoPromptEn } from "./prompt.en.js";
+import { buildParseMemoPrompt } from "./prompt.ko.js";
 
 describe("buildParseMemoPrompt — Gemini 구조화 프롬프트", () => {
   const now = new Date("2026-08-08T12:00:00.000Z");

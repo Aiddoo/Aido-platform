@@ -6,7 +6,7 @@ import {
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeMemoForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import { buildTimeContext, buildTimeRulesText } from "./time-rules.js";
+import { buildTimeContext, buildTimeRulesText } from "../../shared/v1/time-rules.js";
 
 export interface ParseMemoPrompt {
   system: string;

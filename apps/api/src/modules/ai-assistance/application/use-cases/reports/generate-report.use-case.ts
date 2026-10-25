@@ -25,7 +25,7 @@ import { AiReportLogEvent } from "../../observability/reports/ai-report-log.even
 import { type AiReportRepositoryPort } from "../../ports/reports/ai-report.repository.port.js";
 import { type TodoStatsReaderPort } from "../../ports/reports/todo-stats.reader.port.js";
 import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
-import { REPORT_PROMPT_VERSION } from "../../prompts/reports/report.prompt.js";
+import { REPORT_PROMPT_VERSION } from "../../prompts/reports/report/v1/prompt.ko.js";
 import { toAiReportView } from "../../read-models/reports/ai-report.read-model.js";
 import { computePeriodLabel } from "../../read-models/reports/report-period-label.js";
 import {

@@ -6,8 +6,8 @@ import {
 } from "#api/shared/domain/prompt/prompt-sections";
 import { encodeUntrustedJson, sanitizeForPrompt } from "#api/shared/domain/prompt/sanitize";
 
-import type { CategoryInfo } from "./parse-memo.prompt.js";
-import { buildTimeContext, buildTimeRulesText } from "./time-rules.js";
+import type { CategoryInfo } from "../../parse-memo/v1/prompt.ko.js";
+import { buildTimeContext, buildTimeRulesText } from "../../shared/v1/time-rules.js";
 
 export interface ParseTodoPrompt {
   system: string;

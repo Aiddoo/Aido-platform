@@ -2,12 +2,12 @@ import { llmParsedMemoResultSchema, parsedTodoDataSchema } from "@aido/api";
 
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
-import { buildParseMemoPromptEn } from "./parsing/parse-memo.prompt.en.js";
-import { buildParseMemoPrompt } from "./parsing/parse-memo.prompt.js";
-import { buildParseTodoPromptEn } from "./parsing/parse-todo.prompt.en.js";
-import { buildParseTodoPrompt } from "./parsing/parse-todo.prompt.js";
-import { reportPromptCatalog } from "./reports/report.prompt.js";
-import { suggestionPromptCatalog } from "./suggestions/detect-patterns.prompt.js";
+import { buildParseMemoPromptEn } from "./parsing/parse-memo/v1/prompt.en.js";
+import { buildParseMemoPrompt } from "./parsing/parse-memo/v1/prompt.ko.js";
+import { buildParseTodoPromptEn } from "./parsing/parse-todo/v1/prompt.en.js";
+import { buildParseTodoPrompt } from "./parsing/parse-todo/v1/prompt.ko.js";
+import { reportPromptCatalog } from "./reports/report/v1/prompt.ko.js";
+import { suggestionPromptCatalog } from "./suggestions/suggestion/v1/prompt.ko.js";
 
 interface LocalePromptCatalog {
   readonly parseTodo: {
