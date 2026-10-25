@@ -149,6 +149,14 @@ function InviteCodeEntryScreen() {
                   submitCount={formState.submitCount}
                   textInputProps={{
                     autoFocus: true,
+                    returnKeyType: 'done',
+                    // 틀렸을 때 바로 고쳐 쓰도록 제출해도 키보드를 내리지 않는다
+                    submitBehavior: 'submit',
+                    onSubmitEditing: () => {
+                      if (InviteCodePolicy.isFilled(draft)) {
+                        submitInviteCode();
+                      }
+                    },
                     accessibilityLabel: t('codeEntry.inputLabel'),
                     testID: 'invite-code-input',
                   }}
