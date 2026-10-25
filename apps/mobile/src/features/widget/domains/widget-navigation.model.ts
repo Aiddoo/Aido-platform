@@ -1,12 +1,10 @@
 import { dateSchema } from '@aido/api';
 import { z } from 'zod';
 
-const widgetFeedParametersSchema = z
-  .object({
-    date: z.union([dateSchema, z.literal('today')]),
-    action: z.literal('add-todo').optional(),
-  })
-  .strict();
+const widgetFeedParametersSchema = z.strictObject({
+  date: z.union([dateSchema, z.literal('today')]),
+  action: z.literal('add-todo').optional(),
+});
 
 const widgetNavigationDestinationSchema = z.discriminatedUnion('kind', [
   widgetFeedParametersSchema.extend({ kind: z.literal('feed') }),
