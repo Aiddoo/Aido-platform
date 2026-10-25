@@ -1,0 +1,96 @@
+Keep putting off your to-dos? Get them done with friends.
+
+Aido is a social to-do app that helps you follow through every day, with AI to plan and friends to keep you going.
+Just say what you need to do and it becomes a to-do. With friends by your side, sticking with it gets easier.
+
+[ Invite friends and earn Premium together ]
+- Send your invite link on KakaoTalk or any app, or share your 6-character invite code
+- Friends who joined within the last 7 days get 7 days of Premium when they accept
+- When your friend finishes to-dos on 2 different days within 14 days of joining, you get 7 days of Premium and 1 friend slot
+- See your paw prints and rewards at a glance in “Collect paw prints”
+
+[ Smart to-dos with AI ]
+- Type or say it, and AI picks out the to-do, date, and time
+- “Next Friday,” “in 3 days,” and “end of the month” are worked out from today in your time zone
+- Say “work out every Mon, Wed, and Fri” to set up a repeating to-do
+- Turn a single note into several to-dos with AI
+- Get routine suggestions based on to-dos you’ve done again and again (Premium)
+- Weekly and monthly AI reports break down your completion rate, categories, and best days (Premium)
+
+[ Stay motivated with friends ]
+- Find friends by user tag (#) and see each other’s to-dos in the feed
+- Nudge a friend who’s slacking off
+- Send a cheer to friends who finish their day
+- Turn good intentions into everyday habits, together
+
+[ See your progress ]
+- Check your daily completion rate on weekly and monthly calendars
+- Build streaks and stay consistent
+- Look back on your week and month with AI reports (Premium)
+
+[ Stay organized ]
+- Sort to-dos with color-coded categories
+- Add dates and times to plan your day like a calendar
+- Break big to-dos into subtasks
+- Set up repeating to-dos for your weekly routine
+- Drag and drop to prioritize
+- Choose what’s public and what stays private
+
+[ Reminders that fit your day ]
+- Morning and evening reminders to start and wrap up your day
+- Automatic alerts 60 and 10 minutes before a to-do starts
+- Set your own reminder times (Premium)
+
+[ Home Screen widgets ]
+- See today’s to-dos and progress right on your Home Screen
+- At midnight, widgets switch to the new day without opening the app
+
+[ Make it yours ]
+- Light, dark, or system theme
+- 8 cat-themed Premium app icons
+
+[ Made for bigger screens ]
+- Unfold your foldable to see your list and details side by side, and pick up right where you left off
+
+[ Easy to start ]
+- Sign in with Kakao, Google, Naver, or Apple
+- Or sign up with email
+- Have an invite code? Enter it right on the sign-in screen
+
+Aido is for you if you…
+- keep putting things off
+- make plans alone but give up after a few days
+- want friends to keep you motivated
+- want AI to sort out your to-dos fast
+- like to check in on your productivity every week
+
+Start with today’s to-dos on Aido.
+
+[ Subscription ]
+
+Aido’s core features are free.
+
+Subscribe to Aido Premium to unlock:
+- Unlimited AI
+- Weekly and monthly AI reports
+- Routine suggestions
+- Custom reminder times
+- Unlimited friends and nudges
+- Up to 30 categories
+- Premium app icons (8 cat themes)
+
+Premium you earn by inviting friends includes the same features. Rewards earned while you’re subscribed start after your subscription ends.
+
+- Payment is charged to your Google Play account at confirmation of purchase.
+- Your subscription renews automatically unless auto-renew is turned off at least 24 hours before the end of the current period.
+- You can manage your subscription in Google Play under Payments & subscriptions > Subscriptions after purchase.
+
+Terms of Use: https://aido.kr/en/terms
+Privacy Policy: https://aido.kr/en/privacy
+
+[ Data sources ]
+Aido uses public data from Korea’s Public Data Portal (data.go.kr).
+
+- Korea Meteorological Administration: short-term forecasts, UV index
+- AirKorea (Korea Environment Corporation): real-time air quality (PM10, PM2.5)
+- Korea Astronomy and Space Science Institute: sunrise and sunset times

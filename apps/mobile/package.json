@@ -50,7 +50,10 @@
     "update:preview": "eas update --branch preview",
     "update:production": "eas update --branch production",
     "test:cov": "jest --coverage",
-    "generate:tab-icons": "node scripts/generate-tab-icons.mjs"
+    "generate:tab-icons": "node scripts/generate-tab-icons.mjs",
+    "store:check": "node scripts/store-listing.mjs check",
+    "store:export": "node scripts/store-listing.mjs export",
+    "test:store-listing": "node --test scripts/store-listing.test.mjs"
   },
   "dependencies": {
     "@aido/api": "workspace:*",
