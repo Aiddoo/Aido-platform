@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import {
+  getInvitedFriendsQuerySchema,
   type InviterRewardMilestone,
   inviteCodeParamSchema,
   inviteRewardSchema,
@@ -147,5 +148,32 @@ describe("초대 보상 표", () => {
 
     // Then
     expect(result.success).toBe(true);
+  });
+});
+
+describe("getInvitedFriendsQuerySchema", () => {
+  it("상태를 생략하면 전체, JOINED면 기다리는 친구만 고르고 limit 기본값은 20이다", () => {
+    // Given
+    const all = {};
+    const waiting = { status: "JOINED", limit: "10" };
+
+    // When
+    const parsedAll = getInvitedFriendsQuerySchema.parse(all);
+    const parsedWaiting = getInvitedFriendsQuerySchema.parse(waiting);
+
+    // Then
+    expect(parsedAll).toEqual({ limit: 20 });
+    expect(parsedWaiting).toEqual({ status: "JOINED", limit: 10 });
+  });
+
+  it.each([{ status: "WAITING" }, { limit: "51" }])("허용하지 않는 값 %o는 거부한다", (query) => {
+    // Given
+    const input = query;
+
+    // When
+    const result = getInvitedFriendsQuerySchema.safeParse(input);
+
+    // Then
+    expect(result.success).toBe(false);
   });
 });

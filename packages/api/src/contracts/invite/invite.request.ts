@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { getFollowsQuerySchema } from "../follow/follow.request.js";
-import { inviteCodeSchema } from "./invite.common.js";
+import { inviteCodeSchema, redemptionStatusSchema } from "./invite.common.js";
 
 export const inviteCodeParamSchema = z.object({
   code: inviteCodeSchema,
@@ -25,6 +25,10 @@ export const redeemInviteRequestSchema = z
 export type RedeemInviteRequest = z.infer<typeof redeemInviteRequestSchema>;
 
 // 초대한 친구 목록도 친구 목록과 같은 cursor(마지막 userId)·limit 규칙을 쓴다
-export const getInvitedFriendsQuerySchema = getFollowsQuerySchema;
+export const getInvitedFriendsQuerySchema = getFollowsQuerySchema.extend({
+  status: redemptionStatusSchema
+    .optional()
+    .describe("초대 수락 상태로 거르기 (예: JOINED는 사용 시작을 기다리는 친구, 생략하면 전체)"),
+});
 
 export type GetInvitedFriendsQuery = z.infer<typeof getInvitedFriendsQuerySchema>;
