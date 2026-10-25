@@ -20,7 +20,6 @@
     "build:production:local:ios": "eas build --local --platform ios --profile production",
     "check": "pnpm lint && pnpm format:check && pnpm check:conventions",
     "check:conventions": "node scripts/check-mobile-conventions.mjs",
-    "check:release-assets": "node scripts/check-growth-release-assets.mjs",
     "check:ipa-linkage": "node scripts/check-ipa-expo-linkage.mjs",
     "check:native-icons": "node scripts/check-native-icon-assets.mjs",
     "clean": "rm -rf dist .expo android ios node_modules/.cache",
