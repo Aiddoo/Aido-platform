@@ -10,7 +10,7 @@
     "more": "+{{overflow}}개 더"
   },
   "calendar": {
-    "weekTitle": "{{month}}, {{week}}주차 발자국"
+    "weekTitle": "{{month}} {{week}}주차"
   },
   "actions": {
     "addTodo": "할 일 만들기",

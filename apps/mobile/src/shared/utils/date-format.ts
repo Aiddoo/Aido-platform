@@ -76,6 +76,15 @@ function findPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPar
   return parts.find((part) => part.type === type)?.value ?? '';
 }
 
+// Hermes(iOS)는 ko-KR day 파트에 "일"까지 붙여 주므로 숫자만 필요한 곳은 en-US 파트에서 읽는다
+function formatNumericDay(date: Date, context: DateFormatContext): string {
+  const parts = getFormatter(
+    { ...context, locale: PARTS_LOCALE },
+    DATE_OPTIONS.dayNumber,
+  ).formatToParts(date);
+  return findPart(parts, 'day');
+}
+
 function toUtcContext(context: DateFormatContext): DateFormatContext {
   return { ...context, timeZone: 'UTC' };
 }
@@ -99,10 +108,10 @@ export function formatDateLabel(date: Date, kind: DateLabel, context: DateFormat
   const formatter = getFormatter(context, DATE_OPTIONS[kind]);
   return match(kind)
     .with('dayOfMonth', () => {
-      const day = findPart(formatter.formatToParts(date), 'day');
+      const day = formatNumericDay(date, context);
       return context.locale === 'ko-KR' ? `${day}일` : day;
     })
-    .with('dayNumber', () => findPart(formatter.formatToParts(date), 'day'))
+    .with('dayNumber', () => formatNumericDay(date, context))
     .with('dottedMonthDay', () => {
       const parts = getFormatter(
         { ...context, locale: PARTS_LOCALE },

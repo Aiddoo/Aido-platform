@@ -76,7 +76,7 @@ function buildProps(maxRows: number, locale: 'ko' | 'en' = 'ko'): WidgetProps {
     compactStreakLabel: locale === 'ko' ? '12일' : '12d',
     allDoneLabel: locale === 'ko' ? '모두 완료!' : 'All done!',
     moreLabelTemplate: locale === 'ko' ? '+{count}개 더' : '+{count} more',
-    weekTitle: locale === 'ko' ? '10월, 1주차 발자국' : 'October · Week 1',
+    weekTitle: locale === 'ko' ? '10월 1주차' : 'October · Week 1',
     weekRangeLabel: '9/27 – 10/3',
     openAppUrl: 'aido-dev://feed?date=today',
     addTodoUrl: 'aido-dev://feed?date=today&action=add-todo',
