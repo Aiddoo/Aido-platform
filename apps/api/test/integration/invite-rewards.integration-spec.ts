@@ -4,6 +4,10 @@ import { ENTITLEMENT_READER } from "#api/modules/access/access-entitlement.publi
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import { Resource } from "#api/modules/access/access-entitlement.public";
 import { HandleWebhookEvent } from "#api/modules/billing/application/use-cases/subscriptions/handle-webhook-event.use-case";
+import {
+  PREMIUM_ACCESS_READER,
+  type PremiumAccessReaderPort,
+} from "#api/modules/billing/billing-subscriptions.public";
 import { TodoToggledEvent } from "#api/modules/planning/planning-todos.public";
 import {
   INVITE_NOTIFIER,
@@ -27,6 +31,11 @@ import { GetMyInvite } from "#api/modules/social/application/use-cases/invites/g
 import { GrantInviteRewards } from "#api/modules/social/application/use-cases/invites/grant-invite-rewards.use-case";
 import { RecordInviteeActivity } from "#api/modules/social/application/use-cases/invites/record-invitee-activity.use-case";
 import { RedeemInvite } from "#api/modules/social/application/use-cases/invites/redeem-invite.use-case";
+import {
+  InviteRewardPolicy,
+  remainingPremiumDays,
+  rewardCapWindowStart,
+} from "#api/modules/social/domain/policies/invites/invite-reward.policy";
 import { INVITE_REWARD_MAX_ATTEMPTS } from "#api/modules/social/domain/types/invites/reward-grant.types";
 import { InviteeActivitySubscriber } from "#api/modules/social/infrastructure/subscribers/invites/invitee-activity.subscriber";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -172,9 +181,26 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     );
   }
 
-  it("같은 지급 작업이 동시에 두 번 돌아도 보상 기간은 하나만 생긴다", async () => {
+  it("초대받은 사람 보상은 수락 때 이미 적용돼 지급 작업이 다시 돌아도 보상 기간은 하나다", async () => {
     // Given
     const { inviteeId, redemptionId } = await redeemed("JOBINVTR", "JOBINVTE");
+
+    // When
+    const rerun = await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
+
+    // Then
+    expect(rerun.appliedCount).toBe(0);
+    expect(
+      await client.orm.public.RewardGrant.where({ recipientId: inviteeId }).select("status").all(),
+    ).toEqual([{ status: "APPLIED" }]);
+    expect(await premiumGrantsOf(inviteeId)).toEqual([
+      { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
+    ]);
+  });
+
+  it("같은 지급 작업이 동시에 두 번 돌아도 초대한 사람의 보상 기간과 친구 자리는 하나씩만 생긴다", async () => {
+    // Given
+    const { inviterId, redemptionId } = await qualified("JOBINVR2", "JOBINVE2");
 
     // When
     const results = await Promise.all([
@@ -184,11 +210,14 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     const rerun = await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
 
     // Then
-    expect(results.map((result) => result.appliedCount).sort()).toEqual([0, 1]);
+    expect(results.reduce((sum, result) => sum + result.appliedCount, 0)).toBe(2);
     expect(rerun.appliedCount).toBe(0);
-    expect(await premiumGrantsOf(inviteeId)).toEqual([
+    expect(await premiumGrantsOf(inviterId)).toEqual([
       { durationDays: 7, status: "ACTIVE", endsAt: new Date("2028-03-06T03:00:00.000Z") },
     ]);
+    expect(
+      await client.orm.public.ResourceBonus.where({ userId: inviterId }).select("quantity").all(),
+    ).toEqual([{ quantity: 1 }]);
   });
 
   it("서로 다른 이틀 할 일을 마치면 초대한 사람에게 7일과 친구 자리를 주고 보상 완료로 바꾼다", async () => {
@@ -239,7 +268,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
   it("적용이 실패하면 FAILED와 시도 횟수를 남기고 다음 실행에서 한 번만 적용한다", async () => {
     // Given
-    const { inviteeId, redemptionId } = await redeemed("FAILINVR", "FAILINVE");
+    const { inviterId, redemptionId } = await qualified("FAILINVR", "FAILINVE");
     const appliers = context.module.get<RewardApplierRegistry>(REWARD_APPLIERS);
     let shouldFail = true;
     const flaky = new GrantInviteRewards({
@@ -266,7 +295,10 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     // When
     const failed = flaky.execute({ redemptionId, countsAttempt: true });
     await expect(failed).rejects.toMatchObject({ name: "InviteRewardGrantFailedError" });
-    const afterFailure = await client.orm.public.RewardGrant.where({ recipientId: inviteeId })
+    const afterFailure = await client.orm.public.RewardGrant.where({
+      recipientId: inviterId,
+      rewardType: "PREMIUM_DAYS",
+    })
       .select("status", "attempts", "lastErrorCode")
       .all();
     shouldFail = false;
@@ -276,7 +308,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(afterFailure).toEqual([
       { status: "FAILED", attempts: 1, lastErrorCode: "APPLY_FAILED" },
     ]);
-    expect(await premiumGrantsOf(inviteeId)).toHaveLength(1);
+    expect(await premiumGrantsOf(inviterId)).toHaveLength(1);
     expect(retried.appliedCount).toBe(1);
   });
 
@@ -339,24 +371,25 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     });
   });
 
-  it("보상 지급 작업과 스토어 첫 결제 웹훅이 동시에 와도 보상 기간은 하나이고 프리미엄은 끊기지 않는다", async () => {
+  it("보상 지급 작업과 스토어 첫 결제 웹훅이 동시에 와도 보상 7일은 한 번만 남고 프리미엄은 끊기지 않는다", async () => {
     // Given
     const storeExpiry = new Date("2028-03-28T03:00:00.000Z");
-    const scenarios = await Promise.all(
-      ["A", "B", "C"].map((suffix) => redeemed(`RACEIVR${suffix}`, `RACEIVE${suffix}`)),
-    );
+    const scenarios: { inviterId: string; redemptionId: string }[] = [];
+    for (const suffix of ["A", "B", "C"]) {
+      scenarios.push(await qualified(`RACEIVR${suffix}`, `RACEIVE${suffix}`));
+    }
     const webhook = context.module.get(HandleWebhookEvent);
 
     // When
     await Promise.all(
-      scenarios.flatMap(({ inviteeId, redemptionId }) => [
+      scenarios.flatMap(({ inviterId, redemptionId }) => [
         grantInviteRewards.execute({ redemptionId, countsAttempt: true }),
         webhook.execute({
           body: SubscriptionEventBuilder.initialPurchase()
-            .withAppUserId(inviteeId)
-            .withOriginalTransactionId(`race-${inviteeId}`)
-            .withTransactionId(`race-${inviteeId}`)
-            .withEventId(`race-${inviteeId}`)
+            .withAppUserId(inviterId)
+            .withOriginalTransactionId(`race-${inviterId}`)
+            .withTransactionId(`race-${inviterId}`)
+            .withEventId(`race-${inviterId}`)
             .withExpirationAtMs(storeExpiry.getTime())
             .build(),
         }),
@@ -365,31 +398,94 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
     // Then
     const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
-    for (const { inviteeId } of scenarios) {
-      const grants = await premiumGrantsOf(inviteeId);
-      expect(grants).toHaveLength(1);
-      expect(grants[0]?.durationDays).toBe(7);
-      expect(await entitlement.hasPremiumAccessInTx(inviteeId)).toBe(true);
+    const reader = context.module.get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER);
+    for (const { inviterId } of scenarios) {
+      // 지급이 먼저면 시작한 7일을 구매 시각에 끊어 남은 7일을, 구매가 먼저면 처음부터 7일을 쌓는다
+      expect(await reader.getPremiumAccess(inviterId)).toMatchObject({
+        source: "STORE",
+        periodEndsAt: storeExpiry,
+        bankedDays: 7,
+      });
+      expect(await entitlement.hasPremiumAccessInTx(inviterId)).toBe(true);
       const projection = decodeRecord(
         "User",
-        await client.orm.public.User.where({ id: inviteeId })
+        await client.orm.public.User.where({ id: inviterId })
           .select("subscriptionStatus", "subscriptionExpiresAt")
           .first(),
       );
       expect(projection?.subscriptionStatus).toBe("ACTIVE");
-      expect(projection?.subscriptionExpiresAt?.getTime()).toBeGreaterThanOrEqual(
-        storeExpiry.getTime(),
+      expect(projection?.subscriptionExpiresAt?.getTime()).toBeGreaterThan(storeExpiry.getTime());
+    }
+  });
+
+  it("윤년 2월을 지나는 최근 30일 상한은 기간 시작 시각 기록을 빼고 1ms 뒤 기록부터 세며 누적 90일이면 더 주지 않는다", async () => {
+    // Given
+    const inviterId = await createUser("CAPLEAP1");
+    const now = new Date("2028-03-15T03:00:00.000Z");
+    const windowStart = rewardCapWindowStart(now);
+    const grants = [
+      { sourceId: "leap-window-start", quantity: 7, createdAt: windowStart },
+      { sourceId: "leap-window-in", quantity: 7, createdAt: new Date(windowStart.getTime() + 1) },
+      { sourceId: "leap-old", quantity: 76, createdAt: new Date("2027-12-01T00:00:00.000Z") },
+    ];
+    for (const grant of grants) {
+      await client.orm.public.RewardGrant.create(
+        encodeCreate("RewardGrant", {
+          recipientId: inviterId,
+          sourceType: "INVITE_REDEMPTION",
+          sourceId: grant.sourceId,
+          rewardType: "PREMIUM_DAYS",
+          quantity: grant.quantity,
+          status: "APPLIED",
+          appliedAt: grant.createdAt,
+          createdAt: grant.createdAt,
+        }),
       );
     }
+    const repository = context.module.get<RewardGrantRepositoryPort>(REWARD_GRANT_REPOSITORY);
+
+    // When
+    const summary = InviteRewardPolicy.summarize(
+      await repository.summarizeInviterRewards(inviterId, windowStart),
+    );
+
+    // Then
+    expect(windowStart).toEqual(new Date("2028-02-14T03:00:00.000Z"));
+    expect(summary).toMatchObject({ premiumDaysInWindow: 7, totalPremiumDays: 90 });
+    expect(remainingPremiumDays(summary)).toBe(0);
+  });
+
+  it("ADMIN이 초대한 사람이어도 보상 기간·친구 자리·보상 알림을 받고 role과 무제한 한도는 그대로다", async () => {
+    // Given
+    const { inviterId, redemptionId } = await qualified("ADMININV", "ADMINVTE");
+    await client.orm.public.User.where({ id: inviterId }).updateAndCount(
+      encodePatch("User", { role: "ADMIN" }),
+    );
+
+    // When
+    await grantInviteRewards.execute({ redemptionId, countsAttempt: true });
+
+    // Then
+    expect(await premiumGrantsOf(inviterId)).toEqual([
+      expect.objectContaining({ durationDays: 7, status: "ACTIVE" }),
+    ]);
+    expect(
+      await client.orm.public.ResourceBonus.where({ userId: inviterId }).select("quantity").all(),
+    ).toEqual([{ quantity: 1 }]);
+    expect(await rewardedNotices()).toEqual([{ userId: inviterId, body: expect.any(String) }]);
+    expect(
+      (await client.orm.public.User.where({ id: inviterId }).select("role").first())?.role,
+    ).toBe("ADMIN");
+    const entitlement = context.module.get<EntitlementReaderPort>(ENTITLEMENT_READER);
+    expect(
+      (await entitlement.getResourceLimitInTx(inviterId, Resource.FRIEND)).maxCount,
+    ).toBeNull();
   });
 
   it("정비 작업은 마감이 지난 수락만 거절하고 남은 지급이 있는 수락의 작업을 다시 만든다", async () => {
     // Given
     const stale = await redeemed("MNTINVR1", "MNTINVE1");
-    const fresh = await redeemed("MNTINVR2", "MNTINVE2");
-    await client.orm.public.InviteRedemption.where({ id: fresh.redemptionId }).updateAndCount(
-      encodePatch("InviteRedemption", { expiresAt: new Date("2028-04-01T00:00:00.000Z") }),
-    );
+    const fresh = await qualified("MNTINVR2", "MNTINVE2");
     const maintenance = context.module.get(ExpireStaleRedemptions);
 
     // When
@@ -400,7 +496,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
 
     // Then
     expect(result.expiredCount).toBe(1);
-    expect(result.retriedCount).toBe(2);
+    expect(result.retriedCount).toBe(1);
     const statuses = await client.orm.public.InviteRedemption.where((row) =>
       row.id.in([stale.redemptionId, fresh.redemptionId]),
     )
@@ -409,7 +505,7 @@ describe("초대 보상 지급 멱등성과 재시도 (실제 PostgreSQL)", () =
     expect(statuses).toEqual(
       expect.arrayContaining([
         { id: stale.redemptionId, status: "REJECTED", rejectionReason: "EXPIRED" },
-        { id: fresh.redemptionId, status: "JOINED", rejectionReason: null },
+        { id: fresh.redemptionId, status: "QUALIFIED", rejectionReason: null },
       ]),
     );
   });

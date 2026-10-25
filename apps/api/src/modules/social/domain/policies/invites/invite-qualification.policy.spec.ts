@@ -89,4 +89,25 @@ describe("InviteQualificationPolicy", () => {
     // Then
     expect(result).toBe(expected);
   });
+
+  it.each([
+    // 같은 UTC 시각이 서울과 로스앤젤레스에서 서로 다른 윤년 날짜가 된다
+    { at: "2028-02-28T15:00:00.000Z", seoul: "2028-02-29", losAngeles: "2028-02-28" },
+    { at: "2028-02-29T14:59:59.999Z", seoul: "2028-02-29", losAngeles: "2028-02-29" },
+    { at: "2028-02-29T15:00:00.000Z", seoul: "2028-03-01", losAngeles: "2028-02-29" },
+    { at: "2028-03-01T07:59:59.999Z", seoul: "2028-03-01", losAngeles: "2028-02-29" },
+    { at: "2028-03-01T08:00:00.000Z", seoul: "2028-03-01", losAngeles: "2028-03-01" },
+  ])("$at의 활동일은 서울 $seoul, 로스앤젤레스 $losAngeles다", ({ at, seoul, losAngeles }) => {
+    // Given
+    const occurredAt = new Date(at);
+
+    // When
+    const days = [
+      localActivityDate(occurredAt, "Asia/Seoul"),
+      localActivityDate(occurredAt, "America/Los_Angeles"),
+    ];
+
+    // Then
+    expect(days).toEqual([seoul, losAngeles]);
+  });
 });

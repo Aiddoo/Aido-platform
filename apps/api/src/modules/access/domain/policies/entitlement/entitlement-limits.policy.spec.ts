@@ -125,6 +125,33 @@ describe("Entitlement 순수 정책 — 미지 상태와 무제한 구분", () =
   });
 
   it.each([
+    { role: "USER" as const, status: "ACTIVE" as const, expected: null },
+    { role: "ADMIN" as const, status: "ACTIVE" as const, expected: null },
+    {
+      role: "USER" as const,
+      status: "CANCELLED" as const,
+      expected: SUBSCRIPTION_FOLLOW_LIMITS.FREE + 2,
+    },
+    {
+      role: "USER" as const,
+      status: "EXPIRED" as const,
+      expected: SUBSCRIPTION_FOLLOW_LIMITS.FREE + 2,
+    },
+  ])(
+    "$role·$status 사용자의 친구 자리 보너스 2개를 더한 한도는 $expected다",
+    ({ role, status, expected }) => {
+      // Given
+      const bonus = 2;
+
+      // When
+      const limit = resolveResourceLimit(role, status, Resource.FRIEND, bonus);
+
+      // Then
+      expect(limit).toBe(expected);
+    },
+  );
+
+  it.each([
     { value: "CANCELLED", expected: "CANCELLED" },
     { value: "TRIAL", expected: "FREE" },
   ])("저장된 구독 상태 $value는 $expected로 읽는다", ({ value, expected }) => {

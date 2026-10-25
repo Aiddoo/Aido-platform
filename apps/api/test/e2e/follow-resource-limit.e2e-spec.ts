@@ -8,6 +8,11 @@ import request from "supertest";
  * Testcontainers를 사용하여 독립적인 PostgreSQL 환경에서 테스트합니다.
  */
 
+import { SweepPremiumGrants } from "#api/modules/billing/application/use-cases/subscriptions/sweep-premium-grants.use-case";
+import {
+  PREMIUM_GRANTER,
+  type PremiumGranterPort,
+} from "#api/modules/billing/billing-subscriptions.public";
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import { requireRecord } from "#api/platform/database/prisma-error.util";
 
@@ -115,6 +120,52 @@ describe("팔로우 리소스 제한 E2E", () => {
         current: FREE_LIMIT + 1,
         limit: FREE_LIMIT + 1,
       });
+    });
+  });
+
+  describe("보상 기간과 친구 자리 보너스", () => {
+    it("보상 기간 중에는 친구 자리 보너스가 있어도 무제한이고 끝나면 무료 한도에 보너스를 더한다", async () => {
+      // Given
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        const email = "follow-limit-grant@test.com";
+        const user = await ctx.helpers.createVerifiedUser(email, password);
+        await ctx.testDatabase.getClient().orm.public.ResourceBonus.create(
+          encodeCreate("ResourceBonus", {
+            userId: user.userId,
+            resource: "FRIEND",
+            quantity: 1,
+            sourceKey: "invite:follow-limit-grant",
+          }),
+        );
+        await ctx.module.get<PremiumGranterPort>(PREMIUM_GRANTER).grant({
+          userId: user.userId,
+          source: "INVITE",
+          sourceKey: "invite:limit",
+          durationDays: 7,
+        });
+        const endsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1_000);
+        const maxCountAt = async (at: Date) => {
+          vi.setSystemTime(at);
+          await ctx.module.get(SweepPremiumGrants).execute({ now: at });
+          const { accessToken } = await ctx.helpers.loginUser(email, password);
+          const response = await request(ctx.app.getHttpServer())
+            .get("/v1/follows/resource-limit")
+            .set("Authorization", `Bearer ${accessToken}`)
+            .expect(200);
+          return response.body.data.maxCount;
+        };
+
+        // When
+        const duringGrant = await maxCountAt(new Date(endsAt.getTime() - 1));
+        const afterGrant = await maxCountAt(endsAt);
+
+        // Then
+        expect(duringGrant).toBeNull();
+        expect(afterGrant).toBe(FREE_LIMIT + 1);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 
