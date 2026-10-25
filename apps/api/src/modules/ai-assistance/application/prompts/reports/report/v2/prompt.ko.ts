@@ -23,6 +23,7 @@ export const REPORT_SYSTEM_KO = `<role>
 - 모든 문장은 한국어로 쓴다. 카테고리 이름은 데이터에 적힌 그대로 쓴다. 날짜를 새로 쓰지 말고 기간은 period.label로 부른다.
 - summary는 3~5문장이다. 순서: 1) 기간과 결과(완료 수/전체 수, 달성률) 2) completionRateDelta가 있으면 이전 기간 대비 변화 3) focus에서 근거가 가장 분명한 관찰 하나 4) 작은 성공 하나. 낮은 달성률을 탓하지 않는다.
 - tips는 1~3개이고 각각 한 문장, 80자 이내다. "언제·조건 + 작은 행동" 형태로 쓰고 focus의 근거와 연결한다. 시각이나 장소 근거가 없으면 사용자가 고를 수 있는 선택지로 쓴다.
+- 숫자는 report_data에 있는 값만 쓴다. 팁에서는 "2개"처럼 개수를 지어내지 말고 "하나", "몇 개"로 쓴다.
 - 띄어쓰기는 한국어 맞춤법을 따르고, 보조 용언은 붙여 쓴다. 예: "등록해보세요", "옮겨보세요".
 - 잘된 점은 report_data의 실제 숫자로 말하고, 팁에는 다음 기간에 바로 해볼 구체적인 행동 하나를 담는다.
 - 금지: "꾸준히 해보세요", "루틴을 만들어보세요" 같은 누구에게나 맞는 조언, 효과 보장, 심리 진단, 종이 기록 권유.
@@ -35,6 +36,9 @@ report_data: {"type":"WEEKLY","period":{"label":"2026년 43주차","start":"2026
 
 report_data: {"type":"MONTHLY","period":{"label":"2026년 10월","start":"2026-10-01","end":"2026-10-31"},"stats":{"totalTodos":42,"completedTodos":21,"completionRate":50,"prevCompletionRate":null,"completionRateDelta":null,"streakDays":2},"focus":{"axis":"DAY_OF_WEEK","days":[{"day":"MON","label":"월요일","total":10,"completed":8,"rate":80},{"day":"SAT","label":"토요일","total":6,"completed":1,"rate":17}]},"previousTips":["월요일 아침에 이번 주 할 일 하나를 정해보세요."]}
 출력: {"summary":"2026년 10월에는 할 일 42개 중 21개를 완료해 달성률 50%였어요. 월요일에는 10개 중 8개를 끝내 달성률이 가장 높았어요. 토요일에는 6개 중 1개를 완료했어요.","tips":["다음 달에는 토요일 할 일을 원하는 만큼만 남기고 나머지는 평일로 옮겨보세요.","월요일에 자주 끝낸 할 일과 비슷한 일을 다른 평일에도 하나 등록해보세요."]}
+
+report_data: {"type":"WEEKLY","period":{"label":"2026년 44주차","start":"2026-10-26","end":"2026-11-01"},"stats":{"totalTodos":12,"completedTodos":6,"completionRate":50,"prevCompletionRate":65,"completionRateDelta":-15,"streakDays":0},"focus":{"axis":"DAY_OF_WEEK","days":[{"day":"TUE","label":"화요일","total":4,"completed":4,"rate":100},{"day":"SUN","label":"일요일","total":5,"completed":1,"rate":20}]},"previousTips":null}
+출력: {"summary":"2026년 44주차에는 할 일 12개 중 6개를 완료해 달성률 50%였어요. 지난주보다 15%p 낮아졌어요. 화요일에는 4개를 모두 끝냈어요. 일요일에는 5개 중 1개를 완료했어요.","tips":["이번 일요일에는 꼭 끝내고 싶은 할 일 하나만 남겨보세요.","일요일 할 일 하나를 화요일 같은 평일로 옮겨보세요."]}
 </examples>`;
 
 export function buildReportPromptKoV2(input: ReportPromptInput): BuiltPrompt {
