@@ -9,6 +9,7 @@ pnpm --filter @aido/mobile store:art --out <폴더> --preview            # 없�
 pnpm --filter @aido/mobile store:art --out <폴더>                      # 최종본(캡처가 하나라도 없으면 멈춤)
 pnpm --filter @aido/mobile store:art --out <폴더> --only scenes        # 캡처가 필요 없는 배너·이벤트만
 pnpm --filter @aido/mobile store:art todo --out <업로드 폴더>          # 캡처 전 폴더별 TODO.md
+pnpm --filter @aido/mobile store:art asset-names --out <파일.md>      # App Store 에셋 라이브러리 이름표
 pnpm --filter @aido/mobile test:store-art
 ```
 
@@ -26,15 +27,18 @@ pnpm --filter @aido/mobile test:store-art
 <캡처 루트>/<기기>/<일반|프리미엄>/<라이트|다크>[/en]/<NN_화면명>.png
 ```
 
-| 출력 대상    | 크기(px)  | 기기 폴더                                      | 틀                     |
-| ------------ | --------- | ---------------------------------------------- | ---------------------- |
-| `iphone-6.3` | 1206×2622 | `iPhone 17 Pro`                                | iPhone(Dynamic Island) |
-| `iphone-6.9` | 1320×2868 | `iPhone 17 Pro`(키워서 씀)                     | iPhone                 |
-| `iphone-duo` | 2007×2853 | `iPhone Duo 펼침`(+ `iPhone Duo 접힘` 쌍 배치) | Duo 펼침·접힘          |
-| `ipad-13`    | 2064×2752 | `iPad Pro 13`                                  | iPad                   |
-| `play-phone` | 1080×1920 | `Android 폰`                                   | 틀 없이 화면 카드      |
+| 출력 대상          | 크기(px)  | 기기 폴더                                      | 틀                     |
+| ------------------ | --------- | ---------------------------------------------- | ---------------------- |
+| `iphone-6.3`       | 1206×2622 | `iPhone 17 Pro`                                | iPhone(Dynamic Island) |
+| `iphone-6.9`       | 1320×2868 | `iPhone 17 Pro`(키워서 씀)                     | iPhone                 |
+| `iphone-duo`       | 2007×2853 | `iPhone Duo 펼침`(+ `iPhone Duo 접힘` 쌍 배치) | Duo 펼침·접힘          |
+| `iphone-duo-outer` | 1398×2034 | `iPhone Duo 접힘`                              | Duo 접힘               |
+| `ipad-13`          | 2064×2752 | `iPad Pro 13`                                  | iPad                   |
+| `play-phone`       | 1080×1920 | `Android 폰`                                   | 틀 없이 화면 카드      |
+| `play-tablet-7`    | 1920×1080 | `Android 폴드 펼침`(문구 없음)                 | 화면 카드              |
+| `play-tablet-10`   | 2560×1440 | `Android 폴드 펼침`(문구 없음)                 | 화면 카드              |
 
-캡처 계획에 아직 없는 것(2026-10-26 기준): `iPad Pro 13` 기기(ko·en), `iPhone Duo`·`Android 폰`의 `en`,
+캡처 계획에 아직 없는 것(2026-10-26 기준): `iPad Pro 13` 기기(ko·en), `iPhone Duo`·`Android 폰`·`Android 폴드 펼침`의 `en`,
 그리고 OS 홈 화면이라 자동으로 못 찍는 `W1_홈_화면_위젯.png`(기기별 ko·en, 같은 폴더에 직접 저장).
 `captures` 명령이 장면별로 빠진 파일을 보여줘요. 캡처 비율이 틀과 3% 넘게 다르면 잘라내지 않고 여백을 둬요.
 
@@ -55,12 +59,12 @@ pnpm --filter @aido/mobile test:store-art
 ## 업로드 폴더
 
 ```
-<업로드>/app-store/<ko|en>/<세트>/<대상>/NN_장면.png      세트: main, cpp-invite, cpp-ai, cpp-large, ppo-invite-first(ko)
+<업로드>/app-store/<ko|en>/<세트>/<대상>/NN_장면.png      세트: main, cpp-invite, cpp-ai, cpp-large, ppo-invite-first(ko). 대상에 iphone-duo-outer 포함
 <업로드>/app-store/<ko|en>/graphics/header_3840x1646.png, search-result_3840x2560.png
 <업로드>/app-store/shared/graphics/event-card_3840x2160.png, event-detail_2160x3840.png
-<업로드>/google-play/<ko-KR|en-US>/<세트>/phone_1080x1920/NN_장면.png   세트: main, custom-listing-invite, experiment-invite-first(ko)
+<업로드>/google-play/<ko-KR|en-US>/<세트>/<phone_1080x1920|tablet-7_1920x1080|tablet-10_2560x1440>/NN_장면.png   세트: main, custom-listing-invite, experiment-invite-first(ko)
 <업로드>/google-play/<ko-KR|en-US>/graphics/feature-graphic_1024x500.png
-<업로드>/google-play/shared/graphics/feature-graphic-invite_1024x500.png
+<업로드>/google-play/shared/graphics/feature-graphic-invite_1024x500.png, promotional-content_1920x1080.jpg(보관용)
 ```
 
 ## 출처

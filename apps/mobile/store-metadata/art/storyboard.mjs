@@ -39,6 +39,16 @@ export const TARGETS = {
     folder: 'iphone-duo_2007x2853',
     badge: true,
   },
+  'iphone-duo-outer': {
+    store: 'app-store',
+    label: 'iPhone Duo 바깥 화면(접힘)',
+    width: 1398,
+    height: 2034,
+    frame: 'duo-closed',
+    device: 'iPhone Duo 접힘',
+    folder: 'iphone-duo-outer_1398x2034',
+    badge: true,
+  },
   'ipad-13': {
     store: 'app-store',
     label: 'iPad 13″',
@@ -60,6 +70,29 @@ export const TARGETS = {
     folder: 'phone_1080x1920',
     // Play 그래픽에는 "New" 같은 기간 한정 표현을 쓰지 않는다.
     badge: false,
+  },
+  // Play 태블릿(7″·10″): 16:9 가로, 1,080~7,680px. 가이드가 앱 화면 밖 글자를 빼라고 해서 문구 없이 화면만 둔다.
+  'play-tablet-7': {
+    store: 'google-play',
+    label: 'Google Play 7″ 태블릿(16:9, 문구 없음)',
+    width: 1920,
+    height: 1080,
+    frame: 'card-fold',
+    device: 'Android 폴드 펼침',
+    folder: 'tablet-7_1920x1080',
+    badge: false,
+    bare: true,
+  },
+  'play-tablet-10': {
+    store: 'google-play',
+    label: 'Google Play 10″ 태블릿(16:9, 문구 없음)',
+    width: 2560,
+    height: 1440,
+    frame: 'card-fold',
+    device: 'Android 폴드 펼침',
+    folder: 'tablet-10_2560x1440',
+    badge: false,
+    bare: true,
   },
 };
 
@@ -284,7 +317,7 @@ export const SETS = [
   {
     id: 'main',
     label: '기본 제품 페이지',
-    targets: ['iphone-6.3', 'iphone-6.9', 'ipad-13'],
+    targets: ['iphone-6.3', 'iphone-6.9', 'iphone-duo-outer', 'ipad-13'],
     slots: MAIN_IPHONE,
   },
   {
@@ -303,6 +336,12 @@ export const SETS = [
     ],
   },
   { id: 'main', label: '기본 스토어 등록정보', targets: ['play-phone'], slots: MAIN_PLAY },
+  {
+    id: 'main',
+    label: '기본 스토어 등록정보(태블릿)',
+    targets: ['play-tablet-7', 'play-tablet-10'],
+    slots: ['large-feed', 'ai', 'invite', 'large-memo', 'report', 'large-settings'],
+  },
   {
     id: 'cpp-invite',
     label: 'CPP-1 초대 유입',
@@ -333,6 +372,12 @@ export const SETS = [
     label: 'Play 맞춤 등록정보 invite',
     targets: ['play-phone'],
     slots: [...CPP_INVITE, 'ai-date'],
+  },
+  {
+    id: 'custom-listing-invite',
+    label: 'Play 맞춤 등록정보 invite(태블릿)',
+    targets: ['play-tablet-7', 'play-tablet-10'],
+    slots: ['invite', 'large-feed', 'ai', 'report'],
   },
   {
     id: 'experiment-invite-first',
@@ -402,6 +447,17 @@ export const SCENES = {
     scale: 2,
     file: 'event-detail_2160x3840.png',
     text: false,
+  },
+  // Play 프로모션 콘텐츠(LiveOps)용 기본 이미지. 지금은 자격(Premium growth tools) 밖이라 보관만 한다.
+  // 16:9 1920×1080, 글자·테두리 금지, 1MB 이하, 안전 영역 위 15%·옆 10%·아래 20%.
+  'play-promo': {
+    store: 'google-play',
+    label: 'Play 프로모션 콘텐츠(16:9, 글자 없음, 보관용)',
+    design: [1920, 1080],
+    scale: 1,
+    file: 'promotional-content_1920x1080.jpg',
+    text: false,
+    maxBytes: 1024 * 1024,
   },
 };
 

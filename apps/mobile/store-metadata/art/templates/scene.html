@@ -643,6 +643,9 @@
         },
       };
 
+      // Play 프로모션 콘텐츠는 이벤트 카드와 같은 16:9 구도(안전 영역 안)
+      SCENES['play-promo'] = SCENES['event-card'];
+
       window.renderJob = async (job) => {
         const [width, height] = job.design;
         document.documentElement.style.width = `${width}px`;

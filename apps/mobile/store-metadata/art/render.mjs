@@ -5,6 +5,7 @@
 //   node store-metadata/art/render.mjs --out <폴더> --preview              # 없는 캡처는 자리표시로 미리보기
 //   node store-metadata/art/render.mjs --out <폴더> --only scenes          # 캡처가 필요 없는 배너·이벤트만
 //   node store-metadata/art/render.mjs captures                            # 필요한 캡처 목록과 빠진 파일
+//   node store-metadata/art/render.mjs asset-names --out <파일.md>             # App Store 에셋 라이브러리 이름표
 //   node store-metadata/art/render.mjs todo --out <폴더>                   # 캡처 전 업로드 폴더에 장별 TODO.md
 //
 // 옵션: --captures <캡처 루트>(기본 ~/Desktop/Aido-Screens-1.13.0), --only <scenes|screenshots|세트 id|대상 id>,
@@ -161,6 +162,7 @@ const FRAME_ASPECT = {
   'duo-closed': 1398 / 2034,
   ipad: 2064 / 2752,
   card: 1080 / 2400,
+  'card-fold': 2208 / 1840,
 };
 
 async function buildScreenshotJob(job, captureRoot, preview) {
@@ -186,6 +188,7 @@ async function buildScreenshotJob(job, captureRoot, preview) {
       locale,
     ),
     preview: preview ? `PREVIEW · ${RELEASE_VERSION}` : null,
+    bare: target.bare === true,
   };
   if (slot.layout === 'duo-pair') {
     const folded = screenSource(job, captureRoot, target.foldedDevice, slot.foldedCapture);
@@ -213,7 +216,10 @@ async function finish(png, job, expected) {
     .flatten({ background: '#ffffff' })
     .removeAlpha()
     .toColourspace('srgb')
-    .png({ compressionLevel: 9 })
+    // Play는 JPG 또는 24-bit PNG만 받는다. 1MB 한도가 있는 그래픽은 JPG로 둔다.
+    [job.output.endsWith('.jpg') ? 'jpeg' : 'png'](
+      job.output.endsWith('.jpg') ? { quality: 90, mozjpeg: true } : { compressionLevel: 9 },
+    )
     .toBuffer();
   const meta = await sharp(output).metadata();
   const problems = [];
@@ -224,7 +230,11 @@ async function finish(png, job, expected) {
     problems.push('알파 채널이 남아 있다');
   }
   const limit =
-    job.type === 'scene' && job.scene.design[0] === 1024 ? MAX_BYTES.feature : MAX_BYTES[job.type];
+    job.type === 'scene' && job.scene.maxBytes != null
+      ? job.scene.maxBytes
+      : job.type === 'scene' && job.scene.design[0] === 1024
+        ? MAX_BYTES.feature
+        : MAX_BYTES[job.type];
   if (output.length > limit) {
     problems.push(`${Math.round(output.length / 1024)}KiB > ${Math.round(limit / 1024)}KiB`);
   }
@@ -393,7 +403,7 @@ async function render({ out, captureRoot, preview, only, locales }) {
       const path = join(out, job.output);
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, finished.output);
-      const thumb = join('thumbs', job.output.replace(/\.png$/u, '.jpg'));
+      const thumb = join('thumbs', job.output.replace(/\.(png|jpg)$/u, '.jpg'));
       mkdirSync(dirname(join(out, thumb)), { recursive: true });
       await sharp(finished.output)
         .resize({ width: 360 })
@@ -494,6 +504,25 @@ function writeTodos({ out, captureRoot, locales }) {
   console.log(`TODO.md ${folders.size}개 → ${out}`);
 }
 
+// App Store 에셋 라이브러리 이름: 1.13.0_<세트 또는 자리>_<언어>_<대상>_<번호>
+export function assetNames({ locales }) {
+  return plan({ only: undefined, locales })
+    .filter((job) => job.output.startsWith('app-store/'))
+    .map((job) => {
+      if (job.type === 'screenshot') {
+        const number = job.output.split('/').pop().slice(0, 2);
+        return {
+          output: job.output,
+          name: `${RELEASE_VERSION}_${job.set.id}_${job.locale}_${job.targetId}_${number}`,
+        };
+      }
+      return {
+        output: job.output,
+        name: `${RELEASE_VERSION}_${job.sceneId}_${job.locale ?? 'shared'}`,
+      };
+    });
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { positionals, values } = parseArgs({
     args: process.argv.slice(2).filter((arg) => arg !== '--'),
@@ -515,6 +544,15 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   try {
     if (positionals[0] === 'captures') {
       listCaptures(options);
+    } else if (positionals[0] === 'asset-names') {
+      const rows = assetNames(options).map((row) => `| \`${row.output}\` | \`${row.name}\` |`);
+      const markdown = `# App Store 에셋 라이브러리 이름 (${RELEASE_VERSION})\n\n업로드한 뒤 에셋 라이브러리에서 이 이름으로 바꾸면 CPP·PPO·이벤트에서 찾기 쉬워요.\n규칙: \`${RELEASE_VERSION}_<세트 또는 자리>_<언어>_<대상>_<번호>\`\n\n| 업로드 파일 | 에셋 이름 |\n| --- | --- |\n${rows.join('\n')}\n`;
+      if (values.out == null) {
+        console.log(markdown);
+      } else {
+        writeFileSync(resolve(values.out), markdown);
+        console.log(`${rows.length}개 → ${resolve(values.out)}`);
+      }
     } else if (positionals[0] === 'todo') {
       if (values.out == null) {
         throw new Error('--out <폴더>가 필요해요');

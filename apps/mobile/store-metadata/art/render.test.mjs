@@ -71,3 +71,19 @@ test('글자 없는 그래픽(인앱 이벤트·Play 맞춤 그래픽)은 공용
     assert.equal(matching[0].locale, null);
   }
 });
+
+test('Play 태블릿은 문구 없이 4장 이상, 16:9 1,080~7,680px로 만든다', () => {
+  for (const id of ['play-tablet-7', 'play-tablet-10']) {
+    const target = TARGETS[id];
+    assert.equal(target.bare, true);
+    assert.equal(target.badge, false);
+    assert.equal(target.width / target.height, 16 / 9);
+    assert.ok(
+      Math.min(target.width, target.height) >= 1080 &&
+        Math.max(target.width, target.height) <= 7680,
+    );
+    for (const set of SETS.filter((item) => item.targets.includes(id))) {
+      assert.ok(set.slots.length >= 4 && set.slots.length <= 8, set.label);
+    }
+  }
+});

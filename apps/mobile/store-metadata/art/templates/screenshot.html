@@ -300,6 +300,7 @@
         'duo-open': { aspect: 2007 / 2853, rim: 0.008, bezel: 0.022, radius: 0.075, crease: true },
         ipad: { aspect: 2064 / 2752, rim: 0.007, bezel: 0.026, radius: 0.06 },
         card: { aspect: 1080 / 2400, rim: 0, bezel: 0, radius: 0.07 },
+        'card-fold': { aspect: 2208 / 1840, rim: 0, bezel: 0, radius: 0.025 },
       };
       const WIDTH_SHARE = {
         iphone: 0.84,
@@ -421,6 +422,42 @@
         const stage = document.getElementById('stage');
         stage.replaceChildren();
         stage.style.paddingTop = `${190 * unit}px`;
+
+        // 문구 없는 화면(Play 태블릿): 화면 카드만 가운데에 둔다
+        if (job.bare) {
+          const aspect = FRAMES[job.frame].aspect;
+          const deviceWidth = Math.min(width * 0.9, height * 0.88 * aspect);
+          const deviceHeight = deviceWidth / aspect;
+          drawDevice(
+            stage,
+            job.frame,
+            job.screen,
+            (width - deviceWidth) / 2,
+            (height - deviceHeight) / 2,
+            deviceWidth,
+          );
+          stage.style.paddingTop = '0';
+          if (job.preview) {
+            const mark = el('div', 'preview-mark', document.body);
+            mark.style.fontSize = `${24 * unit}px`;
+            mark.textContent = job.preview;
+          }
+          await document.fonts.ready;
+          await Promise.all(
+            [...document.images].map((image) =>
+              image.complete
+                ? null
+                : new Promise((resolve) => {
+                    image.onload = resolve;
+                    image.onerror = resolve;
+                  }),
+            ),
+          );
+          const broken = [...document.images]
+            .filter((image) => !image.naturalWidth)
+            .map((image) => image.src);
+          return { contrast: [], broken, fonts: [], overflow: false };
+        }
 
         const copy = el('div', 'copy', stage);
         if (job.badge) {
