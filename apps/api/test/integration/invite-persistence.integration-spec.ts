@@ -1,8 +1,10 @@
 import { ErrorCode } from "@aido/api/errors";
 import postgres from "@prisma/orm-postgres/runtime";
+import { sortBy } from "es-toolkit";
 import { Pool } from "pg";
 import sql from "sql-template-tag";
 
+import { MyInviteReader } from "#api/modules/social/application/services/invites/my-invite.reader";
 import { InviteRedemption } from "#api/modules/social/domain/aggregates/invites/invite-redemption.aggregate";
 import { InviteCode } from "#api/modules/social/domain/value-objects/invites/invite-code.vo";
 import { InviteCodeGenerator } from "#api/modules/social/infrastructure/persistence/invites/invite-code.generator";
@@ -285,15 +287,14 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
 
       // Then
       expect(created).toBe(3);
-      const ledger = await grants.findInviterLedger(inviterId);
-      expect(ledger.map(({ rewardType, quantity }) => ({ rewardType, quantity }))).toEqual(
-        expect.arrayContaining([
-          { rewardType: "PREMIUM_DAYS", quantity: 7 },
-          { rewardType: "FRIEND_SLOT", quantity: 1 },
-        ]),
-      );
-      expect(ledger).toHaveLength(2);
-      expect(await grants.findInviterLedger(inviteeId)).toEqual([]);
+      const windowStart = new Date("2026-10-01T00:00:00Z");
+      expect(
+        sortBy(await grants.summarizeInviterRewards(inviterId, windowStart), ["rewardType"]),
+      ).toEqual([
+        { rewardType: "FRIEND_SLOT", quantityInWindow: 1, totalQuantity: 1, appliedQuantity: 0 },
+        { rewardType: "PREMIUM_DAYS", quantityInWindow: 7, totalQuantity: 7, appliedQuantity: 0 },
+      ]);
+      expect(await grants.summarizeInviterRewards(inviteeId, windowStart)).toEqual([]);
     });
   });
 
@@ -412,6 +413,88 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
         joinedCount: 0,
         rejectedCount: 6,
       });
+    });
+
+    it("수락이 1천 건이어도 내 초대 요약은 문장 네 개, 상태별 목록은 한 문장이다", async () => {
+      // Given
+      const inviterId = await createUser({ userTag: "BULKOWNR" });
+      const invite = await invites.issue({ inviterId, issuedAt: new Date("2026-11-01T00:00:00Z") });
+      const now = new Date("2026-11-20T00:00:00Z");
+      const rows = Array.from({ length: 1_000 }, (_, index) => ({
+        userId: createEntityId(),
+        redemptionId: createEntityId(),
+        status: index % 4 === 0 ? ("QUALIFIED" as const) : ("JOINED" as const),
+        joinedAt: new Date(Date.UTC(2026, 10, 1, 0, 0, index)),
+        userTag: `BLK${String(index).padStart(5, "0")}`,
+      }));
+      await client.orm.public.User.createAndCount(
+        rows.map((row) =>
+          encodeCreate(
+            "User",
+            UserFixture.create({
+              id: row.userId,
+              email: `${row.userTag}@example.test`,
+              userTag: row.userTag,
+            }),
+          ),
+        ),
+      );
+      await client.orm.public.InviteRedemption.createAndCount(
+        rows.map((row) =>
+          encodeCreate("InviteRedemption", {
+            id: row.redemptionId,
+            inviteId: invite.id,
+            inviterId,
+            inviteeId: row.userId,
+            status: row.status,
+            timezone: "Asia/Seoul",
+            joinedAt: row.joinedAt,
+            qualifiedAt: row.status === "QUALIFIED" ? now : null,
+            expiresAt: new Date("2026-11-15T00:00:00Z"),
+          }),
+        ),
+      );
+      const qualifiedRows = rows.filter((row) => row.status === "QUALIFIED");
+      await client.orm.public.RewardGrant.createAndCount(
+        qualifiedRows.map((row) =>
+          encodeCreate("RewardGrant", {
+            recipientId: inviterId,
+            sourceType: "INVITE_REDEMPTION",
+            sourceId: row.redemptionId,
+            rewardType: "FRIEND_SLOT",
+            quantity: 1,
+            status: "APPLIED",
+            appliedAt: now,
+          }),
+        ),
+      );
+      const reader = new MyInviteReader({
+        inviteRedemptionRepository: redemptions,
+        rewardGrantRepository: grants,
+      });
+
+      // When
+      statements = [];
+      const view = await reader.read(invite, now);
+      const summaryStatements = statements.length;
+      statements = [];
+      const waiting = await redemptions.findInvitedFriends({
+        inviterId,
+        size: 21,
+        status: "JOINED",
+      });
+      const listStatements = statements.length;
+      statements = null;
+
+      // Then
+      expect([summaryStatements, listStatements]).toEqual([4, 1]);
+      expect(view).toMatchObject({
+        waitingCount: 750,
+        qualifiedCount: 250,
+        rewardsEarned: [{ rewardType: "FRIEND_SLOT", quantity: 250 }],
+      });
+      expect(waiting).toHaveLength(21);
+      expect(waiting.every((friend) => friend.status === "JOINED")).toBe(true);
     });
 
     it("상태별 수를 한 번의 집계로 반환하고 마감이 지난 JOINED만 거절한다", async () => {

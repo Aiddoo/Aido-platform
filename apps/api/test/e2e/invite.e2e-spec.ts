@@ -8,6 +8,7 @@ import { ErrorCode } from "@aido/api/errors";
 import request from "supertest";
 
 import { INVITE_CONFIG } from "#api/modules/social/application/ports/invites/invite.config.port";
+import { encodeCreate } from "#api/platform/database/database-records";
 
 import { createE2eApp, destroyE2eApp, type E2eTestContext } from "./helpers/index.js";
 
@@ -127,6 +128,66 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
       expect(inviteAvailabilityResponseSchema.parse(availability.body.data)).toEqual({
         enabled: true,
       });
+    });
+    it("상태로 거르면 그 상태만 수락 시각 내림차순으로 겹치지 않게 넘기고 totalCount도 그 상태의 수다", async () => {
+      // Given
+      const inviter = await ctx.helpers.createVerifiedUser("invite-filter@test.com", PASSWORD);
+      const invitees = await Promise.all(
+        ["a", "b", "c"].map((suffix) =>
+          ctx.helpers.createVerifiedUser(`invite-filter-${suffix}@test.com`, PASSWORD),
+        ),
+      );
+      // 같은 수락 시각 두 명으로 tie-break까지 확인한다
+      const sameJoinedAt = new Date("2026-10-20T00:00:00.000Z");
+      const rows = [
+        { invitee: invitees[0], status: "JOINED", joinedAt: sameJoinedAt },
+        { invitee: invitees[1], status: "JOINED", joinedAt: sameJoinedAt },
+        {
+          invitee: invitees[2],
+          status: "QUALIFIED",
+          joinedAt: new Date("2026-10-21T00:00:00.000Z"),
+        },
+      ] as const;
+      await ctx.testDatabase.getClient().orm.public.InviteRedemption.createAndCount(
+        rows.map((row) =>
+          encodeCreate("InviteRedemption", {
+            inviterId: inviter.userId,
+            inviteeId: row.invitee?.userId ?? "",
+            status: row.status,
+            timezone: "Asia/Seoul",
+            joinedAt: row.joinedAt,
+            qualifiedAt: row.status === "QUALIFIED" ? row.joinedAt : null,
+            expiresAt: new Date("2026-11-03T00:00:00.000Z"),
+          }),
+        ),
+      );
+      const list = (query: string) =>
+        request(ctx.app.getHttpServer())
+          .get(`/v1/invites/me/invitees?${query}`)
+          .set("Authorization", `Bearer ${inviter.accessToken}`);
+
+      // When
+      const first = invitedFriendsListResponseSchema.parse(
+        (await list("status=JOINED&limit=1").expect(200)).body.data,
+      );
+      const second = invitedFriendsListResponseSchema.parse(
+        (await list(`status=JOINED&limit=1&cursor=${first.items[0]?.userId}`).expect(200)).body
+          .data,
+      );
+      const all = invitedFriendsListResponseSchema.parse(
+        (await list("limit=20").expect(200)).body.data,
+      );
+      const tooLarge = await list("limit=51").expect(400);
+
+      // Then
+      expect(first).toMatchObject({ totalCount: 2, hasMore: true });
+      expect(second).toMatchObject({ totalCount: 2, hasMore: false });
+      expect(new Set([...first.items, ...second.items].map((item) => item.userId))).toEqual(
+        new Set([invitees[0]?.userId, invitees[1]?.userId]),
+      );
+      expect(all.totalCount).toBe(3);
+      expect(all.items.map((item) => item.status)).toEqual(["QUALIFIED", "JOINED", "JOINED"]);
+      expect(tooLarge.body.error.code).toBe(ErrorCode.SYS_0002);
     });
   });
 

@@ -5,21 +5,20 @@ import {
   REWARD_TYPE,
   type RewardType,
 } from "@aido/api/vocabulary";
-import { groupBy, sumBy } from "es-toolkit";
+import { sumBy } from "es-toolkit";
 
 import { subtractDays } from "#api/shared/domain/date/utils/arithmetic";
 
-import type { RewardGrantStatusValue } from "../../types/invites/reward-grant.types.js";
-
 /** 월 상한(PREMIUM_DAYS_PER_30_DAYS)을 세는 rolling 기간. UTC 시각 기준이다. */
-export const INVITE_REWARD_CAP_WINDOW_DAYS = 30;
+const INVITE_REWARD_CAP_WINDOW_DAYS = 30;
 
-/** 초대한 사람으로 받은 보상 한 건 */
-export interface InviterRewardLedgerItem {
+/** 초대한 사람으로 받은 보상의 종류별 합계. 저장소가 집계 한 번으로 만든다. */
+export interface InviterRewardTotal {
   readonly rewardType: RewardType;
-  readonly quantity: number;
-  readonly status: RewardGrantStatusValue;
-  readonly grantedAt: Date;
+  /** rewardCapWindowStart 이후에 기록된 지급. 적용 전·재시도 중인 지급도 포함한다. */
+  readonly quantityInWindow: number;
+  readonly totalQuantity: number;
+  readonly appliedQuantity: number;
 }
 
 export interface InviterRewardSummary {
@@ -82,8 +81,9 @@ export function qualifiedRedemptionCount(counts: {
   return counts.qualifiedCount + counts.rewardedCount;
 }
 
-export function isWithinRewardCapWindow(grantedAt: Date, now: Date): boolean {
-  return grantedAt.getTime() > subtractDays(INVITE_REWARD_CAP_WINDOW_DAYS, now).getTime();
+/** 이 시각보다 뒤에 기록된 지급이 최근 30일 상한에 들어간다. */
+export function rewardCapWindowStart(now: Date): Date {
+  return subtractDays(INVITE_REWARD_CAP_WINDOW_DAYS, now);
 }
 
 /** 월 상한과 누적 상한 중 남은 쪽만큼만 더 지급할 수 있다. */
@@ -108,16 +108,14 @@ function sumRewards(rewards: readonly RewardAmount[]): RewardAmount[] {
 }
 
 export const InviteRewardPolicy = {
-  summarizeLedger(ledger: readonly InviterRewardLedgerItem[], now: Date): InviterRewardSummary {
-    const premiumGrants = ledger.filter((item) => item.rewardType === REWARD_TYPE.PREMIUM_DAYS);
-    const byStatus = groupBy(ledger, (item) => item.status);
+  summarize(totals: readonly InviterRewardTotal[]): InviterRewardSummary {
+    const premium = totals.filter((total) => total.rewardType === REWARD_TYPE.PREMIUM_DAYS);
     return {
-      premiumDaysInWindow: sumBy(
-        premiumGrants.filter((item) => isWithinRewardCapWindow(item.grantedAt, now)),
-        (item) => item.quantity,
+      premiumDaysInWindow: sumBy(premium, (total) => total.quantityInWindow),
+      totalPremiumDays: sumBy(premium, (total) => total.totalQuantity),
+      rewardsEarned: sumRewards(
+        totals.map((total) => ({ rewardType: total.rewardType, quantity: total.appliedQuantity })),
       ),
-      totalPremiumDays: sumBy(premiumGrants, (item) => item.quantity),
-      rewardsEarned: sumRewards(byStatus.APPLIED ?? []),
     };
   },
 

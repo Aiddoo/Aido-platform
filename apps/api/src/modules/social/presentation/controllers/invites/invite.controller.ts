@@ -102,7 +102,7 @@ export class InviteController {
     summary: "내가 초대한 친구 목록",
     operationId: "getInvitedFriends",
     description:
-      "초대 수락 시각 내림차순입니다. cursor는 이전 페이지 마지막 userId입니다. 기능이 꺼져 있으면 INVITE_2105입니다.",
+      "초대 수락 시각 내림차순입니다. cursor는 이전 페이지 마지막 userId입니다. status를 주면 그 상태만 반환하고 totalCount도 그 상태의 수입니다. 기능이 꺼져 있으면 INVITE_2105입니다.",
   })
   @ApiSuccessResponse({ type: InvitedFriendsListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
@@ -115,6 +115,7 @@ export class InviteController {
       inviterId: user.userId,
       cursor: query.cursor,
       size: query.limit,
+      status: query.status,
     });
     return InviteMapper.toInvitedFriendsDto(page);
   }

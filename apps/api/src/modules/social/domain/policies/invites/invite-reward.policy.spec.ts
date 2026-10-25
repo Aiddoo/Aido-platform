@@ -1,12 +1,11 @@
 import type { InviterRewardMilestone } from "@aido/api";
 
 import {
-  type InviterRewardLedgerItem,
   InviteRewardPolicy,
   isMilestoneReachedAt,
-  isWithinRewardCapWindow,
   nextMilestoneQualifiedCount,
   remainingPremiumDays,
+  rewardCapWindowStart,
 } from "./invite-reward.policy.js";
 
 const MILESTONES = [
@@ -21,16 +20,6 @@ const MILESTONES = [
   { qualifiedCount: 3, repeatEvery: null, rewards: [{ rewardType: "PREMIUM_DAYS", quantity: 14 }] },
   { qualifiedCount: 5, repeatEvery: 5, rewards: [{ rewardType: "FRIEND_SLOT", quantity: 2 }] },
 ] as const satisfies readonly InviterRewardMilestone[];
-
-function ledgerItem(overrides: Partial<InviterRewardLedgerItem>): InviterRewardLedgerItem {
-  return {
-    rewardType: "PREMIUM_DAYS",
-    quantity: 7,
-    status: "APPLIED",
-    grantedAt: new Date("2028-02-15T00:00:00.000Z"),
-    ...overrides,
-  };
-}
 
 describe("InviteRewardPolicy", () => {
   describe("isMilestoneReachedAt", () => {
@@ -81,49 +70,58 @@ describe("InviteRewardPolicy", () => {
     });
   });
 
-  describe("summarizeLedger", () => {
-    it("최근 30일 상한은 보류 중 지급까지 세고, 받은 보상은 적용된 지급만 종류별로 합친다", () => {
+  describe("summarize", () => {
+    it("상한은 보류 중 지급까지 세고, 받은 보상은 적용된 지급만 종류별로 보여 준다", () => {
       // Given
-      const now = new Date("2028-03-15T00:00:00.000Z");
-      const ledger = [
-        ledgerItem({ grantedAt: new Date("2028-02-14T00:00:00.000Z") }),
-        ledgerItem({ grantedAt: new Date("2028-02-15T00:00:00.000Z") }),
-        ledgerItem({ status: "PENDING", grantedAt: new Date("2028-03-10T00:00:00.000Z") }),
-        ledgerItem({ rewardType: "FRIEND_SLOT", quantity: 1 }),
+      const totals = [
+        {
+          rewardType: "PREMIUM_DAYS" as const,
+          quantityInWindow: 14,
+          totalQuantity: 21,
+          appliedQuantity: 14,
+        },
+        {
+          rewardType: "FRIEND_SLOT" as const,
+          quantityInWindow: 2,
+          totalQuantity: 3,
+          appliedQuantity: 0,
+        },
       ];
 
       // When
-      const summary = InviteRewardPolicy.summarizeLedger(ledger, now);
+      const summary = InviteRewardPolicy.summarize(totals);
 
       // Then
       expect(summary).toEqual({
         premiumDaysInWindow: 14,
         totalPremiumDays: 21,
-        rewardsEarned: [
-          { rewardType: "PREMIUM_DAYS", quantity: 14 },
-          { rewardType: "FRIEND_SLOT", quantity: 1 },
-        ],
+        rewardsEarned: [{ rewardType: "PREMIUM_DAYS", quantity: 14 }],
       });
+    });
+
+    it("받은 보상이 없으면 0과 빈 목록이다", () => {
+      // Given
+      const totals: Parameters<typeof InviteRewardPolicy.summarize>[0] = [];
+
+      // When
+      const summary = InviteRewardPolicy.summarize(totals);
+
+      // Then
+      expect(summary).toEqual({ premiumDaysInWindow: 0, totalPremiumDays: 0, rewardsEarned: [] });
     });
   });
 
-  describe("isWithinRewardCapWindow", () => {
-    it.each([
-      { grantedAt: "2028-02-14T00:00:00.000Z", expected: false },
-      { grantedAt: "2028-02-14T00:00:00.001Z", expected: true },
-    ])(
-      "윤년 2월을 지나 3월 15일 기준 $grantedAt 지급의 30일 포함 여부는 $expected다",
-      ({ grantedAt, expected }) => {
-        // Given
-        const now = new Date("2028-03-15T00:00:00.000Z");
+  describe("rewardCapWindowStart", () => {
+    it("윤년 2월을 지나 3월 15일의 30일 전은 2월 14일이다", () => {
+      // Given
+      const now = new Date("2028-03-15T00:00:00.000Z");
 
-        // When
-        const within = isWithinRewardCapWindow(new Date(grantedAt), now);
+      // When
+      const start = rewardCapWindowStart(now);
 
-        // Then
-        expect(within).toBe(expected);
-      },
-    );
+      // Then
+      expect(start).toEqual(new Date("2028-02-14T00:00:00.000Z"));
+    });
   });
 
   describe("remainingPremiumDays", () => {

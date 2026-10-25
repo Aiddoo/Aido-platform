@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { and } from "@prisma/orm-postgres/orm-client";
+import { all, and } from "@prisma/orm-postgres/orm-client";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import {
@@ -132,7 +132,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
   }
 
   async summarizeByInviterId(inviterId: string): Promise<InviteRedemptionSummary> {
-    // 상태별 수를 GROUP BY 한 번으로 센다
+    // 상태별 수를 groupBy 한 번으로 센다
     const groups = await this.client.orm.public.InviteRedemption.where({ inviterId })
       .groupBy("status")
       .aggregate((aggregate) => ({ count: aggregate.count() }));
@@ -147,8 +147,14 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
   }
 
   async findInvitedFriends(params: FindInvitedFriendsParams): Promise<InvitedFriendRecord[]> {
-    // (inviterId, joinedAt, id) 인덱스 순서로 keyset을 읽고 프로필·활동일 수는 include로 같은 문장에 붙인다
-    let page = this.client.orm.public.InviteRedemption.where({ inviterId: params.inviterId })
+    // 상태가 있으면 (inviterId, status, joinedAt, id), 없으면 (inviterId, joinedAt, id) 인덱스 순서로 keyset을 읽고
+    // 프로필·활동일 수는 include로 같은 문장에 붙인다
+    let page = this.client.orm.public.InviteRedemption.where((row) =>
+      and(
+        row.inviterId.eq(params.inviterId),
+        params.status == null ? all() : row.status.eq(params.status),
+      ),
+    )
       .select("id", "status", "joinedAt", "qualifiedAt")
       .include("invitee", (user) =>
         user

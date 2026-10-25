@@ -1,6 +1,8 @@
+import { REWARD_TYPE } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { all, and } from "@prisma/orm-postgres/orm-client";
+import { sumBy } from "es-toolkit";
 import sql from "sql-template-tag";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
@@ -10,10 +12,10 @@ import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8
 
 import type {
   FindRetryableRewardSourcesParams,
-  InviterRewardLedgerEntry,
   RewardGrantRecord,
   RewardGrantRepositoryPort,
 } from "../../../application/ports/invites/reward-grant.repository.port.js";
+import type { InviterRewardTotal } from "../../../domain/policies/invites/invite-reward.policy.js";
 import type {
   RewardGrantPlan,
   RewardSourceType,
@@ -47,21 +49,37 @@ export class PrismaRewardGrantRepository implements RewardGrantRepositoryPort {
     );
   }
 
-  async findInviterLedger(inviterId: string): Promise<InviterRewardLedgerEntry[]> {
+  async summarizeInviterRewards(
+    inviterId: string,
+    windowStart: Date,
+  ): Promise<InviterRewardTotal[]> {
     const ownRedemptionId = await this.#findOwnRedemptionId(inviterId);
-    const rows = decodeRecord(
-      "RewardGrant",
-      await this.#inviterGrants(inviterId, ownRedemptionId)
-        .select("rewardType", "quantity", "status", "createdAt")
-        .orderBy((grant) => grant.createdAt.asc())
-        .all(),
-    );
-    return rows.map((row) => ({
-      rewardType: row.rewardType,
-      quantity: row.quantity,
-      status: row.status,
-      grantedAt: row.createdAt,
-    }));
+    // 전체·적용 합계는 (종류, 상태)로, 상한 기간 합계는 기간 조건을 건 종류별로 한 번씩 묶는다
+    const [byStatus, inWindow] = await Promise.all([
+      this.#inviterGrants(inviterId, ownRedemptionId)
+        .groupBy("rewardType", "status")
+        .aggregate((aggregate) => ({ quantity: aggregate.sum("quantity") })),
+      this.#inviterGrants(inviterId, ownRedemptionId)
+        .where((grant) => grant.createdAt.gt(databaseTimestamp(windowStart)))
+        .groupBy("rewardType")
+        .aggregate((aggregate) => ({ quantity: aggregate.sum("quantity") })),
+    ]);
+
+    return Object.values(REWARD_TYPE).flatMap((rewardType) => {
+      const rows = byStatus.filter((row) => row.rewardType === rewardType);
+      if (rows.length === 0) return [];
+      return [
+        {
+          rewardType,
+          quantityInWindow: inWindow.find((row) => row.rewardType === rewardType)?.quantity ?? 0,
+          totalQuantity: sumBy(rows, (row) => row.quantity ?? 0),
+          appliedQuantity: sumBy(
+            rows.filter((row) => row.status === "APPLIED"),
+            (row) => row.quantity ?? 0,
+          ),
+        },
+      ];
+    });
   }
 
   async findBySource(sourceType: RewardSourceType, sourceId: string): Promise<RewardGrantRecord[]> {

@@ -24,7 +24,7 @@ export interface InviteRedemptionSummary {
   readonly rejectedCount: number;
 }
 
-/** 초대한 친구 목록 한 줄 (User·UserProfile 조인과 활동일 수를 한 SQL로 읽는다) */
+/** 초대한 친구 목록 한 줄 (User·UserProfile·활동일 수를 include로 한 문장에 읽는다) */
 export interface InvitedFriendRecord {
   readonly userId: string;
   readonly name: string | null;
@@ -40,6 +40,8 @@ export interface FindInvitedFriendsParams {
   readonly inviterId: string;
   /** 마지막으로 받은 초대받은 사람 userId */
   readonly cursor?: string;
+  /** 없으면 모든 상태 */
+  readonly status?: RedemptionStatus;
   readonly size: number;
 }
 

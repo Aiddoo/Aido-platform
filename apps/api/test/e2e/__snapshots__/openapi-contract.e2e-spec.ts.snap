@@ -26674,7 +26674,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
   },
   "/v1/invites/me/invitees": {
     "get": {
-      "description": "초대 수락 시각 내림차순입니다. cursor는 이전 페이지 마지막 userId입니다. 기능이 꺼져 있으면 INVITE_2105입니다.",
+      "description": "초대 수락 시각 내림차순입니다. cursor는 이전 페이지 마지막 userId입니다. status를 주면 그 상태만 반환하고 totalCount도 그 상태의 수입니다. 기능이 꺼져 있으면 INVITE_2105입니다.",
       "operationId": "getInvitedFriends",
       "parameters": [
         {
@@ -26697,6 +26697,22 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "schema": {
             "description": "페이지 크기 (1-50, 기본값: 20)",
             "pattern": "^\\d+$",
+            "type": "string",
+          },
+        },
+        {
+          "description": "초대 수락 상태로 거르기 (예: JOINED는 사용 시작을 기다리는 친구, 생략하면 전체)",
+          "in": "query",
+          "name": "status",
+          "required": false,
+          "schema": {
+            "description": "초대 수락 상태로 거르기 (예: JOINED는 사용 시작을 기다리는 친구, 생략하면 전체)",
+            "enum": [
+              "JOINED",
+              "QUALIFIED",
+              "REWARDED",
+              "REJECTED",
+            ],
             "type": "string",
           },
         },
