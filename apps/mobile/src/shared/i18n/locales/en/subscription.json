@@ -69,6 +69,7 @@
     "title": "Upgrade to Premium",
     "subtitle": "Use every feature without limits",
     "futureIncluded": "All future premium features are included too",
+    "grantEnded": "Your invite reward Premium ended on {{date}}. Subscribe to get every feature back",
     "moreBenefits": "More premium benefits",
     "subscribeButton": "Subscribe",
     "termsPrefix": "By purchasing, you agree to the ",
@@ -78,10 +79,12 @@
     "termsSuffix": "."
   },
   "endingNotice": {
-    "badgeTomorrow": "D-1",
+    "badgeTomorrow": "Tomorrow",
     "badgeToday": "Today",
-    "tomorrow": "Your Premium ends tomorrow. Subscribe to keep it going",
-    "today": "Your Premium ends today. Subscribe to keep it going"
+    "tomorrow": "Your Premium ends tomorrow. Subscribe to keep Premium going",
+    "today": "Your Premium ends today. Subscribe to keep Premium going",
+    "paidTomorrow": "Your subscription ends tomorrow. Turn auto-renew back on to keep Premium going",
+    "paidToday": "Your subscription ends today. Turn auto-renew back on to keep Premium going"
   },
   "receipt": {
     "paid": {

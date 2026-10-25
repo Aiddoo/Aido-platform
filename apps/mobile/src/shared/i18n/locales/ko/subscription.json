@@ -69,6 +69,7 @@
     "title": "프리미엄으로 업그레이드",
     "subtitle": "모든 기능을 제한 없이 사용해보세요",
     "futureIncluded": "향후 출시되는 모든 프리미엄 기능도 포함돼요",
+    "grantEnded": "초대 보상 프리미엄이 {{date}}에 끝났어요. 구독하면 다시 모든 기능을 쓸 수 있어요",
     "moreBenefits": "더 많은 프리미엄 혜택",
     "subscribeButton": "구독하기",
     "termsPrefix": "구매 시 ",
@@ -81,7 +82,9 @@
     "badgeTomorrow": "D-1",
     "badgeToday": "오늘",
     "tomorrow": "내일 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
-    "today": "오늘 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요"
+    "today": "오늘 프리미엄이 끝나요. 구독하면 끊김 없이 이어져요",
+    "paidTomorrow": "내일 구독이 끝나요. 자동 갱신을 켜면 끊김 없이 이어져요",
+    "paidToday": "오늘 구독이 끝나요. 자동 갱신을 켜면 끊김 없이 이어져요"
   },
   "receipt": {
     "paid": {
@@ -110,7 +113,7 @@
       "bankedReward": "이어서 받을 보상",
       "days": "{{count}}일",
       "daysUntil": "{{count}}일 · {{date}}까지",
-      "overallPeriod": "전체 이용",
+      "overallPeriod": "전체 이용 기간",
       "daysLeft": "남은 기간"
     },
     "footnote": {

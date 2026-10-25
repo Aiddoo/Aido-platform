@@ -17,6 +17,7 @@ const createUser = (overrides?: Partial<User>): User => ({
     periodEndsAt: null,
     willRenew: false,
     bankedDays: 0,
+    grantEndedAt: null,
   },
   createdAt: new Date('2026-01-01T09:00:00.000Z'),
   ...overrides,

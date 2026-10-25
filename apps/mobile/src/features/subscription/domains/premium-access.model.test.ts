@@ -1,4 +1,6 @@
-import { createPremiumAccess } from '../__tests__/premium-access.factories';
+import { toUser } from '@src/features/user/apis/user.mapper';
+
+import { createPremiumAccess, PREMIUM_ME_EXAMPLES } from '../__tests__/premium-access.factories';
 import { calculateDaysLeft, PremiumAccessPolicy } from './premium-access.model';
 
 const SEOUL = 'Asia/Seoul';
@@ -303,6 +305,33 @@ describe('PremiumAccessPolicy', () => {
 
       // Then
       expect(result).toBe(true);
+    });
+  });
+
+  describe('recentGrantEndedAt', () => {
+    it('D. 보상이 끝나 무료로 돌아왔으면 서버가 준 끝난 시각을 반환한다', () => {
+      // Given
+      const { premiumAccess } = toUser(PREMIUM_ME_EXAMPLES.endedReward);
+
+      // When
+      const result = PremiumAccessPolicy.recentGrantEndedAt(premiumAccess);
+
+      // Then
+      expect(result).toEqual(new Date('2028-03-04T04:00:00.000Z'));
+    });
+
+    it('다시 프리미엄이면 지난 보상이 끝난 것을 알리지 않는다', () => {
+      // Given 끝난 시각이 남아 있어도 지금은 보상 기간이다
+      const premiumAccess = createPremiumAccess({
+        source: 'GRANT',
+        grantEndedAt: new Date('2028-03-04T04:00:00.000Z'),
+      });
+
+      // When
+      const result = PremiumAccessPolicy.recentGrantEndedAt(premiumAccess);
+
+      // Then
+      expect(result).toBeNull();
     });
   });
 });

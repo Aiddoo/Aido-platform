@@ -4,6 +4,7 @@ import benefitNotificationImage from '@assets/images/subscription/benefit-notifi
 import benefitNudgeImage from '@assets/images/subscription/benefit-nudge.webp';
 import { useRevenueCatSdkManager } from '@src/bootstrap/providers/di-context';
 import { SubscriptionPlanInput } from '@src/features/subscription/components/subscription-plan-input';
+import { PremiumAccessPolicy } from '@src/features/subscription/domains/premium-access.model';
 import { SubscriptionErrors } from '@src/features/subscription/domains/subscription.error';
 import { useOpenSubscriptionInquiry } from '@src/features/subscription/hooks/use-open-subscription-inquiry';
 import { useSubscriptionReceipt } from '@src/features/subscription/hooks/use-subscription-receipt';
@@ -55,7 +56,7 @@ import { router } from 'expo-router';
 import { Separator, Spinner } from 'heroui-native';
 import { Suspense, useEffect, useState } from 'react';
 import { AccessibilityInfo, Image, type ImageSourcePropType, ScrollView } from 'react-native';
-import { match } from 'ts-pattern';
+import { match, P } from 'ts-pattern';
 
 function SubscriptionScreen() {
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
@@ -202,6 +203,8 @@ function PaywallPane() {
       <ScrollView className="flex-1 px-4" contentContainerClassName="pb-8">
         <StyledSafeAreaView edges={['left', 'right']}>
           <Spacing size={16} />
+
+          <GrantEndedNotice />
 
           <ScallopedContainer>
             <Box className="px-5 pt-5">
@@ -506,11 +509,31 @@ function ReceiptDetailRow({ row, formatDate }: ReceiptDetailRowProps) {
 /** 자동 갱신도 이어서 받을 보상도 없는 프리미엄이 하루 안에 끝나면 구독으로 이어 가도록 알린다 */
 function PremiumEndingNotice() {
   const { t } = useTranslation('subscription');
-  const { endingNotice } = useSubscriptionReceipt();
+  const { variant, endingNotice } = useSubscriptionReceipt();
 
   if (endingNotice == null) {
     return null;
   }
+
+  // 보상 기간은 구독 버튼으로, 취소한 결제 구독은 스토어에서 자동 갱신을 다시 켜서 이어 간다
+  const { badge, message } = match({ variant, endingNotice })
+    .with({ variant: 'paid', endingNotice: 'today' }, () => ({
+      badge: t('endingNotice.badgeToday'),
+      message: t('endingNotice.paidToday'),
+    }))
+    .with({ variant: 'paid', endingNotice: 'tomorrow' }, () => ({
+      badge: t('endingNotice.badgeTomorrow'),
+      message: t('endingNotice.paidTomorrow'),
+    }))
+    .with({ variant: P.union('reward', 'admin'), endingNotice: 'today' }, () => ({
+      badge: t('endingNotice.badgeToday'),
+      message: t('endingNotice.today'),
+    }))
+    .with({ variant: P.union('reward', 'admin'), endingNotice: 'tomorrow' }, () => ({
+      badge: t('endingNotice.badgeTomorrow'),
+      message: t('endingNotice.tomorrow'),
+    }))
+    .exhaustive();
 
   return (
     <>
@@ -522,15 +545,39 @@ function PremiumEndingNotice() {
       >
         <Box className="rounded-full bg-main px-2 py-0.5">
           <Text size="e1" weight="bold" className="text-white tabular-nums dark:text-gray-1">
-            {endingNotice === 'today'
-              ? t('endingNotice.badgeToday')
-              : t('endingNotice.badgeTomorrow')}
+            {badge}
           </Text>
         </Box>
         <Text size="b4" weight="semibold" tone="brand" className="flex-1">
-          {endingNotice === 'today' ? t('endingNotice.today') : t('endingNotice.tomorrow')}
+          {message}
         </Text>
       </HStack>
+      <Spacing size={12} />
+    </>
+  );
+}
+
+/** 최근에 초대 보상이 끝나 무료로 돌아온 사람에게 페이월 위에서 한 줄로 알린다 */
+function GrantEndedNotice() {
+  const { t } = useTranslation('subscription');
+  const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const grantEndedAt = PremiumAccessPolicy.recentGrantEndedAt(user.premiumAccess);
+
+  if (grantEndedAt == null) {
+    return null;
+  }
+
+  return (
+    <>
+      <Text
+        size="b4"
+        shade={7}
+        align="center"
+        lineBreakStrategyIOS="hangul-word"
+        className="rounded-2xl bg-white px-4 py-3 dark:bg-gray-2"
+      >
+        {t('paywall.grantEnded', { date: formatMonthDay(grantEndedAt) })}
+      </Text>
       <Spacing size={12} />
     </>
   );
