@@ -120,6 +120,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: new Date("2028-03-04T00:00:00.000Z"),
         willRenew: false,
         bankedDays: 0,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -142,6 +143,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: new Date("2028-03-01T00:00:00.000Z"),
         willRenew: false,
         bankedDays: 0,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -162,6 +164,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: new Date("2028-03-01T00:00:00.000Z"),
         willRenew: false,
         bankedDays: 7,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -182,6 +185,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: null,
         willRenew: false,
         bankedDays: 7,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -205,6 +209,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: new Date("2028-03-10T00:00:00.000Z"),
         willRenew: true,
         bankedDays: 21,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -225,6 +230,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: new Date("2028-03-10T00:00:00.000Z"),
         willRenew: false,
         bankedDays: 7,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -246,6 +252,7 @@ describe("PremiumAccessPolicy", () => {
         periodEndsAt: expiresAt,
         willRenew: true,
         bankedDays: 7,
+        recentGrantEndedAt: null,
       });
     });
 
@@ -285,6 +292,60 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(access.source).toBe(source);
       expect(access.bankedDays).toBe(7);
+    });
+  });
+
+  describe("resolve의 최근 끝난 보상 기간", () => {
+    it.each([
+      { endedAt: "2028-02-19T12:00:00.001Z", expected: "2028-02-19T12:00:00.001Z" },
+      { endedAt: "2028-02-19T12:00:00.000Z", expected: null },
+    ])(
+      "프리미엄이 아니고 마지막 보상이 $endedAt에 끝났으면 $expected를 반환한다",
+      ({ endedAt, expected }) => {
+        // Given
+        const entitlements = {
+          storeSubscriptions: [],
+          premiumGrants: [],
+          lastEndedGrantAt: new Date(endedAt),
+        };
+
+        // When
+        const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+        // Then
+        expect(access.recentGrantEndedAt).toEqual(expected === null ? null : new Date(expected));
+      },
+    );
+
+    it("정리 전에 끝난 ACTIVE 기간도 끝난 보상으로 본다", () => {
+      // Given
+      const endedAt = new Date("2028-02-26T11:59:59.999Z");
+      const entitlements = {
+        storeSubscriptions: [],
+        premiumGrants: [grant({ endsAt: endedAt })],
+        lastEndedGrantAt: new Date("2028-02-20T00:00:00.000Z"),
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toMatchObject({ source: null, recentGrantEndedAt: endedAt });
+    });
+
+    it("지금 스토어나 보상으로 프리미엄이면 끝난 보상을 알리지 않는다", () => {
+      // Given
+      const lastEndedGrantAt = new Date("2028-02-26T00:00:00.000Z");
+      const subscribed = { storeSubscriptions: [store()], premiumGrants: [], lastEndedGrantAt };
+      const granted = { storeSubscriptions: [], premiumGrants: [grant()], lastEndedGrantAt };
+
+      // When
+      const accesses = [subscribed, granted].map((entitlements) =>
+        PremiumAccessPolicy.resolve(entitlements, NOW),
+      );
+
+      // Then
+      expect(accesses.map((access) => access.recentGrantEndedAt)).toEqual([null, null]);
     });
   });
 

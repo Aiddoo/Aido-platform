@@ -80,6 +80,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       periodEndsAt: new Date("2026-11-08T00:00:00.000Z"),
       willRenew: false,
       bankedDays: 0,
+      recentGrantEndedAt: null,
     });
 
     // When
@@ -107,6 +108,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
       periodEndsAt: new Date("2026-12-01T00:00:00.000Z"),
       willRenew: true,
       bankedDays: 14,
+      recentGrantEndedAt: null,
     });
 
     // When

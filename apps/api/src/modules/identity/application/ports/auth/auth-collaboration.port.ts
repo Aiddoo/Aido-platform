@@ -28,6 +28,7 @@ export interface AuthCachedUserProfile {
   premiumPeriodEndsAt?: string | null;
   willRenew?: boolean;
   bankedPremiumDays?: number;
+  premiumGrantEndedAt?: string | null;
 }
 
 export interface AuthCachedSession {

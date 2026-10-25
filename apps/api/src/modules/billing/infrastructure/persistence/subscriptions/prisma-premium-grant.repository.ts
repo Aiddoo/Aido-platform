@@ -74,6 +74,19 @@ export class PrismaPremiumGrantRepository implements PremiumGrantRepositoryPort 
     return rows.map((row) => PremiumGrant.reconstitute(row));
   }
 
+  async findLastEndedAt(userId: string): Promise<Date | null> {
+    const row = decodeRecord(
+      "PremiumGrant",
+      await this.client.orm.public.PremiumGrant.where((grant) =>
+        and(grant.userId.eq(userId), grant.status.eq("ENDED"), grant.endsAt.isNotNull()),
+      )
+        .select("endsAt")
+        .orderBy((grant) => grant.endsAt.desc())
+        .first(),
+    );
+    return row?.endsAt ?? null;
+  }
+
   async create(plan: PremiumGrantCreationPlan): Promise<boolean> {
     const inserted = await this.client.orm.public.PremiumGrant.createAndCount(
       [encodeCreate("PremiumGrant", plan)],

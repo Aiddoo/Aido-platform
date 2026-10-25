@@ -29,6 +29,8 @@ export const PREMIUM_GRANT_REPOSITORY = Symbol("PREMIUM_GRANT_REPOSITORY");
 export interface PremiumGrantRepositoryPort {
   /** 아직 끝나지 않은 BANKED·ACTIVE 기간을 한 번에 읽는다. */
   findOpenByUserId(userId: string): Promise<PremiumGrant[]>;
+  /** ENDED로 정리한 기간 중 가장 늦은 끝 시각. 없으면 null이다. */
+  findLastEndedAt(userId: string): Promise<Date | null>;
   /** 같은 sourceKey가 이미 있으면 저장하지 않고 false를 반환한다. */
   create(plan: PremiumGrantCreationPlan): Promise<boolean>;
   saveAll(grants: readonly PremiumGrant[]): Promise<void>;

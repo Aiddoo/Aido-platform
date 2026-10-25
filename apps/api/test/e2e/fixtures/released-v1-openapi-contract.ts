@@ -272,11 +272,11 @@ export const RELEASED_V1_OPENAPI_CONTRACT = {
 	preZod46SchemasFingerprint:
 		"661496b690bb1981dc09130a644d779d135f663e218db04b0dd8724d25eab20e",
 	preZod46PathsFingerprint: "12d563b0191e60a54f20cd08208334321e67f67831e3f77cf0d6add48b1f3b22",
-	/** 1.13.0: /me(CurrentUserDto)에 optional premiumSource·premiumEndsAt·premiumPeriodEndsAt·willRenew·bankedPremiumDays만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
+	/** 1.13.0: /me(CurrentUserDto)에 optional premiumSource·premiumEndsAt·premiumPeriodEndsAt·willRenew·bankedPremiumDays·premiumGrantEndedAt만 추가. 구버전 Zod는 strip 모드라 모르는 키를 버린다. */
 	prePremiumAccessSchemasFingerprint:
 		"b6581fa057475468f18183df29e42adadba747271d19630de9a6fa81ca7ab6a7",
 	schemasFingerprint:
-		"ad725683b5013b9355d1f8d3969c52a9e5b5f4c4193d566ffafdebaf023c4f46",
+		"ae2f4dbfd3ce0a76907e35a7ad9011081862d306d24ca4313c6dfafb83c8b724",
 	/** 1.13.0: GET /todos/summary에 선택 date 쿼리(오늘·내일)만 추가. 생략 시 기존 응답과 같아 구버전 앱은 영향이 없다. */
 	pathsFingerprint:
 		"232a008adbbdf9383aeff8f4c29179a123296b70629af0b2baa5b948c50b7f4a",

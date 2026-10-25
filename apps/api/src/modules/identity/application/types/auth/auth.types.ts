@@ -83,6 +83,7 @@ export interface CurrentUserResult {
   premiumPeriodEndsAt?: string | null;
   willRenew?: boolean;
   bankedPremiumDays?: number;
+  premiumGrantEndedAt?: string | null;
 }
 
 /**

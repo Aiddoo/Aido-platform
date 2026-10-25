@@ -15,6 +15,9 @@ const PREMIUM_GRANT_ENDING_NOTICE_MS = 24 * 60 * 60 * 1_000;
 /** 보상 기간 계산은 UTC 달력 기준이라 하루는 항상 24시간이다. */
 const DAY_MS = 24 * 60 * 60 * 1_000;
 
+/** 프리미엄이 아닌 사용자에게 보상 기간이 끝났다고 알려 줄 기간 */
+const RECENT_GRANT_ENDED_WINDOW_MS = 7 * DAY_MS;
+
 /** 스토어 구독 행 중 프리미엄 판단에 필요한 값 */
 export interface StoreEntitlement {
   readonly status: SubscriptionStatusValue;
@@ -39,7 +42,10 @@ export interface PremiumGrantTerm {
 /** 한 사용자의 스토어 구독과 보상 기간 전체 */
 export interface PremiumEntitlements {
   readonly storeSubscriptions: readonly StoreEntitlement[];
+  /** 아직 끝나지 않은(BANKED·ACTIVE) 기간. 끝나는 시각이 지났지만 정리 전인 ACTIVE 기간도 들어 있다. */
   readonly premiumGrants: readonly PremiumGrantTerm[];
+  /** 이미 ENDED로 정리한 기간 중 가장 늦게 끝난 시각. 조회 화면만 읽고 정리는 쓰지 않는다. */
+  readonly lastEndedGrantAt?: Date | null;
 }
 
 export interface PremiumAccess {
@@ -51,6 +57,8 @@ export interface PremiumAccess {
   readonly willRenew: boolean;
   /** 지금 기간이 끝나면 이어서 시작할, 쌓아 둔 보상 일수 합계 */
   readonly bankedDays: number;
+  /** 프리미엄이 아닐 때만, 최근 7일 안에 끝난 마지막 보상 기간의 끝 시각 */
+  readonly recentGrantEndedAt: Date | null;
 }
 
 export type PremiumGrantStart =
@@ -226,6 +234,20 @@ function chainStartsAt(
   return handoffAt;
 }
 
+/** 정리 전에 끝난 ACTIVE 기간과 이미 정리한 기간 중 마지막 끝이 최근 7일 안이면 그 시각 */
+function recentGrantEndedAt(entitlements: PremiumEntitlements, now: Date): Date | null {
+  const endedAt = latestOf([
+    ...entitlements.premiumGrants.flatMap((grant) =>
+      isPremiumGrantEnded(grant, now) && grant.endsAt != null ? [grant.endsAt] : [],
+    ),
+    ...(entitlements.lastEndedGrantAt == null ? [] : [entitlements.lastEndedGrantAt]),
+  ]);
+  if (endedAt === null || endedAt.getTime() + RECENT_GRANT_ENDED_WINDOW_MS <= now.getTime()) {
+    return null;
+  }
+  return endedAt;
+}
+
 export const PremiumAccessPolicy = {
   /**
    * 프리미엄 = 유효한 스토어 구독 또는 진행 중인 보상 기간, 그 뒤에 쌓아 둔 기간.
@@ -262,11 +284,19 @@ export const PremiumAccessPolicy = {
           isStoreSubscriptionRenewing(subscription, now),
         ),
         bankedDays,
+        recentGrantEndedAt: null,
       };
     }
     if (activeGrantEndsAt === null) {
       // 스토어가 막 끝나 아직 시작하지 않은 기간은 다음 정리가 시작한다
-      return { source: null, endsAt: null, periodEndsAt: null, willRenew: false, bankedDays };
+      return {
+        source: null,
+        endsAt: null,
+        periodEndsAt: null,
+        willRenew: false,
+        bankedDays,
+        recentGrantEndedAt: recentGrantEndedAt(entitlements, now),
+      };
     }
     return {
       source: "GRANT",
@@ -274,6 +304,7 @@ export const PremiumAccessPolicy = {
       periodEndsAt: activeGrantEndsAt,
       willRenew: false,
       bankedDays,
+      recentGrantEndedAt: null,
     };
   },
 

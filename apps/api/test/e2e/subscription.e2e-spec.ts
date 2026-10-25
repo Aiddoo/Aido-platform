@@ -10,6 +10,10 @@ import {
   PREMIUM_GRANTER,
   type PremiumGranterPort,
 } from "#api/modules/billing/billing-subscriptions.public";
+import {
+  AUTH_CACHE,
+  type AuthCachePort,
+} from "#api/modules/identity/application/ports/auth/auth-collaboration.port";
 import { decodeRecord } from "#api/platform/database/database-records";
 import { SubscriptionEventBuilder } from "#test/builders/subscription-event.builder";
 
@@ -350,5 +354,42 @@ describe("구독 Webhook HTTP 계약과 권한 캐시 (실제 PostgreSQL)", () =
       willRenew: false,
       bankedPremiumDays: 7,
     });
+  });
+
+  it("/me는 보상 기간이 끝난 FREE 사용자에게 7일 동안만 끝난 시각을 알려 준다", async () => {
+    // Given
+    const email = "premium-grant-ended@test.com";
+    const password = "Test1234!";
+    const user = await context.helpers.createVerifiedUser(email, password);
+    await context.module
+      .get<PremiumGranterPort>(PREMIUM_GRANTER)
+      .grant({ userId: user.userId, source: "INVITE", sourceKey: "invite:ended", durationDays: 1 });
+    const endsAt = new Date(Date.now() + 24 * 60 * 60 * 1_000);
+    const authCache = context.module.get<AuthCachePort>(AUTH_CACHE, { strict: false });
+    const meAt = async (time: Date) => {
+      vi.setSystemTime(time);
+      await authCache.invalidateUserProfile(user.userId);
+      const { accessToken } = await context.helpers.loginUser(email, password);
+      const response = await request(context.app.getHttpServer())
+        .get("/v1/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .expect(200);
+      return currentUserSchema.parse(response.body.data);
+    };
+
+    // When
+    const justEnded = await meAt(endsAt);
+    const lastMoment = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000 - 1));
+    const afterWindow = await meAt(new Date(endsAt.getTime() + 7 * 24 * 60 * 60 * 1_000));
+
+    // Then
+    expect(justEnded).toMatchObject({
+      premiumSource: null,
+      premiumEndsAt: null,
+      premiumPeriodEndsAt: null,
+      premiumGrantEndedAt: endsAt.toISOString(),
+    });
+    expect(lastMoment.premiumGrantEndedAt).toBe(endsAt.toISOString());
+    expect(afterWindow.premiumGrantEndedAt).toBeNull();
   });
 });

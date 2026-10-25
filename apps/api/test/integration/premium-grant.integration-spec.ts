@@ -193,6 +193,12 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       subscriptionStatus: "FREE",
       subscriptionExpiresAt: null,
     });
+    // sweep이 ENDED로 정리한 기간도 7일 동안은 끝난 보상으로 보인다
+    vi.setSystemTime(new Date("2028-02-27T04:00:00.000Z"));
+    expect(await premiumAccess()).toMatchObject({
+      source: null,
+      recentGrantEndedAt: new Date("2028-02-27T04:00:00.000Z"),
+    });
   });
 
   it("스토어 구독이 웹훅 없이 끝나도 sweep이 그 시각부터 쌓아 둔 보상을 시작하고, 아직 유효한 구독의 보상은 그대로 둔다", async () => {
@@ -340,6 +346,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       source: "STORE",
       periodEndsAt: STORE_EXPIRY,
       bankedDays: 7,
+      recentGrantEndedAt: null,
     });
     expect(
       await context.module
@@ -451,6 +458,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       periodEndsAt: new Date("2028-03-04T04:00:00.000Z"),
       willRenew: false,
       bankedDays: 7,
+      recentGrantEndedAt: null,
     });
     expect(afterPurchase).toEqual({
       source: "STORE",
@@ -458,6 +466,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       periodEndsAt: STORE_EXPIRY,
       willRenew: true,
       bankedDays: 12,
+      recentGrantEndedAt: null,
     });
     expect(await grantsOf(userId)).toEqual([
       {
@@ -479,6 +488,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       periodEndsAt: new Date(STORE_EXPIRY.getTime() + 5 * DAY_MS),
       endsAt: new Date(STORE_EXPIRY.getTime() + 12 * DAY_MS),
       bankedDays: 7,
+      recentGrantEndedAt: null,
     });
   });
 
@@ -599,6 +609,7 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       periodEndsAt: new Date("2028-04-12T04:00:00.000Z"),
       willRenew: true,
       bankedDays: 5,
+      recentGrantEndedAt: null,
     });
   });
 

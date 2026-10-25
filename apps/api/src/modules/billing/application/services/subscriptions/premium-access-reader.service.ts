@@ -5,10 +5,12 @@ import {
   PremiumAccessPolicy,
 } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 import type { PremiumAccessReaderPort } from "../../ports/subscriptions/premium-access.reader.port.js";
+import type { PremiumGrantRepositoryPort } from "../../ports/subscriptions/premium-grant.repository.port.js";
 import type { PremiumAccessProjector } from "./premium-access-projector.service.js";
 
 interface PremiumAccessReaderDependencies {
   readonly premiumAccessProjector: Pick<PremiumAccessProjector, "loadEntitlements">;
+  readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findLastEndedAt">;
 }
 
 export class PremiumAccessReader implements PremiumAccessReaderPort {
@@ -19,8 +21,10 @@ export class PremiumAccessReader implements PremiumAccessReaderPort {
   }
 
   async getPremiumAccess(userId: string): Promise<PremiumAccess> {
-    const { entitlements } =
-      await this.#dependencies.premiumAccessProjector.loadEntitlements(userId);
-    return PremiumAccessPolicy.resolve(entitlements, now());
+    const [{ entitlements }, lastEndedGrantAt] = await Promise.all([
+      this.#dependencies.premiumAccessProjector.loadEntitlements(userId),
+      this.#dependencies.premiumGrantRepository.findLastEndedAt(userId),
+    ]);
+    return PremiumAccessPolicy.resolve({ ...entitlements, lastEndedGrantAt }, now());
   }
 }

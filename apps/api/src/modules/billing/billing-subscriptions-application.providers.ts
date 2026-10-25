@@ -32,12 +32,15 @@ export const premiumAccessProjectorProvider: FactoryProvider<PremiumAccessProjec
 
 export const premiumAccessReaderProvider: FactoryProvider<PremiumAccessReader> = {
   provide: PremiumAccessReader,
-  inject: [PremiumAccessProjector],
+  inject: [PremiumAccessProjector, PREMIUM_GRANT_REPOSITORY],
   useFactory: (
     premiumAccessProjector: ConstructorParameters<
       typeof PremiumAccessReader
     >[0]["premiumAccessProjector"],
-  ) => new PremiumAccessReader({ premiumAccessProjector }),
+    premiumGrantRepository: ConstructorParameters<
+      typeof PremiumAccessReader
+    >[0]["premiumGrantRepository"],
+  ) => new PremiumAccessReader({ premiumAccessProjector, premiumGrantRepository }),
 };
 
 export const premiumGranterProvider: FactoryProvider<PremiumGranter> = {

@@ -30,6 +30,7 @@ function createSweep(pages: readonly (readonly string[])[], failingUserIds: Read
             periodEndsAt: null,
             willRenew: false,
             bankedDays: 0,
+            recentGrantEndedAt: null,
           },
           userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
           changedGrantCount: 1,

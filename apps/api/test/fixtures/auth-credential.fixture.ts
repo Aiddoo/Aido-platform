@@ -135,6 +135,7 @@ export class StubPremiumAccessReader implements PremiumAccessReaderPort {
         periodEndsAt: null,
         willRenew: false,
         bankedDays: 0,
+        recentGrantEndedAt: null,
       }
     );
   }
