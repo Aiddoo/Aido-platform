@@ -274,6 +274,11 @@ async function resetInvitee(target: Target): Promise<void> {
     const both = [a, b];
     await db.query('BEGIN');
     try {
+      // 실제 수락이 초대자에게 남긴 알림은 friendId 없이 metadata.redemptionId로만 수락과 이어진다
+      await db.query(
+        `DELETE FROM "Notification" WHERE "metadata"->>'redemptionId' IN (SELECT "id" FROM "InviteRedemption" WHERE "inviteeId" = $1)`,
+        [b],
+      );
       await db.query(
         'DELETE FROM "InviteActiveDay" WHERE "redemptionId" IN (SELECT "id" FROM "InviteRedemption" WHERE "inviteeId" = $1)',
         [b],
@@ -282,6 +287,12 @@ async function resetInvitee(target: Target): Promise<void> {
       await db.query('DELETE FROM "RewardGrant" WHERE "recipientId" = ANY($1::text[])', [both]);
       await db.query('DELETE FROM "PremiumGrant" WHERE "userId" = ANY($1::text[])', [both]);
       await db.query('DELETE FROM "ResourceBonus" WHERE "userId" = ANY($1::text[])', [both]);
+      // 보상 기간을 지워도 User의 구독 projection은 그대로 ACTIVE로 남아 B가 계속 프리미엄으로 읽힌다
+      await db.query(
+        `UPDATE "User" SET "subscriptionStatus" = 'FREE', "subscriptionExpiresAt" = NULL, "updatedAt" = now()
+          WHERE "id" = ANY($1::text[]) AND NOT EXISTS (SELECT 1 FROM "Subscription" s WHERE s."userId" = "User"."id")`,
+        [both],
+      );
       await db.query(
         'DELETE FROM "Follow" WHERE ("followerId" = $1 AND "followingId" = $2) OR ("followerId" = $2 AND "followingId" = $1)',
         [a, b],
