@@ -158,7 +158,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
 - \`topTodos\`: 오늘 할 일 상위 목록 (미완료 우선, 이후 카테고리/정렬 순 — 최대 10개)`,
   })
   @ApiSuccessResponse({ type: TodoSummaryResponseDto })
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async getSummary(
     @CurrentUser() user: CurrentUserPayload,
@@ -226,7 +225,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiCreatedResponse({ type: CreateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   @ApiForbiddenError(ErrorCode.TODO_0811)
   async create(
@@ -282,7 +280,7 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiCreatedResponse({ type: CreateRecurringTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [ErrorCode.SYS_0002, ErrorCode.TODO_0812])
+  @ApiBadRequestError(ErrorCode.TODO_0812)
   @ApiForbiddenError(ErrorCode.TODO_0813)
   @ApiNotFoundError(ErrorCode.TODO_CATEGORY_0851)
   async createRecurring(
@@ -439,7 +437,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   })
   @ApiSuccessResponse({ type: TodoListResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async findMany(
     @CurrentUser() user: CurrentUserPayload,
     @Query({ schema: GetTodosQueryDto }) query: GetTodosQueryDto,
@@ -561,7 +558,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_CATEGORY_0851])
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async update(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -619,7 +615,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async toggleComplete(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -651,7 +646,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateVisibility(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -681,7 +675,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_CATEGORY_0851])
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateCategory(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -721,7 +714,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateSchedule(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -761,7 +753,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateTitle(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -793,7 +784,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: ReorderTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async reorder(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -875,7 +865,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
   @ApiForbiddenError(ErrorCode.TODO_0821)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async addItem(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -921,7 +910,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0822])
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async reorderItems(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoIdParamDto }) params: TodoIdParamDto,
@@ -974,7 +962,6 @@ categoryId를 지정하면 해당 카테고리의 현재 활성 할 일 개수�
   @ApiSuccessResponse({ type: UpdateTodoResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.TODO_0801, ErrorCode.TODO_0822])
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async updateItem(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoItemIdParamDto }) params: TodoItemIdParamDto,

@@ -20,7 +20,6 @@ import {
 } from "#api/modules/identity/identity-auth-http.public";
 import { Timezone } from "#api/platform/http/decorators/index";
 import {
-  ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
   ApiErrorCodesResponse,
@@ -114,7 +113,6 @@ export class MemoController {
   })
   @ApiCreatedResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiForbiddenError(ErrorCode.MEMO_2003)
   async create(
     @CurrentUser() user: CurrentUserPayload,
@@ -176,7 +174,6 @@ export class MemoController {
   })
   @ApiSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiNotFoundError(ErrorCode.MEMO_2001)
   async update(
     @CurrentUser() user: CurrentUserPayload,
@@ -223,7 +220,6 @@ export class MemoController {
   @ApiSuccessResponse({ type: MemoMutationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.MEMO_2002])
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async reorder(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
@@ -286,7 +282,6 @@ export class MemoController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async convertToTodo(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,
@@ -344,7 +339,6 @@ export class MemoController {
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiErrorCodesResponse(HttpStatus.NOT_FOUND, [ErrorCode.MEMO_2001, ErrorCode.TODO_CATEGORY_0851])
   @ApiForbiddenError(ErrorCode.TODO_0811)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async convertToTodos(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: MemoIdParamDto }) params: MemoIdParamDto,

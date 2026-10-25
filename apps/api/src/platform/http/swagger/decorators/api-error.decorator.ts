@@ -75,7 +75,7 @@ function createErrorResponse(errors: readonly [DocumentedError, ...DocumentedErr
  *
  * Swagger의 ApiResponse는 같은 상태를 `{ ...이전, ...나중 }`으로 합쳐 schema는 마지막 것만,
  * 설명은 이어 붙여 남긴다. 그래서 응답을 합치지 않고 지금까지 모은 코드 전체로 교체한다.
- * 코드가 하나면 `error.code` example, 둘 이상이면 enum과 코드별 examples로 선언한다.
+ * 코드가 하나면 `error.code` example, 둘 이상이면 코드 순 enum과 코드별 examples로 선언한다.
  */
 export function documentErrors(
   status: HttpStatus,
@@ -89,10 +89,11 @@ export function documentErrors(
 
     const byStatus = documentedErrors.get(handler) ?? new Map<number, DocumentedError[]>();
     const previous = byStatus.get(status) ?? [];
+    // 데코레이터 순서와 상관없이 문서가 같도록 코드 순으로 둔다
     const merged = [
       ...previous,
       ...errors.filter((error) => !previous.some((known) => known.code === error.code)),
-    ];
+    ].toSorted((left, right) => left.code.localeCompare(right.code));
     byStatus.set(status, merged);
     documentedErrors.set(handler, byStatus);
 

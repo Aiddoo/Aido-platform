@@ -19,7 +19,6 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import {
-  ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
   ApiForbiddenError,
@@ -104,7 +103,6 @@ export class TodoCommentController {
   @ApiSuccessResponse({ type: TodoCommentOverviewResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async getOverview(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,
@@ -134,7 +132,6 @@ export class TodoCommentController {
   @ApiSuccessResponse({ type: TodoConversationResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   @ApiNotFoundError(ErrorCode.TODO_0801)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   async getConversation(
     @CurrentUser() user: CurrentUserPayload,
     @Param({ schema: TodoDetailsParamDto }) params: TodoDetailsParamDto,

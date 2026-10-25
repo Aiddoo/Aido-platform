@@ -266,14 +266,14 @@ describe("OpenAPI 계약 (e2e)", () => {
       parseMemo: { 429: [ErrorCode.AI_1303, ErrorCode.AI_1310] },
       linkSocialAccount: {
         409: [
-          ErrorCode.KAKAO_0306,
           ErrorCode.APPLE_0355,
           ErrorCode.GOOGLE_0405,
+          ErrorCode.KAKAO_0306,
           ErrorCode.NAVER_0455,
         ],
       },
       deleteTodoCategory: {
-        400: [ErrorCode.TODO_CATEGORY_0854, ErrorCode.TODO_CATEGORY_0855, ErrorCode.SYS_0002],
+        400: [ErrorCode.SYS_0002, ErrorCode.TODO_CATEGORY_0854, ErrorCode.TODO_CATEGORY_0855],
       },
     });
   });

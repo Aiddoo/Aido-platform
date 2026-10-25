@@ -7,7 +7,6 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import {
-  ApiBadRequestError,
   ApiCreatedResponse,
   ApiDoc,
   ApiErrorResponse,
@@ -40,7 +39,6 @@ export class InquiryController {
 3. 발송 실패 시 INQUIRY_1501 에러 반환`,
   })
   @ApiCreatedResponse({ type: CreateInquiryResponseDto })
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiErrorResponse({ errorCode: ErrorCode.INQUIRY_1501 })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   async createInquiry(

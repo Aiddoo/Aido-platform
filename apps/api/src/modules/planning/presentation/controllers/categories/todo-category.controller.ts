@@ -18,7 +18,6 @@ import {
   type CurrentUserPayload,
 } from "#api/modules/identity/identity-auth-http.public";
 import {
-  ApiBadRequestError,
   ApiConflictError,
   ApiCreatedResponse,
   ApiDoc,
@@ -103,7 +102,6 @@ export class TodoCategoryController {
   })
   @ApiCreatedResponse({ type: CreateTodoCategoryResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)
-  @ApiBadRequestError(ErrorCode.SYS_0002)
   @ApiConflictError(ErrorCode.TODO_CATEGORY_0853)
   @ApiForbiddenError(ErrorCode.TODO_CATEGORY_0857)
   async create(
@@ -303,7 +301,6 @@ DELETE /todo-categories/3?moveToCategoryId=1
   @ApiErrorCodesResponse(HttpStatus.BAD_REQUEST, [
     ErrorCode.TODO_CATEGORY_0854,
     ErrorCode.TODO_CATEGORY_0855,
-    ErrorCode.SYS_0002,
   ])
   async delete(
     @CurrentUser() user: CurrentUserPayload,

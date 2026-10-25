@@ -14432,10 +14432,10 @@ curl https://api.aido.com/health
                     "properties": {
                       "code": {
                         "enum": [
-                          "SYS_0002",
                           "ADMIN_1403",
+                          "SYS_0002",
                         ],
-                        "example": "SYS_0002",
+                        "example": "ADMIN_1403",
                         "type": "string",
                       },
                       "details": {
@@ -14444,7 +14444,7 @@ curl https://api.aido.com/health
                         "type": "object",
                       },
                       "message": {
-                        "example": "잘못된 파라미터입니다.",
+                        "example": "유효하지 않은 필터 조건입니다.",
                         "type": "string",
                       },
                     },
@@ -14472,9 +14472,9 @@ curl https://api.aido.com/health
               },
             },
           },
-          "description": "SYS_0002: 잘못된 파라미터입니다.
+          "description": "ADMIN_1403: 유효하지 않은 필터 조건입니다.
 
-ADMIN_1403: 유효하지 않은 필터 조건입니다.",
+SYS_0002: 잘못된 파라미터입니다.",
         },
         "403": {
           "content": {
@@ -17430,10 +17430,10 @@ if (limit !== null && used >= limit) {
                     "properties": {
                       "code": {
                         "enum": [
-                          "USER_0612",
                           "SYS_0002",
+                          "USER_0612",
                         ],
-                        "example": "USER_0612",
+                        "example": "SYS_0002",
                         "type": "string",
                       },
                       "details": {
@@ -17442,7 +17442,7 @@ if (limit !== null && used >= limit) {
                         "type": "object",
                       },
                       "message": {
-                        "example": "회원 탈퇴를 위해 비밀번호를 입력해주세요.",
+                        "example": "잘못된 파라미터입니다.",
                         "type": "string",
                       },
                     },
@@ -17470,9 +17470,9 @@ if (limit !== null && used >= limit) {
               },
             },
           },
-          "description": "USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.
+          "description": "SYS_0002: 잘못된 파라미터입니다.
 
-SYS_0002: 잘못된 파라미터입니다.",
+USER_0612: 회원 탈퇴를 위해 비밀번호를 입력해주세요.",
         },
         "401": {
           "content": {
@@ -19504,12 +19504,12 @@ SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
                     "properties": {
                       "code": {
                         "enum": [
-                          "KAKAO_0306",
                           "APPLE_0355",
                           "GOOGLE_0405",
+                          "KAKAO_0306",
                           "NAVER_0455",
                         ],
-                        "example": "KAKAO_0306",
+                        "example": "APPLE_0355",
                         "type": "string",
                       },
                       "details": {
@@ -19518,7 +19518,7 @@ SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "이미 다른 계정에 연동된 카카오 계정입니다.",
+                        "example": "이미 다른 계정에 연동된 애플 계정입니다.",
                         "type": "string",
                       },
                     },
@@ -19546,11 +19546,11 @@ SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
               },
             },
           },
-          "description": "KAKAO_0306: 이미 다른 계정에 연동된 카카오 계정입니다.
-
-APPLE_0355: 이미 다른 계정에 연동된 애플 계정입니다.
+          "description": "APPLE_0355: 이미 다른 계정에 연동된 애플 계정입니다.
 
 GOOGLE_0405: 이미 다른 계정에 연동된 구글 계정입니다.
+
+KAKAO_0306: 이미 다른 계정에 연동된 카카오 계정입니다.
 
 NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
         },
@@ -19839,12 +19839,12 @@ SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
                     "properties": {
                       "code": {
                         "enum": [
-                          "KAKAO_0306",
                           "APPLE_0355",
                           "GOOGLE_0405",
+                          "KAKAO_0306",
                           "NAVER_0455",
                         ],
-                        "example": "KAKAO_0306",
+                        "example": "APPLE_0355",
                         "type": "string",
                       },
                       "details": {
@@ -19853,7 +19853,7 @@ SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "이미 다른 계정에 연동된 카카오 계정입니다.",
+                        "example": "이미 다른 계정에 연동된 애플 계정입니다.",
                         "type": "string",
                       },
                     },
@@ -19881,11 +19881,11 @@ SOCIAL_0202: 소셜 인증 토큰이 유효하지 않습니다.",
               },
             },
           },
-          "description": "KAKAO_0306: 이미 다른 계정에 연동된 카카오 계정입니다.
-
-APPLE_0355: 이미 다른 계정에 연동된 애플 계정입니다.
+          "description": "APPLE_0355: 이미 다른 계정에 연동된 애플 계정입니다.
 
 GOOGLE_0405: 이미 다른 계정에 연동된 구글 계정입니다.
+
+KAKAO_0306: 이미 다른 계정에 연동된 카카오 계정입니다.
 
 NAVER_0455: 이미 다른 계정에 연동된 네이버 계정입니다.",
         },
@@ -21502,10 +21502,10 @@ USER_0608: 이메일 인증이 완료되지 않았습니다. 이메일을 확인
                     "properties": {
                       "code": {
                         "enum": [
-                          "USER_0613",
                           "SYS_0002",
+                          "USER_0613",
                         ],
-                        "example": "USER_0613",
+                        "example": "SYS_0002",
                         "type": "string",
                       },
                       "details": {
@@ -21514,7 +21514,7 @@ USER_0608: 이메일 인증이 완료되지 않았습니다. 이메일을 확인
                         "type": "object",
                       },
                       "message": {
-                        "example": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
+                        "example": "잘못된 파라미터입니다.",
                         "type": "string",
                       },
                     },
@@ -21542,9 +21542,9 @@ USER_0608: 이메일 인증이 완료되지 않았습니다. 이메일을 확인
               },
             },
           },
-          "description": "USER_0613: 소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.
+          "description": "SYS_0002: 잘못된 파라미터입니다.
 
-SYS_0002: 잘못된 파라미터입니다.",
+USER_0613: 소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -23414,10 +23414,10 @@ SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다
                     "properties": {
                       "code": {
                         "enum": [
-                          "USER_0613",
                           "SYS_0002",
+                          "USER_0613",
                         ],
-                        "example": "USER_0613",
+                        "example": "SYS_0002",
                         "type": "string",
                       },
                       "details": {
@@ -23426,7 +23426,7 @@ SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다
                         "type": "object",
                       },
                       "message": {
-                        "example": "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
+                        "example": "잘못된 파라미터입니다.",
                         "type": "string",
                       },
                     },
@@ -23454,9 +23454,9 @@ SESSION_0704: 보안상의 이유로 모든 세션이 종료되었습니다. 다
               },
             },
           },
-          "description": "USER_0613: 소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.
+          "description": "SYS_0002: 잘못된 파라미터입니다.
 
-SYS_0002: 잘못된 파라미터입니다.",
+USER_0613: 소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.",
         },
         "401": {
           "content": {
@@ -36189,10 +36189,10 @@ SYS_0002: 잘못된 파라미터입니다.",
                     "properties": {
                       "code": {
                         "enum": [
-                          "TODO_0801",
                           "NUDGE_1105",
+                          "TODO_0801",
                         ],
-                        "example": "TODO_0801",
+                        "example": "NUDGE_1105",
                         "type": "string",
                       },
                       "details": {
@@ -36201,7 +36201,7 @@ SYS_0002: 잘못된 파라미터입니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "Todo를 찾을 수 없습니다.",
+                        "example": "Nudge를 찾을 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -36229,9 +36229,9 @@ SYS_0002: 잘못된 파라미터입니다.",
               },
             },
           },
-          "description": "TODO_0801: Todo를 찾을 수 없습니다.
+          "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
 
-NUDGE_1105: Nudge를 찾을 수 없습니다.",
+TODO_0801: Todo를 찾을 수 없습니다.",
         },
         "409": {
           "content": {
@@ -36496,10 +36496,10 @@ NUDGE_1105: Nudge를 찾을 수 없습니다.",
                     "properties": {
                       "code": {
                         "enum": [
-                          "TODO_0801",
                           "NUDGE_1105",
+                          "TODO_0801",
                         ],
-                        "example": "TODO_0801",
+                        "example": "NUDGE_1105",
                         "type": "string",
                       },
                       "details": {
@@ -36508,7 +36508,7 @@ NUDGE_1105: Nudge를 찾을 수 없습니다.",
                         "type": "object",
                       },
                       "message": {
-                        "example": "Todo를 찾을 수 없습니다.",
+                        "example": "Nudge를 찾을 수 없습니다.",
                         "type": "string",
                       },
                     },
@@ -36536,9 +36536,9 @@ NUDGE_1105: Nudge를 찾을 수 없습니다.",
               },
             },
           },
-          "description": "TODO_0801: Todo를 찾을 수 없습니다.
+          "description": "NUDGE_1105: Nudge를 찾을 수 없습니다.
 
-NUDGE_1105: Nudge를 찾을 수 없습니다.",
+TODO_0801: Todo를 찾을 수 없습니다.",
         },
         "409": {
           "content": {
@@ -37997,11 +37997,11 @@ DELETE /todo-categories/3?moveToCategoryId=1
                     "properties": {
                       "code": {
                         "enum": [
+                          "SYS_0002",
                           "TODO_CATEGORY_0854",
                           "TODO_CATEGORY_0855",
-                          "SYS_0002",
                         ],
-                        "example": "TODO_CATEGORY_0854",
+                        "example": "SYS_0002",
                         "type": "string",
                       },
                       "details": {
@@ -38010,7 +38010,7 @@ DELETE /todo-categories/3?moveToCategoryId=1
                         "type": "object",
                       },
                       "message": {
-                        "example": "최소 1개의 카테고리가 필요합니다.",
+                        "example": "잘못된 파라미터입니다.",
                         "type": "string",
                       },
                     },
@@ -38038,11 +38038,11 @@ DELETE /todo-categories/3?moveToCategoryId=1
               },
             },
           },
-          "description": "TODO_CATEGORY_0854: 최소 1개의 카테고리가 필요합니다.
+          "description": "SYS_0002: 잘못된 파라미터입니다.
 
-TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.
+TODO_CATEGORY_0854: 최소 1개의 카테고리가 필요합니다.
 
-SYS_0002: 잘못된 파라미터입니다.",
+TODO_CATEGORY_0855: 카테고리에 할 일이 있습니다. 다른 카테고리로 이동해주세요.",
         },
         "401": {
           "content": {
