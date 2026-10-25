@@ -224,7 +224,7 @@ describe("AI 리포트 E2E", () => {
         "AiReport",
         await ctx.testDatabase.getClient().orm.public.AiReport.where({ id: report!.id }).first(),
       );
-      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@v2" });
+      expect(stored).toMatchObject({ locale, contentSource: "AI", promptVersion: "report@v2.1" });
       const other = await createPremiumUser(`ai-report-other-${locale}@example.com`, "Test1234!");
       const denied = await request(ctx.app.getHttpServer())
         .get(`/v1/ai/reports/${report!.id}`)

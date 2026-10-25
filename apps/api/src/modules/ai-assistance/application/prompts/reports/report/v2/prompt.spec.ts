@@ -97,4 +97,37 @@ describe("리포트 프롬프트 v2", () => {
     expect(value.aiSummary).toHaveLength(600);
     expect(value.aiTips).toEqual(["팁 1", "팁 2", "가".repeat(120)]);
   });
+
+  it.each([
+    {
+      locale: "ko" as const,
+      raw: { summary: "지난주보다 15%p 올랐어요냥.", tips: ["운동을 하루 등록해보세요 냥."] },
+      expected: { aiSummary: "지난주보다 15%p 올랐어요.", aiTips: ["운동을 하루 등록해보세요."] },
+    },
+    {
+      locale: "en" as const,
+      raw: { summary: "That's a fantastic meow win.", tips: ["Add one Fitness day, meow."] },
+      expected: { aiSummary: "That's a fantastic win.", aiTips: ["Add one Fitness day."] },
+    },
+  ])(
+    "$locale 모델이 persona 말투를 문장 뒤에 덧붙여도 저장 전에 자연스러운 문장으로 고친다",
+    async ({ locale, raw, expected }) => {
+      // Given
+      const provider = new FakeAiProvider().setRawResponse(raw);
+      // When
+      const { value } = await reportPromptV2[locale].output.generate(
+        provider,
+        {
+          task: "report",
+          promptVersion: "report@v2.1",
+          system: "",
+          prompt: "",
+          policy: { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 },
+        },
+        null,
+      );
+      // Then
+      expect(value).toEqual(expected);
+    },
+  );
 });

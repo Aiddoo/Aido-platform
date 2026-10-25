@@ -258,7 +258,7 @@ describe("GenerateReport", () => {
           aiTips: createReportAiResponse(locale).tips,
           stats: { totalTodos: 4, completedTodos: 3 },
           contentSource: "AI",
-          promptVersion: "report@v2",
+          promptVersion: "report@v2.1",
         });
         expect(f.todoStatsReader.calls[0]?.startDate.toISOString()).toBe(start);
         expect(f.aiProvider.getCallCount()).toBe(1);
