@@ -31,7 +31,7 @@ function prisma(connectionUri: string, args: readonly string[]): void {
 }
 
 describe("invite_foundation additive migration (실제 PostgreSQL)", () => {
-  it("직전 계약의 데이터와 ORM 쓰기를 유지하고 새 테이블 제약·알림 enum·구독 이전 표시 열을 추가한다", async () => {
+  it("직전 계약의 데이터와 ORM 쓰기를 유지하고 새 테이블 제약과 알림 enum을 추가한다", async () => {
     // Given
     const database = await startManagedTestDatabase({
       env: { ...process.env },
@@ -58,17 +58,6 @@ describe("invite_foundation additive migration (실제 PostgreSQL)", () => {
         () => null,
         (error: unknown) => error,
       );
-      // 직전 계약의 구독 쓰기는 이전 표시가 없는 행으로 남는다
-      await previous.orm.public.Subscription.create(
-        encodeCreate("Subscription", {
-          userId: inviter.id,
-          revenueCatId: "otxn-migrate",
-          productId: "premium_monthly",
-          status: "ACTIVE",
-          startedAt: new Date("2026-10-01T00:00:00.000Z"),
-          expiresAt: new Date("2026-11-01T00:00:00.000Z"),
-        }),
-      );
       const notification = await current.orm.public.Notification.create(
         encodeCreate("Notification", {
           userId: inviter.id,
@@ -82,11 +71,6 @@ describe("invite_foundation additive migration (실제 PostgreSQL)", () => {
       expect(isUniqueConstraintViolation(duplicateCode)).toBe(true);
       expect(invite.code).toBe("K7M2QX");
       expect(notification._type).toBe("INVITE_JOINED");
-      expect(
-        await current.orm.public.Subscription.where((row) => row.revenueCatId.eq("otxn-migrate"))
-          .select("transferredAt")
-          .first(),
-      ).toEqual({ transferredAt: null });
       expect(
         await previous.orm.public.User.where((row) => row.id.eq(invitee.id))
           .select("userTag")

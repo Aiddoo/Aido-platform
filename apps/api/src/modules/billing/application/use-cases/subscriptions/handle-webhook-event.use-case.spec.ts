@@ -338,7 +338,7 @@ describe("HandleWebhookEvent", () => {
     expect(fixture.notifier.events).toHaveLength(1);
   });
 
-  it("TRANSFER는 구매를 넘겨준 사용자의 남은 행에 이전 표시를 남겨 그 사용자의 프리미엄 판단에서 뺀다", async () => {
+  it("TRANSFER는 넘겨준 사용자의 행을 받은 사용자에게 옮기고 받은 사용자의 프리미엄을 다시 계산한다", async () => {
     // Given
     givenSubscription();
     const receiverId = "transfer-receiver";
@@ -358,10 +358,60 @@ describe("HandleWebhookEvent", () => {
     // When
     await useCase.execute({ body });
     // Then
-    expect(fixture.subscriptionRepository.transferredAt.get(SUBSCRIPTION_TRANSACTION_ID)).toEqual(
-      SUBSCRIPTION_TIME,
-    );
+    expect(
+      fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID)?.userId,
+    ).toBe(receiverId);
     expect(await fixture.subscriptionRepository.findStoreEntitlements(fixture.user.id)).toEqual([]);
+    expect(fixture.subscriptionRepository.users.get(receiverId)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: SUBSCRIPTION_EXPIRY,
+    });
+  });
+
+  it("TRANSFER로 구독을 받은 사용자가 보상 기간 중이면 남은 일수를 구독 뒤로 쌓아 구독을 끊지 않는다", async () => {
+    // Given
+    givenSubscription();
+    const receiverId = "transfer-receiver";
+    fixture.subscriptionRepository.users.set(receiverId, {
+      id: receiverId,
+      email: "receiver@example.com",
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: new Date("2026-02-17T12:00:00.000Z"),
+      revenueCatUserId: null,
+      profile: null,
+    });
+    fixture.premiumGrantRepository.grants.set("grant-1", {
+      id: "grant-1",
+      userId: receiverId,
+      source: "INVITE",
+      sourceKey: "invite:receiver",
+      durationDays: 7,
+      status: "ACTIVE",
+      startsAt: SUBSCRIPTION_TIME,
+      endsAt: new Date("2026-02-17T12:00:00.000Z"),
+      endingNotifiedAt: null,
+      createdAt: SUBSCRIPTION_TIME,
+    });
+    const body = SubscriptionEventBuilder.transfer()
+      .withAppUserId(receiverId)
+      .withTransferredFrom([fixture.user.id])
+      .withEventId("transfer-with-grant")
+      .build();
+    // When
+    await useCase.execute({ body });
+    // Then
+    expect(fixture.premiumGrantRepository.grants.get("grant-1")?.status).toBe("ENDED");
+    expect(
+      [...fixture.premiumGrantRepository.grants.values()].find(
+        (grant) => grant.sourceKey === "rebank:grant-1",
+      ),
+    ).toMatchObject({ status: "BANKED", durationDays: 7 });
+    expect(fixture.subscriptionRepository.users.get(receiverId)).toMatchObject({
+      subscriptionStatus: "ACTIVE",
+      subscriptionExpiresAt: new Date(
+        SUBSCRIPTION_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS + 7 * 24 * 60 * 60 * 1_000,
+      ),
+    });
   });
 
   it("다른 사용자로 온 체인 이벤트는 행의 소유자를 그 사용자로 옮기고 프리미엄을 다시 계산한다", async () => {
@@ -376,10 +426,6 @@ describe("HandleWebhookEvent", () => {
       revenueCatUserId: null,
       profile: null,
     });
-    fixture.subscriptionRepository.transferredAt.set(
-      SUBSCRIPTION_TRANSACTION_ID,
-      SUBSCRIPTION_TIME,
-    );
     const renewedUntil = new Date("2026-04-10T12:00:00.000Z");
     const body = payloadFor(SubscriptionEventBuilder.renewal()).event;
     // When
@@ -392,9 +438,6 @@ describe("HandleWebhookEvent", () => {
     expect(
       fixture.subscriptionRepository.subscriptions.get(SUBSCRIPTION_TRANSACTION_ID),
     ).toMatchObject({ userId: receiverId, expiresAt: renewedUntil });
-    expect(fixture.subscriptionRepository.transferredAt.has(SUBSCRIPTION_TRANSACTION_ID)).toBe(
-      false,
-    );
     expect(fixture.subscriptionRepository.users.get(receiverId)).toMatchObject({
       subscriptionStatus: "ACTIVE",
       subscriptionExpiresAt: renewedUntil,
@@ -682,7 +725,7 @@ describe("HandleWebhookEvent", () => {
     { status: "FREE", builder: SubscriptionEventBuilder.expiration },
     { status: "CANCELLED", builder: SubscriptionEventBuilder.refundCancellation },
   ] satisfies Array<{ status: "FREE" | "CANCELLED"; builder: () => SubscriptionEventBuilder }>)(
-    "기존 $status 사용자는 다른 사용자에게 옮겨 간 미래 체인으로 자동 재활성화하지 않는다",
+    "기존 $status 사용자는 다른 사용자가 소유한 미래 체인으로 자동 재활성화하지 않는다",
     async ({ status, builder }) => {
       // Given
       fixture = createSubscriptionFixture({
@@ -695,9 +738,8 @@ describe("HandleWebhookEvent", () => {
       useCase = new HandleWebhookEvent(fixture);
       fixture.subscriptionRepository.subscriptions.set(
         "other-chain",
-        createSubscriptionRecord(fixture.user.id, { id: 2, revenueCatId: "other-chain" }),
+        createSubscriptionRecord("transfer-receiver", { id: 2, revenueCatId: "other-chain" }),
       );
-      fixture.subscriptionRepository.transferredAt.set("other-chain", SUBSCRIPTION_TIME);
       // When
       await useCase.execute({ body: payloadFor(builder()) });
       // Then
@@ -716,9 +758,8 @@ describe("HandleWebhookEvent", () => {
     givenSubscription();
     fixture.subscriptionRepository.subscriptions.set(
       "other-chain",
-      createSubscriptionRecord(fixture.user.id, { id: 2, revenueCatId: "other-chain" }),
+      createSubscriptionRecord("transfer-receiver", { id: 2, revenueCatId: "other-chain" }),
     );
-    fixture.subscriptionRepository.transferredAt.set("other-chain", SUBSCRIPTION_TIME);
     fixture.userMutationLock.lockById = async (userId) => {
       await fixture.subscriptionRepository.updateUserSubscriptionStatus(userId, {
         subscriptionStatus: "FREE",
@@ -877,18 +918,61 @@ describe("HandleWebhookEvent", () => {
       });
     });
 
-    it("보상 기간 중 구매해도 사용자 만료를 더 이른 스토어 만료로 덮어쓰지 않는다", async () => {
+    it("보상 기간 중 구매하면 진행 중인 기간을 구매 시각에 끝내고 남은 일수를 스토어 뒤에 쌓는다", async () => {
       // Given
-      givenGrant({ endsAt: new Date("2026-03-20T12:00:00.000Z") });
+      vi.setSystemTime(new Date("2026-02-13T12:00:00.000Z"));
+      givenGrant({});
       const body = payloadFor(SubscriptionEventBuilder.initialPurchase());
+
+      // When
+      await useCase.execute({ body });
+      await useCase.execute({
+        body: payloadFor(SubscriptionEventBuilder.initialPurchase(), "replay"),
+      });
+
+      // Then
+      const grants = [...fixture.premiumGrantRepository.grants.values()];
+      expect(grants).toEqual([
+        expect.objectContaining({
+          id: "grant-1",
+          status: "ENDED",
+          endsAt: new Date("2026-02-13T12:00:00.000Z"),
+        }),
+        expect.objectContaining({
+          sourceKey: "rebank:grant-1",
+          status: "BANKED",
+          durationDays: 4,
+          startsAt: null,
+          createdAt: SUBSCRIPTION_TIME,
+        }),
+      ]);
+      // 스토어 만료(유예 전)가 아니라 자동 갱신 유예 뒤부터 4일을 이어 붙인 끝까지 프리미엄이다
+      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
+        subscriptionStatus: "ACTIVE",
+        subscriptionExpiresAt: new Date(
+          SUBSCRIPTION_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS + 4 * 24 * 60 * 60 * 1_000,
+        ),
+      });
+    });
+
+    it("만료 웹훅이 늦게 와도 쌓아 둔 보상은 취소한 구독의 만료 시각부터 시작한다", async () => {
+      // Given
+      fixture = createSubscriptionFixture({
+        existing: true,
+        subscription: { status: "CANCELLED", cancelledAt: SUBSCRIPTION_TIME },
+      });
+      useCase = new HandleWebhookEvent(fixture);
+      givenGrant({ status: "BANKED", startsAt: null, endsAt: null });
+      vi.setSystemTime(new Date(SUBSCRIPTION_EXPIRY.getTime() + 5 * 60 * 1_000));
+      const body = payloadFor(SubscriptionEventBuilder.expiration());
 
       // When
       await useCase.execute({ body });
 
       // Then
-      expect(fixture.subscriptionRepository.users.get(fixture.user.id)).toMatchObject({
-        subscriptionStatus: "ACTIVE",
-        subscriptionExpiresAt: new Date("2026-03-20T12:00:00.000Z"),
+      expect(fixture.premiumGrantRepository.grants.get("grant-1")).toMatchObject({
+        status: "ACTIVE",
+        startsAt: SUBSCRIPTION_EXPIRY,
       });
     });
   });

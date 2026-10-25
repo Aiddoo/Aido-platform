@@ -25,9 +25,7 @@ export class PrismaEntitlementReader implements EntitlementDatabasePort {
       })
         .select("role", "subscriptionStatus", "subscriptionExpiresAt")
         .include("subscriptions", (related) =>
-          related
-            .where({ status: "ACTIVE", deletedAt: null, transferredAt: null })
-            .select("expiresAt"),
+          related.where({ status: "ACTIVE", deletedAt: null }).select("expiresAt"),
         )
         .first(),
     );

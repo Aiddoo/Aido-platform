@@ -9,8 +9,8 @@ import {
   sql,
 } from "@prisma/orm-postgres/migration";
 
-import type { Contract as End } from "../../snapshots/0f8a383d40e68995fa1899a7b10f01031d9383e67893c3f316998b7d18400a8f/contract";
-import endContract from "../../snapshots/0f8a383d40e68995fa1899a7b10f01031d9383e67893c3f316998b7d18400a8f/contract.json" with { type: "json" };
+import type { Contract as End } from "../../snapshots/2d0bd9f2511c9fe5cc36615ed91cf7f2563d55bd42519338e2887d4a066cdf3a/contract";
+import endContract from "../../snapshots/2d0bd9f2511c9fe5cc36615ed91cf7f2563d55bd42519338e2887d4a066cdf3a/contract.json" with { type: "json" };
 import type { Contract as Start } from "../../snapshots/65d810f74acf51dc46d4ffa10564516809ad487555fff459995e1dee14e7695a/contract";
 import startContract from "../../snapshots/65d810f74acf51dc46d4ffa10564516809ad487555fff459995e1dee14e7695a/contract.json" with { type: "json" };
 
@@ -312,13 +312,6 @@ export default class M extends Migration<Start, End> {
           }),
         ],
         constraints: [primaryKey(["id"], { name: "RewardGrant_pkey" })],
-      }),
-      this.addColumn({
-        schema: "public",
-        table: "Subscription",
-        column: col("transferredAt", "timestamp(3)", {
-          codecRef: { codecId: "pg/timestamp-string@1", typeParams: { precision: 3 } },
-        }),
       }),
       this.addUnique({
         schema: "public",

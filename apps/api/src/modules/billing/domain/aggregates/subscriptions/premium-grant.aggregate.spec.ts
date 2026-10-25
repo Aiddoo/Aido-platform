@@ -138,4 +138,65 @@ describe("PremiumGrant", () => {
     expect(results).toEqual([true, false, false]);
     expect(future.toPersistence()).toEqual({ status: "BANKED", startsAt: null, endsAt: null });
   });
+
+  it("진행 중인 기간을 끊으면 그 시각에 끝내고 남은 일수를 처음 받은 순서로 쌓는 계획을 낸다", () => {
+    // Given
+    const grant = createGrant({
+      status: "ACTIVE",
+      startsAt: new Date("2028-02-26T00:00:00.000Z"),
+      endsAt: new Date("2028-03-04T00:00:00.000Z"),
+    });
+    const at = new Date("2028-02-28T00:00:00.000Z");
+
+    // When
+    const remainder = grant.splitAt(at);
+
+    // Then
+    expect(remainder).toEqual({
+      userId: "user-1",
+      source: "INVITE",
+      sourceKey: "rebank:grant-1",
+      durationDays: 5,
+      status: "BANKED",
+      startsAt: null,
+      endsAt: null,
+      createdAt: new Date("2028-02-20T00:00:00.000Z"),
+    });
+    expect(grant.toPersistence()).toEqual({
+      status: "ENDED",
+      startsAt: new Date("2028-02-26T00:00:00.000Z"),
+      endsAt: at,
+    });
+    expect(grant.splitAt(at)).toBeNull();
+  });
+
+  it.each([
+    { name: "쌓아 둔 기간", overrides: {} },
+    {
+      name: "아직 시작하지 않은 기간",
+      overrides: {
+        status: "ACTIVE" as const,
+        startsAt: new Date("2028-02-28T00:00:00.001Z"),
+        endsAt: new Date("2028-03-06T00:00:00.001Z"),
+      },
+    },
+    {
+      name: "정확히 지금 끝나는 기간",
+      overrides: {
+        status: "ACTIVE" as const,
+        startsAt: new Date("2028-02-21T00:00:00.000Z"),
+        endsAt: new Date("2028-02-28T00:00:00.000Z"),
+      },
+    },
+  ])("$name은 끊지 않는다", ({ overrides }) => {
+    // Given
+    const grant = createGrant(overrides);
+
+    // When
+    const remainder = grant.splitAt(new Date("2028-02-28T00:00:00.000Z"));
+
+    // Then
+    expect(remainder).toBeNull();
+    expect(grant.status).toBe(overrides.status ?? "BANKED");
+  });
 });

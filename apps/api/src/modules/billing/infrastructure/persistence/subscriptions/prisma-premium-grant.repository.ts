@@ -27,12 +27,11 @@ const NOTICE_ROW = sqlRowSpec({
   endsAt: "pg/timestamp-string@1",
 });
 
-// 다른 사용자에게 옮겨 가지 않은 스토어 행이다. 최종 판단은 PremiumAccessPolicy가 같은 규칙으로 다시 한다
+// 보상 기간 사용자가 소유한 스토어 행이다. 최종 판단은 PremiumAccessPolicy가 같은 규칙으로 다시 한다
 const STORE_OF_GRANT_USER = sql`
   SELECT 1 FROM "Subscription" AS "store"
   WHERE "store"."userId" = "grant"."userId"
-    AND "store"."deletedAt" IS NULL
-    AND "store"."transferredAt" IS NULL`;
+    AND "store"."deletedAt" IS NULL`;
 
 // isStoreEntitlementValid와 같은 조건: 자동 갱신 중이면 만료 뒤 유예 시간까지, 취소했으면 만료 전까지 유효하다
 function validStoreOfGrantUser(now: Date) {
@@ -111,7 +110,7 @@ export class PrismaPremiumGrantRepository implements PremiumGrantRepositoryPort 
 
   async findUserIdsToReconcile(params: FindPremiumGrantUsersToReconcileParams): Promise<string[]> {
     // PremiumAccessPolicy.planReconciliation이 바꿀 것이 있는 사용자만 고른다(끝낼 기간, 시작할 기간,
-    // 다시 쌓을 기간). 정책보다 넓게 고르면 같은 사용자를 실행마다 헛되이 다시 잠근다.
+    // 스토어가 유효해 다시 쌓거나 끊을 기간). 정책보다 넓게 고르면 같은 사용자를 실행마다 헛되이 다시 잠근다.
     // PremiumGrant와 Subscription은 contract 관계가 아니라 ORM으로는 User를 거친 relation filter가 되고,
     // 그 계획이 전체 User·Subscription을 훑는 hashed subplan이 되어 userId 상관 NOT EXISTS를 raw SQL로 둔다
     const after =
@@ -138,7 +137,7 @@ export class PrismaPremiumGrantRepository implements PremiumGrantRepositoryPort 
               )
               OR (
                 "grant"."status" = 'ACTIVE'
-                AND "grant"."startsAt" > ${params.now}
+                AND "grant"."endsAt" > ${params.now}
                 AND EXISTS (${validStoreOfGrantUser(params.now)})
               )
             )

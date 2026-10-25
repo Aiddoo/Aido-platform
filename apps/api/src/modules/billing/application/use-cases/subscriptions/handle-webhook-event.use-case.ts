@@ -10,6 +10,7 @@ import { toISOString } from "#api/shared/domain/date/utils/format";
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { Subscription } from "../../../domain/aggregates/subscriptions/subscription.aggregate.js";
+import type { StoreEventChainState } from "../../../domain/policies/subscriptions/premium-access.policy.js";
 import {
   isRefundCancellation,
   resolveCancellationUserStatus,
@@ -57,6 +58,11 @@ interface HandleWebhookEventDependencies {
 interface SubscriptionTransition {
   readonly userState: UpdateUserSubscriptionStatusData;
   readonly payload: SubscriptionEventPayload;
+  /**
+   * 보상 기간 판단에 넘길 이 체인의 상태. 비우면 userState로 정한다. 만료는 행을 지우지 않고 만료 시각을
+   * 남겨, 쌓아 둔 보상이 웹훅 도착 시각이 아니라 스토어가 끝난 시각부터 이어지게 한다.
+   */
+  readonly chainState?: Omit<StoreEventChainState, "revenueCatId">;
 }
 
 export class HandleWebhookEvent {
@@ -212,14 +218,9 @@ export class HandleWebhookEvent {
   ): Promise<SubscriptionEventPayload | null> {
     const { subscriptionRepository } = this.#dependencies;
     if (event.type === "TRANSFER") {
-      const existingUser = await subscriptionRepository.findUserByAppUserId(event.app_user_id);
-      if (existingUser?.id !== user.id) {
-        await subscriptionRepository.updateUserSubscriptionStatus(user.id, {
-          subscriptionStatus: existingUser?.subscriptionStatus ?? "ACTIVE",
-          revenueCatUserId: event.app_user_id,
-        });
-      }
-      await this.#markTransferredAway(user, event.transferred_from ?? []);
+      await this.#takeOverTransferredChains(user, event.transferred_from ?? []);
+      // 옮겨 받은 스토어 행과 보상 기간을 함께 보고 다시 계산해 보상 기간이 구독을 덮지 않게 한다
+      await this.#dependencies.premiumAccessProjector.project({ userId: user.id, now: now() });
       return baseEventPayload(user, event);
     }
 
@@ -267,26 +268,25 @@ export class HandleWebhookEvent {
     );
     if (transition === null) return null;
     await subscriptionRepository.updateStatus(transactionId, subscription.persistenceState);
-    await this.#projectUser(user.id, transactionId, transition.userState);
+    await this.#projectUser(user.id, transactionId, transition.userState, transition.chainState);
     return transition.payload;
   }
 
   /**
-   * TRANSFER로 구매를 넘겨준 사용자의 남은 행에 이전 표시를 남긴다. TRANSFER에는 체인 ID가 없어
-   * 그 사용자의 행 전체를 표시하고, 같은 체인의 이벤트가 다시 그 사용자로 오면 claimChain이 되돌린다.
+   * TRANSFER로 구매를 넘겨준 사용자의 행을 받은 사용자에게 옮긴다. TRANSFER에는 체인 ID가 없어
+   * 그 사용자의 행 전체를 옮기고, 같은 체인의 이벤트가 다시 그 사용자로 오면 claimChain이 되돌린다.
    * 이전 소유자의 사용자 잠금은 잡지 않는다. 두 웹훅이 서로의 사용자를 반대 순서로 잠그는 교착을
-   * 피하려는 것이고, 그 사용자의 projection은 다음 지급·정리·자기 이벤트가 표시를 반영해 다시 계산한다.
+   * 피하려는 것이고, 그 사용자의 projection은 다음 지급·정리·자기 이벤트가 행을 다시 읽어 계산한다.
    */
-  async #markTransferredAway(
+  async #takeOverTransferredChains(
     user: SubscriptionUser,
     transferredFrom: readonly string[],
   ): Promise<void> {
     const { subscriptionRepository } = this.#dependencies;
-    const transferredAt = now();
     for (const appUserId of uniq(transferredFrom)) {
       const previousOwner = await subscriptionRepository.findUserByAppUserId(appUserId);
       if (previousOwner === null || previousOwner.id === user.id) continue;
-      await subscriptionRepository.markTransferredAway(previousOwner.id, transferredAt);
+      await subscriptionRepository.takeOverChains(previousOwner.id, user.id);
     }
   }
 
@@ -295,15 +295,15 @@ export class HandleWebhookEvent {
     userId: string,
     eventChainId: string,
     requested: UpdateUserSubscriptionStatusData,
+    chainState: Omit<StoreEventChainState, "revenueCatId"> = {
+      status: requested.subscriptionStatus,
+      expiresAt: requested.subscriptionExpiresAt,
+    },
   ): Promise<void> {
     await this.#dependencies.premiumAccessProjector.project({
       userId,
       now: now(),
-      eventChain: {
-        revenueCatId: eventChainId,
-        status: requested.subscriptionStatus,
-        expiresAt: requested.subscriptionExpiresAt,
-      },
+      eventChain: { revenueCatId: eventChainId, ...chainState },
       fallback: requested,
     });
   }
@@ -406,6 +406,7 @@ export class HandleWebhookEvent {
         return {
           userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
           payload,
+          chainState: { status: "EXPIRED", expiresAt: subscription.expiresAt },
         } satisfies SubscriptionTransition;
       })
       .with("PRODUCT_CHANGE", () => {

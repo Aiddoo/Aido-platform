@@ -1,4 +1,7 @@
-import type { PremiumGrant } from "../../../domain/aggregates/subscriptions/premium-grant.aggregate.js";
+import type {
+  PremiumGrant,
+  PremiumGrantCreationPlan,
+} from "../../../domain/aggregates/subscriptions/premium-grant.aggregate.js";
 import {
   type PremiumAccess,
   PremiumAccessPolicy,
@@ -40,7 +43,10 @@ interface PremiumAccessProjectorDependencies {
     SubscriptionRepositoryPort,
     "findStoreEntitlements" | "updateUserSubscriptionStatus"
   >;
-  readonly premiumGrantRepository: Pick<PremiumGrantRepositoryPort, "findOpenByUserId" | "saveAll">;
+  readonly premiumGrantRepository: Pick<
+    PremiumGrantRepositoryPort,
+    "findOpenByUserId" | "saveAll" | "create"
+  >;
 }
 
 /**
@@ -58,7 +64,7 @@ export class PremiumAccessProjector {
     userId: string,
     options: LoadPremiumEntitlementsOptions = {},
   ): Promise<LoadedPremiumEntitlements> {
-    // 신뢰 여부는 행 자체(이전 표시)로 정한다. 보상 기간이 바꾸는 User projection에 기대지 않는다
+    // 행의 소유자로 신뢰를 정한다. 보상 기간이 바꾸는 User projection에 기대지 않는다
     const [storeSubscriptions, premiumGrants] = await Promise.all([
       this.#dependencies.subscriptionRepository.findStoreEntitlements(userId),
       this.#dependencies.premiumGrantRepository.findOpenByUserId(userId),
@@ -73,14 +79,23 @@ export class PremiumAccessProjector {
   }
 
   async project(input: ProjectPremiumAccessInput): Promise<PremiumAccessProjection> {
-    const { entitlements, premiumGrants } = await this.loadEntitlements(input.userId, input);
+    const loaded = await this.loadEntitlements(input.userId, input);
 
-    const plan = PremiumAccessPolicy.planReconciliation(entitlements, input.now);
-    const grantsById = new Map(premiumGrants.map((grant) => [grant.id, grant]));
+    const plan = PremiumAccessPolicy.planReconciliation(loaded.entitlements, input.now);
+    const grantsById = new Map(loaded.premiumGrants.map((grant) => [grant.id, grant]));
     const changed = new Set<PremiumGrant>();
+    const remainders: PremiumGrantCreationPlan[] = [];
     for (const grantId of plan.rebankedGrantIds) {
       const grant = grantsById.get(grantId);
       if (grant?.rebank(input.now)) changed.add(grant);
+    }
+    for (const grantId of plan.splitGrantIds) {
+      const grant = grantsById.get(grantId);
+      const remainder = grant?.splitAt(input.now) ?? null;
+      if (grant !== undefined && remainder !== null) {
+        changed.add(grant);
+        remainders.push(remainder);
+      }
     }
     // 정리가 밀려 시작과 동시에 끝나는 기간이 있으므로 시작을 먼저 적용한다
     for (const activation of plan.activations) {
@@ -92,8 +107,14 @@ export class PremiumAccessProjector {
       if (grant?.end(input.now)) changed.add(grant);
     }
     await this.#dependencies.premiumGrantRepository.saveAll([...changed]);
+    // 끊은 기간의 출처 키가 하나뿐이라 같은 끊기를 다시 처리해도 남은 기간은 한 번만 생긴다
+    for (const remainder of remainders) {
+      await this.#dependencies.premiumGrantRepository.create(remainder);
+    }
 
-    // 기간을 시작·종료한 뒤의 상태로 다시 판단한다
+    // 기간을 시작·종료·분할한 뒤의 상태로 다시 판단한다. 새로 쌓은 기간은 저장소에서 다시 읽는다
+    const { entitlements } =
+      remainders.length === 0 ? loaded : await this.loadEntitlements(input.userId, input);
     const access = PremiumAccessPolicy.resolve(entitlements, input.now);
     const userState: UpdateUserSubscriptionStatusData =
       access.endsAt === null
@@ -104,6 +125,6 @@ export class PremiumAccessProjector {
       userState,
     );
 
-    return { access, userState, changedGrantCount: changed.size };
+    return { access, userState, changedGrantCount: changed.size + remainders.length };
   }
 }

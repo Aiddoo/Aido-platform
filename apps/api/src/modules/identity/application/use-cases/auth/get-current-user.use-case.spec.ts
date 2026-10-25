@@ -77,6 +77,7 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     fixture.premiumAccessReader.accesses.set(fixture.user.id, {
       source: "GRANT",
       endsAt: new Date("2026-11-08T00:00:00.000Z"),
+      periodEndsAt: new Date("2026-11-08T00:00:00.000Z"),
       willRenew: false,
       bankedDays: 0,
     });
@@ -101,7 +102,8 @@ describe("GetCurrentUser — 현재 사용자 조회", () => {
     const fixture = given();
     fixture.premiumAccessReader.accesses.set(fixture.user.id, {
       source: "STORE",
-      endsAt: new Date("2026-12-01T00:00:00.000Z"),
+      endsAt: new Date("2026-12-15T03:00:00.000Z"),
+      periodEndsAt: new Date("2026-12-01T00:00:00.000Z"),
       willRenew: true,
       bankedDays: 14,
     });

@@ -3,8 +3,10 @@ import { ErrorCode } from "@aido/api/errors";
 import { AggregateRoot, DomainException } from "#api/shared/domain/index";
 
 import {
+  isPremiumGrantActive,
   isPremiumGrantEnded,
   premiumGrantEndsAt,
+  remainingPremiumGrantDays,
   type PremiumGrantStart,
   type PremiumGrantStatusValue,
 } from "../../policies/subscriptions/premium-access.policy.js";
@@ -36,7 +38,15 @@ export interface PremiumGrantCreationInput {
 export type PremiumGrantCreationPlan = Pick<
   PremiumGrantProps,
   "userId" | "source" | "sourceKey" | "durationDays" | "status" | "startsAt" | "endsAt"
->;
+> & {
+  /** 받은 순서(이어 붙이는 순서). 비우면 저장 시각이다. */
+  readonly createdAt?: Date;
+};
+
+/** 진행 중에 끊은 기간의 남은 일수를 다시 쌓아 둔 기간의 출처 키. 끊긴 기간마다 하나뿐이다. */
+export function rebankedRemainderSourceKey(grantId: string): string {
+  return `rebank:${grantId}`;
+}
 
 // 종료 안내 시각은 안내 작업이 조건부 UPDATE로만 기록하므로 여기서 덮어쓰지 않는다
 export type PremiumGrantPersistenceState = Pick<
@@ -152,6 +162,34 @@ export class PremiumGrant extends AggregateRoot<PremiumGrantProps> {
     this.props.startsAt = null;
     this.props.endsAt = null;
     return true;
+  }
+
+  /**
+   * 진행 중인 기간을 지금 끝내고 남은 일수를 이어 받을 BANKED 기간 계획을 반환한다.
+   * 아직 시작하지 않았거나 이미 끝난 기간이면 null이다. 처음 받은 순서를 지켜 다른 쌓아 둔 기간보다
+   * 먼저 이어 붙는다.
+   */
+  splitAt(at: Date): PremiumGrantCreationPlan | null {
+    if (
+      !isPremiumGrantActive(this, at) ||
+      this.props.startsAt === null ||
+      this.props.startsAt.getTime() > at.getTime()
+    ) {
+      return null;
+    }
+    const remainingDays = remainingPremiumGrantDays(this, at);
+    this.props.status = "ENDED";
+    this.props.endsAt = new Date(at);
+    return {
+      userId: this.props.userId,
+      source: this.props.source,
+      sourceKey: rebankedRemainderSourceKey(this.props.id),
+      durationDays: remainingDays,
+      status: "BANKED",
+      startsAt: null,
+      endsAt: null,
+      createdAt: new Date(this.props.createdAt),
+    };
   }
 
   /** 끝나는 시각이 지난 ACTIVE 기간만 끝낸다. */

@@ -129,7 +129,13 @@ export class StubPremiumAccessReader implements PremiumAccessReaderPort {
   async getPremiumAccess(userId: string): Promise<PremiumAccess> {
     this.requestedUserIds.push(userId);
     return (
-      this.accesses.get(userId) ?? { source: null, endsAt: null, willRenew: false, bankedDays: 0 }
+      this.accesses.get(userId) ?? {
+        source: null,
+        endsAt: null,
+        periodEndsAt: null,
+        willRenew: false,
+        bankedDays: 0,
+      }
     );
   }
 }

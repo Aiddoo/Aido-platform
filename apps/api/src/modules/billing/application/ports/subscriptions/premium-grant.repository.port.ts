@@ -34,7 +34,8 @@ export interface PremiumGrantRepositoryPort {
   saveAll(grants: readonly PremiumGrant[]): Promise<void>;
   /**
    * 정리할 것이 있는 사용자를 userId 순으로 읽는다. 끝난 ACTIVE 기간, 스토어도 진행 중인 기간도 없는
-   * BANKED 기간, 스토어가 유효한데 아직 시작하지 않은 ACTIVE 기간이 대상이다.
+   * BANKED 기간, 스토어가 유효한데 끝나지 않은 ACTIVE 기간(시작 전이면 다시 쌓고 진행 중이면 끊는다)이
+   * 대상이다.
    */
   findUserIdsToReconcile(params: FindPremiumGrantUsersToReconcileParams): Promise<string[]>;
   /** 스토어 구독도 다음 기간도 없는 마지막 기간을 SKIP LOCKED로 잠그고 반환한다. 활성 UoW가 필요하다. */

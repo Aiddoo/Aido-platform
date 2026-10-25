@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0f8a383d40e68995fa1899a7b10f01031d9383e67893c3f316998b7d18400a8f'>;
+  StorageHashBase<'2d0bd9f2511c9fe5cc36615ed91cf7f2563d55bd42519338e2887d4a066cdf3a'>;
 export type ExecutionHash =
   ExecutionHashBase<'8db6e5a63f8631439355537fae75b591341a6d7d1f919403822ac6ed74be1ef4'>;
 export type ProfileHash =
@@ -1353,7 +1353,6 @@ export namespace Models {
     revenueCatId: FieldOutputTypes['public']['Subscription']['revenueCatId'];
     startedAt: FieldOutputTypes['public']['Subscription']['startedAt'];
     status: FieldOutputTypes['public']['Subscription']['status'];
-    transferredAt: FieldOutputTypes['public']['Subscription']['transferredAt'];
     updatedAt: FieldOutputTypes['public']['Subscription']['updatedAt'];
     userId: FieldOutputTypes['public']['Subscription']['userId'];
     user: public_User;
@@ -5331,13 +5330,6 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/enum@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly typeName: 'SubscriptionStatus' };
-                  readonly many: false;
-                };
-                readonly transferredAt: {
-                  readonly dataType: 'pg/timestamp';
-                  readonly codecId: 'pg/timestamp-string@1';
-                  readonly nullable: true;
-                  readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
                 readonly updatedAt: {
@@ -10662,14 +10654,6 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly typeName: 'SubscriptionStatus' };
                 };
               };
-              readonly transferredAt: {
-                readonly nullable: true;
-                readonly type: {
-                  readonly kind: 'scalar';
-                  readonly codecId: 'pg/timestamp-string@1';
-                  readonly typeParams: { readonly precision: 3 };
-                };
-              };
               readonly updatedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -10709,7 +10693,6 @@ type ContractBase = Omit<
                 readonly revenueCatId: { readonly column: 'revenueCatId' };
                 readonly startedAt: { readonly column: 'startedAt' };
                 readonly status: { readonly column: 'status' };
-                readonly transferredAt: { readonly column: 'transferredAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly userId: { readonly column: 'userId' };
               };

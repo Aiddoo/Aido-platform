@@ -4,6 +4,7 @@ import {
   type PremiumGrantTerm,
   premiumGrantEndingNoticeUntil,
   premiumGrantEndsAt,
+  remainingPremiumGrantDays,
   type StoreEntitlement,
 } from "./premium-access.policy.js";
 
@@ -100,7 +101,7 @@ describe("PremiumAccessPolicy", () => {
   });
 
   describe("resolve", () => {
-    it("스토어 구독과 보상 기간 중 늦게 끝나는 시각을 프리미엄 종료로 본다", () => {
+    it("예전에 스토어와 겹쳐 시작한 기간이 남아 있으면 그 끝까지 스토어 출처로 본다", () => {
       // Given
       const entitlements = {
         storeSubscriptions: [
@@ -116,6 +117,7 @@ describe("PremiumAccessPolicy", () => {
       expect(access).toEqual({
         source: "STORE",
         endsAt: new Date("2028-03-04T00:00:00.000Z"),
+        periodEndsAt: new Date("2028-03-04T00:00:00.000Z"),
         willRenew: false,
         bankedDays: 0,
       });
@@ -137,16 +139,17 @@ describe("PremiumAccessPolicy", () => {
       expect(access).toEqual({
         source: "GRANT",
         endsAt: new Date("2028-03-01T00:00:00.000Z"),
+        periodEndsAt: new Date("2028-03-01T00:00:00.000Z"),
         willRenew: false,
         bankedDays: 0,
       });
     });
 
-    it("스토어가 없으면 진행 중인 기간 뒤에 쌓아 둔 기간을 이어 붙인 끝까지 프리미엄이다", () => {
+    it("보상 기간 중 또 받은 보상은 지금 기간 끝과 이어 붙인 전체 끝, 대기 일수로 따로 보인다", () => {
       // Given
       const entitlements = {
         storeSubscriptions: [],
-        premiumGrants: [grant(), banked("next", "2028-02-25T00:00:00.000Z", 3)],
+        premiumGrants: [grant(), banked("next", "2028-02-25T00:00:00.000Z")],
       };
 
       // When
@@ -155,9 +158,10 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(access).toEqual({
         source: "GRANT",
-        endsAt: new Date("2028-03-04T00:00:00.000Z"),
+        endsAt: new Date("2028-03-08T00:00:00.000Z"),
+        periodEndsAt: new Date("2028-03-01T00:00:00.000Z"),
         willRenew: false,
-        bankedDays: 0,
+        bankedDays: 7,
       });
     });
 
@@ -172,10 +176,16 @@ describe("PremiumAccessPolicy", () => {
       const access = PremiumAccessPolicy.resolve(entitlements, NOW);
 
       // Then
-      expect(access).toEqual({ source: null, endsAt: null, willRenew: false, bankedDays: 7 });
+      expect(access).toEqual({
+        source: null,
+        endsAt: null,
+        periodEndsAt: null,
+        willRenew: false,
+        bankedDays: 7,
+      });
     });
 
-    it("스토어 구독 중 쌓아 둔 보상 일수를 합쳐 함께 보여 준다", () => {
+    it("자동 갱신 중인 구독 뒤의 보상은 갱신 유예가 끝난 뒤부터 이어 붙인다", () => {
       // Given
       const entitlements = {
         storeSubscriptions: [store()],
@@ -189,7 +199,33 @@ describe("PremiumAccessPolicy", () => {
       const access = PremiumAccessPolicy.resolve(entitlements, NOW);
 
       // Then
-      expect(access).toMatchObject({ source: "STORE", willRenew: true, bankedDays: 21 });
+      expect(access).toEqual({
+        source: "STORE",
+        endsAt: new Date("2028-03-31T03:00:00.000Z"),
+        periodEndsAt: new Date("2028-03-10T00:00:00.000Z"),
+        willRenew: true,
+        bankedDays: 21,
+      });
+    });
+
+    it("취소한 구독 뒤의 보상은 스토어 만료 시각부터 빈틈 없이 이어 붙인다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ status: "CANCELLED" })],
+        premiumGrants: [banked("banked", "2028-02-21T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access).toEqual({
+        source: "STORE",
+        endsAt: new Date("2028-03-17T00:00:00.000Z"),
+        periodEndsAt: new Date("2028-03-10T00:00:00.000Z"),
+        willRenew: false,
+        bankedDays: 7,
+      });
     });
 
     it("갱신 웹훅을 기다리는 유예 시간에는 만료 시각이 지나도 스토어 출처로 갱신 예정이다", () => {
@@ -206,10 +242,69 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(access).toEqual({
         source: "STORE",
-        endsAt: expiresAt,
+        endsAt: new Date("2028-03-04T14:00:00.000Z"),
+        periodEndsAt: expiresAt,
         willRenew: true,
         bankedDays: 7,
       });
+    });
+
+    it("2028-02-29에 산 연간 구독은 저장된 만료 시각 그대로 보상을 잇는다", () => {
+      // Given
+      const now = new Date("2028-02-29T12:00:00.000Z");
+      const storedExpiresAt = new Date("2029-02-28T12:00:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [store({ status: "CANCELLED", expiresAt: storedExpiresAt })],
+        premiumGrants: [banked("banked", "2028-02-29T12:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, now);
+
+      // Then
+      expect(access).toMatchObject({
+        source: "STORE",
+        periodEndsAt: storedExpiresAt,
+        endsAt: new Date("2029-03-07T12:00:00.000Z"),
+      });
+    });
+
+    it.each([
+      { expiresAt: "2028-02-26T12:00:00.001Z", source: "STORE" },
+      { expiresAt: "2028-02-26T12:00:00.000Z", source: null },
+    ])("취소한 구독이 $expiresAt에 끝나면 지금 출처는 $source다", ({ expiresAt, source }) => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [store({ status: "CANCELLED", expiresAt: new Date(expiresAt) })],
+        premiumGrants: [banked("banked", "2028-02-21T00:00:00.000Z")],
+      };
+
+      // When
+      const access = PremiumAccessPolicy.resolve(entitlements, NOW);
+
+      // Then
+      expect(access.source).toBe(source);
+      expect(access.bankedDays).toBe(7);
+    });
+  });
+
+  describe("remainingPremiumGrantDays", () => {
+    it.each([
+      { endsAt: "2028-02-26T12:00:00.000Z", expected: 0 },
+      { endsAt: "2028-02-26T12:00:00.001Z", expected: 1 },
+      { endsAt: "2028-02-28T12:00:00.000Z", expected: 2 },
+      { endsAt: "2028-02-28T12:00:00.001Z", expected: 3 },
+      // 윤일 2028-02-29를 지나도 하루는 24시간이다
+      { endsAt: "2028-03-02T12:00:00.000Z", expected: 5 },
+    ])("$endsAt에 끝나는 기간을 지금 끊으면 $expected일이 남는다", ({ endsAt, expected }) => {
+      // Given
+      const current = grant({ endsAt: new Date(endsAt) });
+
+      // When
+      const days = remainingPremiumGrantDays(current, NOW);
+
+      // Then
+      expect(days).toBe(expected);
     });
   });
 
@@ -270,6 +365,7 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(plan).toEqual({
         rebankedGrantIds: [],
+        splitGrantIds: [],
         activations: [{ grantId: "earlier", startsAt: NOW }],
         endedGrantIds: [],
       });
@@ -292,9 +388,31 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(plan).toEqual({
         rebankedGrantIds: [],
+        splitGrantIds: [],
         activations: [{ grantId: "next", startsAt: previousEndsAt }],
         endedGrantIds: ["previous"],
       });
+    });
+
+    it("2028-02-29T15:00Z(한국 03-01 자정)에 끝난 기간 뒤의 보상은 그 시각부터 7일이다", () => {
+      // Given
+      const previousEndsAt = new Date("2028-02-29T15:00:00.000Z");
+      const entitlements = {
+        storeSubscriptions: [],
+        premiumGrants: [
+          grant({ id: "previous", endsAt: previousEndsAt }),
+          banked("next", "2028-02-25T00:00:00.000Z"),
+        ],
+      };
+
+      // When
+      const plan = PremiumAccessPolicy.planReconciliation(entitlements, previousEndsAt);
+      const endsAt = premiumGrantEndsAt(previousEndsAt, 7);
+
+      // Then
+      expect(plan.activations).toEqual([{ grantId: "next", startsAt: previousEndsAt }]);
+      expect(plan.endedGrantIds).toEqual(["previous"]);
+      expect(endsAt).toEqual(new Date("2028-03-07T15:00:00.000Z"));
     });
 
     it("앞 기간이 끝난 뒤 스토어가 유효했으면 스토어가 끝난 시각부터 잇는다", () => {
@@ -315,6 +433,62 @@ describe("PremiumAccessPolicy", () => {
       expect(plan.activations).toEqual([{ grantId: "next", startsAt: storeLapsedAt }]);
     });
 
+    it.each([
+      {
+        name: "취소한 구독은 만료 시각",
+        subscription: { status: "CANCELLED" as const, expiresAt: "2028-02-26T11:50:00.000Z" },
+        startsAt: "2028-02-26T11:50:00.000Z",
+      },
+      {
+        name: "만료 웹훅을 받은 구독은 만료 시각",
+        subscription: { status: "EXPIRED" as const, expiresAt: "2028-02-26T11:50:00.000Z" },
+        startsAt: "2028-02-26T11:50:00.000Z",
+      },
+      {
+        name: "갱신 웹훅이 끝내 오지 않은 자동 갱신 구독은 유예가 끝난 시각",
+        subscription: { status: "ACTIVE" as const, expiresAt: "2028-02-26T08:30:00.000Z" },
+        startsAt: "2028-02-26T11:30:00.000Z",
+      },
+      {
+        name: "취소한 구독이 정확히 지금 끝나면 지금",
+        subscription: { status: "CANCELLED" as const, expiresAt: "2028-02-26T12:00:00.000Z" },
+        startsAt: "2028-02-26T12:00:00.000Z",
+      },
+    ])(
+      "스토어 뒤에 쌓아 둔 기간은 sweep이 늦어도 $name부터 시작한다",
+      ({ subscription, startsAt }) => {
+        // Given
+        const entitlements = {
+          storeSubscriptions: [
+            store({ status: subscription.status, expiresAt: new Date(subscription.expiresAt) }),
+          ],
+          premiumGrants: [banked("banked", "2028-02-21T00:00:00.000Z")],
+        };
+
+        // When
+        const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+
+        // Then
+        expect(plan.activations).toEqual([{ grantId: "banked", startsAt: new Date(startsAt) }]);
+      },
+    );
+
+    it("쌓아 둔 기간을 받기 전에 끝난 스토어에는 이어 붙이지 않고 지금 시작한다", () => {
+      // Given
+      const entitlements = {
+        storeSubscriptions: [
+          store({ status: "EXPIRED", expiresAt: new Date("2028-02-20T00:00:00.000Z") }),
+        ],
+        premiumGrants: [banked("banked", "2028-02-25T00:00:00.000Z")],
+      };
+
+      // When
+      const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+
+      // Then
+      expect(plan.activations).toEqual([{ grantId: "banked", startsAt: NOW }]);
+    });
+
     it("정리가 오래 밀렸으면 그동안 끝났어야 할 기간은 시작과 함께 끝내고 다음 기간을 잇는다", () => {
       // Given
       const entitlements = {
@@ -332,6 +506,7 @@ describe("PremiumAccessPolicy", () => {
       // Then
       expect(plan).toEqual({
         rebankedGrantIds: [],
+        splitGrantIds: [],
         activations: [
           { grantId: "short", startsAt: new Date("2028-02-24T12:00:00.000Z") },
           { grantId: "long", startsAt: new Date("2028-02-25T12:00:00.000Z") },
@@ -351,7 +526,12 @@ describe("PremiumAccessPolicy", () => {
       const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
 
       // Then
-      expect(plan).toEqual({ rebankedGrantIds: [], activations: [], endedGrantIds: [] });
+      expect(plan).toEqual({
+        rebankedGrantIds: [],
+        splitGrantIds: [],
+        activations: [],
+        endedGrantIds: [],
+      });
     });
 
     it("스토어 구독이 유효하면 쌓아 둔 기간을 시작하지 않고 끝난 기간만 닫는다", () => {
@@ -368,7 +548,12 @@ describe("PremiumAccessPolicy", () => {
       const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
 
       // Then
-      expect(plan).toEqual({ rebankedGrantIds: [], activations: [], endedGrantIds: ["ended"] });
+      expect(plan).toEqual({
+        rebankedGrantIds: [],
+        splitGrantIds: [],
+        activations: [],
+        endedGrantIds: ["ended"],
+      });
     });
 
     it("갱신 웹훅을 기다리는 유예 시간에는 쌓아 둔 기간을 시작하지 않는다", () => {
@@ -385,7 +570,7 @@ describe("PremiumAccessPolicy", () => {
       expect(plan.activations).toEqual([]);
     });
 
-    it("스토어가 다시 유효해지면 아직 시작하지 않은 ACTIVE 기간을 다시 쌓아 둔다", () => {
+    it("스토어가 다시 유효해지면 진행 중인 기간은 끊어 남은 일수를 쌓고 시작 전 기간은 다시 쌓는다", () => {
       // Given
       const entitlements = {
         storeSubscriptions: [store()],
@@ -403,7 +588,33 @@ describe("PremiumAccessPolicy", () => {
       const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
 
       // Then
-      expect(plan).toEqual({ rebankedGrantIds: ["future"], activations: [], endedGrantIds: [] });
+      expect(plan).toEqual({
+        rebankedGrantIds: ["future"],
+        splitGrantIds: ["current"],
+        activations: [],
+        endedGrantIds: [],
+      });
     });
+
+    it.each([
+      { endsAt: "2028-02-26T12:00:00.000Z", split: [], ended: ["current"] },
+      { endsAt: "2028-02-26T12:00:00.001Z", split: ["current"], ended: [] },
+    ])(
+      "구독을 산 시각에 $endsAt에 끝나는 기간은 끊기 $split, 끝내기 $ended다",
+      ({ endsAt, split, ended }) => {
+        // Given
+        const entitlements = {
+          storeSubscriptions: [store()],
+          premiumGrants: [grant({ id: "current", endsAt: new Date(endsAt) })],
+        };
+
+        // When
+        const plan = PremiumAccessPolicy.planReconciliation(entitlements, NOW);
+
+        // Then
+        expect(plan.splitGrantIds).toEqual(split);
+        expect(plan.endedGrantIds).toEqual(ended);
+      },
+    );
   });
 });

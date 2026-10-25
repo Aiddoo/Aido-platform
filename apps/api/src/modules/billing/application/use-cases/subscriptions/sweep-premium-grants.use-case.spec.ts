@@ -24,7 +24,13 @@ function createSweep(pages: readonly (readonly string[])[], failingUserIds: Read
         if (failingUserIds.has(userId)) throw new Error("projection failed");
         projectedUserIds.push(userId);
         return {
-          access: { source: null, endsAt: null, willRenew: false, bankedDays: 0 },
+          access: {
+            source: null,
+            endsAt: null,
+            periodEndsAt: null,
+            willRenew: false,
+            bankedDays: 0,
+          },
           userState: { subscriptionStatus: "FREE", subscriptionExpiresAt: null },
           changedGrantCount: 1,
         };

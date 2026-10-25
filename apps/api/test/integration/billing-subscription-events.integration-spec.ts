@@ -548,7 +548,13 @@ describe("구독 이벤트 처리 원장과 상태 전이 (실제 PostgreSQL)", 
         subscriptionExpiresAt: nextExpiry,
       });
       await givenOtherSubscription();
-      await repository.markTransferredAway(userId, at);
+      const receiver = UserFixture.create({
+        id: createEntityId(),
+        email: `transfer-receiver-${subscriptionStatus.toLowerCase()}@example.com`,
+        userTag: `BILLT${subscriptionStatus.slice(0, 3)}`,
+      });
+      await client.orm.public.User.create(encodeCreate("User", receiver));
+      await repository.takeOverChains(userId, receiver.id);
       await repository.claimChain(transactionId, userId);
       // When
       await useCase.execute({ body: expiration("no-automatic-reactivation") });

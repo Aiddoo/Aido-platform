@@ -34,8 +34,6 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
   readonly users = new Map<string, SubscriptionUser>();
   readonly subscriptions = new Map<string, SubscriptionProps>();
-  /** 다른 사용자에게 옮겨 간 행의 revenueCatId와 표시 시각 */
-  readonly transferredAt = new Map<string, Date>();
 
   async findUserByAppUserId(appUserId: string): Promise<SubscriptionUser | null> {
     const user = [...this.users.values()].find(
@@ -51,7 +49,7 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
 
   async findStoreEntitlements(userId: string): Promise<StoreSubscriptionEntitlement[]> {
     return [...this.subscriptions.values()]
-      .filter((record) => record.userId === userId && !this.transferredAt.has(record.revenueCatId))
+      .filter((record) => record.userId === userId)
       .map((record) => ({
         revenueCatId: record.revenueCatId,
         status: record.status,
@@ -62,18 +60,18 @@ export class StubSubscriptionRepository implements SubscriptionRepositoryPort {
   async claimChain(revenueCatId: string, userId: string): Promise<boolean> {
     const record = this.subscriptions.get(revenueCatId);
     if (record === undefined) return false;
-    if (record.userId === userId && !this.transferredAt.has(revenueCatId)) return false;
+    if (record.userId === userId) return false;
     this.subscriptions.set(revenueCatId, { ...record, userId });
-    this.transferredAt.delete(revenueCatId);
     return true;
   }
 
-  async markTransferredAway(userId: string, transferredAt: Date): Promise<number> {
+  async takeOverChains(fromUserId: string, toUserId: string): Promise<number> {
     const records = [...this.subscriptions.values()].filter(
-      (record) => record.userId === userId && !this.transferredAt.has(record.revenueCatId),
+      (record) => record.userId === fromUserId,
     );
-    for (const record of records)
-      this.transferredAt.set(record.revenueCatId, new Date(transferredAt));
+    for (const record of records) {
+      this.subscriptions.set(record.revenueCatId, { ...record, userId: toUserId });
+    }
     return records.length;
   }
 
@@ -206,7 +204,12 @@ export class StubPremiumGrantRepository implements Pick<
   async create(plan: PremiumGrantCreationPlan): Promise<boolean> {
     if ([...this.grants.values()].some((grant) => grant.sourceKey === plan.sourceKey)) return false;
     const id = `grant-${this.grants.size + 1}`;
-    this.grants.set(id, { ...plan, id, endingNotifiedAt: null, createdAt: new Date() });
+    this.grants.set(id, {
+      ...plan,
+      id,
+      endingNotifiedAt: null,
+      createdAt: plan.createdAt ?? new Date(),
+    });
     return true;
   }
 

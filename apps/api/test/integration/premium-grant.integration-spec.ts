@@ -33,6 +33,7 @@ import {
 const AT = new Date("2028-02-26T04:00:00.000Z");
 const STORE_EXPIRY = new Date("2028-03-10T04:00:00.000Z");
 const TRANSACTION_ID = "premium-grant-store-chain";
+const DAY_MS = 24 * 60 * 60 * 1_000;
 
 describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 PostgreSQL)", () => {
   let database: TestDatabase;
@@ -235,8 +236,8 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
       {
         sourceKey: "invite:banked",
         status: "ACTIVE",
-        startsAt: new Date("2028-03-11T04:00:00.000Z"),
-        endsAt: new Date("2028-03-18T04:00:00.000Z"),
+        startsAt: new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS),
+        endsAt: new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS + 7 * DAY_MS),
       },
     ]);
     expect((await grantsOf(coveredUser.id)).map((grant) => grant.status)).toEqual(["BANKED"]);
@@ -301,6 +302,52 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     ).toMatchObject({ source: null, endsAt: null });
   });
 
+  it("TRANSFER로 구독을 받은 사용자는 보상을 받아도 보상 종료 시각에 프리미엄이 끊기지 않는다", async () => {
+    // Given
+    const giverId = await createUser("PGRANT06");
+    await subscriptions.create({
+      userId: giverId,
+      revenueCatId: "received-chain",
+      productId: "premium_monthly",
+      status: "ACTIVE",
+      startedAt: AT,
+      expiresAt: STORE_EXPIRY,
+    });
+    const transfer = SubscriptionEventBuilder.transfer()
+      .withAppUserId(userId)
+      .withTransferredFrom([giverId])
+      .withEventId("transfer-in")
+      .build();
+    await context.module.get(HandleWebhookEvent).execute({ body: transfer });
+
+    // When
+    await granter.grant({
+      userId,
+      source: "INVITE",
+      sourceKey: "invite:receiver",
+      durationDays: 7,
+    });
+    const grantWouldEndAt = new Date("2028-03-04T04:00:00.000Z");
+    vi.setSystemTime(grantWouldEndAt);
+    await context.module.get(SweepPremiumGrants).execute({ now: grantWouldEndAt });
+
+    // Then
+    expect(await grantsOf(userId)).toEqual([
+      { sourceKey: "invite:receiver", status: "BANKED", startsAt: null, endsAt: null },
+    ]);
+    expect(await entitlement.hasPremiumAccessInTx(userId)).toBe(true);
+    expect(await premiumAccess()).toMatchObject({
+      source: "STORE",
+      periodEndsAt: STORE_EXPIRY,
+      bankedDays: 7,
+    });
+    expect(
+      await context.module
+        .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+        .getPremiumAccess(giverId),
+    ).toMatchObject({ source: null });
+  });
+
   it("sweep이 돌기 전이라도 보상 기간이 끝나는 시각부터 프리미엄이 아니다", async () => {
     // Given
     await granter.grant({
@@ -351,52 +398,231 @@ describe("프리미엄 보상 기간과 스토어 구독 정합성 (실제 Postg
     ]);
   });
 
-  it("이어 받은 보상은 구독을 사면 쌓인 채로 남고 구독이 끝나면 그때 시작한다", async () => {
-    // Given
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g1", durationDays: 7 });
-    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g2", durationDays: 7 });
-    const purchasedAt = new Date("2028-02-28T04:00:00.000Z");
-    vi.setSystemTime(purchasedAt);
-    const purchase = SubscriptionEventBuilder.initialPurchase()
+  function purchase(eventId: string, purchasedAt: Date, chainId = TRANSACTION_ID) {
+    return SubscriptionEventBuilder.initialPurchase()
       .withAppUserId(userId)
-      .withOriginalTransactionId(TRANSACTION_ID)
-      .withTransactionId(TRANSACTION_ID)
-      .withEventId("purchase-during-grant")
+      .withOriginalTransactionId(chainId)
+      .withTransactionId(chainId)
+      .withEventId(eventId)
       .withPurchasedAtMs(purchasedAt.getTime())
       .withExpirationAtMs(STORE_EXPIRY.getTime())
       .build();
-    await context.module.get(HandleWebhookEvent).execute({ body: purchase });
-    const sweep = context.module.get(SweepPremiumGrants);
-    const afterG1 = new Date("2028-03-04T04:00:00.000Z");
-    vi.setSystemTime(afterG1);
-    await sweep.execute({ now: afterG1 });
-    const duringStore = await grantsOf(userId);
+  }
 
-    // When
-    vi.setSystemTime(STORE_EXPIRY);
-    const expiration = SubscriptionEventBuilder.expiration()
+  function storeEvent(builder: SubscriptionEventBuilder, eventId: string) {
+    return builder
       .withAppUserId(userId)
       .withOriginalTransactionId(TRANSACTION_ID)
       .withTransactionId(TRANSACTION_ID)
-      .withEventId("store-expired-after-grants")
+      .withEventId(eventId)
       .withExpirationAtMs(STORE_EXPIRY.getTime())
       .build();
-    await context.module.get(HandleWebhookEvent).execute({ body: expiration });
+  }
+
+  function premiumAccess() {
+    return context.module
+      .get<PremiumAccessReaderPort>(PREMIUM_ACCESS_READER)
+      .getPremiumAccess(userId);
+  }
+
+  it("보상 기간 중 구독을 사면 진행 중인 기간을 구매 시각에 끝내고 남은 일수를 스토어 뒤로 다시 쌓는다", async () => {
+    // Given
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g1", durationDays: 7 });
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:g2", durationDays: 7 });
+    const beforePurchase = await premiumAccess();
+    const purchasedAt = new Date("2028-02-28T04:00:00.000Z");
+    vi.setSystemTime(purchasedAt);
+    const webhook = context.module.get(HandleWebhookEvent);
+
+    // When
+    await webhook.execute({ body: purchase("purchase-during-grant", purchasedAt) });
+    await webhook.execute({ body: purchase("purchase-during-grant", purchasedAt) });
+    await webhook.execute({ body: purchase("purchase-redelivered", purchasedAt) });
+    const afterPurchase = await premiumAccess();
+    vi.setSystemTime(STORE_EXPIRY);
+    await webhook.execute({
+      body: storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-after-grants"),
+    });
 
     // Then
-    expect(duringStore.map((grant) => [grant.sourceKey, grant.status])).toEqual([
-      ["invite:g1", "ENDED"],
-      ["invite:g2", "BANKED"],
-    ]);
+    expect(beforePurchase).toEqual({
+      source: "GRANT",
+      endsAt: new Date("2028-03-11T04:00:00.000Z"),
+      periodEndsAt: new Date("2028-03-04T04:00:00.000Z"),
+      willRenew: false,
+      bankedDays: 7,
+    });
+    expect(afterPurchase).toEqual({
+      source: "STORE",
+      endsAt: new Date(STORE_EXPIRY.getTime() + STORE_RENEWAL_GRACE_MS + 12 * DAY_MS),
+      periodEndsAt: STORE_EXPIRY,
+      willRenew: true,
+      bankedDays: 12,
+    });
     expect(await grantsOf(userId)).toEqual([
-      expect.objectContaining({ sourceKey: "invite:g1", status: "ENDED" }),
       {
-        sourceKey: "invite:g2",
+        sourceKey: "invite:g1",
+        status: "ENDED",
+        startsAt: AT,
+        endsAt: purchasedAt,
+      },
+      { sourceKey: "invite:g2", status: "BANKED", startsAt: null, endsAt: null },
+      expect.objectContaining({
+        sourceKey: expect.stringMatching(/^rebank:/),
         status: "ACTIVE",
         startsAt: STORE_EXPIRY,
-        endsAt: new Date("2028-03-17T04:00:00.000Z"),
+        endsAt: new Date(STORE_EXPIRY.getTime() + 5 * DAY_MS),
+      }),
+    ]);
+    expect(await premiumAccess()).toMatchObject({
+      source: "GRANT",
+      periodEndsAt: new Date(STORE_EXPIRY.getTime() + 5 * DAY_MS),
+      endsAt: new Date(STORE_EXPIRY.getTime() + 12 * DAY_MS),
+      bankedDays: 7,
+    });
+  });
+
+  it("구매 웹훅·sweep·보상 지급이 동시에 와도 남은 기간은 한 번만 다시 쌓고 새 보상은 그 뒤에 쌓는다", async () => {
+    // Given
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:running", durationDays: 7 });
+    const purchasedAt = new Date("2028-02-29T15:00:00.000Z");
+    vi.setSystemTime(purchasedAt);
+    const webhook = context.module.get(HandleWebhookEvent);
+    const sweep = context.module.get(SweepPremiumGrants);
+
+    // When
+    await Promise.all([
+      webhook.execute({ body: purchase("concurrent-purchase", purchasedAt) }),
+      sweep.execute({ now: purchasedAt }),
+      granter.grant({ userId, source: "INVITE", sourceKey: "invite:concurrent", durationDays: 7 }),
+    ]);
+    // 같은 사용자 웹훅 잠금 경합(SUBSCRIPTION_1605)은 RevenueCat이 다시 보내므로 재전송은 뒤에 온다
+    await webhook.execute({ body: purchase("concurrent-purchase-redelivered", purchasedAt) });
+    await sweep.execute({ now: purchasedAt });
+
+    // Then
+    const grants = await grantsOf(userId);
+    expect(grants.filter((grant) => grant.sourceKey.startsWith("rebank:"))).toEqual([
+      // 2028-02-26T04:00 시작 7일 중 윤일을 지난 2028-02-29T15:00까지 쓰고 3일 13시간이 남아 4일로 올린다
+      { sourceKey: expect.any(String), status: "BANKED", startsAt: null, endsAt: null },
+    ]);
+    expect(grants.find((grant) => grant.sourceKey === "invite:running")).toMatchObject({
+      status: "ENDED",
+      endsAt: purchasedAt,
+    });
+    expect(grants.find((grant) => grant.sourceKey === "invite:concurrent")?.status).toBe("BANKED");
+    expect(await premiumAccess()).toMatchObject({ source: "STORE", bankedDays: 11 });
+  });
+
+  it("취소한 구독 뒤 쌓아 둔 보상은 만료 시각에 빈틈 없이 시작하고 종료 안내는 마지막 끝 전에만 보낸다", async () => {
+    // Given
+    await givenStoreSubscription();
+    await granter.grant({
+      userId,
+      source: "INVITE",
+      sourceKey: "invite:after-store",
+      durationDays: 7,
+    });
+    const webhook = context.module.get(HandleWebhookEvent);
+    await webhook.execute({
+      body: storeEvent(SubscriptionEventBuilder.cancellation(), "store-cancelled"),
+    });
+    const notify = context.module.get(NotifyEndingPremiumGrants);
+    const sweep = context.module.get(SweepPremiumGrants);
+    const finalEndsAt = new Date(STORE_EXPIRY.getTime() + 7 * DAY_MS);
+
+    // When
+    const beforeHandoff = await notify.execute({ now: new Date("2028-03-09T06:00:00.000Z") });
+    vi.setSystemTime(new Date(STORE_EXPIRY.getTime() - 1));
+    const premiumJustBefore = await entitlement.hasPremiumAccessInTx(userId);
+    vi.setSystemTime(STORE_EXPIRY);
+    const premiumAtHandoff = await entitlement.hasPremiumAccessInTx(userId);
+    const lateSweepAt = new Date(STORE_EXPIRY.getTime() + 10 * 60 * 1_000);
+    vi.setSystemTime(lateSweepAt);
+    await sweep.execute({ now: lateSweepAt });
+    const beforeFinalEnd = await notify.execute({ now: new Date("2028-03-16T06:00:00.000Z") });
+
+    // Then
+    expect(beforeHandoff.notifiedCount).toBe(0);
+    expect([premiumJustBefore, premiumAtHandoff]).toEqual([true, true]);
+    expect(await grantsOf(userId)).toEqual([
+      {
+        sourceKey: "invite:after-store",
+        status: "ACTIVE",
+        startsAt: STORE_EXPIRY,
+        endsAt: finalEndsAt,
       },
     ]);
+    expect(beforeFinalEnd.notifiedCount).toBe(1);
+  });
+
+  it("보상이 시작된 뒤 다시 구독하면 진행 중인 보상을 끊어 남은 일수를 새 구독 뒤로 쌓는다", async () => {
+    // Given
+    await givenStoreSubscription();
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:resub", durationDays: 7 });
+    vi.setSystemTime(STORE_EXPIRY);
+    const webhook = context.module.get(HandleWebhookEvent);
+    await webhook.execute({
+      body: storeEvent(SubscriptionEventBuilder.expiration(), "store-expired-before-resub"),
+    });
+    const resubscribedAt = new Date(STORE_EXPIRY.getTime() + 2 * DAY_MS);
+    vi.setSystemTime(resubscribedAt);
+    const renewal = SubscriptionEventBuilder.renewal()
+      .withAppUserId(userId)
+      .withOriginalTransactionId(TRANSACTION_ID)
+      .withTransactionId(TRANSACTION_ID)
+      .withEventId("resubscribed")
+      .withExpirationAtMs(new Date("2028-04-12T04:00:00.000Z").getTime())
+      .build();
+
+    // When
+    await webhook.execute({ body: renewal });
+    await webhook.execute({ body: renewal });
+
+    // Then
+    expect(await grantsOf(userId)).toEqual([
+      {
+        sourceKey: "invite:resub",
+        status: "ENDED",
+        startsAt: STORE_EXPIRY,
+        endsAt: resubscribedAt,
+      },
+      {
+        sourceKey: expect.stringMatching(/^rebank:/),
+        status: "BANKED",
+        startsAt: null,
+        endsAt: null,
+      },
+    ]);
+    expect(await premiumAccess()).toMatchObject({
+      source: "STORE",
+      periodEndsAt: new Date("2028-04-12T04:00:00.000Z"),
+      willRenew: true,
+      bankedDays: 5,
+    });
+  });
+
+  it("보상 기간이 끝난 뒤 받은 보상은 쌓지 않고 바로 시작한다", async () => {
+    // Given
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:first", durationDays: 7 });
+    const afterFirst = new Date("2028-03-05T04:00:00.000Z");
+    vi.setSystemTime(afterFirst);
+    await context.module.get(SweepPremiumGrants).execute({ now: afterFirst });
+
+    // When
+    await granter.grant({ userId, source: "INVITE", sourceKey: "invite:second", durationDays: 7 });
+
+    // Then
+    expect(await grantsOf(userId)).toEqual([
+      expect.objectContaining({ sourceKey: "invite:first", status: "ENDED" }),
+      {
+        sourceKey: "invite:second",
+        status: "ACTIVE",
+        startsAt: afterFirst,
+        endsAt: new Date("2028-03-12T04:00:00.000Z"),
+      },
+    ]);
+    expect(await premiumAccess()).toMatchObject({ source: "GRANT", bankedDays: 0 });
   });
 
   it("스토어가 다시 유효해지면 예전에 미래 시작으로 저장한 기간을 sweep이 다시 쌓아 둔다", async () => {
