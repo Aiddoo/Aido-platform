@@ -44,7 +44,7 @@
     "db:verify": "prisma db verify"
   },
   "dependencies": {
-    "@ai-sdk/google": "4.0.104",
+    "@ai-sdk/google": "4.0.105",
     "@aido/api": "workspace:*",
     "@nestjs-cls/transactional": "catalog:nest12",
     "@nestjs/common": "catalog:nest12",
@@ -59,10 +59,10 @@
     "@nestjs/terminus": "catalog:nest12",
     "@nestjs/throttler": "catalog:nest12",
     "@prisma/orm-postgres": "catalog:prisma8",
-    "@sentry/nestjs": "11.8.0",
-    "ai": "7.0.150",
+    "@sentry/nestjs": "11.9.0",
+    "ai": "7.0.153",
     "argon2": "0.45.1",
-    "bullmq": "6.4.0",
+    "bullmq": "6.4.2",
     "dayjs": "catalog:",
     "es-hangul": "2.4.0",
     "es-toolkit": "catalog:",
