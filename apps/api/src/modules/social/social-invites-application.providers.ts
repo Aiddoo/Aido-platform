@@ -1,6 +1,7 @@
 import { Logger, type FactoryProvider } from "@nestjs/common";
 
 import { PREMIUM_GRANTER } from "#api/modules/billing/billing-subscriptions.public";
+import { USER_BLOCK_READER } from "#api/modules/social/social-blocks.public";
 import { FOLLOW_READER, FRIENDSHIP_ESTABLISHER } from "#api/modules/social/social-friends.public";
 import { MUTATION_LOCK, UNIT_OF_WORK } from "#api/shared/application/ports/index";
 
@@ -112,6 +113,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     REWARD_CLAIM_REPOSITORY,
     REWARD_GRANT_REPOSITORY,
     FOLLOW_READER,
+    USER_BLOCK_READER,
     FRIENDSHIP_ESTABLISHER,
     CLAIM_HASHER,
     INVITE_NOTIFIER,
@@ -129,6 +131,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
     rewardClaimRepository: ConstructorParameters<typeof RedeemInvite>[0]["rewardClaimRepository"],
     rewardGrantRepository: ConstructorParameters<typeof RedeemInvite>[0]["rewardGrantRepository"],
     followReader: ConstructorParameters<typeof RedeemInvite>[0]["followReader"],
+    blockReader: ConstructorParameters<typeof RedeemInvite>[0]["blockReader"],
     friendshipEstablisher: ConstructorParameters<typeof RedeemInvite>[0]["friendshipEstablisher"],
     claimHasher: ConstructorParameters<typeof RedeemInvite>[0]["claimHasher"],
     notifier: ConstructorParameters<typeof RedeemInvite>[0]["notifier"],
@@ -144,6 +147,7 @@ export const redeemInviteProvider: FactoryProvider<RedeemInvite> = {
       rewardClaimRepository,
       rewardGrantRepository,
       followReader,
+      blockReader,
       friendshipEstablisher,
       claimHasher,
       notifier,

@@ -173,7 +173,11 @@ export class InviteController {
   @ApiGoneError(ErrorCode.INVITE_2102)
   @ApiBadRequestError(ErrorCode.INVITE_2103)
   @ApiConflictError(ErrorCode.INVITE_2104)
-  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106])
+  @ApiErrorCodesResponse(HttpStatus.FORBIDDEN, [
+    ErrorCode.INVITE_2105,
+    ErrorCode.INVITE_2106,
+    ErrorCode.BLOCK_2204,
+  ])
   @ApiTooManyRequestsError(ErrorCode.SYS_0001, THROTTLED_DESCRIPTION)
   async redeem(
     @CurrentUser() user: CurrentUserPayload,

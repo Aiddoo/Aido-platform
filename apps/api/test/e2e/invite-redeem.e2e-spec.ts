@@ -269,6 +269,24 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     expect(unknown.body.error.code).toBe(ErrorCode.INVITE_2101);
   });
 
+  it("초대한 사람이 나를 차단했으면 차단 방향을 알리지 않는 BLOCK_2204로 거부하고 보상도 남기지 않는다", async () => {
+    // Given
+    const inviter = await ctx.helpers.createVerifiedUser("blocking-inviter@test.com", PASSWORD);
+    const invitee = await ctx.helpers.createVerifiedUser("blocked-invitee@test.com", PASSWORD);
+    const code = await inviteCodeOf(inviter);
+    await request(ctx.app.getHttpServer())
+      .post(`/v1/blocks/${invitee.userId}`)
+      .set("Authorization", `Bearer ${inviter.accessToken}`)
+      .expect(200);
+
+    // When
+    const response = await redeem(invitee, code, "blocked-device").expect(403);
+
+    // Then
+    expect(response.body.error.code).toBe(ErrorCode.BLOCK_2204);
+    expect(await rewardGrantsOf(invitee.userId)).toEqual([]);
+  });
+
   it("이미 다른 초대를 수락했으면 INVITE_2104이고 이미 친구인 초대한 사람은 ALREADY_FRIENDS다", async () => {
     // Given
     const firstInviter = await ctx.helpers.createVerifiedUser("first-inviter@test.com", PASSWORD);

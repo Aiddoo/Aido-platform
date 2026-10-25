@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AccessModule } from "#api/modules/access/access-entitlement.public";
 import { BillingSubscriptionsModule } from "#api/modules/billing/billing-subscriptions.public";
 import { NotificationDeliveryModule } from "#api/modules/notification/notification-delivery.public";
+import { SocialBlocksModule } from "#api/modules/social/social-blocks.public";
 import { SocialFriendsModule } from "#api/modules/social/social-friends.public";
 import { TypedConfigService } from "#api/platform/config/services/config.service";
 
@@ -50,6 +51,7 @@ import {
 
 @Module({
   imports: [
+    SocialBlocksModule,
     SocialFriendsModule,
     NotificationDeliveryModule,
     AccessModule,

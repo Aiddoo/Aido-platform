@@ -34,6 +34,7 @@ import { InviteRewardPolicy } from "../../../domain/policies/invites/invite-rewa
 import { rewardGrantSourceKey } from "../../../domain/types/invites/reward-grant.types.js";
 import { InviteCode } from "../../../domain/value-objects/invites/invite-code.vo.js";
 import { SocialInviteLogEvent } from "../../observability/invites/social-invite-log.events.js";
+import type { UserBlockReaderPort } from "../../ports/blocks/user-block-reader.port.js";
 import type { ClaimHasherPort } from "../../ports/invites/claim-hasher.port.js";
 import type { InviteNotifierPort } from "../../ports/invites/invite-notifier.port.js";
 import type {
@@ -94,6 +95,7 @@ interface RedeemInviteDependencies {
   >;
   readonly premiumGranter: PremiumGranterPort;
   readonly followReader: Pick<FollowReaderPort, "isCurrentMutualFriend">;
+  readonly blockReader: Pick<UserBlockReaderPort, "findRelation">;
   readonly friendshipEstablisher: FriendshipEstablisherPort;
   readonly claimHasher: ClaimHasherPort;
   readonly notifier: Pick<InviteNotifierPort, "notifyInviteJoined">;
@@ -189,8 +191,9 @@ export class RedeemInvite {
     readonly previous: InviteRedemption | null;
   }> {
     // 친구 수가 많아도 두 사람 쌍만 확인한다
-    const [areAlreadyFriends, previous, hasClaimedReward] = await Promise.all([
+    const [areAlreadyFriends, blockRelation, previous, hasClaimedReward] = await Promise.all([
       this.#dependencies.followReader.isCurrentMutualFriend(identity.userId, invite.inviterId),
+      this.#dependencies.blockReader.findRelation(identity.userId, invite.inviterId),
       this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(identity.userId),
       this.#dependencies.rewardClaimRepository.existsAny(claims.map((claim) => claim.claimHash)),
     ]);
@@ -198,6 +201,7 @@ export class RedeemInvite {
       inviteeId: identity.userId,
       inviteeJoinedAt: identity.createdAt,
       areAlreadyFriends,
+      isBlockedBetween: blockRelation.isBlocking || blockRelation.isBlockedBy,
       previousRedemption: previous == null ? null : { inviterId: previous.inviterId },
       hasClaimedReward,
       now: capturedAt,
@@ -222,6 +226,10 @@ export class RedeemInvite {
     return match(decision)
       .with({ kind: "reject", reason: "SELF_INVITE" }, () => {
         throw new ApplicationException(ErrorCode.INVITE_2103);
+      })
+      .with({ kind: "reject", reason: "BLOCKED" }, () => {
+        // 초대한 사람이 나를 차단했는지 드러내지 않도록 방향 없는 차단 오류로 답한다
+        throw new ApplicationException(ErrorCode.BLOCK_2204);
       })
       .with({ kind: "reject", reason: "INVITE_REVOKED" }, () => {
         throw new ApplicationException(ErrorCode.INVITE_2102);

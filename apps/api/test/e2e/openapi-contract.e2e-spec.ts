@@ -253,7 +253,7 @@ describe("OpenAPI 계약 (e2e)", () => {
     expect(declared).toEqual({
       redeem: {
         400: [ErrorCode.INVITE_2103, ErrorCode.SYS_0002],
-        403: [ErrorCode.INVITE_2105, ErrorCode.INVITE_2106],
+        403: [ErrorCode.BLOCK_2204, ErrorCode.INVITE_2105, ErrorCode.INVITE_2106],
         404: [ErrorCode.INVITE_2101, ErrorCode.USER_0601],
         409: [ErrorCode.INVITE_2104],
         410: [ErrorCode.INVITE_2102],

@@ -26,6 +26,7 @@ function context(overrides: Partial<InviteRedeemContext> = {}): InviteRedeemCont
     inviteeId: INVITEE_ID,
     inviteeJoinedAt: new Date("2028-02-28T12:00:00.000Z"),
     areAlreadyFriends: false,
+    isBlockedBetween: false,
     previousRedemption: null,
     hasClaimedReward: false,
     now: NOW,
@@ -41,6 +42,18 @@ describe("InviteAbusePolicy", () => {
         invite: invite(),
         context: context({ inviteeId: INVITER_ID }),
         expected: { kind: "reject", reason: "SELF_INVITE" },
+      },
+      {
+        name: "차단 관계인 사람의 초대",
+        invite: invite(),
+        context: context({ isBlockedBetween: true }),
+        expected: { kind: "reject", reason: "BLOCKED" },
+      },
+      {
+        name: "차단 관계에서 같은 초대를 다시 수락한 사용자",
+        invite: invite(),
+        context: context({ isBlockedBetween: true, previousRedemption: { inviterId: INVITER_ID } }),
+        expected: { kind: "reject", reason: "BLOCKED" },
       },
       {
         name: "폐기된 코드",
