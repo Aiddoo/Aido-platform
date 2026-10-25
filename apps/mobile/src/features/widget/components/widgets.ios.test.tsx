@@ -153,4 +153,50 @@ describe('iOS 위젯 격리 렌더링과 앱 이동', () => {
       }
     },
   );
+
+  it('첫 동기화 전 문구만 위젯 번들의 Localizable.strings로 기기 언어에 맞춘다', () => {
+    // Given
+    if (!registration) {
+      throw new Error('위젯 등록을 찾지 못했습니다');
+    }
+    const initialProps = registration[2];
+    const {
+      days: [snapshot],
+    } = toWidgetSnapshot({ today: buildWidgetSummary() }, buildWidgetSnapshotContext());
+    const syncedProps = toWidgetProps(snapshot, 'loggedOut', 'aido-dev');
+    const jsx = (type: string, elementProps: object) => createElement(type, elementProps);
+    const render: unknown = runInNewContext(`(${String(registration[1])})`, {
+      ...widgetComponents,
+      ...widgetModifiers,
+      _jsx: jsx,
+      _jsxs: jsx,
+    });
+    if (typeof render !== 'function' || initialProps == null) {
+      throw new Error('위젯을 실행할 수 없습니다');
+    }
+    const collectTexts = (node: ReactNode, texts: { text: unknown; localized: unknown }[]) => {
+      Children.forEach(node, (child) => {
+        if (!isValidElement<{ children?: ReactNode; markdownEnabled?: boolean }>(child)) {
+          return;
+        }
+        if (String(child.type) === 'Text') {
+          texts.push({ text: child.props.children, localized: child.props.markdownEnabled });
+          return;
+        }
+        collectTexts(child.props.children, texts);
+      });
+      return texts;
+    };
+
+    // When
+    const initialTexts = collectTexts(render(initialProps, { widgetFamily: 'systemMedium' }), []);
+    const syncedTexts = collectTexts(render(syncedProps, { widgetFamily: 'systemMedium' }), []);
+
+    // Then
+    expect(initialTexts).toEqual([
+      { text: 'Sign in to get started', localized: true },
+      { text: 'Tap to sign in', localized: true },
+    ]);
+    expect(syncedTexts.map(({ localized }) => localized ?? false)).toEqual([false, false]);
+  });
 });

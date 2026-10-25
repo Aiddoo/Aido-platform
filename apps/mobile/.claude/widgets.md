@@ -61,6 +61,7 @@ ko 기기는 한국어, 그 밖의 언어는 영어로 표시한다. 영어는 �
   만드는 `@string/widget_{name}_description`이다. 번역은 각 파일의 `android` 항목(`values-b+{lang}`)이다.
   `plugins/withAndroidFallbackLocaleStrings`가 finalized 단계에서 en 항목을 기본 `values/`에 써서
   ko·en이 아닌 기기의 리소스 누락과 plugin의 `translatable="false"` 한국어 기본값을 함께 대체한다.
+- 첫 동기화 전 로그인 안내의 iOS 번역도 같은 `Localizable.strings`에 둔다(아래 「디자인과 렌더링」).
 
 기존 `widget-storage`의 `aido_widget_snapshot_v1` key를 그대로 쓴다. 값은 v2 JSON이며, 이미 저장된
 v1 JSON은 `storedWidgetSnapshotSchema`가 하루짜리 v2로 읽는다. 기존 Expo
@@ -98,7 +99,13 @@ LocalDateProvider가 자정 timer, foreground, `useCalendars()`(시간대·signi
   여유 slot 안에서 가운데 배치한다. 긴 제목은 한 줄 말줄임, 개수는 자리수에 따라 축소한다.
 - Android TextWidget는 취소선을 제공하지 않는다. 완료는 색이 흐려진 제목과 체크 표시로 나타낸다.
   글자 폭을 추측해 선을 그리거나 native API를 패치하지 않는다.
-- 첫 snapshot 부재는 카탈로그의 한국어 로그인 안내로 렌더링하고 현재 Expo scheme을 사용한다.
+- 첫 snapshot 부재(갤러리 미리보기·첫 배치)는 카탈로그의 로그인 안내를 기기 언어(ko, 그 밖은 en)로
+  렌더링하고 현재 Expo scheme을 사용한다. 동기화 뒤에는 앱 언어로 만든 snapshot 문구를 쓴다.
+  - iOS `initialProps`는 빌드 시점에 고정되므로 영어 문구와 `localizeStateCopy`를 넘기고, 렌더러가
+    `Text markdownEnabled`(`LocalizedStringKey`)로 위젯 번들의 `Localizable.strings`를 조회한다.
+    SwiftUI Text는 환경 locale(예: ja)의 lproj가 없으면 키를 그대로 보여 주므로 이 키는 영어여야 한다.
+    갤러리 이름은 OS가 번들 언어로 해석하므로 한국어 원문 키를 그대로 쓴다.
+  - Android는 headless 렌더 시 `getDeviceLanguage()`로 `createInitialWidgetProps` 언어를 고른다.
 
 ## Android 위젯에서 앱으로 이동
 

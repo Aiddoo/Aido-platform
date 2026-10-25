@@ -35,6 +35,23 @@ test('iOS 위젯 이름·설명은 ko·en Localizable.strings 키이고 ko는 �
   }
 });
 
+test('iOS 첫 동기화 전 로그인 안내는 앱 카탈로그 위젯 문구를 en 키로 번역한다', () => {
+  const readCatalog = (language) =>
+    JSON.parse(
+      readFileSync(
+        path.join(projectRoot, `src/shared/i18n/locales/${language}/widget.json`),
+        'utf8',
+      ),
+    ).state;
+  const koCatalog = readCatalog('ko');
+  const enCatalog = readCatalog('en');
+
+  for (const key of ['loggedOutTitle', 'loggedOutCta']) {
+    assert.equal(ko.ios['Localizable.strings'][enCatalog[key]], koCatalog[key]);
+    assert.equal(en.ios['Localizable.strings'][enCatalog[key]], enCatalog[key]);
+  }
+});
+
 test('Android 위젯 label·description은 ko·en에 모두 있는 문자열 리소스다', () => {
   assert.deepEqual(Object.keys(en.android).sort(), Object.keys(ko.android).sort());
 

@@ -1,4 +1,6 @@
+import { getDeviceLanguage } from '@src/shared/i18n/device-language';
 import { widgetNavigationStorage } from '@src/shared/infra/storage/widget-navigation-storage';
+import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { readDeviceLocalDateState } from '@src/shared/utils/local-date-clock';
 import Constants from 'expo-constants';
 import { requestWidgetUpdate, type WidgetInfo } from 'react-native-android-widget';
@@ -34,7 +36,11 @@ export function renderStoredAndroidWidget(widgetInfo: WidgetInfo) {
   const appScheme = typeof scheme === 'string' ? scheme : (scheme?.[0] ?? 'aido');
   const props =
     snapshot == null
-      ? { ...createInitialWidgetProps(), openAppUrl: `${appScheme}://feed?date=today` }
+      ? {
+          // 첫 동기화 전에는 앱 언어 설정을 알 수 없으므로 기기 언어(ko, 그 밖은 en)를 따른다
+          ...createInitialWidgetProps(toResolvedLanguage(getDeviceLanguage())),
+          openAppUrl: `${appScheme}://feed?date=today`,
+        }
       : toStoredWidgetProps(snapshot, userId, appScheme);
 
   return renderAndroidWidget({ ...props, maxRows: definition?.maxRows ?? 0 }, widgetInfo, userId);

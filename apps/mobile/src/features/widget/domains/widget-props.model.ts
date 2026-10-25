@@ -48,6 +48,8 @@ const widgetPropsSchema = z.object({
   moreLabelTemplate: z.string(),
   stateTitle: z.string(),
   stateCta: z.string(),
+  // iOS 첫 동기화 전: stateTitle·stateCta가 위젯 번들 Localizable.strings의 영어 키다
+  localizeStateCopy: z.boolean().optional(),
   staleTitle: z.string(),
   staleCta: z.string(),
 });

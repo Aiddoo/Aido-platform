@@ -6,7 +6,9 @@
     "NSLocationWhenInUseUsageDescription": "현재 위치의 날씨를 보여줄 때 위치를 써요.",
     "Localizable.strings": {
       "오늘 할 일": "오늘 할 일",
-      "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요"
+      "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요": "오늘의 할 일과 체크 여부를 홈 화면에서 바로 확인해요",
+      "Sign in to get started": "로그인이 필요해요",
+      "Tap to sign in": "앱을 열어 시작하기"
     }
   },
   "android": {
