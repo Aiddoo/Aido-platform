@@ -5856,7 +5856,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "description": "AI 처리 메타데이터",
           "properties": {
             "model": {
-              "description": "사용된 AI 모델명 (예: google:gemini-2.5-flash-lite)",
+              "description": "사용된 AI 모델명 (예: google:gemini-3.1-flash-lite)",
               "type": "string",
             },
             "processingTimeMs": {
