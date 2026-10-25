@@ -58,6 +58,7 @@
   "myInvite": {
     "title": "Invite friends",
     "heroChip": "{{days}} days of Premium for both of you",
+    "heroChipSeparate": "{{inviteeDays}} days of Premium for your friend, {{inviterDays}} for you",
     "heroTitle": "Invite a friend and\ncheer each other on",
     "codeLabel": "My invite code",
     "copy": "Copy",

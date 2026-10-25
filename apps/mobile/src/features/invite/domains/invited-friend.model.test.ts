@@ -4,47 +4,11 @@ import { createInvitedFriend, createInvitedFriendDto } from '../__tests__/invite
 import {
   calculateActiveDaysLeft,
   calculateHiddenCount,
-  filterByRedemptionStatus,
   InvitedFriendPolicy,
   InvitedFriendSchema,
   orderByJoinedAtDesc,
   orderByWaitingFirst,
 } from './invited-friend.model';
-
-describe('filterByRedemptionStatus', () => {
-  it.each([null, undefined])('상태 조건이 %s면 true를 반환한다', (status) => {
-    // Given
-    const friend = createInvitedFriend({ status: 'REWARDED' });
-
-    // When
-    const result = filterByRedemptionStatus(friend, status);
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('상태가 같으면 true를 반환한다', () => {
-    // Given
-    const friend = createInvitedFriend({ status: 'JOINED' });
-
-    // When
-    const result = filterByRedemptionStatus(friend, 'JOINED');
-
-    // Then
-    expect(result).toBe(true);
-  });
-
-  it('상태가 다르면 false를 반환한다', () => {
-    // Given
-    const friend = createInvitedFriend({ status: 'QUALIFIED' });
-
-    // When
-    const result = filterByRedemptionStatus(friend, 'JOINED');
-
-    // Then
-    expect(result).toBe(false);
-  });
-});
 
 describe('orderByJoinedAtDesc', () => {
   it('나중에 가입한 친구가 앞에 오도록 정렬 값을 반환한다', () => {

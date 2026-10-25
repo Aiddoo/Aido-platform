@@ -55,6 +55,7 @@
   "myInvite": {
     "title": "친구 초대",
     "heroChip": "친구도 나도 프리미엄 {{days}}일",
+    "heroChipSeparate": "친구는 프리미엄 {{inviteeDays}}일, 나는 {{inviterDays}}일",
     "heroTitle": "친구를 초대하고\n서로의 할 일을 응원해요",
     "codeLabel": "내 초대 코드",
     "copy": "복사",

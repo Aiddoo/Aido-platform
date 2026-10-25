@@ -1,4 +1,9 @@
-import { INVITEE_REWARDS, inviteRewardSchema, REWARD_TYPE } from '@aido/api';
+import {
+  INVITEE_REWARDS,
+  INVITER_REWARD_MILESTONES,
+  inviteRewardSchema,
+  REWARD_TYPE,
+} from '@aido/api';
 import { sumBy } from 'es-toolkit';
 import { z } from 'zod';
 
@@ -41,5 +46,13 @@ export const InviteRewardPolicy = {
   /** 초대받은 사람이 가입하면 받는 프리미엄 일수(초대 카드 영수증) */
   welcomePremiumDays() {
     return this.premiumDays(INVITEE_REWARDS);
+  },
+
+  /**
+   * 초대한 사람이 첫 발자국에서 받는 프리미엄 일수. 내 초대 정보를 받기 전 안내에만 쓰고,
+   * 받은 뒤에는 서버가 정한 다음 단계(InvitePolicy.nextPremiumDays)를 쓴다.
+   */
+  inviterPremiumDays() {
+    return this.premiumDays(INVITER_REWARD_MILESTONES[0].rewards);
   },
 };

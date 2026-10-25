@@ -7,6 +7,6 @@ export interface SystemShareContent {
 }
 
 export interface SystemShareGateway {
-  /** OS 공유 시트를 연다. 사용자가 닫으면 false다 */
+  /** OS 공유 시트를 연다. iOS는 사용자가 닫으면 false이고, Android는 닫아도 true다(OS 한계) */
   share(content: SystemShareContent): Promise<boolean>;
 }

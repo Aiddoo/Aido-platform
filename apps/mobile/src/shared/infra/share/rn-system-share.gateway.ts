@@ -8,6 +8,8 @@ export const rnSystemShareGateway: SystemShareGateway = {
       Platform.OS === 'ios' ? { message, url } : { message: `${message}\n${url}` },
       { dialogTitle },
     );
+    // Android Share.share는 공유 시트를 그냥 닫아도 sharedAction으로 끝난다. 그래서 Android의 true는
+    // "공유 시트를 열었다"까지만 뜻하고, 실제로 보냈는지는 iOS 값만 믿을 수 있다
     return result.action === Share.sharedAction;
   },
 };

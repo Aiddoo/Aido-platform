@@ -50,4 +50,14 @@ describe('InviteRewardPolicy', () => {
       expect(result).toBe(7);
     });
   });
+
+  describe('inviterPremiumDays', () => {
+    it('초대받은 사람 보상이 아니라 초대한 사람 첫 단계 보상의 프리미엄 일수를 반환한다', () => {
+      // When
+      const result = InviteRewardPolicy.inviterPremiumDays();
+
+      // Then INVITER_REWARD_MILESTONES[0]의 PREMIUM_DAYS 7 (친구 자리 1은 세지 않는다)
+      expect(result).toBe(7);
+    });
+  });
 });

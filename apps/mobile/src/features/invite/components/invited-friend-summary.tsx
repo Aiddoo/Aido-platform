@@ -1,3 +1,4 @@
+import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -27,6 +28,7 @@ import { InvitedFriendRow } from './invited-friend-row';
 export function InvitedFriendSummary({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation('invite');
   const { data } = useSuspenseInfiniteQuery(useGetInvitedFriendSummaryInfiniteQueryOptions());
+  const openInvitedFriends = useSingleTap(() => router.push(invitedFriendsHref()));
 
   return (
     <InvitedFriendSummaryFrame className={className} {...props}>
@@ -37,7 +39,7 @@ export function InvitedFriendSummary({ className, ...props }: ComponentProps<typ
             testID="invitees-see-all"
             variant="arrow"
             size="small"
-            onPress={() => router.push(invitedFriendsHref())}
+            onPress={openInvitedFriends}
           >
             {t('friendList.seeAll', { count: data.totalCount })}
           </TextButton>

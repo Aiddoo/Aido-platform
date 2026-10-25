@@ -1,8 +1,4 @@
-import {
-  INVITE_QUALIFICATION,
-  invitedFriendResponseSchema,
-  type RedemptionStatus,
-} from '@aido/api';
+import { INVITE_QUALIFICATION, invitedFriendResponseSchema } from '@aido/api';
 import { match } from 'ts-pattern';
 import { z } from 'zod';
 
@@ -15,16 +11,6 @@ export const InvitedFriendSchema = invitedFriendResponseSchema.extend({
 });
 
 export type InvitedFriend = z.output<typeof InvitedFriendSchema>;
-
-export type OrderByInvitedFriend = (friend: InvitedFriend) => number;
-
-export function filterByRedemptionStatus(friend: InvitedFriend, status?: RedemptionStatus | null) {
-  if (status == null) {
-    return true;
-  }
-
-  return friend.status === status;
-}
 
 export function orderByJoinedAtDesc(friend: InvitedFriend) {
   return -friend.joinedAt.getTime();

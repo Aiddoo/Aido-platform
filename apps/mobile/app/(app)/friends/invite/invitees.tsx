@@ -32,7 +32,7 @@ export default function InvitedFriendsScreen() {
         <QueryErrorBoundary resetKeys={[view]} fallback={InvitedFriendList.Error}>
           <Box px={16} pt={8} pb={8}>
             <Suspense fallback={<InvitedFriendFilterTabs.Loading />}>
-              <InvitedFriendFilterTabs value={view} onChange={setView} />
+              <InvitedFriendFilterTabs value={view} onValueChange={setView} />
             </Suspense>
           </Box>
 
@@ -63,13 +63,14 @@ interface InvitedFriendFilterTabsProps extends Omit<
   'value' | 'onValueChange' | 'children'
 > {
   value: InvitedFriendsView;
-  onChange?: (value: InvitedFriendsView) => void;
+  /** 원본 Tabs와 같은 이름. 아는 보기 값만 넘긴다 */
+  onValueChange?: (value: InvitedFriendsView) => void;
 }
 
 /** 전체 수는 전체 목록 첫 페이지, 기다리는 수는 초대 요약에서 읽는다(목록은 걸러서 세면 페이지마다 달라진다) */
 function InvitedFriendFilterTabs({
   value,
-  onChange = noop,
+  onValueChange = noop,
   ...props
 }: InvitedFriendFilterTabsProps) {
   const { t } = useTranslation('invite');
@@ -81,7 +82,7 @@ function InvitedFriendFilterTabs({
   const handleValueChange = (next: string) => {
     const parsed = InvitedFriendsViewSchema.safeParse(next);
     if (parsed.success) {
-      onChange(parsed.data);
+      onValueChange(parsed.data);
     }
   };
 

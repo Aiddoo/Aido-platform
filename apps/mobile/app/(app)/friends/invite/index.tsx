@@ -127,27 +127,32 @@ function InviteShareToolbar() {
 
 function InviteHeroBanner() {
   const { t } = useTranslation('invite');
+  const inviteeDays = InviteRewardPolicy.welcomePremiumDays();
+  const inviterDays = InviteRewardPolicy.inviterPremiumDays();
 
   return (
     <Box className="min-h-[168px] overflow-hidden rounded-3xl bg-highlight px-5 pb-5 pt-[22px]">
+      {/* 고양이를 먼저 그려 글자 아래에 깔고, 제목은 고양이가 보이는 폭(98pt)만큼 비켜 선다 */}
+      <Image
+        source={catHiImage}
+        accessibilityIgnoresInvertColors
+        className="absolute -bottom-[30px] -right-[18px] size-[136px]"
+        resizeMode="cover"
+      />
+
       <Box className="self-start rounded-full bg-white px-3 py-1">
         <Text size="b4" weight="semibold" tone="brand">
-          {t('myInvite.heroChip', { days: InviteRewardPolicy.welcomePremiumDays() })}
+          {inviteeDays === inviterDays
+            ? t('myInvite.heroChip', { days: inviteeDays })
+            : t('myInvite.heroChipSeparate', { inviteeDays, inviterDays })}
         </Text>
       </Box>
 
       <Spacing size={14} />
 
-      <Text size="t2" weight="bold" className="max-w-[220px]">
+      <Text size="t2" weight="bold" lineBreakStrategyIOS="hangul-word" className="mr-[98px]">
         {t('myInvite.heroTitle')}
       </Text>
-
-      <Image
-        source={catHiImage}
-        accessibilityIgnoresInvertColors
-        className="absolute -bottom-[34px] -right-[18px] size-[168px]"
-        resizeMode="cover"
-      />
     </Box>
   );
 }

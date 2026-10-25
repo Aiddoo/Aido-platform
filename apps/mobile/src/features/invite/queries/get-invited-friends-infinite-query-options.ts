@@ -4,14 +4,12 @@ import { unwrap } from '@src/shared/errors/result';
 import type { Page } from '@src/shared/types/page.type';
 import { type InfiniteData, infiniteQueryOptions } from '@tanstack/react-query';
 import { orderBy as orderByFn } from 'es-toolkit';
-import { useCallback } from 'react';
 
 import type { InviteService } from '../apis/invite.service';
 import { INVITE_QUERY_KEYS } from '../constants/invite-query-keys';
 import {
   type InvitedFriend,
   InvitedFriendPolicy,
-  type OrderByInvitedFriend,
   orderByJoinedAtDesc,
   orderByWaitingFirst,
 } from '../domains/invited-friend.model';
@@ -50,39 +48,24 @@ export function getInvitedFriendsInfiniteQueryOptions(
   });
 }
 
+// 서버가 이미 최근 가입 순(joinedAt desc, id desc)으로 페이지를 주므로 이어 붙이기만 한다
 function selectInvitedFriends(
   invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
-  orderBy: OrderByInvitedFriend,
 ) {
-  return orderByFn(
-    invitedFriendPages.pages.flatMap((page) => page.items),
-    [orderBy],
-    ['asc'],
-  );
+  return invitedFriendPages.pages.flatMap((page) => page.items);
 }
 
-interface InvitedFriendsSelection extends InviteesFilter {
-  /** 모듈 함수로 넘겨야 select 참조가 매 렌더 바뀌지 않는다 */
-  orderBy: OrderByInvitedFriend;
-}
-
-export function useGetInvitedFriendsInfiniteQueryOptions({
-  status,
-  orderBy,
-}: InvitedFriendsSelection) {
-  const select = useCallback(
-    (invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>) =>
-      selectInvitedFriends(invitedFriendPages, orderBy),
-    [orderBy],
-  );
-
+export function useGetInvitedFriendsInfiniteQueryOptions({ status }: InviteesFilter) {
   return infiniteQueryOptions({
     ...getInvitedFriendsInfiniteQueryOptions(useInviteService(), { status }),
-    select,
+    select: selectInvitedFriends,
   });
 }
 
-/** 내 초대 화면 요약. 전체 목록과 같은 쿼리를 읽어 기다리는 친구를 먼저, 최근 가입 순으로 앞 몇 명만 고른다 */
+/**
+ * 내 초대 화면 요약. 전체 목록과 같은 쿼리를 읽어 기다리는 친구를 먼저, 최근 가입 순으로 앞 몇 명만 고른다.
+ * 받은 페이지 안에서만 고르므로 첫 페이지 밖의 기다리는 친구는 전체 보기에서 본다.
+ */
 function selectInvitedFriendSummary(
   invitedFriendPages: InfiniteData<Page<InvitedFriend>, string | null>,
 ) {

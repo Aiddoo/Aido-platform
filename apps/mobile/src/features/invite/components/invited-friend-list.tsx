@@ -8,11 +8,7 @@ import { times } from 'es-toolkit/compat';
 import type { ComponentProps, ReactElement } from 'react';
 import { ScrollView } from 'react-native';
 
-import {
-  type InvitedFriend,
-  type OrderByInvitedFriend,
-  orderByJoinedAtDesc,
-} from '../domains/invited-friend.model';
+import type { InvitedFriend } from '../domains/invited-friend.model';
 import { useGetInvitedFriendsInfiniteQueryOptions } from '../queries/get-invited-friends-infinite-query-options';
 import { invalidateInvite } from '../queries/invite-cache';
 import { InvitedFriendRow } from './invited-friend-row';
@@ -20,19 +16,17 @@ import { InvitedFriendRow } from './invited-friend-row';
 interface InvitedFriendListProps {
   /** 이 상태의 친구만 보여 준다. 없으면 전체다 */
   status?: RedemptionStatus;
-  orderBy?: OrderByInvitedFriend;
   ListEmptyComponent?: ReactElement;
 }
 
 /** 내가 초대한 친구 전체. 늘어날 수 있어 친구 목록과 같은 무한 스크롤 FlashList를 쓴다 */
 export function InvitedFriendList({
   status,
-  orderBy = orderByJoinedAtDesc,
   ListEmptyComponent = <InvitedFriendList.Empty />,
 }: InvitedFriendListProps) {
   const queryClient = useQueryClient();
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = useSuspenseInfiniteQuery(
-    useGetInvitedFriendsInfiniteQueryOptions({ status: status ?? null, orderBy }),
+    useGetInvitedFriendsInfiniteQueryOptions({ status: status ?? null }),
   );
   // 발자국 요약(탭 숫자)과 목록을 함께 새로 고친다
   const [isRefreshing, handleRefresh] = useRefresh(() => invalidateInvite(queryClient));
