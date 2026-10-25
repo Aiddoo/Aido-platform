@@ -1,3 +1,5 @@
+import { uniq } from "es-toolkit";
+
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
 
 import {
@@ -103,18 +105,16 @@ export class PushNotificationDeliveryService {
   async prepareBatchDelivery(
     payloads: readonly BatchPushNotificationPayload[],
   ): Promise<PreparedBatchPushDelivery> {
-    const userIds = [...new Set(payloads.map((payload) => payload.userId))];
+    const userIds = uniq(payloads.map((payload) => payload.userId));
     const tokensByUser = await this.#dependencies.activePushTokenReader.findByUserIds(userIds);
-    const capabilityUserIds = [
-      ...new Set(
-        payloads
-          .filter(
-            (payload) =>
-              payload.requiresFeatureCapability || payload.requiresNudgeInteractionCapability,
-          )
-          .map((payload) => payload.userId),
-      ),
-    ];
+    const capabilityUserIds = uniq(
+      payloads
+        .filter(
+          (payload) =>
+            payload.requiresFeatureCapability || payload.requiresNudgeInteractionCapability,
+        )
+        .map((payload) => payload.userId),
+    );
     const capabilityTokenRecords =
       capabilityUserIds.length === 0
         ? []

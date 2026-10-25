@@ -3,6 +3,7 @@ import type {
   TodoConversationConnection,
   TodoConversationItem,
 } from "@aido/api";
+import { uniq } from "es-toolkit";
 
 import type {
   TodoCommentRecord,
@@ -19,7 +20,7 @@ function isDirectParent(
 
 /** Wire lane은 순서와 중복을 허용하지 않는다. reader 결과도 경계에서 한 번 정규화한다. */
 function normalizeLaneDepths(depths: readonly number[]): number[] {
-  return [...new Set(depths)].sort((left, right) => left - right);
+  return uniq(depths).sort((left, right) => left - right);
 }
 
 function toIncomingBranch(depth: number): TodoConversationConnection["incomingBranch"] {

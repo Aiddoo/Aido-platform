@@ -1,6 +1,7 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and, or } from "@prisma/orm-postgres/orm-client";
+import { uniq } from "es-toolkit";
 import sql, { join } from "sql-template-tag";
 
 import { decodeRecord, encodePatch } from "#api/platform/database/database-records";
@@ -406,9 +407,7 @@ export class PrismaPushDeliveryLifecycleRepository implements PushDeliveryLifecy
     const sqlRows4 = sqlRowSpec({ dispatchId: "pg/int4@1", publishAttempt: "pg/int4@1" });
 
     if (inputs.length === 0) return 0;
-    const allTokens = [
-      ...new Set(inputs.flatMap((input) => input.results.map((result) => result.token))),
-    ];
+    const allTokens = uniq(inputs.flatMap((input) => input.results.map((result) => result.token)));
     const tokens =
       allTokens.length === 0
         ? []

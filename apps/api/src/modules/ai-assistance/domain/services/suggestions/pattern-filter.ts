@@ -5,6 +5,7 @@
  * 외부 의존성(DB/Queue/Network) 없이 입력 → 출력만으로 정의되어 테스트·재사용이 용이.
  */
 import { AI_SUGGESTION_LIMITS } from "@aido/api/vocabulary";
+import { uniq } from "es-toolkit";
 
 import type {
   DetectedPattern,
@@ -207,7 +208,7 @@ export function groundPatternCandidates(
   );
   const excluded = new Set(excludedTitles);
   return patterns.flatMap((pattern) => {
-    const matchedTitles = [...new Set(pattern.matchedTitles)];
+    const matchedTitles = uniq(pattern.matchedTitles);
     const matchedActivities = matchedTitles.flatMap((title) => {
       const activity = evidenceByTitle.get(title);
       return activity === undefined ? [] : [activity];
