@@ -11,6 +11,7 @@ import {
 import { ApplicationException } from "#api/shared/domain/exceptions/application.exception";
 
 import type { Friendship } from "../../../domain/aggregates/friends/friendship.aggregate.js";
+import { hasReachedFriendLimit } from "../../../domain/policies/friends/friend-limit.policy.js";
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
 import { type FollowNotifierPort } from "../../ports/friends/follow-notifier.port.js";
 import { type FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
@@ -71,7 +72,7 @@ export class SendFriendRequest {
         this.#dependencies.entitlementReader.getResourceLimitInTx(userId, Resource.FRIEND),
         this.#dependencies.followRepository.countMutualFriends(userId),
       ]);
-      if (entitlement.maxCount !== null && friendCount >= entitlement.maxCount) {
+      if (hasReachedFriendLimit(entitlement.maxCount, friendCount)) {
         throw new ApplicationException(ErrorCode.FOLLOW_0909, {
           current: friendCount,
           limit: entitlement.maxCount,

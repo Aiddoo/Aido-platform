@@ -9,6 +9,7 @@ import {
 } from "#api/shared/application/ports/index";
 
 import type { Friendship } from "../../../domain/aggregates/friends/friendship.aggregate.js";
+import { hasReachedFriendLimit } from "../../../domain/policies/friends/friend-limit.policy.js";
 import { SocialFriendLogEvent } from "../../observability/friends/social-friend-log.events.js";
 import type { FollowNotifierPort } from "../../ports/friends/follow-notifier.port.js";
 import type { FollowRepositoryPort } from "../../ports/friends/follow.repository.port.js";
@@ -41,7 +42,12 @@ interface FriendshipEstablisherDependencies {
   readonly logger: ApplicationLogger;
 }
 
-/** 친구 요청과 같은 잠금·한도 규칙으로 두 방향 관계를 한 번에 맺는다. */
+/**
+ * 친구 요청과 같은 잠금·한도 규칙으로 두 방향 관계를 한 번에 맺는다.
+ * 한도 판단은 SendFriendRequest와 hasReachedFriendLimit을 함께 쓴다. 수락 흐름은 합치지 않는다:
+ * 친구 요청은 기존 요청이 있으면 오류로 거절하고 상대의 대기 요청만 자동 수락하며 알림을 커밋 뒤
+ * 바로 보내지만, 초대는 두 방향의 대기 요청을 모두 수락하고 결과를 상태로 돌려주며 호출자 UoW에 참여한다.
+ */
 export class FriendshipEstablisher implements FriendshipEstablisherPort {
   readonly #dependencies: FriendshipEstablisherDependencies;
 
@@ -91,7 +97,7 @@ export class FriendshipEstablisher implements FriendshipEstablisherPort {
       this.#dependencies.entitlementReader.getResourceLimitInTx(userId, Resource.FRIEND),
       this.#dependencies.followRepository.countMutualFriends(userId),
     ]);
-    return entitlement.maxCount !== null && friendCount >= entitlement.maxCount;
+    return hasReachedFriendLimit(entitlement.maxCount, friendCount);
   }
 
   async #request(
