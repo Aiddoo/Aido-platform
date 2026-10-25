@@ -97,7 +97,8 @@ iOS는 Maestro `back`이 동작하지 않아 왼쪽 위 영역을 탭한다. 비
 `invitees-tab-all`, `invitees-tab-waiting`, `invite-card-signup`, `invite-card-login`, `invite-card-redeem`,
 `invite-card-open-my-invite`, `invite-result-enter-code`, `invite-result-retry`, `invite-welcome-sheet`,
 `invite-welcome-later`, `friends-empty-invite`, `mypage-invite-card`, `feature-guide-open`,
-`feature-discovery-invite-cta`, `friend-edit`, `friend-delete`, `friend-delete-confirm`.
+`feature-discovery-invite-cta`, `friend-delete`, `friend-delete-confirm`.
+친구 목록의 편집 버튼은 헤더 툴바 버튼이라 testID를 받지 않아 접근성 라벨(`list.edit`: `편집`/`Edit`)로 누른다.
 이메일 로그인(`email-login-*`)은 기존 testID를 쓴다. 로그인 시작의 `이메일로 로그인` 버튼은 1.11.0과 같이 텍스트로 누른다.
 
 ## 자동화하지 않는 케이스

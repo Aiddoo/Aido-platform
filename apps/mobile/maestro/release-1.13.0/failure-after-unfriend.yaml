@@ -19,8 +19,8 @@ onFlowStart:
 - extendedWaitUntil:
     visible: '${output.a.name}'
     timeout: 20000
-- tapOn:
-    id: friend-edit
+# 헤더 편집 버튼(Stack.Toolbar.Button)은 testID를 받지 않아 friend 카탈로그 list.edit 접근성 라벨로 누른다
+- tapOn: '편집|Edit'
 - tapOn:
     id: friend-delete
 - extendedWaitUntil:
