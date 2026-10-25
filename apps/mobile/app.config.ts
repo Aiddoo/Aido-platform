@@ -41,7 +41,6 @@ const ICON = './assets/images/icon.png';
 const ADAPTIVE_ICON = './assets/images/adaptive-icon.png';
 const SPLASH = './assets/images/splash-icon.png';
 const SPLASH_ANDROID = './assets/images/splash-icon-android.png';
-const FAVICON = './assets/images/favicon.png';
 const NOTIFICATION_ICON = './assets/images/notification-icon.png';
 
 // Environment
@@ -259,7 +258,6 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     web: {
       bundler: 'metro',
       output: 'static',
-      favicon: FAVICON,
     },
 
     // Plugins

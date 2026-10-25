@@ -62,7 +62,6 @@ jest.mock('@src/shared/ui', () => {
     ArrowUpIcon: () => null,
     CalendarIcon: () => null,
     ClockIcon: () => null,
-    DragIcon: () => null,
     EyeIcon: () => null,
     MemoIcon: () => null,
     MenuIcon: () => null,

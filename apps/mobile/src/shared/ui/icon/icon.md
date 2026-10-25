@@ -1,11 +1,11 @@
 # Icon
 
-기존 SVG → createStyledIcon → Uniwind 경로를 사용한다. TodoTabIcon, MemoTabIcon, MyPageTabIcon은 같은 원본에서 NativeTabs용 PNG도 생성한다.
+기존 SVG → createStyledIcon → Uniwind 경로를 사용한다. 탭 아이콘은 SVG 원본에서 생성한 PNG를 NativeTabs에 template 이미지로 넘긴다.
 
 세 탭은 고양이 귀가 달린 실루엣으로 톤을 맞춘다. 할 일은 체크, 메모는 줄과 접힌 모서리, 마이는 고양이 얼굴이다. 기본 상태는 둥근 1.8px 선, 선택 상태는 채운 실루엣에서 안쪽 글리프를 비운 모양이다.
 
 ```tsx
-<TodoTabIcon width={24} height={24} colorClassName="text-main" />
+<EditIcon width={16} height={16} colorClassName="text-gray-7" />
 <NativeTabs.Trigger.Icon src={NATIVE_TAB_ICON_SOURCES.todo} renderingMode="template" />
 ```
 
