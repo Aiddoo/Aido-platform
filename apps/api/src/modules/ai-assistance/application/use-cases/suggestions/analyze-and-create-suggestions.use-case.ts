@@ -35,7 +35,7 @@ interface AnalyzeAndCreateSuggestionsDependencies {
     AiSuggestionRepositoryPort,
     "deletePending" | "deleteExpired" | "createMany"
   >;
-  readonly aiProvider: Pick<AiProvider, "generateStructured">;
+  readonly aiProvider: Pick<AiProvider, "generateStructured" | "isAvailable">;
   readonly unitOfWork: Pick<UnitOfWorkPort, "run">;
   readonly contextBuilder: Pick<SuggestionContextBuilder, "build">;
   readonly logger: Pick<ApplicationLogger, "debug" | "log" | "warn">;
@@ -65,6 +65,14 @@ export class AnalyzeAndCreateSuggestions {
       });
       return 0;
     }
+    if (!this.#dependencies.aiProvider.isAvailable()) {
+      this.#dependencies.logger.debug({
+        event: AiSuggestionLogEvent.SKIPPED,
+        userId,
+        reason: "provider-unavailable",
+      });
+      return 0;
+    }
     const context = await this.#dependencies.contextBuilder.build(
       userId,
       timezone,
@@ -82,7 +90,7 @@ export class AnalyzeAndCreateSuggestions {
     }
 
     // 2. AI 제안 생성 — 비용과 채우기용 제안을 줄이기 위해 항상 1회만 호출
-    const definition = suggestionPrompts.v1[locale];
+    const definition = suggestionPrompts[this.#dependencies.settings.promptVersion][locale];
     const { system, prompt } = definition.build({ context });
     const logBase = {
       task: "suggestion",

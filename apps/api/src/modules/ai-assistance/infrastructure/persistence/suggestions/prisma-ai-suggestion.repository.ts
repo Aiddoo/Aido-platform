@@ -1,4 +1,4 @@
-import { DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
+import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, dayIndexToDayOfWeek } from "@aido/api/vocabulary";
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
 import { and } from "@prisma/orm-postgres/orm-client";
@@ -288,11 +288,13 @@ export class PrismaAiSuggestionRepository implements AiSuggestionRepositoryPort 
       )
         .select("title", "startDate", "scheduledTime", "categoryId", "completed")
         .include("category", (related) => related.select("name"))
-        .orderBy((row) => row.startDate.asc())
+        // 최근 기록부터 상한까지만 읽고, 기존 소비 순서(날짜 오름차순)로 되돌린다.
+        .orderBy((row) => row.startDate.desc())
+        .limit(AI_SUGGESTION_LIMITS.MAX_ANALYSIS_TODOS)
         .all(),
     );
 
-    return todos.map((t) => ({
+    return todos.toReversed().map((t) => ({
       title: t.title,
       startDate: toDateString(t.startDate),
       scheduledTime:

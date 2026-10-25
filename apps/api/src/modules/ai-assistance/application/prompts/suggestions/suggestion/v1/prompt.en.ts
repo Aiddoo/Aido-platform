@@ -34,6 +34,7 @@ const STARTER_RULES_EN = `<rules>
 - Never mention weather when weather is null. Do not resuggest accepted or dismissed activities by changing amounts or wording.
 </rules>`;
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildSuggestionPromptEn(
   context: SuggestionContext,
   minOccurrences: number,

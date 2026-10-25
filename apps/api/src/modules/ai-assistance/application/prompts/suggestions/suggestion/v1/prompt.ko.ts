@@ -1,4 +1,5 @@
 import type { SuggestionPrompt } from "./types.js";
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export type { SuggestionPrompt } from "./types.js";
 import { dayOfWeekSchema } from "@aido/api";
 import { AI_SUGGESTION_LIMITS, type DayOfWeek } from "@aido/api/vocabulary";
@@ -17,6 +18,7 @@ import { suggestionContextTranslations } from "../../../../locale/suggestions/su
 import type { SuggestionContext } from "../../../../types/suggestions/suggestion-context.js";
 import { buildSuggestionPromptEn } from "./prompt.en.js";
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export const detectedPatternsSchema = z.object({
   patterns: z.array(
     z.object({
@@ -32,8 +34,10 @@ export const detectedPatternsSchema = z.object({
   ),
 });
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export type DetectedPatternsResponse = z.infer<typeof detectedPatternsSchema>;
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export const detectedPatternsSchemaEn = z.object({
   patterns: z.array(
     z.object({
@@ -49,6 +53,7 @@ export const detectedPatternsSchemaEn = z.object({
   ),
 });
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function getDetectedPatternsSchema(locale: SupportedLocale) {
   return suggestionPromptCatalog[locale].schema;
 }
@@ -112,6 +117,7 @@ ${PROMPT_OUTPUT_DISCIPLINE}`;
   return { system, prompt };
 }
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export const suggestionPromptCatalog = {
   ko: {
     build: buildSuggestionPromptKo,
@@ -182,6 +188,7 @@ export const suggestionPromptCatalog = {
   }
 >;
 
+/** @deprecated suggestion v2로 대체됐다. AI_PROMPT_VERSION 롤백용으로만 남긴다. */
 export function buildSuggestionPrompt(
   context: SuggestionContext,
   minOccurrences: number,

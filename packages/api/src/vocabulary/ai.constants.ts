@@ -30,6 +30,8 @@ export const AI_SUGGESTION_LIMITS = {
   /** 3회 이상 반복 패턴에 요구되는 최소 신뢰도 */
   CONFIDENCE_GATE_MULTI_OCC: 0.6,
   ANALYSIS_WEEKS: 2,
+  /** 분석에 읽는 최근 할 일 상한. 입력 토큰과 응답 잘림을 막는다. */
+  MAX_ANALYSIS_TODOS: 300,
   CONTEXT_WEEKS: 4,
   MAX_SUGGESTIONS_PER_USER: 5,
   SUGGESTION_EXPIRY_DAYS: 14,

@@ -11,7 +11,10 @@ import { GenerateReport } from "#api/modules/ai-assistance/application/use-cases
 import { AnalyzeAndCreateSuggestions } from "#api/modules/ai-assistance/application/use-cases/suggestions/analyze-and-create-suggestions.use-case";
 import type { TodoSummaryForAnalysis } from "#api/modules/ai-assistance/domain/types/suggestions/ai-suggestion.types";
 import type { ApplicationLogger } from "#api/shared/application/ports/application-logger";
-import { TEST_AI_TASK_SETTINGS } from "#test/fixtures/ai-task-settings.fixture";
+import {
+  TEST_AI_TASK_SETTINGS,
+  TEST_AI_TASK_SETTINGS_V1,
+} from "#test/fixtures/ai-task-settings.fixture";
 import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 import {
   StubAiGenerationAccess,
@@ -97,6 +100,17 @@ export function createAiAssistanceFixture() {
     logger,
     entitlementReader: access,
     userMutationLock: access,
+    // 기존 제안 시나리오는 v1 응답 모양이라 v1 롤백 경로로 검증한다.
+    settings: TEST_AI_TASK_SETTINGS_V1,
+  });
+  const analyzeV2 = new AnalyzeAndCreateSuggestions({
+    repository,
+    aiProvider,
+    unitOfWork,
+    contextBuilder,
+    logger,
+    entitlementReader: access,
+    userMutationLock: access,
     settings: TEST_AI_TASK_SETTINGS,
   });
   const generateReport = new GenerateReport({
@@ -122,6 +136,7 @@ export function createAiAssistanceFixture() {
     logger,
     contextBuilder,
     analyze,
+    analyzeV2,
     generateReport,
   };
 }
