@@ -65,11 +65,11 @@ HeroUI `AvatarRootProps`의 모든 props를 상속한다 (`size`, `variant`, `co
 
 ### Sub-components
 
-| 컴포넌트          | 설명                          |
-| ----------------- | ----------------------------- |
-| `Avatar.Image`    | HeroUI Avatar.Image 포워딩    |
-| `Avatar.Fallback` | HeroUI Avatar.Fallback 포워딩 |
-| `Avatar.Loading`  | Skeleton 로딩 상태            |
+| 컴포넌트          | 설명                                                                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `Avatar.Image`    | HeroUI Avatar.Image. 페이드 인 없이 바로 표시(캐시된 이미지가 다시 마운트될 때 `onLoad`가 오지 않아도 보이게 함) |
+| `Avatar.Fallback` | HeroUI Avatar.Fallback 포워딩                                                                                    |
+| `Avatar.Loading`  | Skeleton 로딩 상태                                                                                               |
 
 ## 파일 구조
 
