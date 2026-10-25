@@ -18,15 +18,28 @@ export interface GenerateStructuredResult<T> {
   readonly usage: TokenUsage;
 }
 
-/** SDK/HTTP adapter가 전달하는 공급자 호출 실패. */
-export class AiProviderCallError extends Error {
+export const AI_PROVIDER_ERROR_KINDS = [
+  "UNAVAILABLE",
+  "RATE_LIMITED",
+  "TIMEOUT",
+  "UPSTREAM",
+  "BLOCKED",
+  "TRUNCATED",
+  "INVALID_OUTPUT",
+] as const;
+
+/** 공급자 실패를 응답 코드·재시도 판단에 필요한 종류로만 구분한다. */
+export type AiProviderErrorKind = (typeof AI_PROVIDER_ERROR_KINDS)[number];
+
+/** SDK/HTTP adapter가 분류해 전달하는 공급자 호출 실패. 원문 message는 담지 않는다. */
+export class AiProviderError extends Error {
   constructor(
-    message: string,
+    readonly kind: AiProviderErrorKind,
     readonly statusCode: number | undefined,
     options?: ErrorOptions,
   ) {
-    super(message, options);
-    this.name = AiProviderCallError.name;
+    super(kind, options);
+    this.name = AiProviderError.name;
   }
 }
 

@@ -1,12 +1,11 @@
 import { llmParsedMemoResultSchema } from "@aido/api";
-import { ErrorCode } from "@aido/api/errors";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { APICallError, NoObjectGeneratedError } from "ai";
+import { APICallError, NoObjectGeneratedError, RetryError } from "ai";
 import type { MockInstance } from "vitest";
 import { z } from "zod";
 
-import { AiProviderCallError } from "../../../application/ports/parsing/ai-provider.port.js";
+import { AiProviderError } from "../../../application/ports/parsing/ai-provider.port.js";
 import { GeminiAiAdapter } from "./gemini-ai.adapter.js";
 
 const schema = z.object({
@@ -41,11 +40,11 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     vi.unstubAllEnvs();
   });
 
-  it.each([undefined, ""])("미설정 key %s는 AI_1301이며 요청하지 않는다", async (key) => {
+  it.each([undefined, ""])("미설정 key %s는 UNAVAILABLE이며 요청하지 않는다", async (key) => {
     const provider = createProvider(key);
     expect(provider.isAvailable()).toBe(false);
     await expect(provider.generateStructured({ prompt: "독서", schema })).rejects.toMatchObject({
-      errorCode: ErrorCode.AI_1301,
+      kind: "UNAVAILABLE",
     });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
@@ -127,9 +126,12 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       const logError = vi.spyOn(Logger.prototype, "error").mockImplementation(() => {});
       const logWarn = vi.spyOn(Logger.prototype, "warn").mockImplementation(() => {});
 
-      await expect(
-        createProvider("fixture-key").generateStructured({ prompt: "PROMPT_SECRET", schema }),
-      ).rejects.toBeInstanceOf(NoObjectGeneratedError);
+      const error = await createProvider("fixture-key")
+        .generateStructured({ prompt: "PROMPT_SECRET", schema })
+        .catch((cause: unknown) => cause);
+      expect(error).toBeInstanceOf(AiProviderError);
+      expect(error).toMatchObject({ kind: "INVALID_OUTPUT", message: "INVALID_OUTPUT" });
+      expect(NoObjectGeneratedError.isInstance(Reflect.get(Object(error), "cause"))).toBe(true);
       expect(fetchSpy).toHaveBeenCalledTimes(1);
       expect(logError).not.toHaveBeenCalled();
       expect(logWarn).not.toHaveBeenCalled();
@@ -227,29 +229,104 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     });
 
     // Then - 모델 출력이 서버 한도를 벗어나면 성공으로 반환하지 않는다
-    await expect(execution).rejects.toBeInstanceOf(NoObjectGeneratedError);
+    await expect(execution).rejects.toMatchObject({ kind: "INVALID_OUTPUT" });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("non-retryable 429 APICallError는 기존 AI_1310 rate-limit 오류로 변환한다", async () => {
-    const error = new APICallError({
-      message: "SECRET_RATE_LIMIT_BODY",
-      url: "https://fixture.invalid/?key=SECRET_KEY",
-      requestBodyValues: { prompt: "SECRET_PROMPT" },
-      statusCode: 429,
-      isRetryable: false,
-    });
-    fetchSpy.mockRejectedValue(error);
+  it("재시도 가능한 429가 세 번 이어지면 RetryError의 마지막 원인으로 RATE_LIMITED를 반환한다", async () => {
+    // Given - Google의 실제 429 wire 응답과 SDK 기본 재시도 2회
+    fetchSpy.mockImplementation(async () =>
+      Response.json(
+        { error: { code: 429, message: "SECRET_QUOTA_BODY", status: "RESOURCE_EXHAUSTED" } },
+        { status: 429, headers: { "retry-after-ms": "0" } },
+      ),
+    );
 
-    await expect(
-      createProvider("fixture-key").generateStructured({ prompt: "독서", schema }),
-    ).rejects.toMatchObject({
-      errorCode: ErrorCode.AI_1310,
+    // When
+    const error = await createProvider("fixture-key")
+      .generateStructured({ prompt: "독서", schema })
+      .catch((cause: unknown) => cause);
+
+    // Then - 파싱 실패로 오인하지 않고 원문 없이 종류와 상태만 노출한다
+    expect(error).toBeInstanceOf(AiProviderError);
+    expect(error).toMatchObject({ kind: "RATE_LIMITED", statusCode: 429 });
+    expect(String(Reflect.get(Object(error), "message"))).not.toContain("SECRET");
+    expect(RetryError.isInstance(Reflect.get(Object(error), "cause"))).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("재시도가 소진된 503은 UPSTREAM으로 분류한다", async () => {
+    // Given
+    fetchSpy.mockImplementation(async () =>
+      Response.json(
+        { error: { code: 503, message: "fixture unavailable", status: "UNAVAILABLE" } },
+        { status: 503, headers: { "retry-after-ms": "0" } },
+      ),
+    );
+
+    // When
+    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "UPSTREAM", statusCode: 503 });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it("타임아웃 신호로 중단된 요청은 TIMEOUT으로 분류한다", async () => {
+    // Given - 이미 만료된 timeout 신호를 받은 fetch가 신호의 사유로 거절한다
+    vi.spyOn(AbortSignal, "timeout").mockReturnValue(
+      AbortSignal.abort(new DOMException("fixture timeout", "TimeoutError")),
+    );
+    fetchSpy.mockImplementation(async (_url, init) => {
+      throw init?.signal?.reason;
     });
+
+    // When
+    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "TIMEOUT" });
+  });
+
+  it("출력 토큰 한도로 잘린 응답은 TRUNCATED로 분류한다", async () => {
+    // Given - JSON이 중간에 끊긴 MAX_TOKENS 응답
+    fetchSpy.mockResolvedValue(
+      Response.json({
+        candidates: [
+          {
+            content: { role: "model", parts: [{ text: '{"title":"독' }] },
+            finishReason: "MAX_TOKENS",
+          },
+        ],
+      }),
+    );
+
+    // When
+    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "TRUNCATED" });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("non429 HTTP 오류의 status·cause·message 계약은 유지하며 secret을 로그에 남기지 않는다", async () => {
+  it("safety 차단 400은 BLOCKED로 분류하고 재시도하지 않는다", async () => {
+    // Given
+    fetchSpy.mockResolvedValue(
+      Response.json(
+        { error: { code: 400, message: "Input blocked: safety", status: "INVALID_ARGUMENT" } },
+        { status: 400 },
+      ),
+    );
+
+    // When
+    const execution = createProvider("fixture-key").generateStructured({ prompt: "독서", schema });
+
+    // Then
+    await expect(execution).rejects.toMatchObject({ kind: "BLOCKED", statusCode: 400 });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("safety 외 HTTP 400은 원문을 message에 담지 않고 UPSTREAM과 status·cause를 유지한다", async () => {
     const secret = "SECRET_RESPONSE_BODY apiKey=SECRET_KEY prompt=SECRET_PROMPT";
     fetchSpy.mockResolvedValue(
       Response.json(
@@ -264,23 +341,25 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       .generateStructured({ prompt: "SECRET_PROMPT", schema })
       .catch((cause: unknown) => cause);
 
-    expect(error).toBeInstanceOf(AiProviderCallError);
+    expect(error).toBeInstanceOf(AiProviderError);
     expect(error).toMatchObject({
-      message: secret,
+      kind: "UPSTREAM",
+      message: "UPSTREAM",
       statusCode: 400,
       cause: { statusCode: 400, message: secret },
     });
+    expect(APICallError.isInstance(Reflect.get(Object(error), "cause"))).toBe(true);
     expect(logError).not.toHaveBeenCalled();
     expect(logWarn).not.toHaveBeenCalled();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
-  it("SDK 호출의 그 밖의 오류는 identity를 유지한다", async () => {
+  it("분류할 수 없는 SDK 오류는 UPSTREAM으로 감싸고 원래 오류를 cause로 유지한다", async () => {
     const error = new Error("FIXTURE_SECRET");
     fetchSpy.mockRejectedValue(error);
     await expect(
       createProvider("fixture-key").generateStructured({ prompt: "독서", schema }),
-    ).rejects.toBe(error);
+    ).rejects.toMatchObject({ kind: "UPSTREAM", cause: error });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });

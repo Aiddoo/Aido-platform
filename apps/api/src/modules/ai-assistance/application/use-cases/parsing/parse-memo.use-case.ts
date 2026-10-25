@@ -10,10 +10,11 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import { type AiProvider, AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
+import { type AiProvider } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
+import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 import type { ParseTodoMeta } from "./parse-todo.use-case.js";
 
 /** 메모 → 다중 투두 파싱 결과 (LLM 출력에 categoryId 주입). */
@@ -121,29 +122,21 @@ export class ParseMemo {
         },
       };
     } catch (error) {
-      if (error instanceof ApplicationException && error.errorCode === ErrorCode.AI_1310) {
-        throw error;
-      }
-      if (error instanceof AiProviderCallError) {
-        this.#dependencies.logger.error({
-          event: AiParsingLogEvent.PROVIDER_FAILED,
-          userId,
-          statusCode: error.statusCode,
-        });
-        throw new ApplicationException(ErrorCode.AI_1301);
-      }
-
+      const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({
-        event: AiParsingLogEvent.OUTPUT_INVALID,
+        event:
+          failure.errorCode === ErrorCode.AI_1302
+            ? AiParsingLogEvent.OUTPUT_INVALID
+            : AiParsingLogEvent.PROVIDER_FAILED,
         userId,
-        errorCode: ErrorCode.AI_1302,
+        errorKind: failure.kind,
+        statusCode: failure.statusCode,
+        errorCode: failure.errorCode,
         ...(error instanceof ZodError && {
           validationIssues: error.issues.map(({ path, code }) => ({ path, code })),
         }),
       });
-      throw new ApplicationException(ErrorCode.AI_1302, {
-        details: error instanceof Error ? error.message : "Unknown error",
-      });
+      throw new ApplicationException(failure.errorCode);
     }
   }
 }

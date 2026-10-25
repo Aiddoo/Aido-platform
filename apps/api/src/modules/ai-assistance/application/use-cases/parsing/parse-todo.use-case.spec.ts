@@ -1,6 +1,6 @@
 import { AI_QUOTA_TIME, createAiQuotaFixture } from "#test/fixtures/ai-quota.fixture";
 
-import { AiProviderCallError } from "../../ports/parsing/ai-provider.port.js";
+import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import { ParseTodo, type ParseTodoInput } from "./parse-todo.use-case.js";
 
 function createFixture() {
@@ -121,10 +121,16 @@ describe("ParseTodo", () => {
   });
 
   it.each([
-    { error: new AiProviderCallError("provider unavailable", 500), errorCode: "AI_1301" },
+    { error: new AiProviderError("RATE_LIMITED", 429), errorCode: "AI_1310" },
+    { error: new AiProviderError("UPSTREAM", 503), errorCode: "AI_1301" },
+    { error: new AiProviderError("TIMEOUT", undefined), errorCode: "AI_1301" },
+    { error: new AiProviderError("UNAVAILABLE", undefined), errorCode: "AI_1301" },
+    { error: new AiProviderError("TRUNCATED", undefined), errorCode: "AI_1302" },
+    { error: new AiProviderError("BLOCKED", 400), errorCode: "AI_1302" },
+    { error: new AiProviderError("INVALID_OUTPUT", undefined), errorCode: "AI_1302" },
     { error: new Error("invalid output"), errorCode: "AI_1302" },
   ])(
-    "provider 오류는 $errorCode를 반환하고 예약 사용량을 보상한다",
+    "공급자 오류 $error.message는 $errorCode를 반환하고 예약 사용량을 보상한다",
     async ({ error, errorCode }) => {
       // Given
       const fixture = createFixture();

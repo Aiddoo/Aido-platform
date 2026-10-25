@@ -7,14 +7,11 @@ import { ApplicationException } from "#api/shared/domain/exceptions/application.
 import type { SupportedLocale } from "#api/shared/domain/locale";
 
 import { AiParsingLogEvent } from "../../observability/parsing/ai-parsing-log.events.js";
-import {
-  type AiProvider,
-  AiProviderCallError,
-  type TokenUsage,
-} from "../../ports/parsing/ai-provider.port.js";
+import { type AiProvider, type TokenUsage } from "../../ports/parsing/ai-provider.port.js";
 import type { AiQuotaPort } from "../../ports/parsing/ai-quota.port.js";
 import { type UserCategoryReaderPort } from "../../ports/parsing/user-category-reader.port.js";
 import { aiPromptCatalog } from "../../prompts/ai-prompt.catalog.js";
+import { describeParsingFailure } from "../../services/parsing/ai-parsing-error-code.js";
 
 /** 파싱 메타데이터 (모델·처리시간·토큰). */
 export interface ParseTodoMeta {
@@ -45,8 +42,8 @@ export interface ParseTodoInput {
  * 자연어 → 단건 투두 파싱 use-case.
  *
  * 가용성 확인 → 사용량 원자적 차감 → 프롬프트 조립 → AI 생성 → 카테고리 정합.
- * AI 호출 실패 시 사용량을 보상 감소하고, 호출 실패(AI_1301)/파싱 실패(AI_1302)를
- * 구분해 던진다.
+ * AI 호출 실패 시 사용량을 보상 감소하고, 공급자 오류 종류에 따라
+ * 요청 과다(AI_1310)/호출 실패(AI_1301)/파싱 실패(AI_1302)를 구분해 던진다.
  */
 interface ParseTodoDependencies {
   readonly aiProvider: Pick<AiProvider, "isAvailable" | "generateStructured">;
@@ -128,23 +125,18 @@ export class ParseTodo {
         },
       };
     } catch (error) {
-      if (error instanceof AiProviderCallError) {
-        this.#dependencies.logger.error({
-          event: AiParsingLogEvent.PROVIDER_FAILED,
-          userId,
-          statusCode: error.statusCode,
-        });
-        throw new ApplicationException(ErrorCode.AI_1301);
-      }
-
+      const failure = describeParsingFailure(error);
       this.#dependencies.logger.error({
-        event: AiParsingLogEvent.OUTPUT_INVALID,
+        event:
+          failure.errorCode === ErrorCode.AI_1302
+            ? AiParsingLogEvent.OUTPUT_INVALID
+            : AiParsingLogEvent.PROVIDER_FAILED,
         userId,
-        errorCode: ErrorCode.AI_1302,
+        errorKind: failure.kind,
+        statusCode: failure.statusCode,
+        errorCode: failure.errorCode,
       });
-      throw new ApplicationException(ErrorCode.AI_1302, {
-        details: error instanceof Error ? error.message : "Unknown error",
-      });
+      throw new ApplicationException(failure.errorCode);
     }
   }
 }

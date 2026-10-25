@@ -2,16 +2,15 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { APICallError, generateText, Output } from "ai";
+import { generateText, Output } from "ai";
 
-import { ApplicationExceptions } from "#api/shared/application/exceptions/application-exceptions";
-
-import type {
-  AiProvider,
-  GenerateStructuredOptions,
-  GenerateStructuredResult,
+import {
+  type AiProvider,
+  AiProviderError,
+  type GenerateStructuredOptions,
+  type GenerateStructuredResult,
 } from "../../../application/ports/parsing/ai-provider.port.js";
-import { AiProviderCallError } from "../../../application/ports/parsing/ai-provider.port.js";
+import { classifyAiSdkError } from "./ai-sdk-error.classifier.js";
 
 const GEMINI_MODEL = "gemini-3.1-flash-lite" as const;
 const DEFAULT_MAX_OUTPUT_TOKENS = 150;
@@ -31,7 +30,7 @@ export class GeminiAiAdapter implements AiProvider {
     options: GenerateStructuredOptions<T>,
   ): Promise<GenerateStructuredResult<T>> {
     if (this.#model === null) {
-      throw ApplicationExceptions.aiServiceUnavailable();
+      throw new AiProviderError("UNAVAILABLE", undefined);
     }
 
     try {
@@ -54,15 +53,7 @@ export class GeminiAiAdapter implements AiProvider {
         },
       };
     } catch (error) {
-      if (APICallError.isInstance(error) && error.statusCode === 429) {
-        throw ApplicationExceptions.aiRateLimitExceeded();
-      }
-      if (APICallError.isInstance(error)) {
-        throw new AiProviderCallError(error.message, error.statusCode, {
-          cause: error,
-        });
-      }
-      throw error;
+      throw classifyAiSdkError(error);
     }
   }
 

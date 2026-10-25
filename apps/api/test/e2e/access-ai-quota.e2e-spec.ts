@@ -8,7 +8,7 @@ import {
 } from "#api/modules/access/access-entitlement.public";
 import { AI_PROVIDER } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
 import {
-  AiProviderCallError,
+  AiProviderError,
   type GenerateStructuredOptions,
   type GenerateStructuredResult,
 } from "#api/modules/ai-assistance/application/ports/parsing/ai-provider.port";
@@ -154,7 +154,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
   it("AI 공급자 호출 실패는 기존 503 오류를 반환하고 예약한 사용량만 되돌린다", async () => {
     // Given
     await setQuota({ count: 2, resetAt: oldMonthAt });
-    provider.setInvalidResponse(new AiProviderCallError("공급자 연결 실패", 503));
+    provider.setInvalidResponse(new AiProviderError("UPSTREAM", 503));
     // When
     const response = await parseTodo();
     // Then
@@ -180,7 +180,7 @@ describe("Access AI quota HTTP 계약과 사용량 경쟁 (실제 PostgreSQL)", 
 
   it("이전 달 AI 응답이 새달 성공 요청 뒤에 실패해도 새달 사용량을 차감하지 않는다", async () => {
     // Given
-    const deferred = provider.deferNext(new AiProviderCallError("이전 달 공급자 요청 실패", 503));
+    const deferred = provider.deferNext(new AiProviderError("UPSTREAM", 503));
     const previousRequest = parseTodo().then();
     try {
       await Promise.race([

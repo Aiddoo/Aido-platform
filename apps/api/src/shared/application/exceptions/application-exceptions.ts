@@ -33,14 +33,6 @@ export class ApplicationExceptions {
     return new ApplicationException(ErrorCode.FOLLOW_0901, { targetUserId });
   }
 
-  static aiServiceUnavailable() {
-    return new ApplicationException(ErrorCode.AI_1301);
-  }
-
-  static aiRateLimitExceeded() {
-    return new ApplicationException(ErrorCode.AI_1310);
-  }
-
   static todoCategoryNotFound(categoryId: number) {
     return new ApplicationException(ErrorCode.TODO_CATEGORY_0851, { categoryId });
   }
