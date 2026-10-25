@@ -2,12 +2,16 @@
   "codeEntry": {
     "title": "초대 코드 입력",
     "headline": "친구에게 받은\n초대 코드를 입력해주세요",
-    "description": "영문과 숫자 6자리예요. 붙여넣어도 돼요",
+    "description": "영문과 숫자 6자리예요. 헷갈리는 0·O·1·I·L은 없어요",
     "inputLabel": "초대 코드",
     "paste": "복사한 코드 붙여넣기",
     "submit": "확인",
     "retry": "다시 확인",
-    "unsupportedCharacter": "초대 코드에 쓰지 않는 글자가 있어요. 숫자와 영문 대문자 일부만 쓸 수 있어요"
+    "invalidCharacter": {
+      "confusable": "{{characters}} 글자는 초대 코드에 없어요.\n헷갈리기 쉬운 0·O·1·I·L은 쓰지 않아요",
+      "unused": "{{characters}} 글자는 초대 코드에 없어요.\n코드를 다시 확인해주세요",
+      "more": "{{characters}} 등의"
+    }
   },
   "card": {
     "inviterAvatar": "{{name}}님의 고양이 프로필",

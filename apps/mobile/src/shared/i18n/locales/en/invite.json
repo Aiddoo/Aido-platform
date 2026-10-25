@@ -2,12 +2,18 @@
   "codeEntry": {
     "title": "Enter invite code",
     "headline": "Enter the invite code\nyour friend sent you",
-    "description": "It's 6 characters (letters and numbers). You can paste it too",
+    "description": "It's 6 letters and numbers, without look-alikes like 0, O, 1, I, or L",
     "inputLabel": "Invite code",
     "paste": "Paste copied code",
     "submit": "Continue",
     "retry": "Check again",
-    "unsupportedCharacter": "This code has a character invite codes don't use. Codes use only some numbers and capital letters"
+    "invalidCharacter": {
+      "confusable_one": "{{characters}} isn't used in invite codes.\nWe skip look-alikes like 0, O, 1, I, and L",
+      "confusable_other": "{{characters}} aren't used in invite codes.\nWe skip look-alikes like 0, O, 1, I, and L",
+      "unused_one": "{{characters}} isn't used in invite codes.\nPlease check the code again",
+      "unused_other": "{{characters}} aren't used in invite codes.\nPlease check the code again",
+      "more": "{{characters}}, and others"
+    }
   },
   "card": {
     "inviterAvatar": "{{name}}'s cat profile",

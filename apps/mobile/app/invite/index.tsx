@@ -1,6 +1,7 @@
 import { useClipboard, useInviteService } from '@src/bootstrap/providers/di-context';
 import { InviteCodeInput } from '@src/features/invite/components/invite-code-input';
 import {
+  type InvalidCharacterSummary,
   InviteCodePolicy,
   parseInviteCode,
   toInviteCodeDraft,
@@ -26,8 +27,8 @@ import {
 } from '@src/shared/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { PressableFeedback } from 'heroui-native';
-import { type ComponentProps, useState } from 'react';
+import { type InputOTPRef, PressableFeedback } from 'heroui-native';
+import { type ComponentProps, useRef, useState } from 'react';
 import { useErrorBoundary } from 'react-error-boundary';
 import { useForm, useWatch } from 'react-hook-form';
 import { ScrollView } from 'react-native';
@@ -43,17 +44,43 @@ function InviteCodeEntryScreen() {
   const queryClient = useQueryClient();
   const { control, handleSubmit, setValue, setError, clearErrors, formState } =
     useForm<InviteCodeForm>({ defaultValues: { inviteCode: '' } });
+  const inviteCodeInputRef = useRef<InputOTPRef>(null);
   const draft = useWatch({ control, name: 'inviteCode' });
   const errorMessage = formState.errors.inviteCode?.message;
+  // 오류는 값을 바꾸면 지워지므로, 오류가 있는 동안의 틀린 칸은 지금 값에서 다시 구해도 같다
+  const invalidIndexes =
+    errorMessage == null
+      ? []
+      : InviteCodePolicy.invalidCharacters(draft).map((invalidCharacter) => invalidCharacter.index);
+
+  const formatInvalidCharacterMessage = ({
+    kind,
+    listedCharacters,
+    uniqueCount,
+  }: InvalidCharacterSummary) => {
+    const quotedCharacters = listedCharacters.map((character) => `‘${character}’`).join(', ');
+    const characters =
+      uniqueCount > listedCharacters.length
+        ? t('codeEntry.invalidCharacter.more', { characters: quotedCharacters })
+        : quotedCharacters;
+
+    return kind === 'confusable'
+      ? t('codeEntry.invalidCharacter.confusable', { characters, count: uniqueCount })
+      : t('codeEntry.invalidCharacter.unused', { characters, count: uniqueCount });
+  };
 
   const submitInviteCode = handleSubmit(async ({ inviteCode: raw }) => {
     const inviteCode = parseInviteCode(raw);
     if (inviteCode == null) {
+      const invalidCharacterSummary = InviteCodePolicy.invalidCharacterSummary(raw);
       setError('inviteCode', {
-        message: InviteCodePolicy.hasUnsupportedCharacter(raw)
-          ? t('codeEntry.unsupportedCharacter')
-          : t('errors.invalidCode'),
+        message:
+          invalidCharacterSummary == null
+            ? t('errors.invalidCode')
+            : formatInvalidCharacterMessage(invalidCharacterSummary),
       });
+      // 키보드를 그대로 두어 바로 지우고 고쳐 쓰게 한다
+      inviteCodeInputRef.current?.focus();
       return;
     }
 
@@ -100,12 +127,15 @@ function InviteCodeEntryScreen() {
             <FormField control={control} name="inviteCode">
               {({ value, onChange }) => (
                 <InviteCodeInput
+                  ref={inviteCodeInputRef}
                   value={value}
                   onChange={(next) => {
                     clearErrors('inviteCode');
                     onChange(next);
                   }}
-                  isInvalid={errorMessage != null}
+                  // 틀린 글자가 있으면 그 칸만, 없는 코드처럼 전체가 틀렸으면 모든 칸을 빨갛게 그린다
+                  isInvalid={errorMessage != null && invalidIndexes.length === 0}
+                  invalidIndexes={invalidIndexes}
                   textInputProps={{
                     autoFocus: true,
                     accessibilityLabel: t('codeEntry.inputLabel'),
@@ -128,7 +158,13 @@ function InviteCodeEntryScreen() {
                 accessibilityLiveRegion="polite"
               >
                 <InfoIcon width={16} height={16} colorClassName="text-error" />
-                <Text size="b4" weight="semibold" tone="danger" className="flex-1">
+                <Text
+                  size="b4"
+                  weight="semibold"
+                  tone="danger"
+                  lineBreakStrategyIOS="hangul-word"
+                  className="flex-1"
+                >
                   {errorMessage}
                 </Text>
               </HStack>
