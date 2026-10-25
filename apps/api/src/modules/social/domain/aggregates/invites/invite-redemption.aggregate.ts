@@ -19,6 +19,10 @@ export interface InviteRedemptionProps {
   inviteeId: string;
   status: RedemptionStatusValue;
   rejectionReason: RedemptionRejectionReason | null;
+  /** 수락할 때 고정한 초대받은 사람 시간대. 활동일은 이 시간대로만 센다. */
+  timezone: string;
+  /** 같은 기기·신원 재사용으로 초대받은 사람 보상을 막았으면 초대한 사람 보상도 주지 않는다. */
+  inviterRewardEligible: boolean;
   /** 초대받은 사람 시간대의 YYYY-MM-DD 달력 날짜 */
   activeDays: readonly string[];
   joinedAt: Date;
@@ -32,6 +36,8 @@ export interface InviteRedemptionCreationInput {
   readonly inviteId: string;
   readonly inviterId: string;
   readonly inviteeId: string;
+  readonly timezone: string;
+  readonly inviterRewardEligible: boolean;
   readonly joinedAt: Date;
 }
 
@@ -40,6 +46,8 @@ export interface InviteRedemptionCreationPlan {
   readonly inviterId: string;
   readonly inviteeId: string;
   readonly status: "JOINED";
+  readonly timezone: string;
+  readonly inviterRewardEligible: boolean;
   readonly joinedAt: Date;
   readonly expiresAt: Date;
 }
@@ -69,6 +77,8 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       inviterId: input.inviterId,
       inviteeId: input.inviteeId,
       status: "JOINED",
+      timezone: input.timezone,
+      inviterRewardEligible: input.inviterRewardEligible,
       joinedAt: new Date(input.joinedAt),
       expiresAt: addDays(INVITE_QUALIFICATION.EXPIRE_AFTER_DAYS, input.joinedAt),
     };
@@ -82,6 +92,8 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       inviteeId: props.inviteeId,
       status: RedemptionStatus.of(props.status),
       rejectionReason: props.rejectionReason,
+      timezone: props.timezone,
+      inviterRewardEligible: props.inviterRewardEligible,
       activeDays: new Set(props.activeDays),
       addedActiveDays: [],
       joinedAt: new Date(props.joinedAt),
@@ -114,6 +126,14 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
 
   get rejectionReason(): RedemptionRejectionReason | null {
     return this.props.rejectionReason;
+  }
+
+  get timezone(): string {
+    return this.props.timezone;
+  }
+
+  get inviterRewardEligible(): boolean {
+    return this.props.inviterRewardEligible;
   }
 
   get activeDays(): string[] {

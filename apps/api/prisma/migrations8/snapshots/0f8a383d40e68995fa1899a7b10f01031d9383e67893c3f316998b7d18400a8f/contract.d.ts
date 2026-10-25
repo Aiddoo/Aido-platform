@@ -23,7 +23,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2355c978e694f7bdee39bd2688200680bbaac9a70c8fff3b8ef441c046f4f2f9'>;
+  StorageHashBase<'0f8a383d40e68995fa1899a7b10f01031d9383e67893c3f316998b7d18400a8f'>;
 export type ExecutionHash =
   ExecutionHashBase<'8db6e5a63f8631439355537fae75b591341a6d7d1f919403822ac6ed74be1ef4'>;
 export type ProfileHash =
@@ -988,12 +988,14 @@ export namespace Models {
     inviteId: FieldOutputTypes['public']['InviteRedemption']['inviteId'];
     inviteeId: FieldOutputTypes['public']['InviteRedemption']['inviteeId'];
     inviterId: FieldOutputTypes['public']['InviteRedemption']['inviterId'];
+    inviterRewardEligible: FieldOutputTypes['public']['InviteRedemption']['inviterRewardEligible'];
     joinedAt: FieldOutputTypes['public']['InviteRedemption']['joinedAt'];
     qualifiedAt: FieldOutputTypes['public']['InviteRedemption']['qualifiedAt'];
     rejectedAt: FieldOutputTypes['public']['InviteRedemption']['rejectedAt'];
     rejectionReason: FieldOutputTypes['public']['InviteRedemption']['rejectionReason'];
     rewardedAt: FieldOutputTypes['public']['InviteRedemption']['rewardedAt'];
     status: FieldOutputTypes['public']['InviteRedemption']['status'];
+    timezone: FieldOutputTypes['public']['InviteRedemption']['timezone'];
     updatedAt: FieldOutputTypes['public']['InviteRedemption']['updatedAt'];
     activeDays: public_InviteActiveDay[];
     invite: public_Invite | null;
@@ -2426,6 +2428,16 @@ type ContractBase = Omit<
                   readonly nullable: true;
                   readonly many: false;
                 };
+                readonly inviterRewardEligible: {
+                  readonly dataType: 'pg/bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', true>;
+                  };
+                  readonly many: false;
+                };
                 readonly joinedAt: {
                   readonly dataType: 'pg/timestamp';
                   readonly codecId: 'pg/timestamp-string@1';
@@ -2470,6 +2482,13 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/enum@1', 'JOINED'>;
                   };
                   readonly typeParams: { readonly typeName: 'InviteRedemptionStatus' };
+                  readonly many: false;
+                };
+                readonly timezone: {
+                  readonly dataType: 'pg/varchar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly nullable: false;
+                  readonly typeParams: { readonly length: 50 };
                   readonly many: false;
                 };
                 readonly updatedAt: {
@@ -8038,6 +8057,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly inviterRewardEligible: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly joinedAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -8084,6 +8107,14 @@ type ContractBase = Omit<
                   readonly kind: 'scalar';
                   readonly codecId: 'pg/enum@1';
                   readonly typeParams: { readonly typeName: 'InviteRedemptionStatus' };
+                };
+              };
+              readonly timezone: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'sql/varchar@1';
+                  readonly typeParams: { readonly length: 50 };
                 };
               };
               readonly updatedAt: {
@@ -8148,12 +8179,14 @@ type ContractBase = Omit<
                 readonly inviteId: { readonly column: 'inviteId' };
                 readonly inviteeId: { readonly column: 'inviteeId' };
                 readonly inviterId: { readonly column: 'inviterId' };
+                readonly inviterRewardEligible: { readonly column: 'inviterRewardEligible' };
                 readonly joinedAt: { readonly column: 'joinedAt' };
                 readonly qualifiedAt: { readonly column: 'qualifiedAt' };
                 readonly rejectedAt: { readonly column: 'rejectedAt' };
                 readonly rejectionReason: { readonly column: 'rejectionReason' };
                 readonly rewardedAt: { readonly column: 'rewardedAt' };
                 readonly status: { readonly column: 'status' };
+                readonly timezone: { readonly column: 'timezone' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };

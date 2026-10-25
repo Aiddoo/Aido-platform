@@ -12,6 +12,8 @@ function createRedemption(overrides: Partial<InviteRedemptionProps> = {}): Invit
     inviteeId: "cinvitee00000000000000001",
     status: "JOINED",
     rejectionReason: null,
+    timezone: "Asia/Seoul",
+    inviterRewardEligible: true,
     activeDays: [],
     joinedAt: JOINED_AT,
     qualifiedAt: null,
@@ -24,12 +26,14 @@ function createRedemption(overrides: Partial<InviteRedemptionProps> = {}): Invit
 
 describe("InviteRedemption", () => {
   describe("planCreation", () => {
-    it("가입 시각에서 14일 뒤를 사용 시작 마감으로 정한다", () => {
+    it("가입 시각에서 14일 뒤를 사용 시작 마감으로 정하고 시간대와 보상 자격을 고정한다", () => {
       // Given
       const input = {
         inviteId: "cinvite000000000000000001",
         inviterId: "cinviter00000000000000001",
         inviteeId: "cinvitee00000000000000001",
+        timezone: "Asia/Seoul",
+        inviterRewardEligible: false,
         joinedAt: JOINED_AT,
       };
 

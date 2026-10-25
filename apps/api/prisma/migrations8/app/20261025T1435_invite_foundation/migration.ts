@@ -9,10 +9,10 @@ import {
   sql,
 } from "@prisma/orm-postgres/migration";
 
+import type { Contract as End } from "../../snapshots/0f8a383d40e68995fa1899a7b10f01031d9383e67893c3f316998b7d18400a8f/contract";
+import endContract from "../../snapshots/0f8a383d40e68995fa1899a7b10f01031d9383e67893c3f316998b7d18400a8f/contract.json" with { type: "json" };
 import type { Contract as Start } from "../../snapshots/65d810f74acf51dc46d4ffa10564516809ad487555fff459995e1dee14e7695a/contract";
 import startContract from "../../snapshots/65d810f74acf51dc46d4ffa10564516809ad487555fff459995e1dee14e7695a/contract.json" with { type: "json" };
-import type { Contract as End } from "../../snapshots/2355c978e694f7bdee39bd2688200680bbaac9a70c8fff3b8ef441c046f4f2f9/contract";
-import endContract from "../../snapshots/2355c978e694f7bdee39bd2688200680bbaac9a70c8fff3b8ef441c046f4f2f9/contract.json" with { type: "json" };
 
 export default class M extends Migration<Start, End> {
   override readonly startContractJson = startContract;
@@ -146,6 +146,11 @@ export default class M extends Migration<Start, End> {
           col("inviteId", "text", { codecRef: { codecId: "pg/text@1" } }),
           col("inviteeId", "text", { notNull: true, codecRef: { codecId: "pg/text@1" } }),
           col("inviterId", "text", { codecRef: { codecId: "pg/text@1" } }),
+          col("inviterRewardEligible", "bool", {
+            notNull: true,
+            default: lit(true),
+            codecRef: { codecId: "pg/bool@1" },
+          }),
           col("joinedAt", "timestamp(3)", {
             notNull: true,
             codecRef: { codecId: "pg/timestamp-string@1", typeParams: { precision: 3 } },
@@ -166,6 +171,10 @@ export default class M extends Migration<Start, End> {
             notNull: true,
             default: lit("JOINED"),
             codecRef: { codecId: "pg/enum@1", typeParams: { typeName: "InviteRedemptionStatus" } },
+          }),
+          col("timezone", "character varying(50)", {
+            notNull: true,
+            codecRef: { codecId: "sql/varchar@1", typeParams: { length: 50 } },
           }),
           col("updatedAt", "timestamp(3)", {
             notNull: true,

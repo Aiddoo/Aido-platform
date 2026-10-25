@@ -535,7 +535,7 @@
     "execute": [
       {
         "description": "create table \"InviteRedemption\"",
-        "sql": "CREATE TABLE \"public\".\"InviteRedemption\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" text NOT NULL,\n  \"inviteId\" text,\n  \"inviteeId\" text NOT NULL,\n  \"inviterId\" text,\n  \"joinedAt\" timestamp(3) NOT NULL,\n  \"qualifiedAt\" timestamp(3),\n  \"rejectedAt\" timestamp(3),\n  \"rejectionReason\" \"InviteRejectionReason\",\n  \"rewardedAt\" timestamp(3),\n  \"status\" \"InviteRedemptionStatus\" DEFAULT 'JOINED'::\"InviteRedemptionStatus\" NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  CONSTRAINT \"InviteRedemption_pkey\" PRIMARY KEY (\"id\")\n)",
+        "sql": "CREATE TABLE \"public\".\"InviteRedemption\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" text NOT NULL,\n  \"inviteId\" text,\n  \"inviteeId\" text NOT NULL,\n  \"inviterId\" text,\n  \"inviterRewardEligible\" bool DEFAULT true NOT NULL,\n  \"joinedAt\" timestamp(3) NOT NULL,\n  \"qualifiedAt\" timestamp(3),\n  \"rejectedAt\" timestamp(3),\n  \"rejectionReason\" \"InviteRejectionReason\",\n  \"rewardedAt\" timestamp(3),\n  \"status\" \"InviteRedemptionStatus\" DEFAULT 'JOINED'::\"InviteRedemptionStatus\" NOT NULL,\n  \"timezone\" character varying(50) NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  CONSTRAINT \"InviteRedemption_pkey\" PRIMARY KEY (\"id\")\n)",
         "params": []
       }
     ],

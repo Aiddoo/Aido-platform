@@ -819,6 +819,8 @@ namespace public {
     inviteeId       String
     status          pg.enum(InviteRedemptionStatus)            @default("JOINED")
     rejectionReason pg.enum(InviteRejectionReason)?
+    timezone        VarChar(50)
+    inviterRewardEligible Boolean                              @default(true)
     joinedAt        TimestampString(3)
     qualifiedAt     TimestampString(3)?
     rewardedAt      TimestampString(3)?

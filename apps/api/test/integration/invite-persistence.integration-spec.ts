@@ -91,7 +91,14 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
 
   async function redeem(inviterId: string, inviteId: string, inviteeId: string, joinedAt: Date) {
     const redemption = await redemptions.create(
-      InviteRedemption.planCreation({ inviteId, inviterId, inviteeId, joinedAt }),
+      InviteRedemption.planCreation({
+        inviteId,
+        inviterId,
+        inviteeId,
+        timezone: "Asia/Seoul",
+        inviterRewardEligible: true,
+        joinedAt,
+      }),
     );
     if (redemption === null) throw new Error("초대 수락 행이 필요합니다");
     return redemption;
@@ -234,6 +241,8 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
           inviteId: invite.id,
           inviterId,
           inviteeId,
+          timezone: "Asia/Seoul",
+          inviterRewardEligible: true,
           joinedAt: new Date("2026-11-02T00:00:01Z"),
         }),
       );
@@ -243,6 +252,7 @@ describe("초대 저장소·제약·시간대 (실제 PostgreSQL)", () => {
       expect(duplicate).toBeNull();
       const kept = await redemptions.findByIdForUpdate(redemption.id);
       expect([kept?.inviterId, kept?.inviteId, kept?.inviteeId]).toEqual([null, null, inviteeId]);
+      expect([kept?.timezone, kept?.inviterRewardEligible]).toEqual(["Asia/Seoul", true]);
       expect(await claims.existsAny(["b".repeat(64)])).toBe(true);
       expect(
         await claims.claimAll(

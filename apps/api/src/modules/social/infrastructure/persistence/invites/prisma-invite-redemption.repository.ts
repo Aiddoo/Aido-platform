@@ -30,6 +30,8 @@ const REDEMPTION_COLUMNS = [
   "inviteeId",
   "status",
   "rejectionReason",
+  "timezone",
+  "inviterRewardEligible",
   "joinedAt",
   "qualifiedAt",
   "rewardedAt",
