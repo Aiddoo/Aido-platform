@@ -149,6 +149,14 @@ export const currentUserSchema = z
       .describe(
         "스토어 구독이 자동 갱신되는지 여부 (보상 기간만 있으면 false, 구버전 서버는 생략)",
       ),
+    bankedPremiumDays: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "스토어 구독 중이라 아직 시작하지 않은 보상 일수 합계 (구독이 끝나면 이어서 시작, 없으면 0, 구버전 서버는 생략)",
+      ),
   })
   .describe("현재 사용자 정보")
   .meta({
@@ -169,6 +177,7 @@ export const currentUserSchema = z
       premiumSource: null,
       premiumEndsAt: null,
       willRenew: false,
+      bankedPremiumDays: 0,
     },
   });
 
