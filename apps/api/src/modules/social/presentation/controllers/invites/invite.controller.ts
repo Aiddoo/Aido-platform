@@ -129,7 +129,7 @@ export class InviteController {
     summary: "초대 미리보기",
     operationId: "getInvitePreview",
     description:
-      "로그인 없이 초대한 사람의 이름·태그·프로필 이미지만 반환합니다. 공백·하이픈·소문자는 정규화합니다. IP당 분당 20회까지입니다.",
+      "로그인 없이 초대한 사람의 이름과 프로필 이미지만 반환합니다. 친구 요청에 쓰는 태그는 담지 않습니다. 공백·하이픈·소문자는 정규화합니다. IP당 분당 20회까지입니다.",
   })
   @ApiSuccessResponse({ type: InvitePreviewResponseDto })
   @ApiNotFoundError(ErrorCode.INVITE_2101)

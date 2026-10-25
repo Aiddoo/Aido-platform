@@ -194,7 +194,6 @@ describe("invitedFriendResponseSchema", () => {
   it.each([
     { name: "구버전 서버처럼 사유를 생략한", rejectionReason: undefined, expected: true },
     { name: "기한이 지나 제외된", rejectionReason: "EXPIRED", expected: true },
-    { name: "모르는 사유가 온", rejectionReason: "UNKNOWN", expected: false },
   ])("$name 항목의 허용 여부는 $expected다", ({ rejectionReason, expected }) => {
     // Given
     const response = { ...friend, rejectionReason };
@@ -204,5 +203,16 @@ describe("invitedFriendResponseSchema", () => {
 
     // Then
     expect(result.success).toBe(expected);
+  });
+
+  it("뒤에 추가된 사유와 상태를 받으면 사유는 null, 상태는 UNKNOWN으로 읽어 항목을 버리지 않는다", () => {
+    // Given
+    const response = { ...friend, status: "ON_HOLD", rejectionReason: "DUPLICATE_CLAIM" };
+
+    // When
+    const parsed = invitedFriendResponseSchema.parse(response);
+
+    // Then
+    expect(parsed).toMatchObject({ status: "UNKNOWN", rejectionReason: null });
   });
 });

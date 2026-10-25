@@ -5,9 +5,9 @@ import { REDEEM_OUTCOME } from "../../vocabulary/invite.constants.js";
 import {
   inviteCodeFormatSchema,
   inviteFriendshipSchema,
+  invitedFriendRejectionReasonSchema,
+  invitedFriendStatusSchema,
   inviteRewardSchema,
-  redemptionRejectionReasonSchema,
-  redemptionStatusSchema,
 } from "./invite.common.js";
 
 const userTagSchema = z
@@ -20,13 +20,13 @@ const profileImageSchema = z
   .nullable()
   .describe("프로필 이미지 (고양이 아이콘 키 또는 URL, 미설정 시 null)");
 
+// 로그인 전 미리보기는 코드만으로 열리므로 친구 요청에 쓰는 userTag는 싣지 않는다
 export const invitePreviewInviterSchema = z
   .object({
     name: userNameSchema,
-    userTag: userTagSchema,
     profileImage: profileImageSchema,
   })
-  .describe("초대한 사람 공개 프로필 (로그인 전에도 보이므로 이름·태그·프로필 이미지만 담는다)");
+  .describe("초대한 사람 공개 프로필 (로그인 전에도 보이므로 이름과 프로필 이미지만 담는다)");
 
 export type InvitePreviewInviter = z.infer<typeof invitePreviewInviterSchema>;
 
@@ -36,7 +36,7 @@ export const invitePreviewResponseSchema = z
   })
   .meta({
     example: {
-      inviter: { name: "매튜", userTag: "MATT2025", profileImage: "orange_tabby" },
+      inviter: { name: "매튜", profileImage: "orange_tabby" },
     },
   });
 
@@ -45,6 +45,7 @@ export type InvitePreviewResponse = z.infer<typeof invitePreviewResponseSchema>;
 export const inviterSummarySchema = invitePreviewInviterSchema
   .extend({
     userId: z.cuid().describe("초대한 사람 사용자 ID (CUID 25자)"),
+    userTag: userTagSchema,
   })
   .describe("초대한 사람 요약 (환영 화면과 친구 화면 이동용)");
 
@@ -126,7 +127,7 @@ export const invitedFriendResponseSchema = z
     name: userNameSchema,
     userTag: userTagSchema,
     profileImage: profileImageSchema,
-    status: redemptionStatusSchema,
+    status: invitedFriendStatusSchema,
     activeDayCount: z
       .number()
       .int()
@@ -134,8 +135,7 @@ export const invitedFriendResponseSchema = z
       .describe("할 일을 완료한 서로 다른 날짜 수 (초대받은 사람 시간대 기준, 음이 아닌 정수)"),
     joinedAt: datetimeSchema.describe("초대 수락 시각 (ISO 8601 UTC)"),
     qualifiedAt: nullableDatetimeSchema.describe("사용 시작 시각 (ISO 8601 UTC, 아직이면 null)"),
-    rejectionReason: redemptionRejectionReasonSchema
-      .nullable()
+    rejectionReason: invitedFriendRejectionReasonSchema
       .optional()
       .describe("REJECTED일 때만 보상 제외 사유, 그 밖의 상태는 null (구버전 서버는 생략)"),
   })

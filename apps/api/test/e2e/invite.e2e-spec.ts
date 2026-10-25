@@ -96,9 +96,10 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
       // Then
       expect(invitePreviewResponseSchema.parse(preview.body.data).inviter).toMatchObject({
         name: "매튜",
-        userTag: inviter.userTag,
       });
+      // 비로그인 미리보기에는 친구 요청에 쓰는 태그와 사용자 ID를 싣지 않는다
       expect(preview.body.data.inviter).not.toHaveProperty("userId");
+      expect(preview.body.data.inviter).not.toHaveProperty("userTag");
       expect(myInviteResponseSchema.parse(rotated.body.data).code).not.toBe(code);
       expect(revoked.body.error.code).toBe(ErrorCode.INVITE_2102);
       expect(unknown.body.error.code).toBe(ErrorCode.INVITE_2101);

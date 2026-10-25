@@ -38,11 +38,7 @@ export const InviteMapper = {
 
   toPreviewDto(inviter: InviterProfile): InvitePreviewResponseDto {
     return {
-      inviter: {
-        name: inviter.name,
-        userTag: inviter.userTag,
-        profileImage: inviter.profileImage,
-      },
+      inviter: { name: inviter.name, profileImage: inviter.profileImage },
     };
   },
 

@@ -3823,12 +3823,11 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
         "inviter": {
           "name": "매튜",
           "profileImage": "orange_tabby",
-          "userTag": "MATT2025",
         },
       },
       "properties": {
         "inviter": {
-          "description": "초대한 사람 공개 프로필 (로그인 전에도 보이므로 이름·태그·프로필 이미지만 담는다)",
+          "description": "초대한 사람 공개 프로필 (로그인 전에도 보이므로 이름과 프로필 이미지만 담는다)",
           "properties": {
             "name": {
               "description": "사용자 이름 (미설정 시 null)",
@@ -3844,16 +3843,9 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "null",
               ],
             },
-            "userTag": {
-              "description": "사용자 태그 (8자 영숫자 대문자, 예: JOHN2026)",
-              "maxLength": 8,
-              "minLength": 8,
-              "type": "string",
-            },
           },
           "required": [
             "name",
-            "userTag",
             "profileImage",
           ],
           "type": "object",
@@ -3934,6 +3926,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "string",
               },
               "rejectionReason": {
+                "default": null,
                 "description": "REJECTED일 때만 보상 제외 사유, 그 밖의 상태는 null (구버전 서버는 생략)",
                 "enum": [
                   "EXPIRED",
@@ -3944,14 +3937,26 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "type": "string",
               },
               "status": {
-                "description": "초대 수락 상태 (JOINED: 가입함, QUALIFIED: 사용 시작, REWARDED: 보상 지급 완료, REJECTED: 보상 제외)",
-                "enum": [
-                  "JOINED",
-                  "QUALIFIED",
-                  "REWARDED",
-                  "REJECTED",
+                "anyOf": [
+                  {
+                    "description": "초대 수락 상태 (JOINED: 가입함, QUALIFIED: 사용 시작, REWARDED: 보상 지급 완료, REJECTED: 보상 제외)",
+                    "enum": [
+                      "JOINED",
+                      "QUALIFIED",
+                      "REWARDED",
+                      "REJECTED",
+                    ],
+                    "type": "string",
+                  },
+                  {
+                    "enum": [
+                      "UNKNOWN",
+                    ],
+                    "type": "string",
+                  },
                 ],
-                "type": "string",
+                "default": "UNKNOWN",
+                "description": "초대 수락 상태 (JOINED·QUALIFIED·REWARDED·REJECTED, 앱이 모르는 새 상태는 UNKNOWN으로 읽는다)",
               },
               "userId": {
                 "description": "초대받은 사람 사용자 ID (CUID 25자, 다음 페이지 cursor로 쓴다)",
@@ -27039,7 +27044,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
   },
   "/v1/invites/{code}": {
     "get": {
-      "description": "로그인 없이 초대한 사람의 이름·태그·프로필 이미지만 반환합니다. 공백·하이픈·소문자는 정규화합니다. IP당 분당 20회까지입니다.",
+      "description": "로그인 없이 초대한 사람의 이름과 프로필 이미지만 반환합니다. 친구 요청에 쓰는 태그는 담지 않습니다. 공백·하이픈·소문자는 정규화합니다. IP당 분당 20회까지입니다.",
       "operationId": "getInvitePreview",
       "parameters": [
         {

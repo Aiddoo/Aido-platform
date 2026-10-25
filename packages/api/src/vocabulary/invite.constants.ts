@@ -51,6 +51,9 @@ export const REDEMPTION_STATUS = {
 
 export type RedemptionStatus = (typeof REDEMPTION_STATUS)[keyof typeof REDEMPTION_STATUS];
 
+/** 앱이 모르는 새 수락 상태를 받았을 때 읽는 값. 서버는 보내지 않는다. */
+export const REDEMPTION_STATUS_UNKNOWN = "UNKNOWN";
+
 export const REDEMPTION_REJECTION_REASON = {
   EXPIRED: "EXPIRED",
   INVITER_MONTHLY_CAP: "INVITER_MONTHLY_CAP",

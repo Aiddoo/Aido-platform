@@ -6,6 +6,7 @@ import {
   INVITE_FRIENDSHIP,
   REDEMPTION_REJECTION_REASON,
   REDEMPTION_STATUS,
+  REDEMPTION_STATUS_UNKNOWN,
   REWARD_TYPE,
 } from "../../vocabulary/invite.constants.js";
 
@@ -30,15 +31,30 @@ export type InviteCode = z.output<typeof inviteCodeSchema>;
 
 export const redemptionRejectionReasonSchema = z
   .enum(REDEMPTION_REJECTION_REASON)
-  .describe(
-    "보상 제외 사유 (EXPIRED: 기한 안에 사용을 시작하지 않음, INVITER_MONTHLY_CAP: 초대한 사람 월 상한)",
-  );
+  .describe("보상 제외 사유 (EXPIRED: 기한 안에 사용을 시작하지 않음)");
 
 export const redemptionStatusSchema = z
   .enum(REDEMPTION_STATUS)
   .describe(
     "초대 수락 상태 (JOINED: 가입함, QUALIFIED: 사용 시작, REWARDED: 보상 지급 완료, REJECTED: 보상 제외)",
   );
+
+/**
+ * 응답에서 읽는 수락 상태. 1.13.0 앱이 뒤에 추가된 상태를 받아도 목록 전체가 실패하지 않게
+ * 모르는 값은 UNKNOWN으로 읽는다. 서버가 보내는 값은 redemptionStatusSchema다.
+ */
+export const invitedFriendStatusSchema = z
+  .union([redemptionStatusSchema, z.literal(REDEMPTION_STATUS_UNKNOWN)])
+  .catch(REDEMPTION_STATUS_UNKNOWN)
+  .describe(
+    "초대 수락 상태 (JOINED·QUALIFIED·REWARDED·REJECTED, 앱이 모르는 새 상태는 UNKNOWN으로 읽는다)",
+  );
+
+/** 응답에서 읽는 보상 제외 사유. 모르는 새 사유는 null로 읽어 목록을 계속 보여 준다. */
+export const invitedFriendRejectionReasonSchema = redemptionRejectionReasonSchema
+  .nullable()
+  .catch(null)
+  .describe("보상 제외 사유 (EXPIRED, 앱이 모르는 새 사유는 null로 읽는다)");
 
 export const inviteFriendshipSchema = z
   .enum(INVITE_FRIENDSHIP)
