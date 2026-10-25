@@ -9,7 +9,7 @@ import { Avatar } from '@src/shared/ui/avatar/avatar';
 
 // 기본 사용 (선택 UI 없음)
 <Avatar size="lg" alt="프로필">
-  <Avatar.Image source={require('@assets/icon.png')} />
+  <Avatar.Image source={require('@assets/images/icon.png')} />
 </Avatar>
 
 // 선택 가능 모드

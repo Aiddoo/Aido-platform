@@ -7,6 +7,8 @@ import { type AvatarRootProps, Avatar as HeroUIAvatar, Skeleton } from 'heroui-n
 import type { ComponentProps } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 
+import { getAvatarRecyclingKey } from './get-avatar-recycling-key';
+
 interface AvatarProps extends AvatarRootProps {
   isSelected?: boolean;
 }
@@ -45,6 +47,7 @@ Avatar.Image = function Image({ source, ...props }: AvatarImageProps) {
         style={AVATAR_IMAGE_STYLE}
         contentFit="cover"
         cachePolicy="memory-disk"
+        recyclingKey={getAvatarRecyclingKey(source)}
         {...props}
       />
     </HeroUIAvatar.Image>
