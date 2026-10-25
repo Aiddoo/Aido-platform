@@ -49,14 +49,14 @@ export class InviteController {
   ) {}
 
   @Get("availability")
-  @ApiBearerAuth()
+  @Public()
   @ApiDoc({
     summary: "친구 초대 사용 가능 여부",
     operationId: "getInviteAvailability",
-    description: "INVITE_ENABLED 설정을 반환합니다. 꺼져 있으면 앱은 초대 진입점을 숨깁니다.",
+    description:
+      "INVITE_ENABLED 설정을 반환합니다. 로그인 전 초대 링크 화면도 쓰므로 인증 없이 호출합니다. 꺼져 있으면 앱은 초대 진입점을 숨깁니다.",
   })
   @ApiSuccessResponse({ type: InviteAvailabilityResponseDto })
-  @ApiUnauthorizedError(ErrorCode.AUTH_0107)
   getAvailability(): InviteAvailabilityResponseDto {
     return this.getInviteAvailabilityUseCase.execute();
   }

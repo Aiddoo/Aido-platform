@@ -1,4 +1,4 @@
-import type { RedemptionStatus } from "@aido/api/vocabulary";
+import type { RedemptionRejectionReason, RedemptionStatus } from "@aido/api/vocabulary";
 
 import type {
   InviteRedemption,
@@ -34,6 +34,8 @@ export interface InvitedFriendRecord {
   readonly activeDayCount: number;
   readonly joinedAt: Date;
   readonly qualifiedAt: Date | null;
+  /** REJECTED가 아니면 null */
+  readonly rejectionReason: RedemptionRejectionReason | null;
 }
 
 export interface FindInvitedFriendsParams {

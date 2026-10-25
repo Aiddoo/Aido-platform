@@ -3887,7 +3887,7 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
           "type": "boolean",
         },
         "items": {
-          "description": "초대한 친구 목록 (joinedAt 내림차순, 같으면 userId 내림차순)",
+          "description": "초대한 친구 목록 (joinedAt 내림차순, 같으면 수락 기록 순서의 역순)",
           "items": {
             "example": {
               "activeDayCount": 1,
@@ -3931,6 +3931,16 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
                 "format": "date-time",
                 "nullable": true,
                 "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                "type": "string",
+              },
+              "rejectionReason": {
+                "description": "REJECTED일 때만 보상 제외 사유, 그 밖의 상태는 null (구버전 서버는 생략)",
+                "enum": [
+                  "EXPIRED",
+                  "INVITER_MONTHLY_CAP",
+                  null,
+                ],
+                "nullable": true,
                 "type": "string",
               },
               "status": {
@@ -26401,7 +26411,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
   },
   "/v1/invites/availability": {
     "get": {
-      "description": "INVITE_ENABLED 설정을 반환합니다. 꺼져 있으면 앱은 초대 진입점을 숨깁니다.",
+      "description": "INVITE_ENABLED 설정을 반환합니다. 로그인 전 초대 링크 화면도 쓰므로 인증 없이 호출합니다. 꺼져 있으면 앱은 초대 진입점을 숨깁니다.",
       "operationId": "getInviteAvailability",
       "parameters": [],
       "responses": {
@@ -26443,53 +26453,6 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           },
           "description": "잘못된 요청입니다",
         },
-        "401": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "properties": {
-                  "error": {
-                    "properties": {
-                      "code": {
-                        "example": "AUTH_0107",
-                        "type": "string",
-                      },
-                      "details": {
-                        "example": null,
-                        "nullable": true,
-                        "type": "object",
-                      },
-                      "message": {
-                        "example": "인증이 필요합니다.",
-                        "type": "string",
-                      },
-                    },
-                    "required": [
-                      "code",
-                      "message",
-                    ],
-                    "type": "object",
-                  },
-                  "success": {
-                    "example": false,
-                    "type": "boolean",
-                  },
-                  "timestamp": {
-                    "example": 1700000000000,
-                    "type": "number",
-                  },
-                },
-                "required": [
-                  "success",
-                  "error",
-                  "timestamp",
-                ],
-                "type": "object",
-              },
-            },
-          },
-          "description": "인증이 필요합니다.",
-        },
         "500": {
           "content": {
             "application/json": {
@@ -26501,11 +26464,6 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
           "description": "서버 내부 오류가 발생했습니다",
         },
       },
-      "security": [
-        {
-          "bearer": [],
-        },
-      ],
       "summary": "친구 초대 사용 가능 여부",
       "tags": [
         "Invites",

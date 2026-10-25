@@ -105,7 +105,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
       expect(malformed.body.error.code).toBe(ErrorCode.SYS_0002);
     });
 
-    it("초대한 친구가 없으면 빈 목록과 0명을 반환하고 사용 가능 여부는 true다", async () => {
+    it("초대한 친구가 없으면 빈 목록과 0명을 반환하고 로그인 없이 본 사용 가능 여부는 true다", async () => {
       // Given
       const inviter = await ctx.helpers.createVerifiedUser("invite-list@test.com", PASSWORD);
 
@@ -116,7 +116,6 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
         .expect(200);
       const availability = await request(ctx.app.getHttpServer())
         .get("/v1/invites/availability")
-        .set("Authorization", `Bearer ${inviter.accessToken}`)
         .expect(200);
 
       // Then
@@ -129,11 +128,12 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
         enabled: true,
       });
     });
+
     it("상태로 거르면 그 상태만 수락 시각 내림차순으로 겹치지 않게 넘기고 totalCount도 그 상태의 수다", async () => {
       // Given
       const inviter = await ctx.helpers.createVerifiedUser("invite-filter@test.com", PASSWORD);
       const invitees = await Promise.all(
-        ["a", "b", "c"].map((suffix) =>
+        ["a", "b", "c", "d"].map((suffix) =>
           ctx.helpers.createVerifiedUser(`invite-filter-${suffix}@test.com`, PASSWORD),
         ),
       );
@@ -147,6 +147,11 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
           status: "QUALIFIED",
           joinedAt: new Date("2026-10-21T00:00:00.000Z"),
         },
+        {
+          invitee: invitees[3],
+          status: "REJECTED",
+          joinedAt: new Date("2026-10-19T00:00:00.000Z"),
+        },
       ] as const;
       await ctx.testDatabase.getClient().orm.public.InviteRedemption.createAndCount(
         rows.map((row) =>
@@ -157,6 +162,7 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
             timezone: "Asia/Seoul",
             joinedAt: row.joinedAt,
             qualifiedAt: row.status === "QUALIFIED" ? row.joinedAt : null,
+            rejectionReason: row.status === "REJECTED" ? "EXPIRED" : null,
             expiresAt: new Date("2026-11-03T00:00:00.000Z"),
           }),
         ),
@@ -185,8 +191,13 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
       expect(new Set([...first.items, ...second.items].map((item) => item.userId))).toEqual(
         new Set([invitees[0]?.userId, invitees[1]?.userId]),
       );
-      expect(all.totalCount).toBe(3);
-      expect(all.items.map((item) => item.status)).toEqual(["QUALIFIED", "JOINED", "JOINED"]);
+      expect(all.totalCount).toBe(4);
+      expect(all.items.map((item) => [item.status, item.rejectionReason])).toEqual([
+        ["QUALIFIED", null],
+        ["JOINED", null],
+        ["JOINED", null],
+        ["REJECTED", "EXPIRED"],
+      ]);
       expect(tooLarge.body.error.code).toBe(ErrorCode.SYS_0002);
     });
   });
@@ -223,7 +234,6 @@ describe("친구 초대 HTTP 계약 (실제 DB)", () => {
       ]);
       const availability = await request(ctx.app.getHttpServer())
         .get("/v1/invites/availability")
-        .set("Authorization", auth)
         .expect(200);
 
       // Then

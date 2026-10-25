@@ -155,7 +155,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         params.status == null ? all() : row.status.eq(params.status),
       ),
     )
-      .select("id", "status", "joinedAt", "qualifiedAt")
+      .select("id", "status", "rejectionReason", "joinedAt", "qualifiedAt")
       .include("invitee", (user) =>
         user
           .select("id", "userTag")
@@ -189,6 +189,7 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         activeDayCount: row.activeDays,
         joinedAt: row.joinedAt,
         qualifiedAt: row.qualifiedAt,
+        rejectionReason: row.rejectionReason,
       };
     });
   }

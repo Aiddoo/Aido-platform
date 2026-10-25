@@ -57,6 +57,7 @@ export const InviteMapper = {
         activeDayCount: friend.activeDayCount,
         joinedAt: toISOString(friend.joinedAt),
         qualifiedAt: toISOStringOrNull(friend.qualifiedAt),
+        rejectionReason: friend.rejectionReason,
       })),
       totalCount: page.totalCount,
       hasMore: page.hasMore,
