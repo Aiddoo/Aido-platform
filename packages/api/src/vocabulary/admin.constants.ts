@@ -21,8 +21,3 @@ export const BROADCAST_TARGET_FILTER = {
 
 export type BroadcastTargetFilter =
   (typeof BROADCAST_TARGET_FILTER)[keyof typeof BROADCAST_TARGET_FILTER];
-
-export const BROADCAST_TARGET_FILTERS = Object.values(BROADCAST_TARGET_FILTER) as [
-  BroadcastTargetFilter,
-  ...BroadcastTargetFilter[],
-];

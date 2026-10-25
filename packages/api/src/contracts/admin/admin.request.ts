@@ -1,9 +1,6 @@
 import { z } from "zod";
 
-import {
-  BROADCAST_TARGET_FILTER,
-  BROADCAST_TARGET_FILTERS,
-} from "../../vocabulary/admin.constants.js";
+import { BROADCAST_TARGET_FILTER } from "../../vocabulary/admin.constants.js";
 import { notificationActionSchema } from "../notification/notification.payload.js";
 
 const MAX_GROWTH_QUERY_DAYS = 90;
@@ -71,7 +68,7 @@ export const broadcastNotificationSchema = z
       .max(500, "내용은 500자 이하로 입력해주세요")
       .describe("알림 내용"),
     targetFilter: z
-      .enum(BROADCAST_TARGET_FILTERS)
+      .enum(BROADCAST_TARGET_FILTER)
       .default(BROADCAST_TARGET_FILTER.ALL)
       .describe(
         "알림 대상 필터 (ALL: 전체, WITH_PUSH_TOKEN: 푸시 토큰 보유, ACTIVE_LAST_7_DAYS: 7일 내 활동, ACTIVE_LAST_30_DAYS: 30일 내 활동, SUBSCRIBERS: 유료 구독)",
