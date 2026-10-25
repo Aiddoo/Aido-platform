@@ -8,6 +8,8 @@ import {
 } from '@aido/api';
 import { myInviteHref } from '@src/features/invite/utils/navigation/invite-href';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
+import { createTodoDetailHref } from '@src/features/todo/utils/navigation/todo-detail-href';
+import type { WindowSizeClass } from '@src/shared/utils/window-size-class';
 import type { Href } from 'expo-router';
 import { P, match } from 'ts-pattern';
 import { z } from 'zod';
@@ -87,9 +89,15 @@ const NOTICE_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
 
 const NO_DESTINATION: NotificationDestination = { kind: 'none' };
 
+interface NotificationDestinationOptions {
+  today?: string;
+  /** 할 일 목적지를 상세 화면으로 열지 펼친 피드의 상세 pane으로 열지 정한다. */
+  windowSizeClass: WindowSizeClass;
+}
+
 export function resolveNotificationDestination(
   source: NotificationDestinationSource,
-  { today }: { today?: string } = {},
+  { today, windowSizeClass }: NotificationDestinationOptions,
 ): NotificationDestination {
   if (source.action?.type === 'NONE') {
     return NO_DESTINATION;
@@ -106,7 +114,7 @@ export function resolveNotificationDestination(
   }
 
   const routing = parseNotificationRouting(source);
-  return routing == null ? NO_DESTINATION : toRouteDestination(routing, today);
+  return routing == null ? NO_DESTINATION : toRouteDestination(routing, { today, windowSizeClass });
 }
 
 /** 공지의 앱 경로는 아는 화면만 연다. 모르는 경로, 상세 id·프리미엄 확인이 필요한 경로는 이동하지 않는다. */
@@ -143,7 +151,7 @@ function toExternalDestination(kind: 'browser' | 'webview', url?: string): Notif
 
 function toRouteDestination(
   routing: ResolvedNotificationRoute,
-  today?: string,
+  { today, windowSizeClass }: NotificationDestinationOptions,
 ): NotificationDestination {
   const feedDate = today ? 'today' : undefined;
   return match(routing)
@@ -164,7 +172,7 @@ function toRouteDestination(
     }))
     .with({ type: P.union('NUDGE_RECEIVED', 'TODO_REMINDER'), todoId: P.number }, ({ todoId }) => ({
       kind: 'route' as const,
-      href: { pathname: '/todo/[todoId]' as const, params: { todoId } },
+      href: createTodoDetailHref(windowSizeClass, { todoId }),
     }))
     .with({ type: 'NUDGE_RECEIVED', friendId: P.string }, ({ friendId }) => ({
       kind: 'route' as const,
@@ -180,14 +188,11 @@ function toRouteDestination(
     }))
     .with({ type: 'TODO_SHARED', commentId: P.string }, ({ todoId, commentId }) => ({
       kind: 'route' as const,
-      href: {
-        pathname: '/todo/[todoId]' as const,
-        params: { todoId, comment: commentId },
-      },
+      href: createTodoDetailHref(windowSizeClass, { todoId, comment: commentId }),
     }))
     .with({ type: 'TODO_SHARED' }, ({ todoId }) => ({
       kind: 'route' as const,
-      href: { pathname: '/todo/[todoId]' as const, params: { todoId } },
+      href: createTodoDetailHref(windowSizeClass, { todoId }),
     }))
     .with(
       {

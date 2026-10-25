@@ -9,6 +9,7 @@ import { useTrack } from '@src/shared/analytics';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
+import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { useLocalDate } from '@src/shared/providers/local-date-provider';
 import {
@@ -182,6 +183,7 @@ NotificationList.Item = function Item({ notification }: NotificationItemProps) {
 function useNotificationPress(notification: Notification) {
   const navigateToDestination = useNotificationNavigation();
   const today = useTodayKey();
+  const windowSizeClass = useWindowSizeClass();
   const logger = useLogger();
 
   const { mutate: markAsRead } = useMutation(useMarkAsReadMutationOptions());
@@ -212,7 +214,7 @@ function useNotificationPress(notification: Notification) {
         routing: notification.routing,
         action: notification.action,
       },
-      { today },
+      { today, windowSizeClass },
     );
     trackEvent('notification_center_opened', {
       type: notification.type,
@@ -229,6 +231,7 @@ function useNotificationPress(notification: Notification) {
     premiumDialog,
     navigateToDestination,
     today,
+    windowSizeClass,
     logger,
   ]);
 }

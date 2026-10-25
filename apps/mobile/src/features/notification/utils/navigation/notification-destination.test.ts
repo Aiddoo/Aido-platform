@@ -5,16 +5,20 @@ import { toNotification } from '../../apis/notification.mapper';
 import { resolveNotificationDestination } from './notification-destination';
 
 const COMMENT_ID = 'cmt92zn3n000b7voxx9quc2th';
+const COMPACT = { windowSizeClass: 'compact' } as const;
 
 describe('resolveNotificationDestination', () => {
   test('댓글 routing은 할 일 대화 화면의 focus로 이동한다', () => {
     expect(
-      resolveNotificationDestination({
-        type: 'TODO_SHARED',
-        context: { todoId: 42 },
-        routing: { commentId: COMMENT_ID },
-        action: { type: 'DEEP_LINK' },
-      }),
+      resolveNotificationDestination(
+        {
+          type: 'TODO_SHARED',
+          context: { todoId: 42 },
+          routing: { commentId: COMMENT_ID },
+          action: { type: 'DEEP_LINK' },
+        },
+        COMPACT,
+      ),
     ).toEqual({
       kind: 'route',
       href: {
@@ -40,18 +44,24 @@ describe('resolveNotificationDestination', () => {
       },
     });
 
-    const fromNotificationList = resolveNotificationDestination({
-      type: notification.type,
-      context: notification.context,
-      routing: notification.routing,
-      action: notification.action,
-    });
-    const fromPush = resolveNotificationDestination({
-      type: 'TODO_SHARED',
-      context: { todoId: 42 },
-      routing: { commentId: COMMENT_ID },
-      action: { type: 'DEEP_LINK' },
-    });
+    const fromNotificationList = resolveNotificationDestination(
+      {
+        type: notification.type,
+        context: notification.context,
+        routing: notification.routing,
+        action: notification.action,
+      },
+      COMPACT,
+    );
+    const fromPush = resolveNotificationDestination(
+      {
+        type: 'TODO_SHARED',
+        context: { todoId: 42 },
+        routing: { commentId: COMMENT_ID },
+        action: { type: 'DEEP_LINK' },
+      },
+      COMPACT,
+    );
 
     expect(fromNotificationList).toEqual(fromPush);
     expect(fromNotificationList).toEqual({
@@ -65,20 +75,25 @@ describe('resolveNotificationDestination', () => {
 
   test('댓글이 없으면 할 일 상세로 이동한다', () => {
     expect(
-      resolveNotificationDestination({ type: 'TODO_SHARED', context: { todoId: 42 } }),
+      resolveNotificationDestination({ type: 'TODO_SHARED', context: { todoId: 42 } }, COMPACT),
     ).toEqual({ kind: 'route', href: { pathname: '/todo/[todoId]', params: { todoId: 42 } } });
   });
 
   test('이동 재료가 부족한 과거 알림은 이동하지 않는다', () => {
-    expect(resolveNotificationDestination({ type: 'TODO_SHARED' })).toEqual({ kind: 'none' });
+    expect(resolveNotificationDestination({ type: 'TODO_SHARED' }, COMPACT)).toEqual({
+      kind: 'none',
+    });
   });
 
   test('NONE 액션은 기본 경로가 있어도 이동하지 않는다', () => {
     expect(
-      resolveNotificationDestination({
-        type: 'MORNING_REMINDER',
-        action: { type: 'NONE' },
-      }),
+      resolveNotificationDestination(
+        {
+          type: 'MORNING_REMINDER',
+          action: { type: 'NONE' },
+        },
+        COMPACT,
+      ),
     ).toEqual({ kind: 'none' });
   });
 
@@ -87,29 +102,38 @@ describe('resolveNotificationDestination', () => {
     ['WEBVIEW' as const, 'webview'],
   ])('%s 액션을 외부 목적지로 해석한다', (actionType, kind) => {
     expect(
-      resolveNotificationDestination({
-        type: 'SYSTEM_NOTICE',
-        action: { type: actionType, url: 'https://aido.app/news' },
-      }),
+      resolveNotificationDestination(
+        {
+          type: 'SYSTEM_NOTICE',
+          action: { type: actionType, url: 'https://aido.app/news' },
+        },
+        COMPACT,
+      ),
     ).toEqual({ kind, url: 'https://aido.app/news' });
   });
 
   test('웹 주소가 아닌 외부 URL은 열지 않는다', () => {
     expect(
-      resolveNotificationDestination({
-        type: 'SYSTEM_NOTICE',
-        action: { type: 'BROWSER', url: 'javascript:alert(1)' },
-      }),
+      resolveNotificationDestination(
+        {
+          type: 'SYSTEM_NOTICE',
+          action: { type: 'BROWSER', url: 'javascript:alert(1)' },
+        },
+        COMPACT,
+      ),
     ).toEqual({ kind: 'none' });
   });
 
   test('DEEP_LINK URL 대신 타입과 검증된 재료로 이동한다', () => {
     expect(
-      resolveNotificationDestination({
-        type: 'FOLLOW_ACCEPTED',
-        context: { friendId: 'friend-1' },
-        action: { type: 'DEEP_LINK', url: '/anything/the/server/says' },
-      }),
+      resolveNotificationDestination(
+        {
+          type: 'FOLLOW_ACCEPTED',
+          context: { friendId: 'friend-1' },
+          action: { type: 'DEEP_LINK', url: '/anything/the/server/says' },
+        },
+        COMPACT,
+      ),
     ).toEqual({
       kind: 'route',
       href: { pathname: '/feed', params: { friendId: 'friend-1' } },
@@ -117,7 +141,7 @@ describe('resolveNotificationDestination', () => {
   });
 
   test('피드 알림은 별도 routing 없이 이동한다', () => {
-    expect(resolveNotificationDestination({ type: 'STREAK_AT_RISK' })).toEqual({
+    expect(resolveNotificationDestination({ type: 'STREAK_AT_RISK' }, COMPACT)).toEqual({
       kind: 'route',
       href: { pathname: '/feed', params: {} },
     });
@@ -136,7 +160,7 @@ describe('공지 알림의 앱 경로', () => {
     expect(
       resolveNotificationDestination(
         { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
-        { today: '2026-10-26' },
+        { today: '2026-10-26', windowSizeClass: 'compact' },
       ),
     ).toEqual({ kind: 'route', href });
   });
@@ -145,10 +169,13 @@ describe('공지 알림의 앱 경로', () => {
     '%s 공지도 같은 경로 표를 따른다',
     (type) => {
       expect(
-        resolveNotificationDestination({
-          type,
-          action: { type: 'DEEP_LINK', url: '/achievements' },
-        }),
+        resolveNotificationDestination(
+          {
+            type,
+            action: { type: 'DEEP_LINK', url: '/achievements' },
+          },
+          COMPACT,
+        ),
       ).toEqual({ kind: 'route', href: '/achievements' });
     },
   );
@@ -161,7 +188,10 @@ describe('공지 알림의 앱 경로', () => {
     ['앱 스킴 URL', 'aido://feed'],
   ])('%s(%s)는 이동하지 않는다', (_name, url) => {
     expect(
-      resolveNotificationDestination({ type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } }),
+      resolveNotificationDestination(
+        { type: 'SYSTEM_NOTICE', action: { type: 'DEEP_LINK', url } },
+        COMPACT,
+      ),
     ).toEqual({ kind: 'none' });
   });
 });
@@ -171,7 +201,10 @@ describe('콕과 오늘의 알림 이동', () => {
     // Given
     const context = { nudgeId: 7, todoId: 42 };
     // When
-    const destination = resolveNotificationDestination({ type: 'NUDGE_RECEIVED', context });
+    const destination = resolveNotificationDestination(
+      { type: 'NUDGE_RECEIVED', context },
+      COMPACT,
+    );
     // Then
     expect(destination).toEqual({
       kind: 'route',
@@ -185,7 +218,7 @@ describe('콕과 오늘의 알림 이동', () => {
     // When
     const destination = resolveNotificationDestination(
       { type: 'NUDGE_RECEIVED', context },
-      { today: '2026-10-04' },
+      { today: '2026-10-04', windowSizeClass: 'compact' },
     );
     // Then
     expect(destination).toEqual({
@@ -203,7 +236,7 @@ describe('콕과 오늘의 알림 이동', () => {
       // Given
       const context = { nudgeId: 7 };
       // When
-      const destination = resolveNotificationDestination({ type, context });
+      const destination = resolveNotificationDestination({ type, context }, COMPACT);
       // Then
       expect(destination).toEqual({
         kind: 'route',
@@ -216,7 +249,7 @@ describe('콕과 오늘의 알림 이동', () => {
     // Given
     const source = { type: 'NUDGE_REPLIED' as const };
     // When
-    const destination = resolveNotificationDestination(source);
+    const destination = resolveNotificationDestination(source, COMPACT);
     // Then
     expect(destination).toEqual({ kind: 'route', href: '/notifications' });
   });
@@ -227,9 +260,12 @@ describe('콕과 오늘의 알림 이동', () => {
     // When
     const todo = resolveNotificationDestination(
       { type: 'TODO_REMINDER', context: { todoId: 42 } },
-      { today },
+      { today, windowSizeClass: 'compact' },
     );
-    const morning = resolveNotificationDestination({ type: 'MORNING_REMINDER' }, { today });
+    const morning = resolveNotificationDestination(
+      { type: 'MORNING_REMINDER' },
+      { today, windowSizeClass: 'compact' },
+    );
     // Then
     expect(todo).toEqual({
       kind: 'route',
@@ -247,7 +283,7 @@ describe('콕과 오늘의 알림 이동', () => {
       // Given
       const source = { type };
       // When
-      const destination = resolveNotificationDestination(source);
+      const destination = resolveNotificationDestination(source, COMPACT);
       // Then
       expect(destination).toEqual({ kind: 'route', href: '/weather' });
     },
@@ -257,7 +293,7 @@ describe('콕과 오늘의 알림 이동', () => {
     // Given
     const source = { type: 'TODO_SHARED' as const, context: { todoId: -1 } };
     // When
-    const destination = resolveNotificationDestination(source);
+    const destination = resolveNotificationDestination(source, COMPACT);
     // Then
     expect(destination).toEqual({ kind: 'none' });
   });
@@ -326,6 +362,23 @@ describe('알림 타입별 목적지', () => {
   });
 
   test.each(cases)('%s %o', (type, context, expected) => {
-    expect(resolveNotificationDestination({ type, context }, { today })).toEqual(expected);
+    expect(
+      resolveNotificationDestination({ type, context }, { today, windowSizeClass: 'compact' }),
+    ).toEqual(expected);
+  });
+});
+
+describe('펼친 화면의 할 일 알림', () => {
+  test.each([
+    ['TODO_REMINDER', { todoId: 42 }, undefined, { todoId: 42 }],
+    ['NUDGE_RECEIVED', { todoId: 42 }, undefined, { todoId: 42 }],
+    ['TODO_SHARED', { todoId: 42 }, undefined, { todoId: 42 }],
+    ['TODO_SHARED', { todoId: 42 }, { commentId: COMMENT_ID }, { todoId: 42, comment: COMMENT_ID }],
+  ] as const)('%s %o는 피드 상세 pane에 고른다', (type, context, routing, params) => {
+    for (const windowSizeClass of ['medium', 'expanded'] as const) {
+      expect(
+        resolveNotificationDestination({ type, context, routing }, { windowSizeClass }),
+      ).toEqual({ kind: 'route', href: { pathname: '/feed', params } });
+    }
   });
 });
