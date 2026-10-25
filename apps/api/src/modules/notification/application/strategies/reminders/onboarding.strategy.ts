@@ -10,6 +10,7 @@ import {
   isOnboardingDay,
   ONBOARDING_MAX_DAY,
   requiresCompletedCount,
+  resolveOnboardingDeepLinkPath,
 } from "../../../domain/services/reminders/onboarding.js";
 import type { TimezoneContext } from "../../../domain/services/reminders/timezone-context.js";
 import { createOnboardingNotificationMessage } from "../../messages/delivery/notification-messages.js";
@@ -119,6 +120,7 @@ export class OnboardingStrategy implements TimezoneReminderStrategy {
         variantId: message.variantId,
         title: message.title,
         body: message.body,
+        action: { type: "DEEP_LINK", url: resolveOnboardingDeepLinkPath(day, completedCount) },
         notificationDate: today,
         metadata: { onboardingDay: day },
       });

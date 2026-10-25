@@ -6,6 +6,7 @@ import {
   MARKETING_PUSH_OPT_OUT_TOKEN,
   type MarketingPushOptOutTokenPort,
 } from "#api/modules/notification/application/ports/delivery/marketing-push-opt-out-token.port";
+import { SendBillingIssueNotification } from "#api/modules/notification/application/use-cases/delivery/send-billing-issue-notification.use-case";
 /**
  * Notification E2E 테스트
  *
@@ -1032,5 +1033,27 @@ describe("알림 E2E", () => {
         expect(unread.body.data.unreadCount).toBe(visible.length);
       },
     );
+  });
+
+  describe("공지 알림의 앱 이동 경로", () => {
+    it("결제 문제 공지는 알림함에 구독 화면 DEEP_LINK를 싣는다", async () => {
+      // Given
+      const user = await ctx.helpers.createVerifiedUser("notif-billing@test.com", password);
+
+      // When
+      await ctx.module.get(SendBillingIssueNotification).execute({ userId: user.userId });
+      const inbox = await request(ctx.app.getHttpServer())
+        .get("/v1/notifications/inbox")
+        .set("Authorization", `Bearer ${user.accessToken}`)
+        .set("X-App-Version", "1.13.0")
+        .expect(200);
+
+      // Then
+      const [notice] = notificationInboxResponseSchema.parse(inbox.body.data).notifications;
+      expect(notice).toMatchObject({
+        type: "SYSTEM_NOTICE",
+        action: { type: "DEEP_LINK", url: "/settings/subscription" },
+      });
+    });
   });
 });

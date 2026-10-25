@@ -1,3 +1,5 @@
+import { NOTICE_DEEP_LINK_PATH, type NoticeDeepLinkPath } from "@aido/api/vocabulary";
+
 /**
  * 온보딩 알림 발송 정책 (순수 도메인).
  *
@@ -24,4 +26,25 @@ export function requiresCompletedCount(
   day: OnboardingDay,
 ): day is OnboardingDayRequiringCompletedCount {
   return day === 5 || day === 7;
+}
+
+/**
+ * 온보딩 알림을 탭하면 열 앱 화면. 문구가 권하는 화면을 고른다.
+ * 친구(Day 2)·알림 설정(Day 3)·완료 기록(Day 5 완료 1개 이상·Day 7) 외에는 할 일을 적는 피드다.
+ * Day 3은 시간을 바로 고르는 리마인더 화면이 프리미엄 전용이라, 누구나 쓰는 알림 설정 첫 화면을 연다.
+ */
+export function resolveOnboardingDeepLinkPath(
+  day: OnboardingDay,
+  completedCount: number,
+): NoticeDeepLinkPath {
+  if (day === 2) {
+    return NOTICE_DEEP_LINK_PATH.FRIENDS;
+  }
+  if (day === 3) {
+    return NOTICE_DEEP_LINK_PATH.NOTIFICATION_SETTINGS;
+  }
+  if (day === 7 || (day === 5 && completedCount > 0)) {
+    return NOTICE_DEEP_LINK_PATH.ACHIEVEMENTS;
+  }
+  return NOTICE_DEEP_LINK_PATH.FEED;
 }

@@ -4,7 +4,7 @@ import { mockDeep } from "vitest-mock-extended";
 import { SendBillingIssueNotification } from "./send-billing-issue-notification.use-case.js";
 
 describe("SendBillingIssueNotification", () => {
-  it("수신자 언어로 SYSTEM_NOTICE를 보내고 실패를 전파한다", async () => {
+  it("수신자 언어로 구독 화면을 여는 SYSTEM_NOTICE를 보내고 실패를 전파한다", async () => {
     const sendBillingIssueNotificationDependencies = mockDeep<
       ConstructorParameters<typeof SendBillingIssueNotification>[0]
     >({});
@@ -19,7 +19,11 @@ describe("SendBillingIssueNotification", () => {
 
     await unit.execute({ userId: "u1" });
     expect(notificationSender.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "u1", type: "SYSTEM_NOTICE" }),
+      expect.objectContaining({
+        userId: "u1",
+        type: "SYSTEM_NOTICE",
+        action: { type: "DEEP_LINK", url: "/settings/subscription" },
+      }),
     );
 
     notificationSender.publish.mockRejectedValue(new Error("temporary"));

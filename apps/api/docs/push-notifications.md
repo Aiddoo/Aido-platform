@@ -69,7 +69,7 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 | `WEEKLY_REPORT`        | 프리미엄·관리자 주간 리포트                                                              | 서비스       | 리포트 화면                            |
 | `MONTHLY_REPORT`       | 프리미엄·관리자 월간 리포트                                                              | 서비스       | 리포트 화면                            |
 | `AI_SUGGESTION`        | 기록 기반 할 일 제안                                                                     | 참여         | 제안 화면                              |
-| `SYSTEM_NOTICE`        | 온보딩, 결제, 운영 공지                                                                  | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
+| `SYSTEM_NOTICE`        | 온보딩, 결제, 리텐션, 운영 공지                                                          | 생성 시 지정 | `DEEP_LINK` url 앱 경로(아래 표)       |
 | `ADMIN_BROADCAST`      | 관리자 전체·조건 발송                                                                    | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
 | `ADMIN_TARGETED`       | 관리자 특정 사용자 발송                                                                  | 생성 시 지정 | 명시적 action, 없으면 이동 안 함       |
 | `WINBACK`              | 비활성 단계 도달                                                                         | 참여         | 피드                                   |
@@ -84,6 +84,18 @@ AI 제안 분석은 매일 07:30 KST에 dispatch하며 재시작 시 해당 시�
 | `INVITE_REWARDED`      | 초대한 사람의 발자국 보상 적용 (수락 1건에 1회, 프리미엄·친구 자리를 함께 적음, 1.13.0+) | 거래         | 내 초대 화면 (`metadata.redemptionId`) |
 
 `BROWSER`, `WEBVIEW`, `NONE` action은 표의 기본 이동보다 우선한다. `DEEP_LINK`에 URL이 있으면 해당 내부 경로를 우선한다.
+
+공지(`SYSTEM_NOTICE`·`ADMIN_BROADCAST`·`ADMIN_TARGETED`)는 종류만으로 갈 곳을 정할 수 없어 `DEEP_LINK` url에 앱 경로를 싣는다. 경로는 `@aido/api/vocabulary`의 `NOTICE_DEEP_LINK_PATH`(`/feed`, `/achievements`, `/weather`, `/friends`, `/friends/invite`, `/settings/subscription`, `/settings/notifications`) 중에서만 고른다. 1.13.0 앱은 이 경로만 열고 모르는 경로·쿼리·상세 id 경로는 이동하지 않으며, 이전 앱은 url을 무시하고 지금처럼 앱만 연다. url은 추가 필드라 기존 payload·응답 모양은 바뀌지 않는다.
+
+| 공지         | url                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| Retention V2 | 단계 정책이 고른 `/feed` 또는 `/achievements`                                                 |
+| 결제 문제    | `/settings/subscription`                                                                      |
+| 온보딩 D0·D1 | `/feed`                                                                                       |
+| 온보딩 D2    | `/friends`                                                                                    |
+| 온보딩 D3    | `/settings/notifications` (시간을 고르는 리마인더 화면은 프리미엄 전용이라 알림 설정 첫 화면) |
+| 온보딩 D5    | 완료 0개면 `/feed`, 1개 이상이면 `/achievements`                                              |
+| 온보딩 D7    | `/achievements`                                                                               |
 
 초대 알림의 중복 방지는 저장 원장이 소유한다. `INVITE_JOINED`는 `InviteRedemption.inviteeId` UNIQUE로 수락 1건에 한 번, `INVITE_REWARDED`는 수락을 REWARDED로 바꾼 실행만 그 수락에서 초대한 사람이 받은 APPLIED 지급 합계로 보내므로 지급이 여러 번에 나뉘어 적용돼도 수락마다 한 번(초대받은 사람은 수락 응답에서 보상을 바로 보므로 보내지 않는다), `PREMIUM_GRANT_ENDING`은 같은 트랜잭션에서 `PremiumGrant.endingNotifiedAt`을 기록해 기간마다 한 번이다. `INVITE_ENABLED=false`인 동안은 초대받은 사람의 활동일·사용 시작과 지급 원장(PENDING)만 기록하고 지급 작업과 정비 재시도를 멈춰 `INVITE_REWARDED`도 보내지 않는다. 다시 켜면 다음 정비 작업(매일 03:30 KST)이 남은 PENDING·FAILED 지급을 골라 적용하므로 꺼진 동안의 보상은 잃지 않는다.
 
