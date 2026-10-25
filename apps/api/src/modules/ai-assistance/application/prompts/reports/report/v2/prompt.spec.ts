@@ -2,7 +2,7 @@ import { FakeAiProvider } from "#test/mocks/fake-ai.provider";
 
 import type { AggregatedReportData } from "../../../../../domain/types/reports/ai-report.types.js";
 import type { ReportPromptInput } from "../types.js";
-import { reportDraftSchema, reportPromptV2 } from "./index.js";
+import { ReportDraftRejectedError, reportDraftSchema, reportPromptV2 } from "./index.js";
 import { REPORT_SYSTEM_EN } from "./prompt.en.js";
 import { REPORT_SYSTEM_KO } from "./prompt.ko.js";
 
@@ -77,7 +77,7 @@ describe("리포트 프롬프트 v2", () => {
     // Given
     const raw = {
       summary: `  ${"가".repeat(700)}  `,
-      tips: ["  ", "팁 1", "팁 2", "가".repeat(130), "팁 4"],
+      tips: ["  ", "첫 팁", "둘째 팁", "가".repeat(130), "넷째 팁"],
     };
     expect(reportDraftSchema.safeParse(raw).success).toBe(true);
     const provider = new FakeAiProvider().setRawResponse(raw);
@@ -91,18 +91,18 @@ describe("리포트 프롬프트 v2", () => {
         prompt: "",
         policy: { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 },
       },
-      null,
+      input,
     );
     // Then
     expect(value.aiSummary).toHaveLength(600);
-    expect(value.aiTips).toEqual(["팁 1", "팁 2", "가".repeat(120)]);
+    expect(value.aiTips).toEqual(["첫 팁", "둘째 팁", "가".repeat(120)]);
   });
 
   it.each([
     {
       locale: "ko" as const,
-      raw: { summary: "지난주보다 15%p 올랐어요냥.", tips: ["운동을 하루 등록해보세요 냥."] },
-      expected: { aiSummary: "지난주보다 15%p 올랐어요.", aiTips: ["운동을 하루 등록해보세요."] },
+      raw: { summary: "지난주보다 8.3%p 올랐어요냥.", tips: ["운동을 하루 등록해보세요 냥."] },
+      expected: { aiSummary: "지난주보다 8.3%p 올랐어요.", aiTips: ["운동을 하루 등록해보세요."] },
     },
     {
       locale: "en" as const,
@@ -124,10 +124,47 @@ describe("리포트 프롬프트 v2", () => {
           prompt: "",
           policy: { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 },
         },
-        null,
+        input,
       );
       // Then
       expect(value).toEqual(expected);
     },
   );
+
+  const policy = { thinking: "low", maxOutputTokens: 1, timeoutMs: 1, maxRetries: 0 } as const;
+  const request = {
+    task: "report",
+    promptVersion: "report@v2.1",
+    system: "",
+    prompt: "",
+    policy,
+  } as const;
+
+  it("summary와 팁에서 데이터에 없는 숫자를 쓴 문장만 빼고 저장한다", async () => {
+    // Given - 데이터: 20개 중 15개, 75%, 연속 4일. "2개"와 "30%"는 데이터에 없다
+    const provider = new FakeAiProvider().setRawResponse({
+      summary:
+        "20개 중 15개를 끝내 달성률 75%였어요. 다음 주에는 30% 더 해봐요. 4일 연속으로 기록했어요.",
+      tips: ["가장 중요한 2개를 먼저 등록해보세요.", "운동은 하루만 골라 등록해보세요."],
+    });
+    // When
+    const { value } = await reportPromptV2.ko.output.generate(provider, request, input);
+    // Then
+    expect(value).toEqual({
+      aiSummary: "20개 중 15개를 끝내 달성률 75%였어요. 4일 연속으로 기록했어요.",
+      aiTips: ["운동은 하루만 골라 등록해보세요."],
+    });
+  });
+
+  it("남는 팁이 없으면 저장하지 않고 폴백으로 넘긴다", async () => {
+    // Given
+    const provider = new FakeAiProvider().setRawResponse({
+      summary: "You finished 15 of 20 to-dos.",
+      tips: ["Select the 2 most important items first."],
+    });
+    // When / Then
+    await expect(reportPromptV2.en.output.generate(provider, request, input)).rejects.toThrow(
+      ReportDraftRejectedError,
+    );
+  });
 });

@@ -314,7 +314,7 @@ export class GenerateReport {
           prompt,
           policy: resolveGenerationPolicy("report", this.#dependencies.settings),
         },
-        null,
+        input,
       );
       this.#dependencies.logger.log(
         generationCompletedLog({ ...logBase, outcome: "SUCCESS" }, meta),

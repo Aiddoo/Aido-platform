@@ -17,5 +17,6 @@ export interface ReportPromptInput {
 export interface ReportPromptDefinition {
   readonly promptVersion: string;
   build(input: ReportPromptInput): BuiltPrompt;
-  readonly output: StructuredOutput<GeneratedReportContent, null>;
+  /** context는 build에 넘긴 입력이다. 정규화가 문장 속 숫자를 그 입력의 근거로 검증한다. */
+  readonly output: StructuredOutput<GeneratedReportContent, ReportPromptInput>;
 }

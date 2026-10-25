@@ -2,6 +2,7 @@ import { AI_SUGGESTION_LIMITS, DAY_OF_WEEK_ORDER, type DayOfWeek } from "@aido/a
 import { countBy, maxBy } from "es-toolkit";
 
 import type { TodoSummaryForAnalysis } from "../../types/suggestions/ai-suggestion.types.js";
+import { hasOnlyGroundedNumbers, numbersIn } from "../grounding/grounded-numbers.js";
 import { collectRecordedActivities, selectRecordedDays } from "./recorded-activity-evidence.js";
 
 /** 프롬프트에 넣는 후보 수 상한 */
@@ -137,34 +138,19 @@ export function resolveSuggestionPicks(
   return resolved;
 }
 
-const numbersIn = (text: string): number[] => (text.match(/\d+/g) ?? []).map(Number);
-/** 숫자와 바로 뒤의 단위("30개", "5km", "5 km") */
-const QUANTITY = /\d+(?:[ \t]?[^\s\d.,!?()]+)?/g;
-
-/** 사유가 제목·카테고리 이름의 분량을 그대로 다시 쓴 부분을 지운다. 같은 숫자라도 단위가 다르면 남긴다. */
-function withoutRecordedQuantities(reason: string, candidate: SuggestionCandidate): string {
-  const quantities = [candidate.title, candidate.categoryName].flatMap(
-    (text) => text.toLowerCase().match(QUANTITY) ?? [],
-  );
-  return quantities.reduce(
-    (text, quantity) => text.split(quantity).join(" "),
-    reason.toLowerCase(),
-  );
-}
-
 /**
  * 모델이 쓴 사유의 숫자가 후보 근거에 있는 값인지 확인한다. 없는 수치는 환각으로 본다.
  * 제목·카테고리 이름의 분량("영어 단어 30개")을 그대로 다시 쓴 것과 기록된 요일 수는 근거로 인정한다.
  */
 export function isReasonGrounded(reason: string, candidate: SuggestionCandidate): boolean {
-  const allowed = new Set<number>([
-    candidate.occurrences,
-    candidate.completed,
-    candidate.days.length,
-    ...candidate.days.flatMap((day) => [day.total, day.completed]),
-    ...(candidate.recordedTime == null ? [] : numbersIn(candidate.recordedTime)),
-  ]);
-  return numbersIn(withoutRecordedQuantities(reason, candidate)).every((value) =>
-    allowed.has(value),
-  );
+  return hasOnlyGroundedNumbers(reason, {
+    numbers: [
+      candidate.occurrences,
+      candidate.completed,
+      candidate.days.length,
+      ...candidate.days.flatMap((day) => [day.total, day.completed]),
+      ...(candidate.recordedTime == null ? [] : numbersIn(candidate.recordedTime)),
+    ],
+    quotedTexts: [candidate.title, candidate.categoryName],
+  });
 }
