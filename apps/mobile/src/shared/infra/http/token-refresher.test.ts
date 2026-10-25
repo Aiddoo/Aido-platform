@@ -4,12 +4,12 @@ import { TimeoutError as KyTimeoutError } from 'ky';
 
 import { createTokenRefresher, type RefreshTokensRequest } from './token-refresher';
 
+// ok는 status에서 정해진다. 호출부의 ok는 읽는 사람을 위한 표시로 status와 같게 둔다.
 const createFakeResponse = (params: { ok: boolean; status: number; body?: unknown }): Response =>
-  ({
-    ok: params.ok,
+  new Response(params.body === undefined ? null : JSON.stringify(params.body), {
     status: params.status,
-    json: jest.fn().mockResolvedValue(params.body),
-  }) as unknown as Response;
+    headers: { 'Content-Type': 'application/json' },
+  });
 
 const TOKENS_BODY = {
   success: true,

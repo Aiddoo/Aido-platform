@@ -158,7 +158,8 @@ describe('useFeatureDiscoveryHub', () => {
     // When
     await act(async () => {
       result.current.openHub({
-        accountId: undefined as never,
+        // @ts-expect-error 계정 조회 전 런타임에 accountId가 비어 들어오는 경우를 방어하는지 확인한다
+        accountId: undefined,
         campaign,
         source: 'mypage',
       });

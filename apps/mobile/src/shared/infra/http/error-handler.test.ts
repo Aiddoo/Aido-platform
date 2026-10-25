@@ -1,7 +1,7 @@
 import { ErrorCode } from '@aido/api/errors';
+import { runKyAfterResponseHook } from '@src/shared/__tests__';
 import { i18n } from '@src/shared/i18n';
 import { errorReporter } from '@src/shared/infra/error-reporter/global-error-reporter';
-import type { AfterResponseState, KyRequest, KyResponse, NormalizedOptions } from 'ky';
 
 import {
   recordApiFailureBreadcrumb,
@@ -18,13 +18,7 @@ const createErrorResponse = (code: string, message: string, status = 400): Respo
 type Hook = typeof recordPublicApiFailureBreadcrumb;
 
 const runHook = async (hook: Hook, response: Response): Promise<void> => {
-  const request = new Request('https://api.test/todos') as KyRequest;
-  await hook({
-    request,
-    options: {} as NormalizedOptions,
-    response: response as KyResponse,
-    retryCount: 0,
-  } as AfterResponseState);
+  await runKyAfterResponseHook(hook, new Request('https://api.test/todos'), response);
 };
 
 describe('실패 응답 관측 훅 (분류·throw는 KyHttpClient의 몫)', () => {

@@ -26,15 +26,21 @@ type NodeProps = {
 
 type WidgetNode = { type: string; props: NodeProps };
 
+type FunctionComponent = (props: NodeProps) => ReactNode;
+
+// Widget 트리는 클래스 컴포넌트를 쓰지 않는다. prototype 표식으로 함수 컴포넌트만 직접 호출한다.
+function isFunctionComponent(type: unknown): type is FunctionComponent {
+  return typeof type === 'function' && !('isReactComponent' in type.prototype);
+}
+
 // The native tree collector invokes local components directly, without a React root.
 function collect(node: ReactNode, result: WidgetNode[] = []): WidgetNode[] {
   Children.forEach(node, (child) => {
     if (!isValidElement<NodeProps>(child)) {
       return;
     }
-    if (typeof child.type === 'function') {
-      const component = child.type as (props: NodeProps) => ReactNode;
-      collect(component(child.props), result);
+    if (isFunctionComponent(child.type)) {
+      collect(child.type(child.props), result);
       return;
     }
     result.push({ type: String(child.type), props: child.props });

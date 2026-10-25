@@ -10,10 +10,10 @@ jest.mock('@sentry/react-native', () => ({
   setUser: jest.fn(),
 }));
 
-const captureException = Sentry.captureException as jest.Mock;
-const captureMessage = Sentry.captureMessage as jest.Mock;
-const addBreadcrumb = Sentry.addBreadcrumb as jest.Mock;
-const setUser = Sentry.setUser as jest.Mock;
+const captureException = jest.mocked(Sentry.captureException);
+const captureMessage = jest.mocked(Sentry.captureMessage);
+const addBreadcrumb = jest.mocked(Sentry.addBreadcrumb);
+const setUser = jest.mocked(Sentry.setUser);
 
 describe('createSentryErrorReporter', () => {
   beforeEach(() => {
@@ -67,13 +67,12 @@ describe('createSentryErrorReporter', () => {
     for (const severity of severities) {
       reporter.captureMessage('e', { severity });
     }
-    expect(captureMessage.mock.calls.map((c) => c[1].level)).toEqual([
-      'debug',
-      'info',
-      'warning',
-      'error',
-      'fatal',
-    ]);
+    severities.forEach((severity, index) => {
+      expect(captureMessage).toHaveBeenNthCalledWith(index + 1, 'e', {
+        level: severity,
+        tags: {},
+      });
+    });
   });
 
   it('addBreadcrumb는 category/level(기본 info)/data를 Sentry breadcrumb로 매핑한다', () => {

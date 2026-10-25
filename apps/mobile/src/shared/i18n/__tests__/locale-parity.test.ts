@@ -31,13 +31,20 @@ function extractVariables(values: string[]): Set<string> {
   const variables = new Set<string>();
   for (const value of values) {
     for (const match of value.matchAll(/\{\{(\w+)\}\}/g)) {
-      variables.add(match[1] as string);
+      const variable = match[1];
+      if (variable != null) {
+        variables.add(variable);
+      }
     }
   }
   return variables;
 }
 
-const namespaces = Object.keys(resources.ko) as Array<keyof (typeof resources)['ko']>;
+type LocaleNamespace = keyof (typeof resources)['ko'];
+
+const isLocaleNamespace = (key: string): key is LocaleNamespace => Object.hasOwn(resources.ko, key);
+
+const namespaces = Object.keys(resources.ko).filter(isLocaleNamespace);
 
 describe.each(namespaces)('%s 네임스페이스', (namespace) => {
   const koKeys = flattenKeys(resources.ko[namespace]);

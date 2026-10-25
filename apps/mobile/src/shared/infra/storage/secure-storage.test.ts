@@ -12,9 +12,7 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(),
 }));
 
-const getItemAsync = ExpoSecureStore.getItemAsync as jest.MockedFunction<
-  typeof ExpoSecureStore.getItemAsync
->;
+const getItemAsync = jest.mocked(ExpoSecureStore.getItemAsync);
 
 describe('SecureStorage — 벤더 에러 분류', () => {
   let storage: SecureStorage;
@@ -63,10 +61,11 @@ describe('SecureStorage — 벤더 에러 분류', () => {
     getItemAsync.mockRejectedValue(original);
 
     // When
-    const error = await storage.get('key', z.string()).catch((caught: unknown) => caught);
+    const reading = storage.get('key', z.string());
 
     // Then — 관측 시 원본 OSStatus 메시지를 잃지 않는다
-    expect((error as KeychainLockedError).cause).toBe(original);
+    await expect(reading).rejects.toBeInstanceOf(KeychainLockedError);
+    await expect(reading).rejects.toMatchObject({ cause: original });
   });
 
   it.each([
