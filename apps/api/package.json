@@ -41,7 +41,8 @@
     "contract:emit": "prisma contract emit",
     "test:performance": "vitest run --project performance",
     "db:plan": "prisma migration plan",
-    "db:verify": "prisma db verify"
+    "db:verify": "prisma db verify",
+    "ai:eval": "tsx --tsconfig tsconfig.json scripts/ai-eval/run.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.105",

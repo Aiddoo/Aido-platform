@@ -7,6 +7,7 @@
 | 순수 Domain/Application, fixture·Stub, 공급자 Adapter의 wire | [unit-test.md](./unit-test.md)               |
 | 실제 Module 조립, PostgreSQL transaction·경쟁 조건·migration | [integration-test.md](./integration-test.md) |
 | HTTP validation·권한·응답·구 클라이언트 계약                 | [e2e-test.md](./e2e-test.md)                 |
+| AI 파싱 golden·fake model·live eval                          | [AI 평가](../../../docs/server/ai.md#평가)   |
 
 ## 무엇을 검증할지
 
