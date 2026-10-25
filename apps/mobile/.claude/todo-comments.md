@@ -223,7 +223,9 @@ export default function TodoDetailRoute() {
 - route가 safe area, separator, 바깥 padding, `QueryErrorBoundary`, `Suspense` 위치를 소유한다.
 - focus 진입의 `Suspense` fallback은 댓글 row skeleton부터 그린다. 최종 initial viewport에서 가려질
   할 일 header를 fallback 맨 위에 잠깐 보여 주지 않는다.
-- `TodoCommentTitleBar`는 view/form에 맞는 제목과 back 의미만 소유한다.
+- `TodoCommentTitleBar`는 view/form에 맞는 제목과 back 의미만 소유한다. 전체 화면은 `.StackHeader`(네이티브
+  헤더, 가운데 제목)를 쓴다. 펼친 피드의 상세 pane은 왼쪽 정렬 제목 바를 쓰며, 댓글 개요에는 뒤로가기가 없고
+  내 할 일일 때만 ⋯(할 일 옵션 시트)를 둔다. 대화에서만 개요로 돌아가는 뒤로가기를 둔다.
 - `TodoCommentScreenTransitionProvider`는 화면 안의 최신 댓글 이동과 정렬 전환 의도만 유지한다.
   연속 탭, 취소, 뒤로가기, 키보드 닫기, 작성 mutation과 늦게 끝난 prefetch가 현재 route를 뒤집지
   못하게 한다. 숫자 request ID나 문자열 route identity를 만들지 않고, 판별 가능한 transition 객체

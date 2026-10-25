@@ -75,7 +75,6 @@ import { ScrollView, FlatList, Image } from 'react-native';
 | `BottomSheet`                                  | 키보드 불필요 바텀시트 (피커, 액션시트)                                     | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `ModalBottomSheet`                             | Overlay 절대 위치 기반 바텀시트 (시트 위에 시트)                            | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
 | `SheetRouteScreen`, `useSheetRoute`            | 대상이 있는 시트를 Expo Router transparentModal route로 띄우는 바탕과 닫기  | `src/shared/ui/bottom-sheet/bottom-sheet.md`                     |
-| `ScreenTitleBar`                               | Stack 화면이 아닌 pane 꼭대기 제목 바 (뒤로가기 · 제목 · subtitle)          | `src/shared/ui/screen-title-bar/screen-title-bar.md`             |
 | `useStackScreenOptions`, `useStackBackToolbar` | 네이티브 Stack 헤더 공통 옵션과 중첩 Stack 첫 화면의 네이티브 뒤로가기      | `src/shared/ui/stack-header/stack-header.md`                     |
 | `FormStepLayout`                               | 폼 단계 스크롤 영역 (가로 safe area · 페이드인 제목 · 입력 영역)            | `src/shared/ui/form-step-layout/form-step-layout.md`             |
 | `ActionChip`                                   | 아이콘 + 라벨 선택 칩 (필터·옵션)                                           | `src/shared/ui/action-chip/action-chip.md`                       |

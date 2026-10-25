@@ -1,14 +1,20 @@
 import { useTodoModerationActions } from '@src/features/moderation/hooks/use-todo-moderation-actions';
+import { useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
 import { useGetTodoDetailsQueryOptions } from '@src/features/todo/queries/get-todo-details-query-options';
+import { todoActionsSheetHref } from '@src/features/todo/utils/navigation/todo-sheet-href';
+import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
+  ArrowLeftIcon,
+  HStack,
   MoreIcon,
-  ScreenTitleBar,
   STACK_BACK_ICON,
   STACK_MORE_ICON,
+  Text,
   useStackScreenOptions,
+  VStack,
 } from '@src/shared/ui';
 import { useQuery } from '@tanstack/react-query';
 import { Stack, router } from 'expo-router';
@@ -18,27 +24,47 @@ import { useState } from 'react';
 import { useTodoCommentBack } from '../hooks/use-todo-comment-back';
 import { useTodoCommentRoute } from '../hooks/use-todo-comment-route';
 
-const SUBTITLE_LAYOUT_PLACEHOLDER = ' ';
+const SUBTITLE_LAYOUT_PLACEHOLDER = ' ';
 
-interface TodoCommentTitleBarProps {
-  /** 라우트를 pop하지 않는 pane에서 댓글 개요의 뒤로가기가 상세를 닫을 때 쓴다. */
-  onBackPress: () => void;
-}
-
-/** 펼친 피드의 상세 pane 제목 바. pane은 Stack 화면이 아니라 네이티브 헤더가 없다. */
-export function TodoCommentTitleBar({ onBackPress }: TodoCommentTitleBarProps) {
-  const { title, subtitle, isBackDisabled, backAccessibilityLabel, handleBackPress } =
-    useTodoCommentTitle(onBackPress);
+/**
+ * 펼친 피드의 상세 pane 제목 바. pane은 Stack 화면이 아니라 네이티브 헤더가 없다.
+ * 선택과 해제는 목록 pane이 맡으므로 댓글 개요에는 뒤로가기가 없고, 대화에서만 개요로 돌아간다.
+ */
+export function TodoCommentTitleBar() {
+  const { t } = useTranslation('common');
+  const [commentRoute] = useTodoCommentRoute();
+  const { title, subtitle, isBackDisabled, backAccessibilityLabel, handleBack } =
+    useTodoCommentTitle();
+  const handleBackPress = useSingleTap(handleBack);
+  const isConversation = commentRoute.view === 'conversation';
 
   return (
-    <ScreenTitleBar
-      title={title}
-      subtitle={subtitle}
-      onBackPress={handleBackPress}
-      isBackDisabled={isBackDisabled}
-      backAccessibilityLabel={backAccessibilityLabel}
-      right={<TodoModerationMenu />}
-    />
+    <HStack align="center" gap={4} pl={isConversation ? 4 : 20} pr={4} className="min-h-16">
+      {isConversation && (
+        <PressableFeedback
+          onPress={handleBackPress}
+          isDisabled={isBackDisabled}
+          className="size-11 items-center justify-center rounded-full"
+          accessibilityRole="button"
+          accessibilityLabel={backAccessibilityLabel ?? t('actions.goBack')}
+          accessibilityState={{ disabled: isBackDisabled }}
+        >
+          <ArrowLeftIcon width={22} height={22} colorClassName="text-gray-9" />
+        </PressableFeedback>
+      )}
+
+      <VStack flex={1} gap={1} className="min-w-0">
+        <Text size="b2" weight="bold" numberOfLines={1}>
+          {title}
+        </Text>
+        <Text size="e1" shade={7} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      </VStack>
+
+      {!isConversation && <TodoActionsButton />}
+      <TodoModerationMenu />
+    </HStack>
   );
 }
 
@@ -48,15 +74,22 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
   const { t } = useTranslation(['common', 'moderation']);
   const { todoId } = useTodoScreenParams();
   const moderation = useTodoModerationActions({ todoId });
-  const { title, subtitle, isBackDisabled, backAccessibilityLabel, handleBackPress } =
-    useTodoCommentTitle(router.back);
+  const { title, subtitle, isBackDisabled, backAccessibilityLabel, handleBack } =
+    useTodoCommentTitle();
+
+  const handleBackPress = useSingleTap(() => {
+    if (handleBack()) {
+      return;
+    }
+    router.back();
+  });
 
   return (
     <>
       <Stack.Screen
         options={{
           ...screenOptions,
-          headerTitle: () => <ScreenTitleBar.Title title={title} subtitle={subtitle} />,
+          headerTitle: () => <StackHeaderTitle title={title} subtitle={subtitle} />,
         }}
       />
       <Stack.Toolbar placement="left">
@@ -84,6 +117,49 @@ TodoCommentTitleBar.StackHeader = function StackHeader() {
     </>
   );
 };
+
+interface StackHeaderTitleProps {
+  title: string;
+  subtitle: string;
+}
+
+function StackHeaderTitle({ title, subtitle }: StackHeaderTitleProps) {
+  return (
+    <VStack align="center" gap={1}>
+      <Text size="b2" weight="bold">
+        {title}
+      </Text>
+      <Text size="e1" shade={5}>
+        {subtitle}
+      </Text>
+    </VStack>
+  );
+}
+
+/** 내 할 일이면 기존 할 일 옵션 시트를 연다. 친구 할 일의 신고·차단은 TodoModerationMenu가 맡는다. */
+function TodoActionsButton() {
+  const { t } = useTranslation('todo');
+  const { todoId } = useTodoScreenParams();
+  const date = useFeedDateKey();
+  const push = useSingleTap(router.push);
+  const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
+  const { data: me } = useQuery(useGetMeQueryOptions());
+
+  if (detail == null || me == null || me.id !== detail.owner.id) {
+    return null;
+  }
+
+  return (
+    <PressableFeedback
+      onPress={() => push(todoActionsSheetHref({ todoId, date }))}
+      className="size-11 items-center justify-center rounded-full"
+      accessibilityRole="button"
+      accessibilityLabel={t('actions.more')}
+    >
+      <MoreIcon width={22} height={22} colorClassName="text-gray-9" />
+    </PressableFeedback>
+  );
+}
 
 /** 펼친 피드 pane의 ⋯. 친구 할 일에서만 신고·차단을 보인다 */
 function TodoModerationMenu() {
@@ -130,20 +206,13 @@ function TodoModerationMenu() {
   );
 }
 
-/** 댓글 경로에 따라 제목·조회수와 뒤로가기(대화 → 개요 → 화면 나가기)를 정한다. */
-function useTodoCommentTitle(onExit: () => void) {
+/** 댓글 경로에 따라 제목·조회수와 댓글 안 뒤로가기(작성기 → 대화 → 개요)를 정한다. */
+function useTodoCommentTitle() {
   const { todoId } = useTodoScreenParams();
   const [commentRoute] = useTodoCommentRoute();
   const { result: backResult, handleBack } = useTodoCommentBack();
   const { data: detail } = useQuery(useGetTodoDetailsQueryOptions({ todoId }));
   const { t } = useTranslation(['todo', 'todoComment']);
-
-  const handleBackPress = useSingleTap(() => {
-    if (handleBack()) {
-      return;
-    }
-    onExit();
-  });
 
   return {
     title:
@@ -157,6 +226,6 @@ function useTodoCommentTitle(onExit: () => void) {
     isBackDisabled: backResult.status === 'blocked',
     backAccessibilityLabel:
       backResult.status === 'navigate' ? t(`todoComment:${backResult.labelKey}`) : undefined,
-    handleBackPress,
+    handleBack,
   };
 }
