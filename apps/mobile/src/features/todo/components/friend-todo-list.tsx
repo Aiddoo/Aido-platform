@@ -9,6 +9,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { TodoPolicy } from '@src/features/todo/domains/todo.model';
 import type { Todo } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
@@ -27,7 +28,6 @@ import {
   VStack,
   useOverlay,
 } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -123,7 +123,8 @@ FriendTodoList.Item = function Item({ todo }: { todo: Todo }) {
   const selectTodo = useSingleTap(setSelectedTodoId);
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
+  const dateFormatContext = useDateFormatContext();
+  const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const showDateTime = formattedTime != null;
   const canNudgeTodo = TodoNudgePolicy.canNudgeTodoOnDate(
     { targetDate: date, isCompleted: todo.completed },

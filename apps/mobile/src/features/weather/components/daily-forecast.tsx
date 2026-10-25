@@ -1,6 +1,6 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { HStack, Text, VStack, Box } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { maxBy, minBy } from 'es-toolkit';
@@ -66,6 +66,7 @@ DailyForecast.Item = function Item({
   range: { min: number; max: number };
 }) {
   const palette = useTimePalette();
+  const dateFormatContext = useDateFormatContext();
   const Icon =
     resolveIconByPrecipitation(item.precipitationType) ?? resolveIconBySky(item.skyCondition);
   const iconColor =
@@ -77,7 +78,7 @@ DailyForecast.Item = function Item({
   return (
     <HStack align="center" className="py-1 gap-3 px-1">
       <Text size="b3" weight="medium" className="w-8" style={{ color: palette.textSub }}>
-        {formatDateKeyLabel(item.date, 'weekday', getDateFormatContext())}
+        {formatDateKeyLabel(item.date, 'weekday', dateFormatContext)}
       </Text>
 
       <VStack align="center" className="w-10">

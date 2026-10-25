@@ -10,9 +10,10 @@ import type { Todo } from '@src/features/todo/domains/todo.model';
 import { useTrack } from '@src/shared/analytics';
 import { isBusinessError } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSpeechRecognition } from '@src/shared/hooks/use-speech-recognition';
-import { useToday } from '@src/shared/hooks/use-today';
+import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ActionChip,
@@ -39,6 +40,7 @@ import {
 import { FormField } from '@src/shared/ui/form-field/form-field';
 import { cn } from '@src/shared/utils/cn';
 import { formatDate, formatDaysOfWeek } from '@src/shared/utils/date';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { Popover, PressableFeedback, Spinner } from 'heroui-native';
@@ -57,7 +59,6 @@ import { useGetTodoCategoriesQueryOptions } from '../queries/get-todo-categories
 import { useCreateRecurringTodoMutationOptions } from '../queries/use-create-recurring-todo-mutation-options';
 import { useCreateTodoMutationOptions } from '../queries/use-create-todo-mutation-options';
 import { useUpdateTodoMutationOptions } from '../queries/use-update-todo-mutation-options';
-import { formatTodoDateLabel } from '../utils/format-todo-date-label';
 import { toTodoEditFormValues } from '../utils/to-todo-edit-form-values';
 import { CategorySelectInput } from './category-select-input';
 import { TodoDatePickerContent } from './todo-date-picker-content';
@@ -483,8 +484,14 @@ export function AddTodoBottomSheet(props: AddTodoBottomSheetProps) {
 const DateChip = ({ onPress }: { onPress: () => void }) => {
   const actionChipIconSize = useActionChipIconSize();
   const startDate = useWatch<AddTodoFormValues, 'startDate'>({ name: 'startDate' });
-  const today = useToday();
-  const label = formatTodoDateLabel({ startDate, scheduledTime: null, isAllDay: true, today });
+  const { t } = useTranslation('common');
+  const todayDateKey = useTodayKey();
+  const dateFormatContext = useDateFormatContext();
+  const startDateKey = formatDate(startDate);
+  const label =
+    startDateKey === todayDateKey
+      ? t('dateSections.today')
+      : formatDateKeyLabel(startDateKey, 'monthDay', dateFormatContext);
 
   return (
     <ActionChip

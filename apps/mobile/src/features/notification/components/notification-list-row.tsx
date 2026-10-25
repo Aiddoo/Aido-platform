@@ -1,6 +1,7 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, HStack, ListRow, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { type DateSectionKey, formatRelativeTime } from '@src/shared/utils/date';
+import { type DateSectionKey, formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { times } from 'es-toolkit/compat';
 import { PressableFeedback, Separator } from 'heroui-native';
 import { type ComponentProps, Fragment } from 'react';
@@ -25,6 +26,7 @@ export function NotificationListRow({
   isUnread = false,
   ...props
 }: NotificationListRowProps) {
+  const dateFormatContext = useDateFormatContext();
   return (
     <PressableFeedback {...props}>
       <HStack className={isUnread ? 'bg-highlight' : 'bg-background'}>
@@ -45,7 +47,7 @@ export function NotificationListRow({
                   {label}
                 </Text>
                 <Text size="b4" shade={5}>
-                  {formatRelativeTime(createdAt, new Date())}
+                  {formatRelativeTimeLabel(createdAt, new Date(), dateFormatContext)}
                 </Text>
               </HStack>
 

@@ -1,4 +1,5 @@
-import { useFeedDate } from '@src/features/todo/hooks/use-feed-date';
+import { useFeedDate, useFeedDateKey } from '@src/features/todo/hooks/use-feed-date';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useToday } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, FishIcon, HStack, Result, Text, VStack } from '@src/shared/ui';
@@ -9,17 +10,17 @@ import {
   diffMonths,
   diffWeeks,
   formatDate,
-  getMonthHeaderText,
+  formatWeekOfMonthLabel,
   getMonthStart,
   getMonthWeeks,
   getNextDay,
   getWeekDates,
-  getWeekHeaderText,
   getWeekStart,
   isSameMonth,
   withDayOfMonth,
   withDayOfWeek,
 } from '@src/shared/utils/date';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { range } from 'es-toolkit';
 import { PressableFeedback } from 'heroui-native';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
@@ -75,7 +76,7 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
     <VStack className="bg-background" gap={8}>
       <HStack className="px-4 py-2" justify="between" align="center">
         <HStack gap={8} align="center">
-          <CalendarHeaderText displayDate={selectedDate} />
+          <CalendarHeaderText />
           <PressableFeedback
             onPress={() => setSelectedDate(today)}
             className="px-2 py-0.5 bg-gray-2 rounded-full"
@@ -105,16 +106,14 @@ export function Calendar({ completions = EMPTY_COMPLETIONS, status }: CalendarPr
   );
 }
 
-interface CalendarHeaderTextProps {
-  displayDate: Date;
-}
-
-function CalendarHeaderText({ displayDate }: CalendarHeaderTextProps) {
+function CalendarHeaderText() {
   const { viewMode } = useCalendarContext();
+  const selectedDateKey = useFeedDateKey();
+  const dateFormatContext = useDateFormatContext();
 
   const headerText = match(viewMode)
-    .with('week', () => getWeekHeaderText(displayDate))
-    .with('month', () => getMonthHeaderText(displayDate))
+    .with('week', () => formatWeekOfMonthLabel(selectedDateKey, dateFormatContext))
+    .with('month', () => formatDateKeyLabel(selectedDateKey, 'yearMonth', dateFormatContext))
     .exhaustive();
 
   return (

@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { TODO_SHEET_FALLBACK_HREF } from '@src/features/todo/utils/navigation/todo-sheet-href';
 import { isApiError } from '@src/shared/errors';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   BottomSheetTextArea,
@@ -21,7 +22,6 @@ import {
   useSheetRoute,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -175,7 +175,7 @@ function DetailField() {
 /** 상세 내용 길이만 구독해 글자를 칠 때 시트 전체가 다시 그려지지 않게 한다 */
 function DetailLengthCounter() {
   const detail = useWatch<UserReportFormInput, 'detail'>({ name: 'detail' });
-  const { locale } = getDateFormatContext();
+  const { locale } = useDateFormatContext();
 
   return (
     <HStack justify="end">

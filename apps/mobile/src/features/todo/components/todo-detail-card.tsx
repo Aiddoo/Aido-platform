@@ -4,11 +4,12 @@ import { NudgeInteractionPolicy } from '@src/features/nudge/domains/nudge-intera
 import { TodoNudgePolicy } from '@src/features/nudge/domains/todo-nudge.model';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTodayKey } from '@src/shared/hooks/use-today';
 import { useTranslation } from '@src/shared/i18n';
 import { ChatBubbleIcon, EyeIcon, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
-import { formatFullDate } from '@src/shared/utils/date';
+import { formatDateKeyLabel } from '@src/shared/utils/date-format';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
@@ -39,6 +40,7 @@ type TodoDetailSectionProps = { detail: TodoDetails };
 
 function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
   const { t } = useTranslation('todo');
+  const dateFormatContext = useDateFormatContext();
   const ownerName = detail.owner.name ?? t('detail.unknownOwner');
 
   return (
@@ -49,7 +51,7 @@ function TodoOwnerLine({ detail }: TodoDetailSectionProps) {
           {ownerName}
         </Text>
         <Text size="e1" shade={5}>
-          {formatFullDate(detail.todo.startDate)}
+          {formatDateKeyLabel(detail.todo.startDate, 'fullDate', dateFormatContext)}
         </Text>
       </VStack>
     </HStack>

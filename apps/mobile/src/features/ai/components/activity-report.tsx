@@ -1,4 +1,5 @@
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   DashedDivider,
@@ -10,7 +11,7 @@ import {
   Box,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { getDateFormatContext, getDayOfWeekLabel } from '@src/shared/utils/date';
+import { getDayOfWeekLabel } from '@src/shared/utils/date';
 import { formatDateKeyRange, formatHourLabel } from '@src/shared/utils/date-format';
 import { formatPercent } from '@src/shared/utils/format';
 import type { TimeFormat } from '@src/shared/utils/time';
@@ -83,6 +84,7 @@ function ReportSection({ hasDivider = true, children }: ReportSectionProps) {
 
 function ReportPeriodLabel({ report }: { report: AiReport }) {
   const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
   return (
     <HStack align="center" gap={8} className="flex-wrap">
       <Chip
@@ -102,7 +104,7 @@ function ReportPeriodLabel({ report }: { report: AiReport }) {
         {formatDateKeyRange(
           report.dateRange.startDate,
           report.dateRange.endDate,
-          getDateFormatContext(),
+          dateFormatContext,
         )}
       </Text>
     </HStack>
@@ -234,6 +236,7 @@ function TimePatternSummary({
   timeFormat: TimeFormat;
 }) {
   const { t } = useTranslation('ai');
+  const dateFormatContext = useDateFormatContext();
   const top3 = orderBy(items, ['count'], ['desc']).slice(0, 3);
 
   return (
@@ -250,7 +253,7 @@ function TimePatternSummary({
           <Separator orientation="vertical" className="h-3 bg-gray-3" />
 
           <Text size="b4" shade={8}>
-            {formatHourLabel(item.hour, timeFormat, getDateFormatContext())}
+            {formatHourLabel(item.hour, timeFormat, dateFormatContext)}
           </Text>
 
           <Text size="b4" shade={6}>

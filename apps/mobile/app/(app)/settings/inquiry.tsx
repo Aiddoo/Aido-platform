@@ -4,6 +4,7 @@ import { INQUIRY_CATEGORY_LABEL_KEYS } from '@src/features/inquiry/constants/inq
 import { useInquiryScreenParams } from '@src/features/inquiry/hooks/use-inquiry-screen-params';
 import { useCreateInquiryMutationOptions } from '@src/features/inquiry/queries/use-create-inquiry-mutation-options';
 import { isBusinessError } from '@src/shared/errors/result';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
 import { resolveValidationMessage } from '@src/shared/i18n/validation-message';
 import {
@@ -20,7 +21,6 @@ import {
   Box,
 } from '@src/shared/ui';
 import { FormField } from '@src/shared/ui/form-field/form-field';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatCount } from '@src/shared/utils/format';
 import { useMutation } from '@tanstack/react-query';
 import { RadioGroup } from 'heroui-native';
@@ -37,6 +37,7 @@ function InquiryScreen() {
   const initialValues = useInquiryScreenParams();
 
   const { t } = useTranslation('inquiry');
+  const { locale } = useDateFormatContext();
   const scrollViewRef = useAnimatedRef<Animated.ScrollView>();
   const contentHeight = useSharedValue(0);
   const hasScrolled = useSharedValue(false);
@@ -131,11 +132,8 @@ function InquiryScreen() {
                   />
                   <HStack justify="end" className="-mt-4">
                     <Text size="e1" weight="medium" className="text-gray-5">
-                      {formatCount(value.length, getDateFormatContext().locale)}/
-                      {formatCount(
-                        INQUIRY_CONTENT_LIMITS.MAX_LENGTH,
-                        getDateFormatContext().locale,
-                      )}
+                      {formatCount(value.length, locale)}/
+                      {formatCount(INQUIRY_CONTENT_LIMITS.MAX_LENGTH, locale)}
                     </Text>
                   </HStack>
                 </VStack>

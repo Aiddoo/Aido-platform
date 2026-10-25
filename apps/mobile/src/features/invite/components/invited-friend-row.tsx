@@ -1,5 +1,6 @@
 import { REDEMPTION_REJECTION_REASON } from '@aido/api';
 import { UserAvatar } from '@src/features/user/components/user-avatar';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -11,7 +12,7 @@ import {
   Text,
   VStack,
 } from '@src/shared/ui';
-import { formatMonthDay } from '@src/shared/utils/date';
+import { formatDateLabel } from '@src/shared/utils/date-format';
 import { Skeleton } from 'heroui-native';
 import { match, P } from 'ts-pattern';
 
@@ -25,6 +26,7 @@ interface InvitedFriendRowProps extends Omit<ListRowProps, 'left' | 'contents' |
 /** 초대한 친구 한 줄. 내 초대 요약과 전체 목록이 같은 행을 쓴다 */
 export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
   const { t } = useTranslation('invite');
+  const dateFormatContext = useDateFormatContext();
   const displayName = InvitedFriendPolicy.displayName(friend);
 
   return (
@@ -46,7 +48,11 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
             {match(InvitedFriendPolicy.pawPrintState(friend))
               .with('stamped', () =>
                 t('friendList.stamped', {
-                  date: formatMonthDay(friend.qualifiedAt ?? friend.joinedAt),
+                  date: formatDateLabel(
+                    friend.qualifiedAt ?? friend.joinedAt,
+                    'monthDay',
+                    dateFormatContext,
+                  ),
                 }),
               )
               .with('waiting', () =>
@@ -69,7 +75,9 @@ export function InvitedFriendRow({ friend, ...props }: InvitedFriendRowProps) {
                   .exhaustive(),
               )
               .with('unknown', () =>
-                t('friendList.joined', { date: formatMonthDay(friend.joinedAt) }),
+                t('friendList.joined', {
+                  date: formatDateLabel(friend.joinedAt, 'monthDay', dateFormatContext),
+                }),
               )
               .exhaustive()}
           </Text>

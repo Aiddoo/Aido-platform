@@ -1,17 +1,11 @@
 import { DAY_OF_WEEK_MAP, type DayOfWeek } from '@aido/api';
-import { i18n, t } from '@src/shared/i18n';
-import { toResolvedLanguage } from '@src/shared/preferences/language.preference';
+import { t } from '@src/shared/i18n';
 import dayjs from 'dayjs';
 import { range } from 'es-toolkit';
 
 import { getCalendarWeek, getCalendarWeekOfDateKey } from './calendar-week';
-import {
-  formatDateLabel,
-  formatRelativeTime as formatRelativeTimeLabel,
-  type DateFormatContext,
-} from './date-format';
+import { type DateFormatContext, formatDateKeyLabel, formatRelativeTime } from './date-format';
 import { addDaysToDateKey } from './date-key';
-import { getDeviceTimezone } from './timezone';
 
 // Format
 export const formatDate = (date: Date | string | number): string => {
@@ -19,18 +13,9 @@ export const formatDate = (date: Date | string | number): string => {
   return d.isValid() ? d.format('YYYY-MM-DD') : '';
 };
 
-export function getDateFormatContext(): DateFormatContext {
-  return {
-    locale: toResolvedLanguage(i18n.language) === 'ko' ? 'ko-KR' : 'en-US',
-    timeZone: getDeviceTimezone(),
-  };
+function toCatalogLanguage(context: DateFormatContext): 'ko' | 'en' {
+  return context.locale === 'ko-KR' ? 'ko' : 'en';
 }
-
-export const formatFullDate = (date: Date | string | number): string =>
-  formatDateLabel(dayjs(date).toDate(), 'fullDate', getDateFormatContext());
-
-export const formatMonthDay = (date: Date | string | number): string =>
-  formatDateLabel(dayjs(date).toDate(), 'monthDay', getDateFormatContext());
 
 export const toDate = (date: Date | string | number): Date => {
   const d = dayjs(date);
@@ -94,16 +79,14 @@ export const getWeekdayLabels = (): string[] =>
     t(`common:daysOfWeek.${day}`),
   );
 
-export const getWeekHeaderText = (date: Date): string => {
-  const week = getCalendarWeek(date);
+/** 달력 주 헤더 (ko: "10월 3주차", en: "Week 3 of Oct"). 주가 시작한 달 기준이다. */
+export const formatWeekOfMonthLabel = (dateKey: string, context: DateFormatContext): string => {
+  const week = getCalendarWeekOfDateKey(dateKey);
   return t('common:calendar.weekHeader', {
-    month: formatDateLabel(week.start, 'month', getDateFormatContext()),
+    lng: toCatalogLanguage(context),
+    month: formatDateKeyLabel(week.startDateKey, 'month', context),
     week: week.weekOfMonth,
   });
-};
-
-export const getMonthHeaderText = (date: Date): string => {
-  return formatDateLabel(dayjs(date).toDate(), 'yearMonth', getDateFormatContext());
 };
 
 export const getWeekStart = (date: Date): Date => {
@@ -239,16 +222,22 @@ export const getDateSectionKey = (dateKey: string, todayDateKey: string): DateSe
   return 'earlier';
 };
 
-/** 상대 시간 포맷 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025. 1. 5.") */
-export const formatRelativeTime = (date: Date, now: Date): string =>
-  formatRelativeTimeLabel(
+/** 상대 시간 ("방금 전", "5분 전", "3시간 전", "2일 전", "1월 5일", "2025. 1. 5.") */
+export const formatRelativeTimeLabel = (
+  date: Date,
+  now: Date,
+  context: DateFormatContext,
+): string => {
+  const lng = toCatalogLanguage(context);
+  return formatRelativeTime(
     date,
     now,
     {
-      justNow: t('common:relativeTime.justNow'),
-      minutesAgo: (count) => t('common:relativeTime.minutesAgo', { count }),
-      hoursAgo: (count) => t('common:relativeTime.hoursAgo', { count }),
-      daysAgo: (count) => t('common:relativeTime.daysAgo', { count }),
+      justNow: t('common:relativeTime.justNow', { lng }),
+      minutesAgo: (count) => t('common:relativeTime.minutesAgo', { count, lng }),
+      hoursAgo: (count) => t('common:relativeTime.hoursAgo', { count, lng }),
+      daysAgo: (count) => t('common:relativeTime.daysAgo', { count, lng }),
     },
-    getDateFormatContext(),
+    context,
   );
+};

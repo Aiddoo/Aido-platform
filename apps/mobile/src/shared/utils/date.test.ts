@@ -5,15 +5,13 @@ import {
   diffMonths,
   diffWeeks,
   formatDaysOfWeek,
-  formatFullDate,
-  formatRelativeTime,
+  formatRelativeTimeLabel,
   getCalendarRange,
   getDateSectionKey,
   getDayOfWeekLabel,
-  getMonthHeaderText,
   getMonthWeeks,
   getWeekdayLabels,
-  getWeekHeaderText,
+  formatWeekOfMonthLabel,
   getWeekRange,
 } from './date';
 
@@ -253,29 +251,33 @@ describe('getDayOfWeekLabel', () => {
 });
 
 describe('로케일 인지 포맷 (i18n)', () => {
-  const date = new Date(2026, 6, 7); // 2026-07-07 (화)
+  const KO_SEOUL = { locale: 'ko-KR', timeZone: 'Asia/Seoul' } as const;
+  const EN_SEOUL = { locale: 'en-US', timeZone: 'Asia/Seoul' } as const;
 
-  it('ko에서 원문 그대로 포맷한다', () => {
-    expect(formatFullDate(date)).toBe('2026년 7월 7일');
-    expect(getMonthHeaderText(date)).toBe('2026년 7월');
-    expect(getWeekHeaderText(date)).toBe('7월 1주차');
+  it('요일 라벨은 앱 언어를 따른다', async () => {
     expect(getWeekdayLabels()).toEqual(['일', '월', '화', '수', '목', '금', '토']);
-  });
 
-  it('en으로 전환하면 영어 포맷을 사용한다', async () => {
-    // Given
     await i18n.changeLanguage('en');
 
-    // Then
-    expect(formatFullDate(date)).toBe('July 7, 2026');
-    expect(getMonthHeaderText(date)).toBe('July 2026');
-    expect(getWeekHeaderText(date)).toBe('Week 1 of Jul');
     expect(getWeekdayLabels()).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
     expect(formatDaysOfWeek(['MON', 'WED'])).toBe('Mon, Wed');
     expect(getDayOfWeekLabel('SAT')).toBe('Sat');
   });
 
-  it('상대 시간을 로케일과 복수형에 맞춰 포맷한다', async () => {
+  it('주 헤더는 넘겨받은 context의 언어로 만든다', () => {
+    // Given: 앱 언어(i18n)는 ko
+    const dateKey = '2026-07-07';
+
+    // When
+    const korean = formatWeekOfMonthLabel(dateKey, KO_SEOUL);
+    const english = formatWeekOfMonthLabel(dateKey, EN_SEOUL);
+
+    // Then
+    expect(korean).toBe('7월 1주차');
+    expect(english).toBe('Week 1 of Jul');
+  });
+
+  it('상대 시간을 context의 언어와 복수형에 맞춰 포맷한다', () => {
     // Given
     const now = new Date('2026-10-25T03:00:00Z');
     const oneMinuteAgo = new Date(now.getTime() - 61_000);
@@ -283,16 +285,15 @@ describe('로케일 인지 포맷 (i18n)', () => {
     const twoDaysAgo = new Date(now.getTime() - 2 * 86_400_000);
 
     // Then (ko)
-    expect(formatRelativeTime(now, now)).toBe('방금 전');
-    expect(formatRelativeTime(oneMinuteAgo, now)).toBe('1분 전');
-    expect(formatRelativeTime(twoHoursAgo, now)).toBe('2시간 전');
-    expect(formatRelativeTime(twoDaysAgo, now)).toBe('2일 전');
+    expect(formatRelativeTimeLabel(now, now, KO_SEOUL)).toBe('방금 전');
+    expect(formatRelativeTimeLabel(oneMinuteAgo, now, KO_SEOUL)).toBe('1분 전');
+    expect(formatRelativeTimeLabel(twoHoursAgo, now, KO_SEOUL)).toBe('2시간 전');
+    expect(formatRelativeTimeLabel(twoDaysAgo, now, KO_SEOUL)).toBe('2일 전');
 
-    // Then (en — 단수/복수)
-    await i18n.changeLanguage('en');
-    expect(formatRelativeTime(now, now)).toBe('Just now');
-    expect(formatRelativeTime(oneMinuteAgo, now)).toBe('1 minute ago');
-    expect(formatRelativeTime(twoHoursAgo, now)).toBe('2 hours ago');
-    expect(formatRelativeTime(twoDaysAgo, now)).toBe('2 days ago');
+    // Then (en — 단수/복수, 앱 언어 ko와 무관)
+    expect(formatRelativeTimeLabel(now, now, EN_SEOUL)).toBe('Just now');
+    expect(formatRelativeTimeLabel(oneMinuteAgo, now, EN_SEOUL)).toBe('1 minute ago');
+    expect(formatRelativeTimeLabel(twoHoursAgo, now, EN_SEOUL)).toBe('2 hours ago');
+    expect(formatRelativeTimeLabel(twoDaysAgo, now, EN_SEOUL)).toBe('2 days ago');
   });
 });

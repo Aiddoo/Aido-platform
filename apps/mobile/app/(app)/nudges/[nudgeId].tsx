@@ -20,6 +20,7 @@ import { todoThanksSheetHref } from '@src/features/todo/utils/navigation/todo-sh
 import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { isApiError } from '@src/shared/errors';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -40,7 +41,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatRelativeTime } from '@src/shared/utils/date';
+import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries } from '@tanstack/react-query';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Skeleton } from 'heroui-native';
@@ -54,6 +55,7 @@ function NudgeDetailScreen() {
     queries: [useGetNudgeInteractionQueryOptions({ nudgeId }), useGetMeQueryOptions()],
   });
   const { t } = useTranslation('todo');
+  const dateFormatContext = useDateFormatContext();
   const isReceived = nudge.receiverId === me.id;
   const friendName = isReceived ? nudge.senderName : nudge.receiverName;
   const profileImage = isReceived ? nudge.senderProfileImage : nudge.receiverProfileImage;
@@ -77,7 +79,7 @@ function NudgeDetailScreen() {
                 {t(isReceived ? 'interaction.from' : 'interaction.to', { name: friendName })}
               </Text>
               <Text size="e1" shade={5}>
-                {formatRelativeTime(nudge.createdAt, new Date())}
+                {formatRelativeTimeLabel(nudge.createdAt, new Date(), dateFormatContext)}
               </Text>
             </VStack>
           </HStack>

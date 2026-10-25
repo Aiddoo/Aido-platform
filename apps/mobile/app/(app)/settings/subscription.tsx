@@ -26,6 +26,7 @@ import { UserPolicy } from '@src/features/user/domains/user.model';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { legalUrl } from '@src/shared/constants/legal-urls';
 import { STORE_URLS } from '@src/shared/constants/store-urls';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -56,7 +57,7 @@ import {
   Box,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatFullDate, formatMonthDay } from '@src/shared/utils/date';
+import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { router } from 'expo-router';
@@ -358,8 +359,11 @@ function SubscriptionFailureResult({ failure, onRetry }: SubscriptionFailureResu
 function SubscriptionReceipt() {
   const { t } = useTranslation('subscription');
   const { variant, rows, footnote } = useSubscriptionReceipt();
+  const dateFormatContext = useDateFormatContext();
   // 결제 기간은 해를 넘길 수 있어 연도까지, 보상 기간은 길어야 몇 달이라 월·일만 보인다
-  const formatReceiptDate = variant === 'paid' ? formatFullDate : formatMonthDay;
+  const receiptDateLabel = variant === 'paid' ? 'fullDate' : 'monthDay';
+  const formatReceiptDate = (date: Date) =>
+    formatDateLabel(date, receiptDateLabel, dateFormatContext);
 
   return (
     <ScallopedContainer>
@@ -578,6 +582,7 @@ function PremiumEndingNotice() {
 function GrantEndedNotice() {
   const { t } = useTranslation('subscription');
   const { data: user } = useSuspenseQuery(useGetMeQueryOptions());
+  const dateFormatContext = useDateFormatContext();
   const grantEndedAt = PremiumAccessPolicy.recentGrantEndedAt(user.premiumAccess);
 
   if (grantEndedAt == null) {
@@ -593,7 +598,9 @@ function GrantEndedNotice() {
         lineBreakStrategyIOS="hangul-word"
         className="rounded-2xl bg-white px-4 py-3 dark:bg-gray-2"
       >
-        {t('paywall.grantEnded', { date: formatMonthDay(grantEndedAt) })}
+        {t('paywall.grantEnded', {
+          date: formatDateLabel(grantEndedAt, 'monthDay', dateFormatContext),
+        })}
       </Text>
       <Spacing size={12} />
     </>

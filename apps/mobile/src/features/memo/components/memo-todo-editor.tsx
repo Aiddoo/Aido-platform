@@ -1,6 +1,7 @@
 import type { ParsedMemoTodo } from '@src/features/ai/domains/ai.model';
 import type { TodoTimeValue } from '@src/features/todo/components/todo-time-picker-content';
 import { useGetTodoCategoriesQueryOptions } from '@src/features/todo/queries/get-todo-categories-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   ActionChip,
@@ -15,7 +16,8 @@ import {
   VStack,
   useOverlay,
 } from '@src/shared/ui';
-import { formatDate, formatDaysOfWeek, formatMonthDay, toDate } from '@src/shared/utils/date';
+import { formatDate, formatDaysOfWeek, toDate } from '@src/shared/utils/date';
+import { formatDateKeyLabel, formatDateKeyRange } from '@src/shared/utils/date-format';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { CloseButton } from 'heroui-native';
 import { ScrollView, TextInput } from 'react-native';
@@ -36,14 +38,15 @@ interface MemoTodoEditorProps {
 export function MemoTodoEditor({ todo, onChange, onRemove }: MemoTodoEditorProps) {
   const actionChipIconSize = useActionChipIconSize();
   const { t } = useTranslation('memo');
+  const dateFormatContext = useDateFormatContext();
   const { data: categoriesResult } = useSuspenseQuery(useGetTodoCategoriesQueryOptions());
   const overlay = useOverlay();
 
   const category = categoriesResult.categories.find((category) => category.id === todo.categoryId);
 
   const dateLabel = todo.endDate
-    ? `${formatMonthDay(todo.startDate)} ~ ${formatMonthDay(todo.endDate)}`
-    : formatMonthDay(todo.startDate);
+    ? formatDateKeyRange(todo.startDate, todo.endDate, dateFormatContext)
+    : formatDateKeyLabel(todo.startDate, 'monthDay', dateFormatContext);
 
   const timeLabel = todo.isAllDay
     ? t('aiReview.allDay')

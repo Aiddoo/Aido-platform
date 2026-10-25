@@ -118,6 +118,15 @@ describe('formatDateKeyLabel', () => {
       spy.mockRestore();
     }
   });
+
+  it('DateString은 기기 시간대와 무관하게 그 날짜로 표시한다', () => {
+    // Given: 서울보다 하루 늦은 시간대
+    const losAngeles = { locale: 'ko-KR', timeZone: 'America/Los_Angeles' } as const;
+
+    // When / Then
+    expect(formatDateKeyLabel('2026-10-20', 'fullDate', losAngeles)).toBe('2026년 10월 20일');
+    expect(formatDateKeyLabel('2028-02-29', 'fullDate', EN_SEOUL)).toBe('February 29, 2028');
+  });
 });
 
 describe('formatDateKeyRange', () => {

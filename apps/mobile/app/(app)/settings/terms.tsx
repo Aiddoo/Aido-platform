@@ -5,6 +5,7 @@ import { SettingsCard } from '@src/features/notification/components/settings/set
 import { ToggleSkeleton } from '@src/features/notification/components/settings/settings-skeleton';
 import { SettingsToggle } from '@src/features/notification/components/settings/settings-toggle';
 import { legalUrl } from '@src/shared/constants/legal-urls';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useOpenUrl } from '@src/shared/hooks/use-open-url';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
@@ -20,7 +21,6 @@ import {
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
-import { formatFullDate, getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -34,12 +34,13 @@ function TermsSettingsScreen() {
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const openUrl = useOpenUrl();
   const { resolvedLanguage } = useLanguage();
+  const dateFormatContext = useDateFormatContext();
 
-  const formatDate = (date: Date | null) => {
-    if (!date) {
+  const formatAgreedDate = (date: Date | null) => {
+    if (date == null) {
       return t('terms.notAgreed');
     }
-    return formatFullDate(date);
+    return formatDateLabel(date, 'fullDate', dateFormatContext);
   };
 
   return (
@@ -54,7 +55,7 @@ function TermsSettingsScreen() {
 
               <VStack gap={2}>
                 <Text size="b3" shade={6}>
-                  {t('terms.agreedAt', { date: formatDate(consent.termsAgreedAt) })}
+                  {t('terms.agreedAt', { date: formatAgreedDate(consent.termsAgreedAt) })}
                 </Text>
 
                 {consent.agreedTermsVersion && (
@@ -82,7 +83,7 @@ function TermsSettingsScreen() {
 
               <VStack gap={2}>
                 <Text size="b3" shade={6}>
-                  {t('terms.agreedAt', { date: formatDate(consent.privacyAgreedAt) })}
+                  {t('terms.agreedAt', { date: formatAgreedDate(consent.privacyAgreedAt) })}
                 </Text>
 
                 {consent.agreedTermsVersion && (
@@ -156,6 +157,7 @@ function AiDataSharingConsentCard() {
   const { data: consent } = useSuspenseQuery(useGetConsentQueryOptions());
   const updateConsent = useMutation(useUpdateAiDataSharingConsentMutationOptions());
   const confirmDialog = useConfirmDialog();
+  const dateFormatContext = useDateFormatContext();
   const isAgreed = ConsentPolicy.hasAgreedToAiDataSharing(consent);
 
   const handleSelectedChange = async (agreed: boolean) => {
@@ -189,7 +191,7 @@ function AiDataSharingConsentCard() {
           ({ aiDataSharingAgreedAt }) => (
             <Text size="e1" shade={6}>
               {t('settings:terms.aiDataSharing.agreedOn', {
-                date: formatDateLabel(aiDataSharingAgreedAt, 'numericDate', getDateFormatContext()),
+                date: formatDateLabel(aiDataSharingAgreedAt, 'numericDate', dateFormatContext),
               })}
             </Text>
           ),

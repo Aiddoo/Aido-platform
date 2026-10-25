@@ -1,5 +1,6 @@
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import {
   Box,
@@ -14,7 +15,6 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatCount } from '@src/shared/utils/format';
 import { notifySuccess } from '@src/shared/utils/haptics';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
@@ -71,6 +71,7 @@ const NEW_PAW_PRINT_STAGGER_MS = 160;
  */
 export function InvitePawPrintBoard({ className, ...props }: ComponentProps<typeof VStack>) {
   const { t } = useTranslation('invite');
+  const dateFormatContext = useDateFormatContext();
   const inviteService = useInviteService();
   const [{ data: myInvite }, { data: me }] = useSuspenseQueries({
     queries: [useGetInviteQueryOptions(), useGetMeQueryOptions()],
@@ -110,7 +111,7 @@ export function InvitePawPrintBoard({ className, ...props }: ComponentProps<type
         {t('pawPrintBoard.header', {
           boardNumber: board.boardNumber,
           count: board.totalPawPrints,
-          total: formatCount(board.totalPawPrints, getDateFormatContext().locale),
+          total: formatCount(board.totalPawPrints, dateFormatContext.locale),
         })}
       </Text>
 

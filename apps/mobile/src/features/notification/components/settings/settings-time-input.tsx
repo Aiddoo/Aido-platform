@@ -3,6 +3,7 @@ import DateTimePicker, {
   type IOSNativeProps,
 } from '@react-native-community/datetimepicker';
 import { PickerHeader } from '@src/features/todo/components/picker-header';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import {
   ArrowRightIcon,
@@ -14,12 +15,8 @@ import {
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import {
-  formatReminderTime,
-  getPickerLocale,
-  timeToDate,
-  type TimeFormat,
-} from '@src/shared/utils/time';
+import { formatTimeOfDay } from '@src/shared/utils/date-format';
+import { getPickerLocale, timeToDate, type TimeFormat } from '@src/shared/utils/time';
 import { PressableFeedback } from 'heroui-native';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 import { Platform } from 'react-native';
@@ -83,6 +80,7 @@ function SettingsTimeRow({
   className,
   ...pressableProps
 }: SettingsTimeRowProps) {
+  const dateFormatContext = useDateFormatContext();
   return (
     <PressableFeedback
       accessibilityRole="button"
@@ -100,7 +98,7 @@ function SettingsTimeRow({
             </Text>
             {accessory}
             <Text size="b2" className="text-main break-keep">
-              {formatReminderTime(hour, minute, timeFormat)}
+              {formatTimeOfDay({ hour, minute }, timeFormat, dateFormatContext)}
             </Text>
           </HStack>
           <Text size="b3" shade={6}>

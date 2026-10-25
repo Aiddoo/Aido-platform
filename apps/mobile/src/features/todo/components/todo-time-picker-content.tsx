@@ -1,5 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { useLanguage } from '@src/shared/providers/language-provider';
 import { Box, Flex, ListRow, Spacing, Text, VStack } from '@src/shared/ui';
@@ -42,6 +43,7 @@ export function TodoTimePickerContent({
   const { scheduledTime, isAllDay } = value;
   const { t } = useTranslation('todo');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const dateFormatContext = useDateFormatContext();
   const { resolvedLanguage } = useLanguage();
   const [localIsAllDay, setLocalIsAllDay] = useState(isAllDay);
   const [localTime, setLocalTime] = useState<string>(scheduledTime ?? DEFAULT_TODO_TIME);
@@ -90,7 +92,7 @@ export function TodoTimePickerContent({
               </PressableFeedback>
             ) : isIOS ? (
               <Text size="b1" tone="brand" weight="medium">
-                {formatTimeDisplay(localTime, preference.timeFormat)}
+                {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
               </Text>
             ) : (
               <>
@@ -99,7 +101,7 @@ export function TodoTimePickerContent({
                   className="h-[34px] justify-center"
                 >
                   <Text size="b1" tone="brand" weight="medium">
-                    {formatTimeDisplay(localTime, preference.timeFormat)}
+                    {formatTimeDisplay(localTime, preference.timeFormat, dateFormatContext)}
                   </Text>
                 </PressableFeedback>
                 {showAndroidPicker && (

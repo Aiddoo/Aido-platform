@@ -1,3 +1,4 @@
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useWindowSizeClass } from '@src/shared/hooks/use-window-size-class';
 import { useTranslation } from '@src/shared/i18n';
@@ -13,7 +14,7 @@ import {
   type QueryErrorFallbackProps,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
-import { formatMonthDay } from '@src/shared/utils/date';
+import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { range } from 'es-toolkit';
 import { PressableFeedback, Skeleton } from 'heroui-native';
@@ -28,6 +29,7 @@ export function MemoList() {
   const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isFetchNextPageError } =
     useSuspenseInfiniteQuery(useGetMemosInfiniteQueryOptions());
   const windowSizeClass = useWindowSizeClass();
+  const dateFormatContext = useDateFormatContext();
   const memos = data.pages.flatMap((page) => page.items);
 
   if (memos.length === 0) {
@@ -53,7 +55,7 @@ export function MemoList() {
                   id={item.id}
                   content={item.content}
                   isPinned={item.isPinned}
-                  date={formatMonthDay(item.createdAt)}
+                  date={formatDateLabel(item.createdAt, 'monthDay', dateFormatContext)}
                 />
               </Animated.View>
             ))}

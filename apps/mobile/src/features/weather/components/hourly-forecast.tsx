@@ -1,8 +1,8 @@
 import catImage from '@assets/images/cat_weather_anchor.png';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { Spacing, Text, VStack, Box } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatHourLabel } from '@src/shared/utils/date-format';
 import { useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { Image, ScrollView } from 'react-native';
@@ -61,7 +61,8 @@ HourlyForecast.Item = function Item({ item }: { item: HourlyForecastViewModel })
   const { t } = useTranslation('weather');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
   const SkyIcon = resolveIconBySky(item.skyCondition);
-  const hourLabel = formatHourLabel(item.hour, preference.timeFormat, getDateFormatContext());
+  const dateFormatContext = useDateFormatContext();
+  const hourLabel = formatHourLabel(item.hour, preference.timeFormat, dateFormatContext);
 
   return (
     <VStack py={16} px={20} className="items-center justify-between">

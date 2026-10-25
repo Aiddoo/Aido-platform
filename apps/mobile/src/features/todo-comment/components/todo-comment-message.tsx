@@ -3,6 +3,7 @@ import {
   commentReportSheetHref,
 } from '@src/features/moderation/utils/navigation/moderation-href';
 import { useTodoScreenParams } from '@src/features/todo/hooks/use-todo-screen-params';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
@@ -21,7 +22,7 @@ import {
   useConfirmDialog,
   VStack,
 } from '@src/shared/ui';
-import { formatRelativeTime } from '@src/shared/utils/date';
+import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { useMutation } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
 import { router } from 'expo-router';
@@ -136,10 +137,11 @@ TodoCommentMessage.Loading = function Loading() {
 function CommentAuthorLine({ comment }: { comment: TodoComment }) {
   const { t } = useTranslation('todoComment');
   const { fontScale } = useFontScale();
+  const dateFormatContext = useDateFormatContext();
   const userTag = comment.author?.userTag;
   const tagLabel = userTag == null ? null : `#${userTag}`;
   const timeLabel = [
-    formatRelativeTime(comment.createdAt, new Date()),
+    formatRelativeTimeLabel(comment.createdAt, new Date(), dateFormatContext),
     ...(comment.isEdited ? [t('list.edited')] : []),
   ].join(' · ');
   const isMetaOnSecondLine = fontScale === 'xlarge';

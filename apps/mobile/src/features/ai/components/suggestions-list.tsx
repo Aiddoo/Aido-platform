@@ -1,5 +1,6 @@
 import type { AiSuggestion } from '@src/features/ai/domains/ai.model';
 import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/get-preference-query-options';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
 import { t as tGlobal, useTranslation } from '@src/shared/i18n';
@@ -16,7 +17,8 @@ import {
   type QueryErrorFallbackProps,
   Box,
 } from '@src/shared/ui';
-import { formatDaysOfWeek, formatMonthDay } from '@src/shared/utils/date';
+import { formatDaysOfWeek } from '@src/shared/utils/date';
+import { type DateFormatContext, formatDateLabel } from '@src/shared/utils/date-format';
 import { formatTimeDisplay, type TimeFormat } from '@src/shared/utils/time';
 import { useMutation, usePrefetchQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { times } from 'es-toolkit/compat';
@@ -98,12 +100,16 @@ export function SuggestionsList() {
   );
 }
 
-function formatSchedule(suggestion: AiSuggestion, timeFormat: TimeFormat): string {
+function formatSchedule(
+  suggestion: AiSuggestion,
+  timeFormat: TimeFormat,
+  context: DateFormatContext,
+): string {
   const days = formatDaysOfWeek(suggestion.daysOfWeek);
   const time =
     suggestion.scheduledTime == null
       ? tGlobal('ai:suggestions.list.allDay')
-      : formatTimeDisplay(suggestion.scheduledTime, timeFormat);
+      : formatTimeDisplay(suggestion.scheduledTime, timeFormat, context);
   return `${days} · ${time}`;
 }
 
@@ -122,6 +128,7 @@ SuggestionsList.Item = function Item({
 }: SuggestionItemProps) {
   const { t } = useTranslation('ai');
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
+  const dateFormatContext = useDateFormatContext();
   const push = useSingleTap(router.push);
   const confidenceLabel = `${Math.round(suggestion.confidence * 100)}%`;
 
@@ -141,7 +148,7 @@ SuggestionsList.Item = function Item({
             </Text>
           </HStack>
           <Text size="b4" shade={7}>
-            {formatSchedule(suggestion, preference.timeFormat)}
+            {formatSchedule(suggestion, preference.timeFormat, dateFormatContext)}
           </Text>
         </VStack>
 
@@ -151,7 +158,9 @@ SuggestionsList.Item = function Item({
 
         <HStack justify="between" align="center" className="mt-1">
           <Text size="e1" shade={5}>
-            {t('suggestions.list.expires', { date: formatMonthDay(suggestion.expiresAt) })}
+            {t('suggestions.list.expires', {
+              date: formatDateLabel(suggestion.expiresAt, 'monthDay', dateFormatContext),
+            })}
           </Text>
 
           <HStack gap={8}>

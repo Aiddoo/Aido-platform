@@ -1,8 +1,14 @@
+import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
 import { match } from 'ts-pattern';
 
+/** 표시 언어(locale)는 글자 모양만, 시간대(timeZone)는 날짜·시각 계산만 정한다. */
 export interface DateFormatContext {
   locale: 'ko-KR' | 'en-US';
   timeZone: string;
+}
+
+export function toDateFormatLocale(language: ResolvedLanguage): DateFormatContext['locale'] {
+  return language === 'ko' ? 'ko-KR' : 'en-US';
 }
 
 export type TimeFormat = 'TWELVE_HOUR' | 'TWENTY_FOUR_HOUR';

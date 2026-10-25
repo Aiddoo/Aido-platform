@@ -208,10 +208,14 @@ export const unwrap = <T, E extends BusinessError>(result: Result<T, E>): T => {
 - hook은 라우트 읽기, 전환 조정, mutation 상태, field focus처럼 하나의 변화 이유만 갖는다. 계산은
   순수 함수/Policy로 빼고 화면 hook은 작은 계약을 조합한다. 한 컴포넌트에서만 쓰는 작은 hook은
   소유 파일에 둘 수 있다.
-- 날짜 표시는 `shared/utils/date`의 호환 wrapper를 재사용한다. 순수 포맷 구현은
-  `date-format.ts`의 Intl.DateTimeFormat에 locale/timeZone을 명시해 호출한다. 오늘 기준은
-  `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준 상태로 만들지 않는다.
-  날짜 산술과 YYYY-MM-DD API key는 기존 dayjs 유틸을 유지한다.
+- 날짜 표시는 `date-format.ts`의 순수 helper에 `DateFormatContext { locale, timeZone }`를 넘겨
+  만든다. 컴포넌트는 `useDateFormatContext()`(언어=LanguageProvider, 시간대=LocalDateProvider)로
+  context를 읽는다. 언어는 글자 모양만 바꾸고 시간대·오늘·주 시작(일요일)·날짜 key를 바꾸지 않는다.
+  - 서버 DateString(YYYY-MM-DD)과 달력에서 고른 로컬 날짜는 `formatDateKeyLabel`(로컬 Date는
+    `formatDate`로 key를 만든 뒤), 시각(createdAt·expiresAt 같은 ISO instant)은 `formatDateLabel`.
+  - 주는 `calendar-week.ts`의 `getCalendarWeekOfDateKey`, 일 산술은 `date-key.ts`의
+    `addDaysToDateKey`, 오늘은 `useToday`/`useTodayKey`로 읽고 render 중 `new Date()`를 기준
+    상태로 만들지 않는다.
 - 미디어 업로드는 실제 API 계약이 있을 때만 도입한다. Expo 호환성과 유지 상태가 검증된 라이브러리를
   우선하고, 없다면 선택·검증·전송을 각각 작은 hook/service로 분리한다. API가 없는 기능을 미리 만들지 않는다.
 - 상세 조회와 함께 발생해야 하는 서버 의미(예: 멱등 조회수)는 별도 `useEffect` mutation으로 호출하지 않는다. GET endpoint가 원자적으로 처리한다.

@@ -1,8 +1,12 @@
 import type { ResolvedLanguage } from '@src/shared/preferences/language.preference';
-import { getCalendarWeek } from '@src/shared/utils/calendar-week';
-import { formatDate, getWeekDates, getWeekStart, toDate } from '@src/shared/utils/date';
-import { formatDateKeyLabel, type DateFormatContext } from '@src/shared/utils/date-format';
-import { keyBy } from 'es-toolkit';
+import { getCalendarWeekOfDateKey } from '@src/shared/utils/calendar-week';
+import {
+  type DateFormatContext,
+  formatDateKeyLabel,
+  toDateFormatLocale,
+} from '@src/shared/utils/date-format';
+import { addDaysToDateKey } from '@src/shared/utils/date-key';
+import { keyBy, range } from 'es-toolkit';
 
 import type {
   WidgetDaySnapshot,
@@ -142,11 +146,12 @@ function toWidgetDaySnapshot(
 function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContext) {
   const completions = keyBy(context.weekCompletions ?? [], (completion) => completion.date);
   const dateFormatContext: DateFormatContext = {
-    locale: context.locale === 'ko' ? 'ko-KR' : 'en-US',
+    locale: toDateFormatLocale(context.locale),
     timeZone: 'UTC',
   };
-  const days = getWeekDates(getWeekStart(toDate(summary.date))).map((day) => {
-    const date = formatDate(day);
+  const week = getCalendarWeekOfDateKey(summary.date);
+  const days = range(7).map((dayOffset) => {
+    const date = addDaysToDateKey(week.startDateKey, dayOffset);
     const completion = completions[date];
     return {
       date,
@@ -159,14 +164,11 @@ function toWidgetWeek(summary: WidgetSummaryInput, context: WidgetSnapshotContex
       hasTodos: date === summary.date ? summary.totalTodos > 0 : (completion?.totalTodos ?? 0) > 0,
     };
   });
-  const week = getCalendarWeek(toDate(summary.date));
-  const weekStartKey = formatDate(week.start);
-  const weekEndKey = formatDate(week.end);
   const title = context.t('widget:calendar.weekTitle', {
-    month: formatDateKeyLabel(weekStartKey, 'month', dateFormatContext),
+    month: formatDateKeyLabel(week.startDateKey, 'month', dateFormatContext),
     week: week.weekOfMonth,
   });
-  const rangeLabel = [weekStartKey, weekEndKey]
+  const rangeLabel = [week.startDateKey, week.endDateKey]
     .map((dateKey) => formatDateKeyLabel(dateKey, 'dottedMonthDay', dateFormatContext))
     .join(' – ');
   return { days, title, rangeLabel };

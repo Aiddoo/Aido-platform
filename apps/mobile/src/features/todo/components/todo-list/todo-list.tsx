@@ -2,6 +2,7 @@ import { useGetPreferenceQueryOptions } from '@src/features/preference/queries/g
 import { type SubTodo, SubTodoPolicy } from '@src/features/todo/domains/sub-todo.model';
 import { type Todo, TodoPolicy } from '@src/features/todo/domains/todo.model';
 import { formatTodoTime } from '@src/features/todo/utils/format-todo-time';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useFontScaledSize } from '@src/shared/hooks/use-font-scaled-size';
 import { useReorderableList } from '@src/shared/hooks/use-reorderable-list';
 import { useSingleTap } from '@src/shared/hooks/use-single-tap';
@@ -20,7 +21,7 @@ import {
   LockIcon,
   MoreIcon,
 } from '@src/shared/ui';
-import { formatDate, getDateFormatContext } from '@src/shared/utils/date';
+import { formatDate } from '@src/shared/utils/date';
 import { useMutation, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
 import { times } from 'es-toolkit/compat';
@@ -197,7 +198,8 @@ TodoList.Item = function Item({ todo, updatedAt }: TodoListItemProps) {
   const reorderSubTodos = useMutation(useReorderSubTodosMutationOptions());
   const [isExpanded, setIsExpanded] = useState(TodoPolicy.hasSubTodos(todo));
   const { data: preference } = useSuspenseQuery(useGetPreferenceQueryOptions());
-  const formattedTime = formatTodoTime(todo, preference.timeFormat, getDateFormatContext());
+  const dateFormatContext = useDateFormatContext();
+  const formattedTime = formatTodoTime(todo, preference.timeFormat, dateFormatContext);
   const isOptimistic = 'optimistic' in todo && todo.optimistic === true;
 
   const handleRowPress = () => setIsExpanded((current) => !current);

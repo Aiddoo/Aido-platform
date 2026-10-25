@@ -1,8 +1,8 @@
 import { UserList } from '@src/features/friend/components/user-list';
+import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useRefresh } from '@src/shared/hooks/use-refresh';
 import { useTranslation } from '@src/shared/i18n';
 import { Box, Button, DocsIcon, Text, useConfirmDialog } from '@src/shared/ui';
-import { getDateFormatContext } from '@src/shared/utils/date';
 import { formatDateLabel } from '@src/shared/utils/date-format';
 import { useMutation, useSuspenseInfiniteQuery } from '@tanstack/react-query';
 import { Skeleton } from 'heroui-native';
@@ -48,6 +48,7 @@ BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser
   const { t } = useTranslation(['moderation', 'common']);
   const confirmDialog = useConfirmDialog();
   const unblockUser = useMutation(useUnblockUserMutationOptions());
+  const dateFormatContext = useDateFormatContext();
   const displayName = blockedUser.name ?? t('moderation:fallbackName');
 
   const handleUnblock = async () => {
@@ -68,7 +69,7 @@ BlockedUserList.Item = function Item({ blockedUser }: { blockedUser: BlockedUser
       displayName={displayName}
       subtitle={t('moderation:blockedUsers.subtitle', {
         userTag: blockedUser.userTag,
-        date: formatDateLabel(blockedUser.blockedAt, 'monthDay', getDateFormatContext()),
+        date: formatDateLabel(blockedUser.blockedAt, 'monthDay', dateFormatContext),
       })}
       profileImage={blockedUser.profileImage}
       right={
