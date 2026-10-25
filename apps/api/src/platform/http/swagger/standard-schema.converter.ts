@@ -3,7 +3,7 @@ import { z } from "zod";
 
 type JsonSchema = z.core.JSONSchema.BaseSchema;
 
-// z.toJSONSchema target "openapi-3.0"(zod 4.3.6)는 nullable 양수의 minimum을 잃고 $ref를
+// z.toJSONSchema target "openapi-3.0"(zod 4.6.7)는 nullable 양수의 minimum을 잃고 $ref를
 // #/definitions로 바꾸며 tuple 표현이 달라 출시된 OpenAPI 계약과 달라지므로 직접 정규화를 유지한다.
 function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
   let converted: JsonSchema = { ...schema };
@@ -64,16 +64,37 @@ function normalizeJsonSchema(schema: JsonSchema): JsonSchema {
   return converted;
 }
 
+const ROOT_DEFINITION_PREFIX = "#/$defs/";
+
+// zod 4.6부터 id가 있는 루트는 $defs에 들어가고 루트는 { $ref }만 남는다.
+// 이전 출력(루트 본문 inline)과 같은 계약을 유지하려고 루트 정의를 다시 꺼낸다.
+function unwrapRootDefinition(schema: JsonSchema): {
+  root: JsonSchema;
+  definitions: Record<string, JsonSchema>;
+} {
+  const definitions: Record<string, JsonSchema> = schema.$defs ?? {};
+  const name = schema.$ref?.startsWith(ROOT_DEFINITION_PREFIX)
+    ? schema.$ref.slice(ROOT_DEFINITION_PREFIX.length)
+    : undefined;
+  const rootDefinition = name == null ? undefined : definitions[name];
+  if (name == null || rootDefinition == null) return { root: schema, definitions };
+
+  const { [name]: _unwrapped, ...rest } = definitions;
+  return { root: rootDefinition, definitions: rest };
+}
+
 export const convertStandardSchema: NonNullable<
   SwaggerDocumentOptions["standardSchemaConverter"]
 > = (schema) => {
   if (!(schema instanceof z.ZodType)) return undefined;
 
   // Keep released input shapes, including nullable numeric boundary representation.
-  const jsonSchema = z.toJSONSchema(schema, { io: "input" });
+  const { root: jsonSchema, definitions } = unwrapRootDefinition(
+    z.toJSONSchema(schema, { io: "input" }),
+  );
   const converted = normalizeJsonSchema(jsonSchema);
   const components = Object.fromEntries(
-    Object.entries(jsonSchema.$defs ?? {}).map(([name, definition]) => [
+    Object.entries(definitions).map(([name, definition]) => [
       name,
       normalizeJsonSchema(definition),
     ]),
