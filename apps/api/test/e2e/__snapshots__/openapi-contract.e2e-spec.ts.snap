@@ -26832,7 +26832,7 @@ GET /daily-completions/friends/{userId}?startDate=2026-01-01&endDate=2026-01-31
   },
   "/v1/invites/me/rotate": {
     "post": {
-      "description": "지금 코드를 폐기하고 새 코드를 발급합니다. 폐기한 코드는 다시 발급되지 않고 INVITE_2102가 됩니다. 시간당 3회까지입니다.",
+      "description": "지금 코드를 폐기하고 새 코드를 발급합니다. 폐기한 코드는 다시 발급되지 않고 INVITE_2102가 됩니다. 사용자마다 시간당 3회까지입니다.",
       "operationId": "rotateInviteCode",
       "parameters": [],
       "responses": {

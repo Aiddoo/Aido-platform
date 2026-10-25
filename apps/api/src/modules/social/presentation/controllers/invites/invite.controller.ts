@@ -18,6 +18,7 @@ import {
   ApiUnauthorizedError,
   SWAGGER_TAGS,
 } from "#api/platform/http/swagger/index";
+import { ThrottleByUser } from "#api/platform/throttle/index";
 
 import { GetInviteAvailability } from "../../../application/use-cases/invites/get-invite-availability.use-case.js";
 import { GetInvitedFriends } from "../../../application/use-cases/invites/get-invited-friends.use-case.js";
@@ -80,12 +81,13 @@ export class InviteController {
   @Post("me/rotate")
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
+  @ThrottleByUser()
   @Throttle({ default: { ttl: 3_600_000, limit: 3 } })
   @ApiDoc({
     summary: "초대 링크 새로 만들기",
     operationId: "rotateInviteCode",
     description:
-      "지금 코드를 폐기하고 새 코드를 발급합니다. 폐기한 코드는 다시 발급되지 않고 INVITE_2102가 됩니다. 시간당 3회까지입니다.",
+      "지금 코드를 폐기하고 새 코드를 발급합니다. 폐기한 코드는 다시 발급되지 않고 INVITE_2102가 됩니다. 사용자마다 시간당 3회까지입니다.",
   })
   @ApiSuccessResponse({ type: MyInviteResponseDto })
   @ApiUnauthorizedError(ErrorCode.AUTH_0107)

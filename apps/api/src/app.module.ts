@@ -53,7 +53,11 @@ import { LoggerModule } from "#api/platform/logging/index";
 import { PaginationModule } from "#api/platform/pagination/pagination.module";
 import { RedisModule } from "#api/platform/redis/index";
 import { SharedKernelModule } from "#api/platform/shared-kernel.module";
-import { THROTTLER_STORAGE, ThrottleModule } from "#api/platform/throttle/index";
+import {
+  THROTTLER_STORAGE,
+  ThrottleModule,
+  UserAwareThrottlerGuard,
+} from "#api/platform/throttle/index";
 
 import { AppController } from "./app.controller.js";
 import { AppService } from "./app.service.js";
@@ -135,7 +139,8 @@ import { AppService } from "./app.service.js";
 
   providers: [
     AppService,
-    ThrottlerGuard,
+    // 테스트가 ThrottlerGuard 토큰으로 우회하므로 같은 토큰에 사용자 기준 tracker를 붙인 구현을 둔다
+    { provide: ThrottlerGuard, useClass: UserAwareThrottlerGuard },
 
     {
       provide: APP_GUARD,
