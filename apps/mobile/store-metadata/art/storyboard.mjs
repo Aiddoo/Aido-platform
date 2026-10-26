@@ -106,10 +106,11 @@ export const TARGETS = {
 };
 
 // 캡처 기기 폴더별 OS 막대 높이(px, 캡처 원본 기준). Play 화면 카드에서 iOS 표시를 잘라 낼 때 쓴다.
-// iPhone은 3배(상태 막대 62pt·홈 인디케이터 34pt), iPad는 2배(24pt·20pt).
+// iPhone은 3배: 상태 막대 글자는 120px 안에서 끝나고 앱 헤더(뒤로 버튼)는 184px부터라 150px에서 자른다.
+// 홈 인디케이터는 34pt. iPad는 2배(24pt·20pt).
 export const CAPTURE_DEVICES = {
-  'iPhone 17 Pro': { statusBar: 186, homeIndicator: 102 },
-  'iPhone 6.9 원본': { statusBar: 186, homeIndicator: 102 },
+  'iPhone 17 Pro': { statusBar: 150, homeIndicator: 102 },
+  'iPhone 6.9 원본': { statusBar: 150, homeIndicator: 102 },
   'iPad Pro 13': { statusBar: 48, homeIndicator: 40 },
 };
 

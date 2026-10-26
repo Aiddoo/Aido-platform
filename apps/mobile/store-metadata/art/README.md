@@ -41,6 +41,9 @@ pnpm --filter @aido/mobile test:store-art
 Google Play는 Android 캡처 없이 iOS 캡처를 **틀 없는 화면 카드**로 써요. 다른 회사 기기 틀에 넣지 않고,
 `CAPTURE_DEVICES`(storyboard)의 높이만큼 상태 막대·홈 인디케이터를, `KEYBOARD_SCREENS` 화면은 키보드 윗선 아래를 잘라 내요.
 iOS 홈 화면 위젯은 Play에 쓰지 않고, 태블릿은 장면의 `capture`와 `tabletPair`를 나란히 둬요.
+화면 카드(`lib/card.mjs`의 `cardLayout`)는 잘라 낸 첫 행·마지막 행의 바탕색으로 위·아래에 모서리 곡선보다 큰 여백을 둬서
+뒤로 버튼 같은 요소가 둥근 모서리에 잘리지 않게 하고, 카드 높이가 모자라거나 키보드 위에서 자른 화면은 아래를 페이드로 끝내요.
+iOS 시트 화면은 시트 바깥 어두운 배경과 뒤에 겹친 시트를 지우고(`cleanSheet`) 시트 윗선부터 보여줘요.
 Play 문구는 장면의 `play` 문구를 먼저 쓰고, 보상 일수 같은 혜택 표현을 넣지 않아요(`slotCopy`).
 `captures` 명령이 장면별로 빠진 파일을 보여줘요.
 

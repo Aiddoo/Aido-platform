@@ -6,8 +6,9 @@ import { test } from 'node:test';
 
 import sharp from 'sharp';
 
+import { cardLayout, cardWidthForHeight } from './lib/card.mjs';
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
-import { captureNeeds, keyboardHeight, plan, systemBarCrop } from './render.mjs';
+import { captureNeeds, cleanSheet, keyboardHeight, plan, systemBarCrop } from './render.mjs';
 import { LOCALES, SCENES, SETS, SLOTS, TARGETS, slotCopy } from './storyboard.mjs';
 
 test('WCAG 대비율을 계산하고 기준 미달을 고른다', () => {
@@ -144,13 +145,38 @@ test('태블릿 두 장 배치는 장면마다 두 번째 화면을 쓴다', () 
 });
 
 test('OS 막대 자르기는 아래쪽 키보드가 더 길면 키보드 위까지만 남긴다', () => {
-  const plain = systemBarCrop('iPhone 17 Pro', 1206, 2622, 0);
-  assert.equal(plain.top, 186 / 2622);
-  assert.equal(plain.bottom, 102 / 2622);
-  assert.equal(plain.aspect, 1206 / (2622 - 186 - 102));
-  const keyboard = systemBarCrop('iPhone 17 Pro', 1206, 2622, 950);
-  assert.equal(keyboard.bottom, 950 / 2622);
-  assert.throws(() => systemBarCrop('Android 폰', 1080, 2400, 0));
+  assert.deepEqual(systemBarCrop('iPhone 17 Pro', 0), { top: 150, bottom: 102 });
+  assert.deepEqual(systemBarCrop('iPhone 17 Pro', 950), { top: 150, bottom: 950 });
+  assert.throws(() => systemBarCrop('Android 폰', 0));
+});
+
+test('화면 카드의 첫·마지막 내용 행은 모서리 곡선 영역과 겹치지 않는다', () => {
+  const base = {
+    srcWidth: 1206,
+    srcHeight: 2622,
+    cropTop: 186,
+    cropBottom: 102,
+    radiusRatio: 0.075,
+  };
+  for (const [cardWidth, maxHeight, continues] of [
+    [842, null, false],
+    [842, 1300, false],
+    [842, 1300, true],
+    [700, 5000, false],
+  ]) {
+    const layout = cardLayout({ ...base, cardWidth, maxHeight, continues });
+    assert.ok(layout.contentTop >= layout.radius, '위 여백 < radius');
+    assert.ok(layout.height - layout.contentBottom >= layout.radius, '아래 여백 < radius');
+    if (maxHeight != null) {
+      assert.ok(layout.height <= maxHeight + 1e-6, '최대 높이 초과');
+    }
+    // 잘라 낸 상태 막대는 카드 위 여백 위로 올라가 덮인다
+    assert.ok(Math.abs(layout.imageTop + base.cropTop * layout.scale - layout.contentTop) < 1e-6);
+    // 내용이 잘리거나 이어지면 페이드, 다 보이면 페이드 없음
+    assert.equal(layout.fade > 0, continues || layout.visible < 2622 - 186 - 102);
+  }
+  const width = cardWidthForHeight({ ...base, height: 1000 });
+  assert.ok(Math.abs(cardLayout({ ...base, cardWidth: width }).height - 1000) < 1e-6);
 });
 
 test('키보드 윗선을 찾는다', async (t) => {
@@ -186,4 +212,41 @@ test('--only는 쉼표로 여러 값과 세트/대상 조합을 받는다', () =
     }
   }
   assert.equal(jobs.filter((job) => job.type === 'scene').length, 1);
+});
+
+test('iOS 시트 화면은 어두운 배경을 시트 바탕색으로 지우고 시트 안쪽은 그대로 둔다', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'store-art-test-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  // 100~160행: 양끝 40px만 어두운 배경(시트 모서리 바깥), 가운데는 시트(흰색)와 그 안의 회색 버튼
+  const corner = await sharp({
+    create: { width: 40, height: 60, channels: 3, background: '#555555' },
+  })
+    .png()
+    .toBuffer();
+  const button = await sharp({
+    create: { width: 60, height: 60, channels: 3, background: '#cccccc' },
+  })
+    .png()
+    .toBuffer();
+  const sheet = join(dir, 'sheet.png');
+  await sharp({ create: { width: 1000, height: 1000, channels: 3, background: '#ffffff' } })
+    .composite([
+      { input: corner, left: 0, top: 100 },
+      { input: corner, left: 960, top: 100 },
+      { input: button, left: 60, top: 110 },
+    ])
+    .png()
+    .toFile(sheet);
+  const cleaned = await cleanSheet(sheet, 98);
+  assert.equal(cleaned.top, 98);
+  const { data, info } = await sharp(cleaned.path).raw().toBuffer({ resolveWithObject: true });
+  const at = (x, y) => data[(y * info.width + x) * info.channels];
+  assert.equal(at(5, 120), 255, '왼쪽 모서리 바깥');
+  assert.equal(at(995, 120), 255, '오른쪽 모서리 바깥');
+  assert.equal(at(80, 130), 0xcc, '시트 안 버튼은 그대로');
+  const plain = join(dir, 'plain.png');
+  await sharp({ create: { width: 1000, height: 1000, channels: 3, background: '#ffffff' } })
+    .png()
+    .toFile(plain);
+  assert.equal(await cleanSheet(plain, 100), null);
 });

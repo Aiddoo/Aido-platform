@@ -353,8 +353,12 @@
         position: absolute;
         left: 0;
         width: 100%;
-        height: auto;
         object-fit: fill;
+      }
+      .device .screen .cover {
+        position: absolute;
+        left: 0;
+        right: 0;
       }
     </style>
   </head>
@@ -381,7 +385,7 @@
     </svg>
     <div class="stage" id="stage"></div>
     <script>
-      // 기기별 화면 비율과 틀 두께(틀 너비 대비). card는 캡처를 잘라 낸 비율(screen.aspect)을 쓴다.
+      // 기기별 화면 비율과 틀 두께(틀 너비 대비). 잘라 낸 캡처 카드는 drawCard(cardLayout)가 높이를 정한다.
       const FRAMES = {
         iphone: { aspect: 1206 / 2622, rim: 0.012, bezel: 0.03, radius: 0.155, island: true },
         // Duo 접힘 화면은 상태 표시가 오른쪽 세로줄에 있어(시뮬레이터 캡처 기준) 위쪽 Dynamic Island를 그리지 않는다.
@@ -482,16 +486,6 @@
 
       function screenContent(screen, parent, unit, screenWidth, screenHeight) {
         if (screen.src) {
-          if (screen.crop) {
-            // OS 막대를 잘라 낸 화면: 원본 높이를 늘려 잘린 부분이 틀 밖으로 나가게 한다.
-            const img = el('img', 'crop', parent);
-            img.src = screen.src;
-            const visible = 1 - screen.crop.top - screen.crop.bottom;
-            const fullHeight = screenHeight / visible;
-            img.style.height = `${fullHeight}px`;
-            img.style.top = `${-screen.crop.top * fullHeight}px`;
-            return;
-          }
           const img = el('img', screen.fit === 'contain' ? 'contain' : '', parent);
           img.src = screen.src;
           return;
@@ -518,16 +512,92 @@
         box.innerHTML = `<b>캡처 대기</b><span>${screen.label}</span>`;
       }
 
-      function frameAspect(kind, screen) {
-        return kind === 'card' && screen.aspect ? screen.aspect : FRAMES[kind].aspect;
+      function frameAspect(kind) {
+        return FRAMES[kind].aspect;
+      }
+
+      // 잘라 낸 캡처 카드: 위·아래에 화면 바탕색 여백(모서리 곡선보다 크게), 이어지는 화면은 아래 페이드.
+      // 배치 계산은 lib/card.mjs의 cardLayout(render.mjs가 주입)과 같다.
+      function drawCard(container, screen, left, top, width, maxHeight) {
+        const card = screen.card;
+        const layout = window.cardLayout({
+          ...card,
+          cardWidth: width,
+          maxHeight,
+          radiusRatio: FRAMES.card.radius,
+        });
+        const edgeAt = (row) =>
+          card.edge.rows[
+            Math.max(0, Math.min(card.edge.rows.length - 1, Math.floor(row / card.edge.step)))
+          ];
+        const colors = {
+          top: edgeAt(card.cropTop + 2),
+          bottom: edgeAt(card.cropTop + layout.visible - 3),
+        };
+        const device = el('div', 'device card', container);
+        Object.assign(device.style, {
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${width}px`,
+          height: `${layout.height}px`,
+        });
+        el('div', 'rim', device).style.borderRadius = `${layout.radius}px`;
+        const screenNode = el('div', 'screen', device);
+        Object.assign(screenNode.style, {
+          left: '0px',
+          top: '0px',
+          width: `${width}px`,
+          height: `${layout.height}px`,
+          borderRadius: `${layout.radius}px`,
+          background: colors.top,
+        });
+        const img = el('img', 'crop', screenNode);
+        img.src = screen.src;
+        Object.assign(img.style, {
+          top: `${layout.imageTop}px`,
+          height: `${layout.imageHeight}px`,
+        });
+        // 위: 상태 막대 자리를 첫 행 색으로 덮는다
+        const head = el('div', 'cover', screenNode);
+        Object.assign(head.style, {
+          top: '0px',
+          // 소수점 위치에서 잘린 윗행이 비치지 않게 1.5px 겹친다
+          height: `${layout.contentTop + 1.5}px`,
+          background: colors.top,
+        });
+        // 아래: 잘린 내용 아래를 마지막 행 색으로 덮고, 이어지는 화면이면 그 위를 페이드
+        const foot = el('div', 'cover', screenNode);
+        Object.assign(foot.style, {
+          top: `${layout.contentBottom}px`,
+          bottom: '0px',
+          background: colors.bottom,
+        });
+        if (layout.fade > 0) {
+          const fade = el('div', 'cover', screenNode);
+          Object.assign(fade.style, {
+            top: `${layout.contentBottom - layout.fade}px`,
+            height: `${layout.fade + 1}px`,
+            background: `linear-gradient(${colors.bottom}00, ${colors.bottom})`,
+          });
+        }
+        return { device, outerHeight: layout.height };
+      }
+
+      function cardWidthAt(screen, height) {
+        return screen.card
+          ? window.cardWidthForHeight({ ...screen.card, height, radiusRatio: FRAMES.card.radius })
+          : height * FRAMES.card.aspect;
       }
 
       // 틀 하나를 (left, top, width)에 그린다. 화면 비율은 기기 기준(card는 잘라 낸 캡처 기준).
-      function drawDevice(container, kind, screen, left, top, width) {
+      function drawDevice(container, kind, screen, left, top, width, maxHeight = null) {
+        if (kind === 'card' && screen.card) {
+          return drawCard(container, screen, left, top, width, maxHeight);
+        }
         const frame = FRAMES[kind];
         const pad = width * (frame.rim + frame.bezel);
         const screenWidth = width - 2 * pad;
-        const screenHeight = screenWidth / frameAspect(kind, screen);
+        const screenHeight = screenWidth / frameAspect(kind);
         const outerHeight = screenHeight + 2 * pad;
         const device = el('div', `device ${kind === 'card' ? 'card' : ''}`, container);
         Object.assign(device.style, {
@@ -603,11 +673,19 @@
         const screens = job.layout === 'card-pair' ? [job.screen, job.pair] : [job.screen];
         const cardHeight = height * 0.8;
         const gap = width * 0.035;
-        const widths = screens.map((screen) => cardHeight * frameAspect(job.frame, screen));
+        const widths = screens.map((screen) => cardWidthAt(screen, cardHeight));
         const total = widths.reduce((sum, value) => sum + value, 0) + gap * (screens.length - 1);
         let left = (width - total) / 2;
         screens.forEach((screen, index) => {
-          drawDevice(stage, job.frame, screen, left, (height - cardHeight) / 2, widths[index]);
+          drawDevice(
+            stage,
+            job.frame,
+            screen,
+            left,
+            (height - cardHeight) / 2,
+            widths[index],
+            cardHeight,
+          );
           left += widths[index] + gap;
         });
         // 양옆 여백에 발자국 길(글자 없음)
@@ -742,6 +820,8 @@
         } else {
           const share = WIDTH_SHARE[job.frame];
           const deviceWidth = width * share;
+          // 카드는 화면 아래 여백 안에 다 들어오게(넘치면 아래를 페이드로 끝낸다)
+          const maxHeight = height - box.top - height * 0.045;
           const { device } = drawDevice(
             devices,
             job.frame,
@@ -749,6 +829,7 @@
             (width - deviceWidth) / 2,
             0,
             deviceWidth,
+            maxHeight,
           );
           if (job.decor === 'cat-peek' && job.catSrc) {
             const cat = el('img', 'cat-peek', devices);

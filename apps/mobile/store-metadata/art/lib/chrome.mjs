@@ -134,7 +134,7 @@ export async function launchChrome() {
 
   return {
     // url을 width×height(CSS px)로 열고 setup(job)을 실행한 뒤 scale배 PNG를 돌려준다.
-    async render({ url, width, height, scale = 1, job }) {
+    async render({ url, width, height, scale = 1, job, prelude }) {
       await session.send('Emulation.setDeviceMetricsOverride', {
         width,
         height,
@@ -144,6 +144,9 @@ export async function launchChrome() {
       const loaded = session.once('Page.loadEventFired');
       await session.send('Page.navigate', { url });
       await loaded;
+      if (prelude) {
+        await evaluate(prelude);
+      }
       const report = await evaluate(`window.renderJob(${JSON.stringify(job)})`);
       const { data } = await session.send('Page.captureScreenshot', {
         format: 'png',

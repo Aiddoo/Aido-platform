@@ -10,13 +10,16 @@
 //
 // 옵션: --captures <캡처 루트>(기본 ~/Desktop/Aido-Screens-1.13.0), --only <scenes|screenshots|세트 id|대상 id>,
 //       --locales ko,en. 결과 폴더에 index.html(스토리보드 갤러리)과 manifest.json을 쓴다.
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
 import sharp from 'sharp';
 
+import { cardLayout, cardWidthForHeight } from './lib/card.mjs';
 import { defaultCaptureRoot, launchChrome } from './lib/chrome.mjs';
 import { contrastFailures, contrastRatio } from './lib/contrast.mjs';
 import {
@@ -75,6 +78,8 @@ const MOCK_CAPTURES = new Set([
 ]);
 
 const pad = (number) => String(number).padStart(2, '0');
+// 템플릿에서도 같은 카드 배치 계산을 쓴다(테스트하는 함수 그대로 주입).
+const CARD_PRELUDE = `window.cardLayout = ${cardLayout.toString()}; window.cardWidthForHeight = ${cardWidthForHeight.toString()};`;
 
 export function capturePath(root, device, capture, locale) {
   return join(
@@ -168,19 +173,113 @@ function screenSource(job, captureRoot, devices, capture) {
   return { path: existsSync(path) ? path : null, label: relative(captureRoot, path), device };
 }
 
-// stripSystemBars면 기기의 상태 막대·홈 인디케이터(키보드 화면은 키보드 윗선 아래 전부)를 비율로 잘라 내고,
-// 카드 비율을 잘라 낸 화면에 맞춘다. bottomPx는 아래에서 잘라 낼 높이(px).
-export function systemBarCrop(device, width, height, bottomPx) {
+// stripSystemBars면 기기의 상태 막대·홈 인디케이터(키보드 화면은 키보드 윗선 아래 전부)를 잘라 낸다.
+// bottomPx는 아래에서 잘라 낼 높이(px). 돌려주는 값도 px.
+export function systemBarCrop(device, bottomPx) {
   const bars = CAPTURE_DEVICES[device];
   if (bars == null) {
     throw new Error(`${device}: CAPTURE_DEVICES에 OS 막대 높이가 없어요`);
   }
-  const bottom = Math.max(bottomPx ?? 0, bars.homeIndicator);
-  return {
-    top: bars.statusBar / height,
-    bottom: bottom / height,
-    aspect: width / (height - bars.statusBar - bottom),
+  return { top: bars.statusBar, bottom: Math.max(bottomPx ?? 0, bars.homeIndicator) };
+}
+
+// 왼쪽 가장자리 여백(폭의 0.5~2.5%) 바탕색을 EDGE_STEP행마다 기록한다. 카드 위 여백은 잘라 낸 첫 행 색,
+// 아래 여백·페이드는 카드가 실제로 끝나는 행의 색으로 채운다(템플릿이 이 표에서 고른다).
+export const EDGE_STEP = 4;
+export async function edgeProfile(path) {
+  const { data, info } = await sharp(path)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const from = Math.round(info.width * 0.005);
+  const to = Math.max(from + 1, Math.round(info.width * 0.025));
+  const rows = [];
+  for (let y = 0; y < info.height; y += EDGE_STEP) {
+    const sum = [0, 0, 0];
+    for (let x = from; x < to; x += 1) {
+      const index = (y * info.width + x) * 3;
+      for (let channel = 0; channel < 3; channel += 1) {
+        sum[channel] += data[index + channel];
+      }
+    }
+    rows.push(
+      `#${sum
+        .map((value) =>
+          Math.round(value / (to - from))
+            .toString(16)
+            .padStart(2, '0'),
+        )
+        .join('')}`,
+    );
+  }
+  return { step: EDGE_STEP, rows };
+}
+
+// iOS 시트(page sheet) 화면은 상태 막대 아래에 어두운 배경과 시트 둥근 모서리, 뒤에 겹친 시트가 남는다(iOS 표시).
+// 왼쪽 끝이 어두우면 시트로 보고 (1) 가운데 열이 시트 바탕색이 되는 행까지 위를 더 잘라 내고(top),
+// (2) 그 아래 모서리 바깥 픽셀을 양끝에서 안쪽으로 시트 바탕색 픽셀을 만날 때까지 시트 바탕색으로 칠한다.
+// 시트 안쪽(헤더·뒤로 버튼)은 건드리지 않는다. 시트가 아니면 null.
+export async function cleanSheet(path, top) {
+  const { data, info } = await sharp(path)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  const lum = (x, y) => {
+    const index = (y * width + x) * 3;
+    return (data[index] + data[index + 1] + data[index + 2]) / 3;
   };
+  if (lum(1, top + 2) >= 160) {
+    return null;
+  }
+  const limit = Math.round(height * 0.2);
+  let clear = null;
+  for (let y = top + 2; y < limit; y += 1) {
+    if (lum(1, y) > 240 && lum(1, y + 1) > 240) {
+      clear = y + 1;
+      break;
+    }
+  }
+  if (clear == null) {
+    return null;
+  }
+  const center = Math.round(width / 2);
+  // 시트 바탕색: 모서리가 끝난 행의 폭 25% 지점(끝 열은 그림자로 조금 어둡고, 가운데는 제목 글자일 수 있다)
+  const sheetIndex = ((clear + 2) * width + Math.round(width * 0.25)) * 3;
+  const sheet = [data[sheetIndex], data[sheetIndex + 1], data[sheetIndex + 2]];
+  const isSheet = (x, y) => {
+    const index = (y * width + x) * 3;
+    return sheet.every((value, channel) => Math.abs(data[index + channel] - value) <= 4);
+  };
+  let sheetTop = top;
+  while (sheetTop < clear && !isSheet(center, sheetTop)) {
+    sheetTop += 1;
+  }
+  // 맨 끝 열은 조금 더 늦게 밝아져서 clear 아래로 화면 높이의 2%까지 더 본다
+  const last = Math.min(height - 1, clear + Math.round(height * 0.02));
+  for (let y = sheetTop; y <= last; y += 1) {
+    for (const [from, step] of [
+      [0, 1],
+      [width - 1, -1],
+    ]) {
+      // 시트 바탕색 픽셀을 만날 때까지(모서리 곡선의 안티에일리어싱 선까지) 칠하고, 폭의 20%를 넘지 않는다
+      for (let x = from; Math.abs(x - from) < width * 0.2 && !isSheet(x, y); x += step) {
+        const index = (y * width + x) * 3;
+        data.set(sheet, index);
+      }
+    }
+  }
+  const cleaned = join(sheetDir(), `${createHash('sha1').update(path).digest('hex')}.png`);
+  await sharp(data, { raw: { width, height, channels: 3 } })
+    .png()
+    .toFile(cleaned);
+  return { path: cleaned, top: sheetTop };
+}
+
+let sheetTemp = null;
+function sheetDir() {
+  sheetTemp ??= mkdtempSync(join(tmpdir(), 'aido-store-art-sheet-'));
+  return sheetTemp;
 }
 
 // 라이트 테마 iOS 키보드 바탕(#e2e3e8 근처)이 화면 왼쪽 끝에서 화면 높이의 15% 넘게 이어지면 키보드로 보고,
@@ -220,8 +319,23 @@ async function screenSpec(source, frameAspect, capture, locale, strip) {
   const src = pathToFileURL(source.path).href;
   if (strip) {
     const keyboard = KEYBOARD_SCREENS.has(capture.file) ? await keyboardHeight(source.path) : 0;
-    const crop = systemBarCrop(source.device, width, height, keyboard);
-    return { src, fit: 'cover', crop, aspect: crop.aspect, label: source.label };
+    const bars = systemBarCrop(source.device, keyboard);
+    const sheet = await cleanSheet(source.path, bars.top);
+    const crop = { ...bars, top: sheet?.top ?? bars.top };
+    const cardSrc = sheet?.path ?? source.path;
+    return {
+      src: pathToFileURL(cardSrc).href,
+      label: source.label,
+      card: {
+        srcWidth: width,
+        srcHeight: height,
+        cropTop: crop.top,
+        cropBottom: crop.bottom,
+        // 키보드 위에서 자른 화면은 내용이 아래로 이어진다
+        continues: keyboard > 0,
+        edge: await edgeProfile(cardSrc),
+      },
+    };
   }
   const fit = Math.abs(width / height - frameAspect) / frameAspect > 0.03 ? 'contain' : 'cover';
   return { src, fit, label: source.label };
@@ -419,6 +533,7 @@ async function render({ out, captureRoot, preview, only, locales }) {
         expected = { width: job.target.width, height: job.target.height };
         result = await chrome.render({
           url: pathToFileURL(join(HERE, 'templates/screenshot.html')).href,
+          prelude: CARD_PRELUDE,
           width: expected.width,
           height: expected.height,
           job: built.spec,
@@ -507,6 +622,10 @@ async function render({ out, captureRoot, preview, only, locales }) {
     }
   } finally {
     await chrome.close();
+    if (sheetTemp != null) {
+      rmSync(sheetTemp, { recursive: true, force: true });
+      sheetTemp = null;
+    }
   }
   writeFileSync(
     join(out, 'manifest.json'),
