@@ -32,6 +32,8 @@ export function createKakaoShareClient(nativeAppKey: string | undefined): KakaoS
             title: feed.title,
             description: feed.description,
             imageUrl: feed.imageUrl,
+            imageWidth: feed.imageWidth,
+            imageHeight: feed.imageHeight,
             link: { webUrl: feed.webUrl, mobileWebUrl: feed.webUrl },
           },
           buttons: [
