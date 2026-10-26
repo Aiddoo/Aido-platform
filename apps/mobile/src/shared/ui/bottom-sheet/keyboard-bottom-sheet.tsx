@@ -26,6 +26,7 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useKeyboardContext } from 'react-native-keyboard-controller';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useResolveClassNames } from 'uniwind';
@@ -33,6 +34,7 @@ import { useResolveClassNames } from 'uniwind';
 import { HANDLE_HEIGHT, SHEET_INDEX } from './constants';
 import { getSheetMaxHeight } from './get-sheet-layout';
 import { useAndroidSheetBackHandler } from './use-android-sheet-back-handler';
+import { useScrollFocusedInputIntoView } from './use-scroll-focused-input-into-view';
 import { useSheetLayout } from './use-sheet-layout';
 
 interface KeyboardBottomSheetProps {
@@ -62,6 +64,7 @@ export const KeyboardBottomSheet = ({
 }: KeyboardBottomSheetProps) => {
   const { setEnabled } = useKeyboardContext();
   const sheetRef = useRef<ComponentRef<typeof GorhomBottomSheet> | null>(null);
+  const animatedPosition = useSharedValue(0);
   const lastContentHeightRef = useRef(0);
   const isClosingRef = useRef(false);
   const hasNotifiedCloseRef = useRef(false);
@@ -75,8 +78,22 @@ export const KeyboardBottomSheet = ({
   const handleIndicatorStyle = useResolveClassNames('bg-gray-4');
   const maxDynamicContentSize = getSheetMaxHeight(windowHeight, topInset, 0) - HANDLE_HEIGHT;
   const bottomPadding = (insets.bottom || 20) + 4;
-  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다
-  const [footerHeight, setFooterHeight] = useState(0);
+  // 키보드가 홈 인디케이터 영역을 덮는 동안에는 footer 아래 safe area 여백을 줄여 작은 화면(접은 Duo·SE)에서도
+  // 입력 칸이 들어갈 높이를 남긴다. 키보드가 오르내릴 때 시트 전체를 다시 그리지 않도록 shared value로 둔다.
+  const isKeyboardShown = useSharedValue(false);
+  const footerPaddingStyle = useAnimatedStyle(() => ({
+    paddingBottom: isKeyboardShown.get() ? FOOTER_KEYBOARD_GAP : bottomPadding,
+  }));
+  // 고정 영역이 가리는 만큼 스크롤 내용 아래를 비워 마지막 내용까지 올려 볼 수 있게 한다.
+  // 키보드가 오르내릴 때 내용 높이가 바뀌어 시트를 다시 맞추지 않도록 키보드가 없을 때 높이를 기준으로 한다.
+  const [footerContentHeight, setFooterContentHeight] = useState(0);
+  const footerChromeHeight = FOOTER_PADDING_TOP + footerContentHeight;
+  const { scrollViewRef, handleScrollBeginDrag } = useScrollFocusedInputIntoView({
+    isOpen,
+    animatedPosition,
+    bottomInset: footer == null ? 0 : footerChromeHeight + FOOTER_KEYBOARD_GAP,
+    viewportTopLimit: topInset + HANDLE_HEIGHT,
+  });
 
   const closeSheet = useCallback(() => {
     isClosingRef.current = true;
@@ -132,8 +149,13 @@ export const KeyboardBottomSheet = ({
       return;
     }
 
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(showEvent, () => {
+      isKeyboardShown.set(true);
+    });
     const hideSubscription = Keyboard.addListener(hideEvent, () => {
+      isKeyboardShown.set(false);
       resizeSheet();
     });
 
@@ -147,6 +169,7 @@ export const KeyboardBottomSheet = ({
     );
 
     return () => {
+      showSubscription.remove();
       hideSubscription.remove();
       appStateSubscription.remove();
     };
@@ -159,6 +182,7 @@ export const KeyboardBottomSheet = ({
       }
       resizeFrameRef.current = undefined;
       lastContentHeightRef.current = 0;
+      isKeyboardShown.set(false);
       isClosingRef.current = false;
     }
   }, [isOpen]);
@@ -244,15 +268,14 @@ export const KeyboardBottomSheet = ({
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
       <BottomSheetFooter {...props}>
-        <View
-          onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
-          style={[styles.footer, backgroundStyle, { paddingBottom: bottomPadding }]}
-        >
-          {footer}
-        </View>
+        <Animated.View style={[styles.footer, backgroundStyle, footerPaddingStyle]}>
+          <View onLayout={(event) => setFooterContentHeight(event.nativeEvent.layout.height)}>
+            {footer}
+          </View>
+        </Animated.View>
       </BottomSheetFooter>
     ),
-    [backgroundStyle, bottomPadding, footer],
+    [backgroundStyle, footerPaddingStyle, footer],
   );
 
   const handleContentSizeChange = (_width: number, height: number) => {
@@ -274,6 +297,7 @@ export const KeyboardBottomSheet = ({
   return (
     <GorhomBottomSheet
       ref={sheetRef}
+      animatedPosition={animatedPosition}
       accessible={false}
       index={isOpen ? SHEET_INDEX.OPEN : SHEET_INDEX.CLOSED}
       enableDynamicSizing
@@ -293,10 +317,12 @@ export const KeyboardBottomSheet = ({
       footerComponent={footer == null ? undefined : renderFooter}
     >
       <BottomSheetScrollView
+        ref={scrollViewRef}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onContentSizeChange={handleContentSizeChange}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: footer == null ? bottomPadding : footerHeight + 4 },
+          { paddingBottom: bottomPadding + (footer == null ? 0 : footerChromeHeight + 4) },
         ]}
         keyboardShouldPersistTaps="always"
         showsVerticalScrollIndicator={false}
@@ -308,6 +334,9 @@ export const KeyboardBottomSheet = ({
   );
 };
 
+const FOOTER_PADDING_TOP = 12;
+const FOOTER_KEYBOARD_GAP = 8;
+
 const styles = StyleSheet.create({
   handleIndicator: {
     width: 36,
@@ -317,7 +346,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   footer: {
-    paddingTop: 12,
+    paddingTop: FOOTER_PADDING_TOP,
     paddingHorizontal: 20,
   },
 });
