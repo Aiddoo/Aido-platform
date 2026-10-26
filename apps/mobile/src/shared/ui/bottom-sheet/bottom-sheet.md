@@ -48,6 +48,11 @@ import { KeyboardBottomSheet } from '@src/shared/ui/bottom-sheet';
 작은 화면(iPhone SE)·큰 글자에서 폼이 길어도 제출 버튼이 화면 밖으로 밀리지 않게 `footer`에 두면 시트 아래
 (키보드가 올라오면 키보드 위)에 고정되고, 내용은 그 위에서 스크롤된다.
 
+입력에 포커스해 키보드가 올라오면 시트가 포커스된 입력(위로 라벨, 아래로 입력 칸 테두리까지)을 `footer`·키보드 위로
+스크롤한다. 키보드가 다 올라온 뒤의 배치를 미리 구해 시트가 키보드를 따라 움직이는 프레임마다 UI 스레드에서 맞추므로
+키보드·시트·스크롤이 한 동작으로 움직인다. 보이는 높이가 라벨까지 담기엔 좁으면(접은 Duo·SE) 입력 칸 전체가 버튼 위에
+오는 쪽을 우선한다. 키보드가 떠 있는 동안 `footer` 아래 safe area 여백은 키보드가 덮으므로 줄인다.
+
 ```tsx
 <KeyboardBottomSheet isOpen={isOpen} onOpenChange={setIsOpen} footer={<Button>신고하기</Button>}>
   {/* 사유 선택·상세 입력 */}
