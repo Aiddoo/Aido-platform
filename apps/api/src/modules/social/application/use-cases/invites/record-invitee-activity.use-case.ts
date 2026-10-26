@@ -10,16 +10,22 @@ import {
   InviteQualificationPolicy,
   localActivityDate,
 } from "../../../domain/policies/invites/invite-qualification.policy.js";
+import { isFirstActiveDay } from "../../../domain/policies/invites/invite-qualify-reminder.policy.js";
 import {
   InviteRewardPolicy,
   qualifiedRedemptionCount,
   rewardCapWindowStart,
 } from "../../../domain/policies/invites/invite-reward.policy.js";
 import { SocialInviteLogEvent } from "../../observability/invites/social-invite-log.events.js";
+import type { InviteNotifierPort } from "../../ports/invites/invite-notifier.port.js";
 import type { InviteRedemptionRepositoryPort } from "../../ports/invites/invite-redemption.repository.port.js";
 import type { InviteRewardSchedulerPort } from "../../ports/invites/invite-reward.scheduler.port.js";
 import type { InviteConfigPort } from "../../ports/invites/invite.config.port.js";
 import type { RewardGrantRepositoryPort } from "../../ports/invites/reward-grant.repository.port.js";
+import {
+  isInvitePairReachable,
+  type InvitePairReachabilityDependencies,
+} from "../../services/invites/invite-pair-reachability.js";
 
 export interface RecordInviteeActivityInput {
   readonly inviteeId: string;
@@ -31,16 +37,32 @@ export type RecordInviteeActivityResult =
   | { readonly status: "recorded" }
   | { readonly status: "qualified"; readonly redemptionId: string; readonly grantCount: number };
 
-interface RecordInviteeActivityDependencies {
+/** 커밋 뒤 초대한 사람에게 첫 활동일을 알릴 수락 */
+interface FirstActiveDay {
+  readonly redemptionId: string;
+  readonly inviterId: string;
+}
+
+type RecordedActivity =
+  | { readonly status: "skipped" }
+  | { readonly status: "recorded"; readonly firstActiveDay: FirstActiveDay | null }
+  | { readonly status: "qualified"; readonly redemptionId: string; readonly grantCount: number };
+
+interface RecordInviteeActivityDependencies extends InvitePairReachabilityDependencies {
   readonly inviteRedemptionRepository: Pick<
     InviteRedemptionRepositoryPort,
-    "hasJoinedByInviteeId" | "findByInviteeIdForUpdate" | "save" | "summarizeByInviterId"
+    | "hasJoinedByInviteeId"
+    | "findByInviteeIdForUpdate"
+    | "save"
+    | "summarizeByInviterId"
+    | "findDisplayName"
   >;
   readonly rewardGrantRepository: Pick<
     RewardGrantRepositoryPort,
     "summarizeInviterRewards" | "createPending"
   >;
   readonly rewardScheduler: InviteRewardSchedulerPort;
+  readonly notifier: Pick<InviteNotifierPort, "notifyInviteProgress">;
   readonly inviteConfig: InviteConfigPort;
   readonly mutationLock: MutationLockPort;
   readonly unitOfWork: UnitOfWorkPort;
@@ -67,7 +89,7 @@ export class RecordInviteeActivity {
       return { status: "skipped" };
     }
 
-    const result = await this.#dependencies.unitOfWork.run(async () => {
+    const result = await this.#dependencies.unitOfWork.run(async (): Promise<RecordedActivity> => {
       const redemption =
         await this.#dependencies.inviteRedemptionRepository.findByInviteeIdForUpdate(
           input.inviteeId,
@@ -83,7 +105,13 @@ export class RecordInviteeActivity {
       }
       if (!InviteQualificationPolicy.isQualified(redemption) || redemption.inviterId == null) {
         await this.#dependencies.inviteRedemptionRepository.save(redemption);
-        return { status: "recorded" } as const;
+        // 활동일 기록은 수락 행 잠금으로 직렬화되어 첫날로 바뀌는 실행은 한 번뿐이다. 배포 전에 이미
+        // 첫날이 있던 수락은 여기서 다시 첫날이 되지 않으므로 지난 소식을 보내지 않는다
+        const firstActiveDay =
+          isFirstActiveDay(redemption) && redemption.inviterId != null
+            ? { redemptionId: redemption.id, inviterId: redemption.inviterId }
+            : null;
+        return { status: "recorded", firstActiveDay };
       }
 
       return this.#qualify(redemption, redemption.inviterId, input.occurredAt);
@@ -96,15 +124,68 @@ export class RecordInviteeActivity {
         inviteeId: input.inviteeId,
         grantCount: result.grantCount,
       });
+      return result;
+    }
+    if (result.status === "recorded") {
+      if (result.firstActiveDay != null) {
+        await this.#notifyFirstActiveDay(input.inviteeId, result.firstActiveDay);
+      }
+      return { status: "recorded" };
     }
     return result;
+  }
+
+  /** 기록은 이미 커밋됐으므로 알림 실패는 할 일 흐름에 전파하지 않고 남긴다. */
+  async #notifyFirstActiveDay(inviteeId: string, firstActiveDay: FirstActiveDay): Promise<void> {
+    const { redemptionId, inviterId } = firstActiveDay;
+    try {
+      const skippedReason = await this.#progressSkipReason(inviteeId, inviterId);
+      if (skippedReason != null) {
+        this.#dependencies.logger.log({
+          event: SocialInviteLogEvent.PROGRESS_NOTIFICATION_SKIPPED,
+          redemptionId,
+          reason: skippedReason,
+        });
+        return;
+      }
+      const inviteeName =
+        await this.#dependencies.inviteRedemptionRepository.findDisplayName(inviteeId);
+      if (inviteeName == null) return;
+      await this.#dependencies.notifier.notifyInviteProgress({
+        inviterId,
+        inviteeName,
+        redemptionId,
+      });
+      this.#dependencies.logger.log({
+        event: SocialInviteLogEvent.PROGRESS_NOTIFIED,
+        redemptionId,
+      });
+    } catch (error) {
+      this.#dependencies.logger.warn({
+        event: SocialInviteLogEvent.PROGRESS_NOTIFICATION_FAILED,
+        redemptionId,
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
+  }
+
+  async #progressSkipReason(
+    inviteeId: string,
+    inviterId: string,
+  ): Promise<"disabled" | "unreachable" | null> {
+    // 꺼져 있는 동안은 INVITE_REWARDED처럼 초대 알림을 보내지 않는다
+    if (!this.#dependencies.inviteConfig.isEnabled) return "disabled";
+    if (!(await isInvitePairReachable(this.#dependencies, inviteeId, inviterId))) {
+      return "unreachable";
+    }
+    return null;
   }
 
   async #qualify(
     redemption: InviteRedemption,
     inviterId: string,
     at: Date,
-  ): Promise<RecordInviteeActivityResult> {
+  ): Promise<RecordedActivity> {
     // 같은 초대한 사람의 상한을 여러 초대받은 사람이 동시에 읽지 않도록 잠근다
     await this.#dependencies.mutationLock.acquire([MutationLockKeys.inviteRewardLedger(inviterId)]);
     const [rewardTotals, summary] = await Promise.all([

@@ -145,6 +145,44 @@ export function createInviteJoinedNotificationMessage({
   });
 }
 
+export interface InviteProgressNotificationInput extends LocalizedVariantInput {
+  readonly inviteeName: string;
+}
+
+export function createInviteProgressNotificationMessage({
+  inviteeName,
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: InviteProgressNotificationInput): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_PROGRESS,
+    variables: {
+      inviteeName: createNotificationLabelPreview({ label: inviteeName, locale }),
+    },
+    variantContext,
+    templateKey: "invite.progress",
+  });
+}
+
+export interface InviteQualifyReminderNotificationInput extends LocalizedVariantInput {
+  readonly inviterName: string;
+}
+
+export function createInviteQualifyReminderNotificationMessage({
+  inviterName,
+  locale = DEFAULT_LOCALE,
+  variantContext,
+}: InviteQualifyReminderNotificationInput): NotificationMessage {
+  return renderLocalizedNotification({
+    template: LOCALE_TEMPLATES[locale].SOCIAL_TEMPLATES.INVITE_QUALIFY_REMINDER,
+    variables: {
+      inviterName: createNotificationLabelPreview({ label: inviterName, locale }),
+    },
+    variantContext,
+    templateKey: "invite.qualify-reminder",
+  });
+}
+
 export interface InviteRewardedNotificationInput extends LocalizedVariantInput {
   readonly premiumDays: number;
   readonly friendSlots: number;

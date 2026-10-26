@@ -18,6 +18,8 @@ export { TRANSACTIONAL_NOTIFICATION_CAMPAIGN_KEY } from "./domain/services/deliv
 export {
   createAiSuggestionNotificationMessage,
   createInviteJoinedNotificationMessage,
+  createInviteProgressNotificationMessage,
+  createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   createNudgeReplyNotificationMessage,
   createNudgeThanksNotificationMessage,

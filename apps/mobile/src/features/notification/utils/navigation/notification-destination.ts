@@ -85,6 +85,7 @@ const routingSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal(NOTIFICATION_TYPE.PREMIUM_GRANT_ENDING) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_JOINED) }),
   z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_REWARDED) }),
+  z.object({ type: z.literal(NOTIFICATION_TYPE.INVITE_PROGRESS) }),
   z.object({ type: z.literal('FEED') }),
 ]);
 
@@ -98,6 +99,8 @@ const FEED_NOTIFICATION_TYPES: ReadonlySet<NotificationType> = new Set([
   NOTIFICATION_TYPE.SOCIAL_DIGEST,
   NOTIFICATION_TYPE.LUNCH_NUDGE,
   NOTIFICATION_TYPE.STREAK_AT_RISK,
+  // 초대받은 사람이 오늘 할 일을 끝내 사용 시작하도록 오늘 피드로 연다
+  NOTIFICATION_TYPE.INVITE_QUALIFY_REMINDER,
 ]);
 
 /** 종류만으로 갈 곳을 정할 수 없는 공지. 서버가 DEEP_LINK url에 고른 앱 경로를 따른다(리텐션 /feed·/achievements 등). */
@@ -267,7 +270,7 @@ function toRouteDestination(
       kind: 'route' as const,
       href: '/suggestions' as const,
     }))
-    .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED') }, () => ({
+    .with({ type: P.union('INVITE_JOINED', 'INVITE_REWARDED', 'INVITE_PROGRESS') }, () => ({
       kind: 'route' as const,
       href: myInviteHref(),
     }))

@@ -28,22 +28,25 @@ describe("알림 클라이언트 호환성", () => {
     expect(result).toBe(expected);
   });
 
-  it.each(["INVITE_JOINED", "INVITE_REWARDED", "PREMIUM_GRANT_ENDING"] as const)(
-    "%s는 1.12.1에는 숨기고 1.13.0부터 보인다",
-    (type) => {
-      // Given
-      const releasedVersion = "1.12.1";
-      const updatedVersion = "1.13.0";
+  it.each([
+    "INVITE_JOINED",
+    "INVITE_REWARDED",
+    "INVITE_PROGRESS",
+    "INVITE_QUALIFY_REMINDER",
+    "PREMIUM_GRANT_ENDING",
+  ] as const)("%s는 1.12.1에는 숨기고 1.13.0부터 보인다", (type) => {
+    // Given
+    const releasedVersion = "1.12.1";
+    const updatedVersion = "1.13.0";
 
-      // When
-      const released = supportsNotificationType(type, releasedVersion);
-      const updated = supportsNotificationType(type, updatedVersion);
+    // When
+    const released = supportsNotificationType(type, releasedVersion);
+    const updated = supportsNotificationType(type, updatedVersion);
 
-      // Then
-      expect(released).toBe(false);
-      expect(updated).toBe(true);
-    },
-  );
+    // Then
+    expect(released).toBe(false);
+    expect(updated).toBe(true);
+  });
 
   it("기존 알림은 버전 헤더가 없어도 보낸다", () => {
     // Given
@@ -67,7 +70,9 @@ describe("알림 클라이언트 호환성", () => {
     expect(types).toContain("NUDGE_REPLIED");
     expect(types).not.toContain("INVITE_JOINED");
     expect(types).not.toContain("PREMIUM_GRANT_ENDING");
-    expect(types).toHaveLength(Object.values(NOTIFICATION_TYPE).length - 3);
+    expect(types).not.toContain("INVITE_PROGRESS");
+    expect(types).not.toContain("INVITE_QUALIFY_REMINDER");
+    expect(types).toHaveLength(Object.values(NOTIFICATION_TYPE).length - 5);
   });
 
   it("최신 앱은 전체 알림을 조건 없이 조회한다", () => {

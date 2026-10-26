@@ -1,6 +1,6 @@
 import { TransactionHost } from "@nestjs-cls/transactional";
 import { Injectable } from "@nestjs/common";
-import { all, and } from "@prisma/orm-postgres/orm-client";
+import { all, and, or } from "@prisma/orm-postgres/orm-client";
 
 import { decodeRecord, encodeCreate, encodePatch } from "#api/platform/database/database-records";
 import {
@@ -13,10 +13,12 @@ import type { Prisma8TransactionalAdapter } from "#api/platform/database/prisma8
 
 import type {
   FindInvitedFriendsParams,
+  FindQualifyReminderCandidatesParams,
   InvitedFriendRecord,
   InviteeIdentity,
   InviteRedemptionRepositoryPort,
   InviteRedemptionSummary,
+  QualifyReminderCandidate,
 } from "../../../application/ports/invites/invite-redemption.repository.port.js";
 import {
   InviteRedemption,
@@ -37,6 +39,7 @@ const REDEMPTION_COLUMNS = [
   "rewardedAt",
   "rejectedAt",
   "expiresAt",
+  "qualifyReminderSentAt",
 ] as const;
 
 @Injectable()
@@ -67,6 +70,17 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         providerAccountId: account.providerAccountId,
       })),
     };
+  }
+
+  async findDisplayName(userId: string): Promise<string | null> {
+    const user = await this.client.orm.public.User.where((row) =>
+      and(row.id.eq(userId), row.deletedAt.isNull()),
+    )
+      .select("userTag")
+      .include("profile", (profile) => profile.select("name"))
+      .first();
+    if (user == null) return null;
+    return user.profile?.name ?? user.userTag;
   }
 
   async create(plan: InviteRedemptionCreationPlan): Promise<InviteRedemption | null> {
@@ -209,6 +223,47 @@ export class PrismaInviteRedemptionRepository implements InviteRedemptionReposit
         rejectedAt: at,
       }),
     );
+  }
+
+  async findQualifyReminderCandidates(
+    params: FindQualifyReminderCandidatesParams,
+  ): Promise<QualifyReminderCandidate[]> {
+    // (status, expiresAt) 인덱스 범위를 (expiresAt, id) keyset으로 읽고 활동일 수는 include로 같은 문장에 센다
+    const { after } = params;
+    const rows = decodeRecord(
+      "InviteRedemption",
+      await this.client.orm.public.InviteRedemption.where((row) =>
+        and(
+          row.status.eq("JOINED"),
+          row.qualifyReminderSentAt.isNull(),
+          row.inviterId.isNotNull(),
+          row.inviterRewardEligible.eq(true),
+          row.expiresAt.gt(databaseTimestamp(params.now)),
+          row.expiresAt.lte(databaseTimestamp(params.expiresBefore)),
+          after == null
+            ? all()
+            : or(
+                row.expiresAt.gt(databaseTimestamp(after.expiresAt)),
+                and(
+                  row.expiresAt.eq(databaseTimestamp(after.expiresAt)),
+                  row.id.gt(after.redemptionId),
+                ),
+              ),
+        ),
+      )
+        .select("id", "timezone", "expiresAt")
+        .include("activeDays", (days) => days.count())
+        .orderBy((row) => row.expiresAt.asc())
+        .orderBy((row) => row.id.asc())
+        .limit(params.limit)
+        .all(),
+    );
+    return rows.map((row) => ({
+      redemptionId: row.id,
+      timezone: row.timezone,
+      expiresAt: row.expiresAt,
+      activeDayCount: row.activeDays,
+    }));
   }
 
   async #findById(redemptionId: string): Promise<InviteRedemption | null> {

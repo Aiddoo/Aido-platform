@@ -31,6 +31,8 @@ export interface InviteRedemptionProps {
   rewardedAt: Date | null;
   rejectedAt: Date | null;
   expiresAt: Date;
+  /** 사용 시작을 권하는 알림을 보낸 시각. 수락 한 건에 한 번만 보낸다. */
+  qualifyReminderSentAt: Date | null;
 }
 
 export interface InviteRedemptionCreationInput {
@@ -55,7 +57,12 @@ export interface InviteRedemptionCreationPlan {
 
 export type InviteRedemptionPersistenceState = Pick<
   InviteRedemptionProps,
-  "status" | "rejectionReason" | "qualifiedAt" | "rewardedAt" | "rejectedAt"
+  | "status"
+  | "rejectionReason"
+  | "qualifiedAt"
+  | "rewardedAt"
+  | "rejectedAt"
+  | "qualifyReminderSentAt"
 > & {
   /** 이번 변경에서 새로 기록한 날짜만 담는다. */
   readonly addedActiveDays: readonly string[];
@@ -102,6 +109,8 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       rewardedAt: props.rewardedAt == null ? null : new Date(props.rewardedAt),
       rejectedAt: props.rejectedAt == null ? null : new Date(props.rejectedAt),
       expiresAt: new Date(props.expiresAt),
+      qualifyReminderSentAt:
+        props.qualifyReminderSentAt == null ? null : new Date(props.qualifyReminderSentAt),
     });
   }
 
@@ -157,6 +166,12 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
     return new Date(this.props.expiresAt);
   }
 
+  get qualifyReminderSentAt(): Date | null {
+    return this.props.qualifyReminderSentAt == null
+      ? null
+      : new Date(this.props.qualifyReminderSentAt);
+  }
+
   isExpiredAt(at: Date): boolean {
     return at.getTime() >= this.props.expiresAt.getTime();
   }
@@ -186,6 +201,18 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
     return true;
   }
 
+  /** 사용 시작 전에만 한 번 기록한다. 이미 보냈거나 JOINED가 아니면 false다. */
+  markQualifyReminderSent(sentAt: Date): boolean {
+    if (
+      !this.props.status.is(REDEMPTION_STATUS.JOINED) ||
+      this.props.qualifyReminderSentAt != null
+    ) {
+      return false;
+    }
+    this.props.qualifyReminderSentAt = new Date(sentAt);
+    return true;
+  }
+
   expire(expiredAt: Date): boolean {
     return this.#reject(REDEMPTION_REJECTION_REASON.EXPIRED, expiredAt);
   }
@@ -197,6 +224,7 @@ export class InviteRedemption extends AggregateRoot<InviteRedemptionState> {
       qualifiedAt: this.qualifiedAt,
       rewardedAt: this.rewardedAt,
       rejectedAt: this.props.rejectedAt == null ? null : new Date(this.props.rejectedAt),
+      qualifyReminderSentAt: this.qualifyReminderSentAt,
       addedActiveDays: [...this.props.addedActiveDays],
     };
   }

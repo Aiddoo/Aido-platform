@@ -21,6 +21,7 @@ function joinedRedemption(): InviteRedemption {
     rewardedAt: null,
     rejectedAt: null,
     expiresAt: new Date("2028-03-05T00:00:00.000Z"),
+    qualifyReminderSentAt: null,
   });
 }
 

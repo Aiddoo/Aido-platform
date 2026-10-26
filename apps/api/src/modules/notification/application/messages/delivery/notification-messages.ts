@@ -16,6 +16,8 @@ export {
   createFollowRequestNotificationMessage,
   createFriendCompletedNotificationMessage,
   createInviteJoinedNotificationMessage,
+  createInviteProgressNotificationMessage,
+  createInviteQualifyReminderNotificationMessage,
   createInviteRewardedNotificationMessage,
   createNudgeReceivedNotificationMessage,
   createNudgeReplyNotificationMessage,
