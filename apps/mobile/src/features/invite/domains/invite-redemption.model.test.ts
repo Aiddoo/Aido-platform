@@ -97,6 +97,21 @@ describe('InviteRedemptionPolicy', () => {
     });
   });
 
+  describe('isAlreadyAccepted', () => {
+    it.each([
+      ['서버가 처음 결과를 다시 돌려줬으면', createRedemptionResult({ isReplay: true }), true],
+      ['처음 수락했으면', createRedemptionResult({ isReplay: false }), false],
+      ['isReplay가 없는 구버전 서버 응답이면', createRedemptionResult(), false],
+      ['이미 친구였으면', { outcome: 'ALREADY_FRIENDS' as const, inviter }, false],
+    ])('%s %s를 반환한다', (_case, result, expected) => {
+      // When
+      const isAlreadyAccepted = InviteRedemptionPolicy.isAlreadyAccepted(result);
+
+      // Then
+      expect(isAlreadyAccepted).toBe(expected);
+    });
+  });
+
   describe('grantedPremiumDays', () => {
     it('REDEEMED 보상 중 프리미엄 일수만 더해 반환한다', () => {
       // Given

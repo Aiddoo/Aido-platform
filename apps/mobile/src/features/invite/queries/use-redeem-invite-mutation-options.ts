@@ -1,9 +1,11 @@
+import { INVITE_FRIENDSHIP } from '@aido/api';
 import { useInviteService } from '@src/bootstrap/providers/di-context';
 import { createFeedHref } from '@src/features/todo/utils/feed-route';
 import { useTrack } from '@src/shared/analytics';
 import { isApiError } from '@src/shared/errors';
 import { unwrap } from '@src/shared/errors/result';
 import { useAppToast } from '@src/shared/hooks/use-app-toast';
+import { useTranslation } from '@src/shared/i18n';
 import { notifyError, notifySuccess } from '@src/shared/utils/haptics';
 import { mutationOptions, useQueryClient } from '@tanstack/react-query';
 import { noop } from 'es-toolkit';
@@ -23,7 +25,8 @@ import { invalidateAfterRedeem, storeRedemptionResult } from './invite-cache';
 export function useRedeemInviteMutationOptions() {
   const inviteService = useInviteService();
   const queryClient = useQueryClient();
-  const { error: showError } = useAppToast();
+  const { toast, error: showError } = useAppToast();
+  const { t } = useTranslation('invite');
   const { trackEvent } = useTrack();
 
   return mutationOptions({
@@ -38,6 +41,19 @@ export function useRedeemInviteMutationOptions() {
       storeRedemptionResult(queryClient, result);
       await invalidateAfterRedeem(queryClient, { inviteCode }).catch(noop);
       notifySuccess();
+
+      // 이미 받은 초대를 다시 수락했으면 보상을 새로 받은 것처럼 환영 시트를 띄우지 않는다
+      if (InviteRedemptionPolicy.isAlreadyAccepted(result)) {
+        toast(t('card.alreadyAccepted'));
+        router.replace(
+          createFeedHref(
+            InviteRedemptionPolicy.friendship(result) === INVITE_FRIENDSHIP.FRIENDS
+              ? { friendId: result.inviter.userId }
+              : {},
+          ),
+        );
+        return;
+      }
 
       // 이미 친구면 축하할 것이 없어 바로 친구 할 일로 간다
       match(InviteRedemptionPolicy.welcomeVariant(result))

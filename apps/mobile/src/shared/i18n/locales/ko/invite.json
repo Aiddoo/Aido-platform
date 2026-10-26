@@ -30,7 +30,8 @@
     "unnamedInviter": "친구",
     "existingAccountNote": "이미 아이두를 쓰고 있어서 바로 친구가 돼요. 프리미엄 보상은 새로 가입한 친구에게 드려요",
     "redeemWithReward": "친구 되고 프리미엄 {{count}}일 받기",
-    "connect": "{{name}}님과 친구 맺기"
+    "connect": "{{name}}님과 친구 맺기",
+    "alreadyAccepted": "이미 받은 초대예요"
   },
   "result": {
     "notFound": {

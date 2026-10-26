@@ -72,6 +72,11 @@ export const InviteRedemptionPolicy = {
     return InviteRewardPolicy.premiumDays(this.rewards(result));
   },
 
+  /** 이미 수락한 같은 초대를 다시 수락해 서버가 처음 결과를 돌려줬다. 새로 받은 보상이 아니다 */
+  isAlreadyAccepted(result: RedemptionResult) {
+    return result.outcome === REDEEM_OUTCOME.REDEEMED && result.isReplay === true;
+  },
+
   /** 환영 시트가 어떤 결과를 보여 줄지 정한다(문구는 화면이 고른다) */
   welcomeVariant(result: RedemptionResult) {
     return match({ result, hasReward: this.grantedPremiumDays(result) > 0 })
