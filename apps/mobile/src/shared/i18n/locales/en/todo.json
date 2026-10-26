@@ -241,6 +241,7 @@
     "thanksPendingTitle_one": "{{count}} friend nudged you",
     "thanksPendingTitle_other": "{{count}} friends nudged you",
     "thanksPendingDescription": "Send thanks with your done update",
+    "thanksLoadFailed": "Couldn't load thanks",
     "thanksNewPendingDescription_one": "{{count}} new friend nudged you",
     "thanksNewPendingDescription_other": "{{count}} new friends nudged you",
     "thanksSentTitle_one": "Thanks sent to {{count}} friend",

@@ -24,7 +24,7 @@
   "logout": {
     "action": "로그아웃",
     "confirmTitle": "로그아웃",
-    "confirmDescription": "정말 로그아웃 하시겠습니까?"
+    "confirmDescription": "정말 로그아웃할까요?"
   },
   "withdraw": {
     "action": "탈퇴하기",
@@ -56,6 +56,6 @@
     "placeholder": "이름을 입력해주세요",
     "submit": "이름 변경",
     "required": "이름을 입력해주세요",
-    "maxLength": "이름은 20자 이내여야 합니다"
+    "maxLength": "이름은 20자까지 쓸 수 있어요"
   }
 }

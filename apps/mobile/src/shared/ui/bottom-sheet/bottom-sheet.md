@@ -22,6 +22,15 @@ import { BottomSheet } from '@src/shared/ui/bottom-sheet';
 </BottomSheet>;
 ```
 
+내용이 시트 최대 높이보다 길면 시트 안에서 스크롤한다. 작은 화면(SE·Duo 바깥 화면)·큰 글자에서도 주 동작 버튼이
+보여야 하면 `footer`에 두어 시트 아래에 고정한다.
+
+```tsx
+<BottomSheet isOpen={isOpen} onOpenChange={setIsOpen} footer={<Button>확인</Button>}>
+  {/* 긴 안내 */}
+</BottomSheet>
+```
+
 ### KeyboardBottomSheet
 
 내용은 스크롤된다. 짧으면 시트가 그 높이로 줄어들지만, 키보드가 올라온 채로 내용이
@@ -105,17 +114,21 @@ const sheet = useSheetRoute('/feed');
 - Android 뒤로가기는 시트의 `useAndroidSheetBackHandler`가 먼저 소비해 닫기 애니메이션 뒤 route를 떠난다.
 - `SheetRouteScreen`은 제스처 루트와 Overlay를 route 안에 다시 둔다. iOS transparentModal은 루트 위에
   따로 표시되므로, 시트 안에서 여는 피커·다이얼로그가 시트 아래로 숨지 않게 하기 위해서다.
+- 같은 이유로 모달 안에 PortalHost를 둔다. HeroUI `Dialog.Portal`을 직접 쓰는 다이얼로그는
+  `useDialogPortalTarget()`을 펼쳐 넘긴다(`ConfirmDialog`는 이미 쓴다). iOS FullWindowOverlay는 모달 바깥
+  창에 붙어 화면에는 보여도 VoiceOver·XCUITest가 읽지 못한다.
 
 ## Props
 
 ### BottomSheet
 
-| Prop           | 타입                        | 기본값 | 설명                     |
-| -------------- | --------------------------- | ------ | ------------------------ |
-| `isOpen`       | `boolean`                   | -      | 시트 열림 상태           |
-| `onOpenChange` | `(isOpen: boolean) => void` | -      | 열림/닫힘 상태 변경 콜백 |
-| `onCloseStart` | `() => void`                | -      | 닫기 시작 시 콜백 (선택) |
-| `children`     | `ReactNode`                 | -      | 시트 내용                |
+| Prop           | 타입                        | 기본값 | 설명                       |
+| -------------- | --------------------------- | ------ | -------------------------- |
+| `isOpen`       | `boolean`                   | -      | 시트 열림 상태             |
+| `onOpenChange` | `(isOpen: boolean) => void` | -      | 열림/닫힘 상태 변경 콜백   |
+| `onCloseStart` | `() => void`                | -      | 닫기 시작 시 콜백 (선택)   |
+| `children`     | `ReactNode`                 | -      | 시트 내용                  |
+| `footer`       | `ReactNode`                 | -      | 시트 아래 고정 영역 (선택) |
 
 ### ModalBottomSheet
 

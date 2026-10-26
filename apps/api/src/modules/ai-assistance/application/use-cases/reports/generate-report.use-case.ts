@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import type { EntitlementReaderPort } from "#api/modules/access/access-entitlement.public";
 import {
   type AiProvider,
-  AiProviderError,
   canRunScheduledAi,
   type ScheduledAiConsentReaders,
 } from "#api/modules/ai-assistance/ai-assistance-parsing.public";
@@ -25,6 +24,7 @@ import type {
 import {
   generationCompletedLog,
   generationFailedLog,
+  providerFailure,
 } from "../../observability/parsing/ai-generation-log.events.js";
 import { AiReportLogEvent } from "../../observability/reports/ai-report-log.events.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
@@ -331,13 +331,12 @@ export class GenerateReport {
       );
       return { ...value, contentSource: "AI", promptVersion: definition.promptVersion };
     } catch (error) {
-      const errorKind = error instanceof AiProviderError ? error.kind : "INVALID_OUTPUT";
-      const retrying = !isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(errorKind);
+      const failure = providerFailure(error);
+      const retrying = !isFinalAttempt && TRANSIENT_PROVIDER_ERRORS.has(failure.errorKind);
       const failedLog = generationFailedLog({
         ...logBase,
+        ...failure,
         outcome: retrying ? "RETRYING" : "FALLBACK",
-        errorKind,
-        statusCode: error instanceof AiProviderError ? error.statusCode : undefined,
         latencyMs: Date.now() - startedAt,
       });
       if (retrying) {

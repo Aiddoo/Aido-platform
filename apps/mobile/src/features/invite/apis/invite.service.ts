@@ -17,7 +17,12 @@ import {
   type PendingRedemption,
   InviteRedemptionPolicy,
 } from '../domains/invite-redemption.model';
-import { type InviteError, InviteErrors } from '../domains/invite.error';
+import {
+  type InviteError,
+  InviteErrors,
+  isTerminalRedeemFailure,
+  toRedeemFailureReason,
+} from '../domains/invite.error';
 import { type InviteCode, parseInviteCode } from '../domains/invite.model';
 import { type Invite, InviteSchema } from '../domains/invite.model';
 import type { InvitedFriend } from '../domains/invited-friend.model';
@@ -100,6 +105,13 @@ export class InviteService {
 
     const result = await this.#publicHttpClient.get(`v1/invites/${inviteCode}`, { signal });
     if (!result.ok) {
+      // 이어서 열려던 초대가 없어졌거나 바뀌었으면 다음 실행 때 다시 열지 않는다
+      if (
+        this.#pendingRedemptionRepository.get()?.inviteCode === inviteCode &&
+        isTerminalRedeemFailure(toRedeemFailureReason(result.error))
+      ) {
+        this.#pendingRedemptionRepository.clear();
+      }
       return result;
     }
 

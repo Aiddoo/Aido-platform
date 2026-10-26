@@ -9,6 +9,7 @@ import { useInviteRouteParams } from '@src/features/invite/hooks/use-invite-rout
 import { useTrackInviteLinkOpened } from '@src/features/invite/hooks/use-track-invite-link-opened';
 import { useGetInvitePreviewQueryOptions } from '@src/features/invite/queries/get-invite-preview-query-options';
 import { useRedeemInviteMutationOptions } from '@src/features/invite/queries/use-redeem-invite-mutation-options';
+import { ReceiptBenefitRow } from '@src/features/subscription/components/receipt-benefit-row';
 import { useGetMeQueryOptions } from '@src/features/user/queries/get-me-query-options';
 import { useTranslation } from '@src/shared/i18n';
 import {
@@ -16,7 +17,6 @@ import {
   Box,
   Button,
   DashedDivider,
-  FillCheckIcon,
   FillTicketIcon,
   HStack,
   ListRow,
@@ -117,9 +117,12 @@ function InviteBenefitReceiptContents({ inviteCode }: { inviteCode: InviteCode }
         <DashedDivider />
 
         <VStack>
-          <ReceiptBenefitRow title={t('card.receipt.benefitFriend', { name: inviterName })} />
-          <ReceiptBenefitRow title={t('card.receipt.benefitAi')} />
-          <ReceiptBenefitRow title={t('card.receipt.benefitFriends')} />
+          <ReceiptBenefitRow
+            shade={9}
+            title={t('card.receipt.benefitFriend', { name: inviterName })}
+          />
+          <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitAi')} />
+          <ReceiptBenefitRow shade={9} title={t('card.receipt.benefitFriends')} />
         </VStack>
 
         <DashedDivider />
@@ -179,24 +182,6 @@ function InviteBenefitReceiptLoading() {
   );
 }
 
-function ReceiptBenefitRow({ title }: { title: string }) {
-  return (
-    <ListRow
-      verticalPadding="small"
-      left={
-        <Box className="size-5 items-center justify-center rounded-full bg-main">
-          <FillCheckIcon width={12} height={12} colorClassName="text-white dark:text-gray-1" />
-        </Box>
-      }
-      contents={
-        <Text size="b3" shade={9}>
-          {title}
-        </Text>
-      }
-    />
-  );
-}
-
 /** 초대 카드 아래 행동. 로그인 전이면 초대를 기기에 남기고 가입·로그인으로 보낸다 */
 function InviteCardActions() {
   const { status } = useAuth();
@@ -212,7 +197,7 @@ function InviteCardActions() {
     return <InviteRedeemActions inviteCode={inviteCode} />;
   }
 
-  const continueAsGuest = (pathname: '/sign-up' | '/login') => {
+  const handleContinueAsGuest = (pathname: '/sign-up' | '/login') => {
     inviteService.savePendingRedemption({ inviteCode, source }, new Date());
     router.push(pathname);
   };
@@ -220,7 +205,7 @@ function InviteCardActions() {
   return (
     <StyledSafeAreaView edges={['left', 'right', 'bottom']}>
       <ReadableContent px={20} pt={12} pb={12} gap={4}>
-        <Button testID="invite-card-signup" onPress={() => continueAsGuest('/sign-up')}>
+        <Button testID="invite-card-signup" onPress={() => handleContinueAsGuest('/sign-up')}>
           {t('card.signUp')}
         </Button>
 
@@ -228,7 +213,7 @@ function InviteCardActions() {
           <TextButton
             testID="invite-card-login"
             size="medium"
-            onPress={() => continueAsGuest('/login')}
+            onPress={() => handleContinueAsGuest('/login')}
           >
             {t('card.login')}
           </TextButton>

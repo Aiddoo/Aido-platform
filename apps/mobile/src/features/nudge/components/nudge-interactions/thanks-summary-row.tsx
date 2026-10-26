@@ -2,7 +2,17 @@ import { UserAvatar } from '@src/features/user/components/user-avatar';
 import { useDateFormatContext } from '@src/shared/hooks/use-date-format-context';
 import { useTranslation } from '@src/shared/i18n';
 import { useFontScale } from '@src/shared/providers/font-scale-provider';
-import { Box, Button, HeartFilledIcon, HStack, Text, TextSkeleton, VStack } from '@src/shared/ui';
+import {
+  Box,
+  Button,
+  HeartFilledIcon,
+  HStack,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
+  Text,
+  TextSkeleton,
+  VStack,
+} from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
 import { formatRelativeTimeLabel } from '@src/shared/utils/date';
 import { notifySuccess } from '@src/shared/utils/haptics';
@@ -64,7 +74,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
   return match(state)
     .with('NONE', () => null)
     .with('PENDING', () => (
-      <Card
+      <ThanksSummaryCard
         variant="pending"
         left={<RecipientAvatars recipients={preview.recipients} />}
         title={
@@ -94,7 +104,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
       />
     ))
     .with('SENT', () => (
-      <Card
+      <ThanksSummaryCard
         variant="sent"
         left={<SentHeart style={heartStyle} />}
         title={
@@ -106,7 +116,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
       />
     ))
     .with('SENT_WITH_PENDING', () => (
-      <Card
+      <ThanksSummaryCard
         variant="sent"
         left={<SentHeart style={heartStyle} />}
         title={
@@ -135,7 +145,7 @@ ThanksSummaryRow.Contents = function Contents({ todoId, onThanksPress }: ThanksS
 
 ThanksSummaryRow.Loading = function Loading() {
   return (
-    <Card
+    <ThanksSummaryCard
       variant="pending"
       left={
         <HStack>
@@ -149,6 +159,34 @@ ThanksSummaryRow.Loading = function Loading() {
       title={<TextSkeleton size="b3" className="w-32" />}
       description={<TextSkeleton size="e1" className="w-40" />}
       action={<Skeleton className="h-10 w-20 rounded-xl" />}
+    />
+  );
+};
+
+interface ThanksSummaryRowErrorProps extends QueryErrorFallbackProps {
+  /** 시트 안에서는 시트를 닫고 문의 화면으로 가도록 바꿔 준다 */
+  onInquiry?: () => void;
+}
+
+/** 고마움 보내기 입구라 숨기지 않고 같은 자리에 다시 시도·문의를 둔다 */
+ThanksSummaryRow.Error = function ErrorState({ reset, onInquiry }: ThanksSummaryRowErrorProps) {
+  const { t } = useTranslation(['todo', 'common']);
+
+  return (
+    <ThanksSummaryCard
+      variant="sent"
+      left={null}
+      title={<CardTitle>{t('todo:interaction.thanksLoadFailed')}</CardTitle>}
+      description={
+        <Box className="items-start">
+          <QueryErrorActions.Inquiry onPress={onInquiry} />
+        </Box>
+      }
+      action={
+        <Button variant="weak" color="dark" size="small" display="inline" onPress={reset}>
+          {t('common:actions.retry')}
+        </Button>
+      }
     />
   );
 };
@@ -168,13 +206,13 @@ function useThanksCelebration(thankedRecipientCount: number) {
     if (isReducedMotion) {
       return;
     }
-    scale.value = withSequence(withSpring(1.2, HEART_SPRING), withSpring(1, HEART_SPRING));
+    scale.set(withSequence(withSpring(1.2, HEART_SPRING), withSpring(1, HEART_SPRING)));
   }, [thankedRecipientCount, isReducedMotion, scale]);
 
-  return useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  return useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
 }
 
-interface CardProps {
+interface ThanksSummaryCardProps {
   variant: 'pending' | 'sent';
   left: ReactNode;
   title: ReactNode;
@@ -182,7 +220,7 @@ interface CardProps {
   action?: ReactNode;
 }
 
-function Card({ variant, left, title, description, action }: CardProps) {
+function ThanksSummaryCard({ variant, left, title, description, action }: ThanksSummaryCardProps) {
   const { fontScale } = useFontScale();
   const isActionStacked = fontScale === 'xlarge';
 

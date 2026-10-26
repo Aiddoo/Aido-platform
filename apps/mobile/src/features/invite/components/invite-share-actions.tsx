@@ -8,10 +8,8 @@ import {
   CopyIcon,
   HStack,
   KakaoIcon,
-  type QueryErrorFallbackProps,
   ShareIcon,
   Text,
-  TextButton,
   VStack,
 } from '@src/shared/ui';
 import { cn } from '@src/shared/utils/cn';
@@ -20,7 +18,6 @@ import { noop } from 'es-toolkit';
 import type { ComponentProps, ReactNode } from 'react';
 
 import { createInviteShareContent, type InviteShareChannel } from '../domains/invite-share.model';
-import { isInviteDisabledError } from '../domains/invite.error';
 import { useCopiedFeedback } from '../hooks/use-copied-feedback';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
 import { useShareInviteMutationOptions } from '../queries/use-share-invite-mutation-options';
@@ -58,26 +55,6 @@ export function InviteShareActions(props: ComponentProps<typeof VStack>) {
 /** 요약을 불러오는 동안 같은 자리에 비활성 버튼을 둔다 */
 InviteShareActions.Loading = function Loading() {
   return <InviteShareButtons isDisabled isCopied={false} onShare={noop} />;
-};
-
-/** 버튼 자리를 그대로 두고 다시 불러오기만 받는다 */
-InviteShareActions.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('invite');
-
-  if (isInviteDisabledError(error)) {
-    return <InviteShareActions.Unavailable />;
-  }
-
-  return (
-    <VStack gap={10}>
-      <InviteShareButtons isDisabled isCopied={false} onShare={noop} />
-      <Box className="items-center">
-        <TextButton size="small" onPress={reset}>
-          {t('result.retry')}
-        </TextButton>
-      </Box>
-    </VStack>
-  );
 };
 
 /** 초대가 꺼져 있으면 버튼 자리만 비활성으로 남긴다. 안내는 링크 카드가 한다 */

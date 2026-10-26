@@ -18,16 +18,14 @@ const FIRST_PAGE_CURSOR: string | null = null;
 const INVITED_FRIENDS_PAGE_SIZE = 20;
 
 interface InviteesFilter {
-  /** 상태별 목록. null이면 전체다 */
-  status: RedemptionStatus | null;
+  /** 상태별 목록. 없으면 전체다 */
+  status?: RedemptionStatus;
 }
-
-const ALL_INVITEES: InviteesFilter = { status: null };
 
 /** 상태마다 다른 캐시를 둔다. 서버가 상태로 거르고 totalCount도 그 조건으로 센다 */
 export function getInvitedFriendsInfiniteQueryOptions(
   inviteService: InviteService,
-  { status }: InviteesFilter = ALL_INVITEES,
+  { status }: InviteesFilter = {},
 ) {
   return infiniteQueryOptions({
     queryKey: INVITE_QUERY_KEYS.invitees({ status }),
@@ -37,7 +35,7 @@ export function getInvitedFriendsInfiniteQueryOptions(
           {
             cursor: pageParam ?? undefined,
             limit: INVITED_FRIENDS_PAGE_SIZE,
-            status: status ?? undefined,
+            status,
           },
           signal,
         ),

@@ -93,7 +93,7 @@
     "uncomplete": "완료 취소"
   },
   "list": {
-    "loadError": "할 일을 불러오는 중에 오류가 발생했습니다."
+    "loadError": "할 일을 불러오지 못했어요."
   },
   "friendTodo": {
     "emptyTitle": "친구가 아직 할 일을 만들지 않았어요",
@@ -207,7 +207,7 @@
     "delete": "삭제",
     "cancel": "취소",
     "save": "저장",
-    "deleted": "삭제된 댓글입니다.",
+    "deleted": "삭제된 댓글이에요.",
     "deletedUser": "삭제된 댓글",
     "unknownUser": "사용자",
     "authorBadge": "작성자",
@@ -235,6 +235,7 @@
     "thanked": "완료 소식과 고마운 마음을 전했어요",
     "thanksPendingTitle": "콕 찔러 준 친구 {{count}}명",
     "thanksPendingDescription": "완료 소식과 함께 고마움을 전해요",
+    "thanksLoadFailed": "고마움 현황을 불러오지 못했어요",
     "thanksNewPendingDescription": "새로 콕 찔러 준 친구 {{count}}명이 있어요",
     "thanksSentTitle": "친구 {{count}}명에게 고마움을 전했어요",
     "thanksQuickAction": "고마워요",

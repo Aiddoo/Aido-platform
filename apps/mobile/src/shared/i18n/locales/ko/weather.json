@@ -31,7 +31,7 @@
     "locationUpdateFailed": "위치 등록에 실패했어요"
   },
   "errors": {
-    "locationNotRegistered": "위치 정보가 등록되지 않았습니다"
+    "locationNotRegistered": "위치 정보가 등록되지 않았어요"
   },
   "screen": {
     "kmaPreparing": "기상청 데이터 준비 중이에요",

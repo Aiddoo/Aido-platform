@@ -55,15 +55,32 @@ export const AI_PROVIDER_ERROR_KINDS = [
 /** 공급자 실패를 응답 코드·재시도 판단에 필요한 종류로만 구분한다. */
 export type AiProviderErrorKind = (typeof AI_PROVIDER_ERROR_KINDS)[number];
 
+/**
+ * 운영 로그로 원인을 좁히는 데 쓰는 공급자 실패 식별자. 오류 이름·공급자 상태(예: Gemini UNAVAILABLE)·
+ * 네트워크 오류 코드(예: ECONNRESET)처럼 고정된 기호만 담고, 원문 message·응답 본문·프롬프트는 담지 않는다.
+ */
+export interface AiUpstreamCause {
+  readonly errorName: string;
+  readonly providerStatus?: string;
+  readonly errorCode?: string;
+}
+
+interface AiProviderErrorOptions extends ErrorOptions {
+  readonly upstream?: AiUpstreamCause;
+}
+
 /** SDK/HTTP adapter가 분류해 전달하는 공급자 호출 실패. 원문 message는 담지 않는다. */
 export class AiProviderError extends Error {
+  readonly upstream: AiUpstreamCause | undefined;
+
   constructor(
     readonly kind: AiProviderErrorKind,
     readonly statusCode: number | undefined,
-    options?: ErrorOptions,
+    options?: AiProviderErrorOptions,
   ) {
     super(kind, options);
     this.name = AiProviderError.name;
+    this.upstream = options?.upstream;
   }
 }
 

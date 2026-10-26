@@ -39,9 +39,9 @@
     "version": "버전: {{version}}",
     "notAgreed": "미동의",
     "marketing": "마케팅 수신 동의",
-    "marketingDescription": "이벤트 및 프로모션 정보를 받습니다",
+    "marketingDescription": "이벤트와 프로모션 소식을 받아요",
     "marketingPush": "광고성 앱 푸시 수신 동의",
-    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받습니다",
+    "marketingPushDescription": "재방문 혜택과 추천 알림을 앱 푸시로 받아요",
     "aiDataSharing": {
       "label": "AI 기능 데이터 제공",
       "description": "입력한 문장을 Google Gemini로 보내 할 일로 정리해요",

@@ -7,7 +7,6 @@ import {
   FishIcon,
   HStack,
   PawIcon,
-  type QueryErrorFallbackProps,
   READABLE_CONTENT_MAX_WIDTH,
   Result,
   Text,
@@ -40,7 +39,6 @@ import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { match } from 'ts-pattern';
 import { useResolveClassNames } from 'uniwind';
 
-import { isInviteDisabledError } from '../domains/invite.error';
 import { InvitePolicy } from '../domains/invite.model';
 import { InvitedFriendPolicy } from '../domains/invited-friend.model';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
@@ -315,23 +313,6 @@ InvitePawPrintBoard.Loading = function Loading() {
       <Box className="h-5" />
       <Skeleton className="h-[66px] rounded-2xl" />
     </VStack>
-  );
-};
-
-InvitePawPrintBoard.Error = function ErrorState({ error, reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('invite');
-
-  if (isInviteDisabledError(error)) {
-    return <InvitePawPrintBoard.Unavailable />;
-  }
-
-  return (
-    <Box className="min-h-[220px] items-center justify-center">
-      <Result
-        title={t('result.loadFailed.title')}
-        button={<Result.Button onPress={reset}>{t('result.retry')}</Result.Button>}
-      />
-    </Box>
   );
 };
 

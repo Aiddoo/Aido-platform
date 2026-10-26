@@ -18,15 +18,16 @@ import {
   Box,
   ChatBubbleIcon,
   DocsIcon,
+  Flex,
   HStack,
   ICON_COUNT_BUTTON_ICON_SIZE,
   IconCountButton,
   PawIcon,
-  Flex,
+  QueryErrorActions,
   Result,
   Text,
-  VStack,
   useOverlay,
+  VStack,
 } from '@src/shared/ui';
 import { formatDate, isSameDay } from '@src/shared/utils/date';
 import { useQuery, useSuspenseQueries, useSuspenseQuery } from '@tanstack/react-query';
@@ -209,10 +210,7 @@ FriendTodoList.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
   const { t } = useTranslation(['todo', 'common']);
   return (
     <Flex flex={1} justify="center" align="center">
-      <Result
-        title={t('todo:list.loadError')}
-        button={<Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>}
-      />
+      <Result title={t('todo:list.loadError')} button={<QueryErrorActions onRetry={reset} />} />
     </Flex>
   );
 };

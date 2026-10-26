@@ -12,9 +12,10 @@ import {
   Box,
   HStack,
   PlusIcon,
+  QueryErrorActions,
+  type QueryErrorFallbackProps,
   RefreshIcon,
   Result,
-  type QueryErrorFallbackProps,
   Text,
   TextSkeleton,
   VStack,
@@ -219,7 +220,10 @@ FriendStrip.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
       <Text size="b4" shade={6} maxLines={2} className="flex-1">
         {t('friend:list.loadFailed')}
       </Text>
-      <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+      <VStack align="center" gap={2}>
+        <Result.Button onPress={reset}>{t('common:actions.retry')}</Result.Button>
+        <QueryErrorActions.Inquiry />
+      </VStack>
     </HStack>
   );
 };

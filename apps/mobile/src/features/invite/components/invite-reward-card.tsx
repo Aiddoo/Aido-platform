@@ -3,7 +3,7 @@ import {
   ArrowRightIcon,
   Box,
   HStack,
-  QueryErrorBoundary,
+  QueryErrorActions,
   type QueryErrorFallbackProps,
   Text,
   TextButton,
@@ -13,11 +13,10 @@ import {
 import { cn } from '@src/shared/utils/cn';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { PressableFeedback, Skeleton } from 'heroui-native';
-import { type ComponentProps, Fragment, Suspense } from 'react';
+import { type ComponentProps, Fragment } from 'react';
 import { match, P } from 'ts-pattern';
 
 import { InvitePolicy } from '../domains/invite.model';
-import { useInviteAvailability } from '../hooks/use-invite-availability';
 import { useOpenMyInvite } from '../hooks/use-open-my-invite';
 import { useGetInviteQueryOptions } from '../queries/get-invite-query-options';
 import { createPawPrintBoard } from '../utils/view-models/invite-paw-print-board.view-model';
@@ -28,28 +27,8 @@ type InviteRewardCardProps = Omit<ComponentProps<typeof PressableFeedback>, 'onP
 // 마이페이지 카드에는 지금 판의 첫 줄 네 칸만 줄여 보여 준다
 const PREVIEW_COLUMNS = 4;
 
-/**
- * 마이페이지의 친구 초대 카드. 다른 진입점처럼 사용 가능 여부를 모르거나 묻지 못했으면 숨긴다.
- * 가능하다고 확인된 뒤에만 스켈레톤·오류를 보여 꺼진 기능의 오류 카드나 스켈레톤이 번쩍이지 않는다.
- * 사용 가능 여부는 홈 진입점이 먼저 불러 두어 보통 바로 정해진다.
- */
+/** 마이페이지의 친구 초대 카드. 사용 가능 여부와 경계는 마이페이지 Screen이 정한다 */
 export function InviteRewardCard({ className, ...props }: InviteRewardCardProps) {
-  const isAvailable = useInviteAvailability();
-
-  if (!isAvailable) {
-    return null;
-  }
-
-  return (
-    <QueryErrorBoundary fallback={InviteRewardCard.Error}>
-      <Suspense fallback={<InviteRewardCard.Loading className={className} />}>
-        <InviteRewardCard.Contents className={className} {...props} />
-      </Suspense>
-    </QueryErrorBoundary>
-  );
-}
-
-InviteRewardCard.Contents = function Contents({ className, ...props }: InviteRewardCardProps) {
   const { t } = useTranslation('invite');
   const { data: invite } = useSuspenseQuery(useGetInviteQueryOptions());
   const openMyInvite = useOpenMyInvite();
@@ -109,7 +88,7 @@ InviteRewardCard.Contents = function Contents({ className, ...props }: InviteRew
       </VStack>
     </PressableFeedback>
   );
-};
+}
 
 InviteRewardCard.Loading = function Loading({ className }: { className?: string }) {
   return (
@@ -127,15 +106,15 @@ InviteRewardCard.Loading = function Loading({ className }: { className?: string 
   );
 };
 
-/** 카드와 같은 자리·높이에 다시 불러오기만 둔다 */
+/** 카드와 같은 자리·높이에 다시 불러오기와 문의를 둔다 */
 InviteRewardCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps) {
-  const { t } = useTranslation('invite');
+  const { t } = useTranslation(['invite', 'common']);
 
   return (
-    <VStack gap={12} className="mt-3 rounded-[20px] bg-white p-4">
+    <VStack gap={12} className="rounded-[20px] bg-white p-4">
       <VStack gap={2}>
         <Text size="b2" weight="bold">
-          {t('result.loadFailed.title')}
+          {t('invite:result.loadFailed.title')}
         </Text>
         <Text
           size="b4"
@@ -143,14 +122,15 @@ InviteRewardCard.Error = function ErrorState({ reset }: QueryErrorFallbackProps)
           lineBreakStrategyIOS="hangul-word"
           textBreakStrategy="highQuality"
         >
-          {t('result.loadFailed.description')}
+          {t('invite:result.loadFailed.description')}
         </Text>
       </VStack>
-      <Box className="h-9 items-start justify-center">
+      <HStack gap={16} className="h-9 items-center">
         <TextButton size="small" onPress={reset}>
-          {t('result.retry')}
+          {t('common:actions.retry')}
         </TextButton>
-      </Box>
+        <QueryErrorActions.Inquiry />
+      </HStack>
     </VStack>
   );
 };

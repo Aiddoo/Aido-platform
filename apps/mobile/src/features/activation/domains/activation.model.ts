@@ -6,6 +6,7 @@ import {
   FEATURE_DISCOVERY_CAMPAIGN_ID,
   LEGACY_FEATURE_DISCOVERY_CAMPAIGN_ID,
 } from '@src/features/feature-discovery/domains/feature-discovery.registry';
+import type { TodoExistence } from '@src/features/todo/domains/todo.model';
 import { userSchema } from '@src/features/user/domains/user.model';
 import { z } from 'zod';
 
@@ -91,6 +92,28 @@ function isChecklistVisible({ config, user, progress, now }: ChecklistVisibility
   );
 }
 
+export interface ActivationChecklistSteps {
+  hasCreatedTodo: boolean;
+  hasCompletedTodo: boolean;
+}
+
+/**
+ * 시작 체크리스트 단계. 서버의 할 일 기록(재설치·다른 기기·웹에서 만든 할 일 포함)과
+ * 이 기기에서 기록한 진행 중 하나라도 있으면 끝난 단계다. 서버 기록을 아직 못 읽었으면 기기 기록만 본다.
+ */
+function checklistSteps(
+  progress: ActivationProgress,
+  todoExistence: TodoExistence | undefined,
+): ActivationChecklistSteps {
+  const hasCompletedTodo =
+    progress.activatedAt != null || (todoExistence?.hasCompletedTodo ?? false);
+  return {
+    hasCreatedTodo:
+      hasCompletedTodo || progress.todoCreatedAt != null || (todoExistence?.hasTodo ?? false),
+    hasCompletedTodo,
+  };
+}
+
 function shouldRegisterPushAutomatically({
   config,
   user,
@@ -115,6 +138,7 @@ function daysSinceSignup(user: ActivationUser, now: Date): number {
 
 export const ActivationPolicy = {
   activationIdentity,
+  checklistSteps,
   daysSinceSignup,
   isChecklistVisible,
   isNewUserCohort,

@@ -131,7 +131,12 @@ TodoActionsBottomSheet.Content = function Content({ onClose }: TodoActionsConten
   return (
     <VStack gap={8}>
       {NudgeInteractionPolicy.isThankableTodo(todo, { isOwner: true }) && (
-        <QueryErrorBoundary resetKeys={[todo.id]} fallback={() => null}>
+        <QueryErrorBoundary
+          resetKeys={[todo.id]}
+          fallback={(props) => (
+            <ThanksSummaryRow.Error {...props} onInquiry={() => onClose(INQUIRY_SHEET_EXIT)} />
+          )}
+        >
           <Suspense fallback={<ThanksSummaryRow.Loading />}>
             <ThanksSummaryRow
               todoId={todo.id}

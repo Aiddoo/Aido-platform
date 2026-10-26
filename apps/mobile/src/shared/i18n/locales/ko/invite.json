@@ -50,8 +50,7 @@
       "title": "초대 정보를 불러오지 못했어요",
       "description": "인터넷 연결을 확인하고 다시 시도해주세요"
     },
-    "enterCode": "코드 직접 입력하기",
-    "retry": "다시 시도"
+    "enterCode": "코드 직접 입력하기"
   },
   "errors": {
     "invalidCode": "초대 코드는 영문과 숫자 6자리예요"
@@ -154,7 +153,7 @@
     "mypageStart": "첫 발자국을 남겨보세요",
     "mypageNext": "다음 보상까지 친구 {{count}}명 남았어요",
     "mypageKeepGoing": "친구와 함께 계속 응원해요",
-    "checklistStep": "친구 1명 초대하기",
+    "checklistStep": "친구 1명 초대하기 (선택)",
     "checklistReward": "친구에게 프리미엄 {{days}}일",
     "allDoneDescription": "친구와 같이 하면 더 오래 이어가요",
     "allDoneDismiss": "오늘은 그만 보기",
@@ -169,6 +168,8 @@
     "requestedDescription": "{{name}}님의 친구 자리가 꽉 찼어요.\n{{name}}님이 수락하면 바로 친구가 돼요",
     "alreadyClaimedDescription": "이 기기에서는 이미 초대 보상을 받아서 이번에는 친구만 맺었어요",
     "existingAccountDescription": "이미 아이두를 쓰고 있어서 이번에는 친구만 맺었어요",
+    "requestedAlreadyClaimedDescription": "{{name}}님의 친구 자리가 꽉 찼어요. {{name}}님이 수락하면 친구가 돼요.\n이 기기에서는 이미 초대 보상을 받아서 이번에는 보상이 없어요",
+    "requestedExistingAccountDescription": "{{name}}님의 친구 자리가 꽉 찼어요. {{name}}님이 수락하면 친구가 돼요.\n이미 아이두를 쓰고 있어서 이번에는 보상이 없어요",
     "rewardTitle": "프리미엄 {{count}}일을 받았어요",
     "rewardDescription": "{{count}}일 동안 모든 기능을 쓸 수 있어요",
     "rewardAfterSubscription": "구독이 끝나면 보상 프리미엄 {{count}}일이 이어서 시작돼요",

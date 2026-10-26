@@ -62,35 +62,35 @@ export function InviteWelcomeBottomSheet(props: InviteWelcomeBottomSheetProps) {
   }
 
   return (
-    <BottomSheet isOpen={sheet.isOpen} onOpenChange={sheet.onOpenChange} {...props}>
-      <InviteWelcomeBottomSheet.Contents
-        result={result}
-        onCreateFirstTodo={() => sheet.close({ type: 'replace', href: createFeedAddTodoHref() })}
-        onOpenFriendFeed={() =>
-          sheet.close({
-            type: 'replace',
-            href: createFeedHref({ friendId: result.inviter.userId }),
-          })
-        }
-        onDismiss={() => sheet.close()}
-      />
+    <BottomSheet
+      isOpen={sheet.isOpen}
+      onOpenChange={sheet.onOpenChange}
+      // 작은 화면(Duo 바깥 화면 등)에서 내용이 시트보다 길어도 버튼은 시트 아래에 보이게 고정한다
+      footer={
+        <InviteWelcomeBottomSheet.Actions
+          result={result}
+          onCreateFirstTodo={() => sheet.close({ type: 'replace', href: createFeedAddTodoHref() })}
+          onOpenFriendFeed={() =>
+            sheet.close({
+              type: 'replace',
+              href: createFeedHref({ friendId: result.inviter.userId }),
+            })
+          }
+          onDismiss={() => sheet.close()}
+        />
+      }
+      {...props}
+    >
+      <InviteWelcomeBottomSheet.Contents result={result} />
     </BottomSheet>
   );
 }
 
 interface WelcomeContentsProps {
   result: RedemptionResult;
-  onCreateFirstTodo: () => void;
-  onOpenFriendFeed: () => void;
-  onDismiss: () => void;
 }
 
-InviteWelcomeBottomSheet.Contents = function Contents({
-  result,
-  onCreateFirstTodo,
-  onOpenFriendFeed,
-  onDismiss,
-}: WelcomeContentsProps) {
+InviteWelcomeBottomSheet.Contents = function Contents({ result }: WelcomeContentsProps) {
   const { t } = useTranslation('invite');
   // 수락 mutation이 내 정보를 다시 불러온 뒤 열리므로 보상이 이어 붙은 결과를 읽는다
   const { data: me } = useSuspenseQuery(useGetMeQueryOptions());
@@ -99,7 +99,7 @@ InviteWelcomeBottomSheet.Contents = function Contents({
   const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
 
   return (
-    <VStack testID="invite-welcome-sheet" align="center" px={20} pb={20}>
+    <VStack testID="invite-welcome-sheet" align="center" px={20} pb={8}>
       <WelcomeCat />
 
       <Spacing size={8} />
@@ -117,14 +117,24 @@ InviteWelcomeBottomSheet.Contents = function Contents({
         lineBreakStrategyIOS="hangul-word"
         textBreakStrategy="highQuality"
       >
-        {match(InviteRedemptionPolicy.missingRewardReason(result))
-          .with('already-claimed', () => t('welcome.alreadyClaimedDescription'))
-          .with('existing-account', () => t('welcome.existingAccountDescription'))
-          .with(null, () =>
-            isRequested
-              ? t('welcome.requestedDescription', { name })
-              : t('welcome.friendsDescription'),
+        {/* 친구 요청 상태면 "친구를 맺었다"는 문구를 쓰지 않는다 */}
+        {match({ reason: InviteRedemptionPolicy.missingRewardReason(result), isRequested })
+          .with({ reason: 'already-claimed', isRequested: true }, () =>
+            t('welcome.requestedAlreadyClaimedDescription', { name }),
           )
+          .with({ reason: 'already-claimed', isRequested: false }, () =>
+            t('welcome.alreadyClaimedDescription'),
+          )
+          .with({ reason: 'existing-account', isRequested: true }, () =>
+            t('welcome.requestedExistingAccountDescription', { name }),
+          )
+          .with({ reason: 'existing-account', isRequested: false }, () =>
+            t('welcome.existingAccountDescription'),
+          )
+          .with({ reason: null, isRequested: true }, () =>
+            t('welcome.requestedDescription', { name }),
+          )
+          .with({ reason: null, isRequested: false }, () => t('welcome.friendsDescription'))
           .exhaustive()}
       </Text>
 
@@ -156,18 +166,38 @@ InviteWelcomeBottomSheet.Contents = function Contents({
       )}
 
       <WelcomeNotificationPrompt />
+    </VStack>
+  );
+};
 
-      <VStack gap={4} className="mt-5 w-full">
-        <Button onPress={onCreateFirstTodo}>{t('welcome.createFirstTodo')}</Button>
-        <Button
-          testID={isRequested ? 'invite-welcome-later' : undefined}
-          variant="weak"
-          color="dark"
-          onPress={isRequested ? onDismiss : onOpenFriendFeed}
-        >
-          {isRequested ? t('welcome.later') : t('welcome.openFriendFeed', { name })}
-        </Button>
-      </VStack>
+interface WelcomeActionsProps {
+  result: RedemptionResult;
+  onCreateFirstTodo: () => void;
+  onOpenFriendFeed: () => void;
+  onDismiss: () => void;
+}
+
+InviteWelcomeBottomSheet.Actions = function Actions({
+  result,
+  onCreateFirstTodo,
+  onOpenFriendFeed,
+  onDismiss,
+}: WelcomeActionsProps) {
+  const { t } = useTranslation('invite');
+  const name = InviteRedemptionPolicy.inviterName(result, t('card.unnamedInviter'));
+  const isRequested = InviteRedemptionPolicy.isFriendRequestOnly(result);
+
+  return (
+    <VStack gap={4} px={20}>
+      <Button onPress={onCreateFirstTodo}>{t('welcome.createFirstTodo')}</Button>
+      <Button
+        testID={isRequested ? 'invite-welcome-later' : undefined}
+        variant="weak"
+        color="dark"
+        onPress={isRequested ? onDismiss : onOpenFriendFeed}
+      >
+        {isRequested ? t('welcome.later') : t('welcome.openFriendFeed', { name })}
+      </Button>
     </VStack>
   );
 };

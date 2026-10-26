@@ -2,6 +2,7 @@ import { AppVersionCheck } from '@src/features/app-version/components/app-versio
 import { useDeleteAccountMutationOptions } from '@src/features/auth/queries/use-delete-account-mutation-options';
 import { useLogoutMutationOptions } from '@src/features/auth/queries/use-logout-mutation-options';
 import { InviteRewardCard } from '@src/features/invite/components/invite-reward-card';
+import { useInviteAvailability } from '@src/features/invite/hooks/use-invite-availability';
 import { NotificationBell } from '@src/features/notification/components/notification-bell';
 import { MyPageMenu } from '@src/features/user/components/mypage-menu/mypage-menu';
 import { ProfileCard } from '@src/features/user/components/profile-card';
@@ -42,7 +43,7 @@ function MyPageScreen() {
             </Suspense>
           </QueryErrorBoundary>
 
-          <InviteRewardCard className="mt-3" />
+          <InviteRewardSection />
 
           <Spacing size={12} />
 
@@ -62,6 +63,30 @@ function MyPageScreen() {
         </StyledSafeAreaView>
       </ScrollView>
     </StyledSafeAreaView>
+  );
+}
+
+/**
+ * 친구 초대 카드. 다른 진입점처럼 사용 가능 여부를 모르거나 묻지 못했으면 간격까지 숨긴다.
+ * 가능하다고 확인된 뒤에만 스켈레톤·오류를 보여 꺼진 기능의 오류 카드나 스켈레톤이 번쩍이지 않는다.
+ * 사용 가능 여부는 홈 진입점이 먼저 불러 두어 보통 바로 정해진다.
+ */
+function InviteRewardSection() {
+  const isInviteAvailable = useInviteAvailability();
+
+  if (!isInviteAvailable) {
+    return null;
+  }
+
+  return (
+    <>
+      <Spacing size={12} />
+      <QueryErrorBoundary fallback={InviteRewardCard.Error}>
+        <Suspense fallback={<InviteRewardCard.Loading />}>
+          <InviteRewardCard />
+        </Suspense>
+      </QueryErrorBoundary>
+    </>
   );
 }
 

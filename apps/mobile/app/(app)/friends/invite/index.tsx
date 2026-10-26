@@ -6,6 +6,7 @@ import { InviteShareActions } from '@src/features/invite/components/invite-share
 import { InvitedFriendSummary } from '@src/features/invite/components/invited-friend-summary';
 import { InviteRewardPolicy } from '@src/features/invite/domains/invite-reward.model';
 import { createInviteShareContent } from '@src/features/invite/domains/invite-share.model';
+import { isInviteDisabledError } from '@src/features/invite/domains/invite.error';
 import { InvitePolicy } from '@src/features/invite/domains/invite.model';
 import { InvitedFriendPolicy } from '@src/features/invite/domains/invited-friend.model';
 import { useGetInviteQueryOptions } from '@src/features/invite/queries/get-invite-query-options';
@@ -18,8 +19,11 @@ import {
   Box,
   H4,
   HStack,
+  QueryErrorActions,
   QueryErrorBoundary,
+  type QueryErrorFallbackProps,
   ReadableContent,
+  Result,
   Spacing,
   StyledSafeAreaView,
   Text,
@@ -27,14 +31,13 @@ import {
 } from '@src/shared/ui';
 import { useMutation, useQueries, useQueryClient } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { Suspense } from 'react';
+import { type ReactNode, Suspense } from 'react';
 import { Image, RefreshControl, ScrollView } from 'react-native';
 import { useResolveClassNames } from 'uniwind';
 
 const SHARE_ICON = process.env.EXPO_OS === 'ios' ? 'square.and.arrow.up' : ShareIcon;
 
 export default function MyInviteScreen() {
-  const { t } = useTranslation('invite');
   const queryClient = useQueryClient();
   const { color: refreshTint } = useResolveClassNames('text-main');
   // 발자국 판·링크·친구 요약이 모두 초대 쿼리를 읽으니 한 번에 새로 고친다
@@ -60,31 +63,27 @@ export default function MyInviteScreen() {
             <VStack gap={20}>
               <InviteHeroBanner />
 
-              <QueryErrorBoundary fallback={InviteLinkCard.Error}>
+              {/* 네 블록이 같은 초대 조회를 읽으므로 실패는 한 곳에서 한 번만 알린다. 불러오는 동안은 블록마다 자리를 지킨다 */}
+              <QueryErrorBoundary fallback={InviteContentsError}>
                 <Suspense fallback={<InviteLinkCard.Loading />}>
                   <InviteLinkCard />
                 </Suspense>
-              </QueryErrorBoundary>
 
-              <QueryErrorBoundary fallback={InviteShareActions.Error}>
                 <Suspense fallback={<InviteShareActions.Loading />}>
                   <InviteShareActions />
                 </Suspense>
-              </QueryErrorBoundary>
 
-              <VStack gap={14} className="rounded-3xl border border-gray-2 bg-white px-[18px] py-5">
-                <H4>{t('pawPrintBoard.title')}</H4>
-                <QueryErrorBoundary fallback={InvitePawPrintBoard.Error}>
+                <PawPrintBoardSection>
                   <Suspense fallback={<InvitePawPrintBoard.Loading />}>
                     <InvitePawPrintBoard />
                   </Suspense>
-                </QueryErrorBoundary>
-              </VStack>
+                </PawPrintBoardSection>
 
-              <QueryErrorBoundary fallback={InvitedFriendSummary.Error}>
-                <Suspense fallback={<InvitedFriendSummary.Loading />}>
-                  <InvitedFriendSummary />
-                </Suspense>
+                <Box className="-mx-4">
+                  <Suspense fallback={<InvitedFriendSummary.Loading />}>
+                    <InvitedFriendSummary />
+                  </Suspense>
+                </Box>
               </QueryErrorBoundary>
 
               <InviteRewardNotice />
@@ -122,6 +121,43 @@ function InviteShareToolbar() {
         }}
       />
     </Stack.Toolbar>
+  );
+}
+
+/** 초대가 꺼졌으면 블록마다 쓸 수 없음 안내를, 그 밖의 실패는 다시 시도·문의를 한 번만 보인다 */
+function InviteContentsError({ error, reset }: QueryErrorFallbackProps) {
+  const { t } = useTranslation('invite');
+
+  if (isInviteDisabledError(error)) {
+    return (
+      <>
+        <InviteLinkCard.Unavailable />
+        <InviteShareActions.Unavailable />
+        <PawPrintBoardSection>
+          <InvitePawPrintBoard.Unavailable />
+        </PawPrintBoardSection>
+        <Box className="-mx-4">
+          <InvitedFriendSummary.Unavailable />
+        </Box>
+      </>
+    );
+  }
+
+  return (
+    <Box className="min-h-[320px] justify-center">
+      <Result title={t('result.loadFailed.title')} button={<QueryErrorActions onRetry={reset} />} />
+    </Box>
+  );
+}
+
+function PawPrintBoardSection({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('invite');
+
+  return (
+    <VStack gap={14} className="rounded-3xl border border-gray-2 bg-white px-[18px] py-5">
+      <H4>{t('pawPrintBoard.title')}</H4>
+      {children}
+    </VStack>
   );
 }
 

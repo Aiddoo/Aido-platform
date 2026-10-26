@@ -18,9 +18,9 @@ import { resolveSuggestedCategoryId } from "../../../domain/services/suggestions
 import {
   generationCompletedLog,
   generationFailedLog,
+  providerFailure,
 } from "../../observability/parsing/ai-generation-log.events.js";
 import { AiSuggestionLogEvent } from "../../observability/suggestions/ai-suggestion-log.events.js";
-import { AiProviderError } from "../../ports/parsing/ai-provider.port.js";
 import type { AiTaskSettings } from "../../ports/parsing/ai-task-settings.port.js";
 import { type AiSuggestionRepositoryPort } from "../../ports/suggestions/ai-suggestion.repository.port.js";
 import { suggestionPrompts } from "../../prompts/suggestions/suggestion/index.js";
@@ -131,8 +131,7 @@ export class AnalyzeAndCreateSuggestions {
           generationFailedLog({
             ...logBase,
             outcome: "FAILED",
-            errorKind: error instanceof AiProviderError ? error.kind : "INVALID_OUTPUT",
-            statusCode: error instanceof AiProviderError ? error.statusCode : undefined,
+            ...providerFailure(error),
             latencyMs: Date.now() - startedAt,
           }),
         );
