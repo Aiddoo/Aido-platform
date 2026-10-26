@@ -78,7 +78,7 @@ describe("초대 수락 HTTP (실제 DB)", () => {
     return currentUserSchema.parse(response.body.data);
   }
 
-  it("새 사용자는 친구가 되고 7일 보상을 받으며 응답을 놓쳐 다시 수락하면 같은 결과를 돌려준다", async () => {
+  it("새 사용자는 친구가 되고 7일 보상을 받으며 다시 수락하면 같은 결과를 isReplay로 알려 돌려준다", async () => {
     // Given
     const inviter = await ctx.helpers.createVerifiedUser("redeem-inviter@test.com", PASSWORD, {
       name: "매튜",
@@ -103,8 +103,9 @@ describe("초대 수락 HTTP (실제 DB)", () => {
       },
       friendship: "FRIENDS",
       rewards: [{ rewardType: "PREMIUM_DAYS", quantity: 7 }],
+      isReplay: false,
     });
-    expect(repeated.body.data).toEqual(first.body.data);
+    expect(repeated.body.data).toEqual({ ...first.body.data, isReplay: true });
     // 수락 화면이 바로 "프리미엄 7일"을 보여 주므로 응답 직후 /me도 이미 보상 기간이다
     expect(await rewardGrantsOf(invitee.userId)).toEqual([
       { rewardType: "PREMIUM_DAYS", quantity: 7, status: "APPLIED" },

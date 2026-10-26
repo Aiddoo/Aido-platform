@@ -193,6 +193,12 @@ export const redeemInviteResponseSchema = z
         rewards: z
           .array(inviteRewardSchema)
           .describe("초대받은 사람이 받은 보상 (같은 기기·같은 신원으로 이미 받았으면 빈 배열)"),
+        isReplay: z
+          .boolean()
+          .optional()
+          .describe(
+            "이미 수락한 같은 초대를 다시 수락해 처음 결과를 돌려줬으면 true. 보상은 처음 받은 것이고 새로 주지 않습니다",
+          ),
       })
       .describe("신규 사용자가 초대를 수락함"),
     z

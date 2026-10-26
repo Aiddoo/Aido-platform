@@ -7314,6 +7314,10 @@ exports[`OpenAPI 계약 (e2e) > OpenAPI 문서가 스냅샷과 일치한다 (클
               ],
               "type": "object",
             },
+            "isReplay": {
+              "description": "이미 수락한 같은 초대를 다시 수락해 처음 결과를 돌려줬으면 true. 보상은 처음 받은 것이고 새로 주지 않습니다",
+              "type": "boolean",
+            },
             "outcome": {
               "enum": [
                 "REDEEMED",

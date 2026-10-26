@@ -53,6 +53,7 @@ export const InviteMapper = {
         inviter: redeemed.inviter,
         friendship: redeemed.friendship,
         rewards: [...redeemed.rewards],
+        isReplay: redeemed.isReplay,
       }))
       .with({ outcome: REDEEM_OUTCOME.CONNECTED }, (connected) => ({
         outcome: REDEEM_OUTCOME.CONNECTED,
