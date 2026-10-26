@@ -41,7 +41,7 @@ AI 작업의 프롬프트 버전·설정·평가를 바꿀 때 참고한다. 코
 
 ## 관측
 
-모든 작업은 `ai.generation.completed`/`ai.generation.failed` 하나의 형식으로 남긴다: `task`, `promptVersion`, `model`, `latencyMs`, 입력·출력·사고 토큰, `finishReason`, `outcome`, `errorKind`, `quotaCharged`, `userId`. 사용자 원문·제목·카테고리 이름은 남기지 않는다.
+모든 작업은 `ai.generation.completed`/`ai.generation.failed` 하나의 형식으로 남긴다: `task`, `promptVersion`, `model`, `latencyMs`, 입력·출력·사고 토큰, `finishReason`, `outcome`, `errorKind`, `statusCode`, `quotaCharged`, `userId`. 공급자 실패는 `upstream`(`errorName`, Google 오류 본문의 `providerStatus` 예: `UNAVAILABLE`, 네트워크 `errorCode` 예: `ECONNRESET`)으로 원인을 남긴다. 고정 기호만 담고 공급자 message·응답 본문·사용자 원문·제목·카테고리 이름은 남기지 않는다.
 
 ## 버전과 호환
 

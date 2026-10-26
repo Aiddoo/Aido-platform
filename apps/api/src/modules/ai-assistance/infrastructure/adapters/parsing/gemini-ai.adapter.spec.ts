@@ -336,8 +336,14 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
       schema,
     });
 
-    // Then
-    await expect(execution).rejects.toMatchObject({ kind: "UPSTREAM", statusCode: 503 });
+    // Then - 운영 로그로 원인을 좁히도록 공급자 상태 기호는 남기고 원문 message는 남기지 않는다
+    const error = await execution.catch((cause: unknown) => cause);
+    expect(error).toMatchObject({
+      kind: "UPSTREAM",
+      statusCode: 503,
+      upstream: { errorName: "AI_APICallError", providerStatus: "UNAVAILABLE" },
+    });
+    expect(JSON.stringify(Reflect.get(Object(error), "upstream"))).not.toContain("fixture");
     expect(fetchSpy).toHaveBeenCalledTimes(3);
   });
 
@@ -434,6 +440,21 @@ describe("GeminiAiAdapter — 실제 Google factory·설치 SDK, 외부 네트�
     expect(logError).not.toHaveBeenCalled();
     expect(logWarn).not.toHaveBeenCalled();
     expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("네트워크 오류는 원인 체인의 오류 code만 남긴다", async () => {
+    // Given - undici가 연결이 끊겼을 때 던지는 모양
+    const reset = Object.assign(new Error("SECRET_SOCKET_DETAIL"), { code: "ECONNRESET" });
+    fetchSpy.mockRejectedValue(new TypeError("fetch failed", { cause: reset }));
+
+    // When
+    const error = await createProvider("fixture-key")
+      .generateStructured({ ...base, prompt: "독서", schema, policy: { ...policy, maxRetries: 0 } })
+      .catch((cause: unknown) => cause);
+
+    // Then
+    expect(error).toMatchObject({ kind: "UPSTREAM", upstream: { errorCode: "ECONNRESET" } });
+    expect(JSON.stringify(Reflect.get(Object(error), "upstream"))).not.toContain("SECRET");
   });
 
   it("분류할 수 없는 SDK 오류는 UPSTREAM으로 감싸고 원래 오류를 cause로 유지한다", async () => {

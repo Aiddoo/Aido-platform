@@ -172,9 +172,7 @@ export class ParseMemo {
         ...generationFailedLog({
           ...logBase,
           outcome: "FAILED",
-          errorKind: failure.kind,
-          statusCode: failure.statusCode,
-          errorCode: failure.errorCode,
+          ...failure,
           latencyMs: Date.now() - startTime,
           quotaCharged: false,
         }),
